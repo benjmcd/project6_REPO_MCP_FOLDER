@@ -957,6 +957,127 @@ def test_runtime_discovery_scope_restores_layer3_storage_dir(tmp_path: Path, mon
     assert workflow.settings.storage_dir == str(layer3_storage_dir)
 
 
+def test_live_http_operator_receipt_is_not_persisted_before_status_verification(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    checkout_root = tmp_path / "checkout"
+    checkout_root.mkdir()
+    receipt_dir = tmp_path / "operator-receipts"
+    lifecycle_dir = tmp_path / "runtime-root-lifecycle"
+    runtime_parent = tmp_path / "runtime-parent"
+    runtime_parent.mkdir()
+    args = workflow.build_parser().parse_args(
+        [
+            "--execution-mode",
+            "live-http",
+            "--api-base-url",
+            "http://127.0.0.1:8000",
+            "--internal-webhook-mode",
+            "configured",
+            "--checkout-root",
+            str(checkout_root),
+            "--receipt-dir",
+            str(receipt_dir),
+            "--runtime-root-lifecycle-dir",
+            str(lifecycle_dir),
+        ]
+    )
+    triplet = _lifecycle_triplet(
+        {
+            "baseline": runtime_parent / "baseline",
+            "candidate_a": runtime_parent / "candidate-a",
+            "candidate_b": runtime_parent / "candidate-b",
+        }
+    )
+    monkeypatch.setattr(workflow, "_validate_triplet", lambda **_kwargs: triplet)
+    monkeypatch.setattr(workflow, "_runtime_discovery_storage_dir", lambda **_kwargs: runtime_parent)
+    monkeypatch.setattr(
+        workflow,
+        "_runtime_root_lifecycle_receipt",
+        lambda **_kwargs: {
+            "schema_id": workflow.RUNTIME_ROOT_LIFECYCLE_SCHEMA_ID,
+            "lifecycle_mode": workflow.RUNTIME_ROOT_LIFECYCLE_MODE,
+            "lifecycle_receipt_id": "cb-full-corpus-runtime-roots-proof",
+            "lifecycle_receipt_hash": "5" * 64,
+            "runtime_parent_ref": "redacted://sha256/runtime-parent",
+            "root_count": 3,
+            "status": "validated",
+            "validate_only_triplet": True,
+        },
+    )
+    monkeypatch.setattr(workflow, "_operator_api_client", lambda *args, **kwargs: _FakeClientContext(object()))
+    monkeypatch.setattr(workflow, "_assert_operator_api_ready", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        workflow,
+        "_scan_bridge_curated_source",
+        lambda *_args, **_kwargs: {"eligible_file_count": 69},
+    )
+    monkeypatch.setattr(workflow, "_approve_material", lambda *_args, **_kwargs: {"material_snapshot_id": "snapshot"})
+    monkeypatch.setattr(
+        workflow,
+        "_prepare_package",
+        lambda *_args, **_kwargs: (
+            {"material_snapshot_id": "snapshot"},
+            {"status": "proven"},
+            {"prepare": "payload"},
+            {"status": "proven"},
+        ),
+    )
+    monkeypatch.setattr(
+        workflow,
+        "_prove_delivery_surfaces",
+        lambda *_args, **_kwargs: {
+            "same_origin_delivery_available": True,
+            "provider_private_state": "not_admitted",
+            "provider_private_revoke_state": "not_admitted",
+            "internal_webhook_state": "configured",
+        },
+    )
+
+    def _post_json(_client: object, path: str, _payload: dict[str, object]) -> dict[str, object]:
+        if path.endswith("/candidate-b/runtime/material-bridge"):
+            return {
+                "status": "proven",
+                "bridge_receipt_id": "cb-runtime-l3-live-http-proof",
+                "authority_hashes": {
+                    "bridge_receipt_hash": "2" * 64,
+                    "governed_retained_artifact_family_hash": "a" * 64,
+                },
+                "governed_retained_artifact_family": {"role_counts": {"source_pdf": 69}},
+                "admitted_artifact_subset": {"file_count": 69, "text_files": ["target-00001.md"]},
+            }
+        if path.endswith("/candidate-b/visual-lane/status"):
+            return {"visual_lane_status": "proven"}
+        if path.endswith("/candidate-b/runtime/downstream-proof"):
+            return {
+                "proof_receipt_id": "cb-runtime-downstream-proof-live-http",
+                "proof_hash": "3" * 64,
+                "coverage": [{"status": "proven"}],
+                "status": "proven",
+            }
+        raise AssertionError(f"unexpected path: {path}")
+
+    monkeypatch.setattr(workflow, "_post_json", _post_json)
+
+    def _fail_status_verification(_args: object, _receipt: dict[str, object]) -> dict[str, object]:
+        raise workflow.OperatorWorkflowError(
+            "live_http_status_verification_failed",
+            "live status verification failed",
+        )
+
+    monkeypatch.setattr(workflow, "_verify_live_http_workflow_status", _fail_status_verification)
+
+    try:
+        workflow.run_operator_workflow(args)
+    except workflow.OperatorWorkflowError as exc:
+        assert exc.code == "live_http_status_verification_failed"
+    else:
+        raise AssertionError("live-http workflow persisted before failing status verification")
+
+    assert not list(receipt_dir.glob("cb-full-corpus-operator-*/receipt.json"))
+
+
 def test_runtime_root_ref_redacts_external_paths_and_wraps_repo_relative(tmp_path: Path) -> None:
     checkout_root = tmp_path / "checkout"
     inside_relative = "backend/app/storage_test_runtime/lc_e2e/baseline-run"

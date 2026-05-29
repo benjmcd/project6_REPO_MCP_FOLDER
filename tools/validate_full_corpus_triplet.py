@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import re
 import sqlite3
 import sys
 from collections import Counter
@@ -15,6 +17,8 @@ SUMMARY_SCHEMA_ID = "aps.full_corpus_compare_triplet_validation.v1"
 SUMMARY_SCHEMA_VERSION = 1
 LOCAL_CORPUS_SUMMARY_SCHEMA_ID = "aps.local_corpus_e2e_summary.v1"
 DEFAULT_RUNTIME_PARENT = ROOT / "backend" / "app" / "storage_test_runtime" / "lc_e2e"
+ADMITTED_CORPUS_ROOT_RELATIVE = Path("data_demo") / "nrc_adams_documents_for_testing"
+ADMITTED_TARGET_SET_AUTHORITY = "tracked_nrc_aps_local_corpus_pdf_filenames_v1"
 EXPECTED_CORPUS_PDF_COUNT = 69
 BASELINE_ENGINE = "baseline"
 CANDIDATE_A_VISUAL_LANE = "candidate_a_page_evidence_v1"
@@ -85,6 +89,10 @@ def _runtime_parent(checkout_root: Path) -> Path:
     return checkout_root / "backend" / "app" / "storage_test_runtime" / "lc_e2e"
 
 
+def _admitted_corpus_root(checkout_root: Path) -> Path:
+    return checkout_root / ADMITTED_CORPUS_ROOT_RELATIVE
+
+
 def _repo_rel(checkout_root: Path, path: Path) -> str:
     resolved = path.resolve()
     try:
@@ -115,6 +123,79 @@ def _load_json(path: Path) -> dict[str, Any]:
 
 def _summary_path(runtime_root: Path) -> Path:
     return runtime_root / "local_corpus_e2e_summary.json"
+
+
+def _walk_admitted_corpus_pdfs(corpus_root: Path) -> list[Path]:
+    pdfs: list[Path] = []
+    for dirpath, dirnames, filenames in os.walk(str(corpus_root)):
+        dirnames.sort(key=str.lower)
+        for filename in sorted(filenames, key=str.lower):
+            if Path(filename).suffix.lower() == ".pdf":
+                pdfs.append(Path(dirpath) / filename)
+    return pdfs
+
+
+def _extract_admitted_accession(stem: str, *, ordinal: int, seen: set[str]) -> str:
+    match = re.search(r"\b(ML\d{6,})\b", stem, flags=re.IGNORECASE)
+    accession = match.group(1).upper() if match else f"LOCALAPS{ordinal:05d}"
+    if accession in seen:
+        raise ValidationError(
+            "admitted_corpus_accession_duplicate",
+            "The admitted NRC APS local-corpus source has duplicate accession numbers.",
+            context={"accession_number": accession},
+        )
+    seen.add(accession)
+    return accession
+
+
+def _admitted_accession_identities(checkout_root: Path) -> list[dict[str, Any]]:
+    corpus_root = _admitted_corpus_root(checkout_root)
+    if not corpus_root.is_dir():
+        raise ValidationError(
+            "admitted_corpus_root_missing",
+            "The admitted NRC APS full-corpus source directory is unavailable.",
+            context={"admitted_corpus_root": _repo_rel(checkout_root, corpus_root)},
+        )
+    grouped: dict[str, list[Path]] = {}
+    for pdf_path in _walk_admitted_corpus_pdfs(corpus_root.resolve()):
+        relative = pdf_path.relative_to(corpus_root.resolve())
+        group_name = relative.parts[0] if len(relative.parts) > 1 else "__corpus_root__"
+        grouped.setdefault(group_name, []).append(pdf_path)
+
+    identities: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    ordinal = 0
+    for group_name in sorted(grouped, key=str.lower):
+        for pdf_path in grouped[group_name]:
+            ordinal += 1
+            identities.append(
+                {
+                    "ordinal": ordinal,
+                    "accession_number": _extract_admitted_accession(
+                        pdf_path.stem,
+                        ordinal=ordinal,
+                        seen=seen,
+                    ),
+                }
+            )
+    if len(identities) != EXPECTED_CORPUS_PDF_COUNT:
+        raise ValidationError(
+            "admitted_corpus_target_count_invalid",
+            "The admitted NRC APS full-corpus source must contain exactly 69 PDF targets.",
+            context={"target_count": len(identities), "expected": EXPECTED_CORPUS_PDF_COUNT},
+        )
+    return identities
+
+
+def _admitted_target_set_authority(checkout_root: Path) -> dict[str, Any]:
+    identities = _admitted_accession_identities(checkout_root)
+    return {
+        "authority": ADMITTED_TARGET_SET_AUTHORITY,
+        "target_count": EXPECTED_CORPUS_PDF_COUNT,
+        "target_set_hash": _target_set_hash(identities),
+        "accession_head": [item["accession_number"] for item in identities[:3]],
+        "accession_tail": [item["accession_number"] for item in identities[-3:]],
+    }
 
 
 def _resolve_explicit_runtime_root(raw_value: str, *, checkout_root: Path, label: str) -> Path | None:
@@ -549,6 +630,17 @@ def validate_triplet(
             "Baseline, Candidate A, and Candidate B do not share the same full-corpus target set.",
             context={"mismatched": mismatched},
         )
+    admitted_target_set = _admitted_target_set_authority(checkout_root)
+    if baseline_hash != admitted_target_set["target_set_hash"]:
+        raise ValidationError(
+            "triplet_target_set_not_admitted",
+            "Baseline, Candidate A, and Candidate B share a target set that is not the admitted NRC APS full corpus.",
+            context={
+                "received_target_set_hash": baseline_hash,
+                "admitted_target_set_hash": admitted_target_set["target_set_hash"],
+                "admitted_target_set_authority": admitted_target_set["authority"],
+            },
+        )
 
     selected_runs = {
         "baseline": {key: baseline[key] for key in ("run_id", "runtime_root", "document_processing_engine", "visual_lane_mode")},
@@ -589,6 +681,8 @@ def validate_triplet(
         "compare_target_set": {
             "target_count": EXPECTED_CORPUS_PDF_COUNT,
             "target_set_hash": baseline_hash,
+            "admitted_target_set_hash": admitted_target_set["target_set_hash"],
+            "admitted_target_set_authority": admitted_target_set["authority"],
             "accession_head": [
                 item["accession_number"]
                 for item in baseline["target_identity"][:3]

@@ -53,6 +53,13 @@ def _target_outcomes() -> list[dict[str, object]]:
     ]
 
 
+def _seed_admitted_corpus(checkout_root: Path) -> None:
+    corpus_root = checkout_root / triplet.ADMITTED_CORPUS_ROOT_RELATIVE
+    corpus_root.mkdir(parents=True, exist_ok=True)
+    for ordinal in range(1, triplet.EXPECTED_CORPUS_PDF_COUNT + 1):
+        (corpus_root / f"target-{ordinal:05d}.pdf").write_bytes(b"%PDF-1.4\n")
+
+
 def _gate_results() -> dict[str, dict[str, object]]:
     return {gate_name: {"passed": True} for gate_name in triplet.REQUIRED_GATE_NAMES}
 
@@ -121,6 +128,7 @@ def _write_summary(
 
 
 def _seed_triplet(checkout_root: Path) -> dict[str, Path]:
+    _seed_admitted_corpus(checkout_root)
     parent = checkout_root / "backend" / "app" / "storage_test_runtime" / "lc_e2e"
     roots = {
         "baseline": parent / "baseline-full-corpus-v2",
@@ -173,6 +181,14 @@ def test_validate_triplet_accepts_same_checkout_full_corpus_receipts(tmp_path: P
     assert payload["selected_runs"]["candidate_a"]["visual_lane_mode"] == triplet.CANDIDATE_A_VISUAL_LANE
     assert payload["selected_runs"]["candidate_b"]["document_processing_engine"] == triplet.CANDIDATE_B_ENGINE
     assert payload["compare_target_set"]["target_count"] == triplet.EXPECTED_CORPUS_PDF_COUNT
+    assert (
+        payload["compare_target_set"]["target_set_hash"]
+        == payload["compare_target_set"]["admitted_target_set_hash"]
+    )
+    assert (
+        payload["compare_target_set"]["admitted_target_set_authority"]
+        == triplet.ADMITTED_TARGET_SET_AUTHORITY
+    )
     assert payload["target_status_counts"]["candidate_b"] == {"recommended": triplet.EXPECTED_CORPUS_PDF_COUNT}
     assert payload["request_configs"]["baseline"]["document_processing_engine_explicit"] is True
     assert (
@@ -334,6 +350,36 @@ def test_validate_triplet_fails_closed_on_target_set_mismatch(tmp_path: Path) ->
             candidate_a_run_root=roots["candidate_a"],
             candidate_b_run_root=roots["candidate_b"],
         )
+
+
+def test_validate_triplet_rejects_shared_target_set_outside_admitted_corpus(tmp_path: Path) -> None:
+    checkout_root = tmp_path / "checkout"
+    roots = _seed_triplet(checkout_root)
+    altered_targets = _target_outcomes()
+    altered_targets[-1] = {**altered_targets[-1], "accession_number": "LOCALAPS99999"}
+    for label, engine, visual_lane in (
+        ("baseline", triplet.BASELINE_ENGINE, triplet.BASELINE_ENGINE),
+        ("candidate_a", triplet.BASELINE_ENGINE, triplet.CANDIDATE_A_VISUAL_LANE),
+        ("candidate_b", triplet.CANDIDATE_B_ENGINE, triplet.CANDIDATE_B_VISUAL_LANE),
+    ):
+        _write_summary(
+            roots[label],
+            run_id=f"{label}-run",
+            document_processing_engine=engine,
+            visual_lane_mode=visual_lane,
+            target_outcomes=altered_targets,
+        )
+
+    with pytest.raises(triplet.ValidationError) as exc_info:
+        triplet.validate_triplet(
+            checkout_root=checkout_root,
+            baseline_run_root=roots["baseline"],
+            candidate_a_run_root=roots["candidate_a"],
+            candidate_b_run_root=roots["candidate_b"],
+        )
+
+    assert exc_info.value.code == "triplet_target_set_not_admitted"
+    assert exc_info.value.context["admitted_target_set_authority"] == triplet.ADMITTED_TARGET_SET_AUTHORITY
 
 
 def test_validate_triplet_rejects_duplicate_run_ids(tmp_path: Path) -> None:
