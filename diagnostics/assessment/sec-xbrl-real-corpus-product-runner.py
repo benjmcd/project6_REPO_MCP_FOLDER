@@ -736,7 +736,7 @@ def _companyfacts_count(
         else:
             cache[cache_key] = {
                 "oracle_used": True,
-                "confidence": "primary_companyfacts_us_gaap_dei_accession_scope",
+                "confidence": "primary_companyfacts_standard_taxonomy_accession_scope",
                 "_payload": payload if isinstance(payload, dict) else None,
             }
     cached = dict(cache.get(cache_key) or {})
@@ -748,7 +748,7 @@ def _companyfacts_count(
     taxonomies = payload.get("facts") if isinstance(payload, dict) else {}
     if not isinstance(taxonomies, dict):
         return {"oracle_used": False, "confidence": "unavailable_invalid_payload", "fact_count": None}
-    for taxonomy_name in ("us-gaap", "dei"):
+    for taxonomy_name in ("us-gaap", "dei", "ifrs-full"):
         concepts = taxonomies.get(taxonomy_name) or {}
         if not isinstance(concepts, dict):
             continue
@@ -768,7 +768,7 @@ def _companyfacts_count(
                         value_keys.append(value_key)
     return {
         "oracle_used": True,
-        "confidence": "primary_companyfacts_us_gaap_dei_accession_scope",
+        "confidence": "primary_companyfacts_standard_taxonomy_accession_scope",
         "fact_count": count,
         "_value_keys": value_keys,
     }
@@ -804,7 +804,9 @@ def _companyfacts_value_match(*, sidecar: Mapping[str, Any], companyfacts: Mappi
             continue
         concept = record.get("concept") if isinstance(record.get("concept"), Mapping) else {}
         namespace = str(concept.get("namespace") or "")
-        if not concept.get("standard") or not ("fasb.org/us-gaap" in namespace or "xbrl.sec.gov/dei" in namespace):
+        if not concept.get("standard") or not (
+            "fasb.org/us-gaap" in namespace or "xbrl.sec.gov/dei" in namespace or "xbrl.ifrs.org" in namespace
+        ):
             continue
         value_record = values_by_id.get(str(record.get("resolved_fact_id") or ""))
         if not isinstance(value_record, Mapping):
@@ -1019,7 +1021,7 @@ def _criteria(preflight: Mapping[str, Any], summary: Mapping[str, Any]) -> list[
             and float(summary["companyfacts_value_match_rate"] or 0.0) >= MIN_COMPANYFACTS_MATCH_RATE
             and summary["companyfacts_oracle_unavailable_count"] == 0,
             {
-                "oracle": "primary_companyfacts_us_gaap_dei_accession_scope_non_dimensional_numeric_intersection",
+                "oracle": "primary_companyfacts_standard_taxonomy_accession_scope_non_dimensional_numeric_intersection",
                 "match_count": summary["companyfacts_value_match_count"],
                 "compared_count": summary["companyfacts_value_compared_count"],
                 "mismatch_count": summary["companyfacts_value_mismatch_count"],

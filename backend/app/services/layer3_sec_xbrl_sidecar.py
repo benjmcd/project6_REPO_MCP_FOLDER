@@ -489,7 +489,34 @@ def _run_arelle(*, primary_document: str, max_facts: int, submission_documents: 
         return {"status": "blocked", "reasons": [_reason("arelle_fact_count_mismatch")]}
     if len(facts) > max_facts:
         return {"status": "blocked", "reasons": [_reason("arelle_fact_count_exceeds_limit", max_facts=max_facts)]}
+    semantic_reasons = _semantic_resolution_blockers(payload)
+    if semantic_reasons:
+        return {"status": "blocked", "reasons": semantic_reasons}
     return {"status": "ready", **payload}
+
+
+def _semantic_resolution_blockers(payload: Mapping[str, Any]) -> list[dict[str, Any]]:
+    diagnostics = payload.get("diagnostics")
+    if not isinstance(diagnostics, Mapping):
+        return [_reason("arelle_semantic_resolution_diagnostics_missing")]
+    checks = [
+        (
+            "period_unresolved_with_context_ref_count",
+            "arelle_context_period_unresolved",
+        ),
+        (
+            "unit_unresolved_with_unit_ref_count",
+            "arelle_unit_ref_unresolved",
+        ),
+    ]
+    reasons: list[dict[str, Any]] = []
+    for field, reason in checks:
+        count = diagnostics.get(field)
+        if not isinstance(count, int):
+            reasons.append(_reason("arelle_semantic_resolution_diagnostics_missing", missing_field=field))
+        elif count > 0:
+            reasons.append(_reason(reason, unresolved_count=count))
+    return reasons
 
 
 def _write_submission_documents(
@@ -799,7 +826,7 @@ def _parity(*, regex_count: int | None, arelle_count: int, companyfacts_count: A
         "recovered_vs_regex": arelle_count - regex_count if regex_count is not None else None,
         "companyfacts_standard_fact_count": standard_count,
         "companyfacts_oracle_confidence": confidence or None,
-        "companyfacts_scope": "us_gaap_dei_accession_crosscheck_only" if standard_count is not None else "not_recorded",
+        "companyfacts_scope": "standard_taxonomy_accession_crosscheck_only" if standard_count is not None else "not_recorded",
     }
 
 
