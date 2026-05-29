@@ -112,6 +112,9 @@ def test_candidate_b_full_corpus_repeatability_acceptance_closeout_records_appen
     )
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     assert receipt["repeatability_acceptance_operator_closeout_receipt_hash"]
+    assert receipt["workflow_receipt_owner_binding"] == (
+        receipt["repeatability_acceptance_operator_closeout"]["workflow_receipt_owner_binding"]
+    )
     assert (
         receipt["repeatability_acceptance_operator_closeout"]["rendered_acceptance_control_proof"][
             "rendered_acceptance_control_proof_state"

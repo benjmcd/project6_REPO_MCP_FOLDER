@@ -93,7 +93,7 @@ def record_candidate_b_full_corpus_repeatability_acceptance_checkpoint(
     trial = _rerun_trial_body(rerun_receipt)
     original = _validated_workflow_projection("original", trial)
     rerun = _validated_workflow_projection("rerun", trial)
-    _authorize_acceptance_workflow_rows(fields, original, rerun)
+    workflow_receipt_owner_binding = _authorize_acceptance_workflow_rows(fields, original, rerun)
     original_checkpoint = _validated_original_checkpoint(fields, trial)
     rerun_trial._validate_original_checkpoint_binding(original_checkpoint, original, trial)
     _validate_rerun_trial_binding(rerun_receipt, trial, fields, original, rerun)
@@ -127,6 +127,7 @@ def record_candidate_b_full_corpus_repeatability_acceptance_checkpoint(
         "rerun_candidate_b_run_id": trial["rerun_candidate_b_run_id"],
         "compare_target_set_hash": trial["compare_target_set_hash"],
         "material_relative_name": trial["material_relative_name"],
+        "workflow_receipt_owner_binding": workflow_receipt_owner_binding,
         "acceptance_disposition": acceptance_disposition,
         "operator_acceptance_decision": _required(fields, "operator_acceptance_decision"),
         "operator_runbook_repeatability_steps": runbook_steps,
@@ -426,7 +427,8 @@ def _authorize_acceptance_workflow_rows(
     fields: Mapping[str, Any],
     original: Mapping[str, Any],
     rerun: Mapping[str, Any],
-) -> None:
+) -> dict[str, str]:
+    owner_bindings: list[dict[str, str]] = []
     for label, projection in (("original", original), ("rerun", rerun)):
         row = projection.get("row")
         if not isinstance(row, Mapping):
@@ -435,13 +437,25 @@ def _authorize_acceptance_workflow_rows(
                 "Acceptance checkpoint policy requires original and rerun workflow-row authority.",
                 http_status=409,
             )
-        workflow_access_policy.authorize_history_row_access(
+        decision = workflow_access_policy.authorize_history_row_access(
             fields=fields,
             row=row,
             route_family="acceptance_checkpoint",
             rendered_surface=f"acceptance_checkpoint_{label}",
             requested_role=workflow_access_policy.OWNER_ROLE,
         )
+        owner_bindings.append(
+            workflow_access_policy.owner_binding_from_workflow_authority(row)
+            or workflow_access_policy.owner_binding_from_policy(decision)
+        )
+    if owner_bindings[0] != owner_bindings[1]:
+        raise CandidateBFullCorpusRepeatabilityAcceptanceCheckpointError(
+            "candidate_b_full_corpus_repeatability_acceptance_checkpoint_owner_binding_mismatch",
+            "Acceptance checkpoint policy requires original and rerun workflow rows to share owner binding.",
+            http_status=409,
+            details={"original_owner_binding": owner_bindings[0], "rerun_owner_binding": owner_bindings[1]},
+        )
+    return owner_bindings[0]
 
 
 def _load_or_write_acceptance_checkpoint_receipt(
@@ -482,6 +496,7 @@ def _load_or_write_acceptance_checkpoint_receipt(
         "repeatability_acceptance_checkpoint_hash": checkpoint_hash,
         "repeatability_acceptance_checkpoint_authority": dict(checkpoint_authority),
         "repeatability_acceptance_checkpoint_authority_hash": checkpoint_authority_hash,
+        "workflow_receipt_owner_binding": dict(checkpoint["workflow_receipt_owner_binding"]),
         "idempotency_key_hash": idempotency_key_hash,
         "append_only_repeatability_acceptance_checkpoint_receipt": True,
         "exclusive_repeatability_acceptance_checkpoint_per_authority": True,
@@ -561,6 +576,12 @@ def _validate_acceptance_checkpoint_receipt(
     checkpoint_authority_hash: str,
     idempotency_key_hash: str,
 ) -> str:
+    checkpoint_body = receipt.get("repeatability_acceptance_checkpoint")
+    checkpoint_owner_binding = (
+        checkpoint_body.get("workflow_receipt_owner_binding")
+        if isinstance(checkpoint_body, Mapping)
+        else None
+    )
     expected = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
@@ -572,6 +593,7 @@ def _validate_acceptance_checkpoint_receipt(
         "repeatability_acceptance_checkpoint_receipt_id": receipt_id,
         "repeatability_acceptance_checkpoint_hash": checkpoint_hash,
         "repeatability_acceptance_checkpoint_authority_hash": checkpoint_authority_hash,
+        "workflow_receipt_owner_binding": checkpoint_owner_binding,
         "idempotency_key_hash": idempotency_key_hash,
         "append_only_repeatability_acceptance_checkpoint_receipt": True,
         "exclusive_repeatability_acceptance_checkpoint_per_authority": True,
