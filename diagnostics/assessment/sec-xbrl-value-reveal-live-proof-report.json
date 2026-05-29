@@ -1,0 +1,138 @@
+{
+  "schema_id": "diagnostics.sec_xbrl_value_reveal_live_proof.v1",
+  "target": "sec_edgar_arelle_value_reveal_live_authority_and_operator_exercise_v1",
+  "decision": "value_reveal_live_authority_and_operator_exercise_proven_for_two_bounded_filings",
+  "live_main_sha": "f2f7efaf2f9bc5317d59d6134e3693b7e8fe125a",
+  "authority": {
+    "repo_remote": "project6-origin",
+    "branch_authority": "project6-origin/main",
+    "clean_worktree_used": true,
+    "root_checkout_used_as_execution_authority": false
+  },
+  "isolated_environment": {
+    "arelle_python_present": true,
+    "arelle_taxonomy_package_count": 3,
+    "arelle_cache_present": true,
+    "taxonomy_connectivity_mode": "online",
+    "live_sec_network_enabled_for_process_only": true,
+    "descriptive_sec_user_agent_configured": true,
+    "paths_redacted": true,
+    "committed_defaults_changed": false
+  },
+  "committed_default_posture": {
+    "sec_live_network_default_enabled": false,
+    "arelle_fact_authority_cutover_default_enabled": false,
+    "arelle_value_reveal_default_enabled": false
+  },
+  "preflight": {
+    "decision": "authority_provisioning_preflight_ready_for_explicit_granted_run",
+    "blocking_reasons": [],
+    "runtime_settings_source": "env_override",
+    "path_backed_arelle_environment": true
+  },
+  "attempts": [
+    {
+      "attempt_label": "fy2025_domestic_10k",
+      "selected_filing": {
+        "form": "10-K",
+        "document_fiscal_year_focus": "2025",
+        "document_fiscal_period_focus": "FY",
+        "taxonomy_package_match": "us-gaap-2025",
+        "issuer_identity_redacted": true,
+        "accession_redacted": true,
+        "sec_url_redacted": true
+      },
+      "authority_bundle": {
+        "sidecar_ready_count": 1,
+        "internal_value_store_count": 1,
+        "bridge_with_dataset_count": 1,
+        "coherent_bundle_count": 1,
+        "sidecar_receipt_hash": "16cdcfc6e5486ccfdb2991fac7f46a03f53d802d60841f2e0ff6c488cdf5bb9d",
+        "internal_value_store_hash": "1db5495f71e58fe782aa8af8a8670b94e9e556584aad87d94daf03d023de7ea1",
+        "bridge_receipt_hash": "ad5d4612b97dd06099cde52368c123b851e9fe1fe7c19651338695a6913e488c",
+        "dataset_version_hash": "612344f70ca593ec5ce4e5360c1f816c1e3bdaec00e8c76839d27605a03d714c",
+        "runtime_dataset_and_provenance_bound": true
+      },
+      "operator_reveal": {
+        "reveal_state": "ready",
+        "revealed_fact_count": 643,
+        "reveal_receipt_hash": "16794f0d6d54d277235d9d36ffabd68e21bc2a2b3686001900b112c711046c52",
+        "idempotent_replay_same_receipt_id": true,
+        "idempotent_replay_same_receipt_hash": true,
+        "idempotent_replay_no_second_receipt": true,
+        "status_projection_raw_values_returned": false,
+        "status_projection_revealed_fact_count": 0,
+        "flag_off_reveal_blocked_reason": "sec_edgar_arelle_value_reveal_feature_flag_disabled",
+        "flag_off_status_blocked_reason": "sec_edgar_arelle_value_reveal_feature_flag_disabled"
+      },
+      "audit_receipt_redaction": {
+        "receipt_present": true,
+        "effective_field_present": false,
+        "value_record_collection_present": false,
+        "raw_values_persisted": false,
+        "raw_identity_persisted": false
+      }
+    },
+    {
+      "attempt_label": "fy2026_domestic_10q",
+      "selected_filing": {
+        "form": "10-Q",
+        "document_fiscal_year_focus": "2026",
+        "document_fiscal_period_focus": "Q3",
+        "taxonomy_package_match": "us-gaap-2026",
+        "issuer_identity_redacted": true,
+        "accession_redacted": true,
+        "sec_url_redacted": true
+      },
+      "authority_bundle": {
+        "sidecar_ready_count": 1,
+        "internal_value_store_count": 1,
+        "bridge_with_dataset_count": 1,
+        "coherent_bundle_count": 1,
+        "sidecar_receipt_hash": "156c4ad4bf55bb5650042cb5eedcbd6aade07f6c59e6cd81e22561527a597daa",
+        "internal_value_store_hash": "c56241bc339d8e6be3f5c7ad51665bf2808ae22f8b15a718e02f95c3abe8e2c2",
+        "bridge_receipt_hash": "e42d10916e8003a7da02db50ccaf6aa6203fac97c26ca9fa66920a1b48618e9c",
+        "dataset_version_hash": "bd7246aa3675e95d11de9f2abe52297087523415f4a5d22dedf72a85fed859b3",
+        "runtime_dataset_and_provenance_bound": true
+      },
+      "operator_reveal": {
+        "reveal_state": "ready",
+        "revealed_fact_count": 483,
+        "reveal_receipt_hash": "944db0504b3b7acf6dc7fbb4eb42692e8189dc821ee704fc9658c1cd51b64ff0",
+        "idempotent_replay_same_receipt_id": true,
+        "idempotent_replay_same_receipt_hash": true,
+        "idempotent_replay_no_second_receipt": true,
+        "status_projection_raw_values_returned": false,
+        "status_projection_revealed_fact_count": 0,
+        "flag_off_reveal_blocked_reason": "sec_edgar_arelle_value_reveal_feature_flag_disabled",
+        "flag_off_status_blocked_reason": "sec_edgar_arelle_value_reveal_feature_flag_disabled"
+      },
+      "audit_receipt_redaction": {
+        "receipt_present": true,
+        "effective_field_present": false,
+        "value_record_collection_present": false,
+        "raw_values_persisted": false,
+        "raw_identity_persisted": false
+      }
+    }
+  ],
+  "redaction_scan": {
+    "reportable_bundle_refs_and_reveal_receipts_scanned": true,
+    "raw_issuer_identity_found": false,
+    "raw_accession_found": false,
+    "raw_sec_url_found": false,
+    "raw_local_path_found": false,
+    "raw_contact_found": false,
+    "raw_value_record_collection_found": false
+  },
+  "non_admissions_preserved": {
+    "default_on_arelle_cutover_claimed": false,
+    "default_on_value_reveal_claimed": false,
+    "production_readiness_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "cross_company_comparability_claimed": false,
+    "candidate_b_sec_routing_performed": false,
+    "rag_vector_model_provider_auth_behavior_added": false
+  },
+  "next_slice": "sec_edgar_value_reveal_live_proof_planning_and_default_posture_reconciliation_v1"
+}

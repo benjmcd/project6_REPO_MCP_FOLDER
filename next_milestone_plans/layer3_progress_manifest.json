@@ -42226,17 +42226,19 @@
     "next_posture": "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_rendered_status_v1"
   },
   "sec_edgar_arelle_value_reveal_operator_exercise_tracking": {
-    "status": "operator_exercise_readiness_packet_recorded_blocked_until_coherent_authority_bundle",
+    "status": "operator_exercise_readiness_packet_superseded_by_redacted_live_proof",
     "milestone": "sec_edgar_arelle_value_reveal_operator_exercise_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1264-sec-xbrl-value-reveal-operator-exercise.md",
     "authority_doc": "next_milestone_plans/Layer3_planning_docs/1265-sec-xbrl-value-reveal-operator-exercise-authority.md",
     "preflight_doc": "next_milestone_plans/Layer3_planning_docs/1266-sec-xbrl-value-reveal-authority-provisioning-preflight.md",
     "runner": "diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-runner.py",
     "report": "diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-run-report.json",
+    "live_proof_doc": "next_milestone_plans/Layer3_planning_docs/1267-sec-xbrl-value-reveal-live-proof.md",
+    "live_proof_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json",
     "readiness_packet_exists": true,
-    "operator_exercise_performed": false,
-    "ready_to_run_operator_exercise": false,
-    "blocked_until_authority_exists": true,
+    "operator_exercise_performed": true,
+    "ready_to_run_operator_exercise": true,
+    "blocked_until_authority_exists": false,
     "authority_bundle_required": [
       "ready_arelle_sidecar_receipt",
       "verified_internal_value_store",
@@ -42246,27 +42248,37 @@
       "runtime_dataset_source_provenance"
     ],
     "live_behavior_change_introduced_by_tracking": false,
-    "runtime_network_performed": false,
-    "arelle_subprocess_invoked": false,
-    "sidecar_created": false,
-    "dataset_created": false,
-    "audit_receipt_created": false,
+    "runtime_network_performed": true,
+    "arelle_subprocess_invoked": true,
+    "sidecar_created": true,
+    "dataset_created": true,
+    "audit_receipt_created": true,
     "cutover_default_enabled": false,
     "value_reveal_default_enabled": false,
-    "next_posture": "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1"
+    "raw_values_committed": false,
+    "raw_identity_committed": false,
+    "next_posture": "sec_edgar_value_reveal_live_proof_planning_and_default_posture_reconciliation_v1"
   },
   "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_tracking": {
-    "status": "authority_provisioning_preflight_recorded_live_arelle_run_not_granted_or_performed",
+    "status": "authority_provisioning_live_arelle_run_performed_and_redacted",
     "milestone": "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1265-sec-xbrl-value-reveal-operator-exercise-authority.md",
     "preflight_doc": "next_milestone_plans/Layer3_planning_docs/1266-sec-xbrl-value-reveal-authority-provisioning-preflight.md",
     "preflight_report": "diagnostics/assessment/sec-xbrl-value-reveal-authority-provisioning-preflight-report.json",
+    "live_proof_doc": "next_milestone_plans/Layer3_planning_docs/1267-sec-xbrl-value-reveal-live-proof.md",
+    "live_proof_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json",
     "provisioning_preflight_exists": true,
-    "live_arelle_run_granted": false,
-    "live_arelle_run_performed": false,
+    "live_arelle_run_granted": true,
+    "live_arelle_run_performed": true,
     "defaults_remain_off": true,
     "live_behavior_change_introduced_by_tracking": false,
-    "next_posture": "await_explicit_live_arelle_authority_grant_after_review_debt_closeout"
+    "redacted_live_attempts": [
+      "fy2025_domestic_10k",
+      "fy2026_domestic_10q"
+    ],
+    "raw_values_committed": false,
+    "raw_identity_committed": false,
+    "next_posture": "sec_edgar_value_reveal_live_proof_planning_and_default_posture_reconciliation_v1"
   },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_tracking": {
     "status": "branch_local_review_debt_closure_in_progress",
