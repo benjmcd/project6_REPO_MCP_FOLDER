@@ -654,6 +654,15 @@ def test_sec_xbrl_real_corpus_product_runner_default_action_reflects_gate_effect
     assert module._runtime_default_action(pass_gate=False, current_default=False) == "keep_default_false"
 
 
+def test_sec_xbrl_real_corpus_product_runner_displays_external_output_without_path(
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+
+    external_output = tmp_path / "product-runner-report.json"
+    assert module._display_output_path(external_output) == "<external>/product-runner-report.json"
+
+
 def _stratified_plan() -> dict:
     matrices = [
         list(matrix)
