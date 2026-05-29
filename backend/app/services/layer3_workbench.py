@@ -12436,6 +12436,41 @@ def _connector_local_destination_receipt_summary(
     )
 
 
+def _external_export_download_state_with_session_record(
+    session: L3AnalysisSet,
+    external_export_download_state: dict[str, Any],
+) -> dict[str, Any]:
+    current = external_export_download_state if isinstance(external_export_download_state, dict) else {}
+    if (
+        current.get("external_export_download_state") == EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE
+        and current.get("external_export_download_record_ref")
+    ):
+        return current
+    recorded = _json_clone((session.summary_json or {}).get("external_export_download_prepare") or {})
+    if not isinstance(recorded, dict):
+        return current
+    if recorded.get("schema_id") != EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID:
+        return current
+    if (
+        recorded.get("external_export_download_state") != EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE
+        or not recorded.get("external_export_download_record_ref")
+    ):
+        return current
+    return {
+        **recorded,
+        "available": False,
+        "state": recorded.get("external_export_download_state"),
+        "blocked_reason": None,
+        "external_export_download_prepare_enabled": False,
+        "browser_download_enabled": False,
+        "download_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "destination_selection_enabled": False,
+        "generic_downstream_dispatch_enabled": False,
+        "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
+    }
+
+
 def _server_owned_local_outbox_target_history_item(
     row: L3ServerOwnedLocalOutboxTargetReceipt,
 ) -> dict[str, Any]:
@@ -14751,6 +14786,10 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         db,
         session_id=session_id,
         aps_handoff_dispatch_state=aps_handoff_dispatch_state,
+    )
+    external_export_download_state = _external_export_download_state_with_session_record(
+        session,
+        external_export_download_state,
     )
     connector_local_destination_receipt_state = _connector_local_destination_receipt_summary(
         db,

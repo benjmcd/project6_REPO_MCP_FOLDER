@@ -169,6 +169,14 @@ def _write_receipt(kind: str, *, family_override: dict[str, Any] | None = None) 
             "runtime_review_root_storage_authority_hash": "7" * 64,
             "admitted_file_subset_hash": "8" * 64,
             "governed_retained_artifact_family_hash": artifact_family["artifact_family_hash"],
+            "candidate_b_visual_lane_evidence": {
+                "visual_lane_mode": layer3_candidate_b_runtime_bridge.CANDIDATE_B_VISUAL_LANE_MODE,
+                "visual_ref_total": 2,
+                "candidate_b_visual_ref_total": 2,
+                "candidate_b_retained_source_pdf_ref_count": 1,
+                "source_pdf_material_text_payload_enabled": False,
+                "image_material_text_payload_enabled": False,
+            },
             "redaction_policy_id": layer3_candidate_b_runtime_bridge.REDACTION_POLICY_ID,
         }
         prefix = layer3_candidate_b_runtime_bridge.BRIDGE_RECEIPT_PREFIX
@@ -300,6 +308,21 @@ def test_candidate_b_artifact_family_status_fails_closed_on_stale_bridge_receipt
     _write_json(receipt_path, receipt)
 
     response = client.post(STATUS_ENDPOINT, json=_payload(kind, receipt_id))
+
+    assert response.status_code == 409, response.text
+    assert response.json()["error"]["code"] == "candidate_b_artifact_status_bridge_receipt_hash_mismatch"
+
+
+def test_candidate_b_runtime_artifact_family_status_binds_visual_lane_evidence_hash(
+    client: TestClient,
+) -> None:
+    receipt_id = _write_receipt("runtime")
+    receipt_path = Path(settings.layer3_candidate_b_runtime_bridge_dir) / receipt_id / "receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["candidate_b_visual_lane_evidence"]["candidate_b_visual_ref_total"] = 99
+    _write_json(receipt_path, receipt)
+
+    response = client.post(STATUS_ENDPOINT, json=_payload("runtime", receipt_id))
 
     assert response.status_code == 409, response.text
     assert response.json()["error"]["code"] == "candidate_b_artifact_status_bridge_receipt_hash_mismatch"

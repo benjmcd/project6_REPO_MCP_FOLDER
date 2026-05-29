@@ -2439,6 +2439,36 @@ def test_candidate_b_runtime_downstream_proof_rejects_raw_or_path_evidence_ref(
 @pytest.mark.parametrize(
     "evidence_ref",
     [
+        "candidate-b-rendered-runtime-downstream-proof://gate_b",
+        "candidate-b-rendered-operator-status-runtime-proof://gate_b",
+        "candidate-b-rendered-closure-runtime-proof://gate_b",
+        "candidate-b-rendered-readiness-runtime-proof://gate_b",
+        "candidate-b-rendered-final-proof-runtime-proof://gate_b",
+    ],
+)
+def test_candidate_b_runtime_downstream_proof_preserves_rendered_safe_evidence_ref(
+    client: TestClient,
+    evidence_ref: str,
+) -> None:
+    runtime_receipt_id = _write_runtime_receipt()
+    visual_status_response = client.post(VISUAL_STATUS_ENDPOINT, json=_visual_lane_status_request(runtime_receipt_id))
+    assert visual_status_response.status_code == 200, visual_status_response.text
+    payload = _downstream_proof_request(runtime_receipt_id, visual_status_response.json())
+    payload["coverage_evidence"]["gate_b"]["evidence_ref"] = evidence_ref
+
+    response = client.post(DOWNSTREAM_PROOF_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "proven"
+    assert body["coverage_evidence"]["gate_b"]["evidence_ref"] == evidence_ref
+    assert "https://" not in json.dumps(body["coverage_evidence"], sort_keys=True)
+    assert "file://" not in json.dumps(body["coverage_evidence"], sort_keys=True)
+
+
+@pytest.mark.parametrize(
+    "evidence_ref",
+    [
         "candidate-b-bundle-downstream-proof://gate_b https://example.test/raw-proof",
         "safe-prefix file://C:/private/raw-proof",
     ],
@@ -2486,17 +2516,30 @@ def test_candidate_b_bundle_downstream_proof_rejects_path_shaped_evidence_ref(
     assert body["error"]["details"]["coverage_step"] == "gate_b"
 
 
-def test_candidate_b_bundle_downstream_proof_preserves_safe_evidence_refs(client: TestClient) -> None:
+@pytest.mark.parametrize(
+    "evidence_ref",
+    [
+        "candidate-b-bundle-downstream-proof://gate_b",
+        "candidate-b-rendered-bundle-downstream-proof://gate_b",
+        "candidate-b-rendered-closure-bundle-proof://gate_b",
+        "candidate-b-rendered-readiness-bundle-proof://gate_b",
+        "candidate-b-rendered-final-proof-bundle-proof://gate_b",
+    ],
+)
+def test_candidate_b_bundle_downstream_proof_preserves_safe_evidence_refs(
+    client: TestClient,
+    evidence_ref: str,
+) -> None:
     bundle_receipt_id = _write_bundle_receipt()
     payload = _bundle_downstream_proof_request(bundle_receipt_id)
-    payload["coverage_evidence"]["gate_b"]["evidence_ref"] = "candidate-b-bundle-downstream-proof://gate_b"
+    payload["coverage_evidence"]["gate_b"]["evidence_ref"] = evidence_ref
 
     response = client.post(BUNDLE_PROOF_ENDPOINT, json=payload)
 
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["status"] == "proven"
-    assert body["coverage_evidence"]["gate_b"]["evidence_ref"] == "candidate-b-bundle-downstream-proof://gate_b"
+    assert body["coverage_evidence"]["gate_b"]["evidence_ref"] == evidence_ref
     assert "https://" not in json.dumps(body["coverage_evidence"], sort_keys=True)
     assert "file://" not in json.dumps(body["coverage_evidence"], sort_keys=True)
 

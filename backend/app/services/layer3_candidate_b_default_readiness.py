@@ -641,7 +641,7 @@ def _validate_compare_target_set_consistency(
 
 
 def _expected_compare_target_set_hash(*, kind: str, target_set: Mapping[str, Any]) -> str | None:
-    compact_targets = _compact_compare_targets_for_hash(target_set)
+    compact_targets = _compact_compare_targets_for_hash(kind=kind, target_set=target_set)
     if not compact_targets:
         return None
     if kind == "bundle":
@@ -652,7 +652,7 @@ def _expected_compare_target_set_hash(*, kind: str, target_set: Mapping[str, Any
     return _stable_hash({"targets": compact_targets, "candidate_b_run_id": candidate_b_run_id})
 
 
-def _compact_compare_targets_for_hash(target_set: Mapping[str, Any]) -> list[dict[str, str]]:
+def _compact_compare_targets_for_hash(*, kind: str, target_set: Mapping[str, Any]) -> list[dict[str, str]]:
     targets = target_set.get("targets")
     if not isinstance(targets, list):
         return []
@@ -667,7 +667,13 @@ def _compact_compare_targets_for_hash(target_set: Mapping[str, Any]) -> list[dic
             "candidate_b_target_id": str(item.get("candidate_b_target_id") or "").strip(),
             "comparability_state": str(item.get("comparability_state") or "").strip(),
         }
-        if all(record.values()):
+        required_values = (
+            record["fixture_id"],
+            record["baseline_target_id"],
+            record["candidate_a_target_id"],
+            record["comparability_state"],
+        )
+        if all(required_values) and (kind == "bundle" or record["candidate_b_target_id"]):
             compact.append(record)
     compact.sort(key=lambda item: item["fixture_id"])
     return compact

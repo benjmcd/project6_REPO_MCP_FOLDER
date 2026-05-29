@@ -82,6 +82,10 @@ DELIVERY_ARTIFACT_AUTHORITY_COVERAGE = frozenset(
 _ALLOWED_EVIDENCE_REF_PREFIXES = (
     "candidate-b-downstream-proof://",
     "candidate-b-bundle-downstream-proof://",
+    "candidate-b-rendered-bundle-downstream-proof://",
+    "candidate-b-rendered-closure-bundle-proof://",
+    "candidate-b-rendered-readiness-bundle-proof://",
+    "candidate-b-rendered-final-proof-bundle-proof://",
 )
 _FORBIDDEN_REQUEST_FIELDS = {
     "path",
