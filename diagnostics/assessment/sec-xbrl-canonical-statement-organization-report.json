@@ -1,0 +1,229 @@
+{
+  "a_divergent": [
+    {
+      "a_role": "cash_flow_statement",
+      "basis": "total",
+      "canonical_id": "OperatingIncome",
+      "statement": "income",
+      "taxonomy": "ifrs-full"
+    }
+  ],
+  "a_role_authority": "statement_classification_candidate_role_heuristic",
+  "a_role_unknown": [
+    {
+      "a_role": "unknown_or_unclassified",
+      "basis": "total",
+      "canonical_id": "Equity",
+      "statement": "balance",
+      "taxonomy": "ifrs-full"
+    },
+    {
+      "a_role": "unknown_or_unclassified",
+      "basis": "parent",
+      "canonical_id": "Equity",
+      "statement": "balance",
+      "taxonomy": "ifrs-full"
+    }
+  ],
+  "a_role_used_as_pass_gate": false,
+  "alignment_map_version": "sec_xbrl_canonical_statement_alignment_v1",
+  "arelle_invoked": false,
+  "blocking_reasons": [],
+  "canonical_statement_authority": "canonical_projection_reviewed_statement_crosswalk",
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "committed_runtime_defaults_remain_off",
+      "evidence": {
+        "config_defaults_off": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "statement_organization_contract_passes_fail_closed",
+      "evidence": {
+        "contract_passed": true,
+        "total_normalized": 64,
+        "total_unjoined": 0
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "taxonomy_aggregate_counts_are_consistent",
+      "evidence": {
+        "taxonomy_count": 2,
+        "total_normalized": 64,
+        "total_organized": 64,
+        "total_unjoined": 0
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "known_ifrs_a_divergence_is_documented_not_gated",
+      "evidence": {
+        "a_divergent": [
+          {
+            "a_role": "cash_flow_statement",
+            "basis": "total",
+            "canonical_id": "OperatingIncome",
+            "statement": "income",
+            "taxonomy": "ifrs-full"
+          }
+        ],
+        "a_role_unknown": [
+          {
+            "a_role": "unknown_or_unclassified",
+            "basis": "total",
+            "canonical_id": "Equity",
+            "statement": "balance",
+            "taxonomy": "ifrs-full"
+          },
+          {
+            "a_role": "unknown_or_unclassified",
+            "basis": "parent",
+            "canonical_id": "Equity",
+            "statement": "balance",
+            "taxonomy": "ifrs-full"
+          }
+        ],
+        "a_role_used_as_pass_gate": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "redaction_clean",
+      "evidence": {
+        "passed": true,
+        "raw_accession_found": false,
+        "raw_contact_found": false,
+        "raw_issuer_identity_found": false,
+        "raw_local_path_found": false,
+        "raw_period_date_found": false,
+        "raw_resolved_fact_ids_found": false,
+        "raw_url_found": false,
+        "raw_values_in_report": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "validate_only_non_goals_preserved",
+      "evidence": {
+        "arelle_invoked": false,
+        "live_network_used": false,
+        "non_goals_preserved": {
+          "a_classifier_modified": false,
+          "default_on_readiness_claimed": false,
+          "final_financial_statement_semantics_claimed": false,
+          "linkbase_emission_claimed": false,
+          "per_period_projection_claimed": false,
+          "persisted_store_claimed": false,
+          "production_readiness_claimed": false,
+          "sector_families_implemented": false,
+          "statement_assembly_claimed": false,
+          "statement_role_semantics_finalized": false,
+          "value_reveal_performed": false
+        },
+        "runtime_defaults_changed": false,
+        "validate_only": true,
+        "value_reveal_performed": false
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "canonical_statement_organization_validate_only_ready",
+  "evidence_scope": "operator_run_reference_summary_covers_three_issuers_not_all_taxonomies",
+  "live_network_used": false,
+  "next_slice": "sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1",
+  "non_goals_preserved": {
+    "a_classifier_modified": false,
+    "default_on_readiness_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "linkbase_emission_claimed": false,
+    "per_period_projection_claimed": false,
+    "persisted_store_claimed": false,
+    "production_readiness_claimed": false,
+    "sector_families_implemented": false,
+    "statement_assembly_claimed": false,
+    "statement_role_semantics_finalized": false,
+    "value_reveal_performed": false
+  },
+  "per_taxonomy": [
+    {
+      "a_corroborated_count": 22,
+      "a_divergent_count": 0,
+      "a_full_corroboration": true,
+      "a_role_unknown_count": 0,
+      "contract_b_authoritative_organization": true,
+      "contract_derived_inputs_bound_and_corroborated": true,
+      "contract_every_fact_id_bound": true,
+      "contract_passed": true,
+      "derived_count": 2,
+      "derived_inputs_corroborated_count": 2,
+      "issuer_count": 1,
+      "missing_required_fields": [],
+      "normalized_fact_count": 22,
+      "organized_count": 22,
+      "per_statement": {
+        "balance": 9,
+        "cashflow": 3,
+        "income": 10
+      },
+      "taxonomy": "us-gaap",
+      "unjoined_count": 0
+    },
+    {
+      "a_corroborated_count": 36,
+      "a_divergent_count": 2,
+      "a_full_corroboration": false,
+      "a_role_unknown_count": 4,
+      "contract_b_authoritative_organization": true,
+      "contract_derived_inputs_bound_and_corroborated": true,
+      "contract_every_fact_id_bound": true,
+      "contract_passed": true,
+      "derived_count": 0,
+      "derived_inputs_corroborated_count": 0,
+      "issuer_count": 2,
+      "missing_required_fields": [],
+      "normalized_fact_count": 42,
+      "organized_count": 42,
+      "per_statement": {
+        "balance": 17,
+        "cashflow": 6,
+        "income": 19
+      },
+      "taxonomy": "ifrs-full",
+      "unjoined_count": 0
+    }
+  ],
+  "redaction": {
+    "passed": true,
+    "raw_accession_found": false,
+    "raw_contact_found": false,
+    "raw_issuer_identity_found": false,
+    "raw_local_path_found": false,
+    "raw_period_date_found": false,
+    "raw_resolved_fact_ids_found": false,
+    "raw_url_found": false,
+    "raw_values_in_report": false
+  },
+  "runtime_defaults_changed": false,
+  "schema_id": "diagnostics.sec_xbrl_canonical_statement_organization.v1",
+  "source_mode": "redacted_reference_taxonomy_summary",
+  "summary": {
+    "contract_passed": true,
+    "total_a_corroborated": 58,
+    "total_a_divergent": 2,
+    "total_a_role_unknown": 4,
+    "total_normalized": 64,
+    "total_organized": 64,
+    "total_unjoined": 0
+  },
+  "target": "sec_xbrl_canonical_statement_organization_validate_only_v1",
+  "validate_only": true,
+  "value_reveal_performed": false
+}
