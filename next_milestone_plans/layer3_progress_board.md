@@ -9568,6 +9568,22 @@ The committed report records only taxonomy aggregate counts, public canonical co
 
 Next exact posture: `sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1`.
 
+## SEC XBRL Sector-Conditioned Canonical Families Design + Coverage Diagnostic
+
+Milestone: `sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1282-sec-xbrl-sector-conditioned-canonical-families.md`.
+
+Report: `diagnostics/assessment/sec-xbrl-sector-family-coverage-report.json`.
+
+Status: additive validate-only sector-family design and coverage diagnostic. The design records `dei:EntityPrimarySicNumber` as a sector-class label source only, documents SEC submissions metadata as the fallback, and rejects primary-SIC gating in favor of concept-presence conditioning so diversified filers retain reported banking and insurance headline families.
+
+The committed report records only sector-class labels, family ids, public canonical concept ids, standard taxonomy concept ids, taxonomy tokens, counts, coverage rates, and booleans. It excludes issuer names, raw SIC numbers, accessions, periods, URLs, local paths, raw values, and resolved fact authorities. Runtime defaults remain off and no live network, Arelle invocation, value reveal, source acquisition, statement assembly, per-period projection, persisted store, CanonicalConcept model change, sector-family resolution, dimensional roll-forward handling, or default-on readiness is admitted.
+
+Status flags: `sector_conditioned_families_design_complete=true`; `sector_conditioned_families_implemented=false`.
+
+Next exact posture: `sec_xbrl_sector_conditioned_canonical_families_v1_resolution_presence_conditioned`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
