@@ -131,6 +131,53 @@ def test_sec_xbrl_stratified_matrix_readiness_blocks_when_value_reveal_regresses
     )
 
 
+def test_sec_xbrl_stratified_matrix_readiness_blocks_when_value_reveal_defaults_turn_on(
+    tmp_path: Path,
+) -> None:
+    decision = _load_decision()
+    paths = _write_inputs(tmp_path)
+    value_reveal = json.loads(paths["value_reveal"].read_text(encoding="utf-8"))
+    value_reveal["committed_default_posture"]["arelle_value_reveal_default_enabled"] = True
+    paths["value_reveal"].write_text(json.dumps(value_reveal), encoding="utf-8")
+
+    report = decision.build_report(
+        source_root=paths["source_root"],
+        matrix_live_report_path=paths["matrix"],
+        default_posture_report_path=paths["default_posture"],
+        value_reveal_live_proof_report_path=paths["value_reveal"],
+    )
+
+    assert report["decision"] == "explicit_operator_default_off_readiness_blocked"
+    assert any(
+        item["reason"] == "stratified_matrix_value_reveal_authority_not_proven"
+        for item in report["blocking_reasons"]
+    )
+
+
+def test_sec_xbrl_stratified_matrix_readiness_blocks_when_chunk_counts_regress(
+    tmp_path: Path,
+) -> None:
+    decision = _load_decision()
+    paths = _write_inputs(tmp_path)
+    matrix = json.loads(paths["matrix"].read_text(encoding="utf-8"))
+    matrix["summary"]["ready_matrix_chunk_count"] = 5
+    matrix["summary"]["blocked_matrix_chunk_count"] = 1
+    paths["matrix"].write_text(json.dumps(matrix), encoding="utf-8")
+
+    report = decision.build_report(
+        source_root=paths["source_root"],
+        matrix_live_report_path=paths["matrix"],
+        default_posture_report_path=paths["default_posture"],
+        value_reveal_live_proof_report_path=paths["value_reveal"],
+    )
+
+    assert report["decision"] == "explicit_operator_default_off_readiness_blocked"
+    assert any(
+        item["reason"] == "stratified_matrix_live_product_gate_not_ready"
+        for item in report["blocking_reasons"]
+    )
+
+
 def test_sec_xbrl_stratified_matrix_readiness_blocks_when_value_reveal_non_admission_regresses(
     tmp_path: Path,
 ) -> None:
@@ -292,6 +339,11 @@ def _default_posture_report() -> dict:
 def _value_reveal_report() -> dict:
     return {
         "decision": "value_reveal_live_authority_and_operator_exercise_proven_for_two_bounded_filings",
+        "committed_default_posture": {
+            "sec_live_network_default_enabled": False,
+            "arelle_fact_authority_cutover_default_enabled": False,
+            "arelle_value_reveal_default_enabled": False,
+        },
         "attempts": [_attempt("10-K"), _attempt("10-Q")],
         "redaction_scan": {
             "reportable_bundle_refs_and_reveal_receipts_scanned": True,

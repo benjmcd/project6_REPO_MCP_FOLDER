@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import functools
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 from typing import Any, Mapping
 
 
@@ -26,6 +29,14 @@ NEXT_MATRIX_SLICE = "sec_edgar_stratified_real_filing_validation_matrix_v1"
 TARGET = "sec_edgar_stratified_real_filing_validation_matrix_preflight_v1"
 LIVE_AUTH_ENV = "SEC_XBRL_STRATIFIED_MATRIX_LIVE_AUTHORIZED"
 STORAGE_ENV = "SEC_XBRL_STRATIFIED_MATRIX_STORAGE_DIR"
+MATRIX_PLAN_ENV = "SEC_XBRL_STRATIFIED_MATRIX_PLAN"
+RAW_ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
+RAW_URL_RE = re.compile(r"https?://|www\.", re.IGNORECASE)
+RAW_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
+RAW_PATH_RE = re.compile(r"(?:[A-Za-z]:[\\/]|\\\\|(?:^|[\s'\"(])/(?:[^/\s]+/)+[^/\s]+)")
+TICKER_TOKEN_RE = re.compile(r"\b[A-Z][A-Z0-9.-]{0,5}\b")
+IDENTITY_KEYWORDS = ("ticker", "symbol", "issuer", "company", "cik", "accession", "url", "path", "contact", "email")
+IGNORED_TICKER_TOKENS = {"SEC", "XBRL", "GAAP", "IFRS", "USD", "CAD"}
 
 REQUIRED_STRATA = {
     "large_domestic_us_gaap",
@@ -110,8 +121,10 @@ def build_report(
             "selected_matrix_covers_required_strata_without_raw_identity",
             matrix_projection["covers_required_strata"]
             and matrix_projection["raw_issuer_examples_committed"] is False
+            and matrix_projection["raw_identity_scan_passed"]
             and matrix_projection["all_strata_have_forms"]
-            and matrix_projection["minimum_issuer_hash_total"] >= 18,
+            and matrix_projection["minimum_issuer_hash_total"] >= 18
+            and matrix_projection["all_minimum_issuer_hashes_positive"],
             matrix_projection,
             "stratified_matrix_preflight_selected_matrix_incomplete",
         ),
@@ -143,8 +156,12 @@ def build_report(
         _criterion(
             "arelle_environment_available_for_future_matrix_execution",
             runtime["arelle"]["python_exists"]
+            and runtime["arelle"]["python_executable"]
+            and runtime["arelle"]["python_inside_repo"] is False
             and runtime["arelle"]["taxonomy_packages_all_exist"]
-            and runtime["arelle"]["cache_dir_exists"],
+            and runtime["arelle"]["taxonomy_packages_outside_repo"]
+            and runtime["arelle"]["cache_dir_exists"]
+            and runtime["arelle"]["cache_dir_inside_repo"] is False,
             runtime["arelle"],
             "stratified_matrix_preflight_arelle_environment_missing",
         ),
@@ -153,6 +170,12 @@ def build_report(
             runtime["storage"]["storage_dir_exists"] and runtime["storage"]["storage_dir_inside_repo"] is False,
             runtime["storage"],
             "stratified_matrix_preflight_isolated_storage_missing_or_inside_repo",
+        ),
+        _criterion(
+            "external_stratified_matrix_plan_ready_for_future_execution",
+            runtime["external_matrix_plan"]["state"] == "passed",
+            runtime["external_matrix_plan"],
+            "stratified_matrix_preflight_external_matrix_plan_missing_or_invalid",
         ),
     ]
     blockers = [
@@ -238,6 +261,12 @@ def _matrix_projection(matrix: list[Any]) -> dict[str, Any]:
     selected = [str(item.get("stratum") or "") for item in rows if item.get("stratum")]
     minimum_total = sum(_int(item.get("minimum_issuer_hashes")) for item in rows)
     raw_examples = any(item.get("raw_issuer_examples_committed") is not False for item in rows)
+    minimums_by_stratum = {
+        str(item.get("stratum")): _int(item.get("minimum_issuer_hashes"))
+        for item in rows
+        if item.get("stratum")
+    }
+    raw_identity_hits = [hit for row in rows for hit in _raw_identity_hits_for_row(row)]
     missing = sorted(REQUIRED_STRATA - set(selected))
     return {
         "required_strata": sorted(REQUIRED_STRATA),
@@ -246,7 +275,15 @@ def _matrix_projection(matrix: list[Any]) -> dict[str, Any]:
         "covers_required_strata": not missing,
         "matrix_row_count": len(rows),
         "minimum_issuer_hash_total": minimum_total,
+        "minimum_issuer_hashes_by_stratum": minimums_by_stratum,
+        "all_minimum_issuer_hashes_positive": all(value > 0 for value in minimums_by_stratum.values()),
+        "strata_with_non_positive_minimum_issuer_hashes": sorted(
+            stratum for stratum, value in minimums_by_stratum.items() if value <= 0
+        ),
         "raw_issuer_examples_committed": raw_examples,
+        "raw_identity_scan_passed": not raw_identity_hits,
+        "raw_identity_hit_count": len(raw_identity_hits),
+        "raw_identity_hit_fields": raw_identity_hits,
         "all_strata_have_forms": all(bool(item.get("forms")) for item in rows) and bool(rows),
         "forms_by_stratum": {
             str(item.get("stratum")): [str(form) for form in item.get("forms", [])]
@@ -263,12 +300,14 @@ def _runtime_preflight(*, source_root: Path, env: Mapping[str, str]) -> dict[str
         "live_authorization_present": _truthy(env.get(LIVE_AUTH_ENV)),
         "sec_user_agent_present": bool(user_agent),
         "sec_user_agent_marker": _marker(user_agent) if user_agent else None,
-        "arelle": _arelle_env(env),
+        "arelle": _arelle_env(source_root=source_root, env=env),
         "storage": _storage_env(source_root=source_root, env=env),
+        "external_matrix_plan": _external_matrix_plan_preflight(env),
     }
 
 
-def _arelle_env(env: Mapping[str, str]) -> dict[str, Any]:
+def _arelle_env(*, source_root: Path, env: Mapping[str, str]) -> dict[str, Any]:
+    resolved_root = source_root.resolve()
     python_path = str(env.get("SEC_XBRL_ARELLE_PYTHON") or env.get("ARELLE_PYTHON") or "").strip()
     packages = [
         item.strip()
@@ -276,18 +315,29 @@ def _arelle_env(env: Mapping[str, str]) -> dict[str, Any]:
         if item.strip()
     ]
     cache_dir = str(env.get("SEC_XBRL_ARELLE_CACHE_DIR") or "").strip()
-    package_exists = [Path(item).is_file() for item in packages]
+    resolved_python = Path(python_path).resolve(strict=False) if python_path else None
+    resolved_packages = [Path(item).resolve(strict=False) for item in packages]
+    resolved_cache = Path(cache_dir).resolve(strict=False) if cache_dir else None
+    python_exists = resolved_python.is_file() if resolved_python is not None else False
+    package_exists = [path.is_file() for path in resolved_packages]
+    package_inside_repo = [_is_relative_to(path, resolved_root) for path in resolved_packages]
+    cache_inside_repo = _is_relative_to(resolved_cache, resolved_root) if resolved_cache is not None else False
     return {
         "python_present": bool(python_path),
-        "python_exists": Path(python_path).is_file() if python_path else False,
+        "python_exists": python_exists,
+        "python_executable": _python_executable(resolved_python) if python_exists and resolved_python is not None else False,
+        "python_inside_repo": _is_relative_to(resolved_python, resolved_root) if resolved_python is not None else False,
         "python_marker": _marker(python_path) if python_path else None,
         "taxonomy_packages_present": bool(packages),
         "taxonomy_package_count": len(packages),
         "taxonomy_package_existing_count": sum(1 for item in package_exists if item),
         "taxonomy_package_markers": [_marker(item) for item in packages],
         "taxonomy_packages_all_exist": bool(packages) and all(package_exists),
+        "taxonomy_packages_outside_repo": bool(packages) and all(not inside for inside in package_inside_repo),
+        "taxonomy_package_inside_repo_count": sum(1 for inside in package_inside_repo if inside),
         "cache_dir_present": bool(cache_dir),
-        "cache_dir_exists": Path(cache_dir).is_dir() if cache_dir else False,
+        "cache_dir_exists": resolved_cache.is_dir() if resolved_cache is not None else False,
+        "cache_dir_inside_repo": cache_inside_repo,
         "cache_dir_marker": _marker(cache_dir) if cache_dir else None,
         "internet_connectivity_mode": str(env.get("SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY") or "offline")
         .strip()
@@ -309,6 +359,104 @@ def _storage_env(*, source_root: Path, env: Mapping[str, str]) -> dict[str, Any]
         "storage_dir_inside_repo": inside_repo,
         "storage_dir_paths_redacted": True,
     }
+
+
+@functools.lru_cache(maxsize=1)
+def _product_runner_module():
+    runner_path = ROOT / "diagnostics" / "assessment" / "sec-xbrl-real-corpus-product-runner.py"
+    spec = importlib.util.spec_from_file_location("sec_xbrl_real_corpus_product_runner_for_preflight", runner_path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _external_matrix_plan_preflight(env: Mapping[str, str]) -> dict[str, Any]:
+    raw = str(env.get(MATRIX_PLAN_ENV) or "").strip()
+    if not raw:
+        return {
+            "plan_env_var": MATRIX_PLAN_ENV,
+            "plan_present": False,
+            "state": "blocked",
+            "mode": "external_stratified_matrix_plan",
+            "external_plan_used": False,
+            "plan_path_marker": None,
+            "paths_redacted": True,
+            "chunk_count": 0,
+            "required_strata": sorted(REQUIRED_STRATA),
+            "covered_strata": [],
+            "missing_required_strata": sorted(REQUIRED_STRATA),
+            "blocked_reasons": ["matrix_plan_missing"],
+        }
+    runner = _product_runner_module()
+    readiness = runner._public_matrix_plan_readiness(
+        runner._matrix_plan_readiness(matrix_plan_path=Path(raw), matrix_plan=None)
+    )
+    return {
+        "plan_env_var": MATRIX_PLAN_ENV,
+        "plan_present": True,
+        **readiness,
+    }
+
+
+def _raw_identity_hits_for_row(row: Mapping[str, Any]) -> list[dict[str, Any]]:
+    hits: list[dict[str, Any]] = []
+    for field_path, value in _iter_string_leaves(row):
+        kinds = _string_identity_kinds(field_path=field_path, value=value)
+        if kinds:
+            hits.append({"field": field_path, "kinds": kinds})
+    return hits
+
+
+def _iter_string_leaves(value: Any, *, field_path: str = ""):
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            segment = str(key)
+            next_path = f"{field_path}.{segment}" if field_path else segment
+            yield from _iter_string_leaves(item, field_path=next_path)
+        return
+    if isinstance(value, (list, tuple, set)):
+        for index, item in enumerate(value):
+            next_path = f"{field_path}[{index}]"
+            yield from _iter_string_leaves(item, field_path=next_path)
+        return
+    if isinstance(value, str):
+        text = value.strip()
+        if text:
+            yield field_path or "<root>", text
+
+
+def _string_identity_kinds(*, field_path: str, value: str) -> list[str]:
+    kinds: list[str] = []
+    has_url = bool(RAW_URL_RE.search(value))
+    if RAW_ACCESSION_RE.search(value):
+        kinds.append("accession")
+    if has_url:
+        kinds.append("url")
+    if RAW_CONTACT_RE.search(value):
+        kinds.append("contact")
+    if not has_url and RAW_PATH_RE.search(value):
+        kinds.append("path")
+    if _looks_like_raw_ticker(field_path=field_path, value=value):
+        kinds.append("ticker")
+    return kinds
+
+
+def _looks_like_raw_ticker(*, field_path: str, value: str) -> bool:
+    lowered = field_path.lower()
+    if not any(keyword in lowered for keyword in IDENTITY_KEYWORDS):
+        return False
+    return any(token not in IGNORED_TICKER_TOKENS for token in TICKER_TOKEN_RE.findall(value))
+
+
+def _python_executable(path: Path) -> bool:
+    if not os.access(path, os.X_OK):
+        return False
+    if os.name != "nt":
+        return True
+    suffix = path.suffix.lower()
+    name = path.name.lower()
+    return suffix in {".exe", ".bat", ".cmd", ".ps1"} or (not suffix and name.startswith("python"))
 
 
 def _criterion(criterion: str, passed: bool, evidence: Mapping[str, Any], blocked_reason: str) -> dict[str, Any]:
