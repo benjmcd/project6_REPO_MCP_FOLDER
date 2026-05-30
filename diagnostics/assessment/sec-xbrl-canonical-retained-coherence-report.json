@@ -104,6 +104,7 @@
       "contract_qname_consistent": true,
       "contract_single_authority": true,
       "contract_value_reconciled": true,
+      "contract_value_single_authority": true,
       "derived_dual_input_binding_proven": true,
       "issuer_count": 3,
       "missing_count": 0,

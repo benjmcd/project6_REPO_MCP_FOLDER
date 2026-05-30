@@ -45,6 +45,7 @@ REFERENCE_SECTOR_CLASS_RESULTS = (
         "retains_extension": True,
         "contract_b_subset_of_a": True,
         "contract_single_authority": True,
+        "contract_value_single_authority": True,
         "contract_value_reconciled": True,
         "contract_a_strict_superset": True,
         "derived_dual_input_binding_proven": True,
@@ -178,15 +179,29 @@ def _sector_summary(item: Mapping[str, Any]) -> dict[str, Any]:
     bound = int(item["bound_count"])
     missing = int(item["missing_count"])
     qname = int(item["qname_consistent_count"])
-    single_authority = int(item.get("single_authority_count", item.get("value_reconciled_count", 0)))
+    has_hash_reconciliation_evidence = (
+        "single_authority_count" in item
+        and "value_mismatch_count" in item
+        and "contract_single_authority" in item
+        and "contract_value_reconciled" in item
+    )
+    single_authority = int(item.get("single_authority_count") or 0)
     value = int(item["value_reconciled_count"])
-    value_mismatch = int(item.get("value_mismatch_count") or 0)
-    contract_single_authority = item.get("contract_single_authority")
-    if contract_single_authority is None:
-        contract_single_authority = single_authority == normalized
-    contract_value_reconciled = item.get("contract_value_reconciled")
-    if contract_value_reconciled is None:
-        contract_value_reconciled = value == normalized and value_mismatch == 0
+    value_mismatch = (
+        int(item.get("value_mismatch_count") or 0)
+        if has_hash_reconciliation_evidence
+        else normalized
+    )
+    contract_single_authority = (
+        item.get("contract_single_authority") is True
+        if has_hash_reconciliation_evidence
+        else False
+    )
+    contract_value_reconciled = (
+        item.get("contract_value_reconciled") is True
+        if has_hash_reconciliation_evidence
+        else False
+    )
     return {
         "sector_class": str(item["sector_class"]),
         "issuer_count": int(item["issuer_count"]),
@@ -201,8 +216,9 @@ def _sector_summary(item: Mapping[str, Any]) -> dict[str, Any]:
         "retains_extension": item.get("retains_extension") is True,
         "contract_b_subset_of_a": item.get("contract_b_subset_of_a") is True,
         "contract_qname_consistent": qname == normalized,
-        "contract_single_authority": contract_single_authority is True,
-        "contract_value_reconciled": contract_value_reconciled is True,
+        "contract_single_authority": contract_single_authority,
+        "contract_value_single_authority": contract_single_authority,
+        "contract_value_reconciled": contract_value_reconciled,
         "contract_a_strict_superset": item.get("contract_a_strict_superset") is True,
         "contract_passed": (
             normalized > 0
@@ -213,8 +229,8 @@ def _sector_summary(item: Mapping[str, Any]) -> dict[str, Any]:
             and value == normalized
             and value_mismatch == 0
             and item.get("contract_b_subset_of_a") is True
-            and contract_single_authority is True
-            and contract_value_reconciled is True
+            and contract_single_authority
+            and contract_value_reconciled
             and item.get("contract_a_strict_superset") is True
         ),
         "derived_dual_input_binding_proven": item.get("derived_dual_input_binding_proven") is True,
