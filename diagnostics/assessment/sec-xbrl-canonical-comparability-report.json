@@ -1,0 +1,416 @@
+{
+  "arelle_invoked": false,
+  "blocking_reasons": [],
+  "canonical_concept_defined_count": 22,
+  "canonical_concepts": [
+    {
+      "basis": "total",
+      "canonical_id": "Revenue",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax",
+        "us-gaap:Revenues",
+        "ifrs-full:Revenue"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "CostOfSales",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:CostOfGoodsAndServicesSold",
+        "us-gaap:CostOfRevenue",
+        "ifrs-full:CostOfSales"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "GrossProfit",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:GrossProfit",
+        "ifrs-full:GrossProfit"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "OperatingIncome",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:OperatingIncomeLoss",
+        "ifrs-full:ProfitLossFromOperatingActivities"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "ProfitBeforeTax",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+        "us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments",
+        "ifrs-full:ProfitLossBeforeTax"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "IncomeTaxExpense",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:IncomeTaxExpenseBenefit",
+        "ifrs-full:IncomeTaxExpenseContinuingOperations"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "ProfitLoss",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:ProfitLoss",
+        "ifrs-full:ProfitLoss",
+        "us-gaap:NetIncomeLoss"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "parent",
+      "canonical_id": "ProfitLoss",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:NetIncomeLoss",
+        "ifrs-full:ProfitLossAttributableToOwnersOfParent"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "EpsBasic",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:EarningsPerShareBasic",
+        "ifrs-full:BasicEarningsLossPerShare"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "EpsDiluted",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:EarningsPerShareDiluted",
+        "ifrs-full:DilutedEarningsLossPerShare"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "CashAndEquivalents",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:CashAndCashEquivalentsAtCarryingValue",
+        "ifrs-full:CashAndCashEquivalents"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "CurrentAssets",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:AssetsCurrent",
+        "ifrs-full:CurrentAssets"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "NoncurrentAssets",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:AssetsNoncurrent",
+        "ifrs-full:NoncurrentAssets"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "TotalAssets",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:Assets",
+        "ifrs-full:Assets"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "CurrentLiabilities",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:LiabilitiesCurrent",
+        "ifrs-full:CurrentLiabilities"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "NoncurrentLiabilities",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:LiabilitiesNoncurrent",
+        "ifrs-full:NoncurrentLiabilities"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "TotalLiabilities",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:Liabilities",
+        "ifrs-full:Liabilities"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "Equity",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+        "ifrs-full:Equity"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "parent",
+      "canonical_id": "Equity",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:StockholdersEquity",
+        "ifrs-full:EquityAttributableToOwnersOfParent"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "OperatingCashFlow",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:NetCashProvidedByUsedInOperatingActivities",
+        "ifrs-full:CashFlowsFromUsedInOperatingActivities"
+      ],
+      "statement": "cashflow"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "InvestingCashFlow",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:NetCashProvidedByUsedInInvestingActivities",
+        "ifrs-full:CashFlowsFromUsedInInvestingActivities"
+      ],
+      "statement": "cashflow"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "FinancingCashFlow",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:NetCashProvidedByUsedInFinancingActivities",
+        "ifrs-full:CashFlowsFromUsedInFinancingActivities"
+      ],
+      "statement": "cashflow"
+    }
+  ],
+  "coverage_framing": "headline_canonical_resolved_over_defined_only_not_filing_wide",
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "committed_runtime_defaults_remain_off",
+      "evidence": {
+        "config_defaults_off": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "canonical_registry_is_statement_organized_and_bounded",
+      "evidence": {
+        "canonical_concept_defined_count": 22,
+        "coverage_framing": "headline_canonical_resolved_over_defined_only_not_filing_wide"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "headline_coverage_is_honestly_framed",
+      "evidence": {
+        "headline_canonical_cell_count": 66,
+        "headline_canonical_legitimately_absent_count": 5,
+        "headline_canonical_resolved_count": 61,
+        "reference_summary_mode": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "redaction_clean",
+      "evidence": {
+        "passed": true,
+        "raw_accession_found": false,
+        "raw_contact_found": false,
+        "raw_local_path_found": false,
+        "raw_period_date_found": false,
+        "raw_url_found": false,
+        "raw_values_in_report": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "validate_only_non_goals_preserved",
+      "evidence": {
+        "arelle_invoked": false,
+        "live_network_used": false,
+        "non_goals_preserved": {
+          "cross_company_currency_conversion_claimed": false,
+          "default_on_readiness_claimed": false,
+          "final_financial_statement_semantics_claimed": false,
+          "linkbase_relationships_required_or_consumed": false,
+          "production_readiness_claimed": false,
+          "statement_assembly_claimed": false
+        },
+        "runtime_defaults_changed": false,
+        "validate_only": true,
+        "value_reveal_performed": false
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "canonical_comparability_validate_only_ready",
+  "issuer_hash_count": 3,
+  "live_network_used": false,
+  "next_slice": "sec_xbrl_canonical_projection_artifact_design_after_prerequisites_v1",
+  "non_goals_preserved": {
+    "cross_company_currency_conversion_claimed": false,
+    "default_on_readiness_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "linkbase_relationships_required_or_consumed": false,
+    "production_readiness_claimed": false,
+    "statement_assembly_claimed": false
+  },
+  "per_issuer": [
+    {
+      "headline_canonical_defined": 22,
+      "headline_canonical_legitimately_absent": 1,
+      "headline_canonical_resolved": 21,
+      "issuer_hash": "b74c806599139a63a6a6043c",
+      "period_class": "FY",
+      "primary_taxonomy": "ifrs-full"
+    },
+    {
+      "headline_canonical_defined": 22,
+      "headline_canonical_legitimately_absent": 1,
+      "headline_canonical_resolved": 21,
+      "issuer_hash": "be40d0c7991d90b39471a0b6",
+      "period_class": "FY",
+      "primary_taxonomy": "us-gaap"
+    },
+    {
+      "headline_canonical_defined": 22,
+      "headline_canonical_legitimately_absent": 3,
+      "headline_canonical_resolved": 19,
+      "issuer_hash": "8798c268ebcce2a339683782",
+      "period_class": "FY",
+      "primary_taxonomy": "us-gaap"
+    }
+  ],
+  "redaction": {
+    "passed": true,
+    "raw_accession_found": false,
+    "raw_contact_found": false,
+    "raw_local_path_found": false,
+    "raw_period_date_found": false,
+    "raw_url_found": false,
+    "raw_values_in_report": false
+  },
+  "runtime_defaults_changed": false,
+  "schema_id": "diagnostics.sec_xbrl_canonical_comparability.v1",
+  "source_mode": "redacted_reference_summary_plus_committed_registry",
+  "statement_identity_residuals": [
+    {
+      "identity_id": "current_assets_plus_noncurrent_assets_equals_total_assets",
+      "relative_magnitude": "0E+2",
+      "residual_abs": "0",
+      "source_mode": "redacted_reference_summary",
+      "within_tolerance": true
+    },
+    {
+      "identity_id": "total_liabilities_plus_equity_equals_total_assets",
+      "relative_magnitude": "0E+2",
+      "residual_abs": "0",
+      "source_mode": "redacted_reference_summary",
+      "within_tolerance": true
+    },
+    {
+      "identity_id": "derived_total_liabilities_equals_assets_minus_equity_and_split",
+      "relative_magnitude": "0E+2",
+      "residual_abs": "0",
+      "source_mode": "redacted_reference_summary",
+      "within_tolerance": true
+    },
+    {
+      "identity_id": "revenue_minus_cost_of_sales_equals_gross_profit",
+      "relative_magnitude": "0E+2",
+      "residual_abs": "0",
+      "source_mode": "redacted_reference_summary",
+      "within_tolerance": true
+    },
+    {
+      "identity_id": "current_liabilities_plus_noncurrent_liabilities_equals_total_liabilities",
+      "relative_magnitude": "0E+2",
+      "residual_abs": "0",
+      "source_mode": "redacted_reference_summary",
+      "within_tolerance": true
+    }
+  ],
+  "summary": {
+    "headline_canonical_cell_count": 66,
+    "headline_canonical_legitimately_absent_count": 5,
+    "headline_canonical_resolved_count": 61,
+    "headline_canonical_unexplained_gap_count": 0,
+    "statement_identity_residuals_committed_as_magnitudes_only": true,
+    "statement_identity_residuals_reference_within_tolerance": true
+  },
+  "target": "sec_xbrl_canonical_cross_company_comparability_validate_only_v1",
+  "validate_only": true,
+  "value_reveal_performed": false
+}
