@@ -45,9 +45,11 @@ def test_resolution_derives_noncurrent_assets_with_dual_input_provenance() -> No
     assert noncurrent["status"] == "derived"
     assert noncurrent["mapping_method"] == "derived_total_minus_current"
     assert noncurrent["_value"] == Decimal("60")
-    assert noncurrent["inline_confirmed"] is True
+    assert noncurrent["inline_confirmed"] is False
+    assert noncurrent["derived_inputs_inline_confirmed"] is True
     assert noncurrent["derived_from_concepts"] == ["TotalAssets[total]", "CurrentAssets[total]"]
     assert noncurrent["derived_from_resolved_fact_ids"] == ["rf-assets", "rf-current-assets"]
+    assert resolved["inline_confirmed_count"] == 2
     assert _identity(resolved, "current_assets_plus_noncurrent_assets_equals_total_assets")["residual_abs"] == "0"
 
 
@@ -67,7 +69,55 @@ def test_resolution_does_not_derive_noncurrent_assets_when_current_assets_absent
     assert noncurrent["mapping_method"] == "primary_taxonomy_curated_crosswalk"
 
 
-def test_projection_derives_noncurrent_assets_with_complete_dual_input_provenance() -> None:
+def test_resolution_does_not_derive_noncurrent_assets_when_periods_misalign() -> None:
+    sidecar_records = [
+        _record("rf-assets", "us-gaap", "Assets", "USD", instant=True, end="end-2"),
+        _record("rf-current-assets", "us-gaap", "AssetsCurrent", "USD", instant=True, end="end-1"),
+    ]
+    value_records = [_value("rf-assets", "100"), _value("rf-current-assets", "40")]
+
+    resolved = canonical.resolve_issuer_canonical_concepts(
+        companyfacts={
+            "us-gaap": {
+                "Assets": {"units": {"USD": [{"fp": "FY", "fy": 1, "val": "100", "end": "end-2"}]}},
+                "AssetsCurrent": {"units": {"USD": [{"fp": "FY", "fy": 1, "val": "40", "end": "end-1"}]}},
+            }
+        },
+        sidecar_records=sidecar_records,
+        value_records=value_records,
+        fiscal_year=1,
+    )
+    noncurrent = _find(resolved["concepts"], "NoncurrentAssets", "total")
+
+    assert noncurrent["status"] == "legitimately_absent"
+    assert noncurrent["absence_reason"] == "no_reviewed_fy_source_fact"
+
+
+def test_resolution_does_not_derive_noncurrent_assets_when_difference_is_negative() -> None:
+    sidecar_records = [
+        _record("rf-assets", "us-gaap", "Assets", "USD", instant=True),
+        _record("rf-current-assets", "us-gaap", "AssetsCurrent", "USD", instant=True),
+    ]
+    value_records = [_value("rf-assets", "40"), _value("rf-current-assets", "60")]
+
+    resolved = canonical.resolve_issuer_canonical_concepts(
+        companyfacts={
+            "us-gaap": {
+                "Assets": {"units": {"USD": [{"fp": "FY", "fy": 1, "val": "40", "end": "end-2"}]}},
+                "AssetsCurrent": {"units": {"USD": [{"fp": "FY", "fy": 1, "val": "60", "end": "end-2"}]}},
+            }
+        },
+        sidecar_records=sidecar_records,
+        value_records=value_records,
+        fiscal_year=1,
+    )
+    noncurrent = _find(resolved["concepts"], "NoncurrentAssets", "total")
+
+    assert noncurrent["status"] == "legitimately_absent"
+    assert noncurrent["absence_reason"] == "no_reviewed_fy_source_fact"
+
+
+def test_projection_derives_noncurrent_assets_with_target_oracle_absent() -> None:
     sidecar_records = [
         _record("rf-assets", "us-gaap", "Assets", "USD", instant=True),
         _record("rf-current-assets", "us-gaap", "AssetsCurrent", "USD", instant=True),
@@ -89,7 +139,7 @@ def test_projection_derives_noncurrent_assets_with_complete_dual_input_provenanc
     assert projected["status"] == "canonical_projection_ready"
     assert noncurrent["status"] == "derived"
     assert noncurrent["_value"] == Decimal("60")
-    assert noncurrent["oracle_confirmed"] is True
+    assert noncurrent["oracle_confirmed"] == "oracle_absent"
     assert noncurrent["provenance_complete"] is True
     assert noncurrent["derived_from_resolved_fact_ids"] == ["rf-assets", "rf-current-assets"]
     assert projected["provenance_complete_count"] == projected["projected_count"]
@@ -188,11 +238,13 @@ def _record(
     unit_name: str,
     *,
     instant: bool = False,
+    start: str = "start-2",
+    end: str = "end-2",
 ) -> dict:
-    period = {"type": "instant", "instant": "end-2"} if instant else {
+    period = {"type": "instant", "instant": end} if instant else {
         "type": "duration",
-        "start": "start-2",
-        "end": "end-2",
+        "start": start,
+        "end": end,
     }
     return {
         "resolved_fact_id": fact_id,
