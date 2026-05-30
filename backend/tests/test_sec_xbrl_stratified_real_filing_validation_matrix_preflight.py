@@ -210,27 +210,31 @@ def test_sec_xbrl_stratified_matrix_preflight_blocks_raw_cik_in_row_field(
     tmp_path: Path,
 ) -> None:
     module = _preflight_module()
-    paths = _write_inputs(tmp_path)
-    runbook = json.loads(paths["runbook"].read_text(encoding="utf-8"))
-    runbook["selected_stratified_matrix"][0]["cik"] = "789019"
-    paths["runbook"].write_text(json.dumps(runbook), encoding="utf-8")
 
-    report = module.build_report(
-        source_root=ROOT,
-        runbook_report_path=paths["runbook"],
-        default_posture_report_path=paths["default_posture"],
-        real_product_runner_report_path=paths["real_product"],
-        env={},
-    )
+    for index, cik_value in enumerate(("789019", 789019, "37996"), start=1):
+        case_dir = tmp_path / f"case-{index}"
+        case_dir.mkdir()
+        paths = _write_inputs(case_dir)
+        runbook = json.loads(paths["runbook"].read_text(encoding="utf-8"))
+        runbook["selected_stratified_matrix"][0]["cik"] = cik_value
+        paths["runbook"].write_text(json.dumps(runbook), encoding="utf-8")
 
-    assert report["selected_matrix_summary"]["raw_identity_scan_passed"] is False
-    assert report["selected_matrix_summary"]["raw_identity_hit_fields"] == [
-        {"field": "cik", "kinds": ["cik"]}
-    ]
-    assert any(
-        item["reason"] == "stratified_matrix_preflight_selected_matrix_incomplete"
-        for item in report["blocking_reasons"]
-    )
+        report = module.build_report(
+            source_root=ROOT,
+            runbook_report_path=paths["runbook"],
+            default_posture_report_path=paths["default_posture"],
+            real_product_runner_report_path=paths["real_product"],
+            env={},
+        )
+
+        assert report["selected_matrix_summary"]["raw_identity_scan_passed"] is False
+        assert report["selected_matrix_summary"]["raw_identity_hit_fields"] == [
+            {"field": "cik", "kinds": ["cik"]}
+        ]
+        assert any(
+            item["reason"] == "stratified_matrix_preflight_selected_matrix_incomplete"
+            for item in report["blocking_reasons"]
+        )
 
 
 def test_sec_xbrl_stratified_matrix_preflight_blocks_repo_arelle_paths(
@@ -271,7 +275,7 @@ def test_sec_xbrl_stratified_matrix_preflight_blocks_onedrive_arelle_paths(
     paths = _write_inputs(tmp_path)
     env_paths = _runtime_paths(tmp_path)
     plan_path = _write_json(tmp_path / "plan.json", _external_plan())
-    one_drive_root = tmp_path / "OneDrive" / "arelle"
+    one_drive_root = tmp_path / "OneDrive - Contoso" / "arelle"
     one_drive_python = one_drive_root / "python.exe"
     one_drive_taxonomy = one_drive_root / "taxonomy.zip"
     one_drive_cache = one_drive_root / "cache"
