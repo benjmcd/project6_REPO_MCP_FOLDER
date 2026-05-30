@@ -16,7 +16,14 @@ if str(BACKEND) not in sys.path:
 
 os.environ.setdefault("DB_INIT_MODE", "none")
 
-from app.services.layer3_sec_xbrl_canonical_concepts import report_redaction_scan_payload  # noqa: E402
+from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
+    SECTOR_FAMILY_DEFINITIONS,
+    SIC_RANGE_TO_SECTOR_CLASS,
+    UNKNOWN_SECTOR_CLASS,
+    classify_sector_family_presence as runtime_classify_sector_family_presence,
+    report_redaction_scan_payload,
+    sector_class_from_sic as runtime_sector_class_from_sic,
+)
 
 
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_sector_family_coverage.v1"
@@ -25,52 +32,6 @@ TARGET = "sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1"
 NEXT_SLICE = "sec_xbrl_sector_conditioned_canonical_families_v1_resolution_presence_conditioned"
 SIC_RANGE_TABLE_VERSION = "sic_range_to_sector_class_v1"
 SECTOR_FAMILY_REGISTRY_VERSION = "sec_xbrl_sector_family_headline_registry_design_v1"
-UNKNOWN_SECTOR_CLASS = "diversified_or_other"
-
-SIC_RANGE_TO_SECTOR_CLASS: tuple[tuple[int, int, str], ...] = (
-    (1000, 1499, "extractive"),
-    (6000, 6199, "banking"),
-    (6300, 6411, "insurance"),
-    (6500, 6599, "real_estate_reit"),
-)
-
-SECTOR_FAMILY_DEFINITIONS: tuple[dict[str, Any], ...] = (
-    {
-        "family_id": "extractive",
-        "sector_class": "extractive",
-        "headline_concepts": (
-            ("ExtractiveExplorationEvaluationExpense", "ifrs-full", "ifrs-full:ExpenseArisingFromExplorationForAndEvaluationOfMineralResources"),
-            ("ExtractiveCurrentOreStockpiles", "ifrs-full", "ifrs-full:CurrentOreStockpiles"),
-            ("ExtractiveExplorationExpense", "us-gaap", "us-gaap:ExplorationExpense"),
-        ),
-    },
-    {
-        "family_id": "banking",
-        "sector_class": "banking",
-        "headline_concepts": (
-            ("BankingInterestIncome", "ifrs-full", "ifrs-full:InterestIncomeForFinancialAssetsMeasuredAtAmortisedCost"),
-            ("BankingGrossLoanCommitments", "ifrs-full", "ifrs-full:GrossLoanCommitments"),
-            ("BankingCustomerDepositsCurrent", "ifrs-full", "ifrs-full:CurrentDepositsFromCustomers"),
-            ("BankingInterestAndDividendIncome", "us-gaap", "us-gaap:InterestAndDividendIncomeOperating"),
-            ("BankingInterestExpense", "us-gaap", "us-gaap:InterestExpense"),
-            ("BankingDeposits", "us-gaap", "us-gaap:Deposits"),
-        ),
-    },
-    {
-        "family_id": "insurance",
-        "sector_class": "insurance",
-        "headline_concepts": (
-            ("InsuranceRevenue", "ifrs-full", "ifrs-full:InsuranceRevenue"),
-            ("InsuranceContractsLiabilityAsset", "ifrs-full", "ifrs-full:InsuranceContractsLiabilityAsset"),
-            ("InsurancePremiumsEarnedNet", "us-gaap", "us-gaap:PremiumsEarnedNet"),
-            (
-                "InsuranceClaimsAdjustmentExpenseLiability",
-                "us-gaap",
-                "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
-            ),
-        ),
-    },
-)
 
 REFERENCE_FAMILY_EVIDENCE: tuple[dict[str, Any], ...] = (
     {
@@ -160,29 +121,11 @@ def build_report(
 
 
 def sector_class_from_sic(primary_sic: Any) -> str:
-    try:
-        sic_number = int(str(primary_sic).strip())
-    except (TypeError, ValueError):
-        return UNKNOWN_SECTOR_CLASS
-    for start, end, sector_class in SIC_RANGE_TO_SECTOR_CLASS:
-        if start <= sic_number <= end:
-            return sector_class
-    return UNKNOWN_SECTOR_CLASS
+    return runtime_sector_class_from_sic(primary_sic)
 
 
 def classify_sector_family_presence(*, primary_sic: Any, reported_concepts: Sequence[str]) -> dict[str, Any]:
-    present_family_ids = [
-        definition["family_id"]
-        for definition in SECTOR_FAMILY_DEFINITIONS
-        if _family_has_reported_concept(definition=definition, reported_concepts=reported_concepts)
-    ]
-    return {
-        "sector_class": sector_class_from_sic(primary_sic),
-        "present_family_ids": present_family_ids,
-        "present_family_count": len(present_family_ids),
-        "presence_conditioned": True,
-        "sic_used_as_gate": False,
-    }
+    return runtime_classify_sector_family_presence(primary_sic=primary_sic, reported_concepts=reported_concepts)
 
 
 def _reference_summary_report(*, per_family: Sequence[Mapping[str, Any]], config_defaults_off: bool) -> dict[str, Any]:
@@ -206,21 +149,27 @@ def _reference_summary_report(*, per_family: Sequence[Mapping[str, Any]], config
         "runtime_defaults_changed": False,
         "per_family": family_rows,
         "summary": _summary(family_rows),
-        "diversified_filer_guard": {
-            "primary_sector_class": UNKNOWN_SECTOR_CLASS,
-            "reported_family_ids": ["banking", "insurance"],
-            "reported_family_count": 2,
-            "presence_conditioned": True,
-            "sic_used_as_gate": False,
-        },
+        "diversified_filer_guard": classify_sector_family_presence(
+            primary_sic="3651",
+            reported_concepts=[
+                "ifrs-full:InsuranceRevenue",
+                "ifrs-full:InsuranceContractsLiabilityAsset",
+                "ifrs-full:InterestIncomeForFinancialAssetsMeasuredAtAmortisedCost",
+                "ifrs-full:GrossLoanCommitments",
+                "ifrs-full:CurrentDepositsFromCustomers",
+                "us-gaap:InterestExpense",
+            ],
+        ),
         "redaction": {},
         "criteria": [],
         "blocking_reasons": [],
         "non_goals_preserved": {
             "sector_conditioned_families_design_complete": True,
-            "sector_conditioned_families_implemented": False,
-            "canonical_concept_model_changed": False,
-            "sector_resolution_implemented": False,
+            "coverage_diagnostic_runtime_mutation_performed": False,
+            "coverage_diagnostic_canonical_model_mutation_performed": False,
+            "coverage_diagnostic_sector_resolution_performed": False,
+            "runtime_opt_in_sector_family_resolution_available": True,
+            "runtime_canonical_concept_family_qualifier_available": True,
             "statement_assembly_claimed": False,
             "dimensional_roll_forward_claimed": False,
             "per_period_projection_claimed": False,
@@ -253,6 +202,8 @@ def _family_summary(item: Mapping[str, Any]) -> dict[str, Any]:
     return {
         "family_id": family_id,
         "sector_class": definition["sector_class"],
+        "activation_anchor_count": len(definition["activation_anchor_qnames"]),
+        "supporting_concept_count": len(definition["supporting_qnames"]),
         "defined_headline_concept_count": defined_count,
         "reference_present_count": present_count,
         "reference_issuer_count": _int(item.get("reference_issuer_count")),
@@ -262,8 +213,9 @@ def _family_summary(item: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def _concept_summary(concept: tuple[str, str, str], concept_counts: Mapping[str, Any]) -> dict[str, Any]:
-    canonical_concept_id, taxonomy, concept_id = concept
+def _concept_summary(concept: tuple[str, str, str, str], concept_counts: Mapping[str, Any]) -> dict[str, Any]:
+    canonical_concept_id, _basis, _statement, concept_id = concept
+    taxonomy = concept_id.split(":", 1)[0]
     present_count = _int(concept_counts.get(concept_id))
     return {
         "canonical_concept_id": canonical_concept_id,
@@ -318,9 +270,26 @@ def _criteria(*, report: Mapping[str, Any], config_defaults_off: bool) -> list[d
             report.get("sector_conditioning") == "concept_presence_not_sic_gated"
             and guard.get("presence_conditioned") is True
             and guard.get("sic_used_as_gate") is False
-            and set(guard.get("reported_family_ids") or []) == {"banking", "insurance"},
+            and set(guard.get("present_family_ids") or []) == {"banking", "insurance"},
             guard,
             "sector_family_conditioning_regressed_to_sic_gate",
+        ),
+        _criterion(
+            "family_activation_requires_anchor_not_support_only",
+            guard.get("activation_rule") == "anchor_concepts_activate_supporting_concepts_do_not"
+            and classify_sector_family_presence(
+                primary_sic="3651",
+                reported_concepts=["us-gaap:InterestExpense"],
+            ).get("present_family_ids") == []
+            and _supporting_only_family_ids(["us-gaap:InterestExpense"]) == ["banking"],
+            {
+                "activation_rule": guard.get("activation_rule"),
+                "interest_expense_only_family_ids": classify_sector_family_presence(
+                    primary_sic="3651",
+                    reported_concepts=["us-gaap:InterestExpense"],
+                ).get("present_family_ids"),
+            },
+            "sector_family_supporting_concept_activated_family",
         ),
         _criterion(
             "redaction_clean",
@@ -336,9 +305,11 @@ def _criteria(*, report: Mapping[str, Any], config_defaults_off: bool) -> list[d
             and report.get("value_reveal_performed") is False
             and report.get("runtime_defaults_changed") is False
             and non_goals.get("sector_conditioned_families_design_complete") is True
-            and non_goals.get("sector_conditioned_families_implemented") is False
-            and non_goals.get("canonical_concept_model_changed") is False
-            and non_goals.get("sector_resolution_implemented") is False
+            and non_goals.get("coverage_diagnostic_runtime_mutation_performed") is False
+            and non_goals.get("coverage_diagnostic_canonical_model_mutation_performed") is False
+            and non_goals.get("coverage_diagnostic_sector_resolution_performed") is False
+            and non_goals.get("runtime_opt_in_sector_family_resolution_available") is True
+            and non_goals.get("runtime_canonical_concept_family_qualifier_available") is True
             and non_goals.get("statement_assembly_claimed") is False
             and non_goals.get("dimensional_roll_forward_claimed") is False
             and non_goals.get("persisted_store_claimed") is False,
@@ -374,9 +345,18 @@ def _family_counts_consistent(families: Sequence[Mapping[str, Any]]) -> bool:
     return True
 
 
+def _supporting_only_family_ids(reported_concepts: Sequence[str]) -> list[str]:
+    presence = classify_sector_family_presence(primary_sic=None, reported_concepts=reported_concepts)
+    return [
+        str(item.get("family_id") or "")
+        for item in presence.get("reported_family_evidence") or []
+        if isinstance(item, Mapping) and item.get("supporting_only") is True
+    ]
+
+
 def _family_has_reported_concept(*, definition: Mapping[str, Any], reported_concepts: Sequence[str]) -> bool:
     reported = set(reported_concepts)
-    return any(concept_id in reported for _, _, concept_id in definition["headline_concepts"])
+    return any(concept_id in reported for _, _, _, concept_id in definition["headline_concepts"])
 
 
 def _family_definition(family_id: str) -> Mapping[str, Any]:

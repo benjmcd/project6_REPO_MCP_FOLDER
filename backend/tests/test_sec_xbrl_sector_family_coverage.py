@@ -52,8 +52,27 @@ def test_diversified_filer_guard_uses_concept_presence_not_primary_sic_gate() ->
     assert result["sector_class"] == "diversified_or_other"
     assert result["sic_used_as_gate"] is False
     assert result["presence_conditioned"] is True
+    assert result["activation_rule"] == "anchor_concepts_activate_supporting_concepts_do_not"
     assert set(result["present_family_ids"]) == {"banking", "insurance"}
     assert result["present_family_count"] == 2
+
+
+def test_supporting_banking_concept_does_not_activate_family_by_itself() -> None:
+    diagnostic = _diagnostic_module()
+
+    result = diagnostic.classify_sector_family_presence(
+        primary_sic="3651",
+        reported_concepts=["us-gaap:InterestExpense"],
+    )
+    banking = next(
+        item for item in result["reported_family_evidence"] if item["family_id"] == "banking"
+    )
+
+    assert result["present_family_ids"] == []
+    assert result["present_family_count"] == 0
+    assert banking["activation_anchor_concepts"] == []
+    assert banking["supporting_family_concepts"] == ["us-gaap:InterestExpense"]
+    assert banking["supporting_only"] is True
 
 
 def test_build_report_defaults_to_reference_evidence(tmp_path: Path) -> None:
@@ -67,15 +86,22 @@ def test_build_report_defaults_to_reference_evidence(tmp_path: Path) -> None:
     assert report["summary"]["total_headline_concepts_defined"] == 13
     assert report["summary"]["total_reference_present_count"] == 7
     assert report["summary"]["universal_only_reference_issuer_count"] == 1
-    assert report["diversified_filer_guard"] == {
-        "presence_conditioned": True,
-        "primary_sector_class": "diversified_or_other",
-        "reported_family_count": 2,
-        "reported_family_ids": ["banking", "insurance"],
-        "sic_used_as_gate": False,
-    }
+    guard = report["diversified_filer_guard"]
+    assert guard["presence_conditioned"] is True
+    assert guard["sector_class"] == "diversified_or_other"
+    assert guard["sic_used_as_gate"] is False
+    assert guard["activation_rule"] == "anchor_concepts_activate_supporting_concepts_do_not"
+    assert set(guard["present_family_ids"]) == {"banking", "insurance"}
+    assert guard["present_family_count"] == 2
+    assert all(item["activation_anchor_count"] >= 1 for item in report["per_family"])
+    assert report["per_family"][1]["supporting_concept_count"] == 2
+    assert any(
+        item["criterion"] == "family_activation_requires_anchor_not_support_only"
+        and item["state"] == "passed"
+        for item in report["criteria"]
+    )
     assert report["non_goals_preserved"]["sector_conditioned_families_design_complete"] is True
-    assert report["non_goals_preserved"]["sector_conditioned_families_implemented"] is False
+    assert report["non_goals_preserved"]["coverage_diagnostic_sector_resolution_performed"] is False
     assert report["redaction"]["passed"] is True
 
 

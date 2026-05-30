@@ -99,6 +99,8 @@ def _reference_summary_report(*, config_defaults_off: bool) -> dict[str, Any]:
                 "primary_taxonomy": item["primary_taxonomy"],
                 "period_class": "FY",
                 "headline_canonical_defined": len(concept_inventory),
+                "universal_defined_count": len(concept_inventory),
+                "sector_family_defined_count": 0,
                 "projected_count": projected,
                 "oracle_confirmed_count": int(item["oracle_confirmed"]),
                 "oracle_absent_count": int(item["oracle_absent"]),
@@ -131,6 +133,9 @@ def _reference_summary_report(*, config_defaults_off: bool) -> dict[str, Any]:
         "oracle_authority": "companyfacts_period_aware_validation_only",
         "coverage_framing": "headline_canonical_projected_over_defined_not_filing_wide",
         "canonical_concept_defined_count": len(concept_inventory),
+        "universal_canonical_concept_defined_count": len(concept_inventory),
+        "sector_family_canonical_concept_defined_count": 0,
+        "include_sector_families": False,
         "issuer_hash_count": len(issuer_summaries),
         "summary": {
             "headline_canonical_cell_count": len(concept_inventory) * len(issuer_summaries),

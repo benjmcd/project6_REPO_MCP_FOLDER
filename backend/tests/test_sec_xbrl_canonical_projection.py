@@ -27,8 +27,13 @@ def test_reference_summary_projection_counts_are_internally_consistent(tmp_path:
     issuer = report["per_issuer"][0]
 
     assert report["decision"] == "canonical_projection_validate_only_ready"
+    assert report["include_sector_families"] is False
+    assert report["issuer_hash_count"] == 1
+    assert issuer["issuer_hash"] == stable_hash({"issuer_ref": "redacted-reference-projection-a"})[:24]
     assert issuer["primary_taxonomy"] == "ifrs-full"
     assert issuer["headline_canonical_defined"] == 22
+    assert issuer["universal_defined_count"] == 22
+    assert issuer["sector_family_defined_count"] == 0
     assert issuer["projected_count"] == 21
     assert issuer["provenance_complete_count"] == issuer["projected_count"]
     assert issuer["oracle_confirmed_count"] == 21
@@ -80,6 +85,83 @@ def test_projection_sources_fy_sidecar_value_and_provenance() -> None:
     assert revenue["resolved_fact_id"] == "rf-revenue-fy"
     assert revenue["provenance_complete"] is True
     assert revenue["value_store_hash"] == stable_hash(value_records)
+
+
+def test_fy_periods_from_records_returns_document_period_then_comparatives() -> None:
+    sidecar_records = [
+        _record("rf-revenue-old", "us-gaap", "RevenueFromContractWithCustomerExcludingAssessedTax", "USD", start="start-1", end="end-1"),
+        _record("rf-assets-old", "us-gaap", "Assets", "USD", end="end-1", instant=True),
+        _record("rf-revenue-fy", "us-gaap", "RevenueFromContractWithCustomerExcludingAssessedTax", "USD", start="start-2", end="end-2"),
+        _record("rf-assets-fy", "us-gaap", "Assets", "USD", end="end-2", instant=True),
+        _record("rf-period-end", "dei", "DocumentPeriodEndDate", "unitless", end="end-2", instant=True),
+    ]
+    value_records = [
+        _value("rf-revenue-old", "90"),
+        _value("rf-assets-old", "180"),
+        _value("rf-revenue-fy", "100"),
+        _value("rf-assets-fy", "200"),
+        _value("rf-period-end", "end-2"),
+    ]
+
+    periods = canonical.fy_periods_from_records(sidecar_records, value_records)
+
+    assert [item["period_ref"] for item in periods] == ["fy-period-1", "fy-period-2"]
+    assert periods[0]["duration_period_key"] == ("d", "start-2", "end-2")
+    assert periods[0]["instant_period_key"] == ("i", "end-2")
+    assert periods[0]["matches_document_period_end_date"] is True
+    assert periods[1]["duration_period_key"] == ("d", "start-1", "end-1")
+    assert periods[1]["instant_period_key"] == ("i", "end-1")
+    assert periods[1]["matches_document_period_end_date"] is False
+    assert all(item["document_period_end_date_cross_checked"] is True for item in periods)
+
+
+def test_multi_period_projection_projects_distinct_fy_periods() -> None:
+    sidecar_records = [
+        _record("rf-revenue-old", "us-gaap", "RevenueFromContractWithCustomerExcludingAssessedTax", "USD", start="start-1", end="end-1"),
+        _record("rf-assets-old", "us-gaap", "Assets", "USD", end="end-1", instant=True),
+        _record("rf-revenue-fy", "us-gaap", "RevenueFromContractWithCustomerExcludingAssessedTax", "USD", start="start-2", end="end-2"),
+        _record("rf-assets-fy", "us-gaap", "Assets", "USD", end="end-2", instant=True),
+        _record("rf-period-end", "dei", "DocumentPeriodEndDate", "unitless", end="end-2", instant=True),
+    ]
+    value_records = [
+        _value("rf-revenue-old", "90"),
+        _value("rf-assets-old", "180"),
+        _value("rf-revenue-fy", "100"),
+        _value("rf-assets-fy", "200"),
+        _value("rf-period-end", "end-2"),
+    ]
+
+    result = canonical.project_issuer_canonical_facts_by_periods(
+        companyfacts=_companyfacts_periods(
+            [
+                ("us-gaap", "RevenueFromContractWithCustomerExcludingAssessedTax", "90", "USD", "start-1", "end-1", False),
+                ("us-gaap", "RevenueFromContractWithCustomerExcludingAssessedTax", "100", "USD", "start-2", "end-2", False),
+                ("us-gaap", "Assets", "180", "USD", "", "end-1", True),
+                ("us-gaap", "Assets", "200", "USD", "", "end-2", True),
+            ]
+        ),
+        sidecar_records=sidecar_records,
+        value_records=value_records,
+        sidecar_receipt_id="sidecar-ref",
+        sidecar_receipt_hash="sidecar-hash",
+        value_store_hash=stable_hash(value_records),
+        dataset_version_id="dataset-ref",
+        period_limit=2,
+    )
+    latest = result["periods"][0]["projection"]
+    comparative = result["periods"][1]["projection"]
+
+    assert result["status"] == "canonical_multi_period_projection_ready"
+    assert result["period_count"] == 2
+    assert result["ready_period_count"] == 2
+    assert result["defined_cell_count"] == 44
+    assert result["periods"][0]["matches_document_period_end_date"] is True
+    assert result["periods"][1]["matches_document_period_end_date"] is False
+    assert _find(latest["concepts"], "Revenue", "total")["_value"] == Decimal("100")
+    assert _find(latest["concepts"], "Revenue", "total")["status"] == "projected_oracle_confirmed"
+    assert _find(comparative["concepts"], "Revenue", "total")["_value"] == Decimal("90")
+    assert _find(comparative["concepts"], "Revenue", "total")["status"] == "projected_oracle_confirmed"
+    assert _find(comparative["concepts"], "Revenue", "total")["resolved_fact_id"] == "rf-revenue-old"
 
 
 def test_projection_handles_total_parent_fallback_and_divided_units() -> None:
@@ -264,6 +346,129 @@ def test_projection_derived_noncurrent_assets_is_unconfirmed_when_target_oracle_
     assert result["projected_unconfirmed_count"] == 1
 
 
+def test_projection_keeps_sector_families_opt_in_and_universal_by_default() -> None:
+    sidecar_records = [
+        _record("rf-interest-expense", "us-gaap", "InterestExpense", "USD"),
+        _record("rf-assets-fy", "us-gaap", "Assets", "USD", instant=True),
+    ]
+    value_records = [
+        _value("rf-interest-expense", "12"),
+        _value("rf-assets-fy", "200"),
+    ]
+
+    result = _project(
+        companyfacts={},
+        sidecar_records=sidecar_records,
+        value_records=value_records,
+    )
+
+    assert result["defined_count"] == 22
+    assert result["universal_defined_count"] == 22
+    assert result["sector_family_defined_count"] == 0
+    assert result["sector_family_presence"]["activation_rule"] == "sector_families_not_requested"
+    assert all(item["family"] == "universal" for item in result["concepts"])
+
+
+def test_projection_supporting_banking_concept_does_not_activate_sector_family() -> None:
+    sidecar_records = [
+        _record("rf-interest-expense", "us-gaap", "InterestExpense", "USD"),
+        _record("rf-assets-fy", "us-gaap", "Assets", "USD", instant=True),
+    ]
+    value_records = [
+        _value("rf-interest-expense", "12"),
+        _value("rf-assets-fy", "200"),
+    ]
+
+    result = _project(
+        companyfacts={},
+        sidecar_records=sidecar_records,
+        value_records=value_records,
+        include_sector_families=True,
+    )
+    banking = next(
+        item
+        for item in result["sector_family_presence"]["reported_family_evidence"]
+        if item["family_id"] == "banking"
+    )
+
+    assert result["sector_family_defined_count"] == 0
+    assert result["sector_family_presence"]["present_family_ids"] == []
+    assert banking["activation_anchor_concepts"] == []
+    assert banking["supporting_family_concepts"] == ["us-gaap:InterestExpense"]
+    assert banking["supporting_only"] is True
+    assert all(item["family"] == "universal" for item in result["concepts"])
+
+
+def test_projection_anchor_activates_banking_family_and_supporting_concepts() -> None:
+    sidecar_records = [
+        _record("rf-loan-commitments", "ifrs-full", "GrossLoanCommitments", "USD", instant=True),
+        _record("rf-interest-expense", "us-gaap", "InterestExpense", "USD"),
+        _record("rf-assets-fy", "ifrs-full", "Assets", "USD", instant=True),
+    ]
+    value_records = [
+        _value("rf-loan-commitments", "900"),
+        _value("rf-interest-expense", "12"),
+        _value("rf-assets-fy", "200"),
+    ]
+
+    result = _project(
+        companyfacts={},
+        sidecar_records=sidecar_records,
+        value_records=value_records,
+        include_sector_families=True,
+    )
+    gross_loan_commitments = _find(result["concepts"], "BankingGrossLoanCommitments", "total")
+    interest_expense = _find(result["concepts"], "BankingInterestExpense", "total")
+
+    assert result["sector_family_defined_count"] == 6
+    assert result["sector_family_presence"]["present_family_ids"] == ["banking"]
+    assert gross_loan_commitments["family"] == "banking"
+    assert gross_loan_commitments["status"] == "projected_oracle_absent"
+    assert gross_loan_commitments["resolved_fact_id"] == "rf-loan-commitments"
+    assert interest_expense["family"] == "banking"
+    assert interest_expense["status"] == "projected_oracle_absent"
+    assert interest_expense["resolved_fact_id"] == "rf-interest-expense"
+
+
+def test_projection_report_separates_registry_count_from_active_sector_family_count() -> None:
+    sidecar_records = [
+        _record("rf-loan-commitments", "ifrs-full", "GrossLoanCommitments", "USD", instant=True),
+        _record("rf-interest-expense", "us-gaap", "InterestExpense", "USD"),
+        _record("rf-assets-fy", "ifrs-full", "Assets", "USD", instant=True),
+    ]
+    value_records = [
+        _value("rf-loan-commitments", "900"),
+        _value("rf-interest-expense", "12"),
+        _value("rf-assets-fy", "200"),
+    ]
+
+    report = canonical.build_redacted_projection_report(
+        issuer_bundles=[
+            _bundle(
+                issuer_ref="raw-fixture-issuer",
+                companyfacts={},
+                sidecar_records=sidecar_records,
+                value_records=value_records,
+            )
+        ],
+        include_sector_families=True,
+    )
+    issuer = report["per_issuer"][0]
+
+    assert report["decision"] == "canonical_projection_validate_only_ready"
+    assert report["include_sector_families"] is True
+    assert report["canonical_concept_defined_count"] == 35
+    assert report["universal_canonical_concept_defined_count"] == 22
+    assert report["sector_family_canonical_concept_defined_count"] == 13
+    assert report["issuer_hash_count"] == 1
+    assert issuer["issuer_hash"] == stable_hash({"issuer_ref": "raw-fixture-issuer"})[:24]
+    assert len(report["canonical_concepts"]) == 35
+    assert issuer["headline_canonical_defined"] == 28
+    assert issuer["universal_defined_count"] == 22
+    assert issuer["sector_family_defined_count"] == 6
+    assert report["summary"]["headline_canonical_cell_count"] == 28
+
+
 def _source_root(tmp_path: Path) -> Path:
     source_root = tmp_path / "source"
     config_path = source_root / "backend" / "app" / "core" / "config.py"
@@ -294,6 +499,7 @@ def _project(
     companyfacts: dict,
     sidecar_records: list[dict],
     value_records: list[dict],
+    include_sector_families: bool = False,
 ) -> dict:
     return canonical.project_issuer_canonical_facts(
         companyfacts=companyfacts,
@@ -304,6 +510,7 @@ def _project(
         value_store_hash=stable_hash(value_records),
         dataset_version_id="dataset-ref",
         fiscal_year=1,
+        include_sector_families=include_sector_families,
     )
 
 
@@ -350,6 +557,17 @@ def _companyfacts(
         fact = {"fp": "FY", "fy": 1, "val": value, "end": "end-2"}
         if not instant:
             fact["start"] = "start-2"
+        facts[taxonomy][local_name]["units"].setdefault(unit, []).append(fact)
+    return facts
+
+
+def _companyfacts_periods(entries: list[tuple[str, str, str, str, str, str, bool]]) -> dict:
+    facts: dict[str, dict] = {}
+    for taxonomy, local_name, value, unit, start, end, instant in entries:
+        facts.setdefault(taxonomy, {}).setdefault(local_name, {"units": {}})
+        fact = {"fp": "FY", "fy": "", "val": value, "end": end}
+        if not instant:
+            fact["start"] = start
         facts[taxonomy][local_name]["units"].setdefault(unit, []).append(fact)
     return facts
 
