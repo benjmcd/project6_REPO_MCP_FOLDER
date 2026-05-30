@@ -1,0 +1,282 @@
+{
+  "arelle_invoked": false,
+  "blocking_reasons": [],
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "committed_runtime_defaults_remain_off",
+      "evidence": {
+        "config_defaults_off": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "family_coverage_counts_are_consistent",
+      "evidence": {
+        "families_defined": 3,
+        "total_headline_concepts_defined": 13,
+        "total_reference_present_count": 7
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "concept_presence_conditioning_not_sic_gating",
+      "evidence": {
+        "presence_conditioned": true,
+        "primary_sector_class": "diversified_or_other",
+        "reported_family_count": 2,
+        "reported_family_ids": [
+          "banking",
+          "insurance"
+        ],
+        "sic_used_as_gate": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "redaction_clean",
+      "evidence": {
+        "passed": true,
+        "raw_accession_found": false,
+        "raw_contact_found": false,
+        "raw_issuer_identity_found": false,
+        "raw_local_path_found": false,
+        "raw_path_or_accession_found": false,
+        "raw_period_date_found": false,
+        "raw_sic_found": false,
+        "raw_url_found": false,
+        "raw_value_found": false,
+        "raw_values_in_report": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "validate_only_non_goals_preserved",
+      "evidence": {
+        "arelle_invoked": false,
+        "live_network_used": false,
+        "non_goals_preserved": {
+          "canonical_concept_model_changed": false,
+          "default_on_readiness_claimed": false,
+          "dimensional_roll_forward_claimed": false,
+          "per_period_projection_claimed": false,
+          "persisted_store_claimed": false,
+          "production_readiness_claimed": false,
+          "sector_conditioned_families_design_complete": true,
+          "sector_conditioned_families_implemented": false,
+          "sector_resolution_implemented": false,
+          "statement_assembly_claimed": false,
+          "value_reveal_performed": false
+        },
+        "runtime_defaults_changed": false,
+        "validate_only": true,
+        "value_reveal_performed": false
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "sector_family_coverage_validate_only_ready",
+  "diversified_filer_guard": {
+    "presence_conditioned": true,
+    "primary_sector_class": "diversified_or_other",
+    "reported_family_count": 2,
+    "reported_family_ids": [
+      "banking",
+      "insurance"
+    ],
+    "sic_used_as_gate": false
+  },
+  "evidence_scope": "operator_run_reference_summary_covers_three_redacted_filers_not_all_sectors",
+  "family_registry_version": "sec_xbrl_sector_family_headline_registry_design_v1",
+  "live_network_used": false,
+  "next_slice": "sec_xbrl_sector_conditioned_canonical_families_v1_resolution_presence_conditioned",
+  "non_goals_preserved": {
+    "canonical_concept_model_changed": false,
+    "default_on_readiness_claimed": false,
+    "dimensional_roll_forward_claimed": false,
+    "per_period_projection_claimed": false,
+    "persisted_store_claimed": false,
+    "production_readiness_claimed": false,
+    "sector_conditioned_families_design_complete": true,
+    "sector_conditioned_families_implemented": false,
+    "sector_resolution_implemented": false,
+    "statement_assembly_claimed": false,
+    "value_reveal_performed": false
+  },
+  "per_family": [
+    {
+      "concepts": [
+        {
+          "canonical_concept_id": "ExtractiveExplorationEvaluationExpense",
+          "concept_id": "ifrs-full:ExpenseArisingFromExplorationForAndEvaluationOfMineralResources",
+          "coverage_rate": 1.0,
+          "reference_present": true,
+          "reference_present_count": 1,
+          "taxonomy": "ifrs-full"
+        },
+        {
+          "canonical_concept_id": "ExtractiveCurrentOreStockpiles",
+          "concept_id": "ifrs-full:CurrentOreStockpiles",
+          "coverage_rate": 1.0,
+          "reference_present": true,
+          "reference_present_count": 1,
+          "taxonomy": "ifrs-full"
+        },
+        {
+          "canonical_concept_id": "ExtractiveExplorationExpense",
+          "concept_id": "us-gaap:ExplorationExpense",
+          "coverage_rate": 0.0,
+          "reference_present": false,
+          "reference_present_count": 0,
+          "taxonomy": "us-gaap"
+        }
+      ],
+      "coverage_rate": 0.6667,
+      "defined_headline_concept_count": 3,
+      "family_id": "extractive",
+      "reference_issuer_count": 1,
+      "reference_present": true,
+      "reference_present_count": 2,
+      "sector_class": "extractive"
+    },
+    {
+      "concepts": [
+        {
+          "canonical_concept_id": "BankingInterestIncome",
+          "concept_id": "ifrs-full:InterestIncomeForFinancialAssetsMeasuredAtAmortisedCost",
+          "coverage_rate": 1.0,
+          "reference_present": true,
+          "reference_present_count": 1,
+          "taxonomy": "ifrs-full"
+        },
+        {
+          "canonical_concept_id": "BankingGrossLoanCommitments",
+          "concept_id": "ifrs-full:GrossLoanCommitments",
+          "coverage_rate": 1.0,
+          "reference_present": true,
+          "reference_present_count": 1,
+          "taxonomy": "ifrs-full"
+        },
+        {
+          "canonical_concept_id": "BankingCustomerDepositsCurrent",
+          "concept_id": "ifrs-full:CurrentDepositsFromCustomers",
+          "coverage_rate": 1.0,
+          "reference_present": true,
+          "reference_present_count": 1,
+          "taxonomy": "ifrs-full"
+        },
+        {
+          "canonical_concept_id": "BankingInterestAndDividendIncome",
+          "concept_id": "us-gaap:InterestAndDividendIncomeOperating",
+          "coverage_rate": 0.0,
+          "reference_present": false,
+          "reference_present_count": 0,
+          "taxonomy": "us-gaap"
+        },
+        {
+          "canonical_concept_id": "BankingInterestExpense",
+          "concept_id": "us-gaap:InterestExpense",
+          "coverage_rate": 0.0,
+          "reference_present": false,
+          "reference_present_count": 0,
+          "taxonomy": "us-gaap"
+        },
+        {
+          "canonical_concept_id": "BankingDeposits",
+          "concept_id": "us-gaap:Deposits",
+          "coverage_rate": 0.0,
+          "reference_present": false,
+          "reference_present_count": 0,
+          "taxonomy": "us-gaap"
+        }
+      ],
+      "coverage_rate": 0.5,
+      "defined_headline_concept_count": 6,
+      "family_id": "banking",
+      "reference_issuer_count": 1,
+      "reference_present": true,
+      "reference_present_count": 3,
+      "sector_class": "banking"
+    },
+    {
+      "concepts": [
+        {
+          "canonical_concept_id": "InsuranceRevenue",
+          "concept_id": "ifrs-full:InsuranceRevenue",
+          "coverage_rate": 1.0,
+          "reference_present": true,
+          "reference_present_count": 1,
+          "taxonomy": "ifrs-full"
+        },
+        {
+          "canonical_concept_id": "InsuranceContractsLiabilityAsset",
+          "concept_id": "ifrs-full:InsuranceContractsLiabilityAsset",
+          "coverage_rate": 1.0,
+          "reference_present": true,
+          "reference_present_count": 1,
+          "taxonomy": "ifrs-full"
+        },
+        {
+          "canonical_concept_id": "InsurancePremiumsEarnedNet",
+          "concept_id": "us-gaap:PremiumsEarnedNet",
+          "coverage_rate": 0.0,
+          "reference_present": false,
+          "reference_present_count": 0,
+          "taxonomy": "us-gaap"
+        },
+        {
+          "canonical_concept_id": "InsuranceClaimsAdjustmentExpenseLiability",
+          "concept_id": "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
+          "coverage_rate": 0.0,
+          "reference_present": false,
+          "reference_present_count": 0,
+          "taxonomy": "us-gaap"
+        }
+      ],
+      "coverage_rate": 0.5,
+      "defined_headline_concept_count": 4,
+      "family_id": "insurance",
+      "reference_issuer_count": 1,
+      "reference_present": true,
+      "reference_present_count": 2,
+      "sector_class": "insurance"
+    }
+  ],
+  "redaction": {
+    "passed": true,
+    "raw_accession_found": false,
+    "raw_contact_found": false,
+    "raw_issuer_identity_found": false,
+    "raw_local_path_found": false,
+    "raw_path_or_accession_found": false,
+    "raw_period_date_found": false,
+    "raw_sic_found": false,
+    "raw_url_found": false,
+    "raw_value_found": false,
+    "raw_values_in_report": false
+  },
+  "runtime_defaults_changed": false,
+  "schema_id": "diagnostics.sec_xbrl_sector_family_coverage.v1",
+  "sector_class_source_concept": "dei:EntityPrimarySicNumber",
+  "sector_class_source_fallback_documented": "sec_submissions_metadata",
+  "sector_conditioning": "concept_presence_not_sic_gated",
+  "sic_range_table_version": "sic_range_to_sector_class_v1",
+  "source_mode": "redacted_reference_family_summary",
+  "summary": {
+    "contract_passed": true,
+    "coverage_rate": 0.5385,
+    "families_defined": 3,
+    "families_with_reference_presence": 3,
+    "sector_class_count": 3,
+    "total_headline_concepts_defined": 13,
+    "total_reference_present_count": 7,
+    "universal_only_reference_issuer_count": 1
+  },
+  "target": "sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1",
+  "validate_only": true,
+  "value_reveal_performed": false
+}
