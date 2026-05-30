@@ -214,6 +214,56 @@ def test_projection_uses_sidecar_primary_taxonomy_not_companyfacts_presence() ->
     assert revenue["oracle_confirmed"] == "oracle_absent"
 
 
+def test_projection_derived_noncurrent_assets_confirms_when_target_oracle_matches() -> None:
+    sidecar_records = [
+        _record("rf-assets", "us-gaap", "Assets", "USD", instant=True),
+        _record("rf-current-assets", "us-gaap", "AssetsCurrent", "USD", instant=True),
+    ]
+    value_records = [_value("rf-assets", "100"), _value("rf-current-assets", "40")]
+
+    result = _project(
+        companyfacts=_companyfacts(
+            [
+                ("us-gaap", "Assets", "100", "USD", True),
+                ("us-gaap", "AssetsCurrent", "40", "USD", True),
+                ("us-gaap", "AssetsNoncurrent", "60", "USD", True),
+            ]
+        ),
+        sidecar_records=sidecar_records,
+        value_records=value_records,
+    )
+    noncurrent = _find(result["concepts"], "NoncurrentAssets", "total")
+
+    assert noncurrent["status"] == "derived"
+    assert noncurrent["oracle_confirmed"] is True
+    assert result["oracle_confirmed_count"] == 3
+
+
+def test_projection_derived_noncurrent_assets_is_unconfirmed_when_target_oracle_differs() -> None:
+    sidecar_records = [
+        _record("rf-assets", "us-gaap", "Assets", "USD", instant=True),
+        _record("rf-current-assets", "us-gaap", "AssetsCurrent", "USD", instant=True),
+    ]
+    value_records = [_value("rf-assets", "100"), _value("rf-current-assets", "40")]
+
+    result = _project(
+        companyfacts=_companyfacts(
+            [
+                ("us-gaap", "Assets", "100", "USD", True),
+                ("us-gaap", "AssetsCurrent", "40", "USD", True),
+                ("us-gaap", "AssetsNoncurrent", "61", "USD", True),
+            ]
+        ),
+        sidecar_records=sidecar_records,
+        value_records=value_records,
+    )
+    noncurrent = _find(result["concepts"], "NoncurrentAssets", "total")
+
+    assert noncurrent["status"] == "derived"
+    assert noncurrent["oracle_confirmed"] is False
+    assert result["projected_unconfirmed_count"] == 1
+
+
 def _source_root(tmp_path: Path) -> Path:
     source_root = tmp_path / "source"
     config_path = source_root / "backend" / "app" / "core" / "config.py"
@@ -276,13 +326,29 @@ def _bundle(
     }
 
 
-def _companyfacts(entries: list[tuple[str, str, str, str]]) -> dict:
+def _companyfacts(
+    entries: list[tuple[str, str, str, str] | tuple[str, str, str, str, bool]]
+) -> dict:
     facts: dict[str, dict] = {}
-    instant_names = {"Assets", "StockholdersEquity"}
-    for taxonomy, local_name, value, unit in entries:
+    instant_names = {
+        "Assets",
+        "AssetsCurrent",
+        "AssetsNoncurrent",
+        "Liabilities",
+        "LiabilitiesCurrent",
+        "LiabilitiesNoncurrent",
+        "StockholdersEquity",
+        "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+    }
+    for entry in entries:
+        if len(entry) == 5:
+            taxonomy, local_name, value, unit, instant = entry
+        else:
+            taxonomy, local_name, value, unit = entry
+            instant = local_name in instant_names
         facts.setdefault(taxonomy, {}).setdefault(local_name, {"units": {}})
         fact = {"fp": "FY", "fy": 1, "val": value, "end": "end-2"}
-        if local_name not in instant_names:
+        if not instant:
             fact["start"] = "start-2"
         facts[taxonomy][local_name]["units"].setdefault(unit, []).append(fact)
     return facts
