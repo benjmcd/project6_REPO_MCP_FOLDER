@@ -24,14 +24,56 @@
       "blocked_reason": null,
       "criterion": "concept_presence_conditioning_not_sic_gating",
       "evidence": {
+        "activation_rule": "anchor_concepts_activate_supporting_concepts_do_not",
         "presence_conditioned": true,
-        "primary_sector_class": "diversified_or_other",
-        "reported_family_count": 2,
-        "reported_family_ids": [
+        "present_family_count": 2,
+        "present_family_ids": [
           "banking",
           "insurance"
         ],
+        "reported_family_evidence": [
+          {
+            "activation_anchor_concepts": [],
+            "active": false,
+            "family_id": "extractive",
+            "supporting_family_concepts": [],
+            "supporting_only": false
+          },
+          {
+            "activation_anchor_concepts": [
+              "ifrs-full:InterestIncomeForFinancialAssetsMeasuredAtAmortisedCost",
+              "ifrs-full:GrossLoanCommitments",
+              "ifrs-full:CurrentDepositsFromCustomers"
+            ],
+            "active": true,
+            "family_id": "banking",
+            "supporting_family_concepts": [
+              "us-gaap:InterestExpense"
+            ],
+            "supporting_only": false
+          },
+          {
+            "activation_anchor_concepts": [
+              "ifrs-full:InsuranceRevenue",
+              "ifrs-full:InsuranceContractsLiabilityAsset"
+            ],
+            "active": true,
+            "family_id": "insurance",
+            "supporting_family_concepts": [],
+            "supporting_only": false
+          }
+        ],
+        "sector_class": "diversified_or_other",
         "sic_used_as_gate": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "family_activation_requires_anchor_not_support_only",
+      "evidence": {
+        "activation_rule": "anchor_concepts_activate_supporting_concepts_do_not",
+        "interest_expense_only_family_ids": []
       },
       "state": "passed"
     },
@@ -60,15 +102,17 @@
         "arelle_invoked": false,
         "live_network_used": false,
         "non_goals_preserved": {
-          "canonical_concept_model_changed": false,
+          "coverage_diagnostic_canonical_model_mutation_performed": false,
+          "coverage_diagnostic_runtime_mutation_performed": false,
+          "coverage_diagnostic_sector_resolution_performed": false,
           "default_on_readiness_claimed": false,
           "dimensional_roll_forward_claimed": false,
           "per_period_projection_claimed": false,
           "persisted_store_claimed": false,
           "production_readiness_claimed": false,
+          "runtime_canonical_concept_family_qualifier_available": true,
+          "runtime_opt_in_sector_family_resolution_available": true,
           "sector_conditioned_families_design_complete": true,
-          "sector_conditioned_families_implemented": false,
-          "sector_resolution_implemented": false,
           "statement_assembly_claimed": false,
           "value_reveal_performed": false
         },
@@ -81,13 +125,46 @@
   ],
   "decision": "sector_family_coverage_validate_only_ready",
   "diversified_filer_guard": {
+    "activation_rule": "anchor_concepts_activate_supporting_concepts_do_not",
     "presence_conditioned": true,
-    "primary_sector_class": "diversified_or_other",
-    "reported_family_count": 2,
-    "reported_family_ids": [
+    "present_family_count": 2,
+    "present_family_ids": [
       "banking",
       "insurance"
     ],
+    "reported_family_evidence": [
+      {
+        "activation_anchor_concepts": [],
+        "active": false,
+        "family_id": "extractive",
+        "supporting_family_concepts": [],
+        "supporting_only": false
+      },
+      {
+        "activation_anchor_concepts": [
+          "ifrs-full:InterestIncomeForFinancialAssetsMeasuredAtAmortisedCost",
+          "ifrs-full:GrossLoanCommitments",
+          "ifrs-full:CurrentDepositsFromCustomers"
+        ],
+        "active": true,
+        "family_id": "banking",
+        "supporting_family_concepts": [
+          "us-gaap:InterestExpense"
+        ],
+        "supporting_only": false
+      },
+      {
+        "activation_anchor_concepts": [
+          "ifrs-full:InsuranceRevenue",
+          "ifrs-full:InsuranceContractsLiabilityAsset"
+        ],
+        "active": true,
+        "family_id": "insurance",
+        "supporting_family_concepts": [],
+        "supporting_only": false
+      }
+    ],
+    "sector_class": "diversified_or_other",
     "sic_used_as_gate": false
   },
   "evidence_scope": "operator_run_reference_summary_covers_three_redacted_filers_not_all_sectors",
@@ -95,20 +172,23 @@
   "live_network_used": false,
   "next_slice": "sec_xbrl_sector_conditioned_canonical_families_v1_resolution_presence_conditioned",
   "non_goals_preserved": {
-    "canonical_concept_model_changed": false,
+    "coverage_diagnostic_canonical_model_mutation_performed": false,
+    "coverage_diagnostic_runtime_mutation_performed": false,
+    "coverage_diagnostic_sector_resolution_performed": false,
     "default_on_readiness_claimed": false,
     "dimensional_roll_forward_claimed": false,
     "per_period_projection_claimed": false,
     "persisted_store_claimed": false,
     "production_readiness_claimed": false,
+    "runtime_canonical_concept_family_qualifier_available": true,
+    "runtime_opt_in_sector_family_resolution_available": true,
     "sector_conditioned_families_design_complete": true,
-    "sector_conditioned_families_implemented": false,
-    "sector_resolution_implemented": false,
     "statement_assembly_claimed": false,
     "value_reveal_performed": false
   },
   "per_family": [
     {
+      "activation_anchor_count": 3,
       "concepts": [
         {
           "canonical_concept_id": "ExtractiveExplorationEvaluationExpense",
@@ -141,9 +221,11 @@
       "reference_issuer_count": 1,
       "reference_present": true,
       "reference_present_count": 2,
-      "sector_class": "extractive"
+      "sector_class": "extractive",
+      "supporting_concept_count": 0
     },
     {
+      "activation_anchor_count": 4,
       "concepts": [
         {
           "canonical_concept_id": "BankingInterestIncome",
@@ -200,9 +282,11 @@
       "reference_issuer_count": 1,
       "reference_present": true,
       "reference_present_count": 3,
-      "sector_class": "banking"
+      "sector_class": "banking",
+      "supporting_concept_count": 2
     },
     {
+      "activation_anchor_count": 4,
       "concepts": [
         {
           "canonical_concept_id": "InsuranceRevenue",
@@ -243,7 +327,8 @@
       "reference_issuer_count": 1,
       "reference_present": true,
       "reference_present_count": 2,
-      "sector_class": "insurance"
+      "sector_class": "insurance",
+      "supporting_concept_count": 0
     }
   ],
   "redaction": {

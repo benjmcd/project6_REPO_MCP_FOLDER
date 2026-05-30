@@ -9578,11 +9578,97 @@ Report: `diagnostics/assessment/sec-xbrl-sector-family-coverage-report.json`.
 
 Status: additive validate-only sector-family design and coverage diagnostic. The design records `dei:EntityPrimarySicNumber` as a sector-class label source only, documents SEC submissions metadata as the fallback, and rejects primary-SIC gating in favor of concept-presence conditioning so diversified filers retain reported banking and insurance headline families.
 
-The committed report records only sector-class labels, family ids, public canonical concept ids, standard taxonomy concept ids, taxonomy tokens, counts, coverage rates, and booleans. It excludes issuer names, raw SIC numbers, accessions, periods, URLs, local paths, raw values, and resolved fact authorities. Runtime defaults remain off and no live network, Arelle invocation, value reveal, source acquisition, statement assembly, per-period projection, persisted store, CanonicalConcept model change, sector-family resolution, dimensional roll-forward handling, or default-on readiness is admitted.
+The committed report records only sector-class labels, family ids, public canonical concept ids, standard taxonomy concept ids, taxonomy tokens, counts, coverage rates, and booleans. It excludes issuer names, raw SIC numbers, accessions, periods, URLs, local paths, raw values, and resolved fact authorities. Runtime defaults remain off and no live network, Arelle invocation, value reveal, source acquisition, statement assembly, per-period projection, persisted store, dimensional roll-forward handling, or default-on readiness is admitted by the diagnostic. The follow-on opt-in runtime resolution slice is tracked separately in 1283.
 
 Status flags: `sector_conditioned_families_design_complete=true`; `sector_conditioned_families_implemented=false`.
 
 Next exact posture: `sec_xbrl_sector_conditioned_canonical_families_v1_resolution_presence_conditioned`.
+
+## SEC XBRL Sector-Conditioned Canonical Families Opt-In Resolution
+
+Milestone: `sec_xbrl_sector_conditioned_canonical_families_v1_resolution_presence_conditioned`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1283-sector-resolution.md`.
+
+Runtime: `backend/app/services/layer3_sec_xbrl_canonical_concepts.py`.
+
+Reports: `diagnostics/assessment/sec-xbrl-sector-family-coverage-report.json`; `diagnostics/assessment/sec-xbrl-canonical-projection-report.json`.
+
+Status: additive opt-in runtime resolution. `CanonicalConcept` now carries a family qualifier, sector-family definitions are centralized in the canonical runtime module, and the default canonical projection remains universal-only with `include_sector_families=false`, `universal_defined_count=22`, and `sector_family_defined_count=0`.
+
+Activation is anchored concept-presence resolution, not primary-SIC gating. Supporting-only banking concepts such as `us-gaap:InterestExpense` record evidence but do not activate banking by themselves; a banking anchor activates the six banking headline concepts and lets supporting concepts project when governed facts exist.
+
+Non-goals preserved: no runtime default enablement, live SEC network, Arelle invocation, value reveal, source acquisition, persisted store, statement assembly, dimensional roll-forward handling, per-period projection, linkbase emission, final financial-statement semantics claim, filing-wide canonicalization claim, production-readiness claim, or default-on readiness claim.
+
+Focused validation: `python -m pytest ./backend/tests/test_sec_xbrl_sector_family_coverage.py ./backend/tests/test_sec_xbrl_canonical_projection.py` -> `19 passed`.
+
+Status flags: `sector_conditioned_families_resolution_implemented=true`; `include_sector_families_default=false`; `supporting_only_activation_guard_proven=true`.
+
+Next exact posture: `sec_xbrl_statement_assembly_deferred_pending_linkbase_emission_v1`.
+
+## SEC XBRL Reviewable Statement Packet Validate-Only Assembly
+
+Milestone: `sec_xbrl_statement_assembly_deferred_pending_linkbase_emission_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1284-statement-packet.md`.
+
+Runtime: `backend/app/services/layer3_sec_xbrl_statement_assembly.py`.
+
+Report: `diagnostics/assessment/sec-xbrl-statement-assembly-report.json`.
+
+Status: additive validate-only review packet assembly. The packet consumes canonical projection rows plus the canonical statement-organization contract, groups non-absent rows into `income`, `balance`, and `cashflow`, carries canonical id/basis/family/status/provenance/review-exception metadata, and records identity residual rollup when supplied.
+
+The committed report is redacted review-packet evidence only. It excludes raw values, raw resolved fact authorities, issuer identities, accessions, period dates, URLs, and local paths. `oracle_absent` rows are retained as review exceptions instead of being silently accepted.
+
+Non-goals preserved: no runtime default enablement, live SEC network, Arelle invocation, value reveal, persistence, provider or connector dispatch, linkbase emission, per-period projection, final financial-statement semantics claim, production-readiness claim, or default-on readiness claim.
+
+Focused validation: `python -m pytest ./backend/tests/test_sec_xbrl_statement_assembly.py` -> `8 passed`.
+
+Status flags: `statement_packet_validate_only_ready=true`; `review_packet_redacted=true`; `final_financial_statement_semantics_claimed=false`.
+
+Next exact posture: `sec_xbrl_multi_period_projection_design_v1`.
+
+## SEC XBRL Multi-Period Canonical Projection Validate-Only
+
+Milestone: `sec_xbrl_multi_period_projection_design_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1285-multi-period.md`.
+
+Runtime: `backend/app/services/layer3_sec_xbrl_canonical_concepts.py`.
+
+Report: `diagnostics/assessment/sec-xbrl-multi-period-projection-report.json`.
+
+Status: additive validate-only comparative FY projection. `fy_periods_from_records(...)` enumerates FY period candidates from governed sidecar records, orders the document-period end first when present, and preserves comparative periods. `project_issuer_canonical_facts_by_periods(...)` runs the existing canonical projection logic per selected period without changing default single-FY behavior.
+
+The committed report is redacted period-summary evidence only. It records period refs, counts, statement count rollups, document-period-match booleans, and validation criteria. It excludes raw values, raw resolved fact authorities, issuer identities, accessions, period dates, URLs, and local paths.
+
+Non-goals preserved: no runtime default enablement, live SEC network, Arelle invocation, value reveal, persistence, statement assembly change, provider or connector dispatch, linkbase emission, final financial-statement semantics claim, production-readiness claim, or default-on readiness claim.
+
+Focused validation: `python -m pytest ./backend/tests/test_sec_xbrl_multi_period_projection.py ./backend/tests/test_sec_xbrl_canonical_projection.py -q` -> `18 passed`.
+
+Status flags: `multi_period_projection_validate_only_ready=true`; `document_period_first=true`; `comparative_period_projected=true`.
+
+Next exact posture: `sec_xbrl_sector_family_real_filer_validation_v1`.
+
+## SEC XBRL Deferred Schema Gate
+
+Milestones deferred: `sec_xbrl_projection_persistence_design_v1`; `sec_xbrl_persisted_statement_packet_design_v1`.
+
+Preserved work holder: branch `codex/sec-family-res`.
+
+Status: `deferred_pending_real_filer_validation`. The branch-local persistence and persisted-statement-packet work is intentionally not part of this no-schema landing branch. No `models.py` additions, Alembic migrations, persistence services, persistence diagnostics, or persistence tests are admitted here.
+
+Reason: durable projection and packet schemas should not be frozen on the current narrow evidence base. The next validation slice must prove sector-family anchor activation and projection row-shape stability across the approved real-filer matrix before persistence is finalized.
+
+Required gate: `sec_xbrl_sector_family_real_filer_validation_v1` must prove anchor-driven family activation, supporting-only non-activation, redacted projection row-shape stability, and the universal-only control before schema work resumes. The gate should extend the existing stratified real-filing validation matrix or real-corpus product runner with sector-family activation as a new validated dimension rather than greenfielding a standalone diagnostic when existing infrastructure can host it.
+
+Non-blocking backlog note: keyed or salted HMAC issuer pseudonyms may be useful as operator-side defense in depth for offline artifacts that hash real CIKs before redaction. The committed surface is already safe for this landing because synthetic issuer-hash preimages and count-only real-corpus summaries are used; HMAC pseudonyms are not part of this landing and are not a gate.
+
+REIT asymmetry is explicit: `real_estate_reit` remains a sector-class label from SIC mapping only. No REIT family is defined or validated in this branch.
+
+Status flags: `schema_set_landed=false`; `projection_persistence_deferred_pending_validation=true`; `persisted_statement_packet_deferred_pending_validation=true`; `real_estate_reit_family_defined=false`.
+
+Next exact posture: `sec_xbrl_sector_family_real_filer_validation_v1`.
 
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 

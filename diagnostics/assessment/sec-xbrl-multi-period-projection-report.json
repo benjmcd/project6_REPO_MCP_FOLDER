@@ -1,0 +1,153 @@
+{
+  "arelle_invoked": false,
+  "blocking_reasons": [],
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "committed_runtime_defaults_remain_off",
+      "evidence": {
+        "config_defaults_off": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "multi_period_projection_ready_fail_closed",
+      "evidence": {
+        "defined_cell_count": 44,
+        "include_sector_families": false,
+        "period_class": "FY",
+        "period_count": 2,
+        "primary_taxonomy": "us-gaap",
+        "projected_count": 4,
+        "projection_status": "canonical_multi_period_projection_ready",
+        "provenance_complete_count": 4,
+        "ready_period_count": 2
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "period_summaries_are_consistent",
+      "evidence": {
+        "period_count": 2,
+        "period_summary_count": 2
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "redaction_clean",
+      "evidence": {
+        "passed": true,
+        "raw_accession_found": false,
+        "raw_contact_found": false,
+        "raw_issuer_identity_found": false,
+        "raw_local_path_found": false,
+        "raw_period_date_found": false,
+        "raw_resolved_fact_authority_key_found": false,
+        "raw_url_found": false,
+        "raw_value_key_found": false,
+        "raw_values_in_report": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "validate_only_non_goals_preserved",
+      "evidence": {
+        "non_goals_preserved": {
+          "final_financial_statement_semantics_claimed": false,
+          "linkbase_emission_claimed": false,
+          "persisted_store_claimed": false,
+          "production_readiness_claimed": false,
+          "runtime_default_enabled": false,
+          "statement_assembly_changed": false,
+          "value_reveal_performed": false
+        },
+        "validate_only": true
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "sec_xbrl_multi_period_projection_validate_only_ready",
+  "live_network_used": false,
+  "next_slice": "sec_xbrl_sector_family_real_filer_validation_v1",
+  "non_goals_preserved": {
+    "final_financial_statement_semantics_claimed": false,
+    "linkbase_emission_claimed": false,
+    "persisted_store_claimed": false,
+    "production_readiness_claimed": false,
+    "runtime_default_enabled": false,
+    "statement_assembly_changed": false,
+    "value_reveal_performed": false
+  },
+  "oracle_authority": "companyfacts_period_key_validation_only",
+  "period_selection_rule": "document_period_end_first_then_comparative_fy_periods",
+  "periods": [
+    {
+      "defined_count": 22,
+      "matches_document_period_end_date": true,
+      "oracle_absent_count": 0,
+      "oracle_confirmed_count": 2,
+      "per_statement_projected": {
+        "balance": 1,
+        "cashflow": 0,
+        "income": 1
+      },
+      "period_index": 1,
+      "period_ref": "fy-period-1",
+      "projected_count": 2,
+      "provenance_complete_count": 2,
+      "statement_identity_evaluated_count": 0,
+      "status": "canonical_projection_ready"
+    },
+    {
+      "defined_count": 22,
+      "matches_document_period_end_date": false,
+      "oracle_absent_count": 0,
+      "oracle_confirmed_count": 2,
+      "per_statement_projected": {
+        "balance": 1,
+        "cashflow": 0,
+        "income": 1
+      },
+      "period_index": 2,
+      "period_ref": "fy-period-2",
+      "projected_count": 2,
+      "provenance_complete_count": 2,
+      "statement_identity_evaluated_count": 0,
+      "status": "canonical_projection_ready"
+    }
+  ],
+  "redaction": {
+    "passed": true,
+    "raw_accession_found": false,
+    "raw_contact_found": false,
+    "raw_issuer_identity_found": false,
+    "raw_local_path_found": false,
+    "raw_period_date_found": false,
+    "raw_resolved_fact_authority_key_found": false,
+    "raw_url_found": false,
+    "raw_value_key_found": false,
+    "raw_values_in_report": false
+  },
+  "runtime_defaults_changed": false,
+  "schema_id": "diagnostics.sec_xbrl_multi_period_projection.v1",
+  "source_mode": "governed_sidecar_value_store_reference_bundle",
+  "summary": {
+    "defined_cell_count": 44,
+    "include_sector_families": false,
+    "period_class": "FY",
+    "period_count": 2,
+    "primary_taxonomy": "us-gaap",
+    "projected_count": 4,
+    "projection_status": "canonical_multi_period_projection_ready",
+    "provenance_complete_count": 4,
+    "ready_period_count": 2
+  },
+  "target": "sec_xbrl_multi_period_projection_design_v1",
+  "validate_only": true,
+  "value_authority": "governed_arelle_sidecar_value_store",
+  "value_reveal_performed": false
+}

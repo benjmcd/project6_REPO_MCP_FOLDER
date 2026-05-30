@@ -1,0 +1,290 @@
+{
+  "arelle_invoked": false,
+  "blocking_reasons": [],
+  "canonical_projection_authority": "canonical_projection_items",
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "committed_runtime_defaults_remain_off",
+      "evidence": {
+        "config_defaults_off": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "statement_packet_ready_fail_closed",
+      "evidence": {
+        "identity_residuals_within_tolerance": true,
+        "packet_status": "statement_assembly_ready",
+        "provenance_complete_count": 5,
+        "review_exception_count": 2,
+        "review_ready": true,
+        "statement_count": 3,
+        "statements_with_rows": 3,
+        "total_review_rows": 5
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "statement_rows_are_consistent",
+      "evidence": {
+        "statement_count": 3,
+        "total_review_rows": 5
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "redaction_clean",
+      "evidence": {
+        "passed": true,
+        "raw_accession_found": false,
+        "raw_contact_found": false,
+        "raw_issuer_identity_found": false,
+        "raw_local_path_found": false,
+        "raw_period_date_found": false,
+        "raw_resolved_fact_authority_key_found": false,
+        "raw_url_found": false,
+        "raw_value_key_found": false,
+        "raw_values_in_report": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "validate_only_non_goals_preserved",
+      "evidence": {
+        "non_goals_preserved": {
+          "final_financial_statement_semantics_claimed": false,
+          "linkbase_emission_claimed": false,
+          "per_period_projection_claimed": false,
+          "persisted_store_claimed": false,
+          "production_readiness_claimed": false,
+          "provider_or_connector_dispatch_performed": false,
+          "runtime_default_enabled": false,
+          "value_reveal_performed": false
+        },
+        "validate_only": true
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "sec_xbrl_statement_assembly_validate_only_ready",
+  "identity_rollup": {
+    "identity_residual_count": 1,
+    "identity_residual_evaluated_count": 1,
+    "identity_residual_failed_count": 0,
+    "identity_residual_within_tolerance_count": 1,
+    "identity_residuals": [
+      {
+        "identity_id": "current_assets_plus_noncurrent_assets_equals_total_assets",
+        "relative_magnitude": "0E+2",
+        "residual_abs": "0",
+        "status": "evaluated",
+        "within_tolerance": true
+      }
+    ],
+    "identity_residuals_within_tolerance": true
+  },
+  "linkbase_required_for_review_packet": false,
+  "live_network_used": false,
+  "next_slice": "sec_xbrl_multi_period_projection_design_v1",
+  "non_goals_preserved": {
+    "final_financial_statement_semantics_claimed": false,
+    "linkbase_emission_claimed": false,
+    "per_period_projection_claimed": false,
+    "persisted_store_claimed": false,
+    "production_readiness_claimed": false,
+    "provider_or_connector_dispatch_performed": false,
+    "runtime_default_enabled": false,
+    "value_reveal_performed": false
+  },
+  "organization_contract": {
+    "a_divergent_count": 0,
+    "a_role_unknown_count": 0,
+    "contract_b_authoritative_organization": true,
+    "contract_derived_inputs_bound_and_corroborated": true,
+    "contract_every_fact_id_bound": true,
+    "contract_passed": true,
+    "normalized_fact_count": 5,
+    "organized_count": 5,
+    "unjoined_count": 0
+  },
+  "redaction": {
+    "passed": true,
+    "raw_accession_found": false,
+    "raw_contact_found": false,
+    "raw_issuer_identity_found": false,
+    "raw_local_path_found": false,
+    "raw_period_date_found": false,
+    "raw_resolved_fact_authority_key_found": false,
+    "raw_url_found": false,
+    "raw_value_key_found": false,
+    "raw_values_in_report": false
+  },
+  "runtime_defaults_changed": false,
+  "runtime_schema_id": "layer3.sec_xbrl_reviewable_statement_packet.v1",
+  "schema_id": "diagnostics.sec_xbrl_statement_assembly.v1",
+  "source_mode": "redacted_reference_projection_and_statement_organization_summary",
+  "statement_organization_authority": "canonical_statement_organization_contract",
+  "statements": [
+    {
+      "derived_count": 0,
+      "family_counts": {
+        "banking": 1,
+        "universal": 1
+      },
+      "line_count": 2,
+      "projected_count": 2,
+      "provenance_complete_count": 2,
+      "review_exception_count": 1,
+      "rows": [
+        {
+          "basis": "total",
+          "canonical_id": "Revenue",
+          "family": "universal",
+          "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+          "mapping_method": "redacted_reference_projection",
+          "oracle_confirmed": true,
+          "period_class": "FY",
+          "provenance_complete": true,
+          "requested_basis": "total",
+          "source_index": 1,
+          "source_qname": "ifrs-full:Revenue",
+          "statement": "income",
+          "statement_row_index": 1,
+          "status": "projected_oracle_confirmed",
+          "unit_class": "currency",
+          "value_redacted": false
+        },
+        {
+          "basis": "total",
+          "canonical_id": "BankingInterestExpense",
+          "family": "banking",
+          "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+          "mapping_method": "presence_conditioned_sector_family_crosswalk",
+          "oracle_confirmed": "oracle_absent",
+          "period_class": "FY",
+          "provenance_complete": true,
+          "requested_basis": "total",
+          "source_index": 2,
+          "source_qname": "us-gaap:InterestExpense",
+          "statement": "income",
+          "statement_row_index": 2,
+          "status": "projected_oracle_absent",
+          "unit_class": "currency",
+          "value_redacted": false
+        }
+      ],
+      "statement": "income",
+      "status_counts": {
+        "projected_oracle_absent": 1,
+        "projected_oracle_confirmed": 1
+      }
+    },
+    {
+      "derived_count": 0,
+      "family_counts": {
+        "banking": 1,
+        "universal": 1
+      },
+      "line_count": 2,
+      "projected_count": 2,
+      "provenance_complete_count": 2,
+      "review_exception_count": 1,
+      "rows": [
+        {
+          "basis": "total",
+          "canonical_id": "TotalAssets",
+          "family": "universal",
+          "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+          "mapping_method": "redacted_reference_projection",
+          "oracle_confirmed": true,
+          "period_class": "FY",
+          "provenance_complete": true,
+          "requested_basis": "total",
+          "source_index": 3,
+          "source_qname": "ifrs-full:Assets",
+          "statement": "balance",
+          "statement_row_index": 1,
+          "status": "projected_oracle_confirmed",
+          "unit_class": "currency",
+          "value_redacted": false
+        },
+        {
+          "basis": "total",
+          "canonical_id": "BankingGrossLoanCommitments",
+          "family": "banking",
+          "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+          "mapping_method": "presence_conditioned_sector_family_crosswalk",
+          "oracle_confirmed": "oracle_absent",
+          "period_class": "FY",
+          "provenance_complete": true,
+          "requested_basis": "total",
+          "source_index": 4,
+          "source_qname": "ifrs-full:GrossLoanCommitments",
+          "statement": "balance",
+          "statement_row_index": 2,
+          "status": "projected_oracle_absent",
+          "unit_class": "currency",
+          "value_redacted": false
+        }
+      ],
+      "statement": "balance",
+      "status_counts": {
+        "projected_oracle_absent": 1,
+        "projected_oracle_confirmed": 1
+      }
+    },
+    {
+      "derived_count": 0,
+      "family_counts": {
+        "universal": 1
+      },
+      "line_count": 1,
+      "projected_count": 1,
+      "provenance_complete_count": 1,
+      "review_exception_count": 0,
+      "rows": [
+        {
+          "basis": "total",
+          "canonical_id": "OperatingCashFlow",
+          "family": "universal",
+          "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+          "mapping_method": "redacted_reference_projection",
+          "oracle_confirmed": true,
+          "period_class": "FY",
+          "provenance_complete": true,
+          "requested_basis": "total",
+          "source_index": 5,
+          "source_qname": "ifrs-full:CashFlowsFromUsedInOperatingActivities",
+          "statement": "cashflow",
+          "statement_row_index": 1,
+          "status": "projected_oracle_confirmed",
+          "unit_class": "currency",
+          "value_redacted": false
+        }
+      ],
+      "statement": "cashflow",
+      "status_counts": {
+        "projected_oracle_confirmed": 1
+      }
+    }
+  ],
+  "summary": {
+    "identity_residuals_within_tolerance": true,
+    "packet_status": "statement_assembly_ready",
+    "provenance_complete_count": 5,
+    "review_exception_count": 2,
+    "review_ready": true,
+    "statement_count": 3,
+    "statements_with_rows": 3,
+    "total_review_rows": 5
+  },
+  "target": "sec_xbrl_statement_assembly_deferred_pending_linkbase_emission_v1",
+  "validate_only": true,
+  "value_policy": "redacted_no_values",
+  "value_reveal_performed": false
+}
