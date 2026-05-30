@@ -9538,6 +9538,20 @@ Status: additive validate-only coverage-breadth diagnostic. The canonical resolv
 
 The committed report records only per-sector-class headline canonical counts, derived counts, coverage rates, concept identifiers, and the sector-structure limitation. It does not include issuer identities, source accessions, period dates, source URLs, local paths, raw filing text, or financial values. Runtime defaults remain off and no live network, Arelle invocation, value reveal, statement assembly, FX conversion, sector-family implementation, or default-on readiness is admitted.
 
+Next exact posture: `sec_xbrl_canonical_retained_coherence_validate_only_v1`.
+
+## SEC XBRL Canonical Retained Coherence Validate-Only Diagnostic
+
+Milestone: `sec_xbrl_canonical_retained_coherence_validate_only_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1280-sec-xbrl-canonical-retained-coherence.md`.
+
+Report: `diagnostics/assessment/sec-xbrl-canonical-retained-coherence-report.json`.
+
+Status: additive validate-only coherence diagnostic. The new reconciliation primitive is decoupled from both SEC XBRL lineages and consumes only canonical projection outputs plus retained statement-classification fact-view outputs. Lineage A exposes a thin public retained-view accessor that maps the existing statement-classification sidecar flattening function without changing material-bridge or statement-classification behavior.
+
+The committed report records only per-sector-class aggregate binding counts, contract booleans, and retained-view superset booleans. It does not include issuer identities, source accessions, period dates, source URLs, local paths, raw financial values, raw resolved fact authorities, or raw retained total-fact counts. Runtime defaults remain off and no live network, Arelle invocation, value reveal, statement assembly, per-period projection, persisted store, sector-family implementation, or default-on readiness is admitted.
+
 Next exact posture: `sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1`.
 
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt

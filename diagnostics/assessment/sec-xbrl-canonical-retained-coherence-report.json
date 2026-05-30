@@ -1,0 +1,142 @@
+{
+  "arelle_invoked": false,
+  "blocking_reasons": [],
+  "canonical_view_authority": "canonical_projection_resolved_fact_ids",
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "committed_runtime_defaults_remain_off",
+      "evidence": {
+        "config_defaults_off": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "coherence_contract_passes_fail_closed",
+      "evidence": {
+        "contract_passed": true,
+        "total_missing": 0
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "sector_aggregate_counts_are_consistent",
+      "evidence": {
+        "sector_class_count": 1,
+        "total_bound": 66,
+        "total_missing": 0,
+        "total_normalized": 66
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "retained_view_is_strict_superset",
+      "evidence": {
+        "retains_dimensional_all": true,
+        "retains_extension_all": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "redaction_clean",
+      "evidence": {
+        "passed": true,
+        "raw_accession_found": false,
+        "raw_contact_found": false,
+        "raw_issuer_identity_found": false,
+        "raw_local_path_found": false,
+        "raw_period_date_found": false,
+        "raw_resolved_fact_ids_found": false,
+        "raw_total_fact_counts_found": false,
+        "raw_url_found": false,
+        "raw_values_in_report": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "validate_only_non_goals_preserved",
+      "evidence": {
+        "arelle_invoked": false,
+        "live_network_used": false,
+        "non_goals_preserved": {
+          "default_on_readiness_claimed": false,
+          "live_network_or_arelle_required": false,
+          "per_period_projection_claimed": false,
+          "persisted_store_claimed": false,
+          "production_readiness_claimed": false,
+          "sector_families_implemented": false,
+          "statement_assembly_claimed": false,
+          "value_reveal_performed": false
+        },
+        "runtime_defaults_changed": false,
+        "validate_only": true,
+        "value_reveal_performed": false
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "canonical_retained_coherence_validate_only_ready",
+  "evidence_scope": "operator_run_reference_summary_covers_three_issuers_not_all_sectors",
+  "live_network_used": false,
+  "next_slice": "sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1",
+  "non_goals_preserved": {
+    "default_on_readiness_claimed": false,
+    "live_network_or_arelle_required": false,
+    "per_period_projection_claimed": false,
+    "persisted_store_claimed": false,
+    "production_readiness_claimed": false,
+    "sector_families_implemented": false,
+    "statement_assembly_claimed": false,
+    "value_reveal_performed": false
+  },
+  "per_sector_class": [
+    {
+      "bound_count": 66,
+      "contract_a_strict_superset": true,
+      "contract_b_subset_of_a": true,
+      "contract_passed": true,
+      "contract_qname_consistent": true,
+      "contract_value_single_authority": true,
+      "derived_dual_input_binding_proven": true,
+      "issuer_count": 3,
+      "missing_count": 0,
+      "normalized_fact_count": 66,
+      "qname_consistent_count": 66,
+      "retains_dimensional": true,
+      "retains_extension": true,
+      "sector_class": "industrial_commercial",
+      "value_reconciled_count": 66
+    }
+  ],
+  "redaction": {
+    "passed": true,
+    "raw_accession_found": false,
+    "raw_contact_found": false,
+    "raw_issuer_identity_found": false,
+    "raw_local_path_found": false,
+    "raw_period_date_found": false,
+    "raw_resolved_fact_ids_found": false,
+    "raw_total_fact_counts_found": false,
+    "raw_url_found": false,
+    "raw_values_in_report": false
+  },
+  "retained_view_authority": "statement_classification_sidecar_fact_projection",
+  "runtime_defaults_changed": false,
+  "schema_id": "diagnostics.sec_xbrl_canonical_retained_coherence.v1",
+  "source_mode": "redacted_reference_sector_class_summary",
+  "summary": {
+    "contract_passed": true,
+    "total_bound": 66,
+    "total_missing": 0,
+    "total_normalized": 66
+  },
+  "target": "sec_xbrl_canonical_retained_coherence_validate_only_v1",
+  "validate_only": true,
+  "value_authority": "governed_arelle_sidecar_value_store",
+  "value_reveal_performed": false
+}
