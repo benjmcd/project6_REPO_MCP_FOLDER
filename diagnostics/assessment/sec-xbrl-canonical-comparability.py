@@ -29,7 +29,7 @@ TARGET = "sec_xbrl_canonical_cross_company_comparability_validate_only_v1"
 NEXT_SLICE = "sec_xbrl_canonical_projection_artifact_design_after_prerequisites_v1"
 REFERENCE_ISSUER_RESULTS = (
     {"issuer_ref": "redacted-reference-issuer-a", "primary_taxonomy": "ifrs-full", "resolved": 21, "absent": 1},
-    {"issuer_ref": "redacted-reference-issuer-b", "primary_taxonomy": "us-gaap", "resolved": 21, "absent": 1},
+    {"issuer_ref": "redacted-reference-issuer-b", "primary_taxonomy": "ifrs-full", "resolved": 21, "absent": 1},
     {"issuer_ref": "redacted-reference-issuer-c", "primary_taxonomy": "us-gaap", "resolved": 19, "absent": 3},
 )
 

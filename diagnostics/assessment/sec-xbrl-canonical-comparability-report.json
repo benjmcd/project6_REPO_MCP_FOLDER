@@ -342,7 +342,7 @@
       "headline_canonical_resolved": 21,
       "issuer_hash": "be40d0c7991d90b39471a0b6",
       "period_class": "FY",
-      "primary_taxonomy": "us-gaap"
+      "primary_taxonomy": "ifrs-full"
     },
     {
       "headline_canonical_defined": 22,
