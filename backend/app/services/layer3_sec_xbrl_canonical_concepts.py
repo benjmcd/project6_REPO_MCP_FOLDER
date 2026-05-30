@@ -319,7 +319,13 @@ def resolve_issuer_canonical_concepts(
                 if fallback_resolution["status"] != "legitimately_absent":
                     resolution = fallback_resolution
         resolutions.append(resolution)
-    _apply_noncurrent_derivations(resolutions, projection=False)
+    _apply_noncurrent_derivations(
+        resolutions,
+        projection=False,
+        companyfacts=companyfacts,
+        primary_taxonomy=primary_taxonomy,
+        fiscal_year=fiscal_year,
+    )
     identities = statement_identity_residuals(resolutions)
     return {
         "primary_taxonomy": primary_taxonomy,
@@ -474,7 +480,13 @@ def project_issuer_canonical_facts(
             blocking_reasons=blocking_reasons,
         )
 
-    _apply_noncurrent_derivations(projections, projection=True)
+    _apply_noncurrent_derivations(
+        projections,
+        projection=True,
+        companyfacts=companyfacts,
+        primary_taxonomy=primary_taxonomy,
+        fiscal_year=fiscal_year,
+    )
     identities = statement_identity_residuals(projections)
     projected = [item for item in projections if item["status"] != "legitimately_absent"]
     confirmed_or_unconfirmed = [
@@ -776,6 +788,7 @@ def _resolve_concept(
             "_resolution_key": concept.key if requested_basis is None else f"{concept.canonical_id}[{requested_basis}]",
             "_value": fact["value"],
             "_unit": str(fact["unit"]),
+            "_period_key": tuple(fact["period_key"]),
         }
     return {
         "canonical_id": concept.canonical_id,
@@ -790,6 +803,7 @@ def _resolve_concept(
         "mapping_confidence": MAPPING_CONFIDENCE,
         "absence_reason": "no_reviewed_fy_source_fact",
         "_resolution_key": concept.key if requested_basis is None else f"{concept.canonical_id}[{requested_basis}]",
+        "_period_key": None,
     }
 
 
@@ -888,6 +902,8 @@ def _project_concept(
             "_resolution_key": concept.key if requested_basis is None else f"{concept.canonical_id}[{requested_basis}]",
             "_value": effective_value,
             "_unit": unit,
+            "_period_key": tuple(period_key),
+            "_decimals": record.get("decimals"),
         }
     return {
         "canonical_id": concept.canonical_id,
@@ -903,10 +919,18 @@ def _project_concept(
         "absence_reason": "no_reviewed_sidecar_fy_source_fact",
         "provenance_complete": False,
         "_resolution_key": concept.key if requested_basis is None else f"{concept.canonical_id}[{requested_basis}]",
+        "_period_key": None,
     }
 
 
-def _apply_noncurrent_derivations(items: list[dict[str, Any]], *, projection: bool) -> None:
+def _apply_noncurrent_derivations(
+    items: list[dict[str, Any]],
+    *,
+    projection: bool,
+    companyfacts: Mapping[str, Any],
+    primary_taxonomy: str,
+    fiscal_year: int | str | None,
+) -> None:
     by_key = {
         str(item.get("_resolution_key") or ""): item
         for item in items
@@ -922,11 +946,23 @@ def _apply_noncurrent_derivations(items: list[dict[str, Any]], *, projection: bo
             continue
         if str(total.get("_unit") or "") != str(current.get("_unit") or ""):
             continue
+        total_period_key = tuple(total.get("_period_key") or ())
+        current_period_key = tuple(current.get("_period_key") or ())
+        if not total_period_key or total_period_key != current_period_key:
+            continue
+        derived_value = total["_value"] - current["_value"]
+        if derived_value < 0:
+            continue
         derived = _derived_noncurrent_item(
             target=target,
             total=total,
             current=current,
             projection=projection,
+            companyfacts=companyfacts,
+            primary_taxonomy=primary_taxonomy,
+            fiscal_year=fiscal_year,
+            period_key=total_period_key,
+            derived_value=derived_value,
         )
         index = items.index(target)
         items[index] = derived
@@ -949,10 +985,12 @@ def _derived_noncurrent_item(
     total: Mapping[str, Any],
     current: Mapping[str, Any],
     projection: bool,
+    companyfacts: Mapping[str, Any],
+    primary_taxonomy: str,
+    fiscal_year: int | str | None,
+    period_key: tuple[str, ...],
+    derived_value: Decimal,
 ) -> dict[str, Any]:
-    total_value = total["_value"]
-    current_value = current["_value"]
-    derived_value = total_value - current_value
     source_fact_ids = [
         str(total.get("resolved_fact_id") or ""),
         str(current.get("resolved_fact_id") or ""),
@@ -976,11 +1014,21 @@ def _derived_noncurrent_item(
         "_resolution_key": target.get("_resolution_key"),
         "_value": derived_value,
         "_unit": str(total.get("_unit") or ""),
+        "_period_key": tuple(period_key),
     }
     if projection:
         item.update(
             {
-                "oracle_confirmed": _derived_oracle_confirmation(total, current),
+                "oracle_confirmed": _derived_oracle_confirmation(
+                    target_key=str(target.get("_resolution_key") or ""),
+                    companyfacts=companyfacts,
+                    primary_taxonomy=primary_taxonomy,
+                    unit=str(total.get("_unit") or ""),
+                    period_key=tuple(period_key),
+                    value=derived_value,
+                    decimals=_derived_oracle_decimals(total, current),
+                    fiscal_year=fiscal_year,
+                ),
                 "sidecar_receipt_id": total.get("sidecar_receipt_id"),
                 "sidecar_receipt_hash": total.get("sidecar_receipt_hash"),
                 "value_store_hash": total.get("value_store_hash"),
@@ -989,16 +1037,46 @@ def _derived_noncurrent_item(
             }
         )
     else:
-        item["inline_confirmed"] = total.get("inline_confirmed") is True and current.get("inline_confirmed") is True
+        item["inline_confirmed"] = False
+        item["derived_inputs_inline_confirmed"] = (
+            total.get("inline_confirmed") is True and current.get("inline_confirmed") is True
+        )
     return item
 
 
-def _derived_oracle_confirmation(total: Mapping[str, Any], current: Mapping[str, Any]) -> bool | str:
-    states = {total.get("oracle_confirmed"), current.get("oracle_confirmed")}
-    if states == {True}:
-        return True
-    if False in states:
-        return False
+def _derived_oracle_decimals(total: Mapping[str, Any], current: Mapping[str, Any]) -> Any:
+    candidates = [item for item in (total.get("_decimals"), current.get("_decimals")) if item not in (None, "")]
+    if not candidates:
+        return None
+    return max(candidates, key=_decimals_tolerance)
+
+
+def _derived_oracle_confirmation(
+    *,
+    target_key: str,
+    companyfacts: Mapping[str, Any],
+    primary_taxonomy: str,
+    unit: str,
+    period_key: tuple[str, ...],
+    value: Decimal,
+    decimals: Any,
+    fiscal_year: int | str | None,
+) -> bool | str:
+    target = _CONCEPT_BY_KEY.get(target_key)
+    if target is None:
+        return "oracle_absent"
+    for source in _ordered_sources(target, primary_taxonomy):
+        oracle = _companyfacts_oracle_confirmation(
+            companyfacts=companyfacts,
+            source=source,
+            unit=unit,
+            period_key=period_key,
+            value=value,
+            decimals=decimals,
+            fiscal_year=fiscal_year,
+        )
+        if oracle != "oracle_absent":
+            return oracle
     return "oracle_absent"
 
 
@@ -1355,6 +1433,8 @@ def _public_resolution(item: Mapping[str, Any]) -> dict[str, Any]:
         public["unit_class"] = item.get("unit_class")
     if item.get("derived_from_concepts") is not None:
         public["derived_from_concepts"] = item.get("derived_from_concepts")
+    if item.get("derived_inputs_inline_confirmed") is not None:
+        public["derived_inputs_inline_confirmed"] = item.get("derived_inputs_inline_confirmed")
     if item.get("absence_reason") is not None:
         public["absence_reason"] = item.get("absence_reason")
     return public
