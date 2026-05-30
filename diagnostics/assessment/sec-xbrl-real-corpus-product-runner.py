@@ -72,11 +72,16 @@ REQUIRED_ARELLE_ENV = (
     "SEC_XBRL_ARELLE_CACHE_DIR",
 )
 ADMITTED_COMPANY_REFS = frozenset(layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_CIK_REFS)
+ADMITTED_COMPANY_CIK_REFS = frozenset(
+    str(cik).lstrip("0") or "0"
+    for cik in layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_CIK_REFS.values()
+)
 RAW_ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 RAW_URL_RE = re.compile(r"https?://|www\.", re.IGNORECASE)
 RAW_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 RAW_PATH_RE = re.compile(r"(?:[A-Za-z]:[\\/]|\\\\|(?:^|[\s'\"(])/(?:[^/\s]+/)+[^/\s]+)")
 LABEL_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9.-]{0,9}")
+LABEL_CIK_TOKEN_RE = re.compile(r"\bcik[-_ ]?0*(\d+)\b|\b(\d{6,10})\b", re.IGNORECASE)
 
 
 def main() -> int:
@@ -94,8 +99,8 @@ def main() -> int:
         "--matrix-plan",
         default=os.environ.get("SEC_XBRL_STRATIFIED_MATRIX_PLAN", ""),
         help=(
-            "Optional off-repo stratified matrix plan JSON. The plan is read only to select "
-            "bounded chunks; reports keep issuer identities redacted."
+            "Off-repo stratified matrix plan JSON required for the selected tranche. "
+            "The plan is read only to select bounded chunks; reports keep issuer identities redacted."
         ),
     )
     parser.add_argument("--user-agent", default=os.environ.get("LAYER3_SEC_EDGAR_USER_AGENT", ""))
@@ -1538,10 +1543,17 @@ def _matrix_label_contains_raw_identity(label: str) -> bool:
         return True
     if RAW_PATH_RE.search(label):
         return True
+    for match in LABEL_CIK_TOKEN_RE.finditer(label):
+        if _normalize_cik_token(match.group(1) or match.group(2)) in ADMITTED_COMPANY_CIK_REFS:
+            return True
     for token in LABEL_TOKEN_RE.findall(label):
         if token.upper() in ADMITTED_COMPANY_REFS:
             return True
     return False
+
+
+def _normalize_cik_token(value: str) -> str:
+    return value.lstrip("0") or "0"
 
 
 def _matrix_chunks_from_readiness(
@@ -1570,9 +1582,11 @@ def _default_matrix_chunks() -> tuple[tuple[str, tuple[str, ...], tuple[str, ...
 def _arelle_python_preflight() -> dict[str, Any]:
     raw = str(os.environ.get("SEC_XBRL_ARELLE_PYTHON") or os.environ.get("ARELLE_PYTHON") or "").strip()
     path = Path(raw).resolve(strict=False) if raw else None
+    inside_restricted = bool(path and _path_inside_repo_or_onedrive(path))
     return {
-        "configured": bool(path and path.exists() and path.is_file()),
+        "configured": bool(path and path.exists() and path.is_file() and not inside_restricted),
         "path_redacted": bool(raw),
+        "inside_repo_or_onedrive": inside_restricted,
     }
 
 

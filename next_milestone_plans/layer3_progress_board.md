@@ -9328,17 +9328,19 @@ Authority doc: `next_milestone_plans/Layer3_planning_docs/1265-sec-xbrl-value-re
 
 Runner: `diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-runner.py`.
 
-Report: `diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-run-report.json`.
+Superseded readiness report: `diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-run-report.json`.
 
-Status: readiness packet exists; operator exercise not performed; current runner blocks until a coherent selected authority bundle exists.
+Authoritative proof report: `diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json`.
+
+Status: readiness packet exists as superseded readiness evidence; the authoritative live proof records the bounded governed operator exercise was performed, while the readiness report itself remains superseded.
 
 Readiness now requires one mutually-bound bundle: READY Arelle sidecar receipt, verified internal value store, matching bridge receipt with dataset version id/hash, matching runtime `DatasetVersion`, and matching dataset source provenance. Independent counts are insufficient.
 
 Defaults remain off: Arelle cutover `false`; value reveal `false`.
 
-No live network, Arelle subprocess, sidecar creation, dataset creation, audit receipt creation, value reveal request, UI change, parser expansion, Candidate B SEC routing, final financial-statement semantics claim, or cross-company comparability claim is admitted by this tracking entry.
+The superseded readiness report itself admitted no live network, Arelle subprocess, sidecar creation, dataset creation, audit receipt creation, value reveal request, UI change, parser expansion, Candidate B SEC routing, final financial-statement semantics claim, or cross-company comparability claim. The true live-run booleans are backed only by the authoritative redacted live proof report.
 
-Next exact posture: `sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1` after post-1968/1969 review debt is closed.
+Next exact posture: `sec_edgar_stratified_real_filing_validation_matrix_v1`.
 
 ## SEC XBRL Value-Reveal Authority Provisioning Preflight
 
@@ -9349,6 +9351,8 @@ Planning docs: `next_milestone_plans/Layer3_planning_docs/1265-sec-xbrl-value-re
 Status: superseded by live proof packet `1267-sec-xbrl-value-reveal-live-proof.md`; committed defaults remain off.
 
 The live/Arelle authority-provisioning and governed operator value-reveal exercise has now been performed from current `project6-origin/main` after PR `#1982` for two bounded filings: one FY2025 `10-K` and one FY2026 `10-Q`. The redacted proof report is `diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json`.
+
+The earlier preflight report `diagnostics/assessment/sec-xbrl-value-reveal-authority-provisioning-preflight-report.json` remains superseded readiness evidence only; true live-run booleans in the tracking manifests are backed by the authoritative redacted live proof report.
 
 The proof records coherent sidecar/value-store/bridge/dataset/provenance bundles, governed reveal receipts, idempotent replay, status redaction, flag-off blocking, and audit-receipt redaction. It does not commit raw source bytes, raw values, issuer identity, accessions, SEC URLs, local paths, operator contact, or actor text.
 
@@ -9426,7 +9430,7 @@ Planning doc: `next_milestone_plans/Layer3_planning_docs/1272-sec-xbrl-stratifie
 
 Runner: `diagnostics/assessment/sec-xbrl-real-corpus-product-runner.py`.
 
-Status: harness ready. The real-corpus product runner can now accept an off-repo stratified matrix plan through `--matrix-plan` or `SEC_XBRL_STRATIFIED_MATRIX_PLAN`, reject incomplete or in-repo plans, and report only redacted chunk hashes, issuer counts, strata, and readiness evidence.
+Status: harness ready. The selected tranche requires an off-repo stratified matrix plan through `--matrix-plan` or `SEC_XBRL_STRATIFIED_MATRIX_PLAN`; the real-corpus product runner rejects incomplete or in-repo plans and reports only redacted chunk hashes, issuer counts, strata, and readiness evidence.
 
 This harness adds no live network run, Arelle invocation, source acquisition, sidecar, dataset, audit receipt, value reveal, runtime default change, raw issuer-list commitment, production-readiness claim, final financial-statement semantics claim, or cross-company comparability claim.
 
