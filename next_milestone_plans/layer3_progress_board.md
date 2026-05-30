@@ -9494,6 +9494,20 @@ Non-goals preserved: no default/config change, no live SEC network, no Arelle su
 
 Next exact posture: `sec_xbrl_canonical_comparability_validate_only_v1`.
 
+## SEC XBRL Canonical Comparability Validate-Only Diagnostic
+
+Milestone: `sec_xbrl_canonical_cross_company_comparability_validate_only_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1277-sec-xbrl-canonical-comparability.md`.
+
+Report: `diagnostics/assessment/sec-xbrl-canonical-comparability-report.json`.
+
+Status: additive validate-only comparability diagnostic. The reviewed 22-concept headline statement crosswalk is versioned in `backend/app/services/layer3_sec_xbrl_canonical_concepts.py`, and the diagnostic report frames coverage only as headline canonical resolved/defined, never as whole-filing canonicalization.
+
+The diagnostic covers primary-taxonomy source preference, FY period scoping, explicit total-to-parent basis fallback, legitimately absent cells, divided-unit support, and redacted statement-identity residual magnitudes. Runtime defaults remain off and no live network, Arelle invocation, value reveal, statement assembly, FX conversion, or default-on readiness is admitted.
+
+Next exact posture: `sec_xbrl_canonical_projection_artifact_design_after_prerequisites_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
