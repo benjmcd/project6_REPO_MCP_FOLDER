@@ -16,7 +16,8 @@
       "criterion": "coherence_contract_passes_fail_closed",
       "evidence": {
         "contract_passed": true,
-        "total_missing": 0
+        "total_missing": 0,
+        "total_value_mismatch": 0
       },
       "state": "passed"
     },
@@ -101,7 +102,8 @@
       "contract_b_subset_of_a": true,
       "contract_passed": true,
       "contract_qname_consistent": true,
-      "contract_value_single_authority": true,
+      "contract_single_authority": true,
+      "contract_value_reconciled": true,
       "derived_dual_input_binding_proven": true,
       "issuer_count": 3,
       "missing_count": 0,
@@ -110,6 +112,8 @@
       "retains_dimensional": true,
       "retains_extension": true,
       "sector_class": "industrial_commercial",
+      "single_authority_count": 66,
+      "value_mismatch_count": 0,
       "value_reconciled_count": 66
     }
   ],
@@ -133,7 +137,8 @@
     "contract_passed": true,
     "total_bound": 66,
     "total_missing": 0,
-    "total_normalized": 66
+    "total_normalized": 66,
+    "total_value_mismatch": 0
   },
   "target": "sec_xbrl_canonical_retained_coherence_validate_only_v1",
   "validate_only": true,
