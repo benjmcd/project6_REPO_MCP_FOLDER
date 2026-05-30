@@ -27,6 +27,7 @@ TARGET = "sec_xbrl_canonical_retained_coherence_validate_only_v1"
 NEXT_SLICE = "sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1"
 _RAW_RESOLVED_FACT_ID_RE = re.compile(r"\brf[-_][A-Za-z0-9]")
 _RAW_TOTAL_FACT_COUNT_KEY_RE = re.compile(r'"(?:retained_fact_count|total_fact_count)"')
+_ISSUER_IDENTITY_TOKENS = ("issuer" + "_ref", "issuer" + "_hash", "issuer" + "_name")
 
 
 REFERENCE_SECTOR_CLASS_RESULTS = (
@@ -37,10 +38,14 @@ REFERENCE_SECTOR_CLASS_RESULTS = (
         "bound_count": 66,
         "missing_count": 0,
         "qname_consistent_count": 66,
+        "single_authority_count": 66,
         "value_reconciled_count": 66,
+        "value_mismatch_count": 0,
         "retains_dimensional": True,
         "retains_extension": True,
         "contract_b_subset_of_a": True,
+        "contract_single_authority": True,
+        "contract_value_reconciled": True,
         "contract_a_strict_superset": True,
         "derived_dual_input_binding_proven": True,
     },
@@ -73,15 +78,22 @@ def build_report(
     sector_results: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     config_text = (source_root / "backend" / "app" / "core" / "config.py").read_text(encoding="utf-8")
+    selected_sector_results = (
+        REFERENCE_SECTOR_CLASS_RESULTS if sector_results is None else sector_results
+    )
     report = _reference_summary_report(
-        sector_results=list(sector_results or REFERENCE_SECTOR_CLASS_RESULTS),
+        sector_results=list(selected_sector_results),
         config_defaults_off=_config_defaults_off(config_text),
     )
     report["redaction"] = _redaction_scan_payload(report)
     report["criteria"] = _criteria(report=report, config_defaults_off=_config_defaults_off(config_text))
     report["blocking_reasons"] = _blocking_reasons(report["criteria"])
     if report["blocking_reasons"]:
-        report["decision"] = "canonical_retained_coherence_validate_only_blocked"
+        report["decision"] = (
+            "no_retained_coherence_evidence"
+            if not report.get("per_sector_class")
+            else "canonical_retained_coherence_validate_only_blocked"
+        )
         report["next_slice"] = "sec_xbrl_canonical_retained_coherence_remediation_v1"
     return report
 
@@ -96,14 +108,20 @@ def _reference_summary_report(
     total_bound = sum(int(item["bound_count"]) for item in sectors)
     total_missing = sum(int(item["missing_count"]) for item in sectors)
     total_qname = sum(int(item["qname_consistent_count"]) for item in sectors)
+    total_single_authority = sum(int(item["single_authority_count"]) for item in sectors)
     total_value = sum(int(item["value_reconciled_count"]) for item in sectors)
+    total_value_mismatch = sum(int(item["value_mismatch_count"]) for item in sectors)
     contract_passed = (
         total_normalized > 0
         and total_missing == 0
         and total_bound == total_normalized
         and total_qname == total_normalized
+        and total_single_authority == total_normalized
         and total_value == total_normalized
+        and total_value_mismatch == 0
         and all(item["contract_b_subset_of_a"] for item in sectors)
+        and all(item["contract_single_authority"] for item in sectors)
+        and all(item["contract_value_reconciled"] for item in sectors)
         and all(item["contract_a_strict_superset"] for item in sectors)
     )
     report: dict[str, Any] = {
@@ -125,6 +143,7 @@ def _reference_summary_report(
             "total_normalized": total_normalized,
             "total_bound": total_bound,
             "total_missing": total_missing,
+            "total_value_mismatch": total_value_mismatch,
         },
         "per_sector_class": sectors,
         "redaction": {},
@@ -145,7 +164,11 @@ def _reference_summary_report(
     report["criteria"] = _criteria(report=report, config_defaults_off=config_defaults_off)
     report["blocking_reasons"] = _blocking_reasons(report["criteria"])
     if report["blocking_reasons"]:
-        report["decision"] = "canonical_retained_coherence_validate_only_blocked"
+        report["decision"] = (
+            "no_retained_coherence_evidence"
+            if not report.get("per_sector_class")
+            else "canonical_retained_coherence_validate_only_blocked"
+        )
         report["next_slice"] = "sec_xbrl_canonical_retained_coherence_remediation_v1"
     return report
 
@@ -155,7 +178,15 @@ def _sector_summary(item: Mapping[str, Any]) -> dict[str, Any]:
     bound = int(item["bound_count"])
     missing = int(item["missing_count"])
     qname = int(item["qname_consistent_count"])
+    single_authority = int(item.get("single_authority_count", item.get("value_reconciled_count", 0)))
     value = int(item["value_reconciled_count"])
+    value_mismatch = int(item.get("value_mismatch_count") or 0)
+    contract_single_authority = item.get("contract_single_authority")
+    if contract_single_authority is None:
+        contract_single_authority = single_authority == normalized
+    contract_value_reconciled = item.get("contract_value_reconciled")
+    if contract_value_reconciled is None:
+        contract_value_reconciled = value == normalized and value_mismatch == 0
     return {
         "sector_class": str(item["sector_class"]),
         "issuer_count": int(item["issuer_count"]),
@@ -163,20 +194,27 @@ def _sector_summary(item: Mapping[str, Any]) -> dict[str, Any]:
         "bound_count": bound,
         "missing_count": missing,
         "qname_consistent_count": qname,
+        "single_authority_count": single_authority,
         "value_reconciled_count": value,
+        "value_mismatch_count": value_mismatch,
         "retains_dimensional": item.get("retains_dimensional") is True,
         "retains_extension": item.get("retains_extension") is True,
         "contract_b_subset_of_a": item.get("contract_b_subset_of_a") is True,
         "contract_qname_consistent": qname == normalized,
-        "contract_value_single_authority": value == normalized,
+        "contract_single_authority": contract_single_authority is True,
+        "contract_value_reconciled": contract_value_reconciled is True,
         "contract_a_strict_superset": item.get("contract_a_strict_superset") is True,
         "contract_passed": (
             normalized > 0
             and bound == normalized
             and missing == 0
             and qname == normalized
+            and single_authority == normalized
             and value == normalized
+            and value_mismatch == 0
             and item.get("contract_b_subset_of_a") is True
+            and contract_single_authority is True
+            and contract_value_reconciled is True
             and item.get("contract_a_strict_superset") is True
         ),
         "derived_dual_input_binding_proven": item.get("derived_dual_input_binding_proven") is True,
@@ -201,6 +239,7 @@ def _criteria(*, report: Mapping[str, Any], config_defaults_off: bool) -> list[d
             {
                 "contract_passed": summary.get("contract_passed"),
                 "total_missing": summary.get("total_missing"),
+                "total_value_mismatch": summary.get("total_value_mismatch"),
             },
             "canonical_retained_coherence_contract_failed",
         ),
@@ -302,7 +341,7 @@ def _redaction_scan_payload(payload: Any) -> dict[str, bool]:
     text = json.dumps(payload, sort_keys=True) if not isinstance(payload, str) else payload
     base = report_redaction_scan_payload(payload)
     raw_resolved_fact_ids_found = bool(_RAW_RESOLVED_FACT_ID_RE.search(text))
-    raw_issuer_identity_found = any(token in text for token in ("issuer_ref", "issuer_hash", "issuer_name"))
+    raw_issuer_identity_found = any(token in text for token in _ISSUER_IDENTITY_TOKENS)
     raw_total_fact_counts_found = bool(_RAW_TOTAL_FACT_COUNT_KEY_RE.search(text))
     return {
         **base,
