@@ -120,7 +120,7 @@ def test_canonical_resolution_scopes_to_fy_period() -> None:
 
 def test_canonical_resolution_marks_total_to_parent_basis_fallback() -> None:
     companyfacts = _companyfacts([("us-gaap", "StockholdersEquity", "75", "USD")])
-    sidecar_records = [_record("fact-equity", "us-gaap", "StockholdersEquity", "USD")]
+    sidecar_records = [_record("fact-equity", "us-gaap", "StockholdersEquity", "USD", instant=True)]
     value_records = [{"resolved_fact_id": "fact-equity", "effective_value": "75"}]
 
     resolved = canonical.resolve_issuer_canonical_concepts(
@@ -169,6 +169,39 @@ def test_canonical_resolution_supports_divided_units() -> None:
 
     assert eps["status"] == "resolved_inline_confirmed"
     assert eps["unit_class"] == "divided_unit"
+
+
+def test_comparability_report_excludes_derived_facts_from_inline_confirmed_counts() -> None:
+    report = canonical.build_redacted_comparability_report(
+        issuer_bundles=[
+            {
+                "issuer_ref": "fixture-issuer",
+                "companyfacts": _companyfacts(
+                    [
+                        ("us-gaap", "Assets", "100", "USD", True),
+                        ("us-gaap", "AssetsCurrent", "40", "USD", True),
+                    ]
+                ),
+                "sidecar_records": [
+                    _record("fact-assets", "us-gaap", "Assets", "USD", instant=True),
+                    _record("fact-current-assets", "us-gaap", "AssetsCurrent", "USD", instant=True),
+                ],
+                "value_records": [
+                    {"resolved_fact_id": "fact-assets", "effective_value": "100"},
+                    {"resolved_fact_id": "fact-current-assets", "effective_value": "40"},
+                ],
+            }
+        ],
+        fiscal_year=1,
+    )
+    issuer = report["per_issuer"][0]
+    noncurrent = _find(issuer["concepts"], "NoncurrentAssets", "total")
+
+    assert noncurrent["status"] == "derived"
+    assert noncurrent["inline_confirmed"] is False
+    assert noncurrent["derived_inputs_inline_confirmed"] is True
+    assert issuer["headline_canonical_inline_confirmed"] == 2
+    assert report["summary"]["headline_canonical_inline_confirmed_count"] == 2
 
 
 def test_canonical_report_redacts_identity_and_preserves_residuals(tmp_path: Path) -> None:
@@ -255,13 +288,31 @@ class Settings:
     return source_root
 
 
-def _companyfacts(entries: list[tuple[str, str, str, str]]) -> dict:
+def _companyfacts(
+    entries: list[tuple[str, str, str, str] | tuple[str, str, str, str, bool]]
+) -> dict:
     facts: dict[str, dict] = {}
-    for taxonomy, local_name, value, unit in entries:
+    instant_names = {
+        "Assets",
+        "AssetsCurrent",
+        "AssetsNoncurrent",
+        "Liabilities",
+        "LiabilitiesCurrent",
+        "LiabilitiesNoncurrent",
+        "StockholdersEquity",
+        "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+    }
+    for entry in entries:
+        if len(entry) == 5:
+            taxonomy, local_name, value, unit, instant = entry
+        else:
+            taxonomy, local_name, value, unit = entry
+            instant = local_name in instant_names
         facts.setdefault(taxonomy, {}).setdefault(local_name, {"units": {}})
-        facts[taxonomy][local_name]["units"].setdefault(unit, []).append(
-            {"fp": "FY", "fy": 1, "val": value, "start": "fy-start", "end": "fy-end"}
-        )
+        fact = {"fp": "FY", "fy": 1, "val": value, "end": "fy-end"}
+        if not instant:
+            fact["start"] = "fy-start"
+        facts[taxonomy][local_name]["units"].setdefault(unit, []).append(fact)
     return facts
 
 
