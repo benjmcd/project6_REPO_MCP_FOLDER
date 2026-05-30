@@ -40418,9 +40418,10 @@
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1264-sec-xbrl-value-reveal-operator-exercise.md",
     "authority_doc": "next_milestone_plans/Layer3_planning_docs/1265-sec-xbrl-value-reveal-operator-exercise-authority.md",
     "live_proof_doc": "next_milestone_plans/Layer3_planning_docs/1267-sec-xbrl-value-reveal-live-proof.md",
+    "authoritative_proof_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json",
     "live_proof_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json",
     "runner": "diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-runner.py",
-    "report": "diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-run-report.json",
+    "superseded_readiness_report": "diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-run-report.json",
     "proof_terms": [
       "sec_edgar_arelle_value_reveal_operator_exercise_v1",
       "live proof report proves two bounded current-main filings",
@@ -40445,8 +40446,9 @@
     "status": "authority_provisioning_live_arelle_run_performed_and_redacted",
     "milestone": "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1266-sec-xbrl-value-reveal-authority-provisioning-preflight.md",
-    "preflight_report": "diagnostics/assessment/sec-xbrl-value-reveal-authority-provisioning-preflight-report.json",
+    "superseded_preflight_report": "diagnostics/assessment/sec-xbrl-value-reveal-authority-provisioning-preflight-report.json",
     "live_proof_doc": "next_milestone_plans/Layer3_planning_docs/1267-sec-xbrl-value-reveal-live-proof.md",
+    "authoritative_proof_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json",
     "live_proof_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json",
     "proof_terms": [
       "validate-only authority provisioning preflight exists",
@@ -40540,12 +40542,13 @@
     "milestone": "sec_edgar_stratified_real_filing_validation_matrix_preflight_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1271-sec-xbrl-stratified-real-filing-validation-matrix-preflight.md",
     "preflight_report": "diagnostics/assessment/sec-xbrl-stratified-real-filing-validation-matrix-preflight-report.json",
+    "external_matrix_plan_required_for_selected_tranche": true,
     "proof_terms": [
       "operator runbook selected the stratified matrix",
       "committed SEC live network, Arelle cutover, and value-reveal defaults remain off",
       "selected matrix covers all required strata",
       "real-product runner baseline supports expansion",
-      "preflight blocks until explicit live authorization and isolated runtime are present",
+      "preflight blocks until explicit live authorization, isolated runtime, and the required off-repo external stratified matrix plan are present",
       "no live network, Arelle invocation, source acquisition, sidecar, dataset, audit receipt, or value reveal is performed",
       "no raw identity, values, paths, URLs, accessions, contact strings, or retained bytes are committed"
     ],
@@ -40564,8 +40567,9 @@
     "milestone": "sec_edgar_stratified_real_filing_validation_matrix_external_plan_harness_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1272-sec-xbrl-stratified-matrix-external-plan-harness.md",
     "runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner.py",
+    "external_matrix_plan_required_for_selected_tranche": true,
     "proof_terms": [
-      "runner accepts optional off-repo stratified matrix plan",
+      "runner validates the required off-repo stratified matrix plan for the selected tranche",
       "external plan schema and mode are validated",
       "plan labels, admitted issuer identifiers, and required strata are fail-closed",
       "reports expose chunk hashes, issuer counts, strata, and markers rather than raw issuer identities",
