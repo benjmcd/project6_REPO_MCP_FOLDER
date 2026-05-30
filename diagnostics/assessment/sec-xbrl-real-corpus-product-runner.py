@@ -7,6 +7,7 @@ import http.client
 import json
 import os
 from pathlib import Path
+import re
 import sys
 import time
 from typing import Any, Callable, Mapping
@@ -70,6 +71,12 @@ REQUIRED_ARELLE_ENV = (
     "SEC_XBRL_ARELLE_TAXONOMY_PACKAGES",
     "SEC_XBRL_ARELLE_CACHE_DIR",
 )
+ADMITTED_COMPANY_REFS = frozenset(layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_CIK_REFS)
+RAW_ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
+RAW_URL_RE = re.compile(r"https?://|www\.", re.IGNORECASE)
+RAW_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
+RAW_PATH_RE = re.compile(r"(?:[A-Za-z]:[\\/]|\\\\|(?:^|[\s'\"(])/(?:[^/\s]+/)+[^/\s]+)")
+LABEL_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9.-]{0,9}")
 
 
 def main() -> int:
@@ -1402,8 +1409,15 @@ def _matrix_plan_readiness(
             "blocked_reasons": [],
         }
     path = matrix_plan_path.resolve(strict=False) if matrix_plan_path is not None else None
-    plan = dict(matrix_plan or {})
+    plan: dict[str, Any] = {}
     blocked_reasons: list[str] = []
+    plan_top_level_type = None
+    if matrix_plan is not None:
+        if isinstance(matrix_plan, Mapping):
+            plan = dict(matrix_plan)
+        else:
+            blocked_reasons.append("matrix_plan_top_level_not_object")
+            plan_top_level_type = type(matrix_plan).__name__
     if path is not None:
         if not path.exists() or not path.is_file():
             blocked_reasons.append("matrix_plan_file_unavailable")
@@ -1411,9 +1425,16 @@ def _matrix_plan_readiness(
             blocked_reasons.append("matrix_plan_file_inside_repo_or_onedrive")
         else:
             try:
-                plan = json.loads(path.read_text(encoding="utf-8"))
+                payload = json.loads(path.read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError):
                 blocked_reasons.append("matrix_plan_file_unreadable")
+            else:
+                if not isinstance(payload, Mapping):
+                    blocked_reasons.append("matrix_plan_top_level_not_object")
+                    plan_top_level_type = type(payload).__name__
+                    plan = {}
+                else:
+                    plan = dict(payload)
     if plan.get("schema_id") != MATRIX_PLAN_SCHEMA_ID:
         blocked_reasons.append("matrix_plan_schema_not_admitted")
     if plan.get("matrix_mode") != MATRIX_PLAN_MODE:
@@ -1442,6 +1463,7 @@ def _matrix_plan_readiness(
         "required_strata": list(REQUIRED_STRATA),
         "covered_strata": sorted(covered),
         "missing_required_strata": missing_strata,
+        "plan_top_level_type": plan_top_level_type,
         "blocked_reasons": list(dict.fromkeys(blocked_reasons)),
     }
 
@@ -1461,7 +1483,13 @@ def _matrix_chunks_from_external_plan(
             reasons.append("matrix_plan_chunk_invalid")
             continue
         label = str(raw.get("matrix_label") or "").strip()
-        if not label or label in seen_labels:
+        if not label:
+            reasons.append("matrix_plan_chunk_label_invalid")
+            continue
+        if _matrix_label_contains_raw_identity(label):
+            reasons.append("matrix_plan_chunk_label_raw_identity_not_admitted")
+            continue
+        if label in seen_labels:
             reasons.append("matrix_plan_chunk_label_invalid")
             continue
         seen_labels.add(label)
@@ -1499,6 +1527,21 @@ def _external_strata(value: Any) -> tuple[str, ...]:
     if not values or any(item not in REQUIRED_STRATA for item in values):
         return ()
     return values
+
+
+def _matrix_label_contains_raw_identity(label: str) -> bool:
+    if RAW_ACCESSION_RE.search(label):
+        return True
+    if RAW_URL_RE.search(label):
+        return True
+    if RAW_CONTACT_RE.search(label):
+        return True
+    if RAW_PATH_RE.search(label):
+        return True
+    for token in LABEL_TOKEN_RE.findall(label):
+        if token.upper() in ADMITTED_COMPANY_REFS:
+            return True
+    return False
 
 
 def _matrix_chunks_from_readiness(

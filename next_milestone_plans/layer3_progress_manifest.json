@@ -42366,6 +42366,8 @@
     "explicit_live_authorization_present": false,
     "arelle_environment_present": false,
     "isolated_storage_ready": false,
+    "external_matrix_plan_required_for_selected_tranche": true,
+    "external_matrix_plan_present": false,
     "runtime_default_changed_by_preflight": false,
     "live_behavior_change_introduced_by_tracking": false,
     "runtime_network_performed_by_preflight": false,

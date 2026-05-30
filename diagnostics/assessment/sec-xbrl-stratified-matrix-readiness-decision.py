@@ -76,6 +76,7 @@ def build_report(
     matrix_defaults = dict(matrix.get("runtime_default_posture") or {})
     matrix_non_goals = dict(matrix.get("non_goals_preserved") or {})
     selected_posture = dict(default_posture.get("selected_posture") or {})
+    value_defaults = dict(value_reveal.get("committed_default_posture") or {})
     value_attempts = value_reveal.get("attempts") if isinstance(value_reveal.get("attempts"), list) else []
 
     config_defaults_off = _config_defaults_off(config_text)
@@ -95,9 +96,15 @@ def build_report(
         and matrix_defaults.get("default_on_not_claimed_or_applied_by_this_report") is True
         and matrix_defaults.get("selected_operating_posture") == "explicit_operator_only_default_off"
     )
+    value_reveal_defaults_off = (
+        value_defaults.get("sec_live_network_default_enabled") is False
+        and value_defaults.get("arelle_fact_authority_cutover_default_enabled") is False
+        and value_defaults.get("arelle_value_reveal_default_enabled") is False
+    )
     value_reveal_still_ready = (
         value_reveal.get("decision")
         == "value_reveal_live_authority_and_operator_exercise_proven_for_two_bounded_filings"
+        and value_reveal_defaults_off
         and len(value_attempts) >= 2
         and all(_attempt_proves_gated_reveal(attempt) for attempt in value_attempts)
     )
@@ -165,6 +172,7 @@ def build_report(
             {
                 "source_report": _repo_display_path(value_reveal_live_proof_report_path),
                 "decision": value_reveal.get("decision"),
+                "committed_default_posture": value_defaults,
                 "attempt_count": len(value_attempts),
             },
             "stratified_matrix_value_reveal_authority_not_proven",
@@ -243,6 +251,9 @@ def _matrix_product_ready(*, matrix: Mapping[str, Any], summary: Mapping[str, An
         and product.get("gate_verdict") == "PASS"
         and product.get("live_sec_network_used") is True
         and not product.get("blocking_reasons")
+        and _int(summary.get("matrix_chunk_count")) > 0
+        and _int(summary.get("ready_matrix_chunk_count")) == _int(summary.get("matrix_chunk_count"))
+        and _int(summary.get("blocked_matrix_chunk_count")) == 0
         and _int(summary.get("real_filing_count")) >= 30
         and _int(summary.get("issuer_hash_count")) >= 15
         and _int(summary.get("supported_record_count")) >= 30

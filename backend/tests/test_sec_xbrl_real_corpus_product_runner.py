@@ -527,6 +527,67 @@ def test_sec_xbrl_real_corpus_product_runner_blocks_duplicate_external_plan_issu
     assert "matrix_plan_duplicate_company_matrix_issuer" in report["matrix_execution_plan"]["blocked_reasons"]
 
 
+def test_sec_xbrl_real_corpus_product_runner_blocks_raw_identity_in_matrix_label(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    arelle_python = tmp_path / "arelle-python.exe"
+    taxonomy_package = tmp_path / "taxonomy.zip"
+    cache_dir = tmp_path / "arelle-cache"
+    arelle_python.write_text("", encoding="utf-8")
+    taxonomy_package.write_text("", encoding="utf-8")
+    cache_dir.mkdir()
+    monkeypatch.setenv("SEC_XBRL_ARELLE_PYTHON", str(arelle_python))
+    monkeypatch.setenv("SEC_XBRL_ARELLE_TAXONOMY_PACKAGES", str(taxonomy_package))
+    monkeypatch.setenv("SEC_XBRL_ARELLE_CACHE_DIR", str(cache_dir))
+
+    plan = _stratified_plan()
+    raw_label = "https://sec.gov/Archives/edgar/data/core"
+    plan["chunks"][0]["matrix_label"] = raw_label
+
+    report = module.build_report(
+        live=True,
+        matrix_plan=plan,
+        user_agent="Layer3 diagnostics contact@example.com",
+    )
+    serialized = json.dumps(report, sort_keys=True)
+
+    assert report["live_sec_network_used"] is False
+    assert report["matrix_execution_plan"]["state"] == "blocked"
+    assert "matrix_plan_chunk_label_raw_identity_not_admitted" in report["matrix_execution_plan"]["blocked_reasons"]
+    assert raw_label not in serialized
+
+
+def test_sec_xbrl_real_corpus_product_runner_blocks_non_object_plan_json(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    arelle_python = tmp_path / "arelle-python.exe"
+    taxonomy_package = tmp_path / "taxonomy.zip"
+    cache_dir = tmp_path / "arelle-cache"
+    plan_path = tmp_path / "plan.json"
+    arelle_python.write_text("", encoding="utf-8")
+    taxonomy_package.write_text("", encoding="utf-8")
+    cache_dir.mkdir()
+    plan_path.write_text(json.dumps(["not-an-object"]), encoding="utf-8")
+    monkeypatch.setenv("SEC_XBRL_ARELLE_PYTHON", str(arelle_python))
+    monkeypatch.setenv("SEC_XBRL_ARELLE_TAXONOMY_PACKAGES", str(taxonomy_package))
+    monkeypatch.setenv("SEC_XBRL_ARELLE_CACHE_DIR", str(cache_dir))
+
+    report = module.build_report(
+        live=True,
+        matrix_plan_path=plan_path,
+        user_agent="Layer3 diagnostics contact@example.com",
+    )
+
+    assert report["live_sec_network_used"] is False
+    assert report["matrix_execution_plan"]["state"] == "blocked"
+    assert report["matrix_execution_plan"]["plan_top_level_type"] == "list"
+    assert "matrix_plan_top_level_not_object" in report["matrix_execution_plan"]["blocked_reasons"]
+
+
 def test_sec_xbrl_real_corpus_product_runner_requires_ready_external_strata(
     monkeypatch,
     tmp_path: Path,
