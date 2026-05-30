@@ -40693,6 +40693,37 @@
     "statement_assembly_claimed": false,
     "fx_comparability_claimed": false
   },
+  "sec_xbrl_canonical_comparability_validate_only_proof": {
+    "proof_kind": "sec_xbrl_canonical_comparability_validate_only_proof",
+    "status": "canonical_comparability_validate_only_ready",
+    "milestone": "sec_xbrl_canonical_cross_company_comparability_validate_only_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1277-sec-xbrl-canonical-comparability.md",
+    "proof_terms": [
+      "reviewed 22-concept headline statement crosswalk is committed as a deterministic registry",
+      "coverage is framed only as headline canonical resolved over defined and not whole-filing canonicalization",
+      "primary-taxonomy source preference avoids stale legacy taxonomy source selection",
+      "FY period scoping, total-to-parent basis fallback, legitimate absence, and divided units are covered by tests",
+      "statement identity residuals are emitted only as redacted magnitudes and tolerance booleans",
+      "no live SEC network, Arelle invocation, source acquisition, default change, statement assembly, FX conversion, or value reveal is performed by this slice"
+    ],
+    "canonical_concept_defined_count": 22,
+    "validate_only": true,
+    "runtime_default_changed_by_proof": false,
+    "live_sec_network_run_performed_by_proof": false,
+    "arelle_subprocess_invoked_by_proof": false,
+    "source_acquisition_performed_by_proof": false,
+    "value_reveal_request_performed_by_proof": false,
+    "raw_runtime_artifacts_committed": false,
+    "raw_values_committed": false,
+    "raw_identity_committed": false,
+    "local_paths_committed": false,
+    "operator_contact_committed": false,
+    "default_on_readiness_claimed": false,
+    "production_readiness_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "statement_assembly_claimed": false,
+    "fx_comparability_claimed": false
+  },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof": {
     "proof_kind": "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof",
     "status": "branch_local_review_debt_closure_in_progress",
