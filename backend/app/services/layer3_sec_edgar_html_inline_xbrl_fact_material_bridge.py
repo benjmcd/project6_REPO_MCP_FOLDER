@@ -7,7 +7,7 @@ import html as html_lib
 import json
 from pathlib import Path
 import re
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 from sqlalchemy.orm import Session
 
@@ -1237,6 +1237,14 @@ def _sidecar_fact_authority_view(sidecar_receipt: Mapping[str, Any]) -> dict[str
 
 def sidecar_fact_authority_view_for_downstream(sidecar_receipt: Mapping[str, Any]) -> dict[str, Any]:
     return _sidecar_fact_authority_view(sidecar_receipt)
+
+
+def retained_fact_view_from_sidecar_records(records: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        _flatten_sidecar_fact_for_statement_classification(record)
+        for record in records
+        if isinstance(record, Mapping)
+    ]
 
 
 def _flatten_sidecar_fact_for_statement_classification(record: Mapping[str, Any]) -> dict[str, Any]:
