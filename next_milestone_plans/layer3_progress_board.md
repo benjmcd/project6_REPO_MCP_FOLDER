@@ -9548,9 +9548,9 @@ Planning doc: `next_milestone_plans/Layer3_planning_docs/1280-sec-xbrl-canonical
 
 Report: `diagnostics/assessment/sec-xbrl-canonical-retained-coherence-report.json`.
 
-Status: additive validate-only coherence diagnostic. The new reconciliation primitive is decoupled from both SEC XBRL lineages and consumes only canonical projection outputs plus retained statement-classification fact-view outputs. Lineage A exposes a thin public retained-view accessor that maps the existing statement-classification sidecar flattening function without changing material-bridge or statement-classification behavior.
+Status: additive validate-only coherence diagnostic. The new reconciliation primitive is decoupled from both SEC XBRL lineages and consumes only canonical projection outputs plus retained statement-classification fact-view outputs plus governed value-store hashes. Lineage A exposes a thin public retained-view accessor that maps the existing statement-classification sidecar flattening function without changing material-bridge or statement-classification behavior.
 
-The committed report records only per-sector-class aggregate binding counts, contract booleans, and retained-view superset booleans. It does not include issuer identities, source accessions, period dates, source URLs, local paths, raw financial values, raw resolved fact authorities, or raw retained total-fact counts. Runtime defaults remain off and no live network, Arelle invocation, value reveal, statement assembly, per-period projection, persisted store, sector-family implementation, or default-on readiness is admitted.
+The committed report records only per-sector-class aggregate binding counts, single-authority counts, value-hash reconciliation counts, contract booleans, and retained-view superset booleans. It does not include issuer identities, source accessions, period dates, source URLs, local paths, raw financial values, raw resolved fact authorities, or raw retained total-fact counts. Runtime defaults remain off and no live network, Arelle invocation, value reveal, statement assembly, per-period projection, persisted store, sector-family implementation, or default-on readiness is admitted.
 
 Next exact posture: `sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1`.
 
