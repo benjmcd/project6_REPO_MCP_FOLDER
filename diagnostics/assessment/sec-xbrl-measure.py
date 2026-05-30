@@ -243,12 +243,23 @@ def _companyfacts_effective_value_summary(rows: list[dict[str, Any]]) -> dict[st
     ]
     compared = sum(int(row.get("companyfacts_effective_value_compared_count") or 0) for row in counted)
     matched = sum(int(row.get("companyfacts_effective_value_match_count") or 0) for row in counted)
+    compared_period_aware = sum(
+        int(row.get("companyfacts_effective_value_compared_count_period_aware") or 0) for row in counted
+    )
+    matched_period_aware = sum(
+        int(row.get("companyfacts_effective_value_match_count_period_aware") or 0) for row in counted
+    )
     return {
         "schema_id": "diagnostics.sec_xbrl_companyfacts_effective_value_correctness.v1",
         "oracle": "primary_companyfacts_standard_taxonomy_accession_scope_non_dimensional_numeric_intersection",
         "match_count": matched,
         "compared_count": compared,
         "match_rate": round(matched / compared, 4) if compared else None,
+        "match_count_period_aware": matched_period_aware,
+        "compared_count_period_aware": compared_period_aware,
+        "match_rate_period_aware": (
+            round(matched_period_aware / compared_period_aware, 4) if compared_period_aware else None
+        ),
         "values_redacted_in_report": True,
         "identity_redacted": True,
     }
@@ -595,6 +606,7 @@ def _process_live_filing(
     )
     sidecar = _sidecar_response(index=index, label=label, parser=parser, fact=fact, companyfacts=companyfacts)
     value_match = _companyfacts_value_match(sidecar=sidecar, companyfacts=companyfacts)
+    value_match_period_aware = _companyfacts_value_match_period_aware(sidecar=sidecar, companyfacts=companyfacts)
     bridge: dict[str, Any] | None = None
     classification: dict[str, Any] | None = None
     pipeline_block: str | None = None
@@ -630,6 +642,9 @@ def _process_live_filing(
         "companyfacts_effective_value_match_count": value_match["match_count"],
         "companyfacts_effective_value_compared_count": value_match["compared_count"],
         "companyfacts_effective_value_match_rate": value_match["match_rate"],
+        "companyfacts_effective_value_match_count_period_aware": value_match_period_aware["match_count"],
+        "companyfacts_effective_value_compared_count_period_aware": value_match_period_aware["compared_count"],
+        "companyfacts_effective_value_match_rate_period_aware": value_match_period_aware["match_rate"],
         "arelle_fact_count": arelle.get("fact_count"),
         "arelle_oracle_used": arelle.get("oracle_used"),
         "arelle_confidence": arelle.get("confidence"),
@@ -1057,6 +1072,7 @@ def _companyfacts_count(*, cik: str, accession: str, user_agent: str) -> dict[st
         }
     count = 0
     value_keys: list[tuple[str, str, str]] = []
+    value_keys_period_aware: list[tuple[str, str, tuple[str, ...], str]] = []
     taxonomies = payload.get("facts") if isinstance(payload, dict) else {}
     if not isinstance(taxonomies, dict):
         return {"oracle_used": False, "confidence": "unavailable_invalid_payload", "fact_count": None}
@@ -1078,11 +1094,20 @@ def _companyfacts_count(*, cik: str, accession: str, user_agent: str) -> dict[st
                     value_key = _numeric_value_key(concept_name, unit_name, fact.get("val"))
                     if value_key is not None:
                         value_keys.append(value_key)
+                    value_key_period_aware = _numeric_value_key_period_aware(
+                        concept_name,
+                        unit_name,
+                        fact.get("val"),
+                        _companyfacts_period_key(fact),
+                    )
+                    if value_key_period_aware is not None:
+                        value_keys_period_aware.append(value_key_period_aware)
     return {
         "oracle_used": True,
         "confidence": "primary_companyfacts_standard_taxonomy_accession_scope",
         "fact_count": count,
         "_value_keys": value_keys,
+        "_value_keys_period_aware": value_keys_period_aware,
     }
 
 
@@ -1154,6 +1179,87 @@ def _companyfacts_value_match(*, sidecar: Mapping[str, Any], companyfacts: Mappi
     }
 
 
+def _companyfacts_value_match_period_aware(
+    *,
+    sidecar: Mapping[str, Any],
+    companyfacts: Mapping[str, Any],
+) -> dict[str, Any]:
+    if sidecar.get("sidecar_state") != layer3_sec_xbrl_sidecar.READY_STATE:
+        return {"match_count": None, "compared_count": 0, "match_rate": None}
+    value_keys = companyfacts.get("_value_keys_period_aware")
+    if not isinstance(value_keys, list) or not value_keys:
+        return {"match_count": None, "compared_count": 0, "match_rate": None}
+    try:
+        receipt = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_sidecar_receipt(
+            str(sidecar["sidecar_receipt_id"]),
+            expected_sidecar_receipt_hash=str(sidecar["sidecar_receipt_hash"]),
+        )
+        store = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(receipt)
+    except Layer3WorkbenchError:
+        return {"match_count": None, "compared_count": 0, "match_rate": None}
+    values_by_id = {
+        str(item.get("resolved_fact_id") or ""): item
+        for item in store.get("value_records") or []
+        if isinstance(item, Mapping)
+    }
+    companyfacts_by_concept_unit_period: dict[tuple[str, str, tuple[str, ...]], list[Decimal]] = {}
+    for item in value_keys:
+        if not isinstance(item, (list, tuple)) or len(item) != 4:
+            continue
+        concept_name, unit_name, period_key, value_text = item
+        if not isinstance(period_key, (list, tuple)):
+            continue
+        try:
+            value_decimal = Decimal(str(value_text))
+        except (InvalidOperation, ValueError):
+            continue
+        companyfacts_by_concept_unit_period.setdefault(
+            (str(concept_name), str(unit_name), tuple(str(part) for part in period_key)),
+            [],
+        ).append(value_decimal)
+    compared = 0
+    matched = 0
+    for record in receipt.get("resolved_fact_records") or []:
+        if not isinstance(record, Mapping):
+            continue
+        concept = record.get("concept") if isinstance(record.get("concept"), Mapping) else {}
+        namespace = str(concept.get("namespace") or "")
+        if not concept.get("standard") or not (
+            "fasb.org/us-gaap" in namespace or "xbrl.sec.gov/dei" in namespace or "xbrl.ifrs.org" in namespace
+        ):
+            continue
+        value_record = values_by_id.get(str(record.get("resolved_fact_id") or ""))
+        if not isinstance(value_record, Mapping):
+            continue
+        unit = record.get("unit") if isinstance(record.get("unit"), Mapping) else {}
+        dimensions = record.get("dimensions") if isinstance(record.get("dimensions"), Mapping) else {}
+        if list(dimensions.get("explicit") or []) or list(dimensions.get("typed") or []):
+            continue
+        concept_unit_period = (
+            str(concept.get("local_name") or ""),
+            _companyfacts_unit_name_period_aware(unit),
+            _resolved_fact_period_key(record.get("period") if isinstance(record.get("period"), Mapping) else {}),
+        )
+        candidates = companyfacts_by_concept_unit_period.get(concept_unit_period)
+        if not candidates:
+            continue
+        try:
+            effective_value = Decimal(str(value_record.get("effective_value")))
+        except (InvalidOperation, ValueError):
+            continue
+        tolerance = _decimals_tolerance(record.get("decimals"))
+        compared += 1
+        match_index = _matching_decimal_index(candidates, effective_value, tolerance)
+        if match_index is not None:
+            matched += 1
+            candidates.pop(match_index)
+    return {
+        "match_count": matched,
+        "compared_count": compared,
+        "match_rate": round(matched / compared, 4) if compared else None,
+    }
+
+
 def _numeric_value_key(concept_name: Any, unit_name: Any, value: Any) -> tuple[str, str, str] | None:
     try:
         numeric = Decimal(str(value))
@@ -1162,6 +1268,24 @@ def _numeric_value_key(concept_name: Any, unit_name: Any, value: Any) -> tuple[s
     return (
         str(concept_name or ""),
         str(unit_name or ""),
+        format(numeric.normalize(), "f"),
+    )
+
+
+def _numeric_value_key_period_aware(
+    concept_name: Any,
+    unit_name: Any,
+    value: Any,
+    period_key: tuple[str, ...],
+) -> tuple[str, str, tuple[str, ...], str] | None:
+    try:
+        numeric = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return None
+    return (
+        str(concept_name or ""),
+        str(unit_name or ""),
+        period_key,
         format(numeric.normalize(), "f"),
     )
 
@@ -1194,6 +1318,41 @@ def _companyfacts_unit_name(unit: Mapping[str, Any]) -> str:
         measure = str(measures[0])
         return measure.split(":", 1)[1] if ":" in measure else measure
     return ""
+
+
+def _companyfacts_unit_name_period_aware(unit: Mapping[str, Any]) -> str:
+    denominator = list(unit.get("denominator") or [])
+    if denominator:
+        numerator = list(unit.get("numerator") or [])
+        if numerator:
+            numerator_name = _unit_measure_name(numerator[0])
+        else:
+            currency = str(unit.get("currency") or "")
+            numerator_name = currency.split(":", 1)[1] if currency.startswith("iso4217:") else ""
+        return f"{numerator_name}/{_unit_measure_name(denominator[0])}"
+    return _companyfacts_unit_name(unit)
+
+
+def _unit_measure_name(value: Any) -> str:
+    text = str(value or "")
+    return text.split(":", 1)[1] if ":" in text else text
+
+
+def _companyfacts_period_key(fact: Mapping[str, Any]) -> tuple[str, ...]:
+    start = fact.get("start")
+    end = fact.get("end")
+    if start in (None, ""):
+        return ("i", str(end or ""))
+    return ("d", str(start or ""), str(end or ""))
+
+
+def _resolved_fact_period_key(period: Mapping[str, Any]) -> tuple[str, ...]:
+    period_type = str(period.get("type") or "")
+    if period_type == "instant":
+        return ("i", str(period.get("instant") or ""))
+    if period_type == "duration":
+        return ("d", str(period.get("start") or ""), str(period.get("end") or ""))
+    return ("?",)
 
 
 def _arelle_fact_count(*, primary_document: str, arelle_python: str) -> dict[str, Any]:
