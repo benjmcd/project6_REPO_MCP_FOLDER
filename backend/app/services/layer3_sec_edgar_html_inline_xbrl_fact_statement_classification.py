@@ -5,7 +5,7 @@ import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 from app.core.config import settings
 from app.services import (
@@ -580,6 +580,47 @@ def _read_fact_authority_for_bridge_input(
         http_status=409,
         blocked_fields=["fact_authority_input_mode"],
     )
+
+
+def statement_role_view_from_retained_records(records: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Per-fact role view over retained records using the existing classifier helpers."""
+
+    view: list[dict[str, Any]] = []
+    for index, record in enumerate(records):
+        if not isinstance(record, Mapping):
+            continue
+        qualified_name = str(record.get("qualified_name") or "")
+        namespace_prefix = str(record.get("namespace_prefix") or "")
+        local_name = str(record.get("local_name") or "")
+        if qualified_name and (not namespace_prefix or not local_name):
+            qname_prefix, qname_local = _split_qualified_name(qualified_name)
+            namespace_prefix = namespace_prefix or qname_prefix
+            local_name = local_name or qname_local
+        role, basis, confidence = _classify_role(local_name, namespace_prefix)
+        view.append(
+            {
+                "fact_id_or_order_key": str(
+                    record.get("fact_id_or_order_key")
+                    or record.get("resolved_fact_id")
+                    or f"retained-record-{index}"
+                ),
+                "qualified_name": qualified_name,
+                "namespace_prefix": namespace_prefix,
+                "local_name": local_name,
+                "statement_candidate_role": role,
+                "classification_confidence": confidence,
+                "classification_basis": basis,
+                "concept_family": _concept_family(local_name, role),
+            }
+        )
+    return view
+
+
+def _split_qualified_name(qualified_name: str) -> tuple[str, str]:
+    if ":" not in qualified_name:
+        return "", qualified_name
+    prefix, local = qualified_name.split(":", 1)
+    return prefix, local
 
 
 def _classification_record(fact: Mapping[str, Any], *, fact_order: int, fact_inventory_hash: str) -> dict[str, Any]:

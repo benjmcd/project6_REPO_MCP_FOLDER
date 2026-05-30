@@ -9552,6 +9552,20 @@ Status: additive validate-only coherence diagnostic. The new reconciliation prim
 
 The committed report records only per-sector-class aggregate binding counts, single-authority counts, value-hash reconciliation counts, contract booleans, and retained-view superset booleans. It does not include issuer identities, source accessions, period dates, source URLs, local paths, raw financial values, raw resolved fact authorities, or raw retained total-fact counts. Runtime defaults remain off and no live network, Arelle invocation, value reveal, statement assembly, per-period projection, persisted store, sector-family implementation, or default-on readiness is admitted.
 
+Next exact posture: `sec_xbrl_canonical_statement_organization_validate_only_v1`.
+
+## SEC XBRL Canonical Statement Organization Validate-Only Diagnostic
+
+Milestone: `sec_xbrl_canonical_statement_organization_validate_only_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1281-sec-xbrl-canonical-statement-organization.md`.
+
+Report: `diagnostics/assessment/sec-xbrl-canonical-statement-organization-report.json`.
+
+Status: additive validate-only organization diagnostic. The new primitive consumes B canonical projection items that already carry the reviewed `statement` crosswalk plus A's per-fact statement-role view, joins them by resolved fact authority, and validates B's authoritative statement organization while reporting A corroboration, divergence, and unknown-role counts by taxonomy.
+
+The committed report records only taxonomy aggregate counts, public canonical concept ids, taxonomy tokens, statement roles, and contract booleans. It documents the known IFRS A-classifier drift set without making A agreement a pass gate. Runtime defaults remain off and no live network, Arelle invocation, value reveal, source acquisition, statement assembly, per-period projection, persisted store, linkbase emission, sector-family implementation, A-classifier behavior change, or default-on readiness is admitted.
+
 Next exact posture: `sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1`.
 
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
