@@ -9412,7 +9412,7 @@ Report: `diagnostics/assessment/sec-xbrl-stratified-real-filing-validation-matri
 
 Decision: `stratified_matrix_preflight_requires_authorization_or_environment`.
 
-Status: validate-only preflight recorded. It verifies the committed runbook-selected matrix, default-off posture, and real-product baseline reports remain admitted, and it deliberately blocks live execution until explicit matrix live authorization, SEC user agent, Arelle executable/taxonomy/cache, and off-repo runtime storage are present.
+Status: validate-only preflight recorded. It verifies the committed runbook-selected matrix, default-off posture, and real-product baseline reports remain admitted, and it deliberately blocks live execution until explicit matrix live authorization, SEC user agent, Arelle executable/taxonomy/cache, off-repo runtime storage, and an admitted off-repo external stratified plan via `SEC_XBRL_STRATIFIED_MATRIX_PLAN` are present.
 
 This preflight does not fetch SEC data, invoke Arelle, acquire sources, create sidecars, create datasets, create audit receipts, reveal values, change defaults, or commit raw identities, paths, accessions, URLs, values, contact strings, or retained bytes.
 
