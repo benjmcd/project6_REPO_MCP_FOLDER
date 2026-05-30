@@ -244,6 +244,36 @@ def test_diagnostic_report_preserves_explicit_empty_sector_results(tmp_path: Pat
     assert report["blocking_reasons"]
 
 
+def test_diagnostic_report_fails_closed_when_hash_evidence_fields_are_missing(tmp_path: Path) -> None:
+    diagnostic = _diagnostic_module()
+    report = diagnostic.build_report(
+        source_root=_source_root(tmp_path),
+        sector_results=[
+            {
+                "sector_class": "industrial_commercial",
+                "issuer_count": 1,
+                "normalized_fact_count": 3,
+                "bound_count": 3,
+                "missing_count": 0,
+                "qname_consistent_count": 3,
+                "value_reconciled_count": 3,
+                "retains_dimensional": True,
+                "retains_extension": True,
+                "contract_b_subset_of_a": True,
+                "contract_a_strict_superset": True,
+                "derived_dual_input_binding_proven": True,
+            }
+        ],
+    )
+
+    assert report["decision"] == "canonical_retained_coherence_validate_only_blocked"
+    assert report["summary"]["contract_passed"] is False
+    assert report["summary"]["total_value_mismatch"] == 3
+    assert report["per_sector_class"][0]["single_authority_count"] == 0
+    assert report["per_sector_class"][0]["contract_single_authority"] is False
+    assert report["per_sector_class"][0]["contract_value_reconciled"] is False
+
+
 def test_committed_report_is_redacted_sector_aggregate_only() -> None:
     report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
     text = json.dumps(report, sort_keys=True)
@@ -259,6 +289,7 @@ def test_committed_report_is_redacted_sector_aggregate_only() -> None:
     assert report["per_sector_class"][0]["sector_class"] == "industrial_commercial"
     assert report["per_sector_class"][0]["contract_b_subset_of_a"] is True
     assert report["per_sector_class"][0]["contract_single_authority"] is True
+    assert report["per_sector_class"][0]["contract_value_single_authority"] is True
     assert report["per_sector_class"][0]["contract_value_reconciled"] is True
     assert report["per_sector_class"][0]["contract_a_strict_superset"] is True
     assert "per_issuer" not in report
