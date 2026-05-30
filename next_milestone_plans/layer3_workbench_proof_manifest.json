@@ -40661,6 +40661,38 @@
     "final_financial_statement_semantics_claimed": false,
     "cross_company_comparability_claimed": false
   },
+  "sec_xbrl_period_aware_divided_unit_value_oracle_proof": {
+    "proof_kind": "sec_xbrl_period_aware_divided_unit_value_oracle_proof",
+    "status": "period_aware_value_oracle_metric_ready",
+    "milestone": "sec_xbrl_period_aware_divided_unit_value_oracle_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1276-sec-xbrl-period-aware-value-oracle.md",
+    "proof_terms": [
+      "period-aware CompanyFacts value-match fields are added beside the existing period-blind fields",
+      "existing period-blind metric and MIN_COMPANYFACTS_MATCH_RATE gate remain unchanged",
+      "period-aware metric keys comparisons by concept, unit, and period",
+      "divided-unit normalization is limited to the new period-aware metric",
+      "focused tests cover unmatched-period skipping and per-share divided-unit inclusion",
+      "no live SEC network, Arelle invocation, source acquisition, sidecar, dataset, audit receipt, or value reveal is performed by this slice"
+    ],
+    "existing_period_blind_gate_preserved": true,
+    "minimum_companyfacts_match_rate_unchanged": true,
+    "runtime_default_changed_by_proof": false,
+    "live_sec_network_run_performed_by_proof": false,
+    "arelle_subprocess_invoked_by_proof": false,
+    "source_acquisition_performed_by_proof": false,
+    "value_reveal_request_performed_by_proof": false,
+    "raw_runtime_artifacts_committed": false,
+    "raw_values_committed": false,
+    "raw_identity_committed": false,
+    "local_paths_committed": false,
+    "operator_contact_committed": false,
+    "default_on_readiness_claimed": false,
+    "production_readiness_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "cross_company_comparability_claimed": false,
+    "statement_assembly_claimed": false,
+    "fx_comparability_claimed": false
+  },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof": {
     "proof_kind": "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof",
     "status": "branch_local_review_debt_closure_in_progress",

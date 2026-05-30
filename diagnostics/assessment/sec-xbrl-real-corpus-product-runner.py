@@ -546,10 +546,17 @@ def _per_filing_projection(validation: Mapping[str, Any], *, user_agent: str) ->
             if sidecar is not None
             else {"match_count": None, "compared_count": 0, "match_rate": None}
         )
+        value_match_period_aware = (
+            _companyfacts_value_match_period_aware(sidecar=sidecar, companyfacts=companyfacts)
+            if sidecar is not None
+            else {"match_count": None, "compared_count": 0, "match_rate": None}
+        )
         arelle_count = int(metrics.get("resolved_fact_count") or sidecar.get("resolved_fact_count") or 0) if sidecar else 0
         independent_count = int(sidecar_diagnostics.get("independent_inline_fact_count") or 0)
         compared = int(value_match.get("compared_count") or 0)
         matched = int(value_match.get("match_count") or 0)
+        compared_period_aware = int(value_match_period_aware.get("compared_count") or 0)
+        matched_period_aware = int(value_match_period_aware.get("match_count") or 0)
         rows.append(
             {
                 "fixture_hash": str(record.get("record_hash") or "")[:24],
@@ -600,6 +607,13 @@ def _per_filing_projection(validation: Mapping[str, Any], *, user_agent: str) ->
                 "companyfacts_effective_value_compared_count": compared,
                 "companyfacts_effective_value_mismatch_count": max(compared - matched, 0),
                 "companyfacts_effective_value_match_rate": value_match.get("match_rate"),
+                "companyfacts_effective_value_match_count_period_aware": matched_period_aware,
+                "companyfacts_effective_value_compared_count_period_aware": compared_period_aware,
+                "companyfacts_effective_value_mismatch_count_period_aware": max(
+                    compared_period_aware - matched_period_aware,
+                    0,
+                ),
+                "companyfacts_effective_value_match_rate_period_aware": value_match_period_aware.get("match_rate"),
                 "companyfacts_mismatch_diagnostics": (
                     "none" if compared and matched == compared else "mismatch_count_reported_values_redacted"
                     if compared
@@ -794,6 +808,7 @@ def _companyfacts_count(
         return {key: value for key, value in cached.items() if key != "_payload"} | {"fact_count": None}
     count = 0
     value_keys: list[tuple[str, str, str]] = []
+    value_keys_period_aware: list[tuple[str, str, tuple[str, ...], str]] = []
     taxonomies = payload.get("facts") if isinstance(payload, dict) else {}
     if not isinstance(taxonomies, dict):
         return {"oracle_used": False, "confidence": "unavailable_invalid_payload", "fact_count": None}
@@ -815,11 +830,20 @@ def _companyfacts_count(
                     value_key = _numeric_value_key(concept_name, unit_name, fact.get("val"))
                     if value_key is not None:
                         value_keys.append(value_key)
+                    value_key_period_aware = _numeric_value_key_period_aware(
+                        concept_name,
+                        unit_name,
+                        fact.get("val"),
+                        _companyfacts_period_key(fact),
+                    )
+                    if value_key_period_aware is not None:
+                        value_keys_period_aware.append(value_key_period_aware)
     return {
         "oracle_used": True,
         "confidence": "primary_companyfacts_standard_taxonomy_accession_scope",
         "fact_count": count,
         "_value_keys": value_keys,
+        "_value_keys_period_aware": value_keys_period_aware,
     }
 
 
@@ -885,12 +909,100 @@ def _companyfacts_value_match(*, sidecar: Mapping[str, Any], companyfacts: Mappi
     }
 
 
+def _companyfacts_value_match_period_aware(
+    *,
+    sidecar: Mapping[str, Any],
+    companyfacts: Mapping[str, Any],
+) -> dict[str, Any]:
+    value_keys = companyfacts.get("_value_keys_period_aware")
+    if not isinstance(value_keys, list) or not value_keys:
+        return {"match_count": None, "compared_count": 0, "match_rate": None}
+    try:
+        store = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(sidecar)
+    except Layer3WorkbenchError:
+        return {"match_count": None, "compared_count": 0, "match_rate": None}
+    values_by_id = {
+        str(item.get("resolved_fact_id") or ""): item
+        for item in store.get("value_records") or []
+        if isinstance(item, Mapping)
+    }
+    companyfacts_by_concept_unit_period: dict[tuple[str, str, tuple[str, ...]], list[Decimal]] = {}
+    for item in value_keys:
+        if not isinstance(item, (list, tuple)) or len(item) != 4:
+            continue
+        concept_name, unit_name, period_key, value_text = item
+        if not isinstance(period_key, (list, tuple)):
+            continue
+        try:
+            value_decimal = Decimal(str(value_text))
+        except (InvalidOperation, ValueError):
+            continue
+        companyfacts_by_concept_unit_period.setdefault(
+            (str(concept_name), str(unit_name), tuple(str(part) for part in period_key)),
+            [],
+        ).append(value_decimal)
+    compared = 0
+    matched = 0
+    for record in sidecar.get("resolved_fact_records") or []:
+        if not isinstance(record, Mapping):
+            continue
+        concept = record.get("concept") if isinstance(record.get("concept"), Mapping) else {}
+        namespace = str(concept.get("namespace") or "")
+        if not concept.get("standard") or not (
+            "fasb.org/us-gaap" in namespace or "xbrl.sec.gov/dei" in namespace or "xbrl.ifrs.org" in namespace
+        ):
+            continue
+        value_record = values_by_id.get(str(record.get("resolved_fact_id") or ""))
+        if not isinstance(value_record, Mapping):
+            continue
+        unit = record.get("unit") if isinstance(record.get("unit"), Mapping) else {}
+        dimensions = record.get("dimensions") if isinstance(record.get("dimensions"), Mapping) else {}
+        if list(dimensions.get("explicit") or []) or list(dimensions.get("typed") or []):
+            continue
+        concept_unit_period = (
+            str(concept.get("local_name") or ""),
+            _companyfacts_unit_name_period_aware(unit),
+            _resolved_fact_period_key(record.get("period") if isinstance(record.get("period"), Mapping) else {}),
+        )
+        candidates = companyfacts_by_concept_unit_period.get(concept_unit_period)
+        if not candidates:
+            continue
+        try:
+            effective_value = Decimal(str(value_record.get("effective_value")))
+        except (InvalidOperation, ValueError):
+            continue
+        tolerance = _decimals_tolerance(record.get("decimals"))
+        compared += 1
+        match_index = _matching_decimal_index(candidates, effective_value, tolerance)
+        if match_index is not None:
+            matched += 1
+            candidates.pop(match_index)
+    return {
+        "match_count": matched,
+        "compared_count": compared,
+        "match_rate": round(matched / compared, 4) if compared else None,
+    }
+
+
 def _numeric_value_key(concept_name: Any, unit_name: Any, value: Any) -> tuple[str, str, str] | None:
     try:
         numeric = Decimal(str(value))
     except (InvalidOperation, ValueError):
         return None
     return (str(concept_name or ""), str(unit_name or ""), format(numeric.normalize(), "f"))
+
+
+def _numeric_value_key_period_aware(
+    concept_name: Any,
+    unit_name: Any,
+    value: Any,
+    period_key: tuple[str, ...],
+) -> tuple[str, str, tuple[str, ...], str] | None:
+    try:
+        numeric = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return None
+    return (str(concept_name or ""), str(unit_name or ""), period_key, format(numeric.normalize(), "f"))
 
 
 def _decimals_tolerance(decimals: Any) -> Decimal:
@@ -923,6 +1035,41 @@ def _companyfacts_unit_name(unit: Mapping[str, Any]) -> str:
     return ""
 
 
+def _companyfacts_unit_name_period_aware(unit: Mapping[str, Any]) -> str:
+    denominator = list(unit.get("denominator") or [])
+    if denominator:
+        numerator = list(unit.get("numerator") or [])
+        if numerator:
+            numerator_name = _unit_measure_name(numerator[0])
+        else:
+            currency = str(unit.get("currency") or "")
+            numerator_name = currency.split(":", 1)[1] if currency.startswith("iso4217:") else ""
+        return f"{numerator_name}/{_unit_measure_name(denominator[0])}"
+    return _companyfacts_unit_name(unit)
+
+
+def _unit_measure_name(value: Any) -> str:
+    text = str(value or "")
+    return text.split(":", 1)[1] if ":" in text else text
+
+
+def _companyfacts_period_key(fact: Mapping[str, Any]) -> tuple[str, ...]:
+    start = fact.get("start")
+    end = fact.get("end")
+    if start in (None, ""):
+        return ("i", str(end or ""))
+    return ("d", str(start or ""), str(end or ""))
+
+
+def _resolved_fact_period_key(period: Mapping[str, Any]) -> tuple[str, ...]:
+    period_type = str(period.get("type") or "")
+    if period_type == "instant":
+        return ("i", str(period.get("instant") or ""))
+    if period_type == "duration":
+        return ("d", str(period.get("start") or ""), str(period.get("end") or ""))
+    return ("?",)
+
+
 def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     forms: Counter[str] = Counter()
     per_filing = _per_filing_from_rows(rows)
@@ -931,6 +1078,12 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         forms.update(row.get("forms") or {})
     compared = sum(int(item.get("companyfacts_effective_value_compared_count") or 0) for item in per_filing)
     matched = sum(int(item.get("companyfacts_effective_value_match_count") or 0) for item in per_filing)
+    compared_period_aware = sum(
+        int(item.get("companyfacts_effective_value_compared_count_period_aware") or 0) for item in per_filing
+    )
+    matched_period_aware = sum(
+        int(item.get("companyfacts_effective_value_match_count_period_aware") or 0) for item in per_filing
+    )
     issuer_hashes = {str(item.get("issuer_by_hash") or "") for item in per_filing if item.get("issuer_by_hash")}
     return {
         "matrix_chunk_count": len(rows),
@@ -961,6 +1114,12 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "companyfacts_value_compared_count": compared,
         "companyfacts_value_mismatch_count": max(compared - matched, 0),
         "companyfacts_value_match_rate": round(matched / compared, 4) if compared else None,
+        "companyfacts_value_match_count_period_aware": matched_period_aware,
+        "companyfacts_value_compared_count_period_aware": compared_period_aware,
+        "companyfacts_value_mismatch_count_period_aware": max(compared_period_aware - matched_period_aware, 0),
+        "companyfacts_value_match_rate_period_aware": (
+            round(matched_period_aware / compared_period_aware, 4) if compared_period_aware else None
+        ),
         "minimum_companyfacts_value_match_rate": MIN_COMPANYFACTS_MATCH_RATE,
         "companyfacts_oracle_unavailable_count": sum(int(row.get("companyfacts_oracle_unavailable_count") or 0) for row in rows),
         "taxonomy_package_invalid_count": sum(

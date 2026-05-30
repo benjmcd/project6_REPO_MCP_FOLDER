@@ -9480,6 +9480,20 @@ Default-on Arelle cutover, default-on value reveal, production readiness, final 
 
 Next exact posture: `sec_edgar_explicit_operator_default_off_runbook_refresh_v1`.
 
+## SEC XBRL Period-Aware Value Oracle
+
+Milestone: `sec_xbrl_period_aware_divided_unit_value_oracle_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1276-sec-xbrl-period-aware-value-oracle.md`.
+
+Status: additive metric-fidelity slice. The existing period-blind CompanyFacts value-match metric, fields, and `MIN_COMPANYFACTS_MATCH_RATE = 0.98` gate remain unchanged. New period-aware fields are added beside the existing fields in the real-corpus product runner and measurement diagnostic.
+
+The new metric keys value comparisons by concept, unit, and period, and applies divided-unit normalization only inside the period-aware path. This lets per-share units participate in the new metric without changing the existing currency-only gated behavior.
+
+Non-goals preserved: no default/config change, no live SEC network, no Arelle subprocess invocation, no value reveal, no source acquisition, no sidecar/dataset/audit receipt creation, no raw values or identities in committed artifacts, no default-on readiness, no production readiness, no final financial-statement semantics, no cross-company comparability, no statement assembly, and no FX comparability.
+
+Next exact posture: `sec_xbrl_canonical_comparability_validate_only_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
