@@ -29,6 +29,29 @@ def test_canonical_registry_is_statement_organized_and_bounded() -> None:
     assert any(item["canonical_id"] == "Equity" and item["basis"] == "parent" for item in inventory)
 
 
+def test_reference_summary_taxonomy_mix_matches_primary_taxonomy_logic(tmp_path: Path) -> None:
+    diagnostic = _diagnostic_module()
+    report = diagnostic.build_report(source_root=_source_root(tmp_path))
+    taxonomies = [item["primary_taxonomy"] for item in report["per_issuer"]]
+
+    assert taxonomies.count("ifrs-full") >= 2
+    assert taxonomies.count("us-gaap") == 1
+    assert canonical.primary_taxonomy_from_records(
+        [
+            _record("ifrs-majority-1", "ifrs-full", "Revenue", "USD"),
+            _record("ifrs-majority-2", "ifrs-full", "GrossProfit", "USD"),
+            _record("us-minority-1", "us-gaap", "RevenueFromContractWithCustomerExcludingAssessedTax", "USD"),
+        ]
+    ) == "ifrs-full"
+    assert canonical.primary_taxonomy_from_records(
+        [
+            _record("us-majority-1", "us-gaap", "RevenueFromContractWithCustomerExcludingAssessedTax", "USD"),
+            _record("us-majority-2", "us-gaap", "GrossProfit", "USD"),
+            _record("ifrs-minority-1", "ifrs-full", "Revenue", "USD"),
+        ]
+    ) == "us-gaap"
+
+
 def test_canonical_resolution_prefers_primary_taxonomy() -> None:
     companyfacts = _companyfacts(
         [
