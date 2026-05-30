@@ -8,6 +8,8 @@ Milestone:
 
 This design slice records the sector-conditioned canonical family decision and adds a validate-only, redacted coverage diagnostic. It does not change `CanonicalConcept`, add sector-family resolution, alter statement assembly, fetch SEC data, invoke Arelle, reveal values, persist runtime artifacts, or change runtime defaults.
 
+Follow-on implementation is tracked separately in `next_milestone_plans/Layer3_planning_docs/1283-sector-resolution.md`. After that follow-on slice, the coverage diagnostic may report that opt-in runtime sector-family resolution is available while still preserving this diagnostic's validate-only boundary.
+
 Files in this slice:
 
 - `next_milestone_plans/Layer3_planning_docs/1282-sec-xbrl-sector-conditioned-canonical-families.md`
@@ -43,9 +45,11 @@ The follow-on implementation posture is:
 
 ## Family Registry Shape
 
-The follow-on resolution slice should extend the canonical registry design with a family qualifier such as `universal`, `extractive`, `banking`, `insurance`, or `real_estate_reit`. This design does not make that model change.
+The follow-on resolution slice should extend the canonical registry design with a family qualifier such as `universal`, `extractive`, `banking`, or `insurance`. This design does not make that model change.
 
 Each sector family is limited to headline, non-dimensional FY concepts for v1. Dimensional roll-forwards, detailed insurance movement tables, per-period projection, persisted store semantics, and final statement assembly stay out of scope.
+
+`real_estate_reit` is intentionally a sector-class label only in this slice. The SIC mapping table names the class for 6500-6599, but no REIT canonical family is defined or validated yet; adding one requires a later approved validation set and is not silently implied by the sector label.
 
 ## Grounded Headline Families
 
@@ -80,10 +84,16 @@ Reference evidence is intentionally count-only:
 - Insurance family presence is recorded through two IFRS headline concepts.
 - One redacted reference filer remains universal-only for these families.
 
-## Status
+## Design Status
 
 - `sector_conditioned_families_design_complete`: `true`
 - `sector_conditioned_families_implemented`: `false`
 - `sector_conditioning`: `concept_presence_not_sic_gated`
 - `runtime_defaults_changed`: `false`
 - `next_posture`: `sec_xbrl_sector_conditioned_canonical_families_v1_resolution_presence_conditioned`
+
+Follow-on posture now tracked in 1283:
+
+- `runtime_opt_in_sector_family_resolution_available`: `true`
+- `runtime_defaults_changed`: `false`
+- `next_posture_after_resolution`: `sec_xbrl_statement_assembly_deferred_pending_linkbase_emission_v1`

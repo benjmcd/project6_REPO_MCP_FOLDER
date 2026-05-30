@@ -34,10 +34,26 @@ class CanonicalConcept:
     basis: str
     statement: str
     sources: tuple[SourceConcept, ...]
+    family: str = "universal"
 
     @property
     def key(self) -> str:
-        return f"{self.canonical_id}[{self.basis}]"
+        base = f"{self.canonical_id}[{self.basis}]"
+        return base if self.family == "universal" else f"{self.family}:{base}"
+
+
+UNKNOWN_SECTOR_CLASS = "diversified_or_other"
+SIC_RANGE_TO_SECTOR_CLASS: tuple[tuple[int, int, str], ...] = (
+    (1000, 1499, "extractive"),
+    (6000, 6199, "banking"),
+    (6300, 6411, "insurance"),
+    (6500, 6599, "real_estate_reit"),
+)
+
+
+def _source_from_qname(qname: str) -> SourceConcept:
+    taxonomy, local_name = qname.split(":", 1)
+    return SourceConcept(taxonomy, local_name)
 
 
 CANONICAL_CONCEPTS: tuple[CanonicalConcept, ...] = (
@@ -233,6 +249,75 @@ CANONICAL_CONCEPTS: tuple[CanonicalConcept, ...] = (
     ),
 )
 
+SECTOR_FAMILY_DEFINITIONS: tuple[dict[str, Any], ...] = (
+    {
+        "family_id": "extractive",
+        "sector_class": "extractive",
+        "activation_anchor_qnames": (
+            "ifrs-full:ExpenseArisingFromExplorationForAndEvaluationOfMineralResources",
+            "ifrs-full:CurrentOreStockpiles",
+            "us-gaap:ExplorationExpense",
+        ),
+        "supporting_qnames": (),
+        "headline_concepts": (
+            ("ExtractiveExplorationEvaluationExpense", "total", "income", "ifrs-full:ExpenseArisingFromExplorationForAndEvaluationOfMineralResources"),
+            ("ExtractiveCurrentOreStockpiles", "total", "balance", "ifrs-full:CurrentOreStockpiles"),
+            ("ExtractiveExplorationExpense", "total", "income", "us-gaap:ExplorationExpense"),
+        ),
+    },
+    {
+        "family_id": "banking",
+        "sector_class": "banking",
+        "activation_anchor_qnames": (
+            "ifrs-full:InterestIncomeForFinancialAssetsMeasuredAtAmortisedCost",
+            "ifrs-full:GrossLoanCommitments",
+            "ifrs-full:CurrentDepositsFromCustomers",
+            "us-gaap:Deposits",
+        ),
+        "supporting_qnames": (
+            "us-gaap:InterestAndDividendIncomeOperating",
+            "us-gaap:InterestExpense",
+        ),
+        "headline_concepts": (
+            ("BankingInterestIncome", "total", "income", "ifrs-full:InterestIncomeForFinancialAssetsMeasuredAtAmortisedCost"),
+            ("BankingGrossLoanCommitments", "total", "balance", "ifrs-full:GrossLoanCommitments"),
+            ("BankingCustomerDepositsCurrent", "total", "balance", "ifrs-full:CurrentDepositsFromCustomers"),
+            ("BankingInterestAndDividendIncome", "total", "income", "us-gaap:InterestAndDividendIncomeOperating"),
+            ("BankingInterestExpense", "total", "income", "us-gaap:InterestExpense"),
+            ("BankingDeposits", "total", "balance", "us-gaap:Deposits"),
+        ),
+    },
+    {
+        "family_id": "insurance",
+        "sector_class": "insurance",
+        "activation_anchor_qnames": (
+            "ifrs-full:InsuranceRevenue",
+            "ifrs-full:InsuranceContractsLiabilityAsset",
+            "us-gaap:PremiumsEarnedNet",
+            "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
+        ),
+        "supporting_qnames": (),
+        "headline_concepts": (
+            ("InsuranceRevenue", "total", "income", "ifrs-full:InsuranceRevenue"),
+            ("InsuranceContractsLiabilityAsset", "total", "balance", "ifrs-full:InsuranceContractsLiabilityAsset"),
+            ("InsurancePremiumsEarnedNet", "total", "income", "us-gaap:PremiumsEarnedNet"),
+            ("InsuranceClaimsAdjustmentExpenseLiability", "total", "balance", "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense"),
+        ),
+    },
+)
+
+SECTOR_CANONICAL_CONCEPTS: tuple[CanonicalConcept, ...] = tuple(
+    CanonicalConcept(
+        canonical_id,
+        basis,
+        statement,
+        (_source_from_qname(qname),),
+        family=str(definition["family_id"]),
+    )
+    for definition in SECTOR_FAMILY_DEFINITIONS
+    for canonical_id, basis, statement, qname in definition["headline_concepts"]
+)
+
 _CONCEPT_BY_KEY = {concept.key: concept for concept in CANONICAL_CONCEPTS}
 _NONCURRENT_DERIVATIONS = (
     ("NoncurrentAssets[total]", "TotalAssets[total]", "CurrentAssets[total]"),
@@ -251,11 +336,27 @@ def canonical_concept_inventory() -> list[dict[str, Any]]:
             "canonical_id": concept.canonical_id,
             "basis": concept.basis,
             "statement": concept.statement,
+            "family": concept.family,
             "source_qnames": [source.qname for source in concept.sources],
             "mapping_method": "reviewed_statement_crosswalk",
             "mapping_confidence": MAPPING_CONFIDENCE,
         }
         for concept in CANONICAL_CONCEPTS
+    ]
+
+
+def sector_family_concept_inventory() -> list[dict[str, Any]]:
+    return [
+        {
+            "canonical_id": concept.canonical_id,
+            "basis": concept.basis,
+            "statement": concept.statement,
+            "family": concept.family,
+            "source_qnames": [source.qname for source in concept.sources],
+            "mapping_method": "presence_conditioned_sector_family_crosswalk",
+            "mapping_confidence": MAPPING_CONFIDENCE,
+        }
+        for concept in SECTOR_CANONICAL_CONCEPTS
     ]
 
 
@@ -277,7 +378,114 @@ def taxonomy_from_namespace(namespace: str) -> str:
         return "us-gaap"
     if "xbrl.ifrs.org" in namespace:
         return "ifrs-full"
+    if "xbrl.sec.gov/dei" in namespace:
+        return "dei"
     return "unknown"
+
+
+def sector_class_from_sic(primary_sic: Any) -> str:
+    try:
+        sic_number = int(str(primary_sic).strip())
+    except (TypeError, ValueError):
+        return UNKNOWN_SECTOR_CLASS
+    for start, end, sector_class in SIC_RANGE_TO_SECTOR_CLASS:
+        if start <= sic_number <= end:
+            return sector_class
+    return UNKNOWN_SECTOR_CLASS
+
+
+def classify_sector_family_presence(*, primary_sic: Any, reported_concepts: Sequence[str]) -> dict[str, Any]:
+    reported = {str(concept or "") for concept in reported_concepts if str(concept or "")}
+    present_family_ids: list[str] = []
+    family_evidence: list[dict[str, Any]] = []
+    for definition in SECTOR_FAMILY_DEFINITIONS:
+        family_id = str(definition["family_id"])
+        anchors = [qname for qname in definition["activation_anchor_qnames"] if qname in reported]
+        supporting = [qname for qname in definition["supporting_qnames"] if qname in reported]
+        active = bool(anchors)
+        if active:
+            present_family_ids.append(family_id)
+        family_evidence.append(
+            {
+                "family_id": family_id,
+                "active": active,
+                "activation_anchor_concepts": anchors,
+                "supporting_family_concepts": supporting,
+                "supporting_only": bool(supporting and not anchors),
+            }
+        )
+    return {
+        "sector_class": sector_class_from_sic(primary_sic),
+        "present_family_ids": present_family_ids,
+        "present_family_count": len(present_family_ids),
+        "presence_conditioned": True,
+        "sic_used_as_gate": False,
+        "activation_rule": "anchor_concepts_activate_supporting_concepts_do_not",
+        "reported_family_evidence": family_evidence,
+    }
+
+
+def _concepts_for_sidecar_records(
+    *,
+    sidecar_records: Sequence[Mapping[str, Any]],
+    value_by_fact_id: Mapping[str, Mapping[str, Any]],
+    include_sector_families: bool,
+) -> tuple[tuple[CanonicalConcept, ...], dict[str, Any]]:
+    if not include_sector_families:
+        return CANONICAL_CONCEPTS, _empty_sector_family_presence()
+    presence = classify_sector_family_presence(
+        primary_sic=_primary_sic_from_records(sidecar_records=sidecar_records, value_by_fact_id=value_by_fact_id),
+        reported_concepts=_reported_standard_concept_qnames(sidecar_records),
+    )
+    active_families = set(presence["present_family_ids"])
+    sector_concepts = tuple(concept for concept in SECTOR_CANONICAL_CONCEPTS if concept.family in active_families)
+    return CANONICAL_CONCEPTS + sector_concepts, presence
+
+
+def _empty_sector_family_presence() -> dict[str, Any]:
+    return {
+        "sector_class": UNKNOWN_SECTOR_CLASS,
+        "present_family_ids": [],
+        "present_family_count": 0,
+        "presence_conditioned": True,
+        "sic_used_as_gate": False,
+        "activation_rule": "sector_families_not_requested",
+        "reported_family_evidence": [],
+    }
+
+
+def _reported_standard_concept_qnames(records: Sequence[Mapping[str, Any]]) -> list[str]:
+    qnames: set[str] = set()
+    for record in records:
+        if not isinstance(record, Mapping) or not _is_standard_non_dimensional_record(record):
+            continue
+        qname = _record_qname(record)
+        if qname:
+            qnames.add(qname)
+    return sorted(qnames)
+
+
+def _record_qname(record: Mapping[str, Any]) -> str:
+    concept = record.get("concept") if isinstance(record.get("concept"), Mapping) else {}
+    taxonomy = taxonomy_from_namespace(str(concept.get("namespace") or ""))
+    local_name = str(concept.get("local_name") or "")
+    return f"{taxonomy}:{local_name}" if taxonomy != "unknown" and local_name else ""
+
+
+def _primary_sic_from_records(
+    *,
+    sidecar_records: Sequence[Mapping[str, Any]],
+    value_by_fact_id: Mapping[str, Mapping[str, Any]],
+) -> Any:
+    for record in sidecar_records:
+        if not isinstance(record, Mapping):
+            continue
+        if _record_qname(record) != "dei:EntityPrimarySicNumber":
+            continue
+        value_record = value_by_fact_id.get(str(record.get("resolved_fact_id") or ""))
+        if isinstance(value_record, Mapping):
+            return value_record.get("effective_value")
+    return None
 
 
 def resolve_issuer_canonical_concepts(
@@ -286,6 +494,7 @@ def resolve_issuer_canonical_concepts(
     sidecar_records: Sequence[Mapping[str, Any]],
     value_records: Sequence[Mapping[str, Any]],
     fiscal_year: int | str | None = None,
+    include_sector_families: bool = False,
 ) -> dict[str, Any]:
     primary_taxonomy = primary_taxonomy_from_records(sidecar_records)
     value_by_fact_id = {
@@ -293,8 +502,13 @@ def resolve_issuer_canonical_concepts(
         for item in value_records
         if isinstance(item, Mapping)
     }
+    concepts, sector_family_presence = _concepts_for_sidecar_records(
+        sidecar_records=sidecar_records,
+        value_by_fact_id=value_by_fact_id,
+        include_sector_families=include_sector_families,
+    )
     resolutions: list[dict[str, Any]] = []
-    for concept in CANONICAL_CONCEPTS:
+    for concept in concepts:
         resolution = _resolve_concept(
             concept=concept,
             companyfacts=companyfacts,
@@ -329,11 +543,14 @@ def resolve_issuer_canonical_concepts(
     identities = statement_identity_residuals(resolutions)
     return {
         "primary_taxonomy": primary_taxonomy,
-        "defined_count": len(CANONICAL_CONCEPTS),
+        "defined_count": len(concepts),
+        "universal_defined_count": len(CANONICAL_CONCEPTS),
+        "sector_family_defined_count": len(concepts) - len(CANONICAL_CONCEPTS),
         "resolved_count": sum(1 for item in resolutions if item["status"] != "legitimately_absent"),
         "inline_confirmed_count": sum(1 for item in resolutions if item.get("inline_confirmed") is True),
         "legitimately_absent_count": sum(1 for item in resolutions if item["status"] == "legitimately_absent"),
         "concepts": resolutions,
+        "sector_family_presence": sector_family_presence,
         "statement_identity_residuals": identities,
     }
 
@@ -342,6 +559,26 @@ def primary_fy_period_from_records(
     records: Sequence[Mapping[str, Any]],
     value_records: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    periods = fy_periods_from_records(records, value_records)
+    if not periods:
+        return {
+            "status": "missing_fy_period",
+            "period_class": PERIOD_CLASS,
+            "instant_period_key": None,
+            "duration_period_key": None,
+            "document_period_end_date_cross_checked": False,
+        }
+    return dict(periods[0])
+
+
+def fy_periods_from_records(
+    records: Sequence[Mapping[str, Any]],
+    value_records: Sequence[Mapping[str, Any]] | None = None,
+    *,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
+    if limit is not None and int(limit) <= 0:
+        return []
     value_by_fact_id = {
         str(item.get("resolved_fact_id") or ""): item
         for item in (value_records or [])
@@ -367,26 +604,36 @@ def primary_fy_period_from_records(
 
     candidate_ends = sorted(set(instant_ends) | set(duration_starts_by_end))
     if not candidate_ends:
-        return {
-            "status": "missing_fy_period",
-            "period_class": PERIOD_CLASS,
-            "instant_period_key": None,
-            "duration_period_key": None,
-            "document_period_end_date_cross_checked": False,
-        }
+        return []
 
-    end = next((item for item in sorted(document_period_end_values, reverse=True) if item in candidate_ends), candidate_ends[-1])
-    duration_starts = sorted(set(duration_starts_by_end.get(end) or []))
-    duration_key = ("d", duration_starts[0], end) if duration_starts else None
-    return {
-        "status": "ready",
-        "period_class": PERIOD_CLASS,
-        "instant_period_key": ("i", end),
-        "duration_period_key": duration_key,
-        "document_period_end_date_cross_checked": (
-            not document_period_end_values or any(item == end for item in document_period_end_values)
-        ),
-    }
+    document_period_end_date_cross_checked = (
+        not document_period_end_values or any(item in candidate_ends for item in document_period_end_values)
+    )
+    ordered_ends = sorted(candidate_ends, reverse=True)
+    document_end_set = set(document_period_end_values)
+    document_matches = [item for item in sorted(document_end_set, reverse=True) if item in candidate_ends]
+    if document_matches:
+        ordered_ends = document_matches + [item for item in ordered_ends if item not in set(document_matches)]
+
+    periods: list[dict[str, Any]] = []
+    for index, end in enumerate(ordered_ends, start=1):
+        duration_starts = sorted(set(duration_starts_by_end.get(end) or []))
+        duration_key = ("d", duration_starts[0], end) if duration_starts else None
+        periods.append(
+            {
+                "status": "ready",
+                "period_class": PERIOD_CLASS,
+                "period_index": index,
+                "period_ref": f"fy-period-{index}",
+                "instant_period_key": ("i", end),
+                "duration_period_key": duration_key,
+                "matches_document_period_end_date": end in document_end_set,
+                "document_period_end_date_cross_checked": document_period_end_date_cross_checked,
+            }
+        )
+        if limit is not None and len(periods) >= int(limit):
+            break
+    return periods
 
 
 def project_issuer_canonical_facts(
@@ -399,9 +646,11 @@ def project_issuer_canonical_facts(
     value_store_hash: str | None,
     dataset_version_id: str | None,
     fiscal_year: int | str | None = None,
+    include_sector_families: bool = False,
+    fy_period_override: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     primary_taxonomy = primary_taxonomy_from_records(sidecar_records)
-    fy_period = primary_fy_period_from_records(sidecar_records, value_records)
+    fy_period = dict(fy_period_override or primary_fy_period_from_records(sidecar_records, value_records))
     if fy_period["status"] != "ready":
         return _blocked_projection(
             primary_taxonomy=primary_taxonomy,
@@ -420,6 +669,11 @@ def project_issuer_canonical_facts(
         for item in value_records
         if isinstance(item, Mapping)
     }
+    concepts, sector_family_presence = _concepts_for_sidecar_records(
+        sidecar_records=sidecar_records,
+        value_by_fact_id=value_by_fact_id,
+        include_sector_families=include_sector_families,
+    )
     expected_value_store_hash = str(value_store_hash or "")
     if expected_value_store_hash and stable_hash(list(value_records)) != expected_value_store_hash:
         return _blocked_projection(
@@ -436,7 +690,7 @@ def project_issuer_canonical_facts(
     }
     projections: list[dict[str, Any]] = []
     blocking_reasons: list[dict[str, Any]] = []
-    for concept in CANONICAL_CONCEPTS:
+    for concept in concepts:
         projection = _project_concept(
             concept=concept,
             companyfacts=companyfacts,
@@ -497,7 +751,9 @@ def project_issuer_canonical_facts(
         "status": "canonical_projection_ready",
         "primary_taxonomy": primary_taxonomy,
         "period_class": PERIOD_CLASS,
-        "defined_count": len(CANONICAL_CONCEPTS),
+        "defined_count": len(concepts),
+        "universal_defined_count": len(CANONICAL_CONCEPTS),
+        "sector_family_defined_count": len(concepts) - len(CANONICAL_CONCEPTS),
         "projected_count": len(projected),
         "oracle_confirmed_count": len(confirmed),
         "oracle_absent_count": sum(1 for item in projected if item.get("oracle_confirmed") == "oracle_absent"),
@@ -509,8 +765,94 @@ def project_issuer_canonical_facts(
         ),
         "fy_period": fy_period,
         "concepts": projections,
+        "sector_family_presence": sector_family_presence,
         "statement_identity_residuals": identities,
         "blocking_reasons": [],
+    }
+
+
+def project_issuer_canonical_facts_by_periods(
+    *,
+    companyfacts: Mapping[str, Any],
+    sidecar_records: Sequence[Mapping[str, Any]],
+    value_records: Sequence[Mapping[str, Any]],
+    sidecar_receipt_id: str | None,
+    sidecar_receipt_hash: str | None,
+    value_store_hash: str | None,
+    dataset_version_id: str | None,
+    period_limit: int = 3,
+    include_sector_families: bool = False,
+) -> dict[str, Any]:
+    primary_taxonomy = primary_taxonomy_from_records(sidecar_records)
+    periods = fy_periods_from_records(sidecar_records, value_records, limit=period_limit)
+    if not periods:
+        return {
+            "status": "canonical_multi_period_projection_blocked",
+            "primary_taxonomy": primary_taxonomy,
+            "period_class": PERIOD_CLASS,
+            "period_count": 0,
+            "periods": [],
+            "blocking_reasons": [
+                {
+                    "reason": "canonical_multi_period_projection_periods_missing",
+                    "evidence": {"period_class": PERIOD_CLASS},
+                }
+            ],
+        }
+
+    period_results = []
+    blocking_reasons: list[dict[str, Any]] = []
+    for period in periods:
+        projection = project_issuer_canonical_facts(
+            companyfacts=companyfacts,
+            sidecar_records=sidecar_records,
+            value_records=value_records,
+            sidecar_receipt_id=sidecar_receipt_id,
+            sidecar_receipt_hash=sidecar_receipt_hash,
+            value_store_hash=value_store_hash,
+            dataset_version_id=dataset_version_id,
+            fiscal_year=None,
+            include_sector_families=include_sector_families,
+            fy_period_override=period,
+        )
+        period_ref = str(period.get("period_ref") or f"fy-period-{len(period_results) + 1}")
+        if projection.get("status") != "canonical_projection_ready":
+            blocking_reasons.append(
+                {
+                    "reason": "canonical_multi_period_projection_period_blocked",
+                    "period_ref": period_ref,
+                    "blocking_reasons": list(projection.get("blocking_reasons") or []),
+                }
+            )
+        period_results.append(
+            {
+                "period_ref": period_ref,
+                "period_index": int(period.get("period_index") or len(period_results) + 1),
+                "matches_document_period_end_date": period.get("matches_document_period_end_date") is True,
+                "projection": projection,
+            }
+        )
+
+    ready_periods = [item for item in period_results if item["projection"].get("status") == "canonical_projection_ready"]
+    total_projected = sum(int(item["projection"].get("projected_count") or 0) for item in ready_periods)
+    total_defined = sum(int(item["projection"].get("defined_count") or 0) for item in ready_periods)
+    total_provenance = sum(int(item["projection"].get("provenance_complete_count") or 0) for item in ready_periods)
+    return {
+        "status": (
+            "canonical_multi_period_projection_ready"
+            if not blocking_reasons
+            else "canonical_multi_period_projection_blocked"
+        ),
+        "primary_taxonomy": primary_taxonomy,
+        "period_class": PERIOD_CLASS,
+        "period_count": len(period_results),
+        "ready_period_count": len(ready_periods),
+        "defined_cell_count": total_defined,
+        "projected_count": total_projected,
+        "provenance_complete_count": total_provenance,
+        "include_sector_families": include_sector_families,
+        "periods": period_results,
+        "blocking_reasons": blocking_reasons,
     }
 
 
@@ -518,13 +860,17 @@ def build_redacted_projection_report(
     *,
     issuer_bundles: Sequence[Mapping[str, Any]],
     fiscal_year: int | str | None = None,
+    include_sector_families: bool = False,
 ) -> dict[str, Any]:
+    universal_inventory = canonical_concept_inventory()
+    sector_family_inventory = sector_family_concept_inventory() if include_sector_families else []
     per_issuer = []
     total_projected = 0
     total_confirmed = 0
     total_oracle_absent = 0
     total_absent = 0
     total_provenance_complete = 0
+    total_defined = 0
     identity_count = 0
     identity_ok_count = 0
     blocking_reasons: list[dict[str, Any]] = []
@@ -539,6 +885,7 @@ def build_redacted_projection_report(
             value_store_hash=str(bundle.get("value_store_hash") or ""),
             dataset_version_id=str(bundle.get("dataset_version_id") or ""),
             fiscal_year=fiscal_year,
+            include_sector_families=include_sector_families,
         )
         if projection["status"] != "canonical_projection_ready":
             blocking_reasons.extend(list(projection.get("blocking_reasons") or []))
@@ -552,6 +899,7 @@ def build_redacted_projection_report(
         total_oracle_absent += int(projection.get("oracle_absent_count") or 0)
         total_absent += int(projection.get("legitimately_absent_count") or 0)
         total_provenance_complete += int(projection.get("provenance_complete_count") or 0)
+        total_defined += int(projection.get("defined_count") or len(CANONICAL_CONCEPTS))
         identity_count += len(identities)
         identity_ok_count += sum(1 for item in identities if item["within_tolerance"] is True)
         per_issuer.append(
@@ -560,6 +908,11 @@ def build_redacted_projection_report(
                 "primary_taxonomy": projection["primary_taxonomy"],
                 "period_class": PERIOD_CLASS,
                 "headline_canonical_defined": projection.get("defined_count", len(CANONICAL_CONCEPTS)),
+                "universal_defined_count": projection.get("universal_defined_count", len(CANONICAL_CONCEPTS)),
+                "sector_family_defined_count": projection.get("sector_family_defined_count", 0),
+                "sector_family_presence": _public_sector_family_presence(
+                    dict(projection.get("sector_family_presence") or {})
+                ),
                 "projected_count": projection.get("projected_count", 0),
                 "oracle_confirmed_count": projection.get("oracle_confirmed_count", 0),
                 "oracle_absent_count": projection.get("oracle_absent_count", 0),
@@ -585,10 +938,13 @@ def build_redacted_projection_report(
         "value_authority": "governed_arelle_sidecar_value_store",
         "oracle_authority": "companyfacts_period_aware_validation_only",
         "coverage_framing": "headline_canonical_projected_over_defined_not_filing_wide",
-        "canonical_concept_defined_count": len(CANONICAL_CONCEPTS),
+        "canonical_concept_defined_count": len(universal_inventory) + len(sector_family_inventory),
+        "universal_canonical_concept_defined_count": len(universal_inventory),
+        "sector_family_canonical_concept_defined_count": len(sector_family_inventory),
+        "include_sector_families": include_sector_families,
         "issuer_hash_count": len(per_issuer),
         "summary": {
-            "headline_canonical_cell_count": len(CANONICAL_CONCEPTS) * len(per_issuer),
+            "headline_canonical_cell_count": total_defined,
             "projected_count": total_projected,
             "oracle_confirmed_count": total_confirmed,
             "oracle_absent_count": total_oracle_absent,
@@ -597,7 +953,7 @@ def build_redacted_projection_report(
             "statement_identity_evaluated_count": identity_count,
             "statement_identity_within_tolerance_count": identity_ok_count,
         },
-        "canonical_concepts": canonical_concept_inventory(),
+        "canonical_concepts": universal_inventory + sector_family_inventory,
         "per_issuer": per_issuer,
         "blocking_reasons": blocking_reasons,
         "redaction": {},
@@ -777,6 +1133,7 @@ def _resolve_concept(
             "basis": concept.basis,
             "requested_basis": requested_basis or concept.basis,
             "statement": concept.statement,
+            "family": concept.family,
             "status": status,
             "source_qname": source.qname,
             "period_class": PERIOD_CLASS,
@@ -795,6 +1152,7 @@ def _resolve_concept(
         "basis": concept.basis,
         "requested_basis": requested_basis or concept.basis,
         "statement": concept.statement,
+        "family": concept.family,
         "status": "legitimately_absent",
         "source_qname": None,
         "period_class": PERIOD_CLASS,
@@ -886,6 +1244,7 @@ def _project_concept(
             "basis": concept.basis,
             "requested_basis": requested_basis or concept.basis,
             "statement": concept.statement,
+            "family": concept.family,
             "status": status,
             "source_qname": source.qname,
             "period_class": PERIOD_CLASS,
@@ -910,6 +1269,7 @@ def _project_concept(
         "basis": concept.basis,
         "requested_basis": requested_basis or concept.basis,
         "statement": concept.statement,
+        "family": concept.family,
         "status": "legitimately_absent",
         "source_qname": None,
         "period_class": PERIOD_CLASS,
@@ -1000,6 +1360,7 @@ def _derived_noncurrent_item(
         "basis": target.get("basis"),
         "requested_basis": target.get("requested_basis"),
         "statement": target.get("statement"),
+        "family": target.get("family", "universal"),
         "status": "derived",
         "source_qname": None,
         "period_class": PERIOD_CLASS,
@@ -1201,11 +1562,13 @@ def _blocked_concept_projection(
         "canonical_id": concept.canonical_id,
         "basis": concept.basis,
         "requested_basis": requested_basis or concept.basis,
+        "family": concept.family,
         "_blocked_reason": {
             "reason": reason,
             "canonical_id": concept.canonical_id,
             "basis": concept.basis,
             "requested_basis": requested_basis or concept.basis,
+            "family": concept.family,
             "source_qname": source_qname,
             "evidence": dict(evidence or {}),
         },
@@ -1422,6 +1785,7 @@ def _public_resolution(item: Mapping[str, Any]) -> dict[str, Any]:
         "basis": item.get("basis"),
         "requested_basis": item.get("requested_basis"),
         "statement": item.get("statement"),
+        "family": item.get("family", "universal"),
         "status": item.get("status"),
         "source_qname": item.get("source_qname"),
         "period_class": item.get("period_class"),
@@ -1446,6 +1810,7 @@ def _public_projection(item: Mapping[str, Any]) -> dict[str, Any]:
         "basis": item.get("basis"),
         "requested_basis": item.get("requested_basis"),
         "statement": item.get("statement"),
+        "family": item.get("family", "universal"),
         "status": item.get("status"),
         "source_qname": item.get("source_qname"),
         "period_class": item.get("period_class"),
@@ -1461,6 +1826,31 @@ def _public_projection(item: Mapping[str, Any]) -> dict[str, Any]:
     if item.get("absence_reason") is not None:
         public["absence_reason"] = item.get("absence_reason")
     return public
+
+
+def _public_sector_family_presence(presence: Mapping[str, Any]) -> dict[str, Any]:
+    evidence = []
+    for item in presence.get("reported_family_evidence") or []:
+        if not isinstance(item, Mapping):
+            continue
+        evidence.append(
+            {
+                "family_id": str(item.get("family_id") or ""),
+                "active": item.get("active") is True,
+                "activation_anchor_concepts": list(item.get("activation_anchor_concepts") or []),
+                "supporting_family_concepts": list(item.get("supporting_family_concepts") or []),
+                "supporting_only": item.get("supporting_only") is True,
+            }
+        )
+    return {
+        "sector_class": str(presence.get("sector_class") or UNKNOWN_SECTOR_CLASS),
+        "present_family_ids": list(presence.get("present_family_ids") or []),
+        "present_family_count": int(presence.get("present_family_count") or 0),
+        "presence_conditioned": presence.get("presence_conditioned") is True,
+        "sic_used_as_gate": presence.get("sic_used_as_gate") is True,
+        "activation_rule": str(presence.get("activation_rule") or ""),
+        "reported_family_evidence": evidence,
+    }
 
 
 def _public_provenance_presence(items: Sequence[Mapping[str, Any]]) -> dict[str, bool]:
