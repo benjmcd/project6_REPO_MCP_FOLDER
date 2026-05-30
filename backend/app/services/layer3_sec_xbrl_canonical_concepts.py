@@ -11,6 +11,7 @@ from app.services.layer3_utils import stable_hash
 
 SCHEMA_ID = "layer3.sec_xbrl_canonical_concepts.v1"
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_canonical_comparability.v1"
+PROJECTION_REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_canonical_projection.v1"
 MAPPING_CONFIDENCE = "reviewed_high_value_headline_statement_crosswalk"
 IDENTITY_TOLERANCE = Decimal("0.005")
 PERIOD_CLASS = "FY"
@@ -325,6 +326,268 @@ def resolve_issuer_canonical_concepts(
     }
 
 
+def primary_fy_period_from_records(
+    records: Sequence[Mapping[str, Any]],
+    value_records: Sequence[Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
+    value_by_fact_id = {
+        str(item.get("resolved_fact_id") or ""): item
+        for item in (value_records or [])
+        if isinstance(item, Mapping)
+    }
+    instant_ends: list[str] = []
+    duration_starts_by_end: dict[str, list[str]] = {}
+    document_period_end_values: list[str] = []
+    for record in records:
+        if not _is_standard_non_dimensional_record(record):
+            continue
+        period = record.get("period") if isinstance(record.get("period"), Mapping) else {}
+        period_type = str(period.get("type") or "")
+        if period_type == "instant" and str(period.get("instant") or ""):
+            instant_ends.append(str(period.get("instant") or ""))
+        elif period_type == "duration" and str(period.get("start") or "") and str(period.get("end") or ""):
+            duration_starts_by_end.setdefault(str(period.get("end") or ""), []).append(str(period.get("start") or ""))
+        concept = record.get("concept") if isinstance(record.get("concept"), Mapping) else {}
+        if str(concept.get("local_name") or "") == "DocumentPeriodEndDate":
+            value_record = value_by_fact_id.get(str(record.get("resolved_fact_id") or ""))
+            if isinstance(value_record, Mapping) and str(value_record.get("effective_value") or ""):
+                document_period_end_values.append(str(value_record.get("effective_value") or ""))
+
+    candidate_ends = sorted(set(instant_ends) | set(duration_starts_by_end))
+    if not candidate_ends:
+        return {
+            "status": "missing_fy_period",
+            "period_class": PERIOD_CLASS,
+            "instant_period_key": None,
+            "duration_period_key": None,
+            "document_period_end_date_cross_checked": False,
+        }
+
+    end = next((item for item in sorted(document_period_end_values, reverse=True) if item in candidate_ends), candidate_ends[-1])
+    duration_starts = sorted(set(duration_starts_by_end.get(end) or []))
+    duration_key = ("d", duration_starts[0], end) if duration_starts else None
+    return {
+        "status": "ready",
+        "period_class": PERIOD_CLASS,
+        "instant_period_key": ("i", end),
+        "duration_period_key": duration_key,
+        "document_period_end_date_cross_checked": (
+            not document_period_end_values or any(item == end for item in document_period_end_values)
+        ),
+    }
+
+
+def project_issuer_canonical_facts(
+    *,
+    companyfacts: Mapping[str, Any],
+    sidecar_records: Sequence[Mapping[str, Any]],
+    value_records: Sequence[Mapping[str, Any]],
+    sidecar_receipt_id: str | None,
+    sidecar_receipt_hash: str | None,
+    value_store_hash: str | None,
+    dataset_version_id: str | None,
+    fiscal_year: int | str | None = None,
+) -> dict[str, Any]:
+    primary_taxonomy = primary_taxonomy_from_records(sidecar_records)
+    fy_period = primary_fy_period_from_records(sidecar_records, value_records)
+    if fy_period["status"] != "ready":
+        return _blocked_projection(
+            primary_taxonomy=primary_taxonomy,
+            reason="canonical_projection_fy_period_missing",
+            evidence={"period_class": PERIOD_CLASS},
+        )
+    if fy_period.get("document_period_end_date_cross_checked") is not True:
+        return _blocked_projection(
+            primary_taxonomy=primary_taxonomy,
+            reason="canonical_projection_document_period_end_mismatch",
+            evidence={"period_class": PERIOD_CLASS},
+        )
+
+    value_by_fact_id = {
+        str(item.get("resolved_fact_id") or ""): item
+        for item in value_records
+        if isinstance(item, Mapping)
+    }
+    expected_value_store_hash = str(value_store_hash or "")
+    if expected_value_store_hash and stable_hash(list(value_records)) != expected_value_store_hash:
+        return _blocked_projection(
+            primary_taxonomy=primary_taxonomy,
+            reason="canonical_projection_value_store_hash_mismatch",
+            evidence={"value_record_count": len(value_records)},
+        )
+
+    shared_provenance = {
+        "sidecar_receipt_id": str(sidecar_receipt_id or ""),
+        "sidecar_receipt_hash": str(sidecar_receipt_hash or ""),
+        "value_store_hash": expected_value_store_hash,
+        "dataset_version_id": str(dataset_version_id or ""),
+    }
+    projections: list[dict[str, Any]] = []
+    blocking_reasons: list[dict[str, Any]] = []
+    for concept in CANONICAL_CONCEPTS:
+        projection = _project_concept(
+            concept=concept,
+            companyfacts=companyfacts,
+            sidecar_records=sidecar_records,
+            value_by_fact_id=value_by_fact_id,
+            primary_taxonomy=primary_taxonomy,
+            fy_period=fy_period,
+            fiscal_year=fiscal_year,
+            shared_provenance=shared_provenance,
+        )
+        if projection.get("_blocked_reason") is not None:
+            blocking_reasons.append(dict(projection["_blocked_reason"]))
+            continue
+        if projection["status"] == "legitimately_absent" and concept.basis == "total":
+            fallback = _parent_fallback(concept)
+            if fallback is not None:
+                fallback_projection = _project_concept(
+                    concept=fallback,
+                    companyfacts=companyfacts,
+                    sidecar_records=sidecar_records,
+                    value_by_fact_id=value_by_fact_id,
+                    primary_taxonomy=primary_taxonomy,
+                    fy_period=fy_period,
+                    fiscal_year=fiscal_year,
+                    requested_basis=concept.basis,
+                    mapping_method="basis_fallback_total_to_parent",
+                    shared_provenance=shared_provenance,
+                )
+                if fallback_projection.get("_blocked_reason") is not None:
+                    blocking_reasons.append(dict(fallback_projection["_blocked_reason"]))
+                    continue
+                if fallback_projection["status"] != "legitimately_absent":
+                    projection = fallback_projection
+        projections.append(projection)
+
+    if blocking_reasons:
+        return _blocked_projection(
+            primary_taxonomy=primary_taxonomy,
+            reason="canonical_projection_provenance_or_value_blocked",
+            evidence={"blocking_reason_count": len(blocking_reasons)},
+            blocking_reasons=blocking_reasons,
+        )
+
+    identities = statement_identity_residuals(projections)
+    projected = [item for item in projections if item["status"] != "legitimately_absent"]
+    confirmed_or_unconfirmed = [
+        item for item in projected if item.get("oracle_confirmed") in {True, False}
+    ]
+    confirmed = [item for item in projected if item.get("oracle_confirmed") is True]
+    return {
+        "status": "canonical_projection_ready",
+        "primary_taxonomy": primary_taxonomy,
+        "period_class": PERIOD_CLASS,
+        "defined_count": len(CANONICAL_CONCEPTS),
+        "projected_count": len(projected),
+        "oracle_confirmed_count": len(confirmed),
+        "oracle_absent_count": sum(1 for item in projected if item.get("oracle_confirmed") == "oracle_absent"),
+        "projected_unconfirmed_count": sum(1 for item in projected if item.get("oracle_confirmed") is False),
+        "legitimately_absent_count": sum(1 for item in projections if item["status"] == "legitimately_absent"),
+        "provenance_complete_count": sum(1 for item in projected if item.get("provenance_complete") is True),
+        "oracle_confirmed_rate_excluding_absent": (
+            round(len(confirmed) / len(confirmed_or_unconfirmed), 4) if confirmed_or_unconfirmed else None
+        ),
+        "fy_period": fy_period,
+        "concepts": projections,
+        "statement_identity_residuals": identities,
+        "blocking_reasons": [],
+    }
+
+
+def build_redacted_projection_report(
+    *,
+    issuer_bundles: Sequence[Mapping[str, Any]],
+    fiscal_year: int | str | None = None,
+) -> dict[str, Any]:
+    per_issuer = []
+    total_projected = 0
+    total_confirmed = 0
+    total_oracle_absent = 0
+    total_absent = 0
+    total_provenance_complete = 0
+    identity_count = 0
+    identity_ok_count = 0
+    blocking_reasons: list[dict[str, Any]] = []
+    for index, bundle in enumerate(issuer_bundles):
+        issuer_ref = str(bundle.get("issuer_ref") or f"issuer-{index}")
+        projection = project_issuer_canonical_facts(
+            companyfacts=dict(bundle.get("companyfacts") or {}),
+            sidecar_records=list(bundle.get("sidecar_records") or []),
+            value_records=list(bundle.get("value_records") or []),
+            sidecar_receipt_id=str(bundle.get("sidecar_receipt_id") or ""),
+            sidecar_receipt_hash=str(bundle.get("sidecar_receipt_hash") or ""),
+            value_store_hash=str(bundle.get("value_store_hash") or ""),
+            dataset_version_id=str(bundle.get("dataset_version_id") or ""),
+            fiscal_year=fiscal_year,
+        )
+        if projection["status"] != "canonical_projection_ready":
+            blocking_reasons.extend(list(projection.get("blocking_reasons") or []))
+        identities = [
+            _public_identity(item)
+            for item in projection.get("statement_identity_residuals") or []
+            if item["status"] == "evaluated"
+        ]
+        total_projected += int(projection.get("projected_count") or 0)
+        total_confirmed += int(projection.get("oracle_confirmed_count") or 0)
+        total_oracle_absent += int(projection.get("oracle_absent_count") or 0)
+        total_absent += int(projection.get("legitimately_absent_count") or 0)
+        total_provenance_complete += int(projection.get("provenance_complete_count") or 0)
+        identity_count += len(identities)
+        identity_ok_count += sum(1 for item in identities if item["within_tolerance"] is True)
+        per_issuer.append(
+            {
+                "issuer_hash": stable_hash({"issuer_ref": issuer_ref})[:24],
+                "primary_taxonomy": projection["primary_taxonomy"],
+                "period_class": PERIOD_CLASS,
+                "headline_canonical_defined": projection.get("defined_count", len(CANONICAL_CONCEPTS)),
+                "projected_count": projection.get("projected_count", 0),
+                "oracle_confirmed_count": projection.get("oracle_confirmed_count", 0),
+                "oracle_absent_count": projection.get("oracle_absent_count", 0),
+                "legitimately_absent_count": projection.get("legitimately_absent_count", 0),
+                "provenance_complete_count": projection.get("provenance_complete_count", 0),
+                "provenance_fields_present": _public_provenance_presence(
+                    list(projection.get("concepts") or [])
+                ),
+                "concepts": [_public_projection(item) for item in projection.get("concepts") or []],
+                "statement_identity_residuals": identities,
+            }
+        )
+    report: dict[str, Any] = {
+        "schema_id": PROJECTION_REPORT_SCHEMA_ID,
+        "target": "sec_xbrl_canonical_projection_artifact_validate_only_v1",
+        "decision": "canonical_projection_validate_only_ready" if not blocking_reasons else "canonical_projection_validate_only_blocked",
+        "source_mode": "supplied_governed_source_bundles",
+        "validate_only": True,
+        "live_network_used": False,
+        "arelle_invoked": False,
+        "value_reveal_performed": False,
+        "runtime_defaults_changed": False,
+        "value_authority": "governed_arelle_sidecar_value_store",
+        "oracle_authority": "companyfacts_period_aware_validation_only",
+        "coverage_framing": "headline_canonical_projected_over_defined_not_filing_wide",
+        "canonical_concept_defined_count": len(CANONICAL_CONCEPTS),
+        "issuer_hash_count": len(per_issuer),
+        "summary": {
+            "headline_canonical_cell_count": len(CANONICAL_CONCEPTS) * len(per_issuer),
+            "projected_count": total_projected,
+            "oracle_confirmed_count": total_confirmed,
+            "oracle_absent_count": total_oracle_absent,
+            "legitimately_absent_count": total_absent,
+            "provenance_complete_count": total_provenance_complete,
+            "statement_identity_evaluated_count": identity_count,
+            "statement_identity_within_tolerance_count": identity_ok_count,
+        },
+        "canonical_concepts": canonical_concept_inventory(),
+        "per_issuer": per_issuer,
+        "blocking_reasons": blocking_reasons,
+        "redaction": {},
+        "non_goals_preserved": _projection_non_goals(),
+    }
+    report["redaction"] = report_redaction_scan_payload(report)
+    return report
+
+
 def build_redacted_comparability_report(
     *,
     issuer_bundles: Sequence[Mapping[str, Any]],
@@ -522,6 +785,240 @@ def _resolve_concept(
     }
 
 
+def _project_concept(
+    *,
+    concept: CanonicalConcept,
+    companyfacts: Mapping[str, Any],
+    sidecar_records: Sequence[Mapping[str, Any]],
+    value_by_fact_id: Mapping[str, Mapping[str, Any]],
+    primary_taxonomy: str,
+    fy_period: Mapping[str, Any],
+    fiscal_year: int | str | None,
+    shared_provenance: Mapping[str, str],
+    requested_basis: str | None = None,
+    mapping_method: str = "primary_taxonomy_sidecar_value_store_projection",
+) -> dict[str, Any]:
+    for source in _ordered_sources(concept, primary_taxonomy):
+        record = _sidecar_fy_record(
+            sidecar_records=sidecar_records,
+            source=source,
+            fy_period=fy_period,
+            statement=concept.statement,
+        )
+        if record is None:
+            continue
+        resolved_fact_id = str(record.get("resolved_fact_id") or "")
+        if not resolved_fact_id:
+            return _blocked_concept_projection(
+                concept=concept,
+                requested_basis=requested_basis,
+                reason="canonical_projection_resolved_fact_id_missing",
+                source_qname=source.qname,
+            )
+        value_record = value_by_fact_id.get(resolved_fact_id)
+        if not isinstance(value_record, Mapping):
+            return _blocked_concept_projection(
+                concept=concept,
+                requested_basis=requested_basis,
+                reason="canonical_projection_value_store_record_missing",
+                source_qname=source.qname,
+            )
+        effective_value = _decimal(value_record.get("effective_value"))
+        if effective_value is None:
+            return _blocked_concept_projection(
+                concept=concept,
+                requested_basis=requested_basis,
+                reason="canonical_projection_effective_value_invalid",
+                source_qname=source.qname,
+            )
+        missing_provenance = [
+            field for field, value in shared_provenance.items() if not str(value or "").strip()
+        ]
+        if missing_provenance:
+            return _blocked_concept_projection(
+                concept=concept,
+                requested_basis=requested_basis,
+                reason="canonical_projection_provenance_incomplete",
+                source_qname=source.qname,
+                evidence={"missing_provenance_fields": missing_provenance},
+            )
+        unit = _unit_name(record.get("unit") if isinstance(record.get("unit"), Mapping) else {})
+        period_key = _resolved_fact_period_key(record.get("period") if isinstance(record.get("period"), Mapping) else {})
+        oracle = _companyfacts_oracle_confirmation(
+            companyfacts=companyfacts,
+            source=source,
+            unit=unit,
+            period_key=period_key,
+            value=effective_value,
+            decimals=record.get("decimals"),
+            fiscal_year=fiscal_year,
+        )
+        if oracle is True:
+            status = "projected_oracle_confirmed"
+        elif oracle == "oracle_absent":
+            status = "projected_oracle_absent"
+        else:
+            status = "projected_unconfirmed"
+        return {
+            "canonical_id": concept.canonical_id,
+            "basis": concept.basis,
+            "requested_basis": requested_basis or concept.basis,
+            "statement": concept.statement,
+            "status": status,
+            "source_qname": source.qname,
+            "period_class": PERIOD_CLASS,
+            "oracle_confirmed": oracle,
+            "mapping_method": mapping_method,
+            "mapping_confidence": MAPPING_CONFIDENCE,
+            "unit_class": _unit_class(unit),
+            "resolved_fact_id": resolved_fact_id,
+            "sidecar_receipt_id": shared_provenance["sidecar_receipt_id"],
+            "sidecar_receipt_hash": shared_provenance["sidecar_receipt_hash"],
+            "value_store_hash": shared_provenance["value_store_hash"],
+            "dataset_version_id": shared_provenance["dataset_version_id"],
+            "provenance_complete": True,
+            "_resolution_key": concept.key if requested_basis is None else f"{concept.canonical_id}[{requested_basis}]",
+            "_value": effective_value,
+            "_unit": unit,
+        }
+    return {
+        "canonical_id": concept.canonical_id,
+        "basis": concept.basis,
+        "requested_basis": requested_basis or concept.basis,
+        "statement": concept.statement,
+        "status": "legitimately_absent",
+        "source_qname": None,
+        "period_class": PERIOD_CLASS,
+        "oracle_confirmed": "oracle_absent",
+        "mapping_method": mapping_method,
+        "mapping_confidence": MAPPING_CONFIDENCE,
+        "absence_reason": "no_reviewed_sidecar_fy_source_fact",
+        "provenance_complete": False,
+        "_resolution_key": concept.key if requested_basis is None else f"{concept.canonical_id}[{requested_basis}]",
+    }
+
+
+def _sidecar_fy_record(
+    *,
+    sidecar_records: Sequence[Mapping[str, Any]],
+    source: SourceConcept,
+    fy_period: Mapping[str, Any],
+    statement: str,
+) -> Mapping[str, Any] | None:
+    instant_key = fy_period.get("instant_period_key")
+    duration_key = fy_period.get("duration_period_key")
+    preferred = duration_key if statement != "balance" else instant_key
+    fallback = instant_key if statement != "balance" else duration_key
+    for period_key in (preferred, fallback):
+        if not isinstance(period_key, tuple):
+            continue
+        matches = [
+            record
+            for record in sidecar_records
+            if _is_standard_non_dimensional_record(record)
+            and _record_matches_source(record, source)
+            and _resolved_fact_period_key(record.get("period") if isinstance(record.get("period"), Mapping) else {}) == period_key
+        ]
+        if matches:
+            return sorted(matches, key=lambda item: int(item.get("source_order") or 0))[0]
+    return None
+
+
+def _companyfacts_oracle_confirmation(
+    *,
+    companyfacts: Mapping[str, Any],
+    source: SourceConcept,
+    unit: str,
+    period_key: tuple[str, ...],
+    value: Decimal,
+    decimals: Any,
+    fiscal_year: int | str | None,
+) -> bool | str:
+    concept = ((companyfacts.get(source.taxonomy) or {}).get(source.local_name) or {})
+    units = concept.get("units") if isinstance(concept, Mapping) else {}
+    facts = (units or {}).get(unit)
+    if not isinstance(facts, Sequence) or isinstance(facts, (str, bytes)):
+        return "oracle_absent"
+    period_seen = False
+    tolerance = _decimals_tolerance(decimals)
+    for fact in facts:
+        if not isinstance(fact, Mapping) or fact.get("fp") != PERIOD_CLASS:
+            continue
+        if fiscal_year is not None and str(fact.get("fy") or "") != str(fiscal_year):
+            continue
+        if _companyfacts_period_key(fact) != period_key:
+            continue
+        period_seen = True
+        candidate = _decimal(fact.get("val"))
+        if candidate is not None and abs(candidate - value) <= tolerance:
+            return True
+    return False if period_seen else "oracle_absent"
+
+
+def _is_standard_non_dimensional_record(record: Mapping[str, Any]) -> bool:
+    concept = record.get("concept") if isinstance(record.get("concept"), Mapping) else {}
+    if concept.get("standard") is not True:
+        return False
+    dimensions = record.get("dimensions") if isinstance(record.get("dimensions"), Mapping) else {}
+    return not list(dimensions.get("explicit") or []) and not list(dimensions.get("typed") or [])
+
+
+def _record_matches_source(record: Mapping[str, Any], source: SourceConcept) -> bool:
+    concept = record.get("concept") if isinstance(record.get("concept"), Mapping) else {}
+    return (
+        str(concept.get("local_name") or "") == source.local_name
+        and taxonomy_from_namespace(str(concept.get("namespace") or "")) == source.taxonomy
+    )
+
+
+def _blocked_projection(
+    *,
+    primary_taxonomy: str,
+    reason: str,
+    evidence: Mapping[str, Any],
+    blocking_reasons: Sequence[Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
+    reasons = list(blocking_reasons or [{"reason": reason, "evidence": dict(evidence)}])
+    return {
+        "status": "canonical_projection_blocked",
+        "primary_taxonomy": primary_taxonomy,
+        "period_class": PERIOD_CLASS,
+        "defined_count": len(CANONICAL_CONCEPTS),
+        "projected_count": 0,
+        "oracle_confirmed_count": 0,
+        "oracle_absent_count": 0,
+        "projected_unconfirmed_count": 0,
+        "legitimately_absent_count": 0,
+        "provenance_complete_count": 0,
+        "concepts": [],
+        "statement_identity_residuals": [],
+        "blocking_reasons": reasons,
+    }
+
+
+def _blocked_concept_projection(
+    *,
+    concept: CanonicalConcept,
+    requested_basis: str | None,
+    reason: str,
+    source_qname: str,
+    evidence: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {
+        "canonical_id": concept.canonical_id,
+        "basis": concept.basis,
+        "requested_basis": requested_basis or concept.basis,
+        "_blocked_reason": {
+            "reason": reason,
+            "canonical_id": concept.canonical_id,
+            "basis": concept.basis,
+            "requested_basis": requested_basis or concept.basis,
+            "source_qname": source_qname,
+            "evidence": dict(evidence or {}),
+        },
+    }
+
+
 def _companyfacts_fy_fact(
     companyfacts: Mapping[str, Any],
     source: SourceConcept,
@@ -583,8 +1080,12 @@ def _inline_confirmation(
             continue
         effective = _decimal(value_record.get("effective_value"))
         if effective is not None and effective == value:
-            return {"confirmed": True}
-    return {"confirmed": False}
+            return {
+                "confirmed": True,
+                "resolved_fact_id": str(record.get("resolved_fact_id") or ""),
+                "effective_value": effective,
+            }
+    return {"confirmed": False, "resolved_fact_id": None, "effective_value": None}
 
 
 def _ordered_sources(concept: CanonicalConcept, primary_taxonomy: str) -> tuple[SourceConcept, ...]:
@@ -643,6 +1144,18 @@ def _decimal(value: Any) -> Decimal | None:
         return Decimal(str(value))
     except (InvalidOperation, TypeError, ValueError):
         return None
+
+
+def _decimals_tolerance(decimals: Any) -> Decimal:
+    if decimals is None or decimals == "":
+        return Decimal("0")
+    text = str(decimals).strip()
+    if text.upper() in {"INF", "INFINITY"}:
+        return Decimal("0")
+    try:
+        return Decimal(1).scaleb(-int(text))
+    except (InvalidOperation, ValueError):
+        return Decimal("0")
 
 
 def _identity(
@@ -728,6 +1241,53 @@ def _public_resolution(item: Mapping[str, Any]) -> dict[str, Any]:
     if item.get("absence_reason") is not None:
         public["absence_reason"] = item.get("absence_reason")
     return public
+
+
+def _public_projection(item: Mapping[str, Any]) -> dict[str, Any]:
+    public = {
+        "canonical_id": item.get("canonical_id"),
+        "basis": item.get("basis"),
+        "requested_basis": item.get("requested_basis"),
+        "statement": item.get("statement"),
+        "status": item.get("status"),
+        "source_qname": item.get("source_qname"),
+        "period_class": item.get("period_class"),
+        "oracle_confirmed": item.get("oracle_confirmed"),
+        "mapping_method": item.get("mapping_method"),
+        "mapping_confidence": item.get("mapping_confidence"),
+        "provenance_complete": item.get("provenance_complete") is True,
+    }
+    if item.get("unit_class") is not None:
+        public["unit_class"] = item.get("unit_class")
+    if item.get("absence_reason") is not None:
+        public["absence_reason"] = item.get("absence_reason")
+    return public
+
+
+def _public_provenance_presence(items: Sequence[Mapping[str, Any]]) -> dict[str, bool]:
+    projected = [item for item in items if item.get("status") != "legitimately_absent"]
+    return {
+        "resolved_fact_id_present_for_all_projected": all(bool(item.get("resolved_fact_id")) for item in projected),
+        "sidecar_receipt_present_for_all_projected": all(
+            bool(item.get("sidecar_receipt_id")) and bool(item.get("sidecar_receipt_hash"))
+            for item in projected
+        ),
+        "value_store_hash_present_for_all_projected": all(bool(item.get("value_store_hash")) for item in projected),
+        "dataset_version_present_for_all_projected": all(bool(item.get("dataset_version_id")) for item in projected),
+    }
+
+
+def _projection_non_goals() -> dict[str, bool]:
+    return {
+        "default_on_readiness_claimed": False,
+        "production_readiness_claimed": False,
+        "final_financial_statement_semantics_claimed": False,
+        "cross_company_currency_conversion_claimed": False,
+        "statement_assembly_claimed": False,
+        "linkbase_relationships_required_or_consumed": False,
+        "live_network_or_arelle_required": False,
+        "value_reveal_performed": False,
+    }
 
 
 def _public_identity(item: Mapping[str, Any]) -> dict[str, Any]:
