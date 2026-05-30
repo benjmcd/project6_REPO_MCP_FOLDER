@@ -12,6 +12,7 @@ from app.services.layer3_utils import stable_hash
 SCHEMA_ID = "layer3.sec_xbrl_canonical_concepts.v1"
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_canonical_comparability.v1"
 PROJECTION_REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_canonical_projection.v1"
+COVERAGE_BREADTH_REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_canonical_coverage_breadth.v1"
 MAPPING_CONFIDENCE = "reviewed_high_value_headline_statement_crosswalk"
 IDENTITY_TOLERANCE = Decimal("0.005")
 PERIOD_CLASS = "FY"
@@ -233,6 +234,10 @@ CANONICAL_CONCEPTS: tuple[CanonicalConcept, ...] = (
 )
 
 _CONCEPT_BY_KEY = {concept.key: concept for concept in CANONICAL_CONCEPTS}
+_NONCURRENT_DERIVATIONS = (
+    ("NoncurrentAssets[total]", "TotalAssets[total]", "CurrentAssets[total]"),
+    ("NoncurrentLiabilities[total]", "TotalLiabilities[total]", "CurrentLiabilities[total]"),
+)
 _DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 _ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 _URL_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*:" + "/" + "/")
@@ -314,6 +319,7 @@ def resolve_issuer_canonical_concepts(
                 if fallback_resolution["status"] != "legitimately_absent":
                     resolution = fallback_resolution
         resolutions.append(resolution)
+    _apply_noncurrent_derivations(resolutions, projection=False)
     identities = statement_identity_residuals(resolutions)
     return {
         "primary_taxonomy": primary_taxonomy,
@@ -468,6 +474,7 @@ def project_issuer_canonical_facts(
             blocking_reasons=blocking_reasons,
         )
 
+    _apply_noncurrent_derivations(projections, projection=True)
     identities = statement_identity_residuals(projections)
     projected = [item for item in projections if item["status"] != "legitimately_absent"]
     confirmed_or_unconfirmed = [
@@ -765,6 +772,7 @@ def _resolve_concept(
             "mapping_method": mapping_method,
             "mapping_confidence": MAPPING_CONFIDENCE,
             "unit_class": _unit_class(str(fact["unit"])),
+            "resolved_fact_id": inline.get("resolved_fact_id"),
             "_resolution_key": concept.key if requested_basis is None else f"{concept.canonical_id}[{requested_basis}]",
             "_value": fact["value"],
             "_unit": str(fact["unit"]),
@@ -896,6 +904,113 @@ def _project_concept(
         "provenance_complete": False,
         "_resolution_key": concept.key if requested_basis is None else f"{concept.canonical_id}[{requested_basis}]",
     }
+
+
+def _apply_noncurrent_derivations(items: list[dict[str, Any]], *, projection: bool) -> None:
+    by_key = {
+        str(item.get("_resolution_key") or ""): item
+        for item in items
+        if isinstance(item, Mapping)
+    }
+    for target_key, total_key, current_key in _NONCURRENT_DERIVATIONS:
+        target = by_key.get(target_key)
+        total = by_key.get(total_key)
+        current = by_key.get(current_key)
+        if target is None or target.get("status") != "legitimately_absent":
+            continue
+        if not _derivation_source_ready(total) or not _derivation_source_ready(current):
+            continue
+        if str(total.get("_unit") or "") != str(current.get("_unit") or ""):
+            continue
+        derived = _derived_noncurrent_item(
+            target=target,
+            total=total,
+            current=current,
+            projection=projection,
+        )
+        index = items.index(target)
+        items[index] = derived
+        by_key[target_key] = derived
+
+
+def _derivation_source_ready(item: Mapping[str, Any] | None) -> bool:
+    if not isinstance(item, Mapping) or item.get("status") == "legitimately_absent":
+        return False
+    return (
+        isinstance(item.get("_value"), Decimal)
+        and bool(str(item.get("_unit") or ""))
+        and bool(str(item.get("resolved_fact_id") or ""))
+    )
+
+
+def _derived_noncurrent_item(
+    *,
+    target: Mapping[str, Any],
+    total: Mapping[str, Any],
+    current: Mapping[str, Any],
+    projection: bool,
+) -> dict[str, Any]:
+    total_value = total["_value"]
+    current_value = current["_value"]
+    derived_value = total_value - current_value
+    source_fact_ids = [
+        str(total.get("resolved_fact_id") or ""),
+        str(current.get("resolved_fact_id") or ""),
+    ]
+    item: dict[str, Any] = {
+        "canonical_id": target.get("canonical_id"),
+        "basis": target.get("basis"),
+        "requested_basis": target.get("requested_basis"),
+        "statement": target.get("statement"),
+        "status": "derived",
+        "source_qname": None,
+        "period_class": PERIOD_CLASS,
+        "mapping_method": "derived_total_minus_current",
+        "mapping_confidence": MAPPING_CONFIDENCE,
+        "unit_class": _unit_class(str(total.get("_unit") or "")),
+        "derived_from_concepts": [
+            str(total.get("_resolution_key") or ""),
+            str(current.get("_resolution_key") or ""),
+        ],
+        "derived_from_resolved_fact_ids": source_fact_ids,
+        "_resolution_key": target.get("_resolution_key"),
+        "_value": derived_value,
+        "_unit": str(total.get("_unit") or ""),
+    }
+    if projection:
+        item.update(
+            {
+                "oracle_confirmed": _derived_oracle_confirmation(total, current),
+                "sidecar_receipt_id": total.get("sidecar_receipt_id"),
+                "sidecar_receipt_hash": total.get("sidecar_receipt_hash"),
+                "value_store_hash": total.get("value_store_hash"),
+                "dataset_version_id": total.get("dataset_version_id"),
+                "provenance_complete": _derived_projection_provenance_complete(total, current),
+            }
+        )
+    else:
+        item["inline_confirmed"] = total.get("inline_confirmed") is True and current.get("inline_confirmed") is True
+    return item
+
+
+def _derived_oracle_confirmation(total: Mapping[str, Any], current: Mapping[str, Any]) -> bool | str:
+    states = {total.get("oracle_confirmed"), current.get("oracle_confirmed")}
+    if states == {True}:
+        return True
+    if False in states:
+        return False
+    return "oracle_absent"
+
+
+def _derived_projection_provenance_complete(total: Mapping[str, Any], current: Mapping[str, Any]) -> bool:
+    fields = ("sidecar_receipt_id", "sidecar_receipt_hash", "value_store_hash", "dataset_version_id")
+    return (
+        bool(total.get("resolved_fact_id"))
+        and bool(current.get("resolved_fact_id"))
+        and all(str(total.get(field) or "").strip() for field in fields)
+        and all(str(current.get(field) or "").strip() for field in fields)
+        and all(str(total.get(field) or "") == str(current.get(field) or "") for field in fields)
+    )
 
 
 def _sidecar_fy_record(
@@ -1238,6 +1353,8 @@ def _public_resolution(item: Mapping[str, Any]) -> dict[str, Any]:
     }
     if item.get("unit_class") is not None:
         public["unit_class"] = item.get("unit_class")
+    if item.get("derived_from_concepts") is not None:
+        public["derived_from_concepts"] = item.get("derived_from_concepts")
     if item.get("absence_reason") is not None:
         public["absence_reason"] = item.get("absence_reason")
     return public
@@ -1259,6 +1376,8 @@ def _public_projection(item: Mapping[str, Any]) -> dict[str, Any]:
     }
     if item.get("unit_class") is not None:
         public["unit_class"] = item.get("unit_class")
+    if item.get("derived_from_concepts") is not None:
+        public["derived_from_concepts"] = item.get("derived_from_concepts")
     if item.get("absence_reason") is not None:
         public["absence_reason"] = item.get("absence_reason")
     return public
@@ -1267,7 +1386,9 @@ def _public_projection(item: Mapping[str, Any]) -> dict[str, Any]:
 def _public_provenance_presence(items: Sequence[Mapping[str, Any]]) -> dict[str, bool]:
     projected = [item for item in items if item.get("status") != "legitimately_absent"]
     return {
-        "resolved_fact_id_present_for_all_projected": all(bool(item.get("resolved_fact_id")) for item in projected),
+        "resolved_fact_id_present_for_all_projected": all(
+            _projected_resolved_fact_provenance_present(item) for item in projected
+        ),
         "sidecar_receipt_present_for_all_projected": all(
             bool(item.get("sidecar_receipt_id")) and bool(item.get("sidecar_receipt_hash"))
             for item in projected
@@ -1275,6 +1396,19 @@ def _public_provenance_presence(items: Sequence[Mapping[str, Any]]) -> dict[str,
         "value_store_hash_present_for_all_projected": all(bool(item.get("value_store_hash")) for item in projected),
         "dataset_version_present_for_all_projected": all(bool(item.get("dataset_version_id")) for item in projected),
     }
+
+
+def _projected_resolved_fact_provenance_present(item: Mapping[str, Any]) -> bool:
+    if bool(item.get("resolved_fact_id")):
+        return True
+    source_ids = item.get("derived_from_resolved_fact_ids")
+    return (
+        item.get("status") == "derived"
+        and isinstance(source_ids, Sequence)
+        and not isinstance(source_ids, (str, bytes))
+        and len(source_ids) == 2
+        and all(bool(str(source_id or "").strip()) for source_id in source_ids)
+    )
 
 
 def _projection_non_goals() -> dict[str, bool]:

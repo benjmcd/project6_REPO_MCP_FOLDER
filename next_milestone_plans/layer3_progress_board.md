@@ -9520,7 +9520,21 @@ Status: additive validate-only projection diagnostic. Projection values are sour
 
 The projection path covers sidecar-derived primary taxonomy, sidecar-derived primary FY period, complete provenance for projected facts, explicit total-to-parent fallback, divided-unit support, `oracle_absent` coverage gain handling, and redacted statement-identity residual magnitudes. Runtime defaults remain off and no live network, Arelle invocation, value reveal, statement assembly, FX conversion, or default-on readiness is admitted.
 
-Next exact posture: `sec_xbrl_statement_assembly_deferred_pending_linkbase_emission_v1`.
+Next exact posture: `sec_xbrl_canonical_coverage_breadth_validate_only_v1`.
+
+## SEC XBRL Canonical Coverage Breadth Validate-Only Diagnostic
+
+Milestone: `sec_xbrl_canonical_coverage_breadth_validate_only_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1279-sec-xbrl-canonical-coverage-breadth.md`.
+
+Report: `diagnostics/assessment/sec-xbrl-canonical-coverage-breadth-report.json`.
+
+Status: additive validate-only coverage-breadth diagnostic. The canonical resolver and projection path now include a post-pass that derives `NoncurrentAssets[total]` and `NoncurrentLiabilities[total]` from governed Total minus Current inputs when both source facts are resolved. Derived facts use `status="derived"`, `mapping_method="derived_total_minus_current"`, and dual-input resolved-fact provenance.
+
+The committed report records only per-sector-class headline canonical counts, derived counts, coverage rates, concept identifiers, and the sector-structure limitation. It does not include issuer identities, source accessions, period dates, source URLs, local paths, raw filing text, or financial values. Runtime defaults remain off and no live network, Arelle invocation, value reveal, statement assembly, FX conversion, sector-family implementation, or default-on readiness is admitted.
+
+Next exact posture: `sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1`.
 
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 

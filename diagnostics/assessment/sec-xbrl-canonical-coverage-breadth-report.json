@@ -1,0 +1,753 @@
+{
+  "arelle_invoked": false,
+  "blocking_reasons": [],
+  "canonical_concept_defined_count": 22,
+  "canonical_concepts": [
+    {
+      "basis": "total",
+      "canonical_id": "Revenue",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax",
+        "us-gaap:Revenues",
+        "ifrs-full:Revenue"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "CostOfSales",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:CostOfGoodsAndServicesSold",
+        "us-gaap:CostOfRevenue",
+        "ifrs-full:CostOfSales"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "GrossProfit",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:GrossProfit",
+        "ifrs-full:GrossProfit"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "OperatingIncome",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:OperatingIncomeLoss",
+        "ifrs-full:ProfitLossFromOperatingActivities"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "ProfitBeforeTax",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+        "us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments",
+        "ifrs-full:ProfitLossBeforeTax"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "IncomeTaxExpense",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:IncomeTaxExpenseBenefit",
+        "ifrs-full:IncomeTaxExpenseContinuingOperations"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "ProfitLoss",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:ProfitLoss",
+        "ifrs-full:ProfitLoss",
+        "us-gaap:NetIncomeLoss"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "parent",
+      "canonical_id": "ProfitLoss",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:NetIncomeLoss",
+        "ifrs-full:ProfitLossAttributableToOwnersOfParent"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "EpsBasic",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:EarningsPerShareBasic",
+        "ifrs-full:BasicEarningsLossPerShare"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "EpsDiluted",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:EarningsPerShareDiluted",
+        "ifrs-full:DilutedEarningsLossPerShare"
+      ],
+      "statement": "income"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "CashAndEquivalents",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:CashAndCashEquivalentsAtCarryingValue",
+        "ifrs-full:CashAndCashEquivalents"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "CurrentAssets",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:AssetsCurrent",
+        "ifrs-full:CurrentAssets"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "NoncurrentAssets",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:AssetsNoncurrent",
+        "ifrs-full:NoncurrentAssets"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "TotalAssets",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:Assets",
+        "ifrs-full:Assets"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "CurrentLiabilities",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:LiabilitiesCurrent",
+        "ifrs-full:CurrentLiabilities"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "NoncurrentLiabilities",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:LiabilitiesNoncurrent",
+        "ifrs-full:NoncurrentLiabilities"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "TotalLiabilities",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:Liabilities",
+        "ifrs-full:Liabilities"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "Equity",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+        "ifrs-full:Equity"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "parent",
+      "canonical_id": "Equity",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:StockholdersEquity",
+        "ifrs-full:EquityAttributableToOwnersOfParent"
+      ],
+      "statement": "balance"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "OperatingCashFlow",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:NetCashProvidedByUsedInOperatingActivities",
+        "ifrs-full:CashFlowsFromUsedInOperatingActivities"
+      ],
+      "statement": "cashflow"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "InvestingCashFlow",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:NetCashProvidedByUsedInInvestingActivities",
+        "ifrs-full:CashFlowsFromUsedInInvestingActivities"
+      ],
+      "statement": "cashflow"
+    },
+    {
+      "basis": "total",
+      "canonical_id": "FinancingCashFlow",
+      "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
+      "mapping_method": "reviewed_statement_crosswalk",
+      "source_qnames": [
+        "us-gaap:NetCashProvidedByUsedInFinancingActivities",
+        "ifrs-full:CashFlowsFromUsedInFinancingActivities"
+      ],
+      "statement": "cashflow"
+    }
+  ],
+  "coverage_framing": "headline_canonical_coverage_by_sector_class_not_filing_wide",
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "committed_runtime_defaults_remain_off",
+      "evidence": {
+        "config_defaults_off": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "sector_aggregate_counts_are_consistent",
+      "evidence": {
+        "covered_count_including_derived": 248,
+        "headline_canonical_cell_count": 286,
+        "legitimately_absent_count": 38,
+        "sector_class_count": 2
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "noncurrent_derivation_recorded_as_distinct_coverage",
+      "evidence": {
+        "derived_count": 14
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "sector_structure_limitation_preserved",
+      "evidence": {
+        "deferred_design": "sector_conditioned_canonical_families_selected_by_sic_or_industry",
+        "implementation_in_this_slice": false,
+        "limitation": "The current 22-concept headline industrial schema does not represent financial sector statement structures such as bank, insurer, or REIT statements.",
+        "status": "known_limitation"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "redaction_clean",
+      "evidence": {
+        "passed": true,
+        "raw_accession_found": false,
+        "raw_contact_found": false,
+        "raw_local_path_found": false,
+        "raw_period_date_found": false,
+        "raw_url_found": false,
+        "raw_values_in_report": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "validate_only_non_goals_preserved",
+      "evidence": {
+        "arelle_invoked": false,
+        "live_network_used": false,
+        "non_goals_preserved": {
+          "cross_company_currency_conversion_claimed": false,
+          "default_on_readiness_claimed": false,
+          "filing_wide_canonicalization_claimed": false,
+          "final_financial_statement_semantics_claimed": false,
+          "linkbase_relationships_required_or_consumed": false,
+          "production_readiness_claimed": false,
+          "sector_conditioned_families_implemented": false,
+          "statement_assembly_claimed": false
+        },
+        "runtime_defaults_changed": false,
+        "validate_only": true,
+        "value_reveal_performed": false
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "canonical_coverage_breadth_validate_only_ready",
+  "live_network_used": false,
+  "next_slice": "sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1",
+  "non_goals_preserved": {
+    "cross_company_currency_conversion_claimed": false,
+    "default_on_readiness_claimed": false,
+    "filing_wide_canonicalization_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "linkbase_relationships_required_or_consumed": false,
+    "production_readiness_claimed": false,
+    "sector_conditioned_families_implemented": false,
+    "statement_assembly_claimed": false
+  },
+  "redaction": {
+    "passed": true,
+    "raw_accession_found": false,
+    "raw_contact_found": false,
+    "raw_local_path_found": false,
+    "raw_period_date_found": false,
+    "raw_url_found": false,
+    "raw_values_in_report": false
+  },
+  "runtime_defaults_changed": false,
+  "schema_id": "diagnostics.sec_xbrl_canonical_coverage_breadth.v1",
+  "sector_class_count": 2,
+  "sector_classes": [
+    {
+      "concepts": [
+        {
+          "basis": "total",
+          "canonical_id": "Revenue",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 10,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "CostOfSales",
+          "coverage_rate_including_derived": 0.7,
+          "derived_count": 0,
+          "direct_resolved_count": 7,
+          "legitimately_absent_count": 3
+        },
+        {
+          "basis": "total",
+          "canonical_id": "GrossProfit",
+          "coverage_rate_including_derived": 0.6,
+          "derived_count": 0,
+          "direct_resolved_count": 6,
+          "legitimately_absent_count": 4
+        },
+        {
+          "basis": "total",
+          "canonical_id": "OperatingIncome",
+          "coverage_rate_including_derived": 0.9,
+          "derived_count": 0,
+          "direct_resolved_count": 9,
+          "legitimately_absent_count": 1
+        },
+        {
+          "basis": "total",
+          "canonical_id": "ProfitBeforeTax",
+          "coverage_rate_including_derived": 0.9,
+          "derived_count": 0,
+          "direct_resolved_count": 9,
+          "legitimately_absent_count": 1
+        },
+        {
+          "basis": "total",
+          "canonical_id": "IncomeTaxExpense",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 10,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "ProfitLoss",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 10,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "parent",
+          "canonical_id": "ProfitLoss",
+          "coverage_rate_including_derived": 0.8,
+          "derived_count": 0,
+          "direct_resolved_count": 8,
+          "legitimately_absent_count": 2
+        },
+        {
+          "basis": "total",
+          "canonical_id": "EpsBasic",
+          "coverage_rate_including_derived": 0.9,
+          "derived_count": 0,
+          "direct_resolved_count": 9,
+          "legitimately_absent_count": 1
+        },
+        {
+          "basis": "total",
+          "canonical_id": "EpsDiluted",
+          "coverage_rate_including_derived": 0.9,
+          "derived_count": 0,
+          "direct_resolved_count": 9,
+          "legitimately_absent_count": 1
+        },
+        {
+          "basis": "total",
+          "canonical_id": "CashAndEquivalents",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 10,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "CurrentAssets",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 10,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "NoncurrentAssets",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 7,
+          "direct_resolved_count": 3,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "TotalAssets",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 10,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "CurrentLiabilities",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 10,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "NoncurrentLiabilities",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 7,
+          "direct_resolved_count": 3,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "TotalLiabilities",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 10,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "Equity",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 10,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "parent",
+          "canonical_id": "Equity",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 10,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "OperatingCashFlow",
+          "coverage_rate_including_derived": 0.9,
+          "derived_count": 0,
+          "direct_resolved_count": 9,
+          "legitimately_absent_count": 1
+        },
+        {
+          "basis": "total",
+          "canonical_id": "InvestingCashFlow",
+          "coverage_rate_including_derived": 0.8,
+          "derived_count": 0,
+          "direct_resolved_count": 8,
+          "legitimately_absent_count": 2
+        },
+        {
+          "basis": "total",
+          "canonical_id": "FinancingCashFlow",
+          "coverage_rate_including_derived": 0.9,
+          "derived_count": 0,
+          "direct_resolved_count": 9,
+          "legitimately_absent_count": 1
+        }
+      ],
+      "coverage_rate_including_derived": 0.9227,
+      "covered_count_including_derived": 203,
+      "derived_count": 14,
+      "direct_resolved_count": 189,
+      "headline_canonical_cell_count": 220,
+      "headline_canonical_defined_count": 22,
+      "issuer_count": 10,
+      "legitimately_absent_count": 17,
+      "sector_class": "industrial_commercial"
+    },
+    {
+      "concepts": [
+        {
+          "basis": "total",
+          "canonical_id": "Revenue",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 3,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "CostOfSales",
+          "coverage_rate_including_derived": 0.0,
+          "derived_count": 0,
+          "direct_resolved_count": 0,
+          "legitimately_absent_count": 3
+        },
+        {
+          "basis": "total",
+          "canonical_id": "GrossProfit",
+          "coverage_rate_including_derived": 0.0,
+          "derived_count": 0,
+          "direct_resolved_count": 0,
+          "legitimately_absent_count": 3
+        },
+        {
+          "basis": "total",
+          "canonical_id": "OperatingIncome",
+          "coverage_rate_including_derived": 0.6667,
+          "derived_count": 0,
+          "direct_resolved_count": 2,
+          "legitimately_absent_count": 1
+        },
+        {
+          "basis": "total",
+          "canonical_id": "ProfitBeforeTax",
+          "coverage_rate_including_derived": 0.6667,
+          "derived_count": 0,
+          "direct_resolved_count": 2,
+          "legitimately_absent_count": 1
+        },
+        {
+          "basis": "total",
+          "canonical_id": "IncomeTaxExpense",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 3,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "ProfitLoss",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 3,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "parent",
+          "canonical_id": "ProfitLoss",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 3,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "EpsBasic",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 3,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "EpsDiluted",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 3,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "CashAndEquivalents",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 3,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "CurrentAssets",
+          "coverage_rate_including_derived": 0.0,
+          "derived_count": 0,
+          "direct_resolved_count": 0,
+          "legitimately_absent_count": 3
+        },
+        {
+          "basis": "total",
+          "canonical_id": "NoncurrentAssets",
+          "coverage_rate_including_derived": 0.0,
+          "derived_count": 0,
+          "direct_resolved_count": 0,
+          "legitimately_absent_count": 3
+        },
+        {
+          "basis": "total",
+          "canonical_id": "TotalAssets",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 3,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "CurrentLiabilities",
+          "coverage_rate_including_derived": 0.0,
+          "derived_count": 0,
+          "direct_resolved_count": 0,
+          "legitimately_absent_count": 3
+        },
+        {
+          "basis": "total",
+          "canonical_id": "NoncurrentLiabilities",
+          "coverage_rate_including_derived": 0.0,
+          "derived_count": 0,
+          "direct_resolved_count": 0,
+          "legitimately_absent_count": 3
+        },
+        {
+          "basis": "total",
+          "canonical_id": "TotalLiabilities",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 3,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "Equity",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 3,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "parent",
+          "canonical_id": "Equity",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 3,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "OperatingCashFlow",
+          "coverage_rate_including_derived": 0.6667,
+          "derived_count": 0,
+          "direct_resolved_count": 2,
+          "legitimately_absent_count": 1
+        },
+        {
+          "basis": "total",
+          "canonical_id": "InvestingCashFlow",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 3,
+          "legitimately_absent_count": 0
+        },
+        {
+          "basis": "total",
+          "canonical_id": "FinancingCashFlow",
+          "coverage_rate_including_derived": 1.0,
+          "derived_count": 0,
+          "direct_resolved_count": 3,
+          "legitimately_absent_count": 0
+        }
+      ],
+      "coverage_rate_including_derived": 0.6818,
+      "covered_count_including_derived": 45,
+      "derived_count": 0,
+      "direct_resolved_count": 45,
+      "headline_canonical_cell_count": 66,
+      "headline_canonical_defined_count": 22,
+      "issuer_count": 3,
+      "legitimately_absent_count": 21,
+      "sector_class": "financial_structure_limited"
+    }
+  ],
+  "sector_structure_limitation": {
+    "deferred_design": "sector_conditioned_canonical_families_selected_by_sic_or_industry",
+    "implementation_in_this_slice": false,
+    "limitation": "The current 22-concept headline industrial schema does not represent financial sector statement structures such as bank, insurer, or REIT statements.",
+    "status": "known_limitation"
+  },
+  "source_mode": "redacted_reference_sector_summary_plus_committed_registry",
+  "summary": {
+    "coverage_rate_including_derived": 0.8671,
+    "covered_count_including_derived": 248,
+    "derived_count": 14,
+    "direct_resolved_count": 234,
+    "headline_canonical_cell_count": 286,
+    "legitimately_absent_count": 38
+  },
+  "target": "sec_xbrl_canonical_coverage_breadth_validate_only_v1",
+  "validate_only": true,
+  "value_reveal_performed": false
+}
