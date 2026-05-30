@@ -35,7 +35,9 @@ RAW_URL_RE = re.compile(r"https?://|www\.", re.IGNORECASE)
 RAW_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 RAW_PATH_RE = re.compile(r"(?:[A-Za-z]:[\\/]|\\\\|(?:^|[\s'\"(])/(?:[^/\s]+/)+[^/\s]+)")
 TICKER_TOKEN_RE = re.compile(r"\b[A-Z][A-Z0-9.-]{0,5}\b")
-CIK_TOKEN_RE = re.compile(r"\bcik[-_ ]?0*\d+\b|\b\d{6,10}\b", re.IGNORECASE)
+CIK_PREFIX_TOKEN_RE = re.compile(r"\bcik[-_ ]?0*\d{1,10}\b", re.IGNORECASE)
+CIK_BARE_TOKEN_RE = re.compile(r"\b\d{6,10}\b")
+CIK_FIELD_BARE_TOKEN_RE = re.compile(r"\b\d{1,10}\b")
 IDENTITY_KEYWORDS = ("ticker", "symbol", "issuer", "company", "cik", "accession", "url", "path", "contact", "email")
 IGNORED_TICKER_TOKENS = {"SEC", "XBRL", "GAAP", "IFRS", "USD", "CAD"}
 
@@ -442,6 +444,9 @@ def _iter_string_leaves(value: Any, *, field_path: str = ""):
         text = value.strip()
         if text:
             yield field_path or "<root>", text
+        return
+    if isinstance(value, int) and not isinstance(value, bool):
+        yield field_path or "<root>", str(value)
 
 
 def _string_identity_kinds(*, field_path: str, value: str) -> list[str]:
@@ -473,7 +478,11 @@ def _looks_like_raw_cik(*, field_path: str, value: str) -> bool:
     lowered = field_path.lower()
     if not any(keyword in lowered for keyword in IDENTITY_KEYWORDS):
         return False
-    return bool(CIK_TOKEN_RE.search(value))
+    if CIK_PREFIX_TOKEN_RE.search(value):
+        return True
+    if "cik" in lowered:
+        return bool(CIK_FIELD_BARE_TOKEN_RE.search(value))
+    return bool(CIK_BARE_TOKEN_RE.search(value))
 
 
 def _python_executable(path: Path) -> bool:
@@ -543,7 +552,7 @@ def _path_inside_repo_or_onedrive(path: Path | None, root: Path) -> bool:
         return False
     if _is_relative_to(path, root):
         return True
-    return any(part.lower() == "onedrive" for part in path.resolve(strict=False).parts)
+    return any(part.lower().startswith("onedrive") for part in path.resolve(strict=False).parts)
 
 
 def _resolve_path(path: str | Path) -> Path:
