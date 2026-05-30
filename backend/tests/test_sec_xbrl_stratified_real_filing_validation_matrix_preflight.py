@@ -206,6 +206,33 @@ def test_sec_xbrl_stratified_matrix_preflight_blocks_raw_identity_in_row_field(
     )
 
 
+def test_sec_xbrl_stratified_matrix_preflight_blocks_raw_cik_in_row_field(
+    tmp_path: Path,
+) -> None:
+    module = _preflight_module()
+    paths = _write_inputs(tmp_path)
+    runbook = json.loads(paths["runbook"].read_text(encoding="utf-8"))
+    runbook["selected_stratified_matrix"][0]["cik"] = "789019"
+    paths["runbook"].write_text(json.dumps(runbook), encoding="utf-8")
+
+    report = module.build_report(
+        source_root=ROOT,
+        runbook_report_path=paths["runbook"],
+        default_posture_report_path=paths["default_posture"],
+        real_product_runner_report_path=paths["real_product"],
+        env={},
+    )
+
+    assert report["selected_matrix_summary"]["raw_identity_scan_passed"] is False
+    assert report["selected_matrix_summary"]["raw_identity_hit_fields"] == [
+        {"field": "cik", "kinds": ["cik"]}
+    ]
+    assert any(
+        item["reason"] == "stratified_matrix_preflight_selected_matrix_incomplete"
+        for item in report["blocking_reasons"]
+    )
+
+
 def test_sec_xbrl_stratified_matrix_preflight_blocks_repo_arelle_paths(
     tmp_path: Path,
 ) -> None:
@@ -231,6 +258,52 @@ def test_sec_xbrl_stratified_matrix_preflight_blocks_repo_arelle_paths(
     )
 
     assert report["runtime_preflight"]["arelle"]["python_inside_repo"] is True
+    assert any(
+        item["reason"] == "stratified_matrix_preflight_arelle_environment_missing"
+        for item in report["blocking_reasons"]
+    )
+
+
+def test_sec_xbrl_stratified_matrix_preflight_blocks_onedrive_arelle_paths(
+    tmp_path: Path,
+) -> None:
+    module = _preflight_module()
+    paths = _write_inputs(tmp_path)
+    env_paths = _runtime_paths(tmp_path)
+    plan_path = _write_json(tmp_path / "plan.json", _external_plan())
+    one_drive_root = tmp_path / "OneDrive" / "arelle"
+    one_drive_python = one_drive_root / "python.exe"
+    one_drive_taxonomy = one_drive_root / "taxonomy.zip"
+    one_drive_cache = one_drive_root / "cache"
+    one_drive_root.mkdir(parents=True)
+    one_drive_python.write_text("", encoding="utf-8")
+    one_drive_taxonomy.write_text("", encoding="utf-8")
+    one_drive_cache.mkdir()
+
+    report = module.build_report(
+        source_root=ROOT,
+        runbook_report_path=paths["runbook"],
+        default_posture_report_path=paths["default_posture"],
+        real_product_runner_report_path=paths["real_product"],
+        env={
+            "SEC_XBRL_STRATIFIED_MATRIX_LIVE_AUTHORIZED": "true",
+            "SEC_XBRL_STRATIFIED_MATRIX_STORAGE_DIR": str(env_paths["storage"]),
+            "SEC_XBRL_ARELLE_PYTHON": str(one_drive_python),
+            "SEC_XBRL_ARELLE_TAXONOMY_PACKAGES": str(one_drive_taxonomy),
+            "SEC_XBRL_ARELLE_CACHE_DIR": str(one_drive_cache),
+            "SEC_XBRL_STRATIFIED_MATRIX_PLAN": str(plan_path),
+            "LAYER3_SEC_EDGAR_USER_AGENT": "redacted operator test agent",
+        },
+    )
+
+    arelle = report["runtime_preflight"]["arelle"]
+    assert report["decision"] == "stratified_matrix_preflight_requires_authorization_or_environment"
+    assert arelle["python_inside_repo"] is False
+    assert arelle["python_inside_repo_or_onedrive"] is True
+    assert arelle["taxonomy_packages_outside_repo"] is True
+    assert arelle["taxonomy_packages_outside_repo_or_onedrive"] is False
+    assert arelle["cache_dir_inside_repo"] is False
+    assert arelle["cache_dir_inside_repo_or_onedrive"] is True
     assert any(
         item["reason"] == "stratified_matrix_preflight_arelle_environment_missing"
         for item in report["blocking_reasons"]
@@ -300,6 +373,53 @@ def test_sec_xbrl_stratified_matrix_preflight_blocks_zero_minimum_for_required_s
     )
 
 
+def test_sec_xbrl_stratified_matrix_tracking_surfaces_require_external_plan() -> None:
+    progress = _read_repo_json("next_milestone_plans/layer3_progress_manifest.json")
+    proof = _read_repo_json("next_milestone_plans/layer3_workbench_proof_manifest.json")
+    board = (ROOT / "next_milestone_plans" / "layer3_progress_board.md").read_text(encoding="utf-8")
+
+    preflight_tracking = progress["sec_edgar_stratified_real_filing_validation_matrix_preflight_tracking"]
+    harness_tracking = progress["sec_edgar_stratified_real_filing_validation_matrix_external_plan_harness_tracking"]
+    preflight_proof = proof["sec_edgar_stratified_real_filing_validation_matrix_preflight_proof"]
+    harness_proof = proof["sec_edgar_stratified_real_filing_validation_matrix_external_plan_harness_proof"]
+
+    assert preflight_tracking["external_matrix_plan_required_for_selected_tranche"] is True
+    assert harness_tracking["external_matrix_plan_required_for_selected_tranche"] is True
+    assert preflight_proof["external_matrix_plan_required_for_selected_tranche"] is True
+    assert harness_proof["external_matrix_plan_required_for_selected_tranche"] is True
+    assert "selected tranche requires an off-repo stratified matrix plan" in board
+    assert "runner accepts optional off-repo stratified matrix plan" not in json.dumps(harness_proof)
+
+
+def test_sec_xbrl_value_reveal_tracking_separates_superseded_reports() -> None:
+    progress = _read_repo_json("next_milestone_plans/layer3_progress_manifest.json")
+    proof = _read_repo_json("next_milestone_plans/layer3_workbench_proof_manifest.json")
+    board = (ROOT / "next_milestone_plans" / "layer3_progress_board.md").read_text(encoding="utf-8")
+
+    readiness_tracking = progress["sec_edgar_arelle_value_reveal_operator_exercise_tracking"]
+    readiness_proof = proof["sec_edgar_arelle_value_reveal_operator_exercise_readiness_proof"]
+    authority_tracking = progress["sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_tracking"]
+    authority_proof = proof["sec_edgar_arelle_value_reveal_authority_provisioning_preflight_proof"]
+
+    for payload in (readiness_tracking, readiness_proof):
+        assert payload.get("report") is None
+        assert payload["superseded_readiness_report"].endswith(
+            "sec-xbrl-value-reveal-operator-exercise-run-report.json"
+        )
+        assert payload["authoritative_proof_report"] == payload["live_proof_report"]
+
+    for payload in (authority_tracking, authority_proof):
+        assert payload.get("preflight_report") is None
+        assert payload["superseded_preflight_report"].endswith(
+            "sec-xbrl-value-reveal-authority-provisioning-preflight-report.json"
+        )
+        assert payload["authoritative_proof_report"] == payload["live_proof_report"]
+
+    assert "Superseded readiness report" in board
+    assert "Authoritative proof report" in board
+    assert "remains superseded readiness evidence only" in board
+
+
 def _write_inputs(tmp_path: Path) -> dict[str, Path]:
     return {
         "runbook": _write_json(tmp_path / "runbook.json", _runbook_report()),
@@ -311,6 +431,10 @@ def _write_inputs(tmp_path: Path) -> dict[str, Path]:
 def _write_json(path: Path, value: dict) -> Path:
     path.write_text(json.dumps(value, sort_keys=True), encoding="utf-8")
     return path
+
+
+def _read_repo_json(path: str) -> dict:
+    return json.loads((ROOT / path).read_text(encoding="utf-8"))
 
 
 def _runtime_paths(tmp_path: Path) -> dict[str, Path]:

@@ -35,6 +35,7 @@ RAW_URL_RE = re.compile(r"https?://|www\.", re.IGNORECASE)
 RAW_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 RAW_PATH_RE = re.compile(r"(?:[A-Za-z]:[\\/]|\\\\|(?:^|[\s'\"(])/(?:[^/\s]+/)+[^/\s]+)")
 TICKER_TOKEN_RE = re.compile(r"\b[A-Z][A-Z0-9.-]{0,5}\b")
+CIK_TOKEN_RE = re.compile(r"\bcik[-_ ]?0*\d+\b|\b\d{6,10}\b", re.IGNORECASE)
 IDENTITY_KEYWORDS = ("ticker", "symbol", "issuer", "company", "cik", "accession", "url", "path", "contact", "email")
 IGNORED_TICKER_TOKENS = {"SEC", "XBRL", "GAAP", "IFRS", "USD", "CAD"}
 
@@ -157,11 +158,11 @@ def build_report(
             "arelle_environment_available_for_future_matrix_execution",
             runtime["arelle"]["python_exists"]
             and runtime["arelle"]["python_executable"]
-            and runtime["arelle"]["python_inside_repo"] is False
+            and runtime["arelle"]["python_inside_repo_or_onedrive"] is False
             and runtime["arelle"]["taxonomy_packages_all_exist"]
-            and runtime["arelle"]["taxonomy_packages_outside_repo"]
+            and runtime["arelle"]["taxonomy_packages_outside_repo_or_onedrive"]
             and runtime["arelle"]["cache_dir_exists"]
-            and runtime["arelle"]["cache_dir_inside_repo"] is False,
+            and runtime["arelle"]["cache_dir_inside_repo_or_onedrive"] is False,
             runtime["arelle"],
             "stratified_matrix_preflight_arelle_environment_missing",
         ),
@@ -321,12 +322,23 @@ def _arelle_env(*, source_root: Path, env: Mapping[str, str]) -> dict[str, Any]:
     python_exists = resolved_python.is_file() if resolved_python is not None else False
     package_exists = [path.is_file() for path in resolved_packages]
     package_inside_repo = [_is_relative_to(path, resolved_root) for path in resolved_packages]
+    package_inside_repo_or_onedrive = [
+        _path_inside_repo_or_onedrive(path, resolved_root) for path in resolved_packages
+    ]
     cache_inside_repo = _is_relative_to(resolved_cache, resolved_root) if resolved_cache is not None else False
+    cache_inside_repo_or_onedrive = (
+        _path_inside_repo_or_onedrive(resolved_cache, resolved_root) if resolved_cache is not None else False
+    )
+    python_inside_repo = _is_relative_to(resolved_python, resolved_root) if resolved_python is not None else False
+    python_inside_repo_or_onedrive = (
+        _path_inside_repo_or_onedrive(resolved_python, resolved_root) if resolved_python is not None else False
+    )
     return {
         "python_present": bool(python_path),
         "python_exists": python_exists,
         "python_executable": _python_executable(resolved_python) if python_exists and resolved_python is not None else False,
-        "python_inside_repo": _is_relative_to(resolved_python, resolved_root) if resolved_python is not None else False,
+        "python_inside_repo": python_inside_repo,
+        "python_inside_repo_or_onedrive": python_inside_repo_or_onedrive,
         "python_marker": _marker(python_path) if python_path else None,
         "taxonomy_packages_present": bool(packages),
         "taxonomy_package_count": len(packages),
@@ -335,9 +347,15 @@ def _arelle_env(*, source_root: Path, env: Mapping[str, str]) -> dict[str, Any]:
         "taxonomy_packages_all_exist": bool(packages) and all(package_exists),
         "taxonomy_packages_outside_repo": bool(packages) and all(not inside for inside in package_inside_repo),
         "taxonomy_package_inside_repo_count": sum(1 for inside in package_inside_repo if inside),
+        "taxonomy_packages_outside_repo_or_onedrive": bool(packages)
+        and all(not inside for inside in package_inside_repo_or_onedrive),
+        "taxonomy_package_inside_repo_or_onedrive_count": sum(
+            1 for inside in package_inside_repo_or_onedrive if inside
+        ),
         "cache_dir_present": bool(cache_dir),
         "cache_dir_exists": resolved_cache.is_dir() if resolved_cache is not None else False,
         "cache_dir_inside_repo": cache_inside_repo,
+        "cache_dir_inside_repo_or_onedrive": cache_inside_repo_or_onedrive,
         "cache_dir_marker": _marker(cache_dir) if cache_dir else None,
         "internet_connectivity_mode": str(env.get("SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY") or "offline")
         .strip()
@@ -439,6 +457,8 @@ def _string_identity_kinds(*, field_path: str, value: str) -> list[str]:
         kinds.append("path")
     if _looks_like_raw_ticker(field_path=field_path, value=value):
         kinds.append("ticker")
+    if _looks_like_raw_cik(field_path=field_path, value=value):
+        kinds.append("cik")
     return kinds
 
 
@@ -447,6 +467,13 @@ def _looks_like_raw_ticker(*, field_path: str, value: str) -> bool:
     if not any(keyword in lowered for keyword in IDENTITY_KEYWORDS):
         return False
     return any(token not in IGNORED_TICKER_TOKENS for token in TICKER_TOKEN_RE.findall(value))
+
+
+def _looks_like_raw_cik(*, field_path: str, value: str) -> bool:
+    lowered = field_path.lower()
+    if not any(keyword in lowered for keyword in IDENTITY_KEYWORDS):
+        return False
+    return bool(CIK_TOKEN_RE.search(value))
 
 
 def _python_executable(path: Path) -> bool:
@@ -509,6 +536,14 @@ def _is_relative_to(path: Path | None, root: Path) -> bool:
     except ValueError:
         return False
     return True
+
+
+def _path_inside_repo_or_onedrive(path: Path | None, root: Path) -> bool:
+    if path is None:
+        return False
+    if _is_relative_to(path, root):
+        return True
+    return any(part.lower() == "onedrive" for part in path.resolve(strict=False).parts)
 
 
 def _resolve_path(path: str | Path) -> Path:
