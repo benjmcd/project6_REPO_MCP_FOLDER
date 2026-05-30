@@ -9506,7 +9506,21 @@ Status: additive validate-only comparability diagnostic. The reviewed 22-concept
 
 The diagnostic covers primary-taxonomy source preference, FY period scoping, explicit total-to-parent basis fallback, legitimately absent cells, divided-unit support, and redacted statement-identity residual magnitudes. Runtime defaults remain off and no live network, Arelle invocation, value reveal, statement assembly, FX conversion, or default-on readiness is admitted.
 
-Next exact posture: `sec_xbrl_canonical_projection_artifact_design_after_prerequisites_v1`.
+Next exact posture: `sec_xbrl_canonical_projection_artifact_validate_only_v1`.
+
+## SEC XBRL Canonical Projection Validate-Only Diagnostic
+
+Milestone: `sec_xbrl_canonical_projection_artifact_validate_only_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1278-sec-xbrl-canonical-projection.md`.
+
+Report: `diagnostics/assessment/sec-xbrl-canonical-projection-report.json`.
+
+Status: additive validate-only projection diagnostic. Projection values are sourced from the governed Arelle sidecar value store through resolved facts; CompanyFacts is used only as a period-aware oracle.
+
+The projection path covers sidecar-derived primary taxonomy, sidecar-derived primary FY period, complete provenance for projected facts, explicit total-to-parent fallback, divided-unit support, `oracle_absent` coverage gain handling, and redacted statement-identity residual magnitudes. Runtime defaults remain off and no live network, Arelle invocation, value reveal, statement assembly, FX conversion, or default-on readiness is admitted.
+
+Next exact posture: `sec_xbrl_statement_assembly_deferred_pending_linkbase_emission_v1`.
 
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
