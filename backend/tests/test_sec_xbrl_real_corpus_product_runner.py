@@ -91,6 +91,7 @@ def test_sec_xbrl_real_corpus_product_runner_counts_ifrs_full_companyfacts() -> 
     assert result["confidence"] == "primary_companyfacts_standard_taxonomy_accession_scope"
     assert result["fact_count"] == 1
     assert result["_value_keys"] == [("Revenue", "CAD", "123.45")]
+    assert result["_value_keys_period_aware"] == [("Revenue", "CAD", ("i", ""), "123.45")]
 
 
 def test_sec_xbrl_real_corpus_product_runner_matches_ifrs_full_sidecar_values(monkeypatch) -> None:
@@ -122,6 +123,93 @@ def test_sec_xbrl_real_corpus_product_runner_matches_ifrs_full_sidecar_values(mo
     )
 
     assert result == {"match_count": 1, "compared_count": 1, "match_rate": 1.0}
+
+
+def test_sec_xbrl_real_corpus_product_runner_adds_period_aware_value_match(monkeypatch) -> None:
+    module = _runner_module()
+    sidecar = {
+        "resolved_fact_records": [
+            _resolved_fact(
+                "fact-extra",
+                local_name="CashAndCashEquivalentsAtCarryingValue",
+                period={"type": "instant", "instant": "prior-extra-period"},
+            ),
+            _resolved_fact(
+                "fact-current",
+                local_name="CashAndCashEquivalentsAtCarryingValue",
+                period={"type": "instant", "instant": "current-period"},
+            ),
+            _resolved_fact(
+                "fact-prior",
+                local_name="CashAndCashEquivalentsAtCarryingValue",
+                period={"type": "instant", "instant": "prior-period"},
+            ),
+        ]
+    }
+    monkeypatch.setattr(
+        module.layer3_sec_xbrl_sidecar,
+        "read_sec_edgar_arelle_resolved_fact_authority_internal_value_store",
+        lambda _sidecar: {
+            "value_records": [
+                {"resolved_fact_id": "fact-extra", "effective_value": "300"},
+                {"resolved_fact_id": "fact-current", "effective_value": "200"},
+                {"resolved_fact_id": "fact-prior", "effective_value": "100"},
+            ]
+        },
+    )
+    companyfacts = {
+        "_value_keys": [
+            ("CashAndCashEquivalentsAtCarryingValue", "USD", "200"),
+            ("CashAndCashEquivalentsAtCarryingValue", "USD", "100"),
+        ],
+        "_value_keys_period_aware": [
+            ("CashAndCashEquivalentsAtCarryingValue", "USD", ("i", "current-period"), "200"),
+            ("CashAndCashEquivalentsAtCarryingValue", "USD", ("i", "prior-period"), "100"),
+        ],
+    }
+
+    period_blind = module._companyfacts_value_match(sidecar=sidecar, companyfacts=companyfacts)
+    period_aware = module._companyfacts_value_match_period_aware(sidecar=sidecar, companyfacts=companyfacts)
+
+    assert period_blind == {"match_count": 2, "compared_count": 3, "match_rate": 0.6667}
+    assert period_aware == {"match_count": 2, "compared_count": 2, "match_rate": 1.0}
+
+
+def test_sec_xbrl_real_corpus_product_runner_period_aware_includes_divided_units(monkeypatch) -> None:
+    module = _runner_module()
+    sidecar = {
+        "resolved_fact_records": [
+            _resolved_fact(
+                "fact-eps",
+                local_name="EarningsPerShareBasic",
+                period={"type": "duration", "start": "eps-start", "end": "eps-end"},
+                unit={
+                    "currency": "iso4217:USD",
+                    "measures": ["iso4217:USD"],
+                    "numerator": ["iso4217:USD"],
+                    "denominator": ["xbrli:shares"],
+                },
+                decimals="2",
+            )
+        ]
+    }
+    monkeypatch.setattr(
+        module.layer3_sec_xbrl_sidecar,
+        "read_sec_edgar_arelle_resolved_fact_authority_internal_value_store",
+        lambda _sidecar: {"value_records": [{"resolved_fact_id": "fact-eps", "effective_value": "2.50"}]},
+    )
+    companyfacts = {
+        "_value_keys": [("EarningsPerShareBasic", "USD/shares", "2.50")],
+        "_value_keys_period_aware": [
+            ("EarningsPerShareBasic", "USD/shares", ("d", "eps-start", "eps-end"), "2.50")
+        ],
+    }
+
+    period_blind = module._companyfacts_value_match(sidecar=sidecar, companyfacts=companyfacts)
+    period_aware = module._companyfacts_value_match_period_aware(sidecar=sidecar, companyfacts=companyfacts)
+
+    assert period_blind == {"match_count": 0, "compared_count": 0, "match_rate": None}
+    assert period_aware == {"match_count": 1, "compared_count": 1, "match_rate": 1.0}
 
 
 def test_sec_xbrl_real_corpus_product_runner_admits_when_existing_chain_reaches_archive(
@@ -625,6 +713,28 @@ def test_sec_xbrl_real_corpus_product_runner_reads_independent_tally_from_sideca
     assert row["companyfacts_oracle_used"] is True
     assert observed_identity["cik"] == "123456"
     assert observed_identity["accession"] == "0000123456-26-000001"
+
+
+def _resolved_fact(
+    fact_id: str,
+    *,
+    local_name: str,
+    period: dict,
+    unit: dict | None = None,
+    decimals: str = "0",
+) -> dict:
+    return {
+        "resolved_fact_id": fact_id,
+        "concept": {
+            "namespace": "xbrl.ifrs.org/test",
+            "local_name": local_name,
+            "standard": True,
+        },
+        "unit": unit or {"currency": "iso4217:USD", "measures": ["iso4217:USD"]},
+        "period": period,
+        "dimensions": {"explicit": [], "typed": []},
+        "decimals": decimals,
+    }
 
 
 def test_sec_xbrl_real_corpus_product_runner_allows_delivery_block_for_no_inline_records() -> None:
