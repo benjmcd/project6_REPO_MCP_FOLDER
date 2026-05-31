@@ -1851,7 +1851,7 @@ def _sector_family_us_gaap_sidecars_by_source_hash(storage_dir: Path) -> dict[st
         qnames = {
             str((record.get("concept") or {}).get("qname") or "")
             for record in payload.get("resolved_fact_records") or []
-            if isinstance(record, Mapping) and isinstance(record.get("concept"), Mapping)
+            if _sector_family_standard_non_dimensional_record(record)
         }
         sidecars_by_source_hash.setdefault(source_hash, []).append(
             {
@@ -1872,6 +1872,8 @@ def _is_governed_arelle_sidecar_receipt(payload: Mapping[str, Any]) -> bool:
     sidecar_receipt_suffix = sidecar_hash[:24]
     records = payload.get("resolved_fact_records") or []
     if not isinstance(records, list) or not all(isinstance(record, Mapping) for record in records):
+        return False
+    if any(set(record).intersection({"value", "effective_value", "lexical_value"}) for record in records):
         return False
     redacted_records = [_redacted_sidecar_inventory_record(record) for record in records]
     projection = payload.get("resolved_fact_projection")
@@ -1966,6 +1968,25 @@ def _is_governed_arelle_sidecar_receipt(payload: Mapping[str, Any]) -> bool:
         and payload.get("diagnostics_hash") == diagnostics_hash
         and stable_hash(sidecar_receipt_hash_basis) == sidecar_hash
         and projection_matches
+    )
+
+
+def _sector_family_standard_non_dimensional_record(record: Any) -> bool:
+    if not isinstance(record, Mapping):
+        return False
+    concept = record.get("concept") or {}
+    dimensions = record.get("dimensions") or {}
+    if not isinstance(concept, Mapping) or not isinstance(dimensions, Mapping):
+        return False
+    explicit_dimensions = dimensions.get("explicit") or []
+    typed_dimensions = dimensions.get("typed") or []
+    return (
+        bool(concept.get("qname"))
+        and concept.get("standard") is True
+        and isinstance(explicit_dimensions, list)
+        and isinstance(typed_dimensions, list)
+        and not explicit_dimensions
+        and not typed_dimensions
     )
 
 

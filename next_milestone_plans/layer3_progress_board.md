@@ -9662,7 +9662,7 @@ Status: `sector_family_real_filer_validation_ready`. The branch-local PR #2020 e
 
 The gate is validate-only and fail-closed. It verifies governed connector receipt shape and hash-basis parity before trusting issuer class, nested source-artifact receipt hash-basis parity before accepting connector acquisitions, sidecar metadata/resolved-fact inventory/receipt hash-basis parity before consuming qnames, single-sidecar anchor satisfaction rather than cross-sidecar qname union, distinct bank and insurer source artifacts, supporting-only non-activation, row-shape stability, and the universal-only control. Full live-source-artifact receipt hash-basis revalidation is not claimed by this offline gate because the redacted connector response does not carry the server-derived URL hash or user-agent hash basis; that remains a bounded follow-up Tier-1 hardening concern, not a persistence/schema gate.
 
-Focused validation: `python -m pytest ./backend/tests/test_sec_xbrl_real_corpus_product_runner.py -q` -> `32 passed`.
+Focused validation: `python -m pytest ./backend/tests/test_sec_xbrl_real_corpus_product_runner.py -q` -> `34 passed`.
 
 Non-goals preserved for this validation pass: no runtime default enablement, new live SEC network request, new source acquisition, new Arelle invocation, value reveal, persistence, schema, `models.py`, Alembic migration, provider or connector dispatch, operator workflow/API/UI, raw runtime artifacts committed, production-readiness claim, or default-on readiness claim.
 

@@ -629,6 +629,50 @@ def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_sidecar_
     ]
 
 
+def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_sidecars_with_raw_values(
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage = _offline_sector_family_storage(
+        tmp_path,
+        sidecar_raw_values=True,
+    )
+
+    gate = module._sector_family_activation_validation(offline_storage_dir=storage)
+    sub_gate = gate["us_gaap_bank_insurer_subgate"]
+
+    assert gate["status"] == "partially_satisfied_us_gaap_subgate_pending"
+    assert sub_gate["state"] == "blocked_offline_artifacts_incomplete"
+    assert sub_gate["offline_storage_evidence"]["sidecar_reference_count"] == 0
+    assert "real_us_gaap_bank_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+    assert "real_us_gaap_insurer_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+
+
+def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_requires_standard_non_dimensional_anchors(
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage = _offline_sector_family_storage(
+        tmp_path,
+        sidecar_standard_concepts=False,
+        sidecar_dimensional_facts=True,
+    )
+
+    gate = module._sector_family_activation_validation(offline_storage_dir=storage)
+    sub_gate = gate["us_gaap_bank_insurer_subgate"]
+    evidence = sub_gate["offline_storage_evidence"]
+
+    assert gate["status"] == "partially_satisfied_us_gaap_subgate_pending"
+    assert sub_gate["state"] == "blocked_offline_artifacts_incomplete"
+    assert evidence["sidecar_reference_count"] == 2
+    assert "real_us_gaap_bank_filing_activation_anchor_missing" in evidence["blocked_reasons"]
+    assert "real_us_gaap_insurer_filing_activation_anchor_missing" in evidence["blocked_reasons"]
+
+
 def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_nested_acquisition_hash_mismatch(
     tmp_path: Path,
 ) -> None:
@@ -1315,6 +1359,9 @@ def _offline_sector_family_storage(
     nested_acquisition_valid: bool = True,
     split_insurer_sidecars: bool = False,
     shared_bank_insurer_source: bool = False,
+    sidecar_raw_values: bool = False,
+    sidecar_standard_concepts: bool = True,
+    sidecar_dimensional_facts: bool = False,
 ) -> Path:
     storage = storage_dir or tmp_path / "offline-storage"
     connector_dir = storage / "layer3-sec-edgar-real-filing-acquisition-connector" / "receipts"
@@ -1377,6 +1424,9 @@ def _offline_sector_family_storage(
         receipt_shape_valid=sidecar_receipt_shape_valid,
         inventory_valid=sidecar_inventory_valid,
         hash_basis_valid=sidecar_hash_basis_valid,
+        raw_values=sidecar_raw_values,
+        standard_concepts=sidecar_standard_concepts,
+        dimensional_facts=sidecar_dimensional_facts,
     )
     if not shared_bank_insurer_source:
         if split_insurer_sidecars:
@@ -1388,6 +1438,9 @@ def _offline_sector_family_storage(
                 receipt_shape_valid=sidecar_receipt_shape_valid,
                 inventory_valid=sidecar_inventory_valid,
                 hash_basis_valid=sidecar_hash_basis_valid,
+                raw_values=sidecar_raw_values,
+                standard_concepts=sidecar_standard_concepts,
+                dimensional_facts=sidecar_dimensional_facts,
             )
             _write_sidecar(
                 sidecar_dir / "insurer-sidecar-claims.json",
@@ -1397,6 +1450,9 @@ def _offline_sector_family_storage(
                 receipt_shape_valid=sidecar_receipt_shape_valid,
                 inventory_valid=sidecar_inventory_valid,
                 hash_basis_valid=sidecar_hash_basis_valid,
+                raw_values=sidecar_raw_values,
+                standard_concepts=sidecar_standard_concepts,
+                dimensional_facts=sidecar_dimensional_facts,
             )
         else:
             _write_sidecar(
@@ -1411,6 +1467,9 @@ def _offline_sector_family_storage(
                 receipt_shape_valid=sidecar_receipt_shape_valid,
                 inventory_valid=sidecar_inventory_valid,
                 hash_basis_valid=sidecar_hash_basis_valid,
+                raw_values=sidecar_raw_values,
+                standard_concepts=sidecar_standard_concepts,
+                dimensional_facts=sidecar_dimensional_facts,
             )
     return storage
 
@@ -1597,15 +1656,24 @@ def _write_sidecar(
     receipt_shape_valid: bool = True,
     inventory_valid: bool = True,
     hash_basis_valid: bool = True,
+    raw_values: bool = False,
+    standard_concepts: bool = True,
+    dimensional_facts: bool = False,
 ) -> None:
-    records = [
-        {
-            "concept": {"qname": qname},
+    records = []
+    for index, qname in enumerate(qnames, start=1):
+        record = {
+            "concept": {"qname": qname, "standard": standard_concepts},
+            "dimensions": {
+                "explicit": [{"axis": "fixture:Axis", "member": "fixture:Member"}] if dimensional_facts else [],
+                "typed": [],
+            },
             "resolved_fact_id": f"fact-{index}",
             "value_hash": stable_hash({"source_hash": source_hash, "qname": qname, "index": index}),
         }
-        for index, qname in enumerate(qnames, start=1)
-    ]
+        if raw_values:
+            record["value"] = "123.45"
+        records.append(record)
     projection = [_redacted_sidecar_record(record) for record in records]
     if receipt_shape_valid:
         inventory_hash = stable_hash(projection) if inventory_valid else "0" * 64
