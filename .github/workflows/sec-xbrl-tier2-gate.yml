@@ -1,0 +1,56 @@
+name: SEC XBRL Tier-2 review gate
+
+# Mechanical enforcement of the Tier-2 leg of
+# next_milestone_plans/Layer3_planning_docs/SEC-XBRL-MERGE-GATE-VERIFIER-POLICY.md
+#
+# If a PR changes a path-detectable Tier-2 surface (irreversible / durable:
+# Alembic migrations, ORM models, or SEC XBRL persistence services), this gate
+# FAILS unless the PR carries the `tier2-independent-review-recorded` label,
+# which the operator/verifier applies only after an independent pre-merge review
+# is recorded on the PR. Tier-1 PRs (no Tier-2 paths) pass immediately.
+#
+# This gate is advisory until branch protection on `main` is set to REQUIRE the
+# `tier2-review-gate` check (an operator/GitHub-admin action). Value-reveal,
+# default-on, and redaction-posture changes are not reliably path-detectable and
+# remain governed by the policy doc + AGENTS.md (soft enforcement).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  tier2-review-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require independent-review label when Tier-2 paths change
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+          echo "Base: $BASE_SHA  Head: $HEAD_SHA"
+          CHANGED="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          echo "Changed files:"
+          echo "$CHANGED"
+          TIER2="$(echo "$CHANGED" | grep -E '^backend/alembic/versions/|^backend/app/models/models\.py$|^backend/app/services/.*persist' || true)"
+          if [ -z "$TIER2" ]; then
+            echo "No path-detectable Tier-2 surface changed -> Tier 1; gate passes."
+            exit 0
+          fi
+          echo "Tier-2 surface changed:"
+          echo "$TIER2"
+          case ",$PR_LABELS," in
+            *,tier2-independent-review-recorded,*)
+              echo "Label 'tier2-independent-review-recorded' present -> gate passes."
+              exit 0
+              ;;
+          esac
+          echo "::error::Tier-2 surface changed (migrations / models.py / persistence) but the PR lacks the 'tier2-independent-review-recorded' label. Per SEC-XBRL-MERGE-GATE-VERIFIER-POLICY.md, record an independent pre-merge review and apply that label before merge."
+          exit 1

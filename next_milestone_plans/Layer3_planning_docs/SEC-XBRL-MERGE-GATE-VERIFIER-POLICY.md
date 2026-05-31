@@ -57,6 +57,18 @@ Merge gate (Tier 1 requirements PLUS):
      PR before merge.
    - The executor MUST NOT self-certify and merge a Tier-2 PR.
 
+## Enforcement
+
+Soft (in effect): this policy is referenced from `AGENTS.md` (Git And PR Workflow) and recorded as a durable executor
+memory note, so the executor consults it and pauses on Tier-2 PRs.
+
+Hard (mechanical): the `SEC XBRL Tier-2 review gate` workflow (`.github/workflows/sec-xbrl-tier2-gate.yml`) fails a PR
+that changes a path-detectable Tier-2 surface (Alembic migrations, `backend/app/models/models.py`, or
+`backend/app/services/*persist*`) unless the PR carries the `tier2-independent-review-recorded` label, applied only
+after an independent pre-merge review is recorded. The gate becomes blocking once branch protection on `main` is
+configured to REQUIRE the `tier2-review-gate` check (an operator/GitHub-admin action). Value-reveal, default-on, and
+redaction-posture changes are not reliably path-detectable and remain soft-governed by this policy and AGENTS.md.
+
 ## Disposition recording
 
 When the bot is silent at merge time, record a tracking issue following the #2004 / #2008 / #2009 pattern: the opening
