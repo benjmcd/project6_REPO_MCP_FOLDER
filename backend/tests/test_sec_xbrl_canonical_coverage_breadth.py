@@ -182,6 +182,23 @@ def test_coverage_breadth_report_is_sector_aggregate_and_redacted(tmp_path: Path
     assert "C:" + "\\" not in text
 
 
+def test_coverage_breadth_fails_closed_on_duplicate_sector_rows(tmp_path: Path) -> None:
+    diagnostic = _diagnostic_module()
+    reference = list(diagnostic._reference_sector_results())
+    duplicate_sector_rows = [reference[0], reference[0], reference[1]]
+
+    report = diagnostic.build_report(
+        source_root=_source_root(tmp_path),
+        sector_results=duplicate_sector_rows,
+    )
+
+    assert report["decision"] == "canonical_coverage_breadth_validate_only_blocked"
+    assert any(
+        item["reason"] == "canonical_coverage_breadth_counts_inconsistent"
+        for item in report["blocking_reasons"]
+    )
+
+
 def _source_root(tmp_path: Path) -> Path:
     source_root = tmp_path / "source"
     config_path = source_root / "backend" / "app" / "core" / "config.py"

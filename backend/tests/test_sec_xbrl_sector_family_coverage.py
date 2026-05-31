@@ -117,6 +117,24 @@ def test_build_report_preserves_explicit_empty_family_evidence(tmp_path: Path) -
     assert report["blocking_reasons"]
 
 
+def test_build_report_fails_closed_on_duplicate_family_evidence(tmp_path: Path) -> None:
+    diagnostic = _diagnostic_module()
+    reference = list(diagnostic.REFERENCE_FAMILY_EVIDENCE)
+    duplicate_family_rows = [reference[0], reference[1], reference[1], reference[2]]
+
+    report = diagnostic.build_report(
+        source_root=_source_root(tmp_path),
+        per_family=duplicate_family_rows,
+    )
+
+    assert report["decision"] == "sector_family_coverage_validate_only_blocked"
+    assert report["summary"]["contract_passed"] is False
+    assert any(
+        item["reason"] == "sector_family_coverage_counts_inconsistent"
+        for item in report["blocking_reasons"]
+    )
+
+
 def test_committed_report_is_redacted_family_coverage_only() -> None:
     report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
     text = json.dumps(report, sort_keys=True)
