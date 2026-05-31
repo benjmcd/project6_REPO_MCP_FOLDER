@@ -347,9 +347,10 @@ def test_sec_xbrl_real_corpus_product_runner_admits_when_existing_chain_reaches_
         },
     ]
 
+    storage = _offline_sector_family_storage(tmp_path)
     report = module.build_report(
         live=True,
-        storage_dir=tmp_path,
+        storage_dir=storage,
         matrix_plan=_stratified_plan(),
         user_agent="Layer3 diagnostics contact@example.com",
         runner=lambda _storage, _agent, _namespace, _taxonomy: ready_rows,
@@ -364,10 +365,48 @@ def test_sec_xbrl_real_corpus_product_runner_admits_when_existing_chain_reaches_
     assert report["summary"]["companyfacts_value_match_rate"] == 0.99
     assert report["summary"]["filings_with_invalid_taxonomy_package_entries"] == 32
     assert report["summary"]["taxonomy_package_invalid_count"] == 192
-    assert report["sector_family_activation_validation"]["status"] == "partially_satisfied_us_gaap_subgate_pending"
-    assert report["sector_family_activation_validation"]["full_gate_satisfied"] is False
+    assert report["sector_family_activation_validation"]["status"] == "sector_family_real_filer_validation_satisfied"
+    assert report["sector_family_activation_validation"]["full_gate_satisfied"] is True
     assert report["runtime_default_decision"]["resulting_default_enabled"] is True
-    assert report["next_slice"] == "sec_xbrl_sector_family_us_gaap_bank_insurer_subgate_v1"
+    assert report["next_slice"] == "sec_edgar_operator_surface_gated_value_reveal_v1"
+
+    incomplete_storage = _offline_sector_family_storage(
+        tmp_path,
+        storage_dir=tmp_path / "incomplete-offline-storage",
+        insurer_qnames=["us-gaap:PremiumsEarnedNet"],
+    )
+    blocked_report = module.build_report(
+        live=True,
+        storage_dir=incomplete_storage,
+        matrix_plan=_stratified_plan(),
+        user_agent="Layer3 diagnostics contact@example.com",
+        runner=lambda _storage, _agent, _namespace, _taxonomy: ready_rows,
+    )
+    assert blocked_report["gate_verdict"] == "FAIL_OR_INCONCLUSIVE"
+    assert blocked_report["runtime_default_decision"]["resulting_default_enabled"] is False
+    assert blocked_report["next_slice"] == "sec_xbrl_sector_family_us_gaap_bank_insurer_subgate_v1"
+    assert any(
+        item["reason"] == "sector_family_available_filer_activation_dimension_not_satisfied"
+        for item in blocked_report["blocking_reasons"]
+    )
+
+    default_live_storage = tmp_path / "default-live-storage"
+    monkeypatch.setattr(module, "DEFAULT_LIVE_STORAGE", default_live_storage)
+
+    def runner_writes_sector_family_storage(storage_path, _agent, _namespace, _taxonomy):
+        _offline_sector_family_storage(tmp_path, storage_dir=storage_path)
+        return ready_rows
+
+    default_storage_report = module.build_report(
+        live=True,
+        matrix_plan=_stratified_plan(),
+        user_agent="Layer3 diagnostics contact@example.com",
+        runner=runner_writes_sector_family_storage,
+    )
+    assert default_storage_report["sector_family_activation_validation"]["status"] == (
+        "sector_family_real_filer_validation_satisfied"
+    )
+    assert default_storage_report["sector_family_activation_validation"]["full_gate_satisfied"] is True
 
 
 def test_sec_xbrl_real_corpus_product_runner_scaffolds_sector_family_activation_dimension() -> None:
@@ -469,6 +508,29 @@ def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_fails_closed_wit
     assert gate["full_gate_satisfied"] is False
     assert gate["pending_sub_gates"] == [sub_gate]
     assert sub_gate["state"] == "blocked_offline_artifacts_incomplete"
+    assert "real_us_gaap_insurer_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+
+
+def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_ungoverned_sidecar_json(
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage = _offline_sector_family_storage(
+        tmp_path,
+        sidecar_metadata_valid=False,
+    )
+
+    gate = module._sector_family_activation_validation(offline_storage_dir=storage)
+    sub_gate = gate["us_gaap_bank_insurer_subgate"]
+
+    assert gate["status"] == "partially_satisfied_us_gaap_subgate_pending"
+    assert sub_gate["state"] == "blocked_offline_artifacts_incomplete"
+    assert sub_gate["offline_storage_evidence"]["sidecar_reference_count"] == 0
+    assert "real_us_gaap_bank_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
     assert "real_us_gaap_insurer_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
         "blocked_reasons"
     ]
@@ -580,6 +642,7 @@ def test_sec_xbrl_real_corpus_product_runner_executes_external_stratified_plan_r
         }
 
     monkeypatch.setattr(module, "_run_matrix_chunk", fake_run_matrix_chunk)
+    _offline_sector_family_storage(tmp_path, storage_dir=tmp_path)
 
     report = module.build_report(
         live=True,
@@ -1080,10 +1143,12 @@ def _plan_chunk(matrix_label: str, company_matrix: list[str], strata: list[str])
 def _offline_sector_family_storage(
     tmp_path: Path,
     *,
+    storage_dir: Path | None = None,
     bank_qnames: list[str] | None = None,
     insurer_qnames: list[str] | None = None,
+    sidecar_metadata_valid: bool = True,
 ) -> Path:
-    storage = tmp_path / "offline-storage"
+    storage = storage_dir or tmp_path / "offline-storage"
     connector_dir = storage / "layer3-sec-edgar-real-filing-acquisition-connector" / "receipts"
     sidecar_dir = storage / "layer3-sec-edgar-arelle-resolved-fact-authority" / "receipts"
     connector_dir.mkdir(parents=True)
@@ -1108,6 +1173,7 @@ def _offline_sector_family_storage(
         sidecar_dir / "bank-sidecar.json",
         bank_hash,
         bank_qnames or ["us-gaap:Deposits"],
+        metadata_valid=sidecar_metadata_valid,
     )
     _write_sidecar(
         sidecar_dir / "insurer-sidecar.json",
@@ -1117,6 +1183,7 @@ def _offline_sector_family_storage(
             "us-gaap:PremiumsEarnedNet",
             "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
         ],
+        metadata_valid=sidecar_metadata_valid,
     )
     return storage
 
@@ -1138,7 +1205,8 @@ def _offline_acquisition(example_id: str, source_hash: str) -> dict:
     }
 
 
-def _write_sidecar(path: Path, source_hash: str, qnames: list[str]) -> None:
+def _write_sidecar(path: Path, source_hash: str, qnames: list[str], *, metadata_valid: bool = True) -> None:
+    sidecar_hash = f"{source_hash}-sidecar"
     payload = {
         "schema_id": "layer3.sec_edgar_arelle_resolved_fact_authority_sidecar.v1",
         "source_artifact_receipt_hash": source_hash,
@@ -1147,6 +1215,18 @@ def _write_sidecar(path: Path, source_hash: str, qnames: list[str]) -> None:
             for qname in qnames
         ],
     }
+    if metadata_valid:
+        payload.update(
+            {
+                "adapter_id": "arelle_resolved_fact_authority_adapter",
+                "sidecar_receipt_hash": sidecar_hash,
+                "sidecar_state": "sec_edgar_arelle_resolved_fact_authority_sidecar_ready",
+                "authority_hashes": {
+                    "source_artifact_receipt_hash": source_hash,
+                    "sidecar_receipt_hash": sidecar_hash,
+                },
+            }
+        )
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 

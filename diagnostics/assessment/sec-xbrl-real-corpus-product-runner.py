@@ -239,8 +239,10 @@ def build_report(
     matrix_chunks = _matrix_chunks_from_readiness(matrix_plan_readiness)
     rows: list[dict[str, Any]] = []
     storage_marker = None
+    sector_family_storage_dir = storage_dir
     if preflight["state"] == "passed" and matrix_plan_readiness["state"] == "passed":
         live_storage = _live_storage_dir(storage_dir)
+        sector_family_storage_dir = live_storage
         storage_marker = _storage_marker(live_storage)
         run = runner or _run_live_product_path
         if runner is None:
@@ -261,7 +263,7 @@ def build_report(
 
     summary = _summary(rows)
     sector_family_activation_validation = _sector_family_activation_validation(
-        offline_storage_dir=storage_dir,
+        offline_storage_dir=sector_family_storage_dir,
     )
     criteria = _criteria(
         preflight,
@@ -1674,7 +1676,7 @@ def _sector_family_us_gaap_qnames_by_source_hash(storage_dir: Path) -> dict[str,
     qnames_by_source_hash: dict[str, set[str]] = {}
     for path in _service_receipt_paths(storage_dir, "layer3-sec-edgar-arelle-resolved-fact-authority"):
         payload = _read_json_object(path)
-        if not payload:
+        if not payload or not _is_governed_arelle_sidecar_receipt(payload):
             continue
         source_hash = str(payload.get("source_artifact_receipt_hash") or "")
         if not source_hash:
@@ -1686,6 +1688,23 @@ def _sector_family_us_gaap_qnames_by_source_hash(storage_dir: Path) -> dict[str,
         }
         qnames_by_source_hash.setdefault(source_hash, set()).update(qname for qname in qnames if qname)
     return qnames_by_source_hash
+
+
+def _is_governed_arelle_sidecar_receipt(payload: Mapping[str, Any]) -> bool:
+    source_hash = str(payload.get("source_artifact_receipt_hash") or "")
+    sidecar_hash = str(payload.get("sidecar_receipt_hash") or "")
+    authority_hashes = payload.get("authority_hashes") or {}
+    return (
+        payload.get("schema_id") == "layer3.sec_edgar_arelle_resolved_fact_authority_sidecar.v1"
+        and payload.get("sidecar_state") == "sec_edgar_arelle_resolved_fact_authority_sidecar_ready"
+        and payload.get("adapter_id") == "arelle_resolved_fact_authority_adapter"
+        and bool(source_hash)
+        and bool(sidecar_hash)
+        and isinstance(authority_hashes, Mapping)
+        and authority_hashes.get("source_artifact_receipt_hash") == source_hash
+        and authority_hashes.get("sidecar_receipt_hash") == sidecar_hash
+        and isinstance(payload.get("resolved_fact_records"), list)
+    )
 
 
 def _sector_family_us_gaap_class_result(
@@ -1825,7 +1844,7 @@ def _criteria(
                 "sector_family_real_filer_validation_satisfied",
             }
             and sector_family_activation_validation.get("us_gaap_bank_insurer_subgate_state")
-            in {"pending_operator_offline_filings", "blocked_offline_artifacts_incomplete", "validated"},
+            in {"pending_operator_offline_filings", "validated"},
             {
                 "dimension_id": sector_family_activation_validation.get("dimension_id"),
                 "status": sector_family_activation_validation.get("status"),
@@ -2266,6 +2285,8 @@ def _next_slice(
     reasons = {str(item.get("reason") or "") for item in blockers}
     if "real_corpus_product_path_live_preflight_not_satisfied" in reasons:
         return "sec_edgar_real_corpus_product_path_runner_live_execution_v1"
+    if "sector_family_available_filer_activation_dimension_not_satisfied" in reasons:
+        return SECTOR_FAMILY_US_GAAP_SUBGATE_NEXT_SLICE
     return "sec_edgar_arelle_extraction_coverage_remediation_then_gate_rerun_v1"
 
 
