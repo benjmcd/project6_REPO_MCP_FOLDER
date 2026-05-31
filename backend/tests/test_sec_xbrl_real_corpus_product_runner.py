@@ -606,6 +606,52 @@ def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_sidecar_
     ]
 
 
+def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_sidecar_hash_basis_mismatch(
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage = _offline_sector_family_storage(
+        tmp_path,
+        sidecar_hash_basis_valid=False,
+    )
+
+    gate = module._sector_family_activation_validation(offline_storage_dir=storage)
+    sub_gate = gate["us_gaap_bank_insurer_subgate"]
+
+    assert gate["status"] == "partially_satisfied_us_gaap_subgate_pending"
+    assert sub_gate["state"] == "blocked_offline_artifacts_incomplete"
+    assert sub_gate["offline_storage_evidence"]["sidecar_reference_count"] == 0
+    assert "real_us_gaap_bank_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+    assert "real_us_gaap_insurer_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+
+
+def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_nested_acquisition_hash_mismatch(
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage = _offline_sector_family_storage(
+        tmp_path,
+        nested_acquisition_valid=False,
+    )
+
+    gate = module._sector_family_activation_validation(offline_storage_dir=storage)
+    sub_gate = gate["us_gaap_bank_insurer_subgate"]
+
+    assert gate["status"] == "partially_satisfied_us_gaap_subgate_pending"
+    assert sub_gate["state"] == "blocked_offline_artifacts_incomplete"
+    assert sub_gate["offline_storage_evidence"]["connector_reference_count"] == 0
+    assert "real_us_gaap_bank_filing_annual_reference_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+    assert "real_us_gaap_insurer_filing_annual_reference_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+
+
 def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_split_sidecar_anchor_union(
     tmp_path: Path,
 ) -> None:
@@ -1264,7 +1310,9 @@ def _offline_sector_family_storage(
     sidecar_metadata_valid: bool = True,
     sidecar_receipt_shape_valid: bool = True,
     sidecar_inventory_valid: bool = True,
+    sidecar_hash_basis_valid: bool = True,
     connector_receipt_valid: bool = True,
+    nested_acquisition_valid: bool = True,
     split_insurer_sidecars: bool = False,
     shared_bank_insurer_source: bool = False,
 ) -> Path:
@@ -1273,20 +1321,39 @@ def _offline_sector_family_storage(
     sidecar_dir = storage / "layer3-sec-edgar-arelle-resolved-fact-authority" / "receipts"
     connector_dir.mkdir(parents=True)
     sidecar_dir.mkdir(parents=True)
-    bank_hash = "b" * 64
-    insurer_hash = "c" * 64
     if shared_bank_insurer_source:
         examples = [_offline_example("shared-bank-insurer-example", ["financial_institution", "insurance"])]
-        acquisitions = [_offline_acquisition("shared-bank-insurer-example", bank_hash, "4" * 64, "6" * 64)]
+        acquisitions = [
+            _offline_acquisition(
+                examples[0],
+                live_hash="4" * 64,
+                content_hash="6" * 64,
+                nested_valid=nested_acquisition_valid,
+            )
+        ]
+        bank_hash = acquisitions[0]["source_artifact_receipt"]["source_artifact_receipt_hash"]
+        insurer_hash = bank_hash
     else:
         examples = [
             _offline_example("bank-example", "financial_institution"),
             _offline_example("insurer-example", "insurance"),
         ]
         acquisitions = [
-            _offline_acquisition("bank-example", bank_hash, "4" * 64, "6" * 64),
-            _offline_acquisition("insurer-example", insurer_hash, "5" * 64, "7" * 64),
+            _offline_acquisition(
+                examples[0],
+                live_hash="4" * 64,
+                content_hash="6" * 64,
+                nested_valid=nested_acquisition_valid,
+            ),
+            _offline_acquisition(
+                examples[1],
+                live_hash="5" * 64,
+                content_hash="7" * 64,
+                nested_valid=nested_acquisition_valid,
+            ),
         ]
+        bank_hash = acquisitions[0]["source_artifact_receipt"]["source_artifact_receipt_hash"]
+        insurer_hash = acquisitions[1]["source_artifact_receipt"]["source_artifact_receipt_hash"]
     connector = _offline_connector_receipt(
         examples=examples,
         acquisitions=acquisitions,
@@ -1309,6 +1376,7 @@ def _offline_sector_family_storage(
         metadata_valid=sidecar_metadata_valid,
         receipt_shape_valid=sidecar_receipt_shape_valid,
         inventory_valid=sidecar_inventory_valid,
+        hash_basis_valid=sidecar_hash_basis_valid,
     )
     if not shared_bank_insurer_source:
         if split_insurer_sidecars:
@@ -1319,7 +1387,7 @@ def _offline_sector_family_storage(
                 metadata_valid=sidecar_metadata_valid,
                 receipt_shape_valid=sidecar_receipt_shape_valid,
                 inventory_valid=sidecar_inventory_valid,
-                sidecar_hash="8" * 64,
+                hash_basis_valid=sidecar_hash_basis_valid,
             )
             _write_sidecar(
                 sidecar_dir / "insurer-sidecar-claims.json",
@@ -1328,7 +1396,7 @@ def _offline_sector_family_storage(
                 metadata_valid=sidecar_metadata_valid,
                 receipt_shape_valid=sidecar_receipt_shape_valid,
                 inventory_valid=sidecar_inventory_valid,
-                sidecar_hash="9" * 64,
+                hash_basis_valid=sidecar_hash_basis_valid,
             )
         else:
             _write_sidecar(
@@ -1342,6 +1410,7 @@ def _offline_sector_family_storage(
                 metadata_valid=sidecar_metadata_valid,
                 receipt_shape_valid=sidecar_receipt_shape_valid,
                 inventory_valid=sidecar_inventory_valid,
+                hash_basis_valid=sidecar_hash_basis_valid,
             )
     return storage
 
@@ -1425,20 +1494,96 @@ def _offline_example(example_id: str, class_tags: str | list[str]) -> dict:
     tags = [class_tags] if isinstance(class_tags, str) else list(class_tags)
     return {
         "example_id": example_id,
+        "cik_hash": stable_hash({"fixture_cik": example_id}),
+        "accession_or_submission_id_hash": stable_hash({"fixture_accession": example_id}),
         "form_type": "10-K",
+        "filing_date": "2026-01-31",
         "issuer_profile_tags": tags + ["domestic_large_cap", "annual_form_family"],
+        "primary_document_family": "inline_xbrl",
+        "source_family": "complete_submission_text",
+        "source_family_roles": ["complete_submission_text", "html_inline_xbrl"],
+        "expected_support_status": "supported",
+        "selection_policy": "explicit_form_types_v1",
+        "parser_family": "sec_edgar_filing",
+        "parser_contract_id": "aps_sec_edgar_filing_parser_v1",
+        "artifact_role_set": ["complete_submission_text"],
+        "diagnostics": {},
     }
 
 
-def _offline_acquisition(example_id: str, source_hash: str, live_hash: str, content_hash: str) -> dict:
+def _offline_acquisition(
+    example: dict,
+    *,
+    live_hash: str,
+    content_hash: str,
+    nested_valid: bool = True,
+) -> dict:
+    artifact_ref_hash = stable_hash({"fixture_artifact_ref": example["example_id"]})
+    content_length = 1000 + len(str(example["example_id"]))
+    source_receipt_id = f"sec-edgar-text-table-source-artifact-{artifact_ref_hash[:24]}"
+    source_hash = stable_hash(
+        {
+            "schema_id": "layer3.sec_edgar_text_table_source_artifact_receipt.v1",
+            "schema_version": 1,
+            "source_artifact_receipt_id": source_receipt_id,
+            "source_artifact_ref_hash": artifact_ref_hash,
+            "content_sha256": content_hash,
+            "content_length": content_length,
+            "accession_or_submission_id_hash": example["accession_or_submission_id_hash"],
+            "cik_or_filer_ref_hash": example["cik_hash"],
+            "form_type": example["form_type"],
+            "filing_date": example["filing_date"],
+            "parser_family": "sec_edgar_filing",
+            "parser_contract_id": "aps_sec_edgar_filing_parser_v1",
+            "typed_content_contract_id": "aps_sec_edgar_filing_units_v1",
+            "source_mode": "artifact_sec_edgar_filing_parser",
+        }
+    )
+    if not nested_valid:
+        source_hash = "f" * 64
+    source_identity_hash = stable_hash(
+        {
+            "hash_version": "sec_edgar_live_source_identity_hash_v1",
+            "cik_or_filer_ref_hash": example["cik_hash"],
+            "accession_or_submission_id_hash": example["accession_or_submission_id_hash"],
+            "form_type": example["form_type"],
+            "filing_date": example["filing_date"],
+        }
+    )
     return {
-        "example_id": example_id,
-        "live_source_artifact_receipt_id": f"sec-edgar-live-source-artifact-{live_hash[:24]}",
+        "example_id": example["example_id"],
+        "live_source_artifact_receipt_id": (
+            f"sec-edgar-text-table-live-source-artifact-{source_identity_hash[:24]}-{live_hash[:24]}"
+        ),
         "live_source_artifact_receipt_hash": live_hash,
         "live_source_artifact_receipt_status": "available",
         "source_artifact_receipt": {
+            "schema_id": "layer3.sec_edgar_text_table_source_artifact_receipt.v1",
+            "schema_version": 1,
+            "source_artifact_receipt_id": source_receipt_id,
             "source_artifact_receipt_hash": source_hash,
+            "source_artifact_ref_hash": artifact_ref_hash,
             "content_sha256": content_hash,
+            "content_length": content_length,
+            "parser_family": "sec_edgar_filing",
+            "parser_contract_id": "aps_sec_edgar_filing_parser_v1",
+            "typed_content_contract_id": "aps_sec_edgar_filing_units_v1",
+            "source_mode": "artifact_sec_edgar_filing_parser",
+            "server_owned_source_artifact_authority": True,
+            "raw_source_artifact_ref_exposed": False,
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "artifact_bytes_exposed": False,
+        },
+        "retained_source_artifact_manifest": {
+            "source_artifact_family": "complete_submission_text_filing_artifact",
+            "artifact_ref_hash": artifact_ref_hash,
+            "content_sha256": content_hash,
+            "content_length": content_length,
+            "retained_source_artifact_available": True,
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "artifact_bytes_exposed": False,
         },
     }
 
@@ -1451,37 +1596,113 @@ def _write_sidecar(
     metadata_valid: bool = True,
     receipt_shape_valid: bool = True,
     inventory_valid: bool = True,
-    sidecar_hash: str | None = None,
+    hash_basis_valid: bool = True,
 ) -> None:
     records = [
-        {"concept": {"qname": qname}, "resolved_fact_id": f"fact-{index}"}
+        {
+            "concept": {"qname": qname},
+            "resolved_fact_id": f"fact-{index}",
+            "value_hash": stable_hash({"source_hash": source_hash, "qname": qname, "index": index}),
+        }
         for index, qname in enumerate(qnames, start=1)
     ]
     projection = [_redacted_sidecar_record(record) for record in records]
     if receipt_shape_valid:
-        sidecar_hash = sidecar_hash or (("d" if source_hash.startswith("b") else "e") * 64)
         inventory_hash = stable_hash(projection) if inventory_valid else "0" * 64
+        local_value_inventory_hash = stable_hash([record["value_hash"] for record in projection])
+        diagnostics = {"adapter_execution": "isolated_subprocess_cli", "test_fixture": True}
+        parity = {
+            "arelle_resolved_fact_count": len(records),
+            "regex_fact_authority_count": len(records),
+        }
+        diagnostics_hash = stable_hash(diagnostics)
+        sidecar_hash = stable_hash(
+            {
+                "hash_version": "sec_edgar_arelle_resolved_fact_authority_sidecar_hash_v1",
+                "sidecar_mode": "sec_edgar_arelle_resolved_fact_authority_sidecar_v1",
+                "adapter_version": "arelle_resolved_fact_authority_adapter:arelle-release==2.41.3",
+                "parser_receipt_hash": "1" * 64,
+                "connector_receipt_hash": "2" * 64,
+                "live_source_artifact_receipt_hash": "3" * 64,
+                "source_artifact_receipt_hash": source_hash,
+                "content_sha256": "4" * 64,
+                "primary_document_hash": "5" * 64,
+                "document_inventory_hash": "6" * 64,
+                "content_order_hash": "7" * 64,
+                "table_candidate_inventory_hash": "8" * 64,
+                "inline_xbrl_marker_inventory_hash": "9" * 64,
+                "resolved_fact_inventory_hash": inventory_hash,
+                "local_value_inventory_hash": local_value_inventory_hash,
+                "internal_value_store_enabled": False,
+                "internal_value_store_hash": None,
+                "diagnostics_hash": diagnostics_hash,
+                "parity_hash": stable_hash(parity),
+            }
+        )
+        if not hash_basis_valid:
+            sidecar_hash = "f" * 64
     else:
         sidecar_hash = f"{source_hash}-sidecar"
         inventory_hash = f"{source_hash}-inventory"
+        local_value_inventory_hash = f"{source_hash}-local-values"
+        diagnostics = {}
+        parity = {}
+        diagnostics_hash = f"{source_hash}-diagnostics"
     payload = {
         "schema_id": "layer3.sec_edgar_arelle_resolved_fact_authority_sidecar.v1",
+        "schema_version": 1,
+        "sidecar_mode": "sec_edgar_arelle_resolved_fact_authority_sidecar_v1",
+        "operator_decision": "derive_sec_edgar_arelle_resolved_fact_authority_sidecar",
         "source_artifact_receipt_hash": source_hash,
         "resolved_fact_records": records,
         "resolved_fact_count": len(records),
         "resolved_fact_projection": projection,
+        "local_value_inventory_hash": local_value_inventory_hash,
+        "internal_value_store": {
+            "schema_id": "layer3.sec_edgar_arelle_resolved_fact_authority_internal_value_store.v1",
+            "store_state": "not_created_cutover_flag_off",
+            "creation_gated_by_cutover_flag": True,
+            "consumption_gated_by_cutover_flag": True,
+            "value_record_count": 0,
+            "values_exposed_in_status_projection": False,
+            "retention_policy": "not_created_without_cutover_flag",
+        },
+        "diagnostics": diagnostics,
+        "diagnostics_hash": diagnostics_hash,
+        "parity": parity,
     }
     if metadata_valid:
         payload.update(
             {
                 "adapter_id": "arelle_resolved_fact_authority_adapter",
+                "adapter_version": "arelle_resolved_fact_authority_adapter:arelle-release==2.41.3",
+                "parser_receipt_hash": "1" * 64,
+                "connector_receipt_hash": "2" * 64,
+                "live_source_artifact_receipt_hash": "3" * 64,
+                "content_sha256": "4" * 64,
+                "primary_document_hash": "5" * 64,
+                "document_inventory_hash": "6" * 64,
+                "content_order_hash": "7" * 64,
+                "table_candidate_inventory_hash": "8" * 64,
+                "inline_xbrl_marker_inventory_hash": "9" * 64,
                 "resolved_fact_inventory_hash": inventory_hash,
                 "sidecar_receipt_id": f"sec-edgar-arelle-resolved-fact-authority-{sidecar_hash[:24]}",
                 "sidecar_receipt_hash": sidecar_hash,
                 "sidecar_receipt_ref": f"sec-edgar-arelle-resolved-fact-authority:{sidecar_hash[:24]}",
                 "sidecar_state": "sec_edgar_arelle_resolved_fact_authority_sidecar_ready",
                 "authority_hashes": {
+                    "parser_receipt_hash": "1" * 64,
+                    "connector_receipt_hash": "2" * 64,
+                    "live_source_artifact_receipt_hash": "3" * 64,
+                    "content_sha256": "4" * 64,
+                    "primary_document_hash": "5" * 64,
+                    "document_inventory_hash": "6" * 64,
+                    "content_order_hash": "7" * 64,
+                    "table_candidate_inventory_hash": "8" * 64,
+                    "inline_xbrl_marker_inventory_hash": "9" * 64,
                     "resolved_fact_inventory_hash": inventory_hash,
+                    "local_value_inventory_hash": local_value_inventory_hash,
+                    "diagnostics_hash": diagnostics_hash,
                     "source_artifact_receipt_hash": source_hash,
                     "sidecar_receipt_hash": sidecar_hash,
                 },

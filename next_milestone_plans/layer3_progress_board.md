@@ -9658,13 +9658,13 @@ Runner: `diagnostics/assessment/sec-xbrl-real-corpus-product-runner.py`.
 
 Report: `diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json`.
 
-Status: `sector_family_real_filer_validation_ready`. The branch-local PR #2020 evidence validates redacted operator-acquired offline US-GAAP bank and insurer annual filing receipts through the existing real-corpus product runner.
+Status: `sector_family_real_filer_validation_ready`. The branch-local PR #2020 evidence validates redacted operator-acquired offline US-GAAP bank and insurer annual filing receipts through the existing real-corpus product runner. The validation pass itself reads existing offline receipts and performs no new live SEC network request, source acquisition, Arelle subprocess invocation, value reveal, persistence, schema, API/UI, default-on, or operator-workflow action. The evidence provenance remains live/Arelle: the offline receipts being revalidated were operator-acquired during an earlier governed live SEC/Arelle run, which is why the committed report and manifests retain `live_sec_network_used=true`, source-acquisition, and Arelle-sidecar-count fields for the source evidence.
 
-The gate is validate-only and fail-closed. It verifies governed connector receipt shape and hash-basis parity before trusting issuer class, sidecar metadata and resolved-fact inventory parity before consuming qnames, single-sidecar anchor satisfaction rather than cross-sidecar qname union, distinct bank and insurer source artifacts, supporting-only non-activation, row-shape stability, and the universal-only control.
+The gate is validate-only and fail-closed. It verifies governed connector receipt shape and hash-basis parity before trusting issuer class, nested source-artifact receipt hash-basis parity before accepting connector acquisitions, sidecar metadata/resolved-fact inventory/receipt hash-basis parity before consuming qnames, single-sidecar anchor satisfaction rather than cross-sidecar qname union, distinct bank and insurer source artifacts, supporting-only non-activation, row-shape stability, and the universal-only control. Full live-source-artifact receipt hash-basis revalidation is not claimed by this offline gate because the redacted connector response does not carry the server-derived URL hash or user-agent hash basis; that remains a bounded follow-up Tier-1 hardening concern, not a persistence/schema gate.
 
-Focused validation: `python -m pytest ./backend/tests/test_sec_xbrl_real_corpus_product_runner.py -q` -> `30 passed`.
+Focused validation: `python -m pytest ./backend/tests/test_sec_xbrl_real_corpus_product_runner.py -q` -> `32 passed`.
 
-Non-goals preserved: no runtime default enablement, live SEC network, source acquisition, Arelle invocation, value reveal, persistence, schema, `models.py`, Alembic migration, provider or connector dispatch, operator workflow/API/UI, raw runtime artifacts committed, production-readiness claim, or default-on readiness claim.
+Non-goals preserved for this validation pass: no runtime default enablement, new live SEC network request, new source acquisition, new Arelle invocation, value reveal, persistence, schema, `models.py`, Alembic migration, provider or connector dispatch, operator workflow/API/UI, raw runtime artifacts committed, production-readiness claim, or default-on readiness claim.
 
 Status flags: `sector_family_real_filer_validation_ready=true`; `tier1_validate_only=true`; `projection_persistence_deferred_to_tier2_pre_review=true`.
 

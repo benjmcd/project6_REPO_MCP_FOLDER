@@ -1619,6 +1619,10 @@ def _sector_family_us_gaap_offline_storage_evidence(storage_dir: Path) -> dict[s
         "offline_storage_used": True,
         "connector_reference_count": len(examples_by_source_hash),
         "sidecar_reference_count": sum(len(sidecars) for sidecars in sidecars_by_source_hash.values()),
+        "connector_receipt_hash_basis_validated": bool(examples_by_source_hash),
+        "nested_source_artifact_receipt_hash_basis_validated": bool(examples_by_source_hash),
+        "sidecar_receipt_hash_basis_validated": bool(sidecars_by_source_hash),
+        "live_source_artifact_receipt_hash_basis_deferred": True,
         "required_distinct_source_artifact_count": len(SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS),
         "distinct_source_artifact_marker_count": len(distinct_source_artifact_markers),
         "class_results": class_results,
@@ -1717,6 +1721,7 @@ def _is_governed_connector_receipt(payload: Mapping[str, Any]) -> bool:
     acquisition_records = [item for item in acquisitions if isinstance(item, Mapping)]
     if len(records) != int(manifest.get("example_count") or -1) or len(acquisition_records) != len(acquisitions):
         return False
+    records_by_id = {str(item.get("example_id") or ""): item for item in records}
     if manifest.get("manifest_hash") != stable_hash(
         {
             "examples": records,
@@ -1728,21 +1733,13 @@ def _is_governed_connector_receipt(payload: Mapping[str, Any]) -> bool:
     live_hashes: list[str] = []
     artifact_hashes: list[str] = []
     for receipt in acquisition_records:
+        record = records_by_id.get(str(receipt.get("example_id") or ""))
+        if not isinstance(record, Mapping) or not _is_governed_connector_acquisition_receipt(receipt, record):
+            return False
         live_hash = str(receipt.get("live_source_artifact_receipt_hash") or "")
         source_receipt = receipt.get("source_artifact_receipt") or {}
-        if not isinstance(source_receipt, Mapping):
-            return False
-        source_hash = str(source_receipt.get("source_artifact_receipt_hash") or "")
-        content_hash = str(source_receipt.get("content_sha256") or "")
-        if (
-            receipt.get("live_source_artifact_receipt_status") != "available"
-            or not bool(HEX64_RE.fullmatch(live_hash))
-            or not bool(HEX64_RE.fullmatch(source_hash))
-            or not bool(HEX64_RE.fullmatch(content_hash))
-        ):
-            return False
         live_hashes.append(live_hash)
-        artifact_hashes.append(content_hash)
+        artifact_hashes.append(str(source_receipt.get("content_sha256") or ""))
     return (
         basis.get("schema_id") == layer3_sec_edgar_real_filing_acquisition_connector.SCHEMA_ID
         and basis.get("schema_version") == layer3_sec_edgar_real_filing_acquisition_connector.SCHEMA_VERSION
@@ -1754,6 +1751,91 @@ def _is_governed_connector_receipt(payload: Mapping[str, Any]) -> bool:
         and basis.get("artifact_hashes") == artifact_hashes
         and basis.get("classification_hashes") == [stable_hash(item) for item in records]
         and basis.get("diagnostics_hash") == stable_hash(diagnostics)
+    )
+
+
+def _is_governed_connector_acquisition_receipt(
+    receipt: Mapping[str, Any],
+    example_record: Mapping[str, Any],
+) -> bool:
+    live_hash = str(receipt.get("live_source_artifact_receipt_hash") or "")
+    source_receipt = receipt.get("source_artifact_receipt") or {}
+    retained_manifest = receipt.get("retained_source_artifact_manifest") or {}
+    if not isinstance(source_receipt, Mapping) or not isinstance(retained_manifest, Mapping):
+        return False
+    source_hash = str(source_receipt.get("source_artifact_receipt_hash") or "")
+    source_id = str(source_receipt.get("source_artifact_receipt_id") or "")
+    artifact_ref_hash = str(source_receipt.get("source_artifact_ref_hash") or "")
+    content_hash = str(source_receipt.get("content_sha256") or "")
+    try:
+        content_length = int(source_receipt.get("content_length"))
+    except (TypeError, ValueError):
+        return False
+    cik_hash = str(example_record.get("cik_hash") or "")
+    accession_hash = str(example_record.get("accession_or_submission_id_hash") or "")
+    form_type = str(example_record.get("form_type") or "")
+    filing_date = str(example_record.get("filing_date") or "")
+    source_identity_hash = stable_hash(
+        {
+            "hash_version": "sec_edgar_live_source_identity_hash_v1",
+            "cik_or_filer_ref_hash": cik_hash,
+            "accession_or_submission_id_hash": accession_hash,
+            "form_type": form_type,
+            "filing_date": filing_date,
+        }
+    )
+    expected_source_id = f"{layer3_sec_edgar_live_source_artifact.SOURCE_ARTIFACT_RECEIPT_PREFIX}-{artifact_ref_hash[:24]}"
+    expected_source_hash = stable_hash(
+        {
+            "schema_id": layer3_sec_edgar_live_source_artifact.SOURCE_ARTIFACT_RECEIPT_SCHEMA_ID,
+            "schema_version": layer3_sec_edgar_live_source_artifact.SCHEMA_VERSION,
+            "source_artifact_receipt_id": expected_source_id,
+            "source_artifact_ref_hash": artifact_ref_hash,
+            "content_sha256": content_hash,
+            "content_length": content_length,
+            "accession_or_submission_id_hash": accession_hash,
+            "cik_or_filer_ref_hash": cik_hash,
+            "form_type": form_type,
+            "filing_date": filing_date,
+            "parser_family": layer3_sec_edgar_live_source_artifact.PARSER_FAMILY,
+            "parser_contract_id": layer3_sec_edgar_live_source_artifact.PARSER_CONTRACT_ID,
+            "typed_content_contract_id": layer3_sec_edgar_live_source_artifact.TYPED_CONTENT_CONTRACT_ID,
+            "source_mode": layer3_sec_edgar_live_source_artifact.SOURCE_MODE,
+        }
+    )
+    expected_live_id_prefix = f"{layer3_sec_edgar_live_source_artifact.RECEIPT_PREFIX}-{source_identity_hash[:24]}-"
+    expected_live_id_suffix = live_hash[:24]
+    return (
+        receipt.get("live_source_artifact_receipt_status") == "available"
+        and bool(HEX64_RE.fullmatch(live_hash))
+        and bool(HEX64_RE.fullmatch(source_hash))
+        and bool(HEX64_RE.fullmatch(artifact_ref_hash))
+        and bool(HEX64_RE.fullmatch(content_hash))
+        and bool(HEX64_RE.fullmatch(cik_hash))
+        and bool(HEX64_RE.fullmatch(accession_hash))
+        and source_receipt.get("schema_id") == layer3_sec_edgar_live_source_artifact.SOURCE_ARTIFACT_RECEIPT_SCHEMA_ID
+        and source_receipt.get("schema_version") == layer3_sec_edgar_live_source_artifact.SCHEMA_VERSION
+        and source_id == expected_source_id
+        and source_hash == expected_source_hash
+        and str(receipt.get("live_source_artifact_receipt_id") or "").startswith(expected_live_id_prefix)
+        and str(receipt.get("live_source_artifact_receipt_id") or "").endswith(expected_live_id_suffix)
+        and source_receipt.get("parser_family") == layer3_sec_edgar_live_source_artifact.PARSER_FAMILY
+        and source_receipt.get("parser_contract_id") == layer3_sec_edgar_live_source_artifact.PARSER_CONTRACT_ID
+        and source_receipt.get("typed_content_contract_id") == layer3_sec_edgar_live_source_artifact.TYPED_CONTENT_CONTRACT_ID
+        and source_receipt.get("source_mode") == layer3_sec_edgar_live_source_artifact.SOURCE_MODE
+        and source_receipt.get("server_owned_source_artifact_authority") is True
+        and source_receipt.get("raw_source_artifact_ref_exposed") is False
+        and source_receipt.get("raw_local_path_exposed") is False
+        and source_receipt.get("raw_url_exposed") is False
+        and source_receipt.get("artifact_bytes_exposed") is False
+        and retained_manifest.get("source_artifact_family") == layer3_sec_edgar_live_source_artifact.SOURCE_ARTIFACT_FAMILY
+        and retained_manifest.get("artifact_ref_hash") == artifact_ref_hash
+        and retained_manifest.get("content_sha256") == content_hash
+        and int(retained_manifest.get("content_length") or -1) == content_length
+        and retained_manifest.get("retained_source_artifact_available") is True
+        and retained_manifest.get("raw_local_path_exposed") is False
+        and retained_manifest.get("raw_url_exposed") is False
+        and retained_manifest.get("artifact_bytes_exposed") is False
     )
 
 
@@ -1794,21 +1876,95 @@ def _is_governed_arelle_sidecar_receipt(payload: Mapping[str, Any]) -> bool:
     redacted_records = [_redacted_sidecar_inventory_record(record) for record in records]
     projection = payload.get("resolved_fact_projection")
     projection_matches = projection is None or projection == redacted_records
+    if not isinstance(authority_hashes, Mapping):
+        return False
+    local_value_hashes = [str(record.get("value_hash") or "") for record in redacted_records]
+    if not local_value_hashes or not all(bool(HEX64_RE.fullmatch(value_hash)) for value_hash in local_value_hashes):
+        return False
+    local_value_inventory_hash = stable_hash(local_value_hashes)
+    diagnostics = payload.get("diagnostics") or {}
+    parity = payload.get("parity") or {}
+    internal_value_store = payload.get("internal_value_store") or {}
+    if (
+        not isinstance(diagnostics, Mapping)
+        or not isinstance(parity, Mapping)
+        or not isinstance(internal_value_store, Mapping)
+    ):
+        return False
+    diagnostics_hash = stable_hash(diagnostics)
+    parity_hash = stable_hash(parity)
+    internal_value_store_enabled = internal_value_store.get("store_state") == "persisted"
+    internal_value_store_hash = (
+        str(internal_value_store.get("value_store_hash") or "")
+        if internal_value_store_enabled
+        else None
+    )
+    if internal_value_store_enabled and not bool(HEX64_RE.fullmatch(str(internal_value_store_hash or ""))):
+        return False
+    expected_hash_fields = {
+        "parser_receipt_hash": str(payload.get("parser_receipt_hash") or ""),
+        "connector_receipt_hash": str(payload.get("connector_receipt_hash") or ""),
+        "live_source_artifact_receipt_hash": str(payload.get("live_source_artifact_receipt_hash") or ""),
+        "source_artifact_receipt_hash": source_hash,
+        "content_sha256": str(payload.get("content_sha256") or ""),
+        "primary_document_hash": str(payload.get("primary_document_hash") or ""),
+        "document_inventory_hash": str(payload.get("document_inventory_hash") or ""),
+        "content_order_hash": str(payload.get("content_order_hash") or ""),
+        "table_candidate_inventory_hash": str(payload.get("table_candidate_inventory_hash") or ""),
+        "inline_xbrl_marker_inventory_hash": str(payload.get("inline_xbrl_marker_inventory_hash") or ""),
+        "resolved_fact_inventory_hash": resolved_fact_inventory_hash,
+        "local_value_inventory_hash": local_value_inventory_hash,
+        "diagnostics_hash": diagnostics_hash,
+        "sidecar_receipt_hash": sidecar_hash,
+    }
+    if internal_value_store_hash is not None:
+        expected_hash_fields["internal_value_store_hash"] = internal_value_store_hash
+    if any(not bool(HEX64_RE.fullmatch(str(value))) for value in expected_hash_fields.values()):
+        return False
+    if any(authority_hashes.get(key) != value for key, value in expected_hash_fields.items()):
+        return False
+    sidecar_receipt_hash_basis = {
+        "hash_version": layer3_sec_xbrl_sidecar.AUTHORITY_HASH_VERSION,
+        "sidecar_mode": layer3_sec_xbrl_sidecar.SIDECAR_MODE,
+        "adapter_version": layer3_sec_xbrl_sidecar.ADAPTER_VERSION,
+        "parser_receipt_hash": expected_hash_fields["parser_receipt_hash"],
+        "connector_receipt_hash": expected_hash_fields["connector_receipt_hash"],
+        "live_source_artifact_receipt_hash": expected_hash_fields["live_source_artifact_receipt_hash"],
+        "source_artifact_receipt_hash": source_hash,
+        "content_sha256": expected_hash_fields["content_sha256"],
+        "primary_document_hash": expected_hash_fields["primary_document_hash"],
+        "document_inventory_hash": expected_hash_fields["document_inventory_hash"],
+        "content_order_hash": expected_hash_fields["content_order_hash"],
+        "table_candidate_inventory_hash": expected_hash_fields["table_candidate_inventory_hash"],
+        "inline_xbrl_marker_inventory_hash": expected_hash_fields["inline_xbrl_marker_inventory_hash"],
+        "resolved_fact_inventory_hash": resolved_fact_inventory_hash,
+        "local_value_inventory_hash": local_value_inventory_hash,
+        "internal_value_store_enabled": internal_value_store_enabled,
+        "internal_value_store_hash": internal_value_store_hash,
+        "diagnostics_hash": diagnostics_hash,
+        "parity_hash": parity_hash,
+    }
     return (
-        payload.get("schema_id") == "layer3.sec_edgar_arelle_resolved_fact_authority_sidecar.v1"
-        and payload.get("sidecar_state") == "sec_edgar_arelle_resolved_fact_authority_sidecar_ready"
-        and payload.get("adapter_id") == "arelle_resolved_fact_authority_adapter"
+        payload.get("schema_id") == layer3_sec_xbrl_sidecar.SCHEMA_ID
+        and payload.get("schema_version") == layer3_sec_xbrl_sidecar.SCHEMA_VERSION
+        and payload.get("sidecar_mode") == layer3_sec_xbrl_sidecar.SIDECAR_MODE
+        and payload.get("operator_decision") == layer3_sec_xbrl_sidecar.OPERATOR_DECISION
+        and payload.get("sidecar_state") == layer3_sec_xbrl_sidecar.READY_STATE
+        and payload.get("adapter_id") == layer3_sec_xbrl_sidecar.ADAPTER_ID
+        and payload.get("adapter_version") == layer3_sec_xbrl_sidecar.ADAPTER_VERSION
         and bool(HEX64_RE.fullmatch(source_hash))
         and bool(HEX64_RE.fullmatch(sidecar_hash))
         and bool(HEX64_RE.fullmatch(resolved_fact_inventory_hash))
-        and payload.get("sidecar_receipt_id") == f"sec-edgar-arelle-resolved-fact-authority-{sidecar_receipt_suffix}"
-        and payload.get("sidecar_receipt_ref") == f"sec-edgar-arelle-resolved-fact-authority:{sidecar_receipt_suffix}"
-        and isinstance(authority_hashes, Mapping)
+        and payload.get("sidecar_receipt_id") == f"{layer3_sec_xbrl_sidecar.RECEIPT_PREFIX}-{sidecar_receipt_suffix}"
+        and payload.get("sidecar_receipt_ref") == f"{layer3_sec_xbrl_sidecar.RECEIPT_PREFIX}:{sidecar_receipt_suffix}"
         and authority_hashes.get("source_artifact_receipt_hash") == source_hash
         and authority_hashes.get("sidecar_receipt_hash") == sidecar_hash
         and authority_hashes.get("resolved_fact_inventory_hash") == resolved_fact_inventory_hash
         and int(payload.get("resolved_fact_count") or -1) == len(records)
         and stable_hash(redacted_records) == resolved_fact_inventory_hash
+        and payload.get("local_value_inventory_hash") == local_value_inventory_hash
+        and payload.get("diagnostics_hash") == diagnostics_hash
+        and stable_hash(sidecar_receipt_hash_basis) == sidecar_hash
         and projection_matches
     )
 

@@ -41275,7 +41275,7 @@
     "focused_tests": [
       "backend/tests/test_sec_xbrl_real_corpus_product_runner.py"
     ],
-    "focused_test_result": "30 passed",
+    "focused_test_result": "32 passed",
     "tier_classification": "Tier 1 diagnostic/report/test/progress only",
     "runtime_default_changed_by_tracking": false,
     "live_sec_network_run_performed_by_tracking": true,
@@ -41298,12 +41298,18 @@
     "proof_terms": [
       "operator-acquired off-repo storage is read without downloading or synthesizing filings",
       "real US-GAAP bank and insurer annual references are validated through redacted connector and Arelle sidecar receipts",
+      "the offline gate verifies connector receipt hash-basis parity, nested source-artifact receipt hash-basis parity, and Arelle sidecar receipt hash-basis parity before consuming issuer class tags or qnames",
+      "full live-source-artifact receipt hash-basis revalidation remains deferred because the committed redacted connector response does not carry the server-derived URL hash or user-agent hash basis",
       "required activation anchors are present for banking and insurance families",
       "missing banking supporting headline concept is tracked but not treated as an activation anchor",
       "no schema, persistence, model, Alembic, runtime-default, value-reveal, API, UI, or operator-workflow surface is changed"
     ],
     "source_report_live_sec_network_used": true,
     "source_report_arelle_sidecar_output_count": 30,
-    "sector_family_gate_closed_from_offline_storage_scan": true
+    "sector_family_gate_closed_from_offline_storage_scan": true,
+    "connector_receipt_hash_basis_validated_by_offline_gate": true,
+    "nested_source_artifact_receipt_hash_basis_validated_by_offline_gate": true,
+    "sidecar_receipt_hash_basis_validated_by_offline_gate": true,
+    "live_source_artifact_receipt_hash_basis_deferred_by_offline_gate": true
   }
 }
