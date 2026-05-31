@@ -4,6 +4,8 @@ import importlib.util
 import json
 from pathlib import Path
 
+from app.services import layer3_sec_xbrl_canonical_concepts as canonical
+
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNNER_PATH = ROOT / "diagnostics" / "assessment" / "sec-xbrl-real-corpus-product-runner.py"
@@ -38,6 +40,11 @@ def test_sec_xbrl_real_corpus_product_runner_blocks_without_live_preflight(monke
     ]
     assert report["summary"]["real_filing_count"] == 0
     assert report["next_slice"] == "sec_edgar_real_corpus_product_path_runner_live_execution_v1"
+    family_gate = report["sector_family_activation_validation"]
+    assert family_gate["dimension_id"] == "sec_xbrl_sector_family_real_filer_validation_v1"
+    assert family_gate["available_dimension_passed"] is True
+    assert family_gate["full_gate_satisfied"] is False
+    assert family_gate["us_gaap_bank_insurer_subgate_state"] == "pending_operator_offline_filings"
     serialized = json.dumps(report, sort_keys=True)
     for forbidden in (
         "MSFT",
@@ -357,8 +364,64 @@ def test_sec_xbrl_real_corpus_product_runner_admits_when_existing_chain_reaches_
     assert report["summary"]["companyfacts_value_match_rate"] == 0.99
     assert report["summary"]["filings_with_invalid_taxonomy_package_entries"] == 32
     assert report["summary"]["taxonomy_package_invalid_count"] == 192
+    assert report["sector_family_activation_validation"]["status"] == "partially_satisfied_us_gaap_subgate_pending"
+    assert report["sector_family_activation_validation"]["full_gate_satisfied"] is False
     assert report["runtime_default_decision"]["resulting_default_enabled"] is True
-    assert report["next_slice"] == "sec_edgar_operator_surface_gated_value_reveal_v1"
+    assert report["next_slice"] == "sec_xbrl_sector_family_us_gaap_bank_insurer_subgate_v1"
+
+
+def test_sec_xbrl_real_corpus_product_runner_scaffolds_sector_family_activation_dimension() -> None:
+    module = _runner_module()
+
+    gate = module._sector_family_activation_validation()
+    references = {
+        item["reference_role"]: item
+        for item in gate["available_reference_results"]
+    }
+    pending_sub_gate = gate["pending_sub_gates"][0]
+    serialized = json.dumps(gate, sort_keys=True)
+
+    assert gate["status"] == "partially_satisfied_us_gaap_subgate_pending"
+    assert gate["available_dimension_passed"] is True
+    assert gate["available_reference_filer_count"] == 3
+    assert gate["validated_available_family_ids"] == ["banking", "extractive", "insurance"]
+    assert gate["ifrs_anchor_activation_passed"] is True
+    assert gate["supporting_only_control_passed"] is True
+    assert gate["universal_only_control_passed"] is True
+    assert gate["full_gate_satisfied"] is False
+    assert references["available_ifrs_financial_services_activation_reference"]["actual_present_family_ids"] == [
+        "banking",
+        "insurance",
+    ]
+    assert references["available_ifrs_extractive_activation_reference"]["actual_present_family_ids"] == [
+        "extractive"
+    ]
+    assert references["available_universal_only_control_reference"]["actual_present_family_ids"] == []
+    assert gate["supporting_only_control"]["reported_concepts"] == ["us-gaap:InterestExpense"]
+    assert gate["supporting_only_control"]["actual_present_family_ids"] == []
+    assert gate["supporting_only_control"]["supporting_only_family_ids"] == ["banking"]
+    assert pending_sub_gate["state"] == "pending_operator_offline_filings"
+    assert pending_sub_gate["validated"] is False
+    assert pending_sub_gate["required_anchor_concepts"] == [
+        "us-gaap:Deposits",
+        "us-gaap:InterestAndDividendIncomeOperating",
+        "us-gaap:PremiumsEarnedNet",
+        "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
+    ]
+    assert gate["projection_row_shape"]["stable_across_available_references"] is True
+    assert gate["projection_row_shape"]["unique_row_shape_hash_count"] == 1
+    for forbidden in ("SONY", "CCJ", "FIZZ", "313838", "1009001", "69891", "contact@nexonpvp.net"):
+        assert forbidden not in serialized
+
+
+def test_sec_xbrl_real_corpus_product_runner_projection_row_shape_matches_canonical_projection() -> None:
+    module = _runner_module()
+    report = canonical.build_redacted_projection_report(
+        issuer_bundles=[_projection_bundle(module)],
+        include_sector_families=True,
+    )
+
+    assert module._sector_family_projection_row_shape(1)["public_row_keys"] == sorted(report["per_issuer"][0])
 
 
 def test_sec_xbrl_real_corpus_product_runner_blocks_live_without_external_matrix_plan(
@@ -952,3 +1015,72 @@ def _plan_chunk(matrix_label: str, company_matrix: list[str], strata: list[str])
         "company_matrix": company_matrix,
         "strata": strata,
     }
+
+
+def _projection_bundle(module) -> dict:
+    value_records = [
+        _projection_value("rf-period-end", "end-2"),
+        _projection_value("rf-assets", "200"),
+        _projection_value("rf-gross-loan-commitments", "900"),
+    ]
+    return {
+        "issuer_ref": "redacted-sector-family-row-shape-reference",
+        "companyfacts": {},
+        "sidecar_records": [
+            _projection_record("rf-period-end", "dei", "DocumentPeriodEndDate", "unitless", instant=True),
+            _projection_record("rf-assets", "ifrs-full", "Assets", "USD", instant=True),
+            _projection_record(
+                "rf-gross-loan-commitments",
+                "ifrs-full",
+                "GrossLoanCommitments",
+                "USD",
+                instant=True,
+            ),
+        ],
+        "value_records": value_records,
+        "sidecar_receipt_id": "sidecar-ref",
+        "sidecar_receipt_hash": "sidecar-hash",
+        "value_store_hash": module.stable_hash(value_records),
+        "dataset_version_id": "dataset-ref",
+    }
+
+
+def _projection_record(
+    fact_id: str,
+    taxonomy: str,
+    local_name: str,
+    unit_name: str,
+    *,
+    instant: bool = False,
+) -> dict:
+    return {
+        "resolved_fact_id": fact_id,
+        "concept": {
+            "namespace": _projection_namespace(taxonomy),
+            "local_name": local_name,
+            "standard": True,
+        },
+        "unit": _projection_unit(unit_name),
+        "period": {"type": "instant", "instant": "end-2"}
+        if instant
+        else {"type": "duration", "start": "start-2", "end": "end-2"},
+        "dimensions": {"explicit": [], "typed": []},
+    }
+
+
+def _projection_value(fact_id: str, effective_value: str) -> dict:
+    return {"resolved_fact_id": fact_id, "effective_value": effective_value}
+
+
+def _projection_namespace(taxonomy: str) -> str:
+    if taxonomy == "ifrs-full":
+        return "xbrl.ifrs.org/test"
+    if taxonomy == "dei":
+        return "xbrl.sec.gov/dei/test"
+    return "fasb.org/us-gaap/test"
+
+
+def _projection_unit(unit_name: str) -> dict:
+    if unit_name == "unitless":
+        return {"measures": []}
+    return {"currency": f"iso4217:{unit_name}", "measures": [f"iso4217:{unit_name}"]}
