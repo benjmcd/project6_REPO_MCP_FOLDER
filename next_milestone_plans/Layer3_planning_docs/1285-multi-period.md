@@ -49,9 +49,9 @@ Report decision:
 
 ## Next Posture
 
-`sec_xbrl_projection_persistence_design_v1_tier2_pre_review`
+`sec_xbrl_projection_persistence_design_v1_tier2_risk_assessed_entry`
 
-Real-filer sector-family validation is satisfied by the validate-only real-corpus runner gate `sec_xbrl_sector_family_real_filer_validation_v1`, using redacted operator-acquired offline receipts for US-GAAP bank and insurer annual filings. Persistence remains deferred to a Tier 2 design/review step. The deferred persistence work is preserved on branch `codex/sec-family-res`; it is reference-only and not a merge base for this no-schema landing branch.
+Real-filer sector-family validation is satisfied by the validate-only real-corpus runner gate `sec_xbrl_sector_family_real_filer_validation_v1`, using redacted operator-acquired offline receipts for US-GAAP bank and insurer annual filings. Persistence remains deferred to a Tier 2 risk-assessed design entry step. The deferred persistence work is preserved on branch `codex/sec-family-res`; it is reference-only and not a merge base for this no-schema landing branch.
 
 The validation gate extends the existing real-corpus product runner with sector-family activation as a validated dimension. It does not introduce a standalone greenfield diagnostic.
 

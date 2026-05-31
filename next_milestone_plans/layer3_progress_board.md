@@ -9648,7 +9648,7 @@ Focused validation: `python -m pytest ./backend/tests/test_sec_xbrl_multi_period
 
 Status flags: `multi_period_projection_validate_only_ready=true`; `document_period_first=true`; `comparative_period_projected=true`.
 
-Next exact posture: `sec_xbrl_projection_persistence_design_v1_tier2_pre_review`.
+Next exact posture: `sec_xbrl_projection_persistence_design_v1_tier2_risk_assessed_entry`.
 
 ## SEC XBRL Sector-Family Real-Filer Validation
 
@@ -9666,9 +9666,9 @@ Focused validation: `python -m pytest ./backend/tests/test_sec_xbrl_real_corpus_
 
 Non-goals preserved for this validation pass: no runtime default enablement, new live SEC network request, new source acquisition, new Arelle invocation, value reveal, persistence, schema, `models.py`, Alembic migration, provider or connector dispatch, operator workflow/API/UI, raw runtime artifacts committed, production-readiness claim, or default-on readiness claim.
 
-Status flags: `sector_family_real_filer_validation_ready=true`; `tier1_validate_only=true`; `projection_persistence_deferred_to_tier2_pre_review=true`.
+Status flags: `sector_family_real_filer_validation_ready=true`; `tier1_validate_only=true`; `projection_persistence_deferred_to_tier2_risk_assessed_entry=true`.
 
-Next exact posture: `sec_xbrl_projection_persistence_design_v1_tier2_pre_review`.
+Next exact posture: `sec_xbrl_projection_persistence_design_v1_tier2_risk_assessed_entry`.
 
 ## SEC XBRL Deferred Schema Gate
 
@@ -9676,9 +9676,9 @@ Milestones deferred: `sec_xbrl_projection_persistence_design_v1`; `sec_xbrl_pers
 
 Preserved work holder: branch `codex/sec-family-res` is reference-only and is not a merge base for the Tier-1 PR #2020 branch.
 
-Status: `ready_for_tier2_schema_design_after_real_filer_validation`. The branch-local persistence and persisted-statement-packet work remains intentionally outside this no-schema landing branch. No `models.py` additions, Alembic migrations, persistence services, persistence diagnostics, or persistence tests are admitted here.
+Status: `ready_for_tier2_risk_assessed_design_after_real_filer_validation`. The branch-local persistence and persisted-statement-packet work remains intentionally outside this no-schema landing branch. No `models.py` additions, Alembic migrations, persistence services, persistence diagnostics, or persistence tests are admitted here.
 
-Reason: durable projection and packet schemas should be designed only after the Tier-1 real-filer gate evidence and independent review settle. The next pass is a Tier-2 pre-review design lane, not implementation.
+Reason: durable projection and packet schemas should be designed only after the Tier-1 real-filer gate evidence and a documented risk disposition settle. Independent review is recommended for high-risk or ambiguous changes under the softened policy, but it is not a blanket prerequisite for every Tier-2 design move. The next pass is a Tier-2 risk-assessed design entry lane, not implementation.
 
 Closed gate recorded on this branch: `sec_xbrl_sector_family_real_filer_validation_v1` proves anchor-driven family activation, supporting-only non-activation, redacted projection row-shape stability, the universal-only control, governed connector receipts, governed sidecar inventories, single-sidecar anchor satisfaction, and distinct bank/insurer source artifacts.
 
@@ -9688,7 +9688,7 @@ REIT asymmetry is explicit: `real_estate_reit` remains a sector-class label from
 
 Status flags: `schema_set_landed=false`; `projection_persistence_deferred_pending_validation=true`; `persisted_statement_packet_deferred_pending_validation=true`; `real_estate_reit_family_defined=false`.
 
-Next exact posture: `sec_xbrl_projection_persistence_design_v1_tier2_pre_review`.
+Next exact posture: `sec_xbrl_projection_persistence_design_v1_tier2_risk_assessed_entry`.
 
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 

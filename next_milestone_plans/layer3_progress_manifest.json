@@ -42912,10 +42912,10 @@
     "linkbase_emission_claimed": false,
     "persisted_store_claimed": false,
     "fx_comparability_claimed": false,
-    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_pre_review"
+    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_risk_assessed_entry"
   },
   "sec_xbrl_projection_persistence_tracking": {
-    "status": "ready_for_tier2_schema_design_after_real_filer_validation",
+    "status": "ready_for_tier2_risk_assessed_design_after_real_filer_validation",
     "milestone": "sec_xbrl_projection_persistence_design_v1",
     "preserved_work_branch": "codex/sec-family-res",
     "defer_reason": "durable projection schema waits for real-filer sector-family anchor and projection row-shape validation",
@@ -42950,11 +42950,11 @@
     "dimensional_roll_forward_claimed": false,
     "linkbase_emission_claimed": false,
     "fx_comparability_claimed": false,
-    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_pre_review",
+    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_risk_assessed_entry",
     "required_prior_gate_satisfied_by_tracking": true
   },
   "sec_xbrl_persisted_statement_packet_tracking": {
-    "status": "deferred_until_projection_persistence_tier2_review",
+    "status": "deferred_until_projection_persistence_tier2_risk_assessed_design",
     "milestone": "sec_xbrl_persisted_statement_packet_design_v1",
     "preserved_work_branch": "codex/sec-family-res",
     "defer_reason": "persisted statement packet schema waits for real-filer sector-family anchor and projection row-shape validation",
@@ -42989,7 +42989,7 @@
     "dimensional_roll_forward_claimed": false,
     "linkbase_emission_claimed": false,
     "fx_comparability_claimed": false,
-    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_pre_review",
+    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_risk_assessed_entry",
     "required_prior_gate_satisfied_by_tracking": true
   },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_tracking": {
@@ -43059,7 +43059,7 @@
     "default_on_readiness_claimed": false,
     "production_readiness_claimed": false,
     "persisted_store_claimed": false,
-    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_pre_review",
+    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_risk_assessed_entry",
     "source_report_live_sec_network_used": true,
     "source_report_arelle_sidecar_output_count": 30,
     "sector_family_gate_closed_from_offline_storage_scan": true,
