@@ -29,7 +29,7 @@ relegates the bot to best-effort defense-in-depth.
 ## Tier classification
 
 Quick test: if reverting the PR would require a down-migration, a data backfill, or it touches stored/revealed values
-or runtime defaults, it is **Tier 2**. Otherwise it is **Tier 1**.
+runtime defaults, or redaction posture, it is **Tier 2**. Otherwise it is **Tier 1**.
 
 ### Tier 1 — low-risk (validate-only, additive, reversible)
 
@@ -37,12 +37,13 @@ Applies when the PR changes ONLY: diagnostics, validate-only committed reports, 
 additive service logic with NO schema, persistence, value-reveal, runtime-default, or redaction-posture change.
 
 Merge gate:
-1. Independent-verifier record documented in the PR body (verification commands and results).
+1. Verifier record documented in the PR body (verification commands and results).
 2. CI green (all shards and aggregate checks).
 3. `@codex review` posted as best-effort; if the bot is silent within the watch window, record a silent-bot
    disposition and proceed.
 
-Executor self-verification is acceptable for Tier 1.
+Executor self-verification satisfies the Tier 1 verifier record; independence is the Tier 2 escalation, not a
+Tier 1 requirement (the bot remains best-effort defense-in-depth, never the sole gate).
 
 ### Tier 2 — high-risk / irreversible
 
