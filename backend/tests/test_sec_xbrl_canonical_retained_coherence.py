@@ -244,6 +244,23 @@ def test_diagnostic_report_preserves_explicit_empty_sector_results(tmp_path: Pat
     assert report["blocking_reasons"]
 
 
+def test_diagnostic_report_fails_closed_on_duplicate_sector_rows(tmp_path: Path) -> None:
+    diagnostic = _diagnostic_module()
+    reference = list(diagnostic.REFERENCE_SECTOR_CLASS_RESULTS)
+    duplicate_sector_rows = [reference[0], reference[0]]
+
+    report = diagnostic.build_report(
+        source_root=_source_root(tmp_path),
+        sector_results=duplicate_sector_rows,
+    )
+
+    assert report["decision"] == "canonical_retained_coherence_validate_only_blocked"
+    assert any(
+        item["reason"] == "canonical_retained_coherence_counts_inconsistent"
+        for item in report["blocking_reasons"]
+    )
+
+
 def test_diagnostic_report_fails_closed_when_hash_evidence_fields_are_missing(tmp_path: Path) -> None:
     diagnostic = _diagnostic_module()
     report = diagnostic.build_report(
