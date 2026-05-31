@@ -19,6 +19,7 @@ os.environ.setdefault("DB_INIT_MODE", "none")
 from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
     report_redaction_scan_payload,
 )
+from app.services.layer3_sec_xbrl_report_guards import rows_have_unique_required_key  # noqa: E402
 
 
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_canonical_retained_coherence.v1"
@@ -315,6 +316,8 @@ def _criteria(*, report: Mapping[str, Any], config_defaults_off: bool) -> list[d
 
 
 def _sector_counts_consistent(*, sectors: Sequence[Mapping[str, Any]], summary: Mapping[str, Any]) -> bool:
+    if not rows_have_unique_required_key(sectors, key_field="sector_class"):
+        return False
     total_normalized = sum(int(item.get("normalized_fact_count") or 0) for item in sectors)
     total_bound = sum(int(item.get("bound_count") or 0) for item in sectors)
     total_missing = sum(int(item.get("missing_count") or 0) for item in sectors)
