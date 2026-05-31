@@ -6,6 +6,7 @@
     {
       "basis": "total",
       "canonical_id": "Revenue",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -18,6 +19,7 @@
     {
       "basis": "total",
       "canonical_id": "CostOfSales",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -30,6 +32,7 @@
     {
       "basis": "total",
       "canonical_id": "GrossProfit",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -41,6 +44,7 @@
     {
       "basis": "total",
       "canonical_id": "OperatingIncome",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -52,6 +56,7 @@
     {
       "basis": "total",
       "canonical_id": "ProfitBeforeTax",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -64,6 +69,7 @@
     {
       "basis": "total",
       "canonical_id": "IncomeTaxExpense",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -75,6 +81,7 @@
     {
       "basis": "total",
       "canonical_id": "ProfitLoss",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -87,6 +94,7 @@
     {
       "basis": "parent",
       "canonical_id": "ProfitLoss",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -98,6 +106,7 @@
     {
       "basis": "total",
       "canonical_id": "EpsBasic",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -109,6 +118,7 @@
     {
       "basis": "total",
       "canonical_id": "EpsDiluted",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -120,6 +130,7 @@
     {
       "basis": "total",
       "canonical_id": "CashAndEquivalents",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -131,6 +142,7 @@
     {
       "basis": "total",
       "canonical_id": "CurrentAssets",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -142,6 +154,7 @@
     {
       "basis": "total",
       "canonical_id": "NoncurrentAssets",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -153,6 +166,7 @@
     {
       "basis": "total",
       "canonical_id": "TotalAssets",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -164,6 +178,7 @@
     {
       "basis": "total",
       "canonical_id": "CurrentLiabilities",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -175,6 +190,7 @@
     {
       "basis": "total",
       "canonical_id": "NoncurrentLiabilities",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -186,6 +202,7 @@
     {
       "basis": "total",
       "canonical_id": "TotalLiabilities",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -197,6 +214,7 @@
     {
       "basis": "total",
       "canonical_id": "Equity",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -208,6 +226,7 @@
     {
       "basis": "parent",
       "canonical_id": "Equity",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -219,6 +238,7 @@
     {
       "basis": "total",
       "canonical_id": "OperatingCashFlow",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -230,6 +250,7 @@
     {
       "basis": "total",
       "canonical_id": "InvestingCashFlow",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
@@ -241,6 +262,7 @@
     {
       "basis": "total",
       "canonical_id": "FinancingCashFlow",
+      "family": "universal",
       "mapping_confidence": "reviewed_high_value_headline_statement_crosswalk",
       "mapping_method": "reviewed_statement_crosswalk",
       "source_qnames": [
