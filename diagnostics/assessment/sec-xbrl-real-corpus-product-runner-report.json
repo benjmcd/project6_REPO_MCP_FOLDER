@@ -3932,6 +3932,7 @@
       "arelle_invoked": false,
       "class_results": [
         {
+          "accepted_sidecar_candidate_count": 1,
           "activation_anchor_concepts_present": [
             "us-gaap:Deposits"
           ],
@@ -3949,11 +3950,13 @@
           "raw_identity_redacted": true,
           "reference_class": "real_us_gaap_bank_filing",
           "reported_qname_count": 1215,
+          "sidecar_receipt_marker": "3ceb0b59b2fa6c5be56f81e7",
           "source_artifact_marker": "a3ffb6fe47676879f796d26c",
           "supporting_headline_concepts_present": [],
           "values_redacted": true
         },
         {
+          "accepted_sidecar_candidate_count": 1,
           "activation_anchor_concepts_present": [
             "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
             "us-gaap:PremiumsEarnedNet"
@@ -3969,6 +3972,7 @@
           "raw_identity_redacted": true,
           "reference_class": "real_us_gaap_insurer_filing",
           "reported_qname_count": 1237,
+          "sidecar_receipt_marker": "3f4c43a9e9e2030111a7d4c6",
           "source_artifact_marker": "34888f4da119fa7c5c873024",
           "supporting_headline_concepts_present": [],
           "values_redacted": true
@@ -3979,10 +3983,12 @@
         "arelle_invoked": false,
         "blocked_reasons": [],
         "connector_reference_count": 32,
+        "distinct_source_artifact_marker_count": 2,
         "live_network_used": false,
         "offline_storage_used": true,
         "paths_redacted": true,
         "raw_identity_redacted": true,
+        "required_distinct_source_artifact_count": 2,
         "sidecar_reference_count": 30,
         "state": "passed",
         "storage_dir_marker": "a26c56586d12f29eb1bc7708",

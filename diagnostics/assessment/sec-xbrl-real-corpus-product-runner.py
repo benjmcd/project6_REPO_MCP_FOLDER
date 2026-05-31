@@ -1585,15 +1585,22 @@ def _sector_family_us_gaap_offline_storage_evidence(storage_dir: Path) -> dict[s
             ["offline_storage_dir_unavailable"],
         )
     examples_by_source_hash = _sector_family_us_gaap_examples_by_source_hash(path)
-    qnames_by_source_hash = _sector_family_us_gaap_qnames_by_source_hash(path)
+    sidecars_by_source_hash = _sector_family_us_gaap_sidecars_by_source_hash(path)
     class_results = [
         _sector_family_us_gaap_class_result(
             reference_class=reference_class,
             examples_by_source_hash=examples_by_source_hash,
-            qnames_by_source_hash=qnames_by_source_hash,
+            sidecars_by_source_hash=sidecars_by_source_hash,
         )
         for reference_class in SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS
     ]
+    distinct_source_artifact_markers = sorted(
+        {
+            str(item.get("source_artifact_marker") or "")
+            for item in class_results
+            if item.get("passed") is True and item.get("source_artifact_marker")
+        }
+    )
     blocked_reasons = sorted(
         {
             reason
@@ -1601,13 +1608,19 @@ def _sector_family_us_gaap_offline_storage_evidence(storage_dir: Path) -> dict[s
             for reason in item.get("blocked_reasons") or []
         }
     )
+    if all(item.get("passed") is True for item in class_results) and len(distinct_source_artifact_markers) < len(
+        SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS
+    ):
+        blocked_reasons.append("us_gaap_bank_insurer_distinct_source_artifact_required")
     return {
         "state": "passed" if not blocked_reasons else "blocked",
         "storage_dir_marker": _storage_marker(path),
         "paths_redacted": True,
         "offline_storage_used": True,
         "connector_reference_count": len(examples_by_source_hash),
-        "sidecar_reference_count": len(qnames_by_source_hash),
+        "sidecar_reference_count": sum(len(sidecars) for sidecars in sidecars_by_source_hash.values()),
+        "required_distinct_source_artifact_count": len(SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS),
+        "distinct_source_artifact_marker_count": len(distinct_source_artifact_markers),
         "class_results": class_results,
         "blocked_reasons": blocked_reasons,
         "raw_identity_redacted": True,
@@ -1638,7 +1651,7 @@ def _sector_family_us_gaap_examples_by_source_hash(storage_dir: Path) -> dict[st
     examples: dict[str, dict[str, Any]] = {}
     for path in _service_receipt_paths(storage_dir, "layer3-sec-edgar-real-filing-acquisition-connector"):
         payload = _read_json_object(path)
-        if not payload:
+        if not payload or not _is_governed_connector_receipt(payload):
             continue
         records = [
             item
@@ -1673,8 +1686,79 @@ def _sector_family_us_gaap_examples_by_source_hash(storage_dir: Path) -> dict[st
     return examples
 
 
-def _sector_family_us_gaap_qnames_by_source_hash(storage_dir: Path) -> dict[str, set[str]]:
-    qnames_by_source_hash: dict[str, set[str]] = {}
+def _is_governed_connector_receipt(payload: Mapping[str, Any]) -> bool:
+    connector_hash = str(payload.get("connector_receipt_hash") or "")
+    connector_id = str(payload.get("connector_receipt_id") or "")
+    example_set = payload.get("example_set") or {}
+    example_set_hash = str(example_set.get("example_set_hash") or "") if isinstance(example_set, Mapping) else ""
+    manifest = payload.get("corpus_manifest") or {}
+    diagnostics = payload.get("diagnostics") or {}
+    basis = payload.get("receipt_hash_basis") or {}
+    acquisitions = payload.get("acquisition_receipts") or []
+    if (
+        payload.get("schema_id") != layer3_sec_edgar_real_filing_acquisition_connector.SCHEMA_ID
+        or payload.get("connector_mode") != layer3_sec_edgar_real_filing_acquisition_connector.CONNECTOR_MODE
+        or payload.get("operator_decision") != layer3_sec_edgar_real_filing_acquisition_connector.OPERATOR_DECISION
+        or payload.get("connector_state") != "available"
+        or not bool(HEX64_RE.fullmatch(connector_hash))
+        or not bool(HEX64_RE.fullmatch(example_set_hash))
+        or not connector_id.startswith(f"{layer3_sec_edgar_real_filing_acquisition_connector.RECEIPT_PREFIX}-")
+        or not connector_id.endswith(f"-{connector_hash[:24]}")
+        or example_set_hash[:24] not in connector_id
+        or not isinstance(manifest, Mapping)
+        or manifest.get("schema_id") != layer3_sec_edgar_real_filing_acquisition_connector.CORPUS_MANIFEST_SCHEMA_ID
+        or not isinstance(diagnostics, Mapping)
+        or not isinstance(basis, Mapping)
+        or not isinstance(acquisitions, list)
+        or stable_hash(basis) != connector_hash
+    ):
+        return False
+    records = [item for item in manifest.get("example_records") or [] if isinstance(item, Mapping)]
+    acquisition_records = [item for item in acquisitions if isinstance(item, Mapping)]
+    if len(records) != int(manifest.get("example_count") or -1) or len(acquisition_records) != len(acquisitions):
+        return False
+    if manifest.get("manifest_hash") != stable_hash(
+        {
+            "examples": records,
+            "acquisition_receipts": acquisition_records,
+            "diagnostics": diagnostics,
+        }
+    ):
+        return False
+    live_hashes: list[str] = []
+    artifact_hashes: list[str] = []
+    for receipt in acquisition_records:
+        live_hash = str(receipt.get("live_source_artifact_receipt_hash") or "")
+        source_receipt = receipt.get("source_artifact_receipt") or {}
+        if not isinstance(source_receipt, Mapping):
+            return False
+        source_hash = str(source_receipt.get("source_artifact_receipt_hash") or "")
+        content_hash = str(source_receipt.get("content_sha256") or "")
+        if (
+            receipt.get("live_source_artifact_receipt_status") != "available"
+            or not bool(HEX64_RE.fullmatch(live_hash))
+            or not bool(HEX64_RE.fullmatch(source_hash))
+            or not bool(HEX64_RE.fullmatch(content_hash))
+        ):
+            return False
+        live_hashes.append(live_hash)
+        artifact_hashes.append(content_hash)
+    return (
+        basis.get("schema_id") == layer3_sec_edgar_real_filing_acquisition_connector.SCHEMA_ID
+        and basis.get("schema_version") == layer3_sec_edgar_real_filing_acquisition_connector.SCHEMA_VERSION
+        and basis.get("connector_mode") == layer3_sec_edgar_real_filing_acquisition_connector.CONNECTOR_MODE
+        and basis.get("operator_decision") == layer3_sec_edgar_real_filing_acquisition_connector.OPERATOR_DECISION
+        and basis.get("example_set_hash") == example_set_hash
+        and basis.get("source_family_inventory_hash") == stable_hash(manifest.get("source_family_inventory") or {})
+        and basis.get("acquisition_receipt_hashes") == live_hashes
+        and basis.get("artifact_hashes") == artifact_hashes
+        and basis.get("classification_hashes") == [stable_hash(item) for item in records]
+        and basis.get("diagnostics_hash") == stable_hash(diagnostics)
+    )
+
+
+def _sector_family_us_gaap_sidecars_by_source_hash(storage_dir: Path) -> dict[str, list[dict[str, Any]]]:
+    sidecars_by_source_hash: dict[str, list[dict[str, Any]]] = {}
     for path in _service_receipt_paths(storage_dir, "layer3-sec-edgar-arelle-resolved-fact-authority"):
         payload = _read_json_object(path)
         if not payload or not _is_governed_arelle_sidecar_receipt(payload):
@@ -1687,8 +1771,15 @@ def _sector_family_us_gaap_qnames_by_source_hash(storage_dir: Path) -> dict[str,
             for record in payload.get("resolved_fact_records") or []
             if isinstance(record, Mapping) and isinstance(record.get("concept"), Mapping)
         }
-        qnames_by_source_hash.setdefault(source_hash, set()).update(qname for qname in qnames if qname)
-    return qnames_by_source_hash
+        sidecars_by_source_hash.setdefault(source_hash, []).append(
+            {
+                "sidecar_receipt_marker": stable_hash(
+                    {"sidecar_receipt_hash": str(payload.get("sidecar_receipt_hash") or "")}
+                )[:24],
+                "qnames": {qname for qname in qnames if qname},
+            }
+        )
+    return sidecars_by_source_hash
 
 
 def _is_governed_arelle_sidecar_receipt(payload: Mapping[str, Any]) -> bool:
@@ -1697,6 +1788,12 @@ def _is_governed_arelle_sidecar_receipt(payload: Mapping[str, Any]) -> bool:
     resolved_fact_inventory_hash = str(payload.get("resolved_fact_inventory_hash") or "")
     authority_hashes = payload.get("authority_hashes") or {}
     sidecar_receipt_suffix = sidecar_hash[:24]
+    records = payload.get("resolved_fact_records") or []
+    if not isinstance(records, list) or not all(isinstance(record, Mapping) for record in records):
+        return False
+    redacted_records = [_redacted_sidecar_inventory_record(record) for record in records]
+    projection = payload.get("resolved_fact_projection")
+    projection_matches = projection is None or projection == redacted_records
     return (
         payload.get("schema_id") == "layer3.sec_edgar_arelle_resolved_fact_authority_sidecar.v1"
         and payload.get("sidecar_state") == "sec_edgar_arelle_resolved_fact_authority_sidecar_ready"
@@ -1710,35 +1807,59 @@ def _is_governed_arelle_sidecar_receipt(payload: Mapping[str, Any]) -> bool:
         and authority_hashes.get("source_artifact_receipt_hash") == source_hash
         and authority_hashes.get("sidecar_receipt_hash") == sidecar_hash
         and authority_hashes.get("resolved_fact_inventory_hash") == resolved_fact_inventory_hash
-        and isinstance(payload.get("resolved_fact_records"), list)
+        and int(payload.get("resolved_fact_count") or -1) == len(records)
+        and stable_hash(redacted_records) == resolved_fact_inventory_hash
+        and projection_matches
     )
+
+
+def _redacted_sidecar_inventory_record(record: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        key: value
+        for key, value in record.items()
+        if key not in {"value", "effective_value", "lexical_value"}
+    } | {"value_redacted": True}
 
 
 def _sector_family_us_gaap_class_result(
     *,
     reference_class: str,
     examples_by_source_hash: Mapping[str, Mapping[str, Any]],
-    qnames_by_source_hash: Mapping[str, set[str]],
+    sidecars_by_source_hash: Mapping[str, list[Mapping[str, Any]]],
 ) -> dict[str, Any]:
     required_tag = SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_TAGS[reference_class]
     required_anchors = set(SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS[reference_class])
     tracked_supporting = set(SECTOR_FAMILY_US_GAAP_SUPPORTING_HEADLINE_CONCEPTS[reference_class])
-    candidates: list[tuple[str, Mapping[str, Any], set[str]]] = []
+    candidates: list[tuple[str, Mapping[str, Any], Mapping[str, Any]]] = []
+    annual_reference_candidate_count = 0
     for source_hash, example in examples_by_source_hash.items():
         tags = set(example.get("issuer_profile_tags") or [])
         if required_tag not in tags or example.get("form_type") != "10-K":
             continue
-        candidates.append((str(source_hash), example, set(qnames_by_source_hash.get(str(source_hash), set()))))
-    best: tuple[str, Mapping[str, Any], set[str]] | None = None
+        annual_reference_candidate_count += 1
+        source_sidecars = [
+            sidecar
+            for sidecar in sidecars_by_source_hash.get(str(source_hash), [])
+            if isinstance(sidecar, Mapping)
+        ]
+        if not source_sidecars:
+            candidates.append((str(source_hash), example, {"qnames": set(), "sidecar_receipt_marker": None}))
+        for sidecar in source_sidecars:
+            candidates.append((str(source_hash), example, sidecar))
+    best: tuple[str, Mapping[str, Any], Mapping[str, Any]] | None = None
     for candidate in candidates:
-        if required_anchors.issubset(candidate[2]):
+        if required_anchors.issubset(set(candidate[2].get("qnames") or set())):
             best = candidate
             break
     if best is None and candidates:
-        best = max(candidates, key=lambda item: len(required_anchors.intersection(item[2])))
-    present_anchors = sorted(required_anchors.intersection(best[2])) if best else []
+        best = max(
+            candidates,
+            key=lambda item: len(required_anchors.intersection(set(item[2].get("qnames") or set()))),
+        )
+    best_qnames = set(best[2].get("qnames") or set()) if best else set()
+    present_anchors = sorted(required_anchors.intersection(best_qnames))
     missing_anchors = sorted(required_anchors - set(present_anchors))
-    supporting_present = sorted(tracked_supporting.intersection(best[2])) if best else []
+    supporting_present = sorted(tracked_supporting.intersection(best_qnames))
     supporting_missing = sorted(tracked_supporting - set(supporting_present))
     blocked_reasons: list[str] = []
     if not candidates:
@@ -1749,14 +1870,18 @@ def _sector_family_us_gaap_class_result(
         "reference_class": reference_class,
         "family_id": SECTOR_FAMILY_US_GAAP_CLASS_FAMILIES[reference_class],
         "annual_reference_present": bool(candidates),
-        "annual_reference_candidate_count": len(candidates),
+        "annual_reference_candidate_count": annual_reference_candidate_count,
         "activation_anchor_concepts_present": present_anchors,
         "missing_activation_anchor_concepts": missing_anchors,
         "supporting_headline_concepts_present": supporting_present,
         "missing_supporting_headline_concepts": supporting_missing,
         "source_artifact_marker": best[1].get("source_artifact_marker") if best else None,
         "example_marker": best[1].get("example_marker") if best else None,
-        "reported_qname_count": len(best[2]) if best else 0,
+        "sidecar_receipt_marker": best[2].get("sidecar_receipt_marker") if best else None,
+        "accepted_sidecar_candidate_count": sum(
+            1 for _source_hash, _example, sidecar in candidates if sidecar.get("sidecar_receipt_marker")
+        ),
+        "reported_qname_count": len(best_qnames),
         "passed": bool(candidates) and not missing_anchors,
         "blocked_reasons": blocked_reasons,
         "raw_identity_redacted": True,

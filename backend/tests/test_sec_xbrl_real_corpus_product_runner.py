@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from app.services import layer3_sec_xbrl_canonical_concepts as canonical
+from app.services.layer3_utils import stable_hash
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -557,6 +558,97 @@ def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_handwrit
     assert "real_us_gaap_insurer_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
         "blocked_reasons"
     ]
+
+
+def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_connector_hash_mismatch(
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage = _offline_sector_family_storage(
+        tmp_path,
+        connector_receipt_valid=False,
+    )
+
+    gate = module._sector_family_activation_validation(offline_storage_dir=storage)
+    sub_gate = gate["us_gaap_bank_insurer_subgate"]
+
+    assert gate["status"] == "partially_satisfied_us_gaap_subgate_pending"
+    assert sub_gate["state"] == "blocked_offline_artifacts_incomplete"
+    assert sub_gate["offline_storage_evidence"]["connector_reference_count"] == 0
+    assert "real_us_gaap_bank_filing_annual_reference_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+    assert "real_us_gaap_insurer_filing_annual_reference_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+
+
+def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_sidecar_inventory_mismatch(
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage = _offline_sector_family_storage(
+        tmp_path,
+        sidecar_inventory_valid=False,
+    )
+
+    gate = module._sector_family_activation_validation(offline_storage_dir=storage)
+    sub_gate = gate["us_gaap_bank_insurer_subgate"]
+
+    assert gate["status"] == "partially_satisfied_us_gaap_subgate_pending"
+    assert sub_gate["state"] == "blocked_offline_artifacts_incomplete"
+    assert sub_gate["offline_storage_evidence"]["sidecar_reference_count"] == 0
+    assert "real_us_gaap_bank_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+    assert "real_us_gaap_insurer_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+
+
+def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_split_sidecar_anchor_union(
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage = _offline_sector_family_storage(
+        tmp_path,
+        split_insurer_sidecars=True,
+    )
+
+    gate = module._sector_family_activation_validation(offline_storage_dir=storage)
+    sub_gate = gate["us_gaap_bank_insurer_subgate"]
+    class_results = {
+        item["reference_class"]: item
+        for item in sub_gate["offline_storage_evidence"]["class_results"]
+    }
+
+    assert gate["status"] == "partially_satisfied_us_gaap_subgate_pending"
+    assert sub_gate["state"] == "blocked_offline_artifacts_incomplete"
+    assert class_results["real_us_gaap_insurer_filing"]["accepted_sidecar_candidate_count"] == 2
+    assert class_results["real_us_gaap_insurer_filing"]["passed"] is False
+    assert "real_us_gaap_insurer_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+
+
+def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_requires_distinct_bank_and_insurer_filings(
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage = _offline_sector_family_storage(
+        tmp_path,
+        shared_bank_insurer_source=True,
+    )
+
+    gate = module._sector_family_activation_validation(offline_storage_dir=storage)
+    sub_gate = gate["us_gaap_bank_insurer_subgate"]
+    evidence = sub_gate["offline_storage_evidence"]
+
+    assert gate["status"] == "partially_satisfied_us_gaap_subgate_pending"
+    assert sub_gate["state"] == "blocked_offline_artifacts_incomplete"
+    assert evidence["distinct_source_artifact_marker_count"] == 1
+    assert evidence["required_distinct_source_artifact_count"] == 2
+    assert "us_gaap_bank_insurer_distinct_source_artifact_required" in evidence["blocked_reasons"]
 
 
 def test_sec_xbrl_real_corpus_product_runner_projection_row_shape_matches_canonical_projection() -> None:
@@ -1171,6 +1263,10 @@ def _offline_sector_family_storage(
     insurer_qnames: list[str] | None = None,
     sidecar_metadata_valid: bool = True,
     sidecar_receipt_shape_valid: bool = True,
+    sidecar_inventory_valid: bool = True,
+    connector_receipt_valid: bool = True,
+    split_insurer_sidecars: bool = False,
+    shared_bank_insurer_source: bool = False,
 ) -> Path:
     storage = storage_dir or tmp_path / "offline-storage"
     connector_dir = storage / "layer3-sec-edgar-real-filing-acquisition-connector" / "receipts"
@@ -1179,54 +1275,170 @@ def _offline_sector_family_storage(
     sidecar_dir.mkdir(parents=True)
     bank_hash = "b" * 64
     insurer_hash = "c" * 64
-    connector = {
-        "schema_id": "layer3.sec_edgar_real_filing_acquisition_connector.v1",
-        "corpus_manifest": {
-            "example_records": [
-                _offline_example("bank-example", "financial_institution"),
-                _offline_example("insurer-example", "insurance"),
-            ]
-        },
-        "acquisition_receipts": [
-            _offline_acquisition("bank-example", bank_hash),
-            _offline_acquisition("insurer-example", insurer_hash),
-        ],
-    }
+    if shared_bank_insurer_source:
+        examples = [_offline_example("shared-bank-insurer-example", ["financial_institution", "insurance"])]
+        acquisitions = [_offline_acquisition("shared-bank-insurer-example", bank_hash, "4" * 64, "6" * 64)]
+    else:
+        examples = [
+            _offline_example("bank-example", "financial_institution"),
+            _offline_example("insurer-example", "insurance"),
+        ]
+        acquisitions = [
+            _offline_acquisition("bank-example", bank_hash, "4" * 64, "6" * 64),
+            _offline_acquisition("insurer-example", insurer_hash, "5" * 64, "7" * 64),
+        ]
+    connector = _offline_connector_receipt(
+        examples=examples,
+        acquisitions=acquisitions,
+        receipt_valid=connector_receipt_valid,
+    )
     (connector_dir / "connector.json").write_text(json.dumps(connector), encoding="utf-8")
     _write_sidecar(
         sidecar_dir / "bank-sidecar.json",
         bank_hash,
-        bank_qnames or ["us-gaap:Deposits"],
+        bank_qnames
+        or (
+            [
+                "us-gaap:Deposits",
+                "us-gaap:PremiumsEarnedNet",
+                "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
+            ]
+            if shared_bank_insurer_source
+            else ["us-gaap:Deposits"]
+        ),
         metadata_valid=sidecar_metadata_valid,
         receipt_shape_valid=sidecar_receipt_shape_valid,
+        inventory_valid=sidecar_inventory_valid,
     )
-    _write_sidecar(
-        sidecar_dir / "insurer-sidecar.json",
-        insurer_hash,
-        insurer_qnames
-        or [
-            "us-gaap:PremiumsEarnedNet",
-            "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
-        ],
-        metadata_valid=sidecar_metadata_valid,
-        receipt_shape_valid=sidecar_receipt_shape_valid,
-    )
+    if not shared_bank_insurer_source:
+        if split_insurer_sidecars:
+            _write_sidecar(
+                sidecar_dir / "insurer-sidecar-premiums.json",
+                insurer_hash,
+                ["us-gaap:PremiumsEarnedNet"],
+                metadata_valid=sidecar_metadata_valid,
+                receipt_shape_valid=sidecar_receipt_shape_valid,
+                inventory_valid=sidecar_inventory_valid,
+                sidecar_hash="8" * 64,
+            )
+            _write_sidecar(
+                sidecar_dir / "insurer-sidecar-claims.json",
+                insurer_hash,
+                ["us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense"],
+                metadata_valid=sidecar_metadata_valid,
+                receipt_shape_valid=sidecar_receipt_shape_valid,
+                inventory_valid=sidecar_inventory_valid,
+                sidecar_hash="9" * 64,
+            )
+        else:
+            _write_sidecar(
+                sidecar_dir / "insurer-sidecar.json",
+                insurer_hash,
+                insurer_qnames
+                or [
+                    "us-gaap:PremiumsEarnedNet",
+                    "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
+                ],
+                metadata_valid=sidecar_metadata_valid,
+                receipt_shape_valid=sidecar_receipt_shape_valid,
+                inventory_valid=sidecar_inventory_valid,
+            )
     return storage
 
 
-def _offline_example(example_id: str, class_tag: str) -> dict:
+def _offline_connector_receipt(
+    *,
+    examples: list[dict],
+    acquisitions: list[dict],
+    receipt_valid: bool,
+) -> dict:
+    diagnostics = {
+        "html_inline_xbrl_explicitly_classified": False,
+        "generic_text_downgrade_performed": False,
+        "full_sec_support_claimed": False,
+        "unsupported_or_degraded_requires_future_parser_slice": True,
+    }
+    source_family_inventory = {
+        "source_family": "sec_edgar",
+        "example_count": len(examples),
+        "role_counts": {},
+        "complete_submission_text_examples": 0,
+    }
+    example_set_hash = "a" * 64
+    basis = {
+        "hash_version": "sec_edgar_real_filing_acquisition_connector_receipt_hash_v1",
+        "schema_id": "layer3.sec_edgar_real_filing_acquisition_connector.v1",
+        "schema_version": 1,
+        "connector_mode": "sec_edgar_real_filing_acquisition_connector_v1",
+        "operator_decision": "acquire_sec_edgar_real_filing_validation_corpus",
+        "example_set_hash": example_set_hash,
+        "sec_user_agent_hash": "d" * 64,
+        "source_family_inventory_hash": stable_hash(source_family_inventory),
+        "acquisition_receipt_hashes": [
+            str(item["live_source_artifact_receipt_hash"])
+            for item in acquisitions
+        ],
+        "artifact_hashes": [
+            str(item["source_artifact_receipt"]["content_sha256"])
+            for item in acquisitions
+        ],
+        "classification_hashes": [stable_hash(item) for item in examples],
+        "diagnostics_hash": stable_hash(diagnostics),
+    }
+    connector_hash = stable_hash(basis)
+    if not receipt_valid:
+        basis = {**basis, "diagnostics_hash": "0" * 64}
     return {
-        "example_id": example_id,
-        "form_type": "10-K",
-        "issuer_profile_tags": [class_tag, "domestic_large_cap", "annual_form_family"],
+        "schema_id": "layer3.sec_edgar_real_filing_acquisition_connector.v1",
+        "schema_version": 1,
+        "connector_mode": "sec_edgar_real_filing_acquisition_connector_v1",
+        "operator_decision": "acquire_sec_edgar_real_filing_validation_corpus",
+        "connector_receipt_id": (
+            f"sec-edgar-real-filing-acquisition-connector-{example_set_hash[:24]}-{connector_hash[:24]}"
+        ),
+        "connector_receipt_hash": connector_hash,
+        "connector_state": "available",
+        "example_set": {
+            "example_set_hash": example_set_hash,
+        },
+        "corpus_manifest": {
+            "schema_id": "layer3.sec_edgar_real_filing_validation_corpus_manifest.v1",
+            "schema_version": 1,
+            "example_count": len(examples),
+            "example_records": examples,
+            "source_family_inventory": source_family_inventory,
+            "manifest_hash": stable_hash(
+                {
+                    "examples": examples,
+                    "acquisition_receipts": acquisitions,
+                    "diagnostics": diagnostics,
+                }
+            ),
+        },
+        "acquisition_receipts": acquisitions,
+        "diagnostics": diagnostics,
+        "receipt_hash_basis": basis,
     }
 
 
-def _offline_acquisition(example_id: str, source_hash: str) -> dict:
+def _offline_example(example_id: str, class_tags: str | list[str]) -> dict:
+    tags = [class_tags] if isinstance(class_tags, str) else list(class_tags)
     return {
         "example_id": example_id,
+        "form_type": "10-K",
+        "issuer_profile_tags": tags + ["domestic_large_cap", "annual_form_family"],
+    }
+
+
+def _offline_acquisition(example_id: str, source_hash: str, live_hash: str, content_hash: str) -> dict:
+    return {
+        "example_id": example_id,
+        "live_source_artifact_receipt_id": f"sec-edgar-live-source-artifact-{live_hash[:24]}",
+        "live_source_artifact_receipt_hash": live_hash,
+        "live_source_artifact_receipt_status": "available",
         "source_artifact_receipt": {
             "source_artifact_receipt_hash": source_hash,
+            "content_sha256": content_hash,
         },
     }
 
@@ -1238,20 +1450,26 @@ def _write_sidecar(
     *,
     metadata_valid: bool = True,
     receipt_shape_valid: bool = True,
+    inventory_valid: bool = True,
+    sidecar_hash: str | None = None,
 ) -> None:
+    records = [
+        {"concept": {"qname": qname}, "resolved_fact_id": f"fact-{index}"}
+        for index, qname in enumerate(qnames, start=1)
+    ]
+    projection = [_redacted_sidecar_record(record) for record in records]
     if receipt_shape_valid:
-        sidecar_hash = ("d" if source_hash.startswith("b") else "e") * 64
-        inventory_hash = ("1" if source_hash.startswith("b") else "2") * 64
+        sidecar_hash = sidecar_hash or (("d" if source_hash.startswith("b") else "e") * 64)
+        inventory_hash = stable_hash(projection) if inventory_valid else "0" * 64
     else:
         sidecar_hash = f"{source_hash}-sidecar"
         inventory_hash = f"{source_hash}-inventory"
     payload = {
         "schema_id": "layer3.sec_edgar_arelle_resolved_fact_authority_sidecar.v1",
         "source_artifact_receipt_hash": source_hash,
-        "resolved_fact_records": [
-            {"concept": {"qname": qname}}
-            for qname in qnames
-        ],
+        "resolved_fact_records": records,
+        "resolved_fact_count": len(records),
+        "resolved_fact_projection": projection,
     }
     if metadata_valid:
         payload.update(
@@ -1270,6 +1488,14 @@ def _write_sidecar(
             }
         )
     path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _redacted_sidecar_record(record: dict) -> dict:
+    return {
+        key: value
+        for key, value in record.items()
+        if key not in {"value", "effective_value", "lexical_value"}
+    } | {"value_redacted": True}
 
 
 def _projection_bundle(module) -> dict:

@@ -41275,7 +41275,7 @@
     "focused_tests": [
       "backend/tests/test_sec_xbrl_real_corpus_product_runner.py"
     ],
-    "focused_test_result": "26 passed",
+    "focused_test_result": "30 passed",
     "tier_classification": "Tier 1 diagnostic/report/test/progress only",
     "runtime_default_changed_by_tracking": false,
     "live_sec_network_run_performed_by_tracking": true,

@@ -9648,19 +9648,39 @@ Focused validation: `python -m pytest ./backend/tests/test_sec_xbrl_multi_period
 
 Status flags: `multi_period_projection_validate_only_ready=true`; `document_period_first=true`; `comparative_period_projected=true`.
 
-Next exact posture: `sec_xbrl_sector_family_real_filer_validation_v1`.
+Next exact posture: `sec_xbrl_projection_persistence_design_v1_tier2_pre_review`.
+
+## SEC XBRL Sector-Family Real-Filer Validation
+
+Milestone: `sec_xbrl_sector_family_real_filer_validation_v1`.
+
+Runner: `diagnostics/assessment/sec-xbrl-real-corpus-product-runner.py`.
+
+Report: `diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json`.
+
+Status: `sector_family_real_filer_validation_ready`. The branch-local PR #2020 evidence validates redacted operator-acquired offline US-GAAP bank and insurer annual filing receipts through the existing real-corpus product runner.
+
+The gate is validate-only and fail-closed. It verifies governed connector receipt shape and hash-basis parity before trusting issuer class, sidecar metadata and resolved-fact inventory parity before consuming qnames, single-sidecar anchor satisfaction rather than cross-sidecar qname union, distinct bank and insurer source artifacts, supporting-only non-activation, row-shape stability, and the universal-only control.
+
+Focused validation: `python -m pytest ./backend/tests/test_sec_xbrl_real_corpus_product_runner.py -q` -> `30 passed`.
+
+Non-goals preserved: no runtime default enablement, live SEC network, source acquisition, Arelle invocation, value reveal, persistence, schema, `models.py`, Alembic migration, provider or connector dispatch, operator workflow/API/UI, raw runtime artifacts committed, production-readiness claim, or default-on readiness claim.
+
+Status flags: `sector_family_real_filer_validation_ready=true`; `tier1_validate_only=true`; `projection_persistence_deferred_to_tier2_pre_review=true`.
+
+Next exact posture: `sec_xbrl_projection_persistence_design_v1_tier2_pre_review`.
 
 ## SEC XBRL Deferred Schema Gate
 
 Milestones deferred: `sec_xbrl_projection_persistence_design_v1`; `sec_xbrl_persisted_statement_packet_design_v1`.
 
-Preserved work holder: branch `codex/sec-family-res`.
+Preserved work holder: branch `codex/sec-family-res` is reference-only and is not a merge base for the Tier-1 PR #2020 branch.
 
-Status: `deferred_pending_real_filer_validation`. The branch-local persistence and persisted-statement-packet work is intentionally not part of this no-schema landing branch. No `models.py` additions, Alembic migrations, persistence services, persistence diagnostics, or persistence tests are admitted here.
+Status: `ready_for_tier2_schema_design_after_real_filer_validation`. The branch-local persistence and persisted-statement-packet work remains intentionally outside this no-schema landing branch. No `models.py` additions, Alembic migrations, persistence services, persistence diagnostics, or persistence tests are admitted here.
 
-Reason: durable projection and packet schemas should not be frozen on the current narrow evidence base. The next validation slice must prove sector-family anchor activation and projection row-shape stability across the approved real-filer matrix before persistence is finalized.
+Reason: durable projection and packet schemas should be designed only after the Tier-1 real-filer gate evidence and independent review settle. The next pass is a Tier-2 pre-review design lane, not implementation.
 
-Required gate: `sec_xbrl_sector_family_real_filer_validation_v1` must prove anchor-driven family activation, supporting-only non-activation, redacted projection row-shape stability, and the universal-only control before schema work resumes. The gate should extend the existing stratified real-filing validation matrix or real-corpus product runner with sector-family activation as a new validated dimension rather than greenfielding a standalone diagnostic when existing infrastructure can host it.
+Closed gate recorded on this branch: `sec_xbrl_sector_family_real_filer_validation_v1` proves anchor-driven family activation, supporting-only non-activation, redacted projection row-shape stability, the universal-only control, governed connector receipts, governed sidecar inventories, single-sidecar anchor satisfaction, and distinct bank/insurer source artifacts.
 
 Non-blocking backlog note: keyed or salted HMAC issuer pseudonyms may be useful as operator-side defense in depth for offline artifacts that hash real CIKs before redaction. The committed surface is already safe for this landing because synthetic issuer-hash preimages and count-only real-corpus summaries are used; HMAC pseudonyms are not part of this landing and are not a gate.
 
@@ -9668,7 +9688,7 @@ REIT asymmetry is explicit: `real_estate_reit` remains a sector-class label from
 
 Status flags: `schema_set_landed=false`; `projection_persistence_deferred_pending_validation=true`; `persisted_statement_packet_deferred_pending_validation=true`; `real_estate_reit_family_defined=false`.
 
-Next exact posture: `sec_xbrl_sector_family_real_filer_validation_v1`.
+Next exact posture: `sec_xbrl_projection_persistence_design_v1_tier2_pre_review`.
 
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
