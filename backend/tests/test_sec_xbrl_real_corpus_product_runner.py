@@ -446,6 +446,40 @@ def test_sec_xbrl_real_corpus_product_runner_admits_when_existing_chain_reaches_
     assert str(separate_sector_family_storage) not in json.dumps(separate_provenance, sort_keys=True)
 
 
+def test_sec_xbrl_real_corpus_product_runner_sector_family_report_is_reproducible_scope(
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage = _offline_sector_family_storage(tmp_path)
+
+    report = module.build_sector_family_validation_report(offline_storage_dir=storage)
+    repeated = module.build_sector_family_validation_report(offline_storage_dir=storage)
+
+    assert report == repeated
+    assert report["schema_id"] == "diagnostics.sec_xbrl_sector_family_real_filer_validation_report.v1"
+    assert report["gate_verdict"] == "PASS"
+    assert report["storage_dir_marker"] == module._storage_marker(storage)
+    assert report["live_sec_network_used"] is False
+    assert report["arelle_invoked"] is False
+    assert report["report_scope"]["sector_family_subgate_in_scope"] is True
+    assert report["report_scope"]["broader_live_matrix_product_gate_in_scope"] is False
+    assert report["matrix_execution_plan"]["state"] == "not_in_scope"
+    assert report["stratified_matrix_required_strata_readiness"]["state"] == "not_in_scope"
+    assert report["sector_family_evidence_provenance"] == {
+        "provenance_mode": "single_reproducible_sector_family_storage_root",
+        "storage_dir_marker": module._storage_marker(storage),
+        "sector_family_offline_storage_marker": module._storage_marker(storage),
+        "storage_markers_match": True,
+        "operator_supplied_sector_family_storage": True,
+        "paths_redacted": True,
+        "raw_local_paths_committed": False,
+    }
+    assert [item["criterion"] for item in report["criteria"]] == [
+        "sector_family_available_filer_activation_dimension"
+    ]
+    assert report["sector_family_activation_validation"]["full_gate_satisfied"] is True
+
+
 def test_sec_xbrl_real_corpus_product_runner_scaffolds_sector_family_activation_dimension() -> None:
     module = _runner_module()
 

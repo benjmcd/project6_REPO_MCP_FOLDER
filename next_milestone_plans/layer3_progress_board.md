@@ -9364,7 +9364,7 @@ Milestone: `sec_edgar_arelle_default_posture_decision_v1`.
 
 Planning doc: `next_milestone_plans/Layer3_planning_docs/1268-sec-xbrl-default-posture-reconciliation.md`.
 
-Reports: `diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json`, `diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json`, `diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json`, and `diagnostics/assessment/sec-xbrl-default-on-runtime-report.json`.
+Reports: `diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json`, archived historical `archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json`, `diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json`, and `diagnostics/assessment/sec-xbrl-default-on-runtime-report.json`.
 
 Status: completed by decision packet `1269-sec-xbrl-default-posture-decision.md`. Current-main evidence admits broader real-product reliability and proves two bounded governed live value-reveal exercises, while the runtime default authority still keeps committed defaults off.
 
@@ -9656,13 +9656,13 @@ Milestone: `sec_xbrl_sector_family_real_filer_validation_v1`.
 
 Runner: `diagnostics/assessment/sec-xbrl-real-corpus-product-runner.py`.
 
-Report: `diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json`.
+Report: `diagnostics/assessment/sec-xbrl-sector-family-real-filer-validation-report.json`.
 
-Status: `sector_family_real_filer_validation_ready`. The branch-local PR #2020 evidence validates redacted operator-acquired offline US-GAAP bank and insurer annual filing receipts through the existing real-corpus product runner. The validation pass itself reads existing offline receipts and performs no new live SEC network request, source acquisition, Arelle subprocess invocation, value reveal, persistence, schema, API/UI, default-on, or operator-workflow action. The evidence provenance remains live/Arelle: the offline receipts being revalidated were operator-acquired during an earlier governed live SEC/Arelle run, which is why the committed report and manifests retain `live_sec_network_used=true`, source-acquisition, and Arelle-sidecar-count fields for the source evidence.
+Status: `sector_family_real_filer_validation_ready`. The branch-local PR #2020 evidence validates redacted operator-acquired offline US-GAAP bank and insurer annual filing receipts through the existing real-corpus product runner's sector-family-only diagnostic path. The scoped validation report reads existing offline receipts from storage marker `a26c56586d12f29eb1bc7708` and performs no new live SEC network request, source acquisition, Arelle subprocess invocation, value reveal, persistence, schema, API/UI, default-on, or operator-workflow action. The previous broader live-matrix marker `4f49435ffbdc4db07762e8d0` is historical and not reproducible offline from the available inputs, so it is explicitly out of scope for this report.
 
 The gate is validate-only and fail-closed. It verifies governed connector receipt shape and hash-basis parity before trusting issuer class, nested source-artifact receipt hash-basis parity before accepting connector acquisitions, sidecar metadata/resolved-fact inventory/receipt hash-basis parity before consuming qnames, single-sidecar anchor satisfaction rather than cross-sidecar qname union, distinct bank and insurer source artifacts, supporting-only non-activation, row-shape stability, and the universal-only control. Full live-source-artifact receipt hash-basis revalidation is not claimed by this offline gate because the redacted connector response does not carry the server-derived URL hash or user-agent hash basis; that remains a bounded follow-up Tier-1 hardening concern, not a persistence/schema gate.
 
-Focused validation: `python -m pytest ./backend/tests/test_sec_xbrl_real_corpus_product_runner.py -q` -> `34 passed`.
+Focused validation: `python -m pytest ./backend/tests/test_sec_xbrl_real_corpus_product_runner.py -q` -> `36 passed`.
 
 Non-goals preserved for this validation pass: no runtime default enablement, new live SEC network request, new source acquisition, new Arelle invocation, value reveal, persistence, schema, `models.py`, Alembic migration, provider or connector dispatch, operator workflow/API/UI, raw runtime artifacts committed, production-readiness claim, or default-on readiness claim.
 

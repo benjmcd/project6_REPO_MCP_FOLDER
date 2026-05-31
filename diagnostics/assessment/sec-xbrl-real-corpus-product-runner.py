@@ -210,19 +210,38 @@ def main() -> int:
         action="store_true",
         help="Apply the gate verdict to the committed Arelle cutover config default.",
     )
+    parser.add_argument(
+        "--sector-family-only",
+        action="store_true",
+        help=(
+            "Emit only the offline-reproducible sector-family validation report. "
+            "This never runs the live matrix product path."
+        ),
+    )
     args = parser.parse_args()
 
-    report = build_report(
-        live=bool(args.live),
-        storage_dir=Path(args.storage_dir) if args.storage_dir else None,
-        sector_family_storage_dir=(
-            Path(args.sector_family_storage_dir) if args.sector_family_storage_dir else None
-        ),
-        matrix_plan_path=Path(args.matrix_plan) if args.matrix_plan else None,
-        user_agent=str(args.user_agent or ""),
-        request_namespace=str(args.request_namespace or ""),
-        taxonomy_internet_connectivity=str(args.taxonomy_internet_connectivity or "offline"),
-    )
+    if args.sector_family_only:
+        if args.live:
+            parser.error("--sector-family-only cannot be combined with --live")
+        if args.apply_default_decision:
+            parser.error("--sector-family-only cannot apply runtime default decisions")
+        if not args.sector_family_storage_dir:
+            parser.error("--sector-family-only requires --sector-family-storage-dir")
+        report = build_sector_family_validation_report(
+            offline_storage_dir=Path(args.sector_family_storage_dir),
+        )
+    else:
+        report = build_report(
+            live=bool(args.live),
+            storage_dir=Path(args.storage_dir) if args.storage_dir else None,
+            sector_family_storage_dir=(
+                Path(args.sector_family_storage_dir) if args.sector_family_storage_dir else None
+            ),
+            matrix_plan_path=Path(args.matrix_plan) if args.matrix_plan else None,
+            user_agent=str(args.user_agent or ""),
+            request_namespace=str(args.request_namespace or ""),
+            taxonomy_internet_connectivity=str(args.taxonomy_internet_connectivity or "offline"),
+        )
     output = _repo_path(Path(args.output))
     if args.apply_default_decision:
         applied = _apply_runtime_default_decision(report)
@@ -362,6 +381,110 @@ def build_report(
             pass_gate=pass_gate,
             blockers=blockers,
             sector_family_activation_validation=sector_family_activation_validation,
+        ),
+    }
+
+
+def build_sector_family_validation_report(*, offline_storage_dir: Path) -> dict[str, Any]:
+    storage = _repo_path(offline_storage_dir)
+    storage_marker = _storage_marker(storage)
+    validation = _sector_family_activation_validation(offline_storage_dir=storage)
+    criterion = _sector_family_available_filer_activation_criterion(validation)
+    blockers = [
+        {
+            "criterion": criterion["criterion"],
+            "reason": criterion["blocked_reason"],
+            "evidence": criterion["evidence"],
+        }
+    ] if criterion["state"] != "passed" else []
+    pass_gate = not blockers and validation.get("full_gate_satisfied") is True
+    return {
+        "schema_id": "diagnostics.sec_xbrl_sector_family_real_filer_validation_report.v1",
+        "target": SECTOR_FAMILY_VALIDATION_DIMENSION_ID,
+        "decision": (
+            "sector_family_real_filer_validation_satisfied"
+            if pass_gate
+            else "sector_family_real_filer_validation_blocked"
+        ),
+        "gate_verdict": "PASS" if pass_gate else "FAIL_OR_INCONCLUSIVE",
+        "headline": (
+            "PASS: offline-reproducible SEC XBRL sector-family validation satisfied."
+            if pass_gate
+            else "FAIL/INCONCLUSIVE: offline-reproducible SEC XBRL sector-family validation is blocked."
+        ),
+        "report_scope": {
+            "scope_id": "sec_xbrl_sector_family_real_filer_validation_v1",
+            "sector_family_subgate_in_scope": True,
+            "broader_live_matrix_product_gate_in_scope": False,
+            "historical_live_matrix_evidence_reused": False,
+            "historical_live_matrix_reproducible_offline_from_available_inputs": False,
+            "default_on_decision_in_scope": False,
+        },
+        "live_sec_network_used": False,
+        "fake_sec_client_used": False,
+        "arelle_invoked": validation.get("arelle_invoked") is True,
+        "storage_dir_marker": storage_marker,
+        "storage_dir_paths_redacted": True,
+        "matrix_execution_plan": {
+            "state": "not_in_scope",
+            "mode": "sector_family_only_reproducible_offline_validation",
+            "external_plan_used": False,
+            "paths_redacted": True,
+            "blocked_reasons": [],
+        },
+        "stratified_matrix_required_strata_readiness": {
+            "state": "not_in_scope",
+            "reason": "broader_live_matrix_product_gate_not_reproduced_offline",
+        },
+        "sector_family_evidence_provenance": {
+            "provenance_mode": "single_reproducible_sector_family_storage_root",
+            "storage_dir_marker": storage_marker,
+            "sector_family_offline_storage_marker": storage_marker,
+            "storage_markers_match": True,
+            "operator_supplied_sector_family_storage": True,
+            "paths_redacted": True,
+            "raw_local_paths_committed": False,
+        },
+        "sector_family_activation_validation": validation,
+        "criteria": [criterion],
+        "blocking_reasons": blockers,
+        "summary": {
+            "sector_family_full_gate_satisfied": validation.get("full_gate_satisfied") is True,
+            "sector_family_status": validation.get("status"),
+            "available_reference_filer_count": validation.get("available_reference_filer_count"),
+            "validated_available_family_ids": validation.get("validated_available_family_ids"),
+            "us_gaap_bank_insurer_subgate_state": validation.get("us_gaap_bank_insurer_subgate_state"),
+        },
+        "runtime_default_decision": {
+            "current_default_enabled": _config_cutover_default_enabled(),
+            "resulting_default_enabled": False,
+            "action": "not_applicable_sector_family_only",
+            "applied_to_config": False,
+            "gate_has_teeth": True,
+        },
+        "redaction": {
+            "raw_tickers_committed": False,
+            "raw_accessions_committed": False,
+            "raw_sec_urls_committed": False,
+            "local_storage_roots_committed": False,
+            "raw_values_committed": False,
+            "identity_hash_only": True,
+        },
+        "non_goals_preserved": {
+            "runtime_network_default_changed": False,
+            "operator_value_reveal_enabled": False,
+            "gate_b_product_package_ui_redesign_performed": False,
+            "candidate_b_sec_routing_performed": False,
+            "final_financial_statement_semantics_claimed": False,
+            "cross_company_comparability_claimed": False,
+            "rag_vector_model_provider_auth_behavior_added": False,
+            "new_layer3_source_shape_created": False,
+            "broader_live_matrix_default_on_claimed": False,
+        },
+        "next_slice": (
+            "sec_edgar_operator_surface_gated_value_reveal_v1"
+            if pass_gate
+            else SECTOR_FAMILY_US_GAAP_SUBGATE_NEXT_SLICE
         ),
     }
 
@@ -2175,6 +2298,50 @@ def _sector_family_supporting_only_family_ids(presence: Mapping[str, Any]) -> li
     )
 
 
+def _sector_family_available_filer_activation_criterion(
+    sector_family_activation_validation: Mapping[str, Any],
+) -> dict[str, Any]:
+    return _criterion(
+        "sector_family_available_filer_activation_dimension",
+        sector_family_activation_validation.get("available_dimension_passed") is True
+        and sector_family_activation_validation.get("status")
+        in {
+            "partially_satisfied_us_gaap_subgate_pending",
+            "sector_family_real_filer_validation_satisfied",
+        }
+        and sector_family_activation_validation.get("us_gaap_bank_insurer_subgate_state")
+        in {"pending_operator_offline_filings", "validated"},
+        {
+            "dimension_id": sector_family_activation_validation.get("dimension_id"),
+            "status": sector_family_activation_validation.get("status"),
+            "available_reference_filer_count": sector_family_activation_validation.get(
+                "available_reference_filer_count"
+            ),
+            "validated_available_family_ids": sector_family_activation_validation.get(
+                "validated_available_family_ids"
+            ),
+            "ifrs_anchor_activation_passed": sector_family_activation_validation.get(
+                "ifrs_anchor_activation_passed"
+            ),
+            "supporting_only_control_passed": sector_family_activation_validation.get(
+                "supporting_only_control_passed"
+            ),
+            "universal_only_control_passed": sector_family_activation_validation.get(
+                "universal_only_control_passed"
+            ),
+            "projection_row_shape_stable": (
+                sector_family_activation_validation.get("projection_row_shape") or {}
+            ).get("stable_across_available_references"),
+            "us_gaap_bank_insurer_subgate_state": sector_family_activation_validation.get(
+                "us_gaap_bank_insurer_subgate_state"
+            ),
+            "full_gate_satisfied": sector_family_activation_validation.get("full_gate_satisfied"),
+            "raw_identity_redacted": True,
+        },
+        "sector_family_available_filer_activation_dimension_not_satisfied",
+    )
+
+
 def _criteria(
     preflight: Mapping[str, Any],
     summary: Mapping[str, Any],
@@ -2205,45 +2372,7 @@ def _criteria(
             },
             "stratified_matrix_required_strata_not_ready",
         ),
-        _criterion(
-            "sector_family_available_filer_activation_dimension",
-            sector_family_activation_validation.get("available_dimension_passed") is True
-            and sector_family_activation_validation.get("status")
-            in {
-                "partially_satisfied_us_gaap_subgate_pending",
-                "sector_family_real_filer_validation_satisfied",
-            }
-            and sector_family_activation_validation.get("us_gaap_bank_insurer_subgate_state")
-            in {"pending_operator_offline_filings", "validated"},
-            {
-                "dimension_id": sector_family_activation_validation.get("dimension_id"),
-                "status": sector_family_activation_validation.get("status"),
-                "available_reference_filer_count": sector_family_activation_validation.get(
-                    "available_reference_filer_count"
-                ),
-                "validated_available_family_ids": sector_family_activation_validation.get(
-                    "validated_available_family_ids"
-                ),
-                "ifrs_anchor_activation_passed": sector_family_activation_validation.get(
-                    "ifrs_anchor_activation_passed"
-                ),
-                "supporting_only_control_passed": sector_family_activation_validation.get(
-                    "supporting_only_control_passed"
-                ),
-                "universal_only_control_passed": sector_family_activation_validation.get(
-                    "universal_only_control_passed"
-                ),
-                "projection_row_shape_stable": (
-                    sector_family_activation_validation.get("projection_row_shape") or {}
-                ).get("stable_across_available_references"),
-                "us_gaap_bank_insurer_subgate_state": sector_family_activation_validation.get(
-                    "us_gaap_bank_insurer_subgate_state"
-                ),
-                "full_gate_satisfied": sector_family_activation_validation.get("full_gate_satisfied"),
-                "raw_identity_redacted": True,
-            },
-            "sector_family_available_filer_activation_dimension_not_satisfied",
-        ),
+        _sector_family_available_filer_activation_criterion(sector_family_activation_validation),
         _criterion(
             "broader_real_product_path_corpus",
             summary["real_filing_count"] >= REQUIRED_REAL_FILING_COUNT
