@@ -642,6 +642,29 @@ def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_sidecar_
     ]
 
 
+def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_sidecar_missing_projection(
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage = _offline_sector_family_storage(
+        tmp_path,
+        sidecar_projection_present=False,
+    )
+
+    gate = module._sector_family_activation_validation(offline_storage_dir=storage)
+    sub_gate = gate["us_gaap_bank_insurer_subgate"]
+
+    assert gate["status"] == "partially_satisfied_us_gaap_subgate_pending"
+    assert sub_gate["state"] == "blocked_offline_artifacts_incomplete"
+    assert sub_gate["offline_storage_evidence"]["sidecar_reference_count"] == 0
+    assert "real_us_gaap_bank_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+    assert "real_us_gaap_insurer_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+
+
 def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_sidecar_hash_basis_mismatch(
     tmp_path: Path,
 ) -> None:
@@ -1391,6 +1414,7 @@ def _offline_sector_family_storage(
     sidecar_receipt_shape_valid: bool = True,
     sidecar_inventory_valid: bool = True,
     sidecar_hash_basis_valid: bool = True,
+    sidecar_projection_present: bool = True,
     connector_receipt_valid: bool = True,
     nested_acquisition_valid: bool = True,
     split_insurer_sidecars: bool = False,
@@ -1460,6 +1484,7 @@ def _offline_sector_family_storage(
         receipt_shape_valid=sidecar_receipt_shape_valid,
         inventory_valid=sidecar_inventory_valid,
         hash_basis_valid=sidecar_hash_basis_valid,
+        projection_present=sidecar_projection_present,
         raw_values=sidecar_raw_values,
         standard_concepts=sidecar_standard_concepts,
         dimensional_facts=sidecar_dimensional_facts,
@@ -1474,6 +1499,7 @@ def _offline_sector_family_storage(
                 receipt_shape_valid=sidecar_receipt_shape_valid,
                 inventory_valid=sidecar_inventory_valid,
                 hash_basis_valid=sidecar_hash_basis_valid,
+                projection_present=sidecar_projection_present,
                 raw_values=sidecar_raw_values,
                 standard_concepts=sidecar_standard_concepts,
                 dimensional_facts=sidecar_dimensional_facts,
@@ -1486,6 +1512,7 @@ def _offline_sector_family_storage(
                 receipt_shape_valid=sidecar_receipt_shape_valid,
                 inventory_valid=sidecar_inventory_valid,
                 hash_basis_valid=sidecar_hash_basis_valid,
+                projection_present=sidecar_projection_present,
                 raw_values=sidecar_raw_values,
                 standard_concepts=sidecar_standard_concepts,
                 dimensional_facts=sidecar_dimensional_facts,
@@ -1503,6 +1530,7 @@ def _offline_sector_family_storage(
                 receipt_shape_valid=sidecar_receipt_shape_valid,
                 inventory_valid=sidecar_inventory_valid,
                 hash_basis_valid=sidecar_hash_basis_valid,
+                projection_present=sidecar_projection_present,
                 raw_values=sidecar_raw_values,
                 standard_concepts=sidecar_standard_concepts,
                 dimensional_facts=sidecar_dimensional_facts,
@@ -1692,6 +1720,7 @@ def _write_sidecar(
     receipt_shape_valid: bool = True,
     inventory_valid: bool = True,
     hash_basis_valid: bool = True,
+    projection_present: bool = True,
     raw_values: bool = False,
     standard_concepts: bool = True,
     dimensional_facts: bool = False,
@@ -1760,7 +1789,6 @@ def _write_sidecar(
         "source_artifact_receipt_hash": source_hash,
         "resolved_fact_records": records,
         "resolved_fact_count": len(records),
-        "resolved_fact_projection": projection,
         "local_value_inventory_hash": local_value_inventory_hash,
         "internal_value_store": {
             "schema_id": "layer3.sec_edgar_arelle_resolved_fact_authority_internal_value_store.v1",
@@ -1775,6 +1803,8 @@ def _write_sidecar(
         "diagnostics_hash": diagnostics_hash,
         "parity": parity,
     }
+    if projection_present:
+        payload["resolved_fact_projection"] = projection
     if metadata_valid:
         payload.update(
             {

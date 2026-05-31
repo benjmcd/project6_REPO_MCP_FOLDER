@@ -1938,7 +1938,7 @@ def _is_governed_arelle_sidecar_receipt(payload: Mapping[str, Any]) -> bool:
         return False
     redacted_records = [_redacted_sidecar_inventory_record(record) for record in records]
     projection = payload.get("resolved_fact_projection")
-    projection_matches = projection is None or projection == redacted_records
+    projection_matches = isinstance(projection, list) and projection == redacted_records
     if not isinstance(authority_hashes, Mapping):
         return False
     local_value_hashes = [str(record.get("value_hash") or "") for record in redacted_records]
