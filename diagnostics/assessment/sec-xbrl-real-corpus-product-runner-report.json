@@ -36,6 +36,28 @@
     },
     {
       "blocked_reason": null,
+      "criterion": "sector_family_available_filer_activation_dimension",
+      "evidence": {
+        "available_reference_filer_count": 3,
+        "dimension_id": "sec_xbrl_sector_family_real_filer_validation_v1",
+        "full_gate_satisfied": false,
+        "ifrs_anchor_activation_passed": true,
+        "projection_row_shape_stable": true,
+        "raw_identity_redacted": true,
+        "status": "partially_satisfied_us_gaap_subgate_pending",
+        "supporting_only_control_passed": true,
+        "universal_only_control_passed": true,
+        "us_gaap_bank_insurer_subgate_state": "pending_operator_offline_filings",
+        "validated_available_family_ids": [
+          "banking",
+          "extractive",
+          "insurance"
+        ]
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
       "criterion": "broader_real_product_path_corpus",
       "evidence": {
         "forms": {
@@ -153,7 +175,7 @@
       "raw_identity_redacted": true
     }
   ],
-  "next_slice": "sec_edgar_operator_surface_gated_value_reveal_v1",
+  "next_slice": "sec_xbrl_sector_family_us_gaap_bank_insurer_subgate_v1",
   "non_goals_preserved": {
     "candidate_b_sec_routing_performed": false,
     "cross_company_comparability_claimed": false,
@@ -162,7 +184,8 @@
     "new_layer3_source_shape_created": false,
     "operator_value_reveal_enabled": false,
     "rag_vector_model_provider_auth_behavior_added": false,
-    "runtime_network_default_changed": false
+    "runtime_network_default_changed": false,
+    "sector_family_us_gaap_anchor_validation_claimed": false
   },
   "per_filing": [
     {
@@ -3744,6 +3767,195 @@
     "resulting_default_enabled": true
   },
   "schema_id": "diagnostics.sec_xbrl_real_corpus_product_runner.v1",
+  "sector_family_activation_validation": {
+    "arelle_invoked": false,
+    "available_dimension_passed": true,
+    "available_filer_dimension_state": "passed",
+    "available_reference_filer_count": 3,
+    "available_reference_results": [
+      {
+        "activation_anchor_concepts": [
+          "ifrs-full:CurrentDepositsFromCustomers",
+          "ifrs-full:GrossLoanCommitments",
+          "ifrs-full:InsuranceContractsLiabilityAsset",
+          "ifrs-full:InsuranceRevenue",
+          "ifrs-full:InterestIncomeForFinancialAssetsMeasuredAtAmortisedCost"
+        ],
+        "activation_anchor_family_ids": [
+          "banking",
+          "insurance"
+        ],
+        "activation_anchor_taxonomies": [
+          "ifrs-full"
+        ],
+        "activation_passed": true,
+        "activation_rule": "anchor_concepts_activate_supporting_concepts_do_not",
+        "actual_present_family_ids": [
+          "banking",
+          "insurance"
+        ],
+        "expected_present_family_ids": [
+          "banking",
+          "insurance"
+        ],
+        "presence_conditioned": true,
+        "projection_row_shape_hash": "b3421e065cf67b92d8e63be5",
+        "raw_identity_redacted": true,
+        "reference_profile_hash": "3100f3aad2875989e28e109e",
+        "reference_role": "available_ifrs_financial_services_activation_reference",
+        "reported_concept_count": 5,
+        "reported_concepts": [
+          "ifrs-full:InsuranceRevenue",
+          "ifrs-full:InsuranceContractsLiabilityAsset",
+          "ifrs-full:InterestIncomeForFinancialAssetsMeasuredAtAmortisedCost",
+          "ifrs-full:GrossLoanCommitments",
+          "ifrs-full:CurrentDepositsFromCustomers"
+        ],
+        "sic_used_as_gate": false,
+        "supporting_only_family_ids": [],
+        "taxonomy_profile": "ifrs-full",
+        "values_redacted": true
+      },
+      {
+        "activation_anchor_concepts": [
+          "ifrs-full:CurrentOreStockpiles",
+          "ifrs-full:ExpenseArisingFromExplorationForAndEvaluationOfMineralResources"
+        ],
+        "activation_anchor_family_ids": [
+          "extractive"
+        ],
+        "activation_anchor_taxonomies": [
+          "ifrs-full"
+        ],
+        "activation_passed": true,
+        "activation_rule": "anchor_concepts_activate_supporting_concepts_do_not",
+        "actual_present_family_ids": [
+          "extractive"
+        ],
+        "expected_present_family_ids": [
+          "extractive"
+        ],
+        "presence_conditioned": true,
+        "projection_row_shape_hash": "b3421e065cf67b92d8e63be5",
+        "raw_identity_redacted": true,
+        "reference_profile_hash": "2e3f28051a602f2b797f85f5",
+        "reference_role": "available_ifrs_extractive_activation_reference",
+        "reported_concept_count": 2,
+        "reported_concepts": [
+          "ifrs-full:ExpenseArisingFromExplorationForAndEvaluationOfMineralResources",
+          "ifrs-full:CurrentOreStockpiles"
+        ],
+        "sic_used_as_gate": false,
+        "supporting_only_family_ids": [],
+        "taxonomy_profile": "ifrs-full",
+        "values_redacted": true
+      },
+      {
+        "activation_anchor_concepts": [],
+        "activation_anchor_family_ids": [],
+        "activation_anchor_taxonomies": [],
+        "activation_passed": true,
+        "activation_rule": "anchor_concepts_activate_supporting_concepts_do_not",
+        "actual_present_family_ids": [],
+        "expected_present_family_ids": [],
+        "presence_conditioned": true,
+        "projection_row_shape_hash": "b3421e065cf67b92d8e63be5",
+        "raw_identity_redacted": true,
+        "reference_profile_hash": "cac74e81f80f84d53ca9afe3",
+        "reference_role": "available_universal_only_control_reference",
+        "reported_concept_count": 3,
+        "reported_concepts": [
+          "us-gaap:Assets",
+          "us-gaap:Liabilities",
+          "us-gaap:Revenues"
+        ],
+        "sic_used_as_gate": false,
+        "supporting_only_family_ids": [],
+        "taxonomy_profile": "us-gaap",
+        "values_redacted": true
+      }
+    ],
+    "dimension_id": "sec_xbrl_sector_family_real_filer_validation_v1",
+    "full_gate_satisfied": false,
+    "ifrs_anchor_activation_passed": true,
+    "live_network_used": false,
+    "pending_sub_gates": [
+      {
+        "blocked_reason": "real_us_gaap_bank_and_insurer_filings_not_available_in_current_runner_artifacts",
+        "operator_action_code": "operator_offline_us_gaap_bank_insurer_filing_acquisition_required",
+        "raw_identity_redacted": true,
+        "required_anchor_concepts": [
+          "us-gaap:Deposits",
+          "us-gaap:InterestAndDividendIncomeOperating",
+          "us-gaap:PremiumsEarnedNet",
+          "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense"
+        ],
+        "required_reference_classes": [
+          "real_us_gaap_bank_filing",
+          "real_us_gaap_insurer_filing"
+        ],
+        "state": "pending_operator_offline_filings",
+        "sub_gate_id": "us_gaap_bank_insurer_anchor_validation",
+        "validated": false,
+        "values_redacted": true
+      }
+    ],
+    "projection_row_shape": {
+      "public_row_key_count": 15,
+      "public_row_keys": [
+        "concepts",
+        "headline_canonical_defined",
+        "issuer_hash",
+        "legitimately_absent_count",
+        "oracle_absent_count",
+        "oracle_confirmed_count",
+        "period_class",
+        "primary_taxonomy",
+        "projected_count",
+        "provenance_complete_count",
+        "provenance_fields_present",
+        "sector_family_defined_count",
+        "sector_family_presence",
+        "statement_identity_residuals",
+        "universal_defined_count"
+      ],
+      "public_row_shape_hash": "b3421e065cf67b92d8e63be5",
+      "reference_row_shape_hashes": [
+        "b3421e065cf67b92d8e63be5",
+        "b3421e065cf67b92d8e63be5",
+        "b3421e065cf67b92d8e63be5"
+      ],
+      "stable_across_available_references": true,
+      "unique_row_shape_hash_count": 1
+    },
+    "raw_identity_redacted": true,
+    "runtime_defaults_changed": false,
+    "status": "partially_satisfied_us_gaap_subgate_pending",
+    "supporting_only_control": {
+      "actual_present_family_ids": [],
+      "control_id": "supporting_only_interest_expense_control",
+      "expected_present_family_ids": [],
+      "expected_supporting_only_family_ids": [
+        "banking"
+      ],
+      "passed": true,
+      "reported_concepts": [
+        "us-gaap:InterestExpense"
+      ],
+      "supporting_only_family_ids": [
+        "banking"
+      ]
+    },
+    "supporting_only_control_passed": true,
+    "universal_only_control_passed": true,
+    "us_gaap_bank_insurer_subgate_state": "pending_operator_offline_filings",
+    "validated_available_family_ids": [
+      "banking",
+      "extractive",
+      "insurance"
+    ],
+    "values_redacted": true
+  },
   "storage_dir_marker": "4f49435ffbdc4db07762e8d0",
   "storage_dir_paths_redacted": true,
   "summary": {
