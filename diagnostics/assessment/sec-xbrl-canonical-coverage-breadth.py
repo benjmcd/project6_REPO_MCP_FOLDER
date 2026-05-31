@@ -20,6 +20,7 @@ from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
     canonical_concept_inventory,
     report_redaction_scan_payload,
 )
+from app.services.layer3_sec_xbrl_report_guards import rows_have_unique_required_key  # noqa: E402
 
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-canonical-coverage-breadth-report.json")
@@ -323,6 +324,8 @@ def _criteria(*, report: Mapping[str, Any], config_defaults_off: bool) -> list[d
 
 
 def _sector_counts_consistent(*, sectors: Sequence[Mapping[str, Any]], summary: Mapping[str, Any]) -> bool:
+    if not rows_have_unique_required_key(sectors, key_field="sector_class"):
+        return False
     total_cells = sum(int(sector.get("headline_canonical_cell_count") or 0) for sector in sectors)
     total_direct = sum(int(sector.get("direct_resolved_count") or 0) for sector in sectors)
     total_derived = sum(int(sector.get("derived_count") or 0) for sector in sectors)

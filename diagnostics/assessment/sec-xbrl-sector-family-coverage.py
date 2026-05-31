@@ -24,6 +24,7 @@ from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
     report_redaction_scan_payload,
     sector_class_from_sic as runtime_sector_class_from_sic,
 )
+from app.services.layer3_sec_xbrl_report_guards import rows_have_unique_required_key  # noqa: E402
 
 
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_sector_family_coverage.v1"
@@ -330,7 +331,12 @@ def _family_counts_consistent(families: Sequence[Mapping[str, Any]]) -> bool:
     if not families:
         return False
     expected_ids = {definition["family_id"] for definition in SECTOR_FAMILY_DEFINITIONS}
-    if {str(item.get("family_id") or "") for item in families} != expected_ids:
+    if not rows_have_unique_required_key(
+        families,
+        key_field="family_id",
+        expected_count=len(expected_ids),
+        expected_values=expected_ids,
+    ):
         return False
     for family in families:
         concepts = list(family.get("concepts") or [])
