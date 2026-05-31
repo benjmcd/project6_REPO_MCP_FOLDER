@@ -70,6 +70,7 @@ Codesight is optional but useful for orientation on large tasks.
 - Do not reset, stash, force-push, or rewrite preserved user work unless explicitly asked.
 - Before PR closeout, verify the changed-file set, checks, review/comment threads, and current merged `main` state.
 - If GitHub comments identify a real issue, address the narrow issue in a fresh follow-up lane rather than broadening scope opportunistically.
+- SEC XBRL Layer 3 PRs follow `next_milestone_plans/Layer3_planning_docs/SEC-XBRL-MERGE-GATE-VERIFIER-POLICY.md`. Tier-2 changes (Alembic migrations, `models.py`/ORM schema, durable persistence, value-reveal, default-on, or redaction-posture) MUST pause after CI-green/self-verification for an independent pre-merge review recorded on the PR; do not self-certify and merge a Tier-2 PR.
 
 ## What Belongs Elsewhere
 

@@ -60,8 +60,8 @@ Merge gate (Tier 1 requirements PLUS):
 ## Disposition recording
 
 When the bot is silent at merge time, record a tracking issue following the #2004 / #2008 / #2009 pattern: the opening
-body states the bot did not post; the closing comment records the independent-verifier disposition and explicitly
-does NOT claim a bot review.
+body states the bot did not post; the closing comment records the verifier disposition (independent review for
+Tier 2; executor self-verification for Tier 1) and explicitly does NOT claim a bot review.
 
 ## Non-goals
 
