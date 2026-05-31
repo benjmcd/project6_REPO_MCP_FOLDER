@@ -168,6 +168,7 @@ RAW_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGN
 RAW_PATH_RE = re.compile(r"(?:[A-Za-z]:[\\/]|\\\\|(?:^|[\s'\"(])/(?:[^/\s]+/)+[^/\s]+)")
 LABEL_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9.-]{0,9}")
 LABEL_CIK_TOKEN_RE = re.compile(r"\bcik[-_ ]?0*(\d+)\b|\b(\d{6,10})\b", re.IGNORECASE)
+HEX64_RE = re.compile(r"^[a-f0-9]{64}$")
 
 
 def main() -> int:
@@ -1693,16 +1694,22 @@ def _sector_family_us_gaap_qnames_by_source_hash(storage_dir: Path) -> dict[str,
 def _is_governed_arelle_sidecar_receipt(payload: Mapping[str, Any]) -> bool:
     source_hash = str(payload.get("source_artifact_receipt_hash") or "")
     sidecar_hash = str(payload.get("sidecar_receipt_hash") or "")
+    resolved_fact_inventory_hash = str(payload.get("resolved_fact_inventory_hash") or "")
     authority_hashes = payload.get("authority_hashes") or {}
+    sidecar_receipt_suffix = sidecar_hash[:24]
     return (
         payload.get("schema_id") == "layer3.sec_edgar_arelle_resolved_fact_authority_sidecar.v1"
         and payload.get("sidecar_state") == "sec_edgar_arelle_resolved_fact_authority_sidecar_ready"
         and payload.get("adapter_id") == "arelle_resolved_fact_authority_adapter"
-        and bool(source_hash)
-        and bool(sidecar_hash)
+        and bool(HEX64_RE.fullmatch(source_hash))
+        and bool(HEX64_RE.fullmatch(sidecar_hash))
+        and bool(HEX64_RE.fullmatch(resolved_fact_inventory_hash))
+        and payload.get("sidecar_receipt_id") == f"sec-edgar-arelle-resolved-fact-authority-{sidecar_receipt_suffix}"
+        and payload.get("sidecar_receipt_ref") == f"sec-edgar-arelle-resolved-fact-authority:{sidecar_receipt_suffix}"
         and isinstance(authority_hashes, Mapping)
         and authority_hashes.get("source_artifact_receipt_hash") == source_hash
         and authority_hashes.get("sidecar_receipt_hash") == sidecar_hash
+        and authority_hashes.get("resolved_fact_inventory_hash") == resolved_fact_inventory_hash
         and isinstance(payload.get("resolved_fact_records"), list)
     )
 

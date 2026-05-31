@@ -488,7 +488,7 @@ def test_sec_xbrl_real_corpus_product_runner_closes_sector_family_gate_from_offl
         "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
         "us-gaap:PremiumsEarnedNet",
     ]
-    for forbidden in (str(storage), "bank-source-hash", "insurer-source-hash"):
+    for forbidden in (str(storage), "b" * 64, "c" * 64):
         assert forbidden not in serialized
 
 
@@ -520,6 +520,29 @@ def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_ungovern
     storage = _offline_sector_family_storage(
         tmp_path,
         sidecar_metadata_valid=False,
+    )
+
+    gate = module._sector_family_activation_validation(offline_storage_dir=storage)
+    sub_gate = gate["us_gaap_bank_insurer_subgate"]
+
+    assert gate["status"] == "partially_satisfied_us_gaap_subgate_pending"
+    assert sub_gate["state"] == "blocked_offline_artifacts_incomplete"
+    assert sub_gate["offline_storage_evidence"]["sidecar_reference_count"] == 0
+    assert "real_us_gaap_bank_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+    assert "real_us_gaap_insurer_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
+
+
+def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_rejects_handwritten_sidecar_hash_shape(
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage = _offline_sector_family_storage(
+        tmp_path,
+        sidecar_receipt_shape_valid=False,
     )
 
     gate = module._sector_family_activation_validation(offline_storage_dir=storage)
@@ -1147,14 +1170,15 @@ def _offline_sector_family_storage(
     bank_qnames: list[str] | None = None,
     insurer_qnames: list[str] | None = None,
     sidecar_metadata_valid: bool = True,
+    sidecar_receipt_shape_valid: bool = True,
 ) -> Path:
     storage = storage_dir or tmp_path / "offline-storage"
     connector_dir = storage / "layer3-sec-edgar-real-filing-acquisition-connector" / "receipts"
     sidecar_dir = storage / "layer3-sec-edgar-arelle-resolved-fact-authority" / "receipts"
     connector_dir.mkdir(parents=True)
     sidecar_dir.mkdir(parents=True)
-    bank_hash = "bank-source-hash"
-    insurer_hash = "insurer-source-hash"
+    bank_hash = "b" * 64
+    insurer_hash = "c" * 64
     connector = {
         "schema_id": "layer3.sec_edgar_real_filing_acquisition_connector.v1",
         "corpus_manifest": {
@@ -1174,6 +1198,7 @@ def _offline_sector_family_storage(
         bank_hash,
         bank_qnames or ["us-gaap:Deposits"],
         metadata_valid=sidecar_metadata_valid,
+        receipt_shape_valid=sidecar_receipt_shape_valid,
     )
     _write_sidecar(
         sidecar_dir / "insurer-sidecar.json",
@@ -1184,6 +1209,7 @@ def _offline_sector_family_storage(
             "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
         ],
         metadata_valid=sidecar_metadata_valid,
+        receipt_shape_valid=sidecar_receipt_shape_valid,
     )
     return storage
 
@@ -1205,8 +1231,20 @@ def _offline_acquisition(example_id: str, source_hash: str) -> dict:
     }
 
 
-def _write_sidecar(path: Path, source_hash: str, qnames: list[str], *, metadata_valid: bool = True) -> None:
-    sidecar_hash = f"{source_hash}-sidecar"
+def _write_sidecar(
+    path: Path,
+    source_hash: str,
+    qnames: list[str],
+    *,
+    metadata_valid: bool = True,
+    receipt_shape_valid: bool = True,
+) -> None:
+    if receipt_shape_valid:
+        sidecar_hash = ("d" if source_hash.startswith("b") else "e") * 64
+        inventory_hash = ("1" if source_hash.startswith("b") else "2") * 64
+    else:
+        sidecar_hash = f"{source_hash}-sidecar"
+        inventory_hash = f"{source_hash}-inventory"
     payload = {
         "schema_id": "layer3.sec_edgar_arelle_resolved_fact_authority_sidecar.v1",
         "source_artifact_receipt_hash": source_hash,
@@ -1219,9 +1257,13 @@ def _write_sidecar(path: Path, source_hash: str, qnames: list[str], *, metadata_
         payload.update(
             {
                 "adapter_id": "arelle_resolved_fact_authority_adapter",
+                "resolved_fact_inventory_hash": inventory_hash,
+                "sidecar_receipt_id": f"sec-edgar-arelle-resolved-fact-authority-{sidecar_hash[:24]}",
                 "sidecar_receipt_hash": sidecar_hash,
+                "sidecar_receipt_ref": f"sec-edgar-arelle-resolved-fact-authority:{sidecar_hash[:24]}",
                 "sidecar_state": "sec_edgar_arelle_resolved_fact_authority_sidecar_ready",
                 "authority_hashes": {
+                    "resolved_fact_inventory_hash": inventory_hash,
                     "source_artifact_receipt_hash": source_hash,
                     "sidecar_receipt_hash": sidecar_hash,
                 },

@@ -43041,12 +43041,12 @@
     "focused_tests": [
       "backend/tests/test_sec_xbrl_real_corpus_product_runner.py"
     ],
-    "focused_test_result": "24 passed",
+    "focused_test_result": "26 passed",
     "tier_classification": "Tier 1 diagnostic/report/test/progress only",
     "runtime_default_changed_by_tracking": false,
-    "live_sec_network_run_performed_by_tracking": false,
-    "arelle_subprocess_invoked_by_tracking": false,
-    "source_acquisition_performed_by_tracking": false,
+    "live_sec_network_run_performed_by_tracking": true,
+    "arelle_subprocess_invoked_by_tracking": true,
+    "source_acquisition_performed_by_tracking": true,
     "value_reveal_request_performed_by_tracking": false,
     "persistence_performed_by_tracking": false,
     "provider_or_connector_dispatch_performed": false,
@@ -43059,6 +43059,9 @@
     "default_on_readiness_claimed": false,
     "production_readiness_claimed": false,
     "persisted_store_claimed": false,
-    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_pre_review"
+    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_pre_review",
+    "source_report_live_sec_network_used": true,
+    "source_report_arelle_sidecar_output_count": 30,
+    "sector_family_gate_closed_from_offline_storage_scan": true
   }
 }
