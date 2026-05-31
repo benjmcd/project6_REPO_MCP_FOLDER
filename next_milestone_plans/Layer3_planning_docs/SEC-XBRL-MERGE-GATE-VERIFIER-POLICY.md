@@ -22,9 +22,11 @@ relegates the bot to best-effort defense-in-depth.
 
 ## Roles
 
-- Executor (Codex): authors slices, self-verifies, opens and lands PRs.
-- Independent verifier (Claude, verifier/architect lane): provides review independent of the executor. This is the
-  dependable review lane. The bot is best-effort defense-in-depth, never the sole gate.
+- Executor: whichever agent authors the PR — Codex by default for product slices; Claude when directed (e.g.
+  governance/hygiene). The executor self-verifies, opens, and lands PRs.
+- Independent verifier: a reviewer independent of the PR's author — the agent that did NOT author the PR (Codex
+  reviews Claude-authored Tier-2 PRs; Claude reviews Codex-authored Tier-2 PRs), and/or the operator. This is the
+  dependable review lane. The automated bot is best-effort defense-in-depth, never the sole gate.
 
 ## Tier classification
 
@@ -51,7 +53,7 @@ Applies when the PR touches ANY of: Alembic migrations; `models.py` / ORM schema
 enablement or revealed-value handling; runtime default-on changes; redaction-posture changes.
 
 Merge gate (Tier 1 requirements PLUS):
-4. An INDEPENDENT (Claude/verifier) pre-merge review is RECORDED before merge.
+4. An INDEPENDENT pre-merge review — by a reviewer who is NOT the PR's author — is RECORDED before merge.
    - The executor PAUSES after CI-green and self-verification, hands the PR (diff and verification evidence) to the
      operator, who relays it to the independent verifier; the verifier's review is relayed back and recorded on the
      PR before merge.
