@@ -67,6 +67,21 @@ MATRIX_CHUNKS = (
     ("expansion", ("XOM", "PFE", "UAL", "T")),
     ("large-cap-extension", ("AAPL", "NVDA", "AMZN", "TSLA")),
 )
+
+
+def _sector_family_us_gaap_registry_concepts(family_id: str, concept_key: str) -> tuple[str, ...]:
+    for definition in layer3_sec_xbrl_canonical_concepts.SECTOR_FAMILY_DEFINITIONS:
+        if definition.get("family_id") == family_id:
+            if concept_key not in definition:
+                raise RuntimeError(f"sector family concept key not found: {family_id}.{concept_key}")
+            return tuple(
+                str(qname)
+                for qname in definition.get(concept_key, ())
+                if str(qname).startswith("us-gaap:")
+            )
+    raise RuntimeError(f"sector family definition not found: {family_id}")
+
+
 SECTOR_FAMILY_VALIDATION_DIMENSION_ID = "sec_xbrl_sector_family_real_filer_validation_v1"
 SECTOR_FAMILY_US_GAAP_SUBGATE_NEXT_SLICE = "sec_xbrl_sector_family_us_gaap_bank_insurer_subgate_v1"
 SECTOR_FAMILY_AVAILABLE_REFERENCE_PROFILES: tuple[dict[str, Any], ...] = (
@@ -108,12 +123,22 @@ SECTOR_FAMILY_SUPPORTING_ONLY_CONTROL = {
     "expected_present_family_ids": (),
     "expected_supporting_only_family_ids": ("banking",),
 }
-SECTOR_FAMILY_US_GAAP_PENDING_ANCHORS = (
-    "us-gaap:Deposits",
-    "us-gaap:InterestAndDividendIncomeOperating",
-    "us-gaap:PremiumsEarnedNet",
-    "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
-)
+SECTOR_FAMILY_US_GAAP_CLASS_FAMILIES = {
+    "real_us_gaap_bank_filing": "banking",
+    "real_us_gaap_insurer_filing": "insurance",
+}
+SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_TAGS = {
+    "real_us_gaap_bank_filing": "financial_institution",
+    "real_us_gaap_insurer_filing": "insurance",
+}
+SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS = {
+    reference_class: _sector_family_us_gaap_registry_concepts(family_id, "activation_anchor_qnames")
+    for reference_class, family_id in SECTOR_FAMILY_US_GAAP_CLASS_FAMILIES.items()
+}
+SECTOR_FAMILY_US_GAAP_SUPPORTING_HEADLINE_CONCEPTS = {
+    reference_class: _sector_family_us_gaap_registry_concepts(family_id, "supporting_qnames")
+    for reference_class, family_id in SECTOR_FAMILY_US_GAAP_CLASS_FAMILIES.items()
+}
 SECTOR_FAMILY_PROJECTION_PUBLIC_ROW_KEYS = (
     "concepts",
     "headline_canonical_defined",
@@ -235,7 +260,9 @@ def build_report(
             )
 
     summary = _summary(rows)
-    sector_family_activation_validation = _sector_family_activation_validation()
+    sector_family_activation_validation = _sector_family_activation_validation(
+        offline_storage_dir=storage_dir,
+    )
     criteria = _criteria(
         preflight,
         summary,
@@ -300,7 +327,9 @@ def build_report(
             "cross_company_comparability_claimed": False,
             "rag_vector_model_provider_auth_behavior_added": False,
             "new_layer3_source_shape_created": False,
-            "sector_family_us_gaap_anchor_validation_claimed": False,
+            "sector_family_us_gaap_anchor_validation_remains_pending": not bool(
+                sector_family_activation_validation.get("full_gate_satisfied")
+            ),
         },
         "next_slice": _next_slice(
             pass_gate=pass_gate,
@@ -1310,7 +1339,7 @@ def _strata_readiness(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _sector_family_activation_validation() -> dict[str, Any]:
+def _sector_family_activation_validation(*, offline_storage_dir: Path | None = None) -> dict[str, Any]:
     available_references = [
         _sector_family_reference_profile_result(profile)
         for profile in SECTOR_FAMILY_AVAILABLE_REFERENCE_PROFILES
@@ -1351,10 +1380,23 @@ def _sector_family_activation_validation() -> dict[str, Any]:
             for family_id in item.get("actual_present_family_ids") or []
         }
     )
-    pending_sub_gate = _sector_family_us_gaap_pending_sub_gate()
+    us_gaap_sub_gate = _sector_family_us_gaap_sub_gate(offline_storage_dir)
+    us_gaap_sub_gate_passed = us_gaap_sub_gate.get("validated") is True
+    full_gate_satisfied = (
+        available_dimension_passed
+        and ifrs_anchor_activation_passed
+        and universal_only_control_passed
+        and supporting_only_control.get("passed") is True
+        and projection_row_shape.get("stable_across_available_references") is True
+        and us_gaap_sub_gate_passed
+    )
     return {
         "dimension_id": SECTOR_FAMILY_VALIDATION_DIMENSION_ID,
-        "status": "partially_satisfied_us_gaap_subgate_pending",
+        "status": (
+            "sector_family_real_filer_validation_satisfied"
+            if full_gate_satisfied
+            else "partially_satisfied_us_gaap_subgate_pending"
+        ),
         "available_filer_dimension_state": "passed" if available_dimension_passed else "blocked",
         "available_dimension_passed": available_dimension_passed,
         "available_reference_filer_count": len(available_references),
@@ -1365,9 +1407,10 @@ def _sector_family_activation_validation() -> dict[str, Any]:
         "supporting_only_control_passed": supporting_only_control.get("passed") is True,
         "universal_only_control_passed": universal_only_control_passed,
         "projection_row_shape": projection_row_shape,
-        "us_gaap_bank_insurer_subgate_state": pending_sub_gate["state"],
-        "pending_sub_gates": [pending_sub_gate],
-        "full_gate_satisfied": False,
+        "us_gaap_bank_insurer_subgate_state": us_gaap_sub_gate["state"],
+        "us_gaap_bank_insurer_subgate": us_gaap_sub_gate,
+        "pending_sub_gates": [] if us_gaap_sub_gate_passed else [us_gaap_sub_gate],
+        "full_gate_satisfied": full_gate_satisfied,
         "raw_identity_redacted": True,
         "values_redacted": True,
         "live_network_used": False,
@@ -1453,21 +1496,263 @@ def _sector_family_projection_row_shape(reference_count: int) -> dict[str, Any]:
     }
 
 
-def _sector_family_us_gaap_pending_sub_gate() -> dict[str, Any]:
+def _sector_family_us_gaap_sub_gate(offline_storage_dir: Path | None) -> dict[str, Any]:
+    if offline_storage_dir is None:
+        return _sector_family_us_gaap_pending_sub_gate(
+            "real_us_gaap_bank_and_insurer_filings_not_available_in_current_runner_artifacts"
+        )
+    evidence = _sector_family_us_gaap_offline_storage_evidence(offline_storage_dir)
+    class_results = [item for item in evidence.get("class_results") or [] if isinstance(item, Mapping)]
+    validated = evidence.get("state") == "passed" and all(item.get("passed") is True for item in class_results)
+    if not validated:
+        return {
+            **_sector_family_us_gaap_pending_sub_gate("real_us_gaap_bank_and_insurer_offline_artifacts_incomplete"),
+            "state": "blocked_offline_artifacts_incomplete",
+            "offline_storage_evidence": evidence,
+        }
+    return {
+        "sub_gate_id": "us_gaap_bank_insurer_anchor_validation",
+        "state": "validated",
+        "validated": True,
+        "required_reference_classes": list(SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS),
+        "required_activation_anchor_concepts": _sector_family_us_gaap_required_activation_anchors(),
+        "supporting_headline_concepts_tracked": _sector_family_us_gaap_supporting_headline_concepts(),
+        "class_results": class_results,
+        "validated_family_ids": sorted(
+            {
+                str(item.get("family_id") or "")
+                for item in class_results
+                if item.get("passed") is True
+            }
+        ),
+        "offline_storage_evidence": {
+            key: value
+            for key, value in evidence.items()
+            if key != "class_results"
+        },
+        "operator_action_code": "operator_offline_us_gaap_bank_insurer_filing_acquisition_satisfied",
+        "raw_identity_redacted": True,
+        "values_redacted": True,
+        "live_network_used": False,
+        "arelle_invoked": False,
+        "runtime_defaults_changed": False,
+    }
+
+
+def _sector_family_us_gaap_pending_sub_gate(blocked_reason: str) -> dict[str, Any]:
     return {
         "sub_gate_id": "us_gaap_bank_insurer_anchor_validation",
         "state": "pending_operator_offline_filings",
         "validated": False,
-        "required_reference_classes": [
-            "real_us_gaap_bank_filing",
-            "real_us_gaap_insurer_filing",
-        ],
-        "required_anchor_concepts": list(SECTOR_FAMILY_US_GAAP_PENDING_ANCHORS),
-        "blocked_reason": "real_us_gaap_bank_and_insurer_filings_not_available_in_current_runner_artifacts",
+        "required_reference_classes": list(SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS),
+        "required_activation_anchor_concepts": _sector_family_us_gaap_required_activation_anchors(),
+        "supporting_headline_concepts_tracked": _sector_family_us_gaap_supporting_headline_concepts(),
+        "blocked_reason": blocked_reason,
         "operator_action_code": "operator_offline_us_gaap_bank_insurer_filing_acquisition_required",
         "raw_identity_redacted": True,
         "values_redacted": True,
     }
+
+
+def _sector_family_us_gaap_required_activation_anchors() -> list[str]:
+    return sorted(
+        {
+            concept
+            for concepts in SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS.values()
+            for concept in concepts
+        }
+    )
+
+
+def _sector_family_us_gaap_supporting_headline_concepts() -> list[str]:
+    return sorted(
+        {
+            concept
+            for concepts in SECTOR_FAMILY_US_GAAP_SUPPORTING_HEADLINE_CONCEPTS.values()
+            for concept in concepts
+        }
+    )
+
+
+def _sector_family_us_gaap_offline_storage_evidence(storage_dir: Path) -> dict[str, Any]:
+    path = storage_dir.resolve(strict=False)
+    if not path.exists() or not path.is_dir():
+        return _sector_family_offline_storage_blocked(
+            path,
+            ["offline_storage_dir_unavailable"],
+        )
+    examples_by_source_hash = _sector_family_us_gaap_examples_by_source_hash(path)
+    qnames_by_source_hash = _sector_family_us_gaap_qnames_by_source_hash(path)
+    class_results = [
+        _sector_family_us_gaap_class_result(
+            reference_class=reference_class,
+            examples_by_source_hash=examples_by_source_hash,
+            qnames_by_source_hash=qnames_by_source_hash,
+        )
+        for reference_class in SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS
+    ]
+    blocked_reasons = sorted(
+        {
+            reason
+            for item in class_results
+            for reason in item.get("blocked_reasons") or []
+        }
+    )
+    return {
+        "state": "passed" if not blocked_reasons else "blocked",
+        "storage_dir_marker": _storage_marker(path),
+        "paths_redacted": True,
+        "offline_storage_used": True,
+        "connector_reference_count": len(examples_by_source_hash),
+        "sidecar_reference_count": len(qnames_by_source_hash),
+        "class_results": class_results,
+        "blocked_reasons": blocked_reasons,
+        "raw_identity_redacted": True,
+        "values_redacted": True,
+        "live_network_used": False,
+        "arelle_invoked": False,
+    }
+
+
+def _sector_family_offline_storage_blocked(path: Path, blocked_reasons: list[str]) -> dict[str, Any]:
+    return {
+        "state": "blocked",
+        "storage_dir_marker": _storage_marker(path),
+        "paths_redacted": True,
+        "offline_storage_used": False,
+        "connector_reference_count": 0,
+        "sidecar_reference_count": 0,
+        "class_results": [],
+        "blocked_reasons": blocked_reasons,
+        "raw_identity_redacted": True,
+        "values_redacted": True,
+        "live_network_used": False,
+        "arelle_invoked": False,
+    }
+
+
+def _sector_family_us_gaap_examples_by_source_hash(storage_dir: Path) -> dict[str, dict[str, Any]]:
+    examples: dict[str, dict[str, Any]] = {}
+    for path in _service_receipt_paths(storage_dir, "layer3-sec-edgar-real-filing-acquisition-connector"):
+        payload = _read_json_object(path)
+        if not payload:
+            continue
+        records = [
+            item
+            for item in (payload.get("corpus_manifest") or {}).get("example_records") or []
+            if isinstance(item, Mapping)
+        ]
+        records_by_id = {str(item.get("example_id") or ""): item for item in records}
+        for receipt in payload.get("acquisition_receipts") or []:
+            if not isinstance(receipt, Mapping):
+                continue
+            source_receipt = receipt.get("source_artifact_receipt") or {}
+            if not isinstance(source_receipt, Mapping):
+                continue
+            source_hash = str(source_receipt.get("source_artifact_receipt_hash") or "")
+            if not source_hash:
+                continue
+            record = records_by_id.get(str(receipt.get("example_id") or ""))
+            if not isinstance(record, Mapping):
+                continue
+            examples[source_hash] = {
+                "form_type": str(record.get("form_type") or ""),
+                "issuer_profile_tags": sorted(str(item) for item in record.get("issuer_profile_tags") or []),
+                "source_artifact_marker": stable_hash({"source_artifact_receipt_hash": source_hash})[:24],
+                "example_marker": stable_hash(
+                    {
+                        "source_artifact_receipt_hash": source_hash,
+                        "example_id": str(record.get("example_id") or ""),
+                    }
+                )[:24],
+                "raw_identity_redacted": True,
+            }
+    return examples
+
+
+def _sector_family_us_gaap_qnames_by_source_hash(storage_dir: Path) -> dict[str, set[str]]:
+    qnames_by_source_hash: dict[str, set[str]] = {}
+    for path in _service_receipt_paths(storage_dir, "layer3-sec-edgar-arelle-resolved-fact-authority"):
+        payload = _read_json_object(path)
+        if not payload:
+            continue
+        source_hash = str(payload.get("source_artifact_receipt_hash") or "")
+        if not source_hash:
+            continue
+        qnames = {
+            str((record.get("concept") or {}).get("qname") or "")
+            for record in payload.get("resolved_fact_records") or []
+            if isinstance(record, Mapping) and isinstance(record.get("concept"), Mapping)
+        }
+        qnames_by_source_hash.setdefault(source_hash, set()).update(qname for qname in qnames if qname)
+    return qnames_by_source_hash
+
+
+def _sector_family_us_gaap_class_result(
+    *,
+    reference_class: str,
+    examples_by_source_hash: Mapping[str, Mapping[str, Any]],
+    qnames_by_source_hash: Mapping[str, set[str]],
+) -> dict[str, Any]:
+    required_tag = SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_TAGS[reference_class]
+    required_anchors = set(SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS[reference_class])
+    tracked_supporting = set(SECTOR_FAMILY_US_GAAP_SUPPORTING_HEADLINE_CONCEPTS[reference_class])
+    candidates: list[tuple[str, Mapping[str, Any], set[str]]] = []
+    for source_hash, example in examples_by_source_hash.items():
+        tags = set(example.get("issuer_profile_tags") or [])
+        if required_tag not in tags or example.get("form_type") != "10-K":
+            continue
+        candidates.append((str(source_hash), example, set(qnames_by_source_hash.get(str(source_hash), set()))))
+    best: tuple[str, Mapping[str, Any], set[str]] | None = None
+    for candidate in candidates:
+        if required_anchors.issubset(candidate[2]):
+            best = candidate
+            break
+    if best is None and candidates:
+        best = max(candidates, key=lambda item: len(required_anchors.intersection(item[2])))
+    present_anchors = sorted(required_anchors.intersection(best[2])) if best else []
+    missing_anchors = sorted(required_anchors - set(present_anchors))
+    supporting_present = sorted(tracked_supporting.intersection(best[2])) if best else []
+    supporting_missing = sorted(tracked_supporting - set(supporting_present))
+    blocked_reasons: list[str] = []
+    if not candidates:
+        blocked_reasons.append(f"{reference_class}_annual_reference_missing")
+    if missing_anchors:
+        blocked_reasons.append(f"{reference_class}_activation_anchor_missing")
+    return {
+        "reference_class": reference_class,
+        "family_id": SECTOR_FAMILY_US_GAAP_CLASS_FAMILIES[reference_class],
+        "annual_reference_present": bool(candidates),
+        "annual_reference_candidate_count": len(candidates),
+        "activation_anchor_concepts_present": present_anchors,
+        "missing_activation_anchor_concepts": missing_anchors,
+        "supporting_headline_concepts_present": supporting_present,
+        "missing_supporting_headline_concepts": supporting_missing,
+        "source_artifact_marker": best[1].get("source_artifact_marker") if best else None,
+        "example_marker": best[1].get("example_marker") if best else None,
+        "reported_qname_count": len(best[2]) if best else 0,
+        "passed": bool(candidates) and not missing_anchors,
+        "blocked_reasons": blocked_reasons,
+        "raw_identity_redacted": True,
+        "values_redacted": True,
+    }
+
+
+def _service_receipt_paths(storage_dir: Path, service_dir_name: str) -> list[Path]:
+    service_dir = storage_dir / service_dir_name
+    receipts_dir = service_dir / "receipts"
+    root = receipts_dir if receipts_dir.exists() else service_dir
+    if not root.exists() or not root.is_dir():
+        return []
+    return sorted(root.glob("*.json"))
+
+
+def _read_json_object(path: Path) -> dict[str, Any] | None:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    return dict(payload) if isinstance(payload, Mapping) else None
 
 
 def _sector_family_activation_anchor_concepts(presence: Mapping[str, Any]) -> list[str]:
@@ -1535,10 +1820,12 @@ def _criteria(
             "sector_family_available_filer_activation_dimension",
             sector_family_activation_validation.get("available_dimension_passed") is True
             and sector_family_activation_validation.get("status")
-            == "partially_satisfied_us_gaap_subgate_pending"
-            and sector_family_activation_validation.get("full_gate_satisfied") is False
+            in {
+                "partially_satisfied_us_gaap_subgate_pending",
+                "sector_family_real_filer_validation_satisfied",
+            }
             and sector_family_activation_validation.get("us_gaap_bank_insurer_subgate_state")
-            == "pending_operator_offline_filings",
+            in {"pending_operator_offline_filings", "blocked_offline_artifacts_incomplete", "validated"},
             {
                 "dimension_id": sector_family_activation_validation.get("dimension_id"),
                 "status": sector_family_activation_validation.get("status"),

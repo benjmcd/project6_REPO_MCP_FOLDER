@@ -49,10 +49,10 @@ Report decision:
 
 ## Next Posture
 
-`sec_xbrl_sector_family_real_filer_validation_v1`
+`sec_xbrl_projection_persistence_design_v1_tier2_pre_review`
 
-Persistence remains deferred until real-filer sector-family validation proves the family anchor sets and projection row shape across the approved validation matrix. The deferred persistence work is preserved on branch `codex/sec-family-res`; it is not part of this no-schema landing branch.
+Real-filer sector-family validation is satisfied by the validate-only real-corpus runner gate `sec_xbrl_sector_family_real_filer_validation_v1`, using redacted operator-acquired offline receipts for US-GAAP bank and insurer annual filings. Persistence remains deferred to a Tier 2 design/review step. The deferred persistence work is preserved on branch `codex/sec-family-res`; it is reference-only and not a merge base for this no-schema landing branch.
 
-The validation gate should extend the existing stratified real-filing validation matrix or real-corpus product runner with sector-family activation as a new validated dimension. It should not introduce a standalone greenfield diagnostic if the existing runner can host the added checks.
+The validation gate extends the existing real-corpus product runner with sector-family activation as a validated dimension. It does not introduce a standalone greenfield diagnostic.
 
 Non-blocking backlog note: keyed or salted HMAC issuer pseudonyms may be useful as operator-side defense in depth for offline artifacts that hash real CIKs before redaction. The committed surface is already safe for this landing because synthetic issuer-hash preimages and count-only real-corpus summaries are used; HMAC pseudonyms are not part of this landing and are not a gate.

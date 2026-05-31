@@ -402,16 +402,76 @@ def test_sec_xbrl_real_corpus_product_runner_scaffolds_sector_family_activation_
     assert gate["supporting_only_control"]["supporting_only_family_ids"] == ["banking"]
     assert pending_sub_gate["state"] == "pending_operator_offline_filings"
     assert pending_sub_gate["validated"] is False
-    assert pending_sub_gate["required_anchor_concepts"] == [
+    assert pending_sub_gate["required_activation_anchor_concepts"] == [
         "us-gaap:Deposits",
-        "us-gaap:InterestAndDividendIncomeOperating",
-        "us-gaap:PremiumsEarnedNet",
         "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
+        "us-gaap:PremiumsEarnedNet",
+    ]
+    assert pending_sub_gate["supporting_headline_concepts_tracked"] == [
+        "us-gaap:InterestAndDividendIncomeOperating",
+        "us-gaap:InterestExpense",
     ]
     assert gate["projection_row_shape"]["stable_across_available_references"] is True
     assert gate["projection_row_shape"]["unique_row_shape_hash_count"] == 1
     for forbidden in ("SONY", "CCJ", "FIZZ", "313838", "1009001", "69891", "contact@nexonpvp.net"):
         assert forbidden not in serialized
+
+
+def test_sec_xbrl_real_corpus_product_runner_closes_sector_family_gate_from_offline_storage(
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage = _offline_sector_family_storage(tmp_path)
+
+    gate = module._sector_family_activation_validation(offline_storage_dir=storage)
+    sub_gate = gate["us_gaap_bank_insurer_subgate"]
+    class_results = {
+        item["reference_class"]: item
+        for item in sub_gate["class_results"]
+    }
+    serialized = json.dumps(gate, sort_keys=True)
+
+    assert gate["status"] == "sector_family_real_filer_validation_satisfied"
+    assert gate["full_gate_satisfied"] is True
+    assert gate["pending_sub_gates"] == []
+    assert sub_gate["state"] == "validated"
+    assert sub_gate["validated"] is True
+    assert sub_gate["offline_storage_evidence"]["offline_storage_used"] is True
+    assert sub_gate["offline_storage_evidence"]["paths_redacted"] is True
+    assert class_results["real_us_gaap_bank_filing"]["passed"] is True
+    assert class_results["real_us_gaap_bank_filing"]["activation_anchor_concepts_present"] == ["us-gaap:Deposits"]
+    assert class_results["real_us_gaap_bank_filing"]["missing_supporting_headline_concepts"] == [
+        "us-gaap:InterestAndDividendIncomeOperating",
+        "us-gaap:InterestExpense",
+    ]
+    assert class_results["real_us_gaap_insurer_filing"]["passed"] is True
+    assert class_results["real_us_gaap_insurer_filing"]["activation_anchor_concepts_present"] == [
+        "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
+        "us-gaap:PremiumsEarnedNet",
+    ]
+    for forbidden in (str(storage), "bank-source-hash", "insurer-source-hash"):
+        assert forbidden not in serialized
+
+
+def test_sec_xbrl_real_corpus_product_runner_sector_family_gate_fails_closed_without_insurer_anchor(
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage = _offline_sector_family_storage(
+        tmp_path,
+        insurer_qnames=["us-gaap:PremiumsEarnedNet"],
+    )
+
+    gate = module._sector_family_activation_validation(offline_storage_dir=storage)
+    sub_gate = gate["us_gaap_bank_insurer_subgate"]
+
+    assert gate["status"] == "partially_satisfied_us_gaap_subgate_pending"
+    assert gate["full_gate_satisfied"] is False
+    assert gate["pending_sub_gates"] == [sub_gate]
+    assert sub_gate["state"] == "blocked_offline_artifacts_incomplete"
+    assert "real_us_gaap_insurer_filing_activation_anchor_missing" in sub_gate["offline_storage_evidence"][
+        "blocked_reasons"
+    ]
 
 
 def test_sec_xbrl_real_corpus_product_runner_projection_row_shape_matches_canonical_projection() -> None:
@@ -1015,6 +1075,79 @@ def _plan_chunk(matrix_label: str, company_matrix: list[str], strata: list[str])
         "company_matrix": company_matrix,
         "strata": strata,
     }
+
+
+def _offline_sector_family_storage(
+    tmp_path: Path,
+    *,
+    bank_qnames: list[str] | None = None,
+    insurer_qnames: list[str] | None = None,
+) -> Path:
+    storage = tmp_path / "offline-storage"
+    connector_dir = storage / "layer3-sec-edgar-real-filing-acquisition-connector" / "receipts"
+    sidecar_dir = storage / "layer3-sec-edgar-arelle-resolved-fact-authority" / "receipts"
+    connector_dir.mkdir(parents=True)
+    sidecar_dir.mkdir(parents=True)
+    bank_hash = "bank-source-hash"
+    insurer_hash = "insurer-source-hash"
+    connector = {
+        "schema_id": "layer3.sec_edgar_real_filing_acquisition_connector.v1",
+        "corpus_manifest": {
+            "example_records": [
+                _offline_example("bank-example", "financial_institution"),
+                _offline_example("insurer-example", "insurance"),
+            ]
+        },
+        "acquisition_receipts": [
+            _offline_acquisition("bank-example", bank_hash),
+            _offline_acquisition("insurer-example", insurer_hash),
+        ],
+    }
+    (connector_dir / "connector.json").write_text(json.dumps(connector), encoding="utf-8")
+    _write_sidecar(
+        sidecar_dir / "bank-sidecar.json",
+        bank_hash,
+        bank_qnames or ["us-gaap:Deposits"],
+    )
+    _write_sidecar(
+        sidecar_dir / "insurer-sidecar.json",
+        insurer_hash,
+        insurer_qnames
+        or [
+            "us-gaap:PremiumsEarnedNet",
+            "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
+        ],
+    )
+    return storage
+
+
+def _offline_example(example_id: str, class_tag: str) -> dict:
+    return {
+        "example_id": example_id,
+        "form_type": "10-K",
+        "issuer_profile_tags": [class_tag, "domestic_large_cap", "annual_form_family"],
+    }
+
+
+def _offline_acquisition(example_id: str, source_hash: str) -> dict:
+    return {
+        "example_id": example_id,
+        "source_artifact_receipt": {
+            "source_artifact_receipt_hash": source_hash,
+        },
+    }
+
+
+def _write_sidecar(path: Path, source_hash: str, qnames: list[str]) -> None:
+    payload = {
+        "schema_id": "layer3.sec_edgar_arelle_resolved_fact_authority_sidecar.v1",
+        "source_artifact_receipt_hash": source_hash,
+        "resolved_fact_records": [
+            {"concept": {"qname": qname}}
+            for qname in qnames
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
 
 
 def _projection_bundle(module) -> dict:

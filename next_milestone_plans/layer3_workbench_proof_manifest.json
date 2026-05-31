@@ -41135,11 +41135,11 @@
     "linkbase_emission_claimed": false,
     "persisted_store_claimed": false,
     "fx_comparability_claimed": false,
-    "next_posture": "sec_xbrl_sector_family_real_filer_validation_v1"
+    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_pre_review"
   },
   "sec_xbrl_projection_persistence_proof": {
     "proof_kind": "sec_xbrl_deferred_schema_boundary_proof",
-    "status": "deferred_pending_real_filer_validation",
+    "status": "ready_for_tier2_schema_design_after_real_filer_validation",
     "milestone": "sec_xbrl_projection_persistence_design_v1",
     "preserved_work_branch": "codex/sec-family-res",
     "proof_terms": [
@@ -41180,11 +41180,12 @@
     "dimensional_roll_forward_claimed": false,
     "linkbase_emission_claimed": false,
     "fx_comparability_claimed": false,
-    "next_posture": "sec_xbrl_sector_family_real_filer_validation_v1"
+    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_pre_review",
+    "required_prior_gate_satisfied_by_proof": true
   },
   "sec_xbrl_persisted_statement_packet_proof": {
     "proof_kind": "sec_xbrl_deferred_schema_boundary_proof",
-    "status": "deferred_pending_real_filer_validation",
+    "status": "deferred_until_projection_persistence_tier2_review",
     "milestone": "sec_xbrl_persisted_statement_packet_design_v1",
     "preserved_work_branch": "codex/sec-family-res",
     "proof_terms": [
@@ -41225,7 +41226,8 @@
     "dimensional_roll_forward_claimed": false,
     "linkbase_emission_claimed": false,
     "fx_comparability_claimed": false,
-    "next_posture": "sec_xbrl_sector_family_real_filer_validation_v1"
+    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_pre_review",
+    "required_prior_gate_satisfied_by_proof": true
   },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof": {
     "proof_kind": "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof",
@@ -41243,5 +41245,62 @@
       "no live network or arelle invocation in this pass"
     ],
     "live_behavior_change_introduced_by_tracking": false
+  },
+  "sec_xbrl_sector_family_real_filer_validation_proof": {
+    "status": "sector_family_real_filer_validation_ready",
+    "milestone": "sec_xbrl_sector_family_real_filer_validation_v1",
+    "diagnostic": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner.py",
+    "report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+    "report_schema_id": "diagnostics.sec_xbrl_real_corpus_product_runner.v1",
+    "offline_storage_used_by_tracking": true,
+    "offline_storage_marker": "a26c56586d12f29eb1bc7708",
+    "paths_redacted": true,
+    "full_gate_satisfied": true,
+    "us_gaap_bank_insurer_subgate_state": "validated",
+    "required_reference_classes": [
+      "real_us_gaap_bank_filing",
+      "real_us_gaap_insurer_filing"
+    ],
+    "activation_anchor_concepts_validated": [
+      "us-gaap:Deposits",
+      "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
+      "us-gaap:PremiumsEarnedNet"
+    ],
+    "supporting_headline_concepts_missing_not_activation_blocking": [
+      "us-gaap:InterestAndDividendIncomeOperating",
+      "us-gaap:InterestExpense"
+    ],
+    "connector_reference_count": 32,
+    "sidecar_reference_count": 30,
+    "focused_tests": [
+      "backend/tests/test_sec_xbrl_real_corpus_product_runner.py"
+    ],
+    "focused_test_result": "24 passed",
+    "tier_classification": "Tier 1 diagnostic/report/test/progress only",
+    "runtime_default_changed_by_tracking": false,
+    "live_sec_network_run_performed_by_tracking": false,
+    "arelle_subprocess_invoked_by_tracking": false,
+    "source_acquisition_performed_by_tracking": false,
+    "value_reveal_request_performed_by_tracking": false,
+    "persistence_performed_by_tracking": false,
+    "provider_or_connector_dispatch_performed": false,
+    "raw_runtime_artifacts_committed": false,
+    "raw_values_committed": false,
+    "raw_identity_committed": false,
+    "raw_accessions_committed": false,
+    "local_paths_committed": false,
+    "operator_contact_committed": false,
+    "default_on_readiness_claimed": false,
+    "production_readiness_claimed": false,
+    "persisted_store_claimed": false,
+    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_pre_review",
+    "proof_kind": "sec_xbrl_sector_family_real_filer_validation_proof",
+    "proof_terms": [
+      "operator-acquired off-repo storage is read without downloading or synthesizing filings",
+      "real US-GAAP bank and insurer annual references are validated through redacted connector and Arelle sidecar receipts",
+      "required activation anchors are present for banking and insurance families",
+      "missing banking supporting headline concept is tracked but not treated as an activation anchor",
+      "no schema, persistence, model, Alembic, runtime-default, value-reveal, API, UI, or operator-workflow surface is changed"
+    ]
   }
 }
