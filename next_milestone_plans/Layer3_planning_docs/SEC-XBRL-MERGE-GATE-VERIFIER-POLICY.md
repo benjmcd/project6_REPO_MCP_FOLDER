@@ -30,8 +30,8 @@ relegates the bot to best-effort defense-in-depth.
 
 ## Tier classification
 
-Quick test: if reverting the PR would require a down-migration, a data backfill, or it touches stored/revealed values
-runtime defaults, or redaction posture, it is **Tier 2**. Otherwise it is **Tier 1**.
+Quick test: if reverting the PR would require a down-migration, a data backfill, or it touches stored/revealed values, runtime defaults, or redaction posture, it is **Tier 2**. Otherwise it
+is **Tier 1**.
 
 ### Tier 1 — low-risk (validate-only, additive, reversible)
 
