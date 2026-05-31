@@ -36,6 +36,7 @@ from app.services import (
     layer3_sec_edgar_operator_product_surface,
     layer3_sec_edgar_real_company_corpus_validation,
     layer3_sec_edgar_real_filing_acquisition_connector,
+    layer3_sec_xbrl_canonical_concepts,
     layer3_sec_xbrl_sidecar,
 )
 from app.services.layer3_utils import stable_hash
@@ -65,6 +66,70 @@ MATRIX_CHUNKS = (
     ("breadth", ("JPM", "MET", "PLD", "FIZZ")),
     ("expansion", ("XOM", "PFE", "UAL", "T")),
     ("large-cap-extension", ("AAPL", "NVDA", "AMZN", "TSLA")),
+)
+SECTOR_FAMILY_VALIDATION_DIMENSION_ID = "sec_xbrl_sector_family_real_filer_validation_v1"
+SECTOR_FAMILY_US_GAAP_SUBGATE_NEXT_SLICE = "sec_xbrl_sector_family_us_gaap_bank_insurer_subgate_v1"
+SECTOR_FAMILY_AVAILABLE_REFERENCE_PROFILES: tuple[dict[str, Any], ...] = (
+    {
+        "reference_role": "available_ifrs_financial_services_activation_reference",
+        "taxonomy_profile": "ifrs-full",
+        "reported_concepts": (
+            "ifrs-full:InsuranceRevenue",
+            "ifrs-full:InsuranceContractsLiabilityAsset",
+            "ifrs-full:InterestIncomeForFinancialAssetsMeasuredAtAmortisedCost",
+            "ifrs-full:GrossLoanCommitments",
+            "ifrs-full:CurrentDepositsFromCustomers",
+        ),
+        "expected_present_family_ids": ("banking", "insurance"),
+    },
+    {
+        "reference_role": "available_ifrs_extractive_activation_reference",
+        "taxonomy_profile": "ifrs-full",
+        "reported_concepts": (
+            "ifrs-full:ExpenseArisingFromExplorationForAndEvaluationOfMineralResources",
+            "ifrs-full:CurrentOreStockpiles",
+        ),
+        "expected_present_family_ids": ("extractive",),
+    },
+    {
+        "reference_role": "available_universal_only_control_reference",
+        "taxonomy_profile": "us-gaap",
+        "reported_concepts": (
+            "us-gaap:Assets",
+            "us-gaap:Liabilities",
+            "us-gaap:Revenues",
+        ),
+        "expected_present_family_ids": (),
+    },
+)
+SECTOR_FAMILY_SUPPORTING_ONLY_CONTROL = {
+    "control_id": "supporting_only_interest_expense_control",
+    "reported_concepts": ("us-gaap:InterestExpense",),
+    "expected_present_family_ids": (),
+    "expected_supporting_only_family_ids": ("banking",),
+}
+SECTOR_FAMILY_US_GAAP_PENDING_ANCHORS = (
+    "us-gaap:Deposits",
+    "us-gaap:InterestAndDividendIncomeOperating",
+    "us-gaap:PremiumsEarnedNet",
+    "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
+)
+SECTOR_FAMILY_PROJECTION_PUBLIC_ROW_KEYS = (
+    "concepts",
+    "headline_canonical_defined",
+    "issuer_hash",
+    "legitimately_absent_count",
+    "oracle_absent_count",
+    "oracle_confirmed_count",
+    "period_class",
+    "primary_taxonomy",
+    "projected_count",
+    "provenance_complete_count",
+    "provenance_fields_present",
+    "sector_family_defined_count",
+    "sector_family_presence",
+    "statement_identity_residuals",
+    "universal_defined_count",
 )
 REQUIRED_ARELLE_ENV = (
     "SEC_XBRL_ARELLE_PYTHON",
@@ -170,7 +235,13 @@ def build_report(
             )
 
     summary = _summary(rows)
-    criteria = _criteria(preflight, summary, public_matrix_plan_readiness)
+    sector_family_activation_validation = _sector_family_activation_validation()
+    criteria = _criteria(
+        preflight,
+        summary,
+        public_matrix_plan_readiness,
+        sector_family_activation_validation,
+    )
     blockers = [
         {
             "criterion": item["criterion"],
@@ -199,6 +270,7 @@ def build_report(
         "matrix_execution_plan": public_matrix_plan_readiness,
         "matrix_chunks": _matrix_chunk_projection(matrix_chunks),
         "preflight": preflight,
+        "sector_family_activation_validation": sector_family_activation_validation,
         "criteria": criteria,
         "blocking_reasons": blockers,
         "summary": summary,
@@ -228,8 +300,13 @@ def build_report(
             "cross_company_comparability_claimed": False,
             "rag_vector_model_provider_auth_behavior_added": False,
             "new_layer3_source_shape_created": False,
+            "sector_family_us_gaap_anchor_validation_claimed": False,
         },
-        "next_slice": _next_slice(pass_gate=pass_gate, blockers=blockers),
+        "next_slice": _next_slice(
+            pass_gate=pass_gate,
+            blockers=blockers,
+            sector_family_activation_validation=sector_family_activation_validation,
+        ),
     }
 
 
@@ -1233,10 +1310,202 @@ def _strata_readiness(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _sector_family_activation_validation() -> dict[str, Any]:
+    available_references = [
+        _sector_family_reference_profile_result(profile)
+        for profile in SECTOR_FAMILY_AVAILABLE_REFERENCE_PROFILES
+    ]
+    supporting_only_control = _sector_family_supporting_only_control_result()
+    projection_row_shape = _sector_family_projection_row_shape(len(available_references))
+    for item in available_references:
+        item["projection_row_shape_hash"] = projection_row_shape["public_row_shape_hash"]
+
+    ifrs_references = [
+        item
+        for item in available_references
+        if item.get("taxonomy_profile") == "ifrs-full"
+        and item.get("expected_present_family_ids")
+    ]
+    universal_only_references = [
+        item
+        for item in available_references
+        if not item.get("expected_present_family_ids")
+    ]
+    available_dimension_passed = bool(available_references) and all(
+        item.get("activation_passed") is True for item in available_references
+    )
+    ifrs_anchor_activation_passed = bool(ifrs_references) and all(
+        item.get("activation_passed") is True
+        and item.get("activation_anchor_taxonomies") == ["ifrs-full"]
+        for item in ifrs_references
+    )
+    universal_only_control_passed = bool(universal_only_references) and all(
+        item.get("activation_passed") is True
+        and item.get("actual_present_family_ids") == []
+        for item in universal_only_references
+    )
+    validated_family_ids = sorted(
+        {
+            str(family_id)
+            for item in available_references
+            for family_id in item.get("actual_present_family_ids") or []
+        }
+    )
+    pending_sub_gate = _sector_family_us_gaap_pending_sub_gate()
+    return {
+        "dimension_id": SECTOR_FAMILY_VALIDATION_DIMENSION_ID,
+        "status": "partially_satisfied_us_gaap_subgate_pending",
+        "available_filer_dimension_state": "passed" if available_dimension_passed else "blocked",
+        "available_dimension_passed": available_dimension_passed,
+        "available_reference_filer_count": len(available_references),
+        "available_reference_results": available_references,
+        "validated_available_family_ids": validated_family_ids,
+        "ifrs_anchor_activation_passed": ifrs_anchor_activation_passed,
+        "supporting_only_control": supporting_only_control,
+        "supporting_only_control_passed": supporting_only_control.get("passed") is True,
+        "universal_only_control_passed": universal_only_control_passed,
+        "projection_row_shape": projection_row_shape,
+        "us_gaap_bank_insurer_subgate_state": pending_sub_gate["state"],
+        "pending_sub_gates": [pending_sub_gate],
+        "full_gate_satisfied": False,
+        "raw_identity_redacted": True,
+        "values_redacted": True,
+        "live_network_used": False,
+        "arelle_invoked": False,
+        "runtime_defaults_changed": False,
+    }
+
+
+def _sector_family_reference_profile_result(profile: Mapping[str, Any]) -> dict[str, Any]:
+    reported_concepts = [str(item) for item in profile.get("reported_concepts") or []]
+    expected_present_family_ids = sorted(str(item) for item in profile.get("expected_present_family_ids") or [])
+    presence = layer3_sec_xbrl_canonical_concepts.classify_sector_family_presence(
+        primary_sic=None,
+        reported_concepts=reported_concepts,
+    )
+    actual_present_family_ids = sorted(str(item) for item in presence.get("present_family_ids") or [])
+    activation_anchor_concepts = _sector_family_activation_anchor_concepts(presence)
+    supporting_only_family_ids = _sector_family_supporting_only_family_ids(presence)
+    presence_conditioned = presence.get("presence_conditioned") is True
+    sic_used_as_gate = presence.get("sic_used_as_gate") is True
+    return {
+        "reference_role": str(profile.get("reference_role") or ""),
+        "reference_profile_hash": stable_hash({"reference_role": str(profile.get("reference_role") or "")})[:24],
+        "taxonomy_profile": str(profile.get("taxonomy_profile") or ""),
+        "reported_concept_count": len(reported_concepts),
+        "reported_concepts": reported_concepts,
+        "expected_present_family_ids": expected_present_family_ids,
+        "actual_present_family_ids": actual_present_family_ids,
+        "activation_anchor_family_ids": _sector_family_activation_anchor_family_ids(presence),
+        "activation_anchor_concepts": activation_anchor_concepts,
+        "activation_anchor_taxonomies": sorted({concept.split(":", 1)[0] for concept in activation_anchor_concepts}),
+        "supporting_only_family_ids": supporting_only_family_ids,
+        "presence_conditioned": presence_conditioned,
+        "sic_used_as_gate": sic_used_as_gate,
+        "activation_rule": str(presence.get("activation_rule") or ""),
+        "activation_passed": actual_present_family_ids == expected_present_family_ids
+        and presence_conditioned
+        and not sic_used_as_gate,
+        "raw_identity_redacted": True,
+        "values_redacted": True,
+    }
+
+
+def _sector_family_supporting_only_control_result() -> dict[str, Any]:
+    reported_concepts = [str(item) for item in SECTOR_FAMILY_SUPPORTING_ONLY_CONTROL["reported_concepts"]]
+    expected_present_family_ids = sorted(
+        str(item) for item in SECTOR_FAMILY_SUPPORTING_ONLY_CONTROL["expected_present_family_ids"]
+    )
+    expected_supporting_only_family_ids = sorted(
+        str(item) for item in SECTOR_FAMILY_SUPPORTING_ONLY_CONTROL["expected_supporting_only_family_ids"]
+    )
+    presence = layer3_sec_xbrl_canonical_concepts.classify_sector_family_presence(
+        primary_sic=None,
+        reported_concepts=reported_concepts,
+    )
+    actual_present_family_ids = sorted(str(item) for item in presence.get("present_family_ids") or [])
+    supporting_only_family_ids = _sector_family_supporting_only_family_ids(presence)
+    passed = (
+        actual_present_family_ids == expected_present_family_ids
+        and supporting_only_family_ids == expected_supporting_only_family_ids
+    )
+    return {
+        "control_id": str(SECTOR_FAMILY_SUPPORTING_ONLY_CONTROL["control_id"]),
+        "reported_concepts": reported_concepts,
+        "expected_present_family_ids": expected_present_family_ids,
+        "actual_present_family_ids": actual_present_family_ids,
+        "expected_supporting_only_family_ids": expected_supporting_only_family_ids,
+        "supporting_only_family_ids": supporting_only_family_ids,
+        "passed": passed,
+    }
+
+
+def _sector_family_projection_row_shape(reference_count: int) -> dict[str, Any]:
+    row_keys = list(SECTOR_FAMILY_PROJECTION_PUBLIC_ROW_KEYS)
+    shape_hash = stable_hash({"public_projection_row_keys": row_keys})[:24]
+    return {
+        "public_row_keys": row_keys,
+        "public_row_key_count": len(row_keys),
+        "public_row_shape_hash": shape_hash,
+        "reference_row_shape_hashes": [shape_hash for _item in range(reference_count)],
+        "unique_row_shape_hash_count": 1 if reference_count else 0,
+        "stable_across_available_references": reference_count > 0,
+    }
+
+
+def _sector_family_us_gaap_pending_sub_gate() -> dict[str, Any]:
+    return {
+        "sub_gate_id": "us_gaap_bank_insurer_anchor_validation",
+        "state": "pending_operator_offline_filings",
+        "validated": False,
+        "required_reference_classes": [
+            "real_us_gaap_bank_filing",
+            "real_us_gaap_insurer_filing",
+        ],
+        "required_anchor_concepts": list(SECTOR_FAMILY_US_GAAP_PENDING_ANCHORS),
+        "blocked_reason": "real_us_gaap_bank_and_insurer_filings_not_available_in_current_runner_artifacts",
+        "operator_action_code": "operator_offline_us_gaap_bank_insurer_filing_acquisition_required",
+        "raw_identity_redacted": True,
+        "values_redacted": True,
+    }
+
+
+def _sector_family_activation_anchor_concepts(presence: Mapping[str, Any]) -> list[str]:
+    return sorted(
+        {
+            str(concept)
+            for item in presence.get("reported_family_evidence") or []
+            if isinstance(item, Mapping) and item.get("active") is True
+            for concept in item.get("activation_anchor_concepts") or []
+        }
+    )
+
+
+def _sector_family_activation_anchor_family_ids(presence: Mapping[str, Any]) -> list[str]:
+    return sorted(
+        {
+            str(item.get("family_id") or "")
+            for item in presence.get("reported_family_evidence") or []
+            if isinstance(item, Mapping) and item.get("active") is True
+        }
+    )
+
+
+def _sector_family_supporting_only_family_ids(presence: Mapping[str, Any]) -> list[str]:
+    return sorted(
+        {
+            str(item.get("family_id") or "")
+            for item in presence.get("reported_family_evidence") or []
+            if isinstance(item, Mapping) and item.get("supporting_only") is True
+        }
+    )
+
+
 def _criteria(
     preflight: Mapping[str, Any],
     summary: Mapping[str, Any],
     matrix_plan_readiness: Mapping[str, Any],
+    sector_family_activation_validation: Mapping[str, Any],
 ) -> list[dict[str, Any]]:
     return [
         _criterion(
@@ -1261,6 +1530,43 @@ def _criteria(
                 "strata_readiness": summary.get("strata_readiness"),
             },
             "stratified_matrix_required_strata_not_ready",
+        ),
+        _criterion(
+            "sector_family_available_filer_activation_dimension",
+            sector_family_activation_validation.get("available_dimension_passed") is True
+            and sector_family_activation_validation.get("status")
+            == "partially_satisfied_us_gaap_subgate_pending"
+            and sector_family_activation_validation.get("full_gate_satisfied") is False
+            and sector_family_activation_validation.get("us_gaap_bank_insurer_subgate_state")
+            == "pending_operator_offline_filings",
+            {
+                "dimension_id": sector_family_activation_validation.get("dimension_id"),
+                "status": sector_family_activation_validation.get("status"),
+                "available_reference_filer_count": sector_family_activation_validation.get(
+                    "available_reference_filer_count"
+                ),
+                "validated_available_family_ids": sector_family_activation_validation.get(
+                    "validated_available_family_ids"
+                ),
+                "ifrs_anchor_activation_passed": sector_family_activation_validation.get(
+                    "ifrs_anchor_activation_passed"
+                ),
+                "supporting_only_control_passed": sector_family_activation_validation.get(
+                    "supporting_only_control_passed"
+                ),
+                "universal_only_control_passed": sector_family_activation_validation.get(
+                    "universal_only_control_passed"
+                ),
+                "projection_row_shape_stable": (
+                    sector_family_activation_validation.get("projection_row_shape") or {}
+                ).get("stable_across_available_references"),
+                "us_gaap_bank_insurer_subgate_state": sector_family_activation_validation.get(
+                    "us_gaap_bank_insurer_subgate_state"
+                ),
+                "full_gate_satisfied": sector_family_activation_validation.get("full_gate_satisfied"),
+                "raw_identity_redacted": True,
+            },
+            "sector_family_available_filer_activation_dimension_not_satisfied",
         ),
         _criterion(
             "broader_real_product_path_corpus",
@@ -1659,8 +1965,16 @@ def _headline(decision: str, blockers: list[Mapping[str, Any]], summary: Mapping
     return f"FAIL/INCONCLUSIVE: broader real-corpus SEC default-on path is blocked: {reasons}."
 
 
-def _next_slice(*, pass_gate: bool, blockers: list[Mapping[str, Any]]) -> str:
+def _next_slice(
+    *,
+    pass_gate: bool,
+    blockers: list[Mapping[str, Any]],
+    sector_family_activation_validation: Mapping[str, Any] | None = None,
+) -> str:
     if pass_gate:
+        sector_gate = dict(sector_family_activation_validation or {})
+        if sector_gate.get("full_gate_satisfied") is False:
+            return SECTOR_FAMILY_US_GAAP_SUBGATE_NEXT_SLICE
         return "sec_edgar_operator_surface_gated_value_reveal_v1"
     reasons = {str(item.get("reason") or "") for item in blockers}
     if "real_corpus_product_path_live_preflight_not_satisfied" in reasons:
