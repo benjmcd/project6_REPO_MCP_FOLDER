@@ -18,6 +18,7 @@ os.environ.setdefault("DB_INIT_MODE", "none")
 
 from app.services.layer3_sec_xbrl_canonical_concepts import report_redaction_scan_payload  # noqa: E402
 from app.services.layer3_sec_xbrl_canonical_statement_organization import ALIGNMENT_MAP_VERSION  # noqa: E402
+from app.services.layer3_sec_xbrl_report_guards import rows_have_unique_required_key  # noqa: E402
 
 
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_canonical_statement_organization.v1"
@@ -370,6 +371,8 @@ def _taxonomy_counts_consistent(
     per_taxonomy: Sequence[Mapping[str, Any]],
     summary: Mapping[str, Any],
 ) -> bool:
+    if not rows_have_unique_required_key(per_taxonomy, key_field="taxonomy"):
+        return False
     total_normalized = sum(_int(item.get("normalized_fact_count")) for item in per_taxonomy)
     total_organized = sum(_int(item.get("organized_count")) for item in per_taxonomy)
     total_a_corroborated = sum(_int(item.get("a_corroborated_count")) for item in per_taxonomy)

@@ -238,6 +238,23 @@ def test_diagnostic_report_preserves_explicit_empty_taxonomy_results(tmp_path: P
     assert report["blocking_reasons"]
 
 
+def test_diagnostic_report_fails_closed_on_duplicate_taxonomy_rows(tmp_path: Path) -> None:
+    diagnostic = _diagnostic_module()
+    reference = list(diagnostic.REFERENCE_TAXONOMY_RESULTS)
+    duplicate_taxonomy_rows = [reference[0], reference[0], reference[1]]
+
+    report = diagnostic.build_report(
+        source_root=_source_root(tmp_path),
+        taxonomy_results=duplicate_taxonomy_rows,
+    )
+
+    assert report["decision"] == "canonical_statement_organization_validate_only_blocked"
+    assert any(
+        item["reason"] == "canonical_statement_organization_counts_inconsistent"
+        for item in report["blocking_reasons"]
+    )
+
+
 def test_committed_report_is_redacted_taxonomy_aggregate_only() -> None:
     report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
     text = json.dumps(report, sort_keys=True)
