@@ -55,4 +55,6 @@ Real-filer sector-family validation is satisfied by the validate-only real-corpu
 
 The validation gate extends the existing real-corpus product runner with sector-family activation as a validated dimension. It does not introduce a standalone greenfield diagnostic.
 
+The committed runner report records separate redacted storage markers for the broader live matrix run and the operator-supplied offline sector-family evidence. That provenance split is intentional and is not a same-root claim; no raw local paths are committed.
+
 Non-blocking backlog note: keyed or salted HMAC issuer pseudonyms may be useful as operator-side defense in depth for offline artifacts that hash real CIKs before redaction. The committed surface is already safe for this landing because synthetic issuer-hash preimages and count-only real-corpus summaries are used; HMAC pseudonyms are not part of this landing and are not a gate.

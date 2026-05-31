@@ -368,6 +368,15 @@ def test_sec_xbrl_real_corpus_product_runner_admits_when_existing_chain_reaches_
     assert report["summary"]["taxonomy_package_invalid_count"] == 192
     assert report["sector_family_activation_validation"]["status"] == "sector_family_real_filer_validation_satisfied"
     assert report["sector_family_activation_validation"]["full_gate_satisfied"] is True
+    assert report["sector_family_evidence_provenance"] == {
+        "live_matrix_storage_marker": module._storage_marker(storage),
+        "operator_supplied_sector_family_storage": False,
+        "paths_redacted": True,
+        "provenance_mode": "single_storage_root",
+        "raw_local_paths_committed": False,
+        "sector_family_offline_storage_marker": module._storage_marker(storage),
+        "storage_markers_match": True,
+    }
     assert report["runtime_default_decision"]["resulting_default_enabled"] is True
     assert report["next_slice"] == "sec_edgar_operator_surface_gated_value_reveal_v1"
 
@@ -408,6 +417,33 @@ def test_sec_xbrl_real_corpus_product_runner_admits_when_existing_chain_reaches_
         "sector_family_real_filer_validation_satisfied"
     )
     assert default_storage_report["sector_family_activation_validation"]["full_gate_satisfied"] is True
+
+    separate_live_storage = tmp_path / "separate-live-storage"
+    separate_sector_family_storage = _offline_sector_family_storage(
+        tmp_path,
+        storage_dir=tmp_path / "separate-sector-family-storage",
+    )
+    separate_storage_report = module.build_report(
+        live=True,
+        storage_dir=separate_live_storage,
+        sector_family_storage_dir=separate_sector_family_storage,
+        matrix_plan=_stratified_plan(),
+        user_agent="Layer3 diagnostics contact@example.com",
+        runner=lambda _storage, _agent, _namespace, _taxonomy: ready_rows,
+    )
+    separate_provenance = separate_storage_report["sector_family_evidence_provenance"]
+    assert separate_storage_report["decision"] == "real_corpus_default_on_validated"
+    assert separate_provenance == {
+        "live_matrix_storage_marker": module._storage_marker(separate_live_storage),
+        "operator_supplied_sector_family_storage": True,
+        "paths_redacted": True,
+        "provenance_mode": "separate_operator_offline_sector_family_evidence",
+        "raw_local_paths_committed": False,
+        "sector_family_offline_storage_marker": module._storage_marker(separate_sector_family_storage),
+        "storage_markers_match": False,
+    }
+    assert str(separate_live_storage) not in json.dumps(separate_provenance, sort_keys=True)
+    assert str(separate_sector_family_storage) not in json.dumps(separate_provenance, sort_keys=True)
 
 
 def test_sec_xbrl_real_corpus_product_runner_scaffolds_sector_family_activation_dimension() -> None:

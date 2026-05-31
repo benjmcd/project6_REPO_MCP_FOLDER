@@ -4031,6 +4031,15 @@
     ],
     "values_redacted": true
   },
+  "sector_family_evidence_provenance": {
+    "live_matrix_storage_marker": "4f49435ffbdc4db07762e8d0",
+    "operator_supplied_sector_family_storage": true,
+    "paths_redacted": true,
+    "provenance_mode": "separate_operator_offline_sector_family_evidence",
+    "raw_local_paths_committed": false,
+    "sector_family_offline_storage_marker": "a26c56586d12f29eb1bc7708",
+    "storage_markers_match": false
+  },
   "storage_dir_marker": "4f49435ffbdc4db07762e8d0",
   "storage_dir_paths_redacted": true,
   "summary": {

@@ -183,6 +183,14 @@ def main() -> int:
     parser.add_argument("--live", action="store_true")
     parser.add_argument("--storage-dir", default="")
     parser.add_argument(
+        "--sector-family-storage-dir",
+        default="",
+        help=(
+            "Optional off-repo operator-acquired storage root for the US-GAAP bank/insurer "
+            "sector-family subgate. Reports commit only redacted storage markers."
+        ),
+    )
+    parser.add_argument(
         "--matrix-plan",
         default=os.environ.get("SEC_XBRL_STRATIFIED_MATRIX_PLAN", ""),
         help=(
@@ -207,6 +215,9 @@ def main() -> int:
     report = build_report(
         live=bool(args.live),
         storage_dir=Path(args.storage_dir) if args.storage_dir else None,
+        sector_family_storage_dir=(
+            Path(args.sector_family_storage_dir) if args.sector_family_storage_dir else None
+        ),
         matrix_plan_path=Path(args.matrix_plan) if args.matrix_plan else None,
         user_agent=str(args.user_agent or ""),
         request_namespace=str(args.request_namespace or ""),
@@ -227,6 +238,7 @@ def build_report(
     *,
     live: bool,
     storage_dir: Path | None = None,
+    sector_family_storage_dir: Path | None = None,
     matrix_plan_path: Path | None = None,
     matrix_plan: Mapping[str, Any] | None = None,
     user_agent: str = "",
@@ -240,10 +252,16 @@ def build_report(
     matrix_chunks = _matrix_chunks_from_readiness(matrix_plan_readiness)
     rows: list[dict[str, Any]] = []
     storage_marker = None
-    sector_family_storage_dir = storage_dir
+    sector_family_storage_dir_explicit = sector_family_storage_dir is not None
+    resolved_sector_family_storage_dir = (
+        _repo_path(sector_family_storage_dir)
+        if sector_family_storage_dir is not None
+        else (_repo_path(storage_dir) if storage_dir is not None else None)
+    )
     if preflight["state"] == "passed" and matrix_plan_readiness["state"] == "passed":
         live_storage = _live_storage_dir(storage_dir)
-        sector_family_storage_dir = live_storage
+        if sector_family_storage_dir is None:
+            resolved_sector_family_storage_dir = live_storage
         storage_marker = _storage_marker(live_storage)
         run = runner or _run_live_product_path
         if runner is None:
@@ -264,7 +282,12 @@ def build_report(
 
     summary = _summary(rows)
     sector_family_activation_validation = _sector_family_activation_validation(
-        offline_storage_dir=sector_family_storage_dir,
+        offline_storage_dir=resolved_sector_family_storage_dir,
+    )
+    sector_family_evidence_provenance = _sector_family_evidence_provenance(
+        live_matrix_storage_marker=storage_marker,
+        sector_family_activation_validation=sector_family_activation_validation,
+        operator_supplied_sector_family_storage=sector_family_storage_dir_explicit,
     )
     criteria = _criteria(
         preflight,
@@ -300,6 +323,7 @@ def build_report(
         "matrix_execution_plan": public_matrix_plan_readiness,
         "matrix_chunks": _matrix_chunk_projection(matrix_chunks),
         "preflight": preflight,
+        "sector_family_evidence_provenance": sector_family_evidence_provenance,
         "sector_family_activation_validation": sector_family_activation_validation,
         "criteria": criteria,
         "blocking_reasons": blockers,
@@ -339,6 +363,43 @@ def build_report(
             blockers=blockers,
             sector_family_activation_validation=sector_family_activation_validation,
         ),
+    }
+
+
+def _sector_family_evidence_provenance(
+    *,
+    live_matrix_storage_marker: str | None,
+    sector_family_activation_validation: Mapping[str, Any],
+    operator_supplied_sector_family_storage: bool,
+) -> dict[str, Any]:
+    subgate = sector_family_activation_validation.get("us_gaap_bank_insurer_subgate")
+    evidence = subgate.get("offline_storage_evidence") if isinstance(subgate, Mapping) else None
+    sector_family_marker = None
+    if isinstance(evidence, Mapping):
+        sector_family_marker = evidence.get("storage_dir_marker")
+    storage_markers_match = (
+        live_matrix_storage_marker is not None
+        and sector_family_marker is not None
+        and live_matrix_storage_marker == sector_family_marker
+    )
+    if live_matrix_storage_marker is None and sector_family_marker is None:
+        provenance_mode = "no_runtime_storage_evidence"
+    elif live_matrix_storage_marker is None:
+        provenance_mode = "sector_family_offline_only_product_gate_blocked"
+    elif storage_markers_match:
+        provenance_mode = "single_storage_root"
+    elif operator_supplied_sector_family_storage:
+        provenance_mode = "separate_operator_offline_sector_family_evidence"
+    else:
+        provenance_mode = "separate_storage_marker_unexpected"
+    return {
+        "provenance_mode": provenance_mode,
+        "live_matrix_storage_marker": live_matrix_storage_marker,
+        "sector_family_offline_storage_marker": sector_family_marker,
+        "storage_markers_match": storage_markers_match,
+        "operator_supplied_sector_family_storage": operator_supplied_sector_family_storage,
+        "paths_redacted": True,
+        "raw_local_paths_committed": False,
     }
 
 
