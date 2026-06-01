@@ -6,10 +6,12 @@ Base authority: `project6-origin/main` at `45e5a087b83b092e70abf3b4ee7dc6da41f77
 
 Prior milestone: `next_milestone_plans/Layer3_planning_docs/1308-controlled-submit-post-merge-audit-closure.md`
 
+Merged authority: PR `#2053` at `23189d47abf9d7f20e98075e29ea9f3df69683d6`
+
 ## Status
 
-Branch-local Tier-2 risk-assessed design/admission-selection entry. This pass
-changes no runtime behavior.
+Merged current-main Tier-2 risk-assessed design/admission-selection entry,
+verified after merge. This pass changes no runtime behavior.
 
 ## Selection
 
@@ -123,7 +125,7 @@ The later implementation PR must prove:
 
 ## Verification
 
-Branch-local docs-only admission-selection verification:
+PR and post-merge current-main docs-only admission-selection verification:
 
 - `python .\tools\l3-target-selection-validate.py --expect frozen`
   - PASS

@@ -42325,10 +42325,13 @@
   },
   "sec_xbrl_rendered_controlled_value_reveal_ui_admission_selection_proof": {
     "proof_kind": "sec_xbrl_rendered_controlled_value_reveal_ui_admission_selection_proof",
-    "status": "branch_local_tier2_risk_assessed_design_admission_selection_verified",
+    "status": "merged_current_main_tier2_risk_assessed_design_admission_selection_verified",
     "milestone": "sec_xbrl_rendered_controlled_value_reveal_ui_admission_selection_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1309-rendered-value-ui-admission-selection.md",
     "base_main": "45e5a087b83b092e70abf3b4ee7dc6da41f77f64",
+    "merged_pr": 2053,
+    "merged_main": "23189d47abf9d7f20e98075e29ea9f3df69683d6",
+    "post_merge_verification_main": "23189d47abf9d7f20e98075e29ea9f3df69683d6",
     "tier_classification": "Tier-2 risk-assessed design/admission selection because it selects a future rendered value-reveal UI boundary; docs only, no runtime, schema, persistence, API, service, value-reveal response, default-on, export, or redaction-posture change",
     "selected_next_boundary": "rendered_controlled_value_reveal_ui_over_existing_authority_prepare_submit_and_status_apis",
     "proof_terms": [
