@@ -60,6 +60,7 @@ from app.services import (
     layer3_sec_edgar_real_filing_downstream_validation,
     layer3_sec_edgar_repeatability_trial,
     layer3_sec_edgar_source_acquisition,
+    layer3_sec_xbrl_operator_review_workflow,
     layer3_provider_private_signed_url,
     layer3_provider_public_url,
     layer3_provider_public_url_delivery_use,
@@ -1157,6 +1158,16 @@ class Layer3SecEdgarTextTableDownstreamOperatorRepeatabilityTrialRequest(BaseMod
     ]
     operator_confirmation: bool
     actor: str | None = None
+
+
+class Layer3SecXbrlOperatorReviewWorkflowStatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    status_mode: Literal["sec_xbrl_operator_review_workflow_status_v1"]
+    operator_decision: Literal["inspect_sec_xbrl_operator_review_workflow_status"]
+    sec_xbrl_operator_review_workflow_id: str | None = Field(default=None, min_length=1)
+    workflow_basis_hash: str | None = Field(default=None, min_length=64, max_length=64)
 
 
 class Layer3RawMixedCorpusSeedRequest(BaseModel):
@@ -9134,6 +9145,42 @@ class Layer3SecEdgarTextTableDownstreamOperatorRepeatabilityTrialResponse(Layer3
     next_allowed_actions: list[str]
 
 
+class Layer3SecXbrlOperatorReviewWorkflowStatusResponse(Layer3BaseResponse):
+    mode: str
+    operator_decision: str
+    workflow_schema_id: str
+    sec_xbrl_operator_review_workflow_id: str
+    sec_xbrl_statement_packet_set_id: str
+    workflow_basis_hash: str
+    statement_packet_basis_hash: str
+    source_projection_basis_hash: str
+    control_mode: str
+    workflow_status: str
+    redaction_policy: str
+    statement_count: int
+    row_count: int
+    review_exception_count: int
+    review_ready: bool
+    permitted_controls: list[str]
+    blocked_controls: list[dict[str, Any]]
+    authority_refs: dict[str, Any]
+    review_summary: dict[str, Any]
+    status_surface_mode: str
+    read_only_status_surface: bool
+    durable_workflow_authority_used: bool
+    status_api_route_enabled: bool
+    open_workflow_api_route_enabled: bool
+    runtime_default_enabled: bool
+    value_reveal_performed: bool
+    source_acquisition_performed: bool
+    arelle_invoked: bool
+    delivery_export_enabled: bool
+    rendered_ui_enabled: bool
+    operator_review_decision_recorded: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
 class Layer3ApsContentDocumentCandidatesResponse(Layer3BaseResponse):
     aps_content_document_candidates: list[dict[str, Any]]
     candidate_count: int
@@ -13473,6 +13520,24 @@ def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JS
         )
 
 
+def _sec_xbrl_operator_review_workflow_error_response(
+    exc: layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.http_status,
+        content=workbench_error_response(
+            Layer3WorkbenchError(
+                error_code=exc.code,
+                message=exc.message,
+                status="blocked",
+                http_status=exc.http_status,
+                blocked_fields=[str(field) for field in exc.details.get("required_any_of", [])],
+                next_allowed_actions=["inspect_existing_sec_xbrl_operator_review_workflow_authority"],
+            )
+        ),
+    )
+
+
 def _candidate_b_policy_request_context(request: Request) -> dict[str, str]:
     return {str(key): str(value) for key, value in request.headers.items()}
 
@@ -15994,6 +16059,24 @@ def get_sec_edgar_durable_delivery_archive_status(
             sec_edgar_durable_delivery_archive_receipt_id,
         )
     )
+
+
+@router.post(
+    "/sec-xbrl/operator-review/workflow/status",
+    response_model=Layer3SecXbrlOperatorReviewWorkflowStatusResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_xbrl_operator_review_workflow_status(
+    payload: Layer3SecXbrlOperatorReviewWorkflowStatusRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_sec_xbrl_operator_review_workflow.inspect_redacted_operator_review_workflow_status(
+            db,
+            **payload.model_dump(exclude={"status_mode", "operator_decision"}, exclude_none=True),
+        )
+    except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
+        return _sec_xbrl_operator_review_workflow_error_response(exc)
 
 
 @router.post(

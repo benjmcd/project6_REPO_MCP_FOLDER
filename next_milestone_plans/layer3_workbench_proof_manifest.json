@@ -41277,24 +41277,26 @@
     "required_prior_gate_satisfied_by_proof": true
   },
   "sec_xbrl_operator_review_workflow_proof": {
-    "proof_kind": "sec_xbrl_operator_review_workflow_control_envelope_proof",
-    "status": "tier2_risk_assessed_schema_materializer_implemented",
-    "milestone": "sec_xbrl_operator_review_workflow_control_envelope_v1",
+    "proof_kind": "sec_xbrl_operator_review_workflow_status_api_proof",
+    "status": "tier1_read_only_status_api_implemented",
+    "milestone": "sec_xbrl_operator_review_workflow_status_api_v1",
     "prior_design_milestone": "sec_xbrl_operator_review_workflow_design_v1",
+    "prior_control_envelope_milestone": "sec_xbrl_operator_review_workflow_control_envelope_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1290-operator-review-workflow.md",
-    "implementation_doc": "next_milestone_plans/Layer3_planning_docs/1291-operator-review-workflow-impl.md",
+    "prior_control_envelope_doc": "next_milestone_plans/Layer3_planning_docs/1291-operator-review-workflow-impl.md",
+    "implementation_doc": "next_milestone_plans/Layer3_planning_docs/1292-operator-review-workflow-status-api.md",
     "proof_terms": [
-      "operator-review workflow control envelope implementation is a Tier-2 risk-assessed schema and persistence-service slice",
-      "first implementation slice lands one additive redacted workflow table and deterministic owner service over existing persisted statement-packet authority",
+      "operator-review workflow status API implementation is a Tier-1 additive read-only API/status slice over existing persisted workflow authority",
+      "status service revalidates the already-landed redacted workflow table row before returning status",
       "the owner service rejects missing, empty, not-ready, or non-redacted packet sets before writing",
       "the owner service scans copied JSON for raw values, raw authority identifiers, raw accessions, SEC URLs, raw period dates, local paths, operator contact fields, and residual magnitudes",
-      "focused tests cover metadata registration, migration declaration, idempotency, fail-closed redaction checks, missing/empty/not-ready packet rejection, and partial-write containment"
+      "focused tests cover metadata registration, migration declaration, idempotency, fail-closed redaction checks, missing/empty/not-ready packet rejection, status projection, API status route success, API missing-authority failure, and partial-write containment"
     ],
     "required_prior_gate": "sec_xbrl_sector_family_real_filer_validation_v1",
     "required_prior_projection_persistence": "sec_xbrl_projection_persistence_schema_materializer_v1",
     "required_prior_statement_packet_persistence": "sec_xbrl_statement_packet_persistence_schema_materializer_v1",
     "required_prior_statement_packet_persistence_satisfied_by_proof": true,
-    "tier_classification": "Tier 2 risk-assessed schema and persistence service",
+    "tier_classification": "Tier 1 additive read-only API/status over existing Tier-2 workflow authority; no schema, migration, durable persistence expansion, value reveal, default-on, or redaction-posture change",
     "design_doc_landed_by_proof": true,
     "schema_models": [
       "backend/app/models/models.py",
@@ -41302,11 +41304,14 @@
     ],
     "migration": "backend/alembic/versions/0040_layer3_sec_xbrl_operator_review_workflow.py",
     "runtime": "backend/app/services/layer3_sec_xbrl_operator_review_workflow.py",
+    "status_api_route": "backend/app/api/layer3.py",
+    "status_api_path": "POST /api/v1/layer3/sec-xbrl/operator-review/workflow/status",
     "focused_tests": [
       "backend/tests/test_sec_xbrl_operator_review_workflow.py"
     ],
-    "focused_test_result": "10 passed",
+    "focused_test_result": "15 passed",
     "selected_first_implementation_slice": "redacted_operator_review_workflow_control_envelope",
+    "selected_status_api_slice": "read_only_redacted_operator_review_workflow_status_api",
     "selected_first_implementation_tables": [
       "l3_sec_xbrl_operator_review_workflow"
     ],
@@ -41315,7 +41320,9 @@
     "models_landed_by_proof": true,
     "migration_landed_by_proof": true,
     "runtime_landed_by_proof": true,
-    "api_route_landed_by_proof": false,
+    "api_route_landed_by_proof": true,
+    "open_workflow_api_route_landed_by_proof": false,
+    "status_api_route_landed_by_proof": true,
     "rendered_ui_landed_by_proof": false,
     "browser_proof_required_for_first_slice": false,
     "browser_proof_required_before_rendered_slice": true,
@@ -41344,7 +41351,7 @@
     "dimensional_roll_forward_claimed": false,
     "linkbase_emission_claimed": false,
     "fx_comparability_claimed": false,
-    "next_posture": "sec_xbrl_operator_review_workflow_status_api_v1",
+    "next_posture": "sec_xbrl_operator_review_workflow_rendered_read_only_ui_freeze_v1",
     "required_prior_gate_satisfied_by_proof": true
   },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof": {

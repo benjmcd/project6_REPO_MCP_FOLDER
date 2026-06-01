@@ -15,10 +15,14 @@ from app.models.models import (
     L3_SEC_XBRL_STATEMENT_PACKET_REDACTION_POLICY,
     L3_SEC_XBRL_STATEMENT_PACKET_STATUS_MATERIALIZED,
 )
+from app.services.layer3_response_contract import base_response
 from app.services.layer3_utils import json_clone, stable_hash
 
 
 WORKFLOW_SCHEMA_ID = "layer3.sec_xbrl_operator_review_workflow.v1"
+WORKFLOW_STATUS_SCHEMA_ID = "layer3.sec_xbrl_operator_review_workflow_status.v1"
+WORKFLOW_STATUS_MODE = "sec_xbrl_operator_review_workflow_status_v1"
+WORKFLOW_STATUS_OPERATOR_DECISION = "inspect_sec_xbrl_operator_review_workflow_status"
 PERMITTED_CONTROLS = (
     "inspect_redacted_statement_packet_counts",
     "inspect_review_exceptions",
@@ -71,11 +75,19 @@ RAW_PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 
 
 class SecXbrlOperatorReviewWorkflowError(ValueError):
-    def __init__(self, code: str, message: str, *, details: Mapping[str, Any] | None = None) -> None:
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        details: Mapping[str, Any] | None = None,
+        http_status: int = 409,
+    ) -> None:
         super().__init__(message)
         self.code = code
         self.message = message
         self.details = dict(details or {})
+        self.http_status = http_status
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -86,6 +98,54 @@ class SecXbrlOperatorReviewWorkflowError(ValueError):
                 "details": dict(self.details),
             },
         }
+
+
+def inspect_redacted_operator_review_workflow_status(
+    db: Session,
+    *,
+    client_request_id: str,
+    sec_xbrl_operator_review_workflow_id: str | None = None,
+    workflow_basis_hash: str | None = None,
+) -> dict[str, Any]:
+    request_id = _required_text(client_request_id, "client_request_id")
+    workflow_id = _optional_text(
+        sec_xbrl_operator_review_workflow_id,
+        "sec_xbrl_operator_review_workflow_id",
+    )
+    basis_hash = _optional_text(workflow_basis_hash, "workflow_basis_hash")
+    if workflow_id is None and basis_hash is None:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_status_authority_missing",
+            "SEC XBRL operator review workflow status requires a workflow id or workflow basis hash.",
+            details={
+                "required_any_of": [
+                    "sec_xbrl_operator_review_workflow_id",
+                    "workflow_basis_hash",
+                ]
+            },
+            http_status=400,
+        )
+
+    query = db.query(L3SecXbrlOperatorReviewWorkflow)
+    if workflow_id is not None:
+        query = query.filter(
+            L3SecXbrlOperatorReviewWorkflow.sec_xbrl_operator_review_workflow_id == workflow_id
+        )
+    if basis_hash is not None:
+        query = query.filter(L3SecXbrlOperatorReviewWorkflow.workflow_basis_hash == basis_hash)
+    workflow = query.one_or_none()
+    if workflow is None:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_status_not_found",
+            "SEC XBRL operator review workflow status requires existing server-owned workflow authority.",
+            details={
+                "sec_xbrl_operator_review_workflow_id": workflow_id,
+                "workflow_basis_hash": basis_hash,
+            },
+            http_status=404,
+        )
+    _validate_workflow_row_for_status(workflow)
+    return _status_response(workflow, request_id=request_id)
 
 
 def open_redacted_operator_review_workflow(
@@ -106,6 +166,7 @@ def open_redacted_operator_review_workflow(
             "sec_xbrl_operator_review_workflow_packet_set_missing",
             "Operator review workflow requires an existing persisted SEC XBRL statement packet set.",
             details={"sec_xbrl_statement_packet_set_id": packet_set_id},
+            http_status=404,
         )
 
     _validate_packet_set(packet_set)
@@ -286,6 +347,123 @@ def _response(row: L3SecXbrlOperatorReviewWorkflow, *, idempotent_replay: bool) 
     }
 
 
+def _status_response(row: L3SecXbrlOperatorReviewWorkflow, *, request_id: str) -> dict[str, Any]:
+    permitted_controls = json_clone(row.permitted_controls_json)
+    blocked_controls = json_clone(row.blocked_controls_json)
+    authority_refs = json_clone(row.authority_refs_json)
+    review_summary = json_clone(row.review_summary_json)
+    return {
+        **base_response(WORKFLOW_STATUS_SCHEMA_ID, request_id=request_id, status=row.review_status),
+        "mode": WORKFLOW_STATUS_MODE,
+        "operator_decision": WORKFLOW_STATUS_OPERATOR_DECISION,
+        "workflow_schema_id": row.workflow_schema_id,
+        "sec_xbrl_operator_review_workflow_id": row.sec_xbrl_operator_review_workflow_id,
+        "sec_xbrl_statement_packet_set_id": row.sec_xbrl_statement_packet_set_id,
+        "workflow_basis_hash": row.workflow_basis_hash,
+        "statement_packet_basis_hash": row.statement_packet_basis_hash,
+        "source_projection_basis_hash": row.source_projection_basis_hash,
+        "control_mode": row.control_mode,
+        "workflow_status": row.review_status,
+        "redaction_policy": row.redaction_policy,
+        "statement_count": row.statement_count,
+        "row_count": row.row_count,
+        "review_exception_count": row.review_exception_count,
+        "review_ready": row.review_ready,
+        "permitted_controls": permitted_controls,
+        "blocked_controls": blocked_controls,
+        "authority_refs": authority_refs,
+        "review_summary": review_summary,
+        "status_surface_mode": "read_only_redacted_statement_packet_review_workflow_status",
+        "read_only_status_surface": True,
+        "durable_workflow_authority_used": True,
+        "status_api_route_enabled": True,
+        "open_workflow_api_route_enabled": False,
+        "runtime_default_enabled": False,
+        "value_reveal_performed": False,
+        "source_acquisition_performed": False,
+        "arelle_invoked": False,
+        "delivery_export_enabled": False,
+        "rendered_ui_enabled": False,
+        "operator_review_decision_recorded": False,
+        "negative_invariants": {
+            "raw_values_exposed": False,
+            "raw_resolved_fact_authorities_exposed": False,
+            "raw_identity_exposed": False,
+            "raw_accessions_exposed": False,
+            "raw_period_dates_exposed": False,
+            "local_paths_exposed": False,
+            "sec_urls_exposed": False,
+            "operator_contact_exposed": False,
+            "residual_magnitudes_exposed": False,
+            "runtime_default_changed": False,
+            "value_reveal_performed": False,
+            "source_acquisition_performed": False,
+            "arelle_invoked": False,
+            "delivery_export_enabled": False,
+            "rendered_ui_enabled": False,
+            "operator_review_decision_recorded": False,
+        },
+        "next_allowed_actions": list(PERMITTED_CONTROLS),
+    }
+
+
+def _validate_workflow_row_for_status(row: L3SecXbrlOperatorReviewWorkflow) -> None:
+    if row.workflow_schema_id != WORKFLOW_SCHEMA_ID:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_status_schema_invalid",
+            "SEC XBRL operator review workflow status requires the governed workflow schema.",
+            details={"workflow_schema_id": row.workflow_schema_id},
+        )
+    if row.control_mode != L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_CONTROL_MODE:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_status_control_mode_invalid",
+            "SEC XBRL operator review workflow status requires the governed control mode.",
+            details={"control_mode": row.control_mode},
+        )
+    if row.review_status != L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_READY:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_status_invalid",
+            "SEC XBRL operator review workflow status requires a review-ready workflow.",
+            details={"review_status": row.review_status},
+        )
+    if row.redaction_policy != L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_REDACTION_POLICY:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_status_redaction_policy_invalid",
+            "SEC XBRL operator review workflow status requires the governed redaction policy.",
+            details={"redaction_policy": row.redaction_policy},
+        )
+    _positive_int(row.statement_count, "statement_count")
+    _positive_int(row.row_count, "row_count")
+    _non_negative_int(row.review_exception_count, "review_exception_count")
+    if row.review_ready is not True:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_status_not_ready",
+            "SEC XBRL operator review workflow status requires review-ready authority.",
+        )
+    permitted_controls = json_clone(row.permitted_controls_json)
+    blocked_controls = json_clone(row.blocked_controls_json)
+    if permitted_controls != list(PERMITTED_CONTROLS):
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_status_permitted_controls_invalid",
+            "SEC XBRL operator review workflow status requires the governed permitted-control vocabulary.",
+        )
+    if blocked_controls != [
+        {"control": control, "reason": reason}
+        for control, reason in BLOCKED_CONTROLS
+    ]:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_status_blocked_controls_invalid",
+            "SEC XBRL operator review workflow status requires the governed blocked-control vocabulary.",
+        )
+    for value in (
+        permitted_controls,
+        blocked_controls,
+        row.authority_refs_json,
+        row.review_summary_json,
+    ):
+        _reject_raw_or_local_authority(value)
+
+
 def _required_text(value: Any, field: str) -> str:
     text = str(value or "").strip()
     if not text:
@@ -293,8 +471,15 @@ def _required_text(value: Any, field: str) -> str:
             "sec_xbrl_operator_review_workflow_required_field_missing",
             f"SEC XBRL operator review workflow requires {field}.",
             details={"field": field},
+            http_status=400,
         )
     return text
+
+
+def _optional_text(value: Any, field: str) -> str | None:
+    if value is None:
+        return None
+    return _required_text(value, field)
 
 
 def _positive_int(value: Any, field: str) -> int:

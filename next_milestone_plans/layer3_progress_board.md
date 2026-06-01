@@ -9780,6 +9780,20 @@ Rollback/containment: the migration downgrade drops only `l3_sec_xbrl_operator_r
 
 Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_workflow_status_api_v1`.
 
+## SEC XBRL Operator Review Workflow Status API
+
+Milestone: `sec_xbrl_operator_review_workflow_status_api_v1`.
+
+Implementation doc: `next_milestone_plans/Layer3_planning_docs/1292-operator-review-workflow-status-api.md`.
+
+Status: `tier1_read_only_status_api_implemented`. This slice lands the selected read-only status API after the durable control envelope: `POST /api/v1/layer3/sec-xbrl/operator-review/workflow/status` projects server-owned redacted workflow status from existing `l3_sec_xbrl_operator_review_workflow` rows.
+
+Focused proof: `backend/tests/test_sec_xbrl_operator_review_workflow.py` now covers direct status projection, fail-closed missing authority, fail-closed tampered raw status JSON, API route success, and API missing-authority failure in addition to the existing control-envelope materialization coverage. Latest branch-local focused result: `15 passed`.
+
+Containment: no new `models.py`, Alembic migration, schema, durable persistence expansion, rendered UI, browser control, workflow-open API, submitted operator review decision, delivery/export, source acquisition, live SEC network, Arelle invocation, value reveal, default-on behavior, redaction-posture change, raw values, raw issuer identity, raw accessions, raw period dates, raw resolved fact authorities, SEC URLs, local paths, residual magnitudes, operator contact fields, production-readiness claim, or final financial-statement semantics claim.
+
+Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_workflow_rendered_read_only_ui_freeze_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
