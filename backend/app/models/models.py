@@ -72,6 +72,9 @@ L3_SEC_XBRL_PROJECTION_REDACTION_POLICY = "redacted_no_values"
 L3_SEC_XBRL_PROJECTION_STATUS_MATERIALIZED = "materialized"
 L3_SEC_XBRL_STATEMENT_PACKET_REDACTION_POLICY = "redacted_no_values"
 L3_SEC_XBRL_STATEMENT_PACKET_STATUS_MATERIALIZED = "materialized"
+L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_REDACTION_POLICY = "redacted_no_values"
+L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_CONTROL_MODE = "redacted_statement_packet_review_only"
+L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_READY = "review_ready"
 
 
 class TimestampMixin:
@@ -1074,6 +1077,9 @@ class L3SecXbrlStatementPacketSet(Base):
         back_populates="packet_set",
         cascade="all, delete-orphan",
     )
+    operator_review_workflows: Mapped[list["L3SecXbrlOperatorReviewWorkflow"]] = relationship(
+        back_populates="statement_packet_set",
+    )
 
 
 class L3SecXbrlStatementPacketStatement(Base):
@@ -1158,6 +1164,72 @@ class L3SecXbrlStatementPacketRow(Base):
 
     packet_statement: Mapped[L3SecXbrlStatementPacketStatement] = relationship(back_populates="rows")
     projection_fact: Mapped[L3SecXbrlProjectionFact] = relationship(back_populates="statement_packet_rows")
+
+
+class L3SecXbrlOperatorReviewWorkflow(Base):
+    __tablename__ = "l3_sec_xbrl_operator_review_workflow"
+    __table_args__ = (
+        UniqueConstraint("client_request_id", name="uq_l3_sec_xbrl_operator_review_workflow_client_request"),
+        UniqueConstraint("workflow_basis_hash", name="uq_l3_sec_xbrl_operator_review_workflow_basis_hash"),
+        CheckConstraint(
+            f"redaction_policy = '{L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_REDACTION_POLICY}'",
+            name="ck_l3_sec_xbrl_operator_review_workflow_redaction_policy",
+        ),
+        CheckConstraint(
+            f"control_mode = '{L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_CONTROL_MODE}'",
+            name="ck_l3_sec_xbrl_operator_review_workflow_control_mode",
+        ),
+        CheckConstraint(
+            f"review_status = '{L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_READY}'",
+            name="ck_l3_sec_xbrl_operator_review_workflow_status",
+        ),
+        Index("ix_l3_sec_xbrl_operator_review_workflow_packet", "sec_xbrl_statement_packet_set_id"),
+        Index("ix_l3_sec_xbrl_operator_review_workflow_packet_basis", "statement_packet_basis_hash"),
+    )
+
+    sec_xbrl_operator_review_workflow_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=uuid_str,
+    )
+    sec_xbrl_statement_packet_set_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_sec_xbrl_statement_packet_set.sec_xbrl_statement_packet_set_id"),
+        nullable=False,
+    )
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    workflow_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    workflow_schema_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    statement_packet_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_projection_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    control_mode: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default=L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_CONTROL_MODE,
+    )
+    review_status: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default=L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_READY,
+    )
+    redaction_policy: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default=L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_REDACTION_POLICY,
+    )
+    statement_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    row_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    review_exception_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    review_ready: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    permitted_controls_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    blocked_controls_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    authority_refs_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    review_summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    statement_packet_set: Mapped[L3SecXbrlStatementPacketSet] = relationship(
+        back_populates="operator_review_workflows",
+    )
 
 
 class L3TypingRecord(Base, TimestampMixin):

@@ -41277,38 +41277,50 @@
     "required_prior_gate_satisfied_by_proof": true
   },
   "sec_xbrl_operator_review_workflow_proof": {
-    "proof_kind": "sec_xbrl_operator_review_workflow_design_proof",
-    "status": "tier2_risk_assessed_design_selected",
-    "milestone": "sec_xbrl_operator_review_workflow_design_v1",
+    "proof_kind": "sec_xbrl_operator_review_workflow_control_envelope_proof",
+    "status": "tier2_risk_assessed_schema_materializer_implemented",
+    "milestone": "sec_xbrl_operator_review_workflow_control_envelope_v1",
+    "prior_design_milestone": "sec_xbrl_operator_review_workflow_design_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1290-operator-review-workflow.md",
+    "implementation_doc": "next_milestone_plans/Layer3_planning_docs/1291-operator-review-workflow-impl.md",
     "proof_terms": [
-      "operator-review workflow design is a planning-only Tier-2 risk-assessed design entry",
-      "the selected first implementation slice is a durable redacted workflow control envelope over an existing persisted statement-packet set",
-      "the first implementation slice must not add API routes, rendered UI, browser controls, submitted operator decisions, delivery/export, value reveal, source acquisition, Arelle invocation, default-on behavior, or production-readiness claims",
-      "later API/status, rendered UI, and operator-decision lanes require separate freezes and proof",
-      "browser proof is deferred until a rendered or browser-reachable surface is admitted"
+      "operator-review workflow control envelope implementation is a Tier-2 risk-assessed schema and persistence-service slice",
+      "first implementation slice lands one additive redacted workflow table and deterministic owner service over existing persisted statement-packet authority",
+      "the owner service rejects missing, empty, not-ready, or non-redacted packet sets before writing",
+      "the owner service scans copied JSON for raw values, raw authority identifiers, raw accessions, SEC URLs, raw period dates, local paths, operator contact fields, and residual magnitudes",
+      "focused tests cover metadata registration, migration declaration, idempotency, fail-closed redaction checks, missing/empty/not-ready packet rejection, and partial-write containment"
     ],
     "required_prior_gate": "sec_xbrl_sector_family_real_filer_validation_v1",
     "required_prior_projection_persistence": "sec_xbrl_projection_persistence_schema_materializer_v1",
     "required_prior_statement_packet_persistence": "sec_xbrl_statement_packet_persistence_schema_materializer_v1",
     "required_prior_statement_packet_persistence_satisfied_by_proof": true,
-    "tier_classification": "Tier 2 risk-assessed design entry for future schema and persistence service",
+    "tier_classification": "Tier 2 risk-assessed schema and persistence service",
     "design_doc_landed_by_proof": true,
+    "schema_models": [
+      "backend/app/models/models.py",
+      "backend/app/models/__init__.py"
+    ],
+    "migration": "backend/alembic/versions/0040_layer3_sec_xbrl_operator_review_workflow.py",
+    "runtime": "backend/app/services/layer3_sec_xbrl_operator_review_workflow.py",
+    "focused_tests": [
+      "backend/tests/test_sec_xbrl_operator_review_workflow.py"
+    ],
+    "focused_test_result": "10 passed",
     "selected_first_implementation_slice": "redacted_operator_review_workflow_control_envelope",
     "selected_first_implementation_tables": [
       "l3_sec_xbrl_operator_review_workflow"
     ],
     "first_implementation_requires_models_and_migration": true,
     "first_implementation_requires_rollback_or_containment_notes": true,
-    "models_landed_by_proof": false,
-    "migration_landed_by_proof": false,
-    "runtime_landed_by_proof": false,
+    "models_landed_by_proof": true,
+    "migration_landed_by_proof": true,
+    "runtime_landed_by_proof": true,
     "api_route_landed_by_proof": false,
     "rendered_ui_landed_by_proof": false,
     "browser_proof_required_for_first_slice": false,
     "browser_proof_required_before_rendered_slice": true,
-    "focused_tests_run_in_this_landing": false,
-    "schema_set_landed": false,
+    "focused_tests_run_in_this_landing": true,
+    "schema_set_landed": true,
     "runtime_default_changed_by_proof": false,
     "live_sec_network_run_performed_by_proof": false,
     "arelle_subprocess_invoked_by_proof": false,
@@ -41332,7 +41344,7 @@
     "dimensional_roll_forward_claimed": false,
     "linkbase_emission_claimed": false,
     "fx_comparability_claimed": false,
-    "next_posture": "sec_xbrl_operator_review_workflow_control_envelope_v1_tier2_risk_assessed_implementation",
+    "next_posture": "sec_xbrl_operator_review_workflow_status_api_v1",
     "required_prior_gate_satisfied_by_proof": true
   },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof": {
