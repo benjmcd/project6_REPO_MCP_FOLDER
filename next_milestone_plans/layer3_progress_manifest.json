@@ -43187,6 +43187,92 @@
     "final_financial_statement_semantics_claimed": false,
     "next_posture": "sec_xbrl_operator_review_workflow_rendered_status_v1"
   },
+  "sec_xbrl_operator_review_workflow_rendered_status_tracking": {
+    "status": "tier1_read_only_rendered_status_implemented",
+    "milestone": "sec_xbrl_operator_review_workflow_rendered_status_v1",
+    "implementation_doc": "next_milestone_plans/Layer3_planning_docs/1294-rendered-status.md",
+    "prior_freeze_doc": "next_milestone_plans/Layer3_planning_docs/1293-ui-freeze.md",
+    "prior_status_api_milestone": "sec_xbrl_operator_review_workflow_status_api_v1",
+    "status_api_path": "POST /api/v1/layer3/sec-xbrl/operator-review/workflow/status",
+    "rendered_surface": "/review/layer3 read-only SEC XBRL operator-review workflow status panel",
+    "rendered_mode": "rendered_sec_xbrl_operator_review_workflow_status_control",
+    "tier_classification": "Tier 1 rendered read-only UI/test/docs only; no backend API contract, schema, persistence, value reveal, default-on behavior, source acquisition, Arelle, or redaction-posture change",
+    "implementation_files": [
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "e2e/layer3-workbench.spec.js"
+    ],
+    "tracking_files": [
+      "next_milestone_plans/Layer3_planning_docs/1294-rendered-status.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "allowed_browser_request_fields": [
+      "client_request_id",
+      "status_mode",
+      "operator_decision",
+      "sec_xbrl_operator_review_workflow_id",
+      "workflow_basis_hash"
+    ],
+    "rendered_markers_proven": [
+      "data-rendered-mode=rendered_sec_xbrl_operator_review_workflow_status_control",
+      "data-frontend-durable-authority=false",
+      "data-read-only=true"
+    ],
+    "blocked_rendered_controls": [
+      "submit_operator_review_decision",
+      "open_operator_review_workflow",
+      "reveal_values",
+      "export_statement_packet",
+      "deliver_statement_packet",
+      "refresh_from_sec_source",
+      "invoke_arelle",
+      "edit_statement_packet",
+      "change_runtime_default"
+    ],
+    "browser_proof": {
+      "headless_command": "npm run test:e2e -- --grep \"SEC XBRL operator-review workflow status\"",
+      "headless_result": "1 passed",
+      "headed_command": "npm run test:e2e:headed -- --grep \"SEC XBRL operator-review workflow status\"",
+      "headed_result": "1 passed"
+    },
+    "backend_proof": {
+      "focused_command": "python -m pytest ./backend/tests/test_sec_xbrl_operator_review_workflow.py -q",
+      "focused_result": "17 passed",
+      "full_sec_xbrl_command": "$files = Get-ChildItem ./backend/tests/test_sec_xbrl*.py | ForEach-Object { $_.FullName }; python -m pytest $files -q",
+      "full_sec_xbrl_result": "237 passed"
+    },
+    "rendered_ui_landed_by_tracking": true,
+    "browser_proof_landed_by_tracking": true,
+    "schema_models_changed_by_tracking": false,
+    "migration_changed_by_tracking": false,
+    "durable_persistence_changed_by_tracking": false,
+    "api_contract_changed_by_tracking": false,
+    "runtime_default_changed_by_tracking": false,
+    "live_sec_network_run_performed_by_tracking": false,
+    "arelle_subprocess_invoked_by_tracking": false,
+    "source_acquisition_performed_by_tracking": false,
+    "value_reveal_request_performed_by_tracking": false,
+    "operator_review_decision_claimed": false,
+    "workflow_open_api_claimed": false,
+    "delivery_or_export_performed": false,
+    "provider_or_connector_dispatch_performed": false,
+    "frontend_durable_authority_admitted": false,
+    "raw_runtime_artifacts_committed": false,
+    "raw_values_in_rendered_surface": false,
+    "raw_resolved_fact_authorities_in_rendered_surface": false,
+    "raw_identity_committed": false,
+    "raw_accessions_committed": false,
+    "raw_period_dates_committed": false,
+    "local_paths_committed": false,
+    "operator_contact_committed": false,
+    "residual_magnitudes_in_rendered_surface": false,
+    "default_on_readiness_claimed": false,
+    "production_readiness_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "next_posture": "sec_xbrl_operator_review_decision_submit_design_v1"
+  },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_tracking": {
     "status": "branch_local_review_debt_closure_in_progress",
     "milestone": "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1",
