@@ -9870,6 +9870,39 @@ Implementation boundary: the later code slice may touch `backend/app/api/layer3.
 
 Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_decision_submit_api_v1`.
 
+## SEC XBRL Operator Review Decision Submit API Implementation
+
+Milestone: `sec_xbrl_operator_review_decision_submit_api_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1297-decision-submit-api.md`.
+
+Status: `tier2_risk_assessed_api_route_implemented`. This slice implements
+`POST /api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit` as a bounded
+FastAPI wrapper over `record_redacted_operator_review_decision`.
+
+Runtime contract: the request model uses `extra="forbid"`, admits only the frozen submit
+mode/operator decision/review decision/reason code/workflow selectors/optional notes, calls
+only the owner service, and uses the existing SEC XBRL operator-review workflow error mapper.
+The response uses the standard API envelope plus the owner-service receipt projection and
+sets `decision_submit_api_route_enabled=true` while rendered UI, workflow-open API, value
+reveal, delivery/export, source acquisition, Arelle, default-on behavior, and production
+readiness remain false.
+
+Proof: focused operator-review workflow tests returned `34 passed, 3 warnings`; full SEC XBRL
+suite returned `254 passed, 4 warnings`. Focused API tests prove successful receipt creation,
+extra-field rejection, missing authority failure, non-approved missing-notes failure,
+raw-note contact/value-string rejection, idempotent replay, second-decision rejection,
+response redaction, and workflow/statement-packet/projection non-mutation.
+
+Containment: no `models.py`, Alembic migration, schema change, durable persistence expansion
+beyond the existing decision receipt service, rendered UI, browser-visible submit control,
+workflow-open route, value reveal, delivery/export, source acquisition, live SEC network,
+Arelle invocation, default-on behavior, raw runtime artifact, production-readiness claim, or
+final financial-statement semantics claim.
+
+Next exact posture after merge and current-main verification:
+`sec_xbrl_operator_review_decision_status_api_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
