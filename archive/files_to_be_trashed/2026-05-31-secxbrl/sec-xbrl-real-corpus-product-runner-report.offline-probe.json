@@ -1,0 +1,944 @@
+{
+  "blocking_reasons": [
+    {
+      "criterion": "live_preflight",
+      "evidence": {
+        "arelle_cache": {
+          "configured": false,
+          "inside_repo_or_onedrive": false,
+          "path_redacted": false
+        },
+        "arelle_cutover_current_default_enabled": false,
+        "arelle_python": {
+          "configured": false,
+          "inside_repo_or_onedrive": false,
+          "path_redacted": false
+        },
+        "blocked_reasons": [
+          "live_execution_not_requested",
+          "sec_user_agent_not_configured",
+          "arelle_environment_not_configured",
+          "arelle_python_unavailable",
+          "taxonomy_package_files_unavailable",
+          "arelle_cache_dir_unavailable"
+        ],
+        "live_network_default_changed": false,
+        "live_requested": false,
+        "missing_env_names": [
+          "SEC_XBRL_ARELLE_PYTHON",
+          "SEC_XBRL_ARELLE_TAXONOMY_PACKAGES",
+          "SEC_XBRL_ARELLE_CACHE_DIR"
+        ],
+        "required_arelle_env_configured": false,
+        "sec_rate_limit_per_second": 1,
+        "state": "blocked",
+        "taxonomy_packages": {
+          "configured": false,
+          "entry_count": 0,
+          "invalid_entry_count": 0,
+          "invalid_reasons": {},
+          "paths_redacted": true,
+          "valid_file_count": 0
+        },
+        "user_agent_configured": false
+      },
+      "reason": "real_corpus_product_path_live_preflight_not_satisfied"
+    },
+    {
+      "criterion": "matrix_execution_plan",
+      "evidence": {
+        "blocked_reasons": [
+          "matrix_plan_required_for_selected_tranche"
+        ],
+        "chunk_count": 0,
+        "chunks": [],
+        "covered_strata": [],
+        "external_plan_used": false,
+        "missing_required_strata": [
+          "large_domestic_us_gaap",
+          "small_mid_domestic_us_gaap",
+          "foreign_private_ifrs_20f",
+          "canadian_40f",
+          "current_report_8k_sparse",
+          "foreign_6k_sparse",
+          "amendment_restatement",
+          "no_inline_or_zero_fact_diagnostic"
+        ],
+        "mode": "external_stratified_matrix_plan",
+        "paths_redacted": true,
+        "plan_path_marker": null,
+        "required_strata": [
+          "large_domestic_us_gaap",
+          "small_mid_domestic_us_gaap",
+          "foreign_private_ifrs_20f",
+          "canadian_40f",
+          "current_report_8k_sparse",
+          "foreign_6k_sparse",
+          "amendment_restatement",
+          "no_inline_or_zero_fact_diagnostic"
+        ],
+        "state": "blocked"
+      },
+      "reason": "real_corpus_product_path_matrix_plan_not_satisfied"
+    },
+    {
+      "criterion": "broader_real_product_path_corpus",
+      "evidence": {
+        "forms": {},
+        "issuer_hash_count": 0,
+        "real_filing_count": 0,
+        "required_forms": [
+          "10-K",
+          "10-Q",
+          "20-F",
+          "40-F",
+          "6-K",
+          "8-K"
+        ],
+        "required_issuer_hash_count": 15,
+        "required_real_filing_count": 30
+      },
+      "reason": "broader_real_product_path_required_corpus_not_proven"
+    },
+    {
+      "criterion": "arelle_sidecar_selected_for_supported_records",
+      "evidence": {
+        "records_with_arelle_sidecar_output": 0,
+        "records_with_selected_fact_authority_equal_to_sidecar": 0,
+        "supported_record_count": 0
+      },
+      "reason": "arelle_sidecar_not_proven_as_selected_authority_for_all_supported_records"
+    },
+    {
+      "criterion": "product_path_validation_readiness",
+      "evidence": {
+        "matrix_chunk_count": 0,
+        "ready_matrix_chunk_count": 0,
+        "records_with_handoff_export_prepare": 0,
+        "supported_record_count": 0,
+        "unexpected_blocked_or_degraded_count": 0
+      },
+      "reason": "real_corpus_product_path_validation_not_ready_across_matrix_chunks"
+    },
+    {
+      "criterion": "completeness_guard",
+      "evidence": {
+        "completeness_guard_failed_count": 0,
+        "independent_inline_fact_count": 0,
+        "resolved_fact_count": 0,
+        "unexpected_zero_inline_xbrl_count": 0
+      },
+      "reason": "arelle_completeness_guard_failed_or_truncation_possible"
+    },
+    {
+      "criterion": "companyfacts_effective_value_correctness",
+      "evidence": {
+        "companyfacts_oracle_unavailable_count": 0,
+        "compared_count": 0,
+        "match_count": 0,
+        "match_rate": null,
+        "minimum_match_rate": 0.98,
+        "mismatch_count": 0,
+        "oracle": "primary_companyfacts_standard_taxonomy_accession_scope_non_dimensional_numeric_intersection"
+      },
+      "reason": "companyfacts_effective_value_correctness_not_proven_on_broader_corpus"
+    }
+  ],
+  "criteria": [
+    {
+      "blocked_reason": "real_corpus_product_path_live_preflight_not_satisfied",
+      "criterion": "live_preflight",
+      "evidence": {
+        "arelle_cache": {
+          "configured": false,
+          "inside_repo_or_onedrive": false,
+          "path_redacted": false
+        },
+        "arelle_cutover_current_default_enabled": false,
+        "arelle_python": {
+          "configured": false,
+          "inside_repo_or_onedrive": false,
+          "path_redacted": false
+        },
+        "blocked_reasons": [
+          "live_execution_not_requested",
+          "sec_user_agent_not_configured",
+          "arelle_environment_not_configured",
+          "arelle_python_unavailable",
+          "taxonomy_package_files_unavailable",
+          "arelle_cache_dir_unavailable"
+        ],
+        "live_network_default_changed": false,
+        "live_requested": false,
+        "missing_env_names": [
+          "SEC_XBRL_ARELLE_PYTHON",
+          "SEC_XBRL_ARELLE_TAXONOMY_PACKAGES",
+          "SEC_XBRL_ARELLE_CACHE_DIR"
+        ],
+        "required_arelle_env_configured": false,
+        "sec_rate_limit_per_second": 1,
+        "state": "blocked",
+        "taxonomy_packages": {
+          "configured": false,
+          "entry_count": 0,
+          "invalid_entry_count": 0,
+          "invalid_reasons": {},
+          "paths_redacted": true,
+          "valid_file_count": 0
+        },
+        "user_agent_configured": false
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "real_corpus_product_path_matrix_plan_not_satisfied",
+      "criterion": "matrix_execution_plan",
+      "evidence": {
+        "blocked_reasons": [
+          "matrix_plan_required_for_selected_tranche"
+        ],
+        "chunk_count": 0,
+        "chunks": [],
+        "covered_strata": [],
+        "external_plan_used": false,
+        "missing_required_strata": [
+          "large_domestic_us_gaap",
+          "small_mid_domestic_us_gaap",
+          "foreign_private_ifrs_20f",
+          "canadian_40f",
+          "current_report_8k_sparse",
+          "foreign_6k_sparse",
+          "amendment_restatement",
+          "no_inline_or_zero_fact_diagnostic"
+        ],
+        "mode": "external_stratified_matrix_plan",
+        "paths_redacted": true,
+        "plan_path_marker": null,
+        "required_strata": [
+          "large_domestic_us_gaap",
+          "small_mid_domestic_us_gaap",
+          "foreign_private_ifrs_20f",
+          "canadian_40f",
+          "current_report_8k_sparse",
+          "foreign_6k_sparse",
+          "amendment_restatement",
+          "no_inline_or_zero_fact_diagnostic"
+        ],
+        "state": "blocked"
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "stratified_matrix_required_strata_readiness",
+      "evidence": {
+        "matrix_plan_mode": "external_stratified_matrix_plan",
+        "strata_readiness": {
+          "all_required_strata_ready": false,
+          "blocked_strata": [],
+          "by_stratum": {
+            "amendment_restatement": {
+              "blocked_matrix_chunk_count": 0,
+              "matrix_chunk_count": 0,
+              "matrix_ref_hashes": [],
+              "ready_matrix_chunk_count": 0
+            },
+            "canadian_40f": {
+              "blocked_matrix_chunk_count": 0,
+              "matrix_chunk_count": 0,
+              "matrix_ref_hashes": [],
+              "ready_matrix_chunk_count": 0
+            },
+            "current_report_8k_sparse": {
+              "blocked_matrix_chunk_count": 0,
+              "matrix_chunk_count": 0,
+              "matrix_ref_hashes": [],
+              "ready_matrix_chunk_count": 0
+            },
+            "foreign_6k_sparse": {
+              "blocked_matrix_chunk_count": 0,
+              "matrix_chunk_count": 0,
+              "matrix_ref_hashes": [],
+              "ready_matrix_chunk_count": 0
+            },
+            "foreign_private_ifrs_20f": {
+              "blocked_matrix_chunk_count": 0,
+              "matrix_chunk_count": 0,
+              "matrix_ref_hashes": [],
+              "ready_matrix_chunk_count": 0
+            },
+            "large_domestic_us_gaap": {
+              "blocked_matrix_chunk_count": 0,
+              "matrix_chunk_count": 0,
+              "matrix_ref_hashes": [],
+              "ready_matrix_chunk_count": 0
+            },
+            "no_inline_or_zero_fact_diagnostic": {
+              "blocked_matrix_chunk_count": 0,
+              "matrix_chunk_count": 0,
+              "matrix_ref_hashes": [],
+              "ready_matrix_chunk_count": 0
+            },
+            "small_mid_domestic_us_gaap": {
+              "blocked_matrix_chunk_count": 0,
+              "matrix_chunk_count": 0,
+              "matrix_ref_hashes": [],
+              "ready_matrix_chunk_count": 0
+            }
+          },
+          "missing_strata": [
+            "large_domestic_us_gaap",
+            "small_mid_domestic_us_gaap",
+            "foreign_private_ifrs_20f",
+            "canadian_40f",
+            "current_report_8k_sparse",
+            "foreign_6k_sparse",
+            "amendment_restatement",
+            "no_inline_or_zero_fact_diagnostic"
+          ],
+          "not_ready_strata": [
+            "large_domestic_us_gaap",
+            "small_mid_domestic_us_gaap",
+            "foreign_private_ifrs_20f",
+            "canadian_40f",
+            "current_report_8k_sparse",
+            "foreign_6k_sparse",
+            "amendment_restatement",
+            "no_inline_or_zero_fact_diagnostic"
+          ],
+          "ready_strata": [],
+          "required_strata": [
+            "large_domestic_us_gaap",
+            "small_mid_domestic_us_gaap",
+            "foreign_private_ifrs_20f",
+            "canadian_40f",
+            "current_report_8k_sparse",
+            "foreign_6k_sparse",
+            "amendment_restatement",
+            "no_inline_or_zero_fact_diagnostic"
+          ],
+          "unknown_strata": []
+        }
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "sector_family_available_filer_activation_dimension",
+      "evidence": {
+        "available_reference_filer_count": 3,
+        "dimension_id": "sec_xbrl_sector_family_real_filer_validation_v1",
+        "full_gate_satisfied": true,
+        "ifrs_anchor_activation_passed": true,
+        "projection_row_shape_stable": true,
+        "raw_identity_redacted": true,
+        "status": "sector_family_real_filer_validation_satisfied",
+        "supporting_only_control_passed": true,
+        "universal_only_control_passed": true,
+        "us_gaap_bank_insurer_subgate_state": "validated",
+        "validated_available_family_ids": [
+          "banking",
+          "extractive",
+          "insurance"
+        ]
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": "broader_real_product_path_required_corpus_not_proven",
+      "criterion": "broader_real_product_path_corpus",
+      "evidence": {
+        "forms": {},
+        "issuer_hash_count": 0,
+        "real_filing_count": 0,
+        "required_forms": [
+          "10-K",
+          "10-Q",
+          "20-F",
+          "40-F",
+          "6-K",
+          "8-K"
+        ],
+        "required_issuer_hash_count": 15,
+        "required_real_filing_count": 30
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "arelle_sidecar_not_proven_as_selected_authority_for_all_supported_records",
+      "criterion": "arelle_sidecar_selected_for_supported_records",
+      "evidence": {
+        "records_with_arelle_sidecar_output": 0,
+        "records_with_selected_fact_authority_equal_to_sidecar": 0,
+        "supported_record_count": 0
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "real_corpus_product_path_validation_not_ready_across_matrix_chunks",
+      "criterion": "product_path_validation_readiness",
+      "evidence": {
+        "matrix_chunk_count": 0,
+        "ready_matrix_chunk_count": 0,
+        "records_with_handoff_export_prepare": 0,
+        "supported_record_count": 0,
+        "unexpected_blocked_or_degraded_count": 0
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "arelle_completeness_guard_failed_or_truncation_possible",
+      "criterion": "completeness_guard",
+      "evidence": {
+        "completeness_guard_failed_count": 0,
+        "independent_inline_fact_count": 0,
+        "resolved_fact_count": 0,
+        "unexpected_zero_inline_xbrl_count": 0
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "companyfacts_effective_value_correctness_not_proven_on_broader_corpus",
+      "criterion": "companyfacts_effective_value_correctness",
+      "evidence": {
+        "companyfacts_oracle_unavailable_count": 0,
+        "compared_count": 0,
+        "match_count": 0,
+        "match_rate": null,
+        "minimum_match_rate": 0.98,
+        "mismatch_count": 0,
+        "oracle": "primary_companyfacts_standard_taxonomy_accession_scope_non_dimensional_numeric_intersection"
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "redaction_and_non_admissions",
+      "evidence": {
+        "candidate_b_sec_routing_performed": false,
+        "cross_company_comparability_claimed": false,
+        "final_financial_statement_semantics_claimed": false,
+        "operator_surface_values_exposed": false
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "real_corpus_default_on_blocked",
+  "diagnostic_request_namespace_hash": "c8e58c12982ac6d48e2dcd08",
+  "fake_sec_client_used": false,
+  "gate_verdict": "FAIL_OR_INCONCLUSIVE",
+  "headline": "FAIL/INCONCLUSIVE: broader real-corpus SEC default-on path is blocked: real_corpus_product_path_live_preflight_not_satisfied, real_corpus_product_path_matrix_plan_not_satisfied, broader_real_product_path_required_corpus_not_proven.",
+  "live_sec_network_used": false,
+  "matrix_chunks": [],
+  "matrix_execution_plan": {
+    "blocked_reasons": [
+      "matrix_plan_required_for_selected_tranche"
+    ],
+    "chunk_count": 0,
+    "chunks": [],
+    "covered_strata": [],
+    "external_plan_used": false,
+    "missing_required_strata": [
+      "large_domestic_us_gaap",
+      "small_mid_domestic_us_gaap",
+      "foreign_private_ifrs_20f",
+      "canadian_40f",
+      "current_report_8k_sparse",
+      "foreign_6k_sparse",
+      "amendment_restatement",
+      "no_inline_or_zero_fact_diagnostic"
+    ],
+    "mode": "external_stratified_matrix_plan",
+    "paths_redacted": true,
+    "plan_path_marker": null,
+    "required_strata": [
+      "large_domestic_us_gaap",
+      "small_mid_domestic_us_gaap",
+      "foreign_private_ifrs_20f",
+      "canadian_40f",
+      "current_report_8k_sparse",
+      "foreign_6k_sparse",
+      "amendment_restatement",
+      "no_inline_or_zero_fact_diagnostic"
+    ],
+    "state": "blocked"
+  },
+  "next_slice": "sec_edgar_real_corpus_product_path_runner_live_execution_v1",
+  "non_goals_preserved": {
+    "candidate_b_sec_routing_performed": false,
+    "cross_company_comparability_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "gate_b_product_package_ui_redesign_performed": false,
+    "new_layer3_source_shape_created": false,
+    "operator_value_reveal_enabled": false,
+    "rag_vector_model_provider_auth_behavior_added": false,
+    "runtime_network_default_changed": false,
+    "sector_family_us_gaap_anchor_validation_remains_pending": false
+  },
+  "per_filing": [],
+  "per_matrix": [],
+  "preflight": {
+    "arelle_cache": {
+      "configured": false,
+      "inside_repo_or_onedrive": false,
+      "path_redacted": false
+    },
+    "arelle_cutover_current_default_enabled": false,
+    "arelle_python": {
+      "configured": false,
+      "inside_repo_or_onedrive": false,
+      "path_redacted": false
+    },
+    "blocked_reasons": [
+      "live_execution_not_requested",
+      "sec_user_agent_not_configured",
+      "arelle_environment_not_configured",
+      "arelle_python_unavailable",
+      "taxonomy_package_files_unavailable",
+      "arelle_cache_dir_unavailable"
+    ],
+    "live_network_default_changed": false,
+    "live_requested": false,
+    "missing_env_names": [
+      "SEC_XBRL_ARELLE_PYTHON",
+      "SEC_XBRL_ARELLE_TAXONOMY_PACKAGES",
+      "SEC_XBRL_ARELLE_CACHE_DIR"
+    ],
+    "required_arelle_env_configured": false,
+    "sec_rate_limit_per_second": 1,
+    "state": "blocked",
+    "taxonomy_packages": {
+      "configured": false,
+      "entry_count": 0,
+      "invalid_entry_count": 0,
+      "invalid_reasons": {},
+      "paths_redacted": true,
+      "valid_file_count": 0
+    },
+    "user_agent_configured": false
+  },
+  "redaction": {
+    "identity_hash_only": true,
+    "local_storage_roots_committed": false,
+    "raw_accessions_committed": false,
+    "raw_sec_urls_committed": false,
+    "raw_tickers_committed": false,
+    "raw_values_committed": false
+  },
+  "runtime_default_decision": {
+    "action": "keep_default_false",
+    "applied_to_config": false,
+    "current_default_enabled": false,
+    "gate_has_teeth": true,
+    "resulting_default_enabled": false
+  },
+  "schema_id": "diagnostics.sec_xbrl_real_corpus_product_runner.v1",
+  "sector_family_activation_validation": {
+    "arelle_invoked": false,
+    "available_dimension_passed": true,
+    "available_filer_dimension_state": "passed",
+    "available_reference_filer_count": 3,
+    "available_reference_results": [
+      {
+        "activation_anchor_concepts": [
+          "ifrs-full:CurrentDepositsFromCustomers",
+          "ifrs-full:GrossLoanCommitments",
+          "ifrs-full:InsuranceContractsLiabilityAsset",
+          "ifrs-full:InsuranceRevenue",
+          "ifrs-full:InterestIncomeForFinancialAssetsMeasuredAtAmortisedCost"
+        ],
+        "activation_anchor_family_ids": [
+          "banking",
+          "insurance"
+        ],
+        "activation_anchor_taxonomies": [
+          "ifrs-full"
+        ],
+        "activation_passed": true,
+        "activation_rule": "anchor_concepts_activate_supporting_concepts_do_not",
+        "actual_present_family_ids": [
+          "banking",
+          "insurance"
+        ],
+        "expected_present_family_ids": [
+          "banking",
+          "insurance"
+        ],
+        "presence_conditioned": true,
+        "projection_row_shape_hash": "b3421e065cf67b92d8e63be5",
+        "raw_identity_redacted": true,
+        "reference_profile_hash": "3100f3aad2875989e28e109e",
+        "reference_role": "available_ifrs_financial_services_activation_reference",
+        "reported_concept_count": 5,
+        "reported_concepts": [
+          "ifrs-full:InsuranceRevenue",
+          "ifrs-full:InsuranceContractsLiabilityAsset",
+          "ifrs-full:InterestIncomeForFinancialAssetsMeasuredAtAmortisedCost",
+          "ifrs-full:GrossLoanCommitments",
+          "ifrs-full:CurrentDepositsFromCustomers"
+        ],
+        "sic_used_as_gate": false,
+        "supporting_only_family_ids": [],
+        "taxonomy_profile": "ifrs-full",
+        "values_redacted": true
+      },
+      {
+        "activation_anchor_concepts": [
+          "ifrs-full:CurrentOreStockpiles",
+          "ifrs-full:ExpenseArisingFromExplorationForAndEvaluationOfMineralResources"
+        ],
+        "activation_anchor_family_ids": [
+          "extractive"
+        ],
+        "activation_anchor_taxonomies": [
+          "ifrs-full"
+        ],
+        "activation_passed": true,
+        "activation_rule": "anchor_concepts_activate_supporting_concepts_do_not",
+        "actual_present_family_ids": [
+          "extractive"
+        ],
+        "expected_present_family_ids": [
+          "extractive"
+        ],
+        "presence_conditioned": true,
+        "projection_row_shape_hash": "b3421e065cf67b92d8e63be5",
+        "raw_identity_redacted": true,
+        "reference_profile_hash": "2e3f28051a602f2b797f85f5",
+        "reference_role": "available_ifrs_extractive_activation_reference",
+        "reported_concept_count": 2,
+        "reported_concepts": [
+          "ifrs-full:ExpenseArisingFromExplorationForAndEvaluationOfMineralResources",
+          "ifrs-full:CurrentOreStockpiles"
+        ],
+        "sic_used_as_gate": false,
+        "supporting_only_family_ids": [],
+        "taxonomy_profile": "ifrs-full",
+        "values_redacted": true
+      },
+      {
+        "activation_anchor_concepts": [],
+        "activation_anchor_family_ids": [],
+        "activation_anchor_taxonomies": [],
+        "activation_passed": true,
+        "activation_rule": "anchor_concepts_activate_supporting_concepts_do_not",
+        "actual_present_family_ids": [],
+        "expected_present_family_ids": [],
+        "presence_conditioned": true,
+        "projection_row_shape_hash": "b3421e065cf67b92d8e63be5",
+        "raw_identity_redacted": true,
+        "reference_profile_hash": "cac74e81f80f84d53ca9afe3",
+        "reference_role": "available_universal_only_control_reference",
+        "reported_concept_count": 3,
+        "reported_concepts": [
+          "us-gaap:Assets",
+          "us-gaap:Liabilities",
+          "us-gaap:Revenues"
+        ],
+        "sic_used_as_gate": false,
+        "supporting_only_family_ids": [],
+        "taxonomy_profile": "us-gaap",
+        "values_redacted": true
+      }
+    ],
+    "dimension_id": "sec_xbrl_sector_family_real_filer_validation_v1",
+    "full_gate_satisfied": true,
+    "ifrs_anchor_activation_passed": true,
+    "live_network_used": false,
+    "pending_sub_gates": [],
+    "projection_row_shape": {
+      "public_row_key_count": 15,
+      "public_row_keys": [
+        "concepts",
+        "headline_canonical_defined",
+        "issuer_hash",
+        "legitimately_absent_count",
+        "oracle_absent_count",
+        "oracle_confirmed_count",
+        "period_class",
+        "primary_taxonomy",
+        "projected_count",
+        "provenance_complete_count",
+        "provenance_fields_present",
+        "sector_family_defined_count",
+        "sector_family_presence",
+        "statement_identity_residuals",
+        "universal_defined_count"
+      ],
+      "public_row_shape_hash": "b3421e065cf67b92d8e63be5",
+      "reference_row_shape_hashes": [
+        "b3421e065cf67b92d8e63be5",
+        "b3421e065cf67b92d8e63be5",
+        "b3421e065cf67b92d8e63be5"
+      ],
+      "stable_across_available_references": true,
+      "unique_row_shape_hash_count": 1
+    },
+    "raw_identity_redacted": true,
+    "runtime_defaults_changed": false,
+    "status": "sector_family_real_filer_validation_satisfied",
+    "supporting_only_control": {
+      "actual_present_family_ids": [],
+      "control_id": "supporting_only_interest_expense_control",
+      "expected_present_family_ids": [],
+      "expected_supporting_only_family_ids": [
+        "banking"
+      ],
+      "passed": true,
+      "reported_concepts": [
+        "us-gaap:InterestExpense"
+      ],
+      "supporting_only_family_ids": [
+        "banking"
+      ]
+    },
+    "supporting_only_control_passed": true,
+    "universal_only_control_passed": true,
+    "us_gaap_bank_insurer_subgate": {
+      "arelle_invoked": false,
+      "class_results": [
+        {
+          "accepted_sidecar_candidate_count": 1,
+          "activation_anchor_concepts_present": [
+            "us-gaap:Deposits"
+          ],
+          "annual_reference_candidate_count": 1,
+          "annual_reference_present": true,
+          "blocked_reasons": [],
+          "example_marker": "82b26edfab79d04a3b90daec",
+          "family_id": "banking",
+          "missing_activation_anchor_concepts": [],
+          "missing_supporting_headline_concepts": [
+            "us-gaap:InterestAndDividendIncomeOperating",
+            "us-gaap:InterestExpense"
+          ],
+          "passed": true,
+          "raw_identity_redacted": true,
+          "reference_class": "real_us_gaap_bank_filing",
+          "reported_qname_count": 621,
+          "sidecar_receipt_marker": "3ceb0b59b2fa6c5be56f81e7",
+          "source_artifact_marker": "a3ffb6fe47676879f796d26c",
+          "supporting_headline_concepts_present": [],
+          "values_redacted": true
+        },
+        {
+          "accepted_sidecar_candidate_count": 1,
+          "activation_anchor_concepts_present": [
+            "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
+            "us-gaap:PremiumsEarnedNet"
+          ],
+          "annual_reference_candidate_count": 1,
+          "annual_reference_present": true,
+          "blocked_reasons": [],
+          "example_marker": "194707a2c63438f2355f2628",
+          "family_id": "insurance",
+          "missing_activation_anchor_concepts": [],
+          "missing_supporting_headline_concepts": [],
+          "passed": true,
+          "raw_identity_redacted": true,
+          "reference_class": "real_us_gaap_insurer_filing",
+          "reported_qname_count": 660,
+          "sidecar_receipt_marker": "3f4c43a9e9e2030111a7d4c6",
+          "source_artifact_marker": "34888f4da119fa7c5c873024",
+          "supporting_headline_concepts_present": [],
+          "values_redacted": true
+        }
+      ],
+      "live_network_used": false,
+      "offline_storage_evidence": {
+        "arelle_invoked": false,
+        "blocked_reasons": [],
+        "connector_receipt_hash_basis_validated": true,
+        "connector_reference_count": 32,
+        "distinct_source_artifact_marker_count": 2,
+        "live_network_used": false,
+        "live_source_artifact_receipt_hash_basis_deferred": true,
+        "nested_source_artifact_receipt_hash_basis_validated": true,
+        "offline_storage_used": true,
+        "paths_redacted": true,
+        "raw_identity_redacted": true,
+        "required_distinct_source_artifact_count": 2,
+        "sidecar_receipt_hash_basis_validated": true,
+        "sidecar_reference_count": 30,
+        "state": "passed",
+        "storage_dir_marker": "a26c56586d12f29eb1bc7708",
+        "values_redacted": true
+      },
+      "operator_action_code": "operator_offline_us_gaap_bank_insurer_filing_acquisition_satisfied",
+      "raw_identity_redacted": true,
+      "required_activation_anchor_concepts": [
+        "us-gaap:Deposits",
+        "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
+        "us-gaap:PremiumsEarnedNet"
+      ],
+      "required_reference_classes": [
+        "real_us_gaap_bank_filing",
+        "real_us_gaap_insurer_filing"
+      ],
+      "runtime_defaults_changed": false,
+      "state": "validated",
+      "sub_gate_id": "us_gaap_bank_insurer_anchor_validation",
+      "supporting_headline_concepts_tracked": [
+        "us-gaap:InterestAndDividendIncomeOperating",
+        "us-gaap:InterestExpense"
+      ],
+      "validated": true,
+      "validated_family_ids": [
+        "banking",
+        "insurance"
+      ],
+      "values_redacted": true
+    },
+    "us_gaap_bank_insurer_subgate_state": "validated",
+    "validated_available_family_ids": [
+      "banking",
+      "extractive",
+      "insurance"
+    ],
+    "values_redacted": true
+  },
+  "sector_family_evidence_provenance": {
+    "live_matrix_storage_marker": null,
+    "operator_supplied_sector_family_storage": true,
+    "paths_redacted": true,
+    "provenance_mode": "sector_family_offline_only_product_gate_blocked",
+    "raw_local_paths_committed": false,
+    "sector_family_offline_storage_marker": "a26c56586d12f29eb1bc7708",
+    "storage_markers_match": false
+  },
+  "storage_dir_marker": null,
+  "storage_dir_paths_redacted": true,
+  "summary": {
+    "blocked_matrix_chunk_count": 0,
+    "blocked_or_degraded_record_count": 0,
+    "companyfacts_oracle_unavailable_count": 0,
+    "companyfacts_value_compared_count": 0,
+    "companyfacts_value_compared_count_period_aware": 0,
+    "companyfacts_value_match_count": 0,
+    "companyfacts_value_match_count_period_aware": 0,
+    "companyfacts_value_match_rate": null,
+    "companyfacts_value_match_rate_period_aware": null,
+    "companyfacts_value_mismatch_count": 0,
+    "companyfacts_value_mismatch_count_period_aware": 0,
+    "completeness_guard_failed_count": 0,
+    "delivery_ready_matrix_chunk_count": 0,
+    "durable_delivery_archive_ready_matrix_chunk_count": 0,
+    "failure_reasons": {},
+    "filings_with_invalid_taxonomy_package_entries": 0,
+    "forms": {},
+    "independent_inline_fact_count": 0,
+    "issuer_hash_count": 0,
+    "matrix_chunk_count": 0,
+    "minimum_companyfacts_value_match_rate": 0.98,
+    "operator_inspection_ready_matrix_chunk_count": 0,
+    "operator_product_surface_ready_matrix_chunk_count": 0,
+    "operator_surface_values_exposed": false,
+    "ready_matrix_chunk_count": 0,
+    "real_filing_count": 0,
+    "records_with_arelle_sidecar_output": 0,
+    "records_with_handoff_export_prepare": 0,
+    "records_with_selected_fact_authority_equal_to_sidecar": 0,
+    "required_forms": [
+      "10-K",
+      "10-Q",
+      "20-F",
+      "40-F",
+      "6-K",
+      "8-K"
+    ],
+    "required_forms_present": false,
+    "required_issuer_hash_count": 15,
+    "resolved_fact_count": 0,
+    "strata_readiness": {
+      "all_required_strata_ready": false,
+      "blocked_strata": [],
+      "by_stratum": {
+        "amendment_restatement": {
+          "blocked_matrix_chunk_count": 0,
+          "matrix_chunk_count": 0,
+          "matrix_ref_hashes": [],
+          "ready_matrix_chunk_count": 0
+        },
+        "canadian_40f": {
+          "blocked_matrix_chunk_count": 0,
+          "matrix_chunk_count": 0,
+          "matrix_ref_hashes": [],
+          "ready_matrix_chunk_count": 0
+        },
+        "current_report_8k_sparse": {
+          "blocked_matrix_chunk_count": 0,
+          "matrix_chunk_count": 0,
+          "matrix_ref_hashes": [],
+          "ready_matrix_chunk_count": 0
+        },
+        "foreign_6k_sparse": {
+          "blocked_matrix_chunk_count": 0,
+          "matrix_chunk_count": 0,
+          "matrix_ref_hashes": [],
+          "ready_matrix_chunk_count": 0
+        },
+        "foreign_private_ifrs_20f": {
+          "blocked_matrix_chunk_count": 0,
+          "matrix_chunk_count": 0,
+          "matrix_ref_hashes": [],
+          "ready_matrix_chunk_count": 0
+        },
+        "large_domestic_us_gaap": {
+          "blocked_matrix_chunk_count": 0,
+          "matrix_chunk_count": 0,
+          "matrix_ref_hashes": [],
+          "ready_matrix_chunk_count": 0
+        },
+        "no_inline_or_zero_fact_diagnostic": {
+          "blocked_matrix_chunk_count": 0,
+          "matrix_chunk_count": 0,
+          "matrix_ref_hashes": [],
+          "ready_matrix_chunk_count": 0
+        },
+        "small_mid_domestic_us_gaap": {
+          "blocked_matrix_chunk_count": 0,
+          "matrix_chunk_count": 0,
+          "matrix_ref_hashes": [],
+          "ready_matrix_chunk_count": 0
+        }
+      },
+      "missing_strata": [
+        "large_domestic_us_gaap",
+        "small_mid_domestic_us_gaap",
+        "foreign_private_ifrs_20f",
+        "canadian_40f",
+        "current_report_8k_sparse",
+        "foreign_6k_sparse",
+        "amendment_restatement",
+        "no_inline_or_zero_fact_diagnostic"
+      ],
+      "not_ready_strata": [
+        "large_domestic_us_gaap",
+        "small_mid_domestic_us_gaap",
+        "foreign_private_ifrs_20f",
+        "canadian_40f",
+        "current_report_8k_sparse",
+        "foreign_6k_sparse",
+        "amendment_restatement",
+        "no_inline_or_zero_fact_diagnostic"
+      ],
+      "ready_strata": [],
+      "required_strata": [
+        "large_domestic_us_gaap",
+        "small_mid_domestic_us_gaap",
+        "foreign_private_ifrs_20f",
+        "canadian_40f",
+        "current_report_8k_sparse",
+        "foreign_6k_sparse",
+        "amendment_restatement",
+        "no_inline_or_zero_fact_diagnostic"
+      ],
+      "unknown_strata": []
+    },
+    "supported_record_count": 0,
+    "taxonomy_package_invalid_count": 0,
+    "unexpected_blocked_or_degraded_count": 0,
+    "unexpected_zero_inline_xbrl_count": 0
+  },
+  "target": "sec_edgar_real_corpus_product_path_runner_v1"
+}
