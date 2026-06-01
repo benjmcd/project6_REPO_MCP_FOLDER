@@ -9,6 +9,7 @@ from typing import Any, Iterable, Mapping
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-default-on-admission-restatement-report.json")
+NEXT_AFTER_DEFAULT_ON_RUNTIME = "sec_xbrl_default_on_nonlocal_production_readiness_design_v1"
 
 DEFAULT_REQUIRED_REPORTS = {
     "default_on_gate": Path("diagnostics/assessment/sec-xbrl-default-on-gate-report.json"),
@@ -469,7 +470,7 @@ def build_report(*, source_root: Path, report_paths: Mapping[str, Path]) -> dict
     )
     report["headline"] = _headline(report["decision"], report["blocking_reasons"], report["conflicting_reasons"])
     report["next_slice"] = (
-        "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation"
+        NEXT_AFTER_DEFAULT_ON_RUNTIME
         if report["superseded_by_default_on_runtime"]
         else
         "sec_xbrl_default_on_runtime_design_v1"
