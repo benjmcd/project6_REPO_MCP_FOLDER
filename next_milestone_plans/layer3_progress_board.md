@@ -1,5 +1,47 @@
 # Layer3 Progress Board
 
+## SEC XBRL Nonlocal Production-Readiness Gate
+
+Milestone:
+`sec_xbrl_default_on_nonlocal_production_readiness_gate_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1319-nonlocal-production-readiness.md`.
+
+Diagnostic/report:
+`diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate.py` and
+`diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json`.
+
+Status: branch-local Tier-1 validate-only diagnostic/report/test gate on
+`codex/secxbrl-nonlocal-readiness-gate`.
+
+Scope: prove current default-on SEC XBRL runtime evidence remains clean, prove
+nonlocal proxy guardrails are still fail-closed, and refuse to admit nonlocal
+production readiness unless a server/deployment-owned redacted authority packet
+is supplied. The committed report is intentionally blocked with
+`nonlocal_production_readiness_authority_packet_missing`.
+
+Non-goals: no runtime behavior, config default change, schema, `models.py`,
+Alembic migration, durable persistence, backend API/UI, rendered control,
+operator workflow, source acquisition, Arelle subprocess invocation, value
+reveal default-on, export/delivery, provider/connector dispatch, raw runtime
+artifact, final statement semantics, cross-company comparability, or production
+readiness behavior.
+
+Current report: `decision: nonlocal_production_readiness_blocked`,
+`blocking_reasons: [nonlocal_production_readiness_authority_packet_missing]`,
+`production_readiness_claimed: false`.
+
+Verification: focused gate/default-on/nonlocal tests pass with `30 passed, 249
+deselected, 3 warnings`; full SEC XBRL suite passes with `322 passed, 4
+warnings`; target-selection frozen check, progress check, py_compile, changed
+JSON parse, UTF-8-SIG report/source-report validation over `44` SEC-like
+reports, committed SEC XBRL report redaction/residual scan, and
+`git diff --check` pass.
+
+Next exact posture:
+`sec_xbrl_nonlocal_deployment_authority_packet_or_in_app_auth_boundary_v1`.
+
 ## SEC XBRL Nonlocal Production-Readiness Design
 
 Milestone:

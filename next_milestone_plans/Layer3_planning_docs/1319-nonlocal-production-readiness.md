@@ -308,14 +308,67 @@ Docs-only validation on branch
 No Python runtime or test file was touched by this design pass, so
 `py_compile` is not applicable to the branch-local diff.
 
+## Gate Implementation Follow-Up
+
+Branch `codex/secxbrl-nonlocal-readiness-gate` implements the selected
+validate-only gate as:
+
+- `diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate.py`;
+- `diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json`;
+- `backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py`.
+
+The committed report is intentionally blocked:
+
+- `decision: nonlocal_production_readiness_blocked`;
+- `blocking_reasons:
+  [nonlocal_production_readiness_authority_packet_missing]`;
+- current default-on runtime evidence remains clean;
+- nonlocal proxy guardrails remain fail-closed;
+- value reveal, controlled submit, raw value store, source acquisition, Arelle
+  execution, export/delivery, provider dispatch, schema, persistence, API/UI,
+  and production-readiness behavior remain non-admitted.
+
+This is the expected outcome when no server/deployment-owned redacted authority
+packet is supplied. The gate may accept a future packet only if it contains the
+required redacted fields, passes raw-authority scans, and still performs no
+runtime enablement.
+
+Branch-local gate verification on
+`codex/secxbrl-nonlocal-readiness-gate`:
+
+- Focused gate/default-on/nonlocal tests:
+  `python -m pytest ./backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py
+  ./backend/tests/test_layer3_api.py -q -k "nonlocal_production_readiness_gate
+  or deployment_profile or default_arelle_cutover or arelle_sidecar or
+  default_on or value_reveal"`
+  - PASS: `30 passed, 249 deselected, 3 warnings`.
+- Full SEC XBRL suite:
+  `python -m pytest <28 backend/tests/test_sec_xbrl*.py files> -q`
+  - PASS: `322 passed, 4 warnings`.
+- `python ./tools/l3-target-selection-validate.py --expect frozen`
+  - PASS.
+- `python ./tools/l3-progress-check.py`
+  - PASS.
+- `python -m py_compile` over the touched diagnostic and test file:
+  - PASS.
+- UTF-8-SIG JSON/source-report validation:
+  - PASS: `44` SEC-like reports parsed; `0` missing or external
+    `source_reports`.
+- Committed SEC XBRL report redaction/residual scan:
+  - PASS: `44` SEC-like reports; `0` raw identity/path/SEC URL/accession hits;
+    `0` nonzero residual-magnitude hits.
+- `git diff --check`
+  - PASS.
+
 ## Next Posture
 
-Next safe implementation lane:
+Next safe handoff lane after this validate-only gate:
 
-`sec_xbrl_default_on_nonlocal_production_readiness_gate_v1`
+`sec_xbrl_nonlocal_deployment_authority_packet_or_in_app_auth_boundary_v1`
 
-That lane should be a validate-only diagnostic/report/test gate unless the
-operator explicitly authorizes a broader Tier-2 implementation. It should not
+That lane should either provide a server/deployment-owned redacted authority
+packet for the existing gate or choose a separate in-app auth/security design
+before nonlocal production-readiness admission is attempted. It must not
 implement export/delivery, provider dispatch, source acquisition, Arelle
 execution, schema/persistence, value reveal default-on, or production
-enablement.
+enablement unless separately authorized.
