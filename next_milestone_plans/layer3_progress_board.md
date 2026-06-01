@@ -9762,7 +9762,23 @@ The design keeps the first workflow slice narrow: persist review authority, allo
 
 Implementation proof requirements: exact Tier-2 surfaces, focused model/service tests, migration upgrade/downgrade or equivalent project-standard migration proof, missing/empty/not-ready packet fail-closed proof, raw value/identity/accession/period-date/path/SEC URL/operator-contact/residual-magnitude rejection, statement-packet-set binding proof, idempotent replay for `client_request_id` and `workflow_basis_hash`, partial-write rollback, redaction scan, JSON validation, progress checks, and `git diff --check`.
 
-Next exact posture: `sec_xbrl_operator_review_workflow_control_envelope_v1_tier2_risk_assessed_implementation`.
+The operator-review workflow control-envelope implementation entry is selected below.
+
+## SEC XBRL Operator Review Workflow Implementation
+
+Milestone: `sec_xbrl_operator_review_workflow_control_envelope_v1`.
+
+Implementation doc: `next_milestone_plans/Layer3_planning_docs/1291-operator-review-workflow-impl.md`.
+
+Status: `tier2_risk_assessed_schema_materializer_implemented`. This slice lands the selected first implementation from `1290-operator-review-workflow.md`: one additive redacted operator-review workflow table plus a deterministic owner service over existing persisted statement-packet authority. The Tier-2 surfaces are `backend/app/models/models.py`, `backend/app/models/__init__.py`, Alembic migration `backend/alembic/versions/0040_layer3_sec_xbrl_operator_review_workflow.py`, and service `backend/app/services/layer3_sec_xbrl_operator_review_workflow.py`.
+
+Focused proof: `backend/tests/test_sec_xbrl_operator_review_workflow.py` covers metadata registration, migration declaration, idempotent replay, missing/empty/not-ready packet rejection, raw local path rejection, residual-magnitude rejection, and no partial workflow rows after invalid input. Latest branch-local focused result: `10 passed`.
+
+Containment: no API route, rendered UI, browser control, submitted operator review decision, delivery/export, source acquisition, live SEC network, Arelle invocation, value reveal, persisted raw values, raw issuer identity, raw accessions, raw period dates, raw resolved fact authorities, SEC URLs, local paths, residual magnitude rows, operator contact fields, default-on behavior, production-readiness claim, or final financial-statement semantics claim.
+
+Rollback/containment: the migration downgrade drops only `l3_sec_xbrl_operator_review_workflow` plus its indexes; the owner service writes in one transaction and rolls back invalid input without admitting partial workflow rows.
+
+Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_workflow_status_api_v1`.
 
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
