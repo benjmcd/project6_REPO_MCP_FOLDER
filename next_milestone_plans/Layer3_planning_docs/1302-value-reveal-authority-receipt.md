@@ -4,11 +4,13 @@ Milestone: `sec_xbrl_value_reveal_authority_receipt_v1`
 
 Base authority: `project6-origin/main` at `ad1b2e3e1e5ee94feda0c409d2e35776fca20f32`
 
+Merged authority: `project6-origin/main` at `0ce24f713fd3453e97810d56cfdad4d0176abbed`
+
 Prior milestone: `next_milestone_plans/Layer3_planning_docs/1301-value-reveal-authority-design.md`
 
 ## Status
 
-Branch-local Tier-2 implementation entry.
+Merged current-main Tier-2 implementation entry.
 
 This slice implements only a server-owned authority receipt that bridges an approved SEC
 XBRL operator-review decision to a later explicit value-reveal submit. It does not reveal
@@ -93,7 +95,7 @@ separate design and containment plan.
 
 ## Verification
 
-Current branch-local results:
+Current-main post-merge results:
 
 - `python -m pytest .\backend\tests\test_sec_xbrl_operator_review_workflow.py -q`
   - `61 passed, 3 warnings`
@@ -106,13 +108,13 @@ Current branch-local results:
 - `python -m py_compile` on touched Python files
   - PASS
 - JSON validation with `utf-8-sig`
-  - changed manifests parse; 41 committed SEC XBRL report JSON files parse
+  - changed manifests parse; 53 committed SEC XBRL report JSON files parse
 - redaction scan over committed SEC XBRL report JSON files
-  - PASS; no raw accession, local path, SEC URL, or email hits
+  - PASS over 53 reports; no raw accession, local path, SEC URL, or email hits
 - residual-magnitude scan over committed SEC XBRL report JSON files
-  - PASS; no nonzero residual-magnitude hits
+  - PASS over 53 reports; no nonzero residual-magnitude hits
 - `git diff --check`
-  - PASS; only Git line-ending warnings
+  - PASS
 
 ## Next Slice
 
