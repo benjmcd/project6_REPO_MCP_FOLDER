@@ -10217,6 +10217,32 @@ claim.
 Next exact posture after selection:
 `sec_xbrl_default_on_admission_restatement_v1`.
 
+## SEC XBRL Default-On Admission Restatement
+
+Milestone: `sec_xbrl_default_on_admission_restatement_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1314-default-on-admission-restatement.md`.
+
+Status: branch-local Tier-1 validate-only diagnostic/report/test entry.
+
+Scope: implement the selected default-on admission evidence restatement as a
+committed-report diagnostic over current-main evidence only. The diagnostic
+emits `default_on_admission_restatement_still_blocked` because the required
+committed real-corpus runner report is missing and several committed source
+reports still reference that missing artifact. It does not infer readiness from
+summary metrics alone.
+
+Non-goals: no runtime default-on behavior, config default change, value-reveal
+default enablement, live SEC network, source acquisition, Arelle invocation,
+schema, `models.py`, Alembic migration, durable persistence, backend API/UI
+change, export/delivery, operator-authentication claim, production-readiness
+claim, cross-company comparability claim, or final financial-statement semantics
+claim.
+
+Next exact posture after restatement:
+`resolve_sec_xbrl_real_corpus_runner_report_evidence_gap_before_runtime_design`.
+
 ## SEC XBRL Rendered Value UI Proof
 
 Milestone: `sec_xbrl_rendered_controlled_value_reveal_ui_proof_v1`.
