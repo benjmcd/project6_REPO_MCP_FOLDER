@@ -85,6 +85,8 @@ materialization coverage.
 After this slice lands and is verified on current main, the next design lane is
 `sec_xbrl_operator_review_workflow_rendered_read_only_ui_freeze_v1`.
 
+The freeze is tracked in `next_milestone_plans/Layer3_planning_docs/1293-ui-freeze.md`.
+
 That lane may freeze a rendered read-only `/review/layer3` status panel over the
 status API. It must not submit operator decisions, open workflows, reveal values,
 deliver/export packets, invoke SEC/Arelle/source acquisition, change defaults, or
