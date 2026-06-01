@@ -400,6 +400,9 @@ const SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_MODE = 'sec_xbrl_controlled_value_
 const SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_OPERATOR_DECISION = 'submit_explicit_sec_xbrl_value_reveal_from_authority_receipt';
 const SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENDPOINT = '/sec-xbrl/value-reveal/submit';
 const SEC_XBRL_CONTROLLED_VALUE_REVEAL_STATUS_ENDPOINT_PREFIX = '/sec-xbrl/value-reveal/submit/status';
+const SEC_XBRL_LOWERCASE_SHA256_RE = /^[0-9a-f]{64}$/;
+const SEC_XBRL_RAW_ACCESSION_RE = /\b\d{10}-\d{2}-\d{6}\b/;
+const SEC_XBRL_RAW_CIK_RE = /\b\d{10}\b/;
 const SEC_XBRL_CONTROLLED_VALUE_REVEAL_BLOCKED_RENDERED_CONTROLS = [
     'batch_value_reveal',
     'paginated_value_reveal',
@@ -10673,7 +10676,7 @@ function secXbrlValueRevealAuthorityPreparePayload() {
     if (!values.decisionId || !values.decisionBasisHash) {
         throw new Error('sec_xbrl_value_reveal_authority_decision_required');
     }
-    if (!/^[0-9a-fA-F]{64}$/.test(values.decisionBasisHash)) {
+    if (!SEC_XBRL_LOWERCASE_SHA256_RE.test(values.decisionBasisHash)) {
         throw new Error('sec_xbrl_value_reveal_authority_decision_basis_hash_must_be_sha256');
     }
     if (secXbrlValueRevealAttestationLooksRaw(values.operatorAttestation)) {
@@ -10698,7 +10701,7 @@ function secXbrlControlledValueRevealSubmitPayload() {
     if (!values.authorityReceiptId || !values.authorityBasisHash) {
         throw new Error('sec_xbrl_controlled_value_reveal_authority_required');
     }
-    if (!/^[0-9a-fA-F]{64}$/.test(values.authorityBasisHash)) {
+    if (!SEC_XBRL_LOWERCASE_SHA256_RE.test(values.authorityBasisHash)) {
         throw new Error('sec_xbrl_controlled_value_reveal_authority_basis_hash_must_be_sha256');
     }
     if (!values.operatorRevealConfirmation) {
@@ -10727,7 +10730,10 @@ function secXbrlControlledValueRevealStatusPath() {
     if (!values.submitReceiptId) {
         throw new Error('sec_xbrl_controlled_value_reveal_status_receipt_required');
     }
-    if (/[\\/\s]/.test(values.submitReceiptId)) {
+    if (
+        /[\\/\s]/.test(values.submitReceiptId)
+        || secXbrlControlledValueRevealStatusReceiptIdLooksRaw(values.submitReceiptId)
+    ) {
         throw new Error('sec_xbrl_controlled_value_reveal_status_receipt_id_invalid');
     }
     return `${SEC_XBRL_CONTROLLED_VALUE_REVEAL_STATUS_ENDPOINT_PREFIX}/${encodeURIComponent(values.submitReceiptId)}`;
@@ -11336,7 +11342,8 @@ function secXbrlValueRevealAttestationLooksRaw(value) {
     const text = String(value || '').trim();
     return Boolean(
         /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(text)
-        || /\b\d{10}-\d{2}-\d{6}\b/.test(text)
+        || SEC_XBRL_RAW_ACCESSION_RE.test(text)
+        || SEC_XBRL_RAW_CIK_RE.test(text)
         || /\b\d{4}-\d{2}-\d{2}\b/.test(text)
         || /\b\d+\.\d+\b/.test(text)
         || /https?:\/\/(?:www\.)?sec\.gov/i.test(text)
@@ -11345,11 +11352,19 @@ function secXbrlValueRevealAttestationLooksRaw(value) {
     );
 }
 
+function secXbrlControlledValueRevealStatusReceiptIdLooksRaw(value) {
+    const text = String(value || '').trim();
+    return Boolean(
+        SEC_XBRL_RAW_ACCESSION_RE.test(text)
+        || SEC_XBRL_RAW_CIK_RE.test(text)
+    );
+}
+
 function canPrepareSecXbrlValueRevealAuthority() {
     const values = secXbrlValueRevealAuthorityPrepareInputValues();
     return Boolean(
         values.decisionId
-        && /^[0-9a-fA-F]{64}$/.test(values.decisionBasisHash)
+        && SEC_XBRL_LOWERCASE_SHA256_RE.test(values.decisionBasisHash)
         && !State.secXbrlValueRevealAuthorityPreparePending
     );
 }
@@ -11358,7 +11373,7 @@ function canSubmitSecXbrlControlledValueReveal() {
     const values = secXbrlControlledValueRevealSubmitInputValues();
     return Boolean(
         values.authorityReceiptId
-        && /^[0-9a-fA-F]{64}$/.test(values.authorityBasisHash)
+        && SEC_XBRL_LOWERCASE_SHA256_RE.test(values.authorityBasisHash)
         && values.operatorRevealConfirmation
         && (!values.maxRecords || /^[1-9]\d{0,2}$|^1000$/.test(values.maxRecords))
         && !State.secXbrlControlledValueRevealSubmitPending
@@ -11370,6 +11385,7 @@ function canInspectSecXbrlControlledValueRevealStatus() {
     return Boolean(
         values.submitReceiptId
         && !/[\\/\s]/.test(values.submitReceiptId)
+        && !secXbrlControlledValueRevealStatusReceiptIdLooksRaw(values.submitReceiptId)
         && !State.secXbrlControlledValueRevealStatusPending
     );
 }
@@ -11388,6 +11404,30 @@ function clearSecXbrlValueRevealAttestationInput() {
         attestationInput.value = '';
     }
     State.secXbrlValueRevealAuthorityPrepareInput.operatorAttestation = '';
+}
+
+function applySecXbrlControlledValueRevealAuthorityInputState(authority) {
+    const maxRecordsInput = document.getElementById('sec-xbrl-controlled-value-reveal-max-records');
+    const nextSubmitInput = {
+        ...State.secXbrlControlledValueRevealSubmitInput,
+        authorityReceiptId: authority.sec_xbrl_value_reveal_authority_receipt_id || '',
+        authorityBasisHash: authority.authority_basis_hash || '',
+        operatorRevealConfirmation: false,
+        maxRecords: formInputValue(maxRecordsInput, State.secXbrlControlledValueRevealSubmitInput.maxRecords),
+    };
+    State.secXbrlControlledValueRevealSubmitInput = nextSubmitInput;
+    State.secXbrlControlledValueRevealStatusInput = {
+        ...State.secXbrlControlledValueRevealStatusInput,
+        submitReceiptId: '',
+    };
+    const authorityReceiptInput = document.getElementById('sec-xbrl-controlled-value-reveal-authority-receipt-id');
+    const authorityBasisHashInput = document.getElementById('sec-xbrl-controlled-value-reveal-authority-basis-hash');
+    const confirmationInput = document.getElementById('sec-xbrl-controlled-value-reveal-confirmation');
+    const statusReceiptInput = document.getElementById('sec-xbrl-controlled-value-reveal-status-receipt-id');
+    if (authorityReceiptInput) authorityReceiptInput.value = nextSubmitInput.authorityReceiptId;
+    if (authorityBasisHashInput) authorityBasisHashInput.value = nextSubmitInput.authorityBasisHash;
+    if (confirmationInput) confirmationInput.checked = false;
+    if (statusReceiptInput) statusReceiptInput.value = '';
 }
 
 function markSecXbrlOperatorReviewDecisionAuthorityInputTouched(inputId) {
@@ -20404,11 +20444,11 @@ async function prepareSecXbrlValueRevealAuthority(event) {
         const authority = await postJson(SEC_XBRL_VALUE_REVEAL_AUTHORITY_ENDPOINT, payload);
         State.secXbrlValueRevealAuthorityPrepare = authority;
         State.secXbrlValueRevealAuthorityPrepareError = null;
-        State.secXbrlControlledValueRevealSubmitInput = {
-            ...State.secXbrlControlledValueRevealSubmitInput,
-            authorityReceiptId: authority.sec_xbrl_value_reveal_authority_receipt_id || '',
-            authorityBasisHash: authority.authority_basis_hash || '',
-        };
+        State.secXbrlControlledValueRevealSubmit = null;
+        State.secXbrlControlledValueRevealSubmitError = null;
+        State.secXbrlControlledValueRevealStatus = null;
+        State.secXbrlControlledValueRevealStatusError = null;
+        applySecXbrlControlledValueRevealAuthorityInputState(authority);
         addEvent('SEC XBRL value-reveal authority prepared through server-owned decision authority.');
     } catch (error) {
         State.secXbrlValueRevealAuthorityPrepare = null;
