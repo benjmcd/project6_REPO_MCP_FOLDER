@@ -3,13 +3,15 @@
   "criteria": [
     {
       "blocked_reason": null,
-      "criterion": "committed_defaults_remain_off",
+      "criterion": "committed_safety_defaults_preserved",
       "evidence": {
-        "config_defaults_off": true,
+        "config_defaults_off": false,
         "config_file": "backend/app/core/config.py",
-        "default_posture_decision": "explicit_operator_only_default_off_selected",
+        "config_safety_defaults_off": true,
+        "default_posture_decision": "explicit_operator_only_default_off_superseded_by_default_on_runtime",
         "default_posture_report": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json",
-        "selected_posture": "explicit_operator_only_default_off"
+        "selected_posture": "explicit_operator_only_default_off",
+        "superseded_by_default_on_runtime": true
       },
       "state": "passed"
     },
@@ -100,6 +102,11 @@
       "criterion": "governed_value_reveal_still_proven",
       "evidence": {
         "attempt_count": 2,
+        "committed_default_posture": {
+          "arelle_fact_authority_cutover_default_enabled": false,
+          "arelle_value_reveal_default_enabled": false,
+          "sec_live_network_default_enabled": false
+        },
         "decision": "value_reveal_live_authority_and_operator_exercise_proven_for_two_bounded_filings",
         "source_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json"
       },

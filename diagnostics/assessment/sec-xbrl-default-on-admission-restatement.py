@@ -264,11 +264,20 @@ def build_report(*, source_root: Path, report_paths: Mapping[str, Path]) -> dict
             "default_on_admission_restatement_sidecar_selection_not_reproven",
         ),
         _criterion(
-            "runtime_default_enablement_remains_separate_and_off",
-            _runtime_default_remains_off(sources, live_defaults, runtime, runtime_posture, selected_posture, operator_policy),
+            "runtime_default_enablement_posture_recognized",
+            _runtime_default_posture_recognized(
+                sources,
+                live_defaults,
+                runtime,
+                runtime_posture,
+                selected_posture,
+                operator_policy,
+            ),
             {
                 "config_defaults_off": _config_defaults_off(sources.get("config", "")),
+                "config_safety_defaults_off": _config_safety_defaults_off(sources.get("config", "")),
                 "live_proof_defaults_off": _live_proof_defaults_off(live_defaults),
+                "live_proof_safety_defaults_off": _live_proof_safety_defaults_off(live_defaults),
                 "runtime_decision": runtime.get("decision"),
                 "runtime_default_cutover_enabled": runtime_posture.get("default_cutover_enabled"),
                 "default_posture": selected_posture.get("posture"),
@@ -392,7 +401,7 @@ def build_report(*, source_root: Path, report_paths: Mapping[str, Path]) -> dict
             },
             "runtime_enablement": {
                 "ready_for_default_on_may_be_true": default_on_gate.get("ready_for_default_on"),
-                "runtime_default_on_enabled": False,
+                "runtime_default_on_enabled": _runtime_default_enabled(runtime, runtime_posture),
                 "runtime_decision": runtime.get("decision"),
                 "default_posture": selected_posture.get("posture"),
                 "current_broader_real_product_runner_authority": _current_broader_real_product_runner_authority(
@@ -446,12 +455,23 @@ def build_report(*, source_root: Path, report_paths: Mapping[str, Path]) -> dict
         )
     )
     report["blocking_reasons"] = _blocking_reasons(report["criteria"])
-    report["decision"] = _decision(report["blocking_reasons"], report["conflicting_reasons"])
+    runtime_default_enabled = _runtime_default_enabled(runtime, runtime_posture)
+    report["decision"] = _decision(
+        report["blocking_reasons"],
+        report["conflicting_reasons"],
+        runtime_default_enabled=runtime_default_enabled,
+    )
     report["ready_for_default_on_runtime_design"] = report["decision"] == (
         "default_on_admission_restatement_ready_for_runtime_design"
     )
+    report["superseded_by_default_on_runtime"] = report["decision"] == (
+        "default_on_admission_restatement_superseded_by_default_on_runtime"
+    )
     report["headline"] = _headline(report["decision"], report["blocking_reasons"], report["conflicting_reasons"])
     report["next_slice"] = (
+        "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation"
+        if report["superseded_by_default_on_runtime"]
+        else
         "sec_xbrl_default_on_runtime_design_v1"
         if report["ready_for_default_on_runtime_design"]
         else "sec_xbrl_default_on_admission_restatement_v1"
@@ -533,7 +553,7 @@ def _sidecar_selection_restated(
     )
 
 
-def _runtime_default_remains_off(
+def _runtime_default_posture_recognized(
     sources: Mapping[str, str],
     live_defaults: Mapping[str, Any],
     runtime: Mapping[str, Any],
@@ -541,7 +561,7 @@ def _runtime_default_remains_off(
     selected_posture: Mapping[str, Any],
     operator_policy: Mapping[str, Any],
 ) -> bool:
-    return (
+    default_off = (
         _config_defaults_off(sources.get("config", ""))
         and _live_proof_defaults_off(live_defaults)
         and runtime.get("decision") == "default_on_runtime_disabled_by_governance_remediation"
@@ -551,6 +571,24 @@ def _runtime_default_remains_off(
         and selected_posture.get("arelle_fact_authority_cutover_default_enabled") is False
         and selected_posture.get("broader_reliability_admission_converted_to_runtime_default") is False
         and operator_policy.get("runtime_default_change_allowed") is False
+    )
+    default_on = (
+        _config_safety_defaults_off(sources.get("config", ""))
+        and _live_proof_safety_defaults_off(live_defaults)
+        and _runtime_default_enabled(runtime, runtime_posture)
+        and selected_posture.get("posture") == "explicit_operator_only_default_off"
+        and selected_posture.get("arelle_fact_authority_cutover_default_on_supersedes_selected_posture") is True
+        and selected_posture.get("arelle_value_reveal_default_enabled") is False
+        and operator_policy.get("runtime_default_change_allowed") is False
+    )
+    return default_off or default_on
+
+
+def _runtime_default_enabled(runtime: Mapping[str, Any], runtime_posture: Mapping[str, Any]) -> bool:
+    return (
+        runtime.get("decision") == "default_on_runtime_enabled"
+        and runtime_posture.get("default_cutover_enabled") is True
+        and runtime_posture.get("operator_value_reveal_default_enabled") is False
     )
 
 
@@ -643,6 +681,7 @@ def _conflicting_reasons(
     if (
         runtime_posture.get("default_cutover_enabled") is True
         and selected_posture.get("arelle_fact_authority_cutover_default_enabled") is False
+        and runtime.get("decision") != "default_on_runtime_enabled"
     ):
         conflicts.append(
             {
@@ -828,11 +867,18 @@ def _blocking_reasons(criteria: Iterable[Mapping[str, Any]]) -> list[dict[str, A
     ]
 
 
-def _decision(blockers: list[dict[str, Any]], conflicts: list[dict[str, Any]]) -> str:
+def _decision(
+    blockers: list[dict[str, Any]],
+    conflicts: list[dict[str, Any]],
+    *,
+    runtime_default_enabled: bool = False,
+) -> str:
     if conflicts:
         return "default_on_admission_restatement_conflicting_evidence"
     if blockers:
         return "default_on_admission_restatement_still_blocked"
+    if runtime_default_enabled:
+        return "default_on_admission_restatement_superseded_by_default_on_runtime"
     return "default_on_admission_restatement_ready_for_runtime_design"
 
 
@@ -841,6 +887,11 @@ def _headline(decision: str, blockers: list[dict[str, Any]], conflicts: list[dic
         return (
             "Default-on admission evidence is restated from committed authority and is ready for a "
             "separate runtime-design gate; runtime defaults remain off."
+        )
+    if decision == "default_on_admission_restatement_superseded_by_default_on_runtime":
+        return (
+            "Default-on admission evidence is restated from committed authority and has been superseded by "
+            "the default-on fact-authority runtime; value reveal remains separately gated and default-off."
         )
     if decision == "default_on_admission_restatement_conflicting_evidence":
         reasons = ", ".join(item["reason"] for item in conflicts)
@@ -910,10 +961,27 @@ def _config_defaults_off(config_text: str) -> bool:
     )
 
 
+def _config_safety_defaults_off(config_text: str) -> bool:
+    return (
+        _contains(config_text, 'layer3_sec_edgar_live_network_enabled: bool = Field(\n        default=False,')
+        and _contains(
+            config_text,
+            'layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False,',
+        )
+    )
+
+
 def _live_proof_defaults_off(live_defaults: Mapping[str, Any]) -> bool:
     return (
         live_defaults.get("sec_live_network_default_enabled") is False
         and live_defaults.get("arelle_fact_authority_cutover_default_enabled") is False
+        and live_defaults.get("arelle_value_reveal_default_enabled") is False
+    )
+
+
+def _live_proof_safety_defaults_off(live_defaults: Mapping[str, Any]) -> bool:
+    return (
+        live_defaults.get("sec_live_network_default_enabled") is False
         and live_defaults.get("arelle_value_reveal_default_enabled") is False
     )
 

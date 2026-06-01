@@ -248,7 +248,7 @@
         "arelle_fact_authority_cutover_default_on": true,
         "arelle_fact_authority_default_posture_recognized": true,
         "arelle_value_reveal_default_off": true,
-        "decision": "explicit_operator_only_default_off_selected",
+        "decision": "explicit_operator_only_default_off_superseded_by_default_on_runtime",
         "safety_defaults_off": true,
         "sec_live_network_default_off": true,
         "selected_posture": "explicit_operator_only_default_off"

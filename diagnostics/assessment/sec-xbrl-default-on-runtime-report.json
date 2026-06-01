@@ -5,7 +5,7 @@
       "blocked_reason": null,
       "criterion": "runtime_default_on",
       "evidence": {
-        "admission_restatement_decision": "default_on_admission_restatement_ready_for_runtime_design",
+        "admission_restatement_decision": "default_on_admission_restatement_superseded_by_default_on_runtime",
         "config_default_enabled": true,
         "config_file": "backend/app/core/config.py",
         "governance_remediation_default_off": false,
@@ -96,7 +96,7 @@
   "decision": "default_on_runtime_enabled",
   "headline": "Arelle resolved-fact authority is now the default bridge input, with explicit persisted sidecar requirements and a reversible regex rollback flag.",
   "inherited_real_corpus_evidence": {
-    "admission_restatement_decision": "default_on_admission_restatement_ready_for_runtime_design",
+    "admission_restatement_decision": "default_on_admission_restatement_superseded_by_default_on_runtime",
     "admission_review_decision": "admission_review_superseded_by_default_on_runtime",
     "arelle_resolved_fact_count": 18156,
     "bridge_fact_count": 18156,

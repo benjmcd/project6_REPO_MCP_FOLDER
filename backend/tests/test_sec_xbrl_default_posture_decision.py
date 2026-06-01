@@ -38,6 +38,32 @@ def test_sec_xbrl_default_posture_selects_explicit_operator_only_default_off(tmp
     assert all(item["state"] == "passed" for item in report["criteria"])
 
 
+def test_sec_xbrl_default_posture_marks_pre_runtime_posture_superseded_after_runtime_default_on(
+    tmp_path: Path,
+) -> None:
+    decision = _load_decision()
+    paths = _write_inputs(tmp_path, config_defaults_off=False, value_reveal_default_off=True, runtime_default_on=True)
+
+    report = decision.build_report(
+        source_root=paths["source_root"],
+        broader_reliability_report_path=paths["broader"],
+        real_product_runner_report_path=paths["real_product"],
+        value_reveal_live_proof_report_path=paths["live_proof"],
+        runtime_report_path=paths["runtime"],
+        admission_review_report_path=paths["admission"],
+    )
+
+    assert report["decision"] == "explicit_operator_only_default_off_superseded_by_default_on_runtime"
+    assert report["blocking_reasons"] == []
+    assert report["selected_posture"]["posture"] == "explicit_operator_only_default_off"
+    assert report["selected_posture"]["arelle_fact_authority_cutover_default_on_supersedes_selected_posture"] is True
+    assert report["selected_posture"]["arelle_value_reveal_default_enabled"] is False
+    assert report["non_goals_preserved"]["runtime_default_enabled_by_follow_on_runtime_slice"] is True
+    assert report["next_slice"] == (
+        "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation"
+    )
+
+
 def test_sec_xbrl_default_posture_blocks_when_committed_defaults_are_not_off(tmp_path: Path) -> None:
     decision = _load_decision()
     paths = _write_inputs(tmp_path, config_defaults_off=False)
@@ -81,17 +107,31 @@ def test_sec_xbrl_default_posture_blocks_when_flag_off_reveal_is_not_proven(tmp_
     )
 
 
-def _write_inputs(tmp_path: Path, *, config_defaults_off: bool = True) -> dict[str, Path]:
+def _write_inputs(
+    tmp_path: Path,
+    *,
+    config_defaults_off: bool = True,
+    value_reveal_default_off: bool | None = None,
+    runtime_default_on: bool = False,
+) -> dict[str, Path]:
     source_root = tmp_path / "source"
     config_path = source_root / "backend" / "app" / "core" / "config.py"
     config_path.parent.mkdir(parents=True)
-    config_path.write_text(_config_text(defaults_off=config_defaults_off), encoding="utf-8")
+    config_path.write_text(
+        _config_text(
+            defaults_off=config_defaults_off,
+            value_reveal_default_off=(
+                config_defaults_off if value_reveal_default_off is None else value_reveal_default_off
+            ),
+        ),
+        encoding="utf-8",
+    )
 
     broader = _write_json(tmp_path / "broader.json", _broader_report())
     real_product = _write_json(tmp_path / "real-product.json", _real_product_report())
     live_proof = _write_json(tmp_path / "live-proof.json", _live_proof_report())
-    runtime = _write_json(tmp_path / "runtime.json", _runtime_report())
-    admission = _write_json(tmp_path / "admission.json", _admission_report())
+    runtime = _write_json(tmp_path / "runtime.json", _runtime_report(default_on=runtime_default_on))
+    admission = _write_json(tmp_path / "admission.json", _admission_report(superseded=runtime_default_on))
     return {
         "source_root": source_root,
         "broader": broader,
@@ -107,9 +147,9 @@ def _write_json(path: Path, value: dict) -> Path:
     return path
 
 
-def _config_text(*, defaults_off: bool) -> str:
+def _config_text(*, defaults_off: bool, value_reveal_default_off: bool) -> str:
     cutover_default = "False" if defaults_off else "True"
-    reveal_default = "False" if defaults_off else "True"
+    reveal_default = "False" if value_reveal_default_off else "True"
     return f'''
 class Settings:
     layer3_sec_edgar_live_network_enabled: bool = Field(
@@ -235,11 +275,11 @@ def _attempt(form: str, fact_count: int) -> dict:
     }
 
 
-def _runtime_report() -> dict:
+def _runtime_report(*, default_on: bool = False) -> dict:
     return {
-        "decision": "default_on_runtime_disabled_by_governance_remediation",
+        "decision": "default_on_runtime_enabled" if default_on else "default_on_runtime_disabled_by_governance_remediation",
         "runtime_posture": {
-            "default_cutover_enabled": False,
+            "default_cutover_enabled": default_on,
             "operator_value_reveal_default_enabled": False,
         },
         "non_goals_preserved": {
@@ -250,8 +290,12 @@ def _runtime_report() -> dict:
     }
 
 
-def _admission_report() -> dict:
+def _admission_report(*, superseded: bool = False) -> dict:
     return {
-        "decision": "admission_review_requires_post_1966_governance_followup",
+        "decision": (
+            "admission_review_superseded_by_default_on_runtime"
+            if superseded
+            else "admission_review_requires_post_1966_governance_followup"
+        ),
         "ready_for_default_on_runtime_slice": False,
     }
