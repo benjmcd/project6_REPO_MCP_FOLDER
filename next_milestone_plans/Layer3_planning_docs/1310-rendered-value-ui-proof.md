@@ -6,10 +6,12 @@ Base authority: `project6-origin/main` at `f861acb16677267cc58173c1f0b3fcf820e93
 
 Prior milestone: `next_milestone_plans/Layer3_planning_docs/1309-rendered-value-ui-admission-selection.md`
 
+Merged authority: PR `#2055` at `f59cf53f367e036d9c9e8b7029b98cbbe8ea07ce`
+
 ## Status
 
-Branch-local Tier-2 risk-assessed implementation entry, verified before PR
-closeout.
+Merged current-main Tier-2 risk-assessed implementation entry, verified after
+merge.
 
 This slice renders the bounded SEC XBRL controlled value-reveal operator panel
 selected by 1309. It uses only the existing backend authority prepare,
@@ -90,7 +92,7 @@ no new durable server state.
 
 ## Verification
 
-Branch verification:
+Branch and post-merge current-main verification:
 
 - `node --check ./backend/app/review_ui/static/layer3.js`: PASS.
 - `python -m pytest ./backend/tests/test_layer3_page.py -k controlled_value_reveal -q`:
@@ -114,10 +116,13 @@ Branch verification:
   files.
 - `git diff --check`: PASS.
 
+Post-merge audit closure is recorded in
+`next_milestone_plans/Layer3_planning_docs/1311-rendered-value-ui-post-merge-audit-closure.md`.
+
 ## Next Posture
 
-After this rendered proof lands and is verified, the next admissible question is
-not default-on by default. The safer next pass is a post-merge audit of the
-rendered value-reveal UI and any review-thread hardening it produces. Only after
-that audit should the lane decide whether to design default-on readiness,
-export/delivery, operator-auth hardening, or production-readiness controls.
+The post-merge audit closure for this rendered proof is recorded in 1311. The
+next admissible question is not default-on by default; it is a design/admission
+selection pass for exactly one downstream gate, with default-on readiness,
+export/delivery, operator-auth hardening, and production-readiness controls
+treated as separate candidates.
