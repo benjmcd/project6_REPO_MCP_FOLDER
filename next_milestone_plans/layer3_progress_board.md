@@ -9940,6 +9940,40 @@ semantics claim.
 Next exact posture after merge and current-main verification:
 `sec_xbrl_operator_review_decision_rendered_submit_freeze_v1`.
 
+## SEC XBRL Operator Review Decision Rendered Submit Freeze
+
+Milestone: `sec_xbrl_operator_review_decision_rendered_submit_freeze_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1299-decision-rendered-submit-freeze.md`.
+
+Status: planning/control-only Tier-1 freeze.
+
+Scope: freeze the next browser-visible SEC XBRL operator-review decision submit/status
+surface under `/review/layer3` before any rendered implementation. This pass admits no
+runtime behavior and changes no `models.py`, Alembic migration, schema, durable
+persistence, backend API contract, workflow-open behavior, value reveal, delivery/export,
+source acquisition, Arelle invocation, default-on behavior, raw runtime artifact,
+authorization behavior, redaction posture, production-readiness claim, or product-flow
+doc.
+
+Future rendered contract: the implementation may touch only the existing review UI
+static files, `e2e/layer3-workbench.spec.js`, and planning/progress/proof docs. It must
+submit only the already-admitted decision submit API fields and decision status API
+fields, must keep `data-frontend-durable-authority="false"`, must render only redacted
+server-returned receipt/status fields, and must never render, log, preserve, or store raw
+operator notes, raw values, issuer identity, accessions, period dates, SEC URLs, local
+paths, operator contact fields, residual magnitudes, source-acquisition fields, Arelle
+controls, delivery/export controls, value-reveal controls, or default-on controls.
+
+Proof required for future implementation: focused SEC XBRL operator-review tests, full
+SEC XBRL suite, headed and headless browser proof, request-field allowlist proof, DOM
+marker proof, raw-notes non-render/non-persistence proof, blocked-control proof,
+target-selection frozen check, progress check, JavaScript syntax check if touched, JSON
+validation, redaction scan, and `git diff --check`.
+
+Next exact posture after merge and current-main verification:
+`sec_xbrl_operator_review_decision_rendered_submit_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
