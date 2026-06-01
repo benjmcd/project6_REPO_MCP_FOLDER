@@ -72,6 +72,42 @@ ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
 WINDOWS_ABS_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
 RAW_PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
+IDENTITY_ROLLUP_KEYS = {
+    "identity_residual_count",
+    "identity_residual_evaluated_count",
+    "identity_residual_within_tolerance_count",
+    "identity_residual_failed_count",
+    "identity_residuals_within_tolerance",
+}
+ORGANIZATION_CONTRACT_BOOL_FIELDS = {
+    "contract_passed",
+    "contract_b_authoritative_organization",
+    "contract_every_fact_id_bound",
+    "contract_derived_inputs_bound_and_corroborated",
+}
+ORGANIZATION_CONTRACT_COUNT_FIELDS = {
+    "normalized_fact_count",
+    "organized_count",
+    "unjoined_count",
+    "a_divergent_count",
+    "a_role_unknown_count",
+}
+ORGANIZATION_CONTRACT_KEYS = ORGANIZATION_CONTRACT_BOOL_FIELDS | ORGANIZATION_CONTRACT_COUNT_FIELDS
+PACKET_SUMMARY_KEYS = {
+    "statement_count",
+    "total_review_rows",
+    "statements_with_rows",
+    "review_exception_count",
+    "value_policy",
+}
+REVIEW_SUMMARY_KEYS = {
+    "statement_count",
+    "row_count",
+    "review_exception_count",
+    "review_ready",
+    "redaction_policy",
+    "control_mode",
+}
 
 
 class SecXbrlOperatorReviewWorkflowError(ValueError):
@@ -293,12 +329,24 @@ def _validate_packet_set(packet_set: L3SecXbrlStatementPacketSet) -> None:
             "sec_xbrl_operator_review_workflow_empty_packet",
             "Operator review workflow requires persisted statement packet rows.",
         )
-    for value in (
-        packet_set.identity_rollup_json,
-        packet_set.organization_contract_json,
-        packet_set.packet_summary_json,
-    ):
-        _reject_raw_or_local_authority(value)
+    _public_identity_rollup(packet_set.identity_rollup_json)
+    _public_organization_contract(packet_set.organization_contract_json)
+    packet_summary = _public_packet_summary(packet_set.packet_summary_json)
+    expected_packet_summary = {
+        "statement_count": _positive_int(packet_set.statement_count, "statement_count"),
+        "total_review_rows": _positive_int(packet_set.total_review_rows, "total_review_rows"),
+        "statements_with_rows": sum(1 for statement in packet_set.statements if statement.rows),
+        "review_exception_count": _non_negative_int(
+            packet_set.review_exception_count,
+            "review_exception_count",
+        ),
+        "value_policy": L3_SEC_XBRL_STATEMENT_PACKET_REDACTION_POLICY,
+    }
+    if packet_summary != expected_packet_summary:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_packet_summary_invalid",
+            "Operator review workflow requires packet summary JSON to match persisted packet authority.",
+        )
 
 
 def _authority_refs(packet_set: L3SecXbrlStatementPacketSet) -> dict[str, Any]:
@@ -334,7 +382,7 @@ def _response(row: L3SecXbrlOperatorReviewWorkflow, *, idempotent_replay: bool) 
         "permitted_controls": json_clone(row.permitted_controls_json),
         "blocked_controls": json_clone(row.blocked_controls_json),
         "authority_refs": json_clone(row.authority_refs_json),
-        "review_summary": json_clone(row.review_summary_json),
+        "review_summary": _public_review_summary(row.review_summary_json),
         "idempotent_replay": idempotent_replay,
         "runtime_default_enabled": False,
         "value_reveal_performed": False,
@@ -351,7 +399,7 @@ def _status_response(row: L3SecXbrlOperatorReviewWorkflow, *, request_id: str) -
     permitted_controls = json_clone(row.permitted_controls_json)
     blocked_controls = json_clone(row.blocked_controls_json)
     authority_refs = json_clone(row.authority_refs_json)
-    review_summary = json_clone(row.review_summary_json)
+    review_summary = _public_review_summary(row.review_summary_json)
     return {
         **base_response(WORKFLOW_STATUS_SCHEMA_ID, request_id=request_id, status=row.review_status),
         "mode": WORKFLOW_STATUS_MODE,
@@ -459,9 +507,22 @@ def _validate_workflow_row_for_status(row: L3SecXbrlOperatorReviewWorkflow) -> N
         permitted_controls,
         blocked_controls,
         row.authority_refs_json,
-        row.review_summary_json,
     ):
         _reject_raw_or_local_authority(value)
+    review_summary = _public_review_summary(row.review_summary_json)
+    expected_review_summary = {
+        "statement_count": row.statement_count,
+        "row_count": row.row_count,
+        "review_exception_count": row.review_exception_count,
+        "review_ready": True,
+        "redaction_policy": L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_REDACTION_POLICY,
+        "control_mode": L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_CONTROL_MODE,
+    }
+    if review_summary != expected_review_summary:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_status_review_summary_invalid",
+            "SEC XBRL operator review workflow status requires review summary JSON to match workflow authority.",
+        )
 
 
 def _required_text(value: Any, field: str) -> str:
@@ -509,6 +570,148 @@ def _non_negative_int(value: Any, field: str) -> int:
             details={"field": field},
         )
     return number
+
+
+def _required_bool(value: Any, field: str) -> bool:
+    if not isinstance(value, bool):
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_boolean_required",
+            f"SEC XBRL operator review workflow requires boolean {field}.",
+            details={"field": field},
+        )
+    return value
+
+
+def _optional_bool_or_none(value: Any, field: str) -> bool | None:
+    if value is None:
+        return None
+    return _required_bool(value, field)
+
+
+def _public_identity_rollup(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_identity_rollup_invalid",
+            "Operator review workflow requires public identity rollup JSON.",
+        )
+    _reject_raw_or_local_authority(value)
+    _reject_unadmitted_keys(
+        value,
+        admitted=IDENTITY_ROLLUP_KEYS,
+        error_code="sec_xbrl_operator_review_workflow_identity_rollup_invalid",
+        message="Operator review workflow identity rollup only admits public rollup fields.",
+    )
+    return {
+        "identity_residual_count": _non_negative_int(
+            value.get("identity_residual_count"),
+            "identity_residual_count",
+        ),
+        "identity_residual_evaluated_count": _non_negative_int(
+            value.get("identity_residual_evaluated_count"),
+            "identity_residual_evaluated_count",
+        ),
+        "identity_residual_within_tolerance_count": _non_negative_int(
+            value.get("identity_residual_within_tolerance_count"),
+            "identity_residual_within_tolerance_count",
+        ),
+        "identity_residual_failed_count": _non_negative_int(
+            value.get("identity_residual_failed_count"),
+            "identity_residual_failed_count",
+        ),
+        "identity_residuals_within_tolerance": _optional_bool_or_none(
+            value.get("identity_residuals_within_tolerance"),
+            "identity_residuals_within_tolerance",
+        ),
+    }
+
+
+def _public_organization_contract(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_organization_contract_invalid",
+            "Operator review workflow requires public organization contract JSON.",
+        )
+    _reject_raw_or_local_authority(value)
+    _reject_unadmitted_keys(
+        value,
+        admitted=ORGANIZATION_CONTRACT_KEYS,
+        error_code="sec_xbrl_operator_review_workflow_organization_contract_invalid",
+        message="Operator review workflow organization contract only admits public contract fields.",
+    )
+    public = {
+        key: _required_bool(value[key], key)
+        for key in ORGANIZATION_CONTRACT_BOOL_FIELDS
+        if key in value
+    }
+    public.update(
+        {
+            key: _non_negative_int(value[key], key)
+            for key in ORGANIZATION_CONTRACT_COUNT_FIELDS
+            if key in value
+        }
+    )
+    return public
+
+
+def _public_packet_summary(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_packet_summary_invalid",
+            "Operator review workflow requires public packet summary JSON.",
+        )
+    _reject_raw_or_local_authority(value)
+    _reject_unadmitted_keys(
+        value,
+        admitted=PACKET_SUMMARY_KEYS,
+        error_code="sec_xbrl_operator_review_workflow_packet_summary_invalid",
+        message="Operator review workflow packet summary only admits public summary fields.",
+    )
+    return {
+        "statement_count": _non_negative_int(value.get("statement_count"), "statement_count"),
+        "total_review_rows": _non_negative_int(value.get("total_review_rows"), "total_review_rows"),
+        "statements_with_rows": _non_negative_int(value.get("statements_with_rows"), "statements_with_rows"),
+        "review_exception_count": _non_negative_int(value.get("review_exception_count"), "review_exception_count"),
+        "value_policy": _required_text(value.get("value_policy"), "value_policy"),
+    }
+
+
+def _public_review_summary(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_status_review_summary_invalid",
+            "Operator review workflow requires public review summary JSON.",
+        )
+    _reject_raw_or_local_authority(value)
+    _reject_unadmitted_keys(
+        value,
+        admitted=REVIEW_SUMMARY_KEYS,
+        error_code="sec_xbrl_operator_review_workflow_status_review_summary_invalid",
+        message="Operator review workflow review summary only admits public summary fields.",
+    )
+    return {
+        "statement_count": _positive_int(value.get("statement_count"), "statement_count"),
+        "row_count": _positive_int(value.get("row_count"), "row_count"),
+        "review_exception_count": _non_negative_int(value.get("review_exception_count"), "review_exception_count"),
+        "review_ready": _required_bool(value.get("review_ready"), "review_ready"),
+        "redaction_policy": _required_text(value.get("redaction_policy"), "redaction_policy"),
+        "control_mode": _required_text(value.get("control_mode"), "control_mode"),
+    }
+
+
+def _reject_unadmitted_keys(
+    value: Mapping[str, Any],
+    *,
+    admitted: set[str],
+    error_code: str,
+    message: str,
+) -> None:
+    unknown = sorted(str(key) for key in value if str(key) not in admitted)
+    if unknown:
+        raise SecXbrlOperatorReviewWorkflowError(
+            error_code,
+            message,
+            details={"fields": unknown},
+        )
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:

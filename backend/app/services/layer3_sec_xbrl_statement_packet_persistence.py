@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -54,6 +55,20 @@ ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
 WINDOWS_ABS_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
 RAW_PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
+ORGANIZATION_CONTRACT_BOOL_FIELDS = {
+    "contract_passed",
+    "contract_b_authoritative_organization",
+    "contract_every_fact_id_bound",
+    "contract_derived_inputs_bound_and_corroborated",
+}
+ORGANIZATION_CONTRACT_COUNT_FIELDS = {
+    "normalized_fact_count",
+    "organized_count",
+    "unjoined_count",
+    "a_divergent_count",
+    "a_role_unknown_count",
+}
+ORGANIZATION_CONTRACT_KEYS = ORGANIZATION_CONTRACT_BOOL_FIELDS | ORGANIZATION_CONTRACT_COUNT_FIELDS
 
 
 class SecXbrlStatementPacketPersistenceError(ValueError):
@@ -119,6 +134,20 @@ def materialize_redacted_statement_packet(
 
     identity_rollup = _public_identity_rollup(packet.get("identity_rollup") or {})
     organization_contract = _public_organization_contract(packet.get("organization_contract") or {})
+    packet_summary = _packet_summary(statements=statements, rows=rows)
+    provenance_complete_count = sum(1 for row in rows if row["provenance_complete"] is True)
+    review_ready = (
+        packet.get("status") == "statement_assembly_ready"
+        and len(rows) > 0
+        and provenance_complete_count == len(rows)
+        and identity_rollup["identity_residuals_within_tolerance"] is not False
+    )
+    _validate_packet_derived_contract(
+        packet,
+        packet_summary=packet_summary,
+        provenance_complete_count=provenance_complete_count,
+        review_ready=review_ready,
+    )
     envelope = {
         "schema_id": PACKET_SET_SCHEMA_ID,
         "sec_xbrl_projection_set_id": projection_set.sec_xbrl_projection_set_id,
@@ -129,14 +158,11 @@ def materialize_redacted_statement_packet(
             "statement_organization_authority",
         ),
         "value_policy": L3_SEC_XBRL_STATEMENT_PACKET_REDACTION_POLICY,
-        "statement_count": _non_negative_int(packet.get("statement_count"), "statement_count"),
-        "total_review_rows": _positive_int(packet.get("total_review_rows"), "total_review_rows"),
-        "provenance_complete_count": _non_negative_int(
-            packet.get("provenance_complete_count"),
-            "provenance_complete_count",
-        ),
-        "review_exception_count": _non_negative_int(packet.get("review_exception_count"), "review_exception_count"),
-        "review_ready": packet.get("review_ready") is True,
+        "statement_count": packet_summary["statement_count"],
+        "total_review_rows": packet_summary["total_review_rows"],
+        "provenance_complete_count": provenance_complete_count,
+        "review_exception_count": packet_summary["review_exception_count"],
+        "review_ready": review_ready,
         "identity_rollup": identity_rollup,
         "organization_contract": organization_contract,
         "statements": statements,
@@ -175,13 +201,13 @@ def materialize_redacted_statement_packet(
         statement_organization_authority=envelope["statement_organization_authority"],
         value_policy=L3_SEC_XBRL_STATEMENT_PACKET_REDACTION_POLICY,
         statement_count=envelope["statement_count"],
-        total_review_rows=len(rows),
+        total_review_rows=envelope["total_review_rows"],
         provenance_complete_count=envelope["provenance_complete_count"],
         review_exception_count=envelope["review_exception_count"],
         review_ready=envelope["review_ready"],
         identity_rollup_json=json_clone(identity_rollup),
         organization_contract_json=json_clone(organization_contract),
-        packet_summary_json=_packet_summary(statements=statements, rows=rows),
+        packet_summary_json=json_clone(packet_summary),
         status=L3_SEC_XBRL_STATEMENT_PACKET_STATUS_MATERIALIZED,
     )
     try:
@@ -284,23 +310,35 @@ def _normalise_statements(
             )
         statement = _statement(item.get("statement"))
         rows = _normalise_rows(item.get("rows") or [], statement=statement, facts=facts, single_period=single_period)
+        status_counts = _row_count_map(rows, "status")
+        family_counts = _row_count_map(rows, "family")
+        line_count = len(rows)
+        projected_count = sum(1 for row in rows if str(row.get("status") or "").startswith("projected"))
+        derived_count = sum(1 for row in rows if row.get("status") == "derived")
+        provenance_complete_count = sum(1 for row in rows if row["provenance_complete"] is True)
+        review_exception_count = sum(1 for row in rows if row["review_exception"])
+        _require_public_count(item.get("line_count"), line_count, "line_count")
+        _require_public_count(item.get("projected_count"), projected_count, "projected_count")
+        _require_public_count(item.get("derived_count"), derived_count, "derived_count")
+        _require_public_count(
+            item.get("provenance_complete_count"),
+            provenance_complete_count,
+            "provenance_complete_count",
+        )
+        _require_public_count(item.get("review_exception_count"), review_exception_count, "review_exception_count")
+        _require_public_count_map(item.get("status_counts") or {}, status_counts, "status_counts")
+        _require_public_count_map(item.get("family_counts") or {}, family_counts, "family_counts")
         statements.append(
             {
                 "statement": statement,
                 "statement_index": index,
-                "line_count": _non_negative_int(item.get("line_count"), "line_count"),
-                "projected_count": _non_negative_int(item.get("projected_count"), "projected_count"),
-                "derived_count": _non_negative_int(item.get("derived_count"), "derived_count"),
-                "provenance_complete_count": _non_negative_int(
-                    item.get("provenance_complete_count"),
-                    "provenance_complete_count",
-                ),
-                "review_exception_count": _non_negative_int(
-                    item.get("review_exception_count"),
-                    "review_exception_count",
-                ),
-                "status_counts": _public_count_map(item.get("status_counts") or {}, "status_counts"),
-                "family_counts": _public_count_map(item.get("family_counts") or {}, "family_counts"),
+                "line_count": line_count,
+                "projected_count": projected_count,
+                "derived_count": derived_count,
+                "provenance_complete_count": provenance_complete_count,
+                "review_exception_count": review_exception_count,
+                "status_counts": status_counts,
+                "family_counts": family_counts,
                 "rows": rows,
             }
         )
@@ -438,7 +476,10 @@ def _public_identity_rollup(value: Any) -> dict[str, Any]:
             value.get("identity_residual_failed_count") or 0,
             "identity_residual_failed_count",
         ),
-        "identity_residuals_within_tolerance": value.get("identity_residuals_within_tolerance"),
+        "identity_residuals_within_tolerance": _optional_bool_or_none(
+            value.get("identity_residuals_within_tolerance"),
+            "identity_residuals_within_tolerance",
+        ),
     }
 
 
@@ -449,7 +490,25 @@ def _public_organization_contract(value: Any) -> dict[str, Any]:
             "Statement packet organization contract must be an object.",
         )
     _reject_raw_or_local_authority(value)
-    return json_clone(dict(value))
+    _reject_unadmitted_keys(
+        value,
+        admitted=ORGANIZATION_CONTRACT_KEYS,
+        error_code="sec_xbrl_statement_packet_persistence_organization_contract_invalid",
+        message="Statement packet organization contract only admits public contract fields.",
+    )
+    public = {
+        key: _required_bool(value[key], key)
+        for key in ORGANIZATION_CONTRACT_BOOL_FIELDS
+        if key in value
+    }
+    public.update(
+        {
+            key: _non_negative_int(value[key], key)
+            for key in ORGANIZATION_CONTRACT_COUNT_FIELDS
+            if key in value
+        }
+    )
+    return public
 
 
 def _packet_summary(*, statements: Sequence[Mapping[str, Any]], rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
@@ -460,6 +519,33 @@ def _packet_summary(*, statements: Sequence[Mapping[str, Any]], rows: Sequence[M
         "review_exception_count": sum(1 for row in rows if row["review_exception"]),
         "value_policy": L3_SEC_XBRL_STATEMENT_PACKET_REDACTION_POLICY,
     }
+
+
+def _validate_packet_derived_contract(
+    packet: Mapping[str, Any],
+    *,
+    packet_summary: Mapping[str, Any],
+    provenance_complete_count: int,
+    review_ready: bool,
+) -> None:
+    _require_public_count(packet.get("statement_count"), packet_summary["statement_count"], "statement_count")
+    _require_public_count(packet.get("total_review_rows"), packet_summary["total_review_rows"], "total_review_rows")
+    _require_public_count(
+        packet.get("provenance_complete_count"),
+        provenance_complete_count,
+        "provenance_complete_count",
+    )
+    _require_public_count(
+        packet.get("review_exception_count"),
+        packet_summary["review_exception_count"],
+        "review_exception_count",
+    )
+    if _required_bool(packet.get("review_ready"), "review_ready") is not review_ready:
+        raise SecXbrlStatementPacketPersistenceError(
+            "sec_xbrl_statement_packet_persistence_packet_summary_invalid",
+            "Statement packet public header fields must match normalized persisted packet rows.",
+            details={"field": "review_ready"},
+        )
 
 
 def _response(row: L3SecXbrlStatementPacketSet, *, idempotent_replay: bool) -> dict[str, Any]:
@@ -524,6 +610,30 @@ def _public_count_map(value: Any, field: str) -> dict[str, int]:
     return counts
 
 
+def _row_count_map(rows: Sequence[Mapping[str, Any]], field: str) -> dict[str, int]:
+    return dict(sorted(Counter(str(row.get(field) or "") for row in rows).items()))
+
+
+def _require_public_count(value: Any, expected: int, field: str) -> None:
+    actual = _non_negative_int(value, field)
+    if actual != expected:
+        raise SecXbrlStatementPacketPersistenceError(
+            "sec_xbrl_statement_packet_persistence_packet_summary_invalid",
+            "Statement packet public header fields must match normalized persisted packet rows.",
+            details={"field": field, "expected": expected, "actual": actual},
+        )
+
+
+def _require_public_count_map(value: Any, expected: Mapping[str, int], field: str) -> None:
+    actual = _public_count_map(value, field)
+    if actual != dict(expected):
+        raise SecXbrlStatementPacketPersistenceError(
+            "sec_xbrl_statement_packet_persistence_packet_summary_invalid",
+            "Statement packet public statement counts must match normalized persisted packet rows.",
+            details={"field": field, "expected": dict(expected), "actual": actual},
+        )
+
+
 def _required_text(value: Any, field: str) -> str:
     text = str(value or "").strip()
     if not text:
@@ -581,6 +691,22 @@ def _required_true(value: Any, field: str) -> bool:
     return True
 
 
+def _required_bool(value: Any, field: str) -> bool:
+    if not isinstance(value, bool):
+        raise SecXbrlStatementPacketPersistenceError(
+            "sec_xbrl_statement_packet_persistence_boolean_required",
+            f"SEC XBRL statement packet persistence requires boolean {field}.",
+            details={"field": field},
+        )
+    return value
+
+
+def _optional_bool_or_none(value: Any, field: str) -> bool | None:
+    if value is None:
+        return None
+    return _required_bool(value, field)
+
+
 def _safe_public_ref(value: Any, field: str) -> str:
     text = _required_text(value, field)
     _reject_raw_or_local_authority(text)
@@ -601,6 +727,22 @@ def _public_concept_list(value: Any) -> list[str]:
         _reject_raw_or_local_authority(concept)
         concepts.append(concept)
     return concepts
+
+
+def _reject_unadmitted_keys(
+    value: Mapping[str, Any],
+    *,
+    admitted: set[str],
+    error_code: str,
+    message: str,
+) -> None:
+    unknown = sorted(str(key) for key in value if str(key) not in admitted)
+    if unknown:
+        raise SecXbrlStatementPacketPersistenceError(
+            error_code,
+            message,
+            details={"fields": unknown},
+        )
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:

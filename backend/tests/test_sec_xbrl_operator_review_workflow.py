@@ -312,6 +312,26 @@ def test_operator_review_workflow_status_rejects_tampered_raw_status_json(db_ses
     assert exc.value.code == "sec_xbrl_operator_review_workflow_raw_authority_not_admitted"
 
 
+def test_operator_review_workflow_status_rejects_unadmitted_review_summary_numeric_alias(db_session) -> None:
+    workflow = _open_workflow(db_session)
+    workflow_row = db_session.query(L3SecXbrlOperatorReviewWorkflow).one()
+    workflow_row.review_summary_json = {
+        **workflow_row.review_summary_json,
+        "mean": "12345.67",
+    }
+    db_session.commit()
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.inspect_redacted_operator_review_workflow_status(
+            db_session,
+            client_request_id="workflow-status-review-summary-mean",
+            sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_workflow_status_review_summary_invalid"
+    assert exc.value.details == {"fields": ["mean"]}
+
+
 def test_operator_review_workflow_status_api_returns_read_only_projection(api_client) -> None:
     client, Session = api_client
     with Session() as session:
@@ -391,11 +411,13 @@ def test_operator_review_workflow_replays_same_request_and_basis(db_session) -> 
 
 def test_operator_review_workflow_rejects_client_request_conflict(db_session) -> None:
     first_packet = _materialized_packet(db_session)
+    changed_packet = _packet()
+    changed_packet["organization_contract"]["a_role_unknown_count"] = 1
     second_packet = _materialized_packet(
         db_session,
         packet_request_id="packet-2",
         projection_request_id="projection-2",
-        packet=_packet(review_exception_count=1),
+        packet=changed_packet,
     )
     workflow_service.open_redacted_operator_review_workflow(
         db_session,
@@ -504,6 +526,30 @@ def test_operator_review_workflow_rejects_residual_magnitude_in_packet_summary(d
         )
 
     assert exc.value.code == "sec_xbrl_operator_review_workflow_residual_magnitudes_not_admitted"
+    assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 0
+
+
+def test_operator_review_workflow_rejects_unadmitted_organization_contract_numeric_alias(db_session) -> None:
+    packet_response = _materialized_packet(db_session)
+    packet_set = db_session.query(L3SecXbrlStatementPacketSet).filter(
+        L3SecXbrlStatementPacketSet.sec_xbrl_statement_packet_set_id
+        == packet_response["sec_xbrl_statement_packet_set_id"]
+    ).one()
+    packet_set.organization_contract_json = {
+        **packet_set.organization_contract_json,
+        "mean": "12345.67",
+    }
+    db_session.commit()
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.open_redacted_operator_review_workflow(
+            db_session,
+            client_request_id="workflow-organization-contract-mean",
+            sec_xbrl_statement_packet_set_id=packet_response["sec_xbrl_statement_packet_set_id"],
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_workflow_organization_contract_invalid"
+    assert exc.value.details == {"fields": ["mean"]}
     assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 0
 
 
