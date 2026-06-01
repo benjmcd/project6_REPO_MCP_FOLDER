@@ -10136,8 +10136,8 @@ Milestone: `sec_xbrl_controlled_value_reveal_submit_status_ref_hardening_v1`.
 Planning doc:
 `next_milestone_plans/Layer3_planning_docs/1307-submit-status-ref-hardening.md`.
 
-Status: branch-local Tier-2 risk-assessed post-merge audit hardening entry,
-verified for PR handoff.
+Status: merged current-main Tier-2 risk-assessed post-merge audit hardening
+entry, verified after merge at `b5eee6b03104c8294144c21fec2c573ef2a50c24`.
 
 Scope: closes a controlled-submit status-path authority boundary gap. Status
 inspection now applies the existing raw/local authority rejection predicate to

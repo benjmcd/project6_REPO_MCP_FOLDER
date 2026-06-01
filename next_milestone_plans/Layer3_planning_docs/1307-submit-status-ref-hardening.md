@@ -6,10 +6,12 @@ Base authority: `project6-origin/main` at `89e8630068181e7b7484476134338ce470cf3
 
 Prior milestone: `next_milestone_plans/Layer3_planning_docs/1306-submit-local-ref-review-fix.md`
 
+Merged authority: PR `#2049` at `b5eee6b03104c8294144c21fec2c573ef2a50c24`
+
 ## Status
 
-Branch-local Tier-2 risk-assessed post-merge audit hardening entry, verified
-for PR handoff.
+Merged current-main Tier-2 risk-assessed post-merge audit hardening entry,
+verified after merge.
 
 This controlled-submit audit pass found that submit requests rejected raw or
 local authority receipt ids before lookup, but status inspection only required
@@ -42,7 +44,7 @@ response.
 
 ## Verification
 
-Branch-local results:
+Branch-local and post-merge current-main results:
 
 - `python -m pytest .\backend\tests\test_sec_xbrl_operator_review_workflow.py -q`
   - `72 passed, 3 warnings`
@@ -60,13 +62,14 @@ Branch-local results:
 - Redaction identity scan across 53 committed SEC XBRL report JSON files
   - PASS: 0 SEC URLs, accessions, Windows paths, file URIs, or operator emails
 - Residual-magnitude regression scan across 53 committed SEC XBRL report JSON
-  files compared with `HEAD`
-  - PASS: 0 new or increased numeric tokens
+  files
+  - PASS: 0 nonzero residual magnitudes; residual count/boolean evidence fields
+    excluded
 - `git diff --check`
   - PASS
 
 ## Next Posture
 
-After this hardening lands and current-main verification remains clean, record
+With this hardening landed and current-main verification clean, record
 controlled-submit post-merge audit closure. Treat rendered value UI, default-on
 behavior, export/delivery, and production readiness as separate admission gates.
