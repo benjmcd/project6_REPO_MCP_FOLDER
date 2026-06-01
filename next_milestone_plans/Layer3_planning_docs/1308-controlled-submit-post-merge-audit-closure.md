@@ -6,10 +6,12 @@ Base authority: `project6-origin/main` at `52c4e5915f75fffdc76fcff711e911efcf332
 
 Prior milestone: `next_milestone_plans/Layer3_planning_docs/1307-submit-status-ref-hardening.md`
 
+Merged authority: PR `#2051` at `96613b00fa9034e2b17d8842b542a3e7d8d93e84`
+
 ## Status
 
-Branch-local Tier-1 documentation/proof closure over already-merged Tier-2
-controlled value-reveal submit surfaces.
+Merged current-main Tier-1 documentation/proof closure over already-merged
+Tier-2 controlled value-reveal submit surfaces, verified after merge.
 
 This closure records the post-merge audit outcome for the controlled value-reveal
 submit path after the implementation and follow-up hardening records landed on
@@ -66,7 +68,7 @@ artifacts, production readiness, or final financial-statement semantics.
 
 ## Verification
 
-Branch-local docs-only closure verification:
+PR and post-merge current-main docs-only closure verification:
 
 - `python .\tools\l3-target-selection-validate.py --expect frozen`
   - PASS
