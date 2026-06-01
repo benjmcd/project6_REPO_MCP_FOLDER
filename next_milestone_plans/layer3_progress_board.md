@@ -10129,6 +10129,35 @@ redaction scan, residual-magnitude regression scan, py_compile, and
 Next exact posture after merge and current-main verification:
 `sec_xbrl_controlled_value_reveal_submit_post_merge_audit_then_rendered_or_default_design_if_admitted`.
 
+## SEC XBRL Rendered Value UI Admission Selection
+
+Milestone: `sec_xbrl_rendered_controlled_value_reveal_ui_admission_selection_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1309-rendered-value-ui-admission-selection.md`.
+
+Status: branch-local Tier-2 risk-assessed design/admission-selection entry.
+
+Selection: choose rendered controlled value-reveal UI as the next admissible
+implementation boundary over existing server-owned authority prepare,
+controlled submit, and submit-status APIs. Do not select default-on behavior,
+export/delivery, or production readiness as the next implementation boundary.
+
+Rationale: current main has closed the bounded server-side controlled-submit
+path through 1308, while existing rendered proof still asserts
+`#sec-xbrl-value-reveal-submit` is absent and `data-value-reveal-enabled` is
+`false`. The next value-producing movement should therefore be an explicit
+operator-rendered control over the existing backend sequence, not automatic
+default-on behavior or export.
+
+Non-goals: no runtime behavior, schema, migration, durable persistence, backend
+API change, service behavior change, rendered implementation, source
+acquisition, Arelle invocation, export/delivery, default-on behavior, raw
+runtime artifacts, production readiness, or final financial-statement semantics.
+
+Verification: target-selection frozen check, progress check, manifest JSON
+parse, and `git diff --check` pass for this docs-only admission-selection pass.
+
 ## SEC XBRL Controlled Submit Post-Merge Audit Closure
 
 Milestone: `sec_xbrl_controlled_value_reveal_submit_post_merge_audit_closure_v1`.
