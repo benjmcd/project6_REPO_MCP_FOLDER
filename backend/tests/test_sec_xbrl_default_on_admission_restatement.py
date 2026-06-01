@@ -271,6 +271,10 @@ def _blocked_reasons(report: dict[str, Any]) -> set[str]:
     return {str(item["reason"]) for item in report["blocking_reasons"]}
 
 
+def _criterion_by_name(report: dict[str, Any], name: str) -> dict[str, Any]:
+    return next(item for item in report["criteria"] if item["criterion"] == name)
+
+
 def test_sec_xbrl_default_on_admission_restatement_can_admit_runtime_design_from_current_authority(
     tmp_path: Path,
 ) -> None:
@@ -329,6 +333,84 @@ def test_sec_xbrl_default_on_admission_restatement_blocks_raw_source_report_resi
     assert report["decision"] == "default_on_admission_restatement_still_blocked"
     assert "default_on_admission_restatement_source_report_redaction_failed" in _blocked_reasons(report)
     assert report["criteria"][-2]["evidence"]["raw_accession_found"] is True
+
+
+def test_sec_xbrl_default_on_admission_restatement_rejects_source_report_refs_outside_repo(
+    tmp_path: Path,
+) -> None:
+    _write_source_tree(tmp_path)
+    _write_valid_reports(tmp_path)
+    outside_report = tmp_path.parent / "outside-source-report.json"
+    _write_json(outside_report, {"schema_id": "outside.v1"})
+    broader_path = _report_paths(tmp_path)["broader_reliability"]
+    broader = json.loads(broader_path.read_text(encoding="utf-8"))
+    broader["source_reports"] = {
+        "absolute": str(outside_report),
+        "parent": "../outside-source-report.json",
+    }
+    _write_json(broader_path, broader)
+
+    report = _build_report(tmp_path)
+
+    assert report["decision"] == "default_on_admission_restatement_still_blocked"
+    assert "default_on_admission_restatement_stale_or_missing_source_report_reference" in _blocked_reasons(report)
+    refs = _criterion_by_name(report, "required_source_report_references_current")["evidence"]["references"]
+    assert {item["status"] for item in refs} == {"outside_repo"}
+
+
+def test_sec_xbrl_default_on_admission_restatement_detects_common_local_paths_and_unpadded_cik(
+    tmp_path: Path,
+) -> None:
+    _write_source_tree(tmp_path)
+    _write_valid_reports(tmp_path)
+    real_path = _report_paths(tmp_path)["historical_real_product_runner"]
+    real = json.loads(real_path.read_text(encoding="utf-8"))
+    real["debug_path"] = "/workspace/raw"
+    real["debug_tmp_path"] = "/tmp/raw"
+    real["raw_cik"] = 320193
+    _write_json(real_path, real)
+
+    report = _build_report(tmp_path)
+    evidence = _criterion_by_name(report, "source_reports_redaction_clean")["evidence"]
+
+    assert report["decision"] == "default_on_admission_restatement_still_blocked"
+    assert "default_on_admission_restatement_source_report_redaction_failed" in _blocked_reasons(report)
+    assert evidence["raw_local_path_found"] is True
+    assert evidence["raw_cik_found"] is True
+
+
+def test_sec_xbrl_default_on_admission_restatement_fails_closed_on_non_numeric_match_rate(
+    tmp_path: Path,
+) -> None:
+    _write_source_tree(tmp_path)
+    _write_valid_reports(tmp_path)
+    gate_path = _report_paths(tmp_path)["default_on_gate"]
+    gate = json.loads(gate_path.read_text(encoding="utf-8"))
+    gate["summary"]["companyfacts_value_match_rate"] = "n/a"
+    _write_json(gate_path, gate)
+
+    report = _build_report(tmp_path)
+
+    assert report["decision"] == "default_on_admission_restatement_still_blocked"
+    assert "default_on_admission_restatement_companyfacts_value_correctness_not_reproven" in _blocked_reasons(report)
+
+
+def test_sec_xbrl_default_on_admission_restatement_scans_malformed_report_text_for_redaction(
+    tmp_path: Path,
+) -> None:
+    _write_source_tree(tmp_path)
+    _write_valid_reports(tmp_path)
+    real_path = _report_paths(tmp_path)["historical_real_product_runner"]
+    real_path.write_text('{"raw_cik": 320193, "path": "/tmp/raw", ', encoding="utf-8")
+
+    report = _build_report(tmp_path)
+    evidence = _criterion_by_name(report, "source_reports_redaction_clean")["evidence"]
+
+    assert report["decision"] == "default_on_admission_restatement_still_blocked"
+    assert "default_on_admission_restatement_required_report_missing_or_malformed" in _blocked_reasons(report)
+    assert "default_on_admission_restatement_source_report_redaction_failed" in _blocked_reasons(report)
+    assert evidence["raw_local_path_found"] is True
+    assert evidence["raw_cik_found"] is True
 
 
 def test_sec_xbrl_default_on_admission_restatement_preserves_value_reveal_default_off(
