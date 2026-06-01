@@ -38,6 +38,13 @@ ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
 EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 LOCAL_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
+LOCAL_REF_RE = re.compile(
+    r"(?i)(?:"
+    r"file://"
+    r"|\\\\[^\\/]+[\\/]"
+    r"|(?:^|[\s\"'=])/(?:workspace|tmp|home|users|var|mnt|opt|private)(?:/|$)"
+    r")"
+)
 PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 CIK_RE = re.compile(r"\b\d{10}\b")
 RAW_REQUEST_KEYS = {
@@ -418,6 +425,7 @@ def _value_text_requires_redaction(*values: str) -> bool:
         or SEC_URL_RE.search(text)
         or EMAIL_RE.search(text)
         or LOCAL_PATH_RE.search(text)
+        or LOCAL_REF_RE.search(text)
         or PERIOD_DATE_RE.search(text)
         or CIK_RE.fullmatch(text.strip())
     )
