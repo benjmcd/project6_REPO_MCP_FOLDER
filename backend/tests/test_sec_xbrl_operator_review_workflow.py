@@ -24,6 +24,7 @@ from app.db.session import Base
 from app.models import (
     L3SecXbrlOperatorReviewDecision,
     L3SecXbrlOperatorReviewWorkflow,
+    L3SecXbrlProjectionSet,
     L3SecXbrlStatementPacketSet,
 )
 from app.models.models import L3_SEC_XBRL_STATEMENT_PACKET_REDACTION_POLICY
@@ -39,6 +40,7 @@ MIGRATION_PATH = ROOT / "backend" / "alembic" / "versions" / "0040_layer3_sec_xb
 DECISION_MIGRATION_PATH = (
     ROOT / "backend" / "alembic" / "versions" / "0042_layer3_sec_xbrl_operator_review_decision.py"
 )
+DECISION_SUBMIT_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit"
 
 
 @pytest.fixture()
@@ -222,6 +224,64 @@ def _open_workflow(
     )
 
 
+def _decision_submit_payload(workflow: dict[str, Any], **overrides: Any) -> dict[str, Any]:
+    payload = {
+        "client_request_id": "decision-submit-api",
+        "submit_mode": "sec_xbrl_operator_review_decision_submit_v1",
+        "operator_decision": "submit_sec_xbrl_operator_review_decision",
+        "sec_xbrl_operator_review_workflow_id": workflow["sec_xbrl_operator_review_workflow_id"],
+        "workflow_basis_hash": workflow["workflow_basis_hash"],
+        "review_decision": "approved",
+        "decision_reason_code": "ready_for_next_freeze",
+    }
+    payload.update(overrides)
+    return payload
+
+
+def _workflow_snapshot(row: L3SecXbrlOperatorReviewWorkflow) -> dict[str, Any]:
+    return {
+        "workflow_basis_hash": row.workflow_basis_hash,
+        "review_status": row.review_status,
+        "statement_count": row.statement_count,
+        "row_count": row.row_count,
+        "review_exception_count": row.review_exception_count,
+        "permitted_controls_json": json.dumps(row.permitted_controls_json, sort_keys=True),
+        "blocked_controls_json": json.dumps(row.blocked_controls_json, sort_keys=True),
+        "authority_refs_json": json.dumps(row.authority_refs_json, sort_keys=True),
+        "review_summary_json": json.dumps(row.review_summary_json, sort_keys=True),
+    }
+
+
+def _packet_snapshot(row: L3SecXbrlStatementPacketSet) -> dict[str, Any]:
+    return {
+        "packet_basis_hash": row.packet_basis_hash,
+        "source_projection_basis_hash": row.source_projection_basis_hash,
+        "statement_count": row.statement_count,
+        "total_review_rows": row.total_review_rows,
+        "review_exception_count": row.review_exception_count,
+        "review_ready": row.review_ready,
+        "identity_rollup_json": json.dumps(row.identity_rollup_json, sort_keys=True),
+        "organization_contract_json": json.dumps(row.organization_contract_json, sort_keys=True),
+        "packet_summary_json": json.dumps(row.packet_summary_json, sort_keys=True),
+        "status": row.status,
+    }
+
+
+def _projection_snapshot(row: L3SecXbrlProjectionSet) -> dict[str, Any]:
+    return {
+        "projection_basis_hash": row.projection_basis_hash,
+        "source_report_hash": row.source_report_hash,
+        "dataset_version_id": row.dataset_version_id,
+        "sidecar_receipt_hash": row.sidecar_receipt_hash,
+        "value_store_hash": row.value_store_hash,
+        "sector_family_presence_json": json.dumps(row.sector_family_presence_json, sort_keys=True),
+        "period_refs_json": json.dumps(row.period_refs_json, sort_keys=True),
+        "projection_summary_json": json.dumps(row.projection_summary_json, sort_keys=True),
+        "redaction_policy": row.redaction_policy,
+        "status": row.status,
+    }
+
+
 def test_operator_review_workflow_opens_redacted_control_envelope(db_session) -> None:
     response = _open_workflow(db_session)
 
@@ -385,6 +445,206 @@ def test_operator_review_workflow_status_api_fails_closed_without_authority(api_
     assert body["schema_id"] == "layer3.workbench_error.v1"
     assert body["error_code"] == "sec_xbrl_operator_review_workflow_status_authority_missing"
     assert body["status"] == "blocked"
+
+
+def test_operator_review_decision_submit_api_records_redacted_receipt(api_client) -> None:
+    client, Session = api_client
+    with Session() as session:
+        workflow = _open_workflow(session, request_id="workflow-decision-api")
+        workflow_row = session.query(L3SecXbrlOperatorReviewWorkflow).one()
+        packet_row = session.query(L3SecXbrlStatementPacketSet).one()
+        projection_row = session.query(L3SecXbrlProjectionSet).one()
+        workflow_snapshot = _workflow_snapshot(workflow_row)
+        packet_snapshot = _packet_snapshot(packet_row)
+        projection_snapshot = _projection_snapshot(projection_row)
+
+    response = client.post(
+        DECISION_SUBMIT_ROUTE,
+        json=_decision_submit_payload(workflow, client_request_id="decision-submit-api-success"),
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == workflow_service.DECISION_SCHEMA_ID
+    assert body["status"] == "decision_recorded"
+    assert body["review_decision"] == "approved"
+    assert body["decision_reason_code"] == "ready_for_next_freeze"
+    assert body["decision_submit_api_route_enabled"] is True
+    assert body["api_route_enabled"] is False
+    assert body["workflow_open_api_route_enabled"] is False
+    assert body["rendered_ui_enabled"] is False
+    assert body["runtime_default_enabled"] is False
+    assert body["value_reveal_performed"] is False
+    assert body["delivery_export_enabled"] is False
+    assert body["source_acquisition_performed"] is False
+    assert body["arelle_invoked"] is False
+    assert body["production_readiness_claimed"] is False
+    assert body["operator_review_decision_recorded"] is True
+    assert body["workflow_mutated"] is False
+    assert body["statement_packet_mutated"] is False
+    assert body["projection_mutated"] is False
+    assert body["decision_notes_present"] is False
+    assert body["decision_notes_hash"] is None
+    assert "inspect_operator_review_decision_status" in body["permitted_controls_after_decision"]
+    assert {item["control"] for item in body["blocked_controls_after_decision"]} >= {
+        "reveal_values",
+        "export_statement_packet",
+        "deliver_statement_packet",
+        "refresh_from_sec_source",
+        "invoke_arelle",
+        "change_runtime_default",
+        "render_operator_review_decision_submit_control",
+    }
+    response_text = json.dumps(body, sort_keys=True)
+    for forbidden in ("C:/", "https://www.sec.gov", "operator@example.com", "123.45"):
+        assert forbidden not in response_text
+
+    with Session() as session:
+        assert session.query(L3SecXbrlOperatorReviewDecision).count() == 1
+        assert _workflow_snapshot(session.query(L3SecXbrlOperatorReviewWorkflow).one()) == workflow_snapshot
+        assert _packet_snapshot(session.query(L3SecXbrlStatementPacketSet).one()) == packet_snapshot
+        assert _projection_snapshot(session.query(L3SecXbrlProjectionSet).one()) == projection_snapshot
+
+
+def test_operator_review_decision_submit_api_rejects_extra_fields(api_client) -> None:
+    client, Session = api_client
+    with Session() as session:
+        workflow = _open_workflow(session, request_id="workflow-decision-api-extra")
+
+    response = client.post(
+        DECISION_SUBMIT_ROUTE,
+        json=_decision_submit_payload(
+            workflow,
+            client_request_id="decision-submit-api-extra",
+            raw_value="123.45",
+        ),
+    )
+
+    assert response.status_code == 422, response.text
+    with Session() as session:
+        assert session.query(L3SecXbrlOperatorReviewDecision).count() == 0
+
+
+def test_operator_review_decision_submit_api_fails_closed_without_authority(api_client) -> None:
+    client, _Session = api_client
+
+    response = client.post(
+        DECISION_SUBMIT_ROUTE,
+        json={
+            "client_request_id": "decision-submit-api-missing-authority",
+            "submit_mode": "sec_xbrl_operator_review_decision_submit_v1",
+            "operator_decision": "submit_sec_xbrl_operator_review_decision",
+            "review_decision": "approved",
+            "decision_reason_code": "ready_for_next_freeze",
+        },
+    )
+
+    assert response.status_code == 400, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.workbench_error.v1"
+    assert body["error_code"] == "sec_xbrl_operator_review_decision_authority_missing"
+    assert body["status"] == "blocked"
+
+
+def test_operator_review_decision_submit_api_requires_notes_for_non_approved(api_client) -> None:
+    client, Session = api_client
+    with Session() as session:
+        workflow = _open_workflow(session, request_id="workflow-decision-api-notes")
+
+    response = client.post(
+        DECISION_SUBMIT_ROUTE,
+        json=_decision_submit_payload(
+            workflow,
+            client_request_id="decision-submit-api-missing-notes",
+            review_decision="blocked",
+            decision_reason_code="operator_blocked",
+        ),
+    )
+
+    assert response.status_code == 400, response.text
+    body = response.json()
+    assert body["error_code"] == "sec_xbrl_operator_review_decision_notes_required"
+    with Session() as session:
+        assert session.query(L3SecXbrlOperatorReviewDecision).count() == 0
+
+
+def test_operator_review_decision_submit_api_rejects_raw_note_reference(api_client) -> None:
+    client, Session = api_client
+    with Session() as session:
+        workflow = _open_workflow(session, request_id="workflow-decision-api-raw-note")
+
+    response = client.post(
+        DECISION_SUBMIT_ROUTE,
+        json=_decision_submit_payload(
+            workflow,
+            client_request_id="decision-submit-api-raw-note",
+            review_decision="rejected",
+            decision_reason_code="redaction_gap",
+            decision_notes="Contact operator@example.com about 123.45",
+        ),
+    )
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["error_code"] == "sec_xbrl_operator_review_workflow_raw_reference_not_admitted"
+    assert "operator@example.com" not in response.text
+    assert "123.45" not in response.text
+    with Session() as session:
+        assert session.query(L3SecXbrlOperatorReviewDecision).count() == 0
+
+
+def test_operator_review_decision_submit_api_replays_same_request_and_basis(api_client) -> None:
+    client, Session = api_client
+    with Session() as session:
+        workflow = _open_workflow(session, request_id="workflow-decision-api-replay")
+    payload = _decision_submit_payload(
+        workflow,
+        client_request_id="decision-submit-api-replay",
+    )
+
+    first = client.post(DECISION_SUBMIT_ROUTE, json=payload)
+    second = client.post(DECISION_SUBMIT_ROUTE, json=payload)
+
+    assert first.status_code == 200, first.text
+    assert second.status_code == 200, second.text
+    first_body = first.json()
+    second_body = second.json()
+    assert first_body["idempotent_replay"] is False
+    assert second_body["idempotent_replay"] is True
+    assert (
+        second_body["sec_xbrl_operator_review_decision_id"]
+        == first_body["sec_xbrl_operator_review_decision_id"]
+    )
+    with Session() as session:
+        assert session.query(L3SecXbrlOperatorReviewDecision).count() == 1
+
+
+def test_operator_review_decision_submit_api_rejects_second_decision_for_workflow(api_client) -> None:
+    client, Session = api_client
+    with Session() as session:
+        workflow = _open_workflow(session, request_id="workflow-decision-api-second")
+
+    first = client.post(
+        DECISION_SUBMIT_ROUTE,
+        json=_decision_submit_payload(workflow, client_request_id="decision-submit-api-first"),
+    )
+    second = client.post(
+        DECISION_SUBMIT_ROUTE,
+        json=_decision_submit_payload(
+            workflow,
+            client_request_id="decision-submit-api-second",
+            review_decision="blocked",
+            decision_reason_code="operator_blocked",
+            decision_notes="bounded blocked reason",
+        ),
+    )
+
+    assert first.status_code == 200, first.text
+    assert second.status_code == 409, second.text
+    body = second.json()
+    assert body["error_code"] == "sec_xbrl_operator_review_decision_workflow_already_decided"
+    with Session() as session:
+        assert session.query(L3SecXbrlOperatorReviewDecision).count() == 1
 
 
 def test_operator_review_workflow_replays_same_request_and_basis(db_session) -> None:

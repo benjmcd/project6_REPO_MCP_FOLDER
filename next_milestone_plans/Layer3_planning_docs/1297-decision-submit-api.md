@@ -6,17 +6,18 @@ Prior implementation: `next_milestone_plans/Layer3_planning_docs/1296-decision-r
 
 ## Status
 
-Tier-2 risk-assessed API-contract freeze only.
+Tier-2 risk-assessed API-contract freeze plus branch-local route implementation.
 
 This document freezes the next route-level submission boundary over the existing
-`record_redacted_operator_review_decision` owner service. It does not implement the
-route, change runtime behavior, add schema, widen persistence, add UI, reveal values,
+`record_redacted_operator_review_decision` owner service. The implementation pass adds
+only the frozen FastAPI wrapper and focused API proof. It does not change schema, widen
+persistence beyond the existing decision receipt service, add UI, reveal values,
 export/deliver packets, invoke SEC/Arelle/source acquisition, change defaults, or claim
 production readiness.
 
 ## Route Boundary
 
-Future route:
+Frozen and implemented route:
 
 `POST /api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit`
 
@@ -63,7 +64,7 @@ fields, default-on fields, rendered-control fields, or residual magnitude fields
 
 ## Response Contract
 
-The future route may return the owner-service decision receipt projection plus these
+The route returns the owner-service decision receipt projection plus these
 API-specific flags:
 
 - `decision_submit_api_route_enabled=true`;
@@ -83,7 +84,7 @@ payloads, or rendered-control state.
 
 ## Implementation Boundary
 
-The next implementation slice may touch:
+This implementation slice may touch:
 
 - `backend/app/api/layer3.py`;
 - `backend/tests/test_sec_xbrl_operator_review_workflow.py`;
@@ -119,8 +120,8 @@ The implementation PR must prove:
 - second decision for the same workflow fails closed;
 - API response contains no raw notes, values, accessions, period dates, SEC URLs, local
   paths, identities, operator contacts, residual magnitudes, source-acquisition fields,
-  Arelle controls, delivery/export controls, value-reveal controls, or default-on
-  controls;
+  Arelle controls, enabled delivery/export controls, enabled value-reveal controls, or
+  default-on controls; blocked-control evidence may still name blocked controls;
 - no workflow, statement-packet, or projection row is mutated by the route.
 
 Minimum verification:
@@ -134,9 +135,32 @@ Minimum verification:
 - redaction/residual scans over changed SEC XBRL proof artifacts if any are changed;
 - `git diff --check`.
 
+## Implementation Result
+
+Branch-local implementation posture:
+
+- `backend/app/api/layer3.py` adds
+  `POST /api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit`.
+- The request model uses `extra="forbid"` and admits only the frozen submit mode,
+  operator decision, review decision, reason code, optional workflow selectors, and
+  optional notes.
+- The route calls only `record_redacted_operator_review_decision`, uses the existing
+  SEC XBRL operator-review workflow error mapper, and returns the standard API envelope
+  plus the owner-service decision receipt projection.
+- The response sets `decision_submit_api_route_enabled=true` while preserving
+  `api_route_enabled=false` from the owner-service receipt and keeping rendered UI,
+  workflow-open API, value reveal, delivery/export, source acquisition, Arelle,
+  runtime-default, and production-readiness flags false.
+- Focused API proof covers successful receipt creation, extra-field rejection, missing
+  authority failure, non-approved missing-notes failure, raw note/contact/value-string
+  rejection, idempotent replay, second-decision rejection, response redaction, and
+  workflow/statement-packet/projection non-mutation.
+- Branch-local test evidence: focused operator-review workflow tests returned
+  `34 passed, 3 warnings`; full SEC XBRL suite returned `254 passed, 4 warnings`.
+
 ## Next Posture
 
-After this freeze lands and current-main verification is clean, the next bounded posture
-is:
+After this route implementation lands and current-main verification is clean, the next
+bounded posture is:
 
-`sec_xbrl_operator_review_decision_submit_api_v1`
+`sec_xbrl_operator_review_decision_status_api_v1`

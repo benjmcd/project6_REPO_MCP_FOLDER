@@ -123,6 +123,7 @@ from app.services import (
     layer3_workbench,
 )
 from app.services.layer3_preflight_request_contract import PREFLIGHT_MANUAL_CONSTRAINT_FORBIDDEN_FIELDS
+from app.services.layer3_response_contract import base_response
 from app.services.layer3_workbench_error import Layer3WorkbenchError, workbench_error_response
 
 router = APIRouter()
@@ -1168,6 +1169,25 @@ class Layer3SecXbrlOperatorReviewWorkflowStatusRequest(BaseModel):
     operator_decision: Literal["inspect_sec_xbrl_operator_review_workflow_status"]
     sec_xbrl_operator_review_workflow_id: str | None = Field(default=None, min_length=1)
     workflow_basis_hash: str | None = Field(default=None, min_length=64, max_length=64)
+
+
+class Layer3SecXbrlOperatorReviewDecisionSubmitRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    submit_mode: Literal["sec_xbrl_operator_review_decision_submit_v1"]
+    operator_decision: Literal["submit_sec_xbrl_operator_review_decision"]
+    review_decision: Literal["approved", "changes_requested", "rejected", "blocked"]
+    decision_reason_code: Literal[
+        "ready_for_next_freeze",
+        "needs_packet_revision",
+        "authority_gap",
+        "redaction_gap",
+        "operator_blocked",
+    ]
+    sec_xbrl_operator_review_workflow_id: str | None = Field(default=None, min_length=1)
+    workflow_basis_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    decision_notes: str | None = None
 
 
 class Layer3RawMixedCorpusSeedRequest(BaseModel):
@@ -9181,6 +9201,42 @@ class Layer3SecXbrlOperatorReviewWorkflowStatusResponse(Layer3BaseResponse):
     next_allowed_actions: list[str]
 
 
+class Layer3SecXbrlOperatorReviewDecisionSubmitResponse(Layer3BaseResponse):
+    sec_xbrl_operator_review_decision_id: str
+    sec_xbrl_operator_review_workflow_id: str
+    client_request_id: str
+    decision_basis_hash: str
+    workflow_basis_hash: str
+    statement_packet_basis_hash: str
+    source_projection_basis_hash: str
+    decision_mode: str
+    review_decision: str
+    decision_status: str
+    redaction_policy: str
+    decision_reason_code: str
+    decision_notes_present: bool
+    decision_notes_hash: str | None
+    decision_summary: dict[str, Any]
+    authority_refs: dict[str, Any]
+    permitted_controls_after_decision: list[str]
+    blocked_controls_after_decision: list[dict[str, Any]]
+    idempotent_replay: bool
+    operator_review_decision_recorded: bool
+    runtime_default_enabled: bool
+    value_reveal_performed: bool
+    source_acquisition_performed: bool
+    arelle_invoked: bool
+    delivery_export_enabled: bool
+    api_route_enabled: bool
+    decision_submit_api_route_enabled: bool
+    workflow_open_api_route_enabled: bool
+    rendered_ui_enabled: bool
+    production_readiness_claimed: bool
+    workflow_mutated: bool
+    statement_packet_mutated: bool
+    projection_mutated: bool
+
+
 class Layer3ApsContentDocumentCandidatesResponse(Layer3BaseResponse):
     aps_content_document_candidates: list[dict[str, Any]]
     candidate_count: int
@@ -16075,6 +16131,41 @@ def post_sec_xbrl_operator_review_workflow_status(
             db,
             **payload.model_dump(exclude={"status_mode", "operator_decision"}, exclude_none=True),
         )
+    except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
+        return _sec_xbrl_operator_review_workflow_error_response(exc)
+
+
+@router.post(
+    "/sec-xbrl/operator-review/workflow/decision/submit",
+    response_model=Layer3SecXbrlOperatorReviewDecisionSubmitResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_xbrl_operator_review_workflow_decision_submit(
+    payload: Layer3SecXbrlOperatorReviewDecisionSubmitRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        decision = layer3_sec_xbrl_operator_review_workflow.record_redacted_operator_review_decision(
+            db,
+            **payload.model_dump(exclude={"submit_mode", "operator_decision"}, exclude_none=True),
+        )
+        return {
+            **base_response(
+                decision["schema_id"],
+                request_id=decision["client_request_id"],
+                status=decision["status"],
+            ),
+            **decision,
+            "decision_submit_api_route_enabled": True,
+            "workflow_open_api_route_enabled": False,
+            "rendered_ui_enabled": False,
+            "runtime_default_enabled": False,
+            "value_reveal_performed": False,
+            "delivery_export_enabled": False,
+            "source_acquisition_performed": False,
+            "arelle_invoked": False,
+            "production_readiness_claimed": False,
+        }
     except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
         return _sec_xbrl_operator_review_workflow_error_response(exc)
 
