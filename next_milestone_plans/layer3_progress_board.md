@@ -10072,7 +10072,8 @@ Milestone: `sec_xbrl_controlled_value_reveal_submit_v1`.
 
 Planning doc: `next_milestone_plans/Layer3_planning_docs/1303-controlled-value-reveal-submit-design.md`.
 
-Status: branch-local Tier-2 design/pre-review entry.
+Status: merged current-main Tier-2 design/pre-review entry, merged at
+`ddcab8771ebecfdd33b78a077bc461a37edc7d90`.
 
 Scope: designs the next submit boundary without implementing runtime behavior.
 The future route is `POST /api/v1/layer3/sec-xbrl/value-reveal/submit`; the
@@ -10091,6 +10092,42 @@ financial-statement semantics remain separate later gates.
 
 Next exact posture after merge and current-main verification:
 `sec_xbrl_controlled_value_reveal_submit_v1_tier2_risk_assessed_implementation`.
+
+## SEC XBRL Controlled Value-Reveal Submit
+
+Milestone: `sec_xbrl_controlled_value_reveal_submit_v1_tier2_risk_assessed_implementation`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1304-controlled-value-reveal-submit.md`.
+
+Status: branch-local Tier-2 risk-assessed implementation entry with verification
+complete.
+
+Scope: adds a default-off, server-owned controlled reveal-submit boundary over
+the merged value-reveal authority receipt. The implementation adds an additive
+hash/count submit receipt table, an owner service, submit/status API routes, a
+default-off feature flag, and focused service/API/model/migration proof.
+
+Authority boundary: the browser may supply only the authority receipt id,
+authority basis hash, submit mode, operator decision, confirmation, and optional
+server-capped `max_records`. Sidecar, dataset, value-store, accession, CIK,
+ticker, path, URL, source-acquisition, Arelle, delivery/export, UI, and
+default-on authority remain non-admitted and must be server-resolved or blocked.
+
+Containment: returned values are transient submit response data only; the submit
+receipt persists hashes, counts, policy/state, inventory hashes, and summary
+metadata only; the status route returns no revealed facts and omits lower-level
+sidecar/dataset/projection lineage ids. Rendered value UI, default-on admission,
+source acquisition, Arelle invocation, delivery/export, provider dispatch, raw
+artifact commits, production readiness, and final financial-statement semantics
+remain separate later gates.
+
+Verification: focused operator-review workflow test, full SEC XBRL test suite,
+target-selection frozen check, progress check, manifest/report JSON validation,
+redaction scan, residual-magnitude regression scan, py_compile, and
+`git diff --check` pass on this branch.
+
+Next exact posture after merge and current-main verification:
+`sec_xbrl_controlled_value_reveal_submit_post_merge_audit_then_rendered_or_default_design_if_admitted`.
 
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 

@@ -94,6 +94,13 @@ L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REASON_CODES = (
 L3_SEC_XBRL_VALUE_REVEAL_AUTHORITY_STATE_READY = "ready_for_explicit_value_reveal"
 L3_SEC_XBRL_VALUE_REVEAL_AUTHORITY_POLICY_ID = "sec_xbrl_approved_decision_bound_value_reveal_authority_v1"
 L3_SEC_XBRL_VALUE_REVEAL_AUTHORITY_REDACTION_POLICY = "sec_xbrl_value_reveal_authority_hashes_only_v1"
+L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_STATE_READY = "controlled_values_revealed_transiently"
+L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_POLICY_ID = (
+    "sec_xbrl_authority_receipt_bound_controlled_value_reveal_submit_v1"
+)
+L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_REDACTION_POLICY = (
+    "sec_xbrl_controlled_value_reveal_submit_hash_count_receipt_v1"
+)
 
 
 class TimestampMixin:
@@ -1431,6 +1438,108 @@ class L3SecXbrlValueRevealAuthorityReceipt(Base):
     operator_review_decision: Mapped[L3SecXbrlOperatorReviewDecision] = relationship(
         back_populates="value_reveal_authority_receipts",
     )
+    controlled_value_reveal_submit_receipts: Mapped[list["L3SecXbrlControlledValueRevealSubmitReceipt"]] = relationship(
+        back_populates="value_reveal_authority_receipt",
+    )
+
+
+class L3SecXbrlControlledValueRevealSubmitReceipt(Base):
+    __tablename__ = "l3_sec_xbrl_controlled_value_reveal_submit_receipt"
+    __table_args__ = (
+        UniqueConstraint("client_request_id", name="uq_l3_sec_xbrl_controlled_value_reveal_client_request"),
+        UniqueConstraint("submit_basis_hash", name="uq_l3_sec_xbrl_controlled_value_reveal_basis_hash"),
+        UniqueConstraint(
+            "sec_xbrl_value_reveal_authority_receipt_id",
+            name="uq_l3_sec_xbrl_controlled_value_reveal_authority",
+        ),
+        CheckConstraint(
+            f"submit_state = '{L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_STATE_READY}'",
+            name="ck_l3_sec_xbrl_controlled_value_reveal_state",
+        ),
+        CheckConstraint(
+            f"submit_policy_id = '{L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_POLICY_ID}'",
+            name="ck_l3_sec_xbrl_controlled_value_reveal_policy",
+        ),
+        CheckConstraint(
+            f"redaction_policy = '{L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_REDACTION_POLICY}'",
+            name="ck_l3_sec_xbrl_controlled_value_reveal_redaction",
+        ),
+        Index(
+            "ix_l3_sec_xbrl_controlled_value_reveal_authority",
+            "sec_xbrl_value_reveal_authority_receipt_id",
+        ),
+        Index("ix_l3_sec_xbrl_controlled_value_reveal_basis", "submit_basis_hash"),
+        Index("ix_l3_sec_xbrl_controlled_value_reveal_projection", "projection_basis_hash"),
+        Index("ix_l3_sec_xbrl_controlled_value_reveal_dataset", "dataset_version_id"),
+    )
+
+    sec_xbrl_controlled_value_reveal_submit_receipt_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=uuid_str,
+    )
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    submit_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    submit_schema_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    sec_xbrl_value_reveal_authority_receipt_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_sec_xbrl_value_reveal_authority_receipt.sec_xbrl_value_reveal_authority_receipt_id"),
+        nullable=False,
+    )
+    authority_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    sec_xbrl_operator_review_decision_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_sec_xbrl_operator_review_decision.sec_xbrl_operator_review_decision_id"),
+        nullable=False,
+    )
+    decision_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    sec_xbrl_operator_review_workflow_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_sec_xbrl_operator_review_workflow.sec_xbrl_operator_review_workflow_id"),
+        nullable=False,
+    )
+    workflow_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    sec_xbrl_statement_packet_set_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_sec_xbrl_statement_packet_set.sec_xbrl_statement_packet_set_id"),
+        nullable=False,
+    )
+    statement_packet_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    sec_xbrl_projection_set_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_sec_xbrl_projection_set.sec_xbrl_projection_set_id"),
+        nullable=False,
+    )
+    projection_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    dataset_version_id: Mapped[str] = mapped_column(ForeignKey("dataset_version.dataset_version_id"), nullable=False)
+    dataset_version_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    sidecar_receipt_id_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    sidecar_receipt_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    value_store_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    submit_state: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default=L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_STATE_READY,
+    )
+    submit_policy_id: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        default=L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_POLICY_ID,
+    )
+    redaction_policy: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        default=L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_REDACTION_POLICY,
+    )
+    revealed_fact_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    value_redacted_fact_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    fact_inventory_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    value_inventory_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    response_inventory_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    submit_summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    negative_invariants_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    value_reveal_authority_receipt: Mapped[L3SecXbrlValueRevealAuthorityReceipt] = relationship(
+        back_populates="controlled_value_reveal_submit_receipts",
+    )
+    operator_review_decision: Mapped[L3SecXbrlOperatorReviewDecision] = relationship()
 
 
 class L3TypingRecord(Base, TimestampMixin):

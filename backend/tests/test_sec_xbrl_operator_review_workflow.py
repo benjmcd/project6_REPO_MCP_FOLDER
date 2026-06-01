@@ -24,6 +24,7 @@ from app.db.session import Base
 from app.models import (
     Dataset,
     DatasetVersion,
+    L3SecXbrlControlledValueRevealSubmitReceipt,
     L3SecXbrlOperatorReviewDecision,
     L3SecXbrlOperatorReviewWorkflow,
     L3SecXbrlProjectionSet,
@@ -32,6 +33,7 @@ from app.models import (
 )
 from app.models.models import L3_SEC_XBRL_STATEMENT_PACKET_REDACTION_POLICY
 from app.services import layer3_sec_xbrl_operator_review_workflow as workflow_service
+from app.services import layer3_sec_xbrl_controlled_value_reveal_submit as submit_service
 from app.services import layer3_sec_xbrl_projection_persistence as projection_persistence
 from app.services import layer3_sec_xbrl_statement_assembly as assembly
 from app.services import layer3_sec_xbrl_statement_packet_persistence as packet_persistence
@@ -47,8 +49,12 @@ DECISION_MIGRATION_PATH = (
 DECISION_SUBMIT_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit"
 DECISION_STATUS_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/status"
 AUTHORITY_PREPARE_ROUTE = "/api/v1/layer3/sec-xbrl/value-reveal/authority/prepare"
+CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE = "/api/v1/layer3/sec-xbrl/value-reveal/submit"
 AUTHORITY_MIGRATION_PATH = (
     ROOT / "backend" / "alembic" / "versions" / "0044_layer3_sec_xbrl_value_reveal_authority_receipt.py"
+)
+SUBMIT_MIGRATION_PATH = (
+    ROOT / "backend" / "alembic" / "versions" / "0045_layer3_sec_xbrl_controlled_value_reveal_submit.py"
 )
 
 
@@ -323,6 +329,85 @@ def _sidecar_authority() -> dict[str, str]:
         "sidecar_receipt_hash": _hash("b"),
         "value_store_hash": _hash("c"),
     }
+
+
+def _enable_controlled_submit(monkeypatch) -> None:
+    monkeypatch.setattr(
+        submit_service.settings,
+        "layer3_sec_xbrl_controlled_value_reveal_submit_enabled",
+        True,
+    )
+
+
+def _submit_sidecar_and_value_store(
+    *,
+    effective_value: str = "123.45",
+    lexical_value: str = "123.45",
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    sidecar = {
+        "sidecar_receipt_id": "sec-edgar-arelle-resolved-fact-authority-server-owned",
+        "sidecar_receipt_hash": _hash("b"),
+        "sidecar_state": "sec_edgar_arelle_resolved_fact_authority_sidecar_ready",
+        "resolved_fact_records": [
+            {
+                "resolved_fact_id": "resolved-fact-1",
+                "source_order": 1,
+                "entry_document_index": 1,
+                "value_hash": _hash("v"),
+                "concept": {
+                    "qname": "us-gaap:Revenue",
+                    "local_name": "Revenue",
+                    "standard": True,
+                    "extension": False,
+                },
+                "period": {"type": "duration", "start": "2026-01-01", "end": "2026-03-31"},
+                "unit": {"currency": "USD", "resolved": True},
+                "dimensions": {},
+                "hidden": False,
+                "continued": False,
+            }
+        ],
+    }
+    value_store = {
+        "value_store_hash": _hash("c"),
+        "value_records": [
+            {
+                "resolved_fact_id": "resolved-fact-1",
+                "effective_value": effective_value,
+                "lexical_value": lexical_value,
+                "effective_value_hash": _hash("v"),
+                "value_semantics": "arelle_effective_canonical_value_v1",
+                "transform": {"scale": "0", "decimals": "2"},
+            }
+        ],
+    }
+    return sidecar, value_store
+
+
+def _prepare_authority_receipt(db_session, monkeypatch, *, request_id: str = "controlled-submit-authority"):
+    monkeypatch.setattr(authority_service, "_resolve_sidecar_authority", lambda *_args: _sidecar_authority())
+    decision = _record_decision(db_session, request_id=f"{request_id}-decision")
+    return authority_service.prepare_value_reveal_authority_receipt(
+        db_session,
+        client_request_id=request_id,
+        sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
+        decision_basis_hash=decision["decision_basis_hash"],
+    )
+
+
+def _controlled_submit_payload(authority: dict[str, Any], **overrides: Any) -> dict[str, Any]:
+    payload = {
+        "client_request_id": "controlled-value-reveal-submit-api",
+        "submit_mode": submit_service.SUBMIT_MODE,
+        "operator_decision": submit_service.SUBMIT_OPERATOR_DECISION,
+        "sec_xbrl_value_reveal_authority_receipt_id": authority[
+            "sec_xbrl_value_reveal_authority_receipt_id"
+        ],
+        "authority_basis_hash": authority["authority_basis_hash"],
+        "operator_reveal_confirmation": True,
+    }
+    payload.update(overrides)
+    return payload
 
 
 def test_value_reveal_authority_resolves_sidecar_and_internal_value_store(monkeypatch) -> None:
@@ -1793,6 +1878,191 @@ def test_value_reveal_authority_api_rejects_extra_fields(api_client) -> None:
     assert body["blocked_fields"] == ["sidecar_receipt_hash"]
 
 
+def test_controlled_value_reveal_submit_returns_transient_values_and_hash_only_receipt(db_session, monkeypatch) -> None:
+    _enable_controlled_submit(monkeypatch)
+    authority = _prepare_authority_receipt(db_session, monkeypatch, request_id="controlled-submit-service-authority")
+    monkeypatch.setattr(submit_service, "_resolve_sidecar_and_value_store", lambda *_args: _submit_sidecar_and_value_store())
+
+    response = submit_service.submit_controlled_value_reveal(
+        db_session,
+        client_request_id="controlled-submit-service",
+        sec_xbrl_value_reveal_authority_receipt_id=authority["sec_xbrl_value_reveal_authority_receipt_id"],
+        authority_basis_hash=authority["authority_basis_hash"],
+        operator_reveal_confirmation=True,
+    )
+
+    assert response["schema_id"] == submit_service.SUBMIT_SCHEMA_ID
+    assert response["submit_mode"] == submit_service.SUBMIT_MODE
+    assert response["transient_values_returned"] is True
+    assert response["revealed_fact_count"] == 1
+    assert response["revealed_facts"][0]["effective_value"] == "123.45"
+    assert response["revealed_facts"][0]["lexical_value"] == "123.45"
+    assert "period" not in response["revealed_facts"][0]
+    assert "sidecar_receipt_id" not in response
+    assert response["raw_sidecar_receipt_id_persisted"] is False
+    assert response["audit_receipt_raw_values_persisted"] is False
+    assert response["runtime_default_enabled"] is False
+    assert response["delivery_export_enabled"] is False
+    assert response["rendered_ui_enabled"] is False
+
+    row = db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).one()
+    assert row.submit_basis_hash == response["submit_basis_hash"]
+    assert row.revealed_fact_count == 1
+    assert row.value_redacted_fact_count == 0
+    assert row.sidecar_receipt_id_hash == _hash("d")
+    assert "123.45" not in json.dumps(row.submit_summary_json, sort_keys=True)
+    assert row.negative_invariants_json["raw_values_persisted"] is False
+
+    status = submit_service.inspect_controlled_value_reveal_submit_status(
+        db_session,
+        sec_xbrl_controlled_value_reveal_submit_receipt_id=(
+            response["sec_xbrl_controlled_value_reveal_submit_receipt_id"]
+        ),
+    )
+    assert status["schema_id"] == submit_service.STATUS_SCHEMA_ID
+    assert status["revealed_fact_count"] == 1
+    assert status["revealed_facts"] == []
+    assert status["transient_values_returned"] is False
+    assert "dataset_version_id" not in status
+    assert "sidecar_receipt_hash" not in status
+
+
+def test_controlled_value_reveal_submit_redacts_identity_like_transient_values(db_session, monkeypatch) -> None:
+    _enable_controlled_submit(monkeypatch)
+    authority = _prepare_authority_receipt(db_session, monkeypatch, request_id="controlled-submit-redaction")
+    monkeypatch.setattr(
+        submit_service,
+        "_resolve_sidecar_and_value_store",
+        lambda *_args: _submit_sidecar_and_value_store(
+            effective_value="0000123456-26-000001",
+            lexical_value="0000123456-26-000001",
+        ),
+    )
+
+    response = submit_service.submit_controlled_value_reveal(
+        db_session,
+        client_request_id="controlled-submit-redacted-service",
+        sec_xbrl_value_reveal_authority_receipt_id=authority["sec_xbrl_value_reveal_authority_receipt_id"],
+        authority_basis_hash=authority["authority_basis_hash"],
+        operator_reveal_confirmation=True,
+    )
+
+    revealed = response["revealed_facts"][0]
+    assert revealed["effective_value"] == ""
+    assert revealed["lexical_value"] == ""
+    assert revealed["value_redacted"] is True
+    assert revealed["value_redaction_reason"] == "sec_xbrl_controlled_value_reveal_identity_or_raw_reference_redacted"
+    assert response["value_redacted_fact_count"] == 1
+
+    row = db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).one()
+    assert row.value_redacted_fact_count == 1
+    assert "0000123456-26-000001" not in json.dumps(row.submit_summary_json, sort_keys=True)
+    assert "0000123456-26-000001" not in json.dumps(row.negative_invariants_json, sort_keys=True)
+
+
+def test_controlled_value_reveal_submit_default_off_blocks_without_receipt(db_session) -> None:
+    with pytest.raises(submit_service.SecXbrlControlledValueRevealSubmitError) as exc:
+        submit_service.submit_controlled_value_reveal(
+            db_session,
+            client_request_id="controlled-submit-default-off",
+            sec_xbrl_value_reveal_authority_receipt_id="authority-receipt-id",
+            authority_basis_hash=_hash("a"),
+            operator_reveal_confirmation=True,
+        )
+
+    assert exc.value.code == "sec_xbrl_controlled_value_reveal_submit_feature_flag_disabled"
+    assert db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 0
+
+
+def test_controlled_value_reveal_submit_missing_sidecar_creates_no_partial_receipt(db_session, monkeypatch) -> None:
+    _enable_controlled_submit(monkeypatch)
+    authority = _prepare_authority_receipt(db_session, monkeypatch, request_id="controlled-submit-missing-sidecar")
+
+    def missing_sidecar(*_args):
+        raise submit_service.SecXbrlControlledValueRevealSubmitError(
+            "sec_xbrl_controlled_value_reveal_submit_value_store_missing",
+            "missing sidecar",
+        )
+
+    monkeypatch.setattr(submit_service, "_resolve_sidecar_and_value_store", missing_sidecar)
+
+    with pytest.raises(submit_service.SecXbrlControlledValueRevealSubmitError) as exc:
+        submit_service.submit_controlled_value_reveal(
+            db_session,
+            client_request_id="controlled-submit-missing-sidecar-service",
+            sec_xbrl_value_reveal_authority_receipt_id=authority["sec_xbrl_value_reveal_authority_receipt_id"],
+            authority_basis_hash=authority["authority_basis_hash"],
+            operator_reveal_confirmation=True,
+        )
+
+    assert exc.value.code == "sec_xbrl_controlled_value_reveal_submit_value_store_missing"
+    assert db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 0
+
+
+def test_controlled_value_reveal_submit_api_records_receipt_and_status_hash_count_only(
+    api_client,
+    monkeypatch,
+) -> None:
+    _enable_controlled_submit(monkeypatch)
+    monkeypatch.setattr(authority_service, "_resolve_sidecar_authority", lambda *_args: _sidecar_authority())
+    monkeypatch.setattr(submit_service, "_resolve_sidecar_and_value_store", lambda *_args: _submit_sidecar_and_value_store())
+    client, Session = api_client
+    with Session() as db:
+        decision = _record_decision(db, request_id="controlled-submit-api-decision-source")
+
+    authority_response = client.post(AUTHORITY_PREPARE_ROUTE, json=_authority_payload(decision))
+    assert authority_response.status_code == 200
+    authority = authority_response.json()
+
+    submit_response = client.post(
+        CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE,
+        json=_controlled_submit_payload(authority),
+    )
+
+    assert submit_response.status_code == 200
+    body = submit_response.json()
+    assert body["schema_id"] == submit_service.SUBMIT_SCHEMA_ID
+    assert body["revealed_fact_count"] == 1
+    assert body["revealed_facts"][0]["effective_value"] == "123.45"
+    assert "sidecar_receipt_id" not in body
+    assert body["status_surface_hash_count_only"] is True
+
+    status_response = client.get(
+        f"{CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE}/status/"
+        f"{body['sec_xbrl_controlled_value_reveal_submit_receipt_id']}"
+    )
+    assert status_response.status_code == 200
+    status = status_response.json()
+    assert status["schema_id"] == submit_service.STATUS_SCHEMA_ID
+    assert status["revealed_facts"] == []
+    assert status["transient_values_returned"] is False
+    assert "dataset_version_id" not in status
+    assert "sidecar_receipt_hash" not in status
+    assert "123.45" not in json.dumps(status, sort_keys=True)
+
+
+def test_controlled_value_reveal_submit_api_rejects_client_sidecar_fields(api_client) -> None:
+    client, _Session = api_client
+
+    response = client.post(
+        CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE,
+        json={
+            "client_request_id": "controlled-submit-api-extra",
+            "submit_mode": submit_service.SUBMIT_MODE,
+            "operator_decision": submit_service.SUBMIT_OPERATOR_DECISION,
+            "sec_xbrl_value_reveal_authority_receipt_id": "authority-receipt-id",
+            "authority_basis_hash": _hash("a"),
+            "operator_reveal_confirmation": True,
+            "sidecar_receipt_hash": _hash("b"),
+        },
+    )
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["error_code"] == "sec_xbrl_controlled_value_reveal_submit_request_fields_not_admitted"
+    assert body["blocked_fields"] == ["sidecar_receipt_hash"]
+
+
 def test_operator_review_workflow_tables_are_registered_in_metadata() -> None:
     engine = create_engine("sqlite:///:memory:", future=True)
     Base.metadata.create_all(engine)
@@ -1821,6 +2091,15 @@ def test_operator_review_workflow_tables_are_registered_in_metadata() -> None:
         assert "dataset_version_hash" in authority_columns
         assert "sidecar_receipt_id_hash" in authority_columns
         assert "value_store_hash" in authority_columns
+        assert "l3_sec_xbrl_controlled_value_reveal_submit_receipt" in inspector.get_table_names()
+        submit_columns = {
+            column["name"]
+            for column in inspector.get_columns("l3_sec_xbrl_controlled_value_reveal_submit_receipt")
+        }
+        assert "submit_basis_hash" in submit_columns
+        assert "sec_xbrl_value_reveal_authority_receipt_id" in submit_columns
+        assert "revealed_fact_count" in submit_columns
+        assert "response_inventory_hash" in submit_columns
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()
@@ -1877,6 +2156,25 @@ def test_value_reveal_authority_migration_declares_additive_table() -> None:
     assert module.down_revision == "0043_layer3_sec_xbrl_statement_packet_row_period_unique"
     source = AUTHORITY_MIGRATION_PATH.read_text(encoding="utf-8")
     assert "l3_sec_xbrl_value_reveal_authority_receipt" in source
+    assert "drop_table_idempotent(TABLE_NAME)" in source
+
+
+def test_controlled_value_reveal_submit_migration_declares_additive_table() -> None:
+    backend_root = str(ROOT / "backend")
+    if backend_root not in sys.path:
+        sys.path.insert(0, backend_root)
+    spec = importlib.util.spec_from_file_location(
+        "migration_0045_sec_xbrl_controlled_value_reveal_submit",
+        SUBMIT_MIGRATION_PATH,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert module.revision == "0045_layer3_sec_xbrl_controlled_value_reveal_submit"
+    assert module.down_revision == "0044_layer3_sec_xbrl_value_reveal_authority_receipt"
+    source = SUBMIT_MIGRATION_PATH.read_text(encoding="utf-8")
+    assert "l3_sec_xbrl_controlled_value_reveal_submit_receipt" in source
     assert "drop_table_idempotent(TABLE_NAME)" in source
 
 

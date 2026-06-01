@@ -60,6 +60,7 @@ from app.services import (
     layer3_sec_edgar_real_filing_downstream_validation,
     layer3_sec_edgar_repeatability_trial,
     layer3_sec_edgar_source_acquisition,
+    layer3_sec_xbrl_controlled_value_reveal_submit,
     layer3_sec_xbrl_operator_review_workflow,
     layer3_sec_xbrl_value_reveal_authority,
     layer3_provider_private_signed_url,
@@ -1210,6 +1211,19 @@ class Layer3SecXbrlValueRevealAuthorityPrepareRequest(BaseModel):
     sec_xbrl_operator_review_decision_id: str = Field(min_length=1)
     decision_basis_hash: str = Field(min_length=64, max_length=64)
     operator_attestation: str | None = None
+
+
+class Layer3SecXbrlControlledValueRevealSubmitRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    client_request_id: str = Field(min_length=1)
+    submit_mode: Literal["sec_xbrl_controlled_value_reveal_submit_v1"]
+    operator_decision: Literal["submit_explicit_sec_xbrl_value_reveal_from_authority_receipt"]
+    sec_xbrl_value_reveal_authority_receipt_id: str = Field(min_length=1)
+    authority_basis_hash: str = Field(min_length=64, max_length=64)
+    operator_reveal_confirmation: Literal[True]
+    max_records: int | None = Field(default=None, ge=1)
+    page_cursor: str | None = None
 
 
 class Layer3RawMixedCorpusSeedRequest(BaseModel):
@@ -9336,6 +9350,52 @@ class Layer3SecXbrlValueRevealAuthorityPrepareResponse(Layer3BaseResponse):
     production_readiness_claimed: bool
 
 
+class Layer3SecXbrlControlledValueRevealSubmitResponse(Layer3BaseResponse):
+    submit_mode: str
+    submit_state: str
+    sec_xbrl_controlled_value_reveal_submit_receipt_id: str
+    value_reveal_submit_receipt_ref: str
+    client_request_id: str | None = None
+    submit_basis_hash: str
+    sec_xbrl_value_reveal_authority_receipt_id: str
+    authority_basis_hash: str
+    submit_policy_id: str
+    redaction_policy: str
+    sec_xbrl_operator_review_decision_id: str | None = None
+    decision_basis_hash: str | None = None
+    sec_xbrl_operator_review_workflow_id: str | None = None
+    workflow_basis_hash: str | None = None
+    sec_xbrl_statement_packet_set_id: str | None = None
+    statement_packet_basis_hash: str | None = None
+    sec_xbrl_projection_set_id: str | None = None
+    projection_basis_hash: str | None = None
+    dataset_version_id: str | None = None
+    dataset_version_hash: str | None = None
+    sidecar_receipt_id_hash: str | None = None
+    sidecar_receipt_hash: str | None = None
+    value_store_hash: str | None = None
+    revealed_fact_count: int
+    revealed_facts: list[dict[str, Any]]
+    value_redacted_fact_count: int
+    fact_inventory_hash: str
+    value_inventory_hash: str
+    response_inventory_hash: str
+    submit_summary: dict[str, Any]
+    negative_invariants: dict[str, bool]
+    transient_values_returned: bool
+    idempotent_replay: bool
+    status_surface_hash_count_only: bool
+    audit_receipt_raw_values_persisted: bool
+    raw_sidecar_receipt_id_persisted: bool
+    runtime_default_enabled: bool
+    source_acquisition_performed: bool
+    arelle_invoked: bool
+    delivery_export_enabled: bool
+    rendered_ui_enabled: bool
+    production_readiness_claimed: bool
+    next_allowed_actions: list[str]
+
+
 class Layer3ApsContentDocumentCandidatesResponse(Layer3BaseResponse):
     aps_content_document_candidates: list[dict[str, Any]]
     candidate_count: int
@@ -13714,6 +13774,27 @@ def _sec_xbrl_value_reveal_authority_error_response(
     )
 
 
+def _sec_xbrl_controlled_value_reveal_submit_error_response(
+    exc: layer3_sec_xbrl_controlled_value_reveal_submit.SecXbrlControlledValueRevealSubmitError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.http_status,
+        content=workbench_error_response(
+            Layer3WorkbenchError(
+                error_code=exc.code,
+                message=exc.message,
+                status="blocked",
+                http_status=exc.http_status,
+                blocked_fields=[
+                    str(field)
+                    for field in exc.details.get("required_any_of", exc.details.get("blocked_keys", []))
+                ],
+                next_allowed_actions=["prepare_sec_xbrl_value_reveal_authority"],
+            )
+        ),
+    )
+
+
 def _candidate_b_policy_request_context(request: Request) -> dict[str, str]:
     return {str(key): str(value) for key, value in request.headers.items()}
 
@@ -16379,6 +16460,90 @@ def post_sec_xbrl_value_reveal_authority_prepare(
         }
     except layer3_sec_xbrl_value_reveal_authority.SecXbrlValueRevealAuthorityError as exc:
         return _sec_xbrl_value_reveal_authority_error_response(exc)
+
+
+@router.post(
+    "/sec-xbrl/value-reveal/submit",
+    response_model=Layer3SecXbrlControlledValueRevealSubmitResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_xbrl_controlled_value_reveal_submit(
+    payload: Layer3SecXbrlControlledValueRevealSubmitRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    extra_fields = sorted(str(field) for field in (payload.model_extra or {}))
+    if extra_fields:
+        return _sec_xbrl_controlled_value_reveal_submit_error_response(
+            layer3_sec_xbrl_controlled_value_reveal_submit.SecXbrlControlledValueRevealSubmitError(
+                "sec_xbrl_controlled_value_reveal_submit_request_fields_not_admitted",
+                "SEC XBRL controlled value-reveal submit only admits authority-receipt request fields.",
+                details={"blocked_keys": extra_fields},
+                http_status=400,
+            )
+        )
+
+    payload_data = {
+        key: value
+        for key, value in payload.model_dump(exclude_none=True).items()
+        if key in Layer3SecXbrlControlledValueRevealSubmitRequest.model_fields
+    }
+    try:
+        receipt = layer3_sec_xbrl_controlled_value_reveal_submit.submit_controlled_value_reveal(
+            db,
+            **{
+                key: value
+                for key, value in payload_data.items()
+                if key not in {"submit_mode", "operator_decision"}
+            },
+        )
+        return {
+            **base_response(
+                receipt["schema_id"],
+                request_id=payload.client_request_id,
+                status=receipt["status"],
+            ),
+            **receipt,
+            "runtime_default_enabled": False,
+            "source_acquisition_performed": False,
+            "arelle_invoked": False,
+            "delivery_export_enabled": False,
+            "rendered_ui_enabled": False,
+            "production_readiness_claimed": False,
+        }
+    except layer3_sec_xbrl_controlled_value_reveal_submit.SecXbrlControlledValueRevealSubmitError as exc:
+        return _sec_xbrl_controlled_value_reveal_submit_error_response(exc)
+
+
+@router.get(
+    "/sec-xbrl/value-reveal/submit/status/{sec_xbrl_controlled_value_reveal_submit_receipt_id}",
+    response_model=Layer3SecXbrlControlledValueRevealSubmitResponse,
+    response_model_exclude_none=True,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_sec_xbrl_controlled_value_reveal_submit_status(
+    sec_xbrl_controlled_value_reveal_submit_receipt_id: str,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        receipt = layer3_sec_xbrl_controlled_value_reveal_submit.inspect_controlled_value_reveal_submit_status(
+            db,
+            sec_xbrl_controlled_value_reveal_submit_receipt_id=(
+                sec_xbrl_controlled_value_reveal_submit_receipt_id
+            ),
+        )
+        return {
+            **base_response(
+                receipt["schema_id"],
+                request_id=(
+                    "sec-xbrl-controlled-value-reveal-status-"
+                    f"{sec_xbrl_controlled_value_reveal_submit_receipt_id[:12]}"
+                ),
+                status=receipt["status"],
+            ),
+            **receipt,
+        }
+    except layer3_sec_xbrl_controlled_value_reveal_submit.SecXbrlControlledValueRevealSubmitError as exc:
+        return _sec_xbrl_controlled_value_reveal_submit_error_response(exc)
 
 
 @router.post(
