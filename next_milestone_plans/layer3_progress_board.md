@@ -10129,6 +10129,40 @@ redaction scan, residual-magnitude regression scan, py_compile, and
 Next exact posture after merge and current-main verification:
 `sec_xbrl_controlled_value_reveal_submit_post_merge_audit_then_rendered_or_default_design_if_admitted`.
 
+## SEC XBRL Rendered Value UI Proof
+
+Milestone: `sec_xbrl_rendered_controlled_value_reveal_ui_proof_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1310-rendered-value-ui-proof.md`.
+
+Status: branch-local Tier-2 risk-assessed rendered UI proof, verified on
+`codex/secxbrl-rendered-value-ui-proof`, based on current
+`project6-origin/main` at `f861acb16677267cc58173c1f0b3fcf820e93bcc`.
+
+Scope: render the bounded SEC XBRL controlled value-reveal operator panel over
+the existing authority prepare, controlled submit, and submit-status APIs. The
+browser may prepare authority from the admitted decision id/hash fields and
+optional bounded attestation, submit explicit controlled reveal from the
+authority receipt id/hash plus confirmation and optional server-capped
+`max_records`, and inspect status from the controlled submit receipt id only.
+
+Non-goals: no `models.py`, Alembic migration, schema, durable persistence,
+backend API route change, backend service behavior change, source acquisition,
+Arelle subprocess invocation, export/delivery, provider/connector dispatch,
+raw runtime artifacts, default-on behavior, production readiness, frontend
+durable authority, status-response value replay, or final financial-statement
+semantics claim.
+
+Verification: JS syntax, focused static page proof, full `/review/layer3`
+static suite, full SEC XBRL backend suite, headed and headless Chromium
+rendered interaction proof, target-selection frozen check, progress check,
+py_compile, UTF-8-SIG JSON parsing, committed SEC XBRL JSON redaction scan,
+residual-magnitude scan, and `git diff --check` pass before PR closeout.
+
+Next exact posture after merge and current-main verification:
+`sec_xbrl_rendered_controlled_value_reveal_ui_post_merge_audit_then_default_or_export_design_if_admitted`.
+
 ## SEC XBRL Rendered Value UI Admission Selection
 
 Milestone: `sec_xbrl_rendered_controlled_value_reveal_ui_admission_selection_v1`.
