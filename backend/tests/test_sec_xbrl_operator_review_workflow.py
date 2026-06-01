@@ -41,6 +41,7 @@ DECISION_MIGRATION_PATH = (
     ROOT / "backend" / "alembic" / "versions" / "0042_layer3_sec_xbrl_operator_review_decision.py"
 )
 DECISION_SUBMIT_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit"
+DECISION_STATUS_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/status"
 
 
 @pytest.fixture()
@@ -238,6 +239,37 @@ def _decision_submit_payload(workflow: dict[str, Any], **overrides: Any) -> dict
     return payload
 
 
+def _decision_status_payload(decision: dict[str, Any], **overrides: Any) -> dict[str, Any]:
+    payload = {
+        "client_request_id": "decision-status-api",
+        "status_mode": workflow_service.DECISION_STATUS_MODE,
+        "operator_decision": workflow_service.DECISION_STATUS_OPERATOR_DECISION,
+        "sec_xbrl_operator_review_decision_id": decision["sec_xbrl_operator_review_decision_id"],
+        "decision_basis_hash": decision["decision_basis_hash"],
+    }
+    payload.update(overrides)
+    return payload
+
+
+def _record_decision(
+    db_session,
+    *,
+    workflow: dict[str, Any] | None = None,
+    request_id: str = "decision-1",
+    **overrides: Any,
+) -> dict[str, Any]:
+    workflow = workflow or _open_workflow(db_session)
+    kwargs = {
+        "client_request_id": request_id,
+        "sec_xbrl_operator_review_workflow_id": workflow["sec_xbrl_operator_review_workflow_id"],
+        "workflow_basis_hash": workflow["workflow_basis_hash"],
+        "review_decision": "approved",
+        "decision_reason_code": "ready_for_next_freeze",
+    }
+    kwargs.update(overrides)
+    return workflow_service.record_redacted_operator_review_decision(db_session, **kwargs)
+
+
 def _workflow_snapshot(row: L3SecXbrlOperatorReviewWorkflow) -> dict[str, Any]:
     return {
         "workflow_basis_hash": row.workflow_basis_hash,
@@ -279,6 +311,32 @@ def _projection_snapshot(row: L3SecXbrlProjectionSet) -> dict[str, Any]:
         "projection_summary_json": json.dumps(row.projection_summary_json, sort_keys=True),
         "redaction_policy": row.redaction_policy,
         "status": row.status,
+    }
+
+
+def _decision_snapshot(row: L3SecXbrlOperatorReviewDecision) -> dict[str, Any]:
+    return {
+        "decision_basis_hash": row.decision_basis_hash,
+        "workflow_basis_hash": row.workflow_basis_hash,
+        "statement_packet_basis_hash": row.statement_packet_basis_hash,
+        "source_projection_basis_hash": row.source_projection_basis_hash,
+        "decision_mode": row.decision_mode,
+        "review_decision": row.review_decision,
+        "decision_status": row.decision_status,
+        "redaction_policy": row.redaction_policy,
+        "decision_reason_code": row.decision_reason_code,
+        "decision_notes_present": row.decision_notes_present,
+        "decision_notes_hash": row.decision_notes_hash,
+        "decision_summary_json": json.dumps(row.decision_summary_json, sort_keys=True),
+        "authority_refs_json": json.dumps(row.authority_refs_json, sort_keys=True),
+        "permitted_controls_after_decision_json": json.dumps(
+            row.permitted_controls_after_decision_json,
+            sort_keys=True,
+        ),
+        "blocked_controls_after_decision_json": json.dumps(
+            row.blocked_controls_after_decision_json,
+            sort_keys=True,
+        ),
     }
 
 
@@ -392,8 +450,28 @@ def test_operator_review_workflow_status_rejects_unadmitted_review_summary_numer
             sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
         )
 
+    assert exc.value.code == "sec_xbrl_operator_review_workflow_residual_magnitudes_not_admitted"
+    assert exc.value.details == {"field": "mean"}
+
+
+def test_operator_review_workflow_status_rejects_unadmitted_review_summary_field(db_session) -> None:
+    workflow = _open_workflow(db_session)
+    workflow_row = db_session.query(L3SecXbrlOperatorReviewWorkflow).one()
+    workflow_row.review_summary_json = {
+        **workflow_row.review_summary_json,
+        "unexpected_public_field": "not admitted",
+    }
+    db_session.commit()
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.inspect_redacted_operator_review_workflow_status(
+            db_session,
+            client_request_id="workflow-status-review-summary-unadmitted",
+            sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+        )
+
     assert exc.value.code == "sec_xbrl_operator_review_workflow_status_review_summary_invalid"
-    assert exc.value.details == {"fields": ["mean"]}
+    assert exc.value.details == {"fields": ["unexpected_public_field"]}
 
 
 def test_operator_review_workflow_status_api_returns_read_only_projection(api_client) -> None:
@@ -647,6 +725,105 @@ def test_operator_review_decision_submit_api_rejects_second_decision_for_workflo
         assert session.query(L3SecXbrlOperatorReviewDecision).count() == 1
 
 
+def test_operator_review_decision_status_api_returns_read_only_projection(api_client) -> None:
+    client, Session = api_client
+    with Session() as session:
+        workflow = _open_workflow(session, request_id="workflow-decision-status-api")
+        decision = _record_decision(
+            session,
+            workflow=workflow,
+            request_id="decision-status-api-source",
+        )
+        workflow_snapshot = _workflow_snapshot(session.query(L3SecXbrlOperatorReviewWorkflow).one())
+        packet_snapshot = _packet_snapshot(session.query(L3SecXbrlStatementPacketSet).one())
+        projection_snapshot = _projection_snapshot(session.query(L3SecXbrlProjectionSet).one())
+        decision_snapshot = _decision_snapshot(session.query(L3SecXbrlOperatorReviewDecision).one())
+
+    response = client.post(
+        DECISION_STATUS_ROUTE,
+        json=_decision_status_payload(
+            decision,
+            client_request_id="decision-status-api-success",
+        ),
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == workflow_service.DECISION_STATUS_SCHEMA_ID
+    assert body["request_id"] == "decision-status-api-success"
+    assert body["status"] == "decision_recorded"
+    assert body["mode"] == workflow_service.DECISION_STATUS_MODE
+    assert body["operator_decision"] == workflow_service.DECISION_STATUS_OPERATOR_DECISION
+    assert body["sec_xbrl_operator_review_decision_id"] == decision["sec_xbrl_operator_review_decision_id"]
+    assert body["decision_basis_hash"] == decision["decision_basis_hash"]
+    assert body["read_only_status_surface"] is True
+    assert body["durable_decision_authority_used"] is True
+    assert body["decision_status_api_route_enabled"] is True
+    assert body["decision_submit_api_route_enabled"] is False
+    assert body["workflow_open_api_route_enabled"] is False
+    assert body["rendered_ui_enabled"] is False
+    assert body["runtime_default_enabled"] is False
+    assert body["value_reveal_performed"] is False
+    assert body["delivery_export_enabled"] is False
+    assert body["source_acquisition_performed"] is False
+    assert body["arelle_invoked"] is False
+    assert body["operator_review_decision_recorded"] is True
+    assert body["workflow_mutated"] is False
+    assert body["statement_packet_mutated"] is False
+    assert body["projection_mutated"] is False
+    assert body["negative_invariants"]["raw_values_exposed"] is False
+    assert body["negative_invariants"]["raw_operator_notes_exposed"] is False
+    assert body["negative_invariants"]["residual_magnitudes_exposed"] is False
+    assert "inspect_operator_review_decision_status" in body["next_allowed_actions"]
+    response_text = json.dumps(body, sort_keys=True)
+    for forbidden in ("C:/", "https://www.sec.gov", "operator@example.com", "123.45"):
+        assert forbidden not in response_text
+
+    with Session() as session:
+        assert _workflow_snapshot(session.query(L3SecXbrlOperatorReviewWorkflow).one()) == workflow_snapshot
+        assert _packet_snapshot(session.query(L3SecXbrlStatementPacketSet).one()) == packet_snapshot
+        assert _projection_snapshot(session.query(L3SecXbrlProjectionSet).one()) == projection_snapshot
+        assert _decision_snapshot(session.query(L3SecXbrlOperatorReviewDecision).one()) == decision_snapshot
+
+
+def test_operator_review_decision_status_api_rejects_extra_fields(api_client) -> None:
+    client, Session = api_client
+    with Session() as session:
+        decision = _record_decision(session, request_id="decision-status-api-extra-source")
+
+    response = client.post(
+        DECISION_STATUS_ROUTE,
+        json=_decision_status_payload(
+            decision,
+            client_request_id="decision-status-api-extra",
+            raw_value="123.45",
+        ),
+    )
+
+    assert response.status_code == 422, response.text
+    with Session() as session:
+        assert session.query(L3SecXbrlOperatorReviewDecision).count() == 1
+
+
+def test_operator_review_decision_status_api_fails_closed_without_authority(api_client) -> None:
+    client, _Session = api_client
+
+    response = client.post(
+        DECISION_STATUS_ROUTE,
+        json={
+            "client_request_id": "decision-status-api-missing-authority",
+            "status_mode": workflow_service.DECISION_STATUS_MODE,
+            "operator_decision": workflow_service.DECISION_STATUS_OPERATOR_DECISION,
+        },
+    )
+
+    assert response.status_code == 400, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.workbench_error.v1"
+    assert body["error_code"] == "sec_xbrl_operator_review_decision_status_authority_missing"
+    assert body["status"] == "blocked"
+
+
 def test_operator_review_workflow_replays_same_request_and_basis(db_session) -> None:
     packet_response = _materialized_packet(db_session)
 
@@ -812,8 +989,8 @@ def test_operator_review_workflow_rejects_unadmitted_organization_contract_numer
             sec_xbrl_statement_packet_set_id=packet_response["sec_xbrl_statement_packet_set_id"],
         )
 
-    assert exc.value.code == "sec_xbrl_operator_review_workflow_organization_contract_invalid"
-    assert exc.value.details == {"fields": ["mean"]}
+    assert exc.value.code == "sec_xbrl_operator_review_workflow_residual_magnitudes_not_admitted"
+    assert exc.value.details == {"field": "mean"}
     assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 0
 
 
@@ -1073,6 +1250,169 @@ def test_operator_review_decision_rejects_tampered_workflow_without_partial_row(
 
     assert exc.value.code == "sec_xbrl_operator_review_workflow_raw_authority_not_admitted"
     assert db_session.query(L3SecXbrlOperatorReviewDecision).count() == 0
+
+
+def test_operator_review_decision_status_projection_is_read_only(db_session) -> None:
+    decision = _record_decision(db_session, request_id="decision-status-source")
+    workflow_row = db_session.query(L3SecXbrlOperatorReviewWorkflow).one()
+    packet_row = db_session.query(L3SecXbrlStatementPacketSet).one()
+    projection_row = db_session.query(L3SecXbrlProjectionSet).one()
+    decision_row = db_session.query(L3SecXbrlOperatorReviewDecision).one()
+    workflow_snapshot = _workflow_snapshot(workflow_row)
+    packet_snapshot = _packet_snapshot(packet_row)
+    projection_snapshot = _projection_snapshot(projection_row)
+    decision_snapshot = _decision_snapshot(decision_row)
+
+    status = workflow_service.inspect_redacted_operator_review_decision_status(
+        db_session,
+        client_request_id="decision-status-1",
+        sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
+        decision_basis_hash=decision["decision_basis_hash"],
+    )
+
+    assert status["schema_id"] == workflow_service.DECISION_STATUS_SCHEMA_ID
+    assert status["request_id"] == "decision-status-1"
+    assert status["status"] == "decision_recorded"
+    assert status["mode"] == workflow_service.DECISION_STATUS_MODE
+    assert status["operator_decision"] == workflow_service.DECISION_STATUS_OPERATOR_DECISION
+    assert status["read_only_status_surface"] is True
+    assert status["durable_decision_authority_used"] is True
+    assert status["decision_status_api_route_enabled"] is True
+    assert status["decision_submit_api_route_enabled"] is False
+    assert status["runtime_default_enabled"] is False
+    assert status["value_reveal_performed"] is False
+    assert status["source_acquisition_performed"] is False
+    assert status["arelle_invoked"] is False
+    assert status["delivery_export_enabled"] is False
+    assert status["rendered_ui_enabled"] is False
+    assert status["operator_review_decision_recorded"] is True
+    assert status["workflow_mutated"] is False
+    assert status["statement_packet_mutated"] is False
+    assert status["projection_mutated"] is False
+    assert status["negative_invariants"]["raw_values_exposed"] is False
+    assert status["negative_invariants"]["raw_operator_notes_exposed"] is False
+    assert status["negative_invariants"]["residual_magnitudes_exposed"] is False
+    assert status["decision_summary"]["review_decision"] == "approved"
+    assert status["authority_refs"]["workflow_basis_hash"] == decision["workflow_basis_hash"]
+    assert "inspect_operator_review_decision_status" in status["next_allowed_actions"]
+    response_text = json.dumps(status, sort_keys=True)
+    for forbidden in ("C:/", "https://www.sec.gov", "operator@example.com", "123.45"):
+        assert forbidden not in response_text
+
+    db_session.refresh(workflow_row)
+    db_session.refresh(packet_row)
+    db_session.refresh(projection_row)
+    db_session.refresh(decision_row)
+    assert _workflow_snapshot(workflow_row) == workflow_snapshot
+    assert _packet_snapshot(packet_row) == packet_snapshot
+    assert _projection_snapshot(projection_row) == projection_snapshot
+    assert _decision_snapshot(decision_row) == decision_snapshot
+
+
+def test_operator_review_decision_status_rejects_missing_authority(db_session) -> None:
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.inspect_redacted_operator_review_decision_status(
+            db_session,
+            client_request_id="decision-status-missing-authority",
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_decision_status_authority_missing"
+    assert exc.value.http_status == 400
+
+
+def test_operator_review_decision_status_rejects_mismatched_decision_hash(db_session) -> None:
+    decision = _record_decision(db_session, request_id="decision-status-mismatch-source")
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.inspect_redacted_operator_review_decision_status(
+            db_session,
+            client_request_id="decision-status-mismatch",
+            sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
+            decision_basis_hash=_hash("z"),
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_decision_status_not_found"
+    assert exc.value.http_status == 404
+
+
+def test_operator_review_decision_status_rejects_tampered_raw_decision_summary(db_session) -> None:
+    decision = _record_decision(db_session, request_id="decision-status-raw-summary-source")
+    decision_row = db_session.query(L3SecXbrlOperatorReviewDecision).one()
+    decision_row.decision_summary_json = {
+        **decision_row.decision_summary_json,
+        "local_path": "C:/raw/decision.json",
+    }
+    db_session.commit()
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.inspect_redacted_operator_review_decision_status(
+            db_session,
+            client_request_id="decision-status-raw-summary",
+            sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_workflow_raw_authority_not_admitted"
+
+
+def test_operator_review_decision_status_rejects_residual_alias_in_decision_summary(db_session) -> None:
+    decision = _record_decision(db_session, request_id="decision-status-mean-summary-source")
+    decision_row = db_session.query(L3SecXbrlOperatorReviewDecision).one()
+    decision_row.decision_summary_json = {
+        **decision_row.decision_summary_json,
+        "mean": "12345.67",
+    }
+    db_session.commit()
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.inspect_redacted_operator_review_decision_status(
+            db_session,
+            client_request_id="decision-status-mean-summary",
+            sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_workflow_residual_magnitudes_not_admitted"
+    assert exc.value.details == {"field": "mean"}
+
+
+def test_operator_review_decision_status_rejects_tampered_controls(db_session) -> None:
+    decision = _record_decision(db_session, request_id="decision-status-control-source")
+    decision_row = db_session.query(L3SecXbrlOperatorReviewDecision).one()
+    decision_row.permitted_controls_after_decision_json = [
+        *decision_row.permitted_controls_after_decision_json,
+        "reveal_values",
+    ]
+    db_session.commit()
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.inspect_redacted_operator_review_decision_status(
+            db_session,
+            client_request_id="decision-status-control",
+            decision_basis_hash=decision["decision_basis_hash"],
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_decision_status_permitted_controls_invalid"
+
+
+def test_operator_review_decision_status_rejects_invalid_notes_hash(db_session) -> None:
+    decision = _record_decision(
+        db_session,
+        request_id="decision-status-notes-source",
+        review_decision="blocked",
+        decision_reason_code="operator_blocked",
+        decision_notes="bounded blocked reason",
+    )
+    decision_row = db_session.query(L3SecXbrlOperatorReviewDecision).one()
+    decision_row.decision_notes_hash = "short"
+    db_session.commit()
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.inspect_redacted_operator_review_decision_status(
+            db_session,
+            client_request_id="decision-status-notes",
+            sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_decision_status_notes_hash_invalid"
 
 
 def test_operator_review_workflow_tables_are_registered_in_metadata() -> None:
