@@ -43,9 +43,11 @@ REQUIRED_ROLLBACK_SIGNALS = {
 }
 
 RAW_ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
-RAW_CIK_FIELD_RE = re.compile(r'"(?:cik|raw_cik)"\s*:\s*"?\d{10}"?', re.IGNORECASE)
+RAW_CIK_FIELD_RE = re.compile(r'"(?:cik|raw_cik)"\s*:\s*"?\d{1,10}"?', re.IGNORECASE)
 SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
-LOCAL_PATH_RE = re.compile(r"[A-Za-z]:\\|file://|/Users/|/home/")
+LOCAL_PATH_RE = re.compile(
+    r"[A-Za-z]:\\|\\\\|file://|/(?:Users|home|tmp|workspace)(?:/|$)|/var/tmp(?:/|$)|/private/tmp(?:/|$)"
+)
 OPERATOR_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 RAW_DECIMAL_MAGNITUDE_RE = re.compile(r"(?<![A-Za-z0-9_])-?\d{4,}\.\d+(?![A-Za-z0-9_])")
 
@@ -461,13 +463,13 @@ def _companyfacts_value_correctness_restated(
         default_on_gate.get("decision") == "default_on_admitted_candidate"
         and default_on_gate.get("ready_for_default_on") is True
         and _int(gate_summary.get("companyfacts_value_compared_count")) > 0
-        and float(gate_summary.get("companyfacts_value_match_rate") or 0) >= 0.99
+        and _float(gate_summary.get("companyfacts_value_match_rate")) >= 0.99
         and broader.get("decision") == "broader_corpus_reliability_admitted"
-        and float(broader_summary.get("real_product_path_companyfacts_value_match_rate") or 0)
+        and _float(broader_summary.get("real_product_path_companyfacts_value_match_rate"))
         >= MIN_COMPANYFACTS_MATCH_RATE
         and real_product.get("decision") == "real_corpus_default_on_validated"
         and _int(real_summary.get("companyfacts_value_compared_count")) > 0
-        and float(real_summary.get("companyfacts_value_match_rate") or 0) >= MIN_COMPANYFACTS_MATCH_RATE
+        and _float(real_summary.get("companyfacts_value_match_rate")) >= MIN_COMPANYFACTS_MATCH_RATE
     )
 
 
@@ -699,10 +701,12 @@ def _source_report_ref_states(loaded: Mapping[str, Mapping[str, Any]], source_ro
         for ref in _iter_source_report_refs(report.get("source_reports")):
             if not ref.endswith(".json"):
                 continue
-            path = source_root / ref
+            path, containment_status = _source_report_path(source_root, ref)
             ref_state = "present_json_object"
             schema_id: str | None = None
-            if not path.exists():
+            if containment_status is not None:
+                ref_state = containment_status
+            elif not path.exists():
                 ref_state = "missing"
             else:
                 try:
@@ -722,6 +726,19 @@ def _source_report_ref_states(loaded: Mapping[str, Mapping[str, Any]], source_ro
                 }
             )
     return states
+
+
+def _source_report_path(source_root: Path, ref: str) -> tuple[Path, str | None]:
+    root = source_root.resolve()
+    raw_path = Path(ref)
+    if raw_path.is_absolute():
+        return raw_path, "outside_repo"
+    candidate = (root / raw_path).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError:
+        return candidate, "outside_repo"
+    return candidate, None
 
 
 def _iter_source_report_refs(value: Any) -> Iterable[str]:
@@ -793,11 +810,12 @@ def _read_report(path: Path) -> dict[str, Any]:
         return {"status": "missing", "path": display}
     try:
         text = path.read_text(encoding="utf-8-sig")
-        value = json.loads(text)
-    except json.JSONDecodeError:
-        return {"status": "malformed_json", "path": display}
     except (OSError, UnicodeDecodeError):
         return {"status": "unreadable", "path": display}
+    try:
+        value = json.loads(text)
+    except json.JSONDecodeError:
+        return {"status": "malformed_json", "path": display, "text": text}
     if not isinstance(value, dict):
         return {"status": "not_json_object", "path": display, "text": text}
     return {
@@ -918,6 +936,15 @@ def _int(value: Any, *, default: int = 0) -> int:
         return default
     try:
         return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _float(value: Any, *, default: float = 0.0) -> float:
+    if value is None:
+        return default
+    try:
+        return float(value)
     except (TypeError, ValueError):
         return default
 
