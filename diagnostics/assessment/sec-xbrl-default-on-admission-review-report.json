@@ -1,18 +1,5 @@
 {
-  "blocking_reasons": [
-    {
-      "criterion": "post_1966_governance_followups_restate_default_on_evidence",
-      "evidence": {
-        "config_default_off": true,
-        "governance_doc": "next_milestone_plans/Layer3_planning_docs/1261-sec-xbrl-arelle-governance-remediation.md",
-        "requires_companyfacts_restatement": true,
-        "requires_completeness_restatement": true,
-        "requires_product_path_readiness_restatement": true,
-        "requires_sidecar_selection_restatement": true
-      },
-      "reason": "admission_review_post_1966_governance_followup_required"
-    }
-  ],
+  "blocking_reasons": [],
   "criteria": [
     {
       "blocked_reason": null,
@@ -42,26 +29,26 @@
       "state": "passed"
     },
     {
-      "blocked_reason": "admission_review_post_1966_governance_followup_required",
+      "blocked_reason": null,
       "criterion": "post_1966_governance_followups_restate_default_on_evidence",
       "evidence": {
-        "config_default_off": true,
+        "config_default_off": false,
         "governance_doc": "next_milestone_plans/Layer3_planning_docs/1261-sec-xbrl-arelle-governance-remediation.md",
         "requires_companyfacts_restatement": true,
         "requires_completeness_restatement": true,
         "requires_product_path_readiness_restatement": true,
         "requires_sidecar_selection_restatement": true
       },
-      "state": "blocked"
+      "state": "passed"
     },
     {
       "blocked_reason": null,
       "criterion": "runtime_default_posture_recorded",
       "evidence": {
         "config_file": "backend/app/core/config.py",
-        "flag_default_false": true,
-        "flag_default_true": false,
-        "posture": "default_off_admission_candidate"
+        "flag_default_false": false,
+        "flag_default_true": true,
+        "posture": "default_on_runtime_enabled_by_follow_on_slice"
       },
       "state": "passed"
     },
@@ -114,11 +101,11 @@
         },
         "lineage_mismatch": {
           "present": true,
-          "test_signal": "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_lineage_mismatch"
+          "test_signal": "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_default_on_lineage_mismatch"
         },
         "missing_sidecar": {
           "present": true,
-          "test_signal": "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_without_sidecar"
+          "test_signal": "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_default_on_without_sidecar"
         },
         "operator_value_gate": {
           "present": true,
@@ -149,9 +136,9 @@
       "state": "passed"
     }
   ],
-  "decision": "admission_review_requires_post_1966_governance_followup",
-  "headline": "Default-on Arelle admission review is blocked: admission_review_post_1966_governance_followup_required.",
-  "next_slice": "sec_edgar_arelle_governance_remediation_followups_v1",
+  "decision": "admission_review_superseded_by_default_on_runtime",
+  "headline": "Default-on admission evidence is recorded, and the runtime default has already been enabled by the follow-on runtime slice; this report is no longer a pre-cutover PASS packet.",
+  "next_slice": "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation",
   "non_goals_preserved": {
     "bridge_gate_b_product_package_ui_mutated": false,
     "candidate_b_sec_routing_performed": false,
@@ -160,8 +147,8 @@
     "operator_value_reveal_default_enabled": false,
     "rag_vector_model_provider_auth_behavior_added": false,
     "runtime_default_changed_by_admission_review": false,
-    "runtime_default_enabled_by_follow_on_runtime_slice": false,
-    "runtime_default_on_currently_admitted": false
+    "runtime_default_enabled_by_follow_on_runtime_slice": true,
+    "runtime_default_on_currently_admitted": true
   },
   "ready_for_default_on_runtime_slice": false,
   "rollback_criteria": [

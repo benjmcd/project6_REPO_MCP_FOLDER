@@ -195,6 +195,51 @@ Docs-only validation on branch `codex/secxbrl-default-on-runtime-design`:
 No Python runtime file was touched by this design pass, so py-compile is not
 applicable to the branch-local diff.
 
+## Runtime Implementation Evidence
+
+Implementation branch: `codex/secxbrl-default-on-runtime`.
+
+Base authority: `project6-origin/main` at
+`a232a2716533fa1d4c99421fab220073d3a624d3`.
+
+Implemented scope:
+
+- `backend/app/core/config.py` now defaults
+  `layer3_sec_edgar_arelle_fact_authority_cutover_enabled` to `True`.
+- `backend/tests/test_layer3_api.py` proves default sidecar selection,
+  classification from selected sidecar authority, missing-sidecar fail-closed
+  behavior, lineage mismatch blocking, explicit regex rollback, and rejection
+  of request-level default-on toggle fields.
+- `diagnostics/assessment/sec-xbrl-default-on-runtime.py` now requires
+  behavior-level evidence, request-toggle absence, value-reveal/default-submit
+  defaults off, and admission-restatement authority before emitting
+  `default_on_runtime_enabled`.
+- Predecessor diagnostics that previously used Arelle fact-authority default-off
+  as a safety proxy now distinguish the admitted fact-authority default-on
+  posture from still-hard-off value reveal, controlled submit, live SEC network,
+  source acquisition, export/delivery, and production-readiness surfaces.
+
+Non-goals preserved: no schema, `models.py`, Alembic migration, new durable
+persistence, backend API contract, rendered UI/browser toggle, operator-review
+workflow expansion, source acquisition, live SEC network execution, synchronous
+Arelle invocation, value reveal default-on, export/delivery, raw runtime
+artifact, production-readiness claim, final statement semantics claim, or
+cross-company comparability claim.
+
+Branch-local verification:
+
+- Focused default-on/rollback API tests: PASS (`7 passed, 267 deselected`).
+- Full `backend/tests/test_layer3_api.py`: PASS (`274 passed, 4 warnings`).
+- Full `backend/tests/test_sec_xbrl*.py`: PASS (`313 passed, 4 warnings`).
+- The default-on runtime report now emits `decision:
+  default_on_runtime_enabled`, `blocking_reasons: []`, and `next_slice:
+  sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation`.
+
+The runtime change intentionally supersedes the earlier pre-cutover
+default-on-admission report. That report now records
+`admission_review_superseded_by_default_on_runtime` rather than being treated as
+a still-current pre-runtime gate.
+
 ## Review Checklist
 
 Independent review should focus on:
