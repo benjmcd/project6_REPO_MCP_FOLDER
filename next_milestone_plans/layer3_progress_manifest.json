@@ -42972,13 +42972,15 @@
     "dimensional_roll_forward_claimed": false,
     "linkbase_emission_claimed": false,
     "fx_comparability_claimed": false,
-    "next_posture": "sec_xbrl_statement_packet_persistence_schema_materializer_v1_tier2_risk_assessed_implementation",
+    "next_posture": "sec_xbrl_operator_review_workflow_design_v1_after_statement_packet_persistence",
     "required_prior_gate_satisfied_by_tracking": true
   },
   "sec_xbrl_persisted_statement_packet_tracking": {
-    "status": "tier2_risk_assessed_design_selected",
-    "milestone": "sec_xbrl_persisted_statement_packet_design_v1",
+    "status": "tier2_risk_assessed_schema_materializer_implemented",
+    "milestone": "sec_xbrl_statement_packet_persistence_schema_materializer_v1",
+    "prior_design_milestone": "sec_xbrl_persisted_statement_packet_design_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1288-statement-packet-persistence.md",
+    "implementation_doc": "next_milestone_plans/Layer3_planning_docs/1289-statement-packet-persist-impl.md",
     "preserved_work_branch": "codex/sec-family-res",
     "implementation_reason": "durable redacted statement packet authority is required before operator review workflow, delivery/export, value reveal, or default-on behavior can be considered without bypassing persisted projection provenance",
     "required_prior_gate": "sec_xbrl_sector_family_real_filer_validation_v1",
@@ -42987,8 +42989,18 @@
     "required_prior_persistence_satisfied_by_tracking": true,
     "required_gate_infrastructure": "extend_stratified_real_filing_validation_matrix_or_real_corpus_product_runner",
     "non_blocking_backlog_note": "keyed_or_salted_hmac_issuer_pseudonym_for_operator_side_offline_artifacts_only_not_this_landing_not_a_gate",
-    "tier_classification": "Tier 2 risk-assessed design entry",
+    "tier_classification": "Tier 2 risk-assessed schema and persistence service",
     "design_doc_landed_by_tracking": true,
+    "schema_models": [
+      "backend/app/models/models.py",
+      "backend/app/models/__init__.py"
+    ],
+    "migration": "backend/alembic/versions/0039_layer3_sec_xbrl_statement_packet_persistence.py",
+    "runtime": "backend/app/services/layer3_sec_xbrl_statement_packet_persistence.py",
+    "focused_tests": [
+      "backend/tests/test_sec_xbrl_statement_packet_persistence.py"
+    ],
+    "focused_test_result": "10 passed",
     "selected_first_implementation_slice": "redacted_statement_packet_persistence_schema_and_materializer",
     "selected_first_implementation_tables": [
       "l3_sec_xbrl_statement_packet_set",
@@ -42997,12 +43009,12 @@
     ],
     "first_implementation_requires_models_and_migration": true,
     "first_implementation_requires_rollback_or_containment_notes": true,
-    "models_landed_by_tracking": false,
-    "migration_landed_by_tracking": false,
-    "runtime_landed_by_tracking": false,
+    "models_landed_by_tracking": true,
+    "migration_landed_by_tracking": true,
+    "runtime_landed_by_tracking": true,
     "diagnostic_landed_by_tracking": false,
-    "focused_tests_run_in_this_landing": false,
-    "schema_set_landed": false,
+    "focused_tests_run_in_this_landing": true,
+    "schema_set_landed": true,
     "runtime_default_changed_by_tracking": false,
     "live_sec_network_run_performed_by_tracking": false,
     "arelle_subprocess_invoked_by_tracking": false,
@@ -43025,7 +43037,7 @@
     "dimensional_roll_forward_claimed": false,
     "linkbase_emission_claimed": false,
     "fx_comparability_claimed": false,
-    "next_posture": "sec_xbrl_statement_packet_persistence_schema_materializer_v1_tier2_risk_assessed_implementation",
+    "next_posture": "sec_xbrl_operator_review_workflow_design_v1_after_statement_packet_persistence",
     "required_prior_gate_satisfied_by_tracking": true
   },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_tracking": {
