@@ -86,9 +86,14 @@ def build_report(
     runtime_non_goals = dict(runtime.get("non_goals_preserved") or {})
 
     config_defaults_off = _config_defaults_off(config_text)
+    config_safety_defaults_off = _config_safety_defaults_off(config_text)
     live_proof_defaults_off = (
         live_defaults.get("sec_live_network_default_enabled") is False
         and live_defaults.get("arelle_fact_authority_cutover_default_enabled") is False
+        and live_defaults.get("arelle_value_reveal_default_enabled") is False
+    )
+    live_proof_safety_defaults_off = (
+        live_defaults.get("sec_live_network_default_enabled") is False
         and live_defaults.get("arelle_value_reveal_default_enabled") is False
     )
     broader_passed = (
@@ -138,20 +143,35 @@ def build_report(
         and runtime_posture.get("default_cutover_enabled") is False
         and runtime_posture.get("operator_value_reveal_default_enabled") is False
     )
+    runtime_default_enabled = (
+        runtime.get("decision") == "default_on_runtime_enabled"
+        and runtime_posture.get("default_cutover_enabled") is True
+        and runtime_posture.get("operator_value_reveal_default_enabled") is False
+    )
     default_on_not_ready = (
         admission.get("ready_for_default_on_runtime_slice") is False
-        and admission.get("decision") != "admission_review_passed"
+        and admission.get("decision")
+        not in {
+            "admission_review_passed",
+            "admission_review_superseded_by_default_on_runtime",
+        }
         and runtime_default_off
+    )
+    default_on_superseded_by_runtime = (
+        admission.get("decision") == "admission_review_superseded_by_default_on_runtime"
+        and runtime_default_enabled
     )
 
     criteria = [
         _criterion(
-            "committed_defaults_remain_off",
-            config_defaults_off and live_proof_defaults_off,
+            "committed_safety_defaults_preserved",
+            (config_defaults_off or config_safety_defaults_off) and live_proof_safety_defaults_off,
             {
                 "config_file": "backend/app/core/config.py",
                 "config_defaults_off": config_defaults_off,
+                "config_safety_defaults_off": config_safety_defaults_off,
                 "live_proof_defaults_off": live_proof_defaults_off,
+                "live_proof_safety_defaults_off": live_proof_safety_defaults_off,
                 "live_proof_report": _repo_display_path(value_reveal_live_proof_report_path),
             },
             "default_posture_committed_defaults_not_off",
@@ -199,8 +219,8 @@ def build_report(
             "default_posture_bounded_value_reveal_not_proven",
         ),
         _criterion(
-            "runtime_default_authority_remains_default_off",
-            runtime_default_off,
+            "runtime_default_authority_posture_recognized",
+            runtime_default_off or runtime_default_enabled,
             {
                 "source_report": _repo_display_path(runtime_report_path),
                 "decision": runtime.get("decision"),
@@ -212,12 +232,13 @@ def build_report(
             "default_posture_runtime_default_authority_not_default_off",
         ),
         _criterion(
-            "default_on_not_currently_admitted",
-            default_on_not_ready,
+            "default_on_admission_state_recognized",
+            default_on_not_ready or default_on_superseded_by_runtime,
             {
                 "source_report": _repo_display_path(admission_review_report_path),
                 "admission_decision": admission.get("decision"),
                 "ready_for_default_on_runtime_slice": admission.get("ready_for_default_on_runtime_slice"),
+                "runtime_default_enabled": runtime_default_enabled,
             },
             "default_posture_default_on_currently_admitted_or_unreviewed",
         ),
@@ -252,20 +273,24 @@ def build_report(
         if item["state"] != "passed"
     ]
     selected = not blockers
+    superseded = selected and runtime_default_enabled
     return {
         "schema_id": "diagnostics.sec_xbrl_default_posture_decision.v1",
         "target": "sec_edgar_arelle_default_posture_decision_v1",
         "decision": (
-            "explicit_operator_only_default_off_selected"
+            "explicit_operator_only_default_off_superseded_by_default_on_runtime"
+            if superseded
+            else "explicit_operator_only_default_off_selected"
             if selected
             else "default_posture_decision_blocked"
         ),
-        "headline": _headline(selected=selected, blockers=blockers),
+        "headline": _headline(selected=selected, superseded=superseded, blockers=blockers),
         "criteria": criteria,
         "blocking_reasons": blockers,
         "selected_posture": {
             "posture": "explicit_operator_only_default_off" if selected else None,
             "arelle_fact_authority_cutover_default_enabled": False,
+            "arelle_fact_authority_cutover_default_on_supersedes_selected_posture": superseded,
             "arelle_value_reveal_default_enabled": False,
             "sec_live_network_default_enabled": False,
             "operator_value_reveal_available_only_by_explicit_gated_action": selected,
@@ -283,9 +308,16 @@ def build_report(
             "runtime_default": _repo_display_path(runtime_report_path),
             "admission_review": _repo_display_path(admission_review_report_path),
         },
-        "next_slice": NEXT_SLICE if selected else "sec_edgar_arelle_default_posture_decision_v1",
+        "next_slice": (
+            "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation"
+            if superseded
+            else NEXT_SLICE
+            if selected
+            else "sec_edgar_arelle_default_posture_decision_v1"
+        ),
         "non_goals_preserved": {
             "runtime_default_changed_by_decision": False,
+            "runtime_default_enabled_by_follow_on_runtime_slice": superseded,
             "live_sec_network_run_performed_by_decision": False,
             "arelle_subprocess_invoked_by_decision": False,
             "value_reveal_request_performed_by_decision": False,
@@ -334,6 +366,16 @@ def _config_defaults_off(config_text: str) -> bool:
             config_text,
             'layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=False,',
         )
+        and _contains(
+            config_text,
+            'layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False,',
+        )
+    )
+
+
+def _config_safety_defaults_off(config_text: str) -> bool:
+    return (
+        _contains(config_text, 'layer3_sec_edgar_live_network_enabled: bool = Field(\n        default=False,')
         and _contains(
             config_text,
             'layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False,',
@@ -410,7 +452,13 @@ def _criterion(criterion: str, passed: bool, evidence: Mapping[str, Any], blocke
     }
 
 
-def _headline(*, selected: bool, blockers: list[dict[str, Any]]) -> str:
+def _headline(*, selected: bool, superseded: bool, blockers: list[dict[str, Any]]) -> str:
+    if superseded:
+        return (
+            "Default posture selected explicit-operator-only default-off as a pre-runtime posture and is now "
+            "superseded by the reviewed default-on fact-authority runtime; value reveal remains separately gated "
+            "and default-off."
+        )
     if selected:
         return (
             "Default posture selected: keep SEC/Arelle explicit-operator-only and default-off while "

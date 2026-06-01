@@ -84,7 +84,7 @@ def _report_paths(root: Path) -> dict[str, Path]:
     }
 
 
-def _write_valid_reports(root: Path) -> None:
+def _write_valid_reports(root: Path, *, runtime_default_on: bool = False) -> None:
     paths = _report_paths(root)
     forms = {"10-K": 13, "10-Q": 4, "20-F": 1, "40-F": 1, "6-K": 2, "8-K": 10}
     _write_json(
@@ -224,7 +224,11 @@ def _write_valid_reports(root: Path) -> None:
         paths["admission_review"],
         {
             "schema_id": "diagnostics.sec_xbrl_default_on_admission_review.v1",
-            "decision": "admission_review_requires_post_1966_governance_followup",
+            "decision": (
+                "admission_review_superseded_by_default_on_runtime"
+                if runtime_default_on
+                else "admission_review_requires_post_1966_governance_followup"
+            ),
             "ready_for_default_on_runtime_slice": False,
             "source_reports": {},
         },
@@ -233,10 +237,14 @@ def _write_valid_reports(root: Path) -> None:
         paths["runtime_default"],
         {
             "schema_id": "diagnostics.sec_xbrl_default_on_runtime.v1",
-            "decision": "default_on_runtime_disabled_by_governance_remediation",
+            "decision": (
+                "default_on_runtime_enabled"
+                if runtime_default_on
+                else "default_on_runtime_disabled_by_governance_remediation"
+            ),
             "source_reports": {},
             "runtime_posture": {
-                "default_cutover_enabled": False,
+                "default_cutover_enabled": runtime_default_on,
                 "operator_value_reveal_default_enabled": False,
                 "persisted_sidecar_required": True,
                 "regex_rollback_env_supported": True,
@@ -248,11 +256,16 @@ def _write_valid_reports(root: Path) -> None:
         paths["default_posture"],
         {
             "schema_id": "diagnostics.sec_xbrl_default_posture_decision.v1",
-            "decision": "explicit_operator_only_default_off_selected",
+            "decision": (
+                "explicit_operator_only_default_off_superseded_by_default_on_runtime"
+                if runtime_default_on
+                else "explicit_operator_only_default_off_selected"
+            ),
             "source_reports": {},
             "selected_posture": {
                 "posture": "explicit_operator_only_default_off",
                 "arelle_fact_authority_cutover_default_enabled": False,
+                "arelle_fact_authority_cutover_default_on_supersedes_selected_posture": runtime_default_on,
                 "arelle_value_reveal_default_enabled": False,
                 "operator_value_reveal_available_only_by_explicit_gated_action": True,
                 "broader_reliability_admission_converted_to_runtime_default": False,
@@ -311,6 +324,26 @@ def test_sec_xbrl_default_on_admission_restatement_can_admit_runtime_design_from
     assert report["non_goals_preserved"]["runtime_default_on_enabled_by_restatement"] is False
     assert report["non_goals_preserved"]["source_acquisition_performed_by_restatement"] is False
     assert report["redaction"]["passed"] is True
+
+
+def test_sec_xbrl_default_on_admission_restatement_is_superseded_after_runtime_default_on(
+    tmp_path: Path,
+) -> None:
+    _write_source_tree(tmp_path, runtime_default_on=True)
+    _write_valid_reports(tmp_path, runtime_default_on=True)
+
+    report = _build_report(tmp_path)
+
+    assert report["decision"] == "default_on_admission_restatement_superseded_by_default_on_runtime"
+    assert report["ready_for_default_on_runtime_design"] is False
+    assert report["superseded_by_default_on_runtime"] is True
+    assert report["blocking_reasons"] == []
+    assert report["conflicting_reasons"] == []
+    assert report["restated_evidence"]["runtime_enablement"]["runtime_default_on_enabled"] is True
+    assert report["non_goals_preserved"]["value_reveal_default_enabled_by_restatement"] is False
+    assert report["next_slice"] == (
+        "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation"
+    )
 
 
 def test_sec_xbrl_default_on_admission_restatement_fails_closed_when_required_report_missing(

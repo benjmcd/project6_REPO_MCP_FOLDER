@@ -203,7 +203,12 @@ _ATTR_RE = re.compile(r"([A-Za-z_:][-A-Za-z0-9_:.]*)\s*=\s*(?:\"([^\"]*)\"|'([^'
 _TAG_RE = re.compile(r"<[^>]+>", re.DOTALL)
 
 
-def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str, Any], db: Session) -> dict[str, Any]:
+def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(
+    fields: Mapping[str, Any],
+    db: Session,
+    *,
+    use_regex_fact_authority: bool = False,
+) -> dict[str, Any]:
     request = _normalise_request(fields)
     request_id = _required(request, "client_request_id")
     _require_exact(request, "bridge_mode", BRIDGE_MODE)
@@ -229,14 +234,12 @@ def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str,
     )
     fact_receipt: Mapping[str, Any] = regex_fact_receipt
     sidecar_receipt: Mapping[str, Any] | None = None
-    sidecar_value_store: Mapping[str, Any] | None = None
     fact_authority_input_mode = REGEX_FACT_AUTHORITY_INPUT_MODE
-    if _arelle_fact_authority_cutover_enabled():
+    if _arelle_fact_authority_cutover_enabled() and not use_regex_fact_authority:
         sidecar_check = _read_arelle_sidecar_authority(request, request_id=request_id, regex_fact_authority_receipt_hash=fact_receipt_hash, parser_receipt_hash=parser_receipt_hash)
         if isinstance(sidecar_check, dict) and sidecar_check.get("bridge_state") == BLOCKED_STATE:
             return sidecar_check
         sidecar_receipt = sidecar_check
-        sidecar_value_store = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(sidecar_receipt)
         _validate_regex_sidecar_binding(regex_fact_receipt, sidecar_receipt)
         fact_receipt = _sidecar_fact_authority_view(sidecar_receipt)
         fact_authority_input_mode = ARELLE_FACT_AUTHORITY_INPUT_MODE
@@ -268,7 +271,7 @@ def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str,
     if sidecar_receipt is None:
         units = _fact_material_units(str(reparsed["primary_document_text"]), parser_receipt=parser_receipt, fact_receipt=fact_receipt, parsed=parsed)
     else:
-        units = _fact_material_units_from_sidecar(sidecar_receipt, parser_receipt=parser_receipt, value_store=sidecar_value_store)
+        units = _fact_material_units_from_sidecar(sidecar_receipt, parser_receipt=parser_receipt)
     materialization = _materialization_basis(
         parser_receipt,
         fact_receipt,
@@ -454,8 +457,8 @@ def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str,
                 "sidecar_resolved_fact_count": int(sidecar_receipt["resolved_fact_count"]),
                 "regex_fact_authority_count": int(regex_fact_receipt.get("fact_count") or 0),
                 "resolved_period_unit_dimension_fields_materialized": True,
-                "raw_fact_values_materialized": True,
-                "internal_effective_values_materialized": True,
+                "raw_fact_values_materialized": False,
+                "internal_effective_values_materialized": False,
                 "operator_surface_values_exposed": False,
             }
         )
@@ -695,7 +698,6 @@ def _fact_material_units_from_sidecar(
     sidecar_receipt: Mapping[str, Any],
     *,
     parser_receipt: Mapping[str, Any],
-    value_store: Mapping[str, Any] | None,
 ) -> list[dict[str, Any]]:
     records = list(sidecar_receipt.get("resolved_fact_records") or [])
     if len(records) != int(sidecar_receipt.get("resolved_fact_count") or -1):
@@ -712,15 +714,6 @@ def _fact_material_units_from_sidecar(
             "SEC EDGAR HTML/iXBRL fact material bridge requires sidecar resolved fact inventory hash parity.",
             http_status=409,
             blocked_fields=["arelle_sidecar_receipt_hash"],
-        )
-    value_records = list((value_store or {}).get("value_records") or [])
-    values_by_id = {str(item.get("resolved_fact_id") or ""): item for item in value_records if isinstance(item, Mapping)}
-    if len(values_by_id) != len(records):
-        _blocked(
-            "sec_edgar_html_inline_xbrl_fact_material_bridge_sidecar_value_store_count_mismatch",
-            "SEC EDGAR HTML/iXBRL fact material bridge requires one internal value-store record for each resolved sidecar fact.",
-            http_status=409,
-            blocked_fields=["internal_value_store"],
         )
     units: list[dict[str, Any]] = []
     for index, record in enumerate(records, start=1):
@@ -740,17 +733,19 @@ def _fact_material_units_from_sidecar(
         resolved_fact_id = str(record.get("resolved_fact_id") or "")
         source_order = int(record.get("source_order") or index)
         entry_document_index = int(record.get("entry_document_index") or 1)
-        value_record = values_by_id.get(resolved_fact_id)
-        if value_record is None:
+        value_hash = str(record.get("value_hash") or "")
+        value_length = _optional_int(record.get("value_length"))
+        effective_value_hash = str(record.get("effective_value_hash") or value_hash)
+        effective_value_length = _optional_int(record.get("effective_value_length"))
+        lexical_value_hash = str(record.get("lexical_value_hash") or "")
+        lexical_value_length = _optional_int(record.get("lexical_value_length"))
+        if not value_hash or value_length is None or not effective_value_hash or effective_value_length is None:
             _blocked(
-                "sec_edgar_html_inline_xbrl_fact_material_bridge_sidecar_value_record_missing",
-                "SEC EDGAR HTML/iXBRL fact material bridge requires persisted internal values for each resolved sidecar fact.",
+                "sec_edgar_html_inline_xbrl_fact_material_bridge_sidecar_redacted_value_authority_missing",
+                "SEC EDGAR HTML/iXBRL fact material bridge requires redacted value hashes and lengths for each resolved sidecar fact.",
                 http_status=409,
-                blocked_fields=["resolved_fact_id"],
+                blocked_fields=["resolved_fact_records"],
             )
-        effective_value = str(value_record.get("effective_value") or "")
-        lexical_value = str(value_record.get("lexical_value") or "")
-        transform = dict(value_record.get("transform") or {})
         source_order_hash = stable_hash(
             {
                 "sidecar_receipt_hash": sidecar_receipt["sidecar_receipt_hash"],
@@ -777,8 +772,8 @@ def _fact_material_units_from_sidecar(
                 "source_artifact_receipt_hash": str(record.get("source_artifact_receipt_hash") or parser_receipt["source_artifact_receipt_hash"]),
                 "primary_document_hash": str(record.get("primary_document_hash") or parser_receipt["primary_document_hash"]),
                 "value_text": "",
-                "value_hash": str(record.get("value_hash") or value_record.get("effective_value_hash") or _sha256_text(effective_value)),
-                "value_length": int(record.get("value_length") or value_record.get("effective_value_length") or len(effective_value)),
+                "value_hash": value_hash,
+                "value_length": value_length,
                 "table_candidate_anchor_hash": None,
                 "parser_receipt_hash": str(parser_receipt["parser_receipt_hash"]),
                 "fact_authority_receipt_hash": str(sidecar_receipt["sidecar_receipt_hash"]),
@@ -810,19 +805,19 @@ def _fact_material_units_from_sidecar(
                 "hidden": bool(record.get("hidden")),
                 "continued": bool(record.get("continued")),
                 "footnote_count": int(record.get("footnote_count") or 0),
-                "value_redacted": False,
-                "value_semantics": str(value_record.get("value_semantics") or record.get("value_semantics") or "arelle_effective_canonical_value_v1"),
-                "effective_value_text": effective_value,
-                "effective_value_hash": str(value_record.get("effective_value_hash") or _sha256_text(effective_value)),
-                "effective_value_length": int(value_record.get("effective_value_length") or len(effective_value)),
-                "lexical_value_text": lexical_value,
-                "lexical_value_hash": str(value_record.get("lexical_value_hash") or _sha256_text(lexical_value)),
-                "lexical_value_length": int(value_record.get("lexical_value_length") or len(lexical_value)),
-                "transform_sign": str(transform.get("sign") or record.get("sign") or ""),
-                "transform_scale": str(transform.get("scale") or record.get("scale") or ""),
-                "transform_decimals": str(transform.get("decimals") or record.get("decimals") or ""),
-                "transform_precision": str(transform.get("precision") or record.get("precision") or ""),
-                "transform_format": str(transform.get("format") or record.get("format") or ""),
+                "value_redacted": True,
+                "value_semantics": str(record.get("value_semantics") or "arelle_effective_canonical_value_v1"),
+                "effective_value_text": "",
+                "effective_value_hash": effective_value_hash,
+                "effective_value_length": effective_value_length,
+                "lexical_value_text": "",
+                "lexical_value_hash": lexical_value_hash,
+                "lexical_value_length": lexical_value_length or 0,
+                "transform_sign": str(record.get("sign") or ""),
+                "transform_scale": str(record.get("scale") or ""),
+                "transform_decimals": str(record.get("decimals") or ""),
+                "transform_precision": str(record.get("precision") or ""),
+                "transform_format": str(record.get("format") or ""),
             }
         )
     if not units:
@@ -918,7 +913,7 @@ def _materialization_basis(
                 "local_value_inventory_hash": sidecar_receipt["local_value_inventory_hash"],
                 "internal_value_store_hash": (sidecar_receipt.get("internal_value_store") or {}).get("value_store_hash"),
                 "resolved_structural_semantics_materialized": True,
-                "raw_fact_values_materialized": True,
+                "raw_fact_values_materialized": _units_include_raw_values(units),
                 "operator_surface_values_exposed": False,
             }
         )
@@ -971,6 +966,13 @@ def _materialization_admitted_subset(units: list[dict[str, Any]], *, fact_author
         }
         for unit in units
     ]
+
+
+def _units_include_raw_values(units: list[dict[str, Any]]) -> bool:
+    return any(
+        bool(unit.get("value_text") or unit.get("effective_value_text") or unit.get("lexical_value_text"))
+        for unit in units
+    )
 
 
 def _material_preview_request_basis(*, request_id: str, dataset_version_id: str, actor: str) -> dict[str, Any]:
@@ -1461,6 +1463,15 @@ def _split_qname(qname: str) -> tuple[str, str]:
 def _optional_hash(value: Any) -> str | None:
     text = str(value or "").strip()
     return _sha256_text(text) if text else None
+
+
+def _optional_int(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _normalise_request(fields: Mapping[str, Any]) -> dict[str, Any]:

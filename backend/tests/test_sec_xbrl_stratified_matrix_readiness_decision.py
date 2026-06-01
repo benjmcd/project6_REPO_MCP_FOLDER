@@ -39,6 +39,32 @@ def test_sec_xbrl_stratified_matrix_readiness_selects_explicit_operator_default_
     assert all(item["state"] == "passed" for item in report["criteria"])
 
 
+def test_sec_xbrl_stratified_matrix_readiness_accepts_superseded_default_on_runtime_posture(
+    tmp_path: Path,
+) -> None:
+    decision = _load_decision()
+    paths = _write_inputs(
+        tmp_path,
+        fact_authority_default_on=True,
+        default_posture=_default_posture_report(superseded=True),
+    )
+
+    report = decision.build_report(
+        source_root=paths["source_root"],
+        matrix_live_report_path=paths["matrix"],
+        default_posture_report_path=paths["default_posture"],
+        value_reveal_live_proof_report_path=paths["value_reveal"],
+    )
+
+    assert report["decision"] == "explicit_operator_default_off_readiness_selected"
+    assert report["blocking_reasons"] == []
+    assert report["criteria"][0]["evidence"]["config_defaults_off"] is False
+    assert report["criteria"][0]["evidence"]["config_safety_defaults_off"] is True
+    assert report["criteria"][0]["evidence"]["superseded_by_default_on_runtime"] is True
+    assert report["selected_readiness"]["default_on_value_reveal_admitted"] is False
+    assert report["non_goals_preserved"]["runtime_default_changed_by_decision"] is False
+
+
 def test_sec_xbrl_stratified_matrix_readiness_blocks_when_stratum_missing(tmp_path: Path) -> None:
     decision = _load_decision()
     paths = _write_inputs(tmp_path)
@@ -201,15 +227,30 @@ def test_sec_xbrl_stratified_matrix_readiness_blocks_when_value_reveal_non_admis
     )
 
 
-def _write_inputs(tmp_path: Path) -> dict[str, Path]:
+def _write_inputs(
+    tmp_path: Path,
+    *,
+    fact_authority_default_on: bool = False,
+    value_reveal_default_on: bool = False,
+    default_posture: dict | None = None,
+) -> dict[str, Path]:
     source_root = tmp_path / "source"
     config_path = source_root / "backend" / "app" / "core" / "config.py"
     config_path.parent.mkdir(parents=True)
-    config_path.write_text(_config_text(), encoding="utf-8")
+    config_path.write_text(
+        _config_text(
+            fact_authority_default_on=fact_authority_default_on,
+            value_reveal_default_on=value_reveal_default_on,
+        ),
+        encoding="utf-8",
+    )
     return {
         "source_root": source_root,
         "matrix": _write_json(tmp_path / "matrix.json", _matrix_live_report()),
-        "default_posture": _write_json(tmp_path / "default-posture.json", _default_posture_report()),
+        "default_posture": _write_json(
+            tmp_path / "default-posture.json",
+            default_posture or _default_posture_report(),
+        ),
         "value_reveal": _write_json(tmp_path / "value-reveal.json", _value_reveal_report()),
     }
 
@@ -219,19 +260,21 @@ def _write_json(path: Path, value: dict) -> Path:
     return path
 
 
-def _config_text() -> str:
-    return '''
+def _config_text(*, fact_authority_default_on: bool = False, value_reveal_default_on: bool = False) -> str:
+    fact_authority_default = "True" if fact_authority_default_on else "False"
+    value_reveal_default = "True" if value_reveal_default_on else "False"
+    return f'''
 class Settings:
     layer3_sec_edgar_live_network_enabled: bool = Field(
         default=False,
         alias="LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
     )
     layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(
-        default=False,
+        default={fact_authority_default},
         alias="LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED",
     )
     layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(
-        default=False,
+        default={value_reveal_default},
         alias="LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
     )
 '''
@@ -323,13 +366,18 @@ def _matrix_live_report() -> dict:
     }
 
 
-def _default_posture_report() -> dict:
+def _default_posture_report(*, superseded: bool = False) -> dict:
     return {
-        "decision": "explicit_operator_only_default_off_selected",
+        "decision": (
+            "explicit_operator_only_default_off_superseded_by_default_on_runtime"
+            if superseded
+            else "explicit_operator_only_default_off_selected"
+        ),
         "selected_posture": {
             "posture": "explicit_operator_only_default_off",
             "sec_live_network_default_enabled": False,
             "arelle_fact_authority_cutover_default_enabled": False,
+            "arelle_fact_authority_cutover_default_on_supersedes_selected_posture": superseded,
             "arelle_value_reveal_default_enabled": False,
             "broader_reliability_admission_converted_to_runtime_default": False,
         },

@@ -7,7 +7,7 @@
       "criterion": "required_committed_reports_parseable",
       "evidence": {
         "admission_review": {
-          "decision": "admission_review_requires_post_1966_governance_followup",
+          "decision": "admission_review_superseded_by_default_on_runtime",
           "path": "diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json",
           "schema_id": "diagnostics.sec_xbrl_default_on_admission_review.v1",
           "status": "loaded"
@@ -25,7 +25,7 @@
           "status": "loaded"
         },
         "default_posture": {
-          "decision": "explicit_operator_only_default_off_selected",
+          "decision": "explicit_operator_only_default_off_superseded_by_default_on_runtime",
           "path": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json",
           "schema_id": "diagnostics.sec_xbrl_default_posture_decision.v1",
           "status": "loaded"
@@ -43,7 +43,7 @@
           "status": "loaded"
         },
         "runtime_default": {
-          "decision": "default_on_runtime_disabled_by_governance_remediation",
+          "decision": "default_on_runtime_enabled",
           "path": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json",
           "schema_id": "diagnostics.sec_xbrl_default_on_runtime.v1",
           "status": "loaded"
@@ -67,7 +67,7 @@
       "blocked_reason": null,
       "criterion": "required_source_report_references_current",
       "evidence": {
-        "checked_reference_count": 22,
+        "checked_reference_count": 23,
         "references": [
           {
             "report": "default_on_gate",
@@ -127,6 +127,12 @@
             "report": "admission_review",
             "schema_id": "diagnostics.sec_xbrl_default_on_corpus_expansion_gate.v1",
             "source_report": "diagnostics/assessment/sec-xbrl-default-on-gate-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "runtime_default",
+            "schema_id": "diagnostics.sec_xbrl_default_on_admission_restatement.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-default-on-admission-restatement-report.json",
             "status": "present_json_object"
           },
           {
@@ -447,14 +453,16 @@
     },
     {
       "blocked_reason": null,
-      "criterion": "runtime_default_enablement_remains_separate_and_off",
+      "criterion": "runtime_default_enablement_posture_recognized",
       "evidence": {
-        "config_defaults_off": true,
+        "config_defaults_off": false,
+        "config_safety_defaults_off": true,
         "default_posture": "explicit_operator_only_default_off",
         "live_proof_defaults_off": true,
+        "live_proof_safety_defaults_off": true,
         "operator_policy_runtime_default_change_allowed": false,
-        "runtime_decision": "default_on_runtime_disabled_by_governance_remediation",
-        "runtime_default_cutover_enabled": false,
+        "runtime_decision": "default_on_runtime_enabled",
+        "runtime_default_cutover_enabled": true,
         "selected_arelle_fact_authority_cutover_default_enabled": false
       },
       "state": "passed"
@@ -590,9 +598,9 @@
       "state": "passed"
     }
   ],
-  "decision": "default_on_admission_restatement_ready_for_runtime_design",
-  "headline": "Default-on admission evidence is restated from committed authority and is ready for a separate runtime-design gate; runtime defaults remain off.",
-  "next_slice": "sec_xbrl_default_on_runtime_design_v1",
+  "decision": "default_on_admission_restatement_superseded_by_default_on_runtime",
+  "headline": "Default-on admission evidence is restated from committed authority and has been superseded by the default-on fact-authority runtime; value reveal remains separately gated and default-off.",
+  "next_slice": "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation",
   "non_goals_preserved": {
     "api_or_ui_changed_by_restatement": false,
     "arelle_subprocess_invoked_by_restatement": false,
@@ -611,7 +619,7 @@
     "value_reveal_default_enabled_by_restatement": false,
     "value_reveal_request_performed_by_restatement": false
   },
-  "ready_for_default_on_runtime_design": true,
+  "ready_for_default_on_runtime_design": false,
   "redaction": {
     "passed": true,
     "raw_accession_found": false,
@@ -644,8 +652,8 @@
       "current_broader_real_product_runner_authority": true,
       "default_posture": "explicit_operator_only_default_off",
       "ready_for_default_on_may_be_true": true,
-      "runtime_decision": "default_on_runtime_disabled_by_governance_remediation",
-      "runtime_default_on_enabled": false
+      "runtime_decision": "default_on_runtime_enabled",
+      "runtime_default_on_enabled": true
     },
     "sidecar_selection": {
       "default_on_bridge_cutover_parity_state": "passed",
@@ -676,5 +684,6 @@
     "sector_family_validation": "diagnostics/assessment/sec-xbrl-sector-family-real-filer-validation-report.json",
     "value_reveal_live_proof": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json"
   },
+  "superseded_by_default_on_runtime": true,
   "target": "sec_xbrl_default_on_admission_restatement_v1"
 }

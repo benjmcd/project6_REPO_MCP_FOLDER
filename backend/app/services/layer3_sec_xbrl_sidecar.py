@@ -195,7 +195,7 @@ def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str,
     local_facts, value_records = _local_facts(arelle["facts"], parser_receipt=parser_receipt)
     redacted_facts = [_redacted_fact(fact) for fact in local_facts]
     coverage = _coverage_stats(redacted_facts)
-    internal_value_store_enabled = _arelle_fact_authority_cutover_enabled()
+    internal_value_store_enabled = _arelle_internal_value_store_enabled()
     internal_value_store_hash = stable_hash(value_records) if internal_value_store_enabled else None
     internal_value_store = _internal_value_store_metadata(
         enabled=internal_value_store_enabled,
@@ -811,7 +811,11 @@ def _diagnostics(
         "raw_fact_values_exposed_in_response": False,
         "raw_fact_values_retained_local_receipt": False,
         "raw_fact_values_retained_internal_value_store": internal_value_store_enabled,
-        "internal_value_store_retention_policy": "tied_to_sidecar_receipt_lifecycle" if internal_value_store_enabled else "not_created_without_cutover_flag",
+        "internal_value_store_retention_policy": (
+            "tied_to_sidecar_receipt_lifecycle"
+            if internal_value_store_enabled
+            else "not_created_without_internal_value_store_flag"
+        ),
         "bridge_gate_b_product_package_ui_mutated": False,
         "final_financial_statement_semantics_claimed": False,
         "cross_company_comparability_claimed": False,
@@ -1155,18 +1159,18 @@ def _internal_value_store_metadata(
     if not enabled:
         return {
             "schema_id": INTERNAL_VALUE_STORE_SCHEMA_ID,
-            "store_state": "not_created_cutover_flag_off",
-            "creation_gated_by_cutover_flag": True,
-            "consumption_gated_by_cutover_flag": True,
+            "store_state": "not_created_internal_value_store_flag_off",
+            "creation_gated_by_internal_value_store_flag": True,
+            "consumption_gated_by_internal_value_store_flag": True,
             "value_record_count": 0,
             "values_exposed_in_status_projection": False,
-            "retention_policy": "not_created_without_cutover_flag",
+            "retention_policy": "not_created_without_internal_value_store_flag",
         }
     return {
         "schema_id": INTERNAL_VALUE_STORE_SCHEMA_ID,
         "store_state": "persisted",
-        "creation_gated_by_cutover_flag": True,
-        "consumption_gated_by_cutover_flag": True,
+        "creation_gated_by_internal_value_store_flag": True,
+        "consumption_gated_by_internal_value_store_flag": True,
         "value_store_hash": value_store_hash,
         "value_record_count": value_record_count,
         "value_semantics": VALUE_SEMANTICS_ID,
@@ -1374,6 +1378,10 @@ def _taxonomy_internet_connectivity() -> str:
 
 def _arelle_fact_authority_cutover_enabled() -> bool:
     return bool(getattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False))
+
+
+def _arelle_internal_value_store_enabled() -> bool:
+    return bool(getattr(settings, "layer3_sec_edgar_arelle_internal_value_store_enabled", False))
 
 
 def _path_inside_repo_or_onedrive(path: Path) -> bool:

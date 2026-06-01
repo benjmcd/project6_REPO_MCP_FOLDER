@@ -45,10 +45,14 @@ def test_sec_xbrl_sidecar_emits_resolved_semantics_and_redacts_response(monkeypa
         expected_sidecar_receipt_hash=response["sidecar_receipt_hash"],
     )
     assert "value" not in receipt["resolved_fact_records"][0]
-    assert receipt["internal_value_store"]["store_state"] == "persisted"
-    value_store = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(receipt)
-    assert value_store["value_records"][0]["effective_value"] == "987654321000000"
-    assert value_store["value_records"][0]["lexical_value"] == "987654321"
+    assert receipt["internal_value_store"]["store_state"] == "not_created_internal_value_store_flag_off"
+    assert receipt["diagnostics"]["raw_fact_values_retained_internal_value_store"] is False
+    assert receipt["diagnostics"]["internal_value_store_retention_policy"] == (
+        "not_created_without_internal_value_store_flag"
+    )
+    with pytest.raises(Layer3WorkbenchError) as excinfo:
+        layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(receipt)
+    assert excinfo.value.error_code == "sec_edgar_arelle_sidecar_internal_value_store_not_persisted"
     assert receipt["resolved_fact_projection"][0]["value_redacted"] is True
     assert "value" not in receipt["resolved_fact_projection"][0]
     assert receipt["diagnostics"]["app_runtime_imported_arelle"] is False
@@ -58,8 +62,28 @@ def test_sec_xbrl_sidecar_emits_resolved_semantics_and_redacts_response(monkeypa
     assert receipt["negative_invariants"]["material_bridge_mutated"] is False
 
 
+def test_sec_xbrl_sidecar_internal_value_store_requires_explicit_gate(monkeypatch, tmp_path):
+    _install_receipt_fakes(monkeypatch, tmp_path, _ready_arelle_runner)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_internal_value_store_enabled", True)
+
+    response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+        _request(companyfacts_count=1)
+    )
+
+    receipt = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_sidecar_receipt(
+        response["sidecar_receipt_id"],
+        expected_sidecar_receipt_hash=response["sidecar_receipt_hash"],
+    )
+    assert receipt["internal_value_store"]["store_state"] == "persisted"
+    value_store = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(receipt)
+    assert value_store["value_records"][0]["effective_value"] == "987654321000000"
+    assert value_store["value_records"][0]["lexical_value"] == "987654321"
+    assert receipt["diagnostics"]["raw_fact_values_retained_internal_value_store"] is True
+
+
 def test_sec_xbrl_sidecar_internal_value_store_missing_fails_closed(monkeypatch, tmp_path):
     _install_receipt_fakes(monkeypatch, tmp_path, _ready_arelle_runner)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_internal_value_store_enabled", True)
     response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
         _request(companyfacts_count=1)
     )

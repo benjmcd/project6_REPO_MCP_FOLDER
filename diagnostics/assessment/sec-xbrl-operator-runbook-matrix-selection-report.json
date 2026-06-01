@@ -3,11 +3,12 @@
   "criteria": [
     {
       "blocked_reason": null,
-      "criterion": "explicit_operator_only_default_off_posture_selected",
+      "criterion": "explicit_operator_default_posture_recognized",
       "evidence": {
-        "decision": "explicit_operator_only_default_off_selected",
+        "decision": "explicit_operator_only_default_off_superseded_by_default_on_runtime",
         "selected_posture": "explicit_operator_only_default_off",
-        "source_report": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json"
+        "source_report": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json",
+        "superseded_by_default_on_runtime": true
       },
       "state": "passed"
     },
@@ -30,7 +31,7 @@
         "control_count": 14,
         "controls": [
           "start_from_clean_project6_origin_main_worktree",
-          "keep_committed_defaults_off",
+          "preserve_committed_safety_defaults",
           "require_explicit_live_sec_authorization",
           "use_isolated_off_repo_arelle_environment",
           "run_validate_only_preflight_before_live_work",
@@ -42,7 +43,7 @@
           "record_hashes_counts_forms_and_reason_codes_only",
           "stop_on_arelle_or_taxonomy_unavailability",
           "stop_on_redaction_or_identity_leak",
-          "do_not_change_runtime_defaults"
+          "do_not_change_runtime_defaults_by_this_diagnostic"
         ]
       },
       "state": "passed"
@@ -104,7 +105,7 @@
   },
   "runbook_controls": [
     "start_from_clean_project6_origin_main_worktree",
-    "keep_committed_defaults_off",
+    "preserve_committed_safety_defaults",
     "require_explicit_live_sec_authorization",
     "use_isolated_off_repo_arelle_environment",
     "run_validate_only_preflight_before_live_work",
@@ -116,7 +117,7 @@
     "record_hashes_counts_forms_and_reason_codes_only",
     "stop_on_arelle_or_taxonomy_unavailability",
     "stop_on_redaction_or_identity_leak",
-    "do_not_change_runtime_defaults"
+    "do_not_change_runtime_defaults_by_this_diagnostic"
   ],
   "schema_id": "diagnostics.sec_xbrl_operator_runbook_matrix_selection.v1",
   "selected_stratified_matrix": [

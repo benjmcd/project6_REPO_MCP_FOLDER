@@ -115,10 +115,12 @@ def build_report(
             "stratified_matrix_preflight_runbook_not_ready",
         ),
         _criterion(
-            "committed_defaults_and_selected_posture_remain_default_off",
-            defaults["all_defaults_off"] and defaults["selected_posture"] == "explicit_operator_only_default_off",
+            "committed_safety_defaults_and_selected_posture_preserved",
+            defaults["safety_defaults_off"]
+            and defaults["arelle_fact_authority_default_posture_recognized"]
+            and defaults["selected_posture"] == "explicit_operator_only_default_off",
             defaults,
-            "stratified_matrix_preflight_defaults_not_default_off",
+            "stratified_matrix_preflight_safety_defaults_or_posture_unrecognized",
         ),
         _criterion(
             "selected_matrix_covers_required_strata_without_raw_identity",
@@ -245,6 +247,10 @@ def _default_posture_projection(*, config_text: str, default_posture: Mapping[st
         config_text,
         "layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=False,",
     )
+    cutover_default_on = _contains(
+        config_text,
+        "layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=True,",
+    )
     reveal_default_off = _contains(
         config_text,
         "layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False,",
@@ -254,7 +260,10 @@ def _default_posture_projection(*, config_text: str, default_posture: Mapping[st
         "selected_posture": selected.get("posture"),
         "sec_live_network_default_off": sec_live_default_off,
         "arelle_fact_authority_cutover_default_off": cutover_default_off,
+        "arelle_fact_authority_cutover_default_on": cutover_default_on,
+        "arelle_fact_authority_default_posture_recognized": cutover_default_off or cutover_default_on,
         "arelle_value_reveal_default_off": reveal_default_off,
+        "safety_defaults_off": sec_live_default_off and reveal_default_off,
         "all_defaults_off": sec_live_default_off and cutover_default_off and reveal_default_off,
     }
 
