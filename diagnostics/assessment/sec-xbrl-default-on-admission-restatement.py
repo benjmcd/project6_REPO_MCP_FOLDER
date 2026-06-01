@@ -730,10 +730,16 @@ def _source_report_ref_states(loaded: Mapping[str, Mapping[str, Any]], source_ro
 
 def _source_report_path(source_root: Path, ref: str) -> tuple[Path, str | None]:
     root = source_root.resolve()
-    raw_path = Path(ref)
+    try:
+        raw_path = Path(ref)
+    except (TypeError, ValueError):
+        return root, "malformed_path"
     if raw_path.is_absolute():
         return raw_path, "outside_repo"
-    candidate = (root / raw_path).resolve()
+    try:
+        candidate = (root / raw_path).resolve()
+    except (OSError, RuntimeError, ValueError):
+        return root / raw_path, "malformed_path"
     try:
         candidate.relative_to(root)
     except ValueError:
