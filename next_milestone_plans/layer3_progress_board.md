@@ -1,5 +1,42 @@
 # Layer3 Progress Board
 
+## SEC XBRL Nonlocal In-App Auth Policy Validation
+
+Milestone: `sec_xbrl_nonlocal_in_app_auth_policy_validation_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1322-in-app-auth-policy-validation.md`.
+
+Diagnostic/report:
+`diagnostics/assessment/sec-xbrl-in-app-auth-policy-validation.py` and
+`diagnostics/assessment/sec-xbrl-in-app-auth-policy-validation-report.json`.
+
+Status: branch-local Tier-1 validate-only diagnostic/report/test pass on
+`codex/secxbrl-in-app-auth-policy-validation`.
+
+Scope: validate the selected SEC XBRL in-app auth policy before runtime wiring.
+The diagnostic proves the protected route-family map, forbidden request-field
+coverage, anonymous/malformed/spoofed/unauthorized/stale/cross-owner negative
+cases, owner/auditor role constraints, and hash-only redacted output contract.
+
+Non-goals: no runtime auth, middleware, API dependency, config default change,
+schema, `models.py`, Alembic migration, durable persistence, API/UI behavior,
+rendered control, operator workflow mutation, source acquisition, Arelle
+subprocess invocation, value reveal default-on, export/delivery,
+provider/connector dispatch, raw runtime artifact, redaction-posture change,
+final statement semantics, cross-company comparability, or production
+readiness behavior.
+
+Verification: focused policy validation test passes with `7 passed`; focused
+nonlocal/default-on API tests pass with `27 passed, 249 deselected, 3
+warnings`; full SEC XBRL suite passes with `329 passed, 4 warnings`;
+py_compile, report regeneration, changed JSON parse, target-selection frozen
+check, progress check, committed SEC XBRL report redaction/residual scan over
+`57` SEC-like reports, and `git diff --check` pass.
+
+Next exact posture:
+`sec_xbrl_nonlocal_in_app_auth_owner_binding_strategy_v1`.
+
 ## SEC XBRL Nonlocal In-App Auth Design
 
 Milestone: `sec_xbrl_nonlocal_in_app_auth_design_v1`.
