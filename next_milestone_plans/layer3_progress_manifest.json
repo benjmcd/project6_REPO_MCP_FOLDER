@@ -44080,10 +44080,13 @@
     "next_posture": "sec_xbrl_controlled_value_reveal_submit_post_merge_audit_then_rendered_or_default_design_if_admitted"
   },
   "sec_xbrl_controlled_value_reveal_submit_status_ref_hardening_tracking": {
-    "status": "branch_local_tier2_risk_assessed_post_merge_audit_hardening_verified",
+    "status": "merged_current_main_tier2_risk_assessed_post_merge_audit_hardening_verified",
     "milestone": "sec_xbrl_controlled_value_reveal_submit_status_ref_hardening_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1307-submit-status-ref-hardening.md",
     "base_main": "89e8630068181e7b7484476134338ce470cf3490",
+    "merged_pr": 2049,
+    "merged_main": "b5eee6b03104c8294144c21fec2c573ef2a50c24",
+    "post_merge_verification_main": "b5eee6b03104c8294144c21fec2c573ef2a50c24",
     "branch": "codex/secxbrl-submit-status-ref-hardening",
     "tier_classification": "Tier-2 risk-assessed hardening because it tightens controlled value-reveal submit status authority validation",
     "finding": "controlled-submit status inspection checked receipt id as non-empty text but did not reject raw or local status ids before receipt lookup",
@@ -44116,7 +44119,7 @@
     "progress_check_result": "PASS: python ./tools/l3-progress-check.py -> Layer 3 progress state check: PASS",
     "json_validation_result": "PASS: utf-8-sig JSON parse for layer3_progress_manifest.json and layer3_workbench_proof_manifest.json",
     "redaction_identity_scan_result": "PASS: 53 committed SEC XBRL report JSON files scanned; 0 SEC URLs, accessions, Windows paths, file URIs, or operator emails",
-    "residual_magnitude_regression_result": "PASS: 53 committed SEC XBRL report JSON files compared with HEAD; 0 new or increased numeric tokens",
+    "residual_magnitude_regression_result": "PASS: 53 committed SEC XBRL report JSON files scanned; 0 nonzero residual magnitudes; residual count/boolean evidence excluded",
     "diff_check_result": "PASS: git diff --check",
     "next_posture": "sec_xbrl_controlled_value_reveal_submit_post_merge_audit_closure_then_rendered_or_default_design_if_admitted"
   },
