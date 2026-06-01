@@ -1,0 +1,726 @@
+{
+  "blocking_reasons": [],
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "protected_route_family_map_nonempty",
+      "evidence": {
+        "route_family_count": 6
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "protected_routes_present_in_current_api",
+      "evidence": {
+        "api_file": "backend/app/api/layer3.py",
+        "route_family_count": 6,
+        "routes": [
+          {
+            "allowed_roles": [
+              "owner",
+              "auditor"
+            ],
+            "may_expose_revealed_values": false,
+            "method": "POST",
+            "mutating": false,
+            "requires_owner_binding": true,
+            "route": "/api/v1/layer3/sec-xbrl/operator-review/workflow/status",
+            "route_family": "sec_xbrl_operator_review_workflow_status_read"
+          },
+          {
+            "allowed_roles": [
+              "owner"
+            ],
+            "may_expose_revealed_values": false,
+            "method": "POST",
+            "mutating": true,
+            "requires_owner_binding": true,
+            "route": "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit",
+            "route_family": "sec_xbrl_operator_review_decision_submit_write"
+          },
+          {
+            "allowed_roles": [
+              "owner",
+              "auditor"
+            ],
+            "may_expose_revealed_values": false,
+            "method": "POST",
+            "mutating": false,
+            "requires_owner_binding": true,
+            "route": "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/status",
+            "route_family": "sec_xbrl_operator_review_decision_status_read"
+          },
+          {
+            "allowed_roles": [
+              "owner"
+            ],
+            "may_expose_revealed_values": false,
+            "method": "POST",
+            "mutating": true,
+            "requires_owner_binding": true,
+            "route": "/api/v1/layer3/sec-xbrl/value-reveal/authority/prepare",
+            "route_family": "sec_xbrl_value_reveal_authority_prepare_write"
+          },
+          {
+            "allowed_roles": [
+              "owner"
+            ],
+            "may_expose_revealed_values": true,
+            "method": "POST",
+            "mutating": true,
+            "requires_owner_binding": true,
+            "route": "/api/v1/layer3/sec-xbrl/value-reveal/submit",
+            "route_family": "sec_xbrl_controlled_value_reveal_submit_write"
+          },
+          {
+            "allowed_roles": [
+              "owner"
+            ],
+            "may_expose_revealed_values": true,
+            "method": "GET",
+            "mutating": false,
+            "requires_owner_binding": true,
+            "route": "/api/v1/layer3/sec-xbrl/value-reveal/submit/status/{sec_xbrl_controlled_value_reveal_submit_receipt_id}",
+            "route_family": "sec_xbrl_controlled_value_reveal_submit_status_read"
+          }
+        ]
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "design_traceability_current",
+      "evidence": {
+        "design_doc": "next_milestone_plans/Layer3_planning_docs/1321-in-app-auth.md",
+        "route_family_count": 6,
+        "selected_auth_mode": "sec_xbrl_repo_owned_in_app_operator_auth_boundary_v1",
+        "target": "sec_xbrl_nonlocal_in_app_auth_policy_validation_v1"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "repo_nonlocal_proxy_guardrails_still_configured",
+      "evidence": {
+        "config_file": "backend/app/core/config.py",
+        "requires_direct_storage_disabled": true,
+        "requires_explicit_https_origins": true,
+        "requires_proxy_owner_for_nonlocal": true,
+        "requires_trusted_proxy_for_nonlocal": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "candidate_b_hash_only_policy_precedent_present",
+      "evidence": {
+        "precedent": "hash-only request-context policy decision with forbidden request fields",
+        "source_file": "backend/app/services/layer3_candidate_b_operator_workflow_access_policy.py"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "negative_policy_cases_fail_closed",
+      "evidence": {
+        "case_count": 54,
+        "denied_negative_cases": [
+          "sec_xbrl_in_app_auth_policy_context_authority_not_admitted",
+          "sec_xbrl_in_app_auth_policy_cross_owner_receipt",
+          "sec_xbrl_in_app_auth_policy_forbidden_request_fields",
+          "sec_xbrl_in_app_auth_policy_missing_operator_context",
+          "sec_xbrl_in_app_auth_policy_role_not_admitted",
+          "sec_xbrl_in_app_auth_policy_role_route_forbidden",
+          "sec_xbrl_in_app_auth_policy_stale_policy_hash"
+        ]
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "role_allowlist_constrains_mutating_and_value_routes",
+      "evidence": {
+        "auditor_allowed_route_count": 2,
+        "auditor_mutating_route_access": false,
+        "auditor_revealed_value_route_access": false,
+        "owner_allowed_route_count": 6
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "forbidden_request_fields_cover_auth_security_raw_and_override_inputs",
+      "evidence": {
+        "blocked_field_classes": [
+          "auth_security",
+          "raw_identity",
+          "proxy_header",
+          "local_path_or_url",
+          "secret_token",
+          "value_store_or_raw_value",
+          "default_source_arelle_export_override"
+        ],
+        "forbidden_field_count": 35
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "redacted_policy_output_contract",
+      "evidence": {
+        "raw_local_path_exposed": false,
+        "raw_operator_identity_exposed": false,
+        "raw_proxy_header_exposed": false,
+        "raw_url_exposed": false,
+        "raw_value_exposed": false,
+        "raw_workspace_identity_exposed": false,
+        "residual_magnitude_exposed": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "standing_non_admissions_preserved",
+      "evidence": {
+        "api_route_behavior_changed_by_diagnostic": false,
+        "arelle_subprocess_invoked_by_diagnostic": false,
+        "export_or_delivery_enabled_by_diagnostic": false,
+        "owner_binding_strategy_selected_for_runtime": false,
+        "production_readiness_claimed": false,
+        "runtime_auth_dependency_installed_by_diagnostic": false,
+        "schema_or_persistence_changed_by_diagnostic": false,
+        "source_acquisition_performed_by_diagnostic": false,
+        "value_reveal_default_enabled_by_diagnostic": false
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "sec_xbrl_in_app_auth_policy_validation_passed",
+  "forbidden_request_fields": [
+    "accession",
+    "amount",
+    "arelle_execution_override",
+    "auth_policy_override",
+    "auth_security_directive",
+    "browser_identity",
+    "cik",
+    "company_name",
+    "default_on_override",
+    "email",
+    "export_delivery_override",
+    "local_path",
+    "local_storage_identity",
+    "operator_email",
+    "operator_role_override",
+    "permission_override",
+    "provider_secret",
+    "proxy_email_header",
+    "proxy_groups_header",
+    "proxy_identity_header",
+    "raw_operator_identity",
+    "raw_proxy_header",
+    "raw_receipt_path",
+    "raw_storage_root",
+    "raw_tenant_id",
+    "raw_url",
+    "raw_value",
+    "raw_value_store_payload",
+    "raw_workspace_id",
+    "sec_url",
+    "security_context",
+    "source_acquisition_override",
+    "token",
+    "value",
+    "value_store_override"
+  ],
+  "headline": "SEC XBRL in-app auth policy is validated as a redacted, validate-only pre-runtime boundary.",
+  "next_slice": "sec_xbrl_nonlocal_in_app_auth_owner_binding_strategy_v1",
+  "non_goals_preserved": {
+    "api_route_behavior_changed_by_diagnostic": false,
+    "arelle_subprocess_invoked_by_diagnostic": false,
+    "config_default_changed_by_diagnostic": false,
+    "controlled_value_reveal_submit_default_enabled_by_diagnostic": false,
+    "cross_company_comparability_claimed": false,
+    "durable_persistence_changed_by_diagnostic": false,
+    "export_or_delivery_enabled_by_diagnostic": false,
+    "final_financial_statement_semantics_claimed": false,
+    "live_sec_network_run_performed_by_diagnostic": false,
+    "migration_changed_by_diagnostic": false,
+    "owner_binding_strategy_selected_for_runtime": false,
+    "production_readiness_claimed": false,
+    "provider_or_connector_dispatch_enabled_by_diagnostic": false,
+    "raw_internal_value_store_default_enabled_by_diagnostic": false,
+    "raw_runtime_artifacts_added_by_diagnostic": false,
+    "redaction_posture_changed_by_diagnostic": false,
+    "runtime_auth_dependency_installed_by_diagnostic": false,
+    "schema_models_changed_by_diagnostic": false,
+    "source_acquisition_performed_by_diagnostic": false,
+    "value_reveal_default_enabled_by_diagnostic": false
+  },
+  "policy_schema_id": "layer3.sec_xbrl.repo_owned_in_app_operator_auth_policy.v1",
+  "route_family_map": [
+    {
+      "allowed_roles": [
+        "owner",
+        "auditor"
+      ],
+      "may_expose_revealed_values": false,
+      "method": "POST",
+      "mutating": false,
+      "requires_owner_binding": true,
+      "route": "/api/v1/layer3/sec-xbrl/operator-review/workflow/status",
+      "route_family": "sec_xbrl_operator_review_workflow_status_read"
+    },
+    {
+      "allowed_roles": [
+        "owner"
+      ],
+      "may_expose_revealed_values": false,
+      "method": "POST",
+      "mutating": true,
+      "requires_owner_binding": true,
+      "route": "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit",
+      "route_family": "sec_xbrl_operator_review_decision_submit_write"
+    },
+    {
+      "allowed_roles": [
+        "owner",
+        "auditor"
+      ],
+      "may_expose_revealed_values": false,
+      "method": "POST",
+      "mutating": false,
+      "requires_owner_binding": true,
+      "route": "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/status",
+      "route_family": "sec_xbrl_operator_review_decision_status_read"
+    },
+    {
+      "allowed_roles": [
+        "owner"
+      ],
+      "may_expose_revealed_values": false,
+      "method": "POST",
+      "mutating": true,
+      "requires_owner_binding": true,
+      "route": "/api/v1/layer3/sec-xbrl/value-reveal/authority/prepare",
+      "route_family": "sec_xbrl_value_reveal_authority_prepare_write"
+    },
+    {
+      "allowed_roles": [
+        "owner"
+      ],
+      "may_expose_revealed_values": true,
+      "method": "POST",
+      "mutating": true,
+      "requires_owner_binding": true,
+      "route": "/api/v1/layer3/sec-xbrl/value-reveal/submit",
+      "route_family": "sec_xbrl_controlled_value_reveal_submit_write"
+    },
+    {
+      "allowed_roles": [
+        "owner"
+      ],
+      "may_expose_revealed_values": true,
+      "method": "GET",
+      "mutating": false,
+      "requires_owner_binding": true,
+      "route": "/api/v1/layer3/sec-xbrl/value-reveal/submit/status/{sec_xbrl_controlled_value_reveal_submit_receipt_id}",
+      "route_family": "sec_xbrl_controlled_value_reveal_submit_status_read"
+    }
+  ],
+  "schema_id": "diagnostics.sec_xbrl_nonlocal_in_app_auth_policy_validation.v1",
+  "selected_auth_mode": "sec_xbrl_repo_owned_in_app_operator_auth_boundary_v1",
+  "simulation_summary": {
+    "allow_count": 8,
+    "case_count": 54,
+    "cases": [
+      {
+        "case": "anonymous_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_missing_operator_context",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_workflow_status_read"
+      },
+      {
+        "case": "missing_actor_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_context_authority_not_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_workflow_status_read"
+      },
+      {
+        "case": "proxy_header_only_context_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_context_authority_not_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_workflow_status_read"
+      },
+      {
+        "case": "spoofed_request_fields_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_forbidden_request_fields",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_workflow_status_read"
+      },
+      {
+        "case": "unsupported_role_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_not_admitted",
+        "requested_role": "admin",
+        "route_family": "sec_xbrl_operator_review_workflow_status_read"
+      },
+      {
+        "case": "stale_policy_hash_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_stale_policy_hash",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_workflow_status_read"
+      },
+      {
+        "case": "cross_owner_receipt_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_cross_owner_receipt",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_workflow_status_read"
+      },
+      {
+        "case": "owner_positive",
+        "decision": "allow",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_route_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_workflow_status_read"
+      },
+      {
+        "case": "auditor_route_check",
+        "decision": "allow",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_route_admitted",
+        "requested_role": "auditor",
+        "route_family": "sec_xbrl_operator_review_workflow_status_read"
+      },
+      {
+        "case": "anonymous_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_missing_operator_context",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_decision_submit_write"
+      },
+      {
+        "case": "missing_actor_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_context_authority_not_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_decision_submit_write"
+      },
+      {
+        "case": "proxy_header_only_context_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_context_authority_not_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_decision_submit_write"
+      },
+      {
+        "case": "spoofed_request_fields_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_forbidden_request_fields",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_decision_submit_write"
+      },
+      {
+        "case": "unsupported_role_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_not_admitted",
+        "requested_role": "admin",
+        "route_family": "sec_xbrl_operator_review_decision_submit_write"
+      },
+      {
+        "case": "stale_policy_hash_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_stale_policy_hash",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_decision_submit_write"
+      },
+      {
+        "case": "cross_owner_receipt_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_cross_owner_receipt",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_decision_submit_write"
+      },
+      {
+        "case": "owner_positive",
+        "decision": "allow",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_route_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_decision_submit_write"
+      },
+      {
+        "case": "auditor_route_check",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_route_forbidden",
+        "requested_role": "auditor",
+        "route_family": "sec_xbrl_operator_review_decision_submit_write"
+      },
+      {
+        "case": "anonymous_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_missing_operator_context",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_decision_status_read"
+      },
+      {
+        "case": "missing_actor_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_context_authority_not_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_decision_status_read"
+      },
+      {
+        "case": "proxy_header_only_context_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_context_authority_not_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_decision_status_read"
+      },
+      {
+        "case": "spoofed_request_fields_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_forbidden_request_fields",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_decision_status_read"
+      },
+      {
+        "case": "unsupported_role_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_not_admitted",
+        "requested_role": "admin",
+        "route_family": "sec_xbrl_operator_review_decision_status_read"
+      },
+      {
+        "case": "stale_policy_hash_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_stale_policy_hash",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_decision_status_read"
+      },
+      {
+        "case": "cross_owner_receipt_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_cross_owner_receipt",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_decision_status_read"
+      },
+      {
+        "case": "owner_positive",
+        "decision": "allow",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_route_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_operator_review_decision_status_read"
+      },
+      {
+        "case": "auditor_route_check",
+        "decision": "allow",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_route_admitted",
+        "requested_role": "auditor",
+        "route_family": "sec_xbrl_operator_review_decision_status_read"
+      },
+      {
+        "case": "anonymous_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_missing_operator_context",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_value_reveal_authority_prepare_write"
+      },
+      {
+        "case": "missing_actor_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_context_authority_not_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_value_reveal_authority_prepare_write"
+      },
+      {
+        "case": "proxy_header_only_context_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_context_authority_not_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_value_reveal_authority_prepare_write"
+      },
+      {
+        "case": "spoofed_request_fields_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_forbidden_request_fields",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_value_reveal_authority_prepare_write"
+      },
+      {
+        "case": "unsupported_role_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_not_admitted",
+        "requested_role": "admin",
+        "route_family": "sec_xbrl_value_reveal_authority_prepare_write"
+      },
+      {
+        "case": "stale_policy_hash_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_stale_policy_hash",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_value_reveal_authority_prepare_write"
+      },
+      {
+        "case": "cross_owner_receipt_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_cross_owner_receipt",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_value_reveal_authority_prepare_write"
+      },
+      {
+        "case": "owner_positive",
+        "decision": "allow",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_route_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_value_reveal_authority_prepare_write"
+      },
+      {
+        "case": "auditor_route_check",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_route_forbidden",
+        "requested_role": "auditor",
+        "route_family": "sec_xbrl_value_reveal_authority_prepare_write"
+      },
+      {
+        "case": "anonymous_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_missing_operator_context",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_write"
+      },
+      {
+        "case": "missing_actor_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_context_authority_not_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_write"
+      },
+      {
+        "case": "proxy_header_only_context_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_context_authority_not_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_write"
+      },
+      {
+        "case": "spoofed_request_fields_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_forbidden_request_fields",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_write"
+      },
+      {
+        "case": "unsupported_role_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_not_admitted",
+        "requested_role": "admin",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_write"
+      },
+      {
+        "case": "stale_policy_hash_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_stale_policy_hash",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_write"
+      },
+      {
+        "case": "cross_owner_receipt_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_cross_owner_receipt",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_write"
+      },
+      {
+        "case": "owner_positive",
+        "decision": "allow",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_route_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_write"
+      },
+      {
+        "case": "auditor_route_check",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_route_forbidden",
+        "requested_role": "auditor",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_write"
+      },
+      {
+        "case": "anonymous_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_missing_operator_context",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_status_read"
+      },
+      {
+        "case": "missing_actor_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_context_authority_not_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_status_read"
+      },
+      {
+        "case": "proxy_header_only_context_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_context_authority_not_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_status_read"
+      },
+      {
+        "case": "spoofed_request_fields_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_forbidden_request_fields",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_status_read"
+      },
+      {
+        "case": "unsupported_role_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_not_admitted",
+        "requested_role": "admin",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_status_read"
+      },
+      {
+        "case": "stale_policy_hash_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_stale_policy_hash",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_status_read"
+      },
+      {
+        "case": "cross_owner_receipt_denied",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_cross_owner_receipt",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_status_read"
+      },
+      {
+        "case": "owner_positive",
+        "decision": "allow",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_route_admitted",
+        "requested_role": "owner",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_status_read"
+      },
+      {
+        "case": "auditor_route_check",
+        "decision": "deny",
+        "reason_code": "sec_xbrl_in_app_auth_policy_role_route_forbidden",
+        "requested_role": "auditor",
+        "route_family": "sec_xbrl_controlled_value_reveal_submit_status_read"
+      }
+    ],
+    "deny_count": 46
+  },
+  "source_documents": {
+    "api_source": "backend/app/api/layer3.py",
+    "candidate_b_policy_precedent": "backend/app/services/layer3_candidate_b_operator_workflow_access_policy.py",
+    "config_source": "backend/app/core/config.py",
+    "in_app_auth_design": "next_milestone_plans/Layer3_planning_docs/1321-in-app-auth.md"
+  },
+  "target": "sec_xbrl_nonlocal_in_app_auth_policy_validation_v1"
+}
