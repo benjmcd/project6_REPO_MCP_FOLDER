@@ -41617,7 +41617,7 @@
       "only bounded review decisions and reason codes are admitted",
       "non-approved decisions require notes evidence, but raw notes are not persisted",
       "raw contact and raw decimal note strings are rejected before persistence",
-      "same client_request_id or decision_basis_hash replays the existing receipt idempotently",
+      "same client_request_id and decision_basis_hash replays the existing receipt idempotently; same-basis replay under a different request id fails closed until an alias policy is frozen",
       "reused client_request_id with a different basis and second decisions for a workflow are rejected",
       "tampered workflow authority is rejected before any decision row is written",
       "workflow, statement-packet, and projection rows remain unmutated by decision receipt creation",
@@ -41702,11 +41702,11 @@
     "proof_terms": [
       "the future submit route is frozen as POST /api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit",
       "the future route is a bounded wrapper over record_redacted_operator_review_decision",
-      "the future request model must use extra=forbid",
+      "the future route must reject extra fields through a redacted workbench error before owner-service mutation",
       "the future route may pass only bounded decision fields and existing workflow authority selectors to the owner service",
       "the future route must use the existing SEC XBRL operator-review workflow error mapper",
       "the future route must not add schema, migrations, durable persistence beyond the existing decision receipt, rendered UI, workflow-open route, value reveal, delivery/export, source acquisition, Arelle invocation, default-on behavior, raw artifacts, or production-readiness claims",
-      "the future implementation proof must include API success, extra-field rejection, missing authority failure, notes-policy failure, raw-note rejection, idempotent replay, second-decision rejection, response redaction, and non-mutation checks"
+      "the future implementation proof must include API success, redacted extra-field rejection, missing authority failure, notes-policy failure, raw-note rejection, exact-request idempotent replay, second-decision rejection, response redaction, and non-mutation checks"
     ],
     "frozen_future_route": "POST /api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit",
     "future_owner_service": "backend/app/services/layer3_sec_xbrl_operator_review_workflow.py::record_redacted_operator_review_decision",
@@ -41750,11 +41750,11 @@
     "tier_classification": "Tier 2 risk-assessed API-route implementation over the existing decision receipt service; no schema, migration, rendered UI, workflow-open route, value reveal, delivery/export, source acquisition, Arelle invocation, default-on behavior, raw artifacts, or production-readiness change in this pass",
     "proof_terms": [
       "the implemented route is POST /api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit",
-      "the request model uses extra=forbid and admits only bounded decision fields plus workflow authority selectors",
+      "the request model parses only bounded decision fields plus workflow authority selectors, and the route rejects parsed extra fields with a redacted workbench error before owner-service mutation",
       "the route calls only record_redacted_operator_review_decision and uses the existing SEC XBRL operator-review workflow error mapper",
       "the route returns the standard API envelope plus the owner-service decision receipt projection and decision_submit_api_route_enabled=true",
       "rendered UI, workflow-open API, value reveal, delivery/export, source acquisition, Arelle invocation, runtime-default, and production-readiness flags remain false",
-      "focused tests prove success, extra-field rejection, missing authority failure, notes-policy failure, raw-note rejection, idempotent replay, second-decision rejection, response redaction, and workflow/statement-packet/projection non-mutation"
+      "focused tests prove success, extra-field rejection without raw value echo, missing authority failure, notes-policy failure, raw-note rejection, exact-request idempotent replay, second-decision rejection, response redaction, and workflow/statement-packet/projection non-mutation"
     ],
     "implemented_route": "POST /api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit",
     "owner_service": "backend/app/services/layer3_sec_xbrl_operator_review_workflow.py::record_redacted_operator_review_decision",

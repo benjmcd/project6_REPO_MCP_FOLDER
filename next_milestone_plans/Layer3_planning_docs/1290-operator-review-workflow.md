@@ -163,7 +163,9 @@ The control-envelope materializer must:
 5. compute `workflow_basis_hash` from the packet id, packet basis hash, source
    projection basis hash, row counts, review exception count, review readiness, and the
    fixed control vocabulary before writing;
-6. be idempotent on `client_request_id` and `workflow_basis_hash`;
+6. replay only when the same `client_request_id` resolves to the same
+   `workflow_basis_hash`; the same `workflow_basis_hash` under a different
+   `client_request_id` fails closed until a separate alias policy is frozen;
 7. reject raw value fields, raw issuer identity keys, raw accessions, raw period dates,
    SEC URLs, local paths, operator contact fields, raw resolved fact authorities, and
    residual magnitude fields in any JSON copied into the workflow envelope;
@@ -186,7 +188,8 @@ Containment requirements for the implementation PR:
 - Tests run in isolated temporary DB state.
 - Failed materialization leaves no partial workflow row.
 - Replaying the same request returns the existing workflow envelope instead of
-  duplicating rows.
+  duplicating rows; same-basis/new-request replay fails closed rather than silently
+  aliasing authority.
 - Statement-packet persistence rows are read as authority inputs, not mutated.
 - If downgrade is exercised after test data exists, only the new workflow table is
   removed.
@@ -205,7 +208,8 @@ Minimum local verification:
 - raw value/raw identity/raw accession/raw period date/local path/SEC URL/operator
   contact/residual magnitude rejection tests;
 - statement-packet-set binding proof;
-- idempotent replay test for `client_request_id` and `workflow_basis_hash`;
+- exact-request replay and same-basis/new-request mismatch tests for
+  `client_request_id` and `workflow_basis_hash`;
 - partial-write rollback test;
 - `python -m pytest ./backend/tests/test_sec_xbrl_statement_packet_persistence.py -q`;
 - full `backend/tests/test_sec_xbrl*.py` suite;

@@ -544,6 +544,7 @@ def test_operator_review_decision_submit_api_records_redacted_receipt(api_client
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["schema_id"] == workflow_service.DECISION_SCHEMA_ID
+    assert body["request_id"] == "decision-submit-api-success"
     assert body["status"] == "decision_recorded"
     assert body["review_decision"] == "approved"
     assert body["decision_reason_code"] == "ready_for_next_freeze"
@@ -598,7 +599,12 @@ def test_operator_review_decision_submit_api_rejects_extra_fields(api_client) ->
         ),
     )
 
-    assert response.status_code == 422, response.text
+    assert response.status_code == 400, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.workbench_error.v1"
+    assert body["error_code"] == "sec_xbrl_operator_review_decision_request_fields_not_admitted"
+    assert body["blocked_fields"] == []
+    assert "123.45" not in response.text
     with Session() as session:
         assert session.query(L3SecXbrlOperatorReviewDecision).count() == 0
 
@@ -667,6 +673,30 @@ def test_operator_review_decision_submit_api_rejects_raw_note_reference(api_clie
     assert body["error_code"] == "sec_xbrl_operator_review_workflow_raw_reference_not_admitted"
     assert "operator@example.com" not in response.text
     assert "123.45" not in response.text
+    with Session() as session:
+        assert session.query(L3SecXbrlOperatorReviewDecision).count() == 0
+
+
+def test_operator_review_decision_submit_api_rejects_raw_note_cik(api_client) -> None:
+    client, Session = api_client
+    with Session() as session:
+        workflow = _open_workflow(session, request_id="workflow-decision-api-raw-note-cik")
+
+    response = client.post(
+        DECISION_SUBMIT_ROUTE,
+        json=_decision_submit_payload(
+            workflow,
+            client_request_id="decision-submit-api-raw-note-cik",
+            review_decision="rejected",
+            decision_reason_code="authority_gap",
+            decision_notes="See filer 0000123456 in local notes",
+        ),
+    )
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["error_code"] == "sec_xbrl_operator_review_workflow_raw_reference_not_admitted"
+    assert "0000123456" not in response.text
     with Session() as session:
         assert session.query(L3SecXbrlOperatorReviewDecision).count() == 0
 
@@ -837,16 +867,16 @@ def test_operator_review_workflow_replays_same_request_and_basis(db_session) -> 
         client_request_id="workflow-replay",
         sec_xbrl_statement_packet_set_id=packet_response["sec_xbrl_statement_packet_set_id"],
     )
-    third = workflow_service.open_redacted_operator_review_workflow(
-        db_session,
-        client_request_id="workflow-same-basis",
-        sec_xbrl_statement_packet_set_id=packet_response["sec_xbrl_statement_packet_set_id"],
-    )
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.open_redacted_operator_review_workflow(
+            db_session,
+            client_request_id="workflow-same-basis",
+            sec_xbrl_statement_packet_set_id=packet_response["sec_xbrl_statement_packet_set_id"],
+        )
 
     assert second["idempotent_replay"] is True
-    assert third["idempotent_replay"] is True
     assert second["sec_xbrl_operator_review_workflow_id"] == first["sec_xbrl_operator_review_workflow_id"]
-    assert third["sec_xbrl_operator_review_workflow_id"] == first["sec_xbrl_operator_review_workflow_id"]
+    assert exc.value.code == "sec_xbrl_operator_review_workflow_basis_replay_request_mismatch"
     assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 1
 
 
@@ -857,7 +887,7 @@ def test_operator_review_workflow_rejects_client_request_conflict(db_session) ->
     second_packet = _materialized_packet(
         db_session,
         packet_request_id="packet-2",
-        projection_request_id="projection-2",
+        projection_request_id="projection-1",
         packet=changed_packet,
     )
     workflow_service.open_redacted_operator_review_workflow(
@@ -875,6 +905,20 @@ def test_operator_review_workflow_rejects_client_request_conflict(db_session) ->
 
     assert exc.value.code == "sec_xbrl_operator_review_workflow_client_request_conflict"
     assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 1
+
+
+def test_operator_review_workflow_rejects_local_ref_client_request_id(db_session) -> None:
+    packet_response = _materialized_packet(db_session)
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.open_redacted_operator_review_workflow(
+            db_session,
+            client_request_id="/workspace/project/runtime/sec/workflow.json",
+            sec_xbrl_statement_packet_set_id=packet_response["sec_xbrl_statement_packet_set_id"],
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_workflow_raw_reference_not_admitted"
+    assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 0
 
 
 def test_operator_review_workflow_rejects_missing_statement_packet_set(db_session) -> None:
@@ -1120,6 +1164,22 @@ def test_operator_review_decision_requires_notes_for_non_approved(db_session) ->
     assert db_session.query(L3SecXbrlOperatorReviewDecision).count() == 0
 
 
+def test_operator_review_decision_rejects_reason_mismatch(db_session) -> None:
+    workflow = _open_workflow(db_session)
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.record_redacted_operator_review_decision(
+            db_session,
+            client_request_id="decision-reason-mismatch",
+            sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+            review_decision="approved",
+            decision_reason_code="redaction_gap",
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_decision_reason_mismatch"
+    assert db_session.query(L3SecXbrlOperatorReviewDecision).count() == 0
+
+
 def test_operator_review_decision_rejects_raw_note_reference(db_session) -> None:
     workflow = _open_workflow(db_session)
 
@@ -1131,6 +1191,23 @@ def test_operator_review_decision_rejects_raw_note_reference(db_session) -> None
             review_decision="rejected",
             decision_reason_code="redaction_gap",
             decision_notes="Contact operator@example.com about 123.45",
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_workflow_raw_reference_not_admitted"
+    assert db_session.query(L3SecXbrlOperatorReviewDecision).count() == 0
+
+
+def test_operator_review_decision_rejects_raw_note_local_path_and_cik(db_session) -> None:
+    workflow = _open_workflow(db_session)
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.record_redacted_operator_review_decision(
+            db_session,
+            client_request_id="decision-raw-note-local",
+            sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+            review_decision="blocked",
+            decision_reason_code="operator_blocked",
+            decision_notes="Review /workspace/project/sec and filer 0000123456",
         )
 
     assert exc.value.code == "sec_xbrl_operator_review_workflow_raw_reference_not_admitted"
@@ -1155,17 +1232,17 @@ def test_operator_review_decision_replays_same_request_and_basis(db_session) -> 
         client_request_id="decision-replay",
         **kwargs,
     )
-    third = workflow_service.record_redacted_operator_review_decision(
-        db_session,
-        client_request_id="decision-replay-different-request",
-        **kwargs,
-    )
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.record_redacted_operator_review_decision(
+            db_session,
+            client_request_id="decision-replay-different-request",
+            **kwargs,
+        )
 
     assert first["idempotent_replay"] is False
     assert second["idempotent_replay"] is True
-    assert third["idempotent_replay"] is True
     assert second["sec_xbrl_operator_review_decision_id"] == first["sec_xbrl_operator_review_decision_id"]
-    assert third["sec_xbrl_operator_review_decision_id"] == first["sec_xbrl_operator_review_decision_id"]
+    assert exc.value.code == "sec_xbrl_operator_review_decision_basis_replay_request_mismatch"
     assert db_session.query(L3SecXbrlOperatorReviewDecision).count() == 1
 
 
@@ -1249,6 +1326,26 @@ def test_operator_review_decision_rejects_tampered_workflow_without_partial_row(
         )
 
     assert exc.value.code == "sec_xbrl_operator_review_workflow_raw_authority_not_admitted"
+    assert db_session.query(L3SecXbrlOperatorReviewDecision).count() == 0
+
+
+def test_operator_review_decision_recomputes_workflow_basis_before_recording(db_session) -> None:
+    workflow = _open_workflow(db_session)
+    row = db_session.query(L3SecXbrlOperatorReviewWorkflow).one()
+    row.row_count = row.row_count + 1
+    row.review_summary_json = {**row.review_summary_json, "row_count": row.row_count}
+    db_session.commit()
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.record_redacted_operator_review_decision(
+            db_session,
+            client_request_id="decision-tampered-basis",
+            sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+            review_decision="approved",
+            decision_reason_code="ready_for_next_freeze",
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_workflow_status_basis_hash_invalid"
     assert db_session.query(L3SecXbrlOperatorReviewDecision).count() == 0
 
 
@@ -1372,6 +1469,26 @@ def test_operator_review_decision_status_rejects_residual_alias_in_decision_summ
 
     assert exc.value.code == "sec_xbrl_operator_review_workflow_residual_magnitudes_not_admitted"
     assert exc.value.details == {"field": "mean"}
+
+
+def test_operator_review_decision_status_rejects_reason_mismatch(db_session) -> None:
+    decision = _record_decision(db_session, request_id="decision-status-reason-source")
+    decision_row = db_session.query(L3SecXbrlOperatorReviewDecision).one()
+    decision_row.decision_reason_code = "redaction_gap"
+    decision_row.decision_summary_json = {
+        **decision_row.decision_summary_json,
+        "decision_reason_code": "redaction_gap",
+    }
+    db_session.commit()
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.inspect_redacted_operator_review_decision_status(
+            db_session,
+            client_request_id="decision-status-reason-mismatch",
+            sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_decision_reason_mismatch"
 
 
 def test_operator_review_decision_status_rejects_tampered_controls(db_session) -> None:

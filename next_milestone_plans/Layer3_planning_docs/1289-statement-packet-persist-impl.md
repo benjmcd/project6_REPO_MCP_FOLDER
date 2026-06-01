@@ -30,8 +30,9 @@ already-built redacted reviewable statement packet and writes:
 - one `l3_sec_xbrl_statement_packet_row` row per admitted redacted packet row.
 
 The materializer computes a stable `packet_basis_hash` from the redacted packet envelope
-and the persisted projection basis hash, is idempotent on `client_request_id` and
-`packet_basis_hash`, and rejects empty packets, raw value fields, raw resolved-fact
+and the persisted projection basis hash, replays only the same `client_request_id` with
+the same `packet_basis_hash`, rejects same-basis/new-request replay until an alias
+policy is frozen, and rejects empty packets, raw value fields, raw resolved-fact
 authority fields, raw accessions, SEC URLs, raw issuer identity keys, raw period dates,
 local paths, and residual magnitude fields before writing.
 
@@ -83,7 +84,8 @@ Rollback/containment notes:
 - tests use isolated SQLite runtime state;
 - invalid redaction, authority, period-binding, or projection-fact binding input leaves
   no partial packet set/statement/row records;
-- replay of the same request or packet basis does not duplicate rows;
+- replay of the same request does not duplicate rows; same-basis/new-request replay
+  fails closed rather than silently aliasing authority;
 - projection persistence rows are read as authority inputs and are not mutated.
 
 ## Proof
