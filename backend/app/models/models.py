@@ -991,6 +991,10 @@ class L3SecXbrlProjectionFact(Base):
         Index("ix_l3_sec_xbrl_projection_fact_set", "sec_xbrl_projection_set_id"),
         Index("ix_l3_sec_xbrl_projection_fact_canonical", "canonical_id"),
         Index("ix_l3_sec_xbrl_projection_fact_statement", "statement"),
+        CheckConstraint(
+            "value_redacted = true",
+            name="ck_l3_sec_xbrl_projection_fact_value_redacted",
+        ),
     )
 
     sec_xbrl_projection_fact_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
@@ -1131,6 +1135,10 @@ class L3SecXbrlStatementPacketRow(Base):
         Index("ix_l3_sec_xbrl_statement_packet_row_statement", "sec_xbrl_statement_packet_statement_id"),
         Index("ix_l3_sec_xbrl_statement_packet_row_projection_fact", "sec_xbrl_projection_fact_id"),
         Index("ix_l3_sec_xbrl_statement_packet_row_canonical", "canonical_id"),
+        CheckConstraint(
+            "value_redacted = true",
+            name="ck_l3_sec_xbrl_statement_packet_row_value_redacted",
+        ),
     )
 
     sec_xbrl_statement_packet_row_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)

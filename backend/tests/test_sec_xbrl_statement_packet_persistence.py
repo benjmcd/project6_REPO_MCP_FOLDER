@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from decimal import Decimal
 import importlib.util
 import sys
@@ -8,6 +9,7 @@ from typing import Any
 
 import pytest
 from sqlalchemy import create_engine, inspect
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from app.db.session import Base
@@ -25,6 +27,9 @@ from app.services import layer3_sec_xbrl_statement_packet_persistence as packet_
 
 ROOT = Path(__file__).resolve().parents[2]
 MIGRATION_PATH = ROOT / "backend" / "alembic" / "versions" / "0039_layer3_sec_xbrl_statement_packet_persistence.py"
+REDACTION_CONSTRAINT_MIGRATION_PATH = (
+    ROOT / "backend" / "alembic" / "versions" / "0041_layer3_sec_xbrl_redaction_constraints.py"
+)
 
 
 @pytest.fixture()
@@ -126,9 +131,37 @@ def _packet(*, rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     )
     if rows is not None:
         for statement in packet["statements"]:
-            statement["rows"] = [row for row in rows if row.get("statement") == statement["statement"]]
-            statement["line_count"] = len(statement["rows"])
+            statement_rows = [row for row in rows if row.get("statement") == statement["statement"]]
+            status_counts = Counter(str(row.get("status") or "") for row in statement_rows)
+            family_counts = Counter(str(row.get("family") or "universal") for row in statement_rows)
+            statement["rows"] = statement_rows
+            statement["line_count"] = len(statement_rows)
+            statement["projected_count"] = sum(
+                1 for row in statement_rows if str(row.get("status") or "").startswith("projected")
+            )
+            statement["derived_count"] = sum(1 for row in statement_rows if row.get("status") == "derived")
+            statement["provenance_complete_count"] = sum(
+                1 for row in statement_rows if row.get("provenance_complete") is True
+            )
+            statement["review_exception_count"] = sum(
+                1
+                for row in statement_rows
+                if row.get("provenance_complete") is not True
+                or row.get("oracle_confirmed") is False
+                or row.get("oracle_confirmed") == "oracle_absent"
+            )
+            statement["status_counts"] = dict(sorted(status_counts.items()))
+            statement["family_counts"] = dict(sorted(family_counts.items()))
         packet["total_review_rows"] = len(rows)
+        packet["provenance_complete_count"] = sum(1 for row in rows if row.get("provenance_complete") is True)
+        packet["review_exception_count"] = sum(
+            1
+            for row in rows
+            if row.get("provenance_complete") is not True
+            or row.get("oracle_confirmed") is False
+            or row.get("oracle_confirmed") == "oracle_absent"
+        )
+        packet["review_ready"] = bool(rows) and packet["provenance_complete_count"] == len(rows)
     return packet
 
 
@@ -225,7 +258,7 @@ def test_statement_packet_persistence_rejects_client_request_conflict(db_session
         packet=packet,
     )
     changed = _packet()
-    changed["review_ready"] = False
+    changed["organization_contract"]["a_role_unknown_count"] = 1
 
     with pytest.raises(packet_persistence.SecXbrlStatementPacketPersistenceError) as exc:
         packet_persistence.materialize_redacted_statement_packet(
@@ -237,6 +270,42 @@ def test_statement_packet_persistence_rejects_client_request_conflict(db_session
 
     assert exc.value.code == "sec_xbrl_statement_packet_persistence_client_request_conflict"
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 1
+
+
+def test_statement_packet_persistence_rejects_header_count_mismatch(db_session) -> None:
+    projection = _persisted_projection(db_session)
+    packet = _packet()
+    packet["review_exception_count"] = 1
+
+    with pytest.raises(packet_persistence.SecXbrlStatementPacketPersistenceError) as exc:
+        packet_persistence.materialize_redacted_statement_packet(
+            db_session,
+            client_request_id="packet-header-count-mismatch",
+            sec_xbrl_projection_set_id=projection["sec_xbrl_projection_set_id"],
+            packet=packet,
+        )
+
+    assert exc.value.code == "sec_xbrl_statement_packet_persistence_packet_summary_invalid"
+    assert exc.value.details["field"] == "review_exception_count"
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
+
+
+def test_statement_packet_persistence_rejects_statement_count_mismatch(db_session) -> None:
+    projection = _persisted_projection(db_session)
+    packet = _packet()
+    packet["statements"][0]["line_count"] = 9
+
+    with pytest.raises(packet_persistence.SecXbrlStatementPacketPersistenceError) as exc:
+        packet_persistence.materialize_redacted_statement_packet(
+            db_session,
+            client_request_id="packet-statement-count-mismatch",
+            sec_xbrl_projection_set_id=projection["sec_xbrl_projection_set_id"],
+            packet=packet,
+        )
+
+    assert exc.value.code == "sec_xbrl_statement_packet_persistence_packet_summary_invalid"
+    assert exc.value.details["field"] == "line_count"
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
 
 
 def test_statement_packet_persistence_rejects_raw_value_fields(db_session) -> None:
@@ -276,6 +345,42 @@ def test_statement_packet_persistence_rejects_residual_magnitudes(db_session) ->
         )
 
     assert exc.value.code == "sec_xbrl_statement_packet_persistence_residual_magnitudes_not_admitted"
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
+
+
+def test_statement_packet_persistence_rejects_non_boolean_identity_tolerance(db_session) -> None:
+    projection = _persisted_projection(db_session)
+    packet = _packet()
+    packet["identity_rollup"]["identity_residuals_within_tolerance"] = "false"
+
+    with pytest.raises(packet_persistence.SecXbrlStatementPacketPersistenceError) as exc:
+        packet_persistence.materialize_redacted_statement_packet(
+            db_session,
+            client_request_id="packet-identity-tolerance-string",
+            sec_xbrl_projection_set_id=projection["sec_xbrl_projection_set_id"],
+            packet=packet,
+        )
+
+    assert exc.value.code == "sec_xbrl_statement_packet_persistence_boolean_required"
+    assert exc.value.details == {"field": "identity_residuals_within_tolerance"}
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
+
+
+def test_statement_packet_persistence_rejects_unadmitted_organization_contract_numeric_alias(db_session) -> None:
+    projection = _persisted_projection(db_session)
+    packet = _packet()
+    packet["organization_contract"]["mean"] = "12345.67"
+
+    with pytest.raises(packet_persistence.SecXbrlStatementPacketPersistenceError) as exc:
+        packet_persistence.materialize_redacted_statement_packet(
+            db_session,
+            client_request_id="packet-organization-contract-mean",
+            sec_xbrl_projection_set_id=projection["sec_xbrl_projection_set_id"],
+            packet=packet,
+        )
+
+    assert exc.value.code == "sec_xbrl_statement_packet_persistence_organization_contract_invalid"
+    assert exc.value.details == {"fields": ["mean"]}
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
 
 
@@ -328,6 +433,17 @@ def test_statement_packet_persistence_leaves_no_partial_rows_on_late_invalid_row
     assert db_session.query(L3SecXbrlStatementPacketRow).count() == 0
 
 
+def test_statement_packet_row_value_redacted_is_db_constrained(db_session) -> None:
+    _materialize(db_session)
+    row = db_session.query(L3SecXbrlStatementPacketRow).first()
+    assert row is not None
+
+    row.value_redacted = False
+    with pytest.raises(IntegrityError):
+        db_session.commit()
+    db_session.rollback()
+
+
 def test_statement_packet_persistence_tables_are_registered_in_metadata() -> None:
     engine = create_engine("sqlite:///:memory:", future=True)
     Base.metadata.create_all(engine)
@@ -340,6 +456,10 @@ def test_statement_packet_persistence_tables_are_registered_in_metadata() -> Non
         assert "sec_xbrl_projection_fact_id" in row_columns
         assert "value_redacted" in row_columns
         assert "review_exception" in row_columns
+        row_constraints = {
+            constraint["name"] for constraint in inspector.get_check_constraints("l3_sec_xbrl_statement_packet_row")
+        }
+        assert "ck_l3_sec_xbrl_statement_packet_row_value_redacted" in row_constraints
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()
@@ -361,3 +481,22 @@ def test_statement_packet_persistence_migration_declares_additive_tables() -> No
     assert "l3_sec_xbrl_statement_packet_statement" in source
     assert "l3_sec_xbrl_statement_packet_row" in source
     assert "drop_table_idempotent(\"l3_sec_xbrl_statement_packet_row\")" in source
+
+
+def test_statement_packet_redaction_constraint_migration_declares_check() -> None:
+    backend_root = str(ROOT / "backend")
+    if backend_root not in sys.path:
+        sys.path.insert(0, backend_root)
+    spec = importlib.util.spec_from_file_location(
+        "migration_0041_sec_xbrl_redaction_constraints_statement_packet",
+        REDACTION_CONSTRAINT_MIGRATION_PATH,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert module.revision == "0041_layer3_sec_xbrl_redaction_constraints"
+    assert module.down_revision == "0040_layer3_sec_xbrl_operator_review_workflow"
+    source = REDACTION_CONSTRAINT_MIGRATION_PATH.read_text(encoding="utf-8")
+    assert "ck_l3_sec_xbrl_projection_fact_value_redacted" in source
+    assert "ck_l3_sec_xbrl_statement_packet_row_value_redacted" in source
