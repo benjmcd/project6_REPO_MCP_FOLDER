@@ -1,6 +1,6 @@
 # SEC XBRL Merge-Gate & Verifier-Tier Policy
 
-Status: active process policy (validate-only governance; no code, runtime, schema, or redaction-posture impact).
+Status: active process policy (right-sized governance; no code, runtime, schema, or redaction-posture impact).
 Established: 2026-05-31.
 Scope: all SEC XBRL Layer 3 pull requests — canonical normalization, sector families, statement
 organization/assembly, projection, multi-period, persistence, value-reveal, validation gates, and their
@@ -17,21 +17,24 @@ The automated review bot (`chatgpt-codex-connector`) has proven intermittently u
 
 Review-coverage gaps were dispositioned in issues #2004 / #2008 / #2009; the connector outage root cause requires
 GitHub-App admin authority and remains an open operator action (#2010). Because the bot cannot be relied upon as the
-sole independent review, this policy defines a risk-tiered merge gate with a dependable independent-verifier lane and
-relegates the bot to best-effort defense-in-depth.
+sole independent review, this policy defines a risk-tiered merge gate that treats the bot as best-effort
+defense-in-depth and uses independent review as an escalation tool rather than a blanket progress blocker.
 
 ## Roles
 
 - Executor: whichever agent authors the PR — Codex by default for product slices; Claude when directed (e.g.
-  governance/hygiene). The executor self-verifies, opens, and lands PRs.
-- Independent verifier: a reviewer independent of the PR's author — the agent that did NOT author the PR (Codex
-  reviews Claude-authored Tier-2 PRs; Claude reviews Codex-authored Tier-2 PRs), and/or the operator. This is the
-  dependable review lane. The automated bot is best-effort defense-in-depth, never the sole gate.
+  governance/hygiene). The executor classifies risk, self-verifies, records evidence, opens, and lands PRs.
+- Independent verifier: a reviewer independent of the PR's author — the agent that did NOT author the PR, and/or the
+  operator. Independent review is recommended for higher-risk changes and required only when an explicit blocker,
+  failed verification, ambiguous authority boundary, or operator instruction calls for it. The automated bot is
+  best-effort defense-in-depth, never the sole gate.
 
 ## Tier classification
 
-Quick test: if reverting the PR would require a down-migration, a data backfill, or it touches stored/revealed values, runtime defaults, or redaction posture, it is **Tier 2**. Otherwise it
-is **Tier 1**.
+Quick test: if the PR is validate-only/additive/reversible and does not touch stored or revealed values, runtime
+defaults, redaction posture, durable schema, or persistence, it is **Tier 1**. If it touches any of those surfaces, it
+is **Tier 2** and needs explicit risk documentation plus targeted verification. Tier 2 does not automatically require a
+separate pre-merge reviewer.
 
 ### Tier 1 — low-risk (validate-only, additive, reversible)
 
@@ -41,29 +44,33 @@ additive service logic with NO schema, persistence, value-reveal, runtime-defaul
 Merge gate:
 1. Verifier record documented in the PR body (verification commands and results).
 2. CI green (all shards and aggregate checks).
-3. `@codex review` posted as best-effort; if the bot is silent within the watch window, record a silent-bot
-   disposition and proceed.
+3. `@codex review` or another independent review request may be posted when useful, but bot silence is not a blocker.
+   Record bot silence only when it affects the PR's risk/disposition narrative.
 
-Executor self-verification satisfies the Tier 1 verifier record; independence is the Tier 2 escalation, not a
-Tier 1 requirement (the bot remains best-effort defense-in-depth, never the sole gate).
+Executor self-verification satisfies the Tier 1 verifier record. Independent review is optional defense-in-depth unless
+a concrete blocker is present.
 
 ### Tier 2 — high-risk / irreversible
 
-Applies when the PR touches ANY of: Alembic migrations; `models.py` / ORM schema; durable persistence; value-reveal
+Applies when the PR touches any of: Alembic migrations; `models.py` / ORM schema; durable persistence; value-reveal
 enablement or revealed-value handling; runtime default-on changes; redaction-posture changes.
 
 Merge gate (Tier 1 requirements PLUS):
-4. An INDEPENDENT pre-merge review — by a reviewer who is NOT the PR's author — is RECORDED before merge.
-   - The executor PAUSES after CI-green and self-verification, hands the PR (diff and verification evidence) to the
-     operator, who relays it to the independent verifier; the verifier's review is relayed back and recorded on the
-     PR before merge.
-   - The executor MUST NOT self-certify and merge a Tier-2 PR.
+4. PR body or closing comment records the exact Tier 2 surfaces touched and why they are necessary.
+5. Verification includes the narrowest meaningful tests plus migration/rollback or containment notes when schema or
+   persistence changes are present.
+6. Independent review is sought when practical for redaction-posture changes, value reveal, default-on behavior,
+   destructive/irreversible migrations, broad operator workflow changes, or any change whose authority boundary remains
+   ambiguous after audit. If independent review is not obtained, the executor records why self-verification is adequate
+   and what would force a follow-up.
+7. Merge is blocked only by failed required checks, unresolved critical/blocking review findings, missing rollback or
+   containment notes for schema/persistence changes, unclear authority, or an operator instruction requiring review.
 
 ## Disposition recording
 
-When the bot is silent at merge time, record a tracking issue following the #2004 / #2008 / #2009 pattern: the opening
-body states the bot did not post; the closing comment records the verifier disposition (independent review for
-Tier 2; executor self-verification for Tier 1) and explicitly does NOT claim a bot review.
+When the bot is silent at merge time, do not open a tracking issue by default. Record a PR comment or issue only when
+the silence materially affects risk assessment, leaves a requested review unresolved, or is needed for operator-facing
+handoff. Any such record must explicitly avoid claiming a bot review.
 
 ## Non-goals
 

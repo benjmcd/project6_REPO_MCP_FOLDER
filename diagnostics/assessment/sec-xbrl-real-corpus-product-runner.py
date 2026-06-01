@@ -67,6 +67,21 @@ MATRIX_CHUNKS = (
     ("expansion", ("XOM", "PFE", "UAL", "T")),
     ("large-cap-extension", ("AAPL", "NVDA", "AMZN", "TSLA")),
 )
+
+
+def _sector_family_us_gaap_registry_concepts(family_id: str, concept_key: str) -> tuple[str, ...]:
+    for definition in layer3_sec_xbrl_canonical_concepts.SECTOR_FAMILY_DEFINITIONS:
+        if definition.get("family_id") == family_id:
+            if concept_key not in definition:
+                raise RuntimeError(f"sector family concept key not found: {family_id}.{concept_key}")
+            return tuple(
+                str(qname)
+                for qname in definition.get(concept_key, ())
+                if str(qname).startswith("us-gaap:")
+            )
+    raise RuntimeError(f"sector family definition not found: {family_id}")
+
+
 SECTOR_FAMILY_VALIDATION_DIMENSION_ID = "sec_xbrl_sector_family_real_filer_validation_v1"
 SECTOR_FAMILY_US_GAAP_SUBGATE_NEXT_SLICE = "sec_xbrl_sector_family_us_gaap_bank_insurer_subgate_v1"
 SECTOR_FAMILY_AVAILABLE_REFERENCE_PROFILES: tuple[dict[str, Any], ...] = (
@@ -108,12 +123,22 @@ SECTOR_FAMILY_SUPPORTING_ONLY_CONTROL = {
     "expected_present_family_ids": (),
     "expected_supporting_only_family_ids": ("banking",),
 }
-SECTOR_FAMILY_US_GAAP_PENDING_ANCHORS = (
-    "us-gaap:Deposits",
-    "us-gaap:InterestAndDividendIncomeOperating",
-    "us-gaap:PremiumsEarnedNet",
-    "us-gaap:LiabilityForClaimsAndClaimsAdjustmentExpense",
-)
+SECTOR_FAMILY_US_GAAP_CLASS_FAMILIES = {
+    "real_us_gaap_bank_filing": "banking",
+    "real_us_gaap_insurer_filing": "insurance",
+}
+SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_TAGS = {
+    "real_us_gaap_bank_filing": "financial_institution",
+    "real_us_gaap_insurer_filing": "insurance",
+}
+SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS = {
+    reference_class: _sector_family_us_gaap_registry_concepts(family_id, "activation_anchor_qnames")
+    for reference_class, family_id in SECTOR_FAMILY_US_GAAP_CLASS_FAMILIES.items()
+}
+SECTOR_FAMILY_US_GAAP_SUPPORTING_HEADLINE_CONCEPTS = {
+    reference_class: _sector_family_us_gaap_registry_concepts(family_id, "supporting_qnames")
+    for reference_class, family_id in SECTOR_FAMILY_US_GAAP_CLASS_FAMILIES.items()
+}
 SECTOR_FAMILY_PROJECTION_PUBLIC_ROW_KEYS = (
     "concepts",
     "headline_canonical_defined",
@@ -143,6 +168,7 @@ RAW_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGN
 RAW_PATH_RE = re.compile(r"(?:[A-Za-z]:[\\/]|\\\\|(?:^|[\s'\"(])/(?:[^/\s]+/)+[^/\s]+)")
 LABEL_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9.-]{0,9}")
 LABEL_CIK_TOKEN_RE = re.compile(r"\bcik[-_ ]?0*(\d+)\b|\b(\d{6,10})\b", re.IGNORECASE)
+HEX64_RE = re.compile(r"^[a-f0-9]{64}$")
 
 
 def main() -> int:
@@ -156,6 +182,14 @@ def main() -> int:
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
     parser.add_argument("--live", action="store_true")
     parser.add_argument("--storage-dir", default="")
+    parser.add_argument(
+        "--sector-family-storage-dir",
+        default="",
+        help=(
+            "Optional off-repo operator-acquired storage root for the US-GAAP bank/insurer "
+            "sector-family subgate. Reports commit only redacted storage markers."
+        ),
+    )
     parser.add_argument(
         "--matrix-plan",
         default=os.environ.get("SEC_XBRL_STRATIFIED_MATRIX_PLAN", ""),
@@ -176,16 +210,38 @@ def main() -> int:
         action="store_true",
         help="Apply the gate verdict to the committed Arelle cutover config default.",
     )
+    parser.add_argument(
+        "--sector-family-only",
+        action="store_true",
+        help=(
+            "Emit only the offline-reproducible sector-family validation report. "
+            "This never runs the live matrix product path."
+        ),
+    )
     args = parser.parse_args()
 
-    report = build_report(
-        live=bool(args.live),
-        storage_dir=Path(args.storage_dir) if args.storage_dir else None,
-        matrix_plan_path=Path(args.matrix_plan) if args.matrix_plan else None,
-        user_agent=str(args.user_agent or ""),
-        request_namespace=str(args.request_namespace or ""),
-        taxonomy_internet_connectivity=str(args.taxonomy_internet_connectivity or "offline"),
-    )
+    if args.sector_family_only:
+        if args.live:
+            parser.error("--sector-family-only cannot be combined with --live")
+        if args.apply_default_decision:
+            parser.error("--sector-family-only cannot apply runtime default decisions")
+        if not args.sector_family_storage_dir:
+            parser.error("--sector-family-only requires --sector-family-storage-dir")
+        report = build_sector_family_validation_report(
+            offline_storage_dir=Path(args.sector_family_storage_dir),
+        )
+    else:
+        report = build_report(
+            live=bool(args.live),
+            storage_dir=Path(args.storage_dir) if args.storage_dir else None,
+            sector_family_storage_dir=(
+                Path(args.sector_family_storage_dir) if args.sector_family_storage_dir else None
+            ),
+            matrix_plan_path=Path(args.matrix_plan) if args.matrix_plan else None,
+            user_agent=str(args.user_agent or ""),
+            request_namespace=str(args.request_namespace or ""),
+            taxonomy_internet_connectivity=str(args.taxonomy_internet_connectivity or "offline"),
+        )
     output = _repo_path(Path(args.output))
     if args.apply_default_decision:
         applied = _apply_runtime_default_decision(report)
@@ -201,6 +257,7 @@ def build_report(
     *,
     live: bool,
     storage_dir: Path | None = None,
+    sector_family_storage_dir: Path | None = None,
     matrix_plan_path: Path | None = None,
     matrix_plan: Mapping[str, Any] | None = None,
     user_agent: str = "",
@@ -214,8 +271,16 @@ def build_report(
     matrix_chunks = _matrix_chunks_from_readiness(matrix_plan_readiness)
     rows: list[dict[str, Any]] = []
     storage_marker = None
+    sector_family_storage_dir_explicit = sector_family_storage_dir is not None
+    resolved_sector_family_storage_dir = (
+        _repo_path(sector_family_storage_dir)
+        if sector_family_storage_dir is not None
+        else (_repo_path(storage_dir) if storage_dir is not None else None)
+    )
     if preflight["state"] == "passed" and matrix_plan_readiness["state"] == "passed":
         live_storage = _live_storage_dir(storage_dir)
+        if sector_family_storage_dir is None:
+            resolved_sector_family_storage_dir = live_storage
         storage_marker = _storage_marker(live_storage)
         run = runner or _run_live_product_path
         if runner is None:
@@ -235,7 +300,14 @@ def build_report(
             )
 
     summary = _summary(rows)
-    sector_family_activation_validation = _sector_family_activation_validation()
+    sector_family_activation_validation = _sector_family_activation_validation(
+        offline_storage_dir=resolved_sector_family_storage_dir,
+    )
+    sector_family_evidence_provenance = _sector_family_evidence_provenance(
+        live_matrix_storage_marker=storage_marker,
+        sector_family_activation_validation=sector_family_activation_validation,
+        operator_supplied_sector_family_storage=sector_family_storage_dir_explicit,
+    )
     criteria = _criteria(
         preflight,
         summary,
@@ -270,6 +342,7 @@ def build_report(
         "matrix_execution_plan": public_matrix_plan_readiness,
         "matrix_chunks": _matrix_chunk_projection(matrix_chunks),
         "preflight": preflight,
+        "sector_family_evidence_provenance": sector_family_evidence_provenance,
         "sector_family_activation_validation": sector_family_activation_validation,
         "criteria": criteria,
         "blocking_reasons": blockers,
@@ -300,13 +373,156 @@ def build_report(
             "cross_company_comparability_claimed": False,
             "rag_vector_model_provider_auth_behavior_added": False,
             "new_layer3_source_shape_created": False,
-            "sector_family_us_gaap_anchor_validation_claimed": False,
+            "sector_family_us_gaap_anchor_validation_remains_pending": not bool(
+                sector_family_activation_validation.get("full_gate_satisfied")
+            ),
         },
         "next_slice": _next_slice(
             pass_gate=pass_gate,
             blockers=blockers,
             sector_family_activation_validation=sector_family_activation_validation,
         ),
+    }
+
+
+def build_sector_family_validation_report(*, offline_storage_dir: Path) -> dict[str, Any]:
+    storage = _repo_path(offline_storage_dir)
+    storage_marker = _storage_marker(storage)
+    validation = _sector_family_activation_validation(offline_storage_dir=storage)
+    criterion = _sector_family_available_filer_activation_criterion(validation)
+    blockers = [
+        {
+            "criterion": criterion["criterion"],
+            "reason": criterion["blocked_reason"],
+            "evidence": criterion["evidence"],
+        }
+    ] if criterion["state"] != "passed" else []
+    pass_gate = not blockers and validation.get("full_gate_satisfied") is True
+    return {
+        "schema_id": "diagnostics.sec_xbrl_sector_family_real_filer_validation_report.v1",
+        "target": SECTOR_FAMILY_VALIDATION_DIMENSION_ID,
+        "decision": (
+            "sector_family_real_filer_validation_satisfied"
+            if pass_gate
+            else "sector_family_real_filer_validation_blocked"
+        ),
+        "gate_verdict": "PASS" if pass_gate else "FAIL_OR_INCONCLUSIVE",
+        "headline": (
+            "PASS: offline-reproducible SEC XBRL sector-family validation satisfied."
+            if pass_gate
+            else "FAIL/INCONCLUSIVE: offline-reproducible SEC XBRL sector-family validation is blocked."
+        ),
+        "report_scope": {
+            "scope_id": "sec_xbrl_sector_family_real_filer_validation_v1",
+            "sector_family_subgate_in_scope": True,
+            "broader_live_matrix_product_gate_in_scope": False,
+            "historical_live_matrix_evidence_reused": False,
+            "historical_live_matrix_reproducible_offline_from_available_inputs": False,
+            "default_on_decision_in_scope": False,
+        },
+        "live_sec_network_used": False,
+        "fake_sec_client_used": False,
+        "arelle_invoked": validation.get("arelle_invoked") is True,
+        "storage_dir_marker": storage_marker,
+        "storage_dir_paths_redacted": True,
+        "matrix_execution_plan": {
+            "state": "not_in_scope",
+            "mode": "sector_family_only_reproducible_offline_validation",
+            "external_plan_used": False,
+            "paths_redacted": True,
+            "blocked_reasons": [],
+        },
+        "stratified_matrix_required_strata_readiness": {
+            "state": "not_in_scope",
+            "reason": "broader_live_matrix_product_gate_not_reproduced_offline",
+        },
+        "sector_family_evidence_provenance": {
+            "provenance_mode": "single_reproducible_sector_family_storage_root",
+            "storage_dir_marker": storage_marker,
+            "sector_family_offline_storage_marker": storage_marker,
+            "storage_markers_match": True,
+            "operator_supplied_sector_family_storage": True,
+            "paths_redacted": True,
+            "raw_local_paths_committed": False,
+        },
+        "sector_family_activation_validation": validation,
+        "criteria": [criterion],
+        "blocking_reasons": blockers,
+        "summary": {
+            "sector_family_full_gate_satisfied": validation.get("full_gate_satisfied") is True,
+            "sector_family_status": validation.get("status"),
+            "available_reference_filer_count": validation.get("available_reference_filer_count"),
+            "validated_available_family_ids": validation.get("validated_available_family_ids"),
+            "us_gaap_bank_insurer_subgate_state": validation.get("us_gaap_bank_insurer_subgate_state"),
+        },
+        "runtime_default_decision": {
+            "current_default_enabled": _config_cutover_default_enabled(),
+            "resulting_default_enabled": False,
+            "action": "not_applicable_sector_family_only",
+            "applied_to_config": False,
+            "gate_has_teeth": True,
+        },
+        "redaction": {
+            "raw_tickers_committed": False,
+            "raw_accessions_committed": False,
+            "raw_sec_urls_committed": False,
+            "local_storage_roots_committed": False,
+            "raw_values_committed": False,
+            "identity_hash_only": True,
+        },
+        "non_goals_preserved": {
+            "runtime_network_default_changed": False,
+            "operator_value_reveal_enabled": False,
+            "gate_b_product_package_ui_redesign_performed": False,
+            "candidate_b_sec_routing_performed": False,
+            "final_financial_statement_semantics_claimed": False,
+            "cross_company_comparability_claimed": False,
+            "rag_vector_model_provider_auth_behavior_added": False,
+            "new_layer3_source_shape_created": False,
+            "broader_live_matrix_default_on_claimed": False,
+        },
+        "next_slice": (
+            "sec_edgar_operator_surface_gated_value_reveal_v1"
+            if pass_gate
+            else SECTOR_FAMILY_US_GAAP_SUBGATE_NEXT_SLICE
+        ),
+    }
+
+
+def _sector_family_evidence_provenance(
+    *,
+    live_matrix_storage_marker: str | None,
+    sector_family_activation_validation: Mapping[str, Any],
+    operator_supplied_sector_family_storage: bool,
+) -> dict[str, Any]:
+    subgate = sector_family_activation_validation.get("us_gaap_bank_insurer_subgate")
+    evidence = subgate.get("offline_storage_evidence") if isinstance(subgate, Mapping) else None
+    sector_family_marker = None
+    if isinstance(evidence, Mapping):
+        sector_family_marker = evidence.get("storage_dir_marker")
+    storage_markers_match = (
+        live_matrix_storage_marker is not None
+        and sector_family_marker is not None
+        and live_matrix_storage_marker == sector_family_marker
+    )
+    if live_matrix_storage_marker is None and sector_family_marker is None:
+        provenance_mode = "no_runtime_storage_evidence"
+    elif live_matrix_storage_marker is None:
+        provenance_mode = "sector_family_offline_only_product_gate_blocked"
+    elif storage_markers_match:
+        provenance_mode = "single_storage_root"
+    elif operator_supplied_sector_family_storage:
+        provenance_mode = "separate_operator_offline_sector_family_evidence"
+    else:
+        provenance_mode = "separate_storage_marker_unexpected"
+    return {
+        "provenance_mode": provenance_mode,
+        "live_matrix_storage_marker": live_matrix_storage_marker,
+        "sector_family_offline_storage_marker": sector_family_marker,
+        "storage_markers_match": storage_markers_match,
+        "operator_supplied_sector_family_storage": operator_supplied_sector_family_storage,
+        "paths_redacted": True,
+        "raw_local_paths_committed": False,
     }
 
 
@@ -1310,7 +1526,7 @@ def _strata_readiness(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _sector_family_activation_validation() -> dict[str, Any]:
+def _sector_family_activation_validation(*, offline_storage_dir: Path | None = None) -> dict[str, Any]:
     available_references = [
         _sector_family_reference_profile_result(profile)
         for profile in SECTOR_FAMILY_AVAILABLE_REFERENCE_PROFILES
@@ -1351,10 +1567,23 @@ def _sector_family_activation_validation() -> dict[str, Any]:
             for family_id in item.get("actual_present_family_ids") or []
         }
     )
-    pending_sub_gate = _sector_family_us_gaap_pending_sub_gate()
+    us_gaap_sub_gate = _sector_family_us_gaap_sub_gate(offline_storage_dir)
+    us_gaap_sub_gate_passed = us_gaap_sub_gate.get("validated") is True
+    full_gate_satisfied = (
+        available_dimension_passed
+        and ifrs_anchor_activation_passed
+        and universal_only_control_passed
+        and supporting_only_control.get("passed") is True
+        and projection_row_shape.get("stable_across_available_references") is True
+        and us_gaap_sub_gate_passed
+    )
     return {
         "dimension_id": SECTOR_FAMILY_VALIDATION_DIMENSION_ID,
-        "status": "partially_satisfied_us_gaap_subgate_pending",
+        "status": (
+            "sector_family_real_filer_validation_satisfied"
+            if full_gate_satisfied
+            else "partially_satisfied_us_gaap_subgate_pending"
+        ),
         "available_filer_dimension_state": "passed" if available_dimension_passed else "blocked",
         "available_dimension_passed": available_dimension_passed,
         "available_reference_filer_count": len(available_references),
@@ -1365,9 +1594,10 @@ def _sector_family_activation_validation() -> dict[str, Any]:
         "supporting_only_control_passed": supporting_only_control.get("passed") is True,
         "universal_only_control_passed": universal_only_control_passed,
         "projection_row_shape": projection_row_shape,
-        "us_gaap_bank_insurer_subgate_state": pending_sub_gate["state"],
-        "pending_sub_gates": [pending_sub_gate],
-        "full_gate_satisfied": False,
+        "us_gaap_bank_insurer_subgate_state": us_gaap_sub_gate["state"],
+        "us_gaap_bank_insurer_subgate": us_gaap_sub_gate,
+        "pending_sub_gates": [] if us_gaap_sub_gate_passed else [us_gaap_sub_gate],
+        "full_gate_satisfied": full_gate_satisfied,
         "raw_identity_redacted": True,
         "values_redacted": True,
         "live_network_used": False,
@@ -1453,21 +1683,588 @@ def _sector_family_projection_row_shape(reference_count: int) -> dict[str, Any]:
     }
 
 
-def _sector_family_us_gaap_pending_sub_gate() -> dict[str, Any]:
+def _sector_family_us_gaap_sub_gate(offline_storage_dir: Path | None) -> dict[str, Any]:
+    if offline_storage_dir is None:
+        return _sector_family_us_gaap_pending_sub_gate(
+            "real_us_gaap_bank_and_insurer_filings_not_available_in_current_runner_artifacts"
+        )
+    evidence = _sector_family_us_gaap_offline_storage_evidence(offline_storage_dir)
+    class_results = [item for item in evidence.get("class_results") or [] if isinstance(item, Mapping)]
+    validated = evidence.get("state") == "passed" and all(item.get("passed") is True for item in class_results)
+    if not validated:
+        return {
+            **_sector_family_us_gaap_pending_sub_gate("real_us_gaap_bank_and_insurer_offline_artifacts_incomplete"),
+            "state": "blocked_offline_artifacts_incomplete",
+            "offline_storage_evidence": evidence,
+        }
+    return {
+        "sub_gate_id": "us_gaap_bank_insurer_anchor_validation",
+        "state": "validated",
+        "validated": True,
+        "required_reference_classes": list(SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS),
+        "required_activation_anchor_concepts": _sector_family_us_gaap_required_activation_anchors(),
+        "supporting_headline_concepts_tracked": _sector_family_us_gaap_supporting_headline_concepts(),
+        "class_results": class_results,
+        "validated_family_ids": sorted(
+            {
+                str(item.get("family_id") or "")
+                for item in class_results
+                if item.get("passed") is True
+            }
+        ),
+        "offline_storage_evidence": {
+            key: value
+            for key, value in evidence.items()
+            if key != "class_results"
+        },
+        "operator_action_code": "operator_offline_us_gaap_bank_insurer_filing_acquisition_satisfied",
+        "raw_identity_redacted": True,
+        "values_redacted": True,
+        "live_network_used": False,
+        "arelle_invoked": False,
+        "runtime_defaults_changed": False,
+    }
+
+
+def _sector_family_us_gaap_pending_sub_gate(blocked_reason: str) -> dict[str, Any]:
     return {
         "sub_gate_id": "us_gaap_bank_insurer_anchor_validation",
         "state": "pending_operator_offline_filings",
         "validated": False,
-        "required_reference_classes": [
-            "real_us_gaap_bank_filing",
-            "real_us_gaap_insurer_filing",
-        ],
-        "required_anchor_concepts": list(SECTOR_FAMILY_US_GAAP_PENDING_ANCHORS),
-        "blocked_reason": "real_us_gaap_bank_and_insurer_filings_not_available_in_current_runner_artifacts",
+        "required_reference_classes": list(SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS),
+        "required_activation_anchor_concepts": _sector_family_us_gaap_required_activation_anchors(),
+        "supporting_headline_concepts_tracked": _sector_family_us_gaap_supporting_headline_concepts(),
+        "blocked_reason": blocked_reason,
         "operator_action_code": "operator_offline_us_gaap_bank_insurer_filing_acquisition_required",
         "raw_identity_redacted": True,
         "values_redacted": True,
     }
+
+
+def _sector_family_us_gaap_required_activation_anchors() -> list[str]:
+    return sorted(
+        {
+            concept
+            for concepts in SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS.values()
+            for concept in concepts
+        }
+    )
+
+
+def _sector_family_us_gaap_supporting_headline_concepts() -> list[str]:
+    return sorted(
+        {
+            concept
+            for concepts in SECTOR_FAMILY_US_GAAP_SUPPORTING_HEADLINE_CONCEPTS.values()
+            for concept in concepts
+        }
+    )
+
+
+def _sector_family_us_gaap_offline_storage_evidence(storage_dir: Path) -> dict[str, Any]:
+    path = storage_dir.resolve(strict=False)
+    if not path.exists() or not path.is_dir():
+        return _sector_family_offline_storage_blocked(
+            path,
+            ["offline_storage_dir_unavailable"],
+        )
+    examples_by_source_hash = _sector_family_us_gaap_examples_by_source_hash(path)
+    sidecars_by_source_hash = _sector_family_us_gaap_sidecars_by_source_hash(path)
+    class_results = [
+        _sector_family_us_gaap_class_result(
+            reference_class=reference_class,
+            examples_by_source_hash=examples_by_source_hash,
+            sidecars_by_source_hash=sidecars_by_source_hash,
+        )
+        for reference_class in SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS
+    ]
+    distinct_source_artifact_markers = sorted(
+        {
+            str(item.get("source_artifact_marker") or "")
+            for item in class_results
+            if item.get("passed") is True and item.get("source_artifact_marker")
+        }
+    )
+    blocked_reasons = sorted(
+        {
+            reason
+            for item in class_results
+            for reason in item.get("blocked_reasons") or []
+        }
+    )
+    if all(item.get("passed") is True for item in class_results) and len(distinct_source_artifact_markers) < len(
+        SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS
+    ):
+        blocked_reasons.append("us_gaap_bank_insurer_distinct_source_artifact_required")
+    return {
+        "state": "passed" if not blocked_reasons else "blocked",
+        "storage_dir_marker": _storage_marker(path),
+        "paths_redacted": True,
+        "offline_storage_used": True,
+        "connector_reference_count": len(examples_by_source_hash),
+        "sidecar_reference_count": sum(len(sidecars) for sidecars in sidecars_by_source_hash.values()),
+        "connector_receipt_hash_basis_validated": bool(examples_by_source_hash),
+        "nested_source_artifact_receipt_hash_basis_validated": bool(examples_by_source_hash),
+        "sidecar_receipt_hash_basis_validated": bool(sidecars_by_source_hash),
+        "live_source_artifact_receipt_hash_basis_deferred": True,
+        "required_distinct_source_artifact_count": len(SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS),
+        "distinct_source_artifact_marker_count": len(distinct_source_artifact_markers),
+        "class_results": class_results,
+        "blocked_reasons": blocked_reasons,
+        "raw_identity_redacted": True,
+        "values_redacted": True,
+        "live_network_used": False,
+        "arelle_invoked": False,
+    }
+
+
+def _sector_family_offline_storage_blocked(path: Path, blocked_reasons: list[str]) -> dict[str, Any]:
+    return {
+        "state": "blocked",
+        "storage_dir_marker": _storage_marker(path),
+        "paths_redacted": True,
+        "offline_storage_used": False,
+        "connector_reference_count": 0,
+        "sidecar_reference_count": 0,
+        "class_results": [],
+        "blocked_reasons": blocked_reasons,
+        "raw_identity_redacted": True,
+        "values_redacted": True,
+        "live_network_used": False,
+        "arelle_invoked": False,
+    }
+
+
+def _sector_family_us_gaap_examples_by_source_hash(storage_dir: Path) -> dict[str, dict[str, Any]]:
+    examples: dict[str, dict[str, Any]] = {}
+    for path in _service_receipt_paths(storage_dir, "layer3-sec-edgar-real-filing-acquisition-connector"):
+        payload = _read_json_object(path)
+        if not payload or not _is_governed_connector_receipt(payload):
+            continue
+        records = [
+            item
+            for item in (payload.get("corpus_manifest") or {}).get("example_records") or []
+            if isinstance(item, Mapping)
+        ]
+        records_by_id = {str(item.get("example_id") or ""): item for item in records}
+        for receipt in payload.get("acquisition_receipts") or []:
+            if not isinstance(receipt, Mapping):
+                continue
+            source_receipt = receipt.get("source_artifact_receipt") or {}
+            if not isinstance(source_receipt, Mapping):
+                continue
+            source_hash = str(source_receipt.get("source_artifact_receipt_hash") or "")
+            if not source_hash:
+                continue
+            record = records_by_id.get(str(receipt.get("example_id") or ""))
+            if not isinstance(record, Mapping):
+                continue
+            examples[source_hash] = {
+                "form_type": str(record.get("form_type") or ""),
+                "issuer_profile_tags": sorted(str(item) for item in record.get("issuer_profile_tags") or []),
+                "source_artifact_marker": stable_hash({"source_artifact_receipt_hash": source_hash})[:24],
+                "example_marker": stable_hash(
+                    {
+                        "source_artifact_receipt_hash": source_hash,
+                        "example_id": str(record.get("example_id") or ""),
+                    }
+                )[:24],
+                "raw_identity_redacted": True,
+            }
+    return examples
+
+
+def _is_governed_connector_receipt(payload: Mapping[str, Any]) -> bool:
+    connector_hash = str(payload.get("connector_receipt_hash") or "")
+    connector_id = str(payload.get("connector_receipt_id") or "")
+    example_set = payload.get("example_set") or {}
+    example_set_hash = str(example_set.get("example_set_hash") or "") if isinstance(example_set, Mapping) else ""
+    manifest = payload.get("corpus_manifest") or {}
+    diagnostics = payload.get("diagnostics") or {}
+    basis = payload.get("receipt_hash_basis") or {}
+    acquisitions = payload.get("acquisition_receipts") or []
+    if (
+        payload.get("schema_id") != layer3_sec_edgar_real_filing_acquisition_connector.SCHEMA_ID
+        or payload.get("connector_mode") != layer3_sec_edgar_real_filing_acquisition_connector.CONNECTOR_MODE
+        or payload.get("operator_decision") != layer3_sec_edgar_real_filing_acquisition_connector.OPERATOR_DECISION
+        or payload.get("connector_state") != "available"
+        or not bool(HEX64_RE.fullmatch(connector_hash))
+        or not bool(HEX64_RE.fullmatch(example_set_hash))
+        or not connector_id.startswith(f"{layer3_sec_edgar_real_filing_acquisition_connector.RECEIPT_PREFIX}-")
+        or not connector_id.endswith(f"-{connector_hash[:24]}")
+        or example_set_hash[:24] not in connector_id
+        or not isinstance(manifest, Mapping)
+        or manifest.get("schema_id") != layer3_sec_edgar_real_filing_acquisition_connector.CORPUS_MANIFEST_SCHEMA_ID
+        or not isinstance(diagnostics, Mapping)
+        or not isinstance(basis, Mapping)
+        or not isinstance(acquisitions, list)
+        or stable_hash(basis) != connector_hash
+    ):
+        return False
+    records = [item for item in manifest.get("example_records") or [] if isinstance(item, Mapping)]
+    acquisition_records = [item for item in acquisitions if isinstance(item, Mapping)]
+    if len(records) != int(manifest.get("example_count") or -1) or len(acquisition_records) != len(acquisitions):
+        return False
+    records_by_id = {str(item.get("example_id") or ""): item for item in records}
+    if manifest.get("manifest_hash") != stable_hash(
+        {
+            "examples": records,
+            "acquisition_receipts": acquisition_records,
+            "diagnostics": diagnostics,
+        }
+    ):
+        return False
+    live_hashes: list[str] = []
+    artifact_hashes: list[str] = []
+    for receipt in acquisition_records:
+        record = records_by_id.get(str(receipt.get("example_id") or ""))
+        if not isinstance(record, Mapping) or not _is_governed_connector_acquisition_receipt(receipt, record):
+            return False
+        live_hash = str(receipt.get("live_source_artifact_receipt_hash") or "")
+        source_receipt = receipt.get("source_artifact_receipt") or {}
+        live_hashes.append(live_hash)
+        artifact_hashes.append(str(source_receipt.get("content_sha256") or ""))
+    return (
+        basis.get("schema_id") == layer3_sec_edgar_real_filing_acquisition_connector.SCHEMA_ID
+        and basis.get("schema_version") == layer3_sec_edgar_real_filing_acquisition_connector.SCHEMA_VERSION
+        and basis.get("connector_mode") == layer3_sec_edgar_real_filing_acquisition_connector.CONNECTOR_MODE
+        and basis.get("operator_decision") == layer3_sec_edgar_real_filing_acquisition_connector.OPERATOR_DECISION
+        and basis.get("example_set_hash") == example_set_hash
+        and basis.get("source_family_inventory_hash") == stable_hash(manifest.get("source_family_inventory") or {})
+        and basis.get("acquisition_receipt_hashes") == live_hashes
+        and basis.get("artifact_hashes") == artifact_hashes
+        and basis.get("classification_hashes") == [stable_hash(item) for item in records]
+        and basis.get("diagnostics_hash") == stable_hash(diagnostics)
+    )
+
+
+def _is_governed_connector_acquisition_receipt(
+    receipt: Mapping[str, Any],
+    example_record: Mapping[str, Any],
+) -> bool:
+    live_hash = str(receipt.get("live_source_artifact_receipt_hash") or "")
+    source_receipt = receipt.get("source_artifact_receipt") or {}
+    retained_manifest = receipt.get("retained_source_artifact_manifest") or {}
+    if not isinstance(source_receipt, Mapping) or not isinstance(retained_manifest, Mapping):
+        return False
+    source_hash = str(source_receipt.get("source_artifact_receipt_hash") or "")
+    source_id = str(source_receipt.get("source_artifact_receipt_id") or "")
+    artifact_ref_hash = str(source_receipt.get("source_artifact_ref_hash") or "")
+    content_hash = str(source_receipt.get("content_sha256") or "")
+    try:
+        content_length = int(source_receipt.get("content_length"))
+    except (TypeError, ValueError):
+        return False
+    cik_hash = str(example_record.get("cik_hash") or "")
+    accession_hash = str(example_record.get("accession_or_submission_id_hash") or "")
+    form_type = str(example_record.get("form_type") or "")
+    filing_date = str(example_record.get("filing_date") or "")
+    source_identity_hash = stable_hash(
+        {
+            "hash_version": "sec_edgar_live_source_identity_hash_v1",
+            "cik_or_filer_ref_hash": cik_hash,
+            "accession_or_submission_id_hash": accession_hash,
+            "form_type": form_type,
+            "filing_date": filing_date,
+        }
+    )
+    expected_source_id = f"{layer3_sec_edgar_live_source_artifact.SOURCE_ARTIFACT_RECEIPT_PREFIX}-{artifact_ref_hash[:24]}"
+    expected_source_hash = stable_hash(
+        {
+            "schema_id": layer3_sec_edgar_live_source_artifact.SOURCE_ARTIFACT_RECEIPT_SCHEMA_ID,
+            "schema_version": layer3_sec_edgar_live_source_artifact.SCHEMA_VERSION,
+            "source_artifact_receipt_id": expected_source_id,
+            "source_artifact_ref_hash": artifact_ref_hash,
+            "content_sha256": content_hash,
+            "content_length": content_length,
+            "accession_or_submission_id_hash": accession_hash,
+            "cik_or_filer_ref_hash": cik_hash,
+            "form_type": form_type,
+            "filing_date": filing_date,
+            "parser_family": layer3_sec_edgar_live_source_artifact.PARSER_FAMILY,
+            "parser_contract_id": layer3_sec_edgar_live_source_artifact.PARSER_CONTRACT_ID,
+            "typed_content_contract_id": layer3_sec_edgar_live_source_artifact.TYPED_CONTENT_CONTRACT_ID,
+            "source_mode": layer3_sec_edgar_live_source_artifact.SOURCE_MODE,
+        }
+    )
+    expected_live_id_prefix = f"{layer3_sec_edgar_live_source_artifact.RECEIPT_PREFIX}-{source_identity_hash[:24]}-"
+    expected_live_id_suffix = live_hash[:24]
+    return (
+        receipt.get("live_source_artifact_receipt_status") == "available"
+        and bool(HEX64_RE.fullmatch(live_hash))
+        and bool(HEX64_RE.fullmatch(source_hash))
+        and bool(HEX64_RE.fullmatch(artifact_ref_hash))
+        and bool(HEX64_RE.fullmatch(content_hash))
+        and bool(HEX64_RE.fullmatch(cik_hash))
+        and bool(HEX64_RE.fullmatch(accession_hash))
+        and source_receipt.get("schema_id") == layer3_sec_edgar_live_source_artifact.SOURCE_ARTIFACT_RECEIPT_SCHEMA_ID
+        and source_receipt.get("schema_version") == layer3_sec_edgar_live_source_artifact.SCHEMA_VERSION
+        and source_id == expected_source_id
+        and source_hash == expected_source_hash
+        and str(receipt.get("live_source_artifact_receipt_id") or "").startswith(expected_live_id_prefix)
+        and str(receipt.get("live_source_artifact_receipt_id") or "").endswith(expected_live_id_suffix)
+        and source_receipt.get("parser_family") == layer3_sec_edgar_live_source_artifact.PARSER_FAMILY
+        and source_receipt.get("parser_contract_id") == layer3_sec_edgar_live_source_artifact.PARSER_CONTRACT_ID
+        and source_receipt.get("typed_content_contract_id") == layer3_sec_edgar_live_source_artifact.TYPED_CONTENT_CONTRACT_ID
+        and source_receipt.get("source_mode") == layer3_sec_edgar_live_source_artifact.SOURCE_MODE
+        and source_receipt.get("server_owned_source_artifact_authority") is True
+        and source_receipt.get("raw_source_artifact_ref_exposed") is False
+        and source_receipt.get("raw_local_path_exposed") is False
+        and source_receipt.get("raw_url_exposed") is False
+        and source_receipt.get("artifact_bytes_exposed") is False
+        and retained_manifest.get("source_artifact_family") == layer3_sec_edgar_live_source_artifact.SOURCE_ARTIFACT_FAMILY
+        and retained_manifest.get("artifact_ref_hash") == artifact_ref_hash
+        and retained_manifest.get("content_sha256") == content_hash
+        and int(retained_manifest.get("content_length") or -1) == content_length
+        and retained_manifest.get("retained_source_artifact_available") is True
+        and retained_manifest.get("raw_local_path_exposed") is False
+        and retained_manifest.get("raw_url_exposed") is False
+        and retained_manifest.get("artifact_bytes_exposed") is False
+    )
+
+
+def _sector_family_us_gaap_sidecars_by_source_hash(storage_dir: Path) -> dict[str, list[dict[str, Any]]]:
+    sidecars_by_source_hash: dict[str, list[dict[str, Any]]] = {}
+    for path in _service_receipt_paths(storage_dir, "layer3-sec-edgar-arelle-resolved-fact-authority"):
+        payload = _read_json_object(path)
+        if not payload or not _is_governed_arelle_sidecar_receipt(payload):
+            continue
+        source_hash = str(payload.get("source_artifact_receipt_hash") or "")
+        if not source_hash:
+            continue
+        qnames = {
+            str((record.get("concept") or {}).get("qname") or "")
+            for record in payload.get("resolved_fact_records") or []
+            if _sector_family_standard_non_dimensional_record(record)
+        }
+        sidecars_by_source_hash.setdefault(source_hash, []).append(
+            {
+                "sidecar_receipt_marker": stable_hash(
+                    {"sidecar_receipt_hash": str(payload.get("sidecar_receipt_hash") or "")}
+                )[:24],
+                "qnames": {qname for qname in qnames if qname},
+            }
+        )
+    return sidecars_by_source_hash
+
+
+def _is_governed_arelle_sidecar_receipt(payload: Mapping[str, Any]) -> bool:
+    source_hash = str(payload.get("source_artifact_receipt_hash") or "")
+    sidecar_hash = str(payload.get("sidecar_receipt_hash") or "")
+    resolved_fact_inventory_hash = str(payload.get("resolved_fact_inventory_hash") or "")
+    authority_hashes = payload.get("authority_hashes") or {}
+    sidecar_receipt_suffix = sidecar_hash[:24]
+    records = payload.get("resolved_fact_records") or []
+    if not isinstance(records, list) or not all(isinstance(record, Mapping) for record in records):
+        return False
+    if any(set(record).intersection({"value", "effective_value", "lexical_value"}) for record in records):
+        return False
+    redacted_records = [_redacted_sidecar_inventory_record(record) for record in records]
+    projection = payload.get("resolved_fact_projection")
+    projection_matches = isinstance(projection, list) and projection == redacted_records
+    if not isinstance(authority_hashes, Mapping):
+        return False
+    local_value_hashes = [str(record.get("value_hash") or "") for record in redacted_records]
+    if not local_value_hashes or not all(bool(HEX64_RE.fullmatch(value_hash)) for value_hash in local_value_hashes):
+        return False
+    local_value_inventory_hash = stable_hash(local_value_hashes)
+    diagnostics = payload.get("diagnostics") or {}
+    parity = payload.get("parity") or {}
+    internal_value_store = payload.get("internal_value_store") or {}
+    if (
+        not isinstance(diagnostics, Mapping)
+        or not isinstance(parity, Mapping)
+        or not isinstance(internal_value_store, Mapping)
+    ):
+        return False
+    diagnostics_hash = stable_hash(diagnostics)
+    parity_hash = stable_hash(parity)
+    internal_value_store_enabled = internal_value_store.get("store_state") == "persisted"
+    internal_value_store_hash = (
+        str(internal_value_store.get("value_store_hash") or "")
+        if internal_value_store_enabled
+        else None
+    )
+    if internal_value_store_enabled and not bool(HEX64_RE.fullmatch(str(internal_value_store_hash or ""))):
+        return False
+    expected_hash_fields = {
+        "parser_receipt_hash": str(payload.get("parser_receipt_hash") or ""),
+        "connector_receipt_hash": str(payload.get("connector_receipt_hash") or ""),
+        "live_source_artifact_receipt_hash": str(payload.get("live_source_artifact_receipt_hash") or ""),
+        "source_artifact_receipt_hash": source_hash,
+        "content_sha256": str(payload.get("content_sha256") or ""),
+        "primary_document_hash": str(payload.get("primary_document_hash") or ""),
+        "document_inventory_hash": str(payload.get("document_inventory_hash") or ""),
+        "content_order_hash": str(payload.get("content_order_hash") or ""),
+        "table_candidate_inventory_hash": str(payload.get("table_candidate_inventory_hash") or ""),
+        "inline_xbrl_marker_inventory_hash": str(payload.get("inline_xbrl_marker_inventory_hash") or ""),
+        "resolved_fact_inventory_hash": resolved_fact_inventory_hash,
+        "local_value_inventory_hash": local_value_inventory_hash,
+        "diagnostics_hash": diagnostics_hash,
+        "sidecar_receipt_hash": sidecar_hash,
+    }
+    if internal_value_store_hash is not None:
+        expected_hash_fields["internal_value_store_hash"] = internal_value_store_hash
+    if any(not bool(HEX64_RE.fullmatch(str(value))) for value in expected_hash_fields.values()):
+        return False
+    if any(authority_hashes.get(key) != value for key, value in expected_hash_fields.items()):
+        return False
+    sidecar_receipt_hash_basis = {
+        "hash_version": layer3_sec_xbrl_sidecar.AUTHORITY_HASH_VERSION,
+        "sidecar_mode": layer3_sec_xbrl_sidecar.SIDECAR_MODE,
+        "adapter_version": layer3_sec_xbrl_sidecar.ADAPTER_VERSION,
+        "parser_receipt_hash": expected_hash_fields["parser_receipt_hash"],
+        "connector_receipt_hash": expected_hash_fields["connector_receipt_hash"],
+        "live_source_artifact_receipt_hash": expected_hash_fields["live_source_artifact_receipt_hash"],
+        "source_artifact_receipt_hash": source_hash,
+        "content_sha256": expected_hash_fields["content_sha256"],
+        "primary_document_hash": expected_hash_fields["primary_document_hash"],
+        "document_inventory_hash": expected_hash_fields["document_inventory_hash"],
+        "content_order_hash": expected_hash_fields["content_order_hash"],
+        "table_candidate_inventory_hash": expected_hash_fields["table_candidate_inventory_hash"],
+        "inline_xbrl_marker_inventory_hash": expected_hash_fields["inline_xbrl_marker_inventory_hash"],
+        "resolved_fact_inventory_hash": resolved_fact_inventory_hash,
+        "local_value_inventory_hash": local_value_inventory_hash,
+        "internal_value_store_enabled": internal_value_store_enabled,
+        "internal_value_store_hash": internal_value_store_hash,
+        "diagnostics_hash": diagnostics_hash,
+        "parity_hash": parity_hash,
+    }
+    return (
+        payload.get("schema_id") == layer3_sec_xbrl_sidecar.SCHEMA_ID
+        and payload.get("schema_version") == layer3_sec_xbrl_sidecar.SCHEMA_VERSION
+        and payload.get("sidecar_mode") == layer3_sec_xbrl_sidecar.SIDECAR_MODE
+        and payload.get("operator_decision") == layer3_sec_xbrl_sidecar.OPERATOR_DECISION
+        and payload.get("sidecar_state") == layer3_sec_xbrl_sidecar.READY_STATE
+        and payload.get("adapter_id") == layer3_sec_xbrl_sidecar.ADAPTER_ID
+        and payload.get("adapter_version") == layer3_sec_xbrl_sidecar.ADAPTER_VERSION
+        and bool(HEX64_RE.fullmatch(source_hash))
+        and bool(HEX64_RE.fullmatch(sidecar_hash))
+        and bool(HEX64_RE.fullmatch(resolved_fact_inventory_hash))
+        and payload.get("sidecar_receipt_id") == f"{layer3_sec_xbrl_sidecar.RECEIPT_PREFIX}-{sidecar_receipt_suffix}"
+        and payload.get("sidecar_receipt_ref") == f"{layer3_sec_xbrl_sidecar.RECEIPT_PREFIX}:{sidecar_receipt_suffix}"
+        and authority_hashes.get("source_artifact_receipt_hash") == source_hash
+        and authority_hashes.get("sidecar_receipt_hash") == sidecar_hash
+        and authority_hashes.get("resolved_fact_inventory_hash") == resolved_fact_inventory_hash
+        and int(payload.get("resolved_fact_count") or -1) == len(records)
+        and stable_hash(redacted_records) == resolved_fact_inventory_hash
+        and payload.get("local_value_inventory_hash") == local_value_inventory_hash
+        and payload.get("diagnostics_hash") == diagnostics_hash
+        and stable_hash(sidecar_receipt_hash_basis) == sidecar_hash
+        and projection_matches
+    )
+
+
+def _sector_family_standard_non_dimensional_record(record: Any) -> bool:
+    if not isinstance(record, Mapping):
+        return False
+    concept = record.get("concept") or {}
+    dimensions = record.get("dimensions") or {}
+    if not isinstance(concept, Mapping) or not isinstance(dimensions, Mapping):
+        return False
+    explicit_dimensions = dimensions.get("explicit") or []
+    typed_dimensions = dimensions.get("typed") or []
+    return (
+        bool(concept.get("qname"))
+        and concept.get("standard") is True
+        and isinstance(explicit_dimensions, list)
+        and isinstance(typed_dimensions, list)
+        and not explicit_dimensions
+        and not typed_dimensions
+    )
+
+
+def _redacted_sidecar_inventory_record(record: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        key: value
+        for key, value in record.items()
+        if key not in {"value", "effective_value", "lexical_value"}
+    } | {"value_redacted": True}
+
+
+def _sector_family_us_gaap_class_result(
+    *,
+    reference_class: str,
+    examples_by_source_hash: Mapping[str, Mapping[str, Any]],
+    sidecars_by_source_hash: Mapping[str, list[Mapping[str, Any]]],
+) -> dict[str, Any]:
+    required_tag = SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_TAGS[reference_class]
+    required_anchors = set(SECTOR_FAMILY_US_GAAP_REQUIRED_CLASS_ANCHORS[reference_class])
+    tracked_supporting = set(SECTOR_FAMILY_US_GAAP_SUPPORTING_HEADLINE_CONCEPTS[reference_class])
+    candidates: list[tuple[str, Mapping[str, Any], Mapping[str, Any]]] = []
+    annual_reference_candidate_count = 0
+    for source_hash, example in examples_by_source_hash.items():
+        tags = set(example.get("issuer_profile_tags") or [])
+        if required_tag not in tags or example.get("form_type") != "10-K":
+            continue
+        annual_reference_candidate_count += 1
+        source_sidecars = [
+            sidecar
+            for sidecar in sidecars_by_source_hash.get(str(source_hash), [])
+            if isinstance(sidecar, Mapping)
+        ]
+        if not source_sidecars:
+            candidates.append((str(source_hash), example, {"qnames": set(), "sidecar_receipt_marker": None}))
+        for sidecar in source_sidecars:
+            candidates.append((str(source_hash), example, sidecar))
+    best: tuple[str, Mapping[str, Any], Mapping[str, Any]] | None = None
+    for candidate in candidates:
+        if required_anchors.issubset(set(candidate[2].get("qnames") or set())):
+            best = candidate
+            break
+    if best is None and candidates:
+        best = max(
+            candidates,
+            key=lambda item: len(required_anchors.intersection(set(item[2].get("qnames") or set()))),
+        )
+    best_qnames = set(best[2].get("qnames") or set()) if best else set()
+    present_anchors = sorted(required_anchors.intersection(best_qnames))
+    missing_anchors = sorted(required_anchors - set(present_anchors))
+    supporting_present = sorted(tracked_supporting.intersection(best_qnames))
+    supporting_missing = sorted(tracked_supporting - set(supporting_present))
+    blocked_reasons: list[str] = []
+    if not candidates:
+        blocked_reasons.append(f"{reference_class}_annual_reference_missing")
+    if missing_anchors:
+        blocked_reasons.append(f"{reference_class}_activation_anchor_missing")
+    return {
+        "reference_class": reference_class,
+        "family_id": SECTOR_FAMILY_US_GAAP_CLASS_FAMILIES[reference_class],
+        "annual_reference_present": bool(candidates),
+        "annual_reference_candidate_count": annual_reference_candidate_count,
+        "activation_anchor_concepts_present": present_anchors,
+        "missing_activation_anchor_concepts": missing_anchors,
+        "supporting_headline_concepts_present": supporting_present,
+        "missing_supporting_headline_concepts": supporting_missing,
+        "source_artifact_marker": best[1].get("source_artifact_marker") if best else None,
+        "example_marker": best[1].get("example_marker") if best else None,
+        "sidecar_receipt_marker": best[2].get("sidecar_receipt_marker") if best else None,
+        "accepted_sidecar_candidate_count": sum(
+            1 for _source_hash, _example, sidecar in candidates if sidecar.get("sidecar_receipt_marker")
+        ),
+        "reported_qname_count": len(best_qnames),
+        "passed": bool(candidates) and not missing_anchors,
+        "blocked_reasons": blocked_reasons,
+        "raw_identity_redacted": True,
+        "values_redacted": True,
+    }
+
+
+def _service_receipt_paths(storage_dir: Path, service_dir_name: str) -> list[Path]:
+    service_dir = storage_dir / service_dir_name
+    receipts_dir = service_dir / "receipts"
+    root = receipts_dir if receipts_dir.exists() else service_dir
+    if not root.exists() or not root.is_dir():
+        return []
+    return sorted(root.glob("*.json"))
+
+
+def _read_json_object(path: Path) -> dict[str, Any] | None:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return None
+    return dict(payload) if isinstance(payload, Mapping) else None
 
 
 def _sector_family_activation_anchor_concepts(presence: Mapping[str, Any]) -> list[str]:
@@ -1501,6 +2298,50 @@ def _sector_family_supporting_only_family_ids(presence: Mapping[str, Any]) -> li
     )
 
 
+def _sector_family_available_filer_activation_criterion(
+    sector_family_activation_validation: Mapping[str, Any],
+) -> dict[str, Any]:
+    return _criterion(
+        "sector_family_available_filer_activation_dimension",
+        sector_family_activation_validation.get("available_dimension_passed") is True
+        and sector_family_activation_validation.get("status")
+        in {
+            "partially_satisfied_us_gaap_subgate_pending",
+            "sector_family_real_filer_validation_satisfied",
+        }
+        and sector_family_activation_validation.get("us_gaap_bank_insurer_subgate_state")
+        in {"pending_operator_offline_filings", "validated"},
+        {
+            "dimension_id": sector_family_activation_validation.get("dimension_id"),
+            "status": sector_family_activation_validation.get("status"),
+            "available_reference_filer_count": sector_family_activation_validation.get(
+                "available_reference_filer_count"
+            ),
+            "validated_available_family_ids": sector_family_activation_validation.get(
+                "validated_available_family_ids"
+            ),
+            "ifrs_anchor_activation_passed": sector_family_activation_validation.get(
+                "ifrs_anchor_activation_passed"
+            ),
+            "supporting_only_control_passed": sector_family_activation_validation.get(
+                "supporting_only_control_passed"
+            ),
+            "universal_only_control_passed": sector_family_activation_validation.get(
+                "universal_only_control_passed"
+            ),
+            "projection_row_shape_stable": (
+                sector_family_activation_validation.get("projection_row_shape") or {}
+            ).get("stable_across_available_references"),
+            "us_gaap_bank_insurer_subgate_state": sector_family_activation_validation.get(
+                "us_gaap_bank_insurer_subgate_state"
+            ),
+            "full_gate_satisfied": sector_family_activation_validation.get("full_gate_satisfied"),
+            "raw_identity_redacted": True,
+        },
+        "sector_family_available_filer_activation_dimension_not_satisfied",
+    )
+
+
 def _criteria(
     preflight: Mapping[str, Any],
     summary: Mapping[str, Any],
@@ -1531,43 +2372,7 @@ def _criteria(
             },
             "stratified_matrix_required_strata_not_ready",
         ),
-        _criterion(
-            "sector_family_available_filer_activation_dimension",
-            sector_family_activation_validation.get("available_dimension_passed") is True
-            and sector_family_activation_validation.get("status")
-            == "partially_satisfied_us_gaap_subgate_pending"
-            and sector_family_activation_validation.get("full_gate_satisfied") is False
-            and sector_family_activation_validation.get("us_gaap_bank_insurer_subgate_state")
-            == "pending_operator_offline_filings",
-            {
-                "dimension_id": sector_family_activation_validation.get("dimension_id"),
-                "status": sector_family_activation_validation.get("status"),
-                "available_reference_filer_count": sector_family_activation_validation.get(
-                    "available_reference_filer_count"
-                ),
-                "validated_available_family_ids": sector_family_activation_validation.get(
-                    "validated_available_family_ids"
-                ),
-                "ifrs_anchor_activation_passed": sector_family_activation_validation.get(
-                    "ifrs_anchor_activation_passed"
-                ),
-                "supporting_only_control_passed": sector_family_activation_validation.get(
-                    "supporting_only_control_passed"
-                ),
-                "universal_only_control_passed": sector_family_activation_validation.get(
-                    "universal_only_control_passed"
-                ),
-                "projection_row_shape_stable": (
-                    sector_family_activation_validation.get("projection_row_shape") or {}
-                ).get("stable_across_available_references"),
-                "us_gaap_bank_insurer_subgate_state": sector_family_activation_validation.get(
-                    "us_gaap_bank_insurer_subgate_state"
-                ),
-                "full_gate_satisfied": sector_family_activation_validation.get("full_gate_satisfied"),
-                "raw_identity_redacted": True,
-            },
-            "sector_family_available_filer_activation_dimension_not_satisfied",
-        ),
+        _sector_family_available_filer_activation_criterion(sector_family_activation_validation),
         _criterion(
             "broader_real_product_path_corpus",
             summary["real_filing_count"] >= REQUIRED_REAL_FILING_COUNT
@@ -1979,6 +2784,8 @@ def _next_slice(
     reasons = {str(item.get("reason") or "") for item in blockers}
     if "real_corpus_product_path_live_preflight_not_satisfied" in reasons:
         return "sec_edgar_real_corpus_product_path_runner_live_execution_v1"
+    if "sector_family_available_filer_activation_dimension_not_satisfied" in reasons:
+        return SECTOR_FAMILY_US_GAAP_SUBGATE_NEXT_SLICE
     return "sec_edgar_arelle_extraction_coverage_remediation_then_gate_rerun_v1"
 
 
