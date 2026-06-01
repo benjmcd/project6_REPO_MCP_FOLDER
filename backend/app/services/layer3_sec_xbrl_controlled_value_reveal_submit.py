@@ -221,6 +221,7 @@ def inspect_controlled_value_reveal_submit_status(
         sec_xbrl_controlled_value_reveal_submit_receipt_id,
         "sec_xbrl_controlled_value_reveal_submit_receipt_id",
     )
+    _reject_raw_or_local_authority(receipt_id)
     row = db.get(L3SecXbrlControlledValueRevealSubmitReceipt, receipt_id)
     if row is None:
         raise SecXbrlControlledValueRevealSubmitError(
