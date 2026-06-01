@@ -123,6 +123,7 @@ def submit_controlled_value_reveal(
         sec_xbrl_value_reveal_authority_receipt_id,
         "sec_xbrl_value_reveal_authority_receipt_id",
     )
+    _reject_raw_or_local_authority(receipt_id)
     basis_hash = _required_hash(authority_basis_hash, "authority_basis_hash")
 
     authority = _load_authority_receipt(db, receipt_id, basis_hash)
