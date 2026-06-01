@@ -4,11 +4,13 @@ Milestone: `sec_xbrl_controlled_value_reveal_submit_post_merge_audit_hardening_v
 
 Base authority: `project6-origin/main` at `f8c50365dc89cec4055a2c8b78ab510841e17488`
 
+Merged authority: `project6-origin/main` at `64c8957cdf7dcad26eb92c4cf7d146b4a7c15f3b`
+
 Prior milestone: `next_milestone_plans/Layer3_planning_docs/1304-controlled-value-reveal-submit.md`
 
 ## Status
 
-Branch-local Tier-2 risk-assessed hardening entry, verified for PR handoff.
+Merged current-main Tier-2 risk-assessed hardening entry, verified after merge.
 
 This post-merge audit slice closes one authority-boundary gap in the controlled
 value-reveal submit service. The service already rejected raw references in
@@ -43,7 +45,7 @@ Focused regressions prove:
 
 ## Verification
 
-Branch-local results:
+PR and post-merge current-main results:
 
 - `python -m pytest .\backend\tests\test_sec_xbrl_operator_review_workflow.py -q`
   - `70 passed, 3 warnings`
@@ -68,6 +70,6 @@ Branch-local results:
 
 ## Next Posture
 
-After this hardening lands and current-main verification remains clean, continue
-with the read-only controlled-submit post-merge audit outcome and then a
+With this hardening landed and current-main verification clean, continue with
+the read-only controlled-submit post-merge audit outcome and then a
 separate rendered value UI or default-on design only if explicitly admitted.
