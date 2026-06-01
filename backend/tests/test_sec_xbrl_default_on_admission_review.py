@@ -39,21 +39,21 @@ def _gate_report(tmp_path: Path, *, admitted: bool) -> Path:
     return path
 
 
-def test_sec_xbrl_default_on_admission_review_requires_post_1966_governance_followup(
+def test_sec_xbrl_default_on_admission_review_is_superseded_after_runtime_default_on(
     tmp_path: Path,
 ) -> None:
     module = _review_module()
 
     report = module.build_report(gate_report_path=_gate_report(tmp_path, admitted=True), source_root=ROOT)
 
-    assert report["decision"] == "admission_review_requires_post_1966_governance_followup"
+    assert report["decision"] == "admission_review_superseded_by_default_on_runtime"
     assert report["ready_for_default_on_runtime_slice"] is False
-    assert report["next_slice"] == "sec_edgar_arelle_governance_remediation_followups_v1"
-    assert report["blocking_reasons"][0]["reason"] == (
-        "admission_review_post_1966_governance_followup_required"
+    assert report["next_slice"] == (
+        "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation"
     )
-    assert report["non_goals_preserved"]["runtime_default_enabled_by_follow_on_runtime_slice"] is False
-    assert report["non_goals_preserved"]["runtime_default_on_currently_admitted"] is False
+    assert report["blocking_reasons"] == []
+    assert report["non_goals_preserved"]["runtime_default_enabled_by_follow_on_runtime_slice"] is True
+    assert report["non_goals_preserved"]["runtime_default_on_currently_admitted"] is True
 
 
 def test_sec_xbrl_default_on_admission_review_blocks_when_gate_is_not_admitted(tmp_path: Path) -> None:

@@ -3,12 +3,14 @@
   "criteria": [
     {
       "blocked_reason": null,
-      "criterion": "committed_defaults_remain_off",
+      "criterion": "committed_safety_defaults_preserved",
       "evidence": {
-        "config_defaults_off": true,
+        "config_defaults_off": false,
         "config_file": "backend/app/core/config.py",
+        "config_safety_defaults_off": true,
         "live_proof_defaults_off": true,
-        "live_proof_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json"
+        "live_proof_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json",
+        "live_proof_safety_defaults_off": true
       },
       "state": "passed"
     },
@@ -56,10 +58,10 @@
     },
     {
       "blocked_reason": null,
-      "criterion": "runtime_default_authority_remains_default_off",
+      "criterion": "runtime_default_authority_posture_recognized",
       "evidence": {
-        "decision": "default_on_runtime_disabled_by_governance_remediation",
-        "default_cutover_enabled": false,
+        "decision": "default_on_runtime_enabled",
+        "default_cutover_enabled": true,
         "operator_value_reveal_default_enabled": false,
         "source_report": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
       },
@@ -67,10 +69,11 @@
     },
     {
       "blocked_reason": null,
-      "criterion": "default_on_not_currently_admitted",
+      "criterion": "default_on_admission_state_recognized",
       "evidence": {
-        "admission_decision": "admission_review_requires_post_1966_governance_followup",
+        "admission_decision": "admission_review_superseded_by_default_on_runtime",
         "ready_for_default_on_runtime_slice": false,
+        "runtime_default_enabled": true,
         "source_report": "diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json"
       },
       "state": "passed"
@@ -107,14 +110,14 @@
       "state": "passed"
     }
   ],
-  "decision": "explicit_operator_only_default_off_selected",
+  "decision": "explicit_operator_only_default_off_superseded_by_default_on_runtime",
   "deferred_postures": {
     "default_on_arelle_fact_authority_cutover": "requires separate reviewed admission gate and rollback",
     "default_on_value_reveal": "requires separate operator policy, auth, retention, and audit review",
     "staged_default_on_experiment": "requires bounded operator cohort and rollback plan before execution"
   },
-  "headline": "Default posture selected: keep SEC/Arelle explicit-operator-only and default-off while moving to operator runbook and stratified matrix selection.",
-  "next_slice": "sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1",
+  "headline": "Default posture selected explicit-operator-only default-off as a pre-runtime posture and is now superseded by the reviewed default-on fact-authority runtime; value reveal remains separately gated and default-off.",
+  "next_slice": "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation",
   "non_goals_preserved": {
     "arelle_subprocess_invoked_by_decision": false,
     "candidate_b_sec_routing_performed": false,
@@ -125,11 +128,13 @@
     "raw_identity_committed": false,
     "raw_values_committed": false,
     "runtime_default_changed_by_decision": false,
+    "runtime_default_enabled_by_follow_on_runtime_slice": true,
     "value_reveal_request_performed_by_decision": false
   },
   "schema_id": "diagnostics.sec_xbrl_default_posture_decision.v1",
   "selected_posture": {
     "arelle_fact_authority_cutover_default_enabled": false,
+    "arelle_fact_authority_cutover_default_on_supersedes_selected_posture": true,
     "arelle_value_reveal_default_enabled": false,
     "broader_reliability_admission_converted_to_runtime_default": false,
     "operator_value_reveal_available_only_by_explicit_gated_action": true,

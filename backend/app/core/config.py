@@ -91,8 +91,20 @@ class Settings(BaseSettings):
     layer3_sec_edgar_max_bytes: int = Field(default=25_000_000, alias="LAYER3_SEC_EDGAR_MAX_BYTES")
     layer3_sec_edgar_timeout_seconds: int = Field(default=20, alias="LAYER3_SEC_EDGAR_TIMEOUT_SECONDS")
     layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(
-        default=False,
+        default=True,
         alias="LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED",
+    )
+    layer3_sec_edgar_arelle_internal_value_store_enabled: bool = Field(
+        default=False,
+        alias="LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED",
+    )
+    layer3_sec_edgar_arelle_corpus_validation_enabled: bool = Field(
+        default=False,
+        alias="LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED",
+    )
+    layer3_sec_edgar_arelle_fact_authority_nonlocal_authorized: bool = Field(
+        default=False,
+        alias="LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED",
     )
     layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(
         default=False,
@@ -206,6 +218,14 @@ class Settings(BaseSettings):
             raise ValueError("PROXY_IDENTITY_HEADER is required when DEPLOYMENT_MODE=nonlocal")
         if self.storage_exposure in {"enabled", "proxy_protected"}:
             raise ValueError("STORAGE_EXPOSURE must be auto or disabled when DEPLOYMENT_MODE=nonlocal")
+        if (
+            self.layer3_sec_edgar_arelle_fact_authority_cutover_enabled
+            and not self.layer3_sec_edgar_arelle_fact_authority_nonlocal_authorized
+        ):
+            raise ValueError(
+                "LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED=true is required "
+                "when DEPLOYMENT_MODE=nonlocal and Arelle fact-authority cutover is enabled"
+            )
 
     @property
     def raw_storage_dir(self) -> str:

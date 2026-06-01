@@ -26,7 +26,8 @@ def test_sec_xbrl_value_reveal_operator_exercise_is_ready_without_running_exerci
     assert report["operator_exercise_performed"] is False
     assert report["blocking_reasons"] == []
     assert report["next_slice"] == "sec_edgar_arelle_value_reveal_operator_exercise_v1"
-    assert report["non_goals_preserved"]["cutover_default_enabled"] is False
+    assert report["non_goals_preserved"]["fact_authority_cutover_default_enabled"] is True
     assert report["non_goals_preserved"]["value_reveal_default_enabled"] is False
+    assert report["non_goals_preserved"]["controlled_value_reveal_submit_default_enabled"] is False
     assert report["non_goals_preserved"]["raw_values_committed"] is False
     assert report["non_goals_preserved"]["cross_company_comparability_claimed"] is False

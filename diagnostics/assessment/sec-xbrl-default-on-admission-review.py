@@ -23,8 +23,8 @@ REQUIRED_ROLLBACK_SIGNALS = {
 
 REQUIRED_TEST_SIGNALS = {
     "arelle_absent": "test_sec_xbrl_sidecar_fails_closed_when_arelle_is_absent",
-    "missing_sidecar": "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_without_sidecar",
-    "lineage_mismatch": "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_lineage_mismatch",
+    "missing_sidecar": "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_default_on_without_sidecar",
+    "lineage_mismatch": "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_default_on_lineage_mismatch",
     "operator_value_gate": "test_layer3_api_reveals_sec_edgar_arelle_values_only_through_governed_sibling_endpoint",
 }
 
@@ -222,7 +222,7 @@ def build_report(*, gate_report_path: Path, source_root: Path) -> dict[str, Any]
             "rag_vector_model_provider_auth_behavior_added": False,
         },
         "next_slice": (
-            "sec_edgar_operator_surface_gated_value_reveal_v1"
+            "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation"
             if superseded
             else
             "sec_edgar_arelle_fact_authority_default_on_runtime_v1"
