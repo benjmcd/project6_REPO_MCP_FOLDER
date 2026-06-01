@@ -1977,16 +1977,17 @@ def test_controlled_value_reveal_submit_default_off_blocks_without_receipt(db_se
 def test_controlled_value_reveal_submit_rejects_raw_authority_receipt_id(db_session, monkeypatch) -> None:
     _enable_controlled_submit(monkeypatch)
 
-    with pytest.raises(submit_service.SecXbrlControlledValueRevealSubmitError) as exc:
-        submit_service.submit_controlled_value_reveal(
-            db_session,
-            client_request_id="controlled-submit-raw-authority-id",
-            sec_xbrl_value_reveal_authority_receipt_id="0000123456-26-000001",
-            authority_basis_hash=_hash("a"),
-            operator_reveal_confirmation=True,
-        )
+    for raw_receipt_id in ("0000123456-26-000001", "file:///tmp/raw", "/workspace/raw"):
+        with pytest.raises(submit_service.SecXbrlControlledValueRevealSubmitError) as exc:
+            submit_service.submit_controlled_value_reveal(
+                db_session,
+                client_request_id="controlled-submit-raw-authority-id",
+                sec_xbrl_value_reveal_authority_receipt_id=raw_receipt_id,
+                authority_basis_hash=_hash("a"),
+                operator_reveal_confirmation=True,
+            )
 
-    assert exc.value.code == "sec_xbrl_controlled_value_reveal_submit_raw_reference_not_admitted"
+        assert exc.value.code == "sec_xbrl_controlled_value_reveal_submit_raw_reference_not_admitted"
     assert db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 0
 
 
@@ -2081,23 +2082,26 @@ def test_controlled_value_reveal_submit_api_rejects_client_sidecar_fields(api_cl
 
 def test_controlled_value_reveal_submit_api_rejects_raw_authority_receipt_id(api_client, monkeypatch) -> None:
     _enable_controlled_submit(monkeypatch)
-    client, _Session = api_client
+    client, Session = api_client
 
-    response = client.post(
-        CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE,
-        json={
-            "client_request_id": "controlled-submit-api-raw-authority-id",
-            "submit_mode": submit_service.SUBMIT_MODE,
-            "operator_decision": submit_service.SUBMIT_OPERATOR_DECISION,
-            "sec_xbrl_value_reveal_authority_receipt_id": "0000123456-26-000001",
-            "authority_basis_hash": _hash("a"),
-            "operator_reveal_confirmation": True,
-        },
-    )
+    for raw_receipt_id in ("0000123456-26-000001", "file:///tmp/raw", "/workspace/raw"):
+        response = client.post(
+            CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE,
+            json={
+                "client_request_id": "controlled-submit-api-raw-authority-id",
+                "submit_mode": submit_service.SUBMIT_MODE,
+                "operator_decision": submit_service.SUBMIT_OPERATOR_DECISION,
+                "sec_xbrl_value_reveal_authority_receipt_id": raw_receipt_id,
+                "authority_basis_hash": _hash("a"),
+                "operator_reveal_confirmation": True,
+            },
+        )
 
-    assert response.status_code == 400
-    body = response.json()
-    assert body["error_code"] == "sec_xbrl_controlled_value_reveal_submit_raw_reference_not_admitted"
+        assert response.status_code == 400
+        body = response.json()
+        assert body["error_code"] == "sec_xbrl_controlled_value_reveal_submit_raw_reference_not_admitted"
+    with Session() as db:
+        assert db.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 0
 
 
 def test_operator_review_workflow_tables_are_registered_in_metadata() -> None:
