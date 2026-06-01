@@ -9974,6 +9974,44 @@ validation, redaction scan, and `git diff --check`.
 Next exact posture after merge and current-main verification:
 `sec_xbrl_operator_review_decision_rendered_submit_v1`.
 
+## SEC XBRL Operator Review Decision Rendered Submit
+
+Milestone: `sec_xbrl_operator_review_decision_rendered_submit_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1300-decision-rendered-submit.md`.
+
+Status: bounded Tier-1 rendered-control implementation.
+
+Scope: adds the `/review/layer3` rendered SEC XBRL operator-review decision
+submit/status panel over the already-admitted decision submit and decision status APIs.
+This pass changes only `backend/app/review_ui/static/layer3.html`,
+`backend/app/review_ui/static/layer3.js`, `e2e/layer3-workbench.spec.js`, and
+planning/progress/proof docs. It changes no `models.py`, Alembic migration, schema,
+durable persistence, backend API contract, workflow-open behavior, value reveal,
+delivery/export, source acquisition, Arelle invocation, default-on behavior, raw runtime
+artifact, authorization behavior, redaction posture, production-readiness claim, or
+product-flow doc.
+
+Rendered contract: the panel declares
+`data-rendered-mode="rendered_sec_xbrl_operator_review_decision_submit_control"`,
+`data-frontend-durable-authority="false"`, `data-operator-decision-submit="true"`,
+and explicit false markers for value reveal, delivery/export, source acquisition, Arelle
+invocation, and runtime default enablement. The submit form sends only the admitted
+decision submit fields. The status form sends only the admitted decision status fields.
+Raw notes are bounded submit input only; after submit or submit failure the note field is
+cleared, and the rendered outputs show only `decision_notes_present` and
+`decision_notes_hash`.
+
+Proof: focused headed and headless Playwright tests prove DOM markers, request allowlists,
+read-only status projection, raw-note non-render/non-retention, disabled missing-authority
+states, backend notes-policy errors, backend raw-reference rejection, already-decided
+workflow errors, status not-found errors, and the absence of value reveal, delivery/export,
+source acquisition, Arelle, workflow-open, and default-on controls. Full closeout proof is
+recorded in the progress and proof manifests.
+
+Next exact posture after merge and current-main verification:
+`sec_xbrl_value_reveal_authority_design_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
