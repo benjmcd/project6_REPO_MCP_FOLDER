@@ -104,6 +104,9 @@
       "6-K": 2,
       "8-K": 3
     },
+    "historical_live_matrix_reproducible_offline_from_available_inputs": false,
+    "historical_real_corpus_runner_archived": true,
+    "historical_real_corpus_runner_report": "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json",
     "issuer_hash_count": 6,
     "real_filing_count": 12,
     "value_bridge_fact_count": 23102
@@ -125,5 +128,10 @@
     "synchronous_arelle_in_bridge": false
   },
   "schema_id": "diagnostics.sec_xbrl_default_on_runtime.v1",
+  "source_reports": {
+    "admission_review": "diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json",
+    "default_on_gate": "diagnostics/assessment/sec-xbrl-default-on-gate-report.json",
+    "historical_real_corpus_runner": "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json"
+  },
   "target": "sec_edgar_arelle_fact_authority_default_on_runtime_v1"
 }

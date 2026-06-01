@@ -10,7 +10,9 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json")
 DEFAULT_DEFAULT_ON_GATE_REPORT = Path("diagnostics/assessment/sec-xbrl-default-on-gate-report.json")
 DEFAULT_PRODUCT_PATH_REPORT = Path("diagnostics/assessment/sec-xbrl-product-path-corpus-validation-report.json")
-DEFAULT_REAL_PRODUCT_RUNNER_REPORT = Path("diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json")
+DEFAULT_HISTORICAL_REAL_PRODUCT_RUNNER_REPORT = Path(
+    "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json"
+)
 
 REQUIRED_FORMS = {"10-K", "10-Q", "20-F", "40-F", "6-K", "8-K"}
 MIN_REAL_FILINGS = 12
@@ -31,7 +33,7 @@ def main() -> int:
     )
     parser.add_argument("--default-on-gate-report", default=str(DEFAULT_DEFAULT_ON_GATE_REPORT))
     parser.add_argument("--product-path-report", default=str(DEFAULT_PRODUCT_PATH_REPORT))
-    parser.add_argument("--real-product-runner-report", default=str(DEFAULT_REAL_PRODUCT_RUNNER_REPORT))
+    parser.add_argument("--real-product-runner-report", default=str(DEFAULT_HISTORICAL_REAL_PRODUCT_RUNNER_REPORT))
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
     args = parser.parse_args()
 
