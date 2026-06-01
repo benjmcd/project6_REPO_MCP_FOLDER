@@ -42,6 +42,8 @@ from app.models.models import (
     L3ReplacementPackageSetAuthority,
     L3RetrievalEvent,
     L3SelectionManifest,
+    L3SecXbrlProjectionFact,
+    L3SecXbrlProjectionSet,
     L3Session,
     L3SourceDirectoryIngestionBatch,
     L3SourceDirectoryIngestionFile,
