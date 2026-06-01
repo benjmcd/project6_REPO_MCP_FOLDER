@@ -605,3 +605,47 @@ def test_statement_packet_period_unique_migration_replaces_row_index_constraint(
     assert "period_ref" in source
     assert "period_index" in source
     assert "drop_constraint" in source
+
+
+def test_statement_packet_period_unique_migration_downgrade_fails_closed_on_old_key_duplicates(
+    monkeypatch,
+) -> None:
+    backend_root = str(ROOT / "backend")
+    if backend_root not in sys.path:
+        sys.path.insert(0, backend_root)
+    spec = importlib.util.spec_from_file_location(
+        "migration_0043_sec_xbrl_statement_packet_row_period_unique_conflict",
+        PERIOD_UNIQUE_MIGRATION_PATH,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    calls: list[tuple[str, tuple[Any, ...]]] = []
+
+    class Result:
+        def first(self):
+            return (1,)
+
+    class Bind:
+        def execute(self, statement):
+            calls.append(("execute", (statement,)))
+            return Result()
+
+    monkeypatch.setattr(module, "table_exists", lambda table_name: True)
+    monkeypatch.setattr(module.op, "get_bind", lambda: Bind())
+    monkeypatch.setattr(
+        module,
+        "_drop_unique_constraint",
+        lambda *args: calls.append(("drop", args)),
+    )
+    monkeypatch.setattr(
+        module,
+        "_create_unique_constraint",
+        lambda *args: calls.append(("create", args)),
+    )
+
+    with pytest.raises(RuntimeError, match="Cannot safely downgrade SEC XBRL packet row period uniqueness"):
+        module.downgrade()
+
+    assert [name for name, _ in calls] == ["execute"]

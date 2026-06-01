@@ -12067,6 +12067,16 @@ test('Layer 3 workbench inspects SEC XBRL operator-review workflow status throug
   await expect(panel).toContainText('open_operator_review_workflow');
   await expect(panel).toContainText('raw_values_exposed: false');
   await expect(panel).toContainText('rendered UI enabled by backend: false');
+  await expect(page.locator('#sec-xbrl-operator-review-decision-workflow-id')).toHaveValue(
+    'sec-xbrl-operator-review-workflow-rendered-proof',
+  );
+  await expect(page.locator('#sec-xbrl-operator-review-decision-workflow-basis-hash')).toHaveValue('c'.repeat(64));
+  await expect(page.locator('#sec-xbrl-operator-review-decision-submit')).toBeEnabled();
+  await page.locator('#sec-xbrl-operator-review-decision-workflow-id').fill('');
+  await page.locator('#sec-xbrl-operator-review-decision-workflow-basis-hash').fill('');
+  await expect(page.locator('#sec-xbrl-operator-review-decision-workflow-id')).toHaveValue('');
+  await expect(page.locator('#sec-xbrl-operator-review-decision-workflow-basis-hash')).toHaveValue('');
+  await expect(page.locator('#sec-xbrl-operator-review-decision-submit')).toBeDisabled();
 
   expectOnlyPayloadKeys(workflowStatusPayload, [
     'client_request_id',
@@ -12268,6 +12278,12 @@ test('Layer 3 workbench submits and inspects SEC XBRL operator-review decision t
 
   await page.locator('#sec-xbrl-operator-review-decision-workflow-id').fill(workflowId);
   await page.locator('#sec-xbrl-operator-review-decision-workflow-basis-hash').fill(workflowBasisHash);
+  await page.locator('#sec-xbrl-operator-review-decision-review-decision').selectOption('changes_requested');
+  await expect(page.locator('#sec-xbrl-operator-review-decision-reason-code')).toHaveValue('needs_packet_revision');
+  await page.locator('#sec-xbrl-operator-review-decision-reason-code').selectOption('ready_for_next_freeze');
+  await expect(page.locator('#sec-xbrl-operator-review-decision-reason-code')).toHaveValue('needs_packet_revision');
+  await page.locator('#sec-xbrl-operator-review-decision-review-decision').selectOption('approved');
+  await expect(page.locator('#sec-xbrl-operator-review-decision-reason-code')).toHaveValue('ready_for_next_freeze');
   await page.locator('#sec-xbrl-operator-review-decision-notes').fill(boundedNote);
   await expect(submitButton).toBeEnabled();
   await submitButton.click();

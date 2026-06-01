@@ -56,11 +56,34 @@ def _create_unique_constraint(table_name: str, constraint_name: str, columns: li
         batch_op.create_unique_constraint(constraint_name, columns)
 
 
+def _old_constraint_would_conflict() -> bool:
+    if not table_exists(TABLE_NAME):
+        return False
+    result = op.get_bind().execute(
+        sa.text(
+            """
+            SELECT 1
+            FROM l3_sec_xbrl_statement_packet_row
+            GROUP BY sec_xbrl_statement_packet_statement_id, statement_row_index
+            HAVING COUNT(*) > 1
+            LIMIT 1
+            """
+        )
+    )
+    return result.first() is not None
+
+
 def upgrade() -> None:
     _drop_unique_constraint(TABLE_NAME, OLD_CONSTRAINT)
     _create_unique_constraint(TABLE_NAME, NEW_CONSTRAINT, NEW_COLUMNS)
 
 
 def downgrade() -> None:
+    if _old_constraint_would_conflict():
+        raise RuntimeError(
+            "Cannot safely downgrade SEC XBRL packet row period uniqueness: current rows contain "
+            "multiple periods for the same statement and row index. Preserve the upgraded constraint "
+            "or reconcile duplicate old-key rows before recreating the old uniqueness constraint."
+        )
     _drop_unique_constraint(TABLE_NAME, NEW_CONSTRAINT)
     _create_unique_constraint(TABLE_NAME, OLD_CONSTRAINT, OLD_COLUMNS)

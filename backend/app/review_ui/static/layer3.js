@@ -834,6 +834,10 @@ const State = {
         decisionReasonCode: 'ready_for_next_freeze',
         decisionNotes: '',
     },
+    secXbrlOperatorReviewDecisionSubmitAuthorityTouched: {
+        workflowId: false,
+        workflowBasisHash: false,
+    },
     secXbrlOperatorReviewDecisionStatus: null,
     secXbrlOperatorReviewDecisionStatusError: null,
     secXbrlOperatorReviewDecisionStatusPending: false,
@@ -9064,6 +9068,46 @@ function formInputValue(input, ...fallbacks) {
     return '';
 }
 
+function formInputValueWithEmptyFallback(input, preserveEmptyInput, ...fallbacks) {
+    if (input) {
+        const inputValue = input.value.trim();
+        if (inputValue || preserveEmptyInput) {
+            return inputValue;
+        }
+    }
+    for (const fallback of fallbacks) {
+        if (fallback !== undefined && fallback !== null && String(fallback).trim()) {
+            return String(fallback).trim();
+        }
+    }
+    return '';
+}
+
+const SEC_XBRL_OPERATOR_REVIEW_DECISION_REASON_CODES = {
+    approved: ['ready_for_next_freeze'],
+    changes_requested: ['needs_packet_revision', 'authority_gap', 'redaction_gap'],
+    rejected: ['authority_gap', 'redaction_gap', 'operator_blocked'],
+    blocked: ['operator_blocked', 'authority_gap', 'redaction_gap'],
+};
+
+function secXbrlOperatorReviewDecisionDefaultReason(reviewDecision) {
+    return SEC_XBRL_OPERATOR_REVIEW_DECISION_REASON_CODES[reviewDecision]?.[0] || '';
+}
+
+function secXbrlOperatorReviewDecisionReasonAllowed(reviewDecision, reasonCode) {
+    return Boolean(
+        reasonCode
+        && SEC_XBRL_OPERATOR_REVIEW_DECISION_REASON_CODES[reviewDecision]?.includes(reasonCode)
+    );
+}
+
+function normalizedSecXbrlOperatorReviewDecisionReason(reviewDecision, reasonCode) {
+    if (secXbrlOperatorReviewDecisionReasonAllowed(reviewDecision, reasonCode)) {
+        return reasonCode;
+    }
+    return secXbrlOperatorReviewDecisionDefaultReason(reviewDecision);
+}
+
 function secXbrlOperatorReviewDecisionSubmitInputValues() {
     const stored = State.secXbrlOperatorReviewDecisionSubmitInput;
     const workflowStatus = State.secXbrlOperatorReviewWorkflowStatus || {};
@@ -9072,19 +9116,30 @@ function secXbrlOperatorReviewDecisionSubmitInputValues() {
     const reviewDecisionInput = document.getElementById('sec-xbrl-operator-review-decision-review-decision');
     const reasonInput = document.getElementById('sec-xbrl-operator-review-decision-reason-code');
     const notesInput = document.getElementById('sec-xbrl-operator-review-decision-notes');
+    const reviewDecision = formInputValue(reviewDecisionInput, stored.reviewDecision, 'approved');
+    const decisionReasonCode = normalizedSecXbrlOperatorReviewDecisionReason(
+        reviewDecision,
+        formInputValue(
+            reasonInput,
+            stored.decisionReasonCode,
+            secXbrlOperatorReviewDecisionDefaultReason(reviewDecision),
+        ),
+    );
     return {
-        workflowId: formInputValue(
+        workflowId: formInputValueWithEmptyFallback(
             workflowIdInput,
+            State.secXbrlOperatorReviewDecisionSubmitAuthorityTouched.workflowId,
             stored.workflowId,
             workflowStatus.sec_xbrl_operator_review_workflow_id,
         ),
-        workflowBasisHash: formInputValue(
+        workflowBasisHash: formInputValueWithEmptyFallback(
             workflowBasisHashInput,
+            State.secXbrlOperatorReviewDecisionSubmitAuthorityTouched.workflowBasisHash,
             stored.workflowBasisHash,
             workflowStatus.workflow_basis_hash,
         ),
-        reviewDecision: formInputValue(reviewDecisionInput, stored.reviewDecision, 'approved'),
-        decisionReasonCode: formInputValue(reasonInput, stored.decisionReasonCode, 'ready_for_next_freeze'),
+        reviewDecision,
+        decisionReasonCode,
         decisionNotes: formInputValue(notesInput, stored.decisionNotes),
     };
 }
@@ -11087,6 +11142,7 @@ function canSubmitSecXbrlOperatorReviewDecision() {
         (values.workflowId || values.workflowBasisHash)
         && values.reviewDecision
         && values.decisionReasonCode
+        && secXbrlOperatorReviewDecisionReasonAllowed(values.reviewDecision, values.decisionReasonCode)
         && (values.reviewDecision === 'approved' || values.decisionNotes)
         && !State.secXbrlOperatorReviewDecisionSubmitPending
     );
@@ -11106,6 +11162,22 @@ function clearSecXbrlOperatorReviewDecisionNotesInput() {
         notesInput.value = '';
     }
     State.secXbrlOperatorReviewDecisionSubmitInput.decisionNotes = '';
+}
+
+function markSecXbrlOperatorReviewDecisionAuthorityInputTouched(inputId) {
+    if (inputId === 'sec-xbrl-operator-review-decision-workflow-id') {
+        State.secXbrlOperatorReviewDecisionSubmitAuthorityTouched.workflowId = true;
+    }
+    if (inputId === 'sec-xbrl-operator-review-decision-workflow-basis-hash') {
+        State.secXbrlOperatorReviewDecisionSubmitAuthorityTouched.workflowBasisHash = true;
+    }
+}
+
+function syncSecXbrlOperatorReviewDecisionReasonInput(values) {
+    const reasonInput = document.getElementById('sec-xbrl-operator-review-decision-reason-code');
+    if (reasonInput && reasonInput.value !== values.decisionReasonCode) {
+        reasonInput.value = values.decisionReasonCode;
+    }
 }
 
 function canStartCandidateBFullCorpusOperatorWorkflowRun(contract = candidateBDefaultPromotionReadinessContract()) {
@@ -27636,14 +27708,17 @@ elements.secXbrlOperatorReviewDecisionSubmitPanel.addEventListener('submit', (ev
 });
 elements.secXbrlOperatorReviewDecisionSubmitPanel.addEventListener('input', (event) => {
     if (event.target?.id?.startsWith('sec-xbrl-operator-review-decision-')) {
+        markSecXbrlOperatorReviewDecisionAuthorityInputTouched(event.target.id);
         const hadError = Boolean(
             State.secXbrlOperatorReviewDecisionSubmitError
             || State.secXbrlOperatorReviewDecisionStatusError,
         );
-        State.secXbrlOperatorReviewDecisionSubmitInput = secXbrlOperatorReviewDecisionSubmitInputValues();
+        const submitValues = secXbrlOperatorReviewDecisionSubmitInputValues();
+        State.secXbrlOperatorReviewDecisionSubmitInput = submitValues;
         State.secXbrlOperatorReviewDecisionStatusInput = secXbrlOperatorReviewDecisionStatusInputValues();
         State.secXbrlOperatorReviewDecisionSubmitError = null;
         State.secXbrlOperatorReviewDecisionStatusError = null;
+        syncSecXbrlOperatorReviewDecisionReasonInput(submitValues);
         if (hadError) {
             renderSecXbrlOperatorReviewDecisionSubmitPanel();
         } else {
@@ -27653,14 +27728,17 @@ elements.secXbrlOperatorReviewDecisionSubmitPanel.addEventListener('input', (eve
 });
 elements.secXbrlOperatorReviewDecisionSubmitPanel.addEventListener('change', (event) => {
     if (event.target?.id?.startsWith('sec-xbrl-operator-review-decision-')) {
+        markSecXbrlOperatorReviewDecisionAuthorityInputTouched(event.target.id);
         const hadError = Boolean(
             State.secXbrlOperatorReviewDecisionSubmitError
             || State.secXbrlOperatorReviewDecisionStatusError,
         );
-        State.secXbrlOperatorReviewDecisionSubmitInput = secXbrlOperatorReviewDecisionSubmitInputValues();
+        const submitValues = secXbrlOperatorReviewDecisionSubmitInputValues();
+        State.secXbrlOperatorReviewDecisionSubmitInput = submitValues;
         State.secXbrlOperatorReviewDecisionStatusInput = secXbrlOperatorReviewDecisionStatusInputValues();
         State.secXbrlOperatorReviewDecisionSubmitError = null;
         State.secXbrlOperatorReviewDecisionStatusError = null;
+        syncSecXbrlOperatorReviewDecisionReasonInput(submitValues);
         if (hadError) {
             renderSecXbrlOperatorReviewDecisionSubmitPanel();
         } else {
