@@ -98,7 +98,7 @@
         "required_real_filing_count": 30,
         "required_supported_record_count": 30,
         "resolved_fact_count": 52558,
-        "source_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+        "source_report": "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json",
         "supported_record_count": 30,
         "unexpected_blocked_or_degraded_count": 0
       },
@@ -150,7 +150,7 @@
   "source_reports": {
     "default_on_gate": "diagnostics/assessment/sec-xbrl-default-on-gate-report.json",
     "product_path": "diagnostics/assessment/sec-xbrl-product-path-corpus-validation-report.json",
-    "real_product_runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json"
+    "real_product_runner": "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json"
   },
   "summary": {
     "focused_product_path_fake_sec_client_used": true,

@@ -10243,6 +10243,34 @@ claim.
 Next exact posture after restatement:
 `resolve_sec_xbrl_real_corpus_runner_report_evidence_gap_before_runtime_design`.
 
+## SEC XBRL Real-Corpus Evidence Reference Reconciliation
+
+Milestone: `sec_xbrl_real_corpus_evidence_reference_reconciliation_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1315-real-corpus-evidence-reference-reconciliation.md`.
+
+Status: branch-local Tier-1 diagnostic/report/docs reconciliation.
+
+Scope: align committed SEC XBRL report `source_reports` references with the
+#2020 authority decision. The historical broad real-corpus runner report remains
+archived at
+`archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json`;
+current reports now reference that archive path instead of the removed
+diagnostics path. The default-on restatement still blocks runtime design because
+the broad live-matrix report is historical and not reproducible offline from
+available inputs.
+
+Non-goals: no runtime default-on behavior, config default change, value-reveal
+default enablement, live SEC network, source acquisition, Arelle invocation,
+schema, `models.py`, Alembic migration, durable persistence, backend API/UI
+change, export/delivery, operator-authentication claim, production-readiness
+claim, cross-company comparability claim, or final financial-statement semantics
+claim.
+
+Next exact posture after reconciliation:
+`sec_xbrl_broad_real_corpus_product_runner_current_authority_renewal_v1`.
+
 ## SEC XBRL Rendered Value UI Proof
 
 Milestone: `sec_xbrl_rendered_controlled_value_reveal_ui_proof_v1`.
