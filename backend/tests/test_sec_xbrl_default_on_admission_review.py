@@ -49,7 +49,7 @@ def test_sec_xbrl_default_on_admission_review_is_superseded_after_runtime_defaul
     assert report["decision"] == "admission_review_superseded_by_default_on_runtime"
     assert report["ready_for_default_on_runtime_slice"] is False
     assert report["next_slice"] == (
-        "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation"
+        "sec_xbrl_default_on_nonlocal_production_readiness_design_v1"
     )
     assert report["blocking_reasons"] == []
     assert report["non_goals_preserved"]["runtime_default_enabled_by_follow_on_runtime_slice"] is True

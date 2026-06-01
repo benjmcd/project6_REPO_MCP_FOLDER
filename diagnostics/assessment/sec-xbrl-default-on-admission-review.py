@@ -9,6 +9,7 @@ from typing import Any, Mapping
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json")
 DEFAULT_GATE_REPORT = Path("diagnostics/assessment/sec-xbrl-default-on-gate-report.json")
+NEXT_AFTER_DEFAULT_ON_RUNTIME = "sec_xbrl_default_on_nonlocal_production_readiness_design_v1"
 
 REQUIRED_ROLLBACK_SIGNALS = {
     "missing_sidecar": "arelle_sidecar_receipt_required",
@@ -222,7 +223,7 @@ def build_report(*, gate_report_path: Path, source_root: Path) -> dict[str, Any]
             "rag_vector_model_provider_auth_behavior_added": False,
         },
         "next_slice": (
-            "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation"
+            NEXT_AFTER_DEFAULT_ON_RUNTIME
             if superseded
             else
             "sec_edgar_arelle_fact_authority_default_on_runtime_v1"

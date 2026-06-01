@@ -21,6 +21,7 @@ DEFAULT_RUNTIME_REPORT = Path("diagnostics/assessment/sec-xbrl-default-on-runtim
 DEFAULT_ADMISSION_REVIEW_REPORT = Path(
     "diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json"
 )
+NEXT_AFTER_DEFAULT_ON_RUNTIME = "sec_xbrl_default_on_nonlocal_production_readiness_design_v1"
 
 FEATURE_FLAG_DISABLED_REASON = "sec_edgar_arelle_value_reveal_feature_flag_disabled"
 NEXT_SLICE = "sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1"
@@ -309,7 +310,7 @@ def build_report(
             "admission_review": _repo_display_path(admission_review_report_path),
         },
         "next_slice": (
-            "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation"
+            NEXT_AFTER_DEFAULT_ON_RUNTIME
             if superseded
             else NEXT_SLICE
             if selected
