@@ -68,6 +68,8 @@ L3_PASS_RUN_STATUS_VALUES = (
     L3_PASS_RUN_STATUS_COMPLETED_WITH_WARNINGS,
     L3_PASS_RUN_STATUS_FAILED,
 )
+L3_SEC_XBRL_PROJECTION_REDACTION_POLICY = "redacted_no_values"
+L3_SEC_XBRL_PROJECTION_STATUS_MATERIALIZED = "materialized"
 
 
 class TimestampMixin:
@@ -920,6 +922,98 @@ class L3MaterialSnapshot(Base):
 
     session: Mapped[L3Session] = relationship(back_populates="material_snapshots")
     descriptor: Mapped[L3Descriptor] = relationship(back_populates="material_snapshots")
+
+
+class L3SecXbrlProjectionSet(Base):
+    __tablename__ = "l3_sec_xbrl_projection_set"
+    __table_args__ = (
+        UniqueConstraint("client_request_id", name="uq_l3_sec_xbrl_projection_set_client_request"),
+        UniqueConstraint("projection_basis_hash", name="uq_l3_sec_xbrl_projection_set_basis_hash"),
+        CheckConstraint(
+            f"redaction_policy = '{L3_SEC_XBRL_PROJECTION_REDACTION_POLICY}'",
+            name="ck_l3_sec_xbrl_projection_set_redaction_policy",
+        ),
+        CheckConstraint(
+            f"status = '{L3_SEC_XBRL_PROJECTION_STATUS_MATERIALIZED}'",
+            name="ck_l3_sec_xbrl_projection_set_status",
+        ),
+        Index("ix_l3_sec_xbrl_projection_set_dataset_version", "dataset_version_id"),
+        Index("ix_l3_sec_xbrl_projection_set_source_report", "source_report_hash"),
+    )
+
+    sec_xbrl_projection_set_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    projection_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    projection_schema_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    source_report_schema_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    source_report_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    dataset_version_id: Mapped[str | None] = mapped_column(String(36))
+    sidecar_receipt_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    value_store_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    sector_family_presence_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    period_refs_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    projection_summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    redaction_policy: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default=L3_SEC_XBRL_PROJECTION_REDACTION_POLICY,
+    )
+    status: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default=L3_SEC_XBRL_PROJECTION_STATUS_MATERIALIZED,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    facts: Mapped[list["L3SecXbrlProjectionFact"]] = relationship(
+        back_populates="projection_set",
+        cascade="all, delete-orphan",
+    )
+
+
+class L3SecXbrlProjectionFact(Base):
+    __tablename__ = "l3_sec_xbrl_projection_fact"
+    __table_args__ = (
+        UniqueConstraint(
+            "sec_xbrl_projection_set_id",
+            "period_ref",
+            "statement",
+            "statement_row_index",
+            name="uq_l3_sec_xbrl_projection_fact_statement_row",
+        ),
+        Index("ix_l3_sec_xbrl_projection_fact_set", "sec_xbrl_projection_set_id"),
+        Index("ix_l3_sec_xbrl_projection_fact_canonical", "canonical_id"),
+        Index("ix_l3_sec_xbrl_projection_fact_statement", "statement"),
+    )
+
+    sec_xbrl_projection_fact_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    sec_xbrl_projection_set_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_sec_xbrl_projection_set.sec_xbrl_projection_set_id"),
+        nullable=False,
+    )
+    period_ref: Mapped[str] = mapped_column(String(64), nullable=False)
+    period_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    statement: Mapped[str] = mapped_column(String(32), nullable=False)
+    statement_row_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    canonical_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    basis: Mapped[str] = mapped_column(String(64), nullable=False)
+    requested_basis: Mapped[str] = mapped_column(String(64), nullable=False)
+    family: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_qname: Mapped[str | None] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(64), nullable=False)
+    oracle_confirmed: Mapped[str] = mapped_column(String(32), nullable=False)
+    mapping_method: Mapped[str | None] = mapped_column(String(128))
+    mapping_confidence: Mapped[str | None] = mapped_column(String(128))
+    unit_class: Mapped[str | None] = mapped_column(String(64))
+    provenance_complete: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    value_redacted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    resolved_fact_provenance_present: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    sidecar_receipt_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    value_store_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    derived_from_concepts_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+
+    projection_set: Mapped[L3SecXbrlProjectionSet] = relationship(back_populates="facts")
 
 
 class L3TypingRecord(Base, TimestampMixin):

@@ -9704,6 +9704,22 @@ Implementation proof requirements: exact Tier-2 surfaces, focused model/service 
 
 Next exact posture: `sec_xbrl_projection_persistence_schema_materializer_v1_tier2_risk_assessed_implementation`.
 
+## SEC XBRL Projection Persistence Implementation
+
+Milestone: `sec_xbrl_projection_persistence_schema_materializer_v1`.
+
+Implementation doc: `next_milestone_plans/Layer3_planning_docs/1287-projection-persist-impl.md`.
+
+Status: `tier2_risk_assessed_schema_materializer_implemented`. This slice lands the selected first implementation from `1286-projection-persistence.md`: additive redacted projection persistence schema plus a deterministic materializer. The Tier-2 surfaces are `backend/app/models/models.py`, `backend/app/models/__init__.py`, Alembic migration `backend/alembic/versions/0038_layer3_sec_xbrl_projection_persistence.py`, and service `backend/app/services/layer3_sec_xbrl_projection_persistence.py`.
+
+Focused proof: `backend/tests/test_sec_xbrl_projection_persistence.py` covers metadata registration, migration declaration, idempotent replay, empty projection fail-closed behavior, raw value and raw resolved-fact authority rejection, raw issuer identity/path/date/SEC URL rejection, and no partial rows after late invalid input. Latest branch-local focused result: `12 passed`.
+
+Containment: no API/UI/operator workflow, source acquisition, live SEC network, Arelle invocation, value reveal, persisted raw values, raw issuer identity, raw accessions, raw period dates, raw resolved fact authorities, SEC URLs, local paths, persisted statement packet tables, default-on behavior, production-readiness claim, or final financial-statement semantics claim.
+
+Rollback/containment: the migration downgrade drops only `l3_sec_xbrl_projection_fact` and `l3_sec_xbrl_projection_set` plus their indexes; the materializer writes in one transaction and rolls back invalid input without admitting partial rows.
+
+Next exact posture after merge and current-main verification: `sec_xbrl_persisted_statement_packet_design_v1_after_projection_persistence`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
