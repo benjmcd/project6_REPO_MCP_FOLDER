@@ -9718,7 +9718,21 @@ Containment: no API/UI/operator workflow, source acquisition, live SEC network, 
 
 Rollback/containment: the migration downgrade drops only `l3_sec_xbrl_projection_fact` and `l3_sec_xbrl_projection_set` plus their indexes; the materializer writes in one transaction and rolls back invalid input without admitting partial rows.
 
-Next exact posture after merge and current-main verification: `sec_xbrl_persisted_statement_packet_design_v1_after_projection_persistence`.
+Post-merge current-main verification is complete. The statement-packet persistence design entry is selected below.
+
+## SEC XBRL Statement Packet Persistence Design
+
+Milestone: `sec_xbrl_persisted_statement_packet_design_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1288-statement-packet-persistence.md`.
+
+Status: `tier2_risk_assessed_design_selected`. This is a planning-only Tier-2 risk-assessed design entry after PR `#2022` landed and post-merge verification confirmed redacted projection persistence on current `main`. The selected first implementation slice is redacted statement-packet persistence schema plus deterministic materializer, with proposed additive tables `l3_sec_xbrl_statement_packet_set`, `l3_sec_xbrl_statement_packet_statement`, and `l3_sec_xbrl_statement_packet_row`.
+
+The design keeps the first statement-packet persistence slice narrow: persist an already-built redacted statement packet derived from a persisted projection set. It must not recompute values, persist raw values, raw issuer identity, raw accessions, raw period dates, raw resolved fact authorities, source acquisition, Arelle, API/UI/operator workflow, delivery/export, value reveal, default-on behavior, residual magnitudes, or production-readiness claims.
+
+Implementation proof requirements: exact Tier-2 surfaces, focused model/service tests, migration upgrade/downgrade or equivalent project-standard migration proof, empty packet fail-closed proof, raw value/identity/accession/period-date/path/SEC URL/residual-magnitude rejection, projection-set and projection-fact binding proof, idempotent replay for `client_request_id` and `packet_basis_hash`, partial-write rollback, redaction scan, JSON validation, progress checks, and `git diff --check`.
+
+Next exact posture: `sec_xbrl_statement_packet_persistence_schema_materializer_v1_tier2_risk_assessed_implementation`.
 
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
