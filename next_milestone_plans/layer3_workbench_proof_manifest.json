@@ -42375,7 +42375,13 @@
     "merged_main": "96613b00fa9034e2b17d8842b542a3e7d8d93e84",
     "post_merge_verification_main": "96613b00fa9034e2b17d8842b542a3e7d8d93e84",
     "tier_classification": "Tier 1 documentation/proof closure over already-merged Tier-2 controlled value-reveal submit surfaces; no runtime, schema, persistence, value-reveal response, default-on, or redaction-posture change",
-    "evidence_prs": [2043, 2045, 2047, 2049, 2050],
+    "evidence_prs": [
+      2043,
+      2045,
+      2047,
+      2049,
+      2050
+    ],
     "proof_terms": [
       "controlled-submit request id raw/local reference rejection is recorded as landed",
       "controlled-submit authority receipt id raw/local reference rejection is recorded as landed",
@@ -42773,7 +42779,10 @@
     "milestone": "sec_xbrl_rendered_controlled_value_reveal_ui_review_thread_remediation_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1312-rendered-value-ui-review-thread-remediation.md",
     "base_main": "da21a6b3ad54b1122056eb60419ff387d4178ee9",
-    "source_prs": [2055, 2056],
+    "source_prs": [
+      2055,
+      2056
+    ],
     "tier_classification": "Rendered UI guard hardening and governance-doc alignment over already-merged controlled value-reveal UI proof",
     "proof_terms": [
       "uppercase SHA-256 hashes are rejected before rendered authority prepare or controlled submit",
@@ -42977,5 +42986,56 @@
     "diff_check_result": "PASS: git diff --check",
     "verification_status": "branch-local full Tier-1 validation passed",
     "next_posture": "sec_xbrl_broad_real_corpus_product_runner_current_authority_renewal_v1"
+  },
+  "sec_xbrl_broad_real_corpus_authority_renewal_proof": {
+    "proof_kind": "sec_xbrl_broad_real_corpus_authority_renewal_proof",
+    "status": "branch_local_tier1_current_authority_renewal",
+    "milestone": "sec_xbrl_broad_real_corpus_product_runner_current_authority_renewal_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1316-broad-real-corpus-authority-renewal.md",
+    "base_main": "79b8ab2b70c461323aa905673c1cb0c26729fe3f",
+    "proof_terms": [
+      "offline redacted product-runner report import is fail-closed and requires storage-marker validation",
+      "current run performs no live SEC network action and invokes no Arelle subprocess",
+      "current-code summary and criteria are recomputed from imported per-matrix rows",
+      "downstream default-on admission restatement is ready for runtime design only, not implementation",
+      "runtime defaults, value reveal, export/delivery, schema, persistence, API/UI, source acquisition, and production-readiness claims remain unchanged"
+    ],
+    "current_authority_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+    "storage_dir_marker": "a26c56586d12f29eb1bc7708",
+    "candidate_report_marker": "c378f2f69df7d40ef3e72d25",
+    "runner_decision": "real_corpus_default_on_validated",
+    "runner_gate_verdict": "PASS",
+    "restatement_decision": "default_on_admission_restatement_ready_for_runtime_design",
+    "runtime_behavior_changed_by_proof": false,
+    "schema_models_changed_by_proof": false,
+    "migration_changed_by_proof": false,
+    "durable_persistence_changed_by_proof": false,
+    "backend_api_contract_changed_by_proof": false,
+    "rendered_ui_changed_by_proof": false,
+    "runtime_default_changed_by_proof": false,
+    "live_sec_network_run_performed_by_proof": false,
+    "arelle_subprocess_invoked_by_proof": false,
+    "source_acquisition_performed_by_proof": false,
+    "delivery_or_export_performed": false,
+    "provider_or_connector_dispatch_performed": false,
+    "raw_runtime_artifacts_added_by_proof": false,
+    "raw_values_persisted_by_proof": false,
+    "raw_identity_added_by_proof": false,
+    "raw_accessions_added_by_proof": false,
+    "local_paths_added_by_proof": false,
+    "operator_contact_added_by_proof": false,
+    "default_on_runtime_implemented_by_proof": false,
+    "production_readiness_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "verification_status": "branch-local full Tier-1 validation passed",
+    "next_posture": "sec_xbrl_default_on_runtime_design_v1",
+    "focused_test_result": "PASS: focused SEC XBRL authority-renewal suite -> 72 passed",
+    "full_sec_xbrl_suite_result": "PASS: full backend/tests/test_sec_xbrl*.py suite -> 313 passed, 4 warnings",
+    "target_selection_validate_result": "PASS: target selection frozen",
+    "progress_check_result": "PASS: progress check",
+    "py_compile_result": "PASS: touched SEC XBRL diagnostic/test Python files",
+    "json_validation_result": "PASS: manifests plus committed SEC XBRL reports parsed with utf-8-sig",
+    "source_report_reference_scan_result": "PASS: 56 checked; 0 missing",
+    "redaction_residual_scan_result": "PASS: 55 SEC XBRL JSON files scanned; 0 hits"
   }
 }

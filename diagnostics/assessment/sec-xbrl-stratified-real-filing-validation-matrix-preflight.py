@@ -22,7 +22,7 @@ DEFAULT_DEFAULT_POSTURE_REPORT = Path(
     "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json"
 )
 DEFAULT_REAL_PRODUCT_RUNNER_REPORT = Path(
-    "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json"
+    "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json"
 )
 
 NEXT_MATRIX_SLICE = "sec_edgar_stratified_real_filing_validation_matrix_v1"

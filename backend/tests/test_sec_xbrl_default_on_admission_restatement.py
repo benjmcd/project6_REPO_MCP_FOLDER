@@ -128,6 +128,28 @@ def _write_valid_reports(root: Path) -> None:
             "gate_verdict": "PASS",
             "fake_sec_client_used": False,
             "live_sec_network_used": True,
+            "current_run_live_sec_network_used": False,
+            "offline_redacted_product_report_import": {
+                "state": "passed",
+                "used": True,
+                "blocked_reasons": [],
+                "evidence": {
+                    "inherited_live_sec_network_used": True,
+                    "current_run_live_sec_network_used": False,
+                    "current_run_arelle_subprocess_invoked": False,
+                    "storage_marker_matches_supplied_storage": True,
+                    "summary_mismatches": [],
+                    "redaction_scan": {
+                        "passed": True,
+                        "raw_accession_found": False,
+                        "raw_cik_found": False,
+                        "raw_sec_url_found": False,
+                        "raw_local_path_found": False,
+                        "raw_operator_contact_found": False,
+                        "raw_value_magnitude_found": False,
+                    },
+                },
+            },
             "source_reports": {},
             "summary": {
                 "real_filing_count": 32,

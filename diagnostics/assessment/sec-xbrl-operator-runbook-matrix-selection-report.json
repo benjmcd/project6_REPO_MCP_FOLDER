@@ -203,7 +203,7 @@
   "source_reports": {
     "broader_reliability": "diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json",
     "default_posture": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json",
-    "real_product_runner": "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json",
+    "real_product_runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
     "value_reveal_live_proof": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json"
   },
   "target": "sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1"

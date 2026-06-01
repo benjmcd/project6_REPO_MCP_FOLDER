@@ -27,7 +27,7 @@
       "blocked_reason": null,
       "criterion": "live_real_product_runner_proves_product_path",
       "evidence": {
-        "companyfacts_value_match_rate": 0.99,
+        "companyfacts_value_match_rate": 0.9897,
         "decision": "real_corpus_default_on_validated",
         "gate_verdict": "PASS",
         "independent_inline_fact_count": 52558,
@@ -35,7 +35,7 @@
         "operator_surface_values_exposed": false,
         "real_filing_count": 32,
         "resolved_fact_count": 52558,
-        "source_report": "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json",
+        "source_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
         "supported_record_count": 30
       },
       "state": "passed"
@@ -139,7 +139,7 @@
   "source_reports": {
     "admission_review": "diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json",
     "broader_reliability": "diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json",
-    "real_product_runner": "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json",
+    "real_product_runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
     "runtime_default": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json",
     "value_reveal_live_proof": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json"
   },
