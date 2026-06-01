@@ -15,6 +15,8 @@ ADMISSION_RESTATEMENT_REPORT = (
 )
 DEFAULT_ON_FOCUSED_TESTS = (
     "test_layer3_deployment_profile_local_defaults_enable_arelle_cutover_without_value_reveal",
+    "test_layer3_deployment_profile_nonlocal_requires_explicit_arelle_cutover_authorization",
+    "test_layer3_api_default_arelle_cutover_does_not_invoke_arelle_in_corpus_validation_without_corpus_flag",
     "test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_from_arelle_sidecar_by_default",
     "test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_by_default",
     "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_default_on_without_sidecar",
@@ -47,11 +49,14 @@ def build_report() -> dict[str, Any]:
     sources = {
         "config": _read("backend/app/core/config.py"),
         "bridge": _read("backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.py"),
+        "corpus_validation": _read("backend/app/services/layer3_sec_edgar_real_company_corpus_validation.py"),
+        "sidecar": _read("backend/app/services/layer3_sec_xbrl_sidecar.py"),
         "classification": _read(
             "backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.py"
         ),
         "api": _read("backend/app/api/layer3.py"),
         "api_tests": _read("backend/tests/test_layer3_api.py"),
+        "sidecar_tests": _read("backend/tests/test_sec_xbrl_sidecar.py"),
         "admission": _load_json("diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json"),
         "admission_restatement": _load_json(ADMISSION_RESTATEMENT_REPORT),
         "gate": _load_json("diagnostics/assessment/sec-xbrl-default-on-gate-report.json"),
@@ -149,6 +154,74 @@ def build_report() -> dict[str, Any]:
             "default_on_runtime_value_reveal_default_regressed",
         ),
         _criterion(
+            "internal_value_store_remains_explicit_opt_in",
+            _contains(
+                sources["config"],
+                'layer3_sec_edgar_arelle_internal_value_store_enabled: bool = Field(\n        default=False,',
+            )
+            and "internal_value_store_enabled = _arelle_internal_value_store_enabled()" in sources["sidecar"]
+            and "test_sec_xbrl_sidecar_internal_value_store_requires_explicit_gate" in sources["sidecar_tests"],
+            {
+                "config_file": "backend/app/core/config.py",
+                "sidecar_file": "backend/app/services/layer3_sec_xbrl_sidecar.py",
+                "internal_value_store_default_enabled": False,
+                "raw_internal_value_store_created_by_default": False,
+            },
+            "default_on_runtime_internal_value_store_default_regressed",
+        ),
+        _criterion(
+            "corpus_validation_arelle_execution_remains_explicit_opt_in",
+            _contains(
+                sources["config"],
+                'layer3_sec_edgar_arelle_corpus_validation_enabled: bool = Field(\n        default=False,',
+            )
+            and "layer3_sec_edgar_arelle_corpus_validation_enabled" in sources["corpus_validation"]
+            and "use_regex_fact_authority=sidecar is None" in sources["corpus_validation"]
+            and "test_layer3_api_default_arelle_cutover_does_not_invoke_arelle_in_corpus_validation_without_corpus_flag"
+            in sources["api_tests"],
+            {
+                "config_file": "backend/app/core/config.py",
+                "corpus_validation_file": (
+                    "backend/app/services/layer3_sec_edgar_real_company_corpus_validation.py"
+                ),
+                "corpus_validation_arelle_default_enabled": False,
+                "corpus_validation_uses_regex_bridge_path_without_sidecar": True,
+                "synchronous_arelle_corpus_validation_default_on": False,
+            },
+            "default_on_runtime_corpus_validation_arelle_default_regressed",
+        ),
+        _criterion(
+            "nonlocal_default_on_requires_explicit_authorization",
+            _contains(
+                sources["config"],
+                'layer3_sec_edgar_arelle_fact_authority_nonlocal_authorized: bool = Field(\n        default=False,',
+            )
+            and "LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED=true is required"
+            in sources["config"]
+            and "test_layer3_deployment_profile_nonlocal_requires_explicit_arelle_cutover_authorization"
+            in sources["api_tests"],
+            {
+                "config_file": "backend/app/core/config.py",
+                "nonlocal_default_on_requires_explicit_authorization": True,
+                "production_or_nonlocal_authorization_claimed": False,
+            },
+            "default_on_runtime_nonlocal_authorization_missing",
+        ),
+        _criterion(
+            "sidecar_bridge_materializes_redacted_authority_without_internal_value_store",
+            "read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(sidecar_receipt)"
+            not in sources["bridge"]
+            and '"raw_fact_values_materialized"] is False' in sources["api_tests"]
+            and '"internal_effective_values_materialized"] is False' in sources["api_tests"]
+            and '"value_redacted": True' in sources["bridge"],
+            {
+                "bridge_file": "backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.py",
+                "raw_fact_values_materialized_by_default": False,
+                "redacted_hash_length_authority_used": True,
+            },
+            "default_on_runtime_sidecar_bridge_raw_value_store_regressed",
+        ),
+        _criterion(
             "standing_non_admissions_preserved",
             "financial_statement_semantics_claimed" in sources["api_tests"]
             and "cross_company_comparability_admitted" in sources["api_tests"],
@@ -176,7 +249,7 @@ def build_report() -> dict[str, Any]:
         ),
         "headline": (
             "Arelle resolved-fact authority is now the default bridge input, with explicit persisted sidecar "
-            "requirements and a reversible regex rollback flag."
+            "requirements, separate opt-in raw value/corpus-validation gates, and a reversible regex rollback flag."
             if default_enabled and not blockers
             else "Default-on Arelle runtime is disabled by governance remediation; the Arelle bridge remains flag-gated and reversible."
         ),
@@ -224,10 +297,15 @@ def build_report() -> dict[str, Any]:
             "persisted_sidecar_required": True,
             "regex_fallback_while_default_on": False if default_enabled else None,
             "synchronous_arelle_in_bridge": False,
+            "synchronous_arelle_in_corpus_validation_default_enabled": False,
+            "internal_value_store_default_enabled": False,
+            "raw_fact_values_materialized_by_default": False,
+            "redacted_hash_length_sidecar_authority_used": True,
             "regex_rollback_env_supported": True,
             "operator_value_reveal_default_enabled": False,
             "controlled_value_reveal_submit_default_enabled": False,
             "server_deployment_policy_owned": True,
+            "nonlocal_default_on_requires_explicit_authorization": True,
             "api_or_operator_request_toggle_admitted": False,
             "rendered_ui_or_browser_toggle_admitted": False,
             "production_or_nonlocal_authorization_claimed": False,
@@ -240,6 +318,8 @@ def build_report() -> dict[str, Any]:
             "rag_vector_model_provider_auth_behavior_added": False,
             "source_acquisition_performed": False,
             "arelle_subprocess_invoked_by_runtime_switch": False,
+            "arelle_subprocess_invoked_by_corpus_validation_default": False,
+            "raw_internal_value_store_default_on_claimed": False,
             "delivery_export_enabled": False,
             "production_readiness_claimed": False,
             "value_reveal_default_on_claimed": False,

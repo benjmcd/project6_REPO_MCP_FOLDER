@@ -198,6 +198,9 @@ def test_layer3_deployment_profile_local_defaults_enable_arelle_cutover_without_
     assert profile.cors_allow_credentials_enabled is True
     assert profile.storage_mount_enabled is True
     assert profile.layer3_sec_edgar_arelle_fact_authority_cutover_enabled is True
+    assert profile.layer3_sec_edgar_arelle_internal_value_store_enabled is False
+    assert profile.layer3_sec_edgar_arelle_corpus_validation_enabled is False
+    assert profile.layer3_sec_edgar_arelle_fact_authority_nonlocal_authorized is False
     assert profile.layer3_sec_edgar_arelle_value_reveal_enabled is False
     assert profile.layer3_sec_xbrl_controlled_value_reveal_submit_enabled is False
 
@@ -213,6 +216,7 @@ def test_layer3_deployment_profile_nonlocal_accepts_proxy_owned_guardrail() -> N
         ALLOWED_ORIGINS="https://review.example.com, https://ops.example.com",
         AUTH_OWNER="proxy",
         TRUSTED_PROXY_MODE="true",
+        LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED="true",
     )
 
     assert profile.allowed_origin_list == ["https://review.example.com", "https://ops.example.com"]
@@ -220,6 +224,16 @@ def test_layer3_deployment_profile_nonlocal_accepts_proxy_owned_guardrail() -> N
     assert profile.auth_owner == "proxy"
     assert profile.proxy_identity_header == "X-Forwarded-User"
     assert profile.storage_mount_enabled is False
+
+
+def test_layer3_deployment_profile_nonlocal_requires_explicit_arelle_cutover_authorization() -> None:
+    with pytest.raises(ValueError, match="LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED=true"):
+        _settings_for_test(
+            DEPLOYMENT_MODE="nonlocal",
+            ALLOWED_ORIGINS="https://review.example.com",
+            AUTH_OWNER="proxy",
+            TRUSTED_PROXY_MODE="true",
+        )
 
 
 def test_layer3_deployment_profile_nonlocal_main_disables_direct_storage(tmp_path) -> None:
@@ -244,6 +258,7 @@ print(json.dumps({
             "ALLOWED_ORIGINS": "https://review.example.com",
             "AUTH_OWNER": "proxy",
             "TRUSTED_PROXY_MODE": "true",
+            "LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED": "true",
         }
     )
     result = subprocess.run(
@@ -1982,6 +1997,43 @@ def test_layer3_api_validates_sec_edgar_real_company_corpus_product_path(
     assert status_response.json()["validation_receipt_hash"] == body["validation_receipt_hash"]
     assert "https://www.sec.gov" not in status_response.text
     assert str(tmp_path) not in status_response.text
+
+
+def test_layer3_api_default_arelle_cutover_does_not_invoke_arelle_in_corpus_validation_without_corpus_flag(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    assert settings.layer3_sec_edgar_arelle_fact_authority_cutover_enabled is True
+    assert settings.layer3_sec_edgar_arelle_corpus_validation_enabled is False
+
+    def _unexpected_arelle_run(*_args, **_kwargs):
+        raise AssertionError("corpus validation must not invoke Arelle without explicit corpus-validation flag")
+
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", _unexpected_arelle_run)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
+    fake_client = _FakeSecEdgarClient(_real_company_validation_fake_results())
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/validation",
+        json={
+            "client_request_id": "sec-edgar-real-company-validation-no-default-arelle",
+            "validation_mode": "sec_edgar_real_company_corpus_validation_v1",
+            "operator_decision": "validate_sec_edgar_real_company_corpus_product_path",
+            "company_matrix": ["MSFT", "STLD", "SONY", "CCJ"],
+            "operator_confirmation": True,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["validation_state"] == "sec_edgar_real_company_corpus_validation_ready"
+    assert all(
+        "arelle_resolved_fact_authority_sidecar" not in record["outputs_produced"]
+        for record in body["filing_validation_records"]
+    )
 
 
 def test_layer3_api_validates_sec_edgar_broader_issuer_form_quality_matrix(
@@ -4346,6 +4398,7 @@ def _prepare_sec_edgar_arelle_sidecar_authority(
     runner=None,
     expected_resolved_fact_count: int = 2,
     enable_runtime_cutover: bool | None = True,
+    enable_internal_value_store: bool | None = False,
 ) -> dict[str, object]:
     parser = prepared["parser"]
     fact_authority = prepared["fact_authority"]
@@ -4355,6 +4408,8 @@ def _prepare_sec_edgar_arelle_sidecar_authority(
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", runner or _ready_arelle_sidecar_runner)
     if enable_runtime_cutover is not None:
         monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", enable_runtime_cutover)
+    if enable_internal_value_store is not None:
+        monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_internal_value_store_enabled", enable_internal_value_store)
     response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
         {
             "client_request_id": f"sec-edgar-arelle-sidecar-{label}",
@@ -4387,6 +4442,7 @@ def _enable_sec_edgar_arelle_sidecar_for_corpus_validation(tmp_path, monkeypatch
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_arelle_python", lambda: sys.executable)
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", _ready_arelle_sidecar_runner)
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_corpus_validation_enabled", True)
 
 
 def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_authority(
@@ -4549,8 +4605,8 @@ def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_from_arelle
     assert body["materialization_summary"]["sidecar_resolved_fact_count"] == 2
     assert body["materialization_summary"]["regex_fact_authority_count"] == 1
     assert body["materialization_summary"]["resolved_period_unit_dimension_fields_materialized"] is True
-    assert body["materialization_summary"]["raw_fact_values_materialized"] is True
-    assert body["materialization_summary"]["internal_effective_values_materialized"] is True
+    assert body["materialization_summary"]["raw_fact_values_materialized"] is False
+    assert body["materialization_summary"]["internal_effective_values_materialized"] is False
     assert body["materialization_summary"]["operator_surface_values_exposed"] is False
     assert body["authority_hashes"]["arelle_sidecar_receipt_hash"] == sidecar["sidecar_receipt_hash"]
     assert body["authority_hashes"]["resolved_fact_inventory_hash"] == sidecar["resolved_fact_inventory_hash"]
@@ -4585,9 +4641,9 @@ def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_from_arelle
     assert "2024-01-01" in csv_text
     assert "iso4217:USD" in csv_text
     assert "srt:ProductOrServiceAxis" in csv_text
-    assert "987654321000000" in csv_text
-    assert "987654321" in csv_text
-    assert "-123456789" in csv_text
+    assert "987654321000000" not in csv_text
+    assert "987654321" not in csv_text
+    assert "-123456789" not in csv_text
     assert "arelle_effective_canonical_value_v1" in csv_text
 
 
@@ -4698,6 +4754,7 @@ def _prepare_sec_edgar_arelle_value_reveal_fixture(
         label="governed-value-reveal",
         runner=runner,
         expected_resolved_fact_count=expected_resolved_fact_count,
+        enable_internal_value_store=True,
     )
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
 
