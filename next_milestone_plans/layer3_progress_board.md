@@ -10136,7 +10136,8 @@ Milestone: `sec_xbrl_rendered_controlled_value_reveal_ui_admission_selection_v1`
 Planning doc:
 `next_milestone_plans/Layer3_planning_docs/1309-rendered-value-ui-admission-selection.md`.
 
-Status: branch-local Tier-2 risk-assessed design/admission-selection entry.
+Status: merged current-main Tier-2 risk-assessed design/admission-selection
+entry, verified after merge at `23189d47abf9d7f20e98075e29ea9f3df69683d6`.
 
 Selection: choose rendered controlled value-reveal UI as the next admissible
 implementation boundary over existing server-owned authority prepare,
