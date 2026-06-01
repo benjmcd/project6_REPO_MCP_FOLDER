@@ -12460,6 +12460,361 @@ test('Layer 3 workbench renders SEC XBRL decision submit blockers without fronte
   ]);
 });
 
+test('Layer 3 workbench prepares and submits SEC XBRL controlled value reveal through rendered control', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  let authorityPayload = null;
+  let revealPayload = null;
+  let statusRequestPath = null;
+  const authorityPayloads = [];
+  const revealPayloads = [];
+  const decisionId = 'sec-xbrl-operator-review-decision-rendered-value-proof';
+  const decisionBasisHash = 'a'.repeat(64);
+  const authorityReceiptId = 'sec-xbrl-value-reveal-authority-rendered-proof';
+  const authorityBasisHash = 'b'.repeat(64);
+  const submitReceiptId = 'sec-xbrl-controlled-value-reveal-submit-rendered-proof';
+  const submitBasisHash = 'c'.repeat(64);
+  const valueHash = 'd'.repeat(64);
+
+  await page.route('**/api/v1/layer3/sec-xbrl/value-reveal/authority/prepare', async (route) => {
+    authorityPayload = route.request().postDataJSON();
+    authorityPayloads.push(authorityPayload);
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.sec_xbrl_value_reveal_authority_receipt.v1',
+        request_id: authorityPayload.client_request_id,
+        status: 'ready',
+        sec_xbrl_value_reveal_authority_receipt_id: authorityReceiptId,
+        value_reveal_authority_receipt_ref: 'sec-xbrl-value-reveal-authority:bbbbbbbbbbbbbbbbbbbbbbbb',
+        client_request_id: authorityPayload.client_request_id,
+        authority_basis_hash: authorityBasisHash,
+        authority_mode: 'sec_xbrl_value_reveal_authority_receipt_v1',
+        authority_policy_id: 'sec_xbrl_value_reveal_authority_policy_v1',
+        redaction_policy: 'sec_xbrl_value_reveal_authority_redacted_hash_only_v1',
+        sec_xbrl_operator_review_decision_id: authorityPayload.sec_xbrl_operator_review_decision_id,
+        decision_basis_hash: authorityPayload.decision_basis_hash,
+        operator_actor_hash: 'e'.repeat(64),
+        dataset_version_id: 'forbidden-dataset-version',
+        sidecar_receipt_hash: 'forbidden-sidecar-hash',
+        value_store_hash: 'forbidden-value-store',
+        authority_summary: {
+          decision_approved: true,
+          decision_reason_ready: true,
+          value_reveal_response_returned: false,
+        },
+        negative_invariants: {
+          raw_values_exposed: false,
+          raw_identity_exposed: false,
+          raw_accessions_exposed: false,
+          local_paths_exposed: false,
+          sec_urls_exposed: false,
+          source_acquisition_performed: false,
+          arelle_invoked: false,
+          delivery_export_enabled: false,
+          runtime_default_changed: false,
+        },
+        eligible_for_explicit_value_reveal: true,
+        idempotent_replay: false,
+        next_allowed_actions: ['submit_explicit_sec_xbrl_value_reveal_from_authority_receipt'],
+        runtime_default_enabled: false,
+        value_reveal_performed: false,
+        source_acquisition_performed: false,
+        arelle_invoked: false,
+        delivery_export_enabled: false,
+        rendered_ui_enabled: false,
+        production_readiness_claimed: false,
+      }),
+    });
+  });
+  await page.route('**/api/v1/layer3/sec-xbrl/value-reveal/submit', async (route) => {
+    revealPayload = route.request().postDataJSON();
+    revealPayloads.push(revealPayload);
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.sec_xbrl_controlled_value_reveal_submit.v1',
+        request_id: revealPayload.client_request_id,
+        status: 'ready',
+        submit_mode: 'sec_xbrl_controlled_value_reveal_submit_v1',
+        submit_state: 'ready',
+        sec_xbrl_controlled_value_reveal_submit_receipt_id: submitReceiptId,
+        value_reveal_submit_receipt_ref: 'sec-xbrl-controlled-value-reveal-submit:cccccccccccccccccccccccc',
+        client_request_id: revealPayload.client_request_id,
+        submit_basis_hash: submitBasisHash,
+        sec_xbrl_value_reveal_authority_receipt_id: revealPayload.sec_xbrl_value_reveal_authority_receipt_id,
+        authority_basis_hash: revealPayload.authority_basis_hash,
+        submit_policy_id: 'sec_xbrl_controlled_value_reveal_submit_policy_v1',
+        redaction_policy: 'sec_xbrl_controlled_value_reveal_submit_hash_count_status_v1',
+        dataset_version_id: 'forbidden-dataset-version',
+        sidecar_receipt_hash: 'forbidden-sidecar-hash',
+        value_store_hash: 'forbidden-value-store',
+        revealed_fact_count: 1,
+        revealed_facts: [{
+          fact_identity_hash: 'f'.repeat(64),
+          resolved_fact_id_hash: '1'.repeat(64),
+          source_order: 1,
+          entry_document_index: 1,
+          effective_value: 'controlled-value-proof',
+          lexical_value: 'controlled-lexical-proof',
+          value_redacted: false,
+          value_hash: valueHash,
+          value_semantics: 'arelle_effective_canonical_value_v1',
+          concept: {
+            qname: 'us-gaap:Revenue',
+            local_name: 'Revenue',
+            standard: true,
+            extension: false,
+          },
+          hidden: false,
+          continued: false,
+        }],
+        value_redacted_fact_count: 0,
+        fact_inventory_hash: '2'.repeat(64),
+        value_inventory_hash: '3'.repeat(64),
+        response_inventory_hash: '4'.repeat(64),
+        residual_magnitude: 'forbidden-residual-magnitude',
+        submit_summary: {
+          authority_receipt_bound: true,
+          transient_values_returned: true,
+          audit_receipt_raw_values_persisted: false,
+          status_surface_hash_count_only: true,
+        },
+        negative_invariants: {
+          raw_values_persisted: false,
+          raw_identity_persisted: false,
+          raw_sidecar_receipt_id_persisted: false,
+          raw_accessions_persisted: false,
+          raw_period_dates_persisted: false,
+          local_paths_persisted: false,
+          operator_contact_persisted: false,
+          status_surface_replays_raw_values: false,
+          feature_flag_default_enabled: false,
+          runtime_default_changed: false,
+          source_acquisition_performed: false,
+          arelle_invoked: false,
+          delivery_export_enabled: false,
+          rendered_ui_enabled: false,
+          production_readiness_claimed: false,
+        },
+        transient_values_returned: true,
+        idempotent_replay: false,
+        status_surface_hash_count_only: true,
+        audit_receipt_raw_values_persisted: false,
+        raw_sidecar_receipt_id_persisted: false,
+        runtime_default_enabled: false,
+        source_acquisition_performed: false,
+        arelle_invoked: false,
+        delivery_export_enabled: false,
+        rendered_ui_enabled: false,
+        production_readiness_claimed: false,
+        next_allowed_actions: ['inspect_sec_xbrl_controlled_value_reveal_submit_status'],
+      }),
+    });
+  });
+  await page.route('**/api/v1/layer3/sec-xbrl/value-reveal/submit/status/**', async (route) => {
+    statusRequestPath = new URL(route.request().url()).pathname;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.sec_xbrl_controlled_value_reveal_submit_status.v1',
+        request_id: 'sec-xbrl-controlled-value-reveal-status-rendered',
+        status: 'ready',
+        submit_mode: 'sec_xbrl_controlled_value_reveal_submit_v1',
+        submit_state: 'ready',
+        sec_xbrl_controlled_value_reveal_submit_receipt_id: submitReceiptId,
+        value_reveal_submit_receipt_ref: 'sec-xbrl-controlled-value-reveal-submit:cccccccccccccccccccccccc',
+        submit_basis_hash: submitBasisHash,
+        sec_xbrl_value_reveal_authority_receipt_id: authorityReceiptId,
+        authority_basis_hash: authorityBasisHash,
+        submit_policy_id: 'sec_xbrl_controlled_value_reveal_submit_policy_v1',
+        redaction_policy: 'sec_xbrl_controlled_value_reveal_submit_hash_count_status_v1',
+        revealed_fact_count: 1,
+        revealed_facts: [{
+          effective_value: 'status-should-not-render',
+          concept: { qname: 'forbidden-status-qname' },
+        }],
+        value_redacted_fact_count: 0,
+        fact_inventory_hash: '2'.repeat(64),
+        value_inventory_hash: '3'.repeat(64),
+        response_inventory_hash: '4'.repeat(64),
+        submit_summary: {
+          status_surface_hash_count_only: true,
+          transient_values_returned: false,
+        },
+        negative_invariants: {
+          status_surface_replays_raw_values: false,
+          feature_flag_default_enabled: false,
+          runtime_default_changed: false,
+          source_acquisition_performed: false,
+          arelle_invoked: false,
+          delivery_export_enabled: false,
+          rendered_ui_enabled: false,
+          production_readiness_claimed: false,
+        },
+        status_surface_hash_count_only: true,
+        audit_receipt_raw_values_persisted: false,
+        raw_sidecar_receipt_id_persisted: false,
+        runtime_default_enabled: false,
+        source_acquisition_performed: false,
+        arelle_invoked: false,
+        delivery_export_enabled: false,
+        rendered_ui_enabled: false,
+        production_readiness_claimed: false,
+        transient_values_returned: false,
+        idempotent_replay: true,
+        next_allowed_actions: [],
+      }),
+    });
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#sec-xbrl-controlled-value-reveal-panel');
+  const prepareButton = page.locator('#sec-xbrl-value-reveal-authority-prepare-submit');
+  const revealButton = page.locator('#sec-xbrl-controlled-value-reveal-submit');
+  const statusButton = page.locator('#sec-xbrl-controlled-value-reveal-status-submit');
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-rendered-mode', 'rendered_sec_xbrl_controlled_value_reveal_ui_control');
+  await expect(panel).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(panel).toHaveAttribute('data-value-reveal-enabled', 'true');
+  await expect(panel).toHaveAttribute('data-controlled-value-reveal-only', 'true');
+  await expect(panel).toHaveAttribute('data-delivery-export-enabled', 'false');
+  await expect(panel).toHaveAttribute('data-source-acquisition-enabled', 'false');
+  await expect(panel).toHaveAttribute('data-arelle-invocation-enabled', 'false');
+  await expect(panel).toHaveAttribute('data-runtime-default-enabled', 'false');
+  await expect(panel).toHaveAttribute('data-production-readiness-claimed', 'false');
+  await expect(prepareButton).toBeDisabled();
+  await expect(revealButton).toBeDisabled();
+  await expect(statusButton).toBeDisabled();
+
+  await page.locator('#sec-xbrl-value-reveal-authority-decision-id').fill(decisionId);
+  await page.locator('#sec-xbrl-value-reveal-authority-decision-basis-hash').fill(decisionBasisHash);
+  await page.locator('#sec-xbrl-value-reveal-authority-attestation').fill('raw.attestation@example.com');
+  await expect(prepareButton).toBeEnabled();
+  await prepareButton.click();
+  await expect(panel).toContainText('sec_xbrl_value_reveal_authority_raw_attestation_not_admitted');
+  await expect(page.locator('#sec-xbrl-value-reveal-authority-attestation')).toHaveValue('');
+  await expect(panel).not.toContainText('raw.attestation@example.com');
+  expect(authorityPayloads).toHaveLength(0);
+
+  await page.locator('#sec-xbrl-value-reveal-authority-attestation').fill('bounded operator attestation proof');
+  await expect(prepareButton).toBeEnabled();
+  await prepareButton.click();
+  await expect(panel).toContainText('sec_xbrl_value_reveal_authority_ready');
+  await expect(panel).toContainText(authorityReceiptId);
+  await expect(panel).toContainText(authorityBasisHash);
+  await expect(panel).not.toContainText('bounded operator attestation proof');
+  await expect(page.locator('#sec-xbrl-controlled-value-reveal-authority-receipt-id')).toHaveValue(authorityReceiptId);
+  await expect(page.locator('#sec-xbrl-controlled-value-reveal-authority-basis-hash')).toHaveValue(authorityBasisHash);
+  expectOnlyPayloadKeys(authorityPayload, [
+    'client_request_id',
+    'authority_mode',
+    'operator_decision',
+    'sec_xbrl_operator_review_decision_id',
+    'decision_basis_hash',
+    'operator_attestation',
+  ]);
+  expect(authorityPayload).toMatchObject({
+    authority_mode: 'sec_xbrl_value_reveal_authority_receipt_v1',
+    operator_decision: 'prepare_sec_xbrl_value_reveal_authority',
+    sec_xbrl_operator_review_decision_id: decisionId,
+    decision_basis_hash: decisionBasisHash,
+    operator_attestation: 'bounded operator attestation proof',
+  });
+
+  await page.locator('#sec-xbrl-controlled-value-reveal-max-records').fill('1');
+  await expect(revealButton).toBeDisabled();
+  await page.locator('#sec-xbrl-controlled-value-reveal-confirmation').check();
+  await expect(revealButton).toBeEnabled();
+  await revealButton.click();
+  const submitOutput = page.locator('#sec-xbrl-controlled-value-reveal-submit-output');
+  await expect(submitOutput).toHaveAttribute('data-controlled-values', 'transient');
+  await expect(panel).toContainText('sec_xbrl_controlled_value_reveal_values_returned');
+  await expect(panel).toContainText('controlled-value-proof');
+  await expect(panel).toContainText('us-gaap:Revenue');
+  await expect(panel).toContainText(valueHash);
+  await expect(page.locator('#sec-xbrl-controlled-value-reveal-status-receipt-id')).toHaveValue(submitReceiptId);
+  expectOnlyPayloadKeys(revealPayload, [
+    'client_request_id',
+    'submit_mode',
+    'operator_decision',
+    'sec_xbrl_value_reveal_authority_receipt_id',
+    'authority_basis_hash',
+    'operator_reveal_confirmation',
+    'max_records',
+  ]);
+  expect(revealPayload).toMatchObject({
+    submit_mode: 'sec_xbrl_controlled_value_reveal_submit_v1',
+    operator_decision: 'submit_explicit_sec_xbrl_value_reveal_from_authority_receipt',
+    sec_xbrl_value_reveal_authority_receipt_id: authorityReceiptId,
+    authority_basis_hash: authorityBasisHash,
+    operator_reveal_confirmation: true,
+    max_records: 1,
+  });
+  for (const forbiddenPayloadKey of [
+    'sidecar_receipt_id',
+    'sidecar_receipt_hash',
+    'dataset_version_id',
+    'dataset_version_hash',
+    'value_store_hash',
+    'raw_values',
+    'accession',
+    'cik',
+    'issuer_name',
+    'source_acquisition_request',
+    'arelle',
+    'delivery',
+    'export',
+    'default_on',
+  ]) {
+    expect(authorityPayload).not.toHaveProperty(forbiddenPayloadKey);
+    expect(revealPayload).not.toHaveProperty(forbiddenPayloadKey);
+  }
+
+  await expect(statusButton).toBeEnabled();
+  await statusButton.click();
+  const statusOutput = page.locator('#sec-xbrl-controlled-value-reveal-status-output');
+  await expect(page.locator('#sec-xbrl-controlled-value-reveal-status-projection')).toHaveAttribute('data-read-only', 'true');
+  await expect(statusOutput).toHaveAttribute('data-status-values-rendered', 'false');
+  await expect(panel).toContainText('sec_xbrl_controlled_value_reveal_status_available');
+  await expect(panel).not.toContainText('status-should-not-render');
+  await expect(panel).not.toContainText('forbidden-status-qname');
+  expect(statusRequestPath).toBe(`/api/v1/layer3/sec-xbrl/value-reveal/submit/status/${submitReceiptId}`);
+  expect(apiRequests.filter((request) => request.path.includes('/sec-xbrl/value-reveal'))).toEqual([
+    { method: 'POST', path: '/api/v1/layer3/sec-xbrl/value-reveal/authority/prepare' },
+    { method: 'POST', path: '/api/v1/layer3/sec-xbrl/value-reveal/submit' },
+    { method: 'GET', path: `/api/v1/layer3/sec-xbrl/value-reveal/submit/status/${submitReceiptId}` },
+  ]);
+  expect(authorityPayloads).toHaveLength(1);
+  expect(revealPayloads).toHaveLength(1);
+
+  const panelText = await panel.textContent();
+  for (const forbidden of [
+    'forbidden-dataset-version',
+    'forbidden-sidecar-hash',
+    'forbidden-value-store',
+    'forbidden-residual-magnitude',
+    'file://',
+    'raw-issuer',
+    '0000000000-00-000000',
+    'https://www.sec.gov',
+    'C:\\',
+  ]) {
+    expect(panelText).not.toContain(forbidden);
+  }
+  expect(panelText).not.toMatch(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+  for (const blockedControlId of [
+    '#sec-xbrl-value-reveal-submit',
+    '#sec-xbrl-export-statement-packet-submit',
+    '#sec-xbrl-source-acquisition-submit',
+    '#sec-xbrl-arelle-invoke-submit',
+  ]) {
+    await expect(page.locator(blockedControlId)).toHaveCount(0);
+  }
+});
+
 test('Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control', async ({ page }) => {
   const apiRequests = trackLayer3ApiRequests(page);
   let workflowStatusPayload = null;
