@@ -10271,6 +10271,73 @@ claim.
 Next exact posture after reconciliation:
 `sec_xbrl_broad_real_corpus_product_runner_current_authority_renewal_v1`.
 
+## SEC XBRL Broad Real-Corpus Authority Renewal
+
+Milestone: `sec_xbrl_broad_real_corpus_product_runner_current_authority_renewal_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1316-broad-real-corpus-authority-renewal.md`.
+
+Status: merged current-main Tier-1 diagnostic/report/test/docs authority
+renewal, verified after merge at `9fae22608b977bdf62298ab1120c3ce495ab03d0`.
+
+Scope: renew the broad real-corpus product-runner authority by importing an
+already-acquired redacted offline product-runner report through a fail-closed
+path. The import validates storage marker and matrix-plan parity, recomputes
+current-code summary and criteria from the report rows, and records that the
+current renewal run used no live SEC network action and invoked no Arelle
+subprocess.
+
+Outcome: `diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json`
+emits `real_corpus_default_on_validated` with `gate_verdict: PASS`, and
+`diagnostics/assessment/sec-xbrl-default-on-admission-restatement-report.json`
+emits `default_on_admission_restatement_ready_for_runtime_design`.
+
+Non-goals: no runtime default-on behavior, config default change, schema,
+`models.py`, Alembic migration, durable persistence, backend API/UI change,
+operator workflow expansion, value-reveal default enablement, live SEC network,
+source acquisition, Arelle invocation, export/delivery, operator-authentication
+claim, production-readiness claim, cross-company comparability claim, or final
+financial-statement semantics claim.
+
+Next exact posture after renewal:
+`sec_xbrl_default_on_runtime_design_v1`.
+
+## SEC XBRL Default-On Runtime Design
+
+Milestone: `sec_xbrl_default_on_runtime_design_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1317-default-on-runtime-design.md`.
+
+Status: branch-local docs-only Tier-2 design/pre-review entry on
+`codex/secxbrl-default-on-runtime-design`.
+
+Scope: map the current broad real-corpus authority into the narrowest future
+default-on runtime implementation boundary. The design requires the future
+implementation to prove behavior-level default-on admission rather than a
+source-string-only config check: persisted Arelle sidecar authority is the
+default fact-authority path, missing sidecar authority fails closed, no regex
+fallback occurs during default-on operation, explicit regex rollback remains
+available, no synchronous Arelle is introduced, and value reveal remains
+default-off.
+
+Operator-authentication decision: the first default-on switch is a
+deployment-owned server policy, not an in-app operator-authenticated action.
+There must be no API route, rendered UI control, request field, browser state,
+or operator-review decision field that toggles default-on. Production/nonlocal
+authorization remains a separate deployment/operator authority question and is
+not claimed by this design.
+
+Non-goals: no runtime behavior, config default change, schema, `models.py`,
+Alembic migration, durable persistence, backend API/UI change, operator workflow
+expansion, source acquisition, Arelle invocation, value reveal default-on,
+export/delivery, raw runtime artifact, production-readiness claim,
+cross-company comparability claim, or final financial-statement semantics claim.
+
+Next exact posture after design review/merge:
+`sec_xbrl_default_on_runtime_v1_tier2_risk_assessed_implementation`.
+
 ## SEC XBRL Rendered Value UI Proof
 
 Milestone: `sec_xbrl_rendered_controlled_value_reveal_ui_proof_v1`.
