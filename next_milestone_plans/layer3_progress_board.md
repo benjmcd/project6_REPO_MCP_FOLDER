@@ -9732,7 +9732,23 @@ The design keeps the first statement-packet persistence slice narrow: persist an
 
 Implementation proof requirements: exact Tier-2 surfaces, focused model/service tests, migration upgrade/downgrade or equivalent project-standard migration proof, empty packet fail-closed proof, raw value/identity/accession/period-date/path/SEC URL/residual-magnitude rejection, projection-set and projection-fact binding proof, idempotent replay for `client_request_id` and `packet_basis_hash`, partial-write rollback, redaction scan, JSON validation, progress checks, and `git diff --check`.
 
-Next exact posture: `sec_xbrl_statement_packet_persistence_schema_materializer_v1_tier2_risk_assessed_implementation`.
+The statement-packet persistence implementation entry is selected below.
+
+## SEC XBRL Statement Packet Persistence Implementation
+
+Milestone: `sec_xbrl_statement_packet_persistence_schema_materializer_v1`.
+
+Implementation doc: `next_milestone_plans/Layer3_planning_docs/1289-statement-packet-persist-impl.md`.
+
+Status: `tier2_risk_assessed_schema_materializer_implemented`. This slice lands the selected first implementation from `1288-statement-packet-persistence.md`: additive redacted statement-packet persistence schema plus a deterministic materializer. The Tier-2 surfaces are `backend/app/models/models.py`, `backend/app/models/__init__.py`, Alembic migration `backend/alembic/versions/0039_layer3_sec_xbrl_statement_packet_persistence.py`, and service `backend/app/services/layer3_sec_xbrl_statement_packet_persistence.py`.
+
+Focused proof: `backend/tests/test_sec_xbrl_statement_packet_persistence.py` covers metadata registration, migration declaration, idempotent replay, empty packet fail-closed behavior, raw value and residual-magnitude rejection, period binding, projection-fact binding, and no partial rows after late invalid input. Latest branch-local focused result: `10 passed`.
+
+Containment: no API/UI/operator workflow, delivery/export, source acquisition, live SEC network, Arelle invocation, value reveal, persisted raw values, raw issuer identity, raw accessions, raw period dates, raw resolved fact authorities, SEC URLs, local paths, residual magnitude rows, default-on behavior, production-readiness claim, or final financial-statement semantics claim.
+
+Rollback/containment: the migration downgrade drops only `l3_sec_xbrl_statement_packet_row`, `l3_sec_xbrl_statement_packet_statement`, and `l3_sec_xbrl_statement_packet_set` plus their indexes; the materializer writes in one transaction and rolls back invalid input without admitting partial rows.
+
+Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_workflow_design_v1_after_statement_packet_persistence`.
 
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
