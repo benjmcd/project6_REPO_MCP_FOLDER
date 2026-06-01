@@ -42325,10 +42325,12 @@
   },
   "sec_xbrl_controlled_value_reveal_submit_local_ref_review_fix_proof": {
     "proof_kind": "sec_xbrl_controlled_value_reveal_submit_local_ref_review_fix_proof",
-    "status": "branch_local_tier2_risk_assessed_review_thread_fix_verified",
+    "status": "merged_current_main_tier2_risk_assessed_review_thread_fix_verified",
     "milestone": "sec_xbrl_controlled_value_reveal_submit_local_ref_review_fix_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1306-submit-local-ref-review-fix.md",
     "base_main": "4d54fd0b378748e87f877f67814eb346afc4b85b",
+    "merged_pr": 2047,
+    "merged_main": "1012f65d09b6d5922377086c362d2c45df47d13c",
     "source_review_thread": "PR #2045 backend/app/services/layer3_sec_xbrl_controlled_value_reveal_submit.py:126",
     "branch": "codex/secxbrl-submit-local-ref-review-fix",
     "tier_classification": "Tier-2 risk-assessed review-thread fix because it tightens controlled value-reveal submit authority validation",

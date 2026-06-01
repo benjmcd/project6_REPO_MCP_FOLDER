@@ -4,11 +4,13 @@ Milestone: `sec_xbrl_controlled_value_reveal_submit_local_ref_review_fix_v1`
 
 Base authority: `project6-origin/main` at `4d54fd0b378748e87f877f67814eb346afc4b85b`
 
+Merged authority: `project6-origin/main` at `1012f65d09b6d5922377086c362d2c45df47d13c`
+
 Prior milestone: `next_milestone_plans/Layer3_planning_docs/1305-submit-hardening.md`
 
 ## Status
 
-Branch-local Tier-2 risk-assessed review-thread fix, verified for PR handoff.
+Merged current-main Tier-2 risk-assessed review-thread fix, verified after merge.
 
 This slice closes the late PR #2045 review thread that found the controlled
 value-reveal submit raw-reference predicate rejected Windows paths but did not
@@ -38,7 +40,7 @@ no partial controlled-submit receipt.
 
 ## Verification
 
-Branch-local results:
+PR and post-merge current-main results:
 
 - `python -m pytest .\backend\tests\test_sec_xbrl_operator_review_workflow.py -q`
   - `70 passed, 3 warnings`
@@ -63,7 +65,7 @@ Branch-local results:
 
 ## Next Posture
 
-After this review-thread fix lands and current-main verification remains clean,
-continue with controlled-submit post-merge audit closure. Treat rendered value
-UI, default-on behavior, export/delivery, and production readiness as separate
+With this review-thread fix landed and current-main verification clean, continue
+with controlled-submit post-merge audit closure. Treat rendered value UI,
+default-on behavior, export/delivery, and production readiness as separate
 admission gates.

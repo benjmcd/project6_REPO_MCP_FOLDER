@@ -10136,8 +10136,8 @@ Milestone: `sec_xbrl_controlled_value_reveal_submit_local_ref_review_fix_v1`.
 Planning doc:
 `next_milestone_plans/Layer3_planning_docs/1306-submit-local-ref-review-fix.md`.
 
-Status: branch-local Tier-2 risk-assessed review-thread fix, verified for PR
-handoff.
+Status: merged current-main Tier-2 risk-assessed review-thread fix, verified
+after merge at `1012f65d09b6d5922377086c362d2c45df47d13c`.
 
 Scope: closes the late PR #2045 review thread by extending the controlled
 value-reveal submit raw-reference predicate to reject `file://`, UNC, and Unix
