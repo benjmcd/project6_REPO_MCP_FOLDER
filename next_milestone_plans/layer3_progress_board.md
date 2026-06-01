@@ -10129,6 +10129,32 @@ redaction scan, residual-magnitude regression scan, py_compile, and
 Next exact posture after merge and current-main verification:
 `sec_xbrl_controlled_value_reveal_submit_post_merge_audit_then_rendered_or_default_design_if_admitted`.
 
+## SEC XBRL Controlled Submit Status Reference Hardening
+
+Milestone: `sec_xbrl_controlled_value_reveal_submit_status_ref_hardening_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1307-submit-status-ref-hardening.md`.
+
+Status: branch-local Tier-2 risk-assessed post-merge audit hardening entry,
+verified for PR handoff.
+
+Scope: closes a controlled-submit status-path authority boundary gap. Status
+inspection now applies the existing raw/local authority rejection predicate to
+the browser-supplied controlled-submit receipt id before lookup, so accession-,
+file-URI-, or local-root-like status ids fail closed as raw browser authority.
+
+Non-goals: no schema, migration, durable persistence, rendered UI, default-on
+behavior, source acquisition, live SEC network, Arelle subprocess invocation,
+delivery/export, provider dispatch, raw runtime artifacts, production readiness,
+or final financial-statement semantics.
+
+Verification: focused operator-review workflow test passes with `72 passed, 3
+warnings`; full SEC XBRL suite passes with `299 passed, 4 warnings`;
+target-selection frozen check, progress check, touched-file `py_compile`, JSON
+parse, redaction identity scan, residual-magnitude regression scan, and `git
+diff --check` pass.
+
 ## SEC XBRL Controlled Submit Local-Reference Review Fix
 
 Milestone: `sec_xbrl_controlled_value_reveal_submit_local_ref_review_fix_v1`.

@@ -1991,6 +1991,20 @@ def test_controlled_value_reveal_submit_rejects_raw_authority_receipt_id(db_sess
     assert db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 0
 
 
+def test_controlled_value_reveal_submit_status_rejects_raw_receipt_id(db_session, monkeypatch) -> None:
+    _enable_controlled_submit(monkeypatch)
+
+    for raw_receipt_id in ("0000123456-26-000001", "file:///tmp/raw", "/workspace/raw"):
+        with pytest.raises(submit_service.SecXbrlControlledValueRevealSubmitError) as exc:
+            submit_service.inspect_controlled_value_reveal_submit_status(
+                db_session,
+                sec_xbrl_controlled_value_reveal_submit_receipt_id=raw_receipt_id,
+            )
+
+        assert exc.value.code == "sec_xbrl_controlled_value_reveal_submit_raw_reference_not_admitted"
+    assert db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 0
+
+
 def test_controlled_value_reveal_submit_missing_sidecar_creates_no_partial_receipt(db_session, monkeypatch) -> None:
     _enable_controlled_submit(monkeypatch)
     authority = _prepare_authority_receipt(db_session, monkeypatch, request_id="controlled-submit-missing-sidecar")
@@ -2100,6 +2114,20 @@ def test_controlled_value_reveal_submit_api_rejects_raw_authority_receipt_id(api
         assert response.status_code == 400
         body = response.json()
         assert body["error_code"] == "sec_xbrl_controlled_value_reveal_submit_raw_reference_not_admitted"
+    with Session() as db:
+        assert db.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 0
+
+
+def test_controlled_value_reveal_submit_api_status_rejects_raw_receipt_id(api_client, monkeypatch) -> None:
+    _enable_controlled_submit(monkeypatch)
+    client, Session = api_client
+
+    response = client.get(f"{CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE}/status/0000123456-26-000001")
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["error_code"] == "sec_xbrl_controlled_value_reveal_submit_raw_reference_not_admitted"
+    assert "0000123456-26-000001" not in response.text
     with Session() as db:
         assert db.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 0
 
