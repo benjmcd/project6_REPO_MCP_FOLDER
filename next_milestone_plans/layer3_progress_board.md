@@ -10135,8 +10135,8 @@ Milestone: `sec_xbrl_controlled_value_reveal_submit_post_merge_audit_hardening_v
 
 Planning doc: `next_milestone_plans/Layer3_planning_docs/1305-submit-hardening.md`.
 
-Status: branch-local Tier-2 risk-assessed hardening entry, verified for PR
-handoff.
+Status: merged current-main Tier-2 risk-assessed hardening entry, verified
+after merge at `64c8957cdf7dcad26eb92c4cf7d146b4a7c15f3b`.
 
 Scope: closes a post-merge audit gap in the controlled value-reveal submit
 authority boundary. The service now applies the existing raw-reference rejection
