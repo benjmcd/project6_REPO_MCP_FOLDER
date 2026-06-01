@@ -9842,6 +9842,22 @@ Verification required for future implementation: focused decision model/service 
 
 Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_decision_receipt_v1_tier2_risk_assessed_implementation`.
 
+## SEC XBRL Operator Review Decision Receipt Implementation
+
+Milestone: `sec_xbrl_operator_review_decision_receipt_v1_tier2_risk_assessed_implementation`.
+
+Implementation doc: `next_milestone_plans/Layer3_planning_docs/1296-decision-receipt-impl.md`.
+
+Status: `tier2_risk_assessed_schema_materializer_implemented`. This slice lands the selected first implementation from `1295-decision-submit.md`: one additive `l3_sec_xbrl_operator_review_decision` table plus the owner-service materializer `record_redacted_operator_review_decision` over existing server-owned workflow authority. The Tier-2 surfaces are `backend/app/models/models.py`, `backend/app/models/__init__.py`, Alembic migration `backend/alembic/versions/0042_layer3_sec_xbrl_operator_review_decision.py`, and service `backend/app/services/layer3_sec_xbrl_operator_review_workflow.py`.
+
+Runtime contract: decision receipt creation requires an existing workflow id or workflow basis hash, validates the workflow status envelope, requires the pre-decision workflow to keep `submit_operator_review_decision` blocked, records one immutable decision per workflow, hashes notes without persisting raw notes, replays identical `client_request_id` or `decision_basis_hash` requests idempotently, rejects conflicting reused request ids, and leaves workflow, statement-packet, and projection rows unmutated.
+
+Containment: no API route, rendered UI, browser control, workflow-open API, value reveal, delivery/export, source acquisition, live SEC network, Arelle invocation, default-on behavior, raw runtime artifacts, raw values, raw issuer identity, raw accessions, raw period dates, raw resolved fact authorities, SEC URLs, local paths, operator contact fields, residual magnitudes, production-readiness claim, or final financial-statement semantics claim.
+
+Proof: `python -m pytest ./backend/tests/test_sec_xbrl_operator_review_workflow.py -q` returned `27 passed, 3 warnings`; the full SEC XBRL suite returned `247 passed, 4 warnings`; target-selection frozen check, progress check, py_compile, JSON validation, SEC XBRL report redaction scan, residual magnitude scan, and `git diff --check` passed.
+
+Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_decision_submit_api_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.

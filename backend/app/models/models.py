@@ -75,6 +75,22 @@ L3_SEC_XBRL_STATEMENT_PACKET_STATUS_MATERIALIZED = "materialized"
 L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_REDACTION_POLICY = "redacted_no_values"
 L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_CONTROL_MODE = "redacted_statement_packet_review_only"
 L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_READY = "review_ready"
+L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REDACTION_POLICY = "redacted_no_values"
+L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_MODE = "redacted_statement_packet_operator_review_decision"
+L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_STATUS_RECORDED = "decision_recorded"
+L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_VALUES = (
+    "approved",
+    "changes_requested",
+    "rejected",
+    "blocked",
+)
+L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REASON_CODES = (
+    "ready_for_next_freeze",
+    "needs_packet_revision",
+    "authority_gap",
+    "redaction_gap",
+    "operator_blocked",
+)
 
 
 class TimestampMixin:
@@ -1237,6 +1253,88 @@ class L3SecXbrlOperatorReviewWorkflow(Base):
 
     statement_packet_set: Mapped[L3SecXbrlStatementPacketSet] = relationship(
         back_populates="operator_review_workflows",
+    )
+    operator_review_decisions: Mapped[list["L3SecXbrlOperatorReviewDecision"]] = relationship(
+        back_populates="operator_review_workflow",
+    )
+
+
+class L3SecXbrlOperatorReviewDecision(Base):
+    __tablename__ = "l3_sec_xbrl_operator_review_decision"
+    __table_args__ = (
+        UniqueConstraint("client_request_id", name="uq_l3_sec_xbrl_operator_review_decision_client_request"),
+        UniqueConstraint("decision_basis_hash", name="uq_l3_sec_xbrl_operator_review_decision_basis_hash"),
+        UniqueConstraint(
+            "sec_xbrl_operator_review_workflow_id",
+            name="uq_l3_sec_xbrl_operator_review_decision_workflow",
+        ),
+        CheckConstraint(
+            f"redaction_policy = '{L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REDACTION_POLICY}'",
+            name="ck_l3_sec_xbrl_operator_review_decision_redaction_policy",
+        ),
+        CheckConstraint(
+            f"decision_mode = '{L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_MODE}'",
+            name="ck_l3_sec_xbrl_operator_review_decision_mode",
+        ),
+        CheckConstraint(
+            f"decision_status = '{L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_STATUS_RECORDED}'",
+            name="ck_l3_sec_xbrl_operator_review_decision_status",
+        ),
+        CheckConstraint(
+            "review_decision IN ('approved', 'changes_requested', 'rejected', 'blocked')",
+            name="ck_l3_sec_xbrl_operator_review_decision_value",
+        ),
+        CheckConstraint(
+            "decision_reason_code IN ('ready_for_next_freeze', 'needs_packet_revision', 'authority_gap', 'redaction_gap', 'operator_blocked')",
+            name="ck_l3_sec_xbrl_operator_review_decision_reason",
+        ),
+        Index("ix_l3_sec_xbrl_operator_review_decision_workflow", "sec_xbrl_operator_review_workflow_id"),
+        Index("ix_l3_sec_xbrl_operator_review_decision_workflow_basis", "workflow_basis_hash"),
+    )
+
+    sec_xbrl_operator_review_decision_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=uuid_str,
+    )
+    sec_xbrl_operator_review_workflow_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_sec_xbrl_operator_review_workflow.sec_xbrl_operator_review_workflow_id"),
+        nullable=False,
+    )
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    decision_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    decision_schema_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    workflow_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    statement_packet_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_projection_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    decision_mode: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default=L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_MODE,
+    )
+    review_decision: Mapped[str] = mapped_column(String(32), nullable=False)
+    decision_status: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default=L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_STATUS_RECORDED,
+    )
+    redaction_policy: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default=L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REDACTION_POLICY,
+    )
+    decision_reason_code: Mapped[str] = mapped_column(String(64), nullable=False)
+    decision_notes_present: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    decision_notes_hash: Mapped[str | None] = mapped_column(String(64))
+    decision_summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    authority_refs_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    permitted_controls_after_decision_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    blocked_controls_after_decision_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    operator_review_workflow: Mapped[L3SecXbrlOperatorReviewWorkflow] = relationship(
+        back_populates="operator_review_decisions",
     )
 
 

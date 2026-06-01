@@ -7,8 +7,17 @@ from typing import Any
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.models import L3SecXbrlOperatorReviewWorkflow, L3SecXbrlStatementPacketSet
+from app.models import (
+    L3SecXbrlOperatorReviewDecision,
+    L3SecXbrlOperatorReviewWorkflow,
+    L3SecXbrlStatementPacketSet,
+)
 from app.models.models import (
+    L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_MODE,
+    L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REASON_CODES,
+    L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REDACTION_POLICY,
+    L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_STATUS_RECORDED,
+    L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_VALUES,
     L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_CONTROL_MODE,
     L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_REDACTION_POLICY,
     L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_READY,
@@ -23,6 +32,7 @@ WORKFLOW_SCHEMA_ID = "layer3.sec_xbrl_operator_review_workflow.v1"
 WORKFLOW_STATUS_SCHEMA_ID = "layer3.sec_xbrl_operator_review_workflow_status.v1"
 WORKFLOW_STATUS_MODE = "sec_xbrl_operator_review_workflow_status_v1"
 WORKFLOW_STATUS_OPERATOR_DECISION = "inspect_sec_xbrl_operator_review_workflow_status"
+DECISION_SCHEMA_ID = "layer3.sec_xbrl_operator_review_decision.v1"
 PERMITTED_CONTROLS = (
     "inspect_redacted_statement_packet_counts",
     "inspect_review_exceptions",
@@ -38,6 +48,23 @@ BLOCKED_CONTROLS = (
     ("invoke_arelle", "arelle_not_admitted"),
     ("edit_statement_packet", "packet_mutation_not_admitted"),
     ("change_runtime_default", "default_on_not_admitted"),
+)
+POST_DECISION_PERMITTED_CONTROLS = (
+    "inspect_operator_review_decision_status",
+    "inspect_redacted_statement_packet_counts",
+    "inspect_review_exceptions",
+    "inspect_statement_packet_authority",
+)
+POST_DECISION_BLOCKED_CONTROLS = (
+    ("reveal_values", "requires_separate_value_reveal_freeze"),
+    ("export_statement_packet", "delivery_export_not_admitted"),
+    ("deliver_statement_packet", "delivery_export_not_admitted"),
+    ("refresh_from_sec_source", "source_acquisition_not_admitted"),
+    ("invoke_arelle", "arelle_not_admitted"),
+    ("edit_statement_packet", "packet_mutation_not_admitted"),
+    ("change_runtime_default", "default_on_not_admitted"),
+    ("open_operator_review_workflow", "workflow_open_api_not_admitted"),
+    ("render_operator_review_decision_submit_control", "rendered_decision_submit_not_admitted"),
 )
 RAW_VALUE_KEYS = {"_value", "value", "effective_value", "amount"}
 RAW_AUTHORITY_KEYS = {
@@ -72,6 +99,8 @@ ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
 WINDOWS_ABS_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
 RAW_PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
+OPERATOR_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
+RAW_DECIMAL_RE = re.compile(r"(?<![A-Za-z0-9_])-?\d+\.\d+(?![A-Za-z0-9_])")
 IDENTITY_ROLLUP_KEYS = {
     "identity_residual_count",
     "identity_residual_evaluated_count",
@@ -182,6 +211,160 @@ def inspect_redacted_operator_review_workflow_status(
         )
     _validate_workflow_row_for_status(workflow)
     return _status_response(workflow, request_id=request_id)
+
+
+def record_redacted_operator_review_decision(
+    db: Session,
+    *,
+    client_request_id: str,
+    review_decision: str,
+    decision_reason_code: str,
+    sec_xbrl_operator_review_workflow_id: str | None = None,
+    workflow_basis_hash: str | None = None,
+    decision_notes: str | None = None,
+) -> dict[str, Any]:
+    request_id = _required_text(client_request_id, "client_request_id")
+    decision_value = _required_choice(
+        review_decision,
+        "review_decision",
+        admitted=set(L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_VALUES),
+        error_code="sec_xbrl_operator_review_decision_value_invalid",
+    )
+    reason_code = _required_choice(
+        decision_reason_code,
+        "decision_reason_code",
+        admitted=set(L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REASON_CODES),
+        error_code="sec_xbrl_operator_review_decision_reason_invalid",
+    )
+    notes_present, notes_hash = _decision_notes_hash(
+        decision_notes,
+        review_decision=decision_value,
+    )
+    workflow = _resolve_workflow_for_decision(
+        db,
+        sec_xbrl_operator_review_workflow_id=sec_xbrl_operator_review_workflow_id,
+        workflow_basis_hash=workflow_basis_hash,
+    )
+    _validate_workflow_row_for_decision(workflow)
+
+    permitted_after = list(POST_DECISION_PERMITTED_CONTROLS)
+    blocked_after = [
+        {"control": control, "reason": reason}
+        for control, reason in POST_DECISION_BLOCKED_CONTROLS
+    ]
+    authority_refs = {
+        "sec_xbrl_operator_review_workflow_id": workflow.sec_xbrl_operator_review_workflow_id,
+        "workflow_basis_hash": workflow.workflow_basis_hash,
+        "sec_xbrl_statement_packet_set_id": workflow.sec_xbrl_statement_packet_set_id,
+        "statement_packet_basis_hash": workflow.statement_packet_basis_hash,
+        "source_projection_basis_hash": workflow.source_projection_basis_hash,
+    }
+    decision_summary = {
+        "review_decision": decision_value,
+        "decision_reason_code": reason_code,
+        "decision_notes_present": notes_present,
+        "workflow_status": workflow.review_status,
+        "statement_count": _positive_int(workflow.statement_count, "statement_count"),
+        "row_count": _positive_int(workflow.row_count, "row_count"),
+        "review_exception_count": _non_negative_int(
+            workflow.review_exception_count,
+            "review_exception_count",
+        ),
+        "redaction_policy": L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REDACTION_POLICY,
+    }
+    receipt_basis = {
+        "schema_id": DECISION_SCHEMA_ID,
+        "sec_xbrl_operator_review_workflow_id": workflow.sec_xbrl_operator_review_workflow_id,
+        "workflow_basis_hash": workflow.workflow_basis_hash,
+        "statement_packet_basis_hash": workflow.statement_packet_basis_hash,
+        "source_projection_basis_hash": workflow.source_projection_basis_hash,
+        "decision_mode": L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_MODE,
+        "review_decision": decision_value,
+        "decision_status": L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_STATUS_RECORDED,
+        "redaction_policy": L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REDACTION_POLICY,
+        "decision_reason_code": reason_code,
+        "decision_notes_present": notes_present,
+        "decision_notes_hash": notes_hash,
+        "decision_summary": decision_summary,
+        "authority_refs": authority_refs,
+        "permitted_controls_after_decision": permitted_after,
+        "blocked_controls_after_decision": blocked_after,
+    }
+    _reject_raw_or_local_authority(receipt_basis)
+    decision_basis_hash = stable_hash(receipt_basis)
+
+    existing_by_request = (
+        db.query(L3SecXbrlOperatorReviewDecision)
+        .filter(L3SecXbrlOperatorReviewDecision.client_request_id == request_id)
+        .one_or_none()
+    )
+    existing_by_basis = (
+        db.query(L3SecXbrlOperatorReviewDecision)
+        .filter(L3SecXbrlOperatorReviewDecision.decision_basis_hash == decision_basis_hash)
+        .one_or_none()
+    )
+    existing_by_workflow = (
+        db.query(L3SecXbrlOperatorReviewDecision)
+        .filter(
+            L3SecXbrlOperatorReviewDecision.sec_xbrl_operator_review_workflow_id
+            == workflow.sec_xbrl_operator_review_workflow_id
+        )
+        .one_or_none()
+    )
+    if existing_by_request is not None:
+        if existing_by_request.decision_basis_hash != decision_basis_hash:
+            raise SecXbrlOperatorReviewWorkflowError(
+                "sec_xbrl_operator_review_decision_client_request_conflict",
+                "client_request_id already recorded a different SEC XBRL operator review decision basis.",
+                details={"client_request_id": request_id},
+            )
+        return _decision_response(existing_by_request, idempotent_replay=True)
+    if existing_by_basis is not None:
+        return _decision_response(existing_by_basis, idempotent_replay=True)
+    if existing_by_workflow is not None:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_workflow_already_decided",
+            "SEC XBRL operator review workflow already has an immutable decision receipt.",
+            details={
+                "sec_xbrl_operator_review_workflow_id": workflow.sec_xbrl_operator_review_workflow_id,
+                "sec_xbrl_operator_review_decision_id": existing_by_workflow.sec_xbrl_operator_review_decision_id,
+            },
+        )
+
+    decision = L3SecXbrlOperatorReviewDecision(
+        sec_xbrl_operator_review_workflow_id=workflow.sec_xbrl_operator_review_workflow_id,
+        client_request_id=request_id,
+        decision_basis_hash=decision_basis_hash,
+        decision_schema_id=DECISION_SCHEMA_ID,
+        workflow_basis_hash=workflow.workflow_basis_hash,
+        statement_packet_basis_hash=workflow.statement_packet_basis_hash,
+        source_projection_basis_hash=workflow.source_projection_basis_hash,
+        decision_mode=L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_MODE,
+        review_decision=decision_value,
+        decision_status=L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_STATUS_RECORDED,
+        redaction_policy=L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REDACTION_POLICY,
+        decision_reason_code=reason_code,
+        decision_notes_present=notes_present,
+        decision_notes_hash=notes_hash,
+        decision_summary_json=json_clone(decision_summary),
+        authority_refs_json=json_clone(authority_refs),
+        permitted_controls_after_decision_json=json_clone(permitted_after),
+        blocked_controls_after_decision_json=json_clone(blocked_after),
+    )
+    try:
+        db.add(decision)
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_integrity_error",
+            "SEC XBRL operator review decision persistence failed without admitting partial decision rows.",
+        ) from exc
+    except Exception:
+        db.rollback()
+        raise
+    db.refresh(decision)
+    return _decision_response(decision, idempotent_replay=False)
 
 
 def open_redacted_operator_review_workflow(
@@ -455,6 +638,88 @@ def _status_response(row: L3SecXbrlOperatorReviewWorkflow, *, request_id: str) -
     }
 
 
+def _decision_response(row: L3SecXbrlOperatorReviewDecision, *, idempotent_replay: bool) -> dict[str, Any]:
+    return {
+        "status": row.decision_status,
+        "schema_id": row.decision_schema_id,
+        "sec_xbrl_operator_review_decision_id": row.sec_xbrl_operator_review_decision_id,
+        "sec_xbrl_operator_review_workflow_id": row.sec_xbrl_operator_review_workflow_id,
+        "client_request_id": row.client_request_id,
+        "decision_basis_hash": row.decision_basis_hash,
+        "workflow_basis_hash": row.workflow_basis_hash,
+        "statement_packet_basis_hash": row.statement_packet_basis_hash,
+        "source_projection_basis_hash": row.source_projection_basis_hash,
+        "decision_mode": row.decision_mode,
+        "review_decision": row.review_decision,
+        "decision_status": row.decision_status,
+        "redaction_policy": row.redaction_policy,
+        "decision_reason_code": row.decision_reason_code,
+        "decision_notes_present": row.decision_notes_present,
+        "decision_notes_hash": row.decision_notes_hash,
+        "decision_summary": json_clone(row.decision_summary_json),
+        "authority_refs": json_clone(row.authority_refs_json),
+        "permitted_controls_after_decision": json_clone(row.permitted_controls_after_decision_json),
+        "blocked_controls_after_decision": json_clone(row.blocked_controls_after_decision_json),
+        "idempotent_replay": idempotent_replay,
+        "operator_review_decision_recorded": True,
+        "runtime_default_enabled": False,
+        "value_reveal_performed": False,
+        "source_acquisition_performed": False,
+        "arelle_invoked": False,
+        "delivery_export_enabled": False,
+        "api_route_enabled": False,
+        "rendered_ui_enabled": False,
+        "workflow_mutated": False,
+        "statement_packet_mutated": False,
+        "projection_mutated": False,
+    }
+
+
+def _resolve_workflow_for_decision(
+    db: Session,
+    *,
+    sec_xbrl_operator_review_workflow_id: str | None,
+    workflow_basis_hash: str | None,
+) -> L3SecXbrlOperatorReviewWorkflow:
+    workflow_id = _optional_text(
+        sec_xbrl_operator_review_workflow_id,
+        "sec_xbrl_operator_review_workflow_id",
+    )
+    basis_hash = _optional_text(workflow_basis_hash, "workflow_basis_hash")
+    if workflow_id is None and basis_hash is None:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_authority_missing",
+            "SEC XBRL operator review decision requires a workflow id or workflow basis hash.",
+            details={
+                "required_any_of": [
+                    "sec_xbrl_operator_review_workflow_id",
+                    "workflow_basis_hash",
+                ]
+            },
+            http_status=400,
+        )
+
+    query = db.query(L3SecXbrlOperatorReviewWorkflow)
+    if workflow_id is not None:
+        query = query.filter(
+            L3SecXbrlOperatorReviewWorkflow.sec_xbrl_operator_review_workflow_id == workflow_id
+        )
+    if basis_hash is not None:
+        query = query.filter(L3SecXbrlOperatorReviewWorkflow.workflow_basis_hash == basis_hash)
+    workflow = query.one_or_none()
+    if workflow is None:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_workflow_not_found",
+            "SEC XBRL operator review decision requires existing server-owned workflow authority.",
+            details={
+                "sec_xbrl_operator_review_workflow_id": workflow_id,
+                "workflow_basis_hash": basis_hash,
+            },
+            http_status=404,
+        )
+    return workflow
+
+
 def _validate_workflow_row_for_status(row: L3SecXbrlOperatorReviewWorkflow) -> None:
     if row.workflow_schema_id != WORKFLOW_SCHEMA_ID:
         raise SecXbrlOperatorReviewWorkflowError(
@@ -525,6 +790,20 @@ def _validate_workflow_row_for_status(row: L3SecXbrlOperatorReviewWorkflow) -> N
         )
 
 
+def _validate_workflow_row_for_decision(row: L3SecXbrlOperatorReviewWorkflow) -> None:
+    _validate_workflow_row_for_status(row)
+    blocked_controls = json_clone(row.blocked_controls_json)
+    if "submit_operator_review_decision" not in {
+        str(item.get("control"))
+        for item in blocked_controls
+        if isinstance(item, Mapping)
+    }:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_submit_control_not_blocked",
+            "SEC XBRL operator review decision requires prior workflow authority with submit control explicitly blocked.",
+        )
+
+
 def _required_text(value: Any, field: str) -> str:
     text = str(value or "").strip()
     if not text:
@@ -541,6 +820,38 @@ def _optional_text(value: Any, field: str) -> str | None:
     if value is None:
         return None
     return _required_text(value, field)
+
+
+def _required_choice(value: Any, field: str, *, admitted: set[str], error_code: str) -> str:
+    text = _required_text(value, field)
+    if text not in admitted:
+        raise SecXbrlOperatorReviewWorkflowError(
+            error_code,
+            f"SEC XBRL operator review workflow received unsupported {field}.",
+            details={"field": field, "admitted": sorted(admitted)},
+            http_status=400,
+        )
+    return text
+
+
+def _decision_notes_hash(value: Any, *, review_decision: str) -> tuple[bool, str | None]:
+    notes = _optional_text(value, "decision_notes")
+    if notes is None:
+        if review_decision != "approved":
+            raise SecXbrlOperatorReviewWorkflowError(
+                "sec_xbrl_operator_review_decision_notes_required",
+                "SEC XBRL operator review decision requires notes evidence for non-approved decisions.",
+                details={"review_decision": review_decision},
+                http_status=400,
+            )
+        return False, None
+    _reject_raw_or_local_authority({"decision_notes": notes})
+    if OPERATOR_CONTACT_RE.search(notes) or RAW_DECIMAL_RE.search(notes):
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_raw_reference_not_admitted",
+            "SEC XBRL operator review decision cannot store raw contact or value strings in notes evidence.",
+        )
+    return True, stable_hash({"decision_notes_present": True, "decision_notes": notes})
 
 
 def _positive_int(value: Any, field: str) -> int:
