@@ -12,7 +12,7 @@ DEFAULT_BROADER_RELIABILITY_REPORT = Path(
     "diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json"
 )
 DEFAULT_REAL_PRODUCT_RUNNER_REPORT = Path(
-    "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json"
+    "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json"
 )
 DEFAULT_VALUE_REVEAL_LIVE_PROOF_REPORT = Path(
     "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json"

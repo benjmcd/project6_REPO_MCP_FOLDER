@@ -970,6 +970,98 @@ def test_sec_xbrl_real_corpus_product_runner_executes_external_stratified_plan_r
         assert forbidden not in serialized
 
 
+def test_sec_xbrl_real_corpus_product_runner_imports_redacted_product_report_offline(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage, plan, source_report = _redacted_product_report_fixture(module, monkeypatch, tmp_path)
+    monkeypatch.setattr(
+        module,
+        "_run_live_product_path",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("live runner invoked")),
+    )
+
+    report = module.build_report(
+        live=False,
+        storage_dir=storage,
+        sector_family_storage_dir=storage,
+        matrix_plan=plan,
+        redacted_product_runner_report=source_report,
+        user_agent="",
+    )
+    serialized = json.dumps(report, sort_keys=True)
+
+    assert report["decision"] == "real_corpus_default_on_validated"
+    assert report["gate_verdict"] == "PASS"
+    assert report["live_sec_network_used"] is True
+    assert report["current_run_live_sec_network_used"] is False
+    assert report["preflight"]["live_requested"] is False
+    assert report["offline_redacted_product_report_import"]["state"] == "passed"
+    assert report["offline_redacted_product_report_import"]["evidence"]["inherited_live_sec_network_used"] is True
+    assert report["offline_redacted_product_report_import"]["evidence"]["current_run_arelle_subprocess_invoked"] is False
+    assert report["summary"]["real_filing_count"] == 30
+    assert report["summary"]["strata_readiness"]["all_required_strata_ready"] is True
+    assert [item["criterion"] for item in report["criteria"] if item["state"] != "passed"] == []
+    for forbidden in (str(storage), "MSFT", "AAPL", "https://sec.gov", "0000123456-26-000001"):
+        assert forbidden not in serialized
+
+
+def test_sec_xbrl_real_corpus_product_runner_rejects_imported_report_storage_marker_mismatch(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage, plan, source_report = _redacted_product_report_fixture(module, monkeypatch, tmp_path)
+    mismatched_storage = tmp_path / "mismatched-storage"
+    mismatched_storage.mkdir()
+
+    report = module.build_report(
+        live=False,
+        storage_dir=mismatched_storage,
+        sector_family_storage_dir=storage,
+        matrix_plan=plan,
+        redacted_product_runner_report=source_report,
+        user_agent="",
+    )
+
+    assert report["decision"] == "real_corpus_default_on_blocked"
+    assert report["live_sec_network_used"] is False
+    assert report["per_matrix"] == []
+    assert "offline_product_report_storage_marker_mismatch" in report["offline_redacted_product_report_import"][
+        "blocked_reasons"
+    ]
+    assert any(
+        item["criterion"] == "offline_redacted_product_report_import"
+        and item["state"] == "blocked"
+        for item in report["criteria"]
+    )
+
+
+def test_sec_xbrl_real_corpus_product_runner_rejects_imported_report_raw_identity(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage, plan, source_report = _redacted_product_report_fixture(module, monkeypatch, tmp_path)
+    source_report["raw_cik"] = "123456"
+
+    report = module.build_report(
+        live=False,
+        storage_dir=storage,
+        sector_family_storage_dir=storage,
+        matrix_plan=plan,
+        redacted_product_runner_report=source_report,
+        user_agent="",
+    )
+
+    assert report["decision"] == "real_corpus_default_on_blocked"
+    assert report["offline_redacted_product_report_import"]["evidence"]["redaction_scan"]["raw_cik_found"] is True
+    assert "offline_product_report_redaction_scan_failed" in report["offline_redacted_product_report_import"][
+        "blocked_reasons"
+    ]
+
+
 def test_sec_xbrl_real_corpus_product_runner_blocks_invalid_external_stratified_plan(
     monkeypatch,
     tmp_path: Path,
@@ -1114,6 +1206,14 @@ def test_sec_xbrl_real_corpus_product_runner_blocks_raw_cik_in_matrix_label(
             "blocked_reasons"
         ]
         assert raw_label not in serialized
+
+
+def test_sec_xbrl_real_corpus_product_runner_matrix_label_allows_non_identity_words() -> None:
+    module = _runner_module()
+
+    assert module._matrix_label_contains_raw_identity("amendment-restatement") is False
+    assert module._matrix_label_contains_raw_identity("issuer-T") is True
+    assert module._matrix_label_contains_raw_identity("core-MSFT") is True
 
 
 def test_sec_xbrl_real_corpus_product_runner_blocks_onedrive_arelle_python(
@@ -1428,6 +1528,76 @@ def _stratified_plan() -> dict:
             _plan_chunk("no-inline", matrices[2][2:] + matrices[3][2:], ["no_inline_or_zero_fact_diagnostic"]),
         ],
     }
+
+
+def _redacted_product_report_fixture(module, monkeypatch, tmp_path: Path) -> tuple[Path, dict, dict]:
+    arelle_python = tmp_path / "arelle-python.exe"
+    taxonomy_package = tmp_path / "taxonomy.zip"
+    cache_dir = tmp_path / "arelle-cache"
+    arelle_python.write_text("", encoding="utf-8")
+    taxonomy_package.write_text("", encoding="utf-8")
+    cache_dir.mkdir()
+    monkeypatch.setenv("SEC_XBRL_ARELLE_PYTHON", str(arelle_python))
+    monkeypatch.setenv("SEC_XBRL_ARELLE_TAXONOMY_PACKAGES", str(taxonomy_package))
+    monkeypatch.setenv("SEC_XBRL_ARELLE_CACHE_DIR", str(cache_dir))
+    plan = _stratified_plan()
+    storage = _offline_sector_family_storage(tmp_path, storage_dir=tmp_path / "offline-storage")
+    observed: list[tuple[str, tuple[str, ...]]] = []
+    forms = ["10-K", "10-Q", "20-F", "40-F", "8-K", "6-K", "10-K/A", "10-Q/A"]
+
+    def fake_run_matrix_chunk(label, matrix, *, strata, db, request_namespace, user_agent):
+        del db, request_namespace, user_agent
+        observed.append((label, tuple(strata)))
+        start = len(observed) * 100
+        return {
+            "matrix_label": label,
+            "matrix_ref_hash": module.stable_hash({"matrix": list(matrix)})[:24],
+            "strata": list(strata),
+            "pipeline_state": "ready",
+            "filing_count": 5,
+            "supported_count": 5,
+            "blocked_or_degraded_count": 0,
+            "forms": {forms[(len(observed) - 1) % len(forms)]: 5},
+            "issuer_hash_count": 4,
+            "records_with_arelle_sidecar_output": 5,
+            "records_with_selected_fact_authority_equal_to_sidecar": 5,
+            "records_with_handoff_export_prepare": 5,
+            "resolved_fact_count": 500,
+            "independent_inline_fact_count": 500,
+            "per_filing": [
+                {
+                    "fixture_hash": f"{start + index:024x}"[-24:],
+                    "form": forms[(len(observed) + index - 1) % len(forms)],
+                    "issuer_by_hash": f"{start + index:024x}"[-24:],
+                    "record_state": "supported",
+                    "zero_fact_status": "not_zero",
+                    "arelle_resolved_fact_count": 100,
+                    "independent_inline_fact_count": 100,
+                    "completeness_guard": "passed",
+                    "companyfacts_oracle_used": True,
+                    "companyfacts_effective_value_match_count": 100,
+                    "companyfacts_effective_value_compared_count": 100,
+                    "companyfacts_effective_value_mismatch_count": 0,
+                }
+                for index in range(5)
+            ],
+            "delivery_status": "not_required_for_broader_extraction_gate",
+            "operator_inspection_status": "not_required_for_broader_extraction_gate",
+            "operator_product_surface_status": "not_required_for_broader_extraction_gate",
+            "durable_delivery_archive_status": "not_required_for_broader_extraction_gate",
+            "operator_surface_values_exposed": False,
+        }
+
+    monkeypatch.setattr(module, "_run_matrix_chunk", fake_run_matrix_chunk)
+    report = module.build_report(
+        live=True,
+        storage_dir=storage,
+        sector_family_storage_dir=storage,
+        matrix_plan=plan,
+        user_agent="redacted operator test agent",
+    )
+    assert report["decision"] == "real_corpus_default_on_validated"
+    return storage, plan, report
 
 
 def _plan_chunk(matrix_label: str, company_matrix: list[str], strata: list[str]) -> dict:

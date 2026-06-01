@@ -14,7 +14,7 @@ DEFAULT_REQUIRED_REPORTS = {
     "default_on_gate": Path("diagnostics/assessment/sec-xbrl-default-on-gate-report.json"),
     "broader_reliability": Path("diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json"),
     "historical_real_product_runner": Path(
-        "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json"
+        "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json"
     ),
     "sector_family_validation": Path("diagnostics/assessment/sec-xbrl-sector-family-real-filer-validation-report.json"),
     "value_reveal_live_proof": Path("diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json"),
@@ -63,7 +63,9 @@ def main() -> int:
     parser.add_argument("--default-on-gate-report", default=str(DEFAULT_REQUIRED_REPORTS["default_on_gate"]))
     parser.add_argument("--broader-reliability-report", default=str(DEFAULT_REQUIRED_REPORTS["broader_reliability"]))
     parser.add_argument(
+        "--real-product-runner-report",
         "--historical-real-product-runner-report",
+        dest="historical_real_product_runner_report",
         default=str(DEFAULT_REQUIRED_REPORTS["historical_real_product_runner"]),
     )
     parser.add_argument("--sector-family-report", default=str(DEFAULT_REQUIRED_REPORTS["sector_family_validation"]))
@@ -172,20 +174,25 @@ def build_report(*, source_root: Path, report_paths: Mapping[str, Path]) -> dict
             "default_on_admission_restatement_active_reproducible_scope_not_recorded",
         ),
         _criterion(
-            "historical_broader_live_matrix_not_runtime_design_authority",
-            not _is_historical_archive_path(report_paths["historical_real_product_runner"]),
+            "current_broader_real_product_runner_authority",
+            _current_broader_real_product_runner_authority(
+                real_product,
+                report_paths["historical_real_product_runner"],
+            ),
             {
-                "historical_report": _repo_display_path(report_paths["historical_real_product_runner"]),
-                "historical_report_archived": _is_historical_archive_path(
+                "real_product_report": _repo_display_path(report_paths["historical_real_product_runner"]),
+                "real_product_report_archived": _is_historical_archive_path(
                     report_paths["historical_real_product_runner"]
                 ),
-                "historical_report_decision": real_product.get("decision"),
-                "historical_report_gate_verdict": real_product.get("gate_verdict"),
+                "real_product_report_decision": real_product.get("decision"),
+                "real_product_report_gate_verdict": real_product.get("gate_verdict"),
+                "current_run_live_sec_network_used": real_product.get("current_run_live_sec_network_used"),
+                "inherited_live_sec_network_used": real_product.get("live_sec_network_used"),
+                "offline_redacted_product_report_import": real_product.get("offline_redacted_product_report_import"),
                 "active_reproducible_report": _repo_display_path(report_paths["sector_family_validation"]),
                 "active_reproducible_report_target": sector_family.get("target"),
-                "broader_live_matrix_reproducible_offline_from_available_inputs": False,
             },
-            "default_on_admission_restatement_broader_live_matrix_historical_not_current_runtime_design_authority",
+            "default_on_admission_restatement_broader_real_product_runner_not_current_authority",
         ),
         _criterion(
             "companyfacts_value_correctness_restated",
@@ -388,7 +395,10 @@ def build_report(*, source_root: Path, report_paths: Mapping[str, Path]) -> dict
                 "runtime_default_on_enabled": False,
                 "runtime_decision": runtime.get("decision"),
                 "default_posture": selected_posture.get("posture"),
-                "historical_broader_live_matrix_runtime_design_authority": False,
+                "current_broader_real_product_runner_authority": _current_broader_real_product_runner_authority(
+                    real_product,
+                    report_paths["historical_real_product_runner"],
+                ),
             },
         },
         "rollback_criteria": [
@@ -678,6 +688,35 @@ def _conflicting_reasons(
 
 def _source_report_refs_current(loaded: Mapping[str, Mapping[str, Any]], source_root: Path) -> bool:
     return all(item["status"] == "present_json_object" for item in _source_report_ref_states(loaded, source_root))
+
+
+def _current_broader_real_product_runner_authority(real_product: Mapping[str, Any], report_path: Path) -> bool:
+    summary = dict(real_product.get("summary") or {})
+    offline_import = dict(real_product.get("offline_redacted_product_report_import") or {})
+    import_evidence = dict(offline_import.get("evidence") or {})
+    redaction_scan = dict(import_evidence.get("redaction_scan") or {})
+    return (
+        not _is_historical_archive_path(report_path)
+        and real_product.get("decision") == "real_corpus_default_on_validated"
+        and real_product.get("gate_verdict") == "PASS"
+        and real_product.get("fake_sec_client_used") is False
+        and real_product.get("live_sec_network_used") is True
+        and real_product.get("current_run_live_sec_network_used") is False
+        and offline_import.get("state") == "passed"
+        and offline_import.get("used") is True
+        and import_evidence.get("inherited_live_sec_network_used") is True
+        and import_evidence.get("current_run_live_sec_network_used") is False
+        and import_evidence.get("current_run_arelle_subprocess_invoked") is False
+        and import_evidence.get("storage_marker_matches_supplied_storage") is True
+        and import_evidence.get("summary_mismatches") == []
+        and redaction_scan.get("passed") is True
+        and _int(summary.get("real_filing_count")) >= MIN_REAL_FILINGS
+        and _int(summary.get("issuer_hash_count")) >= MIN_ISSUER_HASHES
+        and _int(summary.get("companyfacts_value_compared_count")) > 0
+        and _float(summary.get("companyfacts_value_match_rate")) >= MIN_COMPANYFACTS_MATCH_RATE
+        and _int(summary.get("completeness_guard_failed_count")) == 0
+        and _int(summary.get("unexpected_blocked_or_degraded_count")) == 0
+    )
 
 
 def _is_historical_archive_path(path: Path) -> bool:

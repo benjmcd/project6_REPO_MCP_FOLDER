@@ -166,8 +166,15 @@ RAW_ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 RAW_URL_RE = re.compile(r"https?://|www\.", re.IGNORECASE)
 RAW_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 RAW_PATH_RE = re.compile(r"(?:[A-Za-z]:[\\/]|\\\\|(?:^|[\s'\"(])/(?:[^/\s]+/)+[^/\s]+)")
-LABEL_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9.-]{0,9}")
+RAW_CIK_FIELD_RE = re.compile(r'"(?:cik|raw_cik)"\s*:\s*"?\d{1,10}"?', re.IGNORECASE)
+SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
+LOCAL_PATH_RE = re.compile(
+    r"[A-Za-z]:\\|\\\\|file://|/(?:Users|home|tmp|workspace)(?:/|$)|/var/tmp(?:/|$)|/private/tmp(?:/|$)"
+)
+RAW_DECIMAL_MAGNITUDE_RE = re.compile(r"(?<![A-Za-z0-9_])-?\d{4,}\.\d+(?![A-Za-z0-9_])")
+LABEL_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9.]*")
 LABEL_CIK_TOKEN_RE = re.compile(r"\bcik[-_ ]?0*(\d+)\b|\b(\d{6,10})\b", re.IGNORECASE)
+HEX24_RE = re.compile(r"^[a-f0-9]{24}$")
 HEX64_RE = re.compile(r"^[a-f0-9]{64}$")
 
 
@@ -196,6 +203,15 @@ def main() -> int:
         help=(
             "Off-repo stratified matrix plan JSON required for the selected tranche. "
             "The plan is read only to select bounded chunks; reports keep issuer identities redacted."
+        ),
+    )
+    parser.add_argument(
+        "--redacted-product-runner-report",
+        default="",
+        help=(
+            "Read an already-acquired redacted product-runner report offline, validate it against "
+            "the supplied storage marker and matrix plan, and re-emit current diagnostic criteria. "
+            "This never runs the live SEC network or Arelle subprocess."
         ),
     )
     parser.add_argument("--user-agent", default=os.environ.get("LAYER3_SEC_EDGAR_USER_AGENT", ""))
@@ -227,10 +243,16 @@ def main() -> int:
             parser.error("--sector-family-only cannot apply runtime default decisions")
         if not args.sector_family_storage_dir:
             parser.error("--sector-family-only requires --sector-family-storage-dir")
+        if args.redacted_product_runner_report:
+            parser.error("--sector-family-only cannot import a redacted product runner report")
         report = build_sector_family_validation_report(
             offline_storage_dir=Path(args.sector_family_storage_dir),
         )
     else:
+        if args.redacted_product_runner_report and args.live:
+            parser.error("--redacted-product-runner-report cannot be combined with --live")
+        if args.redacted_product_runner_report and not args.storage_dir:
+            parser.error("--redacted-product-runner-report requires --storage-dir for marker validation")
         report = build_report(
             live=bool(args.live),
             storage_dir=Path(args.storage_dir) if args.storage_dir else None,
@@ -238,6 +260,11 @@ def main() -> int:
                 Path(args.sector_family_storage_dir) if args.sector_family_storage_dir else None
             ),
             matrix_plan_path=Path(args.matrix_plan) if args.matrix_plan else None,
+            redacted_product_runner_report_path=(
+                Path(args.redacted_product_runner_report)
+                if args.redacted_product_runner_report
+                else None
+            ),
             user_agent=str(args.user_agent or ""),
             request_namespace=str(args.request_namespace or ""),
             taxonomy_internet_connectivity=str(args.taxonomy_internet_connectivity or "offline"),
@@ -260,6 +287,8 @@ def build_report(
     sector_family_storage_dir: Path | None = None,
     matrix_plan_path: Path | None = None,
     matrix_plan: Mapping[str, Any] | None = None,
+    redacted_product_runner_report_path: Path | None = None,
+    redacted_product_runner_report: Mapping[str, Any] | None = None,
     user_agent: str = "",
     request_namespace: str = "sec-xbrl-real-corpus-product-runner-v1",
     taxonomy_internet_connectivity: str = "offline",
@@ -271,13 +300,24 @@ def build_report(
     matrix_chunks = _matrix_chunks_from_readiness(matrix_plan_readiness)
     rows: list[dict[str, Any]] = []
     storage_marker = None
+    imported_report_validation = _offline_redacted_product_report_not_requested()
     sector_family_storage_dir_explicit = sector_family_storage_dir is not None
     resolved_sector_family_storage_dir = (
         _repo_path(sector_family_storage_dir)
         if sector_family_storage_dir is not None
         else (_repo_path(storage_dir) if storage_dir is not None else None)
     )
-    if preflight["state"] == "passed" and matrix_plan_readiness["state"] == "passed":
+    if redacted_product_runner_report_path is not None or redacted_product_runner_report is not None:
+        imported_report_validation = _offline_redacted_product_report_validation(
+            report_path=redacted_product_runner_report_path,
+            report=redacted_product_runner_report,
+            storage_dir=storage_dir,
+            matrix_plan_readiness=public_matrix_plan_readiness,
+        )
+        if imported_report_validation["state"] == "passed":
+            rows = list(imported_report_validation["_per_matrix"])
+            storage_marker = str(imported_report_validation["evidence"]["storage_dir_marker"])
+    elif preflight["state"] == "passed" and matrix_plan_readiness["state"] == "passed":
         live_storage = _live_storage_dir(storage_dir)
         if sector_family_storage_dir is None:
             resolved_sector_family_storage_dir = live_storage
@@ -313,6 +353,7 @@ def build_report(
         summary,
         public_matrix_plan_readiness,
         sector_family_activation_validation,
+        imported_report_validation,
     )
     blockers = [
         {
@@ -332,7 +373,13 @@ def build_report(
         "decision": decision,
         "gate_verdict": "PASS" if pass_gate else "FAIL_OR_INCONCLUSIVE",
         "headline": _headline(decision, blockers, summary),
-        "live_sec_network_used": bool(
+        "live_sec_network_used": _report_live_sec_network_used(
+            live=live,
+            preflight=preflight,
+            matrix_plan_readiness=matrix_plan_readiness,
+            imported_report_validation=imported_report_validation,
+        ),
+        "current_run_live_sec_network_used": bool(
             live and preflight["state"] == "passed" and matrix_plan_readiness["state"] == "passed"
         ),
         "fake_sec_client_used": False,
@@ -342,6 +389,9 @@ def build_report(
         "matrix_execution_plan": public_matrix_plan_readiness,
         "matrix_chunks": _matrix_chunk_projection(matrix_chunks),
         "preflight": preflight,
+        "offline_redacted_product_report_import": _public_offline_redacted_product_report_validation(
+            imported_report_validation
+        ),
         "sector_family_evidence_provenance": sector_family_evidence_provenance,
         "sector_family_activation_validation": sector_family_activation_validation,
         "criteria": criteria,
@@ -2342,18 +2392,366 @@ def _sector_family_available_filer_activation_criterion(
     )
 
 
+def _offline_redacted_product_report_not_requested() -> dict[str, Any]:
+    return {
+        "state": "not_requested",
+        "mode": "offline_redacted_product_report_import",
+        "used": False,
+        "blocked_reasons": [],
+        "evidence": {
+            "current_run_live_sec_network_used": False,
+            "current_run_arelle_subprocess_invoked": False,
+            "paths_redacted": True,
+        },
+        "_per_matrix": [],
+    }
+
+
+def _offline_redacted_product_report_validation(
+    *,
+    report_path: Path | None,
+    report: Mapping[str, Any] | None,
+    storage_dir: Path | None,
+    matrix_plan_readiness: Mapping[str, Any],
+) -> dict[str, Any]:
+    blocked_reasons: list[str] = []
+    payload: Mapping[str, Any] | None = None
+    report_text = ""
+    report_path_marker = None
+
+    if report_path is not None:
+        resolved_report_path = report_path.resolve(strict=False)
+        report_path_marker = stable_hash({"report_path": str(resolved_report_path)})[:24]
+        if not resolved_report_path.exists() or not resolved_report_path.is_file():
+            blocked_reasons.append("offline_product_report_file_unavailable")
+        else:
+            try:
+                report_text = resolved_report_path.read_text(encoding="utf-8-sig")
+                loaded = json.loads(report_text)
+            except (OSError, json.JSONDecodeError):
+                blocked_reasons.append("offline_product_report_file_unreadable")
+            else:
+                if isinstance(loaded, Mapping):
+                    payload = dict(loaded)
+                else:
+                    blocked_reasons.append("offline_product_report_top_level_not_object")
+    elif report is not None:
+        payload = dict(report)
+        report_text = json.dumps(payload, sort_keys=True)
+    else:
+        return _offline_redacted_product_report_not_requested()
+
+    expected_storage_marker = None
+    storage_dir_available = False
+    if storage_dir is None:
+        blocked_reasons.append("offline_product_report_storage_dir_required")
+    else:
+        resolved_storage_dir = _repo_path(storage_dir)
+        expected_storage_marker = _storage_marker(resolved_storage_dir)
+        storage_dir_available = resolved_storage_dir.exists() and resolved_storage_dir.is_dir()
+        if not storage_dir_available:
+            blocked_reasons.append("offline_product_report_storage_dir_unavailable")
+
+    if matrix_plan_readiness.get("state") != "passed":
+        blocked_reasons.append("offline_product_report_matrix_plan_not_satisfied")
+
+    redaction_scan = _offline_product_report_redaction_scan(report_text)
+    if not redaction_scan["passed"]:
+        blocked_reasons.append("offline_product_report_redaction_scan_failed")
+
+    evidence: dict[str, Any] = {
+        "current_run_live_sec_network_used": False,
+        "current_run_arelle_subprocess_invoked": False,
+        "report_path_marker": report_path_marker,
+        "report_paths_redacted": True,
+        "storage_dir_marker": expected_storage_marker,
+        "storage_dir_available": storage_dir_available,
+        "matrix_plan_state": matrix_plan_readiness.get("state"),
+        "redaction_scan": redaction_scan,
+        "paths_redacted": True,
+    }
+    per_matrix: list[dict[str, Any]] = []
+    if payload is not None:
+        payload_reasons, payload_evidence, per_matrix = _validate_offline_product_report_payload(
+            payload,
+            expected_storage_marker=expected_storage_marker,
+            matrix_plan_readiness=matrix_plan_readiness,
+        )
+        blocked_reasons.extend(payload_reasons)
+        evidence.update(payload_evidence)
+
+    blocked_reasons = list(dict.fromkeys(blocked_reasons))
+    return {
+        "state": "blocked" if blocked_reasons else "passed",
+        "mode": "offline_redacted_product_report_import",
+        "used": True,
+        "blocked_reasons": blocked_reasons,
+        "evidence": evidence,
+        "_per_matrix": per_matrix if not blocked_reasons else [],
+    }
+
+
+def _validate_offline_product_report_payload(
+    payload: Mapping[str, Any],
+    *,
+    expected_storage_marker: str | None,
+    matrix_plan_readiness: Mapping[str, Any],
+) -> tuple[list[str], dict[str, Any], list[dict[str, Any]]]:
+    blocked_reasons: list[str] = []
+    candidate_storage_marker = str(payload.get("storage_dir_marker") or "")
+    redaction = dict(payload.get("redaction") or {})
+    runtime_default_decision = dict(payload.get("runtime_default_decision") or {})
+    non_goals = dict(payload.get("non_goals_preserved") or {})
+    candidate_plan = dict(payload.get("matrix_execution_plan") or {})
+    per_matrix_raw = payload.get("per_matrix")
+    per_filing_raw = payload.get("per_filing")
+    per_matrix = [
+        dict(item)
+        for item in per_matrix_raw
+        if isinstance(item, Mapping)
+    ] if isinstance(per_matrix_raw, list) else []
+
+    if payload.get("schema_id") != "diagnostics.sec_xbrl_real_corpus_product_runner.v1":
+        blocked_reasons.append("offline_product_report_schema_not_admitted")
+    if payload.get("decision") != "real_corpus_default_on_validated":
+        blocked_reasons.append("offline_product_report_decision_not_validated")
+    if payload.get("gate_verdict") != "PASS":
+        blocked_reasons.append("offline_product_report_gate_verdict_not_pass")
+    if payload.get("live_sec_network_used") is not True:
+        blocked_reasons.append("offline_product_report_live_provenance_not_present")
+    if payload.get("fake_sec_client_used") is not False:
+        blocked_reasons.append("offline_product_report_fake_client_used")
+    if payload.get("storage_dir_paths_redacted") is not True:
+        blocked_reasons.append("offline_product_report_storage_paths_not_redacted")
+    if not HEX24_RE.fullmatch(candidate_storage_marker):
+        blocked_reasons.append("offline_product_report_storage_marker_invalid")
+    if expected_storage_marker and candidate_storage_marker != expected_storage_marker:
+        blocked_reasons.append("offline_product_report_storage_marker_mismatch")
+    if runtime_default_decision.get("applied_to_config") is not False:
+        blocked_reasons.append("offline_product_report_runtime_default_applied")
+
+    for key in (
+        "raw_tickers_committed",
+        "raw_accessions_committed",
+        "raw_sec_urls_committed",
+        "local_storage_roots_committed",
+        "raw_values_committed",
+    ):
+        if redaction.get(key) is not False:
+            blocked_reasons.append(f"offline_product_report_redaction_{key}_not_false")
+    if redaction.get("identity_hash_only") is not True:
+        blocked_reasons.append("offline_product_report_identity_hash_only_not_true")
+
+    for key in (
+        "runtime_network_default_changed",
+        "operator_value_reveal_enabled",
+        "final_financial_statement_semantics_claimed",
+        "cross_company_comparability_claimed",
+    ):
+        if non_goals.get(key) is not False:
+            blocked_reasons.append(f"offline_product_report_non_goal_{key}_not_false")
+
+    if candidate_plan.get("state") != "passed":
+        blocked_reasons.append("offline_product_report_matrix_plan_not_passed")
+    if candidate_plan.get("chunks") != list(matrix_plan_readiness.get("chunks") or []):
+        blocked_reasons.append("offline_product_report_matrix_plan_mismatch")
+    if set(candidate_plan.get("covered_strata") or []) != set(matrix_plan_readiness.get("covered_strata") or []):
+        blocked_reasons.append("offline_product_report_matrix_plan_strata_mismatch")
+    if candidate_plan.get("missing_required_strata") not in ([], None):
+        blocked_reasons.append("offline_product_report_matrix_plan_required_strata_missing")
+
+    if not isinstance(per_matrix_raw, list) or not per_matrix:
+        blocked_reasons.append("offline_product_report_per_matrix_missing")
+    elif len(per_matrix) != len(per_matrix_raw):
+        blocked_reasons.append("offline_product_report_per_matrix_row_invalid")
+    if not isinstance(per_filing_raw, list) or not per_filing_raw:
+        blocked_reasons.append("offline_product_report_per_filing_missing")
+
+    blocked_reasons.extend(
+        _offline_product_report_row_plan_reasons(
+            per_matrix,
+            matrix_plan_readiness=matrix_plan_readiness,
+        )
+    )
+
+    recomputed_summary = _summary(per_matrix)
+    summary_mismatches = _offline_product_report_summary_mismatches(
+        dict(payload.get("summary") or {}),
+        recomputed_summary,
+    )
+    if summary_mismatches:
+        blocked_reasons.append("offline_product_report_summary_mismatch")
+
+    failed_criteria = [
+        str(item.get("criterion") or "")
+        for item in _as_list(payload.get("criteria"))
+        if isinstance(item, Mapping) and item.get("state") != "passed"
+    ]
+    if failed_criteria:
+        blocked_reasons.append("offline_product_report_criteria_not_passed")
+
+    evidence = {
+        "candidate_schema_id": payload.get("schema_id"),
+        "candidate_decision": payload.get("decision"),
+        "candidate_gate_verdict": payload.get("gate_verdict"),
+        "inherited_live_sec_network_used": payload.get("live_sec_network_used") is True,
+        "candidate_fake_sec_client_used": payload.get("fake_sec_client_used"),
+        "candidate_storage_dir_marker": candidate_storage_marker or None,
+        "storage_marker_matches_supplied_storage": bool(
+            expected_storage_marker and candidate_storage_marker == expected_storage_marker
+        ),
+        "candidate_matrix_chunk_count": len(per_matrix),
+        "candidate_per_filing_count": len(per_filing_raw) if isinstance(per_filing_raw, list) else 0,
+        "current_code_per_filing_count": len(_per_filing_from_rows(per_matrix)),
+        "current_code_summary": _offline_product_report_summary_evidence(recomputed_summary),
+        "summary_mismatches": summary_mismatches,
+        "failed_criteria": failed_criteria,
+        "runtime_default_applied_to_config": runtime_default_decision.get("applied_to_config"),
+        "operator_value_reveal_enabled": non_goals.get("operator_value_reveal_enabled"),
+    }
+    return list(dict.fromkeys(blocked_reasons)), evidence, per_matrix
+
+
+def _offline_product_report_row_plan_reasons(
+    per_matrix: list[dict[str, Any]],
+    *,
+    matrix_plan_readiness: Mapping[str, Any],
+) -> list[str]:
+    reasons: list[str] = []
+    expected_chunks = {
+        str(chunk.get("matrix_label")): dict(chunk)
+        for chunk in matrix_plan_readiness.get("chunks") or []
+        if isinstance(chunk, Mapping)
+    }
+    observed_labels: set[str] = set()
+    for row in per_matrix:
+        label = str(row.get("matrix_label") or "")
+        if not label or label not in expected_chunks:
+            reasons.append("offline_product_report_matrix_row_label_not_in_plan")
+            continue
+        if label in observed_labels:
+            reasons.append("offline_product_report_matrix_row_duplicate_label")
+            continue
+        observed_labels.add(label)
+        expected = expected_chunks[label]
+        if row.get("matrix_ref_hash") != expected.get("matrix_ref_hash"):
+            reasons.append("offline_product_report_matrix_row_hash_mismatch")
+        if list(row.get("strata") or []) != list(expected.get("strata") or []):
+            reasons.append("offline_product_report_matrix_row_strata_mismatch")
+    if set(observed_labels) != set(expected_chunks):
+        reasons.append("offline_product_report_matrix_row_plan_coverage_mismatch")
+    return reasons
+
+
+def _offline_product_report_summary_mismatches(
+    candidate_summary: Mapping[str, Any],
+    recomputed_summary: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    keys = (
+        "matrix_chunk_count",
+        "ready_matrix_chunk_count",
+        "blocked_matrix_chunk_count",
+        "real_filing_count",
+        "supported_record_count",
+        "issuer_hash_count",
+        "required_forms_present",
+        "resolved_fact_count",
+        "independent_inline_fact_count",
+        "completeness_guard_failed_count",
+        "unexpected_blocked_or_degraded_count",
+        "companyfacts_value_match_count",
+        "companyfacts_value_compared_count",
+        "companyfacts_value_mismatch_count",
+        "companyfacts_value_match_rate",
+        "companyfacts_oracle_unavailable_count",
+        "records_with_arelle_sidecar_output",
+        "records_with_selected_fact_authority_equal_to_sidecar",
+        "records_with_handoff_export_prepare",
+        "operator_surface_values_exposed",
+    )
+    mismatches: list[dict[str, Any]] = []
+    for key in keys:
+        if candidate_summary.get(key) != recomputed_summary.get(key):
+            mismatches.append(
+                {
+                    "field": key,
+                    "candidate": candidate_summary.get(key),
+                    "current_code": recomputed_summary.get(key),
+                }
+            )
+    return mismatches
+
+
+def _offline_product_report_summary_evidence(summary: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "real_filing_count": summary.get("real_filing_count"),
+        "supported_record_count": summary.get("supported_record_count"),
+        "issuer_hash_count": summary.get("issuer_hash_count"),
+        "required_forms_present": summary.get("required_forms_present"),
+        "resolved_fact_count": summary.get("resolved_fact_count"),
+        "independent_inline_fact_count": summary.get("independent_inline_fact_count"),
+        "companyfacts_value_compared_count": summary.get("companyfacts_value_compared_count"),
+        "companyfacts_value_match_rate": summary.get("companyfacts_value_match_rate"),
+        "unexpected_blocked_or_degraded_count": summary.get("unexpected_blocked_or_degraded_count"),
+        "operator_surface_values_exposed": summary.get("operator_surface_values_exposed"),
+        "strata_readiness": summary.get("strata_readiness"),
+    }
+
+
+def _offline_product_report_redaction_scan(text: str) -> dict[str, Any]:
+    hits = {
+        "raw_accession_found": bool(RAW_ACCESSION_RE.search(text)),
+        "raw_cik_found": bool(RAW_CIK_FIELD_RE.search(text)),
+        "raw_sec_url_found": bool(SEC_URL_RE.search(text)),
+        "raw_local_path_found": bool(LOCAL_PATH_RE.search(text)),
+        "raw_operator_contact_found": bool(RAW_CONTACT_RE.search(text)),
+        "raw_value_magnitude_found": bool(RAW_DECIMAL_MAGNITUDE_RE.search(text)),
+    }
+    return {"passed": not any(hits.values()), **hits}
+
+
+def _public_offline_redacted_product_report_validation(validation: Mapping[str, Any]) -> dict[str, Any]:
+    return {str(key): value for key, value in validation.items() if not str(key).startswith("_")}
+
+
+def _report_live_sec_network_used(
+    *,
+    live: bool,
+    preflight: Mapping[str, Any],
+    matrix_plan_readiness: Mapping[str, Any],
+    imported_report_validation: Mapping[str, Any],
+) -> bool:
+    if imported_report_validation.get("state") == "passed":
+        evidence = dict(imported_report_validation.get("evidence") or {})
+        return bool(evidence.get("inherited_live_sec_network_used"))
+    return bool(live and preflight["state"] == "passed" and matrix_plan_readiness["state"] == "passed")
+
+
 def _criteria(
     preflight: Mapping[str, Any],
     summary: Mapping[str, Any],
     matrix_plan_readiness: Mapping[str, Any],
     sector_family_activation_validation: Mapping[str, Any],
+    imported_report_validation: Mapping[str, Any],
 ) -> list[dict[str, Any]]:
+    imported_report_public = _public_offline_redacted_product_report_validation(
+        imported_report_validation
+    )
     return [
         _criterion(
             "live_preflight",
-            preflight["state"] == "passed",
-            preflight,
+            preflight["state"] == "passed" or imported_report_validation.get("state") == "passed",
+            {
+                "current_run_live_preflight": preflight,
+                "offline_redacted_product_report_import": imported_report_public,
+            },
             "real_corpus_product_path_live_preflight_not_satisfied",
+        ),
+        _criterion(
+            "offline_redacted_product_report_import",
+            imported_report_validation.get("state") in {"not_requested", "passed"},
+            imported_report_public,
+            "offline_redacted_product_report_import_not_satisfied",
         ),
         _criterion(
             "matrix_execution_plan",
