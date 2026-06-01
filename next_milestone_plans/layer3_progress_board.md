@@ -10042,6 +10042,56 @@ semantics claim, or product-flow doc change in this design pass.
 Next exact posture after merge and current-main verification:
 `sec_xbrl_value_reveal_authority_receipt_v1`.
 
+## SEC XBRL Value-Reveal Authority Receipt
+
+Milestone: `sec_xbrl_value_reveal_authority_receipt_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1302-value-reveal-authority-receipt.md`.
+
+Status: merged current-main Tier-2 risk-assessed implementation, post-merge
+verified at `0ce24f713fd3453e97810d56cfdad4d0176abbed`.
+
+Scope: adds only the server-owned authority receipt that bridges an approved
+SEC XBRL operator-review decision to a later explicit value-reveal submit. The
+receipt records governed ids, hashes, policy/state, and eligibility evidence; it
+does not return revealed values, render value UI, change defaults, perform
+source acquisition, invoke Arelle, deliver/export values, or claim production
+readiness.
+
+Critical constraint: browser-supplied sidecar, dataset, value-store, path, URL,
+accession, CIK, operator contact, local storage, and raw value authority remain
+rejected. Sidecar and value-store authority for any later reveal-submit must be
+resolved server-side from the persisted authority lineage.
+
+Next exact posture after merge and current-main verification:
+`sec_xbrl_controlled_value_reveal_submit_v1`.
+
+## SEC XBRL Controlled Value-Reveal Submit Design
+
+Milestone: `sec_xbrl_controlled_value_reveal_submit_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1303-controlled-value-reveal-submit-design.md`.
+
+Status: branch-local Tier-2 design/pre-review entry.
+
+Scope: designs the next submit boundary without implementing runtime behavior.
+The future route is `POST /api/v1/layer3/sec-xbrl/value-reveal/submit`; the
+browser may supply only the value-reveal authority receipt id, authority basis
+hash, submit mode, operator decision, confirmation, and optional server-capped
+pagination inputs. Raw sidecar, dataset, value-store, accession, CIK, ticker,
+path, URL, source-acquisition, Arelle, delivery/export, UI, or default-on fields
+remain non-admitted.
+
+Future implementation constraints: returned values may be transient response
+data only, identity-like values stay redacted, any status surface remains
+hash/count-only, feature flag behavior remains default-off, and rendered value
+UI, default-on admission, source acquisition, Arelle invocation, delivery/export,
+provider dispatch, raw artifact commits, production readiness, and final
+financial-statement semantics remain separate later gates.
+
+Next exact posture after merge and current-main verification:
+`sec_xbrl_controlled_value_reveal_submit_v1_tier2_risk_assessed_implementation`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
