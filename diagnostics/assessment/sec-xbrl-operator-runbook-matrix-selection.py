@@ -35,7 +35,7 @@ REQUIRED_STRATA = {
 
 RUNBOOK_CONTROLS = [
     "start_from_clean_project6_origin_main_worktree",
-    "keep_committed_defaults_off",
+    "preserve_committed_safety_defaults",
     "require_explicit_live_sec_authorization",
     "use_isolated_off_repo_arelle_environment",
     "run_validate_only_preflight_before_live_work",
@@ -47,7 +47,7 @@ RUNBOOK_CONTROLS = [
     "record_hashes_counts_forms_and_reason_codes_only",
     "stop_on_arelle_or_taxonomy_unavailability",
     "stop_on_redaction_or_identity_leak",
-    "do_not_change_runtime_defaults",
+    "do_not_change_runtime_defaults_by_this_diagnostic",
 ]
 
 STRATIFIED_MATRIX = [
@@ -152,21 +152,25 @@ def build_report(
     live_proof = _read_json(value_reveal_live_proof_report_path)
 
     selected_posture = dict(default_posture.get("selected_posture") or {})
+    default_posture_recognized = _default_posture_recognized(
+        default_posture=default_posture,
+        selected_posture=selected_posture,
+    )
     real_summary = dict(real_product.get("summary") or {})
     live_attempts = live_proof.get("attempts") if isinstance(live_proof.get("attempts"), list) else []
     strata = list(STRATIFIED_MATRIX)
     criteria = [
         _criterion(
-            "explicit_operator_only_default_off_posture_selected",
-            default_posture.get("decision") == "explicit_operator_only_default_off_selected"
-            and selected_posture.get("posture") == "explicit_operator_only_default_off"
-            and selected_posture.get("arelle_fact_authority_cutover_default_enabled") is False
-            and selected_posture.get("arelle_value_reveal_default_enabled") is False
-            and selected_posture.get("sec_live_network_default_enabled") is False,
+            "explicit_operator_default_posture_recognized",
+            default_posture_recognized,
             {
                 "source_report": _repo_display_path(default_posture_report_path),
                 "decision": default_posture.get("decision"),
                 "selected_posture": selected_posture.get("posture"),
+                "superseded_by_default_on_runtime": selected_posture.get(
+                    "arelle_fact_authority_cutover_default_on_supersedes_selected_posture"
+                )
+                is True,
             },
             "operator_runbook_default_posture_not_selected",
         ),
@@ -191,9 +195,9 @@ def build_report(
         _criterion(
             "runbook_controls_are_defined",
             len(RUNBOOK_CONTROLS) >= 12
-            and "keep_committed_defaults_off" in RUNBOOK_CONTROLS
+            and "preserve_committed_safety_defaults" in RUNBOOK_CONTROLS
             and "run_redaction_scan_before_reporting" in RUNBOOK_CONTROLS
-            and "do_not_change_runtime_defaults" in RUNBOOK_CONTROLS,
+            and "do_not_change_runtime_defaults_by_this_diagnostic" in RUNBOOK_CONTROLS,
             {"control_count": len(RUNBOOK_CONTROLS), "controls": RUNBOOK_CONTROLS},
             "operator_runbook_controls_incomplete",
         ),
@@ -285,6 +289,28 @@ def _read_json(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"expected JSON object at {_repo_display_path(path)}")
     return value
+
+
+def _default_posture_recognized(
+    *,
+    default_posture: Mapping[str, Any],
+    selected_posture: Mapping[str, Any],
+) -> bool:
+    pre_runtime_selected = (
+        default_posture.get("decision") == "explicit_operator_only_default_off_selected"
+        and selected_posture.get("arelle_fact_authority_cutover_default_enabled") is False
+    )
+    superseded_by_runtime_default_on = (
+        default_posture.get("decision") == "explicit_operator_only_default_off_superseded_by_default_on_runtime"
+        and selected_posture.get("arelle_fact_authority_cutover_default_enabled") is False
+        and selected_posture.get("arelle_fact_authority_cutover_default_on_supersedes_selected_posture") is True
+    )
+    return (
+        selected_posture.get("posture") == "explicit_operator_only_default_off"
+        and selected_posture.get("arelle_value_reveal_default_enabled") is False
+        and selected_posture.get("sec_live_network_default_enabled") is False
+        and (pre_runtime_selected or superseded_by_runtime_default_on)
+    )
 
 
 def _int(value: Any, *, default: int = 0) -> int:

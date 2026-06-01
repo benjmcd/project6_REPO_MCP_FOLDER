@@ -80,13 +80,10 @@ def build_report(
     value_attempts = value_reveal.get("attempts") if isinstance(value_reveal.get("attempts"), list) else []
 
     config_defaults_off = _config_defaults_off(config_text)
-    default_posture_selected = (
-        default_posture.get("decision") == "explicit_operator_only_default_off_selected"
-        and selected_posture.get("posture") == "explicit_operator_only_default_off"
-        and selected_posture.get("sec_live_network_default_enabled") is False
-        and selected_posture.get("arelle_fact_authority_cutover_default_enabled") is False
-        and selected_posture.get("arelle_value_reveal_default_enabled") is False
-        and selected_posture.get("broader_reliability_admission_converted_to_runtime_default") is False
+    config_safety_defaults_off = _config_safety_defaults_off(config_text)
+    default_posture_recognized = _default_posture_recognized(
+        default_posture=default_posture,
+        selected_posture=selected_posture,
     )
     matrix_product_ready = _matrix_product_ready(matrix=matrix, summary=matrix_summary)
     matrix_strata_ready = _matrix_strata_ready(matrix_plan=matrix_plan, summary=matrix_summary)
@@ -116,14 +113,19 @@ def build_report(
 
     criteria = [
         _criterion(
-            "committed_defaults_remain_off",
-            config_defaults_off and default_posture_selected,
+            "committed_safety_defaults_preserved",
+            config_safety_defaults_off and default_posture_recognized,
             {
                 "config_file": "backend/app/core/config.py",
                 "config_defaults_off": config_defaults_off,
+                "config_safety_defaults_off": config_safety_defaults_off,
                 "default_posture_report": _repo_display_path(default_posture_report_path),
                 "default_posture_decision": default_posture.get("decision"),
                 "selected_posture": selected_posture.get("posture"),
+                "superseded_by_default_on_runtime": selected_posture.get(
+                    "arelle_fact_authority_cutover_default_on_supersedes_selected_posture"
+                )
+                is True,
             },
             "stratified_matrix_readiness_defaults_not_off",
         ),
@@ -317,6 +319,29 @@ def _attempt_proves_gated_reveal(attempt: Mapping[str, Any]) -> bool:
     )
 
 
+def _default_posture_recognized(
+    *,
+    default_posture: Mapping[str, Any],
+    selected_posture: Mapping[str, Any],
+) -> bool:
+    pre_runtime_selected = (
+        default_posture.get("decision") == "explicit_operator_only_default_off_selected"
+        and selected_posture.get("arelle_fact_authority_cutover_default_enabled") is False
+        and selected_posture.get("broader_reliability_admission_converted_to_runtime_default") is False
+    )
+    superseded_by_runtime_default_on = (
+        default_posture.get("decision") == "explicit_operator_only_default_off_superseded_by_default_on_runtime"
+        and selected_posture.get("arelle_fact_authority_cutover_default_enabled") is False
+        and selected_posture.get("arelle_fact_authority_cutover_default_on_supersedes_selected_posture") is True
+    )
+    return (
+        selected_posture.get("posture") == "explicit_operator_only_default_off"
+        and selected_posture.get("sec_live_network_default_enabled") is False
+        and selected_posture.get("arelle_value_reveal_default_enabled") is False
+        and (pre_runtime_selected or superseded_by_runtime_default_on)
+    )
+
+
 def _matrix_redaction_ok(redaction: Mapping[str, Any]) -> bool:
     return (
         redaction.get("identity_hash_only") is True
@@ -375,6 +400,16 @@ def _config_defaults_off(config_text: str) -> bool:
             config_text,
             'layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=False,',
         )
+        and _contains(
+            config_text,
+            'layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False,',
+        )
+    )
+
+
+def _config_safety_defaults_off(config_text: str) -> bool:
+    return (
+        _contains(config_text, 'layer3_sec_edgar_live_network_enabled: bool = Field(\n        default=False,')
         and _contains(
             config_text,
             'layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False,',
