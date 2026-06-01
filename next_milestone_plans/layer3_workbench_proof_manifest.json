@@ -42325,10 +42325,13 @@
   },
   "sec_xbrl_controlled_value_reveal_submit_post_merge_audit_closure_proof": {
     "proof_kind": "sec_xbrl_controlled_value_reveal_submit_post_merge_audit_closure_proof",
-    "status": "branch_local_tier1_docs_only_post_merge_audit_closure_verified",
+    "status": "merged_current_main_tier1_docs_only_post_merge_audit_closure_verified",
     "milestone": "sec_xbrl_controlled_value_reveal_submit_post_merge_audit_closure_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1308-controlled-submit-post-merge-audit-closure.md",
     "base_main": "52c4e5915f75fffdc76fcff711e911efcf332c4c",
+    "merged_pr": 2051,
+    "merged_main": "96613b00fa9034e2b17d8842b542a3e7d8d93e84",
+    "post_merge_verification_main": "96613b00fa9034e2b17d8842b542a3e7d8d93e84",
     "tier_classification": "Tier 1 documentation/proof closure over already-merged Tier-2 controlled value-reveal submit surfaces; no runtime, schema, persistence, value-reveal response, default-on, or redaction-posture change",
     "evidence_prs": [2043, 2045, 2047, 2049, 2050],
     "proof_terms": [
