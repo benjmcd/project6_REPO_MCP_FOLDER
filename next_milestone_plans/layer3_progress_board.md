@@ -10129,6 +10129,41 @@ redaction scan, residual-magnitude regression scan, py_compile, and
 Next exact posture after merge and current-main verification:
 `sec_xbrl_controlled_value_reveal_submit_post_merge_audit_then_rendered_or_default_design_if_admitted`.
 
+## SEC XBRL Rendered Value UI Post-Merge Audit Closure
+
+Milestone: `sec_xbrl_rendered_controlled_value_reveal_ui_post_merge_audit_closure_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1311-rendered-value-ui-post-merge-audit-closure.md`.
+
+Status: current-main Tier-1 documentation/proof closure over the already-merged
+Tier-2 rendered controlled value-reveal UI proof from PR `#2055`, merged at
+`f59cf53f367e036d9c9e8b7029b98cbbe8ea07ce`.
+
+Audit outcome: PR `#2055` has zero total review threads and zero current
+unresolved review threads. The final PR head passed GitHub backend and
+Playwright checks. No submitted independent review was recorded before merge;
+independent review was requested and the softened Tier-2 self-verification
+disposition was documented. The first CI run's deferred-control label collision
+was resolved by changing only the rendered button label from `Prepare Authority`
+to `Prepare Receipt`.
+
+Non-goals: this closure changes no runtime behavior and admits no schema,
+`models.py`, Alembic migration, durable persistence, backend API/service
+behavior, source acquisition, Arelle subprocess invocation, export/delivery,
+provider/connector dispatch, default-on behavior, raw runtime artifacts,
+operator-authentication claim, production readiness, or final
+financial-statement semantics.
+
+Verification: current-main JS syntax, full `/review/layer3` static suite, full
+SEC XBRL backend suite, targeted Chromium Playwright proof including the prior
+CI failure representative, target-selection frozen check, progress check,
+py_compile, UTF-8-SIG JSON parsing, committed SEC XBRL JSON redaction scan,
+residual-magnitude scan, and `git diff --check` pass.
+
+Next exact posture:
+`sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation`.
+
 ## SEC XBRL Rendered Value UI Proof
 
 Milestone: `sec_xbrl_rendered_controlled_value_reveal_ui_proof_v1`.
@@ -10136,9 +10171,8 @@ Milestone: `sec_xbrl_rendered_controlled_value_reveal_ui_proof_v1`.
 Planning doc:
 `next_milestone_plans/Layer3_planning_docs/1310-rendered-value-ui-proof.md`.
 
-Status: branch-local Tier-2 risk-assessed rendered UI proof, verified on
-`codex/secxbrl-rendered-value-ui-proof`, based on current
-`project6-origin/main` at `f861acb16677267cc58173c1f0b3fcf820e93bcc`.
+Status: merged current-main Tier-2 risk-assessed rendered UI proof, verified
+after merge at `f59cf53f367e036d9c9e8b7029b98cbbe8ea07ce`.
 
 Scope: render the bounded SEC XBRL controlled value-reveal operator panel over
 the existing authority prepare, controlled submit, and submit-status APIs. The
