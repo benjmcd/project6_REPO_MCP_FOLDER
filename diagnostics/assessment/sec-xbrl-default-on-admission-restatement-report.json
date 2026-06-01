@@ -1,0 +1,748 @@
+{
+  "blocking_reasons": [
+    {
+      "criterion": "required_committed_reports_parseable",
+      "evidence": {
+        "admission_review": {
+          "decision": "admission_review_requires_post_1966_governance_followup",
+          "path": "diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json",
+          "schema_id": "diagnostics.sec_xbrl_default_on_admission_review.v1",
+          "status": "loaded"
+        },
+        "broader_reliability": {
+          "decision": "broader_corpus_reliability_admitted",
+          "path": "diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json",
+          "schema_id": "diagnostics.sec_xbrl_broader_corpus_reliability_gate.v1",
+          "status": "loaded"
+        },
+        "default_on_gate": {
+          "decision": "default_on_admitted_candidate",
+          "path": "diagnostics/assessment/sec-xbrl-default-on-gate-report.json",
+          "schema_id": "diagnostics.sec_xbrl_default_on_corpus_expansion_gate.v1",
+          "status": "loaded"
+        },
+        "default_posture": {
+          "decision": "explicit_operator_only_default_off_selected",
+          "path": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json",
+          "schema_id": "diagnostics.sec_xbrl_default_posture_decision.v1",
+          "status": "loaded"
+        },
+        "operator_runbook": {
+          "decision": "operator_runbook_and_stratified_matrix_selection_ready",
+          "path": "diagnostics/assessment/sec-xbrl-operator-runbook-matrix-selection-report.json",
+          "schema_id": "diagnostics.sec_xbrl_operator_runbook_matrix_selection.v1",
+          "status": "loaded"
+        },
+        "real_product_runner": {
+          "decision": null,
+          "path": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+          "schema_id": null,
+          "status": "missing"
+        },
+        "runtime_default": {
+          "decision": "default_on_runtime_disabled_by_governance_remediation",
+          "path": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json",
+          "schema_id": "diagnostics.sec_xbrl_default_on_runtime.v1",
+          "status": "loaded"
+        },
+        "value_reveal_live_proof": {
+          "decision": "value_reveal_live_authority_and_operator_exercise_proven_for_two_bounded_filings",
+          "path": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json",
+          "schema_id": "diagnostics.sec_xbrl_value_reveal_live_proof.v1",
+          "status": "loaded"
+        }
+      },
+      "reason": "default_on_admission_restatement_required_report_missing_or_malformed"
+    },
+    {
+      "criterion": "required_source_report_references_current",
+      "evidence": {
+        "checked_reference_count": 19,
+        "references": [
+          {
+            "report": "default_on_gate",
+            "schema_id": "diagnostics.sec_xbrl_bridge_cutover_report.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-bridge-cutover-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_on_gate",
+            "schema_id": "diagnostics.sec_xbrl_completeness_verification.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-completeness-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_on_gate",
+            "schema_id": "diagnostics.sec_xbrl_sidecar_parity_report.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-sidecar-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_on_gate",
+            "schema_id": "diagnostics.sec_xbrl_measure.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-value-reveal-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_on_gate",
+            "schema_id": "diagnostics.sec_xbrl_measure.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-expanded-value-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_on_gate",
+            "schema_id": "diagnostics.sec_xbrl_bridge_cutover_report.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-expanded-value-bridge-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "broader_reliability",
+            "schema_id": "diagnostics.sec_xbrl_default_on_corpus_expansion_gate.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-default-on-gate-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "broader_reliability",
+            "schema_id": "diagnostics.sec_xbrl_product_path_corpus_validation_report.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-product-path-corpus-validation-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "broader_reliability",
+            "schema_id": null,
+            "source_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+            "status": "missing"
+          },
+          {
+            "report": "admission_review",
+            "schema_id": "diagnostics.sec_xbrl_default_on_corpus_expansion_gate.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-default-on-gate-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_posture",
+            "schema_id": "diagnostics.sec_xbrl_default_on_admission_review.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_posture",
+            "schema_id": "diagnostics.sec_xbrl_broader_corpus_reliability_gate.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_posture",
+            "schema_id": null,
+            "source_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+            "status": "missing"
+          },
+          {
+            "report": "default_posture",
+            "schema_id": "diagnostics.sec_xbrl_default_on_runtime.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_posture",
+            "schema_id": "diagnostics.sec_xbrl_value_reveal_live_proof.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "operator_runbook",
+            "schema_id": "diagnostics.sec_xbrl_broader_corpus_reliability_gate.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "operator_runbook",
+            "schema_id": "diagnostics.sec_xbrl_default_posture_decision.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "operator_runbook",
+            "schema_id": null,
+            "source_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+            "status": "missing"
+          },
+          {
+            "report": "operator_runbook",
+            "schema_id": "diagnostics.sec_xbrl_value_reveal_live_proof.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json",
+            "status": "present_json_object"
+          }
+        ]
+      },
+      "reason": "default_on_admission_restatement_stale_or_missing_source_report_reference"
+    },
+    {
+      "criterion": "companyfacts_value_correctness_restated",
+      "evidence": {
+        "broader_real_product_match_rate": 0.99,
+        "default_on_gate_compared_count": 3790,
+        "default_on_gate_decision": "default_on_admitted_candidate",
+        "default_on_gate_match_rate": 0.9923,
+        "minimum_match_rate": 0.98,
+        "real_product_compared_count": null,
+        "real_product_decision": null,
+        "real_product_match_rate": null
+      },
+      "reason": "default_on_admission_restatement_companyfacts_value_correctness_not_reproven"
+    },
+    {
+      "criterion": "completeness_and_dts_coverage_restated",
+      "evidence": {
+        "default_on_independent_count_and_dts_state": "passed",
+        "real_product_completeness_guard_failed_count": null,
+        "real_product_gate_verdict": null,
+        "real_product_independent_inline_fact_count": null,
+        "real_product_resolved_fact_count": null,
+        "real_product_unexpected_blocked_or_degraded_count": null
+      },
+      "reason": "default_on_admission_restatement_completeness_or_dts_not_reproven"
+    },
+    {
+      "criterion": "product_path_readiness_restated",
+      "evidence": {
+        "broader_decision": "broader_corpus_reliability_admitted",
+        "broader_real_product_filing_count": 32,
+        "broader_real_product_supported_record_count": 30,
+        "real_product_decision": null,
+        "real_product_filing_count": null,
+        "real_product_gate_verdict": null,
+        "real_product_handoff_export_prepare_count": null,
+        "real_product_supported_record_count": null
+      },
+      "reason": "default_on_admission_restatement_product_path_readiness_not_reproven"
+    },
+    {
+      "criterion": "sidecar_selection_restated",
+      "evidence": {
+        "default_on_bridge_cutover_parity_state": "passed",
+        "real_product_records_with_arelle_sidecar_output": null,
+        "real_product_records_with_selected_fact_authority_equal_to_sidecar": null,
+        "real_product_supported_record_count": null,
+        "runtime_persisted_sidecar_required": true
+      },
+      "reason": "default_on_admission_restatement_sidecar_selection_not_reproven"
+    },
+    {
+      "criterion": "standing_non_admissions_preserved",
+      "evidence": {
+        "live_non_admissions": {
+          "cross_company_comparability_claimed": false,
+          "default_on_value_reveal_claimed": false,
+          "final_financial_statement_semantics_claimed": false,
+          "production_readiness_claimed": false
+        },
+        "live_redaction_scan": {
+          "raw_accession_found": false,
+          "raw_contact_found": false,
+          "raw_issuer_identity_found": false,
+          "raw_local_path_found": false,
+          "raw_sec_url_found": false,
+          "raw_value_record_collection_found": false,
+          "reportable_bundle_refs_and_reveal_receipts_scanned": true
+        },
+        "posture_non_goals": {
+          "cross_company_comparability_claimed": false,
+          "final_financial_statement_semantics_claimed": false,
+          "production_readiness_claimed": false,
+          "raw_identity_committed": false,
+          "raw_values_committed": false
+        },
+        "real_product_non_goals": {},
+        "real_product_redaction": {
+          "identity_hash_only": null,
+          "local_storage_roots_committed": null,
+          "raw_accessions_committed": null,
+          "raw_sec_urls_committed": null,
+          "raw_values_committed": null
+        },
+        "runbook_non_goals": {
+          "arelle_subprocess_invoked": false,
+          "cross_company_comparability_claimed": false,
+          "final_financial_statement_semantics_claimed": false,
+          "live_sec_network_run_performed": false,
+          "production_readiness_claimed": false,
+          "raw_identity_committed": false,
+          "raw_values_committed": false,
+          "runtime_default_changed": false,
+          "source_acquisition_performed": false
+        }
+      },
+      "reason": "default_on_admission_restatement_non_admission_or_redaction_regressed"
+    }
+  ],
+  "conflicting_reasons": [],
+  "criteria": [
+    {
+      "blocked_reason": "default_on_admission_restatement_required_report_missing_or_malformed",
+      "criterion": "required_committed_reports_parseable",
+      "evidence": {
+        "admission_review": {
+          "decision": "admission_review_requires_post_1966_governance_followup",
+          "path": "diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json",
+          "schema_id": "diagnostics.sec_xbrl_default_on_admission_review.v1",
+          "status": "loaded"
+        },
+        "broader_reliability": {
+          "decision": "broader_corpus_reliability_admitted",
+          "path": "diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json",
+          "schema_id": "diagnostics.sec_xbrl_broader_corpus_reliability_gate.v1",
+          "status": "loaded"
+        },
+        "default_on_gate": {
+          "decision": "default_on_admitted_candidate",
+          "path": "diagnostics/assessment/sec-xbrl-default-on-gate-report.json",
+          "schema_id": "diagnostics.sec_xbrl_default_on_corpus_expansion_gate.v1",
+          "status": "loaded"
+        },
+        "default_posture": {
+          "decision": "explicit_operator_only_default_off_selected",
+          "path": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json",
+          "schema_id": "diagnostics.sec_xbrl_default_posture_decision.v1",
+          "status": "loaded"
+        },
+        "operator_runbook": {
+          "decision": "operator_runbook_and_stratified_matrix_selection_ready",
+          "path": "diagnostics/assessment/sec-xbrl-operator-runbook-matrix-selection-report.json",
+          "schema_id": "diagnostics.sec_xbrl_operator_runbook_matrix_selection.v1",
+          "status": "loaded"
+        },
+        "real_product_runner": {
+          "decision": null,
+          "path": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+          "schema_id": null,
+          "status": "missing"
+        },
+        "runtime_default": {
+          "decision": "default_on_runtime_disabled_by_governance_remediation",
+          "path": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json",
+          "schema_id": "diagnostics.sec_xbrl_default_on_runtime.v1",
+          "status": "loaded"
+        },
+        "value_reveal_live_proof": {
+          "decision": "value_reveal_live_authority_and_operator_exercise_proven_for_two_bounded_filings",
+          "path": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json",
+          "schema_id": "diagnostics.sec_xbrl_value_reveal_live_proof.v1",
+          "status": "loaded"
+        }
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "default_on_admission_restatement_stale_or_missing_source_report_reference",
+      "criterion": "required_source_report_references_current",
+      "evidence": {
+        "checked_reference_count": 19,
+        "references": [
+          {
+            "report": "default_on_gate",
+            "schema_id": "diagnostics.sec_xbrl_bridge_cutover_report.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-bridge-cutover-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_on_gate",
+            "schema_id": "diagnostics.sec_xbrl_completeness_verification.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-completeness-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_on_gate",
+            "schema_id": "diagnostics.sec_xbrl_sidecar_parity_report.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-sidecar-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_on_gate",
+            "schema_id": "diagnostics.sec_xbrl_measure.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-value-reveal-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_on_gate",
+            "schema_id": "diagnostics.sec_xbrl_measure.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-expanded-value-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_on_gate",
+            "schema_id": "diagnostics.sec_xbrl_bridge_cutover_report.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-expanded-value-bridge-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "broader_reliability",
+            "schema_id": "diagnostics.sec_xbrl_default_on_corpus_expansion_gate.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-default-on-gate-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "broader_reliability",
+            "schema_id": "diagnostics.sec_xbrl_product_path_corpus_validation_report.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-product-path-corpus-validation-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "broader_reliability",
+            "schema_id": null,
+            "source_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+            "status": "missing"
+          },
+          {
+            "report": "admission_review",
+            "schema_id": "diagnostics.sec_xbrl_default_on_corpus_expansion_gate.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-default-on-gate-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_posture",
+            "schema_id": "diagnostics.sec_xbrl_default_on_admission_review.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_posture",
+            "schema_id": "diagnostics.sec_xbrl_broader_corpus_reliability_gate.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_posture",
+            "schema_id": null,
+            "source_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+            "status": "missing"
+          },
+          {
+            "report": "default_posture",
+            "schema_id": "diagnostics.sec_xbrl_default_on_runtime.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "default_posture",
+            "schema_id": "diagnostics.sec_xbrl_value_reveal_live_proof.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "operator_runbook",
+            "schema_id": "diagnostics.sec_xbrl_broader_corpus_reliability_gate.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "operator_runbook",
+            "schema_id": "diagnostics.sec_xbrl_default_posture_decision.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json",
+            "status": "present_json_object"
+          },
+          {
+            "report": "operator_runbook",
+            "schema_id": null,
+            "source_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+            "status": "missing"
+          },
+          {
+            "report": "operator_runbook",
+            "schema_id": "diagnostics.sec_xbrl_value_reveal_live_proof.v1",
+            "source_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json",
+            "status": "present_json_object"
+          }
+        ]
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "real_corpus_runner_source_present",
+      "evidence": {
+        "source_file": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner.py"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": "default_on_admission_restatement_companyfacts_value_correctness_not_reproven",
+      "criterion": "companyfacts_value_correctness_restated",
+      "evidence": {
+        "broader_real_product_match_rate": 0.99,
+        "default_on_gate_compared_count": 3790,
+        "default_on_gate_decision": "default_on_admitted_candidate",
+        "default_on_gate_match_rate": 0.9923,
+        "minimum_match_rate": 0.98,
+        "real_product_compared_count": null,
+        "real_product_decision": null,
+        "real_product_match_rate": null
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "default_on_admission_restatement_completeness_or_dts_not_reproven",
+      "criterion": "completeness_and_dts_coverage_restated",
+      "evidence": {
+        "default_on_independent_count_and_dts_state": "passed",
+        "real_product_completeness_guard_failed_count": null,
+        "real_product_gate_verdict": null,
+        "real_product_independent_inline_fact_count": null,
+        "real_product_resolved_fact_count": null,
+        "real_product_unexpected_blocked_or_degraded_count": null
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "default_on_admission_restatement_product_path_readiness_not_reproven",
+      "criterion": "product_path_readiness_restated",
+      "evidence": {
+        "broader_decision": "broader_corpus_reliability_admitted",
+        "broader_real_product_filing_count": 32,
+        "broader_real_product_supported_record_count": 30,
+        "real_product_decision": null,
+        "real_product_filing_count": null,
+        "real_product_gate_verdict": null,
+        "real_product_handoff_export_prepare_count": null,
+        "real_product_supported_record_count": null
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "default_on_admission_restatement_sidecar_selection_not_reproven",
+      "criterion": "sidecar_selection_restated",
+      "evidence": {
+        "default_on_bridge_cutover_parity_state": "passed",
+        "real_product_records_with_arelle_sidecar_output": null,
+        "real_product_records_with_selected_fact_authority_equal_to_sidecar": null,
+        "real_product_supported_record_count": null,
+        "runtime_persisted_sidecar_required": true
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "runtime_default_enablement_remains_separate_and_off",
+      "evidence": {
+        "config_defaults_off": true,
+        "default_posture": "explicit_operator_only_default_off",
+        "live_proof_defaults_off": true,
+        "operator_policy_runtime_default_change_allowed": false,
+        "runtime_decision": "default_on_runtime_disabled_by_governance_remediation",
+        "runtime_default_cutover_enabled": false,
+        "selected_arelle_fact_authority_cutover_default_enabled": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "explicit_operator_value_reveal_remains_default_off",
+      "evidence": {
+        "deferred_default_on_value_reveal": "requires separate operator policy, auth, retention, and audit review",
+        "live_non_admissions_default_on_value_reveal_claimed": false,
+        "live_value_reveal_default_enabled": false,
+        "operator_policy_raw_values_committed": false,
+        "operator_policy_value_reveal_requires_confirmation": true,
+        "selected_value_reveal_default_enabled": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "rollback_and_containment_signals_preserved",
+      "evidence": {
+        "missing_or_stale_sidecar": {
+          "present": true,
+          "signal": "arelle_sidecar_receipt_required"
+        },
+        "parser_source_lineage_mismatch": {
+          "present": true,
+          "signal": "sec_edgar_html_inline_xbrl_fact_material_bridge_arelle_sidecar_lineage_mismatch"
+        },
+        "redaction_violation": {
+          "present": true,
+          "signal": "raw_authority_exposed"
+        },
+        "runtime_regex_rollback_env_supported": true,
+        "runtime_synchronous_arelle_in_bridge": false,
+        "taxonomy_or_arelle_unavailable": {
+          "present": true,
+          "signal": "taxonomy_package_unavailable"
+        },
+        "value_store_hash_mismatch": {
+          "present": true,
+          "signal": "sec_edgar_arelle_sidecar_internal_value_store_hash_mismatch"
+        },
+        "value_store_lineage_mismatch": {
+          "present": true,
+          "signal": "sec_edgar_arelle_sidecar_internal_value_store_lineage_mismatch"
+        },
+        "value_store_missing": {
+          "present": true,
+          "signal": "sec_edgar_arelle_sidecar_internal_value_store_missing"
+        }
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": "default_on_admission_restatement_non_admission_or_redaction_regressed",
+      "criterion": "standing_non_admissions_preserved",
+      "evidence": {
+        "live_non_admissions": {
+          "cross_company_comparability_claimed": false,
+          "default_on_value_reveal_claimed": false,
+          "final_financial_statement_semantics_claimed": false,
+          "production_readiness_claimed": false
+        },
+        "live_redaction_scan": {
+          "raw_accession_found": false,
+          "raw_contact_found": false,
+          "raw_issuer_identity_found": false,
+          "raw_local_path_found": false,
+          "raw_sec_url_found": false,
+          "raw_value_record_collection_found": false,
+          "reportable_bundle_refs_and_reveal_receipts_scanned": true
+        },
+        "posture_non_goals": {
+          "cross_company_comparability_claimed": false,
+          "final_financial_statement_semantics_claimed": false,
+          "production_readiness_claimed": false,
+          "raw_identity_committed": false,
+          "raw_values_committed": false
+        },
+        "real_product_non_goals": {},
+        "real_product_redaction": {
+          "identity_hash_only": null,
+          "local_storage_roots_committed": null,
+          "raw_accessions_committed": null,
+          "raw_sec_urls_committed": null,
+          "raw_values_committed": null
+        },
+        "runbook_non_goals": {
+          "arelle_subprocess_invoked": false,
+          "cross_company_comparability_claimed": false,
+          "final_financial_statement_semantics_claimed": false,
+          "live_sec_network_run_performed": false,
+          "production_readiness_claimed": false,
+          "raw_identity_committed": false,
+          "raw_values_committed": false,
+          "runtime_default_changed": false,
+          "source_acquisition_performed": false
+        }
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "source_reports_redaction_clean",
+      "evidence": {
+        "passed": true,
+        "raw_accession_found": false,
+        "raw_cik_found": false,
+        "raw_local_path_found": false,
+        "raw_operator_contact_found": false,
+        "raw_sec_url_found": false,
+        "raw_value_magnitude_found": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "restatement_report_redaction_clean",
+      "evidence": {
+        "passed": true,
+        "raw_accession_found": false,
+        "raw_cik_found": false,
+        "raw_local_path_found": false,
+        "raw_operator_contact_found": false,
+        "raw_sec_url_found": false,
+        "raw_value_magnitude_found": false
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "default_on_admission_restatement_still_blocked",
+  "headline": "Default-on admission restatement remains blocked: default_on_admission_restatement_required_report_missing_or_malformed, default_on_admission_restatement_stale_or_missing_source_report_reference, default_on_admission_restatement_companyfacts_value_correctness_not_reproven, default_on_admission_restatement_completeness_or_dts_not_reproven, default_on_admission_restatement_product_path_readiness_not_reproven, default_on_admission_restatement_sidecar_selection_not_reproven, default_on_admission_restatement_non_admission_or_redaction_regressed.",
+  "next_slice": "sec_xbrl_default_on_admission_restatement_v1",
+  "non_goals_preserved": {
+    "api_or_ui_changed_by_restatement": false,
+    "arelle_subprocess_invoked_by_restatement": false,
+    "cross_company_comparability_claimed": false,
+    "export_or_delivery_performed_by_restatement": false,
+    "final_financial_statement_semantics_claimed": false,
+    "live_sec_network_run_performed_by_restatement": false,
+    "operator_authentication_claimed": false,
+    "production_readiness_claimed": false,
+    "raw_identity_committed": false,
+    "raw_values_committed": false,
+    "runtime_default_changed_by_restatement": false,
+    "runtime_default_on_enabled_by_restatement": false,
+    "schema_or_persistence_changed_by_restatement": false,
+    "source_acquisition_performed_by_restatement": false,
+    "value_reveal_default_enabled_by_restatement": false,
+    "value_reveal_request_performed_by_restatement": false
+  },
+  "ready_for_default_on_runtime_design": false,
+  "redaction": {
+    "passed": true,
+    "raw_accession_found": false,
+    "raw_cik_found": false,
+    "raw_local_path_found": false,
+    "raw_operator_contact_found": false,
+    "raw_sec_url_found": false,
+    "raw_value_magnitude_found": false
+  },
+  "restated_evidence": {
+    "companyfacts_value_correctness": {
+      "broader_real_product_match_rate": 0.99,
+      "default_on_gate_match_rate": 0.9923,
+      "minimum_match_rate": 0.98,
+      "real_product_match_rate": null
+    },
+    "completeness_and_dts": {
+      "default_on_gate_state": "passed",
+      "real_product_independent_inline_fact_count": null,
+      "real_product_resolved_fact_count": null
+    },
+    "product_path_readiness": {
+      "broader_decision": "broader_corpus_reliability_admitted",
+      "real_product_decision": null,
+      "real_product_handoff_export_prepare_count": null,
+      "real_product_supported_record_count": null
+    },
+    "runtime_enablement": {
+      "default_posture": "explicit_operator_only_default_off",
+      "ready_for_default_on_may_be_true": true,
+      "runtime_decision": "default_on_runtime_disabled_by_governance_remediation",
+      "runtime_default_on_enabled": false
+    },
+    "sidecar_selection": {
+      "default_on_bridge_cutover_parity_state": "passed",
+      "real_product_selected_sidecar_count": null,
+      "real_product_sidecar_output_count": null
+    }
+  },
+  "rollback_criteria": [
+    "missing or stale governed Arelle sidecar receipt blocks future runtime cutover",
+    "parser, source-artifact, dataset, and sidecar lineage mismatch blocks future runtime cutover",
+    "missing, stale, hash-mismatched, or lineage-mismatched value store blocks future runtime cutover",
+    "Arelle/taxonomy/cache unavailability blocks source acquisition or runtime cutover",
+    "redaction violation blocks report projection, status projection, and future runtime cutover"
+  ],
+  "schema_id": "diagnostics.sec_xbrl_default_on_admission_restatement.v1",
+  "source_files": {
+    "config": "backend/app/core/config.py",
+    "real_corpus_runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner.py"
+  },
+  "source_reports": {
+    "admission_review": "diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json",
+    "broader_reliability": "diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json",
+    "default_on_gate": "diagnostics/assessment/sec-xbrl-default-on-gate-report.json",
+    "default_posture": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json",
+    "operator_runbook": "diagnostics/assessment/sec-xbrl-operator-runbook-matrix-selection-report.json",
+    "real_product_runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+    "runtime_default": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json",
+    "value_reveal_live_proof": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json"
+  },
+  "target": "sec_xbrl_default_on_admission_restatement_v1"
+}
