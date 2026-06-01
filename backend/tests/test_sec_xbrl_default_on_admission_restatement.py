@@ -358,6 +358,24 @@ def test_sec_xbrl_default_on_admission_restatement_rejects_source_report_refs_ou
     assert {item["status"] for item in refs} == {"outside_repo"}
 
 
+def test_sec_xbrl_default_on_admission_restatement_blocks_malformed_source_report_ref(
+    tmp_path: Path,
+) -> None:
+    _write_source_tree(tmp_path)
+    _write_valid_reports(tmp_path)
+    broader_path = _report_paths(tmp_path)["broader_reliability"]
+    broader = json.loads(broader_path.read_text(encoding="utf-8"))
+    broader["source_reports"] = {"malformed": "bad\u0000.json"}
+    _write_json(broader_path, broader)
+
+    report = _build_report(tmp_path)
+
+    assert report["decision"] == "default_on_admission_restatement_still_blocked"
+    assert "default_on_admission_restatement_stale_or_missing_source_report_reference" in _blocked_reasons(report)
+    refs = _criterion_by_name(report, "required_source_report_references_current")["evidence"]["references"]
+    assert refs[0]["status"] == "malformed_path"
+
+
 def test_sec_xbrl_default_on_admission_restatement_detects_common_local_paths_and_unpadded_cik(
     tmp_path: Path,
 ) -> None:
