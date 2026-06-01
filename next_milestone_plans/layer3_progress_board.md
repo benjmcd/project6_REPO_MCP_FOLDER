@@ -9903,6 +9903,43 @@ final financial-statement semantics claim.
 Next exact posture after merge and current-main verification:
 `sec_xbrl_operator_review_decision_status_api_v1`.
 
+## SEC XBRL Operator Review Decision Status API
+
+Milestone: `sec_xbrl_operator_review_decision_status_api_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1298-decision-status-api.md`.
+
+Status: Tier-2 risk-assessed read-only API implemented branch-locally, with stricter
+fail-closed residual-alias guard hardening.
+
+Runtime contract: `POST /api/v1/layer3/sec-xbrl/operator-review/workflow/decision/status`
+uses an `extra="forbid"` request model, admits only decision status mode/operator decision
+plus existing decision authority selectors, calls only
+`inspect_redacted_operator_review_decision_status`, and uses the existing SEC XBRL
+operator-review workflow error mapper. The response is read-only over the existing
+decision receipt authority and keeps decision submit, workflow-open, rendered UI, value
+reveal, delivery/export, source acquisition, Arelle, runtime-default, and production
+readiness flags false.
+
+Redaction hardening: the operator-review residual magnitude guard now rejects `mean`,
+`median`, `max`, `ratio`, `stddev`, `sum`, `total`, and `quartile` in addition to the
+earlier residual key set. This is a stricter fail-closed guard, not a value reveal.
+
+Proof: focused operator-review workflow tests returned `45 passed, 3 warnings`. Focused
+tests prove successful status projection, extra-field rejection, missing authority
+failure, selector mismatch failure, tampered decision summary rejection, residual-alias
+rejection, tampered control rejection, invalid notes-hash rejection, response redaction,
+and workflow/statement-packet/projection/decision non-mutation.
+
+Containment: no `models.py`, Alembic migration, schema change, durable persistence shape
+change, rendered UI, browser-visible control, workflow-open behavior, value reveal,
+delivery/export, source acquisition, live SEC network, Arelle invocation, default-on
+behavior, raw runtime artifact, production-readiness claim, or final financial-statement
+semantics claim.
+
+Next exact posture after merge and current-main verification:
+`sec_xbrl_operator_review_decision_rendered_submit_freeze_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.

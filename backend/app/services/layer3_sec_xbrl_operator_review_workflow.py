@@ -33,6 +33,9 @@ WORKFLOW_STATUS_SCHEMA_ID = "layer3.sec_xbrl_operator_review_workflow_status.v1"
 WORKFLOW_STATUS_MODE = "sec_xbrl_operator_review_workflow_status_v1"
 WORKFLOW_STATUS_OPERATOR_DECISION = "inspect_sec_xbrl_operator_review_workflow_status"
 DECISION_SCHEMA_ID = "layer3.sec_xbrl_operator_review_decision.v1"
+DECISION_STATUS_SCHEMA_ID = "layer3.sec_xbrl_operator_review_decision_status.v1"
+DECISION_STATUS_MODE = "sec_xbrl_operator_review_decision_status_v1"
+DECISION_STATUS_OPERATOR_DECISION = "inspect_sec_xbrl_operator_review_decision_status"
 PERMITTED_CONTROLS = (
     "inspect_redacted_statement_packet_counts",
     "inspect_review_exceptions",
@@ -94,7 +97,20 @@ RAW_AUTHORITY_KEYS = {
     "storage_root",
     "sec_url",
 }
-RESIDUAL_MAGNITUDE_KEYS = {"relative_magnitude", "residual_abs", "residual", "magnitude"}
+RESIDUAL_MAGNITUDE_KEYS = {
+    "relative_magnitude",
+    "residual_abs",
+    "residual",
+    "magnitude",
+    "mean",
+    "median",
+    "max",
+    "ratio",
+    "stddev",
+    "sum",
+    "total",
+    "quartile",
+}
 ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
 WINDOWS_ABS_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
@@ -136,6 +152,23 @@ REVIEW_SUMMARY_KEYS = {
     "review_ready",
     "redaction_policy",
     "control_mode",
+}
+DECISION_SUMMARY_KEYS = {
+    "review_decision",
+    "decision_reason_code",
+    "decision_notes_present",
+    "workflow_status",
+    "statement_count",
+    "row_count",
+    "review_exception_count",
+    "redaction_policy",
+}
+DECISION_AUTHORITY_REF_KEYS = {
+    "sec_xbrl_operator_review_workflow_id",
+    "workflow_basis_hash",
+    "sec_xbrl_statement_packet_set_id",
+    "statement_packet_basis_hash",
+    "source_projection_basis_hash",
 }
 
 
@@ -365,6 +398,23 @@ def record_redacted_operator_review_decision(
         raise
     db.refresh(decision)
     return _decision_response(decision, idempotent_replay=False)
+
+
+def inspect_redacted_operator_review_decision_status(
+    db: Session,
+    *,
+    client_request_id: str,
+    sec_xbrl_operator_review_decision_id: str | None = None,
+    decision_basis_hash: str | None = None,
+) -> dict[str, Any]:
+    request_id = _required_text(client_request_id, "client_request_id")
+    decision = _resolve_decision_for_status(
+        db,
+        sec_xbrl_operator_review_decision_id=sec_xbrl_operator_review_decision_id,
+        decision_basis_hash=decision_basis_hash,
+    )
+    _validate_decision_row_for_status(decision)
+    return _decision_status_response(decision, request_id=request_id)
 
 
 def open_redacted_operator_review_workflow(
@@ -675,6 +725,71 @@ def _decision_response(row: L3SecXbrlOperatorReviewDecision, *, idempotent_repla
     }
 
 
+def _decision_status_response(row: L3SecXbrlOperatorReviewDecision, *, request_id: str) -> dict[str, Any]:
+    decision_summary = _public_decision_summary(row.decision_summary_json)
+    authority_refs = _public_decision_authority_refs(row.authority_refs_json)
+    permitted_controls = json_clone(row.permitted_controls_after_decision_json)
+    blocked_controls = json_clone(row.blocked_controls_after_decision_json)
+    return {
+        **base_response(DECISION_STATUS_SCHEMA_ID, request_id=request_id, status=row.decision_status),
+        "mode": DECISION_STATUS_MODE,
+        "operator_decision": DECISION_STATUS_OPERATOR_DECISION,
+        "decision_schema_id": row.decision_schema_id,
+        "sec_xbrl_operator_review_decision_id": row.sec_xbrl_operator_review_decision_id,
+        "sec_xbrl_operator_review_workflow_id": row.sec_xbrl_operator_review_workflow_id,
+        "decision_basis_hash": row.decision_basis_hash,
+        "workflow_basis_hash": row.workflow_basis_hash,
+        "statement_packet_basis_hash": row.statement_packet_basis_hash,
+        "source_projection_basis_hash": row.source_projection_basis_hash,
+        "decision_mode": row.decision_mode,
+        "review_decision": row.review_decision,
+        "decision_status": row.decision_status,
+        "redaction_policy": row.redaction_policy,
+        "decision_reason_code": row.decision_reason_code,
+        "decision_notes_present": row.decision_notes_present,
+        "decision_notes_hash": row.decision_notes_hash,
+        "decision_summary": decision_summary,
+        "authority_refs": authority_refs,
+        "permitted_controls_after_decision": permitted_controls,
+        "blocked_controls_after_decision": blocked_controls,
+        "status_surface_mode": "read_only_redacted_operator_review_decision_status",
+        "read_only_status_surface": True,
+        "durable_decision_authority_used": True,
+        "decision_status_api_route_enabled": True,
+        "decision_submit_api_route_enabled": False,
+        "workflow_open_api_route_enabled": False,
+        "runtime_default_enabled": False,
+        "value_reveal_performed": False,
+        "source_acquisition_performed": False,
+        "arelle_invoked": False,
+        "delivery_export_enabled": False,
+        "rendered_ui_enabled": False,
+        "operator_review_decision_recorded": True,
+        "workflow_mutated": False,
+        "statement_packet_mutated": False,
+        "projection_mutated": False,
+        "negative_invariants": {
+            "raw_values_exposed": False,
+            "raw_resolved_fact_authorities_exposed": False,
+            "raw_identity_exposed": False,
+            "raw_accessions_exposed": False,
+            "raw_period_dates_exposed": False,
+            "local_paths_exposed": False,
+            "sec_urls_exposed": False,
+            "operator_contact_exposed": False,
+            "raw_operator_notes_exposed": False,
+            "residual_magnitudes_exposed": False,
+            "runtime_default_changed": False,
+            "value_reveal_performed": False,
+            "source_acquisition_performed": False,
+            "arelle_invoked": False,
+            "delivery_export_enabled": False,
+            "rendered_ui_enabled": False,
+        },
+        "next_allowed_actions": list(POST_DECISION_PERMITTED_CONTROLS),
+    }
+
+
 def _resolve_workflow_for_decision(
     db: Session,
     *,
@@ -718,6 +833,51 @@ def _resolve_workflow_for_decision(
             http_status=404,
         )
     return workflow
+
+
+def _resolve_decision_for_status(
+    db: Session,
+    *,
+    sec_xbrl_operator_review_decision_id: str | None,
+    decision_basis_hash: str | None,
+) -> L3SecXbrlOperatorReviewDecision:
+    decision_id = _optional_text(
+        sec_xbrl_operator_review_decision_id,
+        "sec_xbrl_operator_review_decision_id",
+    )
+    basis_hash = _optional_text(decision_basis_hash, "decision_basis_hash")
+    if decision_id is None and basis_hash is None:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_status_authority_missing",
+            "SEC XBRL operator review decision status requires a decision id or decision basis hash.",
+            details={
+                "required_any_of": [
+                    "sec_xbrl_operator_review_decision_id",
+                    "decision_basis_hash",
+                ]
+            },
+            http_status=400,
+        )
+
+    query = db.query(L3SecXbrlOperatorReviewDecision)
+    if decision_id is not None:
+        query = query.filter(
+            L3SecXbrlOperatorReviewDecision.sec_xbrl_operator_review_decision_id == decision_id
+        )
+    if basis_hash is not None:
+        query = query.filter(L3SecXbrlOperatorReviewDecision.decision_basis_hash == basis_hash)
+    decision = query.one_or_none()
+    if decision is None:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_status_not_found",
+            "SEC XBRL operator review decision status requires existing server-owned decision authority.",
+            details={
+                "sec_xbrl_operator_review_decision_id": decision_id,
+                "decision_basis_hash": basis_hash,
+            },
+            http_status=404,
+        )
+    return decision
 
 
 def _validate_workflow_row_for_status(row: L3SecXbrlOperatorReviewWorkflow) -> None:
@@ -801,6 +961,133 @@ def _validate_workflow_row_for_decision(row: L3SecXbrlOperatorReviewWorkflow) ->
         raise SecXbrlOperatorReviewWorkflowError(
             "sec_xbrl_operator_review_decision_submit_control_not_blocked",
             "SEC XBRL operator review decision requires prior workflow authority with submit control explicitly blocked.",
+        )
+
+
+def _validate_decision_row_for_status(row: L3SecXbrlOperatorReviewDecision) -> None:
+    workflow = row.operator_review_workflow
+    if workflow is None:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_status_workflow_missing",
+            "SEC XBRL operator review decision status requires existing workflow authority.",
+            details={
+                "sec_xbrl_operator_review_workflow_id": row.sec_xbrl_operator_review_workflow_id,
+            },
+        )
+    _validate_workflow_row_for_status(workflow)
+    if (
+        row.workflow_basis_hash != workflow.workflow_basis_hash
+        or row.statement_packet_basis_hash != workflow.statement_packet_basis_hash
+        or row.source_projection_basis_hash != workflow.source_projection_basis_hash
+    ):
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_status_workflow_authority_mismatch",
+            "SEC XBRL operator review decision status requires decision authority to match workflow authority.",
+            details={
+                "sec_xbrl_operator_review_workflow_id": row.sec_xbrl_operator_review_workflow_id,
+            },
+        )
+    if row.decision_schema_id != DECISION_SCHEMA_ID:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_status_schema_invalid",
+            "SEC XBRL operator review decision status requires the governed decision schema.",
+            details={"decision_schema_id": row.decision_schema_id},
+        )
+    if row.decision_mode != L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_MODE:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_status_mode_invalid",
+            "SEC XBRL operator review decision status requires the governed decision mode.",
+            details={"decision_mode": row.decision_mode},
+        )
+    if row.decision_status != L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_STATUS_RECORDED:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_status_invalid",
+            "SEC XBRL operator review decision status requires a recorded decision.",
+            details={"decision_status": row.decision_status},
+        )
+    if row.redaction_policy != L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REDACTION_POLICY:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_status_redaction_policy_invalid",
+            "SEC XBRL operator review decision status requires the governed redaction policy.",
+            details={"redaction_policy": row.redaction_policy},
+        )
+    _required_choice(
+        row.review_decision,
+        "review_decision",
+        admitted=set(L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_VALUES),
+        error_code="sec_xbrl_operator_review_decision_status_value_invalid",
+    )
+    _required_choice(
+        row.decision_reason_code,
+        "decision_reason_code",
+        admitted=set(L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REASON_CODES),
+        error_code="sec_xbrl_operator_review_decision_status_reason_invalid",
+    )
+    notes_present = _required_bool(row.decision_notes_present, "decision_notes_present")
+    if notes_present:
+        notes_hash = _required_text(row.decision_notes_hash, "decision_notes_hash")
+        if len(notes_hash) != 64:
+            raise SecXbrlOperatorReviewWorkflowError(
+                "sec_xbrl_operator_review_decision_status_notes_hash_invalid",
+                "SEC XBRL operator review decision status requires a redacted notes hash.",
+            )
+    elif row.decision_notes_hash is not None:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_status_notes_hash_invalid",
+            "SEC XBRL operator review decision status cannot expose notes hash when notes were absent.",
+        )
+
+    permitted_controls = json_clone(row.permitted_controls_after_decision_json)
+    blocked_controls = json_clone(row.blocked_controls_after_decision_json)
+    if permitted_controls != list(POST_DECISION_PERMITTED_CONTROLS):
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_status_permitted_controls_invalid",
+            "SEC XBRL operator review decision status requires the governed permitted-control vocabulary.",
+        )
+    if blocked_controls != [
+        {"control": control, "reason": reason}
+        for control, reason in POST_DECISION_BLOCKED_CONTROLS
+    ]:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_status_blocked_controls_invalid",
+            "SEC XBRL operator review decision status requires the governed blocked-control vocabulary.",
+        )
+    for value in (
+        permitted_controls,
+        blocked_controls,
+        row.authority_refs_json,
+    ):
+        _reject_raw_or_local_authority(value)
+
+    decision_summary = _public_decision_summary(row.decision_summary_json)
+    expected_decision_summary = {
+        "review_decision": row.review_decision,
+        "decision_reason_code": row.decision_reason_code,
+        "decision_notes_present": notes_present,
+        "workflow_status": L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_READY,
+        "statement_count": workflow.statement_count,
+        "row_count": workflow.row_count,
+        "review_exception_count": workflow.review_exception_count,
+        "redaction_policy": L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REDACTION_POLICY,
+    }
+    if decision_summary != expected_decision_summary:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_status_summary_invalid",
+            "SEC XBRL operator review decision status requires decision summary JSON to match decision authority.",
+        )
+
+    authority_refs = _public_decision_authority_refs(row.authority_refs_json)
+    expected_authority_refs = {
+        "sec_xbrl_operator_review_workflow_id": row.sec_xbrl_operator_review_workflow_id,
+        "workflow_basis_hash": row.workflow_basis_hash,
+        "sec_xbrl_statement_packet_set_id": workflow.sec_xbrl_statement_packet_set_id,
+        "statement_packet_basis_hash": row.statement_packet_basis_hash,
+        "source_projection_basis_hash": row.source_projection_basis_hash,
+    }
+    if authority_refs != expected_authority_refs:
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_status_authority_refs_invalid",
+            "SEC XBRL operator review decision status requires authority refs JSON to match decision authority.",
         )
 
 
@@ -1006,6 +1293,81 @@ def _public_review_summary(value: Any) -> dict[str, Any]:
         "review_ready": _required_bool(value.get("review_ready"), "review_ready"),
         "redaction_policy": _required_text(value.get("redaction_policy"), "redaction_policy"),
         "control_mode": _required_text(value.get("control_mode"), "control_mode"),
+    }
+
+
+def _public_decision_summary(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_status_summary_invalid",
+            "Operator review decision status requires public decision summary JSON.",
+        )
+    _reject_raw_or_local_authority(value)
+    _reject_unadmitted_keys(
+        value,
+        admitted=DECISION_SUMMARY_KEYS,
+        error_code="sec_xbrl_operator_review_decision_status_summary_invalid",
+        message="Operator review decision status summary only admits public summary fields.",
+    )
+    return {
+        "review_decision": _required_choice(
+            value.get("review_decision"),
+            "review_decision",
+            admitted=set(L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_VALUES),
+            error_code="sec_xbrl_operator_review_decision_status_value_invalid",
+        ),
+        "decision_reason_code": _required_choice(
+            value.get("decision_reason_code"),
+            "decision_reason_code",
+            admitted=set(L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REASON_CODES),
+            error_code="sec_xbrl_operator_review_decision_status_reason_invalid",
+        ),
+        "decision_notes_present": _required_bool(
+            value.get("decision_notes_present"),
+            "decision_notes_present",
+        ),
+        "workflow_status": _required_text(value.get("workflow_status"), "workflow_status"),
+        "statement_count": _positive_int(value.get("statement_count"), "statement_count"),
+        "row_count": _positive_int(value.get("row_count"), "row_count"),
+        "review_exception_count": _non_negative_int(
+            value.get("review_exception_count"),
+            "review_exception_count",
+        ),
+        "redaction_policy": _required_text(value.get("redaction_policy"), "redaction_policy"),
+    }
+
+
+def _public_decision_authority_refs(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_decision_status_authority_refs_invalid",
+            "Operator review decision status requires public authority refs JSON.",
+        )
+    _reject_raw_or_local_authority(value)
+    _reject_unadmitted_keys(
+        value,
+        admitted=DECISION_AUTHORITY_REF_KEYS,
+        error_code="sec_xbrl_operator_review_decision_status_authority_refs_invalid",
+        message="Operator review decision status authority refs only admit governed hash/id fields.",
+    )
+    return {
+        "sec_xbrl_operator_review_workflow_id": _required_text(
+            value.get("sec_xbrl_operator_review_workflow_id"),
+            "sec_xbrl_operator_review_workflow_id",
+        ),
+        "workflow_basis_hash": _required_text(value.get("workflow_basis_hash"), "workflow_basis_hash"),
+        "sec_xbrl_statement_packet_set_id": _required_text(
+            value.get("sec_xbrl_statement_packet_set_id"),
+            "sec_xbrl_statement_packet_set_id",
+        ),
+        "statement_packet_basis_hash": _required_text(
+            value.get("statement_packet_basis_hash"),
+            "statement_packet_basis_hash",
+        ),
+        "source_projection_basis_hash": _required_text(
+            value.get("source_projection_basis_hash"),
+            "source_projection_basis_hash",
+        ),
     }
 
 
