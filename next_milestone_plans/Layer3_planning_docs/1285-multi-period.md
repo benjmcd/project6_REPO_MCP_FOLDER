@@ -51,10 +51,12 @@ Report decision:
 
 `sec_xbrl_projection_persistence_design_v1_tier2_risk_assessed_entry`
 
-Real-filer sector-family validation is satisfied by the validate-only real-corpus runner gate `sec_xbrl_sector_family_real_filer_validation_v1`, using redacted operator-acquired offline receipts for US-GAAP bank and insurer annual filings. Persistence remains deferred to a Tier 2 risk-assessed design entry step. The deferred persistence work is preserved on branch `codex/sec-family-res`; it is reference-only and not a merge base for this no-schema landing branch.
+Real-filer sector-family validation is satisfied by the validate-only real-corpus runner gate `sec_xbrl_sector_family_real_filer_validation_v1`, using redacted operator-acquired offline receipts for US-GAAP bank and insurer annual filings. Persistence remains deferred to a Tier 2 risk-assessed design entry step. The deferred persistence work is preserved on branch `codex/sec-family-res`; it is reference-only and not a merge base for this no-schema landing path.
 
 The validation gate extends the existing real-corpus product runner with sector-family activation as a validated dimension. It does not introduce a standalone greenfield diagnostic.
 
-The committed runner report records separate redacted storage markers for the broader live matrix run and the operator-supplied offline sector-family evidence. That provenance split is intentional and is not a same-root claim; no raw local paths are committed.
+The active committed report is the scoped sector-family validation report, `diagnostics/assessment/sec-xbrl-sector-family-real-filer-validation-report.json`, with single-root reproducible offline storage marker `a26c56586d12f29eb1bc7708`. The previous broader live-matrix marker `4f49435ffbdc4db07762e8d0` is historical and explicitly out of scope because it is not reproducible offline from the available inputs.
+
+The Tier-2 persistence design entry is tracked in `next_milestone_plans/Layer3_planning_docs/1286-projection-persistence.md`.
 
 Non-blocking backlog note: keyed or salted HMAC issuer pseudonyms may be useful as operator-side defense in depth for offline artifacts that hash real CIKs before redaction. The committed surface is already safe for this landing because synthetic issuer-hash preimages and count-only real-corpus summaries are used; HMAC pseudonyms are not part of this landing and are not a gate.
