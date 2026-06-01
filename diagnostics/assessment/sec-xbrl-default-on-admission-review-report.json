@@ -138,7 +138,7 @@
   ],
   "decision": "admission_review_superseded_by_default_on_runtime",
   "headline": "Default-on admission evidence is recorded, and the runtime default has already been enabled by the follow-on runtime slice; this report is no longer a pre-cutover PASS packet.",
-  "next_slice": "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation",
+  "next_slice": "sec_xbrl_default_on_nonlocal_production_readiness_design_v1",
   "non_goals_preserved": {
     "bridge_gate_b_product_package_ui_mutated": false,
     "candidate_b_sec_routing_performed": false,

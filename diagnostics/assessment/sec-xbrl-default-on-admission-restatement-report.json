@@ -600,7 +600,7 @@
   ],
   "decision": "default_on_admission_restatement_superseded_by_default_on_runtime",
   "headline": "Default-on admission evidence is restated from committed authority and has been superseded by the default-on fact-authority runtime; value reveal remains separately gated and default-off.",
-  "next_slice": "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation",
+  "next_slice": "sec_xbrl_default_on_nonlocal_production_readiness_design_v1",
   "non_goals_preserved": {
     "api_or_ui_changed_by_restatement": false,
     "arelle_subprocess_invoked_by_restatement": false,
