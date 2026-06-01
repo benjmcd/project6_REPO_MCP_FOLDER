@@ -61,6 +61,7 @@ from app.services import (
     layer3_sec_edgar_repeatability_trial,
     layer3_sec_edgar_source_acquisition,
     layer3_sec_xbrl_operator_review_workflow,
+    layer3_sec_xbrl_value_reveal_authority,
     layer3_provider_private_signed_url,
     layer3_provider_public_url,
     layer3_provider_public_url_delivery_use,
@@ -1198,6 +1199,17 @@ class Layer3SecXbrlOperatorReviewDecisionStatusRequest(BaseModel):
     operator_decision: Literal["inspect_sec_xbrl_operator_review_decision_status"]
     sec_xbrl_operator_review_decision_id: str | None = Field(default=None, min_length=1)
     decision_basis_hash: str | None = Field(default=None, min_length=64, max_length=64)
+
+
+class Layer3SecXbrlValueRevealAuthorityPrepareRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    client_request_id: str = Field(min_length=1)
+    authority_mode: Literal["sec_xbrl_value_reveal_authority_receipt_v1"]
+    operator_decision: Literal["prepare_sec_xbrl_value_reveal_authority"]
+    sec_xbrl_operator_review_decision_id: str = Field(min_length=1)
+    decision_basis_hash: str = Field(min_length=64, max_length=64)
+    operator_attestation: str | None = None
 
 
 class Layer3RawMixedCorpusSeedRequest(BaseModel):
@@ -9288,6 +9300,42 @@ class Layer3SecXbrlOperatorReviewDecisionStatusResponse(Layer3BaseResponse):
     next_allowed_actions: list[str]
 
 
+class Layer3SecXbrlValueRevealAuthorityPrepareResponse(Layer3BaseResponse):
+    sec_xbrl_value_reveal_authority_receipt_id: str
+    value_reveal_authority_receipt_ref: str
+    client_request_id: str
+    authority_basis_hash: str
+    authority_mode: str
+    authority_policy_id: str
+    redaction_policy: str
+    sec_xbrl_operator_review_decision_id: str
+    decision_basis_hash: str
+    sec_xbrl_operator_review_workflow_id: str
+    workflow_basis_hash: str
+    sec_xbrl_statement_packet_set_id: str
+    statement_packet_basis_hash: str
+    sec_xbrl_projection_set_id: str
+    projection_basis_hash: str
+    dataset_version_id: str
+    dataset_version_hash: str
+    sidecar_receipt_id_hash: str
+    sidecar_receipt_hash: str
+    value_store_hash: str
+    operator_actor_hash: str | None
+    authority_summary: dict[str, Any]
+    negative_invariants: dict[str, bool]
+    eligible_for_explicit_value_reveal: bool
+    idempotent_replay: bool
+    next_allowed_actions: list[str]
+    runtime_default_enabled: bool
+    value_reveal_performed: bool
+    source_acquisition_performed: bool
+    arelle_invoked: bool
+    delivery_export_enabled: bool
+    rendered_ui_enabled: bool
+    production_readiness_claimed: bool
+
+
 class Layer3ApsContentDocumentCandidatesResponse(Layer3BaseResponse):
     aps_content_document_candidates: list[dict[str, Any]]
     candidate_count: int
@@ -13645,6 +13693,27 @@ def _sec_xbrl_operator_review_workflow_error_response(
     )
 
 
+def _sec_xbrl_value_reveal_authority_error_response(
+    exc: layer3_sec_xbrl_value_reveal_authority.SecXbrlValueRevealAuthorityError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.http_status,
+        content=workbench_error_response(
+            Layer3WorkbenchError(
+                error_code=exc.code,
+                message=exc.message,
+                status="blocked",
+                http_status=exc.http_status,
+                blocked_fields=[
+                    str(field)
+                    for field in exc.details.get("required_any_of", exc.details.get("blocked_keys", []))
+                ],
+                next_allowed_actions=["inspect_existing_sec_xbrl_operator_review_decision_authority"],
+            )
+        ),
+    )
+
+
 def _candidate_b_policy_request_context(request: Request) -> dict[str, str]:
     return {str(key): str(value) for key, value in request.headers.items()}
 
@@ -16257,6 +16326,59 @@ def post_sec_xbrl_operator_review_workflow_decision_status(
         )
     except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
         return _sec_xbrl_operator_review_workflow_error_response(exc)
+
+
+@router.post(
+    "/sec-xbrl/value-reveal/authority/prepare",
+    response_model=Layer3SecXbrlValueRevealAuthorityPrepareResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_xbrl_value_reveal_authority_prepare(
+    payload: Layer3SecXbrlValueRevealAuthorityPrepareRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    extra_fields = sorted(str(field) for field in (payload.model_extra or {}))
+    if extra_fields:
+        return _sec_xbrl_value_reveal_authority_error_response(
+            layer3_sec_xbrl_value_reveal_authority.SecXbrlValueRevealAuthorityError(
+                "sec_xbrl_value_reveal_authority_request_fields_not_admitted",
+                "SEC XBRL value-reveal authority prepare only admits governed request fields.",
+                details={"blocked_keys": extra_fields},
+                http_status=400,
+            )
+        )
+
+    payload_data = {
+        key: value
+        for key, value in payload.model_dump(exclude_none=True).items()
+        if key in Layer3SecXbrlValueRevealAuthorityPrepareRequest.model_fields
+    }
+    try:
+        receipt = layer3_sec_xbrl_value_reveal_authority.prepare_value_reveal_authority_receipt(
+            db,
+            **{
+                key: value
+                for key, value in payload_data.items()
+                if key not in {"authority_mode", "operator_decision"}
+            },
+        )
+        return {
+            **base_response(
+                receipt["schema_id"],
+                request_id=payload.client_request_id,
+                status=receipt["status"],
+            ),
+            **receipt,
+            "runtime_default_enabled": False,
+            "value_reveal_performed": False,
+            "source_acquisition_performed": False,
+            "arelle_invoked": False,
+            "delivery_export_enabled": False,
+            "rendered_ui_enabled": False,
+            "production_readiness_claimed": False,
+        }
+    except layer3_sec_xbrl_value_reveal_authority.SecXbrlValueRevealAuthorityError as exc:
+        return _sec_xbrl_value_reveal_authority_error_response(exc)
 
 
 @router.post(

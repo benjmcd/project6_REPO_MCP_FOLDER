@@ -49,6 +49,7 @@ from app.models.models import (
     L3SecXbrlStatementPacketRow,
     L3SecXbrlStatementPacketSet,
     L3SecXbrlStatementPacketStatement,
+    L3SecXbrlValueRevealAuthorityReceipt,
     L3Session,
     L3SourceDirectoryIngestionBatch,
     L3SourceDirectoryIngestionFile,
