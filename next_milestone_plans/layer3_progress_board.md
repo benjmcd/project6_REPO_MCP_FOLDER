@@ -10012,6 +10012,36 @@ recorded in the progress and proof manifests.
 Next exact posture after merge and current-main verification:
 `sec_xbrl_value_reveal_authority_design_v1`.
 
+## SEC XBRL Value-Reveal Authority Design
+
+Milestone: `sec_xbrl_value_reveal_authority_design_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1301-value-reveal-authority-design.md`.
+
+Status: planning-only Tier-2 risk-assessed design entry.
+
+Scope: selects a server-owned SEC XBRL value-reveal authority receipt as the next
+implementation boundary. The design bridges an approved SEC XBRL operator-review
+decision to the existing governed SEC EDGAR/Arelle value-reveal engine without trusting
+browser-supplied sidecar or dataset authority. It records the required decision,
+workflow, statement-packet, projection, dataset/provenance, sidecar, and value-store joins
+and makes the first implementation an eligibility/authority receipt only.
+
+Critical constraint: this design admits no value reveal. A later implementation must keep
+the first authority receipt hash/count-only, require an approved decision with
+`decision_reason_code="ready_for_next_freeze"`, resolve lower-level sidecar/dataset inputs
+server-side, fail closed on missing or ambiguous authority, and stop before returning
+revealed values.
+
+Non-goals preserved: no `models.py`, Alembic migration, schema, durable persistence,
+backend API contract, rendered UI, value reveal, default-on behavior, source acquisition,
+live SEC network, Arelle invocation, delivery/export, raw runtime artifact, authorization
+behavior, redaction-posture change, production-readiness claim, final financial-statement
+semantics claim, or product-flow doc change in this design pass.
+
+Next exact posture after merge and current-main verification:
+`sec_xbrl_value_reveal_authority_receipt_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
