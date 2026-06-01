@@ -253,6 +253,7 @@ def _run_html_inline_xbrl_path(
         bridge = layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(
             _fact_material_bridge_payload(request_id, example, parser, fact, sidecar=sidecar),
             db,
+            use_regex_fact_authority=sidecar is None,
         )
         classification = (
             layer3_sec_edgar_html_inline_xbrl_fact_statement_classification
@@ -1418,7 +1419,11 @@ def _server_time() -> str:
 
 
 def _arelle_fact_authority_cutover_enabled() -> bool:
-    return bool(getattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False))
+    return bool(
+        getattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False)
+    ) and bool(
+        getattr(settings, "layer3_sec_edgar_arelle_corpus_validation_enabled", False)
+    )
 
 
 def _blocked(

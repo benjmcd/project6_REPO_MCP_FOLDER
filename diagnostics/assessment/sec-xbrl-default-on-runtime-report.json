@@ -45,6 +45,8 @@
       "evidence": {
         "focused_tests": [
           "test_layer3_deployment_profile_local_defaults_enable_arelle_cutover_without_value_reveal",
+          "test_layer3_deployment_profile_nonlocal_requires_explicit_arelle_cutover_authorization",
+          "test_layer3_api_default_arelle_cutover_does_not_invoke_arelle_in_corpus_validation_without_corpus_flag",
           "test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_from_arelle_sidecar_by_default",
           "test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_by_default",
           "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_default_on_without_sidecar",
@@ -85,6 +87,49 @@
     },
     {
       "blocked_reason": null,
+      "criterion": "internal_value_store_remains_explicit_opt_in",
+      "evidence": {
+        "config_file": "backend/app/core/config.py",
+        "internal_value_store_default_enabled": false,
+        "raw_internal_value_store_created_by_default": false,
+        "sidecar_file": "backend/app/services/layer3_sec_xbrl_sidecar.py"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "corpus_validation_arelle_execution_remains_explicit_opt_in",
+      "evidence": {
+        "config_file": "backend/app/core/config.py",
+        "corpus_validation_arelle_default_enabled": false,
+        "corpus_validation_file": "backend/app/services/layer3_sec_edgar_real_company_corpus_validation.py",
+        "corpus_validation_uses_regex_bridge_path_without_sidecar": true,
+        "synchronous_arelle_corpus_validation_default_on": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "nonlocal_default_on_requires_explicit_authorization",
+      "evidence": {
+        "config_file": "backend/app/core/config.py",
+        "nonlocal_default_on_requires_explicit_authorization": true,
+        "production_or_nonlocal_authorization_claimed": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "sidecar_bridge_materializes_redacted_authority_without_internal_value_store",
+      "evidence": {
+        "bridge_file": "backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.py",
+        "raw_fact_values_materialized_by_default": false,
+        "redacted_hash_length_authority_used": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
       "criterion": "standing_non_admissions_preserved",
       "evidence": {
         "cross_company_comparability_admitted": false,
@@ -94,7 +139,7 @@
     }
   ],
   "decision": "default_on_runtime_enabled",
-  "headline": "Arelle resolved-fact authority is now the default bridge input, with explicit persisted sidecar requirements and a reversible regex rollback flag.",
+  "headline": "Arelle resolved-fact authority is now the default bridge input, with explicit persisted sidecar requirements, separate opt-in raw value/corpus-validation gates, and a reversible regex rollback flag.",
   "inherited_real_corpus_evidence": {
     "admission_restatement_decision": "default_on_admission_restatement_superseded_by_default_on_runtime",
     "admission_review_decision": "admission_review_superseded_by_default_on_runtime",
@@ -278,6 +323,7 @@
   },
   "next_slice": "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation",
   "non_goals_preserved": {
+    "arelle_subprocess_invoked_by_corpus_validation_default": false,
     "arelle_subprocess_invoked_by_runtime_switch": false,
     "candidate_b_sec_routing_performed": false,
     "cross_company_comparability_claimed": false,
@@ -286,6 +332,7 @@
     "gate_b_product_package_ui_redesign_performed": false,
     "production_readiness_claimed": false,
     "rag_vector_model_provider_auth_behavior_added": false,
+    "raw_internal_value_store_default_on_claimed": false,
     "source_acquisition_performed": false,
     "value_reveal_default_on_claimed": false
   },
@@ -293,14 +340,19 @@
     "api_or_operator_request_toggle_admitted": false,
     "controlled_value_reveal_submit_default_enabled": false,
     "default_cutover_enabled": true,
+    "internal_value_store_default_enabled": false,
+    "nonlocal_default_on_requires_explicit_authorization": true,
     "operator_value_reveal_default_enabled": false,
     "persisted_sidecar_required": true,
     "production_or_nonlocal_authorization_claimed": false,
+    "raw_fact_values_materialized_by_default": false,
+    "redacted_hash_length_sidecar_authority_used": true,
     "regex_fallback_while_default_on": false,
     "regex_rollback_env_supported": true,
     "rendered_ui_or_browser_toggle_admitted": false,
     "server_deployment_policy_owned": true,
-    "synchronous_arelle_in_bridge": false
+    "synchronous_arelle_in_bridge": false,
+    "synchronous_arelle_in_corpus_validation_default_enabled": false
   },
   "schema_id": "diagnostics.sec_xbrl_default_on_runtime.v1",
   "source_reports": {
