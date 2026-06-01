@@ -41139,19 +41139,28 @@
   },
   "sec_xbrl_projection_persistence_proof": {
     "proof_kind": "sec_xbrl_deferred_schema_boundary_proof",
-    "status": "ready_for_tier2_risk_assessed_design_after_real_filer_validation",
+    "status": "tier2_risk_assessed_design_selected",
     "milestone": "sec_xbrl_projection_persistence_design_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1286-projection-persistence.md",
     "preserved_work_branch": "codex/sec-family-res",
     "proof_terms": [
-      "projection persistence is intentionally not landed in this no-schema branch",
-      "no model additions or Alembic migrations are admitted for this milestone in this landing",
-      "no persistence service, diagnostic, report, or focused persistence test is admitted in this landing",
-      "the preserved branch retains the deferred work for later revalidation",
-      "real-filer sector-family anchor and projection row-shape validation is required before schema finalization"
+      "projection persistence design is selected as a Tier-2 risk-assessed entry",
+      "first implementation slice is redacted projection persistence schema and deterministic materializer",
+      "no model additions or Alembic migrations are landed by this design-only proof",
+      "no persistence service, diagnostic, report, or focused persistence test is landed by this design-only proof",
+      "real-filer sector-family anchor and projection row-shape validation is satisfied before schema finalization"
     ],
     "required_prior_gate": "sec_xbrl_sector_family_real_filer_validation_v1",
     "required_gate_infrastructure": "extend_stratified_real_filing_validation_matrix_or_real_corpus_product_runner",
     "non_blocking_backlog_note": "keyed_or_salted_hmac_issuer_pseudonym_for_operator_side_offline_artifacts_only_not_this_landing_not_a_gate",
+    "tier_classification": "Tier 2 risk-assessed design entry",
+    "selected_first_implementation_slice": "redacted_projection_persistence_schema_and_materializer",
+    "selected_first_implementation_tables": [
+      "l3_sec_xbrl_projection_set",
+      "l3_sec_xbrl_projection_fact"
+    ],
+    "first_implementation_requires_models_and_migration": true,
+    "first_implementation_requires_rollback_or_containment_notes": true,
     "models_landed_by_proof": false,
     "migration_landed_by_proof": false,
     "runtime_landed_by_proof": false,
@@ -41180,7 +41189,7 @@
     "dimensional_roll_forward_claimed": false,
     "linkbase_emission_claimed": false,
     "fx_comparability_claimed": false,
-    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_risk_assessed_entry",
+    "next_posture": "sec_xbrl_projection_persistence_schema_materializer_v1_tier2_risk_assessed_implementation",
     "required_prior_gate_satisfied_by_proof": true
   },
   "sec_xbrl_persisted_statement_packet_proof": {
@@ -41196,6 +41205,8 @@
       "real-filer sector-family anchor and projection row-shape validation is required before schema finalization"
     ],
     "required_prior_gate": "sec_xbrl_sector_family_real_filer_validation_v1",
+    "required_prior_design": "sec_xbrl_projection_persistence_design_v1",
+    "required_prior_persistence": "sec_xbrl_projection_persistence_schema_materializer_v1",
     "required_gate_infrastructure": "extend_stratified_real_filing_validation_matrix_or_real_corpus_product_runner",
     "non_blocking_backlog_note": "keyed_or_salted_hmac_issuer_pseudonym_for_operator_side_offline_artifacts_only_not_this_landing_not_a_gate",
     "models_landed_by_proof": false,
@@ -41226,7 +41237,7 @@
     "dimensional_roll_forward_claimed": false,
     "linkbase_emission_claimed": false,
     "fx_comparability_claimed": false,
-    "next_posture": "sec_xbrl_projection_persistence_design_v1_tier2_risk_assessed_entry",
+    "next_posture": "sec_xbrl_projection_persistence_schema_materializer_v1_tier2_risk_assessed_implementation",
     "required_prior_gate_satisfied_by_proof": true
   },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof": {
