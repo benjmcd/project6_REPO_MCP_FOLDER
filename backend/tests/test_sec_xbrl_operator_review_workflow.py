@@ -22,6 +22,7 @@ if str(BACKEND) not in sys.path:
 from app.api.deps import get_db
 from app.db.session import Base
 from app.models import (
+    L3SecXbrlOperatorReviewDecision,
     L3SecXbrlOperatorReviewWorkflow,
     L3SecXbrlStatementPacketSet,
 )
@@ -35,6 +36,9 @@ from main import app
 
 ROOT = Path(__file__).resolve().parents[2]
 MIGRATION_PATH = ROOT / "backend" / "alembic" / "versions" / "0040_layer3_sec_xbrl_operator_review_workflow.py"
+DECISION_MIGRATION_PATH = (
+    ROOT / "backend" / "alembic" / "versions" / "0042_layer3_sec_xbrl_operator_review_decision.py"
+)
 
 
 @pytest.fixture()
@@ -553,6 +557,264 @@ def test_operator_review_workflow_rejects_unadmitted_organization_contract_numer
     assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 0
 
 
+def test_operator_review_decision_records_redacted_receipt(db_session) -> None:
+    workflow = _open_workflow(db_session)
+    workflow_row = db_session.query(L3SecXbrlOperatorReviewWorkflow).one()
+    workflow_snapshot = {
+        "workflow_basis_hash": workflow_row.workflow_basis_hash,
+        "review_status": workflow_row.review_status,
+        "statement_count": workflow_row.statement_count,
+        "row_count": workflow_row.row_count,
+        "review_exception_count": workflow_row.review_exception_count,
+        "permitted_controls_json": json.dumps(
+            workflow_row.permitted_controls_json,
+            sort_keys=True,
+        ),
+        "blocked_controls_json": json.dumps(
+            workflow_row.blocked_controls_json,
+            sort_keys=True,
+        ),
+        "authority_refs_json": json.dumps(
+            workflow_row.authority_refs_json,
+            sort_keys=True,
+        ),
+        "review_summary_json": json.dumps(
+            workflow_row.review_summary_json,
+            sort_keys=True,
+        ),
+    }
+
+    response = workflow_service.record_redacted_operator_review_decision(
+        db_session,
+        client_request_id="decision-1",
+        sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+        workflow_basis_hash=workflow["workflow_basis_hash"],
+        review_decision="approved",
+        decision_reason_code="ready_for_next_freeze",
+    )
+
+    assert response["status"] == "decision_recorded"
+    assert response["schema_id"] == workflow_service.DECISION_SCHEMA_ID
+    assert response["review_decision"] == "approved"
+    assert response["decision_reason_code"] == "ready_for_next_freeze"
+    assert response["decision_notes_present"] is False
+    assert response["decision_notes_hash"] is None
+    assert response["operator_review_decision_recorded"] is True
+    assert response["value_reveal_performed"] is False
+    assert response["delivery_export_enabled"] is False
+    assert response["api_route_enabled"] is False
+    assert response["rendered_ui_enabled"] is False
+    assert response["workflow_mutated"] is False
+    assert response["statement_packet_mutated"] is False
+    assert response["projection_mutated"] is False
+    assert response["authority_refs"]["workflow_basis_hash"] == workflow["workflow_basis_hash"]
+    assert "inspect_operator_review_decision_status" in response["permitted_controls_after_decision"]
+    assert {item["control"] for item in response["blocked_controls_after_decision"]} >= {
+        "reveal_values",
+        "export_statement_packet",
+        "deliver_statement_packet",
+        "refresh_from_sec_source",
+        "invoke_arelle",
+        "change_runtime_default",
+        "render_operator_review_decision_submit_control",
+    }
+    assert db_session.query(L3SecXbrlOperatorReviewDecision).count() == 1
+    db_session.refresh(workflow_row)
+    assert workflow_snapshot == {
+        "workflow_basis_hash": workflow_row.workflow_basis_hash,
+        "review_status": workflow_row.review_status,
+        "statement_count": workflow_row.statement_count,
+        "row_count": workflow_row.row_count,
+        "review_exception_count": workflow_row.review_exception_count,
+        "permitted_controls_json": json.dumps(
+            workflow_row.permitted_controls_json,
+            sort_keys=True,
+        ),
+        "blocked_controls_json": json.dumps(
+            workflow_row.blocked_controls_json,
+            sort_keys=True,
+        ),
+        "authority_refs_json": json.dumps(
+            workflow_row.authority_refs_json,
+            sort_keys=True,
+        ),
+        "review_summary_json": json.dumps(
+            workflow_row.review_summary_json,
+            sort_keys=True,
+        ),
+    }
+
+
+def test_operator_review_decision_hashes_notes_without_persisting_raw_notes(db_session) -> None:
+    workflow = _open_workflow(db_session)
+    notes = "bounded redacted issue summary"
+
+    response = workflow_service.record_redacted_operator_review_decision(
+        db_session,
+        client_request_id="decision-notes",
+        sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+        review_decision="changes_requested",
+        decision_reason_code="needs_packet_revision",
+        decision_notes=notes,
+    )
+
+    assert response["decision_notes_present"] is True
+    assert isinstance(response["decision_notes_hash"], str)
+    assert len(response["decision_notes_hash"]) == 64
+    assert notes not in json.dumps(response, sort_keys=True)
+    row = db_session.query(L3SecXbrlOperatorReviewDecision).one()
+    assert row.decision_notes_hash == response["decision_notes_hash"]
+    assert notes not in json.dumps(row.decision_summary_json, sort_keys=True)
+
+
+def test_operator_review_decision_requires_notes_for_non_approved(db_session) -> None:
+    workflow = _open_workflow(db_session)
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.record_redacted_operator_review_decision(
+            db_session,
+            client_request_id="decision-missing-notes",
+            sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+            review_decision="blocked",
+            decision_reason_code="operator_blocked",
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_decision_notes_required"
+    assert db_session.query(L3SecXbrlOperatorReviewDecision).count() == 0
+
+
+def test_operator_review_decision_rejects_raw_note_reference(db_session) -> None:
+    workflow = _open_workflow(db_session)
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.record_redacted_operator_review_decision(
+            db_session,
+            client_request_id="decision-raw-note",
+            sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+            review_decision="rejected",
+            decision_reason_code="redaction_gap",
+            decision_notes="Contact operator@example.com about 123.45",
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_workflow_raw_reference_not_admitted"
+    assert db_session.query(L3SecXbrlOperatorReviewDecision).count() == 0
+
+
+def test_operator_review_decision_replays_same_request_and_basis(db_session) -> None:
+    workflow = _open_workflow(db_session)
+    kwargs = {
+        "sec_xbrl_operator_review_workflow_id": workflow["sec_xbrl_operator_review_workflow_id"],
+        "review_decision": "approved",
+        "decision_reason_code": "ready_for_next_freeze",
+    }
+
+    first = workflow_service.record_redacted_operator_review_decision(
+        db_session,
+        client_request_id="decision-replay",
+        **kwargs,
+    )
+    second = workflow_service.record_redacted_operator_review_decision(
+        db_session,
+        client_request_id="decision-replay",
+        **kwargs,
+    )
+    third = workflow_service.record_redacted_operator_review_decision(
+        db_session,
+        client_request_id="decision-replay-different-request",
+        **kwargs,
+    )
+
+    assert first["idempotent_replay"] is False
+    assert second["idempotent_replay"] is True
+    assert third["idempotent_replay"] is True
+    assert second["sec_xbrl_operator_review_decision_id"] == first["sec_xbrl_operator_review_decision_id"]
+    assert third["sec_xbrl_operator_review_decision_id"] == first["sec_xbrl_operator_review_decision_id"]
+    assert db_session.query(L3SecXbrlOperatorReviewDecision).count() == 1
+
+
+def test_operator_review_decision_rejects_client_request_conflict(db_session) -> None:
+    workflow = _open_workflow(db_session)
+    workflow_service.record_redacted_operator_review_decision(
+        db_session,
+        client_request_id="decision-conflict",
+        sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+        review_decision="approved",
+        decision_reason_code="ready_for_next_freeze",
+    )
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.record_redacted_operator_review_decision(
+            db_session,
+            client_request_id="decision-conflict",
+            sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+            review_decision="blocked",
+            decision_reason_code="operator_blocked",
+            decision_notes="bounded blocked reason",
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_decision_client_request_conflict"
+
+
+def test_operator_review_decision_rejects_second_decision_for_workflow(db_session) -> None:
+    workflow = _open_workflow(db_session)
+    workflow_service.record_redacted_operator_review_decision(
+        db_session,
+        client_request_id="decision-first",
+        sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+        review_decision="approved",
+        decision_reason_code="ready_for_next_freeze",
+    )
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.record_redacted_operator_review_decision(
+            db_session,
+            client_request_id="decision-second",
+            sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+            review_decision="blocked",
+            decision_reason_code="operator_blocked",
+            decision_notes="bounded blocked reason",
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_decision_workflow_already_decided"
+    assert db_session.query(L3SecXbrlOperatorReviewDecision).count() == 1
+
+
+def test_operator_review_decision_rejects_mismatched_workflow_hash(db_session) -> None:
+    workflow = _open_workflow(db_session)
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.record_redacted_operator_review_decision(
+            db_session,
+            client_request_id="decision-mismatch",
+            sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+            workflow_basis_hash=_hash("z"),
+            review_decision="approved",
+            decision_reason_code="ready_for_next_freeze",
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_decision_workflow_not_found"
+    assert db_session.query(L3SecXbrlOperatorReviewDecision).count() == 0
+
+
+def test_operator_review_decision_rejects_tampered_workflow_without_partial_row(db_session) -> None:
+    workflow = _open_workflow(db_session)
+    row = db_session.query(L3SecXbrlOperatorReviewWorkflow).one()
+    row.review_summary_json = {**row.review_summary_json, "local_path": "C:\\\\raw\\\\packet.json"}
+    db_session.commit()
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.record_redacted_operator_review_decision(
+            db_session,
+            client_request_id="decision-tampered",
+            sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+            review_decision="approved",
+            decision_reason_code="ready_for_next_freeze",
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_workflow_raw_authority_not_admitted"
+    assert db_session.query(L3SecXbrlOperatorReviewDecision).count() == 0
+
+
 def test_operator_review_workflow_tables_are_registered_in_metadata() -> None:
     engine = create_engine("sqlite:///:memory:", future=True)
     Base.metadata.create_all(engine)
@@ -564,6 +826,14 @@ def test_operator_review_workflow_tables_are_registered_in_metadata() -> None:
         assert "workflow_basis_hash" in columns
         assert "permitted_controls_json" in columns
         assert "blocked_controls_json" in columns
+        assert "l3_sec_xbrl_operator_review_decision" in inspector.get_table_names()
+        decision_columns = {
+            column["name"]
+            for column in inspector.get_columns("l3_sec_xbrl_operator_review_decision")
+        }
+        assert "sec_xbrl_operator_review_workflow_id" in decision_columns
+        assert "decision_basis_hash" in decision_columns
+        assert "decision_notes_hash" in decision_columns
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()
@@ -583,6 +853,25 @@ def test_operator_review_workflow_migration_declares_additive_table() -> None:
     source = MIGRATION_PATH.read_text(encoding="utf-8")
     assert "l3_sec_xbrl_operator_review_workflow" in source
     assert "drop_table_idempotent(\"l3_sec_xbrl_operator_review_workflow\")" in source
+
+
+def test_operator_review_decision_migration_declares_additive_table() -> None:
+    backend_root = str(ROOT / "backend")
+    if backend_root not in sys.path:
+        sys.path.insert(0, backend_root)
+    spec = importlib.util.spec_from_file_location(
+        "migration_0042_sec_xbrl_operator_review_decision",
+        DECISION_MIGRATION_PATH,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert module.revision == "0042_layer3_sec_xbrl_operator_review_decision"
+    assert module.down_revision == "0041_layer3_sec_xbrl_redaction_constraints"
+    source = DECISION_MIGRATION_PATH.read_text(encoding="utf-8")
+    assert "l3_sec_xbrl_operator_review_decision" in source
+    assert "drop_table_idempotent(\"l3_sec_xbrl_operator_review_decision\")" in source
 
 
 def _direct_packet_set(
