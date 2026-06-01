@@ -10136,8 +10136,9 @@ Milestone: `sec_xbrl_controlled_value_reveal_submit_post_merge_audit_closure_v1`
 Planning doc:
 `next_milestone_plans/Layer3_planning_docs/1308-controlled-submit-post-merge-audit-closure.md`.
 
-Status: branch-local Tier-1 documentation/proof closure over already-merged
-Tier-2 controlled value-reveal submit surfaces.
+Status: merged current-main Tier-1 documentation/proof closure over
+already-merged Tier-2 controlled value-reveal submit surfaces, verified after
+merge at `96613b00fa9034e2b17d8842b542a3e7d8d93e84`.
 
 Scope: records the post-merge audit outcome after PRs `#2043`, `#2045`,
 `#2047`, `#2049`, and `#2050`. The closure confirms that the bounded
