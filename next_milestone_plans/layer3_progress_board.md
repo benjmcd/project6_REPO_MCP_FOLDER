@@ -10190,6 +10190,33 @@ financial-statement semantics.
 Next exact posture after remediation:
 `sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation`.
 
+## SEC XBRL Default-On Admission Restatement Selection
+
+Milestone: `sec_xbrl_default_on_admission_restatement_selection_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1313-default-on-admission-restatement-selection.md`.
+
+Status: branch-local Tier-1 design/admission-selection entry after the rendered
+controlled value-reveal UI review-thread remediation.
+
+Selection: choose a validate-only default-on admission evidence restatement as
+the next downstream gate. Current committed evidence says the default-on corpus
+gate and broader-corpus reliability gate are admitted, but the admission-review
+and runtime reports still block runtime default-on because post-governance
+companyfacts, completeness, product-path readiness, and sidecar-selection
+evidence must be restated.
+
+Non-goals: no runtime default-on behavior, config default change, value-reveal
+default enablement, live SEC network, source acquisition, Arelle invocation,
+schema, `models.py`, Alembic migration, durable persistence, backend API/UI
+change, export/delivery, operator-authentication claim, production-readiness
+claim, cross-company comparability claim, or final financial-statement semantics
+claim.
+
+Next exact posture after selection:
+`sec_xbrl_default_on_admission_restatement_v1`.
+
 ## SEC XBRL Rendered Value UI Proof
 
 Milestone: `sec_xbrl_rendered_controlled_value_reveal_ui_proof_v1`.
