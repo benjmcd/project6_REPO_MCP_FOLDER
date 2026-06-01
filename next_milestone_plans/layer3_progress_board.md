@@ -9858,6 +9858,18 @@ Proof: `python -m pytest ./backend/tests/test_sec_xbrl_operator_review_workflow.
 
 Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_decision_submit_api_v1`.
 
+## SEC XBRL Operator Review Decision Submit API Freeze
+
+Milestone: `sec_xbrl_operator_review_decision_submit_api_freeze_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1297-decision-submit-api.md`.
+
+Status: `tier2_risk_assessed_api_contract_frozen`. This docs-only freeze satisfies the doc 1295 requirement that the decision-submit API lane be separately frozen before code lands. It freezes `POST /api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit` as a route-level wrapper over `record_redacted_operator_review_decision`.
+
+Implementation boundary: the later code slice may touch `backend/app/api/layer3.py`, focused workflow tests, and progress/proof docs only. It must not touch `models.py`, Alembic migrations, schema, persistence beyond the existing decision receipt service, rendered UI, browser-visible submit controls, workflow-open route, value reveal, delivery/export, source acquisition, live SEC network, Arelle invocation, default-on behavior, raw runtime artifacts, production-readiness claims, or final financial-statement semantics claims.
+
+Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_decision_submit_api_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
