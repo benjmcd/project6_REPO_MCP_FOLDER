@@ -5,17 +5,60 @@
       "evidence": {
         "arelle": {
           "cache_dir_exists": false,
+          "cache_dir_inside_repo": false,
+          "cache_dir_inside_repo_or_onedrive": false,
           "cache_dir_marker": null,
           "cache_dir_present": false,
           "internet_connectivity_mode": "offline",
+          "python_executable": false,
           "python_exists": false,
+          "python_inside_repo": false,
+          "python_inside_repo_or_onedrive": false,
           "python_marker": null,
           "python_present": false,
           "taxonomy_package_count": 0,
           "taxonomy_package_existing_count": 0,
+          "taxonomy_package_inside_repo_count": 0,
+          "taxonomy_package_inside_repo_or_onedrive_count": 0,
           "taxonomy_package_markers": [],
           "taxonomy_packages_all_exist": false,
+          "taxonomy_packages_outside_repo": false,
+          "taxonomy_packages_outside_repo_or_onedrive": false,
           "taxonomy_packages_present": false
+        },
+        "external_matrix_plan": {
+          "blocked_reasons": [
+            "matrix_plan_missing"
+          ],
+          "chunk_count": 0,
+          "covered_strata": [],
+          "external_plan_used": false,
+          "missing_required_strata": [
+            "amendment_restatement",
+            "canadian_40f",
+            "current_report_8k_sparse",
+            "foreign_6k_sparse",
+            "foreign_private_ifrs_20f",
+            "large_domestic_us_gaap",
+            "no_inline_or_zero_fact_diagnostic",
+            "small_mid_domestic_us_gaap"
+          ],
+          "mode": "external_stratified_matrix_plan",
+          "paths_redacted": true,
+          "plan_env_var": "SEC_XBRL_STRATIFIED_MATRIX_PLAN",
+          "plan_path_marker": null,
+          "plan_present": false,
+          "required_strata": [
+            "amendment_restatement",
+            "canadian_40f",
+            "current_report_8k_sparse",
+            "foreign_6k_sparse",
+            "foreign_private_ifrs_20f",
+            "large_domestic_us_gaap",
+            "no_inline_or_zero_fact_diagnostic",
+            "small_mid_domestic_us_gaap"
+          ],
+          "state": "blocked"
         },
         "live_authorization_env_var": "SEC_XBRL_STRATIFIED_MATRIX_LIVE_AUTHORIZED",
         "live_authorization_present": false,
@@ -37,17 +80,60 @@
       "evidence": {
         "arelle": {
           "cache_dir_exists": false,
+          "cache_dir_inside_repo": false,
+          "cache_dir_inside_repo_or_onedrive": false,
           "cache_dir_marker": null,
           "cache_dir_present": false,
           "internet_connectivity_mode": "offline",
+          "python_executable": false,
           "python_exists": false,
+          "python_inside_repo": false,
+          "python_inside_repo_or_onedrive": false,
           "python_marker": null,
           "python_present": false,
           "taxonomy_package_count": 0,
           "taxonomy_package_existing_count": 0,
+          "taxonomy_package_inside_repo_count": 0,
+          "taxonomy_package_inside_repo_or_onedrive_count": 0,
           "taxonomy_package_markers": [],
           "taxonomy_packages_all_exist": false,
+          "taxonomy_packages_outside_repo": false,
+          "taxonomy_packages_outside_repo_or_onedrive": false,
           "taxonomy_packages_present": false
+        },
+        "external_matrix_plan": {
+          "blocked_reasons": [
+            "matrix_plan_missing"
+          ],
+          "chunk_count": 0,
+          "covered_strata": [],
+          "external_plan_used": false,
+          "missing_required_strata": [
+            "amendment_restatement",
+            "canadian_40f",
+            "current_report_8k_sparse",
+            "foreign_6k_sparse",
+            "foreign_private_ifrs_20f",
+            "large_domestic_us_gaap",
+            "no_inline_or_zero_fact_diagnostic",
+            "small_mid_domestic_us_gaap"
+          ],
+          "mode": "external_stratified_matrix_plan",
+          "paths_redacted": true,
+          "plan_env_var": "SEC_XBRL_STRATIFIED_MATRIX_PLAN",
+          "plan_path_marker": null,
+          "plan_present": false,
+          "required_strata": [
+            "amendment_restatement",
+            "canadian_40f",
+            "current_report_8k_sparse",
+            "foreign_6k_sparse",
+            "foreign_private_ifrs_20f",
+            "large_domestic_us_gaap",
+            "no_inline_or_zero_fact_diagnostic",
+            "small_mid_domestic_us_gaap"
+          ],
+          "state": "blocked"
         },
         "live_authorization_env_var": "SEC_XBRL_STRATIFIED_MATRIX_LIVE_AUTHORIZED",
         "live_authorization_present": false,
@@ -68,16 +154,25 @@
       "criterion": "arelle_environment_available_for_future_matrix_execution",
       "evidence": {
         "cache_dir_exists": false,
+        "cache_dir_inside_repo": false,
+        "cache_dir_inside_repo_or_onedrive": false,
         "cache_dir_marker": null,
         "cache_dir_present": false,
         "internet_connectivity_mode": "offline",
+        "python_executable": false,
         "python_exists": false,
+        "python_inside_repo": false,
+        "python_inside_repo_or_onedrive": false,
         "python_marker": null,
         "python_present": false,
         "taxonomy_package_count": 0,
         "taxonomy_package_existing_count": 0,
+        "taxonomy_package_inside_repo_count": 0,
+        "taxonomy_package_inside_repo_or_onedrive_count": 0,
         "taxonomy_package_markers": [],
         "taxonomy_packages_all_exist": false,
+        "taxonomy_packages_outside_repo": false,
+        "taxonomy_packages_outside_repo_or_onedrive": false,
         "taxonomy_packages_present": false
       },
       "reason": "stratified_matrix_preflight_arelle_environment_missing"
@@ -93,6 +188,44 @@
         "storage_env_var": "SEC_XBRL_STRATIFIED_MATRIX_STORAGE_DIR"
       },
       "reason": "stratified_matrix_preflight_isolated_storage_missing_or_inside_repo"
+    },
+    {
+      "criterion": "external_stratified_matrix_plan_ready_for_future_execution",
+      "evidence": {
+        "blocked_reasons": [
+          "matrix_plan_missing"
+        ],
+        "chunk_count": 0,
+        "covered_strata": [],
+        "external_plan_used": false,
+        "missing_required_strata": [
+          "amendment_restatement",
+          "canadian_40f",
+          "current_report_8k_sparse",
+          "foreign_6k_sparse",
+          "foreign_private_ifrs_20f",
+          "large_domestic_us_gaap",
+          "no_inline_or_zero_fact_diagnostic",
+          "small_mid_domestic_us_gaap"
+        ],
+        "mode": "external_stratified_matrix_plan",
+        "paths_redacted": true,
+        "plan_env_var": "SEC_XBRL_STRATIFIED_MATRIX_PLAN",
+        "plan_path_marker": null,
+        "plan_present": false,
+        "required_strata": [
+          "amendment_restatement",
+          "canadian_40f",
+          "current_report_8k_sparse",
+          "foreign_6k_sparse",
+          "foreign_private_ifrs_20f",
+          "large_domestic_us_gaap",
+          "no_inline_or_zero_fact_diagnostic",
+          "small_mid_domestic_us_gaap"
+        ],
+        "state": "blocked"
+      },
+      "reason": "stratified_matrix_preflight_external_matrix_plan_missing_or_invalid"
     }
   ],
   "criteria": [
@@ -123,6 +256,7 @@
       "blocked_reason": null,
       "criterion": "selected_matrix_covers_required_strata_without_raw_identity",
       "evidence": {
+        "all_minimum_issuer_hashes_positive": true,
         "all_strata_have_forms": true,
         "covers_required_strata": true,
         "forms_by_stratum": {
@@ -160,7 +294,20 @@
         },
         "matrix_row_count": 8,
         "minimum_issuer_hash_total": 18,
+        "minimum_issuer_hashes_by_stratum": {
+          "amendment_restatement": 2,
+          "canadian_40f": 1,
+          "current_report_8k_sparse": 3,
+          "foreign_6k_sparse": 2,
+          "foreign_private_ifrs_20f": 2,
+          "large_domestic_us_gaap": 3,
+          "no_inline_or_zero_fact_diagnostic": 2,
+          "small_mid_domestic_us_gaap": 3
+        },
         "missing_required_strata": [],
+        "raw_identity_hit_count": 0,
+        "raw_identity_hit_fields": [],
+        "raw_identity_scan_passed": true,
         "raw_issuer_examples_committed": false,
         "required_strata": [
           "amendment_restatement",
@@ -181,7 +328,8 @@
           "foreign_6k_sparse",
           "amendment_restatement",
           "no_inline_or_zero_fact_diagnostic"
-        ]
+        ],
+        "strata_with_non_positive_minimum_issuer_hashes": []
       },
       "state": "passed"
     },
@@ -191,7 +339,7 @@
       "evidence": {
         "decision": "real_corpus_default_on_validated",
         "gate_verdict": "PASS",
-        "real_product_runner_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+        "real_product_runner_report": "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json",
         "supported_record_count": 30
       },
       "state": "passed"
@@ -202,17 +350,60 @@
       "evidence": {
         "arelle": {
           "cache_dir_exists": false,
+          "cache_dir_inside_repo": false,
+          "cache_dir_inside_repo_or_onedrive": false,
           "cache_dir_marker": null,
           "cache_dir_present": false,
           "internet_connectivity_mode": "offline",
+          "python_executable": false,
           "python_exists": false,
+          "python_inside_repo": false,
+          "python_inside_repo_or_onedrive": false,
           "python_marker": null,
           "python_present": false,
           "taxonomy_package_count": 0,
           "taxonomy_package_existing_count": 0,
+          "taxonomy_package_inside_repo_count": 0,
+          "taxonomy_package_inside_repo_or_onedrive_count": 0,
           "taxonomy_package_markers": [],
           "taxonomy_packages_all_exist": false,
+          "taxonomy_packages_outside_repo": false,
+          "taxonomy_packages_outside_repo_or_onedrive": false,
           "taxonomy_packages_present": false
+        },
+        "external_matrix_plan": {
+          "blocked_reasons": [
+            "matrix_plan_missing"
+          ],
+          "chunk_count": 0,
+          "covered_strata": [],
+          "external_plan_used": false,
+          "missing_required_strata": [
+            "amendment_restatement",
+            "canadian_40f",
+            "current_report_8k_sparse",
+            "foreign_6k_sparse",
+            "foreign_private_ifrs_20f",
+            "large_domestic_us_gaap",
+            "no_inline_or_zero_fact_diagnostic",
+            "small_mid_domestic_us_gaap"
+          ],
+          "mode": "external_stratified_matrix_plan",
+          "paths_redacted": true,
+          "plan_env_var": "SEC_XBRL_STRATIFIED_MATRIX_PLAN",
+          "plan_path_marker": null,
+          "plan_present": false,
+          "required_strata": [
+            "amendment_restatement",
+            "canadian_40f",
+            "current_report_8k_sparse",
+            "foreign_6k_sparse",
+            "foreign_private_ifrs_20f",
+            "large_domestic_us_gaap",
+            "no_inline_or_zero_fact_diagnostic",
+            "small_mid_domestic_us_gaap"
+          ],
+          "state": "blocked"
         },
         "live_authorization_env_var": "SEC_XBRL_STRATIFIED_MATRIX_LIVE_AUTHORIZED",
         "live_authorization_present": false,
@@ -235,17 +426,60 @@
       "evidence": {
         "arelle": {
           "cache_dir_exists": false,
+          "cache_dir_inside_repo": false,
+          "cache_dir_inside_repo_or_onedrive": false,
           "cache_dir_marker": null,
           "cache_dir_present": false,
           "internet_connectivity_mode": "offline",
+          "python_executable": false,
           "python_exists": false,
+          "python_inside_repo": false,
+          "python_inside_repo_or_onedrive": false,
           "python_marker": null,
           "python_present": false,
           "taxonomy_package_count": 0,
           "taxonomy_package_existing_count": 0,
+          "taxonomy_package_inside_repo_count": 0,
+          "taxonomy_package_inside_repo_or_onedrive_count": 0,
           "taxonomy_package_markers": [],
           "taxonomy_packages_all_exist": false,
+          "taxonomy_packages_outside_repo": false,
+          "taxonomy_packages_outside_repo_or_onedrive": false,
           "taxonomy_packages_present": false
+        },
+        "external_matrix_plan": {
+          "blocked_reasons": [
+            "matrix_plan_missing"
+          ],
+          "chunk_count": 0,
+          "covered_strata": [],
+          "external_plan_used": false,
+          "missing_required_strata": [
+            "amendment_restatement",
+            "canadian_40f",
+            "current_report_8k_sparse",
+            "foreign_6k_sparse",
+            "foreign_private_ifrs_20f",
+            "large_domestic_us_gaap",
+            "no_inline_or_zero_fact_diagnostic",
+            "small_mid_domestic_us_gaap"
+          ],
+          "mode": "external_stratified_matrix_plan",
+          "paths_redacted": true,
+          "plan_env_var": "SEC_XBRL_STRATIFIED_MATRIX_PLAN",
+          "plan_path_marker": null,
+          "plan_present": false,
+          "required_strata": [
+            "amendment_restatement",
+            "canadian_40f",
+            "current_report_8k_sparse",
+            "foreign_6k_sparse",
+            "foreign_private_ifrs_20f",
+            "large_domestic_us_gaap",
+            "no_inline_or_zero_fact_diagnostic",
+            "small_mid_domestic_us_gaap"
+          ],
+          "state": "blocked"
         },
         "live_authorization_env_var": "SEC_XBRL_STRATIFIED_MATRIX_LIVE_AUTHORIZED",
         "live_authorization_present": false,
@@ -267,16 +501,25 @@
       "criterion": "arelle_environment_available_for_future_matrix_execution",
       "evidence": {
         "cache_dir_exists": false,
+        "cache_dir_inside_repo": false,
+        "cache_dir_inside_repo_or_onedrive": false,
         "cache_dir_marker": null,
         "cache_dir_present": false,
         "internet_connectivity_mode": "offline",
+        "python_executable": false,
         "python_exists": false,
+        "python_inside_repo": false,
+        "python_inside_repo_or_onedrive": false,
         "python_marker": null,
         "python_present": false,
         "taxonomy_package_count": 0,
         "taxonomy_package_existing_count": 0,
+        "taxonomy_package_inside_repo_count": 0,
+        "taxonomy_package_inside_repo_or_onedrive_count": 0,
         "taxonomy_package_markers": [],
         "taxonomy_packages_all_exist": false,
+        "taxonomy_packages_outside_repo": false,
+        "taxonomy_packages_outside_repo_or_onedrive": false,
         "taxonomy_packages_present": false
       },
       "state": "blocked"
@@ -293,10 +536,49 @@
         "storage_env_var": "SEC_XBRL_STRATIFIED_MATRIX_STORAGE_DIR"
       },
       "state": "blocked"
+    },
+    {
+      "blocked_reason": "stratified_matrix_preflight_external_matrix_plan_missing_or_invalid",
+      "criterion": "external_stratified_matrix_plan_ready_for_future_execution",
+      "evidence": {
+        "blocked_reasons": [
+          "matrix_plan_missing"
+        ],
+        "chunk_count": 0,
+        "covered_strata": [],
+        "external_plan_used": false,
+        "missing_required_strata": [
+          "amendment_restatement",
+          "canadian_40f",
+          "current_report_8k_sparse",
+          "foreign_6k_sparse",
+          "foreign_private_ifrs_20f",
+          "large_domestic_us_gaap",
+          "no_inline_or_zero_fact_diagnostic",
+          "small_mid_domestic_us_gaap"
+        ],
+        "mode": "external_stratified_matrix_plan",
+        "paths_redacted": true,
+        "plan_env_var": "SEC_XBRL_STRATIFIED_MATRIX_PLAN",
+        "plan_path_marker": null,
+        "plan_present": false,
+        "required_strata": [
+          "amendment_restatement",
+          "canadian_40f",
+          "current_report_8k_sparse",
+          "foreign_6k_sparse",
+          "foreign_private_ifrs_20f",
+          "large_domestic_us_gaap",
+          "no_inline_or_zero_fact_diagnostic",
+          "small_mid_domestic_us_gaap"
+        ],
+        "state": "blocked"
+      },
+      "state": "blocked"
     }
   ],
   "decision": "stratified_matrix_preflight_requires_authorization_or_environment",
-  "headline": "Stratified real-filing validation matrix preflight is blocked: stratified_matrix_preflight_explicit_live_authorization_missing, stratified_matrix_preflight_user_agent_missing, stratified_matrix_preflight_arelle_environment_missing, stratified_matrix_preflight_isolated_storage_missing_or_inside_repo.",
+  "headline": "Stratified real-filing validation matrix preflight is blocked: stratified_matrix_preflight_explicit_live_authorization_missing, stratified_matrix_preflight_user_agent_missing, stratified_matrix_preflight_arelle_environment_missing, stratified_matrix_preflight_isolated_storage_missing_or_inside_repo, stratified_matrix_preflight_external_matrix_plan_missing_or_invalid.",
   "next_slice": "sec_edgar_stratified_real_filing_validation_matrix_v1",
   "non_goals_preserved": {
     "arelle_subprocess_invoked": false,
@@ -319,17 +601,60 @@
   "runtime_preflight": {
     "arelle": {
       "cache_dir_exists": false,
+      "cache_dir_inside_repo": false,
+      "cache_dir_inside_repo_or_onedrive": false,
       "cache_dir_marker": null,
       "cache_dir_present": false,
       "internet_connectivity_mode": "offline",
+      "python_executable": false,
       "python_exists": false,
+      "python_inside_repo": false,
+      "python_inside_repo_or_onedrive": false,
       "python_marker": null,
       "python_present": false,
       "taxonomy_package_count": 0,
       "taxonomy_package_existing_count": 0,
+      "taxonomy_package_inside_repo_count": 0,
+      "taxonomy_package_inside_repo_or_onedrive_count": 0,
       "taxonomy_package_markers": [],
       "taxonomy_packages_all_exist": false,
+      "taxonomy_packages_outside_repo": false,
+      "taxonomy_packages_outside_repo_or_onedrive": false,
       "taxonomy_packages_present": false
+    },
+    "external_matrix_plan": {
+      "blocked_reasons": [
+        "matrix_plan_missing"
+      ],
+      "chunk_count": 0,
+      "covered_strata": [],
+      "external_plan_used": false,
+      "missing_required_strata": [
+        "amendment_restatement",
+        "canadian_40f",
+        "current_report_8k_sparse",
+        "foreign_6k_sparse",
+        "foreign_private_ifrs_20f",
+        "large_domestic_us_gaap",
+        "no_inline_or_zero_fact_diagnostic",
+        "small_mid_domestic_us_gaap"
+      ],
+      "mode": "external_stratified_matrix_plan",
+      "paths_redacted": true,
+      "plan_env_var": "SEC_XBRL_STRATIFIED_MATRIX_PLAN",
+      "plan_path_marker": null,
+      "plan_present": false,
+      "required_strata": [
+        "amendment_restatement",
+        "canadian_40f",
+        "current_report_8k_sparse",
+        "foreign_6k_sparse",
+        "foreign_private_ifrs_20f",
+        "large_domestic_us_gaap",
+        "no_inline_or_zero_fact_diagnostic",
+        "small_mid_domestic_us_gaap"
+      ],
+      "state": "blocked"
     },
     "live_authorization_env_var": "SEC_XBRL_STRATIFIED_MATRIX_LIVE_AUTHORIZED",
     "live_authorization_present": false,
@@ -346,6 +671,7 @@
   },
   "schema_id": "diagnostics.sec_xbrl_stratified_real_filing_validation_matrix_preflight.v1",
   "selected_matrix_summary": {
+    "all_minimum_issuer_hashes_positive": true,
     "all_strata_have_forms": true,
     "covers_required_strata": true,
     "forms_by_stratum": {
@@ -383,7 +709,20 @@
     },
     "matrix_row_count": 8,
     "minimum_issuer_hash_total": 18,
+    "minimum_issuer_hashes_by_stratum": {
+      "amendment_restatement": 2,
+      "canadian_40f": 1,
+      "current_report_8k_sparse": 3,
+      "foreign_6k_sparse": 2,
+      "foreign_private_ifrs_20f": 2,
+      "large_domestic_us_gaap": 3,
+      "no_inline_or_zero_fact_diagnostic": 2,
+      "small_mid_domestic_us_gaap": 3
+    },
     "missing_required_strata": [],
+    "raw_identity_hit_count": 0,
+    "raw_identity_hit_fields": [],
+    "raw_identity_scan_passed": true,
     "raw_issuer_examples_committed": false,
     "required_strata": [
       "amendment_restatement",
@@ -404,12 +743,13 @@
       "foreign_6k_sparse",
       "amendment_restatement",
       "no_inline_or_zero_fact_diagnostic"
-    ]
+    ],
+    "strata_with_non_positive_minimum_issuer_hashes": []
   },
   "source_reports": {
     "default_posture": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json",
     "operator_runbook_matrix_selection": "diagnostics/assessment/sec-xbrl-operator-runbook-matrix-selection-report.json",
-    "real_product_runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json"
+    "real_product_runner": "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json"
   },
   "target": "sec_edgar_stratified_real_filing_validation_matrix_preflight_v1"
 }
