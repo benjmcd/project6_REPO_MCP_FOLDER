@@ -4,11 +4,13 @@ Milestone: `sec_xbrl_controlled_value_reveal_submit_v1_tier2_risk_assessed_imple
 
 Base authority: `project6-origin/main` at `ddcab8771ebecfdd33b78a077bc461a37edc7d90`
 
+Merged authority: `project6-origin/main` at `d9e55ceebf87de8a42bfe3475debbd0ff452a19f`
+
 Prior milestone: `next_milestone_plans/Layer3_planning_docs/1303-controlled-value-reveal-submit-design.md`
 
 ## Status
 
-Branch-local Tier-2 risk-assessed implementation entry.
+Merged current-main Tier-2 risk-assessed implementation entry.
 
 This slice implements only a server-owned controlled reveal-submit boundary
 behind a default-off feature flag. It returns controlled values transiently from
@@ -112,9 +114,20 @@ Branch-local results:
 - `git diff --check`
   - PASS
 
+Post-merge current-main results at `d9e55ceebf87de8a42bfe3475debbd0ff452a19f`:
+
+- focused operator-review workflow test
+  - `68 passed, 3 warnings`
+- full SEC XBRL suite
+  - `295 passed, 4 warnings`
+- target-selection frozen check, progress check, touched-file `py_compile`,
+  manifest/report JSON validation, redaction scan, residual-magnitude
+  regression scan, and `git diff --check`
+  - PASS
+
 ## Next Posture
 
-After this implementation lands and current-main verification remains clean, the
+After this implementation has landed and current-main verification remains clean, the
 next safe posture is a read-only post-merge audit and then a separate rendered
 value UI or default-on design only if explicitly admitted. This slice does not
 admit rendered values or default-on behavior.

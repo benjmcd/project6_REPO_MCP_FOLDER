@@ -10099,8 +10099,8 @@ Milestone: `sec_xbrl_controlled_value_reveal_submit_v1_tier2_risk_assessed_imple
 
 Planning doc: `next_milestone_plans/Layer3_planning_docs/1304-controlled-value-reveal-submit.md`.
 
-Status: branch-local Tier-2 risk-assessed implementation entry with verification
-complete.
+Status: merged current-main Tier-2 risk-assessed implementation entry, merged
+and post-merge verified at `d9e55ceebf87de8a42bfe3475debbd0ff452a19f`.
 
 Scope: adds a default-off, server-owned controlled reveal-submit boundary over
 the merged value-reveal authority receipt. The implementation adds an additive
@@ -10124,7 +10124,7 @@ remain separate later gates.
 Verification: focused operator-review workflow test, full SEC XBRL test suite,
 target-selection frozen check, progress check, manifest/report JSON validation,
 redaction scan, residual-magnitude regression scan, py_compile, and
-`git diff --check` pass on this branch.
+`git diff --check` passed on the branch and again after merge on current main.
 
 Next exact posture after merge and current-main verification:
 `sec_xbrl_controlled_value_reveal_submit_post_merge_audit_then_rendered_or_default_design_if_admitted`.
