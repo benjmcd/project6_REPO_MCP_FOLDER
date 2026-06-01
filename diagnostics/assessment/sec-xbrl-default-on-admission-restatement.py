@@ -13,7 +13,10 @@ DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-default-on-admission-rest
 DEFAULT_REQUIRED_REPORTS = {
     "default_on_gate": Path("diagnostics/assessment/sec-xbrl-default-on-gate-report.json"),
     "broader_reliability": Path("diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json"),
-    "real_product_runner": Path("diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json"),
+    "historical_real_product_runner": Path(
+        "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json"
+    ),
+    "sector_family_validation": Path("diagnostics/assessment/sec-xbrl-sector-family-real-filer-validation-report.json"),
     "value_reveal_live_proof": Path("diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json"),
     "admission_review": Path("diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json"),
     "runtime_default": Path("diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"),
@@ -57,7 +60,11 @@ def main() -> int:
     )
     parser.add_argument("--default-on-gate-report", default=str(DEFAULT_REQUIRED_REPORTS["default_on_gate"]))
     parser.add_argument("--broader-reliability-report", default=str(DEFAULT_REQUIRED_REPORTS["broader_reliability"]))
-    parser.add_argument("--real-product-runner-report", default=str(DEFAULT_REQUIRED_REPORTS["real_product_runner"]))
+    parser.add_argument(
+        "--historical-real-product-runner-report",
+        default=str(DEFAULT_REQUIRED_REPORTS["historical_real_product_runner"]),
+    )
+    parser.add_argument("--sector-family-report", default=str(DEFAULT_REQUIRED_REPORTS["sector_family_validation"]))
     parser.add_argument("--value-reveal-live-proof-report", default=str(DEFAULT_REQUIRED_REPORTS["value_reveal_live_proof"]))
     parser.add_argument("--admission-review-report", default=str(DEFAULT_REQUIRED_REPORTS["admission_review"]))
     parser.add_argument("--runtime-default-report", default=str(DEFAULT_REQUIRED_REPORTS["runtime_default"]))
@@ -71,7 +78,8 @@ def main() -> int:
         report_paths={
             "default_on_gate": _resolve_path(args.default_on_gate_report),
             "broader_reliability": _resolve_path(args.broader_reliability_report),
-            "real_product_runner": _resolve_path(args.real_product_runner_report),
+            "historical_real_product_runner": _resolve_path(args.historical_real_product_runner_report),
+            "sector_family_validation": _resolve_path(args.sector_family_report),
             "value_reveal_live_proof": _resolve_path(args.value_reveal_live_proof_report),
             "admission_review": _resolve_path(args.admission_review_report),
             "runtime_default": _resolve_path(args.runtime_default_report),
@@ -95,7 +103,8 @@ def build_report(*, source_root: Path, report_paths: Mapping[str, Path]) -> dict
 
     default_on_gate = reports["default_on_gate"]
     broader = reports["broader_reliability"]
-    real_product = reports["real_product_runner"]
+    real_product = reports["historical_real_product_runner"]
+    sector_family = reports["sector_family_validation"]
     live_proof = reports["value_reveal_live_proof"]
     admission = reports["admission_review"]
     runtime = reports["runtime_default"]
@@ -141,6 +150,40 @@ def build_report(*, source_root: Path, report_paths: Mapping[str, Path]) -> dict
             (source_root / REAL_CORPUS_RUNNER_SOURCE).exists(),
             {"source_file": REAL_CORPUS_RUNNER_SOURCE.as_posix()},
             "default_on_admission_restatement_real_corpus_runner_source_missing",
+        ),
+        _criterion(
+            "active_reproducible_sector_family_scope_recorded",
+            sector_family.get("decision") == "sector_family_real_filer_validation_satisfied"
+            and sector_family.get("gate_verdict") == "PASS"
+            and dict(sector_family.get("report_scope") or {}).get("broader_live_matrix_product_gate_in_scope")
+            is False
+            and dict(sector_family.get("report_scope") or {}).get(
+                "historical_live_matrix_reproducible_offline_from_available_inputs"
+            )
+            is False,
+            {
+                "source_report": _repo_display_path(report_paths["sector_family_validation"]),
+                "decision": sector_family.get("decision"),
+                "gate_verdict": sector_family.get("gate_verdict"),
+                "report_scope": sector_family.get("report_scope"),
+            },
+            "default_on_admission_restatement_active_reproducible_scope_not_recorded",
+        ),
+        _criterion(
+            "historical_broader_live_matrix_not_runtime_design_authority",
+            not _is_historical_archive_path(report_paths["historical_real_product_runner"]),
+            {
+                "historical_report": _repo_display_path(report_paths["historical_real_product_runner"]),
+                "historical_report_archived": _is_historical_archive_path(
+                    report_paths["historical_real_product_runner"]
+                ),
+                "historical_report_decision": real_product.get("decision"),
+                "historical_report_gate_verdict": real_product.get("gate_verdict"),
+                "active_reproducible_report": _repo_display_path(report_paths["sector_family_validation"]),
+                "active_reproducible_report_target": sector_family.get("target"),
+                "broader_live_matrix_reproducible_offline_from_available_inputs": False,
+            },
+            "default_on_admission_restatement_broader_live_matrix_historical_not_current_runtime_design_authority",
         ),
         _criterion(
             "companyfacts_value_correctness_restated",
@@ -325,6 +368,9 @@ def build_report(*, source_root: Path, report_paths: Mapping[str, Path]) -> dict
             "product_path_readiness": {
                 "broader_decision": broader.get("decision"),
                 "real_product_decision": real_product.get("decision"),
+                "real_product_report_archived": _is_historical_archive_path(
+                    report_paths["historical_real_product_runner"]
+                ),
                 "real_product_supported_record_count": real_summary.get("supported_record_count"),
                 "real_product_handoff_export_prepare_count": real_summary.get("records_with_handoff_export_prepare"),
             },
@@ -340,6 +386,7 @@ def build_report(*, source_root: Path, report_paths: Mapping[str, Path]) -> dict
                 "runtime_default_on_enabled": False,
                 "runtime_decision": runtime.get("decision"),
                 "default_posture": selected_posture.get("posture"),
+                "historical_broader_live_matrix_runtime_design_authority": False,
             },
         },
         "rollback_criteria": [
@@ -629,6 +676,10 @@ def _conflicting_reasons(
 
 def _source_report_refs_current(loaded: Mapping[str, Mapping[str, Any]], source_root: Path) -> bool:
     return all(item["status"] == "present_json_object" for item in _source_report_ref_states(loaded, source_root))
+
+
+def _is_historical_archive_path(path: Path) -> bool:
+    return "archive/files_to_be_trashed/2026-05-31-secxbrl" in path.as_posix().replace("\\", "/")
 
 
 def _source_report_ref_evidence(loaded: Mapping[str, Mapping[str, Any]], source_root: Path) -> dict[str, Any]:

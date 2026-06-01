@@ -44,20 +44,23 @@ Repo-confirmed branch-local output:
 
 Primary blockers:
 
-- required committed report
-  `diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json` is
-  missing;
-- committed broader-corpus, default-posture, and operator-runbook reports still
-  reference that missing runner report as source evidence;
-- because that report is missing, companyfacts value correctness,
-  completeness/DTS coverage, product-path readiness, sidecar selection, and
-  non-admission/redaction preservation are not re-proven from the required
-  committed authority.
+- the historical broad real-corpus runner report is retained only at
+  `archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json`;
+- current committed reports now reference that archive path instead of the
+  removed diagnostics path, so committed `source_reports` are internally
+  resolvable;
+- that archived broad live-matrix report is not current runtime-design
+  authority because PR #2020 recorded that it is not reproducible offline from
+  available inputs;
+- the active reproducible report is
+  `diagnostics/assessment/sec-xbrl-sector-family-real-filer-validation-report.json`,
+  which validates the scoped sector-family gate but explicitly keeps the broader
+  live-matrix product gate out of scope.
 
 This is an evidence-governance block, not a runtime defect. The broader-corpus
-summary still records admitted real-product metrics, but the restatement gate
-requires the referenced report artifact itself before it can promote the lane to
-runtime design.
+summary still records admitted historical real-product metrics, but the
+restatement gate refuses to promote runtime design from archived, non-offline-
+reproducible evidence.
 
 ## Non-Goals
 
@@ -75,6 +78,13 @@ Branch-local verification:
 
 - `python -m pytest ./backend/tests/test_sec_xbrl_default_on_admission_restatement.py -q`:
   PASS (`5 passed`).
+- `python ./diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate.py`;
+  `python ./diagnostics/assessment/sec-xbrl-default-on-runtime.py`;
+  `python ./diagnostics/assessment/sec-xbrl-default-posture-decision.py`;
+  `python ./diagnostics/assessment/sec-xbrl-operator-runbook-matrix-selection.py`;
+  `python ./diagnostics/assessment/sec-xbrl-stratified-real-filing-validation-matrix-preflight.py`;
+  `python ./diagnostics/assessment/sec-xbrl-default-on-admission-restatement.py`:
+  PASS; all regenerated report `source_reports` references resolve.
 - `python ./diagnostics/assessment/sec-xbrl-default-on-admission-restatement.py --output ./diagnostics/assessment/sec-xbrl-default-on-admission-restatement-report.json`:
   PASS, emitted `default_on_admission_restatement_still_blocked`.
 - `python -m pytest <26 backend/tests/test_sec_xbrl*.py files> -q`: PASS
@@ -91,9 +101,9 @@ Branch-local verification:
 
 ## Next Posture
 
-The next safe action is to resolve the missing/stale committed evidence
-artifact question without running live acquisition in this lane: either restore
-or regenerate the required real-corpus runner report under an explicitly
-authorized offline/live evidence turn, then rerun this restatement diagnostic.
-Runtime default-on design remains blocked until this report returns
+The next safe action is an explicitly authorized broad real-corpus evidence
+renewal turn: regenerate the broad real-corpus product runner report from valid
+offline/live inputs, or select a replacement current-authority report that
+actually covers the broad product-path/default-on evidence requirements. Runtime
+default-on design remains blocked until this report returns
 `default_on_admission_restatement_ready_for_runtime_design`.

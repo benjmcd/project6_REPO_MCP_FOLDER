@@ -74,7 +74,8 @@ def _report_paths(root: Path) -> dict[str, Path]:
     return {
         "default_on_gate": base / "sec-xbrl-default-on-gate-report.json",
         "broader_reliability": base / "sec-xbrl-broader-corpus-reliability-gate-report.json",
-        "real_product_runner": base / "sec-xbrl-real-corpus-product-runner-report.json",
+        "historical_real_product_runner": base / "sec-xbrl-real-corpus-product-runner-report.json",
+        "sector_family_validation": base / "sec-xbrl-sector-family-real-filer-validation-report.json",
         "value_reveal_live_proof": base / "sec-xbrl-value-reveal-live-proof-report.json",
         "admission_review": base / "sec-xbrl-default-on-admission-review-report.json",
         "runtime_default": base / "sec-xbrl-default-on-runtime-report.json",
@@ -110,7 +111,7 @@ def _write_valid_reports(root: Path) -> None:
             "schema_id": "diagnostics.sec_xbrl_broader_corpus_reliability_gate.v1",
             "decision": "broader_corpus_reliability_admitted",
             "source_reports": {
-                "real_product_runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json"
+                "historical_real_product_runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json"
             },
             "summary": {
                 "real_product_path_companyfacts_value_match_rate": 0.99,
@@ -120,7 +121,7 @@ def _write_valid_reports(root: Path) -> None:
         },
     )
     _write_json(
-        paths["real_product_runner"],
+        paths["historical_real_product_runner"],
         {
             "schema_id": "diagnostics.sec_xbrl_real_corpus_product_runner.v1",
             "decision": "real_corpus_default_on_validated",
@@ -154,6 +155,20 @@ def _write_valid_reports(root: Path) -> None:
                 "operator_value_reveal_enabled": False,
                 "final_financial_statement_semantics_claimed": False,
                 "cross_company_comparability_claimed": False,
+            },
+        },
+    )
+    _write_json(
+        paths["sector_family_validation"],
+        {
+            "schema_id": "diagnostics.sec_xbrl_sector_family_real_filer_validation_report.v1",
+            "target": "sec_xbrl_sector_family_real_filer_validation_v1",
+            "decision": "sector_family_real_filer_validation_satisfied",
+            "gate_verdict": "PASS",
+            "source_reports": {},
+            "report_scope": {
+                "broader_live_matrix_product_gate_in_scope": False,
+                "historical_live_matrix_reproducible_offline_from_available_inputs": False,
             },
         },
     )
@@ -277,7 +292,7 @@ def test_sec_xbrl_default_on_admission_restatement_fails_closed_when_required_re
 ) -> None:
     _write_source_tree(tmp_path)
     _write_valid_reports(tmp_path)
-    _report_paths(tmp_path)["real_product_runner"].unlink()
+    _report_paths(tmp_path)["historical_real_product_runner"].unlink()
 
     report = _build_report(tmp_path)
 
@@ -304,7 +319,7 @@ def test_sec_xbrl_default_on_admission_restatement_blocks_raw_source_report_resi
 ) -> None:
     _write_source_tree(tmp_path)
     _write_valid_reports(tmp_path)
-    real_path = _report_paths(tmp_path)["real_product_runner"]
+    real_path = _report_paths(tmp_path)["historical_real_product_runner"]
     real = json.loads(real_path.read_text(encoding="utf-8"))
     real["debug_raw_accession"] = "0000000000-26-000001"
     _write_json(real_path, real)
