@@ -9794,6 +9794,22 @@ Containment: no new `models.py`, Alembic migration, schema, durable persistence 
 
 Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_workflow_rendered_read_only_ui_freeze_v1`.
 
+## SEC XBRL Operator Review Rendered Read-Only UI Freeze
+
+Milestone: `sec_xbrl_operator_review_workflow_rendered_read_only_ui_freeze_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1293-ui-freeze.md`.
+
+Status: `tier1_rendered_read_only_ui_freeze_selected`. This is a planning/control-only freeze after post-#2028 current-main verification confirmed the SEC XBRL operator-review workflow status API. It admits the next bounded rendered slice only as a read-only `/review/layer3` status panel over the existing `POST /api/v1/layer3/sec-xbrl/operator-review/workflow/status` endpoint.
+
+The freeze keeps the browser boundary narrow: the future rendered request may submit only `client_request_id`, `status_mode`, `operator_decision`, `sec_xbrl_operator_review_workflow_id`, and `workflow_basis_hash`; it must declare `data-rendered-mode="rendered_sec_xbrl_operator_review_workflow_status_control"`, `data-frontend-durable-authority="false"`, and read-only status markers.
+
+Containment: no `models.py`, Alembic migration, schema, durable persistence expansion, API contract change, workflow-open API, operator review decision submission, delivery/export, source acquisition, live SEC network, Arelle invocation, value reveal, default-on behavior, redaction-posture change, frontend durable authority, production-readiness claim, or final financial-statement semantics claim.
+
+Future proof requirements: focused SEC XBRL workflow tests, full SEC XBRL suite, headed and headless browser proof, allowed-field-only request proof, no raw value/identity/accession/period-date/URL/path/operator-contact/residual-magnitude rendering, progress checks, JSON validation, redaction scan, and `git diff --check`.
+
+Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_workflow_rendered_status_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
