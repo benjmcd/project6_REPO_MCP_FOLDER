@@ -9810,6 +9810,22 @@ Future proof requirements: focused SEC XBRL workflow tests, full SEC XBRL suite,
 
 Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_workflow_rendered_status_v1`.
 
+## SEC XBRL Operator Review Rendered Status
+
+Milestone: `sec_xbrl_operator_review_workflow_rendered_status_v1`.
+
+Implementation doc: `next_milestone_plans/Layer3_planning_docs/1294-rendered-status.md`.
+
+Status: `tier1_read_only_rendered_status_implemented`. This slice adds a `/review/layer3` SEC XBRL operator-review workflow status panel over the already-landed `POST /api/v1/layer3/sec-xbrl/operator-review/workflow/status` API.
+
+Focused proof: `e2e/layer3-workbench.spec.js` proves the rendered status form submits only `client_request_id`, `status_mode`, `operator_decision`, `sec_xbrl_operator_review_workflow_id`, and `workflow_basis_hash`; asserts `data-rendered-mode="rendered_sec_xbrl_operator_review_workflow_status_control"`, `data-frontend-durable-authority="false"`, and `data-read-only="true"`; and confirms no raw values, identities, accessions, SEC URLs, local paths, operator contact fields, residual magnitudes, source-acquisition fields, Arelle controls, delivery/export controls, workflow-open controls, default-on controls, or operator decision-submit controls render. Latest branch-local browser proof: headless `1 passed`; headed `1 passed`.
+
+Backend proof: the existing SEC XBRL operator-review workflow status API remains green. Latest branch-local focused result: `17 passed`; full `backend/tests/test_sec_xbrl*.py` result: `237 passed`.
+
+Containment: no `models.py`, Alembic migration, schema, durable persistence expansion, backend API contract change, workflow-open API, submitted operator review decision, delivery/export, source acquisition, live SEC network, Arelle invocation, value reveal, default-on behavior, redaction-posture change, frontend durable authority, production-readiness claim, or final financial-statement semantics claim.
+
+Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_decision_submit_design_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
