@@ -1,0 +1,88 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[2]
+GATE_PATH = ROOT / "diagnostics" / "assessment" / "sec-xbrl-nonlocal-production-readiness-gate.py"
+
+
+def _gate_module():
+    spec = importlib.util.spec_from_file_location("sec_xbrl_nonlocal_production_readiness_gate", GATE_PATH)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _valid_authority_packet(module) -> dict[str, object]:
+    return {
+        "deployment_mode": "nonlocal",
+        "deployment_owner_ref": "deployment-owner-ref-alpha",
+        "approval_record_ref": "approval-record-ref-alpha",
+        "approval_record_hash": "a" * 64,
+        "proxy_boundary_mode": "trusted_external_proxy",
+        "proxy_identity_header": "X-Forwarded-User",
+        "allowed_origins_policy_hash": "b" * 64,
+        "storage_exposure_policy": "auto",
+        "arelle_fact_authority_nonlocal_authorized": True,
+        "rollback_owner_ref": "rollback-owner-ref-alpha",
+        "incident_owner_ref": "incident-owner-ref-alpha",
+        "redaction_policy_id": module.REDACTION_POLICY_ID,
+        "verification_run_ref": "verification-run-ref-alpha",
+    }
+
+
+def test_sec_xbrl_nonlocal_readiness_gate_blocks_without_authority_packet() -> None:
+    report = _gate_module().build_report()
+
+    assert report["decision"] == "nonlocal_production_readiness_blocked"
+    assert report["production_readiness_claimed"] is False
+    assert "nonlocal_production_readiness_authority_packet_missing" in report["blocking_reasons"]
+    assert report["authority_packet_summary"]["authority_packet_present"] is False
+    assert report["inherited_default_on_runtime_evidence"]["decision"] == "default_on_runtime_enabled"
+
+
+def test_sec_xbrl_nonlocal_readiness_gate_accepts_redacted_authority_packet(tmp_path: Path) -> None:
+    module = _gate_module()
+    packet_path = tmp_path / "packet.json"
+    packet_path.write_text(json.dumps(_valid_authority_packet(module)), encoding="utf-8")
+
+    report = module.build_report(authority_packet_path=packet_path)
+
+    assert report["decision"] == "nonlocal_production_readiness_authority_admitted"
+    assert report["blocking_reasons"] == []
+    assert report["production_readiness_claimed"] is False
+    assert report["authority_packet_summary"]["admissible"] is True
+    assert report["authority_packet_summary"]["redaction_scan"] == {
+        "status": "passed",
+        "hit_classes": [],
+    }
+    assert str(packet_path) not in json.dumps(report, sort_keys=True)
+
+
+def test_sec_xbrl_nonlocal_readiness_gate_rejects_raw_authority_packet(tmp_path: Path) -> None:
+    module = _gate_module()
+    packet = _valid_authority_packet(module)
+    packet["deployment_owner_ref"] = "owner@example.com"
+    packet["accession"] = "0000000000-26-000001"
+    packet["raw_value"] = "123.45"
+    packet["local_path"] = "C:\\Users\\benny\\raw-sidecar.json"
+    packet_path = tmp_path / "packet.json"
+    packet_path.write_text(json.dumps(packet), encoding="utf-8")
+
+    report = module.build_report(authority_packet_path=packet_path)
+
+    assert report["decision"] == "nonlocal_production_readiness_blocked"
+    assert report["production_readiness_claimed"] is False
+    assert "nonlocal_production_readiness_raw_authority_not_admitted" in report["blocking_reasons"]
+    assert report["authority_packet_summary"]["redaction_scan"]["status"] == "failed_closed"
+    assert set(report["authority_packet_summary"]["redaction_scan"]["hit_classes"]) >= {
+        "raw_accession",
+        "raw_decimal_or_residual_magnitude",
+        "raw_operator_email",
+        "raw_or_local_authority_key",
+        "local_path",
+    }
