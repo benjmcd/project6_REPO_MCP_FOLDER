@@ -10129,6 +10129,33 @@ redaction scan, residual-magnitude regression scan, py_compile, and
 Next exact posture after merge and current-main verification:
 `sec_xbrl_controlled_value_reveal_submit_post_merge_audit_then_rendered_or_default_design_if_admitted`.
 
+## SEC XBRL Controlled Submit Hardening
+
+Milestone: `sec_xbrl_controlled_value_reveal_submit_post_merge_audit_hardening_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1305-submit-hardening.md`.
+
+Status: branch-local Tier-2 risk-assessed hardening entry, verified for PR
+handoff.
+
+Scope: closes a post-merge audit gap in the controlled value-reveal submit
+authority boundary. The service now applies the existing raw-reference rejection
+predicate to the browser-supplied value-reveal authority receipt id before
+loading authority state, so accession-, URL-, or path-like receipt-id text fails
+closed as raw browser authority rather than falling through to the
+missing-authority path.
+
+Non-goals: no schema, migration, durable persistence, rendered UI, default-on
+behavior, source acquisition, live SEC network, Arelle subprocess invocation,
+delivery/export, provider dispatch, raw runtime artifacts, production readiness,
+or final financial-statement semantics.
+
+Verification: focused operator-review workflow test passes with `70 passed, 3
+warnings`; full SEC XBRL suite passes with `297 passed, 4 warnings`;
+target-selection frozen check, progress check, touched-file `py_compile`, JSON
+parse, redaction identity scan, residual-magnitude regression scan, and `git
+diff --check` pass.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
