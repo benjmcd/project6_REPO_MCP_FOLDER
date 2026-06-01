@@ -10140,13 +10140,15 @@ Status: current-main Tier-1 documentation/proof closure over the already-merged
 Tier-2 rendered controlled value-reveal UI proof from PR `#2055`, merged at
 `f59cf53f367e036d9c9e8b7029b98cbbe8ea07ce`.
 
-Audit outcome: PR `#2055` has zero total review threads and zero current
-unresolved review threads. The final PR head passed GitHub backend and
-Playwright checks. No submitted independent review was recorded before merge;
-independent review was requested and the softened Tier-2 self-verification
-disposition was documented. The first CI run's deferred-control label collision
-was resolved by changing only the rendered button label from `Prepare Authority`
-to `Prepare Receipt`.
+Audit outcome: the initial PR `#2055` review-thread audit returned zero current
+unresolved threads before late automated review arrived. Later PR `#2055` and
+PR `#2056` P2 review threads are tracked by the rendered value UI review-thread
+remediation entry below. The final PR head passed GitHub backend and Playwright
+checks. No submitted independent review was recorded before merge; independent
+review was requested and the softened Tier-2 self-verification disposition was
+documented. The first CI run's deferred-control label collision was resolved by
+changing only the rendered button label from `Prepare Authority` to `Prepare
+Receipt`.
 
 Non-goals: this closure changes no runtime behavior and admits no schema,
 `models.py`, Alembic migration, durable persistence, backend API/service
@@ -10162,6 +10164,30 @@ py_compile, UTF-8-SIG JSON parsing, committed SEC XBRL JSON redaction scan,
 residual-magnitude scan, and `git diff --check` pass.
 
 Next exact posture:
+`sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation`.
+
+## SEC XBRL Rendered Value UI Review-Thread Remediation
+
+Milestone: `sec_xbrl_rendered_controlled_value_reveal_ui_review_thread_remediation_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1312-rendered-value-ui-review-thread-remediation.md`.
+
+Status: branch-local remediation for late P2 review threads on merged PRs
+`#2055` and `#2056`.
+
+Scope: harden the rendered controlled value-reveal client guards to reject
+uppercase hashes, raw CIK attestations, raw accession-like or CIK status ids,
+and stale reveal/status output after a new authority prepare; align the board's
+rendered proof posture with the closed audit posture.
+
+Non-goals: no schema, `models.py`, Alembic migration, durable persistence,
+backend API/service behavior, source acquisition, Arelle subprocess invocation,
+export/delivery, provider/connector dispatch, default-on behavior,
+operator-authentication claim, production-readiness claim, or final
+financial-statement semantics.
+
+Next exact posture after remediation:
 `sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation`.
 
 ## SEC XBRL Rendered Value UI Proof
@@ -10194,8 +10220,9 @@ rendered interaction proof, target-selection frozen check, progress check,
 py_compile, UTF-8-SIG JSON parsing, committed SEC XBRL JSON redaction scan,
 residual-magnitude scan, and `git diff --check` pass before PR closeout.
 
-Next exact posture after merge and current-main verification:
-`sec_xbrl_rendered_controlled_value_reveal_ui_post_merge_audit_then_default_or_export_design_if_admitted`.
+Next exact posture after merge, current-main verification, and post-merge audit
+closure:
+`sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation`.
 
 ## SEC XBRL Rendered Value UI Admission Selection
 
