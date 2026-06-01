@@ -101,6 +101,9 @@ L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_POLICY_ID = (
 L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_REDACTION_POLICY = (
     "sec_xbrl_controlled_value_reveal_submit_hash_count_receipt_v1"
 )
+L3_SEC_XBRL_AUTH_BINDING_POLICY_ID = "sec_xbrl_repo_owned_in_app_auth_owner_binding_v1"
+L3_SEC_XBRL_AUTH_BINDING_STATE_OWNER_BOUND = "owner_bound"
+L3_SEC_XBRL_AUTH_BINDING_REDACTION_POLICY = "hash_only_actor_workspace_policy_refs_v1"
 
 
 class TimestampMixin:
@@ -1540,6 +1543,80 @@ class L3SecXbrlControlledValueRevealSubmitReceipt(Base):
         back_populates="controlled_value_reveal_submit_receipts",
     )
     operator_review_decision: Mapped[L3SecXbrlOperatorReviewDecision] = relationship()
+
+
+class L3SecXbrlAuthBindingReceipt(Base):
+    __tablename__ = "l3_sec_xbrl_auth_binding_receipt"
+    __table_args__ = (
+        UniqueConstraint("client_request_id", name="uq_l3_sec_xbrl_auth_binding_client_request"),
+        UniqueConstraint("binding_basis_hash", name="uq_l3_sec_xbrl_auth_binding_basis_hash"),
+        UniqueConstraint(
+            "source_receipt_kind",
+            "source_receipt_id",
+            name="uq_l3_sec_xbrl_auth_binding_source_receipt",
+        ),
+        CheckConstraint(
+            f"binding_policy_id = '{L3_SEC_XBRL_AUTH_BINDING_POLICY_ID}'",
+            name="ck_l3_sec_xbrl_auth_binding_policy",
+        ),
+        CheckConstraint(
+            f"binding_state = '{L3_SEC_XBRL_AUTH_BINDING_STATE_OWNER_BOUND}'",
+            name="ck_l3_sec_xbrl_auth_binding_state",
+        ),
+        CheckConstraint(
+            f"redaction_policy = '{L3_SEC_XBRL_AUTH_BINDING_REDACTION_POLICY}'",
+            name="ck_l3_sec_xbrl_auth_binding_redaction",
+        ),
+        CheckConstraint(
+            "source_receipt_kind IN ('operator_review_workflow', 'operator_review_decision', 'value_reveal_authority', 'controlled_value_reveal_submit')",
+            name="ck_l3_sec_xbrl_auth_binding_source_kind",
+        ),
+        CheckConstraint(
+            "route_family IN ('sec_xbrl_operator_review_workflow_status_read', 'sec_xbrl_operator_review_decision_submit_write', 'sec_xbrl_operator_review_decision_status_read', 'sec_xbrl_value_reveal_authority_prepare_write', 'sec_xbrl_controlled_value_reveal_submit_write', 'sec_xbrl_controlled_value_reveal_submit_status_read')",
+            name="ck_l3_sec_xbrl_auth_binding_route_family",
+        ),
+        CheckConstraint("role IN ('owner', 'auditor')", name="ck_l3_sec_xbrl_auth_binding_role"),
+        Index("ix_l3_sec_xbrl_auth_binding_source_basis", "source_receipt_kind", "source_receipt_basis_hash"),
+        Index("ix_l3_sec_xbrl_auth_binding_actor_workspace", "actor_ref_hash", "workspace_ref_hash"),
+        Index("ix_l3_sec_xbrl_auth_binding_policy", "policy_hash"),
+        Index("ix_l3_sec_xbrl_auth_binding_route_family", "route_family"),
+    )
+
+    sec_xbrl_auth_binding_receipt_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=uuid_str,
+    )
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    binding_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    binding_schema_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    binding_policy_id: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        default=L3_SEC_XBRL_AUTH_BINDING_POLICY_ID,
+    )
+    binding_state: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default=L3_SEC_XBRL_AUTH_BINDING_STATE_OWNER_BOUND,
+    )
+    source_receipt_kind: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_receipt_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    source_receipt_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    route_family: Mapped[str] = mapped_column(String(96), nullable=False)
+    actor_ref_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    workspace_ref_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    role: Mapped[str] = mapped_column(String(32), nullable=False)
+    policy_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    redaction_policy: Mapped[str] = mapped_column(
+        String(128),
+        nullable=False,
+        default=L3_SEC_XBRL_AUTH_BINDING_REDACTION_POLICY,
+    )
+    binding_summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    negative_invariants_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class L3TypingRecord(Base, TimestampMixin):
