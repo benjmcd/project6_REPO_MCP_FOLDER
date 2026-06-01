@@ -61,8 +61,8 @@
       "blocked_reason": null,
       "criterion": "broader_real_product_path_corpus_proof",
       "evidence": {
-        "companyfacts_value_compared_count": 9131,
-        "companyfacts_value_match_rate": 0.99,
+        "companyfacts_value_compared_count": 10187,
+        "companyfacts_value_match_rate": 0.9897,
         "decision": "real_corpus_default_on_validated",
         "evidence_grade": "current-main_live_real_product_runner",
         "fake_sec_client_used": false,
@@ -78,11 +78,11 @@
         "gate_verdict": "PASS",
         "independent_inline_fact_count": 52558,
         "live_sec_network_used": true,
-        "matrix_chunk_count": 4,
+        "matrix_chunk_count": 6,
         "minimum_companyfacts_value_match_rate": 0.98,
         "observed_issuer_hash_count": 16,
         "observed_real_filing_count": 32,
-        "ready_matrix_chunk_count": 4,
+        "ready_matrix_chunk_count": 6,
         "records_with_arelle_sidecar_output": 30,
         "records_with_handoff_export_prepare": 30,
         "records_with_selected_fact_authority_equal_to_sidecar": 30,
@@ -98,7 +98,7 @@
         "required_real_filing_count": 30,
         "required_supported_record_count": 30,
         "resolved_fact_count": 52558,
-        "source_report": "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json",
+        "source_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
         "supported_record_count": 30,
         "unexpected_blocked_or_degraded_count": 0
       },
@@ -150,7 +150,7 @@
   "source_reports": {
     "default_on_gate": "diagnostics/assessment/sec-xbrl-default-on-gate-report.json",
     "product_path": "diagnostics/assessment/sec-xbrl-product-path-corpus-validation-report.json",
-    "real_product_runner": "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json"
+    "real_product_runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json"
   },
   "summary": {
     "focused_product_path_fake_sec_client_used": true,
@@ -170,7 +170,7 @@
     "inherited_real_filing_count": 12,
     "operator_value_reveal_default_enabled": false,
     "product_path_operator_surface_ready": true,
-    "real_product_path_companyfacts_value_match_rate": 0.99,
+    "real_product_path_companyfacts_value_match_rate": 0.9897,
     "real_product_path_fake_sec_client_used": false,
     "real_product_path_filing_count": 32,
     "real_product_path_forms": {

@@ -80,9 +80,9 @@
     "admission_review_decision": "admission_review_requires_post_1966_governance_followup",
     "arelle_resolved_fact_count": 18156,
     "bridge_fact_count": 18156,
-    "broader_companyfacts_value_compared_count": 9131,
-    "broader_companyfacts_value_match_count": 9040,
-    "broader_companyfacts_value_match_rate": 0.99,
+    "broader_companyfacts_value_compared_count": 10187,
+    "broader_companyfacts_value_match_count": 10082,
+    "broader_companyfacts_value_match_rate": 0.9897,
     "broader_failure_reasons": {
       "sec_edgar_html_inline_xbrl_fact_authority_no_inline_xbrl_markers": 2
     },
@@ -95,6 +95,7 @@
     "companyfacts_value_compared_count": 3790,
     "companyfacts_value_match_count": 3761,
     "companyfacts_value_match_rate": 0.9923,
+    "current_run_live_sec_network_used": false,
     "default_on_gate_decision": "default_on_admitted_candidate",
     "forms": {
       "10-K": 4,
@@ -104,10 +105,154 @@
       "6-K": 2,
       "8-K": 3
     },
-    "historical_live_matrix_reproducible_offline_from_available_inputs": false,
-    "historical_real_corpus_runner_archived": true,
-    "historical_real_corpus_runner_report": "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json",
+    "inherited_live_sec_network_used": true,
     "issuer_hash_count": 6,
+    "offline_redacted_product_report_import": {
+      "blocked_reasons": [],
+      "evidence": {
+        "candidate_decision": "real_corpus_default_on_validated",
+        "candidate_fake_sec_client_used": false,
+        "candidate_gate_verdict": "PASS",
+        "candidate_matrix_chunk_count": 6,
+        "candidate_per_filing_count": 32,
+        "candidate_schema_id": "diagnostics.sec_xbrl_real_corpus_product_runner.v1",
+        "candidate_storage_dir_marker": "a26c56586d12f29eb1bc7708",
+        "current_code_per_filing_count": 32,
+        "current_code_summary": {
+          "companyfacts_value_compared_count": 10187,
+          "companyfacts_value_match_rate": 0.9897,
+          "independent_inline_fact_count": 52558,
+          "issuer_hash_count": 16,
+          "operator_surface_values_exposed": false,
+          "real_filing_count": 32,
+          "required_forms_present": true,
+          "resolved_fact_count": 52558,
+          "strata_readiness": {
+            "all_required_strata_ready": true,
+            "blocked_strata": [],
+            "by_stratum": {
+              "amendment_restatement": {
+                "blocked_matrix_chunk_count": 0,
+                "matrix_chunk_count": 1,
+                "matrix_ref_hashes": [
+                  "f91d910b8f7bc0053ce97dbb"
+                ],
+                "ready_matrix_chunk_count": 1
+              },
+              "canadian_40f": {
+                "blocked_matrix_chunk_count": 0,
+                "matrix_chunk_count": 1,
+                "matrix_ref_hashes": [
+                  "4d1b0e3dfcc5fbbb40f197a5"
+                ],
+                "ready_matrix_chunk_count": 1
+              },
+              "current_report_8k_sparse": {
+                "blocked_matrix_chunk_count": 0,
+                "matrix_chunk_count": 1,
+                "matrix_ref_hashes": [
+                  "9e78ee51364dac1a1af8af1f"
+                ],
+                "ready_matrix_chunk_count": 1
+              },
+              "foreign_6k_sparse": {
+                "blocked_matrix_chunk_count": 0,
+                "matrix_chunk_count": 1,
+                "matrix_ref_hashes": [
+                  "4d1b0e3dfcc5fbbb40f197a5"
+                ],
+                "ready_matrix_chunk_count": 1
+              },
+              "foreign_private_ifrs_20f": {
+                "blocked_matrix_chunk_count": 0,
+                "matrix_chunk_count": 1,
+                "matrix_ref_hashes": [
+                  "4d1b0e3dfcc5fbbb40f197a5"
+                ],
+                "ready_matrix_chunk_count": 1
+              },
+              "large_domestic_us_gaap": {
+                "blocked_matrix_chunk_count": 0,
+                "matrix_chunk_count": 1,
+                "matrix_ref_hashes": [
+                  "dfc2989e095fa51777546f0d"
+                ],
+                "ready_matrix_chunk_count": 1
+              },
+              "no_inline_or_zero_fact_diagnostic": {
+                "blocked_matrix_chunk_count": 0,
+                "matrix_chunk_count": 1,
+                "matrix_ref_hashes": [
+                  "609157e6cb2b31c2a772f81c"
+                ],
+                "ready_matrix_chunk_count": 1
+              },
+              "small_mid_domestic_us_gaap": {
+                "blocked_matrix_chunk_count": 0,
+                "matrix_chunk_count": 1,
+                "matrix_ref_hashes": [
+                  "d3b33b9740c263d9395ae3d8"
+                ],
+                "ready_matrix_chunk_count": 1
+              }
+            },
+            "missing_strata": [],
+            "not_ready_strata": [],
+            "ready_strata": [
+              "large_domestic_us_gaap",
+              "small_mid_domestic_us_gaap",
+              "foreign_private_ifrs_20f",
+              "canadian_40f",
+              "current_report_8k_sparse",
+              "foreign_6k_sparse",
+              "amendment_restatement",
+              "no_inline_or_zero_fact_diagnostic"
+            ],
+            "required_strata": [
+              "large_domestic_us_gaap",
+              "small_mid_domestic_us_gaap",
+              "foreign_private_ifrs_20f",
+              "canadian_40f",
+              "current_report_8k_sparse",
+              "foreign_6k_sparse",
+              "amendment_restatement",
+              "no_inline_or_zero_fact_diagnostic"
+            ],
+            "unknown_strata": []
+          },
+          "supported_record_count": 30,
+          "unexpected_blocked_or_degraded_count": 0
+        },
+        "current_run_arelle_subprocess_invoked": false,
+        "current_run_live_sec_network_used": false,
+        "failed_criteria": [],
+        "inherited_live_sec_network_used": true,
+        "matrix_plan_state": "passed",
+        "operator_value_reveal_enabled": false,
+        "paths_redacted": true,
+        "redaction_scan": {
+          "passed": true,
+          "raw_accession_found": false,
+          "raw_cik_found": false,
+          "raw_local_path_found": false,
+          "raw_operator_contact_found": false,
+          "raw_sec_url_found": false,
+          "raw_value_magnitude_found": false
+        },
+        "report_path_marker": "c378f2f69df7d40ef3e72d25",
+        "report_paths_redacted": true,
+        "runtime_default_applied_to_config": false,
+        "storage_dir_available": true,
+        "storage_dir_marker": "a26c56586d12f29eb1bc7708",
+        "storage_marker_matches_supplied_storage": true,
+        "summary_mismatches": []
+      },
+      "mode": "offline_redacted_product_report_import",
+      "state": "passed",
+      "used": true
+    },
+    "real_corpus_runner_archived": false,
+    "real_corpus_runner_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
     "real_filing_count": 12,
     "value_bridge_fact_count": 23102
   },
@@ -131,7 +276,7 @@
   "source_reports": {
     "admission_review": "diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json",
     "default_on_gate": "diagnostics/assessment/sec-xbrl-default-on-gate-report.json",
-    "historical_real_corpus_runner": "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json"
+    "real_corpus_runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json"
   },
   "target": "sec_edgar_arelle_fact_authority_default_on_runtime_v1"
 }

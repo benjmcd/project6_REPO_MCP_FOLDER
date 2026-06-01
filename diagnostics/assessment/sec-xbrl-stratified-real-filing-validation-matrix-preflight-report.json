@@ -339,7 +339,7 @@
       "evidence": {
         "decision": "real_corpus_default_on_validated",
         "gate_verdict": "PASS",
-        "real_product_runner_report": "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json",
+        "real_product_runner_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
         "supported_record_count": 30
       },
       "state": "passed"
@@ -749,7 +749,7 @@
   "source_reports": {
     "default_posture": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json",
     "operator_runbook_matrix_selection": "diagnostics/assessment/sec-xbrl-operator-runbook-matrix-selection-report.json",
-    "real_product_runner": "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json"
+    "real_product_runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json"
   },
   "target": "sec_edgar_stratified_real_filing_validation_matrix_preflight_v1"
 }

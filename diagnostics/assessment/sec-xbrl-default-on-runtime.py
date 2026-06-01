@@ -7,8 +7,8 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-default-on-runtime-report.json")
-HISTORICAL_REAL_CORPUS_RUNNER_REPORT = (
-    "archive/files_to_be_trashed/2026-05-31-secxbrl/sec-xbrl-real-corpus-product-runner-report.json"
+REAL_CORPUS_RUNNER_REPORT = (
+    "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json"
 )
 
 
@@ -29,7 +29,7 @@ def build_report() -> dict[str, Any]:
         "api_tests": _read("backend/tests/test_layer3_api.py"),
         "admission": _load_json("diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json"),
         "gate": _load_json("diagnostics/assessment/sec-xbrl-default-on-gate-report.json"),
-        "real_corpus_gate": _load_json(HISTORICAL_REAL_CORPUS_RUNNER_REPORT),
+        "real_corpus_gate": _load_json(REAL_CORPUS_RUNNER_REPORT),
     }
     default_enabled = (
         'layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=True,'
@@ -134,9 +134,13 @@ def build_report() -> dict[str, Any]:
         "criteria": criteria,
         "blocking_reasons": blockers,
         "inherited_real_corpus_evidence": {
-            "historical_real_corpus_runner_report": HISTORICAL_REAL_CORPUS_RUNNER_REPORT,
-            "historical_real_corpus_runner_archived": True,
-            "historical_live_matrix_reproducible_offline_from_available_inputs": False,
+            "real_corpus_runner_report": REAL_CORPUS_RUNNER_REPORT,
+            "real_corpus_runner_archived": False,
+            "current_run_live_sec_network_used": sources["real_corpus_gate"].get("current_run_live_sec_network_used"),
+            "inherited_live_sec_network_used": sources["real_corpus_gate"].get("live_sec_network_used"),
+            "offline_redacted_product_report_import": sources["real_corpus_gate"].get(
+                "offline_redacted_product_report_import"
+            ),
             "default_on_gate_decision": sources["gate"].get("decision"),
             "admission_review_decision": sources["admission"].get("decision"),
             "real_filing_count": gate_summary.get("real_filing_count"),
@@ -162,7 +166,7 @@ def build_report() -> dict[str, Any]:
         "source_reports": {
             "default_on_gate": "diagnostics/assessment/sec-xbrl-default-on-gate-report.json",
             "admission_review": "diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json",
-            "historical_real_corpus_runner": HISTORICAL_REAL_CORPUS_RUNNER_REPORT,
+            "real_corpus_runner": REAL_CORPUS_RUNNER_REPORT,
         },
         "runtime_posture": {
             "default_cutover_enabled": default_enabled,
