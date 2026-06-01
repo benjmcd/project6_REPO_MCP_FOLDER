@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from decimal import Decimal
 import importlib.util
 import sys
@@ -130,9 +131,37 @@ def _packet(*, rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     )
     if rows is not None:
         for statement in packet["statements"]:
-            statement["rows"] = [row for row in rows if row.get("statement") == statement["statement"]]
-            statement["line_count"] = len(statement["rows"])
+            statement_rows = [row for row in rows if row.get("statement") == statement["statement"]]
+            status_counts = Counter(str(row.get("status") or "") for row in statement_rows)
+            family_counts = Counter(str(row.get("family") or "universal") for row in statement_rows)
+            statement["rows"] = statement_rows
+            statement["line_count"] = len(statement_rows)
+            statement["projected_count"] = sum(
+                1 for row in statement_rows if str(row.get("status") or "").startswith("projected")
+            )
+            statement["derived_count"] = sum(1 for row in statement_rows if row.get("status") == "derived")
+            statement["provenance_complete_count"] = sum(
+                1 for row in statement_rows if row.get("provenance_complete") is True
+            )
+            statement["review_exception_count"] = sum(
+                1
+                for row in statement_rows
+                if row.get("provenance_complete") is not True
+                or row.get("oracle_confirmed") is False
+                or row.get("oracle_confirmed") == "oracle_absent"
+            )
+            statement["status_counts"] = dict(sorted(status_counts.items()))
+            statement["family_counts"] = dict(sorted(family_counts.items()))
         packet["total_review_rows"] = len(rows)
+        packet["provenance_complete_count"] = sum(1 for row in rows if row.get("provenance_complete") is True)
+        packet["review_exception_count"] = sum(
+            1
+            for row in rows
+            if row.get("provenance_complete") is not True
+            or row.get("oracle_confirmed") is False
+            or row.get("oracle_confirmed") == "oracle_absent"
+        )
+        packet["review_ready"] = bool(rows) and packet["provenance_complete_count"] == len(rows)
     return packet
 
 
@@ -229,7 +258,7 @@ def test_statement_packet_persistence_rejects_client_request_conflict(db_session
         packet=packet,
     )
     changed = _packet()
-    changed["review_ready"] = False
+    changed["organization_contract"]["a_role_unknown_count"] = 1
 
     with pytest.raises(packet_persistence.SecXbrlStatementPacketPersistenceError) as exc:
         packet_persistence.materialize_redacted_statement_packet(
@@ -241,6 +270,42 @@ def test_statement_packet_persistence_rejects_client_request_conflict(db_session
 
     assert exc.value.code == "sec_xbrl_statement_packet_persistence_client_request_conflict"
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 1
+
+
+def test_statement_packet_persistence_rejects_header_count_mismatch(db_session) -> None:
+    projection = _persisted_projection(db_session)
+    packet = _packet()
+    packet["review_exception_count"] = 1
+
+    with pytest.raises(packet_persistence.SecXbrlStatementPacketPersistenceError) as exc:
+        packet_persistence.materialize_redacted_statement_packet(
+            db_session,
+            client_request_id="packet-header-count-mismatch",
+            sec_xbrl_projection_set_id=projection["sec_xbrl_projection_set_id"],
+            packet=packet,
+        )
+
+    assert exc.value.code == "sec_xbrl_statement_packet_persistence_packet_summary_invalid"
+    assert exc.value.details["field"] == "review_exception_count"
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
+
+
+def test_statement_packet_persistence_rejects_statement_count_mismatch(db_session) -> None:
+    projection = _persisted_projection(db_session)
+    packet = _packet()
+    packet["statements"][0]["line_count"] = 9
+
+    with pytest.raises(packet_persistence.SecXbrlStatementPacketPersistenceError) as exc:
+        packet_persistence.materialize_redacted_statement_packet(
+            db_session,
+            client_request_id="packet-statement-count-mismatch",
+            sec_xbrl_projection_set_id=projection["sec_xbrl_projection_set_id"],
+            packet=packet,
+        )
+
+    assert exc.value.code == "sec_xbrl_statement_packet_persistence_packet_summary_invalid"
+    assert exc.value.details["field"] == "line_count"
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
 
 
 def test_statement_packet_persistence_rejects_raw_value_fields(db_session) -> None:
@@ -280,6 +345,24 @@ def test_statement_packet_persistence_rejects_residual_magnitudes(db_session) ->
         )
 
     assert exc.value.code == "sec_xbrl_statement_packet_persistence_residual_magnitudes_not_admitted"
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
+
+
+def test_statement_packet_persistence_rejects_non_boolean_identity_tolerance(db_session) -> None:
+    projection = _persisted_projection(db_session)
+    packet = _packet()
+    packet["identity_rollup"]["identity_residuals_within_tolerance"] = "false"
+
+    with pytest.raises(packet_persistence.SecXbrlStatementPacketPersistenceError) as exc:
+        packet_persistence.materialize_redacted_statement_packet(
+            db_session,
+            client_request_id="packet-identity-tolerance-string",
+            sec_xbrl_projection_set_id=projection["sec_xbrl_projection_set_id"],
+            packet=packet,
+        )
+
+    assert exc.value.code == "sec_xbrl_statement_packet_persistence_boolean_required"
+    assert exc.value.details == {"field": "identity_residuals_within_tolerance"}
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
 
 
