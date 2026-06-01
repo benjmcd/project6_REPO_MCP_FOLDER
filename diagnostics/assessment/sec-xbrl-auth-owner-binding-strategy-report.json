@@ -1,0 +1,277 @@
+{
+  "blocking_reasons": [],
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "receipt_surface_inventory_nonempty",
+      "evidence": {
+        "receipt_surface_count": 4
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "current_receipt_surfaces_present",
+      "evidence": {
+        "missing_receipt_surfaces": [],
+        "receipt_surface_count": 4
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "current_owner_binding_not_uniform",
+      "evidence": {
+        "absent_binding_count": 3,
+        "complete_binding_count": 0,
+        "partial_binding_count": 1
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "auth_policy_traceability_current",
+      "evidence": {
+        "auth_design_doc": "next_milestone_plans/Layer3_planning_docs/1321-in-app-auth.md",
+        "auth_policy_doc": "next_milestone_plans/Layer3_planning_docs/1322-in-app-auth-policy-validation.md",
+        "auth_policy_report": "diagnostics/assessment/sec-xbrl-in-app-auth-policy-validation-report.json",
+        "prior_next_slice": "sec_xbrl_nonlocal_in_app_auth_owner_binding_strategy_v1"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "selected_strategy_is_separate_hash_only_binding_table",
+      "evidence": {
+        "reason_codes": [
+          "centralizes_hash_only_actor_workspace_binding",
+          "avoids_rewriting_existing_receipt_contracts",
+          "supports_uniform_cross_receipt_owner_checks",
+          "keeps_export_delivery_and_value_reveal_as_separate_gates"
+        ],
+        "selected_strategy": "separate_hash_only_auth_binding_receipt_table"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "tier2_boundary_preserved",
+      "evidence": {
+        "future_tier": "Tier 2",
+        "implemented_now": false,
+        "requires_independent_review_when_practical": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "redacted_strategy_output_contract",
+      "evidence": {
+        "local_path_exposed": false,
+        "raw_identity_exposed": false,
+        "raw_value_exposed": false,
+        "residual_magnitude_exposed": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "standing_non_admissions_preserved",
+      "evidence": {
+        "api_route_behavior_changed_by_diagnostic": false,
+        "arelle_subprocess_invoked_by_diagnostic": false,
+        "config_default_changed_by_diagnostic": false,
+        "controlled_value_reveal_submit_default_enabled_by_diagnostic": false,
+        "cross_company_comparability_claimed": false,
+        "durable_persistence_changed_by_diagnostic": false,
+        "export_or_delivery_enabled_by_diagnostic": false,
+        "final_financial_statement_semantics_claimed": false,
+        "live_sec_network_run_performed_by_diagnostic": false,
+        "migration_changed_by_diagnostic": false,
+        "owner_binding_persistence_implemented_by_diagnostic": false,
+        "production_readiness_claimed": false,
+        "provider_or_connector_dispatch_enabled_by_diagnostic": false,
+        "raw_internal_value_store_default_enabled_by_diagnostic": false,
+        "raw_runtime_artifacts_added_by_diagnostic": false,
+        "redaction_posture_changed_by_diagnostic": false,
+        "runtime_auth_dependency_installed_by_diagnostic": false,
+        "schema_models_changed_by_diagnostic": false,
+        "source_acquisition_performed_by_diagnostic": false,
+        "value_reveal_default_enabled_by_diagnostic": false
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "sec_xbrl_auth_owner_binding_strategy_selected",
+  "headline": "SEC XBRL owner-binding strategy selected as a separate hash-only binding receipt table.",
+  "next_slice": "sec_xbrl_nonlocal_in_app_auth_owner_binding_table_design_v1",
+  "non_goals_preserved": {
+    "api_route_behavior_changed_by_diagnostic": false,
+    "arelle_subprocess_invoked_by_diagnostic": false,
+    "config_default_changed_by_diagnostic": false,
+    "controlled_value_reveal_submit_default_enabled_by_diagnostic": false,
+    "cross_company_comparability_claimed": false,
+    "durable_persistence_changed_by_diagnostic": false,
+    "export_or_delivery_enabled_by_diagnostic": false,
+    "final_financial_statement_semantics_claimed": false,
+    "live_sec_network_run_performed_by_diagnostic": false,
+    "migration_changed_by_diagnostic": false,
+    "owner_binding_persistence_implemented_by_diagnostic": false,
+    "production_readiness_claimed": false,
+    "provider_or_connector_dispatch_enabled_by_diagnostic": false,
+    "raw_internal_value_store_default_enabled_by_diagnostic": false,
+    "raw_runtime_artifacts_added_by_diagnostic": false,
+    "redaction_posture_changed_by_diagnostic": false,
+    "runtime_auth_dependency_installed_by_diagnostic": false,
+    "schema_models_changed_by_diagnostic": false,
+    "source_acquisition_performed_by_diagnostic": false,
+    "value_reveal_default_enabled_by_diagnostic": false
+  },
+  "policy_schema_id": "layer3.sec_xbrl.repo_owned_in_app_operator_auth_owner_binding_strategy.v1",
+  "proposed_binding_contract": {
+    "fields": [
+      "sec_xbrl_auth_binding_receipt_id",
+      "source_receipt_kind",
+      "source_receipt_id",
+      "source_receipt_basis_hash",
+      "route_family",
+      "actor_ref_hash",
+      "workspace_ref_hash",
+      "policy_hash",
+      "binding_basis_hash",
+      "binding_state",
+      "binding_schema_id",
+      "created_at"
+    ],
+    "model_class": "L3SecXbrlAuthBindingReceipt",
+    "redaction_policy": "hash_only_actor_workspace_policy_refs_v1",
+    "required_indexes": [
+      "source_receipt_kind + source_receipt_basis_hash",
+      "actor_ref_hash + workspace_ref_hash",
+      "policy_hash"
+    ],
+    "table_name": "l3_sec_xbrl_auth_binding_receipt",
+    "unique_constraints": [
+      "source_receipt_kind + source_receipt_id",
+      "binding_basis_hash"
+    ]
+  },
+  "receipt_surface_inventory": [
+    {
+      "actor_binding_column_present": false,
+      "basis_hash_column": "workflow_basis_hash",
+      "id_column": "sec_xbrl_operator_review_workflow_id",
+      "migration_file": "backend/alembic/versions/0040_layer3_sec_xbrl_operator_review_workflow.py",
+      "model_class": "L3SecXbrlOperatorReviewWorkflow",
+      "owner_binding_state": "absent",
+      "receipt_kind": "operator_review_workflow",
+      "route_families": [
+        "sec_xbrl_operator_review_workflow_status_read",
+        "sec_xbrl_operator_review_decision_submit_write"
+      ],
+      "service_file": "backend/app/services/layer3_sec_xbrl_operator_review_workflow.py",
+      "surface_present": true,
+      "table_name": "l3_sec_xbrl_operator_review_workflow",
+      "workspace_binding_column_present": false
+    },
+    {
+      "actor_binding_column_present": false,
+      "basis_hash_column": "decision_basis_hash",
+      "id_column": "sec_xbrl_operator_review_decision_id",
+      "migration_file": "backend/alembic/versions/0042_layer3_sec_xbrl_operator_review_decision.py",
+      "model_class": "L3SecXbrlOperatorReviewDecision",
+      "owner_binding_state": "absent",
+      "receipt_kind": "operator_review_decision",
+      "route_families": [
+        "sec_xbrl_operator_review_decision_submit_write",
+        "sec_xbrl_operator_review_decision_status_read",
+        "sec_xbrl_value_reveal_authority_prepare_write"
+      ],
+      "service_file": "backend/app/services/layer3_sec_xbrl_operator_review_workflow.py",
+      "surface_present": true,
+      "table_name": "l3_sec_xbrl_operator_review_decision",
+      "workspace_binding_column_present": false
+    },
+    {
+      "actor_binding_column_present": true,
+      "basis_hash_column": "authority_basis_hash",
+      "id_column": "sec_xbrl_value_reveal_authority_receipt_id",
+      "migration_file": "backend/alembic/versions/0044_layer3_sec_xbrl_value_reveal_authority_receipt.py",
+      "model_class": "L3SecXbrlValueRevealAuthorityReceipt",
+      "owner_binding_state": "partial",
+      "receipt_kind": "value_reveal_authority",
+      "route_families": [
+        "sec_xbrl_value_reveal_authority_prepare_write",
+        "sec_xbrl_controlled_value_reveal_submit_write"
+      ],
+      "service_file": "backend/app/services/layer3_sec_xbrl_value_reveal_authority.py",
+      "surface_present": true,
+      "table_name": "l3_sec_xbrl_value_reveal_authority_receipt",
+      "workspace_binding_column_present": false
+    },
+    {
+      "actor_binding_column_present": false,
+      "basis_hash_column": "submit_basis_hash",
+      "id_column": "sec_xbrl_controlled_value_reveal_submit_receipt_id",
+      "migration_file": "backend/alembic/versions/0045_layer3_sec_xbrl_controlled_value_reveal_submit.py",
+      "model_class": "L3SecXbrlControlledValueRevealSubmitReceipt",
+      "owner_binding_state": "absent",
+      "receipt_kind": "controlled_value_reveal_submit",
+      "route_families": [
+        "sec_xbrl_controlled_value_reveal_submit_write",
+        "sec_xbrl_controlled_value_reveal_submit_status_read"
+      ],
+      "service_file": "backend/app/services/layer3_sec_xbrl_controlled_value_reveal_submit.py",
+      "surface_present": true,
+      "table_name": "l3_sec_xbrl_controlled_value_reveal_submit_receipt",
+      "workspace_binding_column_present": false
+    }
+  ],
+  "schema_id": "diagnostics.sec_xbrl_nonlocal_in_app_auth_owner_binding_strategy.v1",
+  "selected_strategy": "separate_hash_only_auth_binding_receipt_table",
+  "source_documents": {
+    "api": "backend/app/api/layer3.py",
+    "auth_design_doc": "next_milestone_plans/Layer3_planning_docs/1321-in-app-auth.md",
+    "auth_policy_doc": "next_milestone_plans/Layer3_planning_docs/1322-in-app-auth-policy-validation.md",
+    "auth_policy_report": "diagnostics/assessment/sec-xbrl-in-app-auth-policy-validation-report.json",
+    "models": "backend/app/models/models.py"
+  },
+  "strategy_options": [
+    {
+      "affected_receipt_kinds": [
+        "operator_review_workflow",
+        "operator_review_decision",
+        "value_reveal_authority",
+        "controlled_value_reveal_submit"
+      ],
+      "future_tier": "Tier 2",
+      "implemented_now": false,
+      "reason_codes": [
+        "touches_multiple_existing_receipt_contracts",
+        "requires_per_receipt_backfill_and_service_propagation",
+        "current_receipt_owner_binding_is_mixed_partial_and_absent"
+      ],
+      "recommended": false,
+      "strategy": "add_columns_to_each_existing_sec_xbrl_receipt_table"
+    },
+    {
+      "affected_receipt_kinds": [
+        "operator_review_workflow",
+        "operator_review_decision",
+        "value_reveal_authority",
+        "controlled_value_reveal_submit"
+      ],
+      "future_tier": "Tier 2",
+      "implemented_now": false,
+      "reason_codes": [
+        "centralizes_hash_only_actor_workspace_binding",
+        "avoids_rewriting_existing_receipt_contracts",
+        "supports_uniform_cross_receipt_owner_checks",
+        "keeps_export_delivery_and_value_reveal_as_separate_gates"
+      ],
+      "recommended": true,
+      "strategy": "separate_hash_only_auth_binding_receipt_table"
+    }
+  ],
+  "target": "sec_xbrl_nonlocal_in_app_auth_owner_binding_strategy_v1"
+}
