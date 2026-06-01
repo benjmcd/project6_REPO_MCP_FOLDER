@@ -136,7 +136,9 @@ The materializer must:
    fields, Arelle fields, delivery/export fields, and residual magnitude fields from
    any copied JSON or supplied decision evidence;
 10. compute `decision_basis_hash` before writing;
-11. be idempotent on `client_request_id` and `decision_basis_hash`;
+11. replay only when the same `client_request_id` resolves to the same
+    `decision_basis_hash`; the same `decision_basis_hash` under a different
+    `client_request_id` fails closed until a separate alias policy is frozen;
 12. write the decision row in one transaction and roll back the whole transaction on
     validation failure;
 13. leave the workflow, statement-packet, and projection persistence rows unmutated.
@@ -202,7 +204,8 @@ Containment requirements:
 - invalid authority, duplicate workflow decision, raw evidence, or notes-policy failure
   leaves no partial decision row;
 - replay of the same request returns the existing decision receipt instead of
-  duplicating rows;
+  duplicating rows; same-basis/new-request replay fails closed rather than silently
+  aliasing authority;
 - no route/UI reaches the decision table until a later API/rendered freeze lands;
 - no downstream value reveal, delivery/export, source acquisition, Arelle, default-on, or
   production-readiness behavior is enabled by the decision receipt.
@@ -220,7 +223,8 @@ Minimum local verification:
   only after raw-reference scans pass;
 - raw value/raw identity/raw accession/raw period date/local path/SEC URL/operator
   contact/source-acquisition/Arelle/delivery-export/residual-magnitude rejection tests;
-- idempotent replay tests for `client_request_id` and `decision_basis_hash`;
+- exact-request replay and same-basis/new-request mismatch tests for
+  `client_request_id` and `decision_basis_hash`;
 - partial-write rollback test;
 - workflow, statement-packet, and projection non-mutation proof;
 - `python -m pytest ./backend/tests/test_sec_xbrl_operator_review_workflow.py -q`;

@@ -18,7 +18,7 @@ from app.services.layer3_utils import json_clone, stable_hash
 
 PROJECTION_SET_SCHEMA_ID = "layer3.sec_xbrl_projection_set.v1"
 ALLOWED_STATEMENTS = {"income", "balance", "cashflow"}
-RAW_VALUE_KEYS = {"_value", "value", "effective_value", "amount"}
+RAW_VALUE_KEYS = {"_value", "value", "effective_value", "amount", "lexical_value"}
 RAW_AUTHORITY_KEYS = {
     "resolved_fact_id",
     "resolved_fact_ids",
@@ -46,6 +46,13 @@ RAW_AUTHORITY_KEYS = {
 ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
 WINDOWS_ABS_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
+LOCAL_REF_RE = re.compile(
+    r"(?i)(?:"
+    r"file://"
+    r"|\\\\[^\\/]+[\\/]"
+    r"|(?:^|[\s\"'=])/(?:workspace|tmp|home|users|var|mnt|opt|private)(?:/|$)"
+    r")"
+)
 RAW_PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 SECTOR_FAMILY_PRESENCE_KEYS = {
@@ -94,6 +101,7 @@ def materialize_redacted_projection_set(
     source_report_hash: str,
 ) -> dict[str, Any]:
     request_id = _required_text(client_request_id, "client_request_id")
+    _reject_raw_or_local_authority(request_id)
     report_schema_id = _required_text(source_report_schema_id, "source_report_schema_id")
     report_hash = _required_hash(source_report_hash, "source_report_hash")
     periods = _normalise_periods(projection)
@@ -141,7 +149,14 @@ def materialize_redacted_projection_set(
             )
         return _response(existing_by_request, idempotent_replay=True)
     if existing_by_basis is not None:
-        return _response(existing_by_basis, idempotent_replay=True)
+        raise SecXbrlProjectionPersistenceError(
+            "sec_xbrl_projection_persistence_basis_replay_request_mismatch",
+            "projection_basis_hash already belongs to a different client_request_id; replay the original request id.",
+            details={
+                "client_request_id": request_id,
+                "original_client_request_id": existing_by_basis.client_request_id,
+            },
+        )
 
     set_row = L3SecXbrlProjectionSet(
         client_request_id=request_id,
@@ -662,6 +677,7 @@ def _reject_raw_or_local_authority(value: Any) -> None:
             ACCESSION_RE.search(value)
             or SEC_URL_RE.search(value)
             or WINDOWS_ABS_PATH_RE.search(value)
+            or LOCAL_REF_RE.search(value)
             or RAW_PERIOD_DATE_RE.search(value)
         ):
             raise SecXbrlProjectionPersistenceError(

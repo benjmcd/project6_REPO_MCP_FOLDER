@@ -129,12 +129,12 @@ def test_sec_xbrl_projection_persistence_materializes_redacted_rows(db_session) 
 def test_sec_xbrl_projection_persistence_replays_same_request_and_basis(db_session) -> None:
     first = _materialize(db_session, request_id="request-replay")
     second = _materialize(db_session, request_id="request-replay")
-    third = _materialize(db_session, request_id="request-same-basis")
+    with pytest.raises(persistence.SecXbrlProjectionPersistenceError) as exc:
+        _materialize(db_session, request_id="request-same-basis")
 
     assert second["idempotent_replay"] is True
-    assert third["idempotent_replay"] is True
     assert second["sec_xbrl_projection_set_id"] == first["sec_xbrl_projection_set_id"]
-    assert third["sec_xbrl_projection_set_id"] == first["sec_xbrl_projection_set_id"]
+    assert exc.value.code == "sec_xbrl_projection_persistence_basis_replay_request_mismatch"
     assert db_session.query(L3SecXbrlProjectionSet).count() == 1
     assert db_session.query(L3SecXbrlProjectionFact).count() == 2
 
@@ -163,6 +163,19 @@ def test_sec_xbrl_projection_persistence_rejects_raw_value_fields(db_session) ->
     assert db_session.query(L3SecXbrlProjectionFact).count() == 0
 
 
+def test_sec_xbrl_projection_persistence_rejects_lexical_value_fields(db_session) -> None:
+    row = _row("CashAndDueFromBanks", "balance")
+    row["lexical_value"] = "1000000"
+
+    with pytest.raises(persistence.SecXbrlProjectionPersistenceError) as exc:
+        _materialize(db_session, _projection(rows=[row]))
+
+    assert exc.value.code == "sec_xbrl_projection_persistence_raw_authority_not_admitted"
+    assert exc.value.details == {"field": "lexical_value"}
+    assert db_session.query(L3SecXbrlProjectionSet).count() == 0
+    assert db_session.query(L3SecXbrlProjectionFact).count() == 0
+
+
 def test_sec_xbrl_projection_persistence_rejects_unredacted_row(db_session) -> None:
     row = _row("CashAndDueFromBanks", "balance")
     row["value_redacted"] = False
@@ -183,6 +196,15 @@ def test_sec_xbrl_projection_persistence_rejects_raw_identity_and_paths(db_sessi
 
     assert exc.value.code == "sec_xbrl_projection_persistence_raw_reference_not_admitted"
     assert db_session.query(L3SecXbrlProjectionSet).count() == 0
+
+
+def test_sec_xbrl_projection_persistence_rejects_local_ref_client_request_id(db_session) -> None:
+    with pytest.raises(persistence.SecXbrlProjectionPersistenceError) as exc:
+        _materialize(db_session, request_id="/workspace/project/runtime/sec/filing.json")
+
+    assert exc.value.code == "sec_xbrl_projection_persistence_raw_reference_not_admitted"
+    assert db_session.query(L3SecXbrlProjectionSet).count() == 0
+    assert db_session.query(L3SecXbrlProjectionFact).count() == 0
 
 
 def test_sec_xbrl_projection_persistence_rejects_unadmitted_sector_family_numeric_alias(db_session) -> None:

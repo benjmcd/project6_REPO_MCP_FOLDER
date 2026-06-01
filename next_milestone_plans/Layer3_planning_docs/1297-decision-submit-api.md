@@ -24,7 +24,8 @@ Frozen and implemented route:
 The route must:
 
 - require the existing FastAPI database dependency;
-- use `extra="forbid"` on the request model;
+- reject caller-supplied extra fields through the redacted SEC XBRL workbench error
+  envelope before invoking the owner service;
 - call only `record_redacted_operator_review_decision`;
 - pass only the bounded request fields listed below to the owner service;
 - use the existing SEC XBRL operator-review workflow error mapper;
@@ -112,7 +113,8 @@ It must not touch:
 The implementation PR must prove:
 
 - successful submit over an existing workflow records one decision receipt;
-- request model rejects extra fields;
+- route rejects extra fields with a redacted workbench error before owner-service
+  mutation;
 - missing authority fails closed;
 - missing notes for non-approved decisions fails closed;
 - raw note contact/value strings fail closed through the owner service;
@@ -141,9 +143,9 @@ Branch-local implementation posture:
 
 - `backend/app/api/layer3.py` adds
   `POST /api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit`.
-- The request model uses `extra="forbid"` and admits only the frozen submit mode,
-  operator decision, review decision, reason code, optional workflow selectors, and
-  optional notes.
+- The request model parses the frozen submit mode, operator decision, review decision,
+  reason code, optional workflow selectors, and optional notes; the route rejects
+  parsed extra fields with a redacted workbench error before owner-service mutation.
 - The route calls only `record_redacted_operator_review_decision`, uses the existing
   SEC XBRL operator-review workflow error mapper, and returns the standard API envelope
   plus the owner-service decision receipt projection.
@@ -151,10 +153,11 @@ Branch-local implementation posture:
   `api_route_enabled=false` from the owner-service receipt and keeping rendered UI,
   workflow-open API, value reveal, delivery/export, source acquisition, Arelle,
   runtime-default, and production-readiness flags false.
-- Focused API proof covers successful receipt creation, extra-field rejection, missing
-  authority failure, non-approved missing-notes failure, raw note/contact/value-string
-  rejection, idempotent replay, second-decision rejection, response redaction, and
-  workflow/statement-packet/projection non-mutation.
+- Focused API proof covers successful receipt creation, extra-field rejection without
+  echoing submitted raw values, missing authority failure, non-approved missing-notes
+  failure, raw note/contact/value-string rejection, idempotent exact-request replay,
+  second-decision rejection, response redaction, and workflow/statement-packet/
+  projection non-mutation.
 - Branch-local test evidence: focused operator-review workflow tests returned
   `34 passed, 3 warnings`; full SEC XBRL suite returned `254 passed, 4 warnings`.
 
