@@ -27,8 +27,9 @@ one `l3_sec_xbrl_operator_review_workflow` row. The row is a server-owned contro
 envelope that binds the packet id, packet basis hash, source projection basis hash,
 review-ready counts, redaction policy, and fixed allowed/blocked control vocabulary.
 
-The service computes a stable `workflow_basis_hash`, is idempotent on
-`client_request_id` and `workflow_basis_hash`, rejects missing, empty, not-ready, or
+The service computes a stable `workflow_basis_hash`, replays only the same
+`client_request_id` with the same `workflow_basis_hash`, rejects same-basis/new-request
+replay until an alias policy is frozen, rejects missing, empty, not-ready, or
 non-redacted packet sets, and scans copied JSON for raw values, raw resolved-fact
 authority fields, raw accessions, raw issuer identity keys, operator contact fields,
 raw period dates, SEC URLs, local paths, and residual magnitude fields before writing.
@@ -80,7 +81,8 @@ Rollback/containment notes:
 - tests use isolated SQLite runtime state;
 - invalid packet readiness, redaction, local path, residual magnitude, or missing
   packet input leaves no partial workflow row;
-- replay of the same request or workflow basis does not duplicate rows;
+- replay of the same request does not duplicate rows; same-basis/new-request replay
+  fails closed rather than silently aliasing authority;
 - statement-packet persistence rows are read as authority inputs and are not mutated.
 
 ## Proof

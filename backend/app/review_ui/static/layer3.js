@@ -9047,9 +9047,21 @@ function secXbrlOperatorReviewWorkflowStatusInputValues() {
     const workflowIdInput = document.getElementById('sec-xbrl-operator-review-workflow-id');
     const workflowBasisHashInput = document.getElementById('sec-xbrl-operator-review-workflow-basis-hash');
     return {
-        workflowId: (workflowIdInput?.value || stored.workflowId || '').trim(),
-        workflowBasisHash: (workflowBasisHashInput?.value || stored.workflowBasisHash || '').trim(),
+        workflowId: formInputValue(workflowIdInput, stored.workflowId),
+        workflowBasisHash: formInputValue(workflowBasisHashInput, stored.workflowBasisHash),
     };
+}
+
+function formInputValue(input, ...fallbacks) {
+    if (input) {
+        return input.value.trim();
+    }
+    for (const fallback of fallbacks) {
+        if (fallback !== undefined && fallback !== null && String(fallback).trim()) {
+            return String(fallback).trim();
+        }
+    }
+    return '';
 }
 
 function secXbrlOperatorReviewDecisionSubmitInputValues() {
@@ -9061,29 +9073,19 @@ function secXbrlOperatorReviewDecisionSubmitInputValues() {
     const reasonInput = document.getElementById('sec-xbrl-operator-review-decision-reason-code');
     const notesInput = document.getElementById('sec-xbrl-operator-review-decision-notes');
     return {
-        workflowId: (
-            workflowIdInput?.value
-            || stored.workflowId
-            || workflowStatus.sec_xbrl_operator_review_workflow_id
-            || ''
-        ).trim(),
-        workflowBasisHash: (
-            workflowBasisHashInput?.value
-            || stored.workflowBasisHash
-            || workflowStatus.workflow_basis_hash
-            || ''
-        ).trim(),
-        reviewDecision: (
-            reviewDecisionInput?.value
-            || stored.reviewDecision
-            || 'approved'
-        ).trim(),
-        decisionReasonCode: (
-            reasonInput?.value
-            || stored.decisionReasonCode
-            || 'ready_for_next_freeze'
-        ).trim(),
-        decisionNotes: (notesInput?.value || stored.decisionNotes || '').trim(),
+        workflowId: formInputValue(
+            workflowIdInput,
+            stored.workflowId,
+            workflowStatus.sec_xbrl_operator_review_workflow_id,
+        ),
+        workflowBasisHash: formInputValue(
+            workflowBasisHashInput,
+            stored.workflowBasisHash,
+            workflowStatus.workflow_basis_hash,
+        ),
+        reviewDecision: formInputValue(reviewDecisionInput, stored.reviewDecision, 'approved'),
+        decisionReasonCode: formInputValue(reasonInput, stored.decisionReasonCode, 'ready_for_next_freeze'),
+        decisionNotes: formInputValue(notesInput, stored.decisionNotes),
     };
 }
 
@@ -10432,6 +10434,9 @@ function secXbrlOperatorReviewWorkflowStatusPayload() {
     if (!values.workflowId && !values.workflowBasisHash) {
         throw new Error('sec_xbrl_operator_review_workflow_status_authority_required');
     }
+    if (values.workflowBasisHash && !/^[0-9a-fA-F]{64}$/.test(values.workflowBasisHash)) {
+        throw new Error('sec_xbrl_operator_review_workflow_basis_hash_must_be_sha256');
+    }
     const payload = {
         client_request_id: requestId(),
         status_mode: SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_MODE,
@@ -10451,6 +10456,9 @@ function secXbrlOperatorReviewDecisionSubmitPayload() {
     State.secXbrlOperatorReviewDecisionSubmitInput = values;
     if (!values.workflowId && !values.workflowBasisHash) {
         throw new Error('sec_xbrl_operator_review_decision_authority_required');
+    }
+    if (values.workflowBasisHash && !/^[0-9a-fA-F]{64}$/.test(values.workflowBasisHash)) {
+        throw new Error('sec_xbrl_operator_review_decision_workflow_basis_hash_must_be_sha256');
     }
     if (values.reviewDecision !== 'approved' && !values.decisionNotes) {
         throw new Error('sec_xbrl_operator_review_decision_notes_required');
@@ -11090,6 +11098,14 @@ function canInspectSecXbrlOperatorReviewDecisionStatus() {
         (values.decisionId || values.decisionBasisHash)
         && !State.secXbrlOperatorReviewDecisionStatusPending
     );
+}
+
+function clearSecXbrlOperatorReviewDecisionNotesInput() {
+    const notesInput = document.getElementById('sec-xbrl-operator-review-decision-notes');
+    if (notesInput) {
+        notesInput.value = '';
+    }
+    State.secXbrlOperatorReviewDecisionSubmitInput.decisionNotes = '';
 }
 
 function canStartCandidateBFullCorpusOperatorWorkflowRun(contract = candidateBDefaultPromotionReadinessContract()) {
@@ -17755,7 +17771,7 @@ function renderSecXbrlOperatorReviewDecisionSubmitPanel() {
                     </label>
                     <label>
                         <span>bounded decision notes</span>
-                        <textarea id="sec-xbrl-operator-review-decision-notes" rows="3" maxlength="280" autocomplete="off" spellcheck="false" placeholder="Optional for approved; required for non-approved. Raw notes are submitted only to the server and are cleared after submit."></textarea>
+                        <textarea id="sec-xbrl-operator-review-decision-notes" rows="3" maxlength="280" autocomplete="off" spellcheck="false" placeholder="Optional for approved; required for non-approved. Raw notes are submitted only to the server and are cleared after submit.">${escapeHtml(submitInputs.decisionNotes)}</textarea>
                     </label>
                     <button id="sec-xbrl-operator-review-decision-submit" type="submit" ${canSubmitSecXbrlOperatorReviewDecision() ? '' : 'disabled'}>Submit Decision</button>
                 </form>
@@ -19579,7 +19595,7 @@ async function submitSecXbrlOperatorReviewDecision(event) {
         State.secXbrlOperatorReviewDecisionSubmitError = new Error(
             'SEC XBRL operator-review decision submit requires existing workflow authority, a decision, a reason code, and notes for non-approved decisions.',
         );
-        State.secXbrlOperatorReviewDecisionSubmitInput.decisionNotes = '';
+        clearSecXbrlOperatorReviewDecisionNotesInput();
         renderSecXbrlOperatorReviewDecisionSubmitPanel();
         return;
     }
@@ -19589,13 +19605,13 @@ async function submitSecXbrlOperatorReviewDecision(event) {
     } catch (error) {
         State.secXbrlOperatorReviewDecisionSubmit = null;
         State.secXbrlOperatorReviewDecisionSubmitError = error;
-        State.secXbrlOperatorReviewDecisionSubmitInput.decisionNotes = '';
+        clearSecXbrlOperatorReviewDecisionNotesInput();
         renderSecXbrlOperatorReviewDecisionSubmitPanel();
         return;
     }
     State.secXbrlOperatorReviewDecisionSubmitPending = true;
     State.secXbrlOperatorReviewDecisionSubmitError = null;
-    State.secXbrlOperatorReviewDecisionSubmitInput.decisionNotes = '';
+    clearSecXbrlOperatorReviewDecisionNotesInput();
     renderSecXbrlOperatorReviewDecisionSubmitPanel();
     try {
         const decision = await postJson(SEC_XBRL_OPERATOR_REVIEW_DECISION_SUBMIT_ENDPOINT, payload);
@@ -19609,7 +19625,7 @@ async function submitSecXbrlOperatorReviewDecision(event) {
     } catch (error) {
         State.secXbrlOperatorReviewDecisionSubmit = null;
         State.secXbrlOperatorReviewDecisionSubmitError = error;
-        State.secXbrlOperatorReviewDecisionSubmitInput.decisionNotes = '';
+        clearSecXbrlOperatorReviewDecisionNotesInput();
         addEvent(`SEC XBRL operator-review decision submit blocked: ${error.message}`);
     } finally {
         State.secXbrlOperatorReviewDecisionSubmitPending = false;

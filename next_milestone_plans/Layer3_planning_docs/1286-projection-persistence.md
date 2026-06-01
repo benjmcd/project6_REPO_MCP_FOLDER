@@ -131,7 +131,9 @@ The materializer must:
    projection claims those fields are present;
 6. require every persisted fact row to have `value_redacted=true`;
 7. compute `projection_basis_hash` from the redacted envelope before writing;
-8. be idempotent on `client_request_id` and `projection_basis_hash`;
+8. replay only when the same `client_request_id` resolves to the same
+   `projection_basis_hash`; the same `projection_basis_hash` under a different
+   `client_request_id` fails closed until a separate alias policy is frozen;
 9. write projection set and fact rows in one transaction;
 10. roll back the whole transaction on any row-level validation failure.
 
@@ -150,7 +152,8 @@ Containment requirements for the implementation PR:
 - Tests run in isolated temporary DB state.
 - Failed materialization leaves no partial projection set or fact rows.
 - Replaying the same request returns the existing materialization instead of duplicating
-  rows.
+  rows; same-basis/new-request replay fails closed rather than silently aliasing
+  authority.
 - If downgrade is exercised after test data exists, only the new projection persistence
   tables are removed.
 
@@ -166,7 +169,8 @@ Minimum local verification:
 - migration upgrade/downgrade or project-standard equivalent migration proof;
 - empty projection fail-closed test;
 - raw value/raw identity/raw accession/local path/SEC URL rejection tests;
-- idempotent replay test for `client_request_id` and `projection_basis_hash`;
+- exact-request replay and same-basis/new-request mismatch tests for
+  `client_request_id` and `projection_basis_hash`;
 - partial-write rollback test;
 - `python ./tools/l3-target-selection-validate.py --expect frozen`;
 - `python ./tools/l3-progress-check.py`;

@@ -30,6 +30,9 @@ MIGRATION_PATH = ROOT / "backend" / "alembic" / "versions" / "0039_layer3_sec_xb
 REDACTION_CONSTRAINT_MIGRATION_PATH = (
     ROOT / "backend" / "alembic" / "versions" / "0041_layer3_sec_xbrl_redaction_constraints.py"
 )
+PERIOD_UNIQUE_MIGRATION_PATH = (
+    ROOT / "backend" / "alembic" / "versions" / "0043_layer3_sec_xbrl_statement_packet_row_period_unique.py"
+)
 
 
 @pytest.fixture()
@@ -233,17 +236,17 @@ def test_statement_packet_persistence_replays_same_request_and_basis(db_session)
         sec_xbrl_projection_set_id=projection["sec_xbrl_projection_set_id"],
         packet=packet,
     )
-    third = packet_persistence.materialize_redacted_statement_packet(
-        db_session,
-        client_request_id="packet-same-basis",
-        sec_xbrl_projection_set_id=projection["sec_xbrl_projection_set_id"],
-        packet=packet,
-    )
+    with pytest.raises(packet_persistence.SecXbrlStatementPacketPersistenceError) as exc:
+        packet_persistence.materialize_redacted_statement_packet(
+            db_session,
+            client_request_id="packet-same-basis",
+            sec_xbrl_projection_set_id=projection["sec_xbrl_projection_set_id"],
+            packet=packet,
+        )
 
     assert second["idempotent_replay"] is True
-    assert third["idempotent_replay"] is True
     assert second["sec_xbrl_statement_packet_set_id"] == first["sec_xbrl_statement_packet_set_id"]
-    assert third["sec_xbrl_statement_packet_set_id"] == first["sec_xbrl_statement_packet_set_id"]
+    assert exc.value.code == "sec_xbrl_statement_packet_persistence_basis_replay_request_mismatch"
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 1
     assert db_session.query(L3SecXbrlStatementPacketRow).count() == 3
 
@@ -322,6 +325,39 @@ def test_statement_packet_persistence_rejects_raw_value_fields(db_session) -> No
         )
 
     assert exc.value.code == "sec_xbrl_statement_packet_persistence_raw_authority_not_admitted"
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
+
+
+def test_statement_packet_persistence_rejects_lexical_value_fields(db_session) -> None:
+    projection = _persisted_projection(db_session)
+    packet = _packet()
+    packet["statements"][0]["rows"][0]["lexical_value"] = "100"
+
+    with pytest.raises(packet_persistence.SecXbrlStatementPacketPersistenceError) as exc:
+        packet_persistence.materialize_redacted_statement_packet(
+            db_session,
+            client_request_id="packet-lexical-value",
+            sec_xbrl_projection_set_id=projection["sec_xbrl_projection_set_id"],
+            packet=packet,
+        )
+
+    assert exc.value.code == "sec_xbrl_statement_packet_persistence_raw_authority_not_admitted"
+    assert exc.value.details == {"field": "lexical_value"}
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
+
+
+def test_statement_packet_persistence_rejects_local_ref_client_request_id(db_session) -> None:
+    projection = _persisted_projection(db_session)
+
+    with pytest.raises(packet_persistence.SecXbrlStatementPacketPersistenceError) as exc:
+        packet_persistence.materialize_redacted_statement_packet(
+            db_session,
+            client_request_id="file:///workspace/project/runtime/sec/packet.json",
+            sec_xbrl_projection_set_id=projection["sec_xbrl_projection_set_id"],
+            packet=_packet(),
+        )
+
+    assert exc.value.code == "sec_xbrl_statement_packet_persistence_raw_reference_not_admitted"
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
 
 
@@ -415,6 +451,44 @@ def test_statement_packet_persistence_requires_period_binding_for_multi_period_p
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
 
 
+def test_statement_packet_persistence_allows_same_statement_row_index_across_periods(db_session) -> None:
+    projection = _persisted_projection(db_session, periods=2)
+    base_rows = [
+        dict(row)
+        for statement in _packet()["statements"]
+        for row in statement["rows"]
+    ]
+    rows = []
+    for period_index in (1, 2):
+        for row in base_rows:
+            rows.append(
+                {
+                    **row,
+                    "period_ref": f"fy-period-{period_index}",
+                    "period_index": period_index,
+                }
+            )
+    packet = _packet(rows=rows)
+
+    response = packet_persistence.materialize_redacted_statement_packet(
+        db_session,
+        client_request_id="packet-multi-period-bound",
+        sec_xbrl_projection_set_id=projection["sec_xbrl_projection_set_id"],
+        packet=packet,
+    )
+
+    assert response["row_count"] == 6
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 1
+    assert db_session.query(L3SecXbrlStatementPacketRow).count() == 6
+    rows_by_statement = db_session.query(L3SecXbrlStatementPacketRow).filter(
+        L3SecXbrlStatementPacketRow.statement == "income"
+    ).all()
+    assert sorted((row.period_ref, row.period_index, row.statement_row_index) for row in rows_by_statement) == [
+        ("fy-period-1", 1, 1),
+        ("fy-period-2", 2, 1),
+    ]
+
+
 def test_statement_packet_persistence_leaves_no_partial_rows_on_late_invalid_row(db_session) -> None:
     projection = _persisted_projection(db_session)
     packet = _packet()
@@ -459,7 +533,17 @@ def test_statement_packet_persistence_tables_are_registered_in_metadata() -> Non
         row_constraints = {
             constraint["name"] for constraint in inspector.get_check_constraints("l3_sec_xbrl_statement_packet_row")
         }
+        row_unique_constraints = {
+            constraint["name"]: tuple(constraint["column_names"])
+            for constraint in inspector.get_unique_constraints("l3_sec_xbrl_statement_packet_row")
+        }
         assert "ck_l3_sec_xbrl_statement_packet_row_value_redacted" in row_constraints
+        assert row_unique_constraints["uq_l3_sec_xbrl_statement_packet_row_statement_period_index"] == (
+            "sec_xbrl_statement_packet_statement_id",
+            "period_ref",
+            "period_index",
+            "statement_row_index",
+        )
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()
@@ -500,3 +584,24 @@ def test_statement_packet_redaction_constraint_migration_declares_check() -> Non
     source = REDACTION_CONSTRAINT_MIGRATION_PATH.read_text(encoding="utf-8")
     assert "ck_l3_sec_xbrl_projection_fact_value_redacted" in source
     assert "ck_l3_sec_xbrl_statement_packet_row_value_redacted" in source
+
+
+def test_statement_packet_period_unique_migration_replaces_row_index_constraint() -> None:
+    backend_root = str(ROOT / "backend")
+    if backend_root not in sys.path:
+        sys.path.insert(0, backend_root)
+    spec = importlib.util.spec_from_file_location(
+        "migration_0043_sec_xbrl_statement_packet_row_period_unique",
+        PERIOD_UNIQUE_MIGRATION_PATH,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert module.revision == "0043_layer3_sec_xbrl_statement_packet_row_period_unique"
+    assert module.down_revision == "0042_layer3_sec_xbrl_operator_review_decision"
+    source = PERIOD_UNIQUE_MIGRATION_PATH.read_text(encoding="utf-8")
+    assert "uq_l3_sec_xbrl_statement_packet_row_statement_period_index" in source
+    assert "period_ref" in source
+    assert "period_index" in source
+    assert "drop_constraint" in source

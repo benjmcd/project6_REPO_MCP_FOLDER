@@ -1172,7 +1172,7 @@ class Layer3SecXbrlOperatorReviewWorkflowStatusRequest(BaseModel):
 
 
 class Layer3SecXbrlOperatorReviewDecisionSubmitRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="allow")
 
     client_request_id: str = Field(min_length=1)
     submit_mode: Literal["sec_xbrl_operator_review_decision_submit_v1"]
@@ -16195,15 +16195,35 @@ def post_sec_xbrl_operator_review_workflow_decision_submit(
     payload: Layer3SecXbrlOperatorReviewDecisionSubmitRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    extra_fields = sorted(str(field) for field in (payload.model_extra or {}))
+    if extra_fields:
+        return _sec_xbrl_operator_review_workflow_error_response(
+            layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError(
+                "sec_xbrl_operator_review_decision_request_fields_not_admitted",
+                "SEC XBRL operator review decision submit only admits governed request fields.",
+                details={"fields": extra_fields},
+                http_status=400,
+            )
+        )
+
+    payload_data = {
+        key: value
+        for key, value in payload.model_dump(exclude_none=True).items()
+        if key in Layer3SecXbrlOperatorReviewDecisionSubmitRequest.model_fields
+    }
     try:
         decision = layer3_sec_xbrl_operator_review_workflow.record_redacted_operator_review_decision(
             db,
-            **payload.model_dump(exclude={"submit_mode", "operator_decision"}, exclude_none=True),
+            **{
+                key: value
+                for key, value in payload_data.items()
+                if key not in {"submit_mode", "operator_decision"}
+            },
         )
         return {
             **base_response(
                 decision["schema_id"],
-                request_id=decision["client_request_id"],
+                request_id=payload.client_request_id,
                 status=decision["status"],
             ),
             **decision,

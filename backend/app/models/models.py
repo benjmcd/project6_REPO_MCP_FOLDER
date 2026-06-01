@@ -1145,8 +1145,10 @@ class L3SecXbrlStatementPacketRow(Base):
     __table_args__ = (
         UniqueConstraint(
             "sec_xbrl_statement_packet_statement_id",
+            "period_ref",
+            "period_index",
             "statement_row_index",
-            name="uq_l3_sec_xbrl_statement_packet_row_statement_index",
+            name="uq_l3_sec_xbrl_statement_packet_row_statement_period_index",
         ),
         Index("ix_l3_sec_xbrl_statement_packet_row_statement", "sec_xbrl_statement_packet_statement_id"),
         Index("ix_l3_sec_xbrl_statement_packet_row_projection_fact", "sec_xbrl_projection_fact_id"),

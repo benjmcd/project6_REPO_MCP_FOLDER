@@ -28,7 +28,8 @@ The materializer accepts already-built redacted canonical projection output and 
 - one `l3_sec_xbrl_projection_fact` row per admitted redacted fact.
 
 The materializer computes a stable `projection_basis_hash` from the redacted envelope,
-is idempotent on `client_request_id` and `projection_basis_hash`, and rejects empty
+replays only the same `client_request_id` with the same `projection_basis_hash`, rejects
+same-basis/new-request replay until an alias policy is frozen, and rejects empty
 projection sets, raw value fields, raw resolved-fact authority fields, raw accessions,
 SEC URLs, raw issuer identity keys, raw period dates, and local paths before writing.
 
@@ -72,7 +73,8 @@ Rollback/containment notes:
   `l3_sec_xbrl_projection_set` plus their indexes;
 - tests use isolated SQLite runtime state;
 - invalid redaction or authority input leaves no partial set/fact rows;
-- replay of the same request or projection basis does not duplicate rows.
+- replay of the same request does not duplicate rows; same-basis/new-request replay
+  fails closed rather than silently aliasing authority.
 
 ## Proof
 

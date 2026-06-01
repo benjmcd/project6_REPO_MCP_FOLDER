@@ -48,7 +48,8 @@ The materializer:
 - stores `decision_notes_hash` only, never raw decision notes;
 - rejects raw note contacts and raw decimal strings before persistence;
 - rejects replay conflicts for a reused `client_request_id` with a different basis;
-- replays identical `client_request_id` or `decision_basis_hash` requests idempotently;
+- replays only the identical `client_request_id` and `decision_basis_hash`; same-basis
+  replay under a different request id fails closed until an alias policy is frozen;
 - leaves workflow, statement-packet, and projection authority rows unmutated.
 
 ## Containment

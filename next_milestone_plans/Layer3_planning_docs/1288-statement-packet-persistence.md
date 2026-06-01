@@ -148,7 +148,9 @@ The materializer must:
    SEC URLs, local paths, raw resolved fact authorities, and residual magnitude fields;
 7. compute `packet_basis_hash` from the redacted packet envelope and the persisted
    projection basis hash before writing;
-8. be idempotent on `client_request_id` and `packet_basis_hash`;
+8. replay only when the same `client_request_id` resolves to the same
+   `packet_basis_hash`; the same `packet_basis_hash` under a different
+   `client_request_id` fails closed until a separate alias policy is frozen;
 9. write packet set, statement, and row records in one transaction;
 10. roll back the whole transaction on any row-level validation failure.
 
@@ -167,7 +169,8 @@ Containment requirements for the implementation PR:
 - Tests run in isolated temporary DB state.
 - Failed materialization leaves no partial packet set, statement, or row records.
 - Replaying the same request returns the existing packet materialization instead of
-  duplicating rows.
+  duplicating rows; same-basis/new-request replay fails closed rather than silently
+  aliasing authority.
 - Projection persistence rows are read as authority inputs, not mutated.
 - If downgrade is exercised after test data exists, only the new statement-packet
   persistence tables are removed.
@@ -185,7 +188,8 @@ Minimum local verification:
 - raw value/raw identity/raw accession/raw period date/local path/SEC URL/residual
   magnitude rejection tests;
 - projection-set and projection-fact binding tests;
-- idempotent replay test for `client_request_id` and `packet_basis_hash`;
+- exact-request replay and same-basis/new-request mismatch tests for
+  `client_request_id` and `packet_basis_hash`;
 - partial-write rollback test;
 - `python -m pytest ./backend/tests/test_sec_xbrl_statement_assembly.py -q`;
 - `python -m pytest ./backend/tests/test_sec_xbrl_projection_persistence.py -q`;
