@@ -9748,7 +9748,21 @@ Containment: no API/UI/operator workflow, delivery/export, source acquisition, l
 
 Rollback/containment: the migration downgrade drops only `l3_sec_xbrl_statement_packet_row`, `l3_sec_xbrl_statement_packet_statement`, and `l3_sec_xbrl_statement_packet_set` plus their indexes; the materializer writes in one transaction and rolls back invalid input without admitting partial rows.
 
-Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_workflow_design_v1_after_statement_packet_persistence`.
+The operator-review workflow design entry is selected below.
+
+## SEC XBRL Operator Review Workflow Design
+
+Milestone: `sec_xbrl_operator_review_workflow_design_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1290-operator-review-workflow.md`.
+
+Status: `tier2_risk_assessed_design_selected`. This is a planning-only Tier-2 risk-assessed design entry after PR `#2024` landed and post-merge verification confirmed redacted statement-packet persistence on current `main`. The selected first implementation slice is a durable server-owned redacted operator-review workflow control envelope over an existing persisted statement-packet set, with proposed additive table `l3_sec_xbrl_operator_review_workflow`.
+
+The design keeps the first workflow slice narrow: persist review authority, allowed/blocked control vocabulary, provenance hashes, idempotency, and review-readiness counts. It must not add API routes, rendered UI, browser controls, submitted operator decisions, delivery/export, value reveal, source acquisition, live SEC network, Arelle invocation, default-on behavior, raw values, raw issuer identity, raw accessions, raw period dates, raw resolved fact authorities, SEC URLs, local paths, residual magnitudes, operator contact fields, or production-readiness claims.
+
+Implementation proof requirements: exact Tier-2 surfaces, focused model/service tests, migration upgrade/downgrade or equivalent project-standard migration proof, missing/empty/not-ready packet fail-closed proof, raw value/identity/accession/period-date/path/SEC URL/operator-contact/residual-magnitude rejection, statement-packet-set binding proof, idempotent replay for `client_request_id` and `workflow_basis_hash`, partial-write rollback, redaction scan, JSON validation, progress checks, and `git diff --check`.
+
+Next exact posture: `sec_xbrl_operator_review_workflow_control_envelope_v1_tier2_risk_assessed_implementation`.
 
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
