@@ -74,6 +74,22 @@ Default-on means:
    value-reveal submit tables remain redacted, hash/count-only authority surfaces
    unless a later explicitly scoped implementation changes them.
 
+## Operator-Authentication Decision
+
+The first default-on runtime implementation should treat default-on selection as
+a deployment-owned server policy, not as an operator-submitted runtime action.
+There must be no public API route, rendered UI control, request field, browser
+state, or operator-review decision field that toggles the default-on switch.
+
+For local verification, the implementation can use test-time settings overrides
+to prove both default-on and rollback behavior. For any nonlocal or production
+enablement claim, the implementation must remain silent unless a separate
+deployment/operator authorization record proves who owns the configuration
+change. This design therefore explicitly rules out an in-app
+operator-authenticated activation step for the first runtime switch, while
+requiring the implementation to prove that clients cannot self-authorize or
+override the server policy.
+
 ## Boundary Map
 
 Future Tier-2 implementation surface:
@@ -143,6 +159,10 @@ The first implementation PR is admissible only if all of the following are true:
 - The report proves behavior-level default-on selection, sidecar-required
   fail-closed behavior, no regex fallback during default-on, explicit rollback,
   no synchronous Arelle, and value reveal default-off.
+- The implementation proves the default-on switch is server/deployment policy
+  only: no API/UI/request/browser/operator-review field can toggle it, and no
+  production/nonlocal authorization claim is made without separate deployment
+  authority.
 - Focused runtime tests prove default-on sidecar selection, missing-sidecar
   blocking, lineage mismatch blocking, rollback to regex, and standing
   non-admissions.
@@ -165,6 +185,8 @@ Docs-only validation on branch `codex/secxbrl-default-on-runtime-design`:
 - `python ./tools/l3-target-selection-validate.py --expect frozen`: PASS.
 - `python ./tools/l3-progress-check.py`: PASS.
 - `python -m json.tool` over the progress and proof manifests: PASS.
+- `next_milestone_plans/layer3_progress_board.md` includes the merged 1316
+  authority-renewal state and this 1317 default-on runtime design posture.
 - Added-line redaction/residual scan over this design diff: PASS (`0` hits).
 - Committed SEC XBRL report redaction/residual scan: PASS (`43` reports,
   `0` hits).
@@ -184,6 +206,8 @@ Independent review should focus on:
 - whether missing or stale sidecar authority creates no partial downstream
   product, operator-review, or value-reveal state;
 - whether value reveal remains a separate explicit operator action;
+- whether the server/deployment-owned default-on decision is explicit and no
+  client/operator runtime input can toggle the switch;
 - whether any raw value, accession, CIK, SEC URL, local path, operator contact,
   sidecar payload, value-store payload, or residual magnitude can persist or be
   committed;
