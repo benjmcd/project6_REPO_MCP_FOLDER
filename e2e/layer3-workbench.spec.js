@@ -11935,6 +11935,184 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
   expect(defaultPromotionPayloads).toHaveLength(2);
 });
 
+test('Layer 3 workbench inspects SEC XBRL operator-review workflow status through rendered read-only control', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  let workflowStatusPayload = null;
+  await page.route('**/api/v1/layer3/sec-xbrl/operator-review/workflow/status', async (route) => {
+    workflowStatusPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.sec_xbrl_operator_review_workflow_status.v1',
+        schema_version: 1,
+        request_id: workflowStatusPayload.client_request_id,
+        status: 'review_ready',
+        mode: 'sec_xbrl_operator_review_workflow_status_v1',
+        operator_decision: 'inspect_sec_xbrl_operator_review_workflow_status',
+        workflow_schema_id: 'layer3.sec_xbrl_operator_review_workflow.v1',
+        sec_xbrl_operator_review_workflow_id: workflowStatusPayload.sec_xbrl_operator_review_workflow_id,
+        sec_xbrl_statement_packet_set_id: 'sec-xbrl-statement-packet-set-rendered-proof',
+        workflow_basis_hash: workflowStatusPayload.workflow_basis_hash,
+        statement_packet_basis_hash: 'a'.repeat(64),
+        source_projection_basis_hash: 'b'.repeat(64),
+        control_mode: 'redacted_statement_packet_review_workflow',
+        workflow_status: 'review_ready',
+        redaction_policy: 'redacted_statement_packet_review_workflow_only',
+        statement_count: 3,
+        row_count: 17,
+        review_exception_count: 1,
+        review_ready: true,
+        permitted_controls: [
+          'inspect_redacted_statement_packet_counts',
+          'inspect_review_exceptions',
+          'inspect_statement_packet_authority',
+          'defer_review_decision',
+        ],
+        blocked_controls: [
+          { control: 'submit_operator_review_decision', reason: 'requires_separate_decision_submit_freeze' },
+          { control: 'reveal_values', reason: 'value_reveal_not_admitted' },
+          { control: 'export_statement_packet', reason: 'delivery_export_not_admitted' },
+          { control: 'deliver_statement_packet', reason: 'delivery_export_not_admitted' },
+          { control: 'refresh_from_sec_source', reason: 'source_acquisition_not_admitted' },
+          { control: 'invoke_arelle', reason: 'arelle_not_admitted' },
+          { control: 'edit_statement_packet', reason: 'packet_mutation_not_admitted' },
+          { control: 'change_runtime_default', reason: 'default_on_not_admitted' },
+        ],
+        authority_refs: {
+          sec_xbrl_statement_packet_set_id: 'sec-xbrl-statement-packet-set-rendered-proof',
+          sec_xbrl_projection_set_id: 'sec-xbrl-projection-set-rendered-proof',
+          statement_packet_basis_hash: 'a'.repeat(64),
+          statement_packet_schema_id: 'layer3.sec_xbrl_statement_packet_set.v1',
+          source_projection_basis_hash: 'b'.repeat(64),
+          source_projection_schema_id: 'layer3.sec_xbrl_projection_set.v1',
+          statement_organization_authority: 'b_authoritative_organization_redacted',
+        },
+        review_summary: {
+          statement_count: 3,
+          row_count: 17,
+          review_exception_count: 1,
+          review_ready: true,
+          redaction_policy: 'redacted_statement_packet_review_workflow_only',
+          control_mode: 'redacted_statement_packet_review_workflow',
+        },
+        status_surface_mode: 'read_only_redacted_statement_packet_review_workflow_status',
+        read_only_status_surface: true,
+        durable_workflow_authority_used: true,
+        status_api_route_enabled: true,
+        open_workflow_api_route_enabled: false,
+        runtime_default_enabled: false,
+        value_reveal_performed: false,
+        source_acquisition_performed: false,
+        arelle_invoked: false,
+        delivery_export_enabled: false,
+        rendered_ui_enabled: false,
+        operator_review_decision_recorded: false,
+        negative_invariants: {
+          raw_values_exposed: false,
+          raw_resolved_fact_authorities_exposed: false,
+          raw_identity_exposed: false,
+          raw_accessions_exposed: false,
+          raw_period_dates_exposed: false,
+          local_paths_exposed: false,
+          sec_urls_exposed: false,
+          operator_contact_exposed: false,
+          residual_magnitudes_exposed: false,
+          runtime_default_changed: false,
+          value_reveal_performed: false,
+          source_acquisition_performed: false,
+          arelle_invoked: false,
+          delivery_export_enabled: false,
+          rendered_ui_enabled: false,
+          operator_review_decision_recorded: false,
+        },
+        next_allowed_actions: [
+          'inspect_redacted_statement_packet_counts',
+          'inspect_review_exceptions',
+          'inspect_statement_packet_authority',
+          'defer_review_decision',
+        ],
+      }),
+    });
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#sec-xbrl-operator-review-workflow-status-panel');
+  const form = page.locator('#sec-xbrl-operator-review-workflow-status-form');
+  const submit = page.locator('#sec-xbrl-operator-review-workflow-status-submit');
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-rendered-mode', 'rendered_sec_xbrl_operator_review_workflow_status_control');
+  await expect(panel).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(panel).toHaveAttribute('data-read-only', 'true');
+  await expect(form).toHaveAttribute('data-rendered-mode', 'rendered_sec_xbrl_operator_review_workflow_status_control');
+  await expect(form).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(form).toHaveAttribute('data-read-only', 'true');
+  await expect(submit).toBeDisabled();
+
+  await page.locator('#sec-xbrl-operator-review-workflow-id').fill('sec-xbrl-operator-review-workflow-rendered-proof');
+  await page.locator('#sec-xbrl-operator-review-workflow-basis-hash').fill('c'.repeat(64));
+  await expect(submit).toBeEnabled();
+  await submit.click();
+
+  const output = page.locator('#sec-xbrl-operator-review-workflow-status-output');
+  await expect(output).toHaveAttribute('data-read-only', 'true');
+  await expect(panel).toContainText('sec_xbrl_operator_review_workflow_status_available');
+  await expect(panel).toContainText('sec-xbrl-operator-review-workflow-rendered-proof');
+  await expect(panel).toContainText('sec-xbrl-statement-packet-set-rendered-proof');
+  await expect(panel).toContainText('workflow status: review_ready');
+  await expect(panel).toContainText('review exception count: 1');
+  await expect(panel).toContainText('submit_operator_review_decision');
+  await expect(panel).toContainText('requires_separate_decision_submit_freeze');
+  await expect(panel).toContainText('open workflow API route enabled');
+  await expect(panel).toContainText('open_operator_review_workflow');
+  await expect(panel).toContainText('raw_values_exposed: false');
+  await expect(panel).toContainText('rendered UI enabled by backend: false');
+
+  expectOnlyPayloadKeys(workflowStatusPayload, [
+    'client_request_id',
+    'status_mode',
+    'operator_decision',
+    'sec_xbrl_operator_review_workflow_id',
+    'workflow_basis_hash',
+  ]);
+  expect(workflowStatusPayload).toMatchObject({
+    status_mode: 'sec_xbrl_operator_review_workflow_status_v1',
+    operator_decision: 'inspect_sec_xbrl_operator_review_workflow_status',
+    sec_xbrl_operator_review_workflow_id: 'sec-xbrl-operator-review-workflow-rendered-proof',
+    workflow_basis_hash: 'c'.repeat(64),
+  });
+  expect(workflowStatusPayload).not.toHaveProperty('raw_values');
+  expect(workflowStatusPayload).not.toHaveProperty('resolved_fact_projection');
+  expect(workflowStatusPayload).not.toHaveProperty('source_acquisition_request');
+  expect(workflowStatusPayload).not.toHaveProperty('operator_review_decision');
+  expect(workflowStatusPayload).not.toHaveProperty('default_on');
+  expect(apiRequests.filter((request) => (
+    request.path.includes('/sec-xbrl/operator-review/workflow/status')
+  ))).toEqual([
+    { method: 'POST', path: '/api/v1/layer3/sec-xbrl/operator-review/workflow/status' },
+  ]);
+
+  const panelText = await panel.textContent();
+  for (const forbidden of ['file://', 'raw-issuer']) {
+    expect(panelText).not.toContain(forbidden);
+  }
+  expect(panelText).not.toMatch(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+  expect(panelText).not.toMatch(/\b\d+\.\d+\b/);
+  expect(panelText).not.toMatch(/\b\d{10}-\d{2}-\d{6}\b/);
+  expect(panelText).not.toMatch(/https?:\/\/(?:www\.)?sec\.gov/i);
+  expect(panelText).not.toMatch(/\b[A-Za-z]:\\/);
+  for (const blockedControlId of [
+    '#sec-xbrl-operator-review-decision-submit',
+    '#sec-xbrl-open-operator-review-workflow-submit',
+    '#sec-xbrl-value-reveal-submit',
+    '#sec-xbrl-export-statement-packet-submit',
+    '#sec-xbrl-source-acquisition-submit',
+    '#sec-xbrl-arelle-invoke-submit',
+  ]) {
+    await expect(page.locator(blockedControlId)).toHaveCount(0);
+  }
+});
+
 test('Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control', async ({ page }) => {
   const apiRequests = trackLayer3ApiRequests(page);
   let workflowStatusPayload = null;

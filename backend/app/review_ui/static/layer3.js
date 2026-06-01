@@ -361,6 +361,21 @@ const SEC_EDGAR_ARELLE_VALUE_REVEAL_ENDPOINT = '/source/sec-edgar/real-company-c
 const SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_RENDERED_MODE = 'rendered_sec_edgar_durable_delivery_archive_status_control';
 const SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_SURFACE_MODE = 'sec_edgar_durable_delivery_archive_status_surface_v1';
 const SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_ENDPOINT_PREFIX = '/source/sec-edgar/real-company-corpus/durable-delivery/archive/status';
+const SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_RENDERED_MODE = 'rendered_sec_xbrl_operator_review_workflow_status_control';
+const SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_MODE = 'sec_xbrl_operator_review_workflow_status_v1';
+const SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_OPERATOR_DECISION = 'inspect_sec_xbrl_operator_review_workflow_status';
+const SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_ENDPOINT = '/sec-xbrl/operator-review/workflow/status';
+const SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_BLOCKED_RENDERED_CONTROLS = [
+    'submit_operator_review_decision',
+    'open_operator_review_workflow',
+    'reveal_values',
+    'export_statement_packet',
+    'deliver_statement_packet',
+    'refresh_from_sec_source',
+    'invoke_arelle',
+    'edit_statement_packet',
+    'change_runtime_default',
+];
 const CANDIDATE_B_CLOSURE_EVIDENCE_RENDERED_MODE = 'rendered_candidate_b_default_promotion_closure_evidence_control';
 const CANDIDATE_B_CLOSURE_EVIDENCE_MODE = 'candidate_b_default_promotion_closure_evidence_v1';
 const CANDIDATE_B_CLOSURE_EVIDENCE_OPERATOR_DECISION = 'record_candidate_b_default_promotion_closure_evidence';
@@ -786,6 +801,13 @@ const State = {
     secEdgarDurableDeliveryArchiveStatusInput: {
         archiveReceiptId: '',
     },
+    secXbrlOperatorReviewWorkflowStatus: null,
+    secXbrlOperatorReviewWorkflowStatusError: null,
+    secXbrlOperatorReviewWorkflowStatusPending: false,
+    secXbrlOperatorReviewWorkflowStatusInput: {
+        workflowId: '',
+        workflowBasisHash: '',
+    },
     candidateBFullCorpusOperatorWorkflowStatus: null,
     candidateBFullCorpusOperatorWorkflowStatusError: null,
     candidateBFullCorpusOperatorWorkflowStatusPending: false,
@@ -1043,6 +1065,7 @@ const elements = {
     secEdgarDownstreamRepeatabilityTrialPanel: document.getElementById('sec-edgar-downstream-repeatability-trial-panel'),
     secEdgarOperatorProductSurfacePanel: document.getElementById('sec-edgar-operator-product-surface-panel'),
     secEdgarDurableDeliveryArchiveStatusPanel: document.getElementById('sec-edgar-durable-delivery-archive-status-panel'),
+    secXbrlOperatorReviewWorkflowStatusPanel: document.getElementById('sec-xbrl-operator-review-workflow-status-panel'),
     mockupActivationReadinessPanel: document.getElementById('mockup-activation-readiness-panel'),
     layer3E2EGovernanceLifecycleDashboardPanel: document.getElementById('layer3-e2e-governance-lifecycle-dashboard-panel'),
     sublayerMapPanel: document.getElementById('sublayer-map-panel'),
@@ -8985,6 +9008,16 @@ function secEdgarDurableDeliveryArchiveStatusInputValues() {
     };
 }
 
+function secXbrlOperatorReviewWorkflowStatusInputValues() {
+    const stored = State.secXbrlOperatorReviewWorkflowStatusInput;
+    const workflowIdInput = document.getElementById('sec-xbrl-operator-review-workflow-id');
+    const workflowBasisHashInput = document.getElementById('sec-xbrl-operator-review-workflow-basis-hash');
+    return {
+        workflowId: (workflowIdInput?.value || stored.workflowId || '').trim(),
+        workflowBasisHash: (workflowBasisHashInput?.value || stored.workflowBasisHash || '').trim(),
+    };
+}
+
 function candidateBFullCorpusOperatorWorkflowRunInputValues() {
     const lifecycleInput = document.getElementById('candidate-b-full-corpus-workflow-run-lifecycle-receipt-id');
     const baselineInput = document.getElementById('candidate-b-full-corpus-workflow-run-baseline-run-id');
@@ -10303,6 +10336,26 @@ function secEdgarDurableDeliveryArchiveStatusPath() {
     return `${SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_ENDPOINT_PREFIX}/${encodeURIComponent(values.archiveReceiptId)}`;
 }
 
+function secXbrlOperatorReviewWorkflowStatusPayload() {
+    const values = secXbrlOperatorReviewWorkflowStatusInputValues();
+    State.secXbrlOperatorReviewWorkflowStatusInput = values;
+    if (!values.workflowId && !values.workflowBasisHash) {
+        throw new Error('sec_xbrl_operator_review_workflow_status_authority_required');
+    }
+    const payload = {
+        client_request_id: requestId(),
+        status_mode: SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_MODE,
+        operator_decision: SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_OPERATOR_DECISION,
+    };
+    if (values.workflowId) {
+        payload.sec_xbrl_operator_review_workflow_id = values.workflowId;
+    }
+    if (values.workflowBasisHash) {
+        payload.workflow_basis_hash = values.workflowBasisHash;
+    }
+    return payload;
+}
+
 function candidateBFullCorpusOperatorWorkflowRunPayload() {
     const values = candidateBFullCorpusOperatorWorkflowRunInputValues();
     State.candidateBFullCorpusOperatorWorkflowRunInput = values;
@@ -10871,6 +10924,14 @@ function canInspectSecEdgarDurableDeliveryArchiveStatus() {
         values.archiveReceiptId
         && !/[\\/\s]/.test(values.archiveReceiptId)
         && !State.secEdgarDurableDeliveryArchiveStatusPending
+    );
+}
+
+function canInspectSecXbrlOperatorReviewWorkflowStatus() {
+    const values = secXbrlOperatorReviewWorkflowStatusInputValues();
+    return Boolean(
+        (values.workflowId || values.workflowBasisHash)
+        && !State.secXbrlOperatorReviewWorkflowStatusPending
     );
 }
 
@@ -11741,6 +11802,26 @@ function secEdgarDurableDeliveryArchiveStatusPanelState() {
         return { label: 'sec_edgar_durable_delivery_archive_status_surface_ready', pill: 'ok' };
     }
     return { label: 'sec_edgar_durable_delivery_archive_status_not_inspected', pill: 'preview' };
+}
+
+function secXbrlOperatorReviewWorkflowStatusPanelState() {
+    if (State.secXbrlOperatorReviewWorkflowStatusPending) {
+        return { label: 'sec_xbrl_operator_review_workflow_status_pending', pill: 'preview' };
+    }
+    if (State.secXbrlOperatorReviewWorkflowStatusError) {
+        const detail = State.secXbrlOperatorReviewWorkflowStatusError?.payload?.error || {};
+        return {
+            label: detail.code || 'sec_xbrl_operator_review_workflow_status_blocked',
+            pill: 'blocked',
+        };
+    }
+    if (
+        State.secXbrlOperatorReviewWorkflowStatus?.read_only_status_surface === true
+        && State.secXbrlOperatorReviewWorkflowStatus?.status_api_route_enabled === true
+    ) {
+        return { label: 'sec_xbrl_operator_review_workflow_status_available', pill: 'ok' };
+    }
+    return { label: 'sec_xbrl_operator_review_workflow_status_not_inspected', pill: 'preview' };
 }
 
 function candidateBFullCorpusOperatorWorkflowRunPanelState() {
@@ -13449,6 +13530,130 @@ function secEdgarDurableDeliveryArchiveStatusRows(status) {
                     ${fieldItem('cross company comparability admitted', nonAdmissions.cross_company_comparability_admitted)}
                     ${fieldItem('downstream unavailable', unavailable.join(', '), { code: true })}
                     ${fieldItem('next allowed actions', nextActions.join(', '), { code: true })}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
+function secXbrlCodeListItems(values) {
+    const items = Array.isArray(values) ? values : [];
+    if (!items.length) return '<li>none</li>';
+    return items.map((value) => `<li><code>${escapeHtml(value)}</code></li>`).join('');
+}
+
+function secXbrlBlockedControlItems(controls) {
+    const items = Array.isArray(controls) ? controls : [];
+    if (!items.length) return '<li>none</li>';
+    return items.map((item) => `
+        <li>
+            <code>${escapeHtml(item?.control || item)}</code>:
+            ${escapeHtml(item?.reason || 'blocked_by_rendered_status_boundary')}
+        </li>
+    `).join('');
+}
+
+function secXbrlMapItems(values) {
+    if (!values || typeof values !== 'object') return '<li>none</li>';
+    return Object.entries(values)
+        .map(([key, value]) => fieldItem(key, value, { code: typeof value === 'string' }))
+        .join('');
+}
+
+function secXbrlOperatorReviewWorkflowStatusRows(status) {
+    if (!status) return '';
+    const authorityRefs = status.authority_refs || {};
+    const reviewSummary = status.review_summary || {};
+    const blockedControls = Array.isArray(status.blocked_controls) ? status.blocked_controls : [];
+    const permittedControls = Array.isArray(status.permitted_controls) ? status.permitted_controls : [];
+    const nextActions = Array.isArray(status.next_allowed_actions) ? status.next_allowed_actions : [];
+    const negativeInvariants = status.negative_invariants || {};
+    return `
+        <div id="sec-xbrl-operator-review-workflow-status-output" class="candidate-b-final-proof-status-grid" data-read-only="true">
+            <section class="result-review-card">
+                <strong>SEC XBRL Workflow Status Authority</strong>
+                <ul>
+                    ${fieldItem('schema id', status.schema_id, { code: true })}
+                    ${fieldItem('mode', status.mode, { code: true })}
+                    ${fieldItem('operator decision', status.operator_decision, { code: true })}
+                    ${fieldItem('workflow schema id', status.workflow_schema_id, { code: true })}
+                    ${fieldItem('workflow id', status.sec_xbrl_operator_review_workflow_id, { code: true })}
+                    ${fieldItem('statement packet set id', status.sec_xbrl_statement_packet_set_id, { code: true })}
+                    ${fieldItem('workflow basis hash', status.workflow_basis_hash, { code: true })}
+                    ${fieldItem('statement packet basis hash', status.statement_packet_basis_hash, { code: true })}
+                    ${fieldItem('source projection basis hash', status.source_projection_basis_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Read-Only Review Readiness</strong>
+                <ul>
+                    ${fieldItem('control mode', status.control_mode, { code: true })}
+                    ${fieldItem('workflow status', status.workflow_status, { code: true })}
+                    ${fieldItem('redaction policy', status.redaction_policy, { code: true })}
+                    ${fieldItem('statement count', status.statement_count)}
+                    ${fieldItem('row count', status.row_count)}
+                    ${fieldItem('review exception count', status.review_exception_count)}
+                    ${fieldItem('review ready', status.review_ready)}
+                    ${fieldItem('status surface mode', status.status_surface_mode, { code: true })}
+                    ${fieldItem('read only status surface', status.read_only_status_surface)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Authority Refs</strong>
+                <ul>
+                    ${fieldItem('statement packet set id', authorityRefs.sec_xbrl_statement_packet_set_id, { code: true })}
+                    ${fieldItem('projection set id', authorityRefs.sec_xbrl_projection_set_id, { code: true })}
+                    ${fieldItem('statement packet basis hash', authorityRefs.statement_packet_basis_hash, { code: true })}
+                    ${fieldItem('statement packet schema id', authorityRefs.statement_packet_schema_id, { code: true })}
+                    ${fieldItem('source projection basis hash', authorityRefs.source_projection_basis_hash, { code: true })}
+                    ${fieldItem('source projection schema id', authorityRefs.source_projection_schema_id, { code: true })}
+                    ${fieldItem('statement organization authority', authorityRefs.statement_organization_authority, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Review Summary</strong>
+                <ul>
+                    ${secXbrlMapItems(reviewSummary)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Permitted Read-Only Controls</strong>
+                <ul>
+                    ${secXbrlCodeListItems(permittedControls)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Server Controls</strong>
+                <ul>
+                    ${secXbrlBlockedControlItems(blockedControls)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Rendered Controls</strong>
+                <ul>
+                    ${secXbrlCodeListItems(SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_BLOCKED_RENDERED_CONTROLS)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Negative Invariants</strong>
+                <ul>
+                    ${secXbrlMapItems(negativeInvariants)}
+                    ${fieldItem('durable workflow authority used', status.durable_workflow_authority_used)}
+                    ${fieldItem('status API route enabled', status.status_api_route_enabled)}
+                    ${fieldItem('open workflow API route enabled', status.open_workflow_api_route_enabled)}
+                    ${fieldItem('runtime default enabled', status.runtime_default_enabled)}
+                    ${fieldItem('value reveal performed', status.value_reveal_performed)}
+                    ${fieldItem('source acquisition performed', status.source_acquisition_performed)}
+                    ${fieldItem('Arelle invoked', status.arelle_invoked)}
+                    ${fieldItem('delivery export enabled', status.delivery_export_enabled)}
+                    ${fieldItem('rendered UI enabled by backend', status.rendered_ui_enabled)}
+                    ${fieldItem('operator review decision recorded', status.operator_review_decision_recorded)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Next Allowed Actions</strong>
+                <ul>
+                    ${secXbrlCodeListItems(nextActions)}
                 </ul>
             </section>
         </div>
@@ -15546,6 +15751,24 @@ function secEdgarDurableDeliveryArchiveStatusError() {
     `;
 }
 
+function secXbrlOperatorReviewWorkflowStatusError() {
+    const error = State.secXbrlOperatorReviewWorkflowStatusError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = (
+        detail.code
+        || error.payload?.error_code
+        || 'sec_xbrl_operator_review_workflow_status_error'
+    );
+    const message = detail.message || error.payload?.message || error.message;
+    return `
+        <div id="sec-xbrl-operator-review-workflow-status-error" class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBFullCorpusOperatorWorkflowRunError() {
     const error = State.candidateBFullCorpusOperatorWorkflowRunError;
     if (!error) return '';
@@ -17101,6 +17324,52 @@ function updateSecEdgarDurableDeliveryArchiveStatusControls() {
     const submit = document.getElementById('sec-edgar-durable-delivery-archive-status-submit');
     if (submit) {
         submit.disabled = !canInspectSecEdgarDurableDeliveryArchiveStatus();
+    }
+}
+
+function renderSecXbrlOperatorReviewWorkflowStatusPanel() {
+    if (!elements.secXbrlOperatorReviewWorkflowStatusPanel) return;
+    const statusState = secXbrlOperatorReviewWorkflowStatusPanelState();
+    const inputs = secXbrlOperatorReviewWorkflowStatusInputValues();
+    elements.secXbrlOperatorReviewWorkflowStatusPanel.dataset.frontendDurableAuthority = 'false';
+    elements.secXbrlOperatorReviewWorkflowStatusPanel.dataset.readOnly = 'true';
+    elements.secXbrlOperatorReviewWorkflowStatusPanel.innerHTML = `
+        <div class="workband-heading">
+            <div>
+                <span class="section-kicker">SEC XBRL operator-review workflow</span>
+                <h2>Workflow Status</h2>
+            </div>
+            <span class="status-pill ${escapeHtml(statusState.pill)}">${escapeHtml(statusState.label)}</span>
+        </div>
+        <div class="candidate-b-default-promotion-status-grid">
+            <section class="result-review-card sec-xbrl-operator-review-workflow-status-card">
+                <strong>SEC XBRL Read-Only Workflow Status Inspection</strong>
+                <form id="sec-xbrl-operator-review-workflow-status-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_RENDERED_MODE)}" data-frontend-durable-authority="false" data-read-only="true">
+                    <label>
+                        <span>operator-review workflow id</span>
+                        <input id="sec-xbrl-operator-review-workflow-id" type="text" value="${escapeHtml(inputs.workflowId)}" autocomplete="off" spellcheck="false" placeholder="sec-xbrl-operator-review-workflow-..." />
+                    </label>
+                    <label>
+                        <span>workflow basis hash</span>
+                        <input id="sec-xbrl-operator-review-workflow-basis-hash" type="text" value="${escapeHtml(inputs.workflowBasisHash)}" autocomplete="off" spellcheck="false" placeholder="sha256, optional if workflow id is supplied" />
+                    </label>
+                    <button id="sec-xbrl-operator-review-workflow-status-submit" type="submit" ${canInspectSecXbrlOperatorReviewWorkflowStatus() ? '' : 'disabled'}>Inspect Workflow Status</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(statusState.pill)}">${escapeHtml(statusState.label)}</span>
+                    <span class="rail-label">Server revalidates existing SEC XBRL operator-review workflow authority and returns only a redacted read-only status projection; this rendered control cannot open workflows, submit review decisions, reveal values, export or deliver packets, fetch SEC content, invoke Arelle, mutate packets, change defaults, or create frontend durable authority.</span>
+                </div>
+                ${secXbrlOperatorReviewWorkflowStatusRows(State.secXbrlOperatorReviewWorkflowStatus)}
+                ${secXbrlOperatorReviewWorkflowStatusError()}
+            </section>
+        </div>
+    `;
+}
+
+function updateSecXbrlOperatorReviewWorkflowStatusControls() {
+    const submit = document.getElementById('sec-xbrl-operator-review-workflow-status-submit');
+    if (submit) {
+        submit.disabled = !canInspectSecXbrlOperatorReviewWorkflowStatus();
     }
 }
 
@@ -18832,6 +19101,45 @@ async function inspectSecEdgarDurableDeliveryArchiveStatus(event) {
         addEvent(`SEC EDGAR durable delivery archive status surface blocked: ${error.message}`);
     } finally {
         State.secEdgarDurableDeliveryArchiveStatusPending = false;
+        renderAll();
+    }
+}
+
+async function inspectSecXbrlOperatorReviewWorkflowStatus(event) {
+    event.preventDefault();
+    if (!canInspectSecXbrlOperatorReviewWorkflowStatus()) {
+        State.secXbrlOperatorReviewWorkflowStatus = null;
+        State.secXbrlOperatorReviewWorkflowStatusError = new Error(
+            'SEC XBRL operator-review workflow status requires an existing workflow id or workflow basis hash.',
+        );
+        renderSecXbrlOperatorReviewWorkflowStatusPanel();
+        return;
+    }
+    let payload;
+    try {
+        payload = secXbrlOperatorReviewWorkflowStatusPayload();
+    } catch (error) {
+        State.secXbrlOperatorReviewWorkflowStatus = null;
+        State.secXbrlOperatorReviewWorkflowStatusError = error;
+        renderSecXbrlOperatorReviewWorkflowStatusPanel();
+        return;
+    }
+    State.secXbrlOperatorReviewWorkflowStatusPending = true;
+    State.secXbrlOperatorReviewWorkflowStatusError = null;
+    renderSecXbrlOperatorReviewWorkflowStatusPanel();
+    try {
+        State.secXbrlOperatorReviewWorkflowStatus = await postJson(
+            SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_ENDPOINT,
+            payload,
+        );
+        State.secXbrlOperatorReviewWorkflowStatusError = null;
+        addEvent('SEC XBRL operator-review workflow status inspected through redacted server authority.');
+    } catch (error) {
+        State.secXbrlOperatorReviewWorkflowStatus = null;
+        State.secXbrlOperatorReviewWorkflowStatusError = error;
+        addEvent(`SEC XBRL operator-review workflow status blocked: ${error.message}`);
+    } finally {
+        State.secXbrlOperatorReviewWorkflowStatusPending = false;
         renderAll();
     }
 }
@@ -22810,6 +23118,7 @@ function renderAll() {
     renderSecEdgarDownstreamRepeatabilityTrialPanel();
     renderSecEdgarOperatorProductSurfacePanel();
     renderSecEdgarDurableDeliveryArchiveStatusPanel();
+    renderSecXbrlOperatorReviewWorkflowStatusPanel();
     renderMockupActivationReadinessPanel();
     renderLayer3E2EGovernanceLifecycleDashboardPanel();
     renderGateCPanel();
@@ -26756,6 +27065,35 @@ elements.secEdgarDurableDeliveryArchiveStatusPanel.addEventListener('change', (e
             renderSecEdgarDurableDeliveryArchiveStatusPanel();
         } else {
             updateSecEdgarDurableDeliveryArchiveStatusControls();
+        }
+    }
+});
+elements.secXbrlOperatorReviewWorkflowStatusPanel.addEventListener('submit', (event) => {
+    if (event.target?.id === 'sec-xbrl-operator-review-workflow-status-form') {
+        inspectSecXbrlOperatorReviewWorkflowStatus(event);
+    }
+});
+elements.secXbrlOperatorReviewWorkflowStatusPanel.addEventListener('input', (event) => {
+    if (event.target?.id?.startsWith('sec-xbrl-operator-review-workflow-')) {
+        const hadError = Boolean(State.secXbrlOperatorReviewWorkflowStatusError);
+        State.secXbrlOperatorReviewWorkflowStatusInput = secXbrlOperatorReviewWorkflowStatusInputValues();
+        State.secXbrlOperatorReviewWorkflowStatusError = null;
+        if (hadError) {
+            renderSecXbrlOperatorReviewWorkflowStatusPanel();
+        } else {
+            updateSecXbrlOperatorReviewWorkflowStatusControls();
+        }
+    }
+});
+elements.secXbrlOperatorReviewWorkflowStatusPanel.addEventListener('change', (event) => {
+    if (event.target?.id?.startsWith('sec-xbrl-operator-review-workflow-')) {
+        const hadError = Boolean(State.secXbrlOperatorReviewWorkflowStatusError);
+        State.secXbrlOperatorReviewWorkflowStatusInput = secXbrlOperatorReviewWorkflowStatusInputValues();
+        State.secXbrlOperatorReviewWorkflowStatusError = null;
+        if (hadError) {
+            renderSecXbrlOperatorReviewWorkflowStatusPanel();
+        } else {
+            updateSecXbrlOperatorReviewWorkflowStatusControls();
         }
     }
 });
