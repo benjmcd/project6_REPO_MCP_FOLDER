@@ -1,5 +1,38 @@
 # Layer3 Progress Board
 
+## SEC XBRL Nonlocal Authority Boundary
+
+Milestone:
+`sec_xbrl_nonlocal_deployment_authority_packet_or_in_app_auth_boundary_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1320-nonlocal-authority-boundary.md`.
+
+Status: branch-local docs-only Tier-2 design/pre-review entry on
+`codex/secxbrl-nonlocal-auth-boundary`.
+
+Scope: define the fork required after the nonlocal readiness gate blocked on
+missing deployment authority. The next safe movement is either a redacted
+deployment-owned authority packet admitted by the existing gate, or a separate
+in-app auth/security design before any nonlocal production-readiness admission.
+
+Non-goals: no production-readiness claim, runtime behavior, config default
+change, schema, `models.py`, Alembic migration, durable persistence, API/UI,
+rendered control, operator workflow, source acquisition, Arelle subprocess
+invocation, value reveal default-on, export/delivery, provider/connector
+dispatch, raw runtime artifact, final statement semantics, or cross-company
+comparability behavior.
+
+Verification: focused nonlocal/default-on API tests pass with `27 passed, 249
+deselected, 3 warnings`; target-selection frozen check, progress check, changed
+JSON parse, committed SEC XBRL report redaction/residual scan over `44`
+SEC-like reports, and `git diff --check` pass. No Python runtime, diagnostic,
+report, or test file was touched by this docs-only pass.
+
+Next exact posture:
+choose exactly one of `sec_xbrl_nonlocal_deployment_authority_packet_validation_v1`
+or `sec_xbrl_nonlocal_in_app_auth_design_v1`.
+
 ## SEC XBRL Nonlocal Production-Readiness Gate
 
 Milestone:
