@@ -7,6 +7,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-default-on-runtime-report.json")
+NEXT_AFTER_DEFAULT_ON_RUNTIME = "sec_xbrl_default_on_nonlocal_production_readiness_design_v1"
 REAL_CORPUS_RUNNER_REPORT = (
     "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json"
 )
@@ -325,7 +326,7 @@ def build_report() -> dict[str, Any]:
             "value_reveal_default_on_claimed": False,
         },
         "next_slice": (
-            "sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation"
+            NEXT_AFTER_DEFAULT_ON_RUNTIME
             if default_enabled
             else "sec_edgar_arelle_governance_remediation_followups_v1"
         ),
