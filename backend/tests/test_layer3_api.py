@@ -190,15 +190,16 @@ def client(tmp_path, monkeypatch):
         app.dependency_overrides.pop(get_db, None)
 
 
-def test_layer3_deployment_profile_local_defaults_keep_arelle_cutover_off() -> None:
+def test_layer3_deployment_profile_local_defaults_enable_arelle_cutover_without_value_reveal() -> None:
     profile = _settings_for_test()
 
     assert profile.deployment_mode == "local"
     assert profile.allowed_origin_list == ["*"]
     assert profile.cors_allow_credentials_enabled is True
     assert profile.storage_mount_enabled is True
-    assert profile.layer3_sec_edgar_arelle_fact_authority_cutover_enabled is False
+    assert profile.layer3_sec_edgar_arelle_fact_authority_cutover_enabled is True
     assert profile.layer3_sec_edgar_arelle_value_reveal_enabled is False
+    assert profile.layer3_sec_xbrl_controlled_value_reveal_submit_enabled is False
 
     cors_middleware = next(middleware for middleware in app.user_middleware if middleware.cls.__name__ == "CORSMiddleware")
     assert cors_middleware.kwargs["allow_origins"] == ["*"]
@@ -4344,6 +4345,7 @@ def _prepare_sec_edgar_arelle_sidecar_authority(
     label: str,
     runner=None,
     expected_resolved_fact_count: int = 2,
+    enable_runtime_cutover: bool | None = True,
 ) -> dict[str, object]:
     parser = prepared["parser"]
     fact_authority = prepared["fact_authority"]
@@ -4351,7 +4353,8 @@ def _prepare_sec_edgar_arelle_sidecar_authority(
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_cache_dir", lambda: tmp_path / "arelle-cache")
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_arelle_python", lambda: sys.executable)
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", runner or _ready_arelle_sidecar_runner)
-    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
+    if enable_runtime_cutover is not None:
+        monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", enable_runtime_cutover)
     response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
         {
             "client_request_id": f"sec-edgar-arelle-sidecar-{label}",
@@ -4484,7 +4487,7 @@ def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_authority(
     assert str(tmp_path) not in status_response.text
 
 
-def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_from_arelle_sidecar_when_flag_enabled(
+def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_from_arelle_sidecar_by_default(
     client: TestClient,
     tmp_path,
     monkeypatch,
@@ -4497,8 +4500,9 @@ def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_from_arelle
         monkeypatch,
         prepared,
         label="fact-material-arelle",
+        enable_runtime_cutover=None,
     )
-    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
+    assert settings.layer3_sec_edgar_arelle_fact_authority_cutover_enabled is True
 
     def _unexpected_arelle_run(*_args, **_kwargs):
         raise AssertionError("bridge must not invoke Arelle synchronously")
@@ -4587,7 +4591,7 @@ def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_from_arelle
     assert "arelle_effective_canonical_value_v1" in csv_text
 
 
-def test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_when_cutover_flag_enabled(
+def test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_by_default(
     client: TestClient,
     tmp_path,
     monkeypatch,
@@ -4600,8 +4604,9 @@ def test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_when_cuto
         monkeypatch,
         prepared,
         label="classification-arelle",
+        enable_runtime_cutover=None,
     )
-    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
+    assert settings.layer3_sec_edgar_arelle_fact_authority_cutover_enabled is True
 
     bridge_response = client.post(
         "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
@@ -5203,14 +5208,14 @@ def test_layer3_api_blocks_sec_edgar_arelle_value_reveal_lineage_and_redaction_g
     assert forbidden_response.json()["error_code"] == "sec_edgar_arelle_value_reveal_forbidden_request_fields"
 
 
-def test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_without_sidecar(
+def test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_default_on_without_sidecar(
     client: TestClient,
     monkeypatch,
 ) -> None:
     prepared = _prepare_sec_edgar_html_inline_xbrl_fact_authority(client, monkeypatch, label="fact-material-no-sidecar")
     parser = prepared["parser"]
     fact_authority = prepared["fact_authority"]
-    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
+    assert settings.layer3_sec_edgar_arelle_fact_authority_cutover_enabled is True
     payload = {
         "client_request_id": "sec-edgar-html-inline-xbrl-fact-material-bridge-no-sidecar",
         "bridge_mode": "sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1",
@@ -5238,7 +5243,43 @@ def test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutov
     assert reason["regex_fallback_performed"] is False
 
 
-def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_lineage_mismatch(
+def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_default_on_toggle_fields(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_fact_authority(client, monkeypatch, label="fact-material-toggle")
+    parser = prepared["parser"]
+    fact_authority = prepared["fact_authority"]
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
+        json={
+            "client_request_id": "sec-edgar-html-inline-xbrl-fact-material-bridge-toggle",
+            "bridge_mode": "sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1",
+            "operator_decision": "bridge_sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority",
+            "fact_authority_receipt_id": fact_authority["fact_authority_receipt_id"],
+            "fact_authority_receipt_hash": fact_authority["fact_authority_receipt_hash"],
+            "parser_receipt_id": parser["parser_receipt_id"],
+            "parser_receipt_hash": parser["parser_receipt_hash"],
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+            "arelle_fact_authority_cutover_enabled": False,
+            "default_on_enabled": False,
+            "runtime_default_enabled": False,
+        },
+    )
+
+    assert response.status_code == 400, response.text
+    body = response.json()
+    assert body["error_code"] == "sec_edgar_html_inline_xbrl_fact_material_bridge_unknown_field"
+    assert set(body["blocked_fields"]) >= {
+        "arelle_fact_authority_cutover_enabled",
+        "default_on_enabled",
+        "runtime_default_enabled",
+    }
+
+
+def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_default_on_lineage_mismatch(
     client: TestClient,
     tmp_path,
     monkeypatch,
@@ -5251,8 +5292,9 @@ def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_arelle_cuto
         monkeypatch,
         prepared,
         label="fact-material-lineage",
+        enable_runtime_cutover=None,
     )
-    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
+    assert settings.layer3_sec_edgar_arelle_fact_authority_cutover_enabled is True
     original_reader = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_sidecar_receipt
 
     def _mismatched_reader(receipt_id: str, *, expected_sidecar_receipt_hash: str | None = None) -> dict:

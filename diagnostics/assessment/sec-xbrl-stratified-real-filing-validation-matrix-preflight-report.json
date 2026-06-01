@@ -241,12 +241,15 @@
     },
     {
       "blocked_reason": null,
-      "criterion": "committed_defaults_and_selected_posture_remain_default_off",
+      "criterion": "committed_safety_defaults_and_selected_posture_preserved",
       "evidence": {
-        "all_defaults_off": true,
-        "arelle_fact_authority_cutover_default_off": true,
+        "all_defaults_off": false,
+        "arelle_fact_authority_cutover_default_off": false,
+        "arelle_fact_authority_cutover_default_on": true,
+        "arelle_fact_authority_default_posture_recognized": true,
         "arelle_value_reveal_default_off": true,
         "decision": "explicit_operator_only_default_off_selected",
+        "safety_defaults_off": true,
         "sec_live_network_default_off": true,
         "selected_posture": "explicit_operator_only_default_off"
       },

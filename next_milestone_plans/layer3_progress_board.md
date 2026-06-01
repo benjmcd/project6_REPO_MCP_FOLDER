@@ -10303,6 +10303,46 @@ financial-statement semantics claim.
 Next exact posture after renewal:
 `sec_xbrl_default_on_runtime_design_v1`.
 
+## SEC XBRL Default-On Runtime Implementation
+
+Milestone: `sec_xbrl_default_on_runtime_v1_tier2_risk_assessed_implementation`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1317-default-on-runtime-design.md`.
+
+Status: branch-local Tier-2 risk-assessed implementation on
+`codex/secxbrl-default-on-runtime`.
+
+Scope: make persisted Arelle resolved-fact sidecar authority the default SEC
+XBRL fact-authority runtime path, keep missing sidecar authority fail-closed
+with no regex fallback, preserve explicit regex rollback via
+`LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED=false`, and harden the
+runtime diagnostic to prove behavior-level default-on evidence rather than only
+matching config text.
+
+Non-goals: no schema, `models.py`, Alembic migration, new durable persistence,
+backend API contract, rendered UI/browser toggle, operator-review workflow
+expansion, source acquisition, live SEC network execution, synchronous Arelle
+invocation, value reveal default-on, export/delivery, raw runtime artifact,
+production-readiness claim, cross-company comparability claim, or final
+financial-statement semantics claim.
+
+Evidence: `diagnostics/assessment/sec-xbrl-default-on-runtime-report.json`
+emits `decision: default_on_runtime_enabled` with no blockers. The predecessor
+admission-review report is regenerated as
+`admission_review_superseded_by_default_on_runtime`; value reveal and controlled
+submit remain separately gated and default-off.
+
+Verification: focused default-on/rollback API tests pass (`7 passed, 267
+deselected`), full `backend/tests/test_layer3_api.py` passes (`274 passed, 4
+warnings`), and full `backend/tests/test_sec_xbrl*.py` passes (`313 passed, 4
+warnings`). Final target-selection/progress/JSON/redaction/py-compile/diff
+verification is required before PR closeout.
+
+Next exact posture after merge, current-main verification, and post-merge audit
+closure:
+`sec_xbrl_next_downstream_gate_design_selection_before_any_default_on_export_or_production_implementation`.
+
 ## SEC XBRL Default-On Runtime Design
 
 Milestone: `sec_xbrl_default_on_runtime_design_v1`.

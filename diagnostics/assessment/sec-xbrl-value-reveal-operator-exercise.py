@@ -45,13 +45,17 @@ def main() -> int:
 def build_report(*, source_root: Path) -> dict[str, Any]:
     sources = _source_text(source_root)
     defaults = {
-        "arelle_cutover_default_off": _contains(
+        "arelle_cutover_default_enabled": _contains(
             sources["config"],
-            'layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=False,',
+            'layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=True,',
         ),
         "value_reveal_default_off": _contains(
             sources["config"],
             'layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False,',
+        ),
+        "controlled_value_reveal_submit_default_off": _contains(
+            sources["config"],
+            'layer3_sec_xbrl_controlled_value_reveal_submit_enabled: bool = Field(\n        default=False,',
         ),
     }
     endpoint = {
@@ -120,8 +124,9 @@ def build_report(*, source_root: Path) -> dict[str, Any]:
         ),
     }
     non_goals = {
-        "cutover_default_enabled": False,
+        "fact_authority_cutover_default_enabled": defaults["arelle_cutover_default_enabled"],
         "value_reveal_default_enabled": False,
+        "controlled_value_reveal_submit_default_enabled": False,
         "operator_exercise_performed_by_this_check": False,
         "sec_network_fetch_performed": False,
         "sidecar_receipt_created": False,
@@ -131,7 +136,12 @@ def build_report(*, source_root: Path) -> dict[str, Any]:
         "candidate_b_sec_routing_performed": False,
     }
     criteria = [
-        _criterion("deployment_defaults_remain_off", all(defaults.values()), defaults, "value_reveal_operator_exercise_defaults_not_off"),
+        _criterion(
+            "value_reveal_defaults_remain_off",
+            defaults["value_reveal_default_off"] and defaults["controlled_value_reveal_submit_default_off"],
+            defaults,
+            "value_reveal_operator_exercise_value_reveal_defaults_not_off",
+        ),
         _criterion("sibling_endpoint_available", all(endpoint.values()), endpoint, "value_reveal_operator_exercise_endpoint_missing"),
         _criterion("audit_receipt_governance_available", all(audit.values()), audit, "value_reveal_operator_exercise_audit_receipt_gap"),
         _criterion("default_surface_boundary_preserved", all(surface.values()), surface, "value_reveal_operator_exercise_surface_boundary_gap"),
