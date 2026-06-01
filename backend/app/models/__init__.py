@@ -44,6 +44,7 @@ from app.models.models import (
     L3SelectionManifest,
     L3SecXbrlOperatorReviewDecision,
     L3SecXbrlOperatorReviewWorkflow,
+    L3SecXbrlControlledValueRevealSubmitReceipt,
     L3SecXbrlProjectionFact,
     L3SecXbrlProjectionSet,
     L3SecXbrlStatementPacketRow,

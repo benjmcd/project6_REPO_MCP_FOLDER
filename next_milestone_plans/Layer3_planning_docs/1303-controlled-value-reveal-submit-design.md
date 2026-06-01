@@ -4,11 +4,13 @@ Milestone: `sec_xbrl_controlled_value_reveal_submit_v1`
 
 Base authority: `project6-origin/main` at `0ce24f713fd3453e97810d56cfdad4d0176abbed`
 
+Merged authority: `project6-origin/main` at `ddcab8771ebecfdd33b78a077bc461a37edc7d90`
+
 Prior milestone: `next_milestone_plans/Layer3_planning_docs/1302-value-reveal-authority-receipt.md`
 
 ## Status
 
-Branch-local Tier-2 design/pre-review entry. This pass changes no runtime,
+Merged current-main Tier-2 design/pre-review entry. This pass changes no runtime,
 schema, persistence, API contract, rendered UI, default-on behavior, source
 acquisition, Arelle invocation, delivery/export, raw artifact, or production
 readiness surface.
