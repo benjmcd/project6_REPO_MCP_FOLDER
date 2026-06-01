@@ -1,0 +1,171 @@
+{
+  "authority_packet_summary": {
+    "admissible": false,
+    "authority_packet_hash": null,
+    "authority_packet_present": false,
+    "blocked_reason": "nonlocal_production_readiness_authority_packet_missing",
+    "redaction_scan": {
+      "hit_classes": [],
+      "status": "not_run"
+    },
+    "required_fields_missing": [
+      "deployment_mode",
+      "deployment_owner_ref",
+      "approval_record_ref",
+      "approval_record_hash",
+      "proxy_boundary_mode",
+      "proxy_identity_header",
+      "allowed_origins_policy_hash",
+      "storage_exposure_policy",
+      "arelle_fact_authority_nonlocal_authorized",
+      "rollback_owner_ref",
+      "incident_owner_ref",
+      "redaction_policy_id",
+      "verification_run_ref"
+    ],
+    "required_fields_present": []
+  },
+  "blocking_reasons": [
+    "nonlocal_production_readiness_authority_packet_missing"
+  ],
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "current_default_on_runtime_evidence_clean",
+      "evidence": {
+        "blocking_reasons_count": 0,
+        "decision": "default_on_runtime_enabled",
+        "runtime_report_hash": "8c725285b970c9edeb2645d9a795947c0f26441e8f1e30cb61fdcda7409c16b7",
+        "source_report": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "nonlocal_proxy_guardrails_fail_closed",
+      "evidence": {
+        "blocks_direct_storage_exposure": true,
+        "config_file": "backend/app/core/config.py",
+        "requires_explicit_arelle_nonlocal_authorization": true,
+        "requires_https_origins": true,
+        "requires_proxy_identity_header": true,
+        "requires_proxy_owner": true,
+        "requires_trusted_proxy": true,
+        "test_file": "backend/tests/test_layer3_api.py"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": "nonlocal_production_readiness_authority_packet_missing",
+      "criterion": "authority_packet_present_and_admissible",
+      "evidence": {
+        "admissible": false,
+        "authority_packet_hash": null,
+        "authority_packet_present": false,
+        "blocked_reason": "nonlocal_production_readiness_authority_packet_missing",
+        "redaction_scan": {
+          "hit_classes": [],
+          "status": "not_run"
+        },
+        "required_fields_missing": [
+          "deployment_mode",
+          "deployment_owner_ref",
+          "approval_record_ref",
+          "approval_record_hash",
+          "proxy_boundary_mode",
+          "proxy_identity_header",
+          "allowed_origins_policy_hash",
+          "storage_exposure_policy",
+          "arelle_fact_authority_nonlocal_authorized",
+          "rollback_owner_ref",
+          "incident_owner_ref",
+          "redaction_policy_id",
+          "verification_run_ref"
+        ],
+        "required_fields_present": []
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "standing_non_admissions_preserved",
+      "evidence": {
+        "arelle_subprocess_invoked_by_gate": false,
+        "controlled_value_reveal_submit_default_enabled": false,
+        "corpus_validation_arelle_default_enabled": false,
+        "export_or_delivery_enabled_by_gate": false,
+        "provider_or_connector_dispatch_enabled_by_gate": false,
+        "raw_internal_value_store_default_enabled": false,
+        "source_acquisition_performed_by_gate": false,
+        "value_reveal_default_enabled": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "production_readiness_claim_separated_from_gate",
+      "evidence": {
+        "actual_nonlocal_enablement_admitted": false,
+        "design_doc": "next_milestone_plans/Layer3_planning_docs/1319-nonlocal-production-readiness.md",
+        "production_readiness_claimed": false,
+        "readiness_gate_is_validate_only": true
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "nonlocal_production_readiness_blocked",
+  "headline": "Nonlocal production-readiness authority is not admitted; current repo evidence remains validate-only and production readiness is not claimed.",
+  "inherited_default_on_runtime_evidence": {
+    "blocking_reasons_count": 0,
+    "decision": "default_on_runtime_enabled",
+    "next_slice": "sec_xbrl_default_on_nonlocal_production_readiness_design_v1",
+    "runtime_report_hash": "8c725285b970c9edeb2645d9a795947c0f26441e8f1e30cb61fdcda7409c16b7",
+    "source_report": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
+  },
+  "next_slice": "sec_xbrl_nonlocal_deployment_authority_packet_or_in_app_auth_boundary_v1",
+  "non_goals_preserved": {
+    "arelle_subprocess_invoked_by_gate": false,
+    "backend_api_contract_changed_by_gate": false,
+    "controlled_value_reveal_submit_default_enabled_by_gate": false,
+    "cross_company_comparability_claimed": false,
+    "durable_persistence_changed_by_gate": false,
+    "export_or_delivery_enabled_by_gate": false,
+    "final_financial_statement_semantics_claimed": false,
+    "live_sec_network_run_performed_by_gate": false,
+    "migration_changed_by_gate": false,
+    "operator_workflow_changed_by_gate": false,
+    "production_readiness_claimed": false,
+    "provider_or_connector_dispatch_enabled_by_gate": false,
+    "raw_internal_value_store_default_enabled_by_gate": false,
+    "raw_runtime_artifacts_added_by_gate": false,
+    "rendered_ui_changed_by_gate": false,
+    "runtime_behavior_changed_by_gate": false,
+    "runtime_default_changed_by_gate": false,
+    "schema_models_changed_by_gate": false,
+    "source_acquisition_performed_by_gate": false,
+    "value_reveal_default_enabled_by_gate": false
+  },
+  "nonlocal_runtime_boundary": {
+    "allowed_origins_policy": "explicit_https_only",
+    "arelle_fact_authority_nonlocal_authorized_required": true,
+    "auth_owner_required": "proxy",
+    "deployment_mode_required": "nonlocal",
+    "direct_storage_exposure_admitted": false,
+    "in_app_auth_implemented_by_gate": false,
+    "proxy_identity_header_name_required": true,
+    "storage_exposure_allowed": [
+      "auto",
+      "disabled"
+    ],
+    "trusted_proxy_mode_required": true
+  },
+  "production_readiness_claimed": false,
+  "schema_id": "diagnostics.sec_xbrl_nonlocal_production_readiness_gate.v1",
+  "source_documents": {
+    "nonlocal_readiness_design": "next_milestone_plans/Layer3_planning_docs/1319-nonlocal-production-readiness.md"
+  },
+  "source_reports": {
+    "default_on_runtime": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
+  },
+  "target": "sec_xbrl_default_on_nonlocal_production_readiness_gate_v1"
+}
