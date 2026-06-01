@@ -11938,8 +11938,10 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
 test('Layer 3 workbench inspects SEC XBRL operator-review workflow status through rendered read-only control', async ({ page }) => {
   const apiRequests = trackLayer3ApiRequests(page);
   let workflowStatusPayload = null;
+  const workflowStatusPayloads = [];
   await page.route('**/api/v1/layer3/sec-xbrl/operator-review/workflow/status', async (route) => {
     workflowStatusPayload = route.request().postDataJSON();
+    workflowStatusPayloads.push(workflowStatusPayload);
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -12067,6 +12069,23 @@ test('Layer 3 workbench inspects SEC XBRL operator-review workflow status throug
   await expect(panel).toContainText('open_operator_review_workflow');
   await expect(panel).toContainText('raw_values_exposed: false');
   await expect(panel).toContainText('rendered UI enabled by backend: false');
+  await expect(page.locator('#sec-xbrl-operator-review-decision-workflow-id')).toHaveValue(
+    'sec-xbrl-operator-review-workflow-rendered-proof',
+  );
+  await expect(page.locator('#sec-xbrl-operator-review-decision-workflow-basis-hash')).toHaveValue('c'.repeat(64));
+  await expect(page.locator('#sec-xbrl-operator-review-decision-submit')).toBeEnabled();
+  await page.locator('#sec-xbrl-operator-review-workflow-id').fill('sec-xbrl-operator-review-workflow-rendered-proof-next');
+  await page.locator('#sec-xbrl-operator-review-workflow-basis-hash').fill('d'.repeat(64));
+  await submit.click();
+  await expect(page.locator('#sec-xbrl-operator-review-decision-workflow-id')).toHaveValue(
+    'sec-xbrl-operator-review-workflow-rendered-proof-next',
+  );
+  await expect(page.locator('#sec-xbrl-operator-review-decision-workflow-basis-hash')).toHaveValue('d'.repeat(64));
+  await page.locator('#sec-xbrl-operator-review-decision-workflow-id').fill('');
+  await page.locator('#sec-xbrl-operator-review-decision-workflow-basis-hash').fill('');
+  await expect(page.locator('#sec-xbrl-operator-review-decision-workflow-id')).toHaveValue('');
+  await expect(page.locator('#sec-xbrl-operator-review-decision-workflow-basis-hash')).toHaveValue('');
+  await expect(page.locator('#sec-xbrl-operator-review-decision-submit')).toBeDisabled();
 
   expectOnlyPayloadKeys(workflowStatusPayload, [
     'client_request_id',
@@ -12078,8 +12097,8 @@ test('Layer 3 workbench inspects SEC XBRL operator-review workflow status throug
   expect(workflowStatusPayload).toMatchObject({
     status_mode: 'sec_xbrl_operator_review_workflow_status_v1',
     operator_decision: 'inspect_sec_xbrl_operator_review_workflow_status',
-    sec_xbrl_operator_review_workflow_id: 'sec-xbrl-operator-review-workflow-rendered-proof',
-    workflow_basis_hash: 'c'.repeat(64),
+    sec_xbrl_operator_review_workflow_id: 'sec-xbrl-operator-review-workflow-rendered-proof-next',
+    workflow_basis_hash: 'd'.repeat(64),
   });
   expect(workflowStatusPayload).not.toHaveProperty('raw_values');
   expect(workflowStatusPayload).not.toHaveProperty('resolved_fact_projection');
@@ -12090,7 +12109,9 @@ test('Layer 3 workbench inspects SEC XBRL operator-review workflow status throug
     request.path.includes('/sec-xbrl/operator-review/workflow/status')
   ))).toEqual([
     { method: 'POST', path: '/api/v1/layer3/sec-xbrl/operator-review/workflow/status' },
+    { method: 'POST', path: '/api/v1/layer3/sec-xbrl/operator-review/workflow/status' },
   ]);
+  expect(workflowStatusPayloads).toHaveLength(2);
 
   const panelText = await panel.textContent();
   for (const forbidden of ['file://', 'raw-issuer']) {
@@ -12268,6 +12289,12 @@ test('Layer 3 workbench submits and inspects SEC XBRL operator-review decision t
 
   await page.locator('#sec-xbrl-operator-review-decision-workflow-id').fill(workflowId);
   await page.locator('#sec-xbrl-operator-review-decision-workflow-basis-hash').fill(workflowBasisHash);
+  await page.locator('#sec-xbrl-operator-review-decision-review-decision').selectOption('changes_requested');
+  await expect(page.locator('#sec-xbrl-operator-review-decision-reason-code')).toHaveValue('needs_packet_revision');
+  await page.locator('#sec-xbrl-operator-review-decision-reason-code').selectOption('ready_for_next_freeze');
+  await expect(page.locator('#sec-xbrl-operator-review-decision-reason-code')).toHaveValue('needs_packet_revision');
+  await page.locator('#sec-xbrl-operator-review-decision-review-decision').selectOption('approved');
+  await expect(page.locator('#sec-xbrl-operator-review-decision-reason-code')).toHaveValue('ready_for_next_freeze');
   await page.locator('#sec-xbrl-operator-review-decision-notes').fill(boundedNote);
   await expect(submitButton).toBeEnabled();
   await submitButton.click();
