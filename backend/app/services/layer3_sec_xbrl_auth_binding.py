@@ -1,0 +1,511 @@
+from __future__ import annotations
+
+import re
+from collections.abc import Mapping
+from typing import Any
+
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.models import (
+    L3SecXbrlAuthBindingReceipt,
+    L3SecXbrlControlledValueRevealSubmitReceipt,
+    L3SecXbrlOperatorReviewDecision,
+    L3SecXbrlOperatorReviewWorkflow,
+    L3SecXbrlValueRevealAuthorityReceipt,
+)
+from app.models.models import (
+    L3_SEC_XBRL_AUTH_BINDING_POLICY_ID,
+    L3_SEC_XBRL_AUTH_BINDING_REDACTION_POLICY,
+    L3_SEC_XBRL_AUTH_BINDING_STATE_OWNER_BOUND,
+)
+from app.services.layer3_utils import json_clone, stable_hash
+
+
+AUTH_BINDING_SCHEMA_ID = "layer3.sec_xbrl_auth_binding_receipt.v1"
+AUTH_BINDING_MODE = "sec_xbrl_in_app_auth_owner_binding_receipt_v1"
+OWNER_ROLE = "owner"
+AUDITOR_ROLE = "auditor"
+HASH_RE = re.compile(r"^[0-9a-f]{64}$")
+
+SOURCE_RECEIPTS = {
+    "operator_review_workflow": (
+        L3SecXbrlOperatorReviewWorkflow,
+        "sec_xbrl_operator_review_workflow_id",
+        "workflow_basis_hash",
+    ),
+    "operator_review_decision": (
+        L3SecXbrlOperatorReviewDecision,
+        "sec_xbrl_operator_review_decision_id",
+        "decision_basis_hash",
+    ),
+    "value_reveal_authority": (
+        L3SecXbrlValueRevealAuthorityReceipt,
+        "sec_xbrl_value_reveal_authority_receipt_id",
+        "authority_basis_hash",
+    ),
+    "controlled_value_reveal_submit": (
+        L3SecXbrlControlledValueRevealSubmitReceipt,
+        "sec_xbrl_controlled_value_reveal_submit_receipt_id",
+        "submit_basis_hash",
+    ),
+}
+
+SOURCE_ROUTE_FAMILIES = {
+    "operator_review_workflow": {
+        "sec_xbrl_operator_review_workflow_status_read",
+        "sec_xbrl_operator_review_decision_submit_write",
+    },
+    "operator_review_decision": {
+        "sec_xbrl_operator_review_decision_submit_write",
+        "sec_xbrl_operator_review_decision_status_read",
+        "sec_xbrl_value_reveal_authority_prepare_write",
+    },
+    "value_reveal_authority": {
+        "sec_xbrl_value_reveal_authority_prepare_write",
+        "sec_xbrl_controlled_value_reveal_submit_write",
+    },
+    "controlled_value_reveal_submit": {
+        "sec_xbrl_controlled_value_reveal_submit_write",
+        "sec_xbrl_controlled_value_reveal_submit_status_read",
+    },
+}
+
+ROUTE_ALLOWED_ROLES = {
+    "sec_xbrl_operator_review_workflow_status_read": {OWNER_ROLE, AUDITOR_ROLE},
+    "sec_xbrl_operator_review_decision_submit_write": {OWNER_ROLE},
+    "sec_xbrl_operator_review_decision_status_read": {OWNER_ROLE, AUDITOR_ROLE},
+    "sec_xbrl_value_reveal_authority_prepare_write": {OWNER_ROLE},
+    "sec_xbrl_controlled_value_reveal_submit_write": {OWNER_ROLE},
+    "sec_xbrl_controlled_value_reveal_submit_status_read": {OWNER_ROLE},
+}
+
+FORBIDDEN_POLICY_KEYS = {
+    "actor_ref",
+    "workspace_ref",
+    "operator_identity",
+    "operator_email",
+    "operator_name",
+    "proxy_authorization",
+    "proxy_header",
+    "x-forwarded-user",
+    "x-forwarded-groups",
+    "authorization",
+    "token",
+    "secret",
+    "local_path",
+    "raw_path",
+    "storage_root",
+    "source_url",
+    "sec_url",
+    "accession",
+    "accession_number",
+    "cik",
+    "company_name",
+    "ticker",
+    "raw_value",
+    "value",
+    "amount",
+    "effective_value",
+    "lexical_value",
+    "arelle",
+    "source_acquisition",
+    "default_on",
+    "export",
+    "delivery",
+}
+
+
+class SecXbrlAuthBindingError(ValueError):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        details: Mapping[str, Any] | None = None,
+        http_status: int = 409,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.details = dict(details or {})
+        self.http_status = http_status
+
+
+def record_sec_xbrl_auth_binding(
+    db: Session,
+    *,
+    client_request_id: str,
+    source_receipt_kind: str,
+    source_receipt_id: str,
+    source_receipt_basis_hash: str,
+    route_family: str,
+    policy_decision: Mapping[str, Any],
+) -> dict[str, Any]:
+    request_id = _required_text(client_request_id, "client_request_id")
+    source_kind = _source_kind(source_receipt_kind)
+    source_id = _required_text(source_receipt_id, "source_receipt_id")
+    source_basis = _required_hash(source_receipt_basis_hash, "source_receipt_basis_hash")
+    route = _route_family(source_kind, route_family)
+    policy = _policy_decision(policy_decision, route)
+    _load_source_receipt(db, source_kind, source_id, source_basis)
+
+    binding_basis = {
+        "binding_schema_id": AUTH_BINDING_SCHEMA_ID,
+        "binding_policy_id": L3_SEC_XBRL_AUTH_BINDING_POLICY_ID,
+        "source_receipt_kind": source_kind,
+        "source_receipt_id": source_id,
+        "source_receipt_basis_hash": source_basis,
+        "route_family": route,
+        "actor_ref_hash": policy["actor_ref_hash"],
+        "workspace_ref_hash": policy["workspace_ref_hash"],
+        "role": policy["role"],
+        "policy_hash": policy["policy_hash"],
+    }
+    binding_basis_hash = stable_hash(binding_basis)
+    summary = _binding_summary(binding_basis)
+    negative_invariants = _negative_invariants()
+
+    existing_by_request = (
+        db.query(L3SecXbrlAuthBindingReceipt)
+        .filter(L3SecXbrlAuthBindingReceipt.client_request_id == request_id)
+        .one_or_none()
+    )
+    existing_by_basis = (
+        db.query(L3SecXbrlAuthBindingReceipt)
+        .filter(L3SecXbrlAuthBindingReceipt.binding_basis_hash == binding_basis_hash)
+        .one_or_none()
+    )
+    existing_by_source = (
+        db.query(L3SecXbrlAuthBindingReceipt)
+        .filter(
+            L3SecXbrlAuthBindingReceipt.source_receipt_kind == source_kind,
+            L3SecXbrlAuthBindingReceipt.source_receipt_id == source_id,
+        )
+        .one_or_none()
+    )
+    if existing_by_request is not None:
+        if existing_by_request.binding_basis_hash != binding_basis_hash:
+            raise SecXbrlAuthBindingError(
+                "sec_xbrl_auth_binding_client_request_conflict",
+                "client_request_id already recorded a different SEC XBRL auth binding basis.",
+                details={"client_request_id": request_id},
+            )
+        return _response(existing_by_request, idempotent_replay=True)
+    if existing_by_basis is not None:
+        return _response(existing_by_basis, idempotent_replay=True)
+    if existing_by_source is not None:
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_source_receipt_already_bound",
+            "SEC XBRL source receipt already has an immutable auth binding receipt.",
+            details={"source_receipt_kind": source_kind, "source_receipt_id": source_id},
+        )
+
+    row = L3SecXbrlAuthBindingReceipt(
+        client_request_id=request_id,
+        binding_basis_hash=binding_basis_hash,
+        binding_schema_id=AUTH_BINDING_SCHEMA_ID,
+        binding_policy_id=L3_SEC_XBRL_AUTH_BINDING_POLICY_ID,
+        binding_state=L3_SEC_XBRL_AUTH_BINDING_STATE_OWNER_BOUND,
+        source_receipt_kind=source_kind,
+        source_receipt_id=source_id,
+        source_receipt_basis_hash=source_basis,
+        route_family=route,
+        actor_ref_hash=policy["actor_ref_hash"],
+        workspace_ref_hash=policy["workspace_ref_hash"],
+        role=policy["role"],
+        policy_hash=policy["policy_hash"],
+        redaction_policy=L3_SEC_XBRL_AUTH_BINDING_REDACTION_POLICY,
+        binding_summary_json=summary,
+        negative_invariants_json=negative_invariants,
+    )
+    try:
+        db.add(row)
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_integrity_error",
+            "SEC XBRL auth binding persistence failed without admitting a partial binding.",
+        ) from exc
+    except Exception:
+        db.rollback()
+        raise
+    db.refresh(row)
+    return _response(row, idempotent_replay=False)
+
+
+def inspect_sec_xbrl_auth_binding(
+    db: Session,
+    *,
+    source_receipt_kind: str,
+    source_receipt_id: str | None = None,
+    source_receipt_basis_hash: str | None = None,
+) -> dict[str, Any]:
+    source_kind = _source_kind(source_receipt_kind)
+    query = db.query(L3SecXbrlAuthBindingReceipt).filter(
+        L3SecXbrlAuthBindingReceipt.source_receipt_kind == source_kind,
+    )
+    if source_receipt_id:
+        query = query.filter(L3SecXbrlAuthBindingReceipt.source_receipt_id == source_receipt_id)
+    if source_receipt_basis_hash:
+        query = query.filter(L3SecXbrlAuthBindingReceipt.source_receipt_basis_hash == source_receipt_basis_hash)
+    if not source_receipt_id and not source_receipt_basis_hash:
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_lookup_anchor_missing",
+            "SEC XBRL auth binding inspection requires source receipt id or basis hash.",
+            http_status=400,
+        )
+    row = query.one_or_none()
+    if row is None:
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_missing",
+            "SEC XBRL auth binding receipt was not found.",
+            details={"source_receipt_kind": source_kind},
+            http_status=404,
+        )
+    return _response(row, idempotent_replay=False)
+
+
+def require_sec_xbrl_owner_binding(
+    db: Session,
+    *,
+    source_receipt_kind: str,
+    source_receipt_id: str,
+    route_family: str,
+    policy_decision: Mapping[str, Any],
+) -> dict[str, Any]:
+    source_kind = _source_kind(source_receipt_kind)
+    route = _route_family(source_kind, route_family)
+    policy = _policy_decision(policy_decision, route)
+    row = (
+        db.query(L3SecXbrlAuthBindingReceipt)
+        .filter(
+            L3SecXbrlAuthBindingReceipt.source_receipt_kind == source_kind,
+            L3SecXbrlAuthBindingReceipt.source_receipt_id == source_receipt_id,
+        )
+        .one_or_none()
+    )
+    if row is None:
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_missing",
+            "SEC XBRL protected access requires a prior source receipt auth binding.",
+            details={"source_receipt_kind": source_kind, "source_receipt_id": source_receipt_id},
+            http_status=404,
+        )
+    mismatches = [
+        field
+        for field, expected in {
+            "route_family": route,
+            "actor_ref_hash": policy["actor_ref_hash"],
+            "workspace_ref_hash": policy["workspace_ref_hash"],
+            "role": policy["role"],
+            "policy_hash": policy["policy_hash"],
+        }.items()
+        if getattr(row, field) != expected
+    ]
+    if mismatches:
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_context_mismatch",
+            "SEC XBRL auth binding rejects missing, stale, route-mismatched, or cross-owner access.",
+            details={"mismatched_fields": mismatches},
+            http_status=403,
+        )
+    return _response(row, idempotent_replay=False)
+
+
+def _source_kind(value: str) -> str:
+    source_kind = _required_text(value, "source_receipt_kind")
+    if source_kind not in SOURCE_RECEIPTS:
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_source_kind_not_admitted",
+            "SEC XBRL auth binding admits only known governed SEC XBRL source receipt kinds.",
+            details={"source_receipt_kind": source_kind},
+            http_status=400,
+        )
+    return source_kind
+
+
+def _route_family(source_kind: str, value: str) -> str:
+    route = _required_text(value, "route_family")
+    if route not in SOURCE_ROUTE_FAMILIES[source_kind]:
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_route_family_not_admitted",
+            "SEC XBRL auth binding route family is not admitted for the selected source receipt kind.",
+            details={"source_receipt_kind": source_kind, "route_family": route},
+            http_status=400,
+        )
+    return route
+
+
+def _policy_decision(policy_decision: Mapping[str, Any], route_family: str) -> dict[str, str]:
+    if not isinstance(policy_decision, Mapping):
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_policy_decision_missing",
+            "SEC XBRL auth binding requires a server-derived policy decision.",
+            http_status=400,
+        )
+    blocked_fields = sorted(
+        str(key)
+        for key, value in policy_decision.items()
+        if str(key).lower() in FORBIDDEN_POLICY_KEYS and value is not None
+    )
+    if blocked_fields:
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_policy_raw_fields_not_admitted",
+            "SEC XBRL auth binding rejects caller-supplied auth, identity, local path, value, source, Arelle, default, or export fields.",
+            details={"blocked_fields": blocked_fields},
+            http_status=400,
+        )
+    decision = _required_text(policy_decision.get("decision"), "policy_decision").lower()
+    if decision != "allow":
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_policy_not_admitted",
+            "SEC XBRL auth binding requires an admitted server-derived policy decision.",
+            details={"decision": decision},
+            http_status=403,
+        )
+    policy_route = str(policy_decision.get("route_family") or route_family).strip()
+    if policy_route != route_family:
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_policy_route_mismatch",
+            "SEC XBRL auth binding policy route family does not match the source binding route.",
+            details={"policy_route_family": policy_route, "route_family": route_family},
+            http_status=403,
+        )
+    role = str(policy_decision.get("role") or "").strip().lower()
+    if role not in {OWNER_ROLE, AUDITOR_ROLE}:
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_role_not_admitted",
+            "SEC XBRL auth binding admits only owner and auditor roles.",
+            details={"role": role},
+            http_status=403,
+        )
+    if role not in ROUTE_ALLOWED_ROLES[route_family]:
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_role_route_forbidden",
+            "SEC XBRL auth binding does not admit the requested role for this route family.",
+            details={"role": role, "route_family": route_family},
+            http_status=403,
+        )
+    return {
+        "actor_ref_hash": _required_hash(policy_decision.get("actor_ref_hash"), "actor_ref_hash"),
+        "workspace_ref_hash": _required_hash(policy_decision.get("workspace_ref_hash"), "workspace_ref_hash"),
+        "role": role,
+        "policy_hash": _required_hash(policy_decision.get("policy_hash"), "policy_hash"),
+    }
+
+
+def _load_source_receipt(
+    db: Session,
+    source_kind: str,
+    source_id: str,
+    source_basis_hash: str,
+) -> Any:
+    model, id_column, basis_column = SOURCE_RECEIPTS[source_kind]
+    row = (
+        db.query(model)
+        .filter(
+            getattr(model, id_column) == source_id,
+            getattr(model, basis_column) == source_basis_hash,
+        )
+        .one_or_none()
+    )
+    if row is None:
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_source_receipt_missing",
+            "SEC XBRL auth binding requires an existing source receipt with matching kind, id, and basis hash.",
+            details={
+                "source_receipt_kind": source_kind,
+                "source_receipt_id": source_id,
+                "source_receipt_basis_hash": source_basis_hash,
+            },
+            http_status=404,
+        )
+    return row
+
+
+def _binding_summary(binding_basis: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "auth_binding_mode": AUTH_BINDING_MODE,
+        "source_receipt_kind": str(binding_basis["source_receipt_kind"]),
+        "source_receipt_basis_hash": str(binding_basis["source_receipt_basis_hash"]),
+        "route_family": str(binding_basis["route_family"]),
+        "role": str(binding_basis["role"]),
+        "binding_policy_id": L3_SEC_XBRL_AUTH_BINDING_POLICY_ID,
+        "redaction_policy": L3_SEC_XBRL_AUTH_BINDING_REDACTION_POLICY,
+        "hash_only_actor_workspace_refs": True,
+        "source_receipt_id_exposed": False,
+        "raw_operator_identity_exposed": False,
+        "raw_workspace_identity_exposed": False,
+    }
+
+
+def _negative_invariants() -> dict[str, bool]:
+    return {
+        "raw_operator_identity_persisted": False,
+        "raw_workspace_identity_persisted": False,
+        "raw_proxy_headers_persisted": False,
+        "raw_values_persisted": False,
+        "residual_magnitudes_persisted": False,
+        "local_paths_persisted": False,
+        "sec_accessions_or_urls_persisted": False,
+        "source_acquisition_performed": False,
+        "arelle_invoked": False,
+        "value_reveal_default_enabled": False,
+        "delivery_or_export_performed": False,
+    }
+
+
+def _response(row: L3SecXbrlAuthBindingReceipt, *, idempotent_replay: bool) -> dict[str, Any]:
+    return {
+        "schema_id": AUTH_BINDING_SCHEMA_ID,
+        "auth_binding_mode": AUTH_BINDING_MODE,
+        "sec_xbrl_auth_binding_receipt_id": row.sec_xbrl_auth_binding_receipt_id,
+        "auth_binding_ref": f"sec-xbrl-auth-binding:{row.sec_xbrl_auth_binding_receipt_id}",
+        "binding_basis_hash": row.binding_basis_hash,
+        "binding_policy_id": row.binding_policy_id,
+        "binding_state": row.binding_state,
+        "source_receipt_kind": row.source_receipt_kind,
+        "source_receipt_basis_hash": row.source_receipt_basis_hash,
+        "route_family": row.route_family,
+        "actor_ref_hash": row.actor_ref_hash,
+        "workspace_ref_hash": row.workspace_ref_hash,
+        "role": row.role,
+        "policy_hash": row.policy_hash,
+        "redaction_policy": row.redaction_policy,
+        "binding_summary": json_clone(row.binding_summary_json),
+        "negative_invariants": json_clone(row.negative_invariants_json),
+        "idempotent_replay": idempotent_replay,
+        "runtime_auth_dependency_installed": False,
+        "api_route_behavior_changed": False,
+        "value_reveal_performed": False,
+        "runtime_default_enabled": False,
+        "source_acquisition_performed": False,
+        "arelle_invoked": False,
+        "delivery_or_export_performed": False,
+        "production_readiness_claimed": False,
+    }
+
+
+def _required_text(value: Any, field_name: str) -> str:
+    text = str(value or "").strip()
+    if not text:
+        raise SecXbrlAuthBindingError(
+            f"sec_xbrl_auth_binding_{field_name}_missing",
+            f"SEC XBRL auth binding requires {field_name}.",
+            http_status=400,
+        )
+    return text
+
+
+def _required_hash(value: Any, field_name: str) -> str:
+    text = _required_text(value, field_name)
+    if not HASH_RE.fullmatch(text):
+        raise SecXbrlAuthBindingError(
+            f"sec_xbrl_auth_binding_{field_name}_invalid",
+            f"SEC XBRL auth binding requires {field_name} as a 64-character hex hash.",
+            details={field_name: text},
+            http_status=400,
+        )
+    return text
