@@ -9826,6 +9826,22 @@ Containment: no `models.py`, Alembic migration, schema, durable persistence expa
 
 Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_decision_submit_design_v1`.
 
+## SEC XBRL Operator Review Decision Submit Design
+
+Milestone: `sec_xbrl_operator_review_decision_submit_design_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1295-decision-submit.md`.
+
+Status: `tier2_risk_assessed_design_ready`. This is a design-only lane after the rendered read-only status panel. It selects a future durable decision receipt materializer over existing `l3_sec_xbrl_operator_review_workflow` authority, without implementing schema, persistence, API, UI, value reveal, delivery/export, default-on behavior, source acquisition, Arelle invocation, or production-readiness behavior in this pass.
+
+Selected future first implementation boundary: one additive `l3_sec_xbrl_operator_review_decision` table plus one owner-service materializer/status helper, with no rendered decision submit control and no browser-visible decision route in that first slice.
+
+Containment: the future decision receipt must bind to an existing server-owned workflow row, copy only redacted workflow/packet/projection hashes, record one immutable decision per workflow, store no raw notes, reject raw values, raw resolved fact authority, raw issuer identity, raw accessions, raw period dates, SEC URLs, local paths, operator contact fields, source-acquisition fields, Arelle fields, delivery/export fields, and residual magnitude fields, and leave workflow, statement-packet, and projection rows unmutated.
+
+Verification required for future implementation: focused decision model/service tests, migration upgrade/downgrade or equivalent migration proof, missing/mismatched/tampered/non-ready/non-redacted/already-decided workflow rejection, notes-policy proof, raw-reference rejection, idempotent replay on `client_request_id` and `decision_basis_hash`, partial-write rollback, non-mutation proof, full SEC XBRL suite, target/progress checks, JSON validation, redaction/residual scans, and `git diff --check`.
+
+Next exact posture after merge and current-main verification: `sec_xbrl_operator_review_decision_receipt_v1_tier2_risk_assessed_implementation`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
