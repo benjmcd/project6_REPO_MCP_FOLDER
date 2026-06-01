@@ -1,5 +1,41 @@
 # Layer3 Progress Board
 
+## SEC XBRL Nonlocal In-App Auth Design
+
+Milestone: `sec_xbrl_nonlocal_in_app_auth_design_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1321-in-app-auth.md`.
+
+Status: branch-local docs-only Tier-2 design/pre-review entry on
+`codex/secxbrl-in-app-auth-design`.
+
+Scope: select the in-app auth fork after the nonlocal readiness gate blocked on
+missing deployment authority and a targeted `sandbox_temp` search found no
+admissible redacted authority packet. The selected auth boundary is
+`sec_xbrl_repo_owned_in_app_operator_auth_boundary_v1`: server-owned
+request-context identity, hash-only actor/workspace refs, centralized
+route-family role checks, forbidden auth/security/raw-field rejection, and
+future owner binding before nonlocal production-readiness admission.
+
+Non-goals: no runtime auth, middleware, API dependency, config default change,
+schema, `models.py`, Alembic migration, durable persistence, API/UI behavior,
+rendered control, operator workflow mutation, source acquisition, Arelle
+subprocess invocation, value reveal default-on, export/delivery,
+provider/connector dispatch, raw runtime artifact, redaction-posture change,
+final statement semantics, cross-company comparability, or production
+readiness behavior.
+
+Verification: focused nonlocal/default-on API tests pass with `27 passed, 249
+deselected, 3 warnings`; full SEC XBRL suite passes with `322 passed, 4
+warnings`; target-selection frozen check, progress check, changed JSON parse,
+committed SEC XBRL report redaction/residual scan over `56` SEC-like reports,
+and `git diff --check` pass. No Python runtime, diagnostic, report, or test
+file was touched by this docs-only pass, so `py_compile` is not applicable.
+
+Next exact posture:
+`sec_xbrl_nonlocal_in_app_auth_policy_validation_v1`.
+
 ## SEC XBRL Nonlocal Authority Boundary
 
 Milestone:
