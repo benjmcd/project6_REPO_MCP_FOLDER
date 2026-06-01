@@ -2578,33 +2578,48 @@ def test_layer3_sec_xbrl_controlled_value_reveal_rendered_control_is_bounded() -
     status_path_start = js.text.find("function secXbrlControlledValueRevealStatusPath")
     render_start = js.text.find("function renderSecXbrlControlledValueRevealPanel")
     async_start = js.text.find("async function prepareSecXbrlValueRevealAuthority")
+    submit_async_start = js.text.find("async function submitSecXbrlControlledValueReveal")
     assert authority_payload_start != -1
     assert submit_payload_start != -1
     assert status_path_start != -1
     assert render_start != -1
     assert async_start != -1
+    assert submit_async_start != -1
 
     authority_payload_slice = js.text[authority_payload_start:submit_payload_start]
     submit_payload_slice = js.text[submit_payload_start:status_path_start]
     status_path_slice = js.text[status_path_start:render_start]
     render_slice = js.text[render_start:async_start]
+    async_slice = js.text[async_start:submit_async_start]
+    assert "const SEC_XBRL_LOWERCASE_SHA256_RE = /^[0-9a-f]{64}$/" in js.text
+    assert "const SEC_XBRL_RAW_ACCESSION_RE = /\\b\\d{10}-\\d{2}-\\d{6}\\b/" in js.text
+    assert "const SEC_XBRL_RAW_CIK_RE = /\\b\\d{10}\\b/" in js.text
     assert "authority_mode: SEC_XBRL_VALUE_REVEAL_AUTHORITY_MODE" in authority_payload_slice
     assert "operator_decision: SEC_XBRL_VALUE_REVEAL_AUTHORITY_OPERATOR_DECISION" in authority_payload_slice
     assert "sec_xbrl_operator_review_decision_id: values.decisionId" in authority_payload_slice
     assert "decision_basis_hash: values.decisionBasisHash" in authority_payload_slice
     assert "operator_attestation" in authority_payload_slice
+    assert "SEC_XBRL_LOWERCASE_SHA256_RE.test(values.decisionBasisHash)" in authority_payload_slice
+    assert "secXbrlValueRevealAttestationLooksRaw(values.operatorAttestation)" in authority_payload_slice
     assert "submit_mode: SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_MODE" in submit_payload_slice
     assert "operator_decision: SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_OPERATOR_DECISION" in submit_payload_slice
     assert "sec_xbrl_value_reveal_authority_receipt_id: values.authorityReceiptId" in submit_payload_slice
     assert "authority_basis_hash: values.authorityBasisHash" in submit_payload_slice
     assert "operator_reveal_confirmation: true" in submit_payload_slice
+    assert "SEC_XBRL_LOWERCASE_SHA256_RE.test(values.authorityBasisHash)" in submit_payload_slice
     assert "getJson(path)" in js.text
     assert "SEC_XBRL_CONTROLLED_VALUE_REVEAL_STATUS_ENDPOINT_PREFIX" in status_path_slice
+    assert "secXbrlControlledValueRevealStatusReceiptIdLooksRaw(values.submitReceiptId)" in status_path_slice
     assert "data-status-values-rendered=\"false\"" in render_slice
     assert "data-delivery-export-enabled=\"false\"" in render_slice
     assert "data-source-acquisition-enabled=\"false\"" in render_slice
     assert "data-arelle-invocation-enabled=\"false\"" in render_slice
     assert "data-runtime-default-enabled=\"false\"" in render_slice
+    assert "State.secXbrlControlledValueRevealSubmit = null" in async_slice
+    assert "State.secXbrlControlledValueRevealStatus = null" in async_slice
+    assert "applySecXbrlControlledValueRevealAuthorityInputState(authority)" in async_slice
+    assert "operatorRevealConfirmation: false" in js.text
+    assert "statusReceiptInput.value = ''" in js.text
     for forbidden in (
         "sidecar_receipt_id:",
         "sidecar_receipt_hash:",

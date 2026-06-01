@@ -12469,8 +12469,12 @@ test('Layer 3 workbench prepares and submits SEC XBRL controlled value reveal th
   const revealPayloads = [];
   const decisionId = 'sec-xbrl-operator-review-decision-rendered-value-proof';
   const decisionBasisHash = 'a'.repeat(64);
+  const secondDecisionId = 'sec-xbrl-operator-review-decision-rendered-value-proof-second';
+  const secondDecisionBasisHash = 'e'.repeat(64);
   const authorityReceiptId = 'sec-xbrl-value-reveal-authority-rendered-proof';
   const authorityBasisHash = 'b'.repeat(64);
+  const secondAuthorityReceiptId = 'sec-xbrl-value-reveal-authority-rendered-proof-second';
+  const secondAuthorityBasisHash = 'f'.repeat(64);
   const submitReceiptId = 'sec-xbrl-controlled-value-reveal-submit-rendered-proof';
   const submitBasisHash = 'c'.repeat(64);
   const valueHash = 'd'.repeat(64);
@@ -12478,6 +12482,11 @@ test('Layer 3 workbench prepares and submits SEC XBRL controlled value reveal th
   await page.route('**/api/v1/layer3/sec-xbrl/value-reveal/authority/prepare', async (route) => {
     authorityPayload = route.request().postDataJSON();
     authorityPayloads.push(authorityPayload);
+    const isSecondAuthority = (
+      authorityPayload.sec_xbrl_operator_review_decision_id === secondDecisionId
+    );
+    const responseAuthorityReceiptId = isSecondAuthority ? secondAuthorityReceiptId : authorityReceiptId;
+    const responseAuthorityBasisHash = isSecondAuthority ? secondAuthorityBasisHash : authorityBasisHash;
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -12485,10 +12494,10 @@ test('Layer 3 workbench prepares and submits SEC XBRL controlled value reveal th
         schema_id: 'layer3.sec_xbrl_value_reveal_authority_receipt.v1',
         request_id: authorityPayload.client_request_id,
         status: 'ready',
-        sec_xbrl_value_reveal_authority_receipt_id: authorityReceiptId,
+        sec_xbrl_value_reveal_authority_receipt_id: responseAuthorityReceiptId,
         value_reveal_authority_receipt_ref: 'sec-xbrl-value-reveal-authority:bbbbbbbbbbbbbbbbbbbbbbbb',
         client_request_id: authorityPayload.client_request_id,
-        authority_basis_hash: authorityBasisHash,
+        authority_basis_hash: responseAuthorityBasisHash,
         authority_mode: 'sec_xbrl_value_reveal_authority_receipt_v1',
         authority_policy_id: 'sec_xbrl_value_reveal_authority_policy_v1',
         redaction_policy: 'sec_xbrl_value_reveal_authority_redacted_hash_only_v1',
@@ -12690,7 +12699,19 @@ test('Layer 3 workbench prepares and submits SEC XBRL controlled value reveal th
   await expect(statusButton).toBeDisabled();
 
   await page.locator('#sec-xbrl-value-reveal-authority-decision-id').fill(decisionId);
+  await page.locator('#sec-xbrl-value-reveal-authority-decision-basis-hash').fill(decisionBasisHash.toUpperCase());
+  await expect(prepareButton).toBeDisabled();
+  expect(authorityPayloads).toHaveLength(0);
+
   await page.locator('#sec-xbrl-value-reveal-authority-decision-basis-hash').fill(decisionBasisHash);
+  await page.locator('#sec-xbrl-value-reveal-authority-attestation').fill('0000123456');
+  await expect(prepareButton).toBeEnabled();
+  await prepareButton.click();
+  await expect(panel).toContainText('sec_xbrl_value_reveal_authority_raw_attestation_not_admitted');
+  await expect(page.locator('#sec-xbrl-value-reveal-authority-attestation')).toHaveValue('');
+  await expect(panel).not.toContainText('0000123456');
+  expect(authorityPayloads).toHaveLength(0);
+
   await page.locator('#sec-xbrl-value-reveal-authority-attestation').fill('raw.attestation@example.com');
   await expect(prepareButton).toBeEnabled();
   await prepareButton.click();
@@ -12774,6 +12795,13 @@ test('Layer 3 workbench prepares and submits SEC XBRL controlled value reveal th
   }
 
   await expect(statusButton).toBeEnabled();
+  await page.locator('#sec-xbrl-controlled-value-reveal-status-receipt-id').fill('0000000000-00-000000');
+  await expect(statusButton).toBeDisabled();
+  await page.locator('#sec-xbrl-controlled-value-reveal-status-receipt-id').fill('0000123456');
+  await expect(statusButton).toBeDisabled();
+  expect(statusRequestPath).toBeNull();
+  await page.locator('#sec-xbrl-controlled-value-reveal-status-receipt-id').fill(submitReceiptId);
+  await expect(statusButton).toBeEnabled();
   await statusButton.click();
   const statusOutput = page.locator('#sec-xbrl-controlled-value-reveal-status-output');
   await expect(page.locator('#sec-xbrl-controlled-value-reveal-status-projection')).toHaveAttribute('data-read-only', 'true');
@@ -12805,6 +12833,25 @@ test('Layer 3 workbench prepares and submits SEC XBRL controlled value reveal th
     expect(panelText).not.toContain(forbidden);
   }
   expect(panelText).not.toMatch(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+
+  await page.locator('#sec-xbrl-value-reveal-authority-decision-id').fill(secondDecisionId);
+  await page.locator('#sec-xbrl-value-reveal-authority-decision-basis-hash').fill(secondDecisionBasisHash);
+  await expect(prepareButton).toBeEnabled();
+  await prepareButton.click();
+  await expect(panel).toContainText('sec_xbrl_value_reveal_authority_ready');
+  await expect(panel).toContainText(secondAuthorityReceiptId);
+  await expect(panel).toContainText(secondAuthorityBasisHash);
+  await expect(panel).not.toContainText('controlled-value-proof');
+  await expect(panel).not.toContainText('us-gaap:Revenue');
+  await expect(panel).not.toContainText(valueHash);
+  await expect(page.locator('#sec-xbrl-controlled-value-reveal-authority-receipt-id')).toHaveValue(secondAuthorityReceiptId);
+  await expect(page.locator('#sec-xbrl-controlled-value-reveal-authority-basis-hash')).toHaveValue(secondAuthorityBasisHash);
+  await expect(page.locator('#sec-xbrl-controlled-value-reveal-confirmation')).not.toBeChecked();
+  await expect(page.locator('#sec-xbrl-controlled-value-reveal-status-receipt-id')).toHaveValue('');
+  await expect(revealButton).toBeDisabled();
+  expect(authorityPayloads).toHaveLength(2);
+  expect(revealPayloads).toHaveLength(1);
+
   for (const blockedControlId of [
     '#sec-xbrl-value-reveal-submit',
     '#sec-xbrl-export-statement-packet-submit',
