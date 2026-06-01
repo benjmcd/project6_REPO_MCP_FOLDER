@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import os
 from decimal import Decimal
 import importlib.util
 import sys
@@ -7,9 +9,17 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
+os.environ.setdefault("DB_INIT_MODE", "none")
+BACKEND = Path(__file__).resolve().parents[1]
+if str(BACKEND) not in sys.path:
+    sys.path.insert(0, str(BACKEND))
+
+from app.api.deps import get_db
 from app.db.session import Base
 from app.models import (
     L3SecXbrlOperatorReviewWorkflow,
@@ -20,6 +30,7 @@ from app.services import layer3_sec_xbrl_operator_review_workflow as workflow_se
 from app.services import layer3_sec_xbrl_projection_persistence as projection_persistence
 from app.services import layer3_sec_xbrl_statement_assembly as assembly
 from app.services import layer3_sec_xbrl_statement_packet_persistence as packet_persistence
+from main import app
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -36,6 +47,34 @@ def db_session():
         yield session
     finally:
         session.close()
+        Base.metadata.drop_all(engine)
+        engine.dispose()
+
+
+@pytest.fixture()
+def api_client():
+    engine = create_engine(
+        "sqlite:///:memory:",
+        future=True,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+
+    def override_get_db():
+        db = Session()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    client = TestClient(app)
+    try:
+        yield client, Session
+    finally:
+        app.dependency_overrides.pop(get_db, None)
         Base.metadata.drop_all(engine)
         engine.dispose()
 
@@ -208,6 +247,120 @@ def test_operator_review_workflow_opens_redacted_control_envelope(db_session) ->
     assert workflow.workflow_schema_id == workflow_service.WORKFLOW_SCHEMA_ID
     assert workflow.authority_refs_json["statement_packet_basis_hash"] == response["statement_packet_basis_hash"]
     assert workflow.review_summary_json["row_count"] == 3
+
+
+def test_operator_review_workflow_status_projection_is_read_only(db_session) -> None:
+    workflow = _open_workflow(db_session)
+
+    status = workflow_service.inspect_redacted_operator_review_workflow_status(
+        db_session,
+        client_request_id="workflow-status-1",
+        sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+        workflow_basis_hash=workflow["workflow_basis_hash"],
+    )
+
+    assert status["schema_id"] == workflow_service.WORKFLOW_STATUS_SCHEMA_ID
+    assert status["request_id"] == "workflow-status-1"
+    assert status["status"] == "review_ready"
+    assert status["mode"] == workflow_service.WORKFLOW_STATUS_MODE
+    assert status["operator_decision"] == workflow_service.WORKFLOW_STATUS_OPERATOR_DECISION
+    assert status["workflow_schema_id"] == workflow_service.WORKFLOW_SCHEMA_ID
+    assert status["read_only_status_surface"] is True
+    assert status["durable_workflow_authority_used"] is True
+    assert status["status_api_route_enabled"] is True
+    assert status["open_workflow_api_route_enabled"] is False
+    assert status["runtime_default_enabled"] is False
+    assert status["value_reveal_performed"] is False
+    assert status["source_acquisition_performed"] is False
+    assert status["arelle_invoked"] is False
+    assert status["delivery_export_enabled"] is False
+    assert status["rendered_ui_enabled"] is False
+    assert status["operator_review_decision_recorded"] is False
+    assert status["negative_invariants"]["raw_values_exposed"] is False
+    assert status["negative_invariants"]["residual_magnitudes_exposed"] is False
+    assert "inspect_statement_packet_authority" in status["next_allowed_actions"]
+    assert "reveal_values" in {item["control"] for item in status["blocked_controls"]}
+    response_text = json.dumps(status, sort_keys=True)
+    assert "C:/" not in response_text
+    assert "https://www.sec.gov" not in response_text
+
+
+def test_operator_review_workflow_status_rejects_missing_authority(db_session) -> None:
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.inspect_redacted_operator_review_workflow_status(
+            db_session,
+            client_request_id="workflow-status-missing-authority",
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_workflow_status_authority_missing"
+    assert exc.value.http_status == 400
+
+
+def test_operator_review_workflow_status_rejects_tampered_raw_status_json(db_session) -> None:
+    workflow = _open_workflow(db_session)
+    workflow_row = db_session.query(L3SecXbrlOperatorReviewWorkflow).one()
+    workflow_row.review_summary_json = {"local_path": "C:/raw/workflow.json"}
+    db_session.commit()
+
+    with pytest.raises(workflow_service.SecXbrlOperatorReviewWorkflowError) as exc:
+        workflow_service.inspect_redacted_operator_review_workflow_status(
+            db_session,
+            client_request_id="workflow-status-raw-json",
+            sec_xbrl_operator_review_workflow_id=workflow["sec_xbrl_operator_review_workflow_id"],
+        )
+
+    assert exc.value.code == "sec_xbrl_operator_review_workflow_raw_authority_not_admitted"
+
+
+def test_operator_review_workflow_status_api_returns_read_only_projection(api_client) -> None:
+    client, Session = api_client
+    with Session() as session:
+        workflow = _open_workflow(session, request_id="workflow-api")
+
+    response = client.post(
+        "/api/v1/layer3/sec-xbrl/operator-review/workflow/status",
+        json={
+            "client_request_id": "workflow-status-api",
+            "status_mode": workflow_service.WORKFLOW_STATUS_MODE,
+            "operator_decision": workflow_service.WORKFLOW_STATUS_OPERATOR_DECISION,
+            "sec_xbrl_operator_review_workflow_id": workflow["sec_xbrl_operator_review_workflow_id"],
+            "workflow_basis_hash": workflow["workflow_basis_hash"],
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == workflow_service.WORKFLOW_STATUS_SCHEMA_ID
+    assert body["request_id"] == "workflow-status-api"
+    assert body["status"] == "review_ready"
+    assert body["sec_xbrl_operator_review_workflow_id"] == workflow["sec_xbrl_operator_review_workflow_id"]
+    assert body["workflow_basis_hash"] == workflow["workflow_basis_hash"]
+    assert body["status_api_route_enabled"] is True
+    assert body["open_workflow_api_route_enabled"] is False
+    assert body["rendered_ui_enabled"] is False
+    assert body["operator_review_decision_recorded"] is False
+    assert body["negative_invariants"]["raw_values_exposed"] is False
+    assert "C:/" not in response.text
+    assert "https://www.sec.gov" not in response.text
+
+
+def test_operator_review_workflow_status_api_fails_closed_without_authority(api_client) -> None:
+    client, _Session = api_client
+
+    response = client.post(
+        "/api/v1/layer3/sec-xbrl/operator-review/workflow/status",
+        json={
+            "client_request_id": "workflow-status-api-missing-authority",
+            "status_mode": workflow_service.WORKFLOW_STATUS_MODE,
+            "operator_decision": workflow_service.WORKFLOW_STATUS_OPERATOR_DECISION,
+        },
+    )
+
+    assert response.status_code == 400, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.workbench_error.v1"
+    assert body["error_code"] == "sec_xbrl_operator_review_workflow_status_authority_missing"
+    assert body["status"] == "blocked"
 
 
 def test_operator_review_workflow_replays_same_request_and_basis(db_session) -> None:
