@@ -22,16 +22,20 @@ if str(BACKEND) not in sys.path:
 from app.api.deps import get_db
 from app.db.session import Base
 from app.models import (
+    Dataset,
+    DatasetVersion,
     L3SecXbrlOperatorReviewDecision,
     L3SecXbrlOperatorReviewWorkflow,
     L3SecXbrlProjectionSet,
     L3SecXbrlStatementPacketSet,
+    L3SecXbrlValueRevealAuthorityReceipt,
 )
 from app.models.models import L3_SEC_XBRL_STATEMENT_PACKET_REDACTION_POLICY
 from app.services import layer3_sec_xbrl_operator_review_workflow as workflow_service
 from app.services import layer3_sec_xbrl_projection_persistence as projection_persistence
 from app.services import layer3_sec_xbrl_statement_assembly as assembly
 from app.services import layer3_sec_xbrl_statement_packet_persistence as packet_persistence
+from app.services import layer3_sec_xbrl_value_reveal_authority as authority_service
 from main import app
 
 
@@ -42,6 +46,10 @@ DECISION_MIGRATION_PATH = (
 )
 DECISION_SUBMIT_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit"
 DECISION_STATUS_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/status"
+AUTHORITY_PREPARE_ROUTE = "/api/v1/layer3/sec-xbrl/value-reveal/authority/prepare"
+AUTHORITY_MIGRATION_PATH = (
+    ROOT / "backend" / "alembic" / "versions" / "0044_layer3_sec_xbrl_value_reveal_authority_receipt.py"
+)
 
 
 @pytest.fixture()
@@ -120,7 +128,34 @@ def _projection_row(canonical_id: str, statement: str, *, family: str = "univers
     }
 
 
+def _seed_dataset_version(db_session, *, dataset_version_id: str = "dv-redacted-1") -> None:
+    dataset_id = "dataset-redacted-1"
+    if db_session.get(Dataset, dataset_id) is None:
+        db_session.add(
+            Dataset(
+                dataset_id=dataset_id,
+                name="SEC XBRL redacted fixture dataset",
+                description="Hash-only SEC XBRL authority fixture",
+                domain_pack="sec-xbrl",
+            )
+        )
+    if db_session.get(DatasetVersion, dataset_version_id) is None:
+        db_session.add(
+            DatasetVersion(
+                dataset_version_id=dataset_version_id,
+                dataset_id=dataset_id,
+                version_label="redacted-fixture-v1",
+                version_type="sec-xbrl-redacted",
+                status="ready",
+                storage_ref=None,
+                row_count=3,
+            )
+        )
+    db_session.flush()
+
+
 def _persisted_projection(db_session, *, request_id: str = "projection-1") -> dict[str, Any]:
+    _seed_dataset_version(db_session)
     return projection_persistence.materialize_redacted_projection_set(
         db_session,
         client_request_id=request_id,
@@ -268,6 +303,66 @@ def _record_decision(
     }
     kwargs.update(overrides)
     return workflow_service.record_redacted_operator_review_decision(db_session, **kwargs)
+
+
+def _authority_payload(decision: dict[str, Any], **overrides: Any) -> dict[str, Any]:
+    payload = {
+        "client_request_id": "value-reveal-authority-api",
+        "authority_mode": authority_service.AUTHORITY_MODE,
+        "operator_decision": authority_service.AUTHORITY_OPERATOR_DECISION,
+        "sec_xbrl_operator_review_decision_id": decision["sec_xbrl_operator_review_decision_id"],
+        "decision_basis_hash": decision["decision_basis_hash"],
+    }
+    payload.update(overrides)
+    return payload
+
+
+def _sidecar_authority() -> dict[str, str]:
+    return {
+        "sidecar_receipt_id_hash": _hash("d"),
+        "sidecar_receipt_hash": _hash("b"),
+        "value_store_hash": _hash("c"),
+    }
+
+
+def test_value_reveal_authority_resolves_sidecar_and_internal_value_store(monkeypatch) -> None:
+    calls: dict[str, bool] = {}
+
+    def read_receipt(receipt_id: str, *, expected_sidecar_receipt_hash: str | None = None) -> dict[str, Any]:
+        assert receipt_id == f"sec-edgar-arelle-resolved-fact-authority-{_hash('b')[:24]}"
+        assert expected_sidecar_receipt_hash == _hash("b")
+        calls["receipt"] = True
+        return {
+            "sidecar_receipt_id": receipt_id,
+            "sidecar_receipt_hash": _hash("b"),
+            "sidecar_state": "ready",
+            "internal_value_store": {"value_store_hash": _hash("c")},
+            "resolved_fact_projection": [{"fact_ref_hash": _hash("e")}],
+        }
+
+    def read_value_store(receipt: dict[str, Any]) -> dict[str, Any]:
+        assert receipt["sidecar_receipt_hash"] == _hash("b")
+        calls["value_store"] = True
+        return {"value_store_hash": _hash("c"), "value_records": [{"_value": "123.45"}]}
+
+    monkeypatch.setattr(
+        authority_service.layer3_sec_xbrl_sidecar,
+        "read_sec_edgar_arelle_resolved_fact_authority_sidecar_receipt",
+        read_receipt,
+    )
+    monkeypatch.setattr(
+        authority_service.layer3_sec_xbrl_sidecar,
+        "read_sec_edgar_arelle_resolved_fact_authority_internal_value_store",
+        read_value_store,
+    )
+
+    response = authority_service._resolve_sidecar_authority(_hash("b"), _hash("c"))
+
+    assert calls == {"receipt": True, "value_store": True}
+    assert response["sidecar_receipt_hash"] == _hash("b")
+    assert response["value_store_hash"] == _hash("c")
+    assert "sidecar_receipt_id" not in response
+    assert "_value" not in json.dumps(response)
 
 
 def _workflow_snapshot(row: L3SecXbrlOperatorReviewWorkflow) -> dict[str, Any]:
@@ -1532,6 +1627,172 @@ def test_operator_review_decision_status_rejects_invalid_notes_hash(db_session) 
     assert exc.value.code == "sec_xbrl_operator_review_decision_status_notes_hash_invalid"
 
 
+def test_value_reveal_authority_prepares_hash_only_receipt(db_session, monkeypatch) -> None:
+    monkeypatch.setattr(authority_service, "_resolve_sidecar_authority", lambda *_args: _sidecar_authority())
+    decision = _record_decision(db_session, request_id="authority-decision-source")
+
+    response = authority_service.prepare_value_reveal_authority_receipt(
+        db_session,
+        client_request_id="authority-prepare-1",
+        sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
+        decision_basis_hash=decision["decision_basis_hash"],
+    )
+
+    assert response["schema_id"] == authority_service.AUTHORITY_SCHEMA_ID
+    assert response["authority_mode"] == authority_service.AUTHORITY_MODE
+    assert response["eligible_for_explicit_value_reveal"] is True
+    assert response["next_allowed_actions"] == [authority_service.NEXT_ALLOWED_ACTION]
+    assert response["sidecar_receipt_id_hash"] == _hash("d")
+    assert "sidecar_receipt_id" not in response
+    assert response["value_reveal_performed"] is False
+    assert response["runtime_default_enabled"] is False
+    assert response["source_acquisition_performed"] is False
+    assert response["arelle_invoked"] is False
+    assert response["rendered_ui_enabled"] is False
+    assert response["negative_invariants"]["raw_values_persisted"] is False
+
+    row = db_session.query(L3SecXbrlValueRevealAuthorityReceipt).one()
+    assert row.authority_basis_hash == response["authority_basis_hash"]
+    assert row.sidecar_receipt_id_hash == _hash("d")
+    assert row.sidecar_receipt_hash == _hash("b")
+    assert row.value_store_hash == _hash("c")
+    assert row.authority_summary_json["raw_sidecar_receipt_id_persisted"] is False
+
+
+def test_value_reveal_authority_replays_same_authority_basis(db_session, monkeypatch) -> None:
+    monkeypatch.setattr(authority_service, "_resolve_sidecar_authority", lambda *_args: _sidecar_authority())
+    decision = _record_decision(db_session, request_id="authority-replay-decision-source")
+
+    first = authority_service.prepare_value_reveal_authority_receipt(
+        db_session,
+        client_request_id="authority-replay-1",
+        sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
+        decision_basis_hash=decision["decision_basis_hash"],
+    )
+    second = authority_service.prepare_value_reveal_authority_receipt(
+        db_session,
+        client_request_id="authority-replay-2",
+        sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
+        decision_basis_hash=decision["decision_basis_hash"],
+    )
+
+    assert second["idempotent_replay"] is True
+    assert second["sec_xbrl_value_reveal_authority_receipt_id"] == first["sec_xbrl_value_reveal_authority_receipt_id"]
+    assert db_session.query(L3SecXbrlValueRevealAuthorityReceipt).count() == 1
+
+
+def test_value_reveal_authority_rejects_non_approved_decision(db_session, monkeypatch) -> None:
+    monkeypatch.setattr(authority_service, "_resolve_sidecar_authority", lambda *_args: _sidecar_authority())
+    decision = _record_decision(
+        db_session,
+        request_id="authority-blocked-decision-source",
+        review_decision="blocked",
+        decision_reason_code="operator_blocked",
+        decision_notes="bounded blocked reason",
+    )
+
+    with pytest.raises(authority_service.SecXbrlValueRevealAuthorityError) as exc:
+        authority_service.prepare_value_reveal_authority_receipt(
+            db_session,
+            client_request_id="authority-blocked-decision",
+            sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
+            decision_basis_hash=decision["decision_basis_hash"],
+        )
+
+    assert exc.value.code == "sec_xbrl_value_reveal_authority_decision_not_approved"
+    assert db_session.query(L3SecXbrlValueRevealAuthorityReceipt).count() == 0
+
+
+def test_value_reveal_authority_rejects_missing_dataset_version(db_session, monkeypatch) -> None:
+    monkeypatch.setattr(authority_service, "_resolve_sidecar_authority", lambda *_args: _sidecar_authority())
+    decision = _record_decision(db_session, request_id="authority-missing-dataset-source")
+    db_session.query(DatasetVersion).delete()
+    db_session.commit()
+
+    with pytest.raises(authority_service.SecXbrlValueRevealAuthorityError) as exc:
+        authority_service.prepare_value_reveal_authority_receipt(
+            db_session,
+            client_request_id="authority-missing-dataset",
+            sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
+            decision_basis_hash=decision["decision_basis_hash"],
+        )
+
+    assert exc.value.code == "sec_xbrl_value_reveal_authority_dataset_version_missing"
+    assert db_session.query(L3SecXbrlValueRevealAuthorityReceipt).count() == 0
+
+
+def test_value_reveal_authority_rejects_missing_sidecar_without_partial_row(db_session, monkeypatch) -> None:
+    def missing_sidecar(*_args):
+        raise authority_service.SecXbrlValueRevealAuthorityError(
+            "sec_xbrl_value_reveal_authority_sidecar_missing",
+            "missing sidecar",
+        )
+
+    monkeypatch.setattr(authority_service, "_resolve_sidecar_authority", missing_sidecar)
+    decision = _record_decision(db_session, request_id="authority-missing-sidecar-source")
+
+    with pytest.raises(authority_service.SecXbrlValueRevealAuthorityError) as exc:
+        authority_service.prepare_value_reveal_authority_receipt(
+            db_session,
+            client_request_id="authority-missing-sidecar",
+            sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
+            decision_basis_hash=decision["decision_basis_hash"],
+        )
+
+    assert exc.value.code == "sec_xbrl_value_reveal_authority_sidecar_missing"
+    assert db_session.query(L3SecXbrlValueRevealAuthorityReceipt).count() == 0
+
+
+def test_value_reveal_authority_rejects_raw_attestation(db_session, monkeypatch) -> None:
+    monkeypatch.setattr(authority_service, "_resolve_sidecar_authority", lambda *_args: _sidecar_authority())
+    decision = _record_decision(db_session, request_id="authority-raw-attestation-source")
+
+    with pytest.raises(authority_service.SecXbrlValueRevealAuthorityError) as exc:
+        authority_service.prepare_value_reveal_authority_receipt(
+            db_session,
+            client_request_id="authority-raw-attestation",
+            sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
+            decision_basis_hash=decision["decision_basis_hash"],
+            operator_attestation="operator@example.com approved",
+        )
+
+    assert exc.value.code == "sec_xbrl_value_reveal_authority_raw_attestation_not_admitted"
+    assert db_session.query(L3SecXbrlValueRevealAuthorityReceipt).count() == 0
+
+
+def test_value_reveal_authority_api_records_hash_only_receipt(api_client, monkeypatch) -> None:
+    monkeypatch.setattr(authority_service, "_resolve_sidecar_authority", lambda *_args: _sidecar_authority())
+    client, Session = api_client
+    with Session() as db:
+        decision = _record_decision(db, request_id="authority-api-decision-source")
+
+    response = client.post(AUTHORITY_PREPARE_ROUTE, json=_authority_payload(decision))
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["schema_id"] == authority_service.AUTHORITY_SCHEMA_ID
+    assert body["sidecar_receipt_id_hash"] == _hash("d")
+    assert "sidecar_receipt_id" not in body
+    assert body["value_reveal_performed"] is False
+    assert body["production_readiness_claimed"] is False
+
+
+def test_value_reveal_authority_api_rejects_extra_fields(api_client) -> None:
+    client, Session = api_client
+    with Session() as db:
+        decision = _record_decision(db, request_id="authority-api-extra-source")
+
+    response = client.post(
+        AUTHORITY_PREPARE_ROUTE,
+        json=_authority_payload(decision, sidecar_receipt_hash=_hash("b")),
+    )
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["error_code"] == "sec_xbrl_value_reveal_authority_request_fields_not_admitted"
+    assert body["blocked_fields"] == ["sidecar_receipt_hash"]
+
+
 def test_operator_review_workflow_tables_are_registered_in_metadata() -> None:
     engine = create_engine("sqlite:///:memory:", future=True)
     Base.metadata.create_all(engine)
@@ -1551,6 +1812,15 @@ def test_operator_review_workflow_tables_are_registered_in_metadata() -> None:
         assert "sec_xbrl_operator_review_workflow_id" in decision_columns
         assert "decision_basis_hash" in decision_columns
         assert "decision_notes_hash" in decision_columns
+        assert "l3_sec_xbrl_value_reveal_authority_receipt" in inspector.get_table_names()
+        authority_columns = {
+            column["name"]
+            for column in inspector.get_columns("l3_sec_xbrl_value_reveal_authority_receipt")
+        }
+        assert "authority_basis_hash" in authority_columns
+        assert "dataset_version_hash" in authority_columns
+        assert "sidecar_receipt_id_hash" in authority_columns
+        assert "value_store_hash" in authority_columns
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()
@@ -1589,6 +1859,25 @@ def test_operator_review_decision_migration_declares_additive_table() -> None:
     source = DECISION_MIGRATION_PATH.read_text(encoding="utf-8")
     assert "l3_sec_xbrl_operator_review_decision" in source
     assert "drop_table_idempotent(\"l3_sec_xbrl_operator_review_decision\")" in source
+
+
+def test_value_reveal_authority_migration_declares_additive_table() -> None:
+    backend_root = str(ROOT / "backend")
+    if backend_root not in sys.path:
+        sys.path.insert(0, backend_root)
+    spec = importlib.util.spec_from_file_location(
+        "migration_0044_sec_xbrl_value_reveal_authority",
+        AUTHORITY_MIGRATION_PATH,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert module.revision == "0044_layer3_sec_xbrl_value_reveal_authority_receipt"
+    assert module.down_revision == "0043_layer3_sec_xbrl_statement_packet_row_period_unique"
+    source = AUTHORITY_MIGRATION_PATH.read_text(encoding="utf-8")
+    assert "l3_sec_xbrl_value_reveal_authority_receipt" in source
+    assert "drop_table_idempotent(TABLE_NAME)" in source
 
 
 def _direct_packet_set(
