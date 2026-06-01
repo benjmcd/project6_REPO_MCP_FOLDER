@@ -54,6 +54,20 @@ ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
 WINDOWS_ABS_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
 RAW_PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
+ORGANIZATION_CONTRACT_BOOL_FIELDS = {
+    "contract_passed",
+    "contract_b_authoritative_organization",
+    "contract_every_fact_id_bound",
+    "contract_derived_inputs_bound_and_corroborated",
+}
+ORGANIZATION_CONTRACT_COUNT_FIELDS = {
+    "normalized_fact_count",
+    "organized_count",
+    "unjoined_count",
+    "a_divergent_count",
+    "a_role_unknown_count",
+}
+ORGANIZATION_CONTRACT_KEYS = ORGANIZATION_CONTRACT_BOOL_FIELDS | ORGANIZATION_CONTRACT_COUNT_FIELDS
 
 
 class SecXbrlStatementPacketPersistenceError(ValueError):
@@ -449,7 +463,25 @@ def _public_organization_contract(value: Any) -> dict[str, Any]:
             "Statement packet organization contract must be an object.",
         )
     _reject_raw_or_local_authority(value)
-    return json_clone(dict(value))
+    _reject_unadmitted_keys(
+        value,
+        admitted=ORGANIZATION_CONTRACT_KEYS,
+        error_code="sec_xbrl_statement_packet_persistence_organization_contract_invalid",
+        message="Statement packet organization contract only admits public contract fields.",
+    )
+    public = {
+        key: _required_bool(value[key], key)
+        for key in ORGANIZATION_CONTRACT_BOOL_FIELDS
+        if key in value
+    }
+    public.update(
+        {
+            key: _non_negative_int(value[key], key)
+            for key in ORGANIZATION_CONTRACT_COUNT_FIELDS
+            if key in value
+        }
+    )
+    return public
 
 
 def _packet_summary(*, statements: Sequence[Mapping[str, Any]], rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
@@ -581,6 +613,16 @@ def _required_true(value: Any, field: str) -> bool:
     return True
 
 
+def _required_bool(value: Any, field: str) -> bool:
+    if not isinstance(value, bool):
+        raise SecXbrlStatementPacketPersistenceError(
+            "sec_xbrl_statement_packet_persistence_boolean_required",
+            f"SEC XBRL statement packet persistence requires boolean {field}.",
+            details={"field": field},
+        )
+    return value
+
+
 def _safe_public_ref(value: Any, field: str) -> str:
     text = _required_text(value, field)
     _reject_raw_or_local_authority(text)
@@ -601,6 +643,22 @@ def _public_concept_list(value: Any) -> list[str]:
         _reject_raw_or_local_authority(concept)
         concepts.append(concept)
     return concepts
+
+
+def _reject_unadmitted_keys(
+    value: Mapping[str, Any],
+    *,
+    admitted: set[str],
+    error_code: str,
+    message: str,
+) -> None:
+    unknown = sorted(str(key) for key in value if str(key) not in admitted)
+    if unknown:
+        raise SecXbrlStatementPacketPersistenceError(
+            error_code,
+            message,
+            details={"fields": unknown},
+        )
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:

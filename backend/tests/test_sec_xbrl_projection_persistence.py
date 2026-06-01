@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 from sqlalchemy import create_engine, inspect
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from app.db.session import Base
@@ -16,6 +17,9 @@ from app.services import layer3_sec_xbrl_projection_persistence as persistence
 
 ROOT = Path(__file__).resolve().parents[2]
 MIGRATION_PATH = ROOT / "backend" / "alembic" / "versions" / "0038_layer3_sec_xbrl_projection_persistence.py"
+REDACTION_CONSTRAINT_MIGRATION_PATH = (
+    ROOT / "backend" / "alembic" / "versions" / "0041_layer3_sec_xbrl_redaction_constraints.py"
+)
 
 
 @pytest.fixture()
@@ -181,6 +185,18 @@ def test_sec_xbrl_projection_persistence_rejects_raw_identity_and_paths(db_sessi
     assert db_session.query(L3SecXbrlProjectionSet).count() == 0
 
 
+def test_sec_xbrl_projection_persistence_rejects_unadmitted_sector_family_numeric_alias(db_session) -> None:
+    projection = _projection()
+    projection["sector_family_presence"]["mean"] = "12345.67"
+
+    with pytest.raises(persistence.SecXbrlProjectionPersistenceError) as exc:
+        _materialize(db_session, projection)
+
+    assert exc.value.code == "sec_xbrl_projection_persistence_sector_family_presence_invalid"
+    assert exc.value.details == {"fields": ["mean"]}
+    assert db_session.query(L3SecXbrlProjectionSet).count() == 0
+
+
 def test_sec_xbrl_projection_persistence_rejects_raw_issuer_identity_keys(db_session) -> None:
     row = _row("CashAndDueFromBanks", "balance")
     row["Company_Name"] = "Example Bank Corp"
@@ -224,6 +240,17 @@ def test_sec_xbrl_projection_persistence_leaves_no_partial_rows_on_late_invalid_
     assert db_session.query(L3SecXbrlProjectionFact).count() == 0
 
 
+def test_sec_xbrl_projection_fact_value_redacted_is_db_constrained(db_session) -> None:
+    _materialize(db_session)
+    fact = db_session.query(L3SecXbrlProjectionFact).first()
+    assert fact is not None
+
+    fact.value_redacted = False
+    with pytest.raises(IntegrityError):
+        db_session.commit()
+    db_session.rollback()
+
+
 def test_sec_xbrl_projection_persistence_tables_are_registered_in_metadata() -> None:
     engine = create_engine("sqlite:///:memory:", future=True)
     Base.metadata.create_all(engine)
@@ -234,6 +261,10 @@ def test_sec_xbrl_projection_persistence_tables_are_registered_in_metadata() -> 
         fact_columns = {column["name"] for column in inspector.get_columns("l3_sec_xbrl_projection_fact")}
         assert "value_redacted" in fact_columns
         assert "resolved_fact_provenance_present" in fact_columns
+        fact_constraints = {
+            constraint["name"] for constraint in inspector.get_check_constraints("l3_sec_xbrl_projection_fact")
+        }
+        assert "ck_l3_sec_xbrl_projection_fact_value_redacted" in fact_constraints
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()
@@ -254,3 +285,22 @@ def test_sec_xbrl_projection_persistence_migration_declares_additive_tables() ->
     assert "l3_sec_xbrl_projection_set" in source
     assert "l3_sec_xbrl_projection_fact" in source
     assert "drop_table_idempotent(\"l3_sec_xbrl_projection_fact\")" in source
+
+
+def test_sec_xbrl_projection_redaction_constraint_migration_declares_check() -> None:
+    backend_root = str(ROOT / "backend")
+    if backend_root not in sys.path:
+        sys.path.insert(0, backend_root)
+    spec = importlib.util.spec_from_file_location(
+        "migration_0041_sec_xbrl_redaction_constraints",
+        REDACTION_CONSTRAINT_MIGRATION_PATH,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert module.revision == "0041_layer3_sec_xbrl_redaction_constraints"
+    assert module.down_revision == "0040_layer3_sec_xbrl_operator_review_workflow"
+    source = REDACTION_CONSTRAINT_MIGRATION_PATH.read_text(encoding="utf-8")
+    assert "ck_l3_sec_xbrl_projection_fact_value_redacted" in source
+    assert "ck_l3_sec_xbrl_statement_packet_row_value_redacted" in source

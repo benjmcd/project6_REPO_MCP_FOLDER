@@ -48,6 +48,23 @@ SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
 WINDOWS_ABS_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
 RAW_PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
+SECTOR_FAMILY_PRESENCE_KEYS = {
+    "sector_class",
+    "present_family_ids",
+    "present_family_count",
+    "presence_conditioned",
+    "sic_used_as_gate",
+    "activation_rule",
+    "reported_family_evidence",
+    "active_families",
+}
+SECTOR_FAMILY_EVIDENCE_KEYS = {
+    "family_id",
+    "active",
+    "activation_anchor_concepts",
+    "supporting_family_concepts",
+    "supporting_only",
+}
 
 
 class SecXbrlProjectionPersistenceError(ValueError):
@@ -345,12 +362,78 @@ def _period_refs(periods: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
 def _sector_family_presence(*, projection: Mapping[str, Any], periods: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     presence = projection.get("sector_family_presence")
     if isinstance(presence, Mapping):
-        return json_clone(dict(presence))
+        return _public_sector_family_presence(presence)
     for period in periods:
         period_projection = period.get("projection")
         if isinstance(period_projection, Mapping) and isinstance(period_projection.get("sector_family_presence"), Mapping):
-            return json_clone(dict(period_projection["sector_family_presence"]))
+            return _public_sector_family_presence(period_projection["sector_family_presence"])
     return {}
+
+
+def _public_sector_family_presence(value: Mapping[str, Any]) -> dict[str, Any]:
+    _reject_raw_or_local_authority(value)
+    _reject_unadmitted_keys(
+        value,
+        admitted=SECTOR_FAMILY_PRESENCE_KEYS,
+        error_code="sec_xbrl_projection_persistence_sector_family_presence_invalid",
+        message="SEC XBRL projection persistence only admits public sector-family presence fields.",
+    )
+    present_family_ids = _public_text_list(value.get("present_family_ids") or value.get("active_families"))
+    present_family_count = _non_negative_int(
+        value.get("present_family_count") if value.get("present_family_count") is not None else len(present_family_ids),
+        "present_family_count",
+    )
+    if present_family_count != len(present_family_ids):
+        raise SecXbrlProjectionPersistenceError(
+            "sec_xbrl_projection_persistence_sector_family_presence_invalid",
+            "SEC XBRL sector-family presence count must match public family ids.",
+            details={"field": "present_family_count"},
+        )
+    return {
+        "sector_class": _optional_public_text(value.get("sector_class")) or "unknown",
+        "present_family_ids": present_family_ids,
+        "present_family_count": present_family_count,
+        "presence_conditioned": _optional_bool(value.get("presence_conditioned"), default=True),
+        "sic_used_as_gate": _optional_bool(value.get("sic_used_as_gate"), default=False),
+        "activation_rule": _optional_public_text(value.get("activation_rule")) or "",
+        "reported_family_evidence": _public_sector_family_evidence(value.get("reported_family_evidence")),
+    }
+
+
+def _public_sector_family_evidence(value: Any) -> list[dict[str, Any]]:
+    if value is None:
+        return []
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        raise SecXbrlProjectionPersistenceError(
+            "sec_xbrl_projection_persistence_sector_family_presence_invalid",
+            "SEC XBRL sector-family evidence must be a list of public evidence objects.",
+            details={"field": "reported_family_evidence"},
+        )
+    evidence: list[dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, Mapping):
+            raise SecXbrlProjectionPersistenceError(
+                "sec_xbrl_projection_persistence_sector_family_presence_invalid",
+                "SEC XBRL sector-family evidence must be a list of public evidence objects.",
+                details={"field": "reported_family_evidence"},
+            )
+        _reject_raw_or_local_authority(item)
+        _reject_unadmitted_keys(
+            item,
+            admitted=SECTOR_FAMILY_EVIDENCE_KEYS,
+            error_code="sec_xbrl_projection_persistence_sector_family_presence_invalid",
+            message="SEC XBRL sector-family evidence only admits public evidence fields.",
+        )
+        evidence.append(
+            {
+                "family_id": _optional_public_text(item.get("family_id")) or "",
+                "active": _optional_bool(item.get("active"), default=False),
+                "activation_anchor_concepts": _public_text_list(item.get("activation_anchor_concepts")),
+                "supporting_family_concepts": _public_text_list(item.get("supporting_family_concepts")),
+                "supporting_only": _optional_bool(item.get("supporting_only"), default=False),
+            }
+        )
+    return evidence
 
 
 def _single_required_hash(facts: Sequence[Mapping[str, Any]], field: str) -> str:
@@ -448,6 +531,24 @@ def _positive_int(value: Any, field: str) -> int:
     return number
 
 
+def _non_negative_int(value: Any, field: str) -> int:
+    try:
+        number = int(value)
+    except (TypeError, ValueError) as exc:
+        raise SecXbrlProjectionPersistenceError(
+            "sec_xbrl_projection_persistence_integer_invalid",
+            f"SEC XBRL projection persistence requires an integer {field}.",
+            details={"field": field},
+        ) from exc
+    if number < 0:
+        raise SecXbrlProjectionPersistenceError(
+            "sec_xbrl_projection_persistence_integer_invalid",
+            f"SEC XBRL projection persistence requires a non-negative {field}.",
+            details={"field": field},
+        )
+    return number
+
+
 def _required_true(value: Any, field: str) -> bool:
     if value is not True:
         raise SecXbrlProjectionPersistenceError(
@@ -466,6 +567,38 @@ def _required_bool(value: Any, field: str) -> bool:
             details={"field": field},
         )
     return value
+
+
+def _optional_bool(value: Any, *, default: bool) -> bool:
+    if value is None:
+        return default
+    return _required_bool(value, "sector_family_presence")
+
+
+def _optional_public_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    _reject_raw_or_local_authority(text)
+    return text
+
+
+def _public_text_list(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        raise SecXbrlProjectionPersistenceError(
+            "sec_xbrl_projection_persistence_public_text_list_invalid",
+            "SEC XBRL projection persistence requires a list of public text values.",
+        )
+    items = []
+    for item in value:
+        text = _required_text(item, "public_text")
+        _reject_raw_or_local_authority(text)
+        items.append(text)
+    return items
 
 
 def _safe_public_ref(value: Any, field: str) -> str:
@@ -488,6 +621,22 @@ def _public_concept_list(value: Any) -> list[str]:
         _reject_raw_or_local_authority(concept)
         concepts.append(concept)
     return concepts
+
+
+def _reject_unadmitted_keys(
+    value: Mapping[str, Any],
+    *,
+    admitted: set[str],
+    error_code: str,
+    message: str,
+) -> None:
+    unknown = sorted(str(key) for key in value if str(key) not in admitted)
+    if unknown:
+        raise SecXbrlProjectionPersistenceError(
+            error_code,
+            message,
+            details={"fields": unknown},
+        )
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:
