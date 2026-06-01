@@ -392,6 +392,25 @@ const SEC_XBRL_OPERATOR_REVIEW_DECISION_BLOCKED_RENDERED_CONTROLS = [
     'edit_statement_packet',
     'change_runtime_default',
 ];
+const SEC_XBRL_CONTROLLED_VALUE_REVEAL_RENDERED_MODE = 'rendered_sec_xbrl_controlled_value_reveal_ui_control';
+const SEC_XBRL_VALUE_REVEAL_AUTHORITY_MODE = 'sec_xbrl_value_reveal_authority_receipt_v1';
+const SEC_XBRL_VALUE_REVEAL_AUTHORITY_OPERATOR_DECISION = 'prepare_sec_xbrl_value_reveal_authority';
+const SEC_XBRL_VALUE_REVEAL_AUTHORITY_ENDPOINT = '/sec-xbrl/value-reveal/authority/prepare';
+const SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_MODE = 'sec_xbrl_controlled_value_reveal_submit_v1';
+const SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_OPERATOR_DECISION = 'submit_explicit_sec_xbrl_value_reveal_from_authority_receipt';
+const SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENDPOINT = '/sec-xbrl/value-reveal/submit';
+const SEC_XBRL_CONTROLLED_VALUE_REVEAL_STATUS_ENDPOINT_PREFIX = '/sec-xbrl/value-reveal/submit/status';
+const SEC_XBRL_CONTROLLED_VALUE_REVEAL_BLOCKED_RENDERED_CONTROLS = [
+    'batch_value_reveal',
+    'paginated_value_reveal',
+    'export_statement_packet',
+    'deliver_statement_packet',
+    'refresh_from_sec_source',
+    'invoke_arelle',
+    'edit_statement_packet',
+    'change_runtime_default',
+    'claim_production_readiness',
+];
 const CANDIDATE_B_CLOSURE_EVIDENCE_RENDERED_MODE = 'rendered_candidate_b_default_promotion_closure_evidence_control';
 const CANDIDATE_B_CLOSURE_EVIDENCE_MODE = 'candidate_b_default_promotion_closure_evidence_v1';
 const CANDIDATE_B_CLOSURE_EVIDENCE_OPERATOR_DECISION = 'record_candidate_b_default_promotion_closure_evidence';
@@ -845,6 +864,29 @@ const State = {
         decisionId: '',
         decisionBasisHash: '',
     },
+    secXbrlValueRevealAuthorityPrepare: null,
+    secXbrlValueRevealAuthorityPrepareError: null,
+    secXbrlValueRevealAuthorityPreparePending: false,
+    secXbrlValueRevealAuthorityPrepareInput: {
+        decisionId: '',
+        decisionBasisHash: '',
+        operatorAttestation: '',
+    },
+    secXbrlControlledValueRevealSubmit: null,
+    secXbrlControlledValueRevealSubmitError: null,
+    secXbrlControlledValueRevealSubmitPending: false,
+    secXbrlControlledValueRevealSubmitInput: {
+        authorityReceiptId: '',
+        authorityBasisHash: '',
+        operatorRevealConfirmation: false,
+        maxRecords: '',
+    },
+    secXbrlControlledValueRevealStatus: null,
+    secXbrlControlledValueRevealStatusError: null,
+    secXbrlControlledValueRevealStatusPending: false,
+    secXbrlControlledValueRevealStatusInput: {
+        submitReceiptId: '',
+    },
     candidateBFullCorpusOperatorWorkflowStatus: null,
     candidateBFullCorpusOperatorWorkflowStatusError: null,
     candidateBFullCorpusOperatorWorkflowStatusPending: false,
@@ -1104,6 +1146,7 @@ const elements = {
     secEdgarDurableDeliveryArchiveStatusPanel: document.getElementById('sec-edgar-durable-delivery-archive-status-panel'),
     secXbrlOperatorReviewWorkflowStatusPanel: document.getElementById('sec-xbrl-operator-review-workflow-status-panel'),
     secXbrlOperatorReviewDecisionSubmitPanel: document.getElementById('sec-xbrl-operator-review-decision-submit-panel'),
+    secXbrlControlledValueRevealPanel: document.getElementById('sec-xbrl-controlled-value-reveal-panel'),
     mockupActivationReadinessPanel: document.getElementById('mockup-activation-readiness-panel'),
     layer3E2EGovernanceLifecycleDashboardPanel: document.getElementById('layer3-e2e-governance-lifecycle-dashboard-panel'),
     sublayerMapPanel: document.getElementById('sublayer-map-panel'),
@@ -9165,6 +9208,73 @@ function secXbrlOperatorReviewDecisionStatusInputValues() {
     };
 }
 
+function secXbrlValueRevealAuthorityPrepareInputValues() {
+    const stored = State.secXbrlValueRevealAuthorityPrepareInput;
+    const decisionStatus = State.secXbrlOperatorReviewDecisionStatus || {};
+    const decisionSubmit = State.secXbrlOperatorReviewDecisionSubmit || {};
+    const decisionIdInput = document.getElementById('sec-xbrl-value-reveal-authority-decision-id');
+    const decisionBasisHashInput = document.getElementById('sec-xbrl-value-reveal-authority-decision-basis-hash');
+    const attestationInput = document.getElementById('sec-xbrl-value-reveal-authority-attestation');
+    return {
+        decisionId: formInputValueWithEmptyFallback(
+            decisionIdInput,
+            Boolean(decisionIdInput?.value.trim()),
+            decisionStatus.sec_xbrl_operator_review_decision_id,
+            decisionSubmit.sec_xbrl_operator_review_decision_id,
+            stored.decisionId,
+        ),
+        decisionBasisHash: formInputValueWithEmptyFallback(
+            decisionBasisHashInput,
+            Boolean(decisionBasisHashInput?.value.trim()),
+            decisionStatus.decision_basis_hash,
+            decisionSubmit.decision_basis_hash,
+            stored.decisionBasisHash,
+        ),
+        operatorAttestation: formInputValue(attestationInput, stored.operatorAttestation),
+    };
+}
+
+function secXbrlControlledValueRevealSubmitInputValues() {
+    const stored = State.secXbrlControlledValueRevealSubmitInput;
+    const authority = State.secXbrlValueRevealAuthorityPrepare || {};
+    const authorityReceiptIdInput = document.getElementById('sec-xbrl-controlled-value-reveal-authority-receipt-id');
+    const authorityBasisHashInput = document.getElementById('sec-xbrl-controlled-value-reveal-authority-basis-hash');
+    const confirmationInput = document.getElementById('sec-xbrl-controlled-value-reveal-confirmation');
+    const maxRecordsInput = document.getElementById('sec-xbrl-controlled-value-reveal-max-records');
+    return {
+        authorityReceiptId: formInputValueWithEmptyFallback(
+            authorityReceiptIdInput,
+            Boolean(authorityReceiptIdInput?.value.trim()),
+            authority.sec_xbrl_value_reveal_authority_receipt_id,
+            stored.authorityReceiptId,
+        ),
+        authorityBasisHash: formInputValueWithEmptyFallback(
+            authorityBasisHashInput,
+            Boolean(authorityBasisHashInput?.value.trim()),
+            authority.authority_basis_hash,
+            stored.authorityBasisHash,
+        ),
+        operatorRevealConfirmation: confirmationInput
+            ? Boolean(confirmationInput.checked)
+            : Boolean(stored.operatorRevealConfirmation),
+        maxRecords: formInputValue(maxRecordsInput, stored.maxRecords),
+    };
+}
+
+function secXbrlControlledValueRevealStatusInputValues() {
+    const stored = State.secXbrlControlledValueRevealStatusInput;
+    const submit = State.secXbrlControlledValueRevealSubmit || {};
+    const submitReceiptIdInput = document.getElementById('sec-xbrl-controlled-value-reveal-status-receipt-id');
+    return {
+        submitReceiptId: formInputValueWithEmptyFallback(
+            submitReceiptIdInput,
+            Boolean(submitReceiptIdInput?.value.trim()),
+            submit.sec_xbrl_controlled_value_reveal_submit_receipt_id,
+            stored.submitReceiptId,
+        ),
+    };
+}
+
 function candidateBFullCorpusOperatorWorkflowRunInputValues() {
     const lifecycleInput = document.getElementById('candidate-b-full-corpus-workflow-run-lifecycle-receipt-id');
     const baselineInput = document.getElementById('candidate-b-full-corpus-workflow-run-baseline-run-id');
@@ -10557,6 +10667,72 @@ function secXbrlOperatorReviewDecisionStatusPayload() {
     return payload;
 }
 
+function secXbrlValueRevealAuthorityPreparePayload() {
+    const values = secXbrlValueRevealAuthorityPrepareInputValues();
+    State.secXbrlValueRevealAuthorityPrepareInput = values;
+    if (!values.decisionId || !values.decisionBasisHash) {
+        throw new Error('sec_xbrl_value_reveal_authority_decision_required');
+    }
+    if (!/^[0-9a-fA-F]{64}$/.test(values.decisionBasisHash)) {
+        throw new Error('sec_xbrl_value_reveal_authority_decision_basis_hash_must_be_sha256');
+    }
+    if (secXbrlValueRevealAttestationLooksRaw(values.operatorAttestation)) {
+        throw new Error('sec_xbrl_value_reveal_authority_raw_attestation_not_admitted');
+    }
+    const payload = {
+        client_request_id: requestId(),
+        authority_mode: SEC_XBRL_VALUE_REVEAL_AUTHORITY_MODE,
+        operator_decision: SEC_XBRL_VALUE_REVEAL_AUTHORITY_OPERATOR_DECISION,
+        sec_xbrl_operator_review_decision_id: values.decisionId,
+        decision_basis_hash: values.decisionBasisHash,
+    };
+    if (values.operatorAttestation) {
+        payload.operator_attestation = values.operatorAttestation;
+    }
+    return payload;
+}
+
+function secXbrlControlledValueRevealSubmitPayload() {
+    const values = secXbrlControlledValueRevealSubmitInputValues();
+    State.secXbrlControlledValueRevealSubmitInput = values;
+    if (!values.authorityReceiptId || !values.authorityBasisHash) {
+        throw new Error('sec_xbrl_controlled_value_reveal_authority_required');
+    }
+    if (!/^[0-9a-fA-F]{64}$/.test(values.authorityBasisHash)) {
+        throw new Error('sec_xbrl_controlled_value_reveal_authority_basis_hash_must_be_sha256');
+    }
+    if (!values.operatorRevealConfirmation) {
+        throw new Error('sec_xbrl_controlled_value_reveal_confirmation_required');
+    }
+    if (values.maxRecords && !/^[1-9]\d{0,2}$|^1000$/.test(values.maxRecords)) {
+        throw new Error('sec_xbrl_controlled_value_reveal_max_records_not_admitted');
+    }
+    const payload = {
+        client_request_id: requestId(),
+        submit_mode: SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_MODE,
+        operator_decision: SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_OPERATOR_DECISION,
+        sec_xbrl_value_reveal_authority_receipt_id: values.authorityReceiptId,
+        authority_basis_hash: values.authorityBasisHash,
+        operator_reveal_confirmation: true,
+    };
+    if (values.maxRecords) {
+        payload.max_records = Number(values.maxRecords);
+    }
+    return payload;
+}
+
+function secXbrlControlledValueRevealStatusPath() {
+    const values = secXbrlControlledValueRevealStatusInputValues();
+    State.secXbrlControlledValueRevealStatusInput = values;
+    if (!values.submitReceiptId) {
+        throw new Error('sec_xbrl_controlled_value_reveal_status_receipt_required');
+    }
+    if (/[\\/\s]/.test(values.submitReceiptId)) {
+        throw new Error('sec_xbrl_controlled_value_reveal_status_receipt_id_invalid');
+    }
+    return `${SEC_XBRL_CONTROLLED_VALUE_REVEAL_STATUS_ENDPOINT_PREFIX}/${encodeURIComponent(values.submitReceiptId)}`;
+}
+
 function candidateBFullCorpusOperatorWorkflowRunPayload() {
     const values = candidateBFullCorpusOperatorWorkflowRunInputValues();
     State.candidateBFullCorpusOperatorWorkflowRunInput = values;
@@ -11156,12 +11332,62 @@ function canInspectSecXbrlOperatorReviewDecisionStatus() {
     );
 }
 
+function secXbrlValueRevealAttestationLooksRaw(value) {
+    const text = String(value || '').trim();
+    return Boolean(
+        /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(text)
+        || /\b\d{10}-\d{2}-\d{6}\b/.test(text)
+        || /\b\d{4}-\d{2}-\d{2}\b/.test(text)
+        || /\b\d+\.\d+\b/.test(text)
+        || /https?:\/\/(?:www\.)?sec\.gov/i.test(text)
+        || /\b[A-Za-z]:[\\/]/.test(text)
+        || /file:\/\//i.test(text)
+    );
+}
+
+function canPrepareSecXbrlValueRevealAuthority() {
+    const values = secXbrlValueRevealAuthorityPrepareInputValues();
+    return Boolean(
+        values.decisionId
+        && /^[0-9a-fA-F]{64}$/.test(values.decisionBasisHash)
+        && !State.secXbrlValueRevealAuthorityPreparePending
+    );
+}
+
+function canSubmitSecXbrlControlledValueReveal() {
+    const values = secXbrlControlledValueRevealSubmitInputValues();
+    return Boolean(
+        values.authorityReceiptId
+        && /^[0-9a-fA-F]{64}$/.test(values.authorityBasisHash)
+        && values.operatorRevealConfirmation
+        && (!values.maxRecords || /^[1-9]\d{0,2}$|^1000$/.test(values.maxRecords))
+        && !State.secXbrlControlledValueRevealSubmitPending
+    );
+}
+
+function canInspectSecXbrlControlledValueRevealStatus() {
+    const values = secXbrlControlledValueRevealStatusInputValues();
+    return Boolean(
+        values.submitReceiptId
+        && !/[\\/\s]/.test(values.submitReceiptId)
+        && !State.secXbrlControlledValueRevealStatusPending
+    );
+}
+
 function clearSecXbrlOperatorReviewDecisionNotesInput() {
     const notesInput = document.getElementById('sec-xbrl-operator-review-decision-notes');
     if (notesInput) {
         notesInput.value = '';
     }
     State.secXbrlOperatorReviewDecisionSubmitInput.decisionNotes = '';
+}
+
+function clearSecXbrlValueRevealAttestationInput() {
+    const attestationInput = document.getElementById('sec-xbrl-value-reveal-authority-attestation');
+    if (attestationInput) {
+        attestationInput.value = '';
+    }
+    State.secXbrlValueRevealAuthorityPrepareInput.operatorAttestation = '';
 }
 
 function markSecXbrlOperatorReviewDecisionAuthorityInputTouched(inputId) {
@@ -12104,6 +12330,57 @@ function secXbrlOperatorReviewDecisionStatusPanelState() {
         return { label: 'sec_xbrl_operator_review_decision_status_available', pill: 'ok' };
     }
     return { label: 'sec_xbrl_operator_review_decision_status_not_inspected', pill: 'preview' };
+}
+
+function secXbrlValueRevealAuthorityPreparePanelState() {
+    if (State.secXbrlValueRevealAuthorityPreparePending) {
+        return { label: 'sec_xbrl_value_reveal_authority_prepare_pending', pill: 'preview' };
+    }
+    if (State.secXbrlValueRevealAuthorityPrepareError) {
+        const detail = State.secXbrlValueRevealAuthorityPrepareError?.payload?.error || {};
+        return {
+            label: detail.code || 'sec_xbrl_value_reveal_authority_prepare_blocked',
+            pill: 'blocked',
+        };
+    }
+    if (State.secXbrlValueRevealAuthorityPrepare?.eligible_for_explicit_value_reveal === true) {
+        return { label: 'sec_xbrl_value_reveal_authority_ready', pill: 'ok' };
+    }
+    return { label: 'sec_xbrl_value_reveal_authority_not_prepared', pill: 'preview' };
+}
+
+function secXbrlControlledValueRevealSubmitPanelState() {
+    if (State.secXbrlControlledValueRevealSubmitPending) {
+        return { label: 'sec_xbrl_controlled_value_reveal_submit_pending', pill: 'preview' };
+    }
+    if (State.secXbrlControlledValueRevealSubmitError) {
+        const detail = State.secXbrlControlledValueRevealSubmitError?.payload?.error || {};
+        return {
+            label: detail.code || 'sec_xbrl_controlled_value_reveal_submit_blocked',
+            pill: 'blocked',
+        };
+    }
+    if (State.secXbrlControlledValueRevealSubmit?.transient_values_returned === true) {
+        return { label: 'sec_xbrl_controlled_value_reveal_values_returned', pill: 'ok' };
+    }
+    return { label: 'sec_xbrl_controlled_value_reveal_not_submitted', pill: 'preview' };
+}
+
+function secXbrlControlledValueRevealStatusPanelState() {
+    if (State.secXbrlControlledValueRevealStatusPending) {
+        return { label: 'sec_xbrl_controlled_value_reveal_status_pending', pill: 'preview' };
+    }
+    if (State.secXbrlControlledValueRevealStatusError) {
+        const detail = State.secXbrlControlledValueRevealStatusError?.payload?.error || {};
+        return {
+            label: detail.code || 'sec_xbrl_controlled_value_reveal_status_blocked',
+            pill: 'blocked',
+        };
+    }
+    if (State.secXbrlControlledValueRevealStatus?.status_surface_hash_count_only === true) {
+        return { label: 'sec_xbrl_controlled_value_reveal_status_available', pill: 'ok' };
+    }
+    return { label: 'sec_xbrl_controlled_value_reveal_status_not_inspected', pill: 'preview' };
 }
 
 function candidateBFullCorpusOperatorWorkflowRunPanelState() {
@@ -14028,6 +14305,194 @@ function secXbrlOperatorReviewDecisionRows(decision, outputId) {
                     ${fieldItem('delivery export enabled', decision.delivery_export_enabled)}
                     ${fieldItem('production readiness claimed', decision.production_readiness_claimed)}
                     ${fieldItem('operator review decision recorded', decision.operator_review_decision_recorded)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Next Allowed Actions</strong>
+                <ul>
+                    ${secXbrlCodeListItems(nextActions)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
+function secXbrlValueRevealAuthorityRows(authority) {
+    if (!authority) return '';
+    const negativeInvariants = authority.negative_invariants || {};
+    const nextActions = Array.isArray(authority.next_allowed_actions) ? authority.next_allowed_actions : [];
+    return `
+        <div id="sec-xbrl-value-reveal-authority-output" class="candidate-b-final-proof-status-grid" data-read-only="true">
+            <section class="result-review-card">
+                <strong>SEC XBRL Value-Reveal Authority</strong>
+                <ul>
+                    ${fieldItem('schema id', authority.schema_id, { code: true })}
+                    ${fieldItem('authority mode', authority.authority_mode, { code: true })}
+                    ${fieldItem('authority receipt id', authority.sec_xbrl_value_reveal_authority_receipt_id, { code: true })}
+                    ${fieldItem('authority receipt ref', authority.value_reveal_authority_receipt_ref, { code: true })}
+                    ${fieldItem('authority basis hash', authority.authority_basis_hash, { code: true })}
+                    ${fieldItem('authority policy id', authority.authority_policy_id, { code: true })}
+                    ${fieldItem('redaction policy', authority.redaction_policy, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Decision Bridge</strong>
+                <ul>
+                    ${fieldItem('operator-review decision id', authority.sec_xbrl_operator_review_decision_id, { code: true })}
+                    ${fieldItem('decision basis hash', authority.decision_basis_hash, { code: true })}
+                    ${fieldItem('operator actor hash', authority.operator_actor_hash, { code: true })}
+                    ${fieldItem('eligible for explicit reveal', authority.eligible_for_explicit_value_reveal)}
+                    ${fieldItem('idempotent replay', authority.idempotent_replay)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Containment</strong>
+                <ul>
+                    ${secXbrlMapItems(negativeInvariants)}
+                    ${fieldItem('runtime default enabled', authority.runtime_default_enabled)}
+                    ${fieldItem('value reveal performed', authority.value_reveal_performed)}
+                    ${fieldItem('source acquisition performed', authority.source_acquisition_performed)}
+                    ${fieldItem('Arelle invoked', authority.arelle_invoked)}
+                    ${fieldItem('delivery export enabled', authority.delivery_export_enabled)}
+                    ${fieldItem('rendered UI enabled by backend', authority.rendered_ui_enabled)}
+                    ${fieldItem('production readiness claimed', authority.production_readiness_claimed)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Next Allowed Actions</strong>
+                <ul>
+                    ${secXbrlCodeListItems(nextActions)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
+function secXbrlControlledValueRevealFactRows(facts) {
+    const items = Array.isArray(facts) ? facts : [];
+    if (!items.length) return '<li>none</li>';
+    return items.map((fact) => `
+        <li>
+            <code>${escapeHtml(fact?.concept?.qname || fact?.concept?.local_name || 'controlled_fact')}</code>:
+            ${escapeHtml(fact?.effective_value || fact?.lexical_value || '')}
+            ${fact?.value_redacted ? '<span class="status-pill blocked">value redacted</span>' : ''}
+            <span class="rail-label">value hash ${escapeHtml(fact?.value_hash || 'not-returned')}</span>
+        </li>
+    `).join('');
+}
+
+function secXbrlControlledValueRevealSubmitRows(submit) {
+    if (!submit) return '';
+    const facts = Array.isArray(submit.revealed_facts) ? submit.revealed_facts : [];
+    const negativeInvariants = submit.negative_invariants || {};
+    const summary = submit.submit_summary || {};
+    const nextActions = Array.isArray(submit.next_allowed_actions) ? submit.next_allowed_actions : [];
+    return `
+        <div id="sec-xbrl-controlled-value-reveal-submit-output" class="candidate-b-final-proof-status-grid" data-controlled-values="transient" data-read-only="false">
+            <section class="result-review-card">
+                <strong>Controlled Submit Receipt</strong>
+                <ul>
+                    ${fieldItem('schema id', submit.schema_id, { code: true })}
+                    ${fieldItem('submit mode', submit.submit_mode, { code: true })}
+                    ${fieldItem('submit state', submit.submit_state, { code: true })}
+                    ${fieldItem('submit receipt id', submit.sec_xbrl_controlled_value_reveal_submit_receipt_id, { code: true })}
+                    ${fieldItem('submit receipt ref', submit.value_reveal_submit_receipt_ref, { code: true })}
+                    ${fieldItem('submit basis hash', submit.submit_basis_hash, { code: true })}
+                    ${fieldItem('authority receipt id', submit.sec_xbrl_value_reveal_authority_receipt_id, { code: true })}
+                    ${fieldItem('authority basis hash', submit.authority_basis_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Transient Controlled Values</strong>
+                <ul>
+                    ${fieldItem('revealed fact count', submit.revealed_fact_count)}
+                    ${fieldItem('transient values returned', submit.transient_values_returned)}
+                    ${fieldItem('value redacted fact count', submit.value_redacted_fact_count)}
+                    ${secXbrlControlledValueRevealFactRows(facts)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Hash-Only Audit Projection</strong>
+                <ul>
+                    ${fieldItem('fact inventory hash', submit.fact_inventory_hash, { code: true })}
+                    ${fieldItem('value inventory hash', submit.value_inventory_hash, { code: true })}
+                    ${fieldItem('response inventory hash', submit.response_inventory_hash, { code: true })}
+                    ${fieldItem('status surface hash count only', submit.status_surface_hash_count_only)}
+                    ${fieldItem('audit receipt raw values persisted', submit.audit_receipt_raw_values_persisted)}
+                    ${fieldItem('raw sidecar receipt id persisted', submit.raw_sidecar_receipt_id_persisted)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Containment</strong>
+                <ul>
+                    ${secXbrlMapItems(negativeInvariants)}
+                    ${secXbrlMapItems(summary)}
+                    ${fieldItem('runtime default enabled', submit.runtime_default_enabled)}
+                    ${fieldItem('source acquisition performed', submit.source_acquisition_performed)}
+                    ${fieldItem('Arelle invoked', submit.arelle_invoked)}
+                    ${fieldItem('delivery export enabled', submit.delivery_export_enabled)}
+                    ${fieldItem('rendered UI enabled by backend', submit.rendered_ui_enabled)}
+                    ${fieldItem('production readiness claimed', submit.production_readiness_claimed)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Rendered Controls</strong>
+                <ul>
+                    ${secXbrlCodeListItems(SEC_XBRL_CONTROLLED_VALUE_REVEAL_BLOCKED_RENDERED_CONTROLS)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Next Allowed Actions</strong>
+                <ul>
+                    ${secXbrlCodeListItems(nextActions)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
+function secXbrlControlledValueRevealStatusRows(status) {
+    if (!status) return '';
+    const negativeInvariants = status.negative_invariants || {};
+    const summary = status.submit_summary || {};
+    const nextActions = Array.isArray(status.next_allowed_actions) ? status.next_allowed_actions : [];
+    return `
+        <div id="sec-xbrl-controlled-value-reveal-status-output" class="candidate-b-final-proof-status-grid" data-read-only="true" data-status-values-rendered="false">
+            <section class="result-review-card">
+                <strong>Controlled Reveal Status</strong>
+                <ul>
+                    ${fieldItem('schema id', status.schema_id, { code: true })}
+                    ${fieldItem('submit mode', status.submit_mode, { code: true })}
+                    ${fieldItem('submit state', status.submit_state, { code: true })}
+                    ${fieldItem('submit receipt id', status.sec_xbrl_controlled_value_reveal_submit_receipt_id, { code: true })}
+                    ${fieldItem('submit receipt ref', status.value_reveal_submit_receipt_ref, { code: true })}
+                    ${fieldItem('submit basis hash', status.submit_basis_hash, { code: true })}
+                    ${fieldItem('revealed fact count', status.revealed_fact_count)}
+                    ${fieldItem('transient values returned', status.transient_values_returned)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Status Hash Projection</strong>
+                <ul>
+                    ${fieldItem('fact inventory hash', status.fact_inventory_hash, { code: true })}
+                    ${fieldItem('value inventory hash', status.value_inventory_hash, { code: true })}
+                    ${fieldItem('response inventory hash', status.response_inventory_hash, { code: true })}
+                    ${fieldItem('status surface hash count only', status.status_surface_hash_count_only)}
+                    ${fieldItem('audit receipt raw values persisted', status.audit_receipt_raw_values_persisted)}
+                    ${fieldItem('raw sidecar receipt id persisted', status.raw_sidecar_receipt_id_persisted)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Containment</strong>
+                <ul>
+                    ${secXbrlMapItems(negativeInvariants)}
+                    ${secXbrlMapItems(summary)}
+                    ${fieldItem('runtime default enabled', status.runtime_default_enabled)}
+                    ${fieldItem('source acquisition performed', status.source_acquisition_performed)}
+                    ${fieldItem('Arelle invoked', status.arelle_invoked)}
+                    ${fieldItem('delivery export enabled', status.delivery_export_enabled)}
+                    ${fieldItem('rendered UI enabled by backend', status.rendered_ui_enabled)}
+                    ${fieldItem('production readiness claimed', status.production_readiness_claimed)}
                 </ul>
             </section>
             <section class="result-review-card">
@@ -16185,6 +16650,60 @@ function secXbrlOperatorReviewDecisionStatusError() {
     `;
 }
 
+function secXbrlValueRevealAuthorityPrepareError() {
+    const error = State.secXbrlValueRevealAuthorityPrepareError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = (
+        detail.code
+        || error.payload?.error_code
+        || 'sec_xbrl_value_reveal_authority_prepare_error'
+    );
+    const message = detail.message || error.payload?.message || error.message;
+    return `
+        <div id="sec-xbrl-value-reveal-authority-prepare-error" class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
+function secXbrlControlledValueRevealSubmitError() {
+    const error = State.secXbrlControlledValueRevealSubmitError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = (
+        detail.code
+        || error.payload?.error_code
+        || 'sec_xbrl_controlled_value_reveal_submit_error'
+    );
+    const message = detail.message || error.payload?.message || error.message;
+    return `
+        <div id="sec-xbrl-controlled-value-reveal-submit-error" class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
+function secXbrlControlledValueRevealStatusError() {
+    const error = State.secXbrlControlledValueRevealStatusError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = (
+        detail.code
+        || error.payload?.error_code
+        || 'sec_xbrl_controlled_value_reveal_status_error'
+    );
+    const message = detail.message || error.payload?.message || error.message;
+    return `
+        <div id="sec-xbrl-controlled-value-reveal-status-error" class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBFullCorpusOperatorWorkflowRunError() {
     const error = State.candidateBFullCorpusOperatorWorkflowRunError;
     if (!error) return '';
@@ -17886,6 +18405,118 @@ function updateSecXbrlOperatorReviewDecisionSubmitControls() {
     const status = document.getElementById('sec-xbrl-operator-review-decision-status-submit');
     if (status) {
         status.disabled = !canInspectSecXbrlOperatorReviewDecisionStatus();
+    }
+}
+
+function renderSecXbrlControlledValueRevealPanel() {
+    if (!elements.secXbrlControlledValueRevealPanel) return;
+    const authorityState = secXbrlValueRevealAuthorityPreparePanelState();
+    const submitState = secXbrlControlledValueRevealSubmitPanelState();
+    const statusState = secXbrlControlledValueRevealStatusPanelState();
+    const authorityInputs = secXbrlValueRevealAuthorityPrepareInputValues();
+    const submitInputs = secXbrlControlledValueRevealSubmitInputValues();
+    const statusInputs = secXbrlControlledValueRevealStatusInputValues();
+    elements.secXbrlControlledValueRevealPanel.dataset.frontendDurableAuthority = 'false';
+    elements.secXbrlControlledValueRevealPanel.dataset.valueRevealEnabled = 'true';
+    elements.secXbrlControlledValueRevealPanel.dataset.controlledValueRevealOnly = 'true';
+    elements.secXbrlControlledValueRevealPanel.dataset.deliveryExportEnabled = 'false';
+    elements.secXbrlControlledValueRevealPanel.dataset.sourceAcquisitionEnabled = 'false';
+    elements.secXbrlControlledValueRevealPanel.dataset.arelleInvocationEnabled = 'false';
+    elements.secXbrlControlledValueRevealPanel.dataset.runtimeDefaultEnabled = 'false';
+    elements.secXbrlControlledValueRevealPanel.dataset.productionReadinessClaimed = 'false';
+    elements.secXbrlControlledValueRevealPanel.innerHTML = `
+        <div class="workband-heading">
+            <div>
+                <span class="section-kicker">SEC XBRL controlled value reveal</span>
+                <h2>Explicit Value Reveal</h2>
+            </div>
+            <span class="status-pill ${escapeHtml(submitState.pill)}">${escapeHtml(submitState.label)}</span>
+        </div>
+        <div class="candidate-b-default-promotion-status-grid">
+            <section class="result-review-card sec-xbrl-value-reveal-authority-card">
+                <strong>Prepare Value-Reveal Authority</strong>
+                <form id="sec-xbrl-value-reveal-authority-prepare-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_XBRL_CONTROLLED_VALUE_REVEAL_RENDERED_MODE)}" data-frontend-durable-authority="false" data-authority-prepare="true" data-delivery-export-enabled="false" data-source-acquisition-enabled="false" data-arelle-invocation-enabled="false" data-runtime-default-enabled="false">
+                    <label>
+                        <span>operator-review decision id</span>
+                        <input id="sec-xbrl-value-reveal-authority-decision-id" type="text" value="${escapeHtml(authorityInputs.decisionId)}" autocomplete="off" spellcheck="false" placeholder="sec-xbrl-operator-review-decision-..." />
+                    </label>
+                    <label>
+                        <span>decision basis hash</span>
+                        <input id="sec-xbrl-value-reveal-authority-decision-basis-hash" type="text" value="${escapeHtml(authorityInputs.decisionBasisHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>bounded operator attestation</span>
+                        <textarea id="sec-xbrl-value-reveal-authority-attestation" rows="2" maxlength="280" autocomplete="off" spellcheck="false" placeholder="Optional bounded attestation. Raw contact, values, paths, SEC URLs, accessions, CIKs, and dates are not admitted.">${escapeHtml(authorityInputs.operatorAttestation)}</textarea>
+                    </label>
+                    <button id="sec-xbrl-value-reveal-authority-prepare-submit" type="submit" ${canPrepareSecXbrlValueRevealAuthority() ? '' : 'disabled'}>Prepare Receipt</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(authorityState.pill)}">${escapeHtml(authorityState.label)}</span>
+                    <span class="rail-label">The browser sends only decision id, decision basis hash, mode, decision, request id, and optional bounded attestation. Sidecar, dataset, value-store, source acquisition, Arelle, export, delivery, default-on, and frontend durable authority remain closed.</span>
+                </div>
+                ${secXbrlValueRevealAuthorityRows(State.secXbrlValueRevealAuthorityPrepare)}
+                ${secXbrlValueRevealAuthorityPrepareError()}
+            </section>
+            <section class="result-review-card sec-xbrl-controlled-value-reveal-submit-card">
+                <strong>Submit Explicit Controlled Reveal</strong>
+                <form id="sec-xbrl-controlled-value-reveal-submit-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_XBRL_CONTROLLED_VALUE_REVEAL_RENDERED_MODE)}" data-frontend-durable-authority="false" data-controlled-value-reveal-only="true" data-delivery-export-enabled="false" data-source-acquisition-enabled="false" data-arelle-invocation-enabled="false" data-runtime-default-enabled="false">
+                    <label>
+                        <span>value-reveal authority receipt id</span>
+                        <input id="sec-xbrl-controlled-value-reveal-authority-receipt-id" type="text" value="${escapeHtml(submitInputs.authorityReceiptId)}" autocomplete="off" spellcheck="false" placeholder="sec-xbrl-value-reveal-authority-..." />
+                    </label>
+                    <label>
+                        <span>authority basis hash</span>
+                        <input id="sec-xbrl-controlled-value-reveal-authority-basis-hash" type="text" value="${escapeHtml(submitInputs.authorityBasisHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>max records</span>
+                        <input id="sec-xbrl-controlled-value-reveal-max-records" type="number" min="1" max="1000" step="1" value="${escapeHtml(submitInputs.maxRecords)}" autocomplete="off" />
+                    </label>
+                    <label class="checkbox-label">
+                        <input id="sec-xbrl-controlled-value-reveal-confirmation" type="checkbox" ${submitInputs.operatorRevealConfirmation ? 'checked' : ''} />
+                        <span>confirm explicit controlled value reveal</span>
+                    </label>
+                    <button id="sec-xbrl-controlled-value-reveal-submit" type="submit" ${canSubmitSecXbrlControlledValueReveal() ? '' : 'disabled'}>Reveal Controlled Values</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(submitState.pill)}">${escapeHtml(submitState.label)}</span>
+                    <span class="rail-label">Only an existing authority receipt id, authority basis hash, confirmation, and optional server-capped max records are submitted. Returned values are transient; status remains hash/count-only.</span>
+                </div>
+                ${secXbrlControlledValueRevealSubmitRows(State.secXbrlControlledValueRevealSubmit)}
+                ${secXbrlControlledValueRevealSubmitError()}
+            </section>
+            <section class="result-review-card sec-xbrl-controlled-value-reveal-status-card">
+                <strong>Inspect Reveal Status</strong>
+                <form id="sec-xbrl-controlled-value-reveal-status-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_XBRL_CONTROLLED_VALUE_REVEAL_RENDERED_MODE)}" data-frontend-durable-authority="false" data-read-only="true" data-status-values-rendered="false">
+                    <label>
+                        <span>controlled reveal submit receipt id</span>
+                        <input id="sec-xbrl-controlled-value-reveal-status-receipt-id" type="text" value="${escapeHtml(statusInputs.submitReceiptId)}" autocomplete="off" spellcheck="false" placeholder="sec-xbrl-controlled-value-reveal-submit-..." />
+                    </label>
+                    <button id="sec-xbrl-controlled-value-reveal-status-submit" type="submit" ${canInspectSecXbrlControlledValueRevealStatus() ? '' : 'disabled'}>Inspect Reveal Status</button>
+                </form>
+                <div class="result-review-status" id="sec-xbrl-controlled-value-reveal-status-projection" data-read-only="true" data-status-values-rendered="false">
+                    <span class="status-pill ${escapeHtml(statusState.pill)}">${escapeHtml(statusState.label)}</span>
+                    <span class="rail-label">Status inspection uses only the submit receipt id and never renders revealed facts from the status projection.</span>
+                </div>
+                ${secXbrlControlledValueRevealStatusRows(State.secXbrlControlledValueRevealStatus)}
+                ${secXbrlControlledValueRevealStatusError()}
+            </section>
+        </div>
+    `;
+}
+
+function updateSecXbrlControlledValueRevealControls() {
+    const authoritySubmit = document.getElementById('sec-xbrl-value-reveal-authority-prepare-submit');
+    if (authoritySubmit) {
+        authoritySubmit.disabled = !canPrepareSecXbrlValueRevealAuthority();
+    }
+    const revealSubmit = document.getElementById('sec-xbrl-controlled-value-reveal-submit');
+    if (revealSubmit) {
+        revealSubmit.disabled = !canSubmitSecXbrlControlledValueReveal();
+    }
+    const statusSubmit = document.getElementById('sec-xbrl-controlled-value-reveal-status-submit');
+    if (statusSubmit) {
+        statusSubmit.disabled = !canInspectSecXbrlControlledValueRevealStatus();
     }
 }
 
@@ -19740,6 +20371,128 @@ async function inspectSecXbrlOperatorReviewDecisionStatus(event) {
         addEvent(`SEC XBRL operator-review decision status blocked: ${error.message}`);
     } finally {
         State.secXbrlOperatorReviewDecisionStatusPending = false;
+        renderAll();
+    }
+}
+
+async function prepareSecXbrlValueRevealAuthority(event) {
+    event.preventDefault();
+    if (!canPrepareSecXbrlValueRevealAuthority()) {
+        State.secXbrlValueRevealAuthorityPrepare = null;
+        State.secXbrlValueRevealAuthorityPrepareError = new Error(
+            'SEC XBRL value-reveal authority requires a decision id and 64-character decision basis hash.',
+        );
+        clearSecXbrlValueRevealAttestationInput();
+        renderSecXbrlControlledValueRevealPanel();
+        return;
+    }
+    let payload;
+    try {
+        payload = secXbrlValueRevealAuthorityPreparePayload();
+    } catch (error) {
+        State.secXbrlValueRevealAuthorityPrepare = null;
+        State.secXbrlValueRevealAuthorityPrepareError = error;
+        clearSecXbrlValueRevealAttestationInput();
+        renderSecXbrlControlledValueRevealPanel();
+        return;
+    }
+    State.secXbrlValueRevealAuthorityPreparePending = true;
+    State.secXbrlValueRevealAuthorityPrepareError = null;
+    clearSecXbrlValueRevealAttestationInput();
+    renderSecXbrlControlledValueRevealPanel();
+    try {
+        const authority = await postJson(SEC_XBRL_VALUE_REVEAL_AUTHORITY_ENDPOINT, payload);
+        State.secXbrlValueRevealAuthorityPrepare = authority;
+        State.secXbrlValueRevealAuthorityPrepareError = null;
+        State.secXbrlControlledValueRevealSubmitInput = {
+            ...State.secXbrlControlledValueRevealSubmitInput,
+            authorityReceiptId: authority.sec_xbrl_value_reveal_authority_receipt_id || '',
+            authorityBasisHash: authority.authority_basis_hash || '',
+        };
+        addEvent('SEC XBRL value-reveal authority prepared through server-owned decision authority.');
+    } catch (error) {
+        State.secXbrlValueRevealAuthorityPrepare = null;
+        State.secXbrlValueRevealAuthorityPrepareError = error;
+        clearSecXbrlValueRevealAttestationInput();
+        addEvent(`SEC XBRL value-reveal authority prepare blocked: ${error.message}`);
+    } finally {
+        State.secXbrlValueRevealAuthorityPreparePending = false;
+        renderAll();
+    }
+}
+
+async function submitSecXbrlControlledValueReveal(event) {
+    event.preventDefault();
+    if (!canSubmitSecXbrlControlledValueReveal()) {
+        State.secXbrlControlledValueRevealSubmit = null;
+        State.secXbrlControlledValueRevealSubmitError = new Error(
+            'SEC XBRL controlled value reveal requires authority receipt id, authority basis hash, and explicit confirmation.',
+        );
+        renderSecXbrlControlledValueRevealPanel();
+        return;
+    }
+    let payload;
+    try {
+        payload = secXbrlControlledValueRevealSubmitPayload();
+    } catch (error) {
+        State.secXbrlControlledValueRevealSubmit = null;
+        State.secXbrlControlledValueRevealSubmitError = error;
+        renderSecXbrlControlledValueRevealPanel();
+        return;
+    }
+    State.secXbrlControlledValueRevealSubmitPending = true;
+    State.secXbrlControlledValueRevealSubmitError = null;
+    renderSecXbrlControlledValueRevealPanel();
+    try {
+        const submit = await postJson(SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENDPOINT, payload);
+        State.secXbrlControlledValueRevealSubmit = submit;
+        State.secXbrlControlledValueRevealSubmitError = null;
+        State.secXbrlControlledValueRevealStatusInput = {
+            submitReceiptId: submit.sec_xbrl_controlled_value_reveal_submit_receipt_id || '',
+        };
+        addEvent('SEC XBRL controlled values revealed through explicit server authority.');
+    } catch (error) {
+        State.secXbrlControlledValueRevealSubmit = null;
+        State.secXbrlControlledValueRevealSubmitError = error;
+        addEvent(`SEC XBRL controlled value reveal blocked: ${error.message}`);
+    } finally {
+        State.secXbrlControlledValueRevealSubmitPending = false;
+        renderAll();
+    }
+}
+
+async function inspectSecXbrlControlledValueRevealStatus(event) {
+    event.preventDefault();
+    if (!canInspectSecXbrlControlledValueRevealStatus()) {
+        State.secXbrlControlledValueRevealStatus = null;
+        State.secXbrlControlledValueRevealStatusError = new Error(
+            'SEC XBRL controlled value-reveal status requires a submit receipt id.',
+        );
+        renderSecXbrlControlledValueRevealPanel();
+        return;
+    }
+    let path;
+    try {
+        path = secXbrlControlledValueRevealStatusPath();
+    } catch (error) {
+        State.secXbrlControlledValueRevealStatus = null;
+        State.secXbrlControlledValueRevealStatusError = error;
+        renderSecXbrlControlledValueRevealPanel();
+        return;
+    }
+    State.secXbrlControlledValueRevealStatusPending = true;
+    State.secXbrlControlledValueRevealStatusError = null;
+    renderSecXbrlControlledValueRevealPanel();
+    try {
+        State.secXbrlControlledValueRevealStatus = await getJson(path);
+        State.secXbrlControlledValueRevealStatusError = null;
+        addEvent('SEC XBRL controlled value-reveal status inspected through hash/count receipt authority.');
+    } catch (error) {
+        State.secXbrlControlledValueRevealStatus = null;
+        State.secXbrlControlledValueRevealStatusError = error;
+        addEvent(`SEC XBRL controlled value-reveal status blocked: ${error.message}`);
+    } finally {
+        State.secXbrlControlledValueRevealStatusPending = false;
         renderAll();
     }
 }
@@ -23720,6 +24473,7 @@ function renderAll() {
     renderSecEdgarDurableDeliveryArchiveStatusPanel();
     renderSecXbrlOperatorReviewWorkflowStatusPanel();
     renderSecXbrlOperatorReviewDecisionSubmitPanel();
+    renderSecXbrlControlledValueRevealPanel();
     renderMockupActivationReadinessPanel();
     renderLayer3E2EGovernanceLifecycleDashboardPanel();
     renderGateCPanel();
@@ -27743,6 +28497,63 @@ elements.secXbrlOperatorReviewDecisionSubmitPanel.addEventListener('change', (ev
             renderSecXbrlOperatorReviewDecisionSubmitPanel();
         } else {
             updateSecXbrlOperatorReviewDecisionSubmitControls();
+        }
+    }
+});
+elements.secXbrlControlledValueRevealPanel.addEventListener('submit', (event) => {
+    if (event.target?.id === 'sec-xbrl-value-reveal-authority-prepare-form') {
+        prepareSecXbrlValueRevealAuthority(event);
+    }
+    if (event.target?.id === 'sec-xbrl-controlled-value-reveal-submit-form') {
+        submitSecXbrlControlledValueReveal(event);
+    }
+    if (event.target?.id === 'sec-xbrl-controlled-value-reveal-status-form') {
+        inspectSecXbrlControlledValueRevealStatus(event);
+    }
+});
+elements.secXbrlControlledValueRevealPanel.addEventListener('input', (event) => {
+    if (
+        event.target?.id?.startsWith('sec-xbrl-value-reveal-authority-')
+        || event.target?.id?.startsWith('sec-xbrl-controlled-value-reveal-')
+    ) {
+        const hadError = Boolean(
+            State.secXbrlValueRevealAuthorityPrepareError
+            || State.secXbrlControlledValueRevealSubmitError
+            || State.secXbrlControlledValueRevealStatusError,
+        );
+        State.secXbrlValueRevealAuthorityPrepareInput = secXbrlValueRevealAuthorityPrepareInputValues();
+        State.secXbrlControlledValueRevealSubmitInput = secXbrlControlledValueRevealSubmitInputValues();
+        State.secXbrlControlledValueRevealStatusInput = secXbrlControlledValueRevealStatusInputValues();
+        State.secXbrlValueRevealAuthorityPrepareError = null;
+        State.secXbrlControlledValueRevealSubmitError = null;
+        State.secXbrlControlledValueRevealStatusError = null;
+        if (hadError) {
+            renderSecXbrlControlledValueRevealPanel();
+        } else {
+            updateSecXbrlControlledValueRevealControls();
+        }
+    }
+});
+elements.secXbrlControlledValueRevealPanel.addEventListener('change', (event) => {
+    if (
+        event.target?.id?.startsWith('sec-xbrl-value-reveal-authority-')
+        || event.target?.id?.startsWith('sec-xbrl-controlled-value-reveal-')
+    ) {
+        const hadError = Boolean(
+            State.secXbrlValueRevealAuthorityPrepareError
+            || State.secXbrlControlledValueRevealSubmitError
+            || State.secXbrlControlledValueRevealStatusError,
+        );
+        State.secXbrlValueRevealAuthorityPrepareInput = secXbrlValueRevealAuthorityPrepareInputValues();
+        State.secXbrlControlledValueRevealSubmitInput = secXbrlControlledValueRevealSubmitInputValues();
+        State.secXbrlControlledValueRevealStatusInput = secXbrlControlledValueRevealStatusInputValues();
+        State.secXbrlValueRevealAuthorityPrepareError = null;
+        State.secXbrlControlledValueRevealSubmitError = null;
+        State.secXbrlControlledValueRevealStatusError = null;
+        if (hadError) {
+            renderSecXbrlControlledValueRevealPanel();
+        } else {
+            updateSecXbrlControlledValueRevealControls();
         }
     }
 });

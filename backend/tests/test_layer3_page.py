@@ -2558,6 +2558,69 @@ def test_layer3_source_directory_ingestion_rendered_control_is_bounded() -> None
         assert forbidden not in material_payload_slice
 
 
+def test_layer3_sec_xbrl_controlled_value_reveal_rendered_control_is_bounded() -> None:
+    html = client.get("/review/layer3")
+    js = client.get("/review/layer3/static/layer3.js")
+
+    assert html.status_code == 200
+    assert js.status_code == 200
+    assert 'id="sec-xbrl-controlled-value-reveal-panel"' in html.text
+    assert 'data-rendered-mode="rendered_sec_xbrl_controlled_value_reveal_ui_control"' in html.text
+    assert 'data-controlled-value-reveal-only="true"' in html.text
+    assert 'data-delivery-export-enabled="false"' in html.text
+    assert 'data-source-acquisition-enabled="false"' in html.text
+    assert 'data-arelle-invocation-enabled="false"' in html.text
+    assert 'data-runtime-default-enabled="false"' in html.text
+    assert 'data-production-readiness-claimed="false"' in html.text
+
+    authority_payload_start = js.text.find("function secXbrlValueRevealAuthorityPreparePayload")
+    submit_payload_start = js.text.find("function secXbrlControlledValueRevealSubmitPayload")
+    status_path_start = js.text.find("function secXbrlControlledValueRevealStatusPath")
+    render_start = js.text.find("function renderSecXbrlControlledValueRevealPanel")
+    async_start = js.text.find("async function prepareSecXbrlValueRevealAuthority")
+    assert authority_payload_start != -1
+    assert submit_payload_start != -1
+    assert status_path_start != -1
+    assert render_start != -1
+    assert async_start != -1
+
+    authority_payload_slice = js.text[authority_payload_start:submit_payload_start]
+    submit_payload_slice = js.text[submit_payload_start:status_path_start]
+    status_path_slice = js.text[status_path_start:render_start]
+    render_slice = js.text[render_start:async_start]
+    assert "authority_mode: SEC_XBRL_VALUE_REVEAL_AUTHORITY_MODE" in authority_payload_slice
+    assert "operator_decision: SEC_XBRL_VALUE_REVEAL_AUTHORITY_OPERATOR_DECISION" in authority_payload_slice
+    assert "sec_xbrl_operator_review_decision_id: values.decisionId" in authority_payload_slice
+    assert "decision_basis_hash: values.decisionBasisHash" in authority_payload_slice
+    assert "operator_attestation" in authority_payload_slice
+    assert "submit_mode: SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_MODE" in submit_payload_slice
+    assert "operator_decision: SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_OPERATOR_DECISION" in submit_payload_slice
+    assert "sec_xbrl_value_reveal_authority_receipt_id: values.authorityReceiptId" in submit_payload_slice
+    assert "authority_basis_hash: values.authorityBasisHash" in submit_payload_slice
+    assert "operator_reveal_confirmation: true" in submit_payload_slice
+    assert "getJson(path)" in js.text
+    assert "SEC_XBRL_CONTROLLED_VALUE_REVEAL_STATUS_ENDPOINT_PREFIX" in status_path_slice
+    assert "data-status-values-rendered=\"false\"" in render_slice
+    assert "data-delivery-export-enabled=\"false\"" in render_slice
+    assert "data-source-acquisition-enabled=\"false\"" in render_slice
+    assert "data-arelle-invocation-enabled=\"false\"" in render_slice
+    assert "data-runtime-default-enabled=\"false\"" in render_slice
+    for forbidden in (
+        "sidecar_receipt_id:",
+        "sidecar_receipt_hash:",
+        "dataset_version_id:",
+        "dataset_version_hash:",
+        "value_store_hash:",
+        "source_acquisition_request:",
+        "arelle:",
+        "export:",
+        "delivery:",
+        "default_on:",
+    ):
+        assert forbidden not in authority_payload_slice
+        assert forbidden not in submit_payload_slice
+
+
 def test_layer3_shell_does_not_remove_adjacent_review_pages() -> None:
     assert client.get("/review/nrc-aps").status_code == 200
     assert client.get("/review/nrc-aps/workbench-compare").status_code == 200
