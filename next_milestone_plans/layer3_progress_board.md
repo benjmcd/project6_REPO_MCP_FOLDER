@@ -1,5 +1,47 @@
 # Layer3 Progress Board
 
+## SEC XBRL Nonlocal Production-Readiness Design
+
+Milestone:
+`sec_xbrl_default_on_nonlocal_production_readiness_design_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1319-nonlocal-production-readiness.md`.
+
+Status: branch-local docs-only Tier-2 design/pre-review entry on
+`codex/secxbrl-nonlocal-readiness-design`.
+
+Scope: define the authority packet, proxy/deployment boundary, rollback,
+containment, observability, incident triggers, verification matrix, and stop
+conditions required before any future SEC XBRL nonlocal/default-on production
+readiness implementation or production-readiness claim. This pass does not
+implement or claim production readiness.
+
+Repo-confirmed authority: current main emits
+`default_on_runtime_enabled` with `blocking_reasons: []` and advances default-on
+diagnostics to
+`sec_xbrl_default_on_nonlocal_production_readiness_design_v1`. Current config
+requires explicit nonlocal Arelle authorization when `DEPLOYMENT_MODE=nonlocal`
+and Arelle fact-authority cutover is enabled, plus proxy-owned nonlocal
+guardrails.
+
+Non-goals: no runtime behavior, config default change, schema, `models.py`,
+Alembic migration, durable persistence, backend API/UI, rendered control,
+operator workflow, source acquisition, Arelle subprocess invocation, value
+reveal default-on, export/delivery, provider/connector dispatch, raw runtime
+artifact, final statement semantics, cross-company comparability, or production
+readiness behavior.
+
+Verification: focused default-on/nonlocal API tests pass with `27 passed, 249
+deselected, 3 warnings`; full SEC XBRL suite passes with `319 passed, 4
+warnings`; manifest/default-runtime JSON parse, target-selection frozen check,
+progress check, added-diff redaction scan, committed SEC XBRL report
+redaction/residual scan, and `git diff --check` pass. No Python runtime or test
+file was touched by this design pass, so `py_compile` is not applicable.
+
+Next exact posture after design review/merge:
+`sec_xbrl_default_on_nonlocal_production_readiness_gate_v1`.
+
 ## Purpose
 
 This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
