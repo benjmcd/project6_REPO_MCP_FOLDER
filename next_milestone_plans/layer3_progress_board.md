@@ -10129,6 +10129,32 @@ redaction scan, residual-magnitude regression scan, py_compile, and
 Next exact posture after merge and current-main verification:
 `sec_xbrl_controlled_value_reveal_submit_post_merge_audit_then_rendered_or_default_design_if_admitted`.
 
+## SEC XBRL Controlled Submit Post-Merge Audit Closure
+
+Milestone: `sec_xbrl_controlled_value_reveal_submit_post_merge_audit_closure_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1308-controlled-submit-post-merge-audit-closure.md`.
+
+Status: branch-local Tier-1 documentation/proof closure over already-merged
+Tier-2 controlled value-reveal submit surfaces.
+
+Scope: records the post-merge audit outcome after PRs `#2043`, `#2045`,
+`#2047`, `#2049`, and `#2050`. The closure confirms that the bounded
+server-side controlled-submit path is closed for request-id, authority-id, and
+status-id raw/local reference rejection, with no partial receipt on failed
+validation and no status-route revealed facts.
+
+Non-goals: no `models.py`, Alembic migration, schema, durable persistence,
+backend API behavior, service behavior, tests, rendered UI, value-reveal
+response semantics, default-on behavior, source acquisition, live SEC network,
+Arelle subprocess invocation, delivery/export, provider dispatch, raw runtime
+artifacts, production readiness, or final financial-statement semantics.
+
+Verification: target-selection frozen check, progress check, manifest JSON
+parse, and `git diff --check` pass for this docs-only closure. Runtime proof
+remains the post-merge current-main verification recorded in 1304 through 1307.
+
 ## SEC XBRL Controlled Submit Status Reference Hardening
 
 Milestone: `sec_xbrl_controlled_value_reveal_submit_status_ref_hardening_v1`.
