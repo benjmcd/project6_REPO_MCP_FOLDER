@@ -1,5 +1,41 @@
 # Layer3 Progress Board
 
+## SEC XBRL Offline Evidence Orchestrator
+
+Milestone:
+`sec_xbrl_e2e_offline_evidence_orchestrator_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1331-e2e-offline-orchestrator.md`.
+
+Status: branch-local Tier-2 risk-assessed offline orchestration service proof
+on `codex/secxbrl-e2e-offline-orchestrator`.
+
+Scope: add an offline, already-loaded evidence orchestrator that composes
+current SEC XBRL canonical projection, redacted projection persistence,
+redacted statement-packet persistence, and operator-review workflow services.
+The service requires governed sidecar `resolved_fact_projection`,
+sidecar/value-store hashes, value records, companyfacts, and statement-role
+authority before persistence, and rejects raw public authority/output.
+
+Containment: this proof exercises existing durable materializers in isolated
+test DB state but introduces no schema, `models.py`, Alembic migration,
+backend API/UI, source acquisition, Arelle subprocess invocation, live SEC
+network access, value reveal, runtime-default change, raw runtime artifact,
+operator packet submission, or production-readiness behavior. Existing
+materializers still commit per stage; this pass claims pre-persistence
+authority/packet preflight, not a single cross-stage transaction.
+
+Verification: focused offline-orchestrator suite passes with `4 passed`;
+adapter-plus-orchestrator suite passes with `8 passed`; full SEC XBRL suite
+passes with `379 passed, 3 warnings`; touched-file `py_compile`,
+target-selection frozen check, progress check, manifest JSON parse,
+path-aware committed SEC XBRL report redaction/residual scan over `59`
+reports, and `git diff --check` pass.
+
+Next exact posture:
+`sec_xbrl_offline_evidence_loader_diagnostic_v1`.
+
 ## SEC XBRL End-To-End Contract Adapter
 
 Milestone:
