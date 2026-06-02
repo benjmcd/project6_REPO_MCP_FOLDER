@@ -49,6 +49,10 @@ def test_sec_xbrl_nonlocal_readiness_gate_blocks_without_authority_packet() -> N
     assert report["in_app_auth_evidence_summary"]["admissible"] is True
     assert (
         report["nonlocal_runtime_boundary"]["in_app_auth_implemented_by_gate"]
+        is False
+    )
+    assert (
+        report["nonlocal_runtime_boundary"]["in_app_auth_implementation_evidence_present"]
         is True
     )
     assert report["inherited_default_on_runtime_evidence"]["decision"] == "default_on_runtime_enabled"
@@ -179,6 +183,34 @@ def test_sec_xbrl_nonlocal_readiness_gate_rejects_repo_owned_auth_packet_mode(tm
     assert "nonlocal_production_readiness_authority_packet_invalid_required_fields" in report["blocking_reasons"]
     assert report["authority_packet_summary"]["proxy_boundary_mode"] is None
     assert "proxy_boundary_mode" in report["authority_packet_summary"]["invalid_required_fields"]
+
+
+def test_sec_xbrl_nonlocal_readiness_gate_requires_decision_status_route_token() -> None:
+    module = _gate_module()
+    sources = {
+        "in_app_auth_policy_report": module._load_json(ROOT / module.IN_APP_AUTH_POLICY_REPORT),
+        "auth_owner_binding_strategy_report": module._load_json(
+            ROOT / module.AUTH_OWNER_BINDING_STRATEGY_REPORT
+        ),
+        "in_app_auth_policy_service": module._read(ROOT / module.IN_APP_AUTH_POLICY_SERVICE),
+        "auth_binding_service": module._read(ROOT / module.AUTH_BINDING_SERVICE),
+        "api": module._read(ROOT / "backend/app/api/layer3.py").replace(
+            "sec_xbrl_operator_review_decision_status_read",
+            "sec_xbrl_operator_review_decision_status_missing",
+        ),
+        "auth_route_enforcement_doc": module._read(ROOT / module.AUTH_ROUTE_ENFORCEMENT_DOC),
+        "auth_binding_tests": module._read(ROOT / module.AUTH_BINDING_TEST),
+        "operator_workflow_tests": module._read(ROOT / module.OPERATOR_WORKFLOW_TEST),
+    }
+
+    summary = module._in_app_auth_evidence_summary(sources, root=ROOT)
+
+    assert summary["admissible"] is False
+    assert summary["evidence_checks"]["api_route_enforcement_current"] is False
+    assert (
+        "nonlocal_production_readiness_in_app_auth_api_route_enforcement_current_missing"
+        in summary["blocked_reasons"]
+    )
 
 
 def test_sec_xbrl_nonlocal_readiness_report_hash_is_line_ending_stable(tmp_path: Path) -> None:

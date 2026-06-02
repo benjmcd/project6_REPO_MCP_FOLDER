@@ -262,7 +262,7 @@
     "deployment_mode_required": "nonlocal",
     "direct_storage_exposure_admitted": false,
     "in_app_auth_implementation_evidence_present": true,
-    "in_app_auth_implemented_by_gate": true,
+    "in_app_auth_implemented_by_gate": false,
     "proxy_identity_header_name_required": true,
     "storage_exposure_allowed": [
       "auto",
