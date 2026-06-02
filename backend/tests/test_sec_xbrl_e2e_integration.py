@@ -136,6 +136,19 @@ def _statement_role_records(*, periods: int = 2) -> list[dict[str, Any]]:
     ]
 
 
+def _identity_residuals_with_magnitudes() -> list[dict[str, Any]]:
+    return [
+        {
+            "identity_id": f"identity-{index}",
+            "status": "evaluated",
+            "within_tolerance": True,
+            "relative_magnitude": "0E+2",
+            "residual_abs": "0",
+        }
+        for index in range(1, 5)
+    ]
+
+
 def test_redacted_projection_payload_strips_private_fields_and_materializes(db_session) -> None:
     payload = integration.redacted_projection_persistence_payload(_private_projection(periods=1))
     text = json.dumps(payload, sort_keys=True)
@@ -242,6 +255,56 @@ def test_e2e_adapter_carries_multi_period_projection_to_workflow(db_session) -> 
     assert workflow_response["value_reveal_performed"] is False
     assert workflow_response["source_acquisition_performed"] is False
     assert workflow_response["arelle_invoked"] is False
+
+
+def test_statement_packet_bridge_redacts_residual_magnitudes_before_persistence(db_session) -> None:
+    private_projection = _private_projection(periods=2)
+    projection_payload = integration.redacted_projection_persistence_payload(private_projection)
+    projection_response = projection_persistence.materialize_redacted_projection_set(
+        db_session,
+        client_request_id="projection-e2e-residuals-redacted",
+        projection=projection_payload,
+        source_report_schema_id="diagnostics.sec_xbrl_sector_family_real_filer_validation_report.v1",
+        source_report_hash=_hash("a"),
+    )
+
+    packet = integration.build_reviewable_statement_packet_from_projection(
+        canonical_projection=private_projection,
+        statement_role_view_records=_statement_role_records(periods=2),
+        identity_residuals=_identity_residuals_with_magnitudes(),
+    )
+    text = json.dumps(packet, sort_keys=True)
+
+    assert packet["status"] == "statement_assembly_ready"
+    assert packet["review_ready"] is True
+    assert packet["identity_rollup"] == {
+        "identity_residual_count": 4,
+        "identity_residual_evaluated_count": 4,
+        "identity_residual_within_tolerance_count": 4,
+        "identity_residual_failed_count": 0,
+        "identity_residuals_within_tolerance": True,
+    }
+    assert "identity_residuals" not in packet["identity_rollup"]
+    for key in integration.RESIDUAL_MAGNITUDE_KEYS:
+        assert f'"{key}"' not in text
+
+    packet_response = packet_persistence.materialize_redacted_statement_packet(
+        db_session,
+        client_request_id="packet-e2e-residuals-redacted",
+        sec_xbrl_projection_set_id=projection_response["sec_xbrl_projection_set_id"],
+        packet=packet,
+    )
+
+    assert packet_response["status"] == "materialized"
+    assert packet_response["row_count"] == 6
+
+
+def test_e2e_output_guard_rejects_residual_magnitude_keys() -> None:
+    with pytest.raises(integration.SecXbrlE2EIntegrationError) as exc:
+        integration._reject_output_raw_or_local_authority({"identity_rollup": {"relative_magnitude": None}})
+
+    assert exc.value.code == "sec_xbrl_e2e_integration_raw_output_not_admitted"
+    assert exc.value.details == {"field": "relative_magnitude"}
 
 
 def test_e2e_adapter_fails_closed_without_resolved_fact_authority(db_session) -> None:
