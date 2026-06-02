@@ -13,6 +13,11 @@ Prior milestone:
 
 Branch-local Tier-2 risk-assessed loader/diagnostic proof.
 
+Current-main reconciliation on `project6-origin/main` at
+`b5b22385dacc2b98455c4337ca087b31adf73756` preserves the same validate-only
+boundary but updates the committed report to reflect the stricter
+statement-classification authority now enforced by the loader.
+
 This pass adds a validate-only loader for already-acquired offline SEC XBRL
 storage. It locates governed sidecar, internal value-store, statement-role
 classification, and bridge dataset-version receipts, builds the existing
@@ -49,10 +54,12 @@ Repo-confirmed:
 - The loader requires bridge-derived dataset-version provenance instead of
   inventing or defaulting a dataset version id.
 - The committed diagnostic report has status
-  `offline_evidence_bundle_ready_without_companyfacts_oracle`, with
-  `operator_review_creation_ready: false`,
-  `production_admission_ready: false` and
-  `production_admission_blocked_reason: companyfacts_oracle_not_supplied`.
+  `offline_evidence_bundle_blocked`, with
+  `blocked_reasons[0].reason: sec_xbrl_offline_evidence_loader_field_missing`
+  and `blocked_reasons[0].details.field: fact_inventory_hash`.
+- Existing blocked-storage reports still include a redacted `storage_marker`
+  so the blocker remains bound to the exact offline storage without admitting
+  the evidence bundle.
 - `backend/tests/test_sec_xbrl_offline_evidence_loader.py` proves one
   CompanyFacts-supplied loader-to-review path in isolated in-memory DB state,
   one redacted no-CompanyFacts diagnostic path, and two fail-closed stale or
@@ -60,9 +67,10 @@ Repo-confirmed:
 
 Inference:
 
-- The next gap is not offline storage discovery for the FIZZ evidence shape. It
-  is the missing offline CompanyFacts oracle packet and any operator decision
-  about whether a production-admission gate may consume that oracle.
+- The next gate is operator evidence reconciliation, not repo code execution:
+  the current FIZZ statement-classification receipt must be regenerated or
+  supplied with a top-level `fact_inventory_hash` that matches its governed
+  authority hash before CompanyFacts oracle validation can be attempted.
 
 ## Contract Boundary
 
@@ -91,8 +99,9 @@ identity text, and raw values.
   lineage mismatch blocks admission.
 - Statement classification that does not bind to the selected sidecar receipt
   and resolved-fact inventory blocks admission.
-- Missing CompanyFacts does not block diagnostic bundle readiness, but it does
-  block operator-review creation and production admission.
+- Missing CompanyFacts does not block diagnostic bundle readiness after storage
+  authority is admitted, but current storage now blocks earlier on the missing
+  top-level `fact_inventory_hash` authority copy.
 
 ## Containment And Rollback
 
@@ -124,32 +133,33 @@ Focused loader verification:
 
 `python -m pytest ./backend/tests/test_sec_xbrl_offline_evidence_loader.py -q`
 
-Result: `4 passed`.
+Result: `17 passed`.
 
 Loader plus offline orchestrator verification:
 
 `python -m pytest ./backend/tests/test_sec_xbrl_offline_evidence_loader.py ./backend/tests/test_sec_xbrl_e2e_offline_orchestrator.py -q`
 
-Result: `8 passed`.
+Result: `21 passed`.
 
 Diagnostic regeneration:
 
 `python ./diagnostics/assessment/sec-xbrl-offline-evidence-loader.py --storage-dir <operator-offline-storage> --expected-sidecar-receipt-hash 16cdcfc6e5486ccfdb2991fac7f46a03f53d802d60841f2e0ff6c488cdf5bb9d --expected-statement-classification-receipt-hash bd95ba6d396a7d645f11e8e0bc4f8e7ca5f6e12f2ec9f50a5f250f43ae938666`
 
 Result: report status
-`offline_evidence_bundle_ready_without_companyfacts_oracle`, with
-`operator_review_creation_ready: false` and `production_admission_ready: false`.
+`offline_evidence_bundle_blocked`, with
+`blocked_reasons[0].reason: sec_xbrl_offline_evidence_loader_field_missing`
+and `blocked_reasons[0].details.field: fact_inventory_hash`.
 
 Full SEC XBRL suite:
 
 `python -m pytest` over explicit `./backend/tests/test_sec_xbrl*.py`
 enumeration.
 
-Result: `383 passed, 3 warnings`.
+Result: `396 passed, 3 warnings`.
 
 `python -m py_compile ./backend/app/services/layer3_sec_xbrl_offline_evidence_loader.py ./diagnostics/assessment/sec-xbrl-offline-evidence-loader.py ./backend/tests/test_sec_xbrl_offline_evidence_loader.py`
 
-Result: pass.
+Result: pass; current reconciliation JSON scan parsed `511` JSON files.
 
 `python ./tools/l3-target-selection-validate.py --expect frozen`
 
@@ -166,7 +176,7 @@ Result: pass.
 
 Path-aware redaction/residual scan over committed SEC XBRL reports.
 
-Result: `60` reports scanned with `0` identity hits, `0` raw scalar value
+Result: `49` reports scanned with `0` identity hits, `0` raw scalar value
 hits, and `0` nonzero residual magnitudes.
 
 `git diff --check`
@@ -176,6 +186,9 @@ Result: pass, with Git LF-to-CRLF working-copy warnings only.
 ## Next Safe Action
 
 Do not claim production admission from this diagnostic. The next bounded pass
-should supply or validate an operator-acquired offline CompanyFacts oracle
-packet for the same evidence authority, without source acquisition, live SEC
-network access, Arelle invocation, or raw value/public identity leakage.
+must first supply or regenerate governed offline storage whose
+statement-classification receipt carries a top-level `fact_inventory_hash`
+matching `authority_hashes.fact_inventory_hash`; after that, supply or validate
+an operator-acquired offline CompanyFacts oracle packet for the same evidence
+authority, without source acquisition, live SEC network access, Arelle
+invocation, or raw value/public identity leakage.
