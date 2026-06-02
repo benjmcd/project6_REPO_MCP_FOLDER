@@ -146,7 +146,31 @@ def test_nonlocal_admission_disposition_rejects_unknown_packet_fields(tmp_path: 
 
     assert report["decision"] == "nonlocal_production_admission_disposition_blocked"
     assert "sec_xbrl_nonlocal_admission_packet_invalid_required_fields" in report["blocking_reasons"]
-    assert "deployment_notes" in report["final_admission_packet_summary"]["invalid_required_fields"]
+    assert module.UNKNOWN_PACKET_FIELD in report["final_admission_packet_summary"]["invalid_required_fields"]
+    assert "deployment_notes" not in json.dumps(report, sort_keys=True)
+
+
+def test_nonlocal_admission_disposition_redacts_raw_unknown_packet_keys(tmp_path: Path) -> None:
+    module = _gate_module()
+    raw_key = "operator@example.com"
+    admission = _valid_admission_packet(module)
+    admission[raw_key] = "operator-note-ref-alpha"
+    admission_path = tmp_path / "admission.json"
+    disposition_path = tmp_path / "disposition.json"
+    admission_path.write_text(json.dumps(admission), encoding="utf-8")
+    disposition_path.write_text(json.dumps(_valid_disposition_packet(module)), encoding="utf-8")
+
+    report = module.build_report(
+        admission_packet_path=admission_path,
+        backfill_disposition_path=disposition_path,
+    )
+
+    rendered = json.dumps(report, sort_keys=True)
+    assert report["decision"] == "nonlocal_production_admission_disposition_blocked"
+    assert "sec_xbrl_nonlocal_admission_raw_authority_not_admitted" in report["blocking_reasons"]
+    assert module.UNKNOWN_PACKET_FIELD in report["final_admission_packet_summary"]["invalid_required_fields"]
+    assert "raw_operator_email" in report["final_admission_packet_summary"]["redaction_scan"]["hit_classes"]
+    assert raw_key not in rendered
 
 
 def test_nonlocal_admission_disposition_rejects_inconsistent_backfill_mode(tmp_path: Path) -> None:

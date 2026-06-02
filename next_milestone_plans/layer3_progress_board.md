@@ -13,8 +13,8 @@ Diagnostic/report:
 `diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition-report.json`.
 
 Status: current-main Tier-1 validate-only diagnostic/report/test gate with
-branch-local #2083 review-thread closeout on
-`codex/secxbrl-2083-review-closeout`.
+branch-local late review-ledger closeout on
+`codex/secxbrl-late-review-ledger-closeout`.
 
 Scope: validate optional redacted final-admission and historical
 backfill-disposition packets after nonlocal in-app auth evidence became
@@ -32,13 +32,13 @@ Arelle subprocess invocation, live SEC network run, value-reveal default,
 export/delivery, provider dispatch, historical backfill execution, raw runtime
 artifact, or production-readiness claim is admitted.
 
-Verification: focused admission/readiness gate tests pass with `14 passed`;
-full SEC XBRL suite passes with `364 passed, 3 warnings`; regenerated
-no-packet report remains byte-equivalent and blocked on the two missing
-packets; target-selection frozen check, progress check, py_compile over
-touched Python files, JSON validation with `utf-8-sig` for two manifests and
-59 committed SEC XBRL reports, redaction/residual scan over 59 committed SEC
-XBRL reports, and `git diff --check` pass.
+Verification: focused readiness/admission gate tests pass with `16 passed`;
+full SEC XBRL suite passes with `366 passed, 3 warnings`; regenerated
+no-packet report remains blocked on the two missing packets and now references
+the current readiness report hash; target-selection frozen check, progress
+check, py_compile over touched Python files, JSON validation with `utf-8-sig`
+for two manifests and 59 committed SEC XBRL reports, redaction/residual scan
+over 59 committed SEC XBRL reports, and `git diff --check` pass.
 
 Next exact posture:
 `sec_xbrl_nonlocal_final_admission_packet_and_backfill_disposition_v1`.
@@ -56,7 +56,8 @@ Diagnostic/report:
 `diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json`.
 
 Status: current-main Tier-1 validate-only reconciliation with branch-local
-#2082 review-thread closeout on `codex/secxbrl-2082-review-closeout`.
+late review-ledger closeout on
+`codex/secxbrl-late-review-ledger-closeout`.
 
 Scope: record that repo-owned in-app auth evidence is present and current
 after policy validation, auth-binding, route enforcement, and residual
@@ -73,9 +74,9 @@ workflow, source acquisition, Arelle subprocess invocation, live SEC network
 run, value-reveal default, export/delivery, provider dispatch, raw runtime
 artifact, historical backfill, or production-readiness claim is admitted.
 
-Verification: focused readiness/admission tests pass with `15 passed`; full
-SEC XBRL suite passes with `365 passed, 3 warnings`; regenerated readiness
-report changes only `in_app_auth_implemented_by_gate` from true to false while
+Verification: focused readiness/admission tests pass with `16 passed`; full
+SEC XBRL suite passes with `366 passed, 3 warnings`; regenerated readiness
+report keeps `in_app_auth_implemented_by_gate` false while
 keeping `decision: nonlocal_production_readiness_blocked`,
 `blocking_reasons: [nonlocal_production_readiness_final_admission_missing]`,
 `production_readiness_claimed: false`, and
