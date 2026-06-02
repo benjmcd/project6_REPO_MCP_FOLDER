@@ -19,6 +19,8 @@ AUTH_BINDING_TEST = "backend/tests/test_sec_xbrl_auth_binding_receipt.py"
 OPERATOR_WORKFLOW_TEST = "backend/tests/test_sec_xbrl_operator_review_workflow.py"
 TARGET = "sec_xbrl_nonlocal_production_admission_or_historical_backfill_disposition_v1"
 REDACTION_POLICY_ID = "sec_xbrl_nonlocal_admission_disposition_redaction_v1"
+PACKET_DIR_ADMISSION_FILENAME = "sec-xbrl-final-admission-packet.json"
+PACKET_DIR_BACKFILL_DISPOSITION_FILENAME = "sec-xbrl-backfill-disposition-packet.json"
 
 ADMISSION_REQUIRED_FIELDS = (
     "admission_mode",
@@ -132,11 +134,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
     parser.add_argument("--admission-packet", default=None)
     parser.add_argument("--backfill-disposition", default=None)
+    parser.add_argument("--packet-dir", default=None)
     args = parser.parse_args(argv)
+    if args.packet_dir and (args.admission_packet or args.backfill_disposition):
+        parser.error("--packet-dir cannot be combined with --admission-packet or --backfill-disposition")
+    admission_packet_path = args.admission_packet
+    backfill_disposition_path = args.backfill_disposition
+    if args.packet_dir:
+        packet_dir = Path(args.packet_dir)
+        admission_packet_path = packet_dir / PACKET_DIR_ADMISSION_FILENAME
+        backfill_disposition_path = packet_dir / PACKET_DIR_BACKFILL_DISPOSITION_FILENAME
 
     report = build_report(
-        admission_packet_path=args.admission_packet,
-        backfill_disposition_path=args.backfill_disposition,
+        admission_packet_path=admission_packet_path,
+        backfill_disposition_path=backfill_disposition_path,
     )
     output = ROOT / args.output
     output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -288,6 +299,21 @@ def _operator_packet_contract() -> dict[str, Any]:
             "--backfill-disposition <backfill-disposition.json> "
             "--output <report.json>"
         ),
+        "packet_dir_validation_command": (
+            "python diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition.py "
+            "--packet-dir <packet-directory> "
+            "--output <report.json>"
+        ),
+        "packet_directory": {
+            "cli_argument": "--packet-dir",
+            "required_filenames": {
+                "admission_packet": PACKET_DIR_ADMISSION_FILENAME,
+                "backfill_disposition_packet": PACKET_DIR_BACKFILL_DISPOSITION_FILENAME,
+            },
+            "cannot_combine_with": ["--admission-packet", "--backfill-disposition"],
+            "files_are_operator_supplied": True,
+            "files_are_committed_to_repo": False,
+        },
         "success_decision": "nonlocal_production_admission_disposition_ready_for_operator_review",
         "blocked_decision": "nonlocal_production_admission_disposition_blocked",
         "production_readiness_claimed_by_success": False,
