@@ -143,7 +143,8 @@ Constraints:
 - primary key on `sec_xbrl_auth_binding_receipt_id`;
 - unique `client_request_id`;
 - unique `binding_basis_hash`;
-- unique pair `source_receipt_kind`, `source_receipt_id`;
+- unique tuple `source_receipt_kind`, `source_receipt_id`, `route_family`,
+  `actor_ref_hash`, `workspace_ref_hash`, and `role`;
 - check `binding_policy_id =
   'sec_xbrl_repo_owned_in_app_auth_owner_binding_v1'`;
 - check `binding_state = 'owner_bound'`;
@@ -195,18 +196,18 @@ Future service functions:
 - `record_sec_xbrl_auth_binding(...)`: validates server-derived auth policy
   output, loads the source receipt by kind/id/basis, derives the binding basis,
   performs idempotent write by `client_request_id`, `binding_basis_hash`, and
-  `source_receipt_kind + source_receipt_id`, and returns a redacted binding
+  the source/route/actor/workspace/role tuple, and returns a redacted binding
   summary.
 - `inspect_sec_xbrl_auth_binding(...)`: loads a binding by source receipt
   kind/id or kind/basis and returns only hash refs, route family, role,
   policy id/hash, state, and negative invariant booleans.
 - `require_sec_xbrl_owner_binding(...)`: checks that the current route family
   is admitted for the selected source kind, then compares the current auth
-  context hash refs and stable binding policy hash to the stored binding before
-  any protected status read or downstream value-reveal operation returns. The
-  later route-enforcement slice may not require the stored creation route or
-  stored creation role to equal every later protected access route, because
-  this design also requires one binding per source receipt.
+  context hash refs, role, and exact or route-compatible binding before any
+  protected status read or downstream value-reveal operation returns. Exact
+  route matches must compare the stored policy hash. Route-compatible matches
+  are limited to the explicitly admitted downstream/status transitions and do
+  not allow auditor/read bindings to authorize owner/write routes.
 
 Write order:
 
@@ -221,9 +222,10 @@ Read order:
 
 1. Route dependency derives server-owned auth context.
 2. Auth-binding service loads the source receipt binding.
-3. It denies cross-owner, missing-binding, stale-policy, source-kind route
-   incompatibility, or current-role route incompatibility before the source
-   status service emits a response.
+3. It denies cross-owner, missing-binding, stale-policy on exact-route matches,
+   source-kind route incompatibility, route-incompatible prior bindings, or
+   current-role route incompatibility before the source status service emits a
+   response.
 
 ## Rollback And Containment
 
@@ -253,15 +255,18 @@ Minimum focused tests for the future Tier-2 implementation:
 - downgrade removes the new table and indexes without touching existing SEC
   XBRL receipt tables;
 - model exposes the selected columns and constants only;
-- binding service records one binding per source receipt and is idempotent by
-  request id, binding basis hash, and source receipt identity;
-- conflicting request id, binding basis, or source receipt identity fails
-  closed;
+- binding service records one binding per source/route/actor/workspace/role
+  tuple and is idempotent by request id, binding basis hash, and that tuple;
+- conflicting request id, binding basis, or source/route/actor/workspace/role
+  tuple fails closed;
 - missing source receipt, wrong source receipt basis hash, unsupported receipt
   kind, unsupported route family, unsupported role, stale policy hash, and
   cross-owner context fail closed;
 - protected route status reads deny missing, cross-owner, stale-policy, or
   source-incompatible owner binding;
+- downstream/status routes may reuse only explicitly route-compatible prior
+  write bindings, and auditor/read bindings must not authorize owner/write
+  routes;
 - mutating route responses do not return source receipts unless binding write
   succeeds;
 - value-reveal authority and controlled-submit flows remain explicit and

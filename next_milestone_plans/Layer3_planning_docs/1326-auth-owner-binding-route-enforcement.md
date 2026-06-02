@@ -38,11 +38,11 @@ Repo-confirmed:
 
 Inference:
 
-- A one-binding-per-source table cannot require the stored creation route and
-  stored creation role to equal every later protected access route. The durable
-  binding must prove source owner/workspace identity and stable binding policy;
-  the current route must separately satisfy source-kind route compatibility and
-  current role allowlists.
+- Source-only binding is too coarse for separate read/write and owner/auditor
+  route families. The durable binding must prove source, route,
+  owner/workspace identity, role, and policy context; later protected access
+  may reuse only explicitly route-compatible prior write bindings for
+  downstream/status routes.
 
 ## Implemented Contract
 
@@ -83,18 +83,25 @@ Implemented service reconciliation:
 - It still checks that the current route family is admitted for the source kind
   and that the current policy decision role is admitted for the route.
 - It compares stored and current `actor_ref_hash`, `workspace_ref_hash`, and
-  stable policy hash.
-- It does not require the stored creation `route_family` or stored creation
-  `role` to equal the current route. This preserves the one-binding-per-source
-  table contract while allowing a decision receipt created by the submit route
-  to be inspected by the status route.
+  role.
+- Exact-route matches compare the stored and current policy hash.
+- Route-compatible matches are limited to explicitly admitted downstream/status
+  transitions: decision submit to decision status and value-reveal authority,
+  value-reveal authority to controlled submit, and controlled submit to
+  controlled-submit status.
+- Auditor/read bindings do not authorize owner/write routes. This supersedes
+  the earlier one-binding-per-source wording with a
+  source/route/actor/workspace/role-scoped binding contract.
 
 ## Rollback And Containment
 
 Rollback:
 
 - revert the route calls and the new runtime policy service;
-- no table, model, migration, or existing SEC XBRL receipt row needs rollback.
+- the route-enforcement slice itself added no table, model, or migration, but
+  the later review-thread closeout adds a migration that narrows auth-binding
+  uniqueness to source/route/actor/workspace/role. Rollback for that closeout
+  is owned by its migration and must preserve existing SEC XBRL receipt rows.
 
 Containment:
 
@@ -107,11 +114,15 @@ Containment:
   transaction because the existing receipt services commit internally before
   the API layer records the auth binding. If binding creation fails after source
   receipt creation, the response is blocked and the unbound receipt remains
-  inaccessible until separate repair/backfill authority is admitted.
+  inaccessible until separate repair/backfill authority is admitted. This
+  atomicity/backfill gap remains the next Tier-2 design/implementation risk and
+  is not closed by route/actor-scoped uniqueness alone.
 
-## Non-Goals Preserved
+## Original Route-Enforcement Non-Goals
 
-- no schema, model, or Alembic change;
+- the original route-enforcement slice added no schema, model, or Alembic
+  change; this later review-thread closeout does add the scoped uniqueness
+  migration described above;
 - no source acquisition or live SEC network behavior;
 - no Arelle subprocess invocation;
 - no raw value default-on behavior;

@@ -52,10 +52,11 @@ Reference-only:
 
 Inference:
 
-- The current repo can validate a redacted deployment authority packet, but it
-  cannot truthfully manufacture one. Without either a deployment-owned packet
-  or repo-owned in-app auth proof, nonlocal production-readiness admission must
-  remain blocked.
+- The current repo can validate a redacted deployment authority packet for the
+  external-proxy fork, but it cannot truthfully manufacture one. Repo-owned
+  in-app auth is a separate fork and is not an admissible authority-packet
+  mode; without explicit evidence from the selected fork, nonlocal
+  production-readiness admission must remain blocked.
 
 ## Design Decision
 
@@ -84,7 +85,9 @@ Minimum packet fields are inherited from the gate:
 - `deployment_owner_ref`: redacted stable deployment owner reference;
 - `approval_record_ref`: redacted stable approval reference;
 - `approval_record_hash`: 64-character lowercase hex hash;
-- `proxy_boundary_mode`: `trusted_external_proxy` or `repo_owned_in_app_auth`;
+- `proxy_boundary_mode`: `trusted_external_proxy` only. Repo-owned in-app auth
+  remains a separate fork and must not be admitted through the deployment
+  authority-packet gate.
 - `proxy_identity_header`: header name only, not an observed identity value;
 - `allowed_origins_policy_hash`: 64-character lowercase hex hash;
 - `storage_exposure_policy`: `auto` or `disabled`;
@@ -95,8 +98,9 @@ Minimum packet fields are inherited from the gate:
 - `verification_run_ref`: redacted stable verification-run reference.
 
 The packet must not contain raw operator identity, email, issuer identity,
-accession, CIK, SEC URL, local path, period date, raw sidecar payload, raw
-value-store payload, raw value, or residual magnitude.
+accession, labeled or bare CIK-like references, SEC URL, local path in either
+Windows slash form, period date, raw sidecar payload, raw value-store payload,
+raw value, or residual magnitude.
 
 Passing this fork proves only that the deployment authority packet is
 admissible to the readiness gate. It still does not implement production

@@ -27,7 +27,10 @@ from app.services.layer3_utils import stable_hash
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MIGRATION_PATH = ROOT / "backend" / "alembic" / "versions" / "0046_layer3_sec_xbrl_auth_binding_receipt.py"
+MIGRATION_0046_PATH = ROOT / "backend" / "alembic" / "versions" / "0046_layer3_sec_xbrl_auth_binding_receipt.py"
+MIGRATION_0047_PATH = (
+    ROOT / "backend" / "alembic" / "versions" / "0047_layer3_sec_xbrl_auth_binding_route_actor_scope.py"
+)
 
 
 @pytest.fixture()
@@ -56,13 +59,23 @@ def _policy(
     policy: str = "policy",
     route_family: str = "sec_xbrl_operator_review_workflow_status_read",
 ):
+    actor_ref_hash = _hash(actor)
+    workspace_ref_hash = _hash(workspace)
     return {
         "decision": "allow",
         "route_family": route_family,
         "role": role,
-        "actor_ref_hash": _hash(actor),
-        "workspace_ref_hash": _hash(workspace),
-        "policy_hash": _hash(policy),
+        "actor_ref_hash": actor_ref_hash,
+        "workspace_ref_hash": workspace_ref_hash,
+        "policy_hash": stable_hash(
+            {
+                "policy": policy,
+                "actor_ref_hash": actor_ref_hash,
+                "workspace_ref_hash": workspace_ref_hash,
+                "route_family": route_family,
+                "role": role,
+            }
+        ),
     }
 
 
@@ -109,7 +122,7 @@ def test_auth_binding_model_creates_additive_table() -> None:
         assert "negative_invariants_json" in columns
         assert "ix_l3_sec_xbrl_auth_binding_source_basis" in indexes
         assert "ix_l3_sec_xbrl_auth_binding_actor_workspace" in indexes
-        assert "uq_l3_sec_xbrl_auth_binding_source_receipt" in unique_constraints
+        assert "uq_l3_sec_xbrl_auth_binding_source_route_actor_role" in unique_constraints
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()
@@ -119,19 +132,40 @@ def test_auth_binding_migration_declares_additive_table() -> None:
     backend_root = str(ROOT / "backend")
     if backend_root not in sys.path:
         sys.path.insert(0, backend_root)
-    spec = importlib.util.spec_from_file_location("migration_0046_sec_xbrl_auth_binding", MIGRATION_PATH)
+    spec = importlib.util.spec_from_file_location("migration_0046_sec_xbrl_auth_binding", MIGRATION_0046_PATH)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
 
     assert module.revision == "0046_layer3_sec_xbrl_auth_binding_receipt"
     assert module.down_revision == "0045_layer3_sec_xbrl_controlled_value_reveal_submit"
-    source = MIGRATION_PATH.read_text(encoding="utf-8")
+    source = MIGRATION_0046_PATH.read_text(encoding="utf-8")
     assert "l3_sec_xbrl_auth_binding_receipt" in source
     assert "drop_table_idempotent(TABLE_NAME)" in source
     assert "source_receipt_kind" in source
     assert "actor_ref_hash" in source
     assert "workspace_ref_hash" in source
+
+
+def test_auth_binding_route_actor_scope_migration_rescopes_source_unique_constraint() -> None:
+    backend_root = str(ROOT / "backend")
+    if backend_root not in sys.path:
+        sys.path.insert(0, backend_root)
+    spec = importlib.util.spec_from_file_location("migration_0047_sec_xbrl_auth_binding", MIGRATION_0047_PATH)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert module.revision == "0047_layer3_sec_xbrl_auth_binding_route_actor_scope"
+    assert module.down_revision == "0046_layer3_sec_xbrl_auth_binding_receipt"
+    source = MIGRATION_0047_PATH.read_text(encoding="utf-8")
+    assert "uq_l3_sec_xbrl_auth_binding_source_receipt" in source
+    assert "uq_l3_sec_xbrl_auth_binding_source_route_actor_role" in source
+    assert "route_family" in source
+    assert "actor_ref_hash" in source
+    assert "workspace_ref_hash" in source
+    assert "role" in source
+    assert "Cannot safely downgrade SEC XBRL auth binding route/actor uniqueness" in source
 
 
 def test_auth_binding_records_hash_only_receipt_and_replays_by_basis(db_session) -> None:
@@ -225,6 +259,18 @@ def test_auth_binding_fails_closed_on_source_and_policy_gaps(db_session) -> None
         )
     assert raw_fields.value.code == "sec_xbrl_auth_binding_policy_raw_fields_not_admitted"
 
+    with pytest.raises(auth_binding.SecXbrlAuthBindingError) as raw_client_request:
+        auth_binding.record_sec_xbrl_auth_binding(
+            db_session,
+            client_request_id="operator@example.com",
+            source_receipt_kind="operator_review_workflow",
+            source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+            source_receipt_basis_hash=workflow.workflow_basis_hash,
+            route_family="sec_xbrl_operator_review_workflow_status_read",
+            policy_decision=_policy(),
+        )
+    assert raw_client_request.value.code == "sec_xbrl_auth_binding_raw_reference_not_admitted"
+
     with pytest.raises(auth_binding.SecXbrlAuthBindingError) as bad_role:
         auth_binding.record_sec_xbrl_auth_binding(
             db_session,
@@ -236,6 +282,19 @@ def test_auth_binding_fails_closed_on_source_and_policy_gaps(db_session) -> None
             policy_decision=_policy(role="admin"),
         )
     assert bad_role.value.code == "sec_xbrl_auth_binding_role_not_admitted"
+
+    missing_policy_route = {k: v for k, v in _policy().items() if k != "route_family"}
+    with pytest.raises(auth_binding.SecXbrlAuthBindingError) as missing_route:
+        auth_binding.record_sec_xbrl_auth_binding(
+            db_session,
+            client_request_id="auth-binding-missing-policy-route",
+            source_receipt_kind="operator_review_workflow",
+            source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+            source_receipt_basis_hash=workflow.workflow_basis_hash,
+            route_family="sec_xbrl_operator_review_workflow_status_read",
+            policy_decision=missing_policy_route,
+        )
+    assert missing_route.value.code == "sec_xbrl_auth_binding_policy_route_family_missing"
 
     with pytest.raises(auth_binding.SecXbrlAuthBindingError) as auditor_write:
         auth_binding.record_sec_xbrl_auth_binding(
@@ -296,8 +355,7 @@ def test_auth_binding_requires_matching_owner_context(db_session) -> None:
             route_family="sec_xbrl_operator_review_workflow_status_read",
             policy_decision=_policy(actor="other-actor"),
         )
-    assert cross_owner.value.code == "sec_xbrl_auth_binding_context_mismatch"
-    assert "actor_ref_hash" in cross_owner.value.details["mismatched_fields"]
+    assert cross_owner.value.code == "sec_xbrl_auth_binding_missing"
 
     with pytest.raises(auth_binding.SecXbrlAuthBindingError) as stale_policy:
         auth_binding.require_sec_xbrl_owner_binding(
@@ -313,7 +371,7 @@ def test_auth_binding_requires_matching_owner_context(db_session) -> None:
 
 def test_auth_binding_allows_same_source_owner_across_admitted_route_family(db_session) -> None:
     workflow = _workflow(db_session, workflow_id="workflow-route-family")
-    auth_binding.record_sec_xbrl_auth_binding(
+    read_binding = auth_binding.record_sec_xbrl_auth_binding(
         db_session,
         client_request_id="auth-binding-route-family",
         source_receipt_kind="operator_review_workflow",
@@ -323,12 +381,44 @@ def test_auth_binding_allows_same_source_owner_across_admitted_route_family(db_s
         policy_decision=_policy(route_family="sec_xbrl_operator_review_workflow_status_read"),
     )
 
+    with pytest.raises(auth_binding.SecXbrlAuthBindingError) as write_before_route_binding:
+        auth_binding.require_sec_xbrl_owner_binding(
+            db_session,
+            source_receipt_kind="operator_review_workflow",
+            source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+            route_family="sec_xbrl_operator_review_decision_submit_write",
+            policy_decision=_policy(route_family="sec_xbrl_operator_review_decision_submit_write"),
+        )
+    assert write_before_route_binding.value.code == "sec_xbrl_auth_binding_missing"
+
+    write_binding = auth_binding.record_sec_xbrl_auth_binding(
+        db_session,
+        client_request_id="auth-binding-route-family-write",
+        source_receipt_kind="operator_review_workflow",
+        source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+        source_receipt_basis_hash=workflow.workflow_basis_hash,
+        route_family="sec_xbrl_operator_review_decision_submit_write",
+        policy_decision=_policy(route_family="sec_xbrl_operator_review_decision_submit_write"),
+    )
     owner_write = auth_binding.require_sec_xbrl_owner_binding(
         db_session,
         source_receipt_kind="operator_review_workflow",
         source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
         route_family="sec_xbrl_operator_review_decision_submit_write",
         policy_decision=_policy(route_family="sec_xbrl_operator_review_decision_submit_write"),
+    )
+
+    auditor_binding = auth_binding.record_sec_xbrl_auth_binding(
+        db_session,
+        client_request_id="auth-binding-route-family-auditor",
+        source_receipt_kind="operator_review_workflow",
+        source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+        source_receipt_basis_hash=workflow.workflow_basis_hash,
+        route_family="sec_xbrl_operator_review_workflow_status_read",
+        policy_decision=_policy(
+            role="auditor",
+            route_family="sec_xbrl_operator_review_workflow_status_read",
+        ),
     )
     auditor_read = auth_binding.require_sec_xbrl_owner_binding(
         db_session,
@@ -341,6 +431,25 @@ def test_auth_binding_allows_same_source_owner_across_admitted_route_family(db_s
         ),
     )
 
-    assert owner_write["route_family"] == "sec_xbrl_operator_review_workflow_status_read"
-    assert auditor_read["role"] == "owner"
-    assert db_session.query(L3SecXbrlAuthBindingReceipt).count() == 1
+    assert read_binding["route_family"] == "sec_xbrl_operator_review_workflow_status_read"
+    assert write_binding["route_family"] == "sec_xbrl_operator_review_decision_submit_write"
+    assert owner_write["route_family"] == "sec_xbrl_operator_review_decision_submit_write"
+    assert auditor_binding["role"] == "auditor"
+    assert auditor_read["role"] == "auditor"
+    assert db_session.query(L3SecXbrlAuthBindingReceipt).count() == 3
+
+    changed_policy = _policy(
+        policy="changed",
+        route_family="sec_xbrl_operator_review_decision_submit_write",
+    )
+    with pytest.raises(auth_binding.SecXbrlAuthBindingError) as duplicate_route_actor:
+        auth_binding.record_sec_xbrl_auth_binding(
+            db_session,
+            client_request_id="auth-binding-route-family-write-new-policy",
+            source_receipt_kind="operator_review_workflow",
+            source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+            source_receipt_basis_hash=workflow.workflow_basis_hash,
+            route_family="sec_xbrl_operator_review_decision_submit_write",
+            policy_decision=changed_policy,
+        )
+    assert duplicate_route_actor.value.code == "sec_xbrl_auth_binding_source_route_actor_conflict"
