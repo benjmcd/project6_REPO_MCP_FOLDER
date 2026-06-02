@@ -83,15 +83,13 @@ def redacted_projection_persistence_payload(canonical_projection: Mapping[str, A
 
     periods = _projection_periods(canonical_projection)
     redacted_periods = []
+    examined_absent: list[str] = []
     for period in periods:
         projection = period["projection"]
         concepts = [_redacted_projection_item(item, projection=projection) for item in _projected_items(projection)]
         if not concepts:
-            raise SecXbrlE2EIntegrationError(
-                "sec_xbrl_e2e_integration_no_projected_facts",
-                "SEC XBRL end-to-end integration requires at least one projected fact.",
-                details={"period_ref": period["period_ref"]},
-            )
+            examined_absent.append(period["period_ref"])
+            continue
         redacted_periods.append(
             {
                 "period_ref": period["period_ref"],
@@ -110,6 +108,12 @@ def redacted_projection_persistence_payload(canonical_projection: Mapping[str, A
                     "concepts": concepts,
                 },
             }
+        )
+    if not redacted_periods:
+        raise SecXbrlE2EIntegrationError(
+            "sec_xbrl_e2e_integration_no_projected_facts",
+            "SEC XBRL end-to-end integration requires at least one period with projected facts.",
+            details={"examined_absent_period_refs": examined_absent},
         )
     payload = {
         "status": "canonical_multi_period_projection_ready",

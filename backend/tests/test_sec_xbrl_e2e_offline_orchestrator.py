@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from app.db.session import Base
 from app.models import (
     L3SecXbrlOperatorReviewWorkflow,
+    L3SecXbrlProjectionFact,
     L3SecXbrlProjectionSet,
     L3SecXbrlStatementPacketRow,
     L3SecXbrlStatementPacketSet,
@@ -86,6 +87,39 @@ def test_offline_orchestrator_opens_redacted_review_workflow_from_governed_evide
         ("fy-period-1", 1, True),
         ("fy-period-2", 2, True),
     ]
+    assert db_session.query(L3SecXbrlProjectionSet).count() == 1
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 1
+    assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 1
+
+
+def test_offline_orchestrator_persists_review_workflow_with_ready_empty_later_period(
+    db_session,
+) -> None:
+    response = orchestrator.open_redacted_operator_review_from_offline_evidence(
+        db_session,
+        client_request_id="offline-orchestrator-empty-later-period",
+        evidence=_evidence_with_empty_second_period(),
+        period_limit=2,
+    )
+    text = json.dumps(response, sort_keys=True)
+
+    assert response["status"] == "review_ready"
+    assert response["summary"]["period_count"] == 2
+    assert response["summary"]["ready_period_count"] == 2
+    assert response["summary"]["projected_count"] == 3
+    assert response["summary"]["empty_period_count"] == 1
+    assert response["summary"]["examined_absent_period_refs"] == ["fy-period-2"]
+    assert response["summary"]["row_count"] == 3
+    assert '"effective_value"' not in text
+    assert set(_scalar_values(response)).isdisjoint({"100", 100, "200", 200, "40", 40, "end-1", "end-2"})
+
+    projection_facts = db_session.query(L3SecXbrlProjectionFact).all()
+    packet_rows = db_session.query(L3SecXbrlStatementPacketRow).all()
+
+    assert len(projection_facts) == 3
+    assert len(packet_rows) == 3
+    assert all(row.value_redacted is True for row in projection_facts)
+    assert all(row.value_redacted is True for row in packet_rows)
     assert db_session.query(L3SecXbrlProjectionSet).count() == 1
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 1
     assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 1
@@ -215,6 +249,64 @@ def _evidence() -> dict[str, Any]:
         },
         "value_store": {"value_records": value_records, "value_store_hash": value_store_hash},
         "statement_role_view_records": _statement_role_records(),
+        "dataset_version_id": "dataset-redacted",
+    }
+
+
+def _evidence_with_empty_second_period() -> dict[str, Any]:
+    sidecar_records = [
+        _record(
+            "rf-revenue-fy",
+            "us-gaap",
+            "RevenueFromContractWithCustomerExcludingAssessedTax",
+            "USD",
+            start="start-2",
+            end="end-2",
+        ),
+        _record("rf-assets-fy", "us-gaap", "Assets", "USD", end="end-2", instant=True),
+        _record(
+            "rf-cashflow-fy",
+            "us-gaap",
+            "NetCashProvidedByUsedInOperatingActivities",
+            "USD",
+            start="start-2",
+            end="end-2",
+        ),
+        _record("rf-period-current", "dei", "DocumentPeriodEndDate", "unitless", end="end-2", instant=True),
+        _record("rf-period-old", "dei", "DocumentPeriodEndDate", "unitless", end="end-1", instant=True),
+    ]
+    value_records = [
+        _value("rf-revenue-fy", "100"),
+        _value("rf-assets-fy", "200"),
+        _value("rf-cashflow-fy", "40"),
+        _value("rf-period-current", "end-2"),
+        _value("rf-period-old", "end-1"),
+    ]
+    value_store_hash = stable_hash(value_records)
+    resolved_fact_projection = [_redacted_fact(record) for record in sidecar_records]
+    return {
+        "companyfacts": _companyfacts_periods(
+            [
+                ("us-gaap", "RevenueFromContractWithCustomerExcludingAssessedTax", "100", "USD", "start-2", "end-2", False),
+                ("us-gaap", "Assets", "200", "USD", "", "end-2", True),
+                ("us-gaap", "NetCashProvidedByUsedInOperatingActivities", "40", "USD", "start-2", "end-2", False),
+            ]
+        ),
+        "sidecar_receipt": {
+            "sidecar_receipt_id": "sidecar-receipt-redacted",
+            "sidecar_receipt_hash": _hash("b"),
+            "resolved_fact_records": sidecar_records,
+            "resolved_fact_projection": resolved_fact_projection,
+            "resolved_fact_inventory_hash": stable_hash(resolved_fact_projection),
+            "internal_value_store": {"value_store_hash": value_store_hash, "value_record_count": len(value_records)},
+            "authority_hashes": {"internal_value_store_hash": value_store_hash, "sidecar_receipt_hash": _hash("b")},
+        },
+        "value_store": {"value_records": value_records, "value_store_hash": value_store_hash},
+        "statement_role_view_records": [
+            {"fact_id_or_order_key": "rf-revenue-fy", "statement_candidate_role": "income_statement"},
+            {"fact_id_or_order_key": "rf-assets-fy", "statement_candidate_role": "balance_sheet"},
+            {"fact_id_or_order_key": "rf-cashflow-fy", "statement_candidate_role": "cash_flow_statement"},
+        ],
         "dataset_version_id": "dataset-redacted",
     }
 
