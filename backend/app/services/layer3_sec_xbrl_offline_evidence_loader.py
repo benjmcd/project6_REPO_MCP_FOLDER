@@ -6,14 +6,17 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from app.services.layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_contract import (
+    STATEMENT_CLASSIFICATION_HASH_VERSION,
+    STATEMENT_CLASSIFICATION_MODE,
+    classification_authority_view,
+    classification_receipt_hash_basis,
+)
 from app.services.layer3_utils import stable_hash
 
 
 SCHEMA_ID = "layer3.sec_xbrl_offline_evidence_loader.v1"
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_offline_evidence_loader_report.v1"
-STATEMENT_CLASSIFICATION_HASH_VERSION = "sec_edgar_html_inline_xbrl_fact_statement_classification_hash_v1"
-STATEMENT_CLASSIFICATION_MODE = "sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1"
-
 SIDECAR_RECEIPT_DIR = "layer3-sec-edgar-arelle-resolved-fact-authority"
 VALUE_STORE_SUBDIR = "internal-value-stores"
 STATEMENT_CLASSIFICATION_DIR = "layer3-sec-edgar-html-inline-xbrl-fact-statement-classification"
@@ -373,38 +376,38 @@ def _validate_statement_classification_receipt_hash(classification: Mapping[str,
         classification.get("statement_classification_receipt_hash"),
         "statement_classification_receipt_hash",
     )
-    basis = {
-        "hash_version": STATEMENT_CLASSIFICATION_HASH_VERSION,
-        "classification_mode": _required_text(classification.get("classification_mode"), "classification_mode"),
-        "fact_authority_receipt_hash": _classification_fact_authority_hash(classification),
-        "fact_material_bridge_receipt_hash": _classification_bridge_hash(classification),
-        "fact_inventory_hash": _classification_fact_inventory_hash(classification),
-        "classification_inventory_hash": _required_hash(
+    classification_mode = _required_text(classification.get("classification_mode"), "classification_mode")
+    basis = classification_receipt_hash_basis(
+        classification_mode=classification_mode,
+        fact_authority_receipt_hash=_classification_fact_authority_hash(classification),
+        fact_material_bridge_receipt_hash=_classification_bridge_hash(classification),
+        fact_inventory_hash=_classification_fact_inventory_hash(classification),
+        classification_inventory_hash=_required_hash(
             classification.get("classification_inventory_hash"),
             "classification_inventory_hash",
         ),
-        "semantic_profile_inventory_hash": _required_hash(
+        semantic_profile_inventory_hash=_required_hash(
             classification.get("semantic_profile_inventory_hash"),
             "semantic_profile_inventory_hash",
         ),
-        "classification_order_hash": _required_hash(
+        classification_order_hash=_required_hash(
             classification.get("classification_order_hash"),
             "classification_order_hash",
         ),
-        "statement_group_inventory_hash": _required_hash(
+        statement_group_inventory_hash=_required_hash(
             classification.get("statement_group_inventory_hash"),
             "statement_group_inventory_hash",
         ),
-        "unclassified_fact_inventory_hash": _required_hash(
+        unclassified_fact_inventory_hash=_required_hash(
             classification.get("unclassified_fact_inventory_hash"),
             "unclassified_fact_inventory_hash",
         ),
-        "classification_diagnostics_hash": _required_hash(
+        classification_diagnostics_hash=_required_hash(
             classification.get("classification_diagnostics_hash"),
             "classification_diagnostics_hash",
         ),
-    }
-    if basis["classification_mode"] != STATEMENT_CLASSIFICATION_MODE:
+    )
+    if classification_mode != STATEMENT_CLASSIFICATION_MODE:
         raise SecXbrlOfflineEvidenceLoaderError(
             "sec_xbrl_offline_evidence_loader_statement_classification_mode_mismatch",
             "SEC XBRL statement classification mode is not admitted by the offline loader.",
@@ -417,13 +420,13 @@ def _validate_statement_classification_receipt_hash(classification: Mapping[str,
 
 
 def _classification_fact_authority_hash(classification: Mapping[str, Any]) -> str:
+    view = classification_authority_view(classification)
     top_level_hash = _required_hash(
-        classification.get("fact_authority_receipt_hash"),
+        view["top_level"].get("fact_authority_receipt_hash"),
         "fact_authority_receipt_hash",
     )
-    authority = classification.get("authority_hashes") if isinstance(classification.get("authority_hashes"), Mapping) else {}
     authority_hash = _required_hash(
-        authority.get("fact_authority_receipt_hash"),
+        view["authority_hashes"].get("fact_authority_receipt_hash"),
         "authority_hashes.fact_authority_receipt_hash",
     )
     if authority_hash != top_level_hash:
@@ -435,13 +438,13 @@ def _classification_fact_authority_hash(classification: Mapping[str, Any]) -> st
 
 
 def _classification_fact_inventory_hash(classification: Mapping[str, Any]) -> str:
+    view = classification_authority_view(classification)
     top_level_hash = _required_hash(
-        classification.get("fact_inventory_hash"),
+        view["top_level"].get("fact_inventory_hash"),
         "fact_inventory_hash",
     )
-    authority = classification.get("authority_hashes") if isinstance(classification.get("authority_hashes"), Mapping) else {}
     authority_hash = _required_hash(
-        authority.get("fact_inventory_hash"),
+        view["authority_hashes"].get("fact_inventory_hash"),
         "authority_hashes.fact_inventory_hash",
     )
     if authority_hash != top_level_hash:
@@ -453,12 +456,12 @@ def _classification_fact_inventory_hash(classification: Mapping[str, Any]) -> st
 
 
 def _classification_bridge_hash(classification: Mapping[str, Any]) -> str:
+    view = classification_authority_view(classification)
     bridge_hash = _required_hash(
-        classification.get("fact_material_bridge_receipt_hash"),
+        view["top_level"].get("fact_material_bridge_receipt_hash"),
         "fact_material_bridge_receipt_hash",
     )
-    authority = classification.get("authority_hashes") if isinstance(classification.get("authority_hashes"), Mapping) else {}
-    authority_bridge_hash = str(authority.get("fact_material_bridge_receipt_hash") or "")
+    authority_bridge_hash = str(view["authority_hashes"].get("fact_material_bridge_receipt_hash") or "")
     if authority_bridge_hash and authority_bridge_hash != bridge_hash:
         raise SecXbrlOfflineEvidenceLoaderError(
             "sec_xbrl_offline_evidence_loader_statement_classification_bridge_hash_mismatch",
