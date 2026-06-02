@@ -401,6 +401,8 @@ def _in_app_auth_evidence_summary(sources: dict[str, Any], *, root: Path) -> dic
             "test_auth_binding_accepts_legacy_policy_hash_candidate_for_existing_binding",
             "test_auth_binding_inspection_returns_redacted_list_for_multiple_route_bindings",
             "test_operator_review_workflow_status_api_requires_auth_binding_for_existing_workflow",
+            "test_operator_review_decision_status_api_returns_read_only_projection",
+            "test_operator_review_decision_status_rejects_missing_authority",
             "test_value_reveal_authority_api_rolls_back_source_receipt_when_binding_fails",
             "test_controlled_value_reveal_submit_api_rolls_back_source_receipt_when_binding_fails",
         ),

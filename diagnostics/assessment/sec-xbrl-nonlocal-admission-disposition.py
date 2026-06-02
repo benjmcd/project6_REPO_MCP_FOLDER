@@ -58,6 +58,7 @@ PACKET_ALLOWED_FIELDS = {
     "admission": frozenset(ADMISSION_REQUIRED_FIELDS),
     "backfill_disposition": frozenset(DISPOSITION_REQUIRED_FIELDS),
 }
+UNKNOWN_PACKET_FIELD = "unexpected_packet_field"
 HASH_FIELDS = {
     "approval_record_hash",
     "in_app_auth_evidence_hash",
@@ -446,7 +447,7 @@ def _invalid_packet_fields(packet: Mapping[str, Any], *, packet_kind: str) -> li
         invalid.append("redaction_policy_id")
     for field, value in packet.items():
         if field not in allowed_fields:
-            invalid.append(field)
+            invalid.append(UNKNOWN_PACKET_FIELD)
         if field in HASH_FIELDS and not _hash(value):
             invalid.append(field)
         if field.endswith("_ref") and not _redacted_ref(value):
