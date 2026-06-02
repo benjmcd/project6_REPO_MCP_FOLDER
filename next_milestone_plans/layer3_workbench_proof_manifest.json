@@ -43774,5 +43774,47 @@
     "committed_sec_xbrl_report_redaction_residual_scan": "PASS: 58 committed SEC XBRL reports, 0 redaction hits and 0 residual-magnitude hits",
     "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only",
     "next_posture": "operator review/merge decision for residual closeout, then post-merge thread resolution if current-main proof remains clean"
+  },
+  "sec_xbrl_nonlocal_readiness_in_app_auth_reconciliation_proof": {
+    "proof_kind": "sec_xbrl_nonlocal_readiness_in_app_auth_reconciliation_proof",
+    "status": "branch_local_tier1_validate_only_gate_reconciliation",
+    "milestone": "sec_xbrl_nonlocal_readiness_in_app_auth_reconciliation_v1",
+    "branch": "codex/secxbrl-readiness-inapp-reconcile",
+    "base_main": "d9e6aa47281bffecfc13458b695945bda5181360",
+    "proof_terms": [
+      "nonlocal readiness gate records current repo-owned in-app auth evidence as present",
+      "committed readiness report remains blocked on final nonlocal production admission",
+      "production_readiness_claimed remains false",
+      "no runtime behavior, schema, migration, API/UI, source acquisition, Arelle invocation, value-reveal default, export/delivery, or backfill is admitted"
+    ],
+    "touched_surfaces": [
+      "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate.py",
+      "backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py",
+      "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json",
+      "next_milestone_plans/Layer3_planning_docs/1327-nonlocal-readiness-in-app-reconciliation.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "production_readiness_claimed": false,
+    "source_acquisition_performed_by_proof": false,
+    "arelle_subprocess_invoked_by_proof": false,
+    "live_sec_network_run_performed_by_proof": false,
+    "value_reveal_default_enabled_by_proof": false,
+    "delivery_or_export_performed": false,
+    "provider_or_connector_dispatch_performed": false,
+    "raw_values_committed_by_proof": false,
+    "raw_identity_added_by_proof": false,
+    "raw_runtime_artifacts_added_by_proof": false,
+    "historical_unbound_receipt_backfill_admitted": false,
+    "verification_status": "branch-local verification passed",
+    "focused_gate_test_result": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py -q -> 9 passed",
+    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 359 passed, 3 warnings across 31 files",
+    "target_selection_validation": "PASS: python ./tools/l3-target-selection-validate.py --expect frozen",
+    "progress_check": "PASS: python ./tools/l3-progress-check.py",
+    "py_compile": "PASS: python -m py_compile over touched diagnostic/test Python files",
+    "json_manifest_and_report_validation": "PASS: 2 Layer 3 manifests and 58 diagnostics/assessment/sec-xbrl*.json reports parsed with utf-8-sig; total JSON files checked including changed report: 60",
+    "committed_sec_xbrl_report_redaction_residual_scan": "PASS: 58 committed SEC XBRL reports, 0 raw identity/path/SEC URL/accession/email hits, 0 raw-value field hits, 0 nonzero residual-magnitude hits",
+    "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only",
+    "next_posture": "sec_xbrl_nonlocal_production_admission_or_historical_backfill_disposition_v1"
   }
 }
