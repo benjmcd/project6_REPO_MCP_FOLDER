@@ -137,6 +137,12 @@ def authorize_sec_xbrl_route(
         route_family=route,
         role=role,
     )
+    compatible_policy_hashes = _compatible_policy_hashes(
+        actor_ref_hash=actor_ref_hash,
+        workspace_ref_hash=workspace_ref_hash,
+        route_family=route,
+        role=role,
+    )
     return {
         "decision": "allow",
         "policy_status": "admitted",
@@ -148,6 +154,7 @@ def authorize_sec_xbrl_route(
         "actor_ref_hash": actor_ref_hash,
         "workspace_ref_hash": workspace_ref_hash,
         "policy_hash": policy_hash,
+        "compatible_policy_hashes": compatible_policy_hashes,
         "requires_owner_binding": True,
         "mutating_route": bool(PROTECTED_ROUTE_FAMILIES[route]["mutating"]),
         "may_expose_revealed_values": bool(
@@ -263,4 +270,40 @@ def _policy_hash(*, actor_ref_hash: str, workspace_ref_hash: str, route_family: 
             "route_family": route_family,
             "role": role,
         }
+    )
+
+
+def _legacy_policy_hash(*, actor_ref_hash: str, workspace_ref_hash: str) -> str:
+    return stable_hash(
+        {
+            "policy_schema_id": POLICY_SCHEMA_ID,
+            "selected_auth_mode": SELECTED_AUTH_MODE,
+            "actor_ref_hash": actor_ref_hash,
+            "workspace_ref_hash": workspace_ref_hash,
+        }
+    )
+
+
+def _compatible_policy_hashes(
+    *,
+    actor_ref_hash: str,
+    workspace_ref_hash: str,
+    route_family: str,
+    role: str,
+) -> list[str]:
+    return list(
+        dict.fromkeys(
+            [
+                _policy_hash(
+                    actor_ref_hash=actor_ref_hash,
+                    workspace_ref_hash=workspace_ref_hash,
+                    route_family=route_family,
+                    role=role,
+                ),
+                _legacy_policy_hash(
+                    actor_ref_hash=actor_ref_hash,
+                    workspace_ref_hash=workspace_ref_hash,
+                ),
+            ]
+        )
     )

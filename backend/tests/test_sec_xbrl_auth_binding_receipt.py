@@ -23,6 +23,7 @@ from app.models.models import (
     L3_SEC_XBRL_AUTH_BINDING_STATE_OWNER_BOUND,
 )
 from app.services import layer3_sec_xbrl_auth_binding as auth_binding
+from app.services import layer3_sec_xbrl_in_app_auth_policy as auth_policy
 from app.services.layer3_utils import stable_hash
 
 
@@ -453,3 +454,122 @@ def test_auth_binding_allows_same_source_owner_across_admitted_route_family(db_s
             policy_decision=changed_policy,
         )
     assert duplicate_route_actor.value.code == "sec_xbrl_auth_binding_source_route_actor_conflict"
+
+
+def test_auth_binding_inspection_returns_redacted_list_for_multiple_route_bindings(db_session) -> None:
+    workflow = _workflow(db_session, workflow_id="workflow-inspection-multiple")
+    auth_binding.record_sec_xbrl_auth_binding(
+        db_session,
+        client_request_id="auth-binding-inspection-read",
+        source_receipt_kind="operator_review_workflow",
+        source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+        source_receipt_basis_hash=workflow.workflow_basis_hash,
+        route_family="sec_xbrl_operator_review_workflow_status_read",
+        policy_decision=_policy(route_family="sec_xbrl_operator_review_workflow_status_read"),
+    )
+    auth_binding.record_sec_xbrl_auth_binding(
+        db_session,
+        client_request_id="auth-binding-inspection-write",
+        source_receipt_kind="operator_review_workflow",
+        source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+        source_receipt_basis_hash=workflow.workflow_basis_hash,
+        route_family="sec_xbrl_operator_review_decision_submit_write",
+        policy_decision=_policy(route_family="sec_xbrl_operator_review_decision_submit_write"),
+    )
+    auth_binding.record_sec_xbrl_auth_binding(
+        db_session,
+        client_request_id="auth-binding-inspection-auditor",
+        source_receipt_kind="operator_review_workflow",
+        source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+        source_receipt_basis_hash=workflow.workflow_basis_hash,
+        route_family="sec_xbrl_operator_review_workflow_status_read",
+        policy_decision=_policy(
+            role="auditor",
+            route_family="sec_xbrl_operator_review_workflow_status_read",
+        ),
+    )
+
+    inspection = auth_binding.inspect_sec_xbrl_auth_binding(
+        db_session,
+        source_receipt_kind="operator_review_workflow",
+        source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+    )
+    auditor_read = auth_binding.inspect_sec_xbrl_auth_binding(
+        db_session,
+        source_receipt_kind="operator_review_workflow",
+        source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+        route_family="sec_xbrl_operator_review_workflow_status_read",
+        role="auditor",
+    )
+
+    assert inspection["inspection_state"] == "multiple_bindings"
+    assert inspection["binding_count"] == 3
+    assert {
+        (item["route_family"], item["role"])
+        for item in inspection["bindings"]
+    } == {
+        ("sec_xbrl_operator_review_workflow_status_read", "owner"),
+        ("sec_xbrl_operator_review_workflow_status_read", "auditor"),
+        ("sec_xbrl_operator_review_decision_submit_write", "owner"),
+    }
+    assert auditor_read["route_family"] == "sec_xbrl_operator_review_workflow_status_read"
+    assert auditor_read["role"] == "auditor"
+    assert workflow.sec_xbrl_operator_review_workflow_id not in json.dumps(inspection, sort_keys=True)
+
+
+def test_auth_binding_accepts_legacy_policy_hash_candidate_for_existing_binding(db_session) -> None:
+    workflow = _workflow(db_session, workflow_id="workflow-legacy-policy-hash")
+    legacy_policy = _policy(policy="legacy-policy")
+    current_policy = _policy(policy="current-policy")
+    current_policy_with_legacy_candidate = {
+        **current_policy,
+        "compatible_policy_hashes": [
+            current_policy["policy_hash"],
+            legacy_policy["policy_hash"],
+        ],
+    }
+    auth_binding.record_sec_xbrl_auth_binding(
+        db_session,
+        client_request_id="auth-binding-legacy-policy",
+        source_receipt_kind="operator_review_workflow",
+        source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+        source_receipt_basis_hash=workflow.workflow_basis_hash,
+        route_family="sec_xbrl_operator_review_workflow_status_read",
+        policy_decision=legacy_policy,
+    )
+
+    accepted = auth_binding.require_sec_xbrl_owner_binding(
+        db_session,
+        source_receipt_kind="operator_review_workflow",
+        source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+        route_family="sec_xbrl_operator_review_workflow_status_read",
+        policy_decision=current_policy_with_legacy_candidate,
+    )
+    with pytest.raises(auth_binding.SecXbrlAuthBindingError) as stale_without_candidate:
+        auth_binding.require_sec_xbrl_owner_binding(
+            db_session,
+            source_receipt_kind="operator_review_workflow",
+            source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+            route_family="sec_xbrl_operator_review_workflow_status_read",
+            policy_decision=current_policy,
+        )
+
+    assert accepted["policy_hash"] == legacy_policy["policy_hash"]
+    assert stale_without_candidate.value.code == "sec_xbrl_auth_binding_context_mismatch"
+    assert "policy_hash" in stale_without_candidate.value.details["mismatched_fields"]
+
+
+def test_in_app_auth_policy_emits_legacy_policy_hash_candidate() -> None:
+    decision = auth_policy.authorize_sec_xbrl_route(
+        headers={},
+        route_family="sec_xbrl_operator_review_workflow_status_read",
+        requested_role="owner",
+    )
+
+    legacy_hash = auth_policy._legacy_policy_hash(
+        actor_ref_hash=decision["actor_ref_hash"],
+        workspace_ref_hash=decision["workspace_ref_hash"],
+    )
+    assert decision["policy_hash"] in decision["compatible_policy_hashes"]
+    assert legacy_hash in decision["compatible_policy_hashes"]
+    assert legacy_hash != decision["policy_hash"]
