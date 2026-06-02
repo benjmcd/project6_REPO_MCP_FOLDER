@@ -196,6 +196,49 @@ def test_companyfacts_oracle_packet_requires_oracle_confirmed_projection(tmp_pat
     assert report["readiness"]["operator_review_creation_ready"] is False
 
 
+def test_companyfacts_oracle_packet_preserves_projection_blocker_before_oracle_confirmation(tmp_path) -> None:
+    storage, companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=True)
+    assert companyfacts_path is not None
+    sidecar_path = (
+        storage
+        / loader.SIDECAR_RECEIPT_DIR
+        / "receipts"
+        / f"{refs['sidecar_receipt_id']}.json"
+    )
+    classification_path = next(
+        (storage / loader.STATEMENT_CLASSIFICATION_DIR / "receipts").glob("*.json")
+    )
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    for record in sidecar["resolved_fact_records"]:
+        record["period"] = {"type": "forever"}
+    sidecar["resolved_fact_projection"] = [_redacted_fact(record) for record in sidecar["resolved_fact_records"]]
+    inventory_hash = stable_hash(sidecar["resolved_fact_projection"])
+    sidecar["resolved_fact_inventory_hash"] = inventory_hash
+    _write_json(sidecar_path, sidecar)
+
+    classification = json.loads(classification_path.read_text(encoding="utf-8"))
+    classification["authority_hashes"]["fact_inventory_hash"] = inventory_hash
+    _write_json(classification_path, classification)
+
+    report = oracle_packet.inspect_sec_xbrl_offline_companyfacts_oracle_packet(
+        storage,
+        companyfacts_path=companyfacts_path,
+        expected_sidecar_receipt_hash=refs["sidecar_receipt_hash"],
+        expected_statement_classification_receipt_hash=refs["classification_hash"],
+    )
+
+    assert report["status"] == "offline_companyfacts_oracle_packet_blocked"
+    assert report["blocked_reasons"][0]["reason"] == "companyfacts_oracle_packet_projection_not_ready"
+    assert report["summary"]["companyfacts_observation_count"] == 6
+    assert report["summary"]["projection_status"] == "canonical_multi_period_projection_blocked"
+    assert report["summary"]["projected_count"] == 0
+    assert report["summary"]["oracle_confirmed_count"] == 0
+    assert report["summary"]["projection_blocking_reasons"][0]["reason"] == (
+        "canonical_multi_period_projection_periods_missing"
+    )
+    assert report["readiness"]["operator_review_creation_ready"] is False
+
+
 def _write_storage(tmp_path: Path, *, include_companyfacts: bool) -> tuple[Path, Path | None, dict[str, str]]:
     storage = tmp_path / "storage"
     sidecar_hash = _hash("b")
