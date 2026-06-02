@@ -11,7 +11,15 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json")
 RUNTIME_REPORT = "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
+IN_APP_AUTH_POLICY_REPORT = "diagnostics/assessment/sec-xbrl-in-app-auth-policy-validation-report.json"
+AUTH_OWNER_BINDING_STRATEGY_REPORT = "diagnostics/assessment/sec-xbrl-auth-owner-binding-strategy-report.json"
 DESIGN_DOC = "next_milestone_plans/Layer3_planning_docs/1319-nonlocal-production-readiness.md"
+IN_APP_AUTH_DOC = "next_milestone_plans/Layer3_planning_docs/1321-in-app-auth.md"
+AUTH_ROUTE_ENFORCEMENT_DOC = "next_milestone_plans/Layer3_planning_docs/1326-auth-owner-binding-route-enforcement.md"
+IN_APP_AUTH_POLICY_SERVICE = "backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py"
+AUTH_BINDING_SERVICE = "backend/app/services/layer3_sec_xbrl_auth_binding.py"
+AUTH_BINDING_TEST = "backend/tests/test_sec_xbrl_auth_binding_receipt.py"
+OPERATOR_WORKFLOW_TEST = "backend/tests/test_sec_xbrl_operator_review_workflow.py"
 TARGET = "sec_xbrl_default_on_nonlocal_production_readiness_gate_v1"
 REDACTION_POLICY_ID = "sec_xbrl_nonlocal_production_readiness_gate_redaction_v1"
 
@@ -100,14 +108,25 @@ def build_report(
     root: Path = ROOT,
 ) -> dict[str, Any]:
     runtime_report = _load_json(root / RUNTIME_REPORT)
+    in_app_auth_policy_report = _load_json(root / IN_APP_AUTH_POLICY_REPORT)
+    auth_owner_binding_strategy_report = _load_json(root / AUTH_OWNER_BINDING_STRATEGY_REPORT)
     sources = {
         "config": _read(root / "backend/app/core/config.py"),
         "api": _read(root / "backend/app/api/layer3.py"),
         "api_tests": _read(root / "backend/tests/test_layer3_api.py"),
         "runtime_report": runtime_report,
+        "in_app_auth_policy_report": in_app_auth_policy_report,
+        "auth_owner_binding_strategy_report": auth_owner_binding_strategy_report,
         "design_doc": _read(root / DESIGN_DOC),
+        "in_app_auth_doc": _read(root / IN_APP_AUTH_DOC),
+        "auth_route_enforcement_doc": _read(root / AUTH_ROUTE_ENFORCEMENT_DOC),
+        "in_app_auth_policy_service": _read(root / IN_APP_AUTH_POLICY_SERVICE),
+        "auth_binding_service": _read(root / AUTH_BINDING_SERVICE),
+        "auth_binding_tests": _read(root / AUTH_BINDING_TEST),
+        "operator_workflow_tests": _read(root / OPERATOR_WORKFLOW_TEST),
     }
     authority = _authority_packet_summary(authority_packet_path)
+    in_app_auth = _in_app_auth_evidence_summary(sources, root=root)
 
     default_runtime_clean = (
         runtime_report.get("decision") == "default_on_runtime_enabled"
@@ -122,6 +141,16 @@ def build_report(
         and "production-readiness overclaim" in sources["design_doc"]
         and "production_readiness_claimed" in json.dumps(runtime_report, sort_keys=True)
     )
+    authority_or_in_app_evidence = authority["admissible"] or (
+        not authority["authority_packet_present"] and in_app_auth["admissible"]
+    )
+    authority_or_in_app_blocker = None
+    if not authority_or_in_app_evidence:
+        authority_or_in_app_blocker = (
+            authority["blocked_reason"]
+            or "nonlocal_production_readiness_in_app_auth_evidence_not_current"
+        )
+    final_production_admission = authority["admissible"]
 
     criteria = [
         _criterion(
@@ -151,10 +180,43 @@ def build_report(
             "nonlocal_production_readiness_nonlocal_guardrails_missing",
         ),
         _criterion(
-            "authority_packet_present_and_admissible",
-            authority["admissible"],
-            authority,
-            authority["blocked_reason"],
+            "authority_packet_or_in_app_auth_fork_evidence_present",
+            authority_or_in_app_evidence,
+            {
+                "authority_packet_admissible": authority["admissible"],
+                "authority_packet_present": authority["authority_packet_present"],
+                "in_app_auth_evidence_admissible": in_app_auth["admissible"],
+                "selected_current_fork": (
+                    "external_authority_packet"
+                    if authority["admissible"]
+                    else "repo_owned_in_app_auth"
+                    if in_app_auth["admissible"] and not authority["authority_packet_present"]
+                    else "blocked"
+                ),
+                "authority_packet_summary": authority,
+            },
+            authority_or_in_app_blocker,
+        ),
+        _criterion(
+            "in_app_auth_fork_evidence_current",
+            in_app_auth["admissible"],
+            in_app_auth,
+            "nonlocal_production_readiness_in_app_auth_evidence_not_current",
+        ),
+        _criterion(
+            "final_nonlocal_production_admission_present",
+            final_production_admission,
+            {
+                "authority_packet_admissible": authority["admissible"],
+                "in_app_auth_evidence_admissible": in_app_auth["admissible"],
+                "production_readiness_claimed": False,
+                "admission_boundary": (
+                    "external_authority_packet"
+                    if authority["admissible"]
+                    else "operator_nonlocal_production_admission_required_after_in_app_auth"
+                ),
+            },
+            "nonlocal_production_readiness_final_admission_missing",
         ),
         _criterion(
             "standing_non_admissions_preserved",
@@ -207,6 +269,7 @@ def build_report(
         "criteria": criteria,
         "blocking_reasons": blocking_reasons,
         "authority_packet_summary": authority,
+        "in_app_auth_evidence_summary": in_app_auth,
         "production_readiness_claimed": False,
         "inherited_default_on_runtime_evidence": {
             "source_report": RUNTIME_REPORT,
@@ -223,7 +286,8 @@ def build_report(
             "allowed_origins_policy": "explicit_https_only",
             "storage_exposure_allowed": ["auto", "disabled"],
             "arelle_fact_authority_nonlocal_authorized_required": True,
-            "in_app_auth_implemented_by_gate": False,
+            "in_app_auth_implemented_by_gate": in_app_auth["admissible"],
+            "in_app_auth_implementation_evidence_present": in_app_auth["admissible"],
             "direct_storage_exposure_admitted": False,
         },
         "non_goals_preserved": {
@@ -250,15 +314,143 @@ def build_report(
         },
         "source_reports": {
             "default_on_runtime": RUNTIME_REPORT,
+            "in_app_auth_policy_validation": IN_APP_AUTH_POLICY_REPORT,
+            "auth_owner_binding_strategy": AUTH_OWNER_BINDING_STRATEGY_REPORT,
         },
         "source_documents": {
             "nonlocal_readiness_design": DESIGN_DOC,
+            "in_app_auth_design": IN_APP_AUTH_DOC,
+            "auth_route_enforcement": AUTH_ROUTE_ENFORCEMENT_DOC,
         },
         "next_slice": (
-            "sec_xbrl_nonlocal_deployment_authority_packet_or_in_app_auth_boundary_v1"
+            "sec_xbrl_nonlocal_production_admission_or_historical_backfill_disposition_v1"
             if blocking_reasons
             else "sec_xbrl_nonlocal_production_readiness_operator_review_v1"
         ),
+    }
+
+
+def _in_app_auth_evidence_summary(sources: dict[str, Any], *, root: Path) -> dict[str, Any]:
+    policy_report = sources["in_app_auth_policy_report"]
+    strategy_report = sources["auth_owner_binding_strategy_report"]
+    policy_report_clean = (
+        policy_report.get("decision") == "sec_xbrl_in_app_auth_policy_validation_passed"
+        and policy_report.get("blocking_reasons") == []
+        and policy_report.get("non_goals_preserved", {}).get("production_readiness_claimed") is False
+    )
+    strategy_report_clean = (
+        strategy_report.get("decision") == "sec_xbrl_auth_owner_binding_strategy_selected"
+        and strategy_report.get("blocking_reasons") == []
+        and strategy_report.get("selected_strategy")
+        == "separate_hash_only_auth_binding_receipt_table"
+    )
+    policy_service_current = _all_tokens(
+        sources["in_app_auth_policy_service"],
+        (
+            "PROTECTED_ROUTE_FAMILIES",
+            "sec_xbrl_controlled_value_reveal_submit_write",
+            "sec_xbrl_controlled_value_reveal_submit_status_read",
+            "FORBIDDEN_REQUEST_FIELDS",
+            "AUTH_OWNER=proxy requires TRUSTED_PROXY_MODE=true",
+            "compatible_policy_hashes",
+            "raw_value_exposed",
+            "residual_magnitude_exposed",
+        ),
+    )
+    binding_service_current = _all_tokens(
+        sources["auth_binding_service"],
+        (
+            "def record_sec_xbrl_auth_binding",
+            "def require_sec_xbrl_owner_binding",
+            "SOURCE_ROUTE_COMPATIBLE_PRIOR_BINDINGS",
+            "sec_xbrl_auth_binding_context_mismatch",
+            "sec_xbrl_auth_binding_role_route_forbidden",
+            "sec_xbrl_auth_binding_source_route_actor_conflict",
+        ),
+    )
+    api_route_enforcement_current = _all_tokens(
+        sources["api"],
+        (
+            "_sec_xbrl_require_binding",
+            "_sec_xbrl_record_binding",
+            "sec_xbrl_operator_review_workflow_status_read",
+            "sec_xbrl_operator_review_decision_submit_write",
+            "sec_xbrl_value_reveal_authority_prepare_write",
+            "sec_xbrl_controlled_value_reveal_submit_write",
+            "sec_xbrl_controlled_value_reveal_submit_status_read",
+            "source_auth_binding_ref",
+            "auth_binding_required",
+        ),
+    )
+    route_doc_current = _all_tokens(
+        sources["auth_route_enforcement_doc"],
+        (
+            "workflow status requires an existing workflow auth binding",
+            "value-reveal authority prepare requires an existing decision auth binding",
+            "controlled value-reveal submit requires an existing authority auth binding",
+            "protected mutating routes now defer source-receipt service commits",
+            "historical unbound receipts",
+            "no production-readiness claim",
+        ),
+    )
+    test_evidence_current = _all_tokens(
+        sources["auth_binding_tests"] + "\n" + sources["operator_workflow_tests"],
+        (
+            "test_auth_binding_requires_matching_owner_context",
+            "test_auth_binding_accepts_legacy_policy_hash_candidate_for_existing_binding",
+            "test_auth_binding_inspection_returns_redacted_list_for_multiple_route_bindings",
+            "test_operator_review_workflow_status_api_requires_auth_binding_for_existing_workflow",
+            "test_value_reveal_authority_api_rolls_back_source_receipt_when_binding_fails",
+            "test_controlled_value_reveal_submit_api_rolls_back_source_receipt_when_binding_fails",
+        ),
+    )
+    checks = {
+        "policy_report_clean": policy_report_clean,
+        "strategy_report_clean": strategy_report_clean,
+        "policy_service_current": policy_service_current,
+        "binding_service_current": binding_service_current,
+        "api_route_enforcement_current": api_route_enforcement_current,
+        "route_enforcement_doc_current": route_doc_current,
+        "route_and_binding_test_evidence_current": test_evidence_current,
+    }
+    blockers = [
+        f"nonlocal_production_readiness_in_app_auth_{name}_missing"
+        for name, passed in checks.items()
+        if not passed
+    ]
+    return {
+        "admissible": not blockers,
+        "blocked_reasons": blockers,
+        "selected_auth_mode": "sec_xbrl_repo_owned_in_app_operator_auth_boundary_v1",
+        "route_family_count": 6,
+        "evidence_checks": checks,
+        "source_reports": {
+            "in_app_auth_policy_validation": {
+                "path": IN_APP_AUTH_POLICY_REPORT,
+                "decision": policy_report.get("decision"),
+                "blocking_reasons_count": len(policy_report.get("blocking_reasons", [])),
+                "report_hash": _file_hash(root / IN_APP_AUTH_POLICY_REPORT),
+            },
+            "auth_owner_binding_strategy": {
+                "path": AUTH_OWNER_BINDING_STRATEGY_REPORT,
+                "decision": strategy_report.get("decision"),
+                "blocking_reasons_count": len(strategy_report.get("blocking_reasons", [])),
+                "report_hash": _file_hash(root / AUTH_OWNER_BINDING_STRATEGY_REPORT),
+            },
+        },
+        "source_files": {
+            "policy_service": IN_APP_AUTH_POLICY_SERVICE,
+            "auth_binding_service": AUTH_BINDING_SERVICE,
+            "api": "backend/app/api/layer3.py",
+            "auth_binding_tests": AUTH_BINDING_TEST,
+            "operator_workflow_tests": OPERATOR_WORKFLOW_TEST,
+        },
+        "production_readiness_claimed": False,
+        "value_reveal_default_enabled_by_evidence": False,
+        "export_or_delivery_enabled_by_evidence": False,
+        "source_acquisition_performed_by_evidence": False,
+        "arelle_subprocess_invoked_by_evidence": False,
+        "historical_unbound_receipt_backfill_admitted": False,
     }
 
 
@@ -478,6 +670,10 @@ def _criterion(
         "evidence": evidence,
         "blocked_reason": None if passed else blocked_reason,
     }
+
+
+def _all_tokens(text: str, tokens: tuple[str, ...]) -> bool:
+    return all(token in text for token in tokens)
 
 
 def _redacted_ref(value: Any) -> bool:
