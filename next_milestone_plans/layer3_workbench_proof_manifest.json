@@ -43819,16 +43819,18 @@
   },
   "sec_xbrl_nonlocal_admission_disposition_proof": {
     "proof_kind": "sec_xbrl_nonlocal_admission_disposition_proof",
-    "status": "branch_local_tier1_validate_only_packet_contract_enhancement",
+    "status": "branch_local_tier1_validate_only_packet_dir_intake_enhancement",
     "milestone": "sec_xbrl_nonlocal_production_admission_or_historical_backfill_disposition_v1",
-    "branch": "codex/secxbrl-final-packet-contract",
-    "base_main": "2b61e5eec6d6680f5ada607f56a820c0a3cc3f25",
+    "branch": "codex/secxbrl-packet-dir-intake",
+    "base_main": "2b4ab49e3db8a924e0b9a51795b028e25be70b42",
     "proof_terms": [
       "diagnostic validates final nonlocal admission packet and historical backfill disposition packet",
       "committed report remains blocked when packets are absent",
       "temporary redacted packets can advance only to operator-review readiness, not production enablement",
       "raw identities, paths, SEC identifiers, raw values, raw payloads, and inconsistent backfill counts fail closed",
-      "committed blocked report exposes the redacted operator_packet_contract for required fields, allowed modes, hash/ref rules, forbidden payload classes, and placeholder validation command"
+      "committed blocked report exposes the redacted operator_packet_contract for required fields, allowed modes, hash/ref rules, forbidden payload classes, and placeholder validation command",
+      "diagnostic accepts standard --packet-dir intake using sec-xbrl-final-admission-packet.json and sec-xbrl-backfill-disposition-packet.json",
+      "--packet-dir fails closed when combined with explicit packet path flags to avoid ambiguous operator packet authority"
     ],
     "touched_surfaces": [
       "diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition.py",
@@ -43851,8 +43853,8 @@
     "raw_runtime_artifacts_added_by_proof": false,
     "historical_backfill_performed_by_proof": false,
     "verification_status": "branch-local verification passed",
-    "focused_gate_test_result": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py ./backend/tests/test_sec_xbrl_nonlocal_admission_disposition.py -q -> 18 passed",
-    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 368 passed, 3 warnings across 32 files",
+    "focused_gate_test_result": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py ./backend/tests/test_sec_xbrl_nonlocal_admission_disposition.py -q -> 20 passed",
+    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 370 passed, 3 warnings across 32 files",
     "target_selection_validation": "PASS: python ./tools/l3-target-selection-validate.py --expect frozen",
     "progress_check": "PASS: python ./tools/l3-progress-check.py",
     "py_compile": "PASS: python -m py_compile over touched diagnostic/test Python files",

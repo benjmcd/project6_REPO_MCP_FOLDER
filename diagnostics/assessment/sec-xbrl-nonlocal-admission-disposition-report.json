@@ -376,6 +376,20 @@
       "local_evidence_filename"
     ],
     "hash_rule": "64 lowercase hexadecimal characters",
+    "packet_dir_validation_command": "python diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition.py --packet-dir <packet-directory> --output <report.json>",
+    "packet_directory": {
+      "cannot_combine_with": [
+        "--admission-packet",
+        "--backfill-disposition"
+      ],
+      "cli_argument": "--packet-dir",
+      "files_are_committed_to_repo": false,
+      "files_are_operator_supplied": true,
+      "required_filenames": {
+        "admission_packet": "sec-xbrl-final-admission-packet.json",
+        "backfill_disposition_packet": "sec-xbrl-backfill-disposition-packet.json"
+      }
+    },
     "packet_files_are_committed_to_repo": false,
     "packet_files_are_operator_supplied": true,
     "production_readiness_claimed_by_success": false,
