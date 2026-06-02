@@ -8,14 +8,15 @@ Milestone:
 Planning doc:
 `next_milestone_plans/Layer3_planning_docs/1333-companyfacts-oracle-packet.md`.
 
-Status: branch-local Tier-2 risk-assessed validate-only packet diagnostic on
-`codex/secxbrl-companyfacts-oracle-packet`.
+Status: current-main reconciliation of the branch-local Tier-2 risk-assessed
+validate-only packet diagnostic on `codex/secxbrl-companyfacts-reconcile`.
 
-Scope: add a validate-only CompanyFacts oracle packet validator for
-already-acquired SEC XBRL offline evidence. The validator reports the current
-FIZZ storage as blocked because no operator-acquired offline CompanyFacts JSON
-was found under `sandbox_temp`; it preserves the storage authority hashes and
-counts while keeping operator-review creation and production admission blocked.
+Scope: keep the validate-only CompanyFacts oracle packet validator aligned with
+current offline-loader authority. The current FIZZ storage is now blocked first
+by the stricter statement-classification authority check
+`sec_xbrl_offline_evidence_loader_field_missing` with
+`details.field: fact_inventory_hash`; the `sandbox_temp` scan still finds no
+CompanyFacts-shaped JSON for the later oracle step.
 
 Containment: the diagnostic reads already-acquired local files and writes only
 a redacted report. It introduces no schema, `models.py`, Alembic migration,
@@ -23,12 +24,10 @@ backend API/UI, source acquisition, Arelle subprocess invocation, live SEC
 network access, value reveal, runtime-default change, raw runtime artifact,
 operator source workflow, or production-readiness behavior.
 
-Verification: focused loader/oracle-packet suite passes with `8 passed`;
-loader-plus-orchestrator suite passes with `12 passed`; full SEC XBRL suite
-passes with `387 passed, 3 warnings`; target-selection frozen check, progress
-check, touched-file `py_compile`, manifest/report JSON parse over `63` files,
-committed SEC XBRL report redaction/residual scan over `61` reports, and
-`git diff --check` pass.
+Verification: current reconciliation passes the focused loader/oracle-packet
+suite with `17 passed`, loader-plus-orchestrator with `21 passed`, full SEC
+XBRL suite with `396 passed, 3 warnings`, target/progress checks,
+py_compile, JSON/redaction/residual scans, and `git diff --check`.
 
 Next exact posture:
 `sec_xbrl_offline_companyfacts_oracle_packet_operator_supply_v1`.
@@ -41,16 +40,14 @@ Milestone:
 Planning doc:
 `next_milestone_plans/Layer3_planning_docs/1332-offline-evidence-loader.md`.
 
-Status: branch-local Tier-2 risk-assessed loader/diagnostic proof on
-`codex/secxbrl-offline-loader-diagnostic`.
+Status: current-main reconciliation of the branch-local Tier-2 risk-assessed
+loader/diagnostic proof on `codex/secxbrl-companyfacts-reconcile`.
 
-Scope: add a validate-only offline evidence loader that reads already-acquired
-operator storage, requires governed sidecar, internal value-store,
-statement-classification, and bridge dataset-version receipts, then builds the
-existing offline orchestrator evidence bundle or emits a redacted readiness
-report. The committed report proves the FIZZ offline storage is bundle-ready
-without a CompanyFacts oracle, while operator-review creation and production
-admission remain blocked by `companyfacts_oracle_not_supplied`.
+Scope: keep the validate-only offline evidence loader report aligned with
+current statement-classification authority. The current FIZZ storage now emits
+`offline_evidence_bundle_blocked` with
+`blocked_reasons[0].details.field: fact_inventory_hash`; blocked reports retain
+the storage marker without admitting the bundle.
 
 Containment: the diagnostic reads local storage and writes only a redacted
 report. It introduces no schema, `models.py`, Alembic migration, backend
@@ -59,12 +56,10 @@ access, value reveal, runtime-default change, raw runtime artifact, operator
 source workflow, or production-readiness behavior. The focused happy-path test
 uses existing materializers only in isolated in-memory DB state.
 
-Verification: focused loader suite passes with `4 passed`;
-loader-plus-orchestrator suite passes with `8 passed`; full SEC XBRL suite
-passes with `383 passed, 3 warnings`; touched-file `py_compile`,
-target-selection frozen check, progress check, manifest/report JSON parse,
-committed SEC XBRL report redaction/residual scan over `60` reports, and
-`git diff --check` pass.
+Verification: current reconciliation passes the focused loader/oracle-packet
+suite with `17 passed`, loader-plus-orchestrator with `21 passed`, full SEC
+XBRL suite with `396 passed, 3 warnings`, target/progress checks,
+py_compile, JSON/redaction/residual scans, and `git diff --check`.
 
 Next exact posture:
 `sec_xbrl_offline_companyfacts_oracle_packet_v1`.

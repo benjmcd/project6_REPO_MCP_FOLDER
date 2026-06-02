@@ -13,6 +13,11 @@ Prior milestone:
 
 Branch-local Tier-2 risk-assessed validate-only packet diagnostic.
 
+Current-main reconciliation on `project6-origin/main` at
+`b5b22385dacc2b98455c4337ca087b31adf73756` records that the same FIZZ storage
+now fails the stricter offline-evidence loader before the CompanyFacts oracle
+missing check.
+
 This pass adds a CompanyFacts oracle packet validator for already-acquired SEC
 XBRL offline evidence. It reads the governed offline storage admitted by the
 offline evidence loader and an optional operator-supplied CompanyFacts JSON. It
@@ -26,8 +31,11 @@ Repo-confirmed:
 
 - `backend/app/services/layer3_sec_xbrl_offline_companyfacts_oracle_packet.py`
   returns a blocked report when no CompanyFacts JSON is supplied.
-- The blocked report keeps the base offline storage authority hash/counts while
-  marking `operator_review_creation_ready: false` and
+- Blocked reports preserve the first base offline-storage blocker, including
+  redacted `details`, before evaluating CompanyFacts-specific readiness.
+- After base storage is admitted, the missing-oracle blocked report keeps the
+  base offline storage authority hash/counts while marking
+  `operator_review_creation_ready: false` and
   `production_admission_ready: false`.
 - When a CompanyFacts JSON is supplied, the validator builds the existing
   offline evidence bundle with that oracle and requires canonical
@@ -41,15 +49,21 @@ Repo-confirmed:
   plus at least one oracle-confirmed projection before reporting packet
   readiness.
 - The committed report for the current FIZZ offline storage is blocked with
-  `companyfacts_oracle_packet_missing` because no operator-acquired offline
-  CompanyFacts JSON was found under `C:/Users/benny/Downloads/sandbox_temp`.
+  `sec_xbrl_offline_evidence_loader_field_missing` and
+  `details.field: fact_inventory_hash`; this base-storage blocker is preserved
+  before the oracle-missing check.
+- A current content-shape scan under `C:/Users/benny/Downloads/sandbox_temp`
+  still found no CompanyFacts-shaped JSON payloads, so the CompanyFacts oracle
+  remains a later operator-supply requirement after storage authority is
+  reconciled.
 
 Inference:
 
-- The next implementation gap is external to repo code: an operator-acquired
-  offline CompanyFacts JSON must be supplied for the same evidence authority
-  before the offline loader can claim operator-review creation readiness for
-  this filing.
+- The next implementation gap is external to repo code: the operator must first
+  supply or regenerate governed offline storage whose statement-classification
+  receipt carries a matching top-level `fact_inventory_hash`, then supply an
+  offline CompanyFacts JSON for the same evidence authority before operator
+  review creation readiness can be claimed.
 
 ## Contract Boundary
 
@@ -72,7 +86,7 @@ Outputs:
   `companyfacts_oracle_packet_missing`.
 - Missing, malformed, or non-object CompanyFacts JSON blocks before projection.
 - Offline storage authority errors are inherited from the offline evidence
-  loader and block before packet readiness.
+  loader, including redacted blocker details, and block before packet readiness.
 - Supplied CompanyFacts must produce a ready canonical multi-period projection
   with at least one projected fact.
 - Public report output must reject raw accessions, SEC URLs, local paths, raw
@@ -107,39 +121,40 @@ Focused packet verification:
 
 `python -m pytest ./backend/tests/test_sec_xbrl_offline_evidence_loader.py -q`
 
-Result: `6 passed`.
+Result: `17 passed`.
 
 Post-merge review-fix focused packet verification:
 
 `python -m pytest ./backend/tests/test_sec_xbrl_offline_evidence_loader.py -q`
 
-Result: `8 passed`.
+Result: `17 passed`.
 
 Diagnostic regeneration:
 
 `python ./diagnostics/assessment/sec-xbrl-offline-companyfacts-oracle-packet.py --storage-dir <operator-offline-storage> --expected-sidecar-receipt-hash 16cdcfc6e5486ccfdb2991fac7f46a03f53d802d60841f2e0ff6c488cdf5bb9d --expected-statement-classification-receipt-hash bd95ba6d396a7d645f11e8e0bc4f8e7ca5f6e12f2ec9f50a5f250f43ae938666`
 
 Result: report status `offline_companyfacts_oracle_packet_blocked`, with
-blocking reason `companyfacts_oracle_packet_missing`.
+blocking reason `sec_xbrl_offline_evidence_loader_field_missing` and
+`blocked_reasons[0].details.field: fact_inventory_hash`.
 
 Loader plus offline orchestrator verification:
 
 `python -m pytest ./backend/tests/test_sec_xbrl_offline_evidence_loader.py ./backend/tests/test_sec_xbrl_e2e_offline_orchestrator.py -q`
 
-Result: `10 passed`.
+Result: `21 passed`.
 
 Post-merge review-fix loader plus offline orchestrator verification:
 
 `python -m pytest ./backend/tests/test_sec_xbrl_offline_evidence_loader.py ./backend/tests/test_sec_xbrl_e2e_offline_orchestrator.py -q`
 
-Result: `12 passed`.
+Result: `21 passed`.
 
 Full SEC XBRL suite:
 
 `python -m pytest` over explicit `./backend/tests/test_sec_xbrl*.py`
 enumeration.
 
-Result: `387 passed, 3 warnings`.
+Result: `396 passed, 3 warnings`.
 
 `python -m py_compile ./backend/app/services/layer3_sec_xbrl_offline_companyfacts_oracle_packet.py ./diagnostics/assessment/sec-xbrl-offline-companyfacts-oracle-packet.py ./backend/tests/test_sec_xbrl_offline_evidence_loader.py`
 
@@ -156,11 +171,11 @@ Result: pass.
 `python -c "import json; ..."` over changed JSON manifests/reports with
 `utf-8-sig`.
 
-Result: `63` JSON files parsed, including `61` committed SEC XBRL reports.
+Result: `511` JSON files parsed, including `49` committed SEC XBRL reports.
 
 Path-aware redaction/residual scan over committed SEC XBRL reports.
 
-Result: `61` reports scanned with `0` identity hits, `0` raw scalar value
+Result: `49` reports scanned with `0` identity hits, `0` raw scalar value
 hits, and `0` nonzero residual magnitudes.
 
 `git diff --check`
@@ -169,6 +184,9 @@ Result: pass, with Git LF-to-CRLF working-copy warnings only.
 
 ## Next Safe Action
 
-Provide an operator-acquired offline CompanyFacts JSON for the same filing
-authority, then rerun this packet diagnostic with `--companyfacts-json`. Do not
-download, synthesize, substitute, or infer the CompanyFacts payload.
+First supply or regenerate governed offline storage whose statement-classification
+receipt carries a top-level `fact_inventory_hash` matching
+`authority_hashes.fact_inventory_hash`. Then provide an operator-acquired
+offline CompanyFacts JSON for the same filing authority and rerun this packet
+diagnostic with `--companyfacts-json`. Do not download, synthesize, substitute,
+or infer the CompanyFacts payload.
