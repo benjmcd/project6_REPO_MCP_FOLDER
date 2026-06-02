@@ -448,6 +448,7 @@ def _invalid_packet_fields(packet: Mapping[str, Any], *, packet_kind: str) -> li
     for field, value in packet.items():
         if field not in allowed_fields:
             invalid.append(UNKNOWN_PACKET_FIELD)
+            continue
         if field in HASH_FIELDS and not _hash(value):
             invalid.append(field)
         if field.endswith("_ref") and not _redacted_ref(value):
