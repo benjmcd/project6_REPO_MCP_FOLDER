@@ -3,14 +3,14 @@
 Milestone: `sec_xbrl_nonlocal_production_admission_or_historical_backfill_disposition_v1`
 
 Base authority: `project6-origin/main` at
-`27088eea9bb186066f569631af999f49dc6d01c7`
+`2b61e5eec6d6680f5ada607f56a820c0a3cc3f25`
 
 Prior milestone:
 `sec_xbrl_nonlocal_readiness_in_app_auth_reconciliation_v1`
 
 ## Status
 
-Branch-local Tier-1 validate-only diagnostic/report/test gate.
+Branch-local Tier-1 validate-only diagnostic/report/test contract enhancement.
 
 This pass does not implement production readiness. It adds a validation gate
 for the two authority gaps left after current in-app auth evidence was
@@ -63,6 +63,8 @@ The committed no-packet report must emit:
 - `decision: nonlocal_production_admission_disposition_blocked`;
 - `blocking_reasons: [sec_xbrl_nonlocal_admission_packet_missing,
   sec_xbrl_nonlocal_backfill_disposition_packet_missing]`;
+- `operator_packet_contract:
+  sec_xbrl_nonlocal_final_admission_packet_contract_v1`;
 - `production_readiness_claimed: false`;
 - `next_slice:
   sec_xbrl_nonlocal_final_admission_packet_and_backfill_disposition_v1`.
@@ -82,6 +84,15 @@ The backfill disposition must explicitly state whether historical unbound
 receipts are absent, fail-closed pending backfill, or backfill-authorized. A
 nonzero unbound count without a matching backfill-required disposition is
 invalid.
+
+The committed blocked report now carries the machine-readable
+`operator_packet_contract` for the next pass. It derives required fields,
+allowed fields, allowed modes, hash fields, redacted reference fields, forbidden
+payload classes, and the placeholder validation command from the same constants
+used by the diagnostic, so operators do not need to reverse-engineer the packet
+shape from tests or source. The contract remains redacted: it supplies no packet
+payload, raw identity, accession, SEC URL, local path, raw value, residual
+magnitude, local evidence filename, or deployment note.
 
 ## Non-Goals
 
@@ -108,4 +119,3 @@ missing, raw, inconsistent, or ambiguous.
 Only after that gate is clean should the lane consider a separate operator
 review for production-readiness admission. Production enablement remains a
 separate later lane.
-
