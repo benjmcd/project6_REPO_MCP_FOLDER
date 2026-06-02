@@ -1,5 +1,47 @@
 # Layer3 Progress Board
 
+## SEC XBRL Review-Thread Closeout #2063-#2076
+
+Milestone:
+`sec_xbrl_review_thread_closeout_2063_2076_v1`.
+
+Branch:
+`codex/secxbrl-review-thread-closeout-2063-2076`.
+
+Base:
+`project6-origin/main` at `710e7e25526d6d0ac0899f354a6ae451729f5d47`.
+
+Status: branch-local Tier-2 review-thread remediation verified.
+
+Scope: close active review findings from PRs #2063, #2069, #2070, #2074,
+#2075, and #2076 without starting a new SEC XBRL milestone. The pass hardens
+nonlocal authority-packet redaction and proxy-mode admission, narrows
+auth-binding uniqueness to source/route/actor/workspace/role, requires
+route/role-specific policy hashes for exact matches, admits only explicit
+downstream/status route-compatible prior bindings, and aligns the planning
+docs with those constraints.
+
+Tier-2 surfaces: `backend/app/models/models.py`,
+`backend/alembic/versions/0047_layer3_sec_xbrl_auth_binding_route_actor_scope.py`,
+`backend/app/services/layer3_sec_xbrl_auth_binding.py`, and
+`backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py`.
+
+Containment: no source acquisition, live SEC network, Arelle subprocess,
+default-on change, export/delivery, UI/operator-workflow expansion,
+production-readiness claim, or raw value/identity/path artifact is admitted.
+The auth-binding atomicity/backfill gap remains open and is the next Tier-2
+risk to design/implement separately after this closeout.
+
+Verification: focused closeout suite passes with `128 passed, 3 warnings`;
+full SEC XBRL suite passes with `348 passed, 3 warnings`;
+target-selection frozen check, progress check, py_compile over touched Python
+files, changed-manifest and committed-report JSON validation with
+`utf-8-sig`, redaction/residual scan over `58` committed SEC XBRL reports, and
+`git diff --check` pass.
+
+Next exact posture:
+`sec_xbrl_nonlocal_auth_binding_atomicity_and_backfill_design_v1_tier2_pre_review`.
+
 ## SEC XBRL Nonlocal In-App Auth Policy Validation
 
 Milestone: `sec_xbrl_nonlocal_in_app_auth_policy_validation_v1`.

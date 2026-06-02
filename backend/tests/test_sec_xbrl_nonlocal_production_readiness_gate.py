@@ -69,7 +69,7 @@ def test_sec_xbrl_nonlocal_readiness_gate_rejects_raw_authority_packet(tmp_path:
     packet["deployment_owner_ref"] = "owner@example.com"
     packet["accession"] = "0000000000-26-000001"
     packet["raw_value"] = "123.45"
-    packet["local_path"] = "C:\\Users\\benny\\raw-sidecar.json"
+    packet["local_path"] = "C:/Users/benny/raw-sidecar.json"
     packet_path = tmp_path / "packet.json"
     packet_path.write_text(json.dumps(packet), encoding="utf-8")
 
@@ -86,3 +86,33 @@ def test_sec_xbrl_nonlocal_readiness_gate_rejects_raw_authority_packet(tmp_path:
         "raw_or_local_authority_key",
         "local_path",
     }
+
+
+def test_sec_xbrl_nonlocal_readiness_gate_rejects_bare_cik_refs(tmp_path: Path) -> None:
+    module = _gate_module()
+    packet = _valid_authority_packet(module)
+    packet["deployment_owner_ref"] = "0000320193"
+    packet_path = tmp_path / "packet.json"
+    packet_path.write_text(json.dumps(packet), encoding="utf-8")
+
+    report = module.build_report(authority_packet_path=packet_path)
+
+    assert report["decision"] == "nonlocal_production_readiness_blocked"
+    assert "nonlocal_production_readiness_raw_authority_not_admitted" in report["blocking_reasons"]
+    assert "raw_cik" in report["authority_packet_summary"]["redaction_scan"]["hit_classes"]
+    assert "deployment_owner_ref" in report["authority_packet_summary"]["invalid_required_fields"]
+
+
+def test_sec_xbrl_nonlocal_readiness_gate_rejects_repo_owned_auth_packet_mode(tmp_path: Path) -> None:
+    module = _gate_module()
+    packet = _valid_authority_packet(module)
+    packet["proxy_boundary_mode"] = "repo_owned_in_app_auth"
+    packet_path = tmp_path / "packet.json"
+    packet_path.write_text(json.dumps(packet), encoding="utf-8")
+
+    report = module.build_report(authority_packet_path=packet_path)
+
+    assert report["decision"] == "nonlocal_production_readiness_blocked"
+    assert "nonlocal_production_readiness_authority_packet_invalid_required_fields" in report["blocking_reasons"]
+    assert report["authority_packet_summary"]["proxy_boundary_mode"] is None
+    assert "proxy_boundary_mode" in report["authority_packet_summary"]["invalid_required_fields"]

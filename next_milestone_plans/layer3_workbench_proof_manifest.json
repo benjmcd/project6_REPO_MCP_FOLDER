@@ -43369,8 +43369,8 @@
     "next_posture": "sec_xbrl_nonlocal_in_app_auth_owner_binding_route_enforcement_v1_tier2",
     "proof_terms": [
       "the implementation adds the separate hash-only SEC XBRL auth-binding receipt table selected by the design",
-      "the table has unique request id, binding basis hash, and source receipt identity constraints",
-      "the service validates source receipt kind/id/basis, route-family compatibility, hash-only policy input, role, policy hash, idempotency, and one binding per source receipt",
+      "the table has unique request id, binding basis hash, and source/route/actor/workspace/role constraints",
+      "the service validates source receipt kind/id/basis, route-family compatibility, hash-only policy input, role, policy hash, idempotency, and source/route/actor/workspace/role-scoped binding",
       "missing source receipt, unsupported source kind, unsupported route, unsupported role, raw policy fields, stale policy hash, and cross-owner context fail closed",
       "rollback is contained to the new additive auth-binding table and indexes",
       "route auth wiring, API behavior changes, config defaults, value reveal, default-on, source acquisition, Arelle, export/delivery, provider dispatch, redaction posture changes, and production readiness remain unimplemented"
@@ -43686,5 +43686,47 @@
     "diff_check": "PASS: git diff --check",
     "full_sec_xbrl_suite": "not required: no Python runtime, diagnostic, report, or test file touched",
     "py_compile": "not applicable: no Python runtime, diagnostic, or test file touched"
+  },
+  "sec_xbrl_review_thread_closeout_2063_2076_proof": {
+    "proof_kind": "sec_xbrl_review_thread_closeout_2063_2076_proof",
+    "status": "branch_local_tier2_review_thread_remediation_verified",
+    "milestone": "sec_xbrl_review_thread_closeout_2063_2076_v1",
+    "branch": "codex/secxbrl-review-thread-closeout-2063-2076",
+    "base_main": "710e7e25526d6d0ac0899f354a6ae451729f5d47",
+    "proof_terms": [
+      "nonlocal authority-packet admission is external-proxy-only and repo-owned in-app auth remains a separate fork",
+      "authority-packet redaction fails closed on bare CIK-like references, SEC accessions, emails, local paths, period dates, and residual/value-like decimals",
+      "real-corpus runner redaction fails closed on scheme-less SEC URLs, Windows slash paths, and dotted issuer/core labels",
+      "auth-binding policy hashes are route-family and role scoped",
+      "auth-binding uniqueness is source/route/actor/workspace/role scoped rather than source-only",
+      "downstream/status auth reuse is limited to explicit compatible prior write bindings",
+      "atomicity/backfill remains an admitted open risk, not a closed finding"
+    ],
+    "tier2_surfaces_touched": [
+      "backend/app/models/models.py",
+      "backend/alembic/versions/0047_layer3_sec_xbrl_auth_binding_route_actor_scope.py",
+      "backend/app/services/layer3_sec_xbrl_auth_binding.py",
+      "backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py"
+    ],
+    "production_readiness_claimed": false,
+    "source_acquisition_performed_by_proof": false,
+    "arelle_subprocess_invoked_by_proof": false,
+    "live_sec_network_run_performed_by_proof": false,
+    "value_reveal_default_enabled_by_proof": false,
+    "delivery_or_export_performed": false,
+    "provider_or_connector_dispatch_performed": false,
+    "raw_values_committed_by_proof": false,
+    "raw_identity_added_by_proof": false,
+    "raw_runtime_artifacts_added_by_proof": false,
+    "verification_status": "branch-local verification passed",
+    "focused_review_thread_closeout_suite": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_auth_binding_receipt.py ./backend/tests/test_sec_xbrl_operator_review_workflow.py ./backend/tests/test_sec_xbrl_real_corpus_product_runner.py ./backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py -q -> 128 passed, 3 warnings",
+    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 348 passed, 3 warnings",
+    "target_selection_validation": "PASS: python ./tools/l3-target-selection-validate.py --expect frozen",
+    "progress_check": "PASS: python ./tools/l3-progress-check.py",
+    "py_compile": "PASS: python -m py_compile over touched model/service/diagnostic/test/migration files",
+    "json_manifest_and_report_validation": "PASS: 2 changed manifests and 58 diagnostics/assessment/sec-xbrl*.json reports parsed with utf-8-sig",
+    "committed_sec_xbrl_report_redaction_residual_scan": "PASS: 58 SEC XBRL reports, 0 raw identity/path/SEC URL/accession/email hits, 0 raw-value field hits, 0 nonzero residual-magnitude field hits",
+    "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only",
+    "next_posture": "sec_xbrl_nonlocal_auth_binding_atomicity_and_backfill_design_v1_tier2_pre_review"
   }
 }

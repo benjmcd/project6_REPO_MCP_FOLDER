@@ -28,9 +28,10 @@ OWNER_ROLE = "owner"
 AUDITOR_ROLE = "auditor"
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
-SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
+SEC_URL_RE = re.compile(r"(?:https?://)?(?:www\.)?sec\.gov", re.IGNORECASE)
+OPERATOR_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 WINDOWS_ABS_PATH_RE = re.compile(r"[A-Za-z]:[\\/]")
-LOCAL_REF_RE = re.compile(r"(^|[\\/])(?:workspace|tmp|temp|users)[\\/]", re.IGNORECASE)
+LOCAL_REF_RE = re.compile(r"(^|[\\/])(?:workspace|tmp|temp|users|home)[\\/]", re.IGNORECASE)
 
 SOURCE_RECEIPTS = {
     "operator_review_workflow": (
@@ -82,6 +83,27 @@ ROUTE_ALLOWED_ROLES = {
     "sec_xbrl_value_reveal_authority_prepare_write": {OWNER_ROLE},
     "sec_xbrl_controlled_value_reveal_submit_write": {OWNER_ROLE},
     "sec_xbrl_controlled_value_reveal_submit_status_read": {OWNER_ROLE},
+}
+
+SOURCE_ROUTE_COMPATIBLE_PRIOR_BINDINGS = {
+    "operator_review_decision": {
+        "sec_xbrl_operator_review_decision_status_read": {
+            "sec_xbrl_operator_review_decision_submit_write",
+        },
+        "sec_xbrl_value_reveal_authority_prepare_write": {
+            "sec_xbrl_operator_review_decision_submit_write",
+        },
+    },
+    "value_reveal_authority": {
+        "sec_xbrl_controlled_value_reveal_submit_write": {
+            "sec_xbrl_value_reveal_authority_prepare_write",
+        },
+    },
+    "controlled_value_reveal_submit": {
+        "sec_xbrl_controlled_value_reveal_submit_status_read": {
+            "sec_xbrl_controlled_value_reveal_submit_write",
+        },
+    },
 }
 
 FORBIDDEN_POLICY_KEYS = {
@@ -147,9 +169,10 @@ def record_sec_xbrl_auth_binding(
     policy_decision: Mapping[str, Any],
 ) -> dict[str, Any]:
     request_id = _required_text(client_request_id, "client_request_id")
+    _reject_raw_reference(request_id)
     source_kind = _source_kind(source_receipt_kind)
     source_id = _required_text(source_receipt_id, "source_receipt_id")
-    _reject_raw_source_ref(source_id)
+    _reject_raw_reference(source_id)
     source_basis = _required_hash(source_receipt_basis_hash, "source_receipt_basis_hash")
     route = _route_family(source_kind, route_family)
     policy = _policy_decision(policy_decision, route)
@@ -181,11 +204,15 @@ def record_sec_xbrl_auth_binding(
         .filter(L3SecXbrlAuthBindingReceipt.binding_basis_hash == binding_basis_hash)
         .one_or_none()
     )
-    existing_by_source = (
+    existing_by_route_actor = (
         db.query(L3SecXbrlAuthBindingReceipt)
         .filter(
             L3SecXbrlAuthBindingReceipt.source_receipt_kind == source_kind,
             L3SecXbrlAuthBindingReceipt.source_receipt_id == source_id,
+            L3SecXbrlAuthBindingReceipt.route_family == route,
+            L3SecXbrlAuthBindingReceipt.actor_ref_hash == policy["actor_ref_hash"],
+            L3SecXbrlAuthBindingReceipt.workspace_ref_hash == policy["workspace_ref_hash"],
+            L3SecXbrlAuthBindingReceipt.role == policy["role"],
         )
         .one_or_none()
     )
@@ -199,11 +226,16 @@ def record_sec_xbrl_auth_binding(
         return _response(existing_by_request, idempotent_replay=True)
     if existing_by_basis is not None:
         return _response(existing_by_basis, idempotent_replay=True)
-    if existing_by_source is not None:
+    if existing_by_route_actor is not None:
         raise SecXbrlAuthBindingError(
-            "sec_xbrl_auth_binding_source_receipt_already_bound",
-            "SEC XBRL source receipt already has an immutable auth binding receipt.",
-            details={"source_receipt_kind": source_kind, "source_receipt_id": source_id},
+            "sec_xbrl_auth_binding_source_route_actor_conflict",
+            "SEC XBRL source receipt route already has an immutable auth binding for this actor, workspace, and role.",
+            details={
+                "source_receipt_kind": source_kind,
+                "source_receipt_id": source_id,
+                "route_family": route,
+                "role": policy["role"],
+            },
         )
 
     row = L3SecXbrlAuthBindingReceipt(
@@ -287,7 +319,7 @@ def require_sec_xbrl_owner_binding(
     source_id = str(source_receipt_id or "").strip() or None
     source_basis = str(source_receipt_basis_hash or "").strip() or None
     if source_id is not None:
-        _reject_raw_source_ref(source_id)
+        _reject_raw_reference(source_id)
     if source_id is None and source_basis is None:
         raise SecXbrlAuthBindingError(
             "sec_xbrl_auth_binding_lookup_anchor_missing",
@@ -295,8 +327,13 @@ def require_sec_xbrl_owner_binding(
             details={"source_receipt_kind": source_kind},
             http_status=400,
         )
+    compatible_routes = _compatible_route_families(source_kind, route)
     query = db.query(L3SecXbrlAuthBindingReceipt).filter(
         L3SecXbrlAuthBindingReceipt.source_receipt_kind == source_kind,
+        L3SecXbrlAuthBindingReceipt.route_family.in_(compatible_routes),
+        L3SecXbrlAuthBindingReceipt.actor_ref_hash == policy["actor_ref_hash"],
+        L3SecXbrlAuthBindingReceipt.workspace_ref_hash == policy["workspace_ref_hash"],
+        L3SecXbrlAuthBindingReceipt.role == policy["role"],
     )
     if source_id is not None:
         query = query.filter(L3SecXbrlAuthBindingReceipt.source_receipt_id == source_id)
@@ -309,7 +346,14 @@ def require_sec_xbrl_owner_binding(
                 http_status=400,
             )
         query = query.filter(L3SecXbrlAuthBindingReceipt.source_receipt_basis_hash == source_basis)
-    row = query.one_or_none()
+    rows = query.all()
+    exact_rows = [candidate for candidate in rows if candidate.route_family == route]
+    if exact_rows:
+        row = exact_rows[0]
+    elif len(rows) == 1:
+        row = rows[0]
+    else:
+        row = None
     if row is None:
         raise SecXbrlAuthBindingError(
             "sec_xbrl_auth_binding_missing",
@@ -321,15 +365,9 @@ def require_sec_xbrl_owner_binding(
             },
             http_status=404,
         )
-    mismatches = [
-        field
-        for field, expected in {
-            "actor_ref_hash": policy["actor_ref_hash"],
-            "workspace_ref_hash": policy["workspace_ref_hash"],
-            "policy_hash": policy["policy_hash"],
-        }.items()
-        if getattr(row, field) != expected
-    ]
+    mismatches = []
+    if row.route_family == route and row.policy_hash != policy["policy_hash"]:
+        mismatches.append("policy_hash")
     if mismatches:
         raise SecXbrlAuthBindingError(
             "sec_xbrl_auth_binding_context_mismatch",
@@ -364,6 +402,11 @@ def _route_family(source_kind: str, value: str) -> str:
     return route
 
 
+def _compatible_route_families(source_kind: str, route_family: str) -> tuple[str, ...]:
+    compatible = SOURCE_ROUTE_COMPATIBLE_PRIOR_BINDINGS.get(source_kind, {}).get(route_family, set())
+    return tuple(dict.fromkeys([route_family, *sorted(compatible)]))
+
+
 def _policy_decision(policy_decision: Mapping[str, Any], route_family: str) -> dict[str, str]:
     if not isinstance(policy_decision, Mapping):
         raise SecXbrlAuthBindingError(
@@ -391,7 +434,7 @@ def _policy_decision(policy_decision: Mapping[str, Any], route_family: str) -> d
             details={"decision": decision},
             http_status=403,
         )
-    policy_route = str(policy_decision.get("route_family") or route_family).strip()
+    policy_route = _required_text(policy_decision.get("route_family"), "policy_route_family")
     if policy_route != route_family:
         raise SecXbrlAuthBindingError(
             "sec_xbrl_auth_binding_policy_route_mismatch",
@@ -525,11 +568,12 @@ def _required_text(value: Any, field_name: str) -> str:
     return text
 
 
-def _reject_raw_source_ref(value: str) -> None:
+def _reject_raw_reference(value: str) -> None:
     text = str(value or "").strip()
     if (
         ACCESSION_RE.search(text)
         or SEC_URL_RE.search(text)
+        or OPERATOR_CONTACT_RE.search(text)
         or WINDOWS_ABS_PATH_RE.search(text)
         or LOCAL_REF_RE.search(text)
     ):

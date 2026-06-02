@@ -38,15 +38,17 @@ REF_FIELDS = (
     "incident_owner_ref",
     "verification_run_ref",
 )
-ALLOWED_PROXY_BOUNDARY_MODES = {"trusted_external_proxy", "repo_owned_in_app_auth"}
+ALLOWED_PROXY_BOUNDARY_MODES = {"trusted_external_proxy"}
 ALLOWED_STORAGE_EXPOSURE_POLICIES = {"auto", "disabled"}
 
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
-CIK_RE = re.compile(r'(?i)(?:"cik"|\bcik\b)\s*[:=]\s*"?\d{1,10}"?')
+CIK_RE = re.compile(r'(?:"cik"|\bcik\b)\s*[:=]\s*"?\d{1,10}"?', re.IGNORECASE)
+BARE_CIK_RE = re.compile(r"(?<![A-Za-z0-9_])\d{6,10}(?![A-Za-z0-9_])")
+RAW_CIK_RE = re.compile(f"(?:{CIK_RE.pattern})|(?:{BARE_CIK_RE.pattern})", re.IGNORECASE)
 SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov/", re.IGNORECASE)
-LOCAL_PATH_RE = re.compile(r"(?:[A-Za-z]:\\|file://|/Users/|/home/)")
+LOCAL_PATH_RE = re.compile(r"(?:[A-Za-z]:[\\/]|file://|/Users/|/home/)")
 PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 RAW_DECIMAL_RE = re.compile(r"(?<![A-Za-z0-9_])-?\d+\.\d+(?![A-Za-z0-9_])")
 RAW_KEYS = {
@@ -364,7 +366,7 @@ def _redaction_hit_classes(packet_text: str, packet: Any) -> list[str]:
     regexes = {
         "raw_operator_email": EMAIL_RE,
         "raw_accession": ACCESSION_RE,
-        "raw_cik": CIK_RE,
+        "raw_cik": RAW_CIK_RE,
         "sec_url": SEC_URL_RE,
         "local_path": LOCAL_PATH_RE,
         "raw_period_date": PERIOD_DATE_RE,
@@ -458,7 +460,16 @@ def _criterion(
 def _redacted_ref(value: Any) -> bool:
     return isinstance(value, str) and bool(value.strip()) and not any(
         regex.search(value)
-        for regex in (EMAIL_RE, ACCESSION_RE, CIK_RE, SEC_URL_RE, LOCAL_PATH_RE, PERIOD_DATE_RE, RAW_DECIMAL_RE)
+        for regex in (
+            EMAIL_RE,
+            ACCESSION_RE,
+            CIK_RE,
+            BARE_CIK_RE,
+            SEC_URL_RE,
+            LOCAL_PATH_RE,
+            PERIOD_DATE_RE,
+            RAW_DECIMAL_RE,
+        )
     )
 
 
