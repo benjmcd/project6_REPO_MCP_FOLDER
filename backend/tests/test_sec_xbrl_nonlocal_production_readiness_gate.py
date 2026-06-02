@@ -166,3 +166,14 @@ def test_sec_xbrl_nonlocal_readiness_gate_rejects_repo_owned_auth_packet_mode(tm
     assert "nonlocal_production_readiness_authority_packet_invalid_required_fields" in report["blocking_reasons"]
     assert report["authority_packet_summary"]["proxy_boundary_mode"] is None
     assert "proxy_boundary_mode" in report["authority_packet_summary"]["invalid_required_fields"]
+
+
+def test_sec_xbrl_nonlocal_readiness_report_hash_is_line_ending_stable(tmp_path: Path) -> None:
+    module = _gate_module()
+    lf_report = tmp_path / "report-lf.json"
+    crlf_report = tmp_path / "report-crlf.json"
+    payload = '{\n  "decision": "default_on_runtime_enabled"\n}\n'
+    lf_report.write_text(payload, encoding="utf-8", newline="\n")
+    crlf_report.write_text(payload, encoding="utf-8", newline="\r\n")
+
+    assert module._file_hash(lf_report) == module._file_hash(crlf_report)

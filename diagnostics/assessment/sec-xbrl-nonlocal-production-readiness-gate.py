@@ -514,7 +514,8 @@ def _load_json(path: Path) -> dict[str, Any]:
 
 
 def _file_hash(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    text = path.read_text(encoding="utf-8-sig")
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def _stable_hash(value: Any) -> str:
