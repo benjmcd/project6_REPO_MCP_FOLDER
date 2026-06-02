@@ -13,6 +13,9 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_fact_statement_classification,
     layer3_sec_xbrl_sidecar,
 )
+from app.services.layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_contract import (
+    STATEMENT_CLASSIFICATION_MODE,
+)
 from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
@@ -23,7 +26,7 @@ REQUEST_SCHEMA_ID = "layer3.sec_edgar_html_inline_xbrl_fact_statement_classifica
 STATUS_SCHEMA_ID = "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_status.v1"
 SCHEMA_VERSION = 1
 PRODUCT_MODE = "sec_edgar_html_inline_xbrl_statement_candidate_product_v1"
-CLASSIFICATION_MODE = "sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1"
+CLASSIFICATION_MODE = STATEMENT_CLASSIFICATION_MODE
 OPERATOR_DECISION = "build_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence"
 READY_STATE = "sec_edgar_html_inline_xbrl_statement_candidate_product_ready"
 BLOCKED_STATE = "sec_edgar_html_inline_xbrl_statement_candidate_product_blocked"
