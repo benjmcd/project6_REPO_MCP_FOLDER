@@ -82,14 +82,6 @@ def inspect_sec_xbrl_offline_companyfacts_oracle_packet(
     )
     projection_summary = _projection_summary(projection)
     companyfacts_summary = _companyfacts_summary(companyfacts)
-    if companyfacts_summary["companyfacts_observation_count"] <= 0 or projection_summary["oracle_confirmed_count"] <= 0:
-        return _blocked_report(
-            base_report=base_report,
-            authority_refs={**dict(bundle.get("authority_refs") or {}), "companyfacts_payload_hash": stable_hash(companyfacts)},
-            summary={**dict(bundle.get("summary") or {}), **companyfacts_summary, **projection_summary},
-            reason="companyfacts_oracle_packet_oracle_confirmation_missing",
-            message="Offline CompanyFacts oracle did not confirm any projected facts.",
-        )
     if projection.get("status") != "canonical_multi_period_projection_ready" or projection_summary["projected_count"] <= 0:
         return _blocked_report(
             base_report=base_report,
@@ -97,6 +89,14 @@ def inspect_sec_xbrl_offline_companyfacts_oracle_packet(
             summary={**dict(bundle.get("summary") or {}), **companyfacts_summary, **projection_summary},
             reason="companyfacts_oracle_packet_projection_not_ready",
             message="Offline CompanyFacts oracle did not produce a ready canonical projection.",
+        )
+    if companyfacts_summary["companyfacts_observation_count"] <= 0 or projection_summary["oracle_confirmed_count"] <= 0:
+        return _blocked_report(
+            base_report=base_report,
+            authority_refs={**dict(bundle.get("authority_refs") or {}), "companyfacts_payload_hash": stable_hash(companyfacts)},
+            summary={**dict(bundle.get("summary") or {}), **companyfacts_summary, **projection_summary},
+            reason="companyfacts_oracle_packet_oracle_confirmation_missing",
+            message="Offline CompanyFacts oracle did not confirm any projected facts.",
         )
 
     report = {
@@ -230,20 +230,43 @@ def _companyfacts_summary(companyfacts: Mapping[str, Any]) -> dict[str, int]:
     }
 
 
-def _projection_summary(projection: Mapping[str, Any]) -> dict[str, int]:
+def _projection_summary(projection: Mapping[str, Any]) -> dict[str, Any]:
     ready_periods = [item for item in projection.get("periods") or [] if isinstance(item, Mapping)]
     oracle_confirmed_count = 0
     for item in ready_periods:
         period_projection = item.get("projection") if isinstance(item.get("projection"), Mapping) else {}
         oracle_confirmed_count += int(period_projection.get("oracle_confirmed_count") or 0)
     return {
+        "projection_status": str(projection.get("status") or ""),
         "projection_period_count": int(projection.get("period_count") or 0),
         "projection_ready_period_count": int(projection.get("ready_period_count") or 0),
         "projected_count": int(projection.get("projected_count") or 0),
         "oracle_confirmed_count": oracle_confirmed_count,
         "provenance_complete_count": int(projection.get("provenance_complete_count") or 0),
         "period_result_count": len(ready_periods),
+        "projection_blocking_reasons": _projection_blocking_reasons(projection),
     }
+
+
+def _projection_blocking_reasons(projection: Mapping[str, Any]) -> list[dict[str, Any]]:
+    reasons: list[dict[str, Any]] = []
+    for item in projection.get("blocking_reasons") or []:
+        if not isinstance(item, Mapping):
+            continue
+        entry: dict[str, Any] = {"reason": str(item.get("reason") or "canonical_projection_blocked")}
+        if item.get("period_ref"):
+            entry["period_ref"] = str(item.get("period_ref"))
+        nested = item.get("blocking_reasons")
+        if isinstance(nested, list):
+            nested_reasons = [
+                str(reason.get("reason") or "canonical_projection_blocked")
+                for reason in nested
+                if isinstance(reason, Mapping)
+            ]
+            entry["nested_reason_count"] = len(nested_reasons)
+            entry["nested_reasons"] = nested_reasons
+        reasons.append(entry)
+    return reasons
 
 
 def _controls() -> dict[str, bool]:
