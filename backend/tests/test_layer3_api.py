@@ -5586,6 +5586,8 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["source_family"] == "sec_edgar_html_inline_xbrl"
     assert body["typed_content_contract_id"] == "sec_edgar_html_inline_xbrl_fact_material_units_v1"
     assert body["fact_authority_receipt_hash"] == fact_authority["fact_authority_receipt_hash"]
+    assert body["fact_inventory_hash"] == fact_authority["fact_inventory_hash"]
+    assert body["fact_inventory_hash"] == body["authority_hashes"]["fact_inventory_hash"]
     assert body["fact_material_bridge_receipt_hash"] == bridge["fact_material_bridge_receipt_hash"]
     assert body["classification_diagnostics"]["fact_count"] == fact_authority["fact_count"]
     assert body["classification_diagnostics"]["every_fact_classified_exactly_once"] is True

@@ -13,6 +13,11 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_fact_material_bridge,
     layer3_sec_xbrl_sidecar,
 )
+from app.services.layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_contract import (
+    STATEMENT_CLASSIFICATION_HASH_VERSION,
+    STATEMENT_CLASSIFICATION_MODE,
+    classification_receipt_hash_basis,
+)
 from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
@@ -22,7 +27,7 @@ SCHEMA_ID = "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification.v1"
 REQUEST_SCHEMA_ID = "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_request.v1"
 STATUS_SCHEMA_ID = "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_status.v1"
 SCHEMA_VERSION = 1
-CLASSIFICATION_MODE = "sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1"
+CLASSIFICATION_MODE = STATEMENT_CLASSIFICATION_MODE
 OPERATOR_DECISION = "classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates"
 READY_STATE = "sec_edgar_html_inline_xbrl_fact_statement_classification_ready"
 BLOCKED_STATE = "sec_edgar_html_inline_xbrl_fact_statement_classification_blocked"
@@ -32,7 +37,7 @@ FACT_MATERIAL_CONTRACT_ID = "sec_edgar_html_inline_xbrl_fact_material_units_v1"
 RECEIPT_PREFIX = "sec-edgar-html-inline-xbrl-fact-statement-classification"
 RECEIPT_DIR = "layer3-sec-edgar-html-inline-xbrl-fact-statement-classification"
 REDACTION_POLICY_ID = "sec_edgar_html_inline_xbrl_fact_statement_classification_redaction_v1"
-AUTHORITY_HASH_VERSION = "sec_edgar_html_inline_xbrl_fact_statement_classification_hash_v1"
+AUTHORITY_HASH_VERSION = STATEMENT_CLASSIFICATION_HASH_VERSION
 SEMANTIC_PROFILE_VERSION = "sec_edgar_statement_semantic_profile_v1"
 PERIOD_UNIT_CONTEXT_DIMENSION_PROFILE_VERSION = "sec_edgar_period_unit_context_dimension_profile_v1"
 STATEMENT_ROLE_QUALITY_PROFILE_VERSION = "sec_edgar_statement_role_quality_profile_v1"
@@ -393,20 +398,20 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         "financial_statement_semantics_claimed": False,
     }
     diagnostics_hash = stable_hash(diagnostics)
+    fact_inventory_hash = str(fact_receipt["fact_inventory_hash"])
     receipt_hash = stable_hash(
-        {
-            "hash_version": AUTHORITY_HASH_VERSION,
-            "classification_mode": CLASSIFICATION_MODE,
-            "fact_authority_receipt_hash": fact_receipt_hash,
-            "fact_material_bridge_receipt_hash": bridge_receipt_hash,
-            "fact_inventory_hash": fact_receipt["fact_inventory_hash"],
-            "classification_inventory_hash": classification_inventory_hash,
-            "semantic_profile_inventory_hash": semantic_profile_inventory_hash,
-            "classification_order_hash": classification_order_hash,
-            "statement_group_inventory_hash": statement_group_inventory_hash,
-            "unclassified_fact_inventory_hash": unclassified_fact_inventory_hash,
-            "classification_diagnostics_hash": diagnostics_hash,
-        }
+        classification_receipt_hash_basis(
+            classification_mode=CLASSIFICATION_MODE,
+            fact_authority_receipt_hash=fact_receipt_hash,
+            fact_material_bridge_receipt_hash=bridge_receipt_hash,
+            fact_inventory_hash=fact_inventory_hash,
+            classification_inventory_hash=classification_inventory_hash,
+            semantic_profile_inventory_hash=semantic_profile_inventory_hash,
+            classification_order_hash=classification_order_hash,
+            statement_group_inventory_hash=statement_group_inventory_hash,
+            unclassified_fact_inventory_hash=unclassified_fact_inventory_hash,
+            classification_diagnostics_hash=diagnostics_hash,
+        )
     )
     binding = _read_request_binding(request_id)
     if binding and binding.get("statement_classification_basis_hash") != receipt_hash:
@@ -436,6 +441,7 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         "typed_content_contract_id": FACT_MATERIAL_CONTRACT_ID,
         "fact_authority_receipt_id": fact_receipt_id,
         "fact_authority_receipt_hash": fact_receipt_hash,
+        "fact_inventory_hash": fact_inventory_hash,
         "fact_material_bridge_receipt_id": bridge_receipt_id,
         "fact_material_bridge_receipt_hash": bridge_receipt_hash,
         "parser_receipt_id": fact_receipt["parser_receipt_id"],
@@ -1192,6 +1198,7 @@ def _response_from_receipt(
         "typed_content_contract_id": FACT_MATERIAL_CONTRACT_ID,
         "fact_authority_receipt_id": receipt["fact_authority_receipt_id"],
         "fact_authority_receipt_hash": receipt["fact_authority_receipt_hash"],
+        "fact_inventory_hash": _required_hash(receipt, "fact_inventory_hash"),
         "fact_material_bridge_receipt_id": receipt["fact_material_bridge_receipt_id"],
         "fact_material_bridge_receipt_hash": receipt["fact_material_bridge_receipt_hash"],
         "parser_receipt_hash": receipt["parser_receipt_hash"],

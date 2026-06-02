@@ -115003,7 +115003,7 @@ def _check_sec_edgar_html_inline_xbrl_fact_to_statement_classification_runtime(
         ),
         SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE: (
             'SCHEMA_ID = "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification.v1"',
-            'CLASSIFICATION_MODE = "sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1"',
+            "CLASSIFICATION_MODE = STATEMENT_CLASSIFICATION_MODE",
             'OPERATOR_DECISION = "classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates"',
             "def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates",
             "fact_material_bridge.inspect_sec_edgar_html_inline_xbrl_fact_material_bridge_status",
