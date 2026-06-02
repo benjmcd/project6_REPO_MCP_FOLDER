@@ -121,6 +121,114 @@ def test_loader_requires_expected_hash_when_sidecar_candidates_are_ambiguous(tmp
     assert exc.value.code == "sec_xbrl_offline_evidence_loader_sidecar_ambiguous"
 
 
+def test_loader_binds_dataset_version_to_classification_bridge_hash(tmp_path) -> None:
+    storage, companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=True)
+    other_bridge = {
+        "fact_material_bridge_receipt_hash": _hash("a"),
+        "fact_material_bridge_receipt_id": "sec-edgar-html-inline-xbrl-fact-material-bridge-" + "a" * 24,
+        "response": {
+            "arelle_sidecar_receipt_hash": refs["sidecar_receipt_hash"],
+            "dataset_version_id": "dv-wrong-bridge",
+        },
+    }
+    _write_json(
+        storage
+        / "layer3-sec-edgar-html-inline-xbrl-fact-material-bridge"
+        / "receipts"
+        / f"{other_bridge['fact_material_bridge_receipt_id']}.json",
+        other_bridge,
+    )
+
+    bundle = loader.load_sec_xbrl_offline_evidence_bundle(
+        storage,
+        companyfacts_path=companyfacts_path,
+        expected_sidecar_receipt_hash=refs["sidecar_receipt_hash"],
+        expected_statement_classification_receipt_hash=refs["classification_hash"],
+    )
+
+    assert bundle["evidence"]["dataset_version_id"] == "dv-sec-ixbrl-facts-redacted"
+
+
+def test_loader_rejects_stale_statement_classification_inventory_hash(tmp_path) -> None:
+    storage, companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=True)
+    classification_path = next((storage / loader.STATEMENT_CLASSIFICATION_DIR / "receipts").glob("*.json"))
+    classification = json.loads(classification_path.read_text(encoding="utf-8"))
+    classification["classification_inventory"][0]["statement_candidate_role"] = "balance_sheet"
+    _write_json(classification_path, classification)
+
+    with pytest.raises(loader.SecXbrlOfflineEvidenceLoaderError) as exc:
+        loader.load_sec_xbrl_offline_evidence_bundle(
+            storage,
+            companyfacts_path=companyfacts_path,
+            expected_sidecar_receipt_hash=refs["sidecar_receipt_hash"],
+            expected_statement_classification_receipt_hash=refs["classification_hash"],
+        )
+
+    assert exc.value.code == "sec_xbrl_offline_evidence_loader_statement_classification_inventory_hash_mismatch"
+
+
+def test_loader_reports_malformed_value_count_as_blocked_report(tmp_path) -> None:
+    storage, _companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=True)
+    sidecar_path = (
+        storage
+        / loader.SIDECAR_RECEIPT_DIR
+        / "receipts"
+        / f"{refs['sidecar_receipt_id']}.json"
+    )
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["internal_value_store"]["value_record_count"] = "not-a-number"
+    _write_json(sidecar_path, sidecar)
+
+    report = loader.inspect_sec_xbrl_offline_evidence_storage(
+        storage,
+        expected_sidecar_receipt_hash=refs["sidecar_receipt_hash"],
+        expected_statement_classification_receipt_hash=refs["classification_hash"],
+    )
+
+    assert report["status"] == "offline_evidence_bundle_blocked"
+    assert report["blocked_reasons"][0]["reason"] == "sec_xbrl_offline_evidence_loader_count_invalid"
+
+
+def test_loader_rejects_sidecar_receipt_id_path_escape_before_value_store_read(tmp_path) -> None:
+    storage, companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=True)
+    sidecar_path = (
+        storage
+        / loader.SIDECAR_RECEIPT_DIR
+        / "receipts"
+        / f"{refs['sidecar_receipt_id']}.json"
+    )
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["sidecar_receipt_id"] = "../outside-value-store"
+    _write_json(sidecar_path, sidecar)
+
+    with pytest.raises(loader.SecXbrlOfflineEvidenceLoaderError) as exc:
+        loader.load_sec_xbrl_offline_evidence_bundle(
+            storage,
+            companyfacts_path=companyfacts_path,
+            expected_sidecar_receipt_hash=refs["sidecar_receipt_hash"],
+            expected_statement_classification_receipt_hash=refs["classification_hash"],
+        )
+
+    assert exc.value.code == "sec_xbrl_offline_evidence_loader_receipt_id_invalid"
+
+
+def test_loader_rejects_raw_dataset_version_text_before_readiness(tmp_path) -> None:
+    storage, _companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=False)
+    bridge_path = storage / "layer3-sec-edgar-html-inline-xbrl-fact-material-bridge" / "receipts" / f"{refs['bridge_id']}.json"
+    bridge = json.loads(bridge_path.read_text(encoding="utf-8"))
+    bridge["response"]["dataset_version_id"] = "C:/Users/benny/raw-sec-xbrl"
+    _write_json(bridge_path, bridge)
+
+    report = loader.inspect_sec_xbrl_offline_evidence_storage(
+        storage,
+        expected_sidecar_receipt_hash=refs["sidecar_receipt_hash"],
+        expected_statement_classification_receipt_hash=refs["classification_hash"],
+    )
+
+    assert report["status"] == "offline_evidence_bundle_blocked"
+    assert report["blocked_reasons"][0]["reason"] == "sec_xbrl_offline_evidence_loader_raw_reference_not_admitted"
+
+
 def test_companyfacts_oracle_packet_reports_missing_oracle_without_overclaiming(tmp_path) -> None:
     storage, _companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=False)
 
@@ -245,11 +353,15 @@ def _write_storage(tmp_path: Path, *, include_companyfacts: bool) -> tuple[Path,
     sidecar_id = f"sec-edgar-arelle-resolved-fact-authority-{sidecar_hash[:24]}"
     classification_hash = _hash("d")
     classification_id = f"sec-edgar-html-inline-xbrl-fact-statement-classification-{classification_hash[:24]}"
+    bridge_hash = _hash("e")
+    bridge_id = "sec-edgar-html-inline-xbrl-fact-material-bridge-" + "e" * 24
     sidecar_records = _sidecar_records()
     value_records = _value_records()
     value_store_hash = stable_hash(value_records)
     resolved_projection = [_redacted_fact(record) for record in sidecar_records]
     resolved_projection_hash = stable_hash(resolved_projection)
+    statement_roles = _statement_roles()
+    classification_inventory_hash = stable_hash(statement_roles)
 
     sidecar = {
         "schema_id": "layer3.sec_edgar_arelle_resolved_fact_authority_sidecar.v1",
@@ -280,15 +392,18 @@ def _write_storage(tmp_path: Path, *, include_companyfacts: bool) -> tuple[Path,
         "schema_id": "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification.v1",
         "statement_classification_receipt_id": classification_id,
         "statement_classification_receipt_hash": classification_hash,
+        "fact_material_bridge_receipt_hash": bridge_hash,
+        "classification_inventory_hash": classification_inventory_hash,
         "authority_hashes": {
             "fact_authority_receipt_hash": sidecar_hash,
             "fact_inventory_hash": resolved_projection_hash,
+            "fact_material_bridge_receipt_hash": bridge_hash,
         },
-        "classification_inventory": _statement_roles(),
+        "classification_inventory": statement_roles,
     }
     bridge = {
-        "fact_material_bridge_receipt_hash": _hash("e"),
-        "fact_material_bridge_receipt_id": "sec-edgar-html-inline-xbrl-fact-material-bridge-" + "e" * 24,
+        "fact_material_bridge_receipt_hash": bridge_hash,
+        "fact_material_bridge_receipt_id": bridge_id,
         "response": {
             "arelle_sidecar_receipt_hash": sidecar_hash,
             "dataset_version_id": "dv-sec-ixbrl-facts-redacted",
@@ -314,6 +429,8 @@ def _write_storage(tmp_path: Path, *, include_companyfacts: bool) -> tuple[Path,
         "sidecar_receipt_hash": sidecar_hash,
         "sidecar_receipt_id": sidecar_id,
         "classification_hash": classification_hash,
+        "bridge_hash": bridge_hash,
+        "bridge_id": bridge_id,
     }
 
 
