@@ -43,6 +43,51 @@ XBRL reports, and `git diff --check` pass.
 Next exact posture:
 `sec_xbrl_nonlocal_final_admission_packet_and_backfill_disposition_v1`.
 
+## SEC XBRL Nonlocal Readiness In-App Auth Reconciliation
+
+Milestone:
+`sec_xbrl_nonlocal_readiness_in_app_auth_reconciliation_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1327-nonlocal-readiness-in-app-reconciliation.md`.
+
+Diagnostic/report:
+`diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate.py` and
+`diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json`.
+
+Status: current-main Tier-1 validate-only reconciliation with branch-local
+#2082 review-thread closeout on `codex/secxbrl-2082-review-closeout`.
+
+Scope: record that repo-owned in-app auth evidence is present and current
+after policy validation, auth-binding, route enforcement, and residual
+closeout evidence landed. The readiness gate remains blocked on final nonlocal
+production admission and does not claim that the gate itself implemented auth
+behavior.
+
+Containment: the gate keeps `in_app_auth_implemented_by_gate` false while
+`in_app_auth_implementation_evidence_present` may be true. Evidence must cover
+all six protected route families, including
+`sec_xbrl_operator_review_decision_status_read`. No schema, `models.py`,
+Alembic migration, durable persistence, backend API/UI behavior, operator
+workflow, source acquisition, Arelle subprocess invocation, live SEC network
+run, value-reveal default, export/delivery, provider dispatch, raw runtime
+artifact, historical backfill, or production-readiness claim is admitted.
+
+Verification: focused readiness/admission tests pass with `15 passed`; full
+SEC XBRL suite passes with `365 passed, 3 warnings`; regenerated readiness
+report changes only `in_app_auth_implemented_by_gate` from true to false while
+keeping `decision: nonlocal_production_readiness_blocked`,
+`blocking_reasons: [nonlocal_production_readiness_final_admission_missing]`,
+`production_readiness_claimed: false`, and
+`in_app_auth_implementation_evidence_present: true`; target-selection frozen
+check, progress check, py_compile over touched Python files, JSON validation
+with `utf-8-sig` for two manifests and 59 committed SEC XBRL reports,
+redaction/residual scan over 59 committed SEC XBRL reports, and
+`git diff --check` pass.
+
+Next exact posture:
+`sec_xbrl_nonlocal_production_admission_or_historical_backfill_disposition_v1`.
+
 ## SEC XBRL Residual Review-Thread Closeout #2070/#2074
 
 Milestone:
