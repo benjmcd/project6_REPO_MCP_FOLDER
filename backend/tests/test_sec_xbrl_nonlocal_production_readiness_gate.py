@@ -32,6 +32,8 @@ def _valid_authority_packet(module) -> dict[str, object]:
         "incident_owner_ref": "incident-owner-ref-alpha",
         "redaction_policy_id": module.REDACTION_POLICY_ID,
         "verification_run_ref": "verification-run-ref-alpha",
+        "deployment_authority_provenance_ref": "deployment-authority-provenance-ref-alpha",
+        "deployment_authority_provenance_hash": "c" * 64,
     }
 
 
@@ -101,6 +103,39 @@ def test_sec_xbrl_nonlocal_readiness_gate_rejects_bare_cik_refs(tmp_path: Path) 
     assert "nonlocal_production_readiness_raw_authority_not_admitted" in report["blocking_reasons"]
     assert "raw_cik" in report["authority_packet_summary"]["redaction_scan"]["hit_classes"]
     assert "deployment_owner_ref" in report["authority_packet_summary"]["invalid_required_fields"]
+
+
+def test_sec_xbrl_nonlocal_readiness_gate_rejects_unreduced_authority_ref(tmp_path: Path) -> None:
+    module = _gate_module()
+    packet = _valid_authority_packet(module)
+    packet["deployment_owner_ref"] = "Acme Operator"
+    packet_path = tmp_path / "packet.json"
+    packet_path.write_text(json.dumps(packet), encoding="utf-8")
+
+    report = module.build_report(authority_packet_path=packet_path)
+
+    assert report["decision"] == "nonlocal_production_readiness_blocked"
+    assert "nonlocal_production_readiness_raw_authority_not_admitted" in report["blocking_reasons"]
+    assert "raw_or_unreduced_authority_ref" in report["authority_packet_summary"]["redaction_scan"]["hit_classes"]
+    assert "deployment_owner_ref" in report["authority_packet_summary"]["invalid_required_fields"]
+
+
+def test_sec_xbrl_nonlocal_readiness_gate_requires_deployment_provenance(tmp_path: Path) -> None:
+    module = _gate_module()
+    packet = _valid_authority_packet(module)
+    packet.pop("deployment_authority_provenance_ref")
+    packet.pop("deployment_authority_provenance_hash")
+    packet_path = tmp_path / "packet.json"
+    packet_path.write_text(json.dumps(packet), encoding="utf-8")
+
+    report = module.build_report(authority_packet_path=packet_path)
+
+    assert report["decision"] == "nonlocal_production_readiness_blocked"
+    assert "nonlocal_production_readiness_authority_packet_missing_required_fields" in report["blocking_reasons"]
+    assert set(report["authority_packet_summary"]["required_fields_missing"]) >= {
+        "deployment_authority_provenance_ref",
+        "deployment_authority_provenance_hash",
+    }
 
 
 def test_sec_xbrl_nonlocal_readiness_gate_rejects_repo_owned_auth_packet_mode(tmp_path: Path) -> None:
