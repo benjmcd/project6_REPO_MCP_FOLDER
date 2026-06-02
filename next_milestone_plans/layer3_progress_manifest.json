@@ -45619,13 +45619,13 @@
       "backend/app/api/layer3.py wires protected SEC XBRL route families through auth-binding helpers"
     ],
     "verification_status": "branch-local verification passed",
-    "focused_gate_test_result": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py -q -> 9 passed",
-    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 359 passed, 3 warnings across 31 files",
+    "focused_gate_test_result": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py ./backend/tests/test_sec_xbrl_nonlocal_admission_disposition.py -q -> 16 passed",
+    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 366 passed, 3 warnings across 32 files",
     "target_selection_validation": "PASS: python ./tools/l3-target-selection-validate.py --expect frozen",
     "progress_check": "PASS: python ./tools/l3-progress-check.py",
     "py_compile": "PASS: python -m py_compile over touched diagnostic/test Python files",
-    "json_manifest_and_report_validation": "PASS: 2 Layer 3 manifests and 58 diagnostics/assessment/sec-xbrl*.json reports parsed with utf-8-sig; total JSON files checked including changed report: 60",
-    "committed_sec_xbrl_report_redaction_residual_scan": "PASS: 58 committed SEC XBRL reports, 0 raw identity/path/SEC URL/accession/email hits, 0 raw-value field hits, 0 nonzero residual-magnitude hits",
+    "json_manifest_and_report_validation": "PASS: 2 Layer 3 manifests and 59 diagnostics/assessment/sec-xbrl*.json reports parsed with utf-8-sig; total JSON files checked: 61",
+    "committed_sec_xbrl_report_redaction_residual_scan": "PASS: 59 committed SEC XBRL reports, 0 raw identity/path/SEC URL/accession/email hits, 0 raw-value field hits, 0 nonzero residual-magnitude hits",
     "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only"
   },
   "sec_xbrl_nonlocal_admission_disposition_tracking": {
@@ -45674,8 +45674,8 @@
       "next_milestone_plans/Layer3_planning_docs/1326-auth-owner-binding-route-enforcement.md records current atomic protected mutating route behavior and leaves historical unbound receipts as separate backfill authority"
     ],
     "verification_status": "branch-local verification passed",
-    "focused_gate_test_result": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_nonlocal_admission_disposition.py ./backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py -q -> 13 passed",
-    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 363 passed, 3 warnings across 32 files",
+    "focused_gate_test_result": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py ./backend/tests/test_sec_xbrl_nonlocal_admission_disposition.py -q -> 16 passed",
+    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 366 passed, 3 warnings across 32 files",
     "target_selection_validation": "PASS: python ./tools/l3-target-selection-validate.py --expect frozen",
     "progress_check": "PASS: python ./tools/l3-progress-check.py",
     "py_compile": "PASS: python -m py_compile over touched diagnostic/test Python files",
