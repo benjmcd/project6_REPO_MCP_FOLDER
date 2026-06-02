@@ -36,6 +36,10 @@ Repo-confirmed:
   values, accessions, SEC URLs, local paths, or fact ids.
 - `backend/tests/test_sec_xbrl_offline_evidence_loader.py` proves both the
   missing-oracle blocked path and the supplied-oracle ready path.
+- The post-merge review fix preserves base offline-storage blockers before the
+  oracle-missing blocker and requires at least one CompanyFacts observation
+  plus at least one oracle-confirmed projection before reporting packet
+  readiness.
 - The committed report for the current FIZZ offline storage is blocked with
   `companyfacts_oracle_packet_missing` because no operator-acquired offline
   CompanyFacts JSON was found under `C:/Users/benny/Downloads/sandbox_temp`.
@@ -105,6 +109,12 @@ Focused packet verification:
 
 Result: `6 passed`.
 
+Post-merge review-fix focused packet verification:
+
+`python -m pytest ./backend/tests/test_sec_xbrl_offline_evidence_loader.py -q`
+
+Result: `8 passed`.
+
 Diagnostic regeneration:
 
 `python ./diagnostics/assessment/sec-xbrl-offline-companyfacts-oracle-packet.py --storage-dir <operator-offline-storage> --expected-sidecar-receipt-hash 16cdcfc6e5486ccfdb2991fac7f46a03f53d802d60841f2e0ff6c488cdf5bb9d --expected-statement-classification-receipt-hash bd95ba6d396a7d645f11e8e0bc4f8e7ca5f6e12f2ec9f50a5f250f43ae938666`
@@ -118,12 +128,18 @@ Loader plus offline orchestrator verification:
 
 Result: `10 passed`.
 
+Post-merge review-fix loader plus offline orchestrator verification:
+
+`python -m pytest ./backend/tests/test_sec_xbrl_offline_evidence_loader.py ./backend/tests/test_sec_xbrl_e2e_offline_orchestrator.py -q`
+
+Result: `12 passed`.
+
 Full SEC XBRL suite:
 
 `python -m pytest` over explicit `./backend/tests/test_sec_xbrl*.py`
 enumeration.
 
-Result: `385 passed, 3 warnings`.
+Result: `387 passed, 3 warnings`.
 
 `python -m py_compile ./backend/app/services/layer3_sec_xbrl_offline_companyfacts_oracle_packet.py ./diagnostics/assessment/sec-xbrl-offline-companyfacts-oracle-packet.py ./backend/tests/test_sec_xbrl_offline_evidence_loader.py`
 
