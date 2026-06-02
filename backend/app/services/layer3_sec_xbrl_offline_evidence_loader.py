@@ -309,15 +309,14 @@ def _statement_roles_from_classification(
     *,
     sidecar: Mapping[str, Any],
 ) -> list[dict[str, Any]]:
-    authority = classification.get("authority_hashes") if isinstance(classification.get("authority_hashes"), Mapping) else {}
     sidecar_hash = _required_hash(sidecar.get("sidecar_receipt_hash"), "sidecar_receipt_hash")
     inventory_hash = _required_hash(sidecar.get("resolved_fact_inventory_hash"), "resolved_fact_inventory_hash")
-    if str(authority.get("fact_authority_receipt_hash") or "") != sidecar_hash:
+    if _classification_fact_authority_hash(classification) != sidecar_hash:
         raise SecXbrlOfflineEvidenceLoaderError(
             "sec_xbrl_offline_evidence_loader_statement_classification_authority_mismatch",
             "SEC XBRL statement classification does not bind to the selected sidecar receipt.",
         )
-    if str(authority.get("fact_inventory_hash") or "") != inventory_hash:
+    if _classification_fact_inventory_hash(classification) != inventory_hash:
         raise SecXbrlOfflineEvidenceLoaderError(
             "sec_xbrl_offline_evidence_loader_statement_classification_inventory_mismatch",
             "SEC XBRL statement classification does not bind to the selected resolved-fact inventory.",
@@ -374,15 +373,9 @@ def _validate_statement_classification_receipt_hash(classification: Mapping[str,
     basis = {
         "hash_version": STATEMENT_CLASSIFICATION_HASH_VERSION,
         "classification_mode": _required_text(classification.get("classification_mode"), "classification_mode"),
-        "fact_authority_receipt_hash": _required_hash(
-            classification.get("fact_authority_receipt_hash"),
-            "fact_authority_receipt_hash",
-        ),
+        "fact_authority_receipt_hash": _classification_fact_authority_hash(classification),
         "fact_material_bridge_receipt_hash": _classification_bridge_hash(classification),
-        "fact_inventory_hash": _required_hash(
-            classification.get("fact_inventory_hash"),
-            "fact_inventory_hash",
-        ),
+        "fact_inventory_hash": _classification_fact_inventory_hash(classification),
         "classification_inventory_hash": _required_hash(
             classification.get("classification_inventory_hash"),
             "classification_inventory_hash",
@@ -418,6 +411,42 @@ def _validate_statement_classification_receipt_hash(classification: Mapping[str,
             "sec_xbrl_offline_evidence_loader_statement_classification_receipt_hash_mismatch",
             "SEC XBRL statement classification receipt hash is stale or mismatched.",
         )
+
+
+def _classification_fact_authority_hash(classification: Mapping[str, Any]) -> str:
+    top_level_hash = _required_hash(
+        classification.get("fact_authority_receipt_hash"),
+        "fact_authority_receipt_hash",
+    )
+    authority = classification.get("authority_hashes") if isinstance(classification.get("authority_hashes"), Mapping) else {}
+    authority_hash = _required_hash(
+        authority.get("fact_authority_receipt_hash"),
+        "authority_hashes.fact_authority_receipt_hash",
+    )
+    if authority_hash != top_level_hash:
+        raise SecXbrlOfflineEvidenceLoaderError(
+            "sec_xbrl_offline_evidence_loader_statement_classification_fact_authority_hash_mismatch",
+            "SEC XBRL statement classification fact authority hash copies do not match.",
+        )
+    return top_level_hash
+
+
+def _classification_fact_inventory_hash(classification: Mapping[str, Any]) -> str:
+    top_level_hash = _required_hash(
+        classification.get("fact_inventory_hash"),
+        "fact_inventory_hash",
+    )
+    authority = classification.get("authority_hashes") if isinstance(classification.get("authority_hashes"), Mapping) else {}
+    authority_hash = _required_hash(
+        authority.get("fact_inventory_hash"),
+        "authority_hashes.fact_inventory_hash",
+    )
+    if authority_hash != top_level_hash:
+        raise SecXbrlOfflineEvidenceLoaderError(
+            "sec_xbrl_offline_evidence_loader_statement_classification_fact_inventory_hash_mismatch",
+            "SEC XBRL statement classification fact inventory hash copies do not match.",
+        )
+    return top_level_hash
 
 
 def _classification_bridge_hash(classification: Mapping[str, Any]) -> str:
