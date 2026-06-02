@@ -13881,6 +13881,7 @@ def _sec_xbrl_record_binding(
     source_receipt_basis_hash: str,
     route_family: str,
     policy_decision: dict[str, Any],
+    commit: bool = True,
 ) -> dict[str, Any]:
     return layer3_sec_xbrl_auth_binding.record_sec_xbrl_auth_binding(
         db,
@@ -13890,7 +13891,20 @@ def _sec_xbrl_record_binding(
         source_receipt_basis_hash=source_receipt_basis_hash,
         route_family=route_family,
         policy_decision=policy_decision,
+        commit=commit,
     )
+
+
+def _sec_xbrl_commit_bound_receipts(db: Session) -> None:
+    try:
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_atomic_commit_failed",
+            "SEC XBRL source receipt and auth binding receipt commit failed as one transaction.",
+            http_status=409,
+        ) from exc
 
 
 def _sec_xbrl_auth_binding_projection(binding: dict[str, Any]) -> dict[str, Any]:
@@ -16528,6 +16542,7 @@ def post_sec_xbrl_operator_review_workflow_decision_submit(
                 for key, value in payload_data.items()
                 if key not in {"submit_mode", "operator_decision"}
             },
+            commit=False,
         )
         decision_binding = _sec_xbrl_record_binding(
             db,
@@ -16537,7 +16552,9 @@ def post_sec_xbrl_operator_review_workflow_decision_submit(
             source_receipt_basis_hash=decision["decision_basis_hash"],
             route_family=route_family,
             policy_decision=policy_decision,
+            commit=False,
         )
+        _sec_xbrl_commit_bound_receipts(db)
         return {
             **base_response(
                 decision["schema_id"],
@@ -16561,6 +16578,7 @@ def post_sec_xbrl_operator_review_workflow_decision_submit(
         layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
         layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,
     ) as exc:
+        db.rollback()
         return _sec_xbrl_auth_policy_error_response(exc)
     except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
         return _sec_xbrl_operator_review_workflow_error_response(exc)
@@ -16658,6 +16676,7 @@ def post_sec_xbrl_value_reveal_authority_prepare(
                 for key, value in payload_data.items()
                 if key not in {"authority_mode", "operator_decision"}
             },
+            commit=False,
         )
         authority_binding = _sec_xbrl_record_binding(
             db,
@@ -16667,7 +16686,9 @@ def post_sec_xbrl_value_reveal_authority_prepare(
             source_receipt_basis_hash=receipt["authority_basis_hash"],
             route_family=route_family,
             policy_decision=policy_decision,
+            commit=False,
         )
+        _sec_xbrl_commit_bound_receipts(db)
         return {
             **base_response(
                 receipt["schema_id"],
@@ -16689,6 +16710,7 @@ def post_sec_xbrl_value_reveal_authority_prepare(
         layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
         layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,
     ) as exc:
+        db.rollback()
         return _sec_xbrl_auth_policy_error_response(exc)
     except layer3_sec_xbrl_value_reveal_authority.SecXbrlValueRevealAuthorityError as exc:
         return _sec_xbrl_value_reveal_authority_error_response(exc)
@@ -16742,6 +16764,7 @@ def post_sec_xbrl_controlled_value_reveal_submit(
                 for key, value in payload_data.items()
                 if key not in {"submit_mode", "operator_decision"}
             },
+            commit=False,
         )
         submit_binding = _sec_xbrl_record_binding(
             db,
@@ -16751,7 +16774,9 @@ def post_sec_xbrl_controlled_value_reveal_submit(
             source_receipt_basis_hash=receipt["submit_basis_hash"],
             route_family=route_family,
             policy_decision=policy_decision,
+            commit=False,
         )
+        _sec_xbrl_commit_bound_receipts(db)
         return {
             **base_response(
                 receipt["schema_id"],
@@ -16772,6 +16797,7 @@ def post_sec_xbrl_controlled_value_reveal_submit(
         layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
         layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,
     ) as exc:
+        db.rollback()
         return _sec_xbrl_auth_policy_error_response(exc)
     except layer3_sec_xbrl_controlled_value_reveal_submit.SecXbrlControlledValueRevealSubmitError as exc:
         return _sec_xbrl_controlled_value_reveal_submit_error_response(exc)

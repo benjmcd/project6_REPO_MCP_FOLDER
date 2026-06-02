@@ -1,5 +1,42 @@
 # Layer3 Progress Board
 
+## SEC XBRL Residual Review-Thread Closeout #2070/#2074
+
+Milestone:
+`sec_xbrl_residual_review_thread_closeout_2070_2074_v1`.
+
+Branch:
+`codex/secxbrl-residual-review-closeout`.
+
+Base:
+`project6-origin/main` at `5e88ae9910262fcf7b6433654cfacebc856075e5`.
+
+Status: branch-local Tier-2 residual review-thread remediation verified.
+
+Scope: close the three review findings that remained after PR #2077/current-main
+post-merge verification. The pass requires deployment authority provenance in
+the nonlocal authority packet, rejects raw or unreduced authority refs in the
+packet itself, and makes the three protected mutating SEC XBRL routes commit the
+source receipt plus auth-binding receipt as one route transaction.
+
+Containment: no source acquisition, live SEC network, Arelle subprocess,
+default-on change, export/delivery, UI/operator-workflow expansion,
+production-readiness claim, raw runtime artifact, or value-reveal default-on
+change is admitted. Historical unbound source receipts, if any are discovered,
+remain a separate repair/backfill authority question.
+
+Verification: touched focused suites pass with `83 passed, 3 warnings`;
+focused residual closeout suite passes with `133 passed, 3 warnings`; full SEC
+XBRL suite passes with `353 passed, 3 warnings`; target-selection frozen check,
+progress check, py_compile over touched Python files, JSON validation with
+`utf-8-sig` for two manifests and 58 committed SEC XBRL reports,
+redaction/residual scan over 58 committed SEC XBRL reports, and
+`git diff --check` pass.
+
+Next exact posture after verification:
+operator merge/review decision for this residual closeout PR, then post-merge
+thread resolution if current-main proof remains clean.
+
 ## SEC XBRL Review-Thread Closeout #2063-#2076
 
 Milestone:

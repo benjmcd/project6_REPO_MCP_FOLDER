@@ -102,6 +102,7 @@ def prepare_value_reveal_authority_receipt(
     sec_xbrl_operator_review_decision_id: str,
     decision_basis_hash: str,
     operator_attestation: str | None = None,
+    commit: bool = True,
 ) -> dict[str, Any]:
     request_id = _required_text(client_request_id, "client_request_id")
     _reject_raw_or_local_authority(request_id)
@@ -268,7 +269,10 @@ def prepare_value_reveal_authority_receipt(
     )
     try:
         db.add(receipt)
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
     except IntegrityError as exc:
         db.rollback()
         raise SecXbrlValueRevealAuthorityError(

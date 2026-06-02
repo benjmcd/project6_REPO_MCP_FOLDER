@@ -372,6 +372,21 @@ def _bind_submit(
     )
 
 
+def _force_auth_binding_failure(monkeypatch, *, source_receipt_kind: str) -> None:
+    original = auth_binding.record_sec_xbrl_auth_binding
+
+    def fail_for_source_kind(db_session, *args: Any, **kwargs: Any):
+        if kwargs.get("source_receipt_kind") == source_receipt_kind:
+            raise auth_binding.SecXbrlAuthBindingError(
+                "sec_xbrl_auth_binding_forced_failure",
+                "Forced auth-binding failure for atomic receipt rollback proof.",
+                http_status=409,
+            )
+        return original(db_session, *args, **kwargs)
+
+    monkeypatch.setattr(auth_binding, "record_sec_xbrl_auth_binding", fail_for_source_kind)
+
+
 def _decision_submit_payload(workflow: dict[str, Any], **overrides: Any) -> dict[str, Any]:
     payload = {
         "client_request_id": "decision-submit-api",
@@ -905,6 +920,29 @@ def test_operator_review_decision_submit_api_records_redacted_receipt(api_client
         assert _workflow_snapshot(session.query(L3SecXbrlOperatorReviewWorkflow).one()) == workflow_snapshot
         assert _packet_snapshot(session.query(L3SecXbrlStatementPacketSet).one()) == packet_snapshot
         assert _projection_snapshot(session.query(L3SecXbrlProjectionSet).one()) == projection_snapshot
+
+
+def test_operator_review_decision_submit_api_rolls_back_source_receipt_when_binding_fails(
+    api_client,
+    monkeypatch,
+) -> None:
+    client, Session = api_client
+    with Session() as session:
+        workflow = _open_workflow(session, request_id="workflow-decision-api-binding-fail")
+        _bind_workflow(session, workflow)
+
+    _force_auth_binding_failure(monkeypatch, source_receipt_kind="operator_review_decision")
+
+    response = client.post(
+        DECISION_SUBMIT_ROUTE,
+        json=_decision_submit_payload(workflow, client_request_id="decision-submit-api-binding-fail"),
+    )
+
+    assert response.status_code == 409, response.text
+    assert response.json()["error_code"] == "sec_xbrl_auth_binding_forced_failure"
+    with Session() as session:
+        assert session.query(L3SecXbrlOperatorReviewDecision).count() == 0
+        assert session.query(L3SecXbrlAuthBindingReceipt).count() == 1
 
 
 def test_operator_review_decision_submit_api_rejects_extra_fields(api_client) -> None:
@@ -2019,6 +2057,30 @@ def test_value_reveal_authority_api_records_hash_only_receipt(api_client, monkey
     assert body["production_readiness_claimed"] is False
 
 
+def test_value_reveal_authority_api_rolls_back_source_receipt_when_binding_fails(
+    api_client,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(authority_service, "_resolve_sidecar_authority", lambda *_args: _sidecar_authority())
+    client, Session = api_client
+    with Session() as db:
+        decision = _record_decision(db, request_id="authority-api-binding-fail-decision-source")
+        _bind_decision(db, decision)
+
+    _force_auth_binding_failure(monkeypatch, source_receipt_kind="value_reveal_authority")
+
+    response = client.post(
+        AUTHORITY_PREPARE_ROUTE,
+        json=_authority_payload(decision, client_request_id="authority-api-binding-fail"),
+    )
+
+    assert response.status_code == 409, response.text
+    assert response.json()["error_code"] == "sec_xbrl_auth_binding_forced_failure"
+    with Session() as db:
+        assert db.query(L3SecXbrlValueRevealAuthorityReceipt).count() == 0
+        assert db.query(L3SecXbrlAuthBindingReceipt).count() == 1
+
+
 def test_value_reveal_authority_api_rejects_extra_fields(api_client) -> None:
     client, Session = api_client
     with Session() as db:
@@ -2234,6 +2296,40 @@ def test_controlled_value_reveal_submit_api_records_receipt_and_status_hash_coun
     assert "dataset_version_id" not in status
     assert "sidecar_receipt_hash" not in status
     assert "123.45" not in json.dumps(status, sort_keys=True)
+
+
+def test_controlled_value_reveal_submit_api_rolls_back_source_receipt_when_binding_fails(
+    api_client,
+    monkeypatch,
+) -> None:
+    _enable_controlled_submit(monkeypatch)
+    monkeypatch.setattr(authority_service, "_resolve_sidecar_authority", lambda *_args: _sidecar_authority())
+    monkeypatch.setattr(submit_service, "_resolve_sidecar_and_value_store", lambda *_args: _submit_sidecar_and_value_store())
+    client, Session = api_client
+    with Session() as db:
+        decision = _record_decision(db, request_id="controlled-submit-api-binding-fail-decision-source")
+        _bind_decision(db, decision)
+
+    authority_response = client.post(
+        AUTHORITY_PREPARE_ROUTE,
+        json=_authority_payload(decision, client_request_id="controlled-submit-api-binding-fail-authority"),
+    )
+    assert authority_response.status_code == 200, authority_response.text
+    authority = authority_response.json()
+
+    _force_auth_binding_failure(monkeypatch, source_receipt_kind="controlled_value_reveal_submit")
+
+    submit_response = client.post(
+        CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE,
+        json=_controlled_submit_payload(authority, client_request_id="controlled-submit-api-binding-fail"),
+    )
+
+    assert submit_response.status_code == 409, submit_response.text
+    assert submit_response.json()["error_code"] == "sec_xbrl_auth_binding_forced_failure"
+    with Session() as db:
+        assert db.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 0
+        assert db.query(L3SecXbrlValueRevealAuthorityReceipt).count() == 1
+        assert db.query(L3SecXbrlAuthBindingReceipt).count() == 2
 
 
 def test_controlled_value_reveal_submit_api_rejects_client_sidecar_fields(api_client) -> None:

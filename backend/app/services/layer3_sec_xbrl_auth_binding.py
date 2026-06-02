@@ -167,6 +167,7 @@ def record_sec_xbrl_auth_binding(
     source_receipt_basis_hash: str,
     route_family: str,
     policy_decision: Mapping[str, Any],
+    commit: bool = True,
 ) -> dict[str, Any]:
     request_id = _required_text(client_request_id, "client_request_id")
     _reject_raw_reference(request_id)
@@ -258,7 +259,10 @@ def record_sec_xbrl_auth_binding(
     )
     try:
         db.add(row)
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
     except IntegrityError as exc:
         db.rollback()
         raise SecXbrlAuthBindingError(
