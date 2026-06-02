@@ -37,7 +37,7 @@
       "evidence": {
         "blocking_reasons_count": 0,
         "decision": "default_on_runtime_enabled",
-        "runtime_report_hash": "8c725285b970c9edeb2645d9a795947c0f26441e8f1e30cb61fdcda7409c16b7",
+        "runtime_report_hash": "cfc14e78df265fac4ec3fca0728cd0acae35a84a736968ca26a23303f77e26b1",
         "source_report": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
       },
       "state": "passed"
@@ -123,7 +123,7 @@
     "blocking_reasons_count": 0,
     "decision": "default_on_runtime_enabled",
     "next_slice": "sec_xbrl_default_on_nonlocal_production_readiness_design_v1",
-    "runtime_report_hash": "8c725285b970c9edeb2645d9a795947c0f26441e8f1e30cb61fdcda7409c16b7",
+    "runtime_report_hash": "cfc14e78df265fac4ec3fca0728cd0acae35a84a736968ca26a23303f77e26b1",
     "source_report": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
   },
   "next_slice": "sec_xbrl_nonlocal_deployment_authority_packet_or_in_app_auth_boundary_v1",
