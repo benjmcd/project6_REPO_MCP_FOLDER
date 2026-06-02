@@ -35,7 +35,8 @@ def _hash(char: str) -> str:
     return char * 64
 
 
-def _private_projection(*, periods: int = 2) -> dict[str, Any]:
+def _private_projection(*, periods: int = 2, empty_periods: set[int] | None = None) -> dict[str, Any]:
+    empty_periods = set(empty_periods or set())
     return {
         "status": "canonical_multi_period_projection_ready",
         "sector_family_presence": {
@@ -56,16 +57,29 @@ def _private_projection(*, periods: int = 2) -> dict[str, Any]:
                     "dataset_version_id": "dv-redacted-1",
                     "sidecar_receipt_hash": _hash("b"),
                     "value_store_hash": _hash("c"),
-                    "concepts": [
-                        _private_row("Revenue", "income", period_index=period_index),
-                        _private_row("TotalAssets", "balance", period_index=period_index),
-                        _private_row("OperatingCashFlow", "cashflow", period_index=period_index),
-                    ],
+                    "concepts": _private_period_rows(
+                        period_index=period_index,
+                        empty=period_index in empty_periods,
+                    ),
                 },
             }
             for period_index in range(1, periods + 1)
         ],
     }
+
+
+def _private_period_rows(*, period_index: int, empty: bool = False) -> list[dict[str, Any]]:
+    if empty:
+        return [
+            _absent_row("Revenue", "income"),
+            _absent_row("TotalAssets", "balance"),
+            _absent_row("OperatingCashFlow", "cashflow"),
+        ]
+    return [
+        _private_row("Revenue", "income", period_index=period_index),
+        _private_row("TotalAssets", "balance", period_index=period_index),
+        _private_row("OperatingCashFlow", "cashflow", period_index=period_index),
+    ]
 
 
 def _private_row(canonical_id: str, statement: str, *, period_index: int) -> dict[str, Any]:
@@ -92,6 +106,17 @@ def _private_row(canonical_id: str, statement: str, *, period_index: int) -> dic
         "_value": Decimal("1"),
         "_unit": "USD",
         "_period_key": ("redacted-period-key", period_index),
+    }
+
+
+def _absent_row(canonical_id: str, statement: str) -> dict[str, Any]:
+    return {
+        "canonical_id": canonical_id,
+        "basis": "total",
+        "requested_basis": "total",
+        "statement": statement,
+        "family": "universal",
+        "status": "legitimately_absent",
     }
 
 
@@ -131,6 +156,38 @@ def test_redacted_projection_payload_strips_private_fields_and_materializes(db_s
     assert response["fact_count"] == 3
     assert response["source_acquisition_performed"] is False
     assert response["arelle_invoked"] is False
+
+
+def test_redacted_projection_payload_skips_ready_empty_periods_and_fails_closed_when_all_empty(
+    db_session,
+) -> None:
+    payload = integration.redacted_projection_persistence_payload(
+        _private_projection(periods=2, empty_periods={2})
+    )
+
+    assert [(period["period_ref"], period["period_index"]) for period in payload["periods"]] == [
+        ("fy-period-1", 1)
+    ]
+
+    response = projection_persistence.materialize_redacted_projection_set(
+        db_session,
+        client_request_id="projection-e2e-empty-period-skip",
+        projection=payload,
+        source_report_schema_id="diagnostics.sec_xbrl_sector_family_real_filer_validation_report.v1",
+        source_report_hash=_hash("a"),
+    )
+
+    assert response["status"] == "materialized"
+    assert response["fact_count"] == 3
+
+    with pytest.raises(integration.SecXbrlE2EIntegrationError) as exc:
+        integration.redacted_projection_persistence_payload(
+            _private_projection(periods=2, empty_periods={1, 2})
+        )
+
+    assert exc.value.code == "sec_xbrl_e2e_integration_no_projected_facts"
+    assert "at least one period with projected facts" in str(exc.value)
+    assert exc.value.details == {"examined_absent_period_refs": ["fy-period-1", "fy-period-2"]}
 
 
 def test_e2e_adapter_carries_multi_period_projection_to_workflow(db_session) -> None:
