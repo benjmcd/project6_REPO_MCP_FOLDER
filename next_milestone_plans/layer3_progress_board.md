@@ -12,13 +12,14 @@ Diagnostic/report:
 `diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition.py` and
 `diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition-report.json`.
 
-Status: branch-local Tier-1 validate-only diagnostic/report/test contract
-enhancement on `codex/secxbrl-final-packet-contract`.
+Status: branch-local Tier-1 validate-only diagnostic/report/test packet-dir
+intake enhancement on `codex/secxbrl-packet-dir-intake`.
 
 Scope: validate optional redacted final-admission and historical
 backfill-disposition packets after nonlocal in-app auth evidence became
 current. The committed no-packet report now emits a machine-readable
-`operator_packet_contract` for the next pass and remains blocked with
+`operator_packet_contract` and standard `--packet-dir` filenames for the next
+pass and remains blocked with
 `sec_xbrl_nonlocal_admission_packet_missing` and
 `sec_xbrl_nonlocal_backfill_disposition_packet_missing`; passing temp packets
 advance only to operator-review readiness, not production enablement.
@@ -32,10 +33,11 @@ Arelle subprocess invocation, live SEC network run, value-reveal default,
 export/delivery, provider dispatch, historical backfill execution, raw runtime
 artifact, or production-readiness claim is admitted.
 
-Verification: focused readiness/admission gate tests pass with `18 passed`;
-full SEC XBRL suite passes with `368 passed, 3 warnings`; regenerated
+Verification: focused readiness/admission gate tests pass with `20 passed`;
+full SEC XBRL suite passes with `370 passed, 3 warnings`; regenerated
 no-packet report remains blocked on the two missing packets and now references
-the current readiness report hash plus the redacted operator packet contract;
+the current readiness report hash plus the redacted operator packet contract and
+packet-dir intake command;
 target-selection frozen check, progress check, py_compile over touched Python
 files, JSON validation with `utf-8-sig`
 for two manifests and 59 committed SEC XBRL reports, redaction/residual scan

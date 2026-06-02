@@ -45629,10 +45629,10 @@
     "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only"
   },
   "sec_xbrl_nonlocal_admission_disposition_tracking": {
-    "status": "branch_local_tier1_validate_only_packet_contract_enhancement",
+    "status": "branch_local_tier1_validate_only_packet_dir_intake_enhancement",
     "milestone": "sec_xbrl_nonlocal_production_admission_or_historical_backfill_disposition_v1",
-    "branch": "codex/secxbrl-final-packet-contract",
-    "base_main": "2b61e5eec6d6680f5ada607f56a820c0a3cc3f25",
+    "branch": "codex/secxbrl-packet-dir-intake",
+    "base_main": "2b4ab49e3db8a924e0b9a51795b028e25be70b42",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1328-nonlocal-admission-disposition.md",
     "diagnostic": "diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition.py",
     "report": "diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition-report.json",
@@ -45643,7 +45643,7 @@
       "sec_xbrl_nonlocal_backfill_disposition_packet_missing"
     ],
     "production_readiness_claimed": false,
-    "gate_decision": "validate-only gate still blocks final nonlocal admission authority and historical unbound receipt/backfill disposition because no redacted packets are present; committed report now also exposes the machine-readable operator_packet_contract for the exact next packet pass",
+    "gate_decision": "validate-only gate still blocks final nonlocal admission authority and historical unbound receipt/backfill disposition because no redacted packets are present; committed report now also exposes the machine-readable operator_packet_contract plus standard --packet-dir filenames for the exact next packet pass",
     "next_posture": "sec_xbrl_nonlocal_final_admission_packet_and_backfill_disposition_v1",
     "tier_classification": "Tier 1 diagnostic/report/test/docs/manifests only; no runtime behavior, config default, schema, persistence, API/UI, source acquisition, Arelle invocation, value-reveal default, export/delivery, provider dispatch, redaction-posture, historical backfill, or production-readiness behavior is changed or admitted",
     "runtime_behavior_changed_by_tracking": false,
@@ -45669,13 +45669,13 @@
     "final_financial_statement_semantics_claimed": false,
     "cross_company_comparability_claimed": false,
     "source_evidence": [
-      "diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition-report.json decision=nonlocal_production_admission_disposition_blocked blocking_reasons=[sec_xbrl_nonlocal_admission_packet_missing, sec_xbrl_nonlocal_backfill_disposition_packet_missing] operator_packet_contract=sec_xbrl_nonlocal_final_admission_packet_contract_v1",
+      "diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition-report.json decision=nonlocal_production_admission_disposition_blocked blocking_reasons=[sec_xbrl_nonlocal_admission_packet_missing, sec_xbrl_nonlocal_backfill_disposition_packet_missing] operator_packet_contract=sec_xbrl_nonlocal_final_admission_packet_contract_v1 packet_dir_filenames=[sec-xbrl-final-admission-packet.json, sec-xbrl-backfill-disposition-packet.json]",
       "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json decision=nonlocal_production_readiness_blocked blocking_reasons=[nonlocal_production_readiness_final_admission_missing]",
-      "next_milestone_plans/Layer3_planning_docs/1328-nonlocal-admission-disposition.md records the packet contract, packet boundaries, and non-goals for the final admission/backfill disposition pass"
+      "next_milestone_plans/Layer3_planning_docs/1328-nonlocal-admission-disposition.md records the packet contract, packet-dir intake mode, packet boundaries, and non-goals for the final admission/backfill disposition pass"
     ],
     "verification_status": "branch-local verification passed",
-    "focused_gate_test_result": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py ./backend/tests/test_sec_xbrl_nonlocal_admission_disposition.py -q -> 18 passed",
-    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 368 passed, 3 warnings across 32 files",
+    "focused_gate_test_result": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py ./backend/tests/test_sec_xbrl_nonlocal_admission_disposition.py -q -> 20 passed",
+    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 370 passed, 3 warnings across 32 files",
     "target_selection_validation": "PASS: python ./tools/l3-target-selection-validate.py --expect frozen",
     "progress_check": "PASS: python ./tools/l3-progress-check.py",
     "py_compile": "PASS: python -m py_compile over touched diagnostic/test Python files",

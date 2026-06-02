@@ -56,7 +56,10 @@ The new diagnostic is:
 It reads current repo evidence and optionally accepts:
 
 - `--admission-packet <json>`;
-- `--backfill-disposition <json>`.
+- `--backfill-disposition <json>`; or
+- `--packet-dir <directory>` containing
+  `sec-xbrl-final-admission-packet.json` and
+  `sec-xbrl-backfill-disposition-packet.json`.
 
 The committed no-packet report must emit:
 
@@ -88,11 +91,12 @@ invalid.
 The committed blocked report now carries the machine-readable
 `operator_packet_contract` for the next pass. It derives required fields,
 allowed fields, allowed modes, hash fields, redacted reference fields, forbidden
-payload classes, and the placeholder validation command from the same constants
-used by the diagnostic, so operators do not need to reverse-engineer the packet
-shape from tests or source. The contract remains redacted: it supplies no packet
-payload, raw identity, accession, SEC URL, local path, raw value, residual
-magnitude, local evidence filename, or deployment note.
+payload classes, the placeholder validation command, and the standard
+`--packet-dir` filenames from the same constants used by the diagnostic, so
+operators do not need to reverse-engineer the packet shape from tests or source.
+The contract remains redacted: it supplies no packet payload, raw identity,
+accession, SEC URL, local path, raw value, residual magnitude, local evidence
+filename, or deployment note.
 
 ## Non-Goals
 
@@ -113,8 +117,9 @@ magnitude, local evidence filename, or deployment note.
 The next admissible pass is
 `sec_xbrl_nonlocal_final_admission_packet_and_backfill_disposition_v1`: supply
 or create a redacted final-admission packet and historical backfill disposition,
-run the diagnostic against those packet paths, and stop if either packet is
-missing, raw, inconsistent, or ambiguous.
+run the diagnostic against either those packet paths or the standard
+`--packet-dir`, and stop if either packet is missing, raw, inconsistent, or
+ambiguous.
 
 Only after that gate is clean should the lane consider a separate operator
 review for production-readiness admission. Production enablement remains a
