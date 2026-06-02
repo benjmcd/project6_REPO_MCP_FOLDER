@@ -1,5 +1,48 @@
 # Layer3 Progress Board
 
+## SEC XBRL Nonlocal Admission And Backfill Disposition
+
+Milestone:
+`sec_xbrl_nonlocal_production_admission_or_historical_backfill_disposition_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1328-nonlocal-admission-disposition.md`.
+
+Diagnostic/report:
+`diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition.py` and
+`diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition-report.json`.
+
+Status: current-main Tier-1 validate-only diagnostic/report/test gate with
+branch-local #2083 review-thread closeout on
+`codex/secxbrl-2083-review-closeout`.
+
+Scope: validate optional redacted final-admission and historical
+backfill-disposition packets after nonlocal in-app auth evidence became
+current. The committed no-packet report remains blocked with
+`sec_xbrl_nonlocal_admission_packet_missing` and
+`sec_xbrl_nonlocal_backfill_disposition_packet_missing`; passing temp packets
+advance only to operator-review readiness, not production enablement.
+
+Containment: packets are constrained to the redacted contract from the 1328
+planning doc: stable refs, hashes, counts, modes, policy ids, and verification
+refs only. Unknown packet fields are rejected so free-text deployment notes do
+not enter the gate. No schema, `models.py`, Alembic migration, durable
+persistence, backend API/UI behavior, operator workflow, source acquisition,
+Arelle subprocess invocation, live SEC network run, value-reveal default,
+export/delivery, provider dispatch, historical backfill execution, raw runtime
+artifact, or production-readiness claim is admitted.
+
+Verification: focused admission/readiness gate tests pass with `14 passed`;
+full SEC XBRL suite passes with `364 passed, 3 warnings`; regenerated
+no-packet report remains byte-equivalent and blocked on the two missing
+packets; target-selection frozen check, progress check, py_compile over
+touched Python files, JSON validation with `utf-8-sig` for two manifests and
+59 committed SEC XBRL reports, redaction/residual scan over 59 committed SEC
+XBRL reports, and `git diff --check` pass.
+
+Next exact posture:
+`sec_xbrl_nonlocal_final_admission_packet_and_backfill_disposition_v1`.
+
 ## SEC XBRL Residual Review-Thread Closeout #2070/#2074
 
 Milestone:
