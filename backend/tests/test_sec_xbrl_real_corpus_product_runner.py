@@ -1037,6 +1037,18 @@ def test_sec_xbrl_real_corpus_product_runner_import_direct_call_does_not_report_
     assert report["offline_redacted_product_report_import"]["evidence"]["current_run_arelle_subprocess_invoked"] is False
 
 
+def test_sec_xbrl_real_corpus_product_runner_reports_current_live_run_without_import(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    _storage, _plan, source_report = _redacted_product_report_fixture(module, monkeypatch, tmp_path)
+
+    assert source_report["live_sec_network_used"] is True
+    assert source_report["current_run_live_sec_network_used"] is True
+    assert source_report["offline_redacted_product_report_import"]["state"] == "not_requested"
+
+
 def test_sec_xbrl_real_corpus_product_runner_rejects_import_cli_default_write(
     monkeypatch,
     tmp_path: Path,

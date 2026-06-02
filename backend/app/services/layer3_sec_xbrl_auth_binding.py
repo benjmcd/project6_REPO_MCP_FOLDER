@@ -282,6 +282,10 @@ def inspect_sec_xbrl_auth_binding(
     source_receipt_kind: str,
     source_receipt_id: str | None = None,
     source_receipt_basis_hash: str | None = None,
+    route_family: str | None = None,
+    role: str | None = None,
+    actor_ref_hash: str | None = None,
+    workspace_ref_hash: str | None = None,
 ) -> dict[str, Any]:
     source_kind = _source_kind(source_receipt_kind)
     query = db.query(L3SecXbrlAuthBindingReceipt).filter(
@@ -291,21 +295,64 @@ def inspect_sec_xbrl_auth_binding(
         query = query.filter(L3SecXbrlAuthBindingReceipt.source_receipt_id == source_receipt_id)
     if source_receipt_basis_hash:
         query = query.filter(L3SecXbrlAuthBindingReceipt.source_receipt_basis_hash == source_receipt_basis_hash)
+    if route_family:
+        query = query.filter(L3SecXbrlAuthBindingReceipt.route_family == _route_family(source_kind, route_family))
+    if role:
+        query = query.filter(L3SecXbrlAuthBindingReceipt.role == _role(role))
+    if actor_ref_hash:
+        query = query.filter(
+            L3SecXbrlAuthBindingReceipt.actor_ref_hash == _required_hash(actor_ref_hash, "actor_ref_hash")
+        )
+    if workspace_ref_hash:
+        query = query.filter(
+            L3SecXbrlAuthBindingReceipt.workspace_ref_hash == _required_hash(
+                workspace_ref_hash,
+                "workspace_ref_hash",
+            )
+        )
     if not source_receipt_id and not source_receipt_basis_hash:
         raise SecXbrlAuthBindingError(
             "sec_xbrl_auth_binding_lookup_anchor_missing",
             "SEC XBRL auth binding inspection requires source receipt id or basis hash.",
             http_status=400,
         )
-    row = query.one_or_none()
-    if row is None:
+    rows = (
+        query.order_by(
+            L3SecXbrlAuthBindingReceipt.route_family,
+            L3SecXbrlAuthBindingReceipt.role,
+            L3SecXbrlAuthBindingReceipt.actor_ref_hash,
+            L3SecXbrlAuthBindingReceipt.workspace_ref_hash,
+            L3SecXbrlAuthBindingReceipt.created_at,
+        )
+        .all()
+    )
+    if not rows:
         raise SecXbrlAuthBindingError(
             "sec_xbrl_auth_binding_missing",
             "SEC XBRL auth binding receipt was not found.",
             details={"source_receipt_kind": source_kind},
             http_status=404,
         )
-    return _response(row, idempotent_replay=False)
+    if len(rows) == 1:
+        return _response(rows[0], idempotent_replay=False)
+    return {
+        "schema_id": AUTH_BINDING_SCHEMA_ID,
+        "auth_binding_mode": AUTH_BINDING_MODE,
+        "inspection_state": "multiple_bindings",
+        "binding_count": len(rows),
+        "bindings": [_response(row, idempotent_replay=False) for row in rows],
+        "source_receipt_kind": source_kind,
+        "source_receipt_basis_hash": source_receipt_basis_hash,
+        "source_receipt_id_exposed": False,
+        "runtime_auth_dependency_installed": False,
+        "api_route_behavior_changed": False,
+        "value_reveal_performed": False,
+        "runtime_default_enabled": False,
+        "source_acquisition_performed": False,
+        "arelle_invoked": False,
+        "delivery_or_export_performed": False,
+        "production_readiness_claimed": False,
+    }
 
 
 def require_sec_xbrl_owner_binding(
@@ -370,7 +417,7 @@ def require_sec_xbrl_owner_binding(
             http_status=404,
         )
     mismatches = []
-    if row.route_family == route and row.policy_hash != policy["policy_hash"]:
+    if row.route_family == route and row.policy_hash not in policy["compatible_policy_hashes"]:
         mismatches.append("policy_hash")
     if mismatches:
         raise SecXbrlAuthBindingError(
@@ -411,7 +458,19 @@ def _compatible_route_families(source_kind: str, route_family: str) -> tuple[str
     return tuple(dict.fromkeys([route_family, *sorted(compatible)]))
 
 
-def _policy_decision(policy_decision: Mapping[str, Any], route_family: str) -> dict[str, str]:
+def _role(value: str) -> str:
+    role = _required_text(value, "role").lower()
+    if role not in {OWNER_ROLE, AUDITOR_ROLE}:
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_role_not_admitted",
+            "SEC XBRL auth binding admits only owner and auditor roles.",
+            details={"role": role},
+            http_status=403,
+        )
+    return role
+
+
+def _policy_decision(policy_decision: Mapping[str, Any], route_family: str) -> dict[str, Any]:
     if not isinstance(policy_decision, Mapping):
         raise SecXbrlAuthBindingError(
             "sec_xbrl_auth_binding_policy_decision_missing",
@@ -446,14 +505,7 @@ def _policy_decision(policy_decision: Mapping[str, Any], route_family: str) -> d
             details={"policy_route_family": policy_route, "route_family": route_family},
             http_status=403,
         )
-    role = str(policy_decision.get("role") or "").strip().lower()
-    if role not in {OWNER_ROLE, AUDITOR_ROLE}:
-        raise SecXbrlAuthBindingError(
-            "sec_xbrl_auth_binding_role_not_admitted",
-            "SEC XBRL auth binding admits only owner and auditor roles.",
-            details={"role": role},
-            http_status=403,
-        )
+    role = _role(str(policy_decision.get("role") or ""))
     if role not in ROUTE_ALLOWED_ROLES[route_family]:
         raise SecXbrlAuthBindingError(
             "sec_xbrl_auth_binding_role_route_forbidden",
@@ -466,7 +518,15 @@ def _policy_decision(policy_decision: Mapping[str, Any], route_family: str) -> d
         "workspace_ref_hash": _required_hash(policy_decision.get("workspace_ref_hash"), "workspace_ref_hash"),
         "role": role,
         "policy_hash": _required_hash(policy_decision.get("policy_hash"), "policy_hash"),
+        "compatible_policy_hashes": _compatible_policy_hashes(policy_decision),
     }
+
+
+def _compatible_policy_hashes(policy_decision: Mapping[str, Any]) -> tuple[str, ...]:
+    hashes = [_required_hash(policy_decision.get("policy_hash"), "policy_hash")]
+    for index, value in enumerate(policy_decision.get("compatible_policy_hashes") or []):
+        hashes.append(_required_hash(value, f"compatible_policy_hashes_{index}"))
+    return tuple(dict.fromkeys(hashes))
 
 
 def _load_source_receipt(

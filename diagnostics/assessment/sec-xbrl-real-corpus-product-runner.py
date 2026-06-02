@@ -381,11 +381,11 @@ def build_report(
             matrix_plan_readiness=matrix_plan_readiness,
             imported_report_validation=imported_report_validation,
         ),
-        "current_run_live_sec_network_used": bool(
-            imported_report_validation is None
-            and live
-            and preflight["state"] == "passed"
-            and matrix_plan_readiness["state"] == "passed"
+        "current_run_live_sec_network_used": _current_run_live_sec_network_used(
+            live=live,
+            preflight=preflight,
+            matrix_plan_readiness=matrix_plan_readiness,
+            imported_report_validation=imported_report_validation,
         ),
         "fake_sec_client_used": False,
         "storage_dir_marker": storage_marker,
@@ -2730,6 +2730,21 @@ def _report_live_sec_network_used(
         evidence = dict(imported_report_validation.get("evidence") or {})
         return bool(evidence.get("inherited_live_sec_network_used"))
     return bool(live and preflight["state"] == "passed" and matrix_plan_readiness["state"] == "passed")
+
+
+def _current_run_live_sec_network_used(
+    *,
+    live: bool,
+    preflight: Mapping[str, Any],
+    matrix_plan_readiness: Mapping[str, Any],
+    imported_report_validation: Mapping[str, Any],
+) -> bool:
+    return bool(
+        imported_report_validation.get("state") == "not_requested"
+        and live
+        and preflight["state"] == "passed"
+        and matrix_plan_readiness["state"] == "passed"
+    )
 
 
 def _criteria(
