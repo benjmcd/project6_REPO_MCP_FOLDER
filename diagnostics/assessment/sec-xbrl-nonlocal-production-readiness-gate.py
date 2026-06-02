@@ -395,7 +395,13 @@ def _redaction_hit_classes(packet_text: str, packet: Any) -> list[str]:
 
 
 def _invalid_redacted_ref_fields(packet: dict[str, Any]) -> list[str]:
-    return [field for field in REF_FIELDS if field in packet and not _redacted_ref(packet.get(field))]
+    authority_ref_fields = {
+        str(field)
+        for field in packet
+        if isinstance(field, str) and field.endswith("_ref")
+    }
+    authority_ref_fields.update(field for field in REF_FIELDS if field in packet)
+    return sorted(field for field in authority_ref_fields if not _redacted_ref(packet.get(field)))
 
 
 def _iter_keys(value: Any) -> list[str]:
