@@ -27,6 +27,10 @@ AUTH_BINDING_MODE = "sec_xbrl_in_app_auth_owner_binding_receipt_v1"
 OWNER_ROLE = "owner"
 AUDITOR_ROLE = "auditor"
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
+ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
+SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
+WINDOWS_ABS_PATH_RE = re.compile(r"[A-Za-z]:[\\/]")
+LOCAL_REF_RE = re.compile(r"(^|[\\/])(?:workspace|tmp|temp|users)[\\/]", re.IGNORECASE)
 
 SOURCE_RECEIPTS = {
     "operator_review_workflow": (
@@ -145,6 +149,7 @@ def record_sec_xbrl_auth_binding(
     request_id = _required_text(client_request_id, "client_request_id")
     source_kind = _source_kind(source_receipt_kind)
     source_id = _required_text(source_receipt_id, "source_receipt_id")
+    _reject_raw_source_ref(source_id)
     source_basis = _required_hash(source_receipt_basis_hash, "source_receipt_basis_hash")
     route = _route_family(source_kind, route_family)
     policy = _policy_decision(policy_decision, route)
@@ -271,35 +276,56 @@ def require_sec_xbrl_owner_binding(
     db: Session,
     *,
     source_receipt_kind: str,
-    source_receipt_id: str,
+    source_receipt_id: str | None = None,
+    source_receipt_basis_hash: str | None = None,
     route_family: str,
     policy_decision: Mapping[str, Any],
 ) -> dict[str, Any]:
     source_kind = _source_kind(source_receipt_kind)
     route = _route_family(source_kind, route_family)
     policy = _policy_decision(policy_decision, route)
-    row = (
-        db.query(L3SecXbrlAuthBindingReceipt)
-        .filter(
-            L3SecXbrlAuthBindingReceipt.source_receipt_kind == source_kind,
-            L3SecXbrlAuthBindingReceipt.source_receipt_id == source_receipt_id,
+    source_id = str(source_receipt_id or "").strip() or None
+    source_basis = str(source_receipt_basis_hash or "").strip() or None
+    if source_id is not None:
+        _reject_raw_source_ref(source_id)
+    if source_id is None and source_basis is None:
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_lookup_anchor_missing",
+            "SEC XBRL protected access requires source receipt id or basis hash.",
+            details={"source_receipt_kind": source_kind},
+            http_status=400,
         )
-        .one_or_none()
+    query = db.query(L3SecXbrlAuthBindingReceipt).filter(
+        L3SecXbrlAuthBindingReceipt.source_receipt_kind == source_kind,
     )
+    if source_id is not None:
+        query = query.filter(L3SecXbrlAuthBindingReceipt.source_receipt_id == source_id)
+    if source_basis is not None:
+        if not HASH_RE.fullmatch(source_basis):
+            raise SecXbrlAuthBindingError(
+                "sec_xbrl_auth_binding_source_receipt_basis_hash_invalid",
+                "SEC XBRL protected access requires source receipt basis hash as a 64-character hex hash.",
+                details={"source_receipt_kind": source_kind},
+                http_status=400,
+            )
+        query = query.filter(L3SecXbrlAuthBindingReceipt.source_receipt_basis_hash == source_basis)
+    row = query.one_or_none()
     if row is None:
         raise SecXbrlAuthBindingError(
             "sec_xbrl_auth_binding_missing",
             "SEC XBRL protected access requires a prior source receipt auth binding.",
-            details={"source_receipt_kind": source_kind, "source_receipt_id": source_receipt_id},
+            details={
+                "source_receipt_kind": source_kind,
+                "source_receipt_id": source_id,
+                "source_receipt_basis_hash": source_basis,
+            },
             http_status=404,
         )
     mismatches = [
         field
         for field, expected in {
-            "route_family": route,
             "actor_ref_hash": policy["actor_ref_hash"],
             "workspace_ref_hash": policy["workspace_ref_hash"],
-            "role": policy["role"],
             "policy_hash": policy["policy_hash"],
         }.items()
         if getattr(row, field) != expected
@@ -497,6 +523,21 @@ def _required_text(value: Any, field_name: str) -> str:
             http_status=400,
         )
     return text
+
+
+def _reject_raw_source_ref(value: str) -> None:
+    text = str(value or "").strip()
+    if (
+        ACCESSION_RE.search(text)
+        or SEC_URL_RE.search(text)
+        or WINDOWS_ABS_PATH_RE.search(text)
+        or LOCAL_REF_RE.search(text)
+    ):
+        raise SecXbrlAuthBindingError(
+            "sec_xbrl_auth_binding_raw_reference_not_admitted",
+            "SEC XBRL auth binding rejects raw local paths, SEC URLs, and SEC accession-like receipt references.",
+            http_status=400,
+        )
 
 
 def _required_hash(value: Any, field_name: str) -> str:
