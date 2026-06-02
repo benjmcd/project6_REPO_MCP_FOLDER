@@ -29,19 +29,27 @@ REQUIRED_AUTHORITY_FIELDS = (
     "incident_owner_ref",
     "redaction_policy_id",
     "verification_run_ref",
+    "deployment_authority_provenance_ref",
+    "deployment_authority_provenance_hash",
 )
-HASH_FIELDS = ("approval_record_hash", "allowed_origins_policy_hash")
+HASH_FIELDS = (
+    "approval_record_hash",
+    "allowed_origins_policy_hash",
+    "deployment_authority_provenance_hash",
+)
 REF_FIELDS = (
     "deployment_owner_ref",
     "approval_record_ref",
     "rollback_owner_ref",
     "incident_owner_ref",
     "verification_run_ref",
+    "deployment_authority_provenance_ref",
 )
 ALLOWED_PROXY_BOUNDARY_MODES = {"trusted_external_proxy"}
 ALLOWED_STORAGE_EXPOSURE_POLICIES = {"auto", "disabled"}
 
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
+REDACTED_REF_RE = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*-ref-[a-z0-9]+(?:-[a-z0-9]+)*$")
 EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 CIK_RE = re.compile(r'(?:"cik"|\bcik\b)\s*[:=]\s*"?\d{1,10}"?', re.IGNORECASE)
@@ -294,7 +302,8 @@ def _authority_packet_summary(authority_packet_path: str | Path | None) -> dict[
 
     missing = [field for field in REQUIRED_AUTHORITY_FIELDS if field not in packet]
     present = [field for field in REQUIRED_AUTHORITY_FIELDS if field in packet]
-    invalid = _invalid_authority_fields(packet)
+    invalid_ref_fields = _invalid_redacted_ref_fields(packet)
+    invalid = _invalid_authority_fields(packet, invalid_ref_fields=invalid_ref_fields)
     raw_hits = sorted(set(_redaction_hit_classes(packet_text, packet)))
     blocked_reason = None
     if raw_hits:
@@ -338,7 +347,11 @@ def _authority_packet_summary(authority_packet_path: str | Path | None) -> dict[
     }
 
 
-def _invalid_authority_fields(packet: dict[str, Any]) -> list[str]:
+def _invalid_authority_fields(
+    packet: dict[str, Any],
+    *,
+    invalid_ref_fields: list[str] | None = None,
+) -> list[str]:
     invalid: list[str] = []
     if packet.get("deployment_mode") != "nonlocal":
         invalid.append("deployment_mode")
@@ -355,9 +368,7 @@ def _invalid_authority_fields(packet: dict[str, Any]) -> list[str]:
     for field in HASH_FIELDS:
         if not isinstance(packet.get(field), str) or not HASH_RE.fullmatch(packet[field]):
             invalid.append(field)
-    for field in REF_FIELDS:
-        if not _redacted_ref(packet.get(field)):
-            invalid.append(field)
+    invalid.extend(invalid_ref_fields if invalid_ref_fields is not None else _invalid_redacted_ref_fields(packet))
     return sorted(set(invalid))
 
 
@@ -375,10 +386,16 @@ def _redaction_hit_classes(packet_text: str, packet: Any) -> list[str]:
     for name, regex in regexes.items():
         if regex.search(packet_text):
             hits.append(name)
+    if isinstance(packet, dict) and _invalid_redacted_ref_fields(packet):
+        hits.append("raw_or_unreduced_authority_ref")
     for key in _iter_keys(packet):
         if key.lower() in RAW_KEYS:
             hits.append("raw_or_local_authority_key")
     return hits
+
+
+def _invalid_redacted_ref_fields(packet: dict[str, Any]) -> list[str]:
+    return [field for field in REF_FIELDS if field in packet and not _redacted_ref(packet.get(field))]
 
 
 def _iter_keys(value: Any) -> list[str]:
@@ -458,17 +475,22 @@ def _criterion(
 
 
 def _redacted_ref(value: Any) -> bool:
-    return isinstance(value, str) and bool(value.strip()) and not any(
-        regex.search(value)
-        for regex in (
-            EMAIL_RE,
-            ACCESSION_RE,
-            CIK_RE,
-            BARE_CIK_RE,
-            SEC_URL_RE,
-            LOCAL_PATH_RE,
-            PERIOD_DATE_RE,
-            RAW_DECIMAL_RE,
+    return (
+        isinstance(value, str)
+        and bool(value.strip())
+        and bool(REDACTED_REF_RE.fullmatch(value.strip()))
+        and not any(
+            regex.search(value)
+            for regex in (
+                EMAIL_RE,
+                ACCESSION_RE,
+                CIK_RE,
+                BARE_CIK_RE,
+                SEC_URL_RE,
+                LOCAL_PATH_RE,
+                PERIOD_DATE_RE,
+                RAW_DECIMAL_RE,
+            )
         )
     )
 

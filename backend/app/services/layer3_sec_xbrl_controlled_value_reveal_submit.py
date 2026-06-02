@@ -103,6 +103,7 @@ def submit_controlled_value_reveal(
     operator_reveal_confirmation: bool,
     max_records: int | None = None,
     page_cursor: str | None = None,
+    commit: bool = True,
 ) -> dict[str, Any]:
     request_id = _required_text(client_request_id, "client_request_id")
     _reject_raw_or_local_authority(request_id)
@@ -193,7 +194,10 @@ def submit_controlled_value_reveal(
     )
     try:
         db.add(submit_receipt)
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
     except IntegrityError as exc:
         db.rollback()
         raise SecXbrlControlledValueRevealSubmitError(

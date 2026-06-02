@@ -110,13 +110,14 @@ Containment:
   a source receipt has no auth binding;
 - mutating routes do not return a newly-created source receipt unless the
   auth-binding write succeeds;
-- source receipt creation and auth-binding creation are not yet one database
-  transaction because the existing receipt services commit internally before
-  the API layer records the auth binding. If binding creation fails after source
-  receipt creation, the response is blocked and the unbound receipt remains
-  inaccessible until separate repair/backfill authority is admitted. This
-  atomicity/backfill gap remains the next Tier-2 design/implementation risk and
-  is not closed by route/actor-scoped uniqueness alone.
+- protected mutating routes now defer source-receipt service commits, defer the
+  paired auth-binding service commit, and commit both rows as one route
+  transaction. If binding creation or the combined commit fails after source
+  receipt flush, the route rolls back and no unbound source receipt is
+  persisted;
+- historical unbound receipts, if any are discovered, remain a separate
+  repair/backfill authority question; this closeout does not rewrite or delete
+  existing rows.
 
 ## Original Route-Enforcement Non-Goals
 

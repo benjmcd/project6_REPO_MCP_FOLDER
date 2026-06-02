@@ -95,12 +95,18 @@ Minimum packet fields are inherited from the gate:
 - `rollback_owner_ref`: redacted rollback owner reference;
 - `incident_owner_ref`: redacted incident owner reference;
 - `redaction_policy_id`: must match the gate redaction policy;
-- `verification_run_ref`: redacted stable verification-run reference.
+- `verification_run_ref`: redacted stable verification-run reference;
+- `deployment_authority_provenance_ref`: redacted stable deployment-authority
+  provenance reference;
+- `deployment_authority_provenance_hash`: 64-character lowercase hex hash.
 
-The packet must not contain raw operator identity, email, issuer identity,
-accession, labeled or bare CIK-like references, SEC URL, local path in either
-Windows slash form, period date, raw sidecar payload, raw value-store payload,
-raw value, or residual magnitude.
+All `*_ref` authority fields must be reduced stable references matching the
+gate-owned redacted reference shape, not raw operator names, issuer names,
+deployment notes, paths, URLs, SEC identifiers, or local evidence labels. The
+packet itself and the emitted report must not contain raw operator identity,
+email, issuer identity, accession, labeled or bare CIK-like references, SEC URL,
+local path in either Windows slash form, period date, raw sidecar payload, raw
+value-store payload, raw value, or residual magnitude.
 
 Passing this fork proves only that the deployment authority packet is
 admissible to the readiness gate. It still does not implement production
@@ -163,8 +169,12 @@ Authority-packet fork acceptance:
 - Confirm the temp report has
   `decision: nonlocal_production_readiness_authority_admitted`,
   `blocking_reasons: []`, and `production_readiness_claimed: false`.
+- Confirm the packet includes `deployment_authority_provenance_ref` and
+  `deployment_authority_provenance_hash`, and that the ref is a reduced stable
+  provenance reference rather than a local filename, operator name, issuer name,
+  URL, path, accession, CIK, or free-text deployment note.
 - Confirm no raw identity/path/SEC URL/accession/residual magnitude appears in
-  the temp report.
+  the packet or the temp report.
 - Do not commit secrets, production origins, raw identities, local paths, or
   unreduced deployment notes.
 

@@ -211,11 +211,16 @@ Future service functions:
 
 Write order:
 
-1. Existing receipt service records the governed SEC XBRL receipt.
-2. Auth-binding service records the binding receipt in the same DB session or
-   stops the API response with a fail-closed error if the binding cannot be
-   recorded.
-3. API response may include a redacted `auth_binding_ref` and
+1. Existing receipt service records the governed SEC XBRL receipt in the route
+   session with its internal commit deferred for protected mutating API routes.
+2. Auth-binding service records the binding receipt in the same route session
+   with its internal commit deferred for the same protected mutating API routes.
+3. The API route commits the source receipt and auth-binding receipt as one
+   transaction, or rolls the transaction back and stops the API response with a
+   fail-closed error if either write or the combined commit fails.
+4. Direct service calls retain their default standalone commit behavior unless
+   the caller explicitly requests deferred commit.
+5. API response may include a redacted `auth_binding_ref` and
    `auth_binding_basis_hash` only after both writes succeed.
 
 Read order:
@@ -240,16 +245,17 @@ Rollback:
 Containment:
 
 - if binding writes fail, protected mutating endpoints must fail closed rather
-  than returning a receipt without owner binding;
+  than returning a receipt without owner binding, and the paired source receipt
+  write must be rolled back in the same route transaction;
 - if a source receipt exists without a binding after implementation, protected
   status reads and downstream value-reveal operations must deny access until a
   governed binding exists or a separate migration/backfill authority is
   admitted;
 - the implementation must not delete or rewrite existing unbound receipts.
 
-## Future Implementation Tests
+## Implementation Tests
 
-Minimum focused tests for the future Tier-2 implementation:
+Minimum focused tests for the Tier-2 implementation and later closeouts:
 
 - migration creates all table columns, constraints, and indexes;
 - downgrade removes the new table and indexes without touching existing SEC
@@ -268,7 +274,10 @@ Minimum focused tests for the future Tier-2 implementation:
   write bindings, and auditor/read bindings must not authorize owner/write
   routes;
 - mutating route responses do not return source receipts unless binding write
-  succeeds;
+  succeeds and the paired route transaction commits;
+- protected mutating route tests force auth-binding failure after source receipt
+  flush and prove rollback for operator-review decision submit, value-reveal
+  authority prepare, and controlled value-reveal submit;
 - value-reveal authority and controlled-submit flows remain explicit and
   default-off;
 - output contains no raw identities, headers, local paths, SEC identifiers,

@@ -45517,5 +45517,59 @@
     "json_manifest_and_report_validation": "PASS: 2 changed manifests and 58 diagnostics/assessment/sec-xbrl*.json reports parsed with utf-8-sig",
     "committed_sec_xbrl_report_redaction_residual_scan": "PASS: 58 SEC XBRL reports, 0 raw identity/path/SEC URL/accession/email hits, 0 raw-value field hits, 0 nonzero residual-magnitude field hits",
     "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only"
+  },
+  "sec_xbrl_residual_review_thread_closeout_2070_2074_v1": {
+    "milestone": "sec_xbrl_residual_review_thread_closeout_2070_2074_v1",
+    "branch": "codex/secxbrl-residual-review-closeout",
+    "base_main": "5e88ae9910262fcf7b6433654cfacebc856075e5",
+    "status": "branch_local_tier2_residual_review_thread_remediation_verified",
+    "scope": "Close the three current unresolved review threads left after PR #2077: nonlocal authority-packet raw/ref scanning, deployment authority provenance, and protected mutating route source/auth-binding atomicity.",
+    "tier2_surfaces_touched": [
+      "backend/app/api/layer3.py",
+      "backend/app/services/layer3_sec_xbrl_auth_binding.py",
+      "backend/app/services/layer3_sec_xbrl_controlled_value_reveal_submit.py",
+      "backend/app/services/layer3_sec_xbrl_operator_review_workflow.py",
+      "backend/app/services/layer3_sec_xbrl_value_reveal_authority.py"
+    ],
+    "tier1_supporting_surfaces_touched": [
+      "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate.py",
+      "backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py",
+      "backend/tests/test_sec_xbrl_operator_review_workflow.py"
+    ],
+    "doc_alignment_surfaces": [
+      "next_milestone_plans/Layer3_planning_docs/1320-nonlocal-authority-boundary.md",
+      "next_milestone_plans/Layer3_planning_docs/1324-auth-owner-binding-table-design.md",
+      "next_milestone_plans/Layer3_planning_docs/1326-auth-owner-binding-route-enforcement.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "remediation_summary": [
+      "nonlocal production-readiness gate requires deployment_authority_provenance_ref and deployment_authority_provenance_hash",
+      "nonlocal authority-packet scan rejects present ref fields that are raw or unreduced rather than stable redacted refs",
+      "operator-review decision submit, value-reveal authority prepare, and controlled value-reveal submit defer source and auth-binding service commits and commit both rows as one route transaction",
+      "focused API tests force auth-binding failure after source receipt flush and prove rollback leaves no unbound source receipt for the three protected mutating routes"
+    ],
+    "remaining_backfill_scope": "Historical unbound source receipts, if any are discovered, remain a separate repair/backfill authority question; this closeout does not rewrite or delete existing rows.",
+    "production_readiness_claimed": false,
+    "source_acquisition_performed_by_tracking": false,
+    "arelle_subprocess_invoked_by_tracking": false,
+    "live_sec_network_run_performed_by_tracking": false,
+    "value_reveal_default_enabled_by_tracking": false,
+    "delivery_or_export_performed": false,
+    "provider_or_connector_dispatch_performed": false,
+    "raw_values_committed_by_tracking": false,
+    "raw_identity_committed_by_tracking": false,
+    "raw_runtime_artifacts_added_by_tracking": false,
+    "verification_status": "branch-local verification passed",
+    "touched_focused_suites": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py ./backend/tests/test_sec_xbrl_operator_review_workflow.py -q -> 83 passed, 3 warnings",
+    "focused_review_thread_closeout_suite": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_auth_binding_receipt.py ./backend/tests/test_sec_xbrl_operator_review_workflow.py ./backend/tests/test_sec_xbrl_real_corpus_product_runner.py ./backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py -q -> 133 passed, 3 warnings",
+    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 353 passed, 3 warnings across 31 files",
+    "target_selection_validation": "PASS: python ./tools/l3-target-selection-validate.py --expect frozen",
+    "progress_check": "PASS: python ./tools/l3-progress-check.py",
+    "py_compile": "PASS: python -m py_compile over touched API/service/diagnostic/test Python files",
+    "json_manifest_and_report_validation": "PASS: 2 Layer 3 manifests and 58 diagnostics/assessment/sec-xbrl*.json reports parsed with utf-8-sig",
+    "committed_sec_xbrl_report_redaction_residual_scan": "PASS: 58 committed SEC XBRL reports, 0 redaction hits and 0 residual-magnitude hits",
+    "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only"
   }
 }
