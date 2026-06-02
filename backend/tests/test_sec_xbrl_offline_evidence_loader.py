@@ -334,6 +334,31 @@ def test_companyfacts_oracle_packet_preserves_base_storage_blocker_before_oracle
     assert report["readiness"]["production_admission_blocked_reason"] == "sec_xbrl_offline_evidence_loader_storage_missing"
 
 
+def test_companyfacts_oracle_packet_preserves_base_storage_blocker_details(tmp_path) -> None:
+    storage, _companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=False)
+    classification_path = next((storage / loader.STATEMENT_CLASSIFICATION_DIR / "receipts").glob("*.json"))
+    classification = json.loads(classification_path.read_text(encoding="utf-8"))
+    classification.pop("fact_inventory_hash")
+    _write_json(classification_path, classification)
+
+    report = oracle_packet.inspect_sec_xbrl_offline_companyfacts_oracle_packet(
+        storage,
+        expected_sidecar_receipt_hash=refs["sidecar_receipt_hash"],
+        expected_statement_classification_receipt_hash=refs["classification_hash"],
+    )
+
+    assert report["status"] == "offline_companyfacts_oracle_packet_blocked"
+    assert len(report["storage_marker"]) == 24
+    assert report["blocked_reasons"][0]["reason"] == "sec_xbrl_offline_evidence_loader_field_missing"
+    assert report["blocked_reasons"][0]["details"] == {"field": "fact_inventory_hash"}
+    assert report["readiness"]["operator_review_creation_blocked_reason"] == (
+        "sec_xbrl_offline_evidence_loader_field_missing"
+    )
+    assert report["readiness"]["production_admission_blocked_reason"] == (
+        "sec_xbrl_offline_evidence_loader_field_missing"
+    )
+
+
 def test_companyfacts_oracle_packet_requires_oracle_confirmed_projection(tmp_path) -> None:
     storage, _companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=False)
     empty_companyfacts = tmp_path / "empty-companyfacts.json"
