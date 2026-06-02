@@ -45986,7 +45986,8 @@
     "source_evidence": [
       "sandbox_temp content-shape scan found 0 CompanyFacts-like JSON candidates",
       "diagnostics/assessment/sec-xbrl-offline-companyfacts-oracle-packet-report.json records companyfacts_oracle_packet_missing and keeps operator_review_creation_ready and production_admission_ready false",
-      "backend/tests/test_sec_xbrl_offline_evidence_loader.py proves missing-oracle blocked and supplied-oracle ready packet paths without production admission"
+      "backend/tests/test_sec_xbrl_offline_evidence_loader.py proves missing-oracle blocked and supplied-oracle ready packet paths without production admission",
+      "post-merge review fix preserves base offline-storage blockers before oracle-missing blockers and requires at least one oracle-confirmed projection before packet readiness"
     ],
     "known_hard_seams": [
       "the current FIZZ offline storage still lacks an operator-acquired offline CompanyFacts oracle packet",
@@ -45995,9 +45996,9 @@
     ],
     "containment_or_rollback_notes": "No schema or migration rollback is required. Revert this branch or archive the oracle packet service, diagnostic script/report, focused test additions, planning doc, progress board entry, and manifest/proof entries per repo convention to roll back.",
     "verification_status": "branch-local verification passed",
-    "focused_companyfacts_packet_suite": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_offline_evidence_loader.py -q -> 6 passed",
-    "loader_plus_offline_orchestrator_suite": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_offline_evidence_loader.py ./backend/tests/test_sec_xbrl_e2e_offline_orchestrator.py -q -> 10 passed",
-    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 385 passed, 3 warnings",
+    "focused_companyfacts_packet_suite": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_offline_evidence_loader.py -q -> 8 passed",
+    "loader_plus_offline_orchestrator_suite": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_offline_evidence_loader.py ./backend/tests/test_sec_xbrl_e2e_offline_orchestrator.py -q -> 12 passed",
+    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 387 passed, 3 warnings",
     "py_compile": "PASS: python -m py_compile over touched SEC XBRL oracle packet service/diagnostic/test files",
     "target_selection_validation": "PASS: python ./tools/l3-target-selection-validate.py --expect frozen",
     "progress_check": "PASS: python ./tools/l3-progress-check.py",

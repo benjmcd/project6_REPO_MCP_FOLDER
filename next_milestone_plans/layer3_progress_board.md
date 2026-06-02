@@ -23,9 +23,9 @@ backend API/UI, source acquisition, Arelle subprocess invocation, live SEC
 network access, value reveal, runtime-default change, raw runtime artifact,
 operator source workflow, or production-readiness behavior.
 
-Verification: focused loader/oracle-packet suite passes with `6 passed`;
-loader-plus-orchestrator suite passes with `10 passed`; full SEC XBRL suite
-passes with `385 passed, 3 warnings`; target-selection frozen check, progress
+Verification: focused loader/oracle-packet suite passes with `8 passed`;
+loader-plus-orchestrator suite passes with `12 passed`; full SEC XBRL suite
+passes with `387 passed, 3 warnings`; target-selection frozen check, progress
 check, touched-file `py_compile`, manifest/report JSON parse over `63` files,
 committed SEC XBRL report redaction/residual scan over `61` reports, and
 `git diff --check` pass.
