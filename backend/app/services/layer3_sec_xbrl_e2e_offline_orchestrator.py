@@ -202,6 +202,7 @@ def open_redacted_operator_review_from_offline_evidence(
         client_request_id=f"{request_id}:operator-review",
         sec_xbrl_statement_packet_set_id=packet_response["sec_xbrl_statement_packet_set_id"],
     )
+    examined_absent_period_refs = _examined_absent_period_refs(canonical_projection)
     response = {
         "schema_id": SCHEMA_ID,
         "status": workflow_response["status"],
@@ -220,6 +221,8 @@ def open_redacted_operator_review_from_offline_evidence(
             "period_count": int(canonical_projection.get("period_count") or 0),
             "ready_period_count": int(canonical_projection.get("ready_period_count") or 0),
             "projected_count": int(canonical_projection.get("projected_count") or 0),
+            "empty_period_count": len(examined_absent_period_refs),
+            "examined_absent_period_refs": examined_absent_period_refs,
             "statement_count": packet_response["statement_count"],
             "row_count": workflow_response["row_count"],
             "review_exception_count": workflow_response["review_exception_count"],
@@ -241,6 +244,23 @@ def open_redacted_operator_review_from_offline_evidence(
     }
     _reject_public_raw_or_local_authority(response)
     return response
+
+
+def _examined_absent_period_refs(canonical_projection: Mapping[str, Any]) -> list[str]:
+    refs: list[str] = []
+    periods = canonical_projection.get("periods")
+    if not isinstance(periods, Sequence) or isinstance(periods, (str, bytes)):
+        return refs
+    for period in periods:
+        if not isinstance(period, Mapping):
+            continue
+        projection = period.get("projection")
+        if not isinstance(projection, Mapping) or int(projection.get("projected_count") or 0) != 0:
+            continue
+        period_ref = str(period.get("period_ref") or "").strip()
+        if period_ref:
+            refs.append(period_ref)
+    return refs
 
 
 def _validate_resolved_projection(
