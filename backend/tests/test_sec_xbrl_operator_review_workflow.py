@@ -24,6 +24,7 @@ from app.db.session import Base
 from app.models import (
     Dataset,
     DatasetVersion,
+    L3SecXbrlAuthBindingReceipt,
     L3SecXbrlControlledValueRevealSubmitReceipt,
     L3SecXbrlOperatorReviewDecision,
     L3SecXbrlOperatorReviewWorkflow,
@@ -32,6 +33,8 @@ from app.models import (
     L3SecXbrlValueRevealAuthorityReceipt,
 )
 from app.models.models import L3_SEC_XBRL_STATEMENT_PACKET_REDACTION_POLICY
+from app.services import layer3_sec_xbrl_auth_binding as auth_binding
+from app.services import layer3_sec_xbrl_in_app_auth_policy as auth_policy
 from app.services import layer3_sec_xbrl_operator_review_workflow as workflow_service
 from app.services import layer3_sec_xbrl_controlled_value_reveal_submit as submit_service
 from app.services import layer3_sec_xbrl_projection_persistence as projection_persistence
@@ -50,6 +53,12 @@ DECISION_SUBMIT_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/decisi
 DECISION_STATUS_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/status"
 AUTHORITY_PREPARE_ROUTE = "/api/v1/layer3/sec-xbrl/value-reveal/authority/prepare"
 CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE = "/api/v1/layer3/sec-xbrl/value-reveal/submit"
+WORKFLOW_STATUS_ROUTE_FAMILY = "sec_xbrl_operator_review_workflow_status_read"
+DECISION_SUBMIT_ROUTE_FAMILY = "sec_xbrl_operator_review_decision_submit_write"
+DECISION_STATUS_ROUTE_FAMILY = "sec_xbrl_operator_review_decision_status_read"
+AUTHORITY_PREPARE_ROUTE_FAMILY = "sec_xbrl_value_reveal_authority_prepare_write"
+CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE_FAMILY = "sec_xbrl_controlled_value_reveal_submit_write"
+CONTROLLED_VALUE_REVEAL_STATUS_ROUTE_FAMILY = "sec_xbrl_controlled_value_reveal_submit_status_read"
 AUTHORITY_MIGRATION_PATH = (
     ROOT / "backend" / "alembic" / "versions" / "0044_layer3_sec_xbrl_value_reveal_authority_receipt.py"
 )
@@ -263,6 +272,103 @@ def _open_workflow(
         db_session,
         client_request_id=request_id,
         sec_xbrl_statement_packet_set_id=packet_response["sec_xbrl_statement_packet_set_id"],
+    )
+
+
+def _policy(route_family: str, *, role: str = auth_policy.OWNER_ROLE) -> dict[str, Any]:
+    return auth_policy.authorize_sec_xbrl_route(
+        headers={},
+        route_family=route_family,
+        requested_role=role,
+        request_fields={},
+    )
+
+
+def _bind_source(
+    db_session,
+    *,
+    client_request_id: str,
+    source_receipt_kind: str,
+    source_receipt_id: str,
+    source_receipt_basis_hash: str,
+    route_family: str,
+    role: str = auth_policy.OWNER_ROLE,
+) -> dict[str, Any]:
+    return auth_binding.record_sec_xbrl_auth_binding(
+        db_session,
+        client_request_id=auth_policy.binding_client_request_id(
+            client_request_id=client_request_id,
+            route_family=route_family,
+        ),
+        source_receipt_kind=source_receipt_kind,
+        source_receipt_id=source_receipt_id,
+        source_receipt_basis_hash=source_receipt_basis_hash,
+        route_family=route_family,
+        policy_decision=_policy(route_family, role=role),
+    )
+
+
+def _bind_workflow(
+    db_session,
+    workflow: dict[str, Any],
+    *,
+    route_family: str = DECISION_SUBMIT_ROUTE_FAMILY,
+) -> dict[str, Any]:
+    return _bind_source(
+        db_session,
+        client_request_id=f"{workflow['client_request_id']}-{route_family}",
+        source_receipt_kind="operator_review_workflow",
+        source_receipt_id=workflow["sec_xbrl_operator_review_workflow_id"],
+        source_receipt_basis_hash=workflow["workflow_basis_hash"],
+        route_family=route_family,
+    )
+
+
+def _bind_decision(
+    db_session,
+    decision: dict[str, Any],
+    *,
+    route_family: str = DECISION_SUBMIT_ROUTE_FAMILY,
+) -> dict[str, Any]:
+    return _bind_source(
+        db_session,
+        client_request_id=f"{decision['client_request_id']}-{route_family}",
+        source_receipt_kind="operator_review_decision",
+        source_receipt_id=decision["sec_xbrl_operator_review_decision_id"],
+        source_receipt_basis_hash=decision["decision_basis_hash"],
+        route_family=route_family,
+    )
+
+
+def _bind_authority(
+    db_session,
+    authority: dict[str, Any],
+    *,
+    route_family: str = AUTHORITY_PREPARE_ROUTE_FAMILY,
+) -> dict[str, Any]:
+    return _bind_source(
+        db_session,
+        client_request_id=f"{authority['client_request_id']}-{route_family}",
+        source_receipt_kind="value_reveal_authority",
+        source_receipt_id=authority["sec_xbrl_value_reveal_authority_receipt_id"],
+        source_receipt_basis_hash=authority["authority_basis_hash"],
+        route_family=route_family,
+    )
+
+
+def _bind_submit(
+    db_session,
+    submit: dict[str, Any],
+    *,
+    route_family: str = CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE_FAMILY,
+) -> dict[str, Any]:
+    return _bind_source(
+        db_session,
+        client_request_id=f"{submit['client_request_id']}-{route_family}",
+        source_receipt_kind="controlled_value_reveal_submit",
+        source_receipt_id=submit["sec_xbrl_controlled_value_reveal_submit_receipt_id"],
+        source_receipt_basis_hash=submit["submit_basis_hash"],
+        route_family=route_family,
     )
 
 
@@ -658,6 +764,7 @@ def test_operator_review_workflow_status_api_returns_read_only_projection(api_cl
     client, Session = api_client
     with Session() as session:
         workflow = _open_workflow(session, request_id="workflow-api")
+        _bind_workflow(session, workflow, route_family=WORKFLOW_STATUS_ROUTE_FAMILY)
 
     response = client.post(
         "/api/v1/layer3/sec-xbrl/operator-review/workflow/status",
@@ -678,12 +785,41 @@ def test_operator_review_workflow_status_api_returns_read_only_projection(api_cl
     assert body["sec_xbrl_operator_review_workflow_id"] == workflow["sec_xbrl_operator_review_workflow_id"]
     assert body["workflow_basis_hash"] == workflow["workflow_basis_hash"]
     assert body["status_api_route_enabled"] is True
+    assert body["auth_binding_required"] is True
+    assert body["auth_binding_ref"].startswith("sec-xbrl-auth-binding:")
+    assert body["auth_binding_route_family"] == WORKFLOW_STATUS_ROUTE_FAMILY
     assert body["open_workflow_api_route_enabled"] is False
     assert body["rendered_ui_enabled"] is False
     assert body["operator_review_decision_recorded"] is False
     assert body["negative_invariants"]["raw_values_exposed"] is False
     assert "C:/" not in response.text
     assert "https://www.sec.gov" not in response.text
+
+
+def test_operator_review_workflow_status_api_requires_auth_binding_for_existing_workflow(api_client) -> None:
+    client, Session = api_client
+    with Session() as session:
+        workflow = _open_workflow(session, request_id="workflow-api-unbound")
+
+    response = client.post(
+        "/api/v1/layer3/sec-xbrl/operator-review/workflow/status",
+        json={
+            "client_request_id": "workflow-status-api-unbound",
+            "status_mode": workflow_service.WORKFLOW_STATUS_MODE,
+            "operator_decision": workflow_service.WORKFLOW_STATUS_OPERATOR_DECISION,
+            "sec_xbrl_operator_review_workflow_id": workflow["sec_xbrl_operator_review_workflow_id"],
+            "workflow_basis_hash": workflow["workflow_basis_hash"],
+        },
+    )
+
+    assert response.status_code == 404, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.workbench_error.v1"
+    assert body["error_code"] == "sec_xbrl_auth_binding_missing"
+    assert body["status"] == "blocked"
+    assert "C:/" not in response.text
+    assert "https://www.sec.gov" not in response.text
+    assert "123.45" not in response.text
 
 
 def test_operator_review_workflow_status_api_fails_closed_without_authority(api_client) -> None:
@@ -709,6 +845,7 @@ def test_operator_review_decision_submit_api_records_redacted_receipt(api_client
     client, Session = api_client
     with Session() as session:
         workflow = _open_workflow(session, request_id="workflow-decision-api")
+        _bind_workflow(session, workflow)
         workflow_row = session.query(L3SecXbrlOperatorReviewWorkflow).one()
         packet_row = session.query(L3SecXbrlStatementPacketSet).one()
         projection_row = session.query(L3SecXbrlProjectionSet).one()
@@ -729,6 +866,10 @@ def test_operator_review_decision_submit_api_records_redacted_receipt(api_client
     assert body["review_decision"] == "approved"
     assert body["decision_reason_code"] == "ready_for_next_freeze"
     assert body["decision_submit_api_route_enabled"] is True
+    assert body["auth_binding_required"] is True
+    assert body["auth_binding_ref"].startswith("sec-xbrl-auth-binding:")
+    assert body["auth_binding_route_family"] == DECISION_SUBMIT_ROUTE_FAMILY
+    assert body["source_auth_binding_ref"].startswith("sec-xbrl-auth-binding:")
     assert body["api_route_enabled"] is False
     assert body["workflow_open_api_route_enabled"] is False
     assert body["rendered_ui_enabled"] is False
@@ -760,6 +901,7 @@ def test_operator_review_decision_submit_api_records_redacted_receipt(api_client
 
     with Session() as session:
         assert session.query(L3SecXbrlOperatorReviewDecision).count() == 1
+        assert session.query(L3SecXbrlAuthBindingReceipt).count() == 2
         assert _workflow_snapshot(session.query(L3SecXbrlOperatorReviewWorkflow).one()) == workflow_snapshot
         assert _packet_snapshot(session.query(L3SecXbrlStatementPacketSet).one()) == packet_snapshot
         assert _projection_snapshot(session.query(L3SecXbrlProjectionSet).one()) == projection_snapshot
@@ -814,6 +956,7 @@ def test_operator_review_decision_submit_api_requires_notes_for_non_approved(api
     client, Session = api_client
     with Session() as session:
         workflow = _open_workflow(session, request_id="workflow-decision-api-notes")
+        _bind_workflow(session, workflow)
 
     response = client.post(
         DECISION_SUBMIT_ROUTE,
@@ -836,6 +979,7 @@ def test_operator_review_decision_submit_api_rejects_raw_note_reference(api_clie
     client, Session = api_client
     with Session() as session:
         workflow = _open_workflow(session, request_id="workflow-decision-api-raw-note")
+        _bind_workflow(session, workflow)
 
     response = client.post(
         DECISION_SUBMIT_ROUTE,
@@ -861,6 +1005,7 @@ def test_operator_review_decision_submit_api_rejects_raw_note_cik(api_client) ->
     client, Session = api_client
     with Session() as session:
         workflow = _open_workflow(session, request_id="workflow-decision-api-raw-note-cik")
+        _bind_workflow(session, workflow)
 
     response = client.post(
         DECISION_SUBMIT_ROUTE,
@@ -885,6 +1030,7 @@ def test_operator_review_decision_submit_api_replays_same_request_and_basis(api_
     client, Session = api_client
     with Session() as session:
         workflow = _open_workflow(session, request_id="workflow-decision-api-replay")
+        _bind_workflow(session, workflow)
     payload = _decision_submit_payload(
         workflow,
         client_request_id="decision-submit-api-replay",
@@ -905,12 +1051,14 @@ def test_operator_review_decision_submit_api_replays_same_request_and_basis(api_
     )
     with Session() as session:
         assert session.query(L3SecXbrlOperatorReviewDecision).count() == 1
+        assert session.query(L3SecXbrlAuthBindingReceipt).count() == 2
 
 
 def test_operator_review_decision_submit_api_rejects_second_decision_for_workflow(api_client) -> None:
     client, Session = api_client
     with Session() as session:
         workflow = _open_workflow(session, request_id="workflow-decision-api-second")
+        _bind_workflow(session, workflow)
 
     first = client.post(
         DECISION_SUBMIT_ROUTE,
@@ -944,6 +1092,7 @@ def test_operator_review_decision_status_api_returns_read_only_projection(api_cl
             workflow=workflow,
             request_id="decision-status-api-source",
         )
+        _bind_decision(session, decision)
         workflow_snapshot = _workflow_snapshot(session.query(L3SecXbrlOperatorReviewWorkflow).one())
         packet_snapshot = _packet_snapshot(session.query(L3SecXbrlStatementPacketSet).one())
         projection_snapshot = _projection_snapshot(session.query(L3SecXbrlProjectionSet).one())
@@ -969,6 +1118,9 @@ def test_operator_review_decision_status_api_returns_read_only_projection(api_cl
     assert body["read_only_status_surface"] is True
     assert body["durable_decision_authority_used"] is True
     assert body["decision_status_api_route_enabled"] is True
+    assert body["auth_binding_required"] is True
+    assert body["auth_binding_ref"].startswith("sec-xbrl-auth-binding:")
+    assert body["auth_binding_route_family"] == DECISION_SUBMIT_ROUTE_FAMILY
     assert body["decision_submit_api_route_enabled"] is False
     assert body["workflow_open_api_route_enabled"] is False
     assert body["rendered_ui_enabled"] is False
@@ -1850,6 +2002,7 @@ def test_value_reveal_authority_api_records_hash_only_receipt(api_client, monkey
     client, Session = api_client
     with Session() as db:
         decision = _record_decision(db, request_id="authority-api-decision-source")
+        _bind_decision(db, decision)
 
     response = client.post(AUTHORITY_PREPARE_ROUTE, json=_authority_payload(decision))
 
@@ -1857,6 +2010,10 @@ def test_value_reveal_authority_api_records_hash_only_receipt(api_client, monkey
     body = response.json()
     assert body["schema_id"] == authority_service.AUTHORITY_SCHEMA_ID
     assert body["sidecar_receipt_id_hash"] == _hash("d")
+    assert body["auth_binding_required"] is True
+    assert body["auth_binding_ref"].startswith("sec-xbrl-auth-binding:")
+    assert body["auth_binding_route_family"] == AUTHORITY_PREPARE_ROUTE_FAMILY
+    assert body["source_auth_binding_ref"].startswith("sec-xbrl-auth-binding:")
     assert "sidecar_receipt_id" not in body
     assert body["value_reveal_performed"] is False
     assert body["production_readiness_claimed"] is False
@@ -2040,6 +2197,7 @@ def test_controlled_value_reveal_submit_api_records_receipt_and_status_hash_coun
     client, Session = api_client
     with Session() as db:
         decision = _record_decision(db, request_id="controlled-submit-api-decision-source")
+        _bind_decision(db, decision)
 
     authority_response = client.post(AUTHORITY_PREPARE_ROUTE, json=_authority_payload(decision))
     assert authority_response.status_code == 200
@@ -2055,6 +2213,10 @@ def test_controlled_value_reveal_submit_api_records_receipt_and_status_hash_coun
     assert body["schema_id"] == submit_service.SUBMIT_SCHEMA_ID
     assert body["revealed_fact_count"] == 1
     assert body["revealed_facts"][0]["effective_value"] == "123.45"
+    assert body["auth_binding_required"] is True
+    assert body["auth_binding_ref"].startswith("sec-xbrl-auth-binding:")
+    assert body["auth_binding_route_family"] == CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE_FAMILY
+    assert body["source_auth_binding_ref"].startswith("sec-xbrl-auth-binding:")
     assert "sidecar_receipt_id" not in body
     assert body["status_surface_hash_count_only"] is True
 
@@ -2066,6 +2228,8 @@ def test_controlled_value_reveal_submit_api_records_receipt_and_status_hash_coun
     status = status_response.json()
     assert status["schema_id"] == submit_service.STATUS_SCHEMA_ID
     assert status["revealed_facts"] == []
+    assert status["auth_binding_required"] is True
+    assert status["auth_binding_route_family"] == CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE_FAMILY
     assert status["transient_values_returned"] is False
     assert "dataset_version_id" not in status
     assert "sidecar_receipt_hash" not in status
@@ -2113,7 +2277,8 @@ def test_controlled_value_reveal_submit_api_rejects_raw_authority_receipt_id(api
 
         assert response.status_code == 400
         body = response.json()
-        assert body["error_code"] == "sec_xbrl_controlled_value_reveal_submit_raw_reference_not_admitted"
+        assert body["error_code"] == "sec_xbrl_auth_binding_raw_reference_not_admitted"
+        assert raw_receipt_id not in response.text
     with Session() as db:
         assert db.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 0
 
@@ -2126,7 +2291,7 @@ def test_controlled_value_reveal_submit_api_status_rejects_raw_receipt_id(api_cl
 
     assert response.status_code == 400
     body = response.json()
-    assert body["error_code"] == "sec_xbrl_controlled_value_reveal_submit_raw_reference_not_admitted"
+    assert body["error_code"] == "sec_xbrl_auth_binding_raw_reference_not_admitted"
     assert "0000123456-26-000001" not in response.text
     with Session() as db:
         assert db.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 0
