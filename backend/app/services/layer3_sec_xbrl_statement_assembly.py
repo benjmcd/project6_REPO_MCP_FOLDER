@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
 from typing import Any, Mapping, Sequence
 
 
@@ -35,6 +35,7 @@ def assemble_reviewable_statement_packet(
         )
 
     grouped: dict[str, list[dict[str, Any]]] = {statement: [] for statement in STATEMENT_ORDER}
+    row_counts_by_statement_period: dict[tuple[str, str, int], int] = defaultdict(int)
     unassigned: list[dict[str, Any]] = []
     for index, item in enumerate(projected_items, start=1):
         row = _public_row(item=item, source_index=index)
@@ -42,7 +43,8 @@ def assemble_reviewable_statement_packet(
         if statement not in grouped:
             unassigned.append(_row_ref(row))
             continue
-        row["statement_row_index"] = len(grouped[statement]) + 1
+        row_counts_by_statement_period[_row_index_key(row)] += 1
+        row["statement_row_index"] = row_counts_by_statement_period[_row_index_key(row)]
         grouped[statement].append(row)
 
     if unassigned:
@@ -134,11 +136,21 @@ def _public_row(*, item: Mapping[str, Any], source_index: int) -> dict[str, Any]
         row["unit_class"] = item.get("unit_class")
     if item.get("derived_from_concepts") is not None:
         row["derived_from_concepts"] = list(item.get("derived_from_concepts") or [])
+    if item.get("period_ref") is not None:
+        row["period_ref"] = str(item.get("period_ref") or "")
+    if item.get("period_index") is not None:
+        row["period_index"] = int(item.get("period_index") or 0)
     return row
 
 
 def _has_raw_value(item: Mapping[str, Any]) -> bool:
     return any(key in item and item.get(key) is not None for key in ("_value", "value", "effective_value", "amount"))
+
+
+def _row_index_key(row: Mapping[str, Any]) -> tuple[str, str, int]:
+    period_ref = str(row.get("period_ref") or "")
+    period_index = int(row.get("period_index") or 0)
+    return (str(row.get("statement") or ""), period_ref, period_index)
 
 
 def _row_ref(row: Mapping[str, Any]) -> dict[str, str]:
