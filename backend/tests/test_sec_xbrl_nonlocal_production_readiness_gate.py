@@ -120,6 +120,21 @@ def test_sec_xbrl_nonlocal_readiness_gate_rejects_unreduced_authority_ref(tmp_pa
     assert "deployment_owner_ref" in report["authority_packet_summary"]["invalid_required_fields"]
 
 
+def test_sec_xbrl_nonlocal_readiness_gate_rejects_extra_unreduced_authority_ref(tmp_path: Path) -> None:
+    module = _gate_module()
+    packet = _valid_authority_packet(module)
+    packet["operator_ref"] = "Acme Operator"
+    packet_path = tmp_path / "packet.json"
+    packet_path.write_text(json.dumps(packet), encoding="utf-8")
+
+    report = module.build_report(authority_packet_path=packet_path)
+
+    assert report["decision"] == "nonlocal_production_readiness_blocked"
+    assert "nonlocal_production_readiness_raw_authority_not_admitted" in report["blocking_reasons"]
+    assert "raw_or_unreduced_authority_ref" in report["authority_packet_summary"]["redaction_scan"]["hit_classes"]
+    assert "operator_ref" in report["authority_packet_summary"]["invalid_required_fields"]
+
+
 def test_sec_xbrl_nonlocal_readiness_gate_requires_deployment_provenance(tmp_path: Path) -> None:
     module = _gate_module()
     packet = _valid_authority_packet(module)

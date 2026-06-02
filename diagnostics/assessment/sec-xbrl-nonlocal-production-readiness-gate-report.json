@@ -21,7 +21,9 @@
       "rollback_owner_ref",
       "incident_owner_ref",
       "redaction_policy_id",
-      "verification_run_ref"
+      "verification_run_ref",
+      "deployment_authority_provenance_ref",
+      "deployment_authority_provenance_hash"
     ],
     "required_fields_present": []
   },
@@ -80,7 +82,9 @@
           "rollback_owner_ref",
           "incident_owner_ref",
           "redaction_policy_id",
-          "verification_run_ref"
+          "verification_run_ref",
+          "deployment_authority_provenance_ref",
+          "deployment_authority_provenance_hash"
         ],
         "required_fields_present": []
       },
