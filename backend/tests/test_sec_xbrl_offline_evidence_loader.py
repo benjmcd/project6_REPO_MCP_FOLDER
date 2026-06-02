@@ -149,6 +149,25 @@ def test_loader_binds_dataset_version_to_classification_bridge_hash(tmp_path) ->
     assert bundle["evidence"]["dataset_version_id"] == "dv-sec-ixbrl-facts-redacted"
 
 
+def test_loader_rejects_tampered_classification_bridge_hash_before_dataset_binding(tmp_path) -> None:
+    storage, companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=True)
+    classification_path = next((storage / loader.STATEMENT_CLASSIFICATION_DIR / "receipts").glob("*.json"))
+    classification = json.loads(classification_path.read_text(encoding="utf-8"))
+    classification["fact_material_bridge_receipt_hash"] = _hash("a")
+    classification["authority_hashes"]["fact_material_bridge_receipt_hash"] = _hash("a")
+    _write_json(classification_path, classification)
+
+    with pytest.raises(loader.SecXbrlOfflineEvidenceLoaderError) as exc:
+        loader.load_sec_xbrl_offline_evidence_bundle(
+            storage,
+            companyfacts_path=companyfacts_path,
+            expected_sidecar_receipt_hash=refs["sidecar_receipt_hash"],
+            expected_statement_classification_receipt_hash=refs["classification_hash"],
+        )
+
+    assert exc.value.code == "sec_xbrl_offline_evidence_loader_statement_classification_receipt_hash_mismatch"
+
+
 def test_loader_rejects_stale_statement_classification_inventory_hash(tmp_path) -> None:
     storage, companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=True)
     classification_path = next((storage / loader.STATEMENT_CLASSIFICATION_DIR / "receipts").glob("*.json"))
@@ -351,8 +370,6 @@ def _write_storage(tmp_path: Path, *, include_companyfacts: bool) -> tuple[Path,
     storage = tmp_path / "storage"
     sidecar_hash = _hash("b")
     sidecar_id = f"sec-edgar-arelle-resolved-fact-authority-{sidecar_hash[:24]}"
-    classification_hash = _hash("d")
-    classification_id = f"sec-edgar-html-inline-xbrl-fact-statement-classification-{classification_hash[:24]}"
     bridge_hash = _hash("e")
     bridge_id = "sec-edgar-html-inline-xbrl-fact-material-bridge-" + "e" * 24
     sidecar_records = _sidecar_records()
@@ -362,6 +379,27 @@ def _write_storage(tmp_path: Path, *, include_companyfacts: bool) -> tuple[Path,
     resolved_projection_hash = stable_hash(resolved_projection)
     statement_roles = _statement_roles()
     classification_inventory_hash = stable_hash(statement_roles)
+    semantic_profile_inventory_hash = stable_hash([])
+    classification_order_hash = stable_hash([item["fact_id_or_order_key"] for item in statement_roles])
+    statement_group_inventory_hash = stable_hash([])
+    unclassified_fact_inventory_hash = stable_hash([])
+    classification_diagnostics_hash = stable_hash({})
+    classification_hash = stable_hash(
+        {
+            "hash_version": "sec_edgar_html_inline_xbrl_fact_statement_classification_hash_v1",
+            "classification_mode": "sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1",
+            "fact_authority_receipt_hash": sidecar_hash,
+            "fact_material_bridge_receipt_hash": bridge_hash,
+            "fact_inventory_hash": resolved_projection_hash,
+            "classification_inventory_hash": classification_inventory_hash,
+            "semantic_profile_inventory_hash": semantic_profile_inventory_hash,
+            "classification_order_hash": classification_order_hash,
+            "statement_group_inventory_hash": statement_group_inventory_hash,
+            "unclassified_fact_inventory_hash": unclassified_fact_inventory_hash,
+            "classification_diagnostics_hash": classification_diagnostics_hash,
+        }
+    )
+    classification_id = f"sec-edgar-html-inline-xbrl-fact-statement-classification-{classification_hash[:24]}"
 
     sidecar = {
         "schema_id": "layer3.sec_edgar_arelle_resolved_fact_authority_sidecar.v1",
@@ -390,10 +428,18 @@ def _write_storage(tmp_path: Path, *, include_companyfacts: bool) -> tuple[Path,
     }
     classification = {
         "schema_id": "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification.v1",
+        "classification_mode": "sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1",
         "statement_classification_receipt_id": classification_id,
         "statement_classification_receipt_hash": classification_hash,
+        "fact_authority_receipt_hash": sidecar_hash,
+        "fact_inventory_hash": resolved_projection_hash,
         "fact_material_bridge_receipt_hash": bridge_hash,
         "classification_inventory_hash": classification_inventory_hash,
+        "semantic_profile_inventory_hash": semantic_profile_inventory_hash,
+        "classification_order_hash": classification_order_hash,
+        "statement_group_inventory_hash": statement_group_inventory_hash,
+        "unclassified_fact_inventory_hash": unclassified_fact_inventory_hash,
+        "classification_diagnostics_hash": classification_diagnostics_hash,
         "authority_hashes": {
             "fact_authority_receipt_hash": sidecar_hash,
             "fact_inventory_hash": resolved_projection_hash,

@@ -11,6 +11,8 @@ from app.services.layer3_utils import stable_hash
 
 SCHEMA_ID = "layer3.sec_xbrl_offline_evidence_loader.v1"
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_offline_evidence_loader_report.v1"
+STATEMENT_CLASSIFICATION_HASH_VERSION = "sec_edgar_html_inline_xbrl_fact_statement_classification_hash_v1"
+STATEMENT_CLASSIFICATION_MODE = "sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1"
 
 SIDECAR_RECEIPT_DIR = "layer3-sec-edgar-arelle-resolved-fact-authority"
 VALUE_STORE_SUBDIR = "internal-value-stores"
@@ -74,6 +76,7 @@ def load_sec_xbrl_offline_evidence_bundle(
         ambiguous_code="sec_xbrl_offline_evidence_loader_statement_classification_ambiguous",
         missing_code="sec_xbrl_offline_evidence_loader_statement_classification_missing",
     )
+    _validate_statement_classification_receipt_hash(classification)
     statement_roles = _statement_roles_from_classification(classification, sidecar=sidecar)
     companyfacts, companyfacts_state = _read_companyfacts(companyfacts_path)
     dataset_version_id = _dataset_version_id(
@@ -361,6 +364,60 @@ def _read_companyfacts(companyfacts_path: str | Path | None) -> tuple[dict[str, 
             "SEC XBRL offline CompanyFacts payload must be an object.",
         )
     return dict(facts), "supplied"
+
+
+def _validate_statement_classification_receipt_hash(classification: Mapping[str, Any]) -> None:
+    declared = _required_hash(
+        classification.get("statement_classification_receipt_hash"),
+        "statement_classification_receipt_hash",
+    )
+    basis = {
+        "hash_version": STATEMENT_CLASSIFICATION_HASH_VERSION,
+        "classification_mode": _required_text(classification.get("classification_mode"), "classification_mode"),
+        "fact_authority_receipt_hash": _required_hash(
+            classification.get("fact_authority_receipt_hash"),
+            "fact_authority_receipt_hash",
+        ),
+        "fact_material_bridge_receipt_hash": _classification_bridge_hash(classification),
+        "fact_inventory_hash": _required_hash(
+            classification.get("fact_inventory_hash"),
+            "fact_inventory_hash",
+        ),
+        "classification_inventory_hash": _required_hash(
+            classification.get("classification_inventory_hash"),
+            "classification_inventory_hash",
+        ),
+        "semantic_profile_inventory_hash": _required_hash(
+            classification.get("semantic_profile_inventory_hash"),
+            "semantic_profile_inventory_hash",
+        ),
+        "classification_order_hash": _required_hash(
+            classification.get("classification_order_hash"),
+            "classification_order_hash",
+        ),
+        "statement_group_inventory_hash": _required_hash(
+            classification.get("statement_group_inventory_hash"),
+            "statement_group_inventory_hash",
+        ),
+        "unclassified_fact_inventory_hash": _required_hash(
+            classification.get("unclassified_fact_inventory_hash"),
+            "unclassified_fact_inventory_hash",
+        ),
+        "classification_diagnostics_hash": _required_hash(
+            classification.get("classification_diagnostics_hash"),
+            "classification_diagnostics_hash",
+        ),
+    }
+    if basis["classification_mode"] != STATEMENT_CLASSIFICATION_MODE:
+        raise SecXbrlOfflineEvidenceLoaderError(
+            "sec_xbrl_offline_evidence_loader_statement_classification_mode_mismatch",
+            "SEC XBRL statement classification mode is not admitted by the offline loader.",
+        )
+    if stable_hash(basis) != declared:
+        raise SecXbrlOfflineEvidenceLoaderError(
+            "sec_xbrl_offline_evidence_loader_statement_classification_receipt_hash_mismatch",
+            "SEC XBRL statement classification receipt hash is stale or mismatched.",
+        )
 
 
 def _classification_bridge_hash(classification: Mapping[str, Any]) -> str:
