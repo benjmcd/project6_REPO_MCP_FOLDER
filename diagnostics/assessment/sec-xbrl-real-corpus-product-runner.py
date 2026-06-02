@@ -167,12 +167,12 @@ RAW_URL_RE = re.compile(r"https?://|www\.", re.IGNORECASE)
 RAW_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 RAW_PATH_RE = re.compile(r"(?:[A-Za-z]:[\\/]|\\\\|(?:^|[\s'\"(])/(?:[^/\s]+/)+[^/\s]+)")
 RAW_CIK_FIELD_RE = re.compile(r'"(?:cik|raw_cik)"\s*:\s*"?\d{1,10}"?', re.IGNORECASE)
-SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
+SEC_URL_RE = re.compile(r"(?:https?://)?(?:www\.)?sec\.gov", re.IGNORECASE)
 LOCAL_PATH_RE = re.compile(
-    r"[A-Za-z]:\\|\\\\|file://|/(?:Users|home|tmp|workspace)(?:/|$)|/var/tmp(?:/|$)|/private/tmp(?:/|$)"
+    r"[A-Za-z]:[\\/]|\\\\|file://|/(?:Users|home|tmp|workspace)(?:/|$)|/var/tmp(?:/|$)|/private/tmp(?:/|$)"
 )
 RAW_DECIMAL_MAGNITUDE_RE = re.compile(r"(?<![A-Za-z0-9_])-?\d{4,}\.\d+(?![A-Za-z0-9_])")
-LABEL_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9.]*")
+LABEL_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9]*")
 LABEL_CIK_TOKEN_RE = re.compile(r"\bcik[-_ ]?0*(\d+)\b|\b(\d{6,10})\b", re.IGNORECASE)
 HEX24_RE = re.compile(r"^[a-f0-9]{24}$")
 HEX64_RE = re.compile(r"^[a-f0-9]{64}$")
@@ -253,6 +253,8 @@ def main() -> int:
             parser.error("--redacted-product-runner-report cannot be combined with --live")
         if args.redacted_product_runner_report and not args.storage_dir:
             parser.error("--redacted-product-runner-report requires --storage-dir for marker validation")
+        if args.redacted_product_runner_report and args.apply_default_decision:
+            parser.error("--redacted-product-runner-report cannot apply runtime default decisions")
         report = build_report(
             live=bool(args.live),
             storage_dir=Path(args.storage_dir) if args.storage_dir else None,
@@ -380,7 +382,10 @@ def build_report(
             imported_report_validation=imported_report_validation,
         ),
         "current_run_live_sec_network_used": bool(
-            live and preflight["state"] == "passed" and matrix_plan_readiness["state"] == "passed"
+            imported_report_validation is None
+            and live
+            and preflight["state"] == "passed"
+            and matrix_plan_readiness["state"] == "passed"
         ),
         "fake_sec_client_used": False,
         "storage_dir_marker": storage_marker,

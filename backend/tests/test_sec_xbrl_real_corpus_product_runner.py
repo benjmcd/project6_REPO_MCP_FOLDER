@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import sys
 from pathlib import Path
+
+import pytest
 
 from app.services import layer3_sec_xbrl_canonical_concepts as canonical
 from app.services.layer3_utils import stable_hash
@@ -1007,6 +1010,61 @@ def test_sec_xbrl_real_corpus_product_runner_imports_redacted_product_report_off
         assert forbidden not in serialized
 
 
+def test_sec_xbrl_real_corpus_product_runner_import_direct_call_does_not_report_current_live_run(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage, plan, source_report = _redacted_product_report_fixture(module, monkeypatch, tmp_path)
+    monkeypatch.setattr(
+        module,
+        "_run_live_product_path",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("live runner invoked")),
+    )
+
+    report = module.build_report(
+        live=True,
+        storage_dir=storage,
+        sector_family_storage_dir=storage,
+        matrix_plan=plan,
+        redacted_product_runner_report=source_report,
+        user_agent="operator@example.com",
+    )
+
+    assert report["decision"] == "real_corpus_default_on_validated"
+    assert report["live_sec_network_used"] is True
+    assert report["current_run_live_sec_network_used"] is False
+    assert report["offline_redacted_product_report_import"]["evidence"]["current_run_arelle_subprocess_invoked"] is False
+
+
+def test_sec_xbrl_real_corpus_product_runner_rejects_import_cli_default_write(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage = tmp_path / "storage"
+    storage.mkdir()
+    report_path = tmp_path / "report.json"
+    report_path.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "sec-xbrl-real-corpus-product-runner.py",
+            "--redacted-product-runner-report",
+            str(report_path),
+            "--storage-dir",
+            str(storage),
+            "--apply-default-decision",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc:
+        module.main()
+
+    assert exc.value.code == 2
+
+
 def test_sec_xbrl_real_corpus_product_runner_rejects_imported_report_storage_marker_mismatch(
     monkeypatch,
     tmp_path: Path,
@@ -1057,6 +1115,33 @@ def test_sec_xbrl_real_corpus_product_runner_rejects_imported_report_raw_identit
 
     assert report["decision"] == "real_corpus_default_on_blocked"
     assert report["offline_redacted_product_report_import"]["evidence"]["redaction_scan"]["raw_cik_found"] is True
+    assert "offline_product_report_redaction_scan_failed" in report["offline_redacted_product_report_import"][
+        "blocked_reasons"
+    ]
+
+
+def test_sec_xbrl_real_corpus_product_runner_import_scan_rejects_common_url_and_path_forms(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage, plan, source_report = _redacted_product_report_fixture(module, monkeypatch, tmp_path)
+    source_report["raw_sec_url_variant"] = "www.sec.gov/Archives/edgar/data/redacted"
+    source_report["raw_local_path_variant"] = "C:/Users/operator/sec-storage"
+
+    report = module.build_report(
+        live=False,
+        storage_dir=storage,
+        sector_family_storage_dir=storage,
+        matrix_plan=plan,
+        redacted_product_runner_report=source_report,
+        user_agent="",
+    )
+
+    scan = report["offline_redacted_product_report_import"]["evidence"]["redaction_scan"]
+    assert report["decision"] == "real_corpus_default_on_blocked"
+    assert scan["raw_sec_url_found"] is True
+    assert scan["raw_local_path_found"] is True
     assert "offline_product_report_redaction_scan_failed" in report["offline_redacted_product_report_import"][
         "blocked_reasons"
     ]
@@ -1214,6 +1299,8 @@ def test_sec_xbrl_real_corpus_product_runner_matrix_label_allows_non_identity_wo
     assert module._matrix_label_contains_raw_identity("amendment-restatement") is False
     assert module._matrix_label_contains_raw_identity("issuer-T") is True
     assert module._matrix_label_contains_raw_identity("core-MSFT") is True
+    assert module._matrix_label_contains_raw_identity("issuer.T") is True
+    assert module._matrix_label_contains_raw_identity("core.MSFT") is True
 
 
 def test_sec_xbrl_real_corpus_product_runner_blocks_onedrive_arelle_python(
