@@ -228,6 +228,166 @@
     "source_acquisition_performed_by_gate": false,
     "value_reveal_default_enabled_by_gate": false
   },
+  "operator_packet_contract": {
+    "admission_packet": {
+      "allowed_fields": [
+        "admission_mode",
+        "admission_owner_ref",
+        "approval_record_ref",
+        "approval_record_hash",
+        "in_app_auth_evidence_ref",
+        "in_app_auth_evidence_hash",
+        "auth_binding_evidence_ref",
+        "auth_binding_evidence_hash",
+        "rollback_owner_ref",
+        "incident_owner_ref",
+        "redaction_policy_id",
+        "verification_run_ref",
+        "admission_provenance_ref",
+        "admission_provenance_hash"
+      ],
+      "allowed_modes": [
+        "nonlocal_in_app_auth_final_admission"
+      ],
+      "cli_argument": "--admission-packet",
+      "hash_fields": [
+        "approval_record_hash",
+        "in_app_auth_evidence_hash",
+        "auth_binding_evidence_hash",
+        "admission_provenance_hash"
+      ],
+      "mode_field": "admission_mode",
+      "mode_requirements": {
+        "nonlocal_in_app_auth_final_admission": "final redacted operator authority admits current nonlocal in-app auth evidence for operator review only"
+      },
+      "packet_kind": "admission",
+      "redacted_ref_fields": [
+        "admission_owner_ref",
+        "approval_record_ref",
+        "in_app_auth_evidence_ref",
+        "auth_binding_evidence_ref",
+        "rollback_owner_ref",
+        "incident_owner_ref",
+        "verification_run_ref",
+        "admission_provenance_ref"
+      ],
+      "redaction_policy_field": "redaction_policy_id",
+      "redaction_policy_id": "sec_xbrl_nonlocal_admission_disposition_redaction_v1",
+      "required_fields": [
+        "admission_mode",
+        "admission_owner_ref",
+        "approval_record_ref",
+        "approval_record_hash",
+        "in_app_auth_evidence_ref",
+        "in_app_auth_evidence_hash",
+        "auth_binding_evidence_ref",
+        "auth_binding_evidence_hash",
+        "rollback_owner_ref",
+        "incident_owner_ref",
+        "redaction_policy_id",
+        "verification_run_ref",
+        "admission_provenance_ref",
+        "admission_provenance_hash"
+      ]
+    },
+    "backfill_disposition_packet": {
+      "allowed_fields": [
+        "disposition_mode",
+        "disposition_owner_ref",
+        "disposition_record_ref",
+        "disposition_record_hash",
+        "historical_inventory_ref",
+        "historical_inventory_hash",
+        "unbound_receipt_count",
+        "backfill_required",
+        "backfill_authority_ref",
+        "backfill_authority_hash",
+        "containment_policy_ref",
+        "containment_policy_hash",
+        "redaction_policy_id",
+        "verification_run_ref",
+        "disposition_provenance_ref",
+        "disposition_provenance_hash"
+      ],
+      "allowed_modes": [
+        "historical_unbound_receipts_backfill_authorized",
+        "historical_unbound_receipts_fail_closed_pending_backfill",
+        "no_historical_unbound_receipts"
+      ],
+      "cli_argument": "--backfill-disposition",
+      "hash_fields": [
+        "disposition_record_hash",
+        "historical_inventory_hash",
+        "backfill_authority_hash",
+        "containment_policy_hash",
+        "disposition_provenance_hash"
+      ],
+      "mode_field": "disposition_mode",
+      "mode_requirements": {
+        "historical_unbound_receipts_backfill_authorized": "unbound_receipt_count must be greater than 0 and backfill_required must be true",
+        "historical_unbound_receipts_fail_closed_pending_backfill": "unbound_receipt_count must be greater than 0 and backfill_required must be true",
+        "no_historical_unbound_receipts": "unbound_receipt_count must equal 0 and backfill_required must be false"
+      },
+      "packet_kind": "backfill_disposition",
+      "redacted_ref_fields": [
+        "disposition_owner_ref",
+        "disposition_record_ref",
+        "historical_inventory_ref",
+        "backfill_authority_ref",
+        "containment_policy_ref",
+        "verification_run_ref",
+        "disposition_provenance_ref"
+      ],
+      "redaction_policy_field": "redaction_policy_id",
+      "redaction_policy_id": "sec_xbrl_nonlocal_admission_disposition_redaction_v1",
+      "required_fields": [
+        "disposition_mode",
+        "disposition_owner_ref",
+        "disposition_record_ref",
+        "disposition_record_hash",
+        "historical_inventory_ref",
+        "historical_inventory_hash",
+        "unbound_receipt_count",
+        "backfill_required",
+        "backfill_authority_ref",
+        "backfill_authority_hash",
+        "containment_policy_ref",
+        "containment_policy_hash",
+        "redaction_policy_id",
+        "verification_run_ref",
+        "disposition_provenance_ref",
+        "disposition_provenance_hash"
+      ]
+    },
+    "blocked_decision": "nonlocal_production_admission_disposition_blocked",
+    "contract_id": "sec_xbrl_nonlocal_final_admission_packet_contract_v1",
+    "forbidden_payload_classes": [
+      "raw_operator_identity",
+      "issuer_identity",
+      "accession",
+      "cik",
+      "sec_url",
+      "local_path",
+      "period_date",
+      "raw_value",
+      "raw_payload",
+      "residual_magnitude",
+      "free_text_deployment_note",
+      "local_evidence_filename"
+    ],
+    "hash_rule": "64 lowercase hexadecimal characters",
+    "packet_files_are_committed_to_repo": false,
+    "packet_files_are_operator_supplied": true,
+    "production_readiness_claimed_by_success": false,
+    "redacted_ref_rule": "nonempty lowercase kebab-case reference ending in -ref-<token>, with no operator identity, issuer identity, accession, CIK, SEC URL, local path, period date, raw decimal, raw value, or payload",
+    "redaction_policy_id": "sec_xbrl_nonlocal_admission_disposition_redaction_v1",
+    "success_decision": "nonlocal_production_admission_disposition_ready_for_operator_review",
+    "unknown_fields": {
+      "admitted": false,
+      "reported_as": "unexpected_packet_field"
+    },
+    "validation_command": "python diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition.py --admission-packet <admission-packet.json> --backfill-disposition <backfill-disposition.json> --output <report.json>"
+  },
   "production_readiness_claimed": false,
   "readiness_gate_summary": {
     "admissible": true,
