@@ -1,0 +1,284 @@
+{
+  "blocking_reasons": [
+    "sec_xbrl_nonlocal_admission_packet_missing",
+    "sec_xbrl_nonlocal_backfill_disposition_packet_missing"
+  ],
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "readiness_gate_current_for_admission_disposition",
+      "evidence": {
+        "admissible": true,
+        "blocked_reasons": [],
+        "evidence_checks": {
+          "in_app_auth_evidence_current": true,
+          "next_slice_matches": true,
+          "only_final_admission_blocking": true,
+          "production_readiness_not_claimed": true,
+          "readiness_decision_blocked": true
+        },
+        "readiness_blocking_reasons": [
+          "nonlocal_production_readiness_final_admission_missing"
+        ],
+        "readiness_decision": "nonlocal_production_readiness_blocked",
+        "source_report": "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json",
+        "source_report_hash": "f60b36dcbf4e921be5174507491ab8e3378a1729659f97a2a5666bc677e360a6"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "route_atomicity_and_fail_closed_evidence_current",
+      "evidence": {
+        "admissible": true,
+        "blocked_reasons": [],
+        "evidence_checks": {
+          "api_records_source_and_binding_atomically": true,
+          "auth_binding_service_requires_owner_binding": true,
+          "reconciliation_doc_names_next_disposition": true,
+          "route_doc_records_historical_backfill_boundary": true,
+          "tests_prove_fail_closed_unbound_and_rollback": true
+        },
+        "historical_backfill_performed_by_gate": false,
+        "source_files": {
+          "api": "backend/app/api/layer3.py",
+          "auth_binding_service": "backend/app/services/layer3_sec_xbrl_auth_binding.py",
+          "auth_binding_tests": "backend/tests/test_sec_xbrl_auth_binding_receipt.py",
+          "operator_workflow_tests": "backend/tests/test_sec_xbrl_operator_review_workflow.py",
+          "readiness_reconciliation_doc": "next_milestone_plans/Layer3_planning_docs/1327-nonlocal-readiness-in-app-reconciliation.md",
+          "route_enforcement_doc": "next_milestone_plans/Layer3_planning_docs/1326-auth-owner-binding-route-enforcement.md"
+        },
+        "source_hashes": {
+          "api": "0b08c5983a89c1040197a6cba998e1297006a7bdb28e601d1bb607eaf2b3db02",
+          "auth_binding_service": "7586da59006e30be5cf19c798a203850d5aa28cbc1ee8a546c0f17a0eec51833",
+          "readiness_reconciliation_doc": "f1a4fa9613d581b53fd3fdea439abbf5f68b55852e65e54d118801d7b2d8a53f",
+          "route_enforcement_doc": "cb07c179520e1d4f141afe3474eb07bd202cdfdccd97de7e1b6e4a99c9cfcb51"
+        }
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": "sec_xbrl_nonlocal_admission_packet_missing",
+      "criterion": "final_admission_packet_present_and_admissible",
+      "evidence": {
+        "admissible": false,
+        "blocked_reason": "sec_xbrl_nonlocal_admission_packet_missing",
+        "invalid_required_fields": [],
+        "packet_hash": null,
+        "packet_kind": "admission",
+        "packet_present": false,
+        "redaction_scan": {
+          "hit_classes": [],
+          "status": "not_run"
+        },
+        "required_fields_missing": [
+          "admission_mode",
+          "admission_owner_ref",
+          "approval_record_ref",
+          "approval_record_hash",
+          "in_app_auth_evidence_ref",
+          "in_app_auth_evidence_hash",
+          "auth_binding_evidence_ref",
+          "auth_binding_evidence_hash",
+          "rollback_owner_ref",
+          "incident_owner_ref",
+          "redaction_policy_id",
+          "verification_run_ref",
+          "admission_provenance_ref",
+          "admission_provenance_hash"
+        ],
+        "required_fields_present": []
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "sec_xbrl_nonlocal_backfill_disposition_packet_missing",
+      "criterion": "historical_backfill_disposition_present_and_admissible",
+      "evidence": {
+        "admissible": false,
+        "blocked_reason": "sec_xbrl_nonlocal_backfill_disposition_packet_missing",
+        "invalid_required_fields": [],
+        "packet_hash": null,
+        "packet_kind": "backfill_disposition",
+        "packet_present": false,
+        "redaction_scan": {
+          "hit_classes": [],
+          "status": "not_run"
+        },
+        "required_fields_missing": [
+          "disposition_mode",
+          "disposition_owner_ref",
+          "disposition_record_ref",
+          "disposition_record_hash",
+          "historical_inventory_ref",
+          "historical_inventory_hash",
+          "unbound_receipt_count",
+          "backfill_required",
+          "backfill_authority_ref",
+          "backfill_authority_hash",
+          "containment_policy_ref",
+          "containment_policy_hash",
+          "redaction_policy_id",
+          "verification_run_ref",
+          "disposition_provenance_ref",
+          "disposition_provenance_hash"
+        ],
+        "required_fields_present": []
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "standing_non_admissions_preserved",
+      "evidence": {
+        "arelle_subprocess_invoked_by_gate": false,
+        "export_or_delivery_enabled_by_gate": false,
+        "historical_backfill_performed_by_gate": false,
+        "production_readiness_claimed": false,
+        "provider_or_connector_dispatch_enabled_by_gate": false,
+        "source_acquisition_performed_by_gate": false,
+        "value_reveal_default_enabled_by_gate": false
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "nonlocal_production_admission_disposition_blocked",
+  "final_admission_packet_summary": {
+    "admissible": false,
+    "blocked_reason": "sec_xbrl_nonlocal_admission_packet_missing",
+    "invalid_required_fields": [],
+    "packet_hash": null,
+    "packet_kind": "admission",
+    "packet_present": false,
+    "redaction_scan": {
+      "hit_classes": [],
+      "status": "not_run"
+    },
+    "required_fields_missing": [
+      "admission_mode",
+      "admission_owner_ref",
+      "approval_record_ref",
+      "approval_record_hash",
+      "in_app_auth_evidence_ref",
+      "in_app_auth_evidence_hash",
+      "auth_binding_evidence_ref",
+      "auth_binding_evidence_hash",
+      "rollback_owner_ref",
+      "incident_owner_ref",
+      "redaction_policy_id",
+      "verification_run_ref",
+      "admission_provenance_ref",
+      "admission_provenance_hash"
+    ],
+    "required_fields_present": []
+  },
+  "headline": "Final nonlocal admission or historical backfill disposition authority is missing; current repo state remains blocked and validate-only.",
+  "historical_backfill_disposition_summary": {
+    "admissible": false,
+    "blocked_reason": "sec_xbrl_nonlocal_backfill_disposition_packet_missing",
+    "invalid_required_fields": [],
+    "packet_hash": null,
+    "packet_kind": "backfill_disposition",
+    "packet_present": false,
+    "redaction_scan": {
+      "hit_classes": [],
+      "status": "not_run"
+    },
+    "required_fields_missing": [
+      "disposition_mode",
+      "disposition_owner_ref",
+      "disposition_record_ref",
+      "disposition_record_hash",
+      "historical_inventory_ref",
+      "historical_inventory_hash",
+      "unbound_receipt_count",
+      "backfill_required",
+      "backfill_authority_ref",
+      "backfill_authority_hash",
+      "containment_policy_ref",
+      "containment_policy_hash",
+      "redaction_policy_id",
+      "verification_run_ref",
+      "disposition_provenance_ref",
+      "disposition_provenance_hash"
+    ],
+    "required_fields_present": []
+  },
+  "next_slice": "sec_xbrl_nonlocal_final_admission_packet_and_backfill_disposition_v1",
+  "non_goals_preserved": {
+    "arelle_subprocess_invoked_by_gate": false,
+    "backend_api_contract_changed_by_gate": false,
+    "controlled_value_reveal_submit_default_enabled_by_gate": false,
+    "cross_company_comparability_claimed": false,
+    "durable_persistence_changed_by_gate": false,
+    "export_or_delivery_enabled_by_gate": false,
+    "final_financial_statement_semantics_claimed": false,
+    "historical_backfill_performed_by_gate": false,
+    "live_sec_network_run_performed_by_gate": false,
+    "migration_changed_by_gate": false,
+    "operator_workflow_changed_by_gate": false,
+    "production_readiness_claimed": false,
+    "provider_or_connector_dispatch_enabled_by_gate": false,
+    "raw_internal_value_store_default_enabled_by_gate": false,
+    "raw_runtime_artifacts_added_by_gate": false,
+    "rendered_ui_changed_by_gate": false,
+    "runtime_behavior_changed_by_gate": false,
+    "runtime_default_changed_by_gate": false,
+    "schema_models_changed_by_gate": false,
+    "source_acquisition_performed_by_gate": false,
+    "value_reveal_default_enabled_by_gate": false
+  },
+  "production_readiness_claimed": false,
+  "readiness_gate_summary": {
+    "admissible": true,
+    "blocked_reasons": [],
+    "evidence_checks": {
+      "in_app_auth_evidence_current": true,
+      "next_slice_matches": true,
+      "only_final_admission_blocking": true,
+      "production_readiness_not_claimed": true,
+      "readiness_decision_blocked": true
+    },
+    "readiness_blocking_reasons": [
+      "nonlocal_production_readiness_final_admission_missing"
+    ],
+    "readiness_decision": "nonlocal_production_readiness_blocked",
+    "source_report": "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json",
+    "source_report_hash": "f60b36dcbf4e921be5174507491ab8e3378a1729659f97a2a5666bc677e360a6"
+  },
+  "route_and_backfill_evidence_summary": {
+    "admissible": true,
+    "blocked_reasons": [],
+    "evidence_checks": {
+      "api_records_source_and_binding_atomically": true,
+      "auth_binding_service_requires_owner_binding": true,
+      "reconciliation_doc_names_next_disposition": true,
+      "route_doc_records_historical_backfill_boundary": true,
+      "tests_prove_fail_closed_unbound_and_rollback": true
+    },
+    "historical_backfill_performed_by_gate": false,
+    "source_files": {
+      "api": "backend/app/api/layer3.py",
+      "auth_binding_service": "backend/app/services/layer3_sec_xbrl_auth_binding.py",
+      "auth_binding_tests": "backend/tests/test_sec_xbrl_auth_binding_receipt.py",
+      "operator_workflow_tests": "backend/tests/test_sec_xbrl_operator_review_workflow.py",
+      "readiness_reconciliation_doc": "next_milestone_plans/Layer3_planning_docs/1327-nonlocal-readiness-in-app-reconciliation.md",
+      "route_enforcement_doc": "next_milestone_plans/Layer3_planning_docs/1326-auth-owner-binding-route-enforcement.md"
+    },
+    "source_hashes": {
+      "api": "0b08c5983a89c1040197a6cba998e1297006a7bdb28e601d1bb607eaf2b3db02",
+      "auth_binding_service": "7586da59006e30be5cf19c798a203850d5aa28cbc1ee8a546c0f17a0eec51833",
+      "readiness_reconciliation_doc": "f1a4fa9613d581b53fd3fdea439abbf5f68b55852e65e54d118801d7b2d8a53f",
+      "route_enforcement_doc": "cb07c179520e1d4f141afe3474eb07bd202cdfdccd97de7e1b6e4a99c9cfcb51"
+    }
+  },
+  "schema_id": "diagnostics.sec_xbrl_nonlocal_admission_disposition.v1",
+  "source_documents": {
+    "readiness_reconciliation": "next_milestone_plans/Layer3_planning_docs/1327-nonlocal-readiness-in-app-reconciliation.md",
+    "route_enforcement": "next_milestone_plans/Layer3_planning_docs/1326-auth-owner-binding-route-enforcement.md"
+  },
+  "source_reports": {
+    "nonlocal_readiness_gate": "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json"
+  },
+  "target": "sec_xbrl_nonlocal_production_admission_or_historical_backfill_disposition_v1"
+}
