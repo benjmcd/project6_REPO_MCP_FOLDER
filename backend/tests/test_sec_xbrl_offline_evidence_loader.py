@@ -12,6 +12,7 @@ from app.db.session import Base
 from app.models import L3SecXbrlOperatorReviewWorkflow, L3SecXbrlProjectionSet
 from app.services import (
     layer3_sec_xbrl_e2e_offline_orchestrator as orchestrator,
+    layer3_sec_xbrl_offline_companyfacts_oracle_packet as oracle_packet,
     layer3_sec_xbrl_offline_evidence_loader as loader,
 )
 from app.services.layer3_utils import json_clone, stable_hash
@@ -118,6 +119,50 @@ def test_loader_requires_expected_hash_when_sidecar_candidates_are_ambiguous(tmp
         loader.load_sec_xbrl_offline_evidence_bundle(storage)
 
     assert exc.value.code == "sec_xbrl_offline_evidence_loader_sidecar_ambiguous"
+
+
+def test_companyfacts_oracle_packet_reports_missing_oracle_without_overclaiming(tmp_path) -> None:
+    storage, _companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=False)
+
+    report = oracle_packet.inspect_sec_xbrl_offline_companyfacts_oracle_packet(
+        storage,
+        expected_sidecar_receipt_hash=refs["sidecar_receipt_hash"],
+        expected_statement_classification_receipt_hash=refs["classification_hash"],
+    )
+    text = json.dumps(report, sort_keys=True)
+
+    assert report["status"] == "offline_companyfacts_oracle_packet_blocked"
+    assert report["blocked_reasons"][0]["reason"] == "companyfacts_oracle_packet_missing"
+    assert report["readiness"]["operator_review_creation_ready"] is False
+    assert report["readiness"]["production_admission_ready"] is False
+    assert report["controls"]["source_acquisition_performed"] is False
+    assert report["controls"]["arelle_invoked"] is False
+    assert report["paths_redacted"] is True
+    assert str(storage) not in text
+    assert "rf-revenue-fy" not in text
+
+
+def test_companyfacts_oracle_packet_validates_supplied_oracle_without_production_claim(tmp_path) -> None:
+    storage, companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=True)
+
+    report = oracle_packet.inspect_sec_xbrl_offline_companyfacts_oracle_packet(
+        storage,
+        companyfacts_path=companyfacts_path,
+        expected_sidecar_receipt_hash=refs["sidecar_receipt_hash"],
+        expected_statement_classification_receipt_hash=refs["classification_hash"],
+    )
+    text = json.dumps(report, sort_keys=True)
+
+    assert report["status"] == "offline_companyfacts_oracle_packet_ready"
+    assert report["blocked_reasons"] == []
+    assert report["readiness"]["operator_review_creation_ready"] is True
+    assert report["readiness"]["production_admission_ready"] is False
+    assert report["readiness"]["production_admission_blocked_reason"] == "diagnostic_validate_only_not_production_admission"
+    assert report["summary"]["companyfacts_observation_count"] == 6
+    assert report["summary"]["projected_count"] > 0
+    assert report["controls"]["db_persistence_performed"] is False
+    assert "effective_value" not in text
+    assert "rf-revenue-fy" not in text
 
 
 def _write_storage(tmp_path: Path, *, include_companyfacts: bool) -> tuple[Path, Path | None, dict[str, str]]:
