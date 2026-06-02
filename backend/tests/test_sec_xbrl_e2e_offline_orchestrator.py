@@ -54,9 +54,27 @@ def test_offline_orchestrator_opens_redacted_review_workflow_from_governed_evide
         "production_readiness_claimed": False,
     }
     assert response["containment"]["single_transaction_claimed"] is False
-    assert "100" not in text
-    assert "200" not in text
-    assert "start-2" not in text
+    assert '"effective_value"' not in text
+    assert set(_scalar_values(response)).isdisjoint(
+        {
+            "90",
+            90,
+            "100",
+            100,
+            "180",
+            180,
+            "200",
+            200,
+            "30",
+            30,
+            "40",
+            40,
+            "start-1",
+            "end-1",
+            "start-2",
+            "end-2",
+        }
+    )
 
     persisted_cashflow_rows = (
         db_session.query(L3SecXbrlStatementPacketRow)
@@ -263,6 +281,20 @@ def _statement_role_records() -> list[dict[str, str]]:
         {"fact_id_or_order_key": "rf-assets-fy", "statement_candidate_role": "balance_sheet"},
         {"fact_id_or_order_key": "rf-cashflow-fy", "statement_candidate_role": "cash_flow_statement"},
     ]
+
+
+def _scalar_values(value: Any) -> list[Any]:
+    if isinstance(value, dict):
+        values: list[Any] = []
+        for item in value.values():
+            values.extend(_scalar_values(item))
+        return values
+    if isinstance(value, list):
+        values = []
+        for item in value:
+            values.extend(_scalar_values(item))
+        return values
+    return [value]
 
 
 def _hash(char: str) -> str:
