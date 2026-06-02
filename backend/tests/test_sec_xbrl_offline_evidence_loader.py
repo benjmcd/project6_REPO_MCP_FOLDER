@@ -165,6 +165,37 @@ def test_companyfacts_oracle_packet_validates_supplied_oracle_without_production
     assert "rf-revenue-fy" not in text
 
 
+def test_companyfacts_oracle_packet_preserves_base_storage_blocker_before_oracle_missing(tmp_path) -> None:
+    missing_storage = tmp_path / "missing-storage"
+
+    report = oracle_packet.inspect_sec_xbrl_offline_companyfacts_oracle_packet(missing_storage)
+
+    assert report["status"] == "offline_companyfacts_oracle_packet_blocked"
+    assert report["base_evidence_status"] == "offline_evidence_bundle_blocked"
+    assert report["blocked_reasons"][0]["reason"] == "sec_xbrl_offline_evidence_loader_storage_missing"
+    assert report["readiness"]["operator_review_creation_blocked_reason"] == "sec_xbrl_offline_evidence_loader_storage_missing"
+    assert report["readiness"]["production_admission_blocked_reason"] == "sec_xbrl_offline_evidence_loader_storage_missing"
+
+
+def test_companyfacts_oracle_packet_requires_oracle_confirmed_projection(tmp_path) -> None:
+    storage, _companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=False)
+    empty_companyfacts = tmp_path / "empty-companyfacts.json"
+    _write_json(empty_companyfacts, {"facts": {"us-gaap": {}}})
+
+    report = oracle_packet.inspect_sec_xbrl_offline_companyfacts_oracle_packet(
+        storage,
+        companyfacts_path=empty_companyfacts,
+        expected_sidecar_receipt_hash=refs["sidecar_receipt_hash"],
+        expected_statement_classification_receipt_hash=refs["classification_hash"],
+    )
+
+    assert report["status"] == "offline_companyfacts_oracle_packet_blocked"
+    assert report["blocked_reasons"][0]["reason"] == "companyfacts_oracle_packet_oracle_confirmation_missing"
+    assert report["summary"]["companyfacts_observation_count"] == 0
+    assert report["summary"]["oracle_confirmed_count"] == 0
+    assert report["readiness"]["operator_review_creation_ready"] is False
+
+
 def _write_storage(tmp_path: Path, *, include_companyfacts: bool) -> tuple[Path, Path | None, dict[str, str]]:
     storage = tmp_path / "storage"
     sidecar_hash = _hash("b")

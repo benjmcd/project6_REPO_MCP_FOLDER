@@ -37,6 +37,13 @@ def inspect_sec_xbrl_offline_companyfacts_oracle_packet(
         expected_sidecar_receipt_hash=expected_sidecar_receipt_hash,
         expected_statement_classification_receipt_hash=expected_statement_classification_receipt_hash,
     )
+    if base_report.get("status") == "offline_evidence_bundle_blocked":
+        reason, message = _first_blocked_reason(base_report)
+        return _blocked_report(
+            base_report=base_report,
+            reason=reason,
+            message=message,
+        )
     if not companyfacts_path:
         return _blocked_report(
             base_report=base_report,
@@ -74,11 +81,20 @@ def inspect_sec_xbrl_offline_companyfacts_oracle_packet(
         period_limit=period_limit,
     )
     projection_summary = _projection_summary(projection)
+    companyfacts_summary = _companyfacts_summary(companyfacts)
+    if companyfacts_summary["companyfacts_observation_count"] <= 0 or projection_summary["oracle_confirmed_count"] <= 0:
+        return _blocked_report(
+            base_report=base_report,
+            authority_refs={**dict(bundle.get("authority_refs") or {}), "companyfacts_payload_hash": stable_hash(companyfacts)},
+            summary={**dict(bundle.get("summary") or {}), **companyfacts_summary, **projection_summary},
+            reason="companyfacts_oracle_packet_oracle_confirmation_missing",
+            message="Offline CompanyFacts oracle did not confirm any projected facts.",
+        )
     if projection.get("status") != "canonical_multi_period_projection_ready" or projection_summary["projected_count"] <= 0:
         return _blocked_report(
             base_report=base_report,
             authority_refs={**dict(bundle.get("authority_refs") or {}), "companyfacts_payload_hash": stable_hash(companyfacts)},
-            summary={**dict(bundle.get("summary") or {}), **_companyfacts_summary(companyfacts), **projection_summary},
+            summary={**dict(bundle.get("summary") or {}), **companyfacts_summary, **projection_summary},
             reason="companyfacts_oracle_packet_projection_not_ready",
             message="Offline CompanyFacts oracle did not produce a ready canonical projection.",
         )
@@ -96,7 +112,7 @@ def inspect_sec_xbrl_offline_companyfacts_oracle_packet(
         },
         "summary": {
             **dict(bundle.get("summary") or {}),
-            **_companyfacts_summary(companyfacts),
+            **companyfacts_summary,
             **projection_summary,
         },
         "readiness": {
@@ -115,6 +131,18 @@ class CompanyFactsOraclePacketError(ValueError):
     def __init__(self, code: str, message: str) -> None:
         super().__init__(message)
         self.code = code
+
+
+def _first_blocked_reason(base_report: Mapping[str, Any]) -> tuple[str, str]:
+    reasons = base_report.get("blocked_reasons") if isinstance(base_report.get("blocked_reasons"), list) else []
+    for item in reasons:
+        if not isinstance(item, Mapping):
+            continue
+        reason = str(item.get("reason") or "").strip()
+        message = str(item.get("message") or "").strip()
+        if reason:
+            return reason, message or "Offline evidence storage is blocked."
+    return "offline_evidence_bundle_blocked", "Offline evidence storage is blocked."
 
 
 def _blocked_report(
@@ -204,10 +232,15 @@ def _companyfacts_summary(companyfacts: Mapping[str, Any]) -> dict[str, int]:
 
 def _projection_summary(projection: Mapping[str, Any]) -> dict[str, int]:
     ready_periods = [item for item in projection.get("periods") or [] if isinstance(item, Mapping)]
+    oracle_confirmed_count = 0
+    for item in ready_periods:
+        period_projection = item.get("projection") if isinstance(item.get("projection"), Mapping) else {}
+        oracle_confirmed_count += int(period_projection.get("oracle_confirmed_count") or 0)
     return {
         "projection_period_count": int(projection.get("period_count") or 0),
         "projection_ready_period_count": int(projection.get("ready_period_count") or 0),
         "projected_count": int(projection.get("projected_count") or 0),
+        "oracle_confirmed_count": oracle_confirmed_count,
         "provenance_complete_count": int(projection.get("provenance_complete_count") or 0),
         "period_result_count": len(ready_periods),
     }
