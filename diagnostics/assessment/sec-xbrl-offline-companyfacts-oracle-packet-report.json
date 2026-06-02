@@ -1,0 +1,46 @@
+{
+  "authority_refs": {
+    "dataset_version_id_hash": "b593fbccac9a213a3d188099",
+    "sidecar_receipt_hash": "16cdcfc6e5486ccfdb2991fac7f46a03f53d802d60841f2e0ff6c488cdf5bb9d",
+    "statement_classification_receipt_hash": "bd95ba6d396a7d645f11e8e0bc4f8e7ca5f6e12f2ec9f50a5f250f43ae938666",
+    "statement_role_view_hash": "b7cad950f48596f630c77459d123827f157a5b9819329d9de605b2b37cf9b7ba",
+    "value_store_hash": "1db5495f71e58fe782aa8af8a8670b94e9e556584aad87d94daf03d023de7ea1"
+  },
+  "base_evidence_status": "offline_evidence_bundle_ready_without_companyfacts_oracle",
+  "blocked_reasons": [
+    {
+      "message": "Offline CompanyFacts oracle JSON was not supplied.",
+      "reason": "companyfacts_oracle_packet_missing"
+    }
+  ],
+  "controls": {
+    "api_route_enabled": false,
+    "arelle_invoked": false,
+    "db_persistence_performed": false,
+    "network_performed": false,
+    "offline_storage_read_only": true,
+    "production_readiness_claimed": false,
+    "source_acquisition_performed": false,
+    "value_reveal_performed": false
+  },
+  "paths_redacted": true,
+  "readiness": {
+    "companyfacts_oracle_packet_supplied": false,
+    "operator_review_creation_blocked_reason": "companyfacts_oracle_packet_missing",
+    "operator_review_creation_ready": false,
+    "production_admission_blocked_reason": "companyfacts_oracle_packet_missing",
+    "production_admission_ready": false
+  },
+  "schema_id": "diagnostics.sec_xbrl_offline_companyfacts_oracle_packet.v1",
+  "schema_version": 1,
+  "status": "offline_companyfacts_oracle_packet_blocked",
+  "storage_marker": "28e51c6d8ac3f841310d0c77",
+  "summary": {
+    "companyfacts_authority_state": "not_supplied",
+    "companyfacts_oracle_supplied": false,
+    "resolved_fact_count": 643,
+    "resolved_fact_projection_count": 643,
+    "statement_role_record_count": 643,
+    "value_record_count": 643
+  }
+}

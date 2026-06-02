@@ -1,5 +1,38 @@
 # Layer3 Progress Board
 
+## SEC XBRL Offline CompanyFacts Oracle Packet
+
+Milestone:
+`sec_xbrl_offline_companyfacts_oracle_packet_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1333-companyfacts-oracle-packet.md`.
+
+Status: branch-local Tier-2 risk-assessed validate-only packet diagnostic on
+`codex/secxbrl-companyfacts-oracle-packet`.
+
+Scope: add a validate-only CompanyFacts oracle packet validator for
+already-acquired SEC XBRL offline evidence. The validator reports the current
+FIZZ storage as blocked because no operator-acquired offline CompanyFacts JSON
+was found under `sandbox_temp`; it preserves the storage authority hashes and
+counts while keeping operator-review creation and production admission blocked.
+
+Containment: the diagnostic reads already-acquired local files and writes only
+a redacted report. It introduces no schema, `models.py`, Alembic migration,
+backend API/UI, source acquisition, Arelle subprocess invocation, live SEC
+network access, value reveal, runtime-default change, raw runtime artifact,
+operator source workflow, or production-readiness behavior.
+
+Verification: focused loader/oracle-packet suite passes with `6 passed`;
+loader-plus-orchestrator suite passes with `10 passed`; full SEC XBRL suite
+passes with `385 passed, 3 warnings`; target-selection frozen check, progress
+check, touched-file `py_compile`, manifest/report JSON parse over `63` files,
+committed SEC XBRL report redaction/residual scan over `61` reports, and
+`git diff --check` pass.
+
+Next exact posture:
+`sec_xbrl_offline_companyfacts_oracle_packet_operator_supply_v1`.
+
 ## SEC XBRL Offline Evidence Loader Diagnostic
 
 Milestone:
