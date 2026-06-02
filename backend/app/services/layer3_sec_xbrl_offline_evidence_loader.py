@@ -152,13 +152,16 @@ def inspect_sec_xbrl_offline_evidence_storage(
             expected_statement_classification_receipt_hash=expected_statement_classification_receipt_hash,
         )
     except SecXbrlOfflineEvidenceLoaderError as exc:
-        return {
+        report = {
             "schema_id": REPORT_SCHEMA_ID,
             "schema_version": 1,
             **exc.to_report(),
+            "storage_marker": _blocked_storage_marker(Path(storage_dir)),
             "paths_redacted": True,
             "controls": _controls(db_persistence_performed=False),
         }
+        _reject_report_leaks(report)
+        return report
 
     summary = dict(bundle["summary"])
     companyfacts_supplied = summary["companyfacts_oracle_supplied"] is True
@@ -510,6 +513,13 @@ def _storage_marker(storage_dir: Path) -> str:
             if isinstance(value, str) and HASH_RE.fullmatch(value):
                 markers.append({key: value})
     return stable_hash(markers)[:24]
+
+
+def _blocked_storage_marker(storage_dir: Path) -> str:
+    try:
+        return _storage_marker(storage_dir)
+    except SecXbrlOfflineEvidenceLoaderError:
+        return ""
 
 
 def _read_json_object(path: Path) -> dict[str, Any]:

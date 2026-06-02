@@ -38,11 +38,12 @@ def inspect_sec_xbrl_offline_companyfacts_oracle_packet(
         expected_statement_classification_receipt_hash=expected_statement_classification_receipt_hash,
     )
     if base_report.get("status") == "offline_evidence_bundle_blocked":
-        reason, message = _first_blocked_reason(base_report)
+        blocked_reason = _first_blocked_reason(base_report)
         return _blocked_report(
             base_report=base_report,
-            reason=reason,
-            message=message,
+            reason=blocked_reason["reason"],
+            message=blocked_reason["message"],
+            details=blocked_reason.get("details"),
         )
     if not companyfacts_path:
         return _blocked_report(
@@ -65,6 +66,7 @@ def inspect_sec_xbrl_offline_companyfacts_oracle_packet(
             base_report=base_report,
             reason=getattr(exc, "code", "companyfacts_oracle_packet_invalid"),
             message=str(exc),
+            details=getattr(exc, "details", None),
         )
 
     evidence = bundle["evidence"]
@@ -133,7 +135,7 @@ class CompanyFactsOraclePacketError(ValueError):
         self.code = code
 
 
-def _first_blocked_reason(base_report: Mapping[str, Any]) -> tuple[str, str]:
+def _first_blocked_reason(base_report: Mapping[str, Any]) -> dict[str, Any]:
     reasons = base_report.get("blocked_reasons") if isinstance(base_report.get("blocked_reasons"), list) else []
     for item in reasons:
         if not isinstance(item, Mapping):
@@ -141,8 +143,15 @@ def _first_blocked_reason(base_report: Mapping[str, Any]) -> tuple[str, str]:
         reason = str(item.get("reason") or "").strip()
         message = str(item.get("message") or "").strip()
         if reason:
-            return reason, message or "Offline evidence storage is blocked."
-    return "offline_evidence_bundle_blocked", "Offline evidence storage is blocked."
+            blocked_reason: dict[str, Any] = {
+                "reason": reason,
+                "message": message or "Offline evidence storage is blocked.",
+            }
+            details = item.get("details")
+            if isinstance(details, Mapping) and details:
+                blocked_reason["details"] = dict(details)
+            return blocked_reason
+    return {"reason": "offline_evidence_bundle_blocked", "message": "Offline evidence storage is blocked."}
 
 
 def _blocked_report(
@@ -150,14 +159,18 @@ def _blocked_report(
     base_report: Mapping[str, Any],
     reason: str,
     message: str,
+    details: Mapping[str, Any] | None = None,
     authority_refs: Mapping[str, Any] | None = None,
     summary: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
+    blocked_reason: dict[str, Any] = {"reason": reason, "message": message}
+    if details:
+        blocked_reason["details"] = dict(details)
     report = {
         "schema_id": REPORT_SCHEMA_ID,
         "schema_version": 1,
         "status": "offline_companyfacts_oracle_packet_blocked",
-        "blocked_reasons": [{"reason": reason, "message": message}],
+        "blocked_reasons": [blocked_reason],
         "paths_redacted": True,
         "storage_marker": base_report.get("storage_marker", ""),
         "base_evidence_status": base_report.get("status", ""),
