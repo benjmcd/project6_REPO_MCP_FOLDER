@@ -93,6 +93,14 @@ The service validates:
   role, rejected policy decision, raw/caller identity fields, route mismatch,
   stale policy hash, and cross-owner context fail closed.
 
+Superseding route-enforcement clarification from
+`1326-auth-owner-binding-route-enforcement.md`: one binding per source receipt
+means protected access must compare the current actor/workspace refs and stable
+binding policy hash while separately checking current route/source-kind and
+role/route compatibility. The stored creation `route_family` and stored
+creation `role` are not required to equal every later protected read or
+downstream route.
+
 ## Rollback And Containment
 
 Rollback:
@@ -109,6 +117,9 @@ Containment:
   is unchanged;
 - future protected route wiring must require a matching binding before status
   reads or downstream value-reveal operations;
+- future protected route wiring must interpret matching binding as matching
+  actor/workspace refs plus stable binding policy hash, with current
+  route/source-kind and role/route compatibility checked separately;
 - unbound source receipts remain unmodified and must fail closed only when a
   future route-enforcement slice admits that behavior;
 - this slice stores only hashes, route family, role, policy id/hash, source kind

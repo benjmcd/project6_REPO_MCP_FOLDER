@@ -200,9 +200,13 @@ Future service functions:
 - `inspect_sec_xbrl_auth_binding(...)`: loads a binding by source receipt
   kind/id or kind/basis and returns only hash refs, route family, role,
   policy id/hash, state, and negative invariant booleans.
-- `require_sec_xbrl_owner_binding(...)`: compares the current auth context
-  hash refs to the stored binding before any protected status read or
-  downstream value-reveal operation returns.
+- `require_sec_xbrl_owner_binding(...)`: checks that the current route family
+  is admitted for the selected source kind, then compares the current auth
+  context hash refs and stable binding policy hash to the stored binding before
+  any protected status read or downstream value-reveal operation returns. The
+  later route-enforcement slice may not require the stored creation route or
+  stored creation role to equal every later protected access route, because
+  this design also requires one binding per source receipt.
 
 Write order:
 
@@ -217,8 +221,9 @@ Read order:
 
 1. Route dependency derives server-owned auth context.
 2. Auth-binding service loads the source receipt binding.
-3. It denies cross-owner, missing-binding, stale-policy, or route-family
-   mismatch before the source status service emits a response.
+3. It denies cross-owner, missing-binding, stale-policy, source-kind route
+   incompatibility, or current-role route incompatibility before the source
+   status service emits a response.
 
 ## Rollback And Containment
 
@@ -255,7 +260,8 @@ Minimum focused tests for the future Tier-2 implementation:
 - missing source receipt, wrong source receipt basis hash, unsupported receipt
   kind, unsupported route family, unsupported role, stale policy hash, and
   cross-owner context fail closed;
-- protected route status reads deny missing or mismatched owner binding;
+- protected route status reads deny missing, cross-owner, stale-policy, or
+  source-incompatible owner binding;
 - mutating route responses do not return source receipts unless binding write
   succeeds;
 - value-reveal authority and controlled-submit flows remain explicit and

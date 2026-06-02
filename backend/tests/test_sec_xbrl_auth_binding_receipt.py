@@ -309,3 +309,38 @@ def test_auth_binding_requires_matching_owner_context(db_session) -> None:
         )
     assert stale_policy.value.code == "sec_xbrl_auth_binding_context_mismatch"
     assert "policy_hash" in stale_policy.value.details["mismatched_fields"]
+
+
+def test_auth_binding_allows_same_source_owner_across_admitted_route_family(db_session) -> None:
+    workflow = _workflow(db_session, workflow_id="workflow-route-family")
+    auth_binding.record_sec_xbrl_auth_binding(
+        db_session,
+        client_request_id="auth-binding-route-family",
+        source_receipt_kind="operator_review_workflow",
+        source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+        source_receipt_basis_hash=workflow.workflow_basis_hash,
+        route_family="sec_xbrl_operator_review_workflow_status_read",
+        policy_decision=_policy(route_family="sec_xbrl_operator_review_workflow_status_read"),
+    )
+
+    owner_write = auth_binding.require_sec_xbrl_owner_binding(
+        db_session,
+        source_receipt_kind="operator_review_workflow",
+        source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+        route_family="sec_xbrl_operator_review_decision_submit_write",
+        policy_decision=_policy(route_family="sec_xbrl_operator_review_decision_submit_write"),
+    )
+    auditor_read = auth_binding.require_sec_xbrl_owner_binding(
+        db_session,
+        source_receipt_kind="operator_review_workflow",
+        source_receipt_basis_hash=workflow.workflow_basis_hash,
+        route_family="sec_xbrl_operator_review_workflow_status_read",
+        policy_decision=_policy(
+            role="auditor",
+            route_family="sec_xbrl_operator_review_workflow_status_read",
+        ),
+    )
+
+    assert owner_write["route_family"] == "sec_xbrl_operator_review_workflow_status_read"
+    assert auditor_read["role"] == "owner"
+    assert db_session.query(L3SecXbrlAuthBindingReceipt).count() == 1
