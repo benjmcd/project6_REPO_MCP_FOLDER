@@ -134,6 +134,8 @@ def authorize_sec_xbrl_route(
     policy_hash = _policy_hash(
         actor_ref_hash=actor_ref_hash,
         workspace_ref_hash=workspace_ref_hash,
+        route_family=route,
+        role=role,
     )
     return {
         "decision": "allow",
@@ -251,12 +253,14 @@ def _required_header(
     return value
 
 
-def _policy_hash(*, actor_ref_hash: str, workspace_ref_hash: str) -> str:
+def _policy_hash(*, actor_ref_hash: str, workspace_ref_hash: str, route_family: str, role: str) -> str:
     return stable_hash(
         {
             "policy_schema_id": POLICY_SCHEMA_ID,
             "selected_auth_mode": SELECTED_AUTH_MODE,
             "actor_ref_hash": actor_ref_hash,
             "workspace_ref_hash": workspace_ref_hash,
+            "route_family": route_family,
+            "role": role,
         }
     )

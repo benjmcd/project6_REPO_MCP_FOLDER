@@ -1553,7 +1553,11 @@ class L3SecXbrlAuthBindingReceipt(Base):
         UniqueConstraint(
             "source_receipt_kind",
             "source_receipt_id",
-            name="uq_l3_sec_xbrl_auth_binding_source_receipt",
+            "route_family",
+            "actor_ref_hash",
+            "workspace_ref_hash",
+            "role",
+            name="uq_l3_sec_xbrl_auth_binding_source_route_actor_role",
         ),
         CheckConstraint(
             f"binding_policy_id = '{L3_SEC_XBRL_AUTH_BINDING_POLICY_ID}'",

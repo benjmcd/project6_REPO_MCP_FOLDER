@@ -69,7 +69,8 @@ Implemented model/table:
 - `l3_sec_xbrl_auth_binding_receipt`;
 - unique `client_request_id`;
 - unique `binding_basis_hash`;
-- unique pair `source_receipt_kind`, `source_receipt_id`;
+- unique tuple `source_receipt_kind`, `source_receipt_id`, `route_family`,
+  `actor_ref_hash`, `workspace_ref_hash`, and `role`;
 - checks for binding policy, owner-bound state, redaction policy, source kind,
   route family, and role;
 - indexes on source basis, actor/workspace hashes, policy hash, and route
@@ -88,18 +89,17 @@ The service validates:
 - server-derived hash-only actor/workspace refs and policy hash;
 - owner/auditor role constraints;
 - idempotency by request id and binding basis;
-- one immutable binding per source receipt;
+- one immutable binding per source/route/actor/workspace/role tuple;
 - missing source receipt, unsupported source kind, unsupported route, unsupported
   role, rejected policy decision, raw/caller identity fields, route mismatch,
   stale policy hash, and cross-owner context fail closed.
 
-Superseding route-enforcement clarification from
-`1326-auth-owner-binding-route-enforcement.md`: one binding per source receipt
-means protected access must compare the current actor/workspace refs and stable
-binding policy hash while separately checking current route/source-kind and
-role/route compatibility. The stored creation `route_family` and stored
-creation `role` are not required to equal every later protected read or
-downstream route.
+Review-thread closeout clarification: source-only uniqueness was too coarse
+for separate status/read, write, owner, and auditor bindings. Protected access
+must compare current actor/workspace refs and role, then require either an
+exact route binding with matching policy hash or an explicitly admitted
+route-compatible prior write binding for downstream/status access. Auditor/read
+bindings must not authorize owner/write routes.
 
 ## Rollback And Containment
 
@@ -118,8 +118,8 @@ Containment:
 - future protected route wiring must require a matching binding before status
   reads or downstream value-reveal operations;
 - future protected route wiring must interpret matching binding as matching
-  actor/workspace refs plus stable binding policy hash, with current
-  route/source-kind and role/route compatibility checked separately;
+  actor/workspace refs and role, plus an exact route policy-hash match or an
+  explicitly route-compatible prior write binding;
 - unbound source receipts remain unmodified and must fail closed only when a
   future route-enforcement slice admits that behavior;
 - this slice stores only hashes, route family, role, policy id/hash, source kind

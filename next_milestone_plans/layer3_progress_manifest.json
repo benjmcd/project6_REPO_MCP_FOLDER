@@ -45075,7 +45075,7 @@
     "source_evidence": [
       "backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py derives hash-only actor/workspace refs from AUTH_OWNER=none or AUTH_OWNER=proxy trusted request headers",
       "backend/app/api/layer3.py requires existing source auth bindings before protected status/downstream routes and records auth bindings before returning mutating route receipts",
-      "backend/app/services/layer3_sec_xbrl_auth_binding.py reconciles one binding per source receipt with route/source compatibility and stable owner policy checks"
+      "backend/app/services/layer3_sec_xbrl_auth_binding.py reconciles source/route/actor/workspace/role-scoped bindings with explicit downstream/status route compatibility and owner policy checks"
     ],
     "containment_note": "source receipt services still commit internally before API-layer auth-binding writes; mutating route responses are blocked if binding write fails, and unbound receipts remain inaccessible until a separate repair/backfill authority is admitted",
     "verification_status": "branch-local verification passed",
@@ -45451,5 +45451,71 @@
     "diff_check": "PASS: git diff --check",
     "full_sec_xbrl_suite": "not required: no Python runtime, diagnostic, report, or test file touched",
     "py_compile": "not applicable: no Python runtime, diagnostic, or test file touched"
+  },
+  "sec_xbrl_review_thread_closeout_2063_2076_tracking": {
+    "status": "branch_local_tier2_review_thread_remediation_verified",
+    "milestone": "sec_xbrl_review_thread_closeout_2063_2076_v1",
+    "branch": "codex/secxbrl-review-thread-closeout-2063-2076",
+    "base_main": "710e7e25526d6d0ac0899f354a6ae451729f5d47",
+    "review_scope": [
+      "PR #2063 broad real-corpus authority renewal review residuals",
+      "PR #2069 nonlocal production-readiness gate review residuals",
+      "PR #2070 nonlocal authority-boundary review residuals",
+      "PR #2074 auth owner-binding design review residuals",
+      "PR #2075 auth owner-binding implementation review residuals",
+      "PR #2076 auth owner-binding route-enforcement review residuals"
+    ],
+    "tier_classification": "Tier-2 review-thread remediation because the pass touches models.py, auth-binding persistence uniqueness, Alembic migration, and auth policy hashing; it also includes Tier-1 diagnostic/test redaction hardening and docs/manifests alignment",
+    "tier2_surfaces_touched": [
+      "backend/app/models/models.py",
+      "backend/alembic/versions/0047_layer3_sec_xbrl_auth_binding_route_actor_scope.py",
+      "backend/app/services/layer3_sec_xbrl_auth_binding.py",
+      "backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py"
+    ],
+    "tier1_supporting_surfaces_touched": [
+      "diagnostics/assessment/sec-xbrl-real-corpus-product-runner.py",
+      "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate.py",
+      "backend/tests/test_sec_xbrl_auth_binding_receipt.py",
+      "backend/tests/test_sec_xbrl_real_corpus_product_runner.py",
+      "backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py"
+    ],
+    "doc_alignment_surfaces": [
+      "next_milestone_plans/Layer3_planning_docs/1320-nonlocal-authority-boundary.md",
+      "next_milestone_plans/Layer3_planning_docs/1324-auth-owner-binding-table-design.md",
+      "next_milestone_plans/Layer3_planning_docs/1325-auth-owner-binding-table-implementation.md",
+      "next_milestone_plans/Layer3_planning_docs/1326-auth-owner-binding-route-enforcement.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "remediation_summary": [
+      "nonlocal authority-packet gate admits only trusted_external_proxy and rejects repo_owned_in_app_auth as a packet mode",
+      "authority-packet redaction catches bare CIK-like references and both Windows path slash forms",
+      "real-corpus runner redaction catches scheme-less SEC URLs, Windows slash paths, and dotted issuer/core labels",
+      "auth-binding policy hashes include route family and role",
+      "auth-binding uniqueness narrows from source-only to source/route/actor/workspace/role",
+      "route-compatible prior bindings are limited to explicit downstream/status transitions and do not allow auditor/read bindings to authorize owner/write routes"
+    ],
+    "known_remaining_gap": "auth-binding source receipt creation and auth-binding creation are not yet atomic because existing receipt services commit internally; repair/backfill remains a separate Tier-2 design/implementation posture",
+    "next_posture": "sec_xbrl_nonlocal_auth_binding_atomicity_and_backfill_design_v1_tier2_pre_review",
+    "production_readiness_claimed": false,
+    "source_acquisition_performed_by_tracking": false,
+    "arelle_subprocess_invoked_by_tracking": false,
+    "live_sec_network_run_performed_by_tracking": false,
+    "value_reveal_default_enabled_by_tracking": false,
+    "delivery_or_export_performed": false,
+    "provider_or_connector_dispatch_performed": false,
+    "raw_values_committed_by_tracking": false,
+    "raw_identity_committed_by_tracking": false,
+    "raw_runtime_artifacts_added_by_tracking": false,
+    "verification_status": "branch-local verification passed",
+    "focused_review_thread_closeout_suite": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_auth_binding_receipt.py ./backend/tests/test_sec_xbrl_operator_review_workflow.py ./backend/tests/test_sec_xbrl_real_corpus_product_runner.py ./backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py -q -> 128 passed, 3 warnings",
+    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 348 passed, 3 warnings",
+    "target_selection_validation": "PASS: python ./tools/l3-target-selection-validate.py --expect frozen",
+    "progress_check": "PASS: python ./tools/l3-progress-check.py",
+    "py_compile": "PASS: python -m py_compile over touched model/service/diagnostic/test/migration files",
+    "json_manifest_and_report_validation": "PASS: 2 changed manifests and 58 diagnostics/assessment/sec-xbrl*.json reports parsed with utf-8-sig",
+    "committed_sec_xbrl_report_redaction_residual_scan": "PASS: 58 SEC XBRL reports, 0 raw identity/path/SEC URL/accession/email hits, 0 raw-value field hits, 0 nonzero residual-magnitude field hits",
+    "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only"
   }
 }
