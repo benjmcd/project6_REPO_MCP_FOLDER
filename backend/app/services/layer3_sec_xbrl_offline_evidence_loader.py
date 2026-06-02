@@ -17,6 +17,7 @@ VALUE_STORE_SUBDIR = "internal-value-stores"
 STATEMENT_CLASSIFICATION_DIR = "layer3-sec-edgar-html-inline-xbrl-fact-statement-classification"
 
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
+SIDECAR_RECEIPT_ID_RE = re.compile(r"^sec-edgar-arelle-resolved-fact-authority-[0-9a-f]{24}$")
 ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
 LOCAL_PATH_RE = re.compile(r"[A-Za-z]:[\\/]|\\\\|file://|/(?:Users|home|tmp|workspace|var|mnt|private)(?:/|$)")
@@ -60,7 +61,7 @@ def load_sec_xbrl_offline_evidence_bundle(
         missing_code="sec_xbrl_offline_evidence_loader_sidecar_missing",
     )
     _validate_sidecar(sidecar)
-    sidecar_receipt_id = _required_text(sidecar.get("sidecar_receipt_id"), "sidecar_receipt_id")
+    sidecar_receipt_id = _required_sidecar_receipt_id(sidecar.get("sidecar_receipt_id"), "sidecar_receipt_id")
     sidecar_receipt_hash = _required_hash(sidecar.get("sidecar_receipt_hash"), "sidecar_receipt_hash")
     value_store = _read_value_store(storage, sidecar_receipt_id=sidecar_receipt_id)
     value_records = _required_sequence(value_store.get("value_records"), "value_records")
@@ -75,7 +76,11 @@ def load_sec_xbrl_offline_evidence_bundle(
     )
     statement_roles = _statement_roles_from_classification(classification, sidecar=sidecar)
     companyfacts, companyfacts_state = _read_companyfacts(companyfacts_path)
-    dataset_version_id = _dataset_version_id(storage, sidecar_receipt_hash=sidecar_receipt_hash)
+    dataset_version_id = _dataset_version_id(
+        storage,
+        sidecar_receipt_hash=sidecar_receipt_hash,
+        fact_material_bridge_receipt_hash=_classification_bridge_hash(classification),
+    )
     if not dataset_version_id:
         raise SecXbrlOfflineEvidenceLoaderError(
             "sec_xbrl_offline_evidence_loader_dataset_version_missing",
@@ -256,7 +261,16 @@ def _validate_sidecar(sidecar: Mapping[str, Any]) -> None:
 
 
 def _read_value_store(storage: Path, *, sidecar_receipt_id: str) -> dict[str, Any]:
-    return _read_json_object(storage / SIDECAR_RECEIPT_DIR / VALUE_STORE_SUBDIR / f"{sidecar_receipt_id}.json")
+    parent = (storage / SIDECAR_RECEIPT_DIR / VALUE_STORE_SUBDIR).resolve()
+    path = (parent / f"{sidecar_receipt_id}.json").resolve()
+    try:
+        path.relative_to(parent)
+    except ValueError as exc:
+        raise SecXbrlOfflineEvidenceLoaderError(
+            "sec_xbrl_offline_evidence_loader_value_store_path_escape",
+            "SEC XBRL offline value-store path must remain inside the supplied storage directory.",
+        ) from exc
+    return _read_json_object(path)
 
 
 def _validate_value_store(
@@ -278,7 +292,8 @@ def _validate_value_store(
             "sec_xbrl_offline_evidence_loader_value_store_hash_mismatch",
             "SEC XBRL offline value store hash is stale or mismatched.",
         )
-    if int(metadata.get("value_record_count") or -1) != len(value_records):
+    declared_count = _required_int(metadata.get("value_record_count"), "internal_value_store.value_record_count")
+    if declared_count != len(value_records):
         raise SecXbrlOfflineEvidenceLoaderError(
             "sec_xbrl_offline_evidence_loader_value_store_count_mismatch",
             "SEC XBRL offline value store count does not match sidecar metadata.",
@@ -304,7 +319,17 @@ def _statement_roles_from_classification(
             "sec_xbrl_offline_evidence_loader_statement_classification_inventory_mismatch",
             "SEC XBRL statement classification does not bind to the selected resolved-fact inventory.",
         )
+    _classification_bridge_hash(classification)
     records = _required_sequence(classification.get("classification_inventory"), "classification_inventory")
+    classification_inventory_hash = _required_hash(
+        classification.get("classification_inventory_hash"),
+        "classification_inventory_hash",
+    )
+    if stable_hash(records) != classification_inventory_hash:
+        raise SecXbrlOfflineEvidenceLoaderError(
+            "sec_xbrl_offline_evidence_loader_statement_classification_inventory_hash_mismatch",
+            "SEC XBRL statement classification inventory is stale or hash-mismatched.",
+        )
     roles: list[dict[str, Any]] = []
     for record in records:
         fact_id = _required_text(record.get("fact_id_or_order_key"), "fact_id_or_order_key")
@@ -338,15 +363,47 @@ def _read_companyfacts(companyfacts_path: str | Path | None) -> tuple[dict[str, 
     return dict(facts), "supplied"
 
 
-def _dataset_version_id(storage: Path, *, sidecar_receipt_hash: str) -> str | None:
+def _classification_bridge_hash(classification: Mapping[str, Any]) -> str:
+    bridge_hash = _required_hash(
+        classification.get("fact_material_bridge_receipt_hash"),
+        "fact_material_bridge_receipt_hash",
+    )
+    authority = classification.get("authority_hashes") if isinstance(classification.get("authority_hashes"), Mapping) else {}
+    authority_bridge_hash = str(authority.get("fact_material_bridge_receipt_hash") or "")
+    if authority_bridge_hash and authority_bridge_hash != bridge_hash:
+        raise SecXbrlOfflineEvidenceLoaderError(
+            "sec_xbrl_offline_evidence_loader_statement_classification_bridge_hash_mismatch",
+            "SEC XBRL statement classification bridge authority hash does not match the receipt.",
+        )
+    return bridge_hash
+
+
+def _dataset_version_id(
+    storage: Path,
+    *,
+    sidecar_receipt_hash: str,
+    fact_material_bridge_receipt_hash: str,
+) -> str | None:
     bridge_dir = storage / "layer3-sec-edgar-html-inline-xbrl-fact-material-bridge" / "receipts"
+    matches: list[str] = []
     for path in sorted(bridge_dir.glob("*.json")):
         payload = _read_json_object(path)
+        bridge_hash = _required_hash(payload.get("fact_material_bridge_receipt_hash"), "fact_material_bridge_receipt_hash")
+        if bridge_hash != fact_material_bridge_receipt_hash:
+            continue
         response = payload.get("response") if isinstance(payload.get("response"), Mapping) else {}
-        if str(response.get("arelle_sidecar_receipt_hash") or "") == sidecar_receipt_hash:
-            value = str(response.get("dataset_version_id") or "").strip()
-            return value or None
-    return None
+        if str(response.get("arelle_sidecar_receipt_hash") or "") != sidecar_receipt_hash:
+            raise SecXbrlOfflineEvidenceLoaderError(
+                "sec_xbrl_offline_evidence_loader_bridge_sidecar_hash_mismatch",
+                "SEC XBRL material bridge receipt does not bind to the selected sidecar receipt.",
+            )
+        matches.append(_required_text(response.get("dataset_version_id"), "dataset_version_id"))
+    if len(matches) > 1:
+        raise SecXbrlOfflineEvidenceLoaderError(
+            "sec_xbrl_offline_evidence_loader_bridge_ambiguous",
+            "SEC XBRL offline evidence storage has multiple bridge receipts for the selected classification.",
+        )
+    return matches[0] if matches else None
 
 
 def _storage_marker(storage_dir: Path) -> str:
@@ -416,6 +473,28 @@ def _required_hash(value: Any, field: str) -> str:
             details={"field": field},
         )
     return text
+
+
+def _required_sidecar_receipt_id(value: Any, field: str) -> str:
+    text = _required_text(value, field)
+    if not SIDECAR_RECEIPT_ID_RE.fullmatch(text):
+        raise SecXbrlOfflineEvidenceLoaderError(
+            "sec_xbrl_offline_evidence_loader_receipt_id_invalid",
+            "SEC XBRL offline sidecar receipt id is not a governed receipt id.",
+            details={"field": field},
+        )
+    return text
+
+
+def _required_int(value: Any, field: str) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError) as exc:
+        raise SecXbrlOfflineEvidenceLoaderError(
+            "sec_xbrl_offline_evidence_loader_count_invalid",
+            "SEC XBRL offline evidence count fields must be integers.",
+            details={"field": field},
+        ) from exc
 
 
 def _required_text(value: Any, field: str) -> str:
