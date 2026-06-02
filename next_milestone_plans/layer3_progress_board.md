@@ -1,5 +1,41 @@
 # Layer3 Progress Board
 
+## SEC XBRL Offline Evidence Loader Diagnostic
+
+Milestone:
+`sec_xbrl_offline_evidence_loader_diagnostic_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1332-offline-evidence-loader.md`.
+
+Status: branch-local Tier-2 risk-assessed loader/diagnostic proof on
+`codex/secxbrl-offline-loader-diagnostic`.
+
+Scope: add a validate-only offline evidence loader that reads already-acquired
+operator storage, requires governed sidecar, internal value-store,
+statement-classification, and bridge dataset-version receipts, then builds the
+existing offline orchestrator evidence bundle or emits a redacted readiness
+report. The committed report proves the FIZZ offline storage is bundle-ready
+without a CompanyFacts oracle, while operator-review creation and production
+admission remain blocked by `companyfacts_oracle_not_supplied`.
+
+Containment: the diagnostic reads local storage and writes only a redacted
+report. It introduces no schema, `models.py`, Alembic migration, backend
+API/UI, source acquisition, Arelle subprocess invocation, live SEC network
+access, value reveal, runtime-default change, raw runtime artifact, operator
+source workflow, or production-readiness behavior. The focused happy-path test
+uses existing materializers only in isolated in-memory DB state.
+
+Verification: focused loader suite passes with `4 passed`;
+loader-plus-orchestrator suite passes with `8 passed`; full SEC XBRL suite
+passes with `383 passed, 3 warnings`; touched-file `py_compile`,
+target-selection frozen check, progress check, manifest/report JSON parse,
+committed SEC XBRL report redaction/residual scan over `60` reports, and
+`git diff --check` pass.
+
+Next exact posture:
+`sec_xbrl_offline_companyfacts_oracle_packet_v1`.
+
 ## SEC XBRL Offline Evidence Orchestrator
 
 Milestone:
