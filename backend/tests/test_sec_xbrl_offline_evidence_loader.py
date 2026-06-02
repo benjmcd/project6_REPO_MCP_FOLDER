@@ -168,6 +168,36 @@ def test_loader_rejects_tampered_classification_bridge_hash_before_dataset_bindi
     assert exc.value.code == "sec_xbrl_offline_evidence_loader_statement_classification_receipt_hash_mismatch"
 
 
+def test_loader_rejects_mutable_authority_inventory_hash_before_role_admission(tmp_path) -> None:
+    storage, companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=True)
+    sidecar_path = (
+        storage
+        / loader.SIDECAR_RECEIPT_DIR
+        / "receipts"
+        / f"{refs['sidecar_receipt_id']}.json"
+    )
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["resolved_fact_projection"][0]["tamper_marker"] = "redacted-inventory-drift"
+    tampered_inventory_hash = stable_hash(sidecar["resolved_fact_projection"])
+    sidecar["resolved_fact_inventory_hash"] = tampered_inventory_hash
+    _write_json(sidecar_path, sidecar)
+
+    classification_path = next((storage / loader.STATEMENT_CLASSIFICATION_DIR / "receipts").glob("*.json"))
+    classification = json.loads(classification_path.read_text(encoding="utf-8"))
+    classification["authority_hashes"]["fact_inventory_hash"] = tampered_inventory_hash
+    _write_json(classification_path, classification)
+
+    with pytest.raises(loader.SecXbrlOfflineEvidenceLoaderError) as exc:
+        loader.load_sec_xbrl_offline_evidence_bundle(
+            storage,
+            companyfacts_path=companyfacts_path,
+            expected_sidecar_receipt_hash=refs["sidecar_receipt_hash"],
+            expected_statement_classification_receipt_hash=refs["classification_hash"],
+        )
+
+    assert exc.value.code == "sec_xbrl_offline_evidence_loader_statement_classification_fact_inventory_hash_mismatch"
+
+
 def test_loader_rejects_stale_statement_classification_inventory_hash(tmp_path) -> None:
     storage, companyfacts_path, refs = _write_storage(tmp_path, include_companyfacts=True)
     classification_path = next((storage / loader.STATEMENT_CLASSIFICATION_DIR / "receipts").glob("*.json"))
@@ -344,14 +374,16 @@ def test_companyfacts_oracle_packet_preserves_projection_blocker_before_oracle_c
     _write_json(sidecar_path, sidecar)
 
     classification = json.loads(classification_path.read_text(encoding="utf-8"))
+    classification["fact_inventory_hash"] = inventory_hash
     classification["authority_hashes"]["fact_inventory_hash"] = inventory_hash
+    classification["statement_classification_receipt_hash"] = _classification_receipt_hash(classification)
     _write_json(classification_path, classification)
 
     report = oracle_packet.inspect_sec_xbrl_offline_companyfacts_oracle_packet(
         storage,
         companyfacts_path=companyfacts_path,
         expected_sidecar_receipt_hash=refs["sidecar_receipt_hash"],
-        expected_statement_classification_receipt_hash=refs["classification_hash"],
+        expected_statement_classification_receipt_hash=classification["statement_classification_receipt_hash"],
     )
 
     assert report["status"] == "offline_companyfacts_oracle_packet_blocked"
@@ -384,23 +416,6 @@ def _write_storage(tmp_path: Path, *, include_companyfacts: bool) -> tuple[Path,
     statement_group_inventory_hash = stable_hash([])
     unclassified_fact_inventory_hash = stable_hash([])
     classification_diagnostics_hash = stable_hash({})
-    classification_hash = stable_hash(
-        {
-            "hash_version": "sec_edgar_html_inline_xbrl_fact_statement_classification_hash_v1",
-            "classification_mode": "sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1",
-            "fact_authority_receipt_hash": sidecar_hash,
-            "fact_material_bridge_receipt_hash": bridge_hash,
-            "fact_inventory_hash": resolved_projection_hash,
-            "classification_inventory_hash": classification_inventory_hash,
-            "semantic_profile_inventory_hash": semantic_profile_inventory_hash,
-            "classification_order_hash": classification_order_hash,
-            "statement_group_inventory_hash": statement_group_inventory_hash,
-            "unclassified_fact_inventory_hash": unclassified_fact_inventory_hash,
-            "classification_diagnostics_hash": classification_diagnostics_hash,
-        }
-    )
-    classification_id = f"sec-edgar-html-inline-xbrl-fact-statement-classification-{classification_hash[:24]}"
-
     sidecar = {
         "schema_id": "layer3.sec_edgar_arelle_resolved_fact_authority_sidecar.v1",
         "sidecar_receipt_id": sidecar_id,
@@ -429,8 +444,6 @@ def _write_storage(tmp_path: Path, *, include_companyfacts: bool) -> tuple[Path,
     classification = {
         "schema_id": "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification.v1",
         "classification_mode": "sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1",
-        "statement_classification_receipt_id": classification_id,
-        "statement_classification_receipt_hash": classification_hash,
         "fact_authority_receipt_hash": sidecar_hash,
         "fact_inventory_hash": resolved_projection_hash,
         "fact_material_bridge_receipt_hash": bridge_hash,
@@ -447,6 +460,10 @@ def _write_storage(tmp_path: Path, *, include_companyfacts: bool) -> tuple[Path,
         },
         "classification_inventory": statement_roles,
     }
+    classification_hash = _classification_receipt_hash(classification)
+    classification_id = f"sec-edgar-html-inline-xbrl-fact-statement-classification-{classification_hash[:24]}"
+    classification["statement_classification_receipt_id"] = classification_id
+    classification["statement_classification_receipt_hash"] = classification_hash
     bridge = {
         "fact_material_bridge_receipt_hash": bridge_hash,
         "fact_material_bridge_receipt_id": bridge_id,
@@ -569,6 +586,24 @@ def _unit(unit_name: str) -> dict[str, Any]:
     if unit_name == "unitless":
         return {"measures": []}
     return {"currency": f"iso4217:{unit_name}", "measures": [f"iso4217:{unit_name}"]}
+
+
+def _classification_receipt_hash(classification: dict[str, Any]) -> str:
+    return stable_hash(
+        {
+            "hash_version": "sec_edgar_html_inline_xbrl_fact_statement_classification_hash_v1",
+            "classification_mode": classification["classification_mode"],
+            "fact_authority_receipt_hash": classification["fact_authority_receipt_hash"],
+            "fact_material_bridge_receipt_hash": classification["fact_material_bridge_receipt_hash"],
+            "fact_inventory_hash": classification["fact_inventory_hash"],
+            "classification_inventory_hash": classification["classification_inventory_hash"],
+            "semantic_profile_inventory_hash": classification["semantic_profile_inventory_hash"],
+            "classification_order_hash": classification["classification_order_hash"],
+            "statement_group_inventory_hash": classification["statement_group_inventory_hash"],
+            "unclassified_fact_inventory_hash": classification["unclassified_fact_inventory_hash"],
+            "classification_diagnostics_hash": classification["classification_diagnostics_hash"],
+        }
+    )
 
 
 def _hash(char: str) -> str:
