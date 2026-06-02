@@ -171,6 +171,30 @@ def test_nonlocal_admission_disposition_accepts_packet_dir(tmp_path: Path) -> No
     assert str(output_path) not in rendered
 
 
+def test_nonlocal_admission_disposition_packet_dir_missing_files_reports_missing(
+    tmp_path: Path,
+) -> None:
+    module = _gate_module()
+    packet_dir = tmp_path / "packets"
+    packet_dir.mkdir()
+    output_path = tmp_path / "report.json"
+
+    assert module.main(["--packet-dir", str(packet_dir), "--output", str(output_path)]) == 0
+    report = json.loads(output_path.read_text(encoding="utf-8"))
+
+    rendered = json.dumps(report, sort_keys=True)
+    assert report["decision"] == "nonlocal_production_admission_disposition_blocked"
+    assert report["blocking_reasons"] == [
+        "sec_xbrl_nonlocal_admission_packet_missing",
+        "sec_xbrl_nonlocal_backfill_disposition_packet_missing",
+    ]
+    assert report["final_admission_packet_summary"]["packet_present"] is False
+    assert report["historical_backfill_disposition_summary"]["packet_present"] is False
+    assert report["production_readiness_claimed"] is False
+    assert str(packet_dir) not in rendered
+    assert str(output_path) not in rendered
+
+
 def test_nonlocal_admission_disposition_rejects_ambiguous_packet_dir_args(tmp_path: Path) -> None:
     module = _gate_module()
     admission_path = tmp_path / "admission.json"

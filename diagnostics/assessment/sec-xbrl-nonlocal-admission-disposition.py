@@ -499,6 +499,18 @@ def _packet_summary(
             "blocked_reason": f"sec_xbrl_nonlocal_{packet_kind}_packet_missing",
         }
     path = Path(packet_path)
+    if not path.is_file():
+        return {
+            "packet_kind": packet_kind,
+            "packet_present": False,
+            "packet_hash": None,
+            "required_fields_present": [],
+            "required_fields_missing": list(required_fields),
+            "invalid_required_fields": [],
+            "admissible": False,
+            "redaction_scan": {"status": "not_run", "hit_classes": []},
+            "blocked_reason": f"sec_xbrl_nonlocal_{packet_kind}_packet_missing",
+        }
     try:
         text = path.read_text(encoding="utf-8-sig")
         packet = json.loads(text)
