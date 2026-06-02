@@ -28,7 +28,7 @@
     "required_fields_present": []
   },
   "blocking_reasons": [
-    "nonlocal_production_readiness_authority_packet_missing"
+    "nonlocal_production_readiness_final_admission_missing"
   ],
   "criteria": [
     {
@@ -58,35 +58,99 @@
       "state": "passed"
     },
     {
-      "blocked_reason": "nonlocal_production_readiness_authority_packet_missing",
-      "criterion": "authority_packet_present_and_admissible",
+      "blocked_reason": null,
+      "criterion": "authority_packet_or_in_app_auth_fork_evidence_present",
       "evidence": {
-        "admissible": false,
-        "authority_packet_hash": null,
+        "authority_packet_admissible": false,
         "authority_packet_present": false,
-        "blocked_reason": "nonlocal_production_readiness_authority_packet_missing",
-        "redaction_scan": {
-          "hit_classes": [],
-          "status": "not_run"
+        "authority_packet_summary": {
+          "admissible": false,
+          "authority_packet_hash": null,
+          "authority_packet_present": false,
+          "blocked_reason": "nonlocal_production_readiness_authority_packet_missing",
+          "redaction_scan": {
+            "hit_classes": [],
+            "status": "not_run"
+          },
+          "required_fields_missing": [
+            "deployment_mode",
+            "deployment_owner_ref",
+            "approval_record_ref",
+            "approval_record_hash",
+            "proxy_boundary_mode",
+            "proxy_identity_header",
+            "allowed_origins_policy_hash",
+            "storage_exposure_policy",
+            "arelle_fact_authority_nonlocal_authorized",
+            "rollback_owner_ref",
+            "incident_owner_ref",
+            "redaction_policy_id",
+            "verification_run_ref",
+            "deployment_authority_provenance_ref",
+            "deployment_authority_provenance_hash"
+          ],
+          "required_fields_present": []
         },
-        "required_fields_missing": [
-          "deployment_mode",
-          "deployment_owner_ref",
-          "approval_record_ref",
-          "approval_record_hash",
-          "proxy_boundary_mode",
-          "proxy_identity_header",
-          "allowed_origins_policy_hash",
-          "storage_exposure_policy",
-          "arelle_fact_authority_nonlocal_authorized",
-          "rollback_owner_ref",
-          "incident_owner_ref",
-          "redaction_policy_id",
-          "verification_run_ref",
-          "deployment_authority_provenance_ref",
-          "deployment_authority_provenance_hash"
-        ],
-        "required_fields_present": []
+        "in_app_auth_evidence_admissible": true,
+        "selected_current_fork": "repo_owned_in_app_auth"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "in_app_auth_fork_evidence_current",
+      "evidence": {
+        "admissible": true,
+        "arelle_subprocess_invoked_by_evidence": false,
+        "blocked_reasons": [],
+        "evidence_checks": {
+          "api_route_enforcement_current": true,
+          "binding_service_current": true,
+          "policy_report_clean": true,
+          "policy_service_current": true,
+          "route_and_binding_test_evidence_current": true,
+          "route_enforcement_doc_current": true,
+          "strategy_report_clean": true
+        },
+        "export_or_delivery_enabled_by_evidence": false,
+        "historical_unbound_receipt_backfill_admitted": false,
+        "production_readiness_claimed": false,
+        "route_family_count": 6,
+        "selected_auth_mode": "sec_xbrl_repo_owned_in_app_operator_auth_boundary_v1",
+        "source_acquisition_performed_by_evidence": false,
+        "source_files": {
+          "api": "backend/app/api/layer3.py",
+          "auth_binding_service": "backend/app/services/layer3_sec_xbrl_auth_binding.py",
+          "auth_binding_tests": "backend/tests/test_sec_xbrl_auth_binding_receipt.py",
+          "operator_workflow_tests": "backend/tests/test_sec_xbrl_operator_review_workflow.py",
+          "policy_service": "backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py"
+        },
+        "source_reports": {
+          "auth_owner_binding_strategy": {
+            "blocking_reasons_count": 0,
+            "decision": "sec_xbrl_auth_owner_binding_strategy_selected",
+            "path": "diagnostics/assessment/sec-xbrl-auth-owner-binding-strategy-report.json",
+            "report_hash": "7c31a4093f0afc0ae3beaa476134d4e84affbacf7afac586ed4c1f67e964639a"
+          },
+          "in_app_auth_policy_validation": {
+            "blocking_reasons_count": 0,
+            "decision": "sec_xbrl_in_app_auth_policy_validation_passed",
+            "path": "diagnostics/assessment/sec-xbrl-in-app-auth-policy-validation-report.json",
+            "report_hash": "ee59b66ba594d2628242a9259b88f8d5bafa3c1ee077ab4f5c1ddd952fe8eb8a"
+          }
+        },
+        "value_reveal_default_enabled_by_evidence": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": "nonlocal_production_readiness_final_admission_missing",
+      "criterion": "final_nonlocal_production_admission_present",
+      "evidence": {
+        "admission_boundary": "operator_nonlocal_production_admission_required_after_in_app_auth",
+        "authority_packet_admissible": false,
+        "in_app_auth_evidence_admissible": true,
+        "production_readiness_claimed": false
       },
       "state": "blocked"
     },
@@ -119,6 +183,48 @@
   ],
   "decision": "nonlocal_production_readiness_blocked",
   "headline": "Nonlocal production-readiness authority is not admitted; current repo evidence remains validate-only and production readiness is not claimed.",
+  "in_app_auth_evidence_summary": {
+    "admissible": true,
+    "arelle_subprocess_invoked_by_evidence": false,
+    "blocked_reasons": [],
+    "evidence_checks": {
+      "api_route_enforcement_current": true,
+      "binding_service_current": true,
+      "policy_report_clean": true,
+      "policy_service_current": true,
+      "route_and_binding_test_evidence_current": true,
+      "route_enforcement_doc_current": true,
+      "strategy_report_clean": true
+    },
+    "export_or_delivery_enabled_by_evidence": false,
+    "historical_unbound_receipt_backfill_admitted": false,
+    "production_readiness_claimed": false,
+    "route_family_count": 6,
+    "selected_auth_mode": "sec_xbrl_repo_owned_in_app_operator_auth_boundary_v1",
+    "source_acquisition_performed_by_evidence": false,
+    "source_files": {
+      "api": "backend/app/api/layer3.py",
+      "auth_binding_service": "backend/app/services/layer3_sec_xbrl_auth_binding.py",
+      "auth_binding_tests": "backend/tests/test_sec_xbrl_auth_binding_receipt.py",
+      "operator_workflow_tests": "backend/tests/test_sec_xbrl_operator_review_workflow.py",
+      "policy_service": "backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py"
+    },
+    "source_reports": {
+      "auth_owner_binding_strategy": {
+        "blocking_reasons_count": 0,
+        "decision": "sec_xbrl_auth_owner_binding_strategy_selected",
+        "path": "diagnostics/assessment/sec-xbrl-auth-owner-binding-strategy-report.json",
+        "report_hash": "7c31a4093f0afc0ae3beaa476134d4e84affbacf7afac586ed4c1f67e964639a"
+      },
+      "in_app_auth_policy_validation": {
+        "blocking_reasons_count": 0,
+        "decision": "sec_xbrl_in_app_auth_policy_validation_passed",
+        "path": "diagnostics/assessment/sec-xbrl-in-app-auth-policy-validation-report.json",
+        "report_hash": "ee59b66ba594d2628242a9259b88f8d5bafa3c1ee077ab4f5c1ddd952fe8eb8a"
+      }
+    },
+    "value_reveal_default_enabled_by_evidence": false
+  },
   "inherited_default_on_runtime_evidence": {
     "blocking_reasons_count": 0,
     "decision": "default_on_runtime_enabled",
@@ -126,7 +232,7 @@
     "runtime_report_hash": "cfc14e78df265fac4ec3fca0728cd0acae35a84a736968ca26a23303f77e26b1",
     "source_report": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
   },
-  "next_slice": "sec_xbrl_nonlocal_deployment_authority_packet_or_in_app_auth_boundary_v1",
+  "next_slice": "sec_xbrl_nonlocal_production_admission_or_historical_backfill_disposition_v1",
   "non_goals_preserved": {
     "arelle_subprocess_invoked_by_gate": false,
     "backend_api_contract_changed_by_gate": false,
@@ -155,7 +261,8 @@
     "auth_owner_required": "proxy",
     "deployment_mode_required": "nonlocal",
     "direct_storage_exposure_admitted": false,
-    "in_app_auth_implemented_by_gate": false,
+    "in_app_auth_implementation_evidence_present": true,
+    "in_app_auth_implemented_by_gate": true,
     "proxy_identity_header_name_required": true,
     "storage_exposure_allowed": [
       "auto",
@@ -166,10 +273,14 @@
   "production_readiness_claimed": false,
   "schema_id": "diagnostics.sec_xbrl_nonlocal_production_readiness_gate.v1",
   "source_documents": {
+    "auth_route_enforcement": "next_milestone_plans/Layer3_planning_docs/1326-auth-owner-binding-route-enforcement.md",
+    "in_app_auth_design": "next_milestone_plans/Layer3_planning_docs/1321-in-app-auth.md",
     "nonlocal_readiness_design": "next_milestone_plans/Layer3_planning_docs/1319-nonlocal-production-readiness.md"
   },
   "source_reports": {
-    "default_on_runtime": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
+    "auth_owner_binding_strategy": "diagnostics/assessment/sec-xbrl-auth-owner-binding-strategy-report.json",
+    "default_on_runtime": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json",
+    "in_app_auth_policy_validation": "diagnostics/assessment/sec-xbrl-in-app-auth-policy-validation-report.json"
   },
   "target": "sec_xbrl_default_on_nonlocal_production_readiness_gate_v1"
 }
