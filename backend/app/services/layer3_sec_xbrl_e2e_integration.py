@@ -58,6 +58,13 @@ PROJECTION_PRIVATE_KEYS = {
     "sidecar_receipt_id",
     "value",
 }
+RESIDUAL_MAGNITUDE_KEYS = {"relative_magnitude", "residual_abs", "residual", "magnitude"}
+IDENTITY_ROLLUP_COUNT_KEYS = (
+    "identity_residual_count",
+    "identity_residual_evaluated_count",
+    "identity_residual_within_tolerance_count",
+    "identity_residual_failed_count",
+)
 
 
 class SecXbrlE2EIntegrationError(ValueError):
@@ -163,11 +170,36 @@ def build_reviewable_statement_packet_from_projection(
         projection_items=projection_items,
         statement_role_view_records=list(statement_role_view_records),
     )
-    return assemble_reviewable_statement_packet(
+    packet = assemble_reviewable_statement_packet(
         projection_items=projection_items,
         organization_result=organization_result,
         identity_residuals=list(identity_residuals or []),
     )
+    return _redacted_statement_packet(packet)
+
+
+def _redacted_statement_packet(packet: Mapping[str, Any]) -> dict[str, Any]:
+    redacted = json_clone(packet)
+    redacted["identity_rollup"] = _redacted_identity_rollup(redacted.get("identity_rollup"))
+    _reject_output_raw_or_local_authority(redacted)
+    return redacted
+
+
+def _redacted_identity_rollup(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise SecXbrlE2EIntegrationError(
+            "sec_xbrl_e2e_integration_identity_rollup_invalid",
+            "SEC XBRL end-to-end integration requires an identity rollup object.",
+        )
+    public = {
+        key: _non_negative_int(value.get(key), key)
+        for key in IDENTITY_ROLLUP_COUNT_KEYS
+    }
+    public["identity_residuals_within_tolerance"] = _optional_bool_or_none(
+        value.get("identity_residuals_within_tolerance"),
+        "identity_residuals_within_tolerance",
+    )
+    return public
 
 
 def _projection_periods(canonical_projection: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -315,6 +347,12 @@ def _reject_output_raw_or_local_authority(value: Any) -> None:
         for key, item in value.items():
             key_text = str(key)
             key_match = key_text.strip().lower()
+            if key_match in RESIDUAL_MAGNITUDE_KEYS:
+                raise SecXbrlE2EIntegrationError(
+                    "sec_xbrl_e2e_integration_raw_output_not_admitted",
+                    "SEC XBRL end-to-end integration output cannot carry residual magnitude fields.",
+                    details={"field": key_text},
+                )
             if key_match in PROJECTION_PRIVATE_KEYS or key_match in RAW_REFERENCE_KEYS:
                 if item is not None:
                     raise SecXbrlE2EIntegrationError(
@@ -412,6 +450,34 @@ def _positive_int(value: Any, field: str) -> int:
             details={"field": field},
         )
     return number
+
+
+def _non_negative_int(value: Any, field: str) -> int:
+    try:
+        number = int(value)
+    except (TypeError, ValueError) as exc:
+        raise SecXbrlE2EIntegrationError(
+            "sec_xbrl_e2e_integration_integer_invalid",
+            f"SEC XBRL end-to-end integration requires an integer {field}.",
+            details={"field": field},
+        ) from exc
+    if number < 0:
+        raise SecXbrlE2EIntegrationError(
+            "sec_xbrl_e2e_integration_integer_invalid",
+            f"SEC XBRL end-to-end integration requires a non-negative {field}.",
+            details={"field": field},
+        )
+    return number
+
+
+def _optional_bool_or_none(value: Any, field: str) -> bool | None:
+    if value is None or isinstance(value, bool):
+        return value
+    raise SecXbrlE2EIntegrationError(
+        "sec_xbrl_e2e_integration_boolean_invalid",
+        f"SEC XBRL end-to-end integration requires a boolean {field}.",
+        details={"field": field},
+    )
 
 
 def _public_text_list(value: Any) -> list[str]:
