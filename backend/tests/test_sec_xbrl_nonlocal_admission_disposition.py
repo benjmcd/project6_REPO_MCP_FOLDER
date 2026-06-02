@@ -73,6 +73,47 @@ def test_nonlocal_admission_disposition_blocks_without_packets() -> None:
     assert report["next_slice"] == "sec_xbrl_nonlocal_final_admission_packet_and_backfill_disposition_v1"
 
 
+def test_nonlocal_admission_disposition_reports_operator_packet_contract() -> None:
+    module = _gate_module()
+    report = module.build_report()
+
+    contract = report["operator_packet_contract"]
+    admission = contract["admission_packet"]
+    disposition = contract["backfill_disposition_packet"]
+    rendered = json.dumps(contract, sort_keys=True)
+
+    assert contract["contract_id"] == "sec_xbrl_nonlocal_final_admission_packet_contract_v1"
+    assert contract["redaction_policy_id"] == module.REDACTION_POLICY_ID
+    assert contract["production_readiness_claimed_by_success"] is False
+    assert contract["packet_files_are_operator_supplied"] is True
+    assert contract["packet_files_are_committed_to_repo"] is False
+    assert contract["unknown_fields"] == {
+        "admitted": False,
+        "reported_as": module.UNKNOWN_PACKET_FIELD,
+    }
+    assert "sec_xbrl_nonlocal_admission_disposition_redaction_v1" in rendered
+    assert "C:/Users" not in rendered
+    assert "operator@example.com" not in rendered
+    assert "deployment_notes" not in rendered
+    assert admission["cli_argument"] == "--admission-packet"
+    assert admission["required_fields"] == list(module.ADMISSION_REQUIRED_FIELDS)
+    assert admission["allowed_fields"] == list(module.ADMISSION_REQUIRED_FIELDS)
+    assert admission["allowed_modes"] == sorted(module.ALLOWED_ADMISSION_MODES)
+    assert admission["hash_fields"] == [
+        field for field in module.ADMISSION_REQUIRED_FIELDS if field in module.HASH_FIELDS
+    ]
+    assert admission["redacted_ref_fields"] == [
+        field for field in module.ADMISSION_REQUIRED_FIELDS if field.endswith("_ref")
+    ]
+    assert disposition["cli_argument"] == "--backfill-disposition"
+    assert disposition["required_fields"] == list(module.DISPOSITION_REQUIRED_FIELDS)
+    assert disposition["allowed_modes"] == sorted(module.ALLOWED_DISPOSITION_MODES)
+    assert disposition["mode_requirements"]["no_historical_unbound_receipts"] == (
+        "unbound_receipt_count must equal 0 and backfill_required must be false"
+    )
+    assert "raw_value" in contract["forbidden_payload_classes"]
+
+
 def test_nonlocal_admission_disposition_accepts_redacted_packets(tmp_path: Path) -> None:
     module = _gate_module()
     admission_path = tmp_path / "admission.json"

@@ -111,6 +111,20 @@ RAW_KEYS = {
     "value",
     "value_store_payload",
 }
+FORBIDDEN_PAYLOAD_CLASSES = (
+    "raw_operator_identity",
+    "issuer_identity",
+    "accession",
+    "cik",
+    "sec_url",
+    "local_path",
+    "period_date",
+    "raw_value",
+    "raw_payload",
+    "residual_magnitude",
+    "free_text_deployment_note",
+    "local_evidence_filename",
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -224,6 +238,7 @@ def build_report(
         "route_and_backfill_evidence_summary": route_evidence,
         "final_admission_packet_summary": admission,
         "historical_backfill_disposition_summary": disposition,
+        "operator_packet_contract": _operator_packet_contract(),
         "production_readiness_claimed": False,
         "next_slice": (
             "sec_xbrl_nonlocal_production_readiness_operator_review_v1"
@@ -260,6 +275,90 @@ def build_report(
             "route_enforcement": ROUTE_ENFORCEMENT_DOC,
             "readiness_reconciliation": RECONCILIATION_DOC,
         },
+    }
+
+
+def _operator_packet_contract() -> dict[str, Any]:
+    return {
+        "contract_id": "sec_xbrl_nonlocal_final_admission_packet_contract_v1",
+        "redaction_policy_id": REDACTION_POLICY_ID,
+        "validation_command": (
+            "python diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition.py "
+            "--admission-packet <admission-packet.json> "
+            "--backfill-disposition <backfill-disposition.json> "
+            "--output <report.json>"
+        ),
+        "success_decision": "nonlocal_production_admission_disposition_ready_for_operator_review",
+        "blocked_decision": "nonlocal_production_admission_disposition_blocked",
+        "production_readiness_claimed_by_success": False,
+        "packet_files_are_operator_supplied": True,
+        "packet_files_are_committed_to_repo": False,
+        "unknown_fields": {
+            "admitted": False,
+            "reported_as": UNKNOWN_PACKET_FIELD,
+        },
+        "hash_rule": "64 lowercase hexadecimal characters",
+        "redacted_ref_rule": (
+            "nonempty lowercase kebab-case reference ending in -ref-<token>, "
+            "with no operator identity, issuer identity, accession, CIK, SEC URL, "
+            "local path, period date, raw decimal, raw value, or payload"
+        ),
+        "forbidden_payload_classes": list(FORBIDDEN_PAYLOAD_CLASSES),
+        "admission_packet": _packet_contract(
+            cli_argument="--admission-packet",
+            packet_kind="admission",
+            required_fields=ADMISSION_REQUIRED_FIELDS,
+            allowed_modes=ALLOWED_ADMISSION_MODES,
+            mode_field="admission_mode",
+            mode_requirements={
+                "nonlocal_in_app_auth_final_admission": (
+                    "final redacted operator authority admits current nonlocal in-app auth evidence "
+                    "for operator review only"
+                ),
+            },
+        ),
+        "backfill_disposition_packet": _packet_contract(
+            cli_argument="--backfill-disposition",
+            packet_kind="backfill_disposition",
+            required_fields=DISPOSITION_REQUIRED_FIELDS,
+            allowed_modes=ALLOWED_DISPOSITION_MODES,
+            mode_field="disposition_mode",
+            mode_requirements={
+                "no_historical_unbound_receipts": (
+                    "unbound_receipt_count must equal 0 and backfill_required must be false"
+                ),
+                "historical_unbound_receipts_fail_closed_pending_backfill": (
+                    "unbound_receipt_count must be greater than 0 and backfill_required must be true"
+                ),
+                "historical_unbound_receipts_backfill_authorized": (
+                    "unbound_receipt_count must be greater than 0 and backfill_required must be true"
+                ),
+            },
+        ),
+    }
+
+
+def _packet_contract(
+    *,
+    cli_argument: str,
+    packet_kind: str,
+    required_fields: tuple[str, ...],
+    allowed_modes: set[str],
+    mode_field: str,
+    mode_requirements: dict[str, str],
+) -> dict[str, Any]:
+    return {
+        "cli_argument": cli_argument,
+        "packet_kind": packet_kind,
+        "required_fields": list(required_fields),
+        "allowed_fields": list(required_fields),
+        "mode_field": mode_field,
+        "allowed_modes": sorted(allowed_modes),
+        "mode_requirements": mode_requirements,
+        "hash_fields": [field for field in required_fields if field in HASH_FIELDS],
+        "redacted_ref_fields": [field for field in required_fields if field.endswith("_ref")],
+        "redaction_policy_field": "redaction_policy_id",
+        "redaction_policy_id": REDACTION_POLICY_ID,
     }
 
 
