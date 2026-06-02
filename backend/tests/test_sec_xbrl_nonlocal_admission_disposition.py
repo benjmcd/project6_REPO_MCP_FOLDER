@@ -112,6 +112,16 @@ def test_nonlocal_admission_disposition_reports_operator_packet_contract() -> No
         "unbound_receipt_count must equal 0 and backfill_required must be false"
     )
     assert "raw_value" in contract["forbidden_payload_classes"]
+    assert contract["packet_directory"] == {
+        "cli_argument": "--packet-dir",
+        "required_filenames": {
+            "admission_packet": module.PACKET_DIR_ADMISSION_FILENAME,
+            "backfill_disposition_packet": module.PACKET_DIR_BACKFILL_DISPOSITION_FILENAME,
+        },
+        "cannot_combine_with": ["--admission-packet", "--backfill-disposition"],
+        "files_are_operator_supplied": True,
+        "files_are_committed_to_repo": False,
+    }
 
 
 def test_nonlocal_admission_disposition_accepts_redacted_packets(tmp_path: Path) -> None:
@@ -134,6 +144,50 @@ def test_nonlocal_admission_disposition_accepts_redacted_packets(tmp_path: Path)
     rendered = json.dumps(report, sort_keys=True)
     assert str(admission_path) not in rendered
     assert str(disposition_path) not in rendered
+
+
+def test_nonlocal_admission_disposition_accepts_packet_dir(tmp_path: Path) -> None:
+    module = _gate_module()
+    packet_dir = tmp_path / "packets"
+    packet_dir.mkdir()
+    output_path = tmp_path / "report.json"
+    (packet_dir / module.PACKET_DIR_ADMISSION_FILENAME).write_text(
+        json.dumps(_valid_admission_packet(module)),
+        encoding="utf-8",
+    )
+    (packet_dir / module.PACKET_DIR_BACKFILL_DISPOSITION_FILENAME).write_text(
+        json.dumps(_valid_disposition_packet(module)),
+        encoding="utf-8",
+    )
+
+    assert module.main(["--packet-dir", str(packet_dir), "--output", str(output_path)]) == 0
+    report = json.loads(output_path.read_text(encoding="utf-8"))
+
+    rendered = json.dumps(report, sort_keys=True)
+    assert report["decision"] == "nonlocal_production_admission_disposition_ready_for_operator_review"
+    assert report["blocking_reasons"] == []
+    assert report["production_readiness_claimed"] is False
+    assert str(packet_dir) not in rendered
+    assert str(output_path) not in rendered
+
+
+def test_nonlocal_admission_disposition_rejects_ambiguous_packet_dir_args(tmp_path: Path) -> None:
+    module = _gate_module()
+    admission_path = tmp_path / "admission.json"
+
+    try:
+        module.main(
+            [
+                "--packet-dir",
+                str(tmp_path),
+                "--admission-packet",
+                str(admission_path),
+            ]
+        )
+    except SystemExit as exc:
+        assert exc.code == 2
+    else:  # pragma: no cover - argparse should always exit for this conflict
+        raise AssertionError("--packet-dir conflict was not rejected")
 
 
 def test_nonlocal_admission_disposition_rejects_raw_packet_content(tmp_path: Path) -> None:
