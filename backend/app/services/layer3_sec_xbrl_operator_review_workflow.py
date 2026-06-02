@@ -270,6 +270,7 @@ def record_redacted_operator_review_decision(
     sec_xbrl_operator_review_workflow_id: str | None = None,
     workflow_basis_hash: str | None = None,
     decision_notes: str | None = None,
+    commit: bool = True,
 ) -> dict[str, Any]:
     request_id = _required_text(client_request_id, "client_request_id")
     _reject_raw_or_local_authority(request_id)
@@ -410,7 +411,10 @@ def record_redacted_operator_review_decision(
     )
     try:
         db.add(decision)
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
     except IntegrityError as exc:
         db.rollback()
         raise SecXbrlOperatorReviewWorkflowError(
