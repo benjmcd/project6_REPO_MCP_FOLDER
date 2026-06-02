@@ -1,5 +1,73 @@
 # Layer3 Progress Board
 
+## SEC XBRL End-To-End Contract Adapter
+
+Milestone:
+`sec_xbrl_e2e_statement_packet_integration_phase0_contract_map_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1330-e2e-contract-adapter.md`.
+
+Status: branch-local Tier-2 risk-assessed adapter and multi-period
+statement-packet binding proof on `codex/secxbrl-e2e-integration-design`.
+
+Scope: add a pure SEC XBRL integration adapter that converts private canonical
+projection output into the existing redacted projection-persistence contract
+and builds reviewable statement packets from private projection rows plus
+statement-role authority. Statement assembly now carries `period_ref` and
+`period_index` through packet rows and assigns `statement_row_index` per
+statement-period so multi-period packet rows bind to persisted projection facts.
+
+Containment: no schema, `models.py`, Alembic migration, backend API/UI,
+source acquisition, Arelle subprocess invocation, live SEC network access,
+value reveal, runtime-default change, raw runtime artifact, operator packet
+submission, or production-readiness behavior is admitted. The proof runs only
+against isolated in-memory DB state and existing persistence/workflow services.
+
+Verification: focused adapter/assembly/statement-packet/operator-workflow
+suite passes with `109 passed, 4 warnings`; full SEC XBRL suite passes with
+`375 passed, 3 warnings`; py_compile over touched Python files, target
+selection frozen check, progress check, manifest JSON parse with `utf-8-sig`,
+path-aware committed SEC XBRL report redaction/residual scan over `59`
+reports, and `git diff --check` pass.
+
+Next exact posture:
+`sec_xbrl_e2e_offline_evidence_orchestrator_design_v1`.
+
+## SEC XBRL End-To-End Statement Packet Integration Design
+
+Milestone:
+`sec_xbrl_end_to_end_statement_packet_integration_design_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1329-e2e-integration-design.md`.
+
+Status: branch-local planning-only Tier-2 design/pre-review on
+`codex/secxbrl-e2e-integration-design`.
+
+Scope: record the current-main seam between validated SEC XBRL filing evidence
+and the persisted statement-packet/operator-review path. Current main has
+validate-only statement assembly and downstream persistence/workflow services,
+but no non-test caller that materializes a redacted projection set and
+redacted statement packet from real governed filing evidence before opening an
+operator-review workflow.
+
+Containment: this pass changes only docs/manifests/proof tracking. It does not
+alter schema, `models.py`, Alembic migrations, durable persistence code,
+backend API/UI behavior, operator workflow runtime behavior, source
+acquisition, Arelle subprocess execution, live SEC network access, value
+reveal, default-on behavior, raw runtime artifacts, or production-readiness
+posture. Future implementation remains Tier 2 because it would orchestrate
+durable persistence writes and workflow creation.
+
+Verification: target-selection frozen check, progress check, `utf-8-sig` JSON
+parse for the two Layer 3 manifests, and `git diff --check` pass. No Python
+runtime files were touched, so `py_compile` and SEC XBRL pytest suites are not
+applicable to this docs-only pass.
+
+Next exact posture:
+`sec_xbrl_e2e_statement_packet_integration_phase0_contract_map_v1`.
+
 ## SEC XBRL Nonlocal Admission And Backfill Disposition
 
 Milestone:
