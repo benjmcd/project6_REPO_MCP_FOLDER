@@ -60,7 +60,9 @@ from app.services import (
     layer3_sec_edgar_real_filing_downstream_validation,
     layer3_sec_edgar_repeatability_trial,
     layer3_sec_edgar_source_acquisition,
+    layer3_sec_xbrl_auth_binding,
     layer3_sec_xbrl_controlled_value_reveal_submit,
+    layer3_sec_xbrl_in_app_auth_policy,
     layer3_sec_xbrl_operator_review_workflow,
     layer3_sec_xbrl_value_reveal_authority,
     layer3_provider_private_signed_url,
@@ -13795,6 +13797,113 @@ def _sec_xbrl_controlled_value_reveal_submit_error_response(
     )
 
 
+def _sec_xbrl_auth_policy_error_response(
+    exc: (
+        layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError
+        | layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError
+    ),
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.http_status,
+        content=workbench_error_response(
+            Layer3WorkbenchError(
+                error_code=exc.code,
+                message=exc.message,
+                status="blocked",
+                http_status=exc.http_status,
+                blocked_fields=[
+                    str(field)
+                    for field in exc.details.get(
+                        "blocked_fields",
+                        exc.details.get("mismatched_fields", []),
+                    )
+                ],
+                next_allowed_actions=["inspect_existing_sec_xbrl_auth_binding_authority"],
+            )
+        ),
+    )
+
+
+def _sec_xbrl_policy_request_fields(payload: BaseModel) -> dict[str, Any]:
+    return {
+        **payload.model_dump(exclude_none=True),
+        **dict(payload.model_extra or {}),
+    }
+
+
+def _sec_xbrl_policy_decision(
+    request: Request,
+    payload: BaseModel,
+    *,
+    route_family: str,
+    requested_role: str = layer3_sec_xbrl_in_app_auth_policy.OWNER_ROLE,
+) -> dict[str, Any]:
+    return layer3_sec_xbrl_in_app_auth_policy.authorize_sec_xbrl_route(
+        headers={str(key): str(value) for key, value in request.headers.items()},
+        route_family=route_family,
+        requested_role=requested_role,
+        request_fields=_sec_xbrl_policy_request_fields(payload),
+    )
+
+
+def _sec_xbrl_binding_request_id(client_request_id: str, route_family: str) -> str:
+    return layer3_sec_xbrl_in_app_auth_policy.binding_client_request_id(
+        client_request_id=client_request_id,
+        route_family=route_family,
+    )
+
+
+def _sec_xbrl_require_binding(
+    db: Session,
+    *,
+    source_receipt_kind: str,
+    route_family: str,
+    policy_decision: dict[str, Any],
+    source_receipt_id: str | None = None,
+    source_receipt_basis_hash: str | None = None,
+) -> dict[str, Any]:
+    return layer3_sec_xbrl_auth_binding.require_sec_xbrl_owner_binding(
+        db,
+        source_receipt_kind=source_receipt_kind,
+        source_receipt_id=source_receipt_id,
+        source_receipt_basis_hash=source_receipt_basis_hash,
+        route_family=route_family,
+        policy_decision=policy_decision,
+    )
+
+
+def _sec_xbrl_record_binding(
+    db: Session,
+    *,
+    client_request_id: str,
+    source_receipt_kind: str,
+    source_receipt_id: str,
+    source_receipt_basis_hash: str,
+    route_family: str,
+    policy_decision: dict[str, Any],
+) -> dict[str, Any]:
+    return layer3_sec_xbrl_auth_binding.record_sec_xbrl_auth_binding(
+        db,
+        client_request_id=_sec_xbrl_binding_request_id(client_request_id, route_family),
+        source_receipt_kind=source_receipt_kind,
+        source_receipt_id=source_receipt_id,
+        source_receipt_basis_hash=source_receipt_basis_hash,
+        route_family=route_family,
+        policy_decision=policy_decision,
+    )
+
+
+def _sec_xbrl_auth_binding_projection(binding: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "auth_binding_ref": binding["auth_binding_ref"],
+        "auth_binding_basis_hash": binding["binding_basis_hash"],
+        "auth_binding_route_family": binding["route_family"],
+        "auth_binding_policy_hash": binding["policy_hash"],
+        "auth_binding_role": binding["role"],
+        "auth_binding_required": True,
+    }
+
+
 def _candidate_b_policy_request_context(request: Request) -> dict[str, str]:
     return {str(key): str(value) for key, value in request.headers.items()}
 
@@ -16325,13 +16434,39 @@ def get_sec_edgar_durable_delivery_archive_status(
 )
 def post_sec_xbrl_operator_review_workflow_status(
     payload: Layer3SecXbrlOperatorReviewWorkflowStatusRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        return layer3_sec_xbrl_operator_review_workflow.inspect_redacted_operator_review_workflow_status(
+        if payload.sec_xbrl_operator_review_workflow_id is None and payload.workflow_basis_hash is None:
+            return layer3_sec_xbrl_operator_review_workflow.inspect_redacted_operator_review_workflow_status(
+                db,
+                **payload.model_dump(exclude={"status_mode", "operator_decision"}, exclude_none=True),
+            )
+        route_family = "sec_xbrl_operator_review_workflow_status_read"
+        policy_decision = _sec_xbrl_policy_decision(
+            request,
+            payload,
+            route_family=route_family,
+        )
+        binding = _sec_xbrl_require_binding(
+            db,
+            source_receipt_kind="operator_review_workflow",
+            source_receipt_id=payload.sec_xbrl_operator_review_workflow_id,
+            source_receipt_basis_hash=payload.workflow_basis_hash,
+            route_family=route_family,
+            policy_decision=policy_decision,
+        )
+        response = layer3_sec_xbrl_operator_review_workflow.inspect_redacted_operator_review_workflow_status(
             db,
             **payload.model_dump(exclude={"status_mode", "operator_decision"}, exclude_none=True),
         )
+        return {**response, **_sec_xbrl_auth_binding_projection(binding)}
+    except (
+        layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
+        layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,
+    ) as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
         return _sec_xbrl_operator_review_workflow_error_response(exc)
 
@@ -16343,6 +16478,7 @@ def post_sec_xbrl_operator_review_workflow_status(
 )
 def post_sec_xbrl_operator_review_workflow_decision_submit(
     payload: Layer3SecXbrlOperatorReviewDecisionSubmitRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     extra_fields = sorted(str(field) for field in (payload.model_extra or {}))
@@ -16362,6 +16498,29 @@ def post_sec_xbrl_operator_review_workflow_decision_submit(
         if key in Layer3SecXbrlOperatorReviewDecisionSubmitRequest.model_fields
     }
     try:
+        if payload.sec_xbrl_operator_review_workflow_id is None and payload.workflow_basis_hash is None:
+            return layer3_sec_xbrl_operator_review_workflow.record_redacted_operator_review_decision(
+                db,
+                **{
+                    key: value
+                    for key, value in payload_data.items()
+                    if key not in {"submit_mode", "operator_decision"}
+                },
+            )
+        route_family = "sec_xbrl_operator_review_decision_submit_write"
+        policy_decision = _sec_xbrl_policy_decision(
+            request,
+            payload,
+            route_family=route_family,
+        )
+        workflow_binding = _sec_xbrl_require_binding(
+            db,
+            source_receipt_kind="operator_review_workflow",
+            source_receipt_id=payload.sec_xbrl_operator_review_workflow_id,
+            source_receipt_basis_hash=payload.workflow_basis_hash,
+            route_family=route_family,
+            policy_decision=policy_decision,
+        )
         decision = layer3_sec_xbrl_operator_review_workflow.record_redacted_operator_review_decision(
             db,
             **{
@@ -16370,6 +16529,15 @@ def post_sec_xbrl_operator_review_workflow_decision_submit(
                 if key not in {"submit_mode", "operator_decision"}
             },
         )
+        decision_binding = _sec_xbrl_record_binding(
+            db,
+            client_request_id=payload.client_request_id,
+            source_receipt_kind="operator_review_decision",
+            source_receipt_id=decision["sec_xbrl_operator_review_decision_id"],
+            source_receipt_basis_hash=decision["decision_basis_hash"],
+            route_family=route_family,
+            policy_decision=policy_decision,
+        )
         return {
             **base_response(
                 decision["schema_id"],
@@ -16377,6 +16545,8 @@ def post_sec_xbrl_operator_review_workflow_decision_submit(
                 status=decision["status"],
             ),
             **decision,
+            "source_auth_binding_ref": workflow_binding["auth_binding_ref"],
+            **_sec_xbrl_auth_binding_projection(decision_binding),
             "decision_submit_api_route_enabled": True,
             "workflow_open_api_route_enabled": False,
             "rendered_ui_enabled": False,
@@ -16387,6 +16557,11 @@ def post_sec_xbrl_operator_review_workflow_decision_submit(
             "arelle_invoked": False,
             "production_readiness_claimed": False,
         }
+    except (
+        layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
+        layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,
+    ) as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
         return _sec_xbrl_operator_review_workflow_error_response(exc)
 
@@ -16398,13 +16573,39 @@ def post_sec_xbrl_operator_review_workflow_decision_submit(
 )
 def post_sec_xbrl_operator_review_workflow_decision_status(
     payload: Layer3SecXbrlOperatorReviewDecisionStatusRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        return layer3_sec_xbrl_operator_review_workflow.inspect_redacted_operator_review_decision_status(
+        if payload.sec_xbrl_operator_review_decision_id is None and payload.decision_basis_hash is None:
+            return layer3_sec_xbrl_operator_review_workflow.inspect_redacted_operator_review_decision_status(
+                db,
+                **payload.model_dump(exclude={"status_mode", "operator_decision"}, exclude_none=True),
+            )
+        route_family = "sec_xbrl_operator_review_decision_status_read"
+        policy_decision = _sec_xbrl_policy_decision(
+            request,
+            payload,
+            route_family=route_family,
+        )
+        binding = _sec_xbrl_require_binding(
+            db,
+            source_receipt_kind="operator_review_decision",
+            source_receipt_id=payload.sec_xbrl_operator_review_decision_id,
+            source_receipt_basis_hash=payload.decision_basis_hash,
+            route_family=route_family,
+            policy_decision=policy_decision,
+        )
+        response = layer3_sec_xbrl_operator_review_workflow.inspect_redacted_operator_review_decision_status(
             db,
             **payload.model_dump(exclude={"status_mode", "operator_decision"}, exclude_none=True),
         )
+        return {**response, **_sec_xbrl_auth_binding_projection(binding)}
+    except (
+        layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
+        layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,
+    ) as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
         return _sec_xbrl_operator_review_workflow_error_response(exc)
 
@@ -16416,6 +16617,7 @@ def post_sec_xbrl_operator_review_workflow_decision_status(
 )
 def post_sec_xbrl_value_reveal_authority_prepare(
     payload: Layer3SecXbrlValueRevealAuthorityPrepareRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     extra_fields = sorted(str(field) for field in (payload.model_extra or {}))
@@ -16435,6 +16637,20 @@ def post_sec_xbrl_value_reveal_authority_prepare(
         if key in Layer3SecXbrlValueRevealAuthorityPrepareRequest.model_fields
     }
     try:
+        route_family = "sec_xbrl_value_reveal_authority_prepare_write"
+        policy_decision = _sec_xbrl_policy_decision(
+            request,
+            payload,
+            route_family=route_family,
+        )
+        decision_binding = _sec_xbrl_require_binding(
+            db,
+            source_receipt_kind="operator_review_decision",
+            source_receipt_id=payload.sec_xbrl_operator_review_decision_id,
+            source_receipt_basis_hash=payload.decision_basis_hash,
+            route_family=route_family,
+            policy_decision=policy_decision,
+        )
         receipt = layer3_sec_xbrl_value_reveal_authority.prepare_value_reveal_authority_receipt(
             db,
             **{
@@ -16443,6 +16659,15 @@ def post_sec_xbrl_value_reveal_authority_prepare(
                 if key not in {"authority_mode", "operator_decision"}
             },
         )
+        authority_binding = _sec_xbrl_record_binding(
+            db,
+            client_request_id=payload.client_request_id,
+            source_receipt_kind="value_reveal_authority",
+            source_receipt_id=receipt["sec_xbrl_value_reveal_authority_receipt_id"],
+            source_receipt_basis_hash=receipt["authority_basis_hash"],
+            route_family=route_family,
+            policy_decision=policy_decision,
+        )
         return {
             **base_response(
                 receipt["schema_id"],
@@ -16450,6 +16675,8 @@ def post_sec_xbrl_value_reveal_authority_prepare(
                 status=receipt["status"],
             ),
             **receipt,
+            "source_auth_binding_ref": decision_binding["auth_binding_ref"],
+            **_sec_xbrl_auth_binding_projection(authority_binding),
             "runtime_default_enabled": False,
             "value_reveal_performed": False,
             "source_acquisition_performed": False,
@@ -16458,6 +16685,11 @@ def post_sec_xbrl_value_reveal_authority_prepare(
             "rendered_ui_enabled": False,
             "production_readiness_claimed": False,
         }
+    except (
+        layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
+        layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,
+    ) as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     except layer3_sec_xbrl_value_reveal_authority.SecXbrlValueRevealAuthorityError as exc:
         return _sec_xbrl_value_reveal_authority_error_response(exc)
 
@@ -16469,6 +16701,7 @@ def post_sec_xbrl_value_reveal_authority_prepare(
 )
 def post_sec_xbrl_controlled_value_reveal_submit(
     payload: Layer3SecXbrlControlledValueRevealSubmitRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     extra_fields = sorted(str(field) for field in (payload.model_extra or {}))
@@ -16488,6 +16721,20 @@ def post_sec_xbrl_controlled_value_reveal_submit(
         if key in Layer3SecXbrlControlledValueRevealSubmitRequest.model_fields
     }
     try:
+        route_family = "sec_xbrl_controlled_value_reveal_submit_write"
+        policy_decision = _sec_xbrl_policy_decision(
+            request,
+            payload,
+            route_family=route_family,
+        )
+        authority_binding = _sec_xbrl_require_binding(
+            db,
+            source_receipt_kind="value_reveal_authority",
+            source_receipt_id=payload.sec_xbrl_value_reveal_authority_receipt_id,
+            source_receipt_basis_hash=payload.authority_basis_hash,
+            route_family=route_family,
+            policy_decision=policy_decision,
+        )
         receipt = layer3_sec_xbrl_controlled_value_reveal_submit.submit_controlled_value_reveal(
             db,
             **{
@@ -16496,6 +16743,15 @@ def post_sec_xbrl_controlled_value_reveal_submit(
                 if key not in {"submit_mode", "operator_decision"}
             },
         )
+        submit_binding = _sec_xbrl_record_binding(
+            db,
+            client_request_id=payload.client_request_id,
+            source_receipt_kind="controlled_value_reveal_submit",
+            source_receipt_id=receipt["sec_xbrl_controlled_value_reveal_submit_receipt_id"],
+            source_receipt_basis_hash=receipt["submit_basis_hash"],
+            route_family=route_family,
+            policy_decision=policy_decision,
+        )
         return {
             **base_response(
                 receipt["schema_id"],
@@ -16503,6 +16759,8 @@ def post_sec_xbrl_controlled_value_reveal_submit(
                 status=receipt["status"],
             ),
             **receipt,
+            "source_auth_binding_ref": authority_binding["auth_binding_ref"],
+            **_sec_xbrl_auth_binding_projection(submit_binding),
             "runtime_default_enabled": False,
             "source_acquisition_performed": False,
             "arelle_invoked": False,
@@ -16510,6 +16768,11 @@ def post_sec_xbrl_controlled_value_reveal_submit(
             "rendered_ui_enabled": False,
             "production_readiness_claimed": False,
         }
+    except (
+        layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
+        layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,
+    ) as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     except layer3_sec_xbrl_controlled_value_reveal_submit.SecXbrlControlledValueRevealSubmitError as exc:
         return _sec_xbrl_controlled_value_reveal_submit_error_response(exc)
 
@@ -16522,9 +16785,24 @@ def post_sec_xbrl_controlled_value_reveal_submit(
 )
 def get_sec_xbrl_controlled_value_reveal_submit_status(
     sec_xbrl_controlled_value_reveal_submit_receipt_id: str,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
+        route_family = "sec_xbrl_controlled_value_reveal_submit_status_read"
+        policy_decision = layer3_sec_xbrl_in_app_auth_policy.authorize_sec_xbrl_route(
+            headers={str(key): str(value) for key, value in request.headers.items()},
+            route_family=route_family,
+            requested_role=layer3_sec_xbrl_in_app_auth_policy.OWNER_ROLE,
+            request_fields={},
+        )
+        binding = _sec_xbrl_require_binding(
+            db,
+            source_receipt_kind="controlled_value_reveal_submit",
+            source_receipt_id=sec_xbrl_controlled_value_reveal_submit_receipt_id,
+            route_family=route_family,
+            policy_decision=policy_decision,
+        )
         receipt = layer3_sec_xbrl_controlled_value_reveal_submit.inspect_controlled_value_reveal_submit_status(
             db,
             sec_xbrl_controlled_value_reveal_submit_receipt_id=(
@@ -16541,7 +16819,13 @@ def get_sec_xbrl_controlled_value_reveal_submit_status(
                 status=receipt["status"],
             ),
             **receipt,
+            **_sec_xbrl_auth_binding_projection(binding),
         }
+    except (
+        layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
+        layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,
+    ) as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     except layer3_sec_xbrl_controlled_value_reveal_submit.SecXbrlControlledValueRevealSubmitError as exc:
         return _sec_xbrl_controlled_value_reveal_submit_error_response(exc)
 
