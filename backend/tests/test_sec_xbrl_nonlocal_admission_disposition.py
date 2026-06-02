@@ -130,6 +130,25 @@ def test_nonlocal_admission_disposition_rejects_raw_packet_content(tmp_path: Pat
     }
 
 
+def test_nonlocal_admission_disposition_rejects_unknown_packet_fields(tmp_path: Path) -> None:
+    module = _gate_module()
+    admission = _valid_admission_packet(module)
+    admission["deployment_notes"] = "cleared with operations for production admission"
+    admission_path = tmp_path / "admission.json"
+    disposition_path = tmp_path / "disposition.json"
+    admission_path.write_text(json.dumps(admission), encoding="utf-8")
+    disposition_path.write_text(json.dumps(_valid_disposition_packet(module)), encoding="utf-8")
+
+    report = module.build_report(
+        admission_packet_path=admission_path,
+        backfill_disposition_path=disposition_path,
+    )
+
+    assert report["decision"] == "nonlocal_production_admission_disposition_blocked"
+    assert "sec_xbrl_nonlocal_admission_packet_invalid_required_fields" in report["blocking_reasons"]
+    assert "deployment_notes" in report["final_admission_packet_summary"]["invalid_required_fields"]
+
+
 def test_nonlocal_admission_disposition_rejects_inconsistent_backfill_mode(tmp_path: Path) -> None:
     module = _gate_module()
     admission_path = tmp_path / "admission.json"
@@ -154,4 +173,3 @@ def test_nonlocal_admission_disposition_rejects_inconsistent_backfill_mode(tmp_p
         "backfill_required",
         "disposition_mode",
     }
-

@@ -54,6 +54,10 @@ DISPOSITION_REQUIRED_FIELDS = (
     "disposition_provenance_ref",
     "disposition_provenance_hash",
 )
+PACKET_ALLOWED_FIELDS = {
+    "admission": frozenset(ADMISSION_REQUIRED_FIELDS),
+    "backfill_disposition": frozenset(DISPOSITION_REQUIRED_FIELDS),
+}
 HASH_FIELDS = {
     "approval_record_hash",
     "in_app_auth_evidence_hash",
@@ -429,6 +433,7 @@ def _packet_summary(
 
 def _invalid_packet_fields(packet: Mapping[str, Any], *, packet_kind: str) -> list[str]:
     invalid: list[str] = []
+    allowed_fields = PACKET_ALLOWED_FIELDS[packet_kind]
     allowed_modes = (
         ALLOWED_ADMISSION_MODES
         if packet_kind == "admission"
@@ -440,6 +445,8 @@ def _invalid_packet_fields(packet: Mapping[str, Any], *, packet_kind: str) -> li
     if packet.get("redaction_policy_id") != REDACTION_POLICY_ID:
         invalid.append("redaction_policy_id")
     for field, value in packet.items():
+        if field not in allowed_fields:
+            invalid.append(field)
         if field in HASH_FIELDS and not _hash(value):
             invalid.append(field)
         if field.endswith("_ref") and not _redacted_ref(value):
@@ -582,4 +589,3 @@ def _load_json(path: Path) -> dict[str, Any]:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
