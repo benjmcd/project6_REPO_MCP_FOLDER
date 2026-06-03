@@ -46223,6 +46223,54 @@
     "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only",
     "next_required_operator_input": "governed offline storage whose statement-classification receipt carries a top-level fact_inventory_hash matching authority_hashes.fact_inventory_hash, then operator-acquired offline CompanyFacts JSON for the same filing authority; do not download, synthesize, substitute, or infer it"
   },
+  "sec_xbrl_custom_guard_redaction_audit_tracking": {
+    "tracking_kind": "sec_xbrl_custom_guard_redaction_audit_tracking",
+    "milestone": "sec_xbrl_custom_guard_redaction_audit_v1",
+    "status": "branch_local_design_audit_ready_for_review",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md",
+    "prior_milestone": "sec_xbrl_public_authority_guard_auth_binding_family_v1",
+    "next_posture": "service-family-specific guard/redaction migrations only after exact semantics are proven",
+    "tier_classification": "Tier-1 docs-only planning/audit registration; no runtime, API, UI, config, model, migration, persistence, proof JSON, report JSON, source acquisition, Arelle, live SEC network, value reveal, default-on, or production-readiness behavior changes.",
+    "tier1_supporting_surfaces_touched": [
+      "next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "runtime_default_changed_by_tracking": false,
+    "backend_api_contract_changed_by_tracking": false,
+    "rendered_ui_changed_by_tracking": false,
+    "schema_models_changed_by_tracking": false,
+    "migration_changed_by_tracking": false,
+    "source_acquisition_performed_by_tracking": false,
+    "arelle_subprocess_invoked_by_tracking": false,
+    "live_sec_network_run_performed_by_tracking": false,
+    "value_reveal_default_enabled_by_tracking": false,
+    "raw_internal_value_store_default_enabled_by_tracking": false,
+    "delivery_or_export_performed": false,
+    "provider_or_connector_dispatch_performed": false,
+    "raw_values_committed_by_tracking": false,
+    "raw_identity_committed_by_tracking": false,
+    "raw_runtime_artifacts_added_by_tracking": false,
+    "operator_source_workflow_added_by_tracking": false,
+    "production_readiness_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "cross_company_comparability_claimed": false,
+    "source_evidence": [
+      "1349 records the remaining service-family custom guard wrappers and diagnostic redaction extensions after the shared framework/report-leak/public-authority consolidation slices.",
+      "The audit preserves the parked activation lane and requires future migration slices to prove byte-stable reports or exact service-local error surfaces before merging."
+    ],
+    "known_hard_seams": [
+      "Value-reveal helpers use blocked_keys and CIK/contact scan variants that must retain their current public error contract.",
+      "E2E offline and integration output guards have related but distinct blocked-key policies and must not be collapsed into a generic report-leak helper.",
+      "Diagnostic redaction extensions include custom hit classes and report-byte-sensitive evidence policies."
+    ],
+    "verification_status": "branch-local docs-only audit verification passed",
+    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 460 passed, 3 warnings",
+    "target_selection_validation": "PASS: python ./tools/l3-target-selection-validate.py --expect frozen",
+    "progress_check": "PASS: python ./tools/l3-progress-check.py",
+    "diff_check": "PASS: git diff --check exited 0"
+  },
   "sec_xbrl_predecessor_default_on_reconciliation_tracking": {
     "status": "sec_xbrl_predecessor_default_on_reconciliation_ready_for_review",
     "milestone": "sec_xbrl_predecessor_default_on_reconciliation_v1",
