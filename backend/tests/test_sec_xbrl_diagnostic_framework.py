@@ -158,6 +158,29 @@ def test_framework_nonlocal_redaction_hit_classes_keep_custom_ref_policy() -> No
     ]
 
 
+def test_framework_text_redaction_scan_preserves_named_flags() -> None:
+    framework = _module_from_path(
+        "sec_xbrl_diagnostic_framework_text_redaction_unit",
+        ASSESSMENT / "sec_xbrl_diagnostic_framework.py",
+    )
+
+    scan = framework.text_redaction_scan(
+        ["safe", "issuer@example.com", "0000000000-00-000000"],
+        regexes={
+            "raw_operator_contact_found": re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE),
+            "raw_accession_found": re.compile(r"\b\d{10}-\d{2}-\d{6}\b"),
+            "raw_local_path_found": re.compile(r"[A-Za-z]:\\"),
+        },
+    )
+
+    assert scan == {
+        "passed": False,
+        "raw_operator_contact_found": True,
+        "raw_accession_found": True,
+        "raw_local_path_found": False,
+    }
+
+
 def _module_from_path(module_name: str, path: Path) -> ModuleType:
     spec = importlib.util.spec_from_file_location(module_name, path)
     module = importlib.util.module_from_spec(spec)
