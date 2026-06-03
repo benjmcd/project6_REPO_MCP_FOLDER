@@ -11,6 +11,9 @@ from typing import Any, Mapping, Sequence
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "backend"
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
