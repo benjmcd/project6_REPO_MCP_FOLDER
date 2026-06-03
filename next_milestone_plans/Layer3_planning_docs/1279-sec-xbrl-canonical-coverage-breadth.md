@@ -42,8 +42,8 @@ This slice documents that direction only. It does not implement sector-aware con
 
 ## Guardrails
 
-- Runtime defaults remain off.
-- This is validate-only: no live SEC network, no Arelle invocation, no value reveal, no runtime artifact generation, and no default/config change.
+- Under 1317, Arelle fact-authority cutover is admitted default-on; live SEC network, value reveal, and controlled value-reveal submit remain default-off.
+- This is validate-only: no live SEC network, no Arelle invocation, no value reveal, no runtime artifact generation, and no config change beyond the already-admitted 1317 cutover posture.
 - Existing Slice 0, Slice 1, and Slice 2 behavior and tests remain unchanged.
 - The committed coverage report is redacted summary evidence only.
 - Sector-conditioned canonical families, statement assembly, linkbase relationship extraction, FX/scale normalization, provider/model/RAG/auth behavior, and default-on readiness remain deferred.
