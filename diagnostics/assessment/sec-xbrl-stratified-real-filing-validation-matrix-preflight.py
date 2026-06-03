@@ -8,10 +8,17 @@ import json
 import os
 from pathlib import Path
 import re
+import sys
 from typing import Any, Mapping
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
+
+from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+
 DEFAULT_OUTPUT = Path(
     "diagnostics/assessment/sec-xbrl-stratified-real-filing-validation-matrix-preflight-report.json"
 )
@@ -502,15 +509,6 @@ def _python_executable(path: Path) -> bool:
     suffix = path.suffix.lower()
     name = path.name.lower()
     return suffix in {".exe", ".bat", ".cmd", ".ps1"} or (not suffix and name.startswith("python"))
-
-
-def _criterion(criterion: str, passed: bool, evidence: Mapping[str, Any], blocked_reason: str) -> dict[str, Any]:
-    return {
-        "criterion": criterion,
-        "state": "passed" if passed else "blocked",
-        "blocked_reason": None if passed else blocked_reason,
-        "evidence": dict(evidence),
-    }
 
 
 def _headline(*, ready: bool, blockers: list[dict[str, Any]]) -> str:
