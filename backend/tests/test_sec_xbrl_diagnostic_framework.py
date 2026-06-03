@@ -181,11 +181,33 @@ def _build_report(diagnostic: ModuleType) -> dict:
 def _framework_migrated_reports() -> list[tuple[str, Path, Path]]:
     reports = []
     for diagnostic_path in sorted(ASSESSMENT.glob("sec-xbrl*.py")):
-        if "sec_xbrl_diagnostic_framework" not in diagnostic_path.read_text(encoding="utf-8"):
+        text = diagnostic_path.read_text(encoding="utf-8")
+        if "sec_xbrl_diagnostic_framework" not in text:
             continue
         module_name = f"{diagnostic_path.stem.replace('-', '_')}_byte_stability"
-        diagnostic = _module_from_path(module_name, diagnostic_path)
-        report_path = ROOT / diagnostic.DEFAULT_OUTPUT
+        report_path = ROOT / _static_default_output(diagnostic_path, text)
         assert report_path.exists(), diagnostic_path.relative_to(ROOT).as_posix()
         reports.append((module_name, diagnostic_path, report_path))
     return reports
+
+
+def _static_default_output(diagnostic_path: Path, text: str) -> Path:
+    tree = ast.parse(text)
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        if not any(isinstance(target, ast.Name) and target.id == "DEFAULT_OUTPUT" for target in node.targets):
+            continue
+        value = node.value
+        if (
+            isinstance(value, ast.Call)
+            and isinstance(value.func, ast.Name)
+            and value.func.id == "Path"
+            and value.args
+            and isinstance(value.args[0], ast.Constant)
+            and isinstance(value.args[0].value, str)
+        ):
+            return Path(value.args[0].value)
+        break
+
+    raise AssertionError(f"{diagnostic_path.relative_to(ROOT).as_posix()} has no static DEFAULT_OUTPUT Path")
