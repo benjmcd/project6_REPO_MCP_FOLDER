@@ -15,6 +15,8 @@ Confirmed authority:
 - `backend/app/services/nrc_aps_content_index.py`
 - `backend/app/services/nrc_aps_dataset_bridge.py`
 - `backend/app/services/connectors_nrc_adams.py`
+- `backend/app/services/layer3_aps_source_family.py`
+- `backend/app/services/layer3_sec_edgar_html_inline_xbrl_parser.py`
 - `backend/app/services/layer3_workbench.py`
 - `backend/app/services/layer3_typing_entry.py`
 - `backend/app/services/layer3_aps_handoff.py`
@@ -55,6 +57,7 @@ Confirmed:
 Implications:
 
 - XML and HTML are not pending "maybe supported" file types. They are explicitly refused today. JSON is admitted only for the bounded recordset parser contract, not as arbitrary structured-document support.
+- The generic APS SEC/EDGAR text parser continues to refuse XML/HTML/inline XBRL inputs. Current main separately admits the SEC-specific `sec_edgar_html_inline_xbrl_source_family_parser_v1` receipt chain under Layer 3 SEC authority; that path is not broad generic XML/HTML admission.
 - XLSX files are no longer accepted as generic ZIP when filename or OOXML package evidence identifies them as spreadsheets. Macro-enabled XLSM remains fail-closed.
 - CSV is parser-admitted for typed diagnostics and can be materialized through the legacy CSV bridge or the generic table-unit bridge. XLSX, JSON recordsets, and bounded SEC/EDGAR table blocks can now emit table units and be materialized explicitly or during connector finalization when `table_dataset_bridge_enabled=true`. Explicit Layer 3 material preview can admit resulting APS-derived `DatasetVersion` records through the existing `dataset_version` source shape.
 
@@ -76,6 +79,8 @@ Confirmed:
 - `_process_zip` maps supported document/image members into the existing handlers, parses CSV members for table diagnostics, and keeps spreadsheet/XML/HTML members visible as typed/refused outcomes instead of flattening them into text. XLSX and JSON inside archives remain outside the bounded connector-orchestration tranches.
 - `_process_json` emits `document_class="json_recordset"`, `parser_family="json_recordset"`, `typed_content_contract_id="aps_json_recordset_units_v1"`, `table_units`, `time_series_units`, and table diagnostics for admitted standalone JSON recordsets.
 - `_process_sec_edgar` emits `document_class="sec_edgar_filing"`, `parser_family="sec_edgar_filing"`, `typed_content_contract_id="aps_sec_edgar_filing_units_v1"`, filing units, ordered filing-section units, optional table units, optional time-series units, and table diagnostics for admitted complete submission text files.
+- `layer3_aps_source_family.py` now lists `sec_edgar_html_inline_xbrl_source_family_parser_v1` as an admitted materialized source family while keeping generic `xml_html_inline_xbrl` refused/deferred for APS-derived dataset-version selection.
+- `layer3_sec_edgar_html_inline_xbrl_parser.py` provides the governed SEC-specific HTML/iXBRL parser receipt entrypoint `parse_sec_edgar_html_inline_xbrl_source_family`; this is separate from the generic APS SEC/EDGAR text parser.
 - PDF baseline processing emits a document class and ordered units at `backend/app/services/nrc_aps_document_processing.py:882`, `backend/app/services/nrc_aps_document_processing.py:891`, and `backend/app/services/nrc_aps_document_processing.py:896`.
 - Candidate B emits ordered units and a document class through the same existing contract shape at `backend/app/services/nrc_aps_document_processing.py:1086` through `backend/app/services/nrc_aps_document_processing.py:1160`.
 
@@ -117,7 +122,7 @@ Confirmed:
 Implications:
 
 - The APS connector is already wired for download, media detection, extraction, normalization, content indexing, and report references.
-- The connector wiring is no longer the missing piece for CSV, bounded XLSX, bounded JSON recordsets, or bounded SEC/EDGAR complete submission text files. Remaining connector/parser work is for HTML/XML/inline-XBRL filing families, richer mixed parser semantics, broader typed/refused UI surfacing, and operator clarity.
+- The connector wiring is no longer the missing piece for CSV, bounded XLSX, bounded JSON recordsets, or bounded SEC/EDGAR complete submission text files. Remaining connector/parser work is for richer mixed parser semantics, broader typed/refused UI surfacing, operator clarity, and any future generic XML/HTML admission that is deliberately kept separate from the current SEC-specific HTML/iXBRL receipt chain.
 
 ## Layer 3 Facts
 
@@ -180,7 +185,7 @@ Confirmed:
 Implications:
 
 - Existing tests prove the current document/text and pre-seeded dataset paths.
-- They now prove APS CSV, bounded XLSX, and bounded JSON recordset table-unit materialization into a typed dataset path, including opt-in connector automatic XLSX/JSON materialization through the generic table bridge. They do not prove SEC/EDGAR, mixed-source, arbitrary JSON document parsing, arbitrary workbook, archive-member XLSX/JSON orchestration, or broad workbook ingestion into that path.
+- They now prove APS CSV, bounded XLSX, bounded JSON recordset, and bounded SEC/EDGAR complete-submission table-unit materialization into a typed dataset path, including opt-in connector automatic XLSX/JSON/SEC-EDGAR table materialization through the generic table bridge. They do not prove arbitrary JSON document parsing, arbitrary workbook ingestion, archive-member XLSX/JSON/SEC-EDGAR orchestration, broad generic XML/HTML admission, or mixed-source package semantics.
 
 ## Completion Boundary
 
@@ -193,6 +198,8 @@ Complete today:
 - CSV typed diagnostics for standalone CSV and ZIP CSV members.
 - JSON recordset typed diagnostics for standalone JSON arrays of flat records or configured record paths.
 - Callable CSV dataset bridge into `DatasetVersion` authority.
+- Bounded SEC/EDGAR complete-submission text parser and generic table bridge materialization for simple extracted tables.
+- Current-main SEC-specific HTML/iXBRL source-family parser receipt admission through the governed Layer 3 SEC chain.
 - Explicit Layer 3 material-preview/Gate B/Gate C/plan-preview admission for APS-derived `DatasetVersion` records.
 - Selected-pass execution/result/package proof for APS-derived `DatasetVersion` records.
 - APS content index persistence/search over document chunks.
@@ -210,7 +217,6 @@ Partial today:
 
 Not implemented today:
 
-- SEC/EDGAR filing parser.
-- Parser families beyond CSV/XLSX/JSON recordsets.
+- Parser families beyond admitted CSV/XLSX/JSON recordsets, bounded SEC/EDGAR complete-submission text, and the governed SEC-specific HTML/iXBRL receipt chain.
 - Broad workbook and archive-member XLSX/JSON connector orchestration beyond bounded processed standalone table-unit paths.
 - End-to-end UI tests proving heterogeneous corpus artifacts reach Layer 3 with preserved source semantics.
