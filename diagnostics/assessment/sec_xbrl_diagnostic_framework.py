@@ -113,6 +113,40 @@ def text_redaction_scan(
     return {"passed": not any(hits.values()), **hits}
 
 
+def raw_identity_hits_for_row(
+    row: Mapping[str, Any],
+    *,
+    identity_kinds_for_value: Callable[..., Sequence[str]],
+) -> list[dict[str, Any]]:
+    hits: list[dict[str, Any]] = []
+    for field_path, value in string_leaves(row):
+        kinds = list(identity_kinds_for_value(field_path=field_path, value=value))
+        if kinds:
+            hits.append({"field": field_path, "kinds": kinds})
+    return hits
+
+
+def string_leaves(value: Any, *, field_path: str = ""):
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            segment = str(key)
+            next_path = f"{field_path}.{segment}" if field_path else segment
+            yield from string_leaves(item, field_path=next_path)
+        return
+    if isinstance(value, (list, tuple, set)):
+        for index, item in enumerate(value):
+            next_path = f"{field_path}[{index}]"
+            yield from string_leaves(item, field_path=next_path)
+        return
+    if isinstance(value, str):
+        text = value.strip()
+        if text:
+            yield field_path or "<root>", text
+        return
+    if isinstance(value, int) and not isinstance(value, bool):
+        yield field_path or "<root>", str(value)
+
+
 def _iter_keys(value: Any) -> list[str]:
     if isinstance(value, dict):
         keys: list[str] = []
