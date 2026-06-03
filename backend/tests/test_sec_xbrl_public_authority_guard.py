@@ -4,6 +4,7 @@ from app.services.layer3_sec_xbrl_public_authority_guard import (
     blocked_authority_keys,
     blocked_authority_keys_violation,
     raw_or_local_authority_violation,
+    report_text_reference_flags,
     unadmitted_keys,
 )
 
@@ -53,6 +54,16 @@ def test_public_authority_guard_supports_auth_binding_text_variants() -> None:
         "raw_reference"
     )
     assert raw_or_local_authority_violation("2024-12-31", scan_raw_period_dates=False) is None
+
+
+def test_public_authority_guard_reports_report_text_reference_flags() -> None:
+    assert report_text_reference_flags("0000000000-00-000000") == {
+        "raw_accession_found": True,
+        "sec_url_found": False,
+        "local_path_found": False,
+    }
+    assert report_text_reference_flags("https://www.sec.gov/Archives/example")["sec_url_found"] is True
+    assert report_text_reference_flags("C:/Users/example/raw.json")["local_path_found"] is True
 
 
 def test_public_authority_guard_detects_residual_magnitude_keys_when_configured() -> None:
