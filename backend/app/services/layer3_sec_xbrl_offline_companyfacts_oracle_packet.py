@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Mapping
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,7 @@ from app.services.layer3_sec_xbrl_offline_evidence_loader import (
     load_sec_xbrl_offline_evidence_bundle,
 )
 from app.services.layer3_utils import stable_hash
+from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_leaks
 
 
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_offline_companyfacts_oracle_packet.v1"
@@ -133,6 +135,15 @@ class CompanyFactsOraclePacketError(ValueError):
     def __init__(self, code: str, message: str) -> None:
         super().__init__(message)
         self.code = code
+
+
+_reject_report_leaks = partial(
+    reject_report_leaks,
+    exception_factory=lambda: CompanyFactsOraclePacketError(
+        "companyfacts_oracle_packet_report_redaction_failed",
+        "SEC XBRL CompanyFacts oracle packet report leaked raw authority references.",
+    ),
+)
 
 
 def _first_blocked_reason(base_report: Mapping[str, Any]) -> dict[str, Any]:
@@ -293,12 +304,3 @@ def _controls() -> dict[str, bool]:
         "api_route_enabled": False,
         "production_readiness_claimed": False,
     }
-
-
-def _reject_report_leaks(value: Any) -> None:
-    text = json.dumps(value, sort_keys=True)
-    if ACCESSION_RE.search(text) or SEC_URL_RE.search(text) or LOCAL_PATH_RE.search(text):
-        raise CompanyFactsOraclePacketError(
-            "companyfacts_oracle_packet_report_redaction_failed",
-            "SEC XBRL CompanyFacts oracle packet report leaked raw authority references.",
-        )

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Mapping, Sequence
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,7 @@ from app.services.layer3_sec_edgar_html_inline_xbrl_fact_statement_classificatio
     classification_receipt_hash_basis,
 )
 from app.services.layer3_utils import stable_hash
+from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_leaks
 
 
 SCHEMA_ID = "layer3.sec_xbrl_offline_evidence_loader.v1"
@@ -46,6 +48,15 @@ class SecXbrlOfflineEvidenceLoaderError(ValueError):
                 }
             ],
         }
+
+
+_reject_report_leaks = partial(
+    reject_report_leaks,
+    exception_factory=lambda: SecXbrlOfflineEvidenceLoaderError(
+        "sec_xbrl_offline_evidence_loader_report_redaction_failed",
+        "SEC XBRL offline evidence loader report leaked raw authority references.",
+    ),
+)
 
 
 def load_sec_xbrl_offline_evidence_bundle(
@@ -624,12 +635,3 @@ def _controls(*, db_persistence_performed: bool) -> dict[str, bool]:
         "api_route_enabled": False,
         "production_readiness_claimed": False,
     }
-
-
-def _reject_report_leaks(value: Any) -> None:
-    text = json.dumps(value, sort_keys=True)
-    if ACCESSION_RE.search(text) or SEC_URL_RE.search(text) or LOCAL_PATH_RE.search(text):
-        raise SecXbrlOfflineEvidenceLoaderError(
-            "sec_xbrl_offline_evidence_loader_report_redaction_failed",
-            "SEC XBRL offline evidence loader report leaked raw authority references.",
-        )
