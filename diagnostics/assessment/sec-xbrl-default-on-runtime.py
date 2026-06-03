@@ -2,10 +2,16 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
+from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-default-on-runtime-report.json")
 NEXT_AFTER_DEFAULT_ON_RUNTIME = "sec_xbrl_default_on_nonlocal_production_readiness_design_v1"
 REAL_CORPUS_RUNNER_REPORT = (
@@ -359,20 +365,6 @@ def _class_source(source: str, class_name: str) -> str:
 
 def _contains(source: str, text: str) -> bool:
     return text.replace("\r\n", "\n") in source.replace("\r\n", "\n")
-
-
-def _criterion(
-    name: str,
-    passed: bool,
-    evidence: dict[str, Any],
-    blocked_reason: str,
-) -> dict[str, Any]:
-    return {
-        "criterion": name,
-        "state": "passed" if passed else "blocked",
-        "evidence": evidence,
-        "blocked_reason": None if passed else blocked_reason,
-    }
 
 
 if __name__ == "__main__":

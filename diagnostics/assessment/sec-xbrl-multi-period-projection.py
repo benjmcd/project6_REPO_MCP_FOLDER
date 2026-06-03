@@ -24,6 +24,8 @@ from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
     report_redaction_scan_payload,
 )
 from app.services.layer3_utils import stable_hash  # noqa: E402
+from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
+from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
 from sec_xbrl_runtime_posture import (  # noqa: E402
     committed_runtime_posture,
     runtime_posture_criterion_evidence,
@@ -318,27 +320,6 @@ def _unit(unit_name: str) -> dict[str, Any]:
     if unit_name == "unitless":
         return {"measures": []}
     return {"currency": f"iso4217:{unit_name}", "measures": [f"iso4217:{unit_name}"]}
-
-
-def _criterion(criterion: str, passed: bool, evidence: Mapping[str, Any], blocked_reason: str) -> dict[str, Any]:
-    return {
-        "criterion": criterion,
-        "state": "passed" if passed else "blocked",
-        "blocked_reason": None if passed else blocked_reason,
-        "evidence": dict(evidence),
-    }
-
-
-def _blocking_reasons(criteria: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
-    return [
-        {
-            "criterion": str(item.get("criterion") or ""),
-            "reason": str(item.get("blocked_reason") or ""),
-            "evidence": item.get("evidence") if isinstance(item.get("evidence"), Mapping) else {},
-        }
-        for item in criteria
-        if item.get("state") != "passed"
-    ]
 
 
 def _resolve_path(path_text: str) -> Path:
