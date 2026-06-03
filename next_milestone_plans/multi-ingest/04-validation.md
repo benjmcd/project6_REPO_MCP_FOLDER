@@ -4,7 +4,7 @@ Status: required checks for the planning pack and later implementation phases.
 
 ## Current Branch Validation
 
-This branch now contains Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Phase P5, Phase P6, bounded Phase P10A source/test/UI changes, Phase P7 XLSX parser/materialization, Phase P7.5 generic table bridge orchestration, Phase P8 JSON recordset parser/materialization, bounded Phase P9 SEC/EDGAR text filing parser/materialization, bounded Phase P10B typed/refused workbench guardrails, bounded Phase P10C selected dataset trace/detail surfacing, bounded Phase P10D selected APS content-document trace/detail surfacing, bounded Phase P10E server-owned raw mixed trace labeling, bounded Phase P10F refused/deferred guardrail trace detail, and the planning pack. Required validation for this pass:
+This branch now contains Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Phase P5, Phase P6, bounded Phase P10A source/test/UI changes, Phase P7 XLSX parser/materialization, Phase P7.5 generic table bridge orchestration, Phase P8 JSON recordset parser/materialization, bounded Phase P9 SEC/EDGAR text filing parser/materialization, bounded Phase P10B typed/refused workbench guardrails, bounded Phase P10C selected dataset trace/detail surfacing, bounded Phase P10D selected APS content-document trace/detail surfacing, bounded Phase P10E server-owned raw mixed trace labeling, bounded Phase P10F refused/deferred guardrail trace detail, bounded Phase P10G Gate C unsupported material trace detail, and the planning pack. Required validation for this pass:
 
 - `git diff --check`
 - `git status --short --branch`
@@ -19,7 +19,7 @@ This branch now contains Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Pha
 - Run Layer 3 API tests proving APS-derived dataset material reaches execution, result review, package preview, and package commit.
 - Run Layer 3 workbench/API/page tests proving indexed APS content documents can be listed, selected, previewed, rendered with source trace detail, and persisted through Gate B as `aps_content_document` material snapshots.
 
-Browser tests are required for Phase P10A, P10B, P10C, and P10D because UI assets changed.
+Browser tests are required for Phase P10A, P10B, P10C, P10D, and P10G because UI assets changed.
 
 ## General Test Doctrine
 
@@ -562,6 +562,31 @@ Focused commands:
 Browser validation:
 
 - Run the focused Layer 3 workbench source-family guardrail E2E in both headless and headed Chrome where local browser validation is available.
+
+## Phase P10G Gate C Unsupported Material Trace Detail Validation
+
+Status: implemented for existing Gate C `unsupported_material` output backed by persisted `L3MaterialSnapshot` authority.
+
+Required assertions:
+
+- Unsupported material snapshots include `layer3.gate_c_unsupported_material_trace.v1` trace detail.
+- Trace detail states `trace_readiness="unsupported_material_snapshot_traceable"`, `admission_state="not_admitted_to_gate_c_typing"`, and `selectable=false`.
+- Trace detail carries material snapshot identity, owner-service source shape, source plane, payload hash, co-retrieval group, source identity, source provenance, and load summary from the persisted snapshot.
+- Gate C still returns `blocked_typing_unavailable` when unsupported material is present.
+- No unsupported snapshot becomes a `L3TypingRecord`, selectable source-family candidate, parser admission, source shape, package semantic, or Onlook artifact.
+- The workbench renders unsupported material trace readiness, admission state, authority, typing-rule source, selection state, payload hash, and co-retrieval group in the existing Gate C panel.
+
+Focused commands:
+
+- `python -m pytest .\backend\tests\test_layer3_sublayer_state.py .\backend\tests\test_layer3_workbench.py .\backend\tests\test_layer3_page.py -q`
+- `python .\tools\validate_structure.py`
+- `python .\tools\l3-progress-check.py`
+- `python .\tools\l3-target-selection-validate.py --expect frozen`
+- `git diff --check`
+
+Browser validation:
+
+- Run the focused unsupported-only Gate C Layer 3 workbench E2E in both headless and headed Chrome where local browser validation is available.
 
 ## Completion Definition
 
