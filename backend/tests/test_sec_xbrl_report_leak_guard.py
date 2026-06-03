@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.services.layer3_sec_xbrl_report_leak_guard import report_leak_flags, reject_report_leaks
+from app.services.layer3_sec_xbrl_report_leak_guard import report_leak_flags, raw_value_key_found, reject_report_leaks
 
 
 def test_report_leak_flags_detect_raw_authority_patterns() -> None:
@@ -31,6 +31,19 @@ def test_report_leak_flags_can_include_raw_value_keys() -> None:
     assert report_leak_flags({"value": "123"}, include_raw_value_keys=True)["raw_value_key_found"] is True
     assert report_leak_flags({"amount": "123"}, include_raw_value_keys=True)["raw_value_key_found"] is True
     assert report_leak_flags({"field": "value"}, include_raw_value_keys=True)["raw_value_key_found"] is False
+
+
+def test_report_leak_flags_can_preserve_diagnostic_raw_value_key_variants() -> None:
+    assert raw_value_key_found(
+        '{"_VALUE": "123"}',
+        raw_value_keys=("_value", "value", "effective_value", "amount"),
+        ignore_case=True,
+    )
+    assert not raw_value_key_found(
+        '{"raw_value": "123"}',
+        raw_value_keys=("_value", "value", "effective_value", "amount"),
+        ignore_case=True,
+    )
 
 
 def test_reject_report_leaks_uses_service_exception_factory() -> None:

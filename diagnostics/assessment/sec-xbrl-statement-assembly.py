@@ -24,6 +24,7 @@ from app.services.layer3_sec_xbrl_statement_assembly import (  # noqa: E402
     STATEMENT_ASSEMBLY_SCHEMA_ID,
     assemble_reviewable_statement_packet,
 )
+from app.services.layer3_sec_xbrl_report_leak_guard import report_leak_flags  # noqa: E402
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
 from sec_xbrl_report_redaction import strip_residual_magnitude_fields  # noqa: E402
@@ -38,7 +39,7 @@ REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_statement_assembly.v1"
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-statement-assembly-report.json")
 TARGET = "sec_xbrl_statement_assembly_deferred_pending_linkbase_emission_v1"
 NEXT_SLICE = "sec_xbrl_multi_period_projection_design_v1"
-_RAW_VALUE_KEY_RE = re.compile(r'"(?:_value|value|effective_value|amount)"\s*:', re.IGNORECASE)
+_RAW_VALUE_KEYS = ("_value", "value", "effective_value", "amount")
 _RAW_AUTHORITY_KEY_RE = re.compile(r'"(?:resolved_fact_id|fact_id_or_order_key)"\s*:', re.IGNORECASE)
 _ISSUER_IDENTITY_TOKENS = ("issuer_ref", "issuer_hash", "issuer_name", "entity_name", "company_name")
 
@@ -310,7 +311,12 @@ def _statement_rows_consistent(*, statements: Sequence[Mapping[str, Any]], summa
 def _redaction_scan_payload(report: Mapping[str, Any]) -> dict[str, bool]:
     base = report_redaction_scan_payload(report)
     text = json.dumps(report, sort_keys=True)
-    raw_value_key_found = bool(_RAW_VALUE_KEY_RE.search(text))
+    raw_value_key_found = report_leak_flags(
+        report,
+        include_raw_value_keys=True,
+        raw_value_keys=_RAW_VALUE_KEYS,
+        raw_value_key_ignore_case=True,
+    )["raw_value_key_found"]
     raw_authority_key_found = bool(_RAW_AUTHORITY_KEY_RE.search(text))
     issuer_identity_found = any(token in text for token in _ISSUER_IDENTITY_TOKENS)
     return {
