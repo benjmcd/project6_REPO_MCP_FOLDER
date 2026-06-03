@@ -16,6 +16,11 @@ def test_source_family_for_parser_maps_admitted_aps_table_families() -> None:
             "SEC/EDGAR text table",
             "aps_sec_edgar_filing_units_v1",
         ),
+        "sec_edgar_html_inline_xbrl_source_family_parser_v1": (
+            "sec_edgar_html_inline_xbrl",
+            "SEC/EDGAR HTML inline XBRL",
+            "sec_edgar_html_inline_xbrl_material_units_v1",
+        ),
     }
 
     for parser_family, (source_family, label, contract_id) in expected.items():

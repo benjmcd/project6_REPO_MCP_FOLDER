@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.api.market_data_validation import router  # noqa: E402
+from app.api.market_data_validation import alias_router, router  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.services.market_data_validation import validate_market_rows  # noqa: E402
 
@@ -105,3 +105,54 @@ def test_api_run_endpoint_validation_error_on_empty_body() -> None:
     client = _client()
     r = client.post(f"{settings.api_prefix}/market-pipeline/validation/run", json={})
     assert r.status_code == 422
+
+
+def test_api_run_endpoint_preserves_sparse_zscore_outlier_shape() -> None:
+    client = _client()
+    payload = {
+        "rows": [{"v": 10.0} for _ in range(20)] + [{"v": 1e6}],
+        "options": {
+            "numeric_columns": ["v"],
+            "outlier_method": "zscore",
+        },
+    }
+
+    r = client.post(f"{settings.api_prefix}/market-pipeline/validation/run", json=payload)
+
+    assert r.status_code == 200
+    assert set(r.json()["outliers"][0]) == {
+        "row_index",
+        "column",
+        "value",
+        "method",
+        "z_score",
+        "threshold",
+    }
+
+
+def test_openapi_validation_run_response_contract_is_typed_for_legacy_and_alias() -> None:
+    app = FastAPI()
+    app.include_router(router, prefix=settings.api_prefix)
+    app.include_router(alias_router, prefix=settings.api_prefix)
+
+    schema = app.openapi()
+    legacy_schema = schema["paths"][f"{settings.api_prefix}/market-pipeline/validation/run"]["post"]["responses"]["200"][
+        "content"
+    ]["application/json"]["schema"]
+    alias_schema = schema["paths"][f"{settings.api_prefix}/analyst-insight/validation/run"]["post"]["responses"]["200"][
+        "content"
+    ]["application/json"]["schema"]
+
+    assert legacy_schema == alias_schema
+    assert legacy_schema["$ref"] == "#/components/schemas/MarketDataValidationRunResponse"
+    response_schema = schema["components"]["schemas"]["MarketDataValidationRunResponse"]
+    assert response_schema["type"] == "object"
+    assert set(response_schema["required"]) == {
+        "row_count",
+        "missing_field_issues",
+        "key_consistency",
+        "numeric_stats",
+        "outliers",
+        "outlier_method",
+        "normalized_rows",
+    }
