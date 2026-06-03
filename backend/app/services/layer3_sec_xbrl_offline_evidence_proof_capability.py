@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Mapping
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +31,7 @@ from app.services.layer3_sec_xbrl_offline_evidence_loader import (
     load_sec_xbrl_offline_evidence_bundle,
 )
 from app.services.layer3_utils import stable_hash
+from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_leaks
 
 
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_offline_evidence_proof_capability.v1"
@@ -38,6 +40,13 @@ ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
 LOCAL_PATH_RE = re.compile(r"[A-Za-z]:[\\/]|\\\\|file://|/(?:Users|home|tmp|workspace|var|mnt|private)(?:/|$)")
 RAW_VALUE_KEY_RE = re.compile(r'"(?:effective_value|raw_value|lexical_value)"')
+_reject_report_leaks = partial(
+    reject_report_leaks,
+    exception_factory=lambda: ValueError(
+        "SEC XBRL offline evidence proof report leaked raw authority or value references."
+    ),
+    include_raw_value_keys=True,
+)
 
 
 def inspect_sec_xbrl_offline_evidence_proof_capability(
@@ -646,9 +655,3 @@ def _prefixed_counts(prefix: str, value: Mapping[str, Any]) -> dict[str, Any]:
         or key.endswith("_counts")
         or key in {"status", "period_count", "ready_period_count", "row_count", "statement_count"}
     }
-
-
-def _reject_report_leaks(value: Any) -> None:
-    text = json.dumps(value, sort_keys=True)
-    if ACCESSION_RE.search(text) or SEC_URL_RE.search(text) or LOCAL_PATH_RE.search(text) or RAW_VALUE_KEY_RE.search(text):
-        raise ValueError("SEC XBRL offline evidence proof report leaked raw authority or value references.")
