@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, Union
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
@@ -26,18 +26,87 @@ class MarketDataValidationRunRequest(BaseModel):
     options: MarketDataValidationOptions = Field(default_factory=MarketDataValidationOptions)
 
 
-@router.post("/run")
-def run_market_data_validation(payload: MarketDataValidationRunRequest) -> dict[str, Any]:
+class MissingFieldIssue(BaseModel):
+    row_index: int
+    missing_fields: list[str]
+
+
+class KeyConsistencyCheckedResponse(BaseModel):
+    consistent: bool
+    union_keys: list[str]
+    inconsistent_row_indices: list[int]
+
+
+class KeyConsistencyEmptyResponse(BaseModel):
+    consistent: bool
+    key_sets: list[Any]
+
+
+class KeyConsistencySkippedResponse(BaseModel):
+    consistent: bool
+    skipped: bool
+
+
+class NumericColumnStats(BaseModel):
+    count: int
+    min: float
+    max: float
+    mean: float
+    population_std: float
+    q1: float
+    q3: float
+
+
+class ZScoreValidationOutlier(BaseModel):
+    row_index: int
+    column: str
+    value: float
+    method: Literal["zscore"]
+    z_score: float
+    threshold: float
+
+
+class IqrValidationOutlier(BaseModel):
+    row_index: int
+    column: str
+    value: float
+    method: Literal["iqr"]
+    lower_bound: float
+    upper_bound: float
+    q1: float
+    q3: float
+    iqr: float
+    multiplier: float
+
+
+class MarketDataValidationRunResponse(BaseModel):
+    row_count: int
+    missing_field_issues: list[MissingFieldIssue]
+    key_consistency: Union[
+        KeyConsistencyCheckedResponse,
+        KeyConsistencyEmptyResponse,
+        KeyConsistencySkippedResponse,
+    ]
+    numeric_stats: dict[str, NumericColumnStats]
+    outliers: list[Union[ZScoreValidationOutlier, IqrValidationOutlier]]
+    outlier_method: Literal["zscore", "iqr", "none"]
+    normalized_rows: list[dict[str, Any]] | None
+
+
+@router.post("/run", response_model=MarketDataValidationRunResponse)
+def run_market_data_validation(payload: MarketDataValidationRunRequest) -> MarketDataValidationRunResponse:
     opts = payload.options
-    return validate_market_rows(
-        payload.rows,
-        required_fields=opts.required_fields,
-        numeric_columns=opts.numeric_columns,
-        outlier_method=opts.outlier_method,
-        zscore_threshold=opts.zscore_threshold,
-        iqr_multiplier=opts.iqr_multiplier,
-        normalize_columns=opts.normalize_columns,
-        check_key_consistency=opts.check_key_consistency,
+    return MarketDataValidationRunResponse(
+        **validate_market_rows(
+            payload.rows,
+            required_fields=opts.required_fields,
+            numeric_columns=opts.numeric_columns,
+            outlier_method=opts.outlier_method,
+            zscore_threshold=opts.zscore_threshold,
+            iqr_multiplier=opts.iqr_multiplier,
+            normalize_columns=opts.normalize_columns,
+            check_key_consistency=opts.check_key_consistency,
+        )
     )
 
 
@@ -45,5 +114,6 @@ alias_router.add_api_route(
     "/run",
     run_market_data_validation,
     methods=["POST"],
+    response_model=MarketDataValidationRunResponse,
     name="analyst_insight_run_validation",
 )

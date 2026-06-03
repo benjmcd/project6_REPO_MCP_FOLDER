@@ -45,6 +45,7 @@ ALLOWED_ROOT_ENTRIES = {
     "corpus_verify.log",
     "data_actual",
     "data_demo",
+    "diagnostics",
     "docs",
     "e2e",
     "frontend_UI_plans",
