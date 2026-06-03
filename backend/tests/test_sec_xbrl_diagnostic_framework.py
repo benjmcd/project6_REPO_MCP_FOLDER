@@ -181,6 +181,35 @@ def test_framework_text_redaction_scan_preserves_named_flags() -> None:
     }
 
 
+def test_framework_raw_identity_hits_for_row_preserves_nested_paths_and_kinds() -> None:
+    framework = _module_from_path(
+        "sec_xbrl_diagnostic_framework_raw_identity_unit",
+        ASSESSMENT / "sec_xbrl_diagnostic_framework.py",
+    )
+
+    hits = framework.raw_identity_hits_for_row(
+        {
+            "safe": "redacted",
+            "rows": [
+                {"download_url": "https://sec.gov/Archives/edgar/data/example"},
+                {"cik": 123456},
+            ],
+        },
+        identity_kinds_for_value=lambda *, field_path, value: (
+            ["url"]
+            if "url" in field_path and "sec.gov" in value
+            else ["cik"]
+            if field_path.endswith("cik")
+            else []
+        ),
+    )
+
+    assert hits == [
+        {"field": "rows[0].download_url", "kinds": ["url"]},
+        {"field": "rows[1].cik", "kinds": ["cik"]},
+    ]
+
+
 def _module_from_path(module_name: str, path: Path) -> ModuleType:
     spec = importlib.util.spec_from_file_location(module_name, path)
     module = importlib.util.module_from_spec(spec)
