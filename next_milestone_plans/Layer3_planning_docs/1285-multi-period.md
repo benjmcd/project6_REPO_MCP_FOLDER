@@ -6,7 +6,7 @@ Milestone:
 
 ## Scope
 
-This implementation slice adds validate-only multi-period canonical projection over the governed SEC XBRL sidecar/value-store authority. It keeps the existing single-FY projection behavior intact and adds an explicit comparative-period wrapper.
+This implementation slice adds validate-only multi-period canonical projection over the governed SEC XBRL sidecar/value-store authority. It keeps the existing fiscal-year projection behavior intact and adds an explicit comparative-period wrapper.
 
 Files in this slice:
 
@@ -19,15 +19,19 @@ Files in this slice:
 
 ## Runtime Contract
 
-`fy_periods_from_records(...)` enumerates FY period candidates from non-dimensional standard sidecar records. The filing document-period end is ordered first when it matches a candidate period, followed by comparative FY periods.
+`fy_periods_from_records(...)` enumerates period candidates from non-dimensional standard sidecar records. The filing document-period end is ordered first when it matches a candidate period, followed by comparative fiscal-year periods.
 
-`project_issuer_canonical_facts_by_periods(...)` runs the existing canonical projection for each selected FY period. Each period keeps the same value-store, sidecar receipt, dataset-version, oracle-confirmation, sector-family, and identity-residual behavior as the single-period projection.
+`project_issuer_canonical_facts_by_periods(...)` runs the existing canonical projection for each selected period. Each period keeps the same value-store, sidecar receipt, dataset-version, oracle-confirmation, sector-family, and identity-residual behavior as the single-period projection.
+
+CompanyFacts oracle confirmation is period-aware for selected periods that do not supply a fiscal-year filter. In that path, confirmation requires the normalized CompanyFacts start/end or instant period key to exactly match the governed sidecar period key, along with the existing taxonomy, concept, unit, value, and decimals-tolerance checks. This permits quarterly or YTD CompanyFacts facts to corroborate a matching sidecar-selected period without treating the CompanyFacts fiscal-period label as authoritative.
+
+When a fiscal-year filter is supplied, the existing fiscal-year posture remains intact: CompanyFacts candidates must still carry the configured fiscal-period class and matching fiscal year before exact period-key and value comparison. This keeps the fiscal-year path compatible while extending the no-fiscal-year multi-period confirmation path in the same period-aware direction established by `1276-sec-xbrl-period-aware-value-oracle.md`.
 
 The default `project_issuer_canonical_facts(...)` path remains unchanged for existing callers.
 
 ## Guardrails
 
-The multi-period wrapper fails closed when no FY periods can be selected. It does not seed data, fetch SEC data, invoke Arelle, reveal values, persist projection rows, emit linkbase relationships, change statement assembly, or enable runtime defaults.
+The multi-period wrapper fails closed when no governed sidecar periods can be selected. It does not infer projection periods from CompanyFacts, seed data, fetch SEC data, invoke Arelle, reveal values, persist projection rows, emit linkbase relationships, change statement assembly, or enable runtime defaults.
 
 The committed diagnostic report is redacted. It reports only period references, counts, statement-level count rollups, document-period-match booleans, and validation criteria. It excludes raw values, raw resolved fact authorities, issuer identities, accessions, period dates, URLs, and local paths.
 
@@ -37,7 +41,7 @@ Focused tests:
 
 `python -m pytest ./backend/tests/test_sec_xbrl_multi_period_projection.py ./backend/tests/test_sec_xbrl_canonical_projection.py -q`
 
-Result: `18 passed`.
+Result: `19 passed`.
 
 Committed report:
 
