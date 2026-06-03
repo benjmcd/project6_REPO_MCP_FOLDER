@@ -18,6 +18,7 @@ if str(ASSESSMENT) not in sys.path:
     sys.path.insert(0, str(ASSESSMENT))
 
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import raw_identity_hits_for_row as _framework_raw_identity_hits_for_row  # noqa: E402
 
 DEFAULT_OUTPUT = Path(
     "diagnostics/assessment/sec-xbrl-stratified-real-filing-validation-matrix-preflight-report.json"
@@ -436,33 +437,10 @@ def _external_matrix_plan_preflight(env: Mapping[str, str]) -> dict[str, Any]:
 
 
 def _raw_identity_hits_for_row(row: Mapping[str, Any]) -> list[dict[str, Any]]:
-    hits: list[dict[str, Any]] = []
-    for field_path, value in _iter_string_leaves(row):
-        kinds = _string_identity_kinds(field_path=field_path, value=value)
-        if kinds:
-            hits.append({"field": field_path, "kinds": kinds})
-    return hits
-
-
-def _iter_string_leaves(value: Any, *, field_path: str = ""):
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            segment = str(key)
-            next_path = f"{field_path}.{segment}" if field_path else segment
-            yield from _iter_string_leaves(item, field_path=next_path)
-        return
-    if isinstance(value, (list, tuple, set)):
-        for index, item in enumerate(value):
-            next_path = f"{field_path}[{index}]"
-            yield from _iter_string_leaves(item, field_path=next_path)
-        return
-    if isinstance(value, str):
-        text = value.strip()
-        if text:
-            yield field_path or "<root>", text
-        return
-    if isinstance(value, int) and not isinstance(value, bool):
-        yield field_path or "<root>", str(value)
+    return _framework_raw_identity_hits_for_row(
+        row,
+        identity_kinds_for_value=_string_identity_kinds,
+    )
 
 
 def _string_identity_kinds(*, field_path: str, value: str) -> list[str]:
