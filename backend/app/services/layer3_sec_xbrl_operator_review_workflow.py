@@ -28,7 +28,7 @@ from app.services.layer3_response_contract import base_response
 from app.services.layer3_sec_xbrl_public_authority_guard import (
     RAW_AUTHORITY_KEYS as PUBLIC_RAW_AUTHORITY_KEYS,
     RAW_VALUE_KEYS,
-    raw_or_local_authority_violation,
+    reject_raw_or_local_authority as reject_public_authority,
     unadmitted_keys,
 )
 from app.services.layer3_utils import json_clone, stable_hash
@@ -1515,28 +1515,17 @@ def _reject_unadmitted_keys(
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:
-    violation = raw_or_local_authority_violation(
+    reject_public_authority(
         value,
+        error_type=SecXbrlOperatorReviewWorkflowError,
+        raw_authority_code="sec_xbrl_operator_review_workflow_raw_authority_not_admitted",
+        raw_authority_message="SEC XBRL operator review workflow cannot store raw values or raw authority identifiers.",
+        raw_reference_code="sec_xbrl_operator_review_workflow_raw_reference_not_admitted",
+        raw_reference_message="SEC XBRL operator review workflow cannot store raw accession, SEC URL, period date, or local path strings.",
+        residual_magnitude_code="sec_xbrl_operator_review_workflow_residual_magnitudes_not_admitted",
+        residual_magnitude_message="SEC XBRL operator review workflow cannot store residual magnitude fields.",
         raw_value_keys=RAW_VALUE_KEYS,
         raw_authority_keys=RAW_AUTHORITY_KEYS,
         residual_magnitude_keys=RESIDUAL_MAGNITUDE_KEYS,
         scan_cik=True,
-    )
-    if violation is None:
-        return
-    if violation.kind == "raw_authority":
-        raise SecXbrlOperatorReviewWorkflowError(
-            "sec_xbrl_operator_review_workflow_raw_authority_not_admitted",
-            "SEC XBRL operator review workflow cannot store raw values or raw authority identifiers.",
-            details={"field": violation.field},
-        )
-    if violation.kind == "residual_magnitude":
-        raise SecXbrlOperatorReviewWorkflowError(
-            "sec_xbrl_operator_review_workflow_residual_magnitudes_not_admitted",
-            "SEC XBRL operator review workflow cannot store residual magnitude fields.",
-            details={"field": violation.field},
-        )
-    raise SecXbrlOperatorReviewWorkflowError(
-        "sec_xbrl_operator_review_workflow_raw_reference_not_admitted",
-        "SEC XBRL operator review workflow cannot store raw accession, SEC URL, period date, or local path strings.",
     )
