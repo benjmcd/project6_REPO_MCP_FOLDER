@@ -46,6 +46,7 @@ LOCAL_REF_RE = re.compile(
     r"|(?:^|[\s\"'=])/(?:workspace|tmp|home|users|var|mnt|opt|private)(?:/|$)"
     r")"
 )
+REPORT_LOCAL_PATH_RE = re.compile(r"[A-Za-z]:[\\/]|\\\\|file://|/(?:Users|home|tmp|workspace|var|mnt|private)(?:/|$)")
 LOCAL_REF_SEGMENT_RE = re.compile(r"(^|[\\/])(?:workspace|tmp|temp|users|home)[\\/]", re.IGNORECASE)
 RAW_PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 CIK_RE = re.compile(r"\b\d{10}\b")
@@ -164,6 +165,15 @@ def public_text_reference_detected(
         or (scan_cik_fullmatch and CIK_RE.fullmatch(text))
         or (scan_operator_contact and OPERATOR_CONTACT_RE.search(text))
     )
+
+
+def report_text_reference_flags(value: str) -> dict[str, bool]:
+    text = str(value or "")
+    return {
+        "raw_accession_found": bool(ACCESSION_RE.search(text)),
+        "sec_url_found": bool(SEC_URL_RE.search(text)),
+        "local_path_found": bool(REPORT_LOCAL_PATH_RE.search(text)),
+    }
 
 
 def blocked_authority_keys(
