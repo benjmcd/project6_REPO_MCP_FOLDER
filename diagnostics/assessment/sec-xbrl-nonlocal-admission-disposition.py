@@ -4,11 +4,18 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any, Mapping
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
+
+from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition-report.json")
 READINESS_REPORT = "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json"
 ROUTE_ENFORCEMENT_DOC = "next_milestone_plans/Layer3_planning_docs/1326-auth-owner-binding-route-enforcement.md"
@@ -649,20 +656,6 @@ def _standing_non_admissions_preserved(readiness: Mapping[str, Any]) -> bool:
             "production_readiness_claimed",
         )
     )
-
-
-def _criterion(
-    name: str,
-    passed: bool,
-    evidence: dict[str, Any],
-    blocked_reason: str | None,
-) -> dict[str, Any]:
-    return {
-        "criterion": name,
-        "state": "passed" if passed else "blocked",
-        "evidence": evidence,
-        "blocked_reason": None if passed else blocked_reason,
-    }
 
 
 def _redacted_ref(value: Any) -> bool:
