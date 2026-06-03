@@ -20,6 +20,7 @@ from app.models.models import (
     ApsContentChunk,
     ApsContentDocument,
     ApsContentLinkage,
+    ConnectorRun,
     Dataset,
     DatasetSourceProvenance,
     DatasetVersion,
@@ -49,6 +50,7 @@ from app.models.models import (
     VariableDefinition,
     uuid_str,
 )
+from app.services import nrc_aps_artifact_ingestion
 from app.services.layer3_pass_entry import (
     COHORT_REQUESTED_METHOD_SOURCE,
     COHORT_SHAPE_ALIGNED_WIDE_TABLE,
@@ -1455,6 +1457,202 @@ def aps_content_document_candidates(db: Session, *, limit: int = 50) -> dict[str
         "authority_rail": {
             "authority_source": "aps_content_document_and_linkage",
             "selection_authority": "material_preview_aps_content_document_ids",
+            "read_only": True,
+        },
+    }
+
+
+APS_REFUSED_ARTIFACT_TRACE_SCHEMA_ID = "layer3.aps_refused_artifact_trace.v1"
+APS_REFUSED_ARTIFACT_TRACES_SCHEMA_ID = "layer3.aps_refused_artifact_traces.v1"
+APS_REFUSED_ARTIFACT_FAILURE_CODES = {
+    nrc_aps_artifact_ingestion.APS_FAILURE_ARTIFACT_UNSUPPORTED_MEDIA_TYPE,
+}
+
+
+def _json_object_from_ref(ref: Any) -> dict[str, Any]:
+    ref_text = str(ref or "").strip()
+    if not ref_text:
+        return {}
+    try:
+        path = Path(ref_text)
+        if not path.exists() or not path.is_file():
+            return {}
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return {}
+    return loaded if isinstance(loaded, dict) else {}
+
+
+def _file_sha256_or_none(path: Path) -> str | None:
+    try:
+        digest = hashlib.sha256()
+        with path.open("rb") as handle:
+            while True:
+                chunk = handle.read(65536)
+                if not chunk:
+                    break
+                digest.update(chunk)
+        return digest.hexdigest()
+    except OSError:
+        return None
+
+
+def _dict_or_empty(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _valid_aps_target_artifact_payload(payload: dict[str, Any]) -> bool:
+    try:
+        return not nrc_aps_artifact_ingestion.validate_target_artifact_payload(payload)
+    except (TypeError, ValueError):
+        return False
+
+
+def _aps_artifact_schema_version_matches(payload: dict[str, Any]) -> bool:
+    try:
+        return int(payload.get("schema_version") or 0) == nrc_aps_artifact_ingestion.APS_ARTIFACT_INGESTION_SCHEMA_VERSION
+    except (TypeError, ValueError):
+        return False
+
+
+def _load_valid_target_artifact_payload(target_row: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    target_artifact_ref = str(target_row.get("ref") or "").strip()
+    if not target_artifact_ref:
+        return "", {}
+    target_path = Path(target_artifact_ref)
+    if not target_path.exists() or not target_path.is_file():
+        return target_artifact_ref, {}
+    declared_sha = str(target_row.get("sha256") or "").strip().lower()
+    actual_sha = _file_sha256_or_none(target_path)
+    if declared_sha and declared_sha != str(actual_sha or "").lower():
+        return target_artifact_ref, {}
+    target_payload = _json_object_from_ref(target_artifact_ref)
+    if not _valid_aps_target_artifact_payload(target_payload):
+        return target_artifact_ref, {}
+    return target_artifact_ref, target_payload
+
+
+def _string_or_none(value: Any) -> str | None:
+    text = str(value or "").strip()
+    return text or None
+
+
+def _aps_refused_artifact_trace(
+    *,
+    run: ConnectorRun,
+    run_artifact_ref: str,
+    target_artifact_ref: str,
+    target_payload: dict[str, Any],
+) -> dict[str, Any] | None:
+    if str(target_payload.get("schema_id") or "") != nrc_aps_artifact_ingestion.APS_ARTIFACT_INGESTION_TARGET_SCHEMA_ID:
+        return None
+    failure = _dict_or_empty(target_payload.get("failure"))
+    failure_code = str(failure.get("code") or "").strip()
+    if failure_code not in APS_REFUSED_ARTIFACT_FAILURE_CODES:
+        return None
+    evidence = _dict_or_empty(failure.get("evidence"))
+    download = _dict_or_empty(target_payload.get("download"))
+    return {
+        "schema_id": APS_REFUSED_ARTIFACT_TRACE_SCHEMA_ID,
+        "trace_scope": "aps_artifact_ingestion_target_failure",
+        "trace_readiness": "refused_artifact_traceable",
+        "selectable": False,
+        "materialization_state": "refused_without_material_candidate",
+        "admission_state": "not_admitted_to_layer3_material",
+        "blocked_reason": failure_code,
+        "run_id": _string_or_none(target_payload.get("run_id")) or run.connector_run_id,
+        "connector_run_id": run.connector_run_id,
+        "target_id": _string_or_none(target_payload.get("target_id")),
+        "accession_number": _string_or_none(target_payload.get("accession_number")),
+        "outcome_status": _string_or_none(target_payload.get("outcome_status")),
+        "target_success": bool(target_payload.get("target_success")),
+        "failure_code": failure_code,
+        "failure_stage": _string_or_none(failure.get("stage")),
+        "failure_message": _string_or_none(failure.get("message")),
+        "pipeline_mode": _string_or_none(target_payload.get("pipeline_mode")),
+        "source_metadata_ref": _string_or_none(target_payload.get("source_metadata_ref")),
+        "run_artifact_ref": run_artifact_ref,
+        "target_artifact_ref": target_artifact_ref,
+        "target_artifact_sha256": _string_or_none(target_payload.get("payload_sha256")),
+        "media_evidence": {
+            "declared_content_type": _string_or_none(evidence.get("declared_content_type")),
+            "sniffed_content_type": _string_or_none(evidence.get("sniffed_content_type")),
+            "detected_content_type": _string_or_none(evidence.get("detected_content_type")),
+            "media_detection_status": _string_or_none(evidence.get("media_detection_status")),
+            "allowed_content_types": (
+                evidence.get("allowed_content_types")
+                if isinstance(evidence.get("allowed_content_types"), list)
+                else []
+            ),
+            "blob_ref": _string_or_none(evidence.get("blob_ref") or download.get("blob_ref")),
+            "blob_sha256": _string_or_none(evidence.get("blob_sha256") or download.get("blob_sha256")),
+        },
+        "authority_refs": {
+            "authority_source": "aps_artifact_ingestion_target",
+            "run_report_source": "aps_artifact_ingestion_run",
+            "selection_authority": "none",
+            "read_only": True,
+        },
+        "ui_summary": (
+            "Artifact was refused by APS artifact ingestion and is not a selectable "
+            "Layer 3 material candidate."
+        ),
+    }
+
+
+def aps_refused_artifact_traces(db: Session, *, limit: int = 50) -> dict[str, Any]:
+    normalized_limit = max(1, min(int(limit or 50), 200))
+    rows = (
+        db.query(ConnectorRun)
+        .order_by(
+            ConnectorRun.completed_at.desc(),
+            ConnectorRun.submitted_at.desc(),
+            ConnectorRun.connector_run_id.desc(),
+        )
+        .limit(normalized_limit * 8)
+        .all()
+    )
+    traces: list[dict[str, Any]] = []
+    inspected_run_count = 0
+    for run in rows:
+        query_plan = run.query_plan_json if isinstance(run.query_plan_json, dict) else {}
+        report_refs = query_plan.get("aps_artifact_ingestion_report_refs")
+        if not isinstance(report_refs, dict):
+            continue
+        run_artifact_ref = str(report_refs.get("aps_artifact_ingestion") or "").strip()
+        run_payload = _json_object_from_ref(run_artifact_ref)
+        if str(run_payload.get("schema_id") or "") != nrc_aps_artifact_ingestion.APS_ARTIFACT_INGESTION_RUN_SCHEMA_ID:
+            continue
+        if not _aps_artifact_schema_version_matches(run_payload):
+            continue
+        inspected_run_count += 1
+        for target_row in run_payload.get("target_artifacts") or []:
+            if not isinstance(target_row, dict):
+                continue
+            target_artifact_ref, target_payload = _load_valid_target_artifact_payload(target_row)
+            trace = _aps_refused_artifact_trace(
+                run=run,
+                run_artifact_ref=run_artifact_ref,
+                target_artifact_ref=target_artifact_ref,
+                target_payload=target_payload,
+            )
+            if trace is None:
+                continue
+            traces.append(trace)
+            if len(traces) >= normalized_limit:
+                break
+        if len(traces) >= normalized_limit:
+            break
+    return {
+        **_base_response(APS_REFUSED_ARTIFACT_TRACES_SCHEMA_ID),
+        "refused_artifact_traces": traces,
+        "trace_count": len(traces),
+        "inspected_run_count": inspected_run_count,
+        "source_system": "nrc_adams_aps",
+        "authority_rail": {
+            "authority_source": "connector_run.query_plan_json.aps_artifact_ingestion_report_refs",
+            "target_authority_source": "aps_artifact_ingestion_target",
+            "selection_authority": "none",
             "read_only": True,
         },
     }

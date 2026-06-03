@@ -320,11 +320,11 @@ Answer: Yes. `04-validation.md` requires positive and negative fixture coverage 
 
 Question: What could still be missing?
 
-Answer: The remaining items are parser-level refused artifact trace/detail surfacing beyond the current source-family guardrails, Gate C unsupported material snapshots, selected APS-derived `DatasetVersion`, APS content-document, and server-owned raw mixed materialized sources, when to connect SEC narrative-plus-table output into governed mixed-source package semantics, and whether the legacy CSV bridge compatibility path can be deprecated after generic table bridge adoption is proven. Current-main SEC-specific HTML/iXBRL authority is now reconciled in `22-sec-ixbrl-reconcile-closeout.md`, so any further reconciliation should be triggered by newly discovered drift rather than assumed.
+Answer: Parser-level APS unsupported-media artifact refusal traces are now surfaced from persisted artifact-ingestion run/target reports. Remaining items are when to connect admitted SEC narrative-plus-table output into governed mixed-source package semantics, whether the legacy CSV bridge compatibility path can be deprecated after generic table bridge adoption is proven, and future refusal trace classes only when new server-owned failure authority needs UI surfacing. Current-main SEC-specific HTML/iXBRL authority is now reconciled in `22-sec-ixbrl-reconcile-closeout.md`, so any further reconciliation should be triggered by newly discovered drift rather than assumed.
 
 ## Immediate Next Action
 
-Proceed with a narrow parser-level refused artifact trace/detail UI surfacing pass only after auditing the active workbench UI state and confirming server authority for the details, with a separately scoped mixed-source package semantics pass over admitted SEC parser/material authority if trace/detail surfacing is intentionally deferred, or with a legacy CSV bridge deprecation decision if downstream generic table bridge adoption evidence is sufficient:
+Do not repeat P10H parser-level unsupported-media artifact refusal trace/detail surfacing. The next pass should choose one of the remaining bounded lanes: governed mixed-source package semantics over admitted parser/material authority, legacy CSV bridge deprecation after generic table bridge adoption evidence, or a newly audited refusal trace class only if persisted server-owned run/target authority exists:
 
 - Reuse the P10B candidate-panel guardrails and P10C selected-material trace detail as server authority for what is admitted/materialized versus deferred/refused.
 - Preserve backend-owned material-preview, Gate B, execution/result, and package contracts.

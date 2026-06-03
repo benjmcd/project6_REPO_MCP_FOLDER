@@ -4520,13 +4520,76 @@ test('Layer 3 workbench keeps page-level scrolling and step navigation across vi
 });
 
 test('Layer 3 workbench surfaces typed and deferred APS source-family guardrails', async ({ page }) => {
+  await page.route('**/api/v1/layer3/aps-refused-artifact-traces', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      schema_id: 'layer3.aps_refused_artifact_traces.v1',
+      status: 'ok',
+      generated_at: new Date().toISOString(),
+      refused_artifact_traces: [
+        {
+          schema_id: 'layer3.aps_refused_artifact_trace.v1',
+          trace_scope: 'aps_artifact_ingestion_target_failure',
+          trace_readiness: 'refused_artifact_traceable',
+          selectable: false,
+          materialization_state: 'refused_without_material_candidate',
+          admission_state: 'not_admitted_to_layer3_material',
+          blocked_reason: 'artifact_unsupported_media_type',
+          run_id: 'run-e2e-refused-artifact',
+          connector_run_id: 'run-e2e-refused-artifact',
+          target_id: 'target-e2e-refused-artifact',
+          accession_number: 'ML26001A999',
+          outcome_status: 'failed',
+          target_success: false,
+          failure_code: 'artifact_unsupported_media_type',
+          failure_stage: 'media_detection',
+          failure_message: 'Unsupported APS artifact media type.',
+          media_evidence: {
+            declared_content_type: 'text/html',
+            sniffed_content_type: 'text/html',
+            detected_content_type: 'text/html',
+            media_detection_status: 'unsupported',
+            allowed_content_types: ['application/pdf'],
+            blob_ref: 'nrc_adams_aps/blobs/sha256/aa/bb/blob.bin',
+            blob_sha256: 'a'.repeat(64),
+          },
+          authority_refs: {
+            authority_source: 'aps_artifact_ingestion_target',
+            run_report_source: 'aps_artifact_ingestion_run',
+            selection_authority: 'none',
+            read_only: true,
+          },
+          ui_summary: 'Artifact was refused by APS artifact ingestion and is not a selectable Layer 3 material candidate.',
+        },
+      ],
+      trace_count: 1,
+      inspected_run_count: 1,
+      source_system: 'nrc_adams_aps',
+      authority_rail: {
+        authority_source: 'connector_run.query_plan_json.aps_artifact_ingestion_report_refs',
+        target_authority_source: 'aps_artifact_ingestion_target',
+        selection_authority: 'none',
+        read_only: true,
+      },
+    }),
+  }));
   const candidatesResponsePromise = page.waitForResponse((response) => (
     response.url().includes('/api/v1/layer3/dataset-version-candidates')
   ));
+  const refusedResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/aps-refused-artifact-traces')
+  ));
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   const candidates = await expectJson(await candidatesResponsePromise);
+  const refusedTraces = await expectJson(await refusedResponsePromise);
 
   expect(candidates.source_family_summary.selection_shape).toBe('dataset_version');
+  expect(refusedTraces.trace_count).toBe(1);
+  expect(refusedTraces.refused_artifact_traces[0].selectable).toBe(false);
+  expect(refusedTraces.refused_artifact_traces[0].materialization_state).toBe(
+    'refused_without_material_candidate',
+  );
   expect(
     candidates.source_family_summary.admitted_materialized_families.map((family) => family.parser_family),
   ).toEqual(expect.arrayContaining([
@@ -4563,6 +4626,11 @@ test('Layer 3 workbench surfaces typed and deferred APS source-family guardrails
   await expect(summary).toContainText('guardrail not selectable');
   await expect(summary).toContainText('refused without parser contract');
   await expect(summary).toContainText('parser contract admission policy');
+  await expect(summary).toContainText('Parser-level refused artifacts');
+  await expect(summary).toContainText('ML26001A999');
+  await expect(summary).toContainText('artifact unsupported media type');
+  await expect(summary).toContainText('refused without material candidate');
+  await expect(summary).toContainText('aps artifact ingestion target');
   await expect(summary).toContainText(
     'This endpoint surfaces server-backed materialized DatasetVersion choices only; refused/deferred families are explanatory guardrails with trace detail, not selectable source classes.',
   );

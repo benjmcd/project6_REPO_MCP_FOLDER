@@ -9405,6 +9405,14 @@ class Layer3ApsContentDocumentCandidatesResponse(Layer3BaseResponse):
     authority_rail: dict[str, Any]
 
 
+class Layer3ApsRefusedArtifactTracesResponse(Layer3BaseResponse):
+    refused_artifact_traces: list[dict[str, Any]]
+    trace_count: int
+    inspected_run_count: int
+    source_system: str
+    authority_rail: dict[str, Any]
+
+
 class Layer3GateBDecisionResponse(Layer3BaseResponse):
     session_id: str
     selection_manifest_id: str
@@ -17354,6 +17362,15 @@ def post_sec_edgar_text_table_downstream_operator_repeatability_trial(
 )
 def get_aps_content_document_candidates(limit: int = 50, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.aps_content_document_candidates(db, limit=limit))
+
+
+@router.get(
+    "/aps-refused-artifact-traces",
+    response_model=Layer3ApsRefusedArtifactTracesResponse,
+    responses=_workbench_error_responses(400),
+)
+def get_aps_refused_artifact_traces(limit: int = 50, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.aps_refused_artifact_traces(db, limit=limit))
 
 
 @router.post(
