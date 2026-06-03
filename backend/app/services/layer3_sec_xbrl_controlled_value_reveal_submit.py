@@ -24,7 +24,7 @@ from app.services import (
     layer3_sec_xbrl_value_reveal_authority,
 )
 from app.services.layer3_sec_xbrl_public_authority_guard import (
-    blocked_authority_keys,
+    blocked_authority_keys_violation,
     raw_or_local_authority_violation,
 )
 from app.services.layer3_utils import json_clone, stable_hash
@@ -780,31 +780,27 @@ def _required_hash(value: Any, field: str) -> str:
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:
-    if isinstance(value, Mapping):
-        blocked_keys = blocked_authority_keys(
-            value,
-            raw_value_keys=frozenset(),
-            raw_authority_keys=RAW_REQUEST_KEYS,
+    blocked_keys = blocked_authority_keys_violation(
+        value,
+        raw_value_keys=frozenset(),
+        raw_authority_keys=RAW_REQUEST_KEYS,
+    )
+    if blocked_keys:
+        raise SecXbrlControlledValueRevealSubmitError(
+            "sec_xbrl_controlled_value_reveal_submit_raw_authority_not_admitted",
+            "SEC XBRL controlled value reveal only admits authority-receipt fields from the browser.",
+            details={"blocked_keys": blocked_keys},
+            http_status=400,
         )
-        if blocked_keys:
-            raise SecXbrlControlledValueRevealSubmitError(
-                "sec_xbrl_controlled_value_reveal_submit_raw_authority_not_admitted",
-                "SEC XBRL controlled value reveal only admits authority-receipt fields from the browser.",
-                details={"blocked_keys": blocked_keys},
-                http_status=400,
-            )
-        for item in value.values():
-            _reject_raw_or_local_authority(item)
-        return
-    if isinstance(value, (list, tuple, set)):
-        for item in value:
-            _reject_raw_or_local_authority(item)
-        return
-    if isinstance(value, str):
-        text = value.strip()
-        if _value_text_requires_redaction(text):
-            raise SecXbrlControlledValueRevealSubmitError(
-                "sec_xbrl_controlled_value_reveal_submit_raw_reference_not_admitted",
-                "SEC XBRL controlled value reveal rejects raw identities, paths, SEC URLs, accessions, and period dates.",
-                http_status=400,
-            )
+    if raw_or_local_authority_violation(
+        value,
+        raw_value_keys=frozenset(),
+        raw_authority_keys=frozenset(),
+        scan_cik_fullmatch=True,
+        scan_operator_contact=True,
+    ):
+        raise SecXbrlControlledValueRevealSubmitError(
+            "sec_xbrl_controlled_value_reveal_submit_raw_reference_not_admitted",
+            "SEC XBRL controlled value reveal rejects raw identities, paths, SEC URLs, accessions, and period dates.",
+            http_status=400,
+        )

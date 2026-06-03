@@ -26,7 +26,7 @@ from app.services import layer3_sec_xbrl_operator_review_workflow, layer3_sec_xb
 from app.services.layer3_sec_xbrl_public_authority_guard import (
     RAW_AUTHORITY_KEYS as PUBLIC_RAW_AUTHORITY_KEYS,
     RAW_VALUE_KEYS,
-    blocked_authority_keys,
+    blocked_authority_keys_violation,
     raw_or_local_authority_violation,
 )
 from app.services.layer3_utils import json_clone, stable_hash
@@ -581,37 +581,27 @@ def _required_hash(value: Any, field: str) -> str:
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:
-    if isinstance(value, Mapping):
-        blocked_keys = blocked_authority_keys(
-            value,
-            raw_value_keys=RAW_VALUE_KEYS,
-            raw_authority_keys=VALUE_REVEAL_RAW_AUTHORITY_KEYS,
+    blocked_keys = blocked_authority_keys_violation(
+        value,
+        raw_value_keys=RAW_VALUE_KEYS,
+        raw_authority_keys=VALUE_REVEAL_RAW_AUTHORITY_KEYS,
+    )
+    if blocked_keys:
+        raise SecXbrlValueRevealAuthorityError(
+            "sec_xbrl_value_reveal_authority_raw_authority_not_admitted",
+            "SEC XBRL value-reveal authority only admits server-owned hash authority.",
+            details={"blocked_keys": blocked_keys},
+            http_status=400,
         )
-        if blocked_keys:
-            raise SecXbrlValueRevealAuthorityError(
-                "sec_xbrl_value_reveal_authority_raw_authority_not_admitted",
-                "SEC XBRL value-reveal authority only admits server-owned hash authority.",
-                details={"blocked_keys": blocked_keys},
-                http_status=400,
-            )
-        for item in value.values():
-            _reject_raw_or_local_authority(item)
-        return
-    if isinstance(value, (list, tuple, set)):
-        for item in value:
-            _reject_raw_or_local_authority(item)
-        return
-    if isinstance(value, str):
-        text = value.strip()
-        if raw_or_local_authority_violation(
-            text,
-            raw_value_keys=frozenset(),
-            raw_authority_keys=frozenset(),
-            scan_cik=True,
-            scan_operator_contact=True,
-        ):
-            raise SecXbrlValueRevealAuthorityError(
-                "sec_xbrl_value_reveal_authority_raw_reference_not_admitted",
-                "SEC XBRL value-reveal authority cannot expose raw identities, paths, SEC URLs, accessions, or period dates.",
-                http_status=400,
-            )
+    if raw_or_local_authority_violation(
+        value,
+        raw_value_keys=frozenset(),
+        raw_authority_keys=frozenset(),
+        scan_cik=True,
+        scan_operator_contact=True,
+    ):
+        raise SecXbrlValueRevealAuthorityError(
+            "sec_xbrl_value_reveal_authority_raw_reference_not_admitted",
+            "SEC XBRL value-reveal authority cannot expose raw identities, paths, SEC URLs, accessions, or period dates.",
+            http_status=400,
+        )
