@@ -9,6 +9,7 @@ from app.services.layer3_sec_xbrl_public_authority_guard import (
     report_text_reference_flags,
     unadmitted_keys,
     windows_local_path_reference_found,
+    windows_local_path_start_reference_found,
 )
 
 
@@ -74,6 +75,8 @@ def test_public_authority_guard_exposes_report_reference_predicate_variants() ->
     assert any_url_reference_found("https://example.com/archive") is True
     assert report_text_reference_flags("https://example.com/archive")["sec_url_found"] is False
     assert windows_local_path_reference_found("prefixC:/raw/filing.json") is True
+    assert windows_local_path_start_reference_found("prefixC:/raw/filing.json") is False
+    assert windows_local_path_start_reference_found("C:/raw/filing.json") is True
     assert windows_local_path_reference_found("/Users/example/raw.json") is False
 
 

@@ -39,6 +39,7 @@ SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
 ANY_URL_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*:" + "/" + "/")
 BARE_SEC_DOMAIN_RE = re.compile(r"(?:https?://)?(?:www\.)?sec\.gov", re.IGNORECASE)
 WINDOWS_ABS_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
+WINDOWS_ABS_PATH_START_RE = re.compile(r"^[A-Za-z]:[\\/]")
 WINDOWS_ABS_PATH_ANYWHERE_RE = re.compile(r"[A-Za-z]:[\\/]")
 LOCAL_REF_RE = re.compile(
     r"(?i)(?:"
@@ -186,6 +187,10 @@ def report_local_path_reference_found(value: str) -> bool:
 
 def windows_local_path_reference_found(value: str) -> bool:
     return bool(WINDOWS_ABS_PATH_ANYWHERE_RE.search(str(value or "")))
+
+
+def windows_local_path_start_reference_found(value: str) -> bool:
+    return bool(WINDOWS_ABS_PATH_START_RE.search(str(value or "")))
 
 
 def report_text_reference_flags(value: str) -> dict[str, bool]:
