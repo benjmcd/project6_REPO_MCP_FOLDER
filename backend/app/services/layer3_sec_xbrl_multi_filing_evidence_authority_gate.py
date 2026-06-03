@@ -221,8 +221,7 @@ def _filing_blocked_reasons(handle: str, filing: Mapping[str, Any]) -> list[dict
     if filing.get("status") != "filing_evidence_authority_ready":
         reasons.append(_reason(handle, "status", "filing evidence authority status must be ready"))
     for key in REQUIRED_AUTHORITY_HASHES:
-        value = str(filing.get(key) or "").strip().lower()
-        if not HASH_RE.fullmatch(value):
+        if not _authority_hash_value(filing, key):
             reasons.append(_reason(handle, key, f"filing must include lowercase 64-character {key}"))
     for key in REQUIRED_READY_FLAGS:
         if filing.get(key) is not True:
@@ -261,10 +260,25 @@ def _matrix_authority_refs(filings: Mapping[str, Mapping[str, Any]]) -> dict[str
 def _authority_hashes(filing: Mapping[str, Any]) -> dict[str, str]:
     hashes = {}
     for key in REQUIRED_AUTHORITY_HASHES:
-        value = str(filing.get(key) or "").strip().lower()
-        if HASH_RE.fullmatch(value):
+        value = _authority_hash_value(filing, key)
+        if value:
             hashes[key] = value
     return hashes
+
+
+def _authority_hash_value(filing: Mapping[str, Any], key: str) -> str:
+    for source in (
+        filing,
+        _mapping_or_empty(filing.get("authority_refs")),
+        _mapping_or_empty(filing.get("authority_hashes")),
+    ):
+        if key not in source or source.get(key) in (None, ""):
+            continue
+        value = str(source.get(key) or "").strip().lower()
+        if HASH_RE.fullmatch(value):
+            return value
+        return ""
+    return ""
 
 
 def _filing_map(value: Any) -> dict[str, Mapping[str, Any]]:

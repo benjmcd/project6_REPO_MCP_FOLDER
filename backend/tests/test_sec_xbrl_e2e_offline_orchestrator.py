@@ -154,6 +154,83 @@ def test_offline_orchestrator_fault_injection_requires_single_transaction(db_ses
     assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 0
 
 
+def test_offline_orchestrator_commit_false_requires_single_transaction(db_session) -> None:
+    with pytest.raises(orchestrator.SecXbrlE2EOfflineOrchestratorError) as exc:
+        orchestrator.open_redacted_operator_review_from_offline_evidence(
+            db_session,
+            client_request_id="offline-orchestrator-commit-false-without-atomic",
+            evidence=_evidence(),
+            period_limit=2,
+            commit=False,
+        )
+
+    assert exc.value.code == "sec_xbrl_e2e_offline_orchestrator_commit_false_requires_atomic_transaction"
+    assert exc.value.details == {"single_transaction": False, "commit": False}
+    assert db_session.query(L3SecXbrlProjectionSet).count() == 0
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
+    assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 0
+
+
+def test_offline_orchestrator_atomic_mode_rejects_partial_idempotent_replay(
+    db_session,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        orchestrator,
+        "materialize_redacted_projection_set",
+        lambda *_args, **_kwargs: {
+            "status": "materialized",
+            "sec_xbrl_projection_set_id": "projection-existing",
+            "idempotent_replay": True,
+        },
+    )
+    monkeypatch.setattr(
+        orchestrator,
+        "materialize_redacted_statement_packet",
+        lambda *_args, **_kwargs: {
+            "status": "materialized",
+            "sec_xbrl_statement_packet_set_id": "packet-new",
+            "statement_count": 1,
+            "idempotent_replay": False,
+        },
+    )
+    monkeypatch.setattr(
+        orchestrator,
+        "open_redacted_operator_review_workflow",
+        lambda *_args, **_kwargs: {
+            "status": "review_ready",
+            "sec_xbrl_operator_review_workflow_id": "workflow-new",
+            "row_count": 1,
+            "review_exception_count": 0,
+            "workflow_basis_hash": _hash("4"),
+            "statement_packet_basis_hash": _hash("5"),
+            "source_projection_basis_hash": _hash("6"),
+            "idempotent_replay": False,
+        },
+    )
+
+    with pytest.raises(orchestrator.SecXbrlE2EOfflineOrchestratorError) as exc:
+        orchestrator.open_redacted_operator_review_from_offline_evidence(
+            db_session,
+            client_request_id="offline-orchestrator-partial-atomic-replay",
+            evidence=_evidence(),
+            period_limit=2,
+            single_transaction=True,
+        )
+
+    assert exc.value.code == "sec_xbrl_e2e_offline_orchestrator_partial_atomic_replay_not_admitted"
+    assert exc.value.details == {
+        "idempotent_replay": {
+            "projection": True,
+            "statement_packet": False,
+            "operator_review_workflow": False,
+        }
+    }
+    assert db_session.query(L3SecXbrlProjectionSet).count() == 0
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
+    assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 0
+
+
 def test_offline_orchestrator_persists_review_workflow_with_ready_empty_later_period(
     db_session,
 ) -> None:
