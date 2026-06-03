@@ -20,6 +20,7 @@ from app.services.layer3_sec_xbrl_operator_review_workflow import (
 from app.services.layer3_sec_xbrl_projection_persistence import (
     materialize_redacted_projection_set,
 )
+from app.services.layer3_sec_xbrl_public_authority_guard import public_text_reference_detected
 from app.services.layer3_sec_xbrl_statement_packet_persistence import (
     materialize_redacted_statement_packet,
 )
@@ -38,16 +39,6 @@ ATOMIC_FAULT_INJECTION_POINTS = {
 }
 
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
-ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
-SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
-WINDOWS_ABS_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
-LOCAL_REF_RE = re.compile(
-    r"(?i)(?:"
-    r"file://"
-    r"|\\\\[^\\/]+[\\/]"
-    r"|(?:^|[\s\"'=])/(?:workspace|tmp|home|users|var|mnt|opt|private)(?:/|$)"
-    r")"
-)
 RAW_PUBLIC_KEYS = {
     "accession",
     "accession_number",
@@ -604,7 +595,7 @@ def _reject_public_text_patterns(value: Any, *, field: str) -> None:
         return
     if not isinstance(value, str):
         return
-    if ACCESSION_RE.search(value) or SEC_URL_RE.search(value) or WINDOWS_ABS_PATH_RE.search(value) or LOCAL_REF_RE.search(value):
+    if public_text_reference_detected(value, scan_raw_period_dates=False):
         raise SecXbrlE2EOfflineOrchestratorError(
             "sec_xbrl_e2e_offline_orchestrator_raw_reference_not_admitted",
             "SEC XBRL offline orchestration public output cannot carry raw accession, SEC URL, or local path strings.",
