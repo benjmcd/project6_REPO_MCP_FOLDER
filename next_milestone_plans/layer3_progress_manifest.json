@@ -45915,6 +45915,66 @@
     "json_manifest_validation": "PASS: utf-8-sig JSON parse for layer3_progress_manifest.json and layer3_workbench_proof_manifest.json",
     "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only"
   },
+  "sec_xbrl_public_authority_guard_persistence_family_tracking": {
+    "status": "branch_local_persistence_family_guard_consolidation",
+    "milestone": "sec_xbrl_public_authority_guard_persistence_family_v1",
+    "branch": "codex/secxbrl-authority-guard",
+    "base_main": "33ad95c2dcdc744b27d670a127ccac15dba3a444",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1346-sec-xbrl-public-authority-guard.md",
+    "prior_milestone": "sec_xbrl_transaction_safe_operator_review_persistence_v1_review_debt_closeout",
+    "design_decision": "extract the duplicated SEC XBRL public raw/local authority scanner from projection and statement-packet persistence into a shared pure helper while preserving service-local exception classes, error codes, messages, and residual-magnitude variants",
+    "next_posture": "continue raw/local authority guard consolidation in smaller service-family tranches after this persistence-family pilot is verified and merged",
+    "tier_classification": "Persistence-family consolidation of duplicated validation scaffolding. It changes no schema, models.py, Alembic migration, backend API/UI, diagnostics report, proof JSON, source acquisition, Arelle invocation, value reveal, runtime-default behavior, raw runtime artifact, or production-readiness behavior.",
+    "tier2_surfaces_touched": [
+      "backend/app/services/layer3_sec_xbrl_projection_persistence.py",
+      "backend/app/services/layer3_sec_xbrl_statement_packet_persistence.py",
+      "backend/app/services/layer3_sec_xbrl_public_authority_guard.py"
+    ],
+    "tier1_supporting_surfaces_touched": [
+      "backend/tests/test_sec_xbrl_public_authority_guard.py",
+      "next_milestone_plans/Layer3_planning_docs/1346-sec-xbrl-public-authority-guard.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "runtime_default_changed_by_tracking": false,
+    "backend_api_contract_changed_by_tracking": false,
+    "rendered_ui_changed_by_tracking": false,
+    "schema_models_changed_by_tracking": false,
+    "migration_changed_by_tracking": false,
+    "source_acquisition_performed_by_tracking": false,
+    "arelle_subprocess_invoked_by_tracking": false,
+    "live_sec_network_run_performed_by_tracking": false,
+    "value_reveal_default_enabled_by_tracking": false,
+    "controlled_value_reveal_submit_default_enabled_by_tracking": false,
+    "raw_internal_value_store_default_enabled_by_tracking": false,
+    "delivery_or_export_performed": false,
+    "provider_or_connector_dispatch_performed": false,
+    "raw_values_committed_by_tracking": false,
+    "raw_identity_committed_by_tracking": false,
+    "raw_runtime_artifacts_added_by_tracking": false,
+    "operator_source_workflow_added_by_tracking": false,
+    "production_readiness_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "cross_company_comparability_claimed": false,
+    "source_evidence": [
+      "backend/app/services/layer3_sec_xbrl_public_authority_guard.py owns raw value key, raw authority key, raw reference, raw period-date, residual variant, and unadmitted-key scanning primitives",
+      "backend/app/services/layer3_sec_xbrl_projection_persistence.py delegates raw/local authority scanning and unadmitted-key inventory to the shared guard while preserving projection-specific errors",
+      "backend/app/services/layer3_sec_xbrl_statement_packet_persistence.py delegates raw/local authority scanning and unadmitted-key inventory to the shared guard while preserving statement-packet-specific raw authority, raw reference, and residual-magnitude errors"
+    ],
+    "known_hard_seams": [
+      "operator-review workflow, value-reveal, controlled-submit, E2E, auth-binding, and multi-filing guards have additional service semantics and remain separate future tranches",
+      "this pilot reduces duplicated validation scaffolding but does not complete all SEC XBRL raw/local authority guard consolidation"
+    ],
+    "containment_or_rollback_notes": "No schema or migration rollback is required. Revert the shared guard module, the two persistence service delegations, focused guard test, and 1346 planning/progress/proof entries to roll back this pilot.",
+    "verification_status": "branch-local verification passed",
+    "focused_persistence_guard_suite": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_public_authority_guard.py ./backend/tests/test_sec_xbrl_projection_persistence.py ./backend/tests/test_sec_xbrl_statement_packet_persistence.py -q -> 43 passed",
+    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 452 passed, 3 warnings",
+    "target_selection_validation": "PASS: python ./tools/l3-target-selection-validate.py --expect frozen",
+    "progress_check": "PASS: python ./tools/l3-progress-check.py",
+    "json_manifest_validation": "PASS: utf-8-sig JSON parse for layer3_progress_manifest.json and layer3_workbench_proof_manifest.json",
+    "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only"
+  },
   "sec_xbrl_offline_evidence_loader_diagnostic_tracking": {
     "status": "branch_local_tier2_risk_assessed_offline_evidence_loader_diagnostic_proof",
     "milestone": "sec_xbrl_offline_evidence_loader_diagnostic_v1",

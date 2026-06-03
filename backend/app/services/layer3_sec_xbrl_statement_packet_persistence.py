@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -19,49 +18,19 @@ from app.models.models import (
     L3_SEC_XBRL_STATEMENT_PACKET_REDACTION_POLICY,
     L3_SEC_XBRL_STATEMENT_PACKET_STATUS_MATERIALIZED,
 )
+from app.services.layer3_sec_xbrl_public_authority_guard import (
+    RAW_AUTHORITY_KEYS,
+    RAW_VALUE_KEYS,
+    raw_or_local_authority_violation,
+    unadmitted_keys,
+)
 from app.services.layer3_sec_xbrl_statement_assembly import STATEMENT_ASSEMBLY_SCHEMA_ID
 from app.services.layer3_utils import json_clone, stable_hash
 
 
 PACKET_SET_SCHEMA_ID = STATEMENT_ASSEMBLY_SCHEMA_ID
 ALLOWED_STATEMENTS = ("income", "balance", "cashflow")
-RAW_VALUE_KEYS = {"_value", "value", "effective_value", "amount", "lexical_value"}
-RAW_AUTHORITY_KEYS = {
-    "resolved_fact_id",
-    "resolved_fact_ids",
-    "derived_from_resolved_fact_ids",
-    "raw_resolved_fact_authority",
-    "raw_resolved_fact_authorities",
-    "cik",
-    "cik_or_filer_ref",
-    "filer_or_cik",
-    "accession",
-    "accession_number",
-    "company_name",
-    "issuer_name",
-    "registrant",
-    "registrant_name",
-    "ticker",
-    "contact",
-    "user_agent",
-    "local_path",
-    "raw_path",
-    "storage_dir",
-    "storage_root",
-    "sec_url",
-}
 RESIDUAL_MAGNITUDE_KEYS = {"relative_magnitude", "residual_abs", "residual", "magnitude"}
-ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
-SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
-WINDOWS_ABS_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
-LOCAL_REF_RE = re.compile(
-    r"(?i)(?:"
-    r"file://"
-    r"|\\\\[^\\/]+[\\/]"
-    r"|(?:^|[\s\"'=])/(?:workspace|tmp|home|users|var|mnt|opt|private)(?:/|$)"
-    r")"
-)
-RAW_PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 ORGANIZATION_CONTRACT_BOOL_FIELDS = {
     "contract_passed",
     "contract_b_authoritative_organization",
@@ -755,7 +724,7 @@ def _reject_unadmitted_keys(
     error_code: str,
     message: str,
 ) -> None:
-    unknown = sorted(str(key) for key in value if str(key) not in admitted)
+    unknown = unadmitted_keys(value, admitted=admitted)
     if unknown:
         raise SecXbrlStatementPacketPersistenceError(
             error_code,
@@ -765,38 +734,27 @@ def _reject_unadmitted_keys(
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            key_text = str(key)
-            key_match = key_text.strip().lower()
-            if key_match in RAW_VALUE_KEYS or key_match in RAW_AUTHORITY_KEYS:
-                if item is not None:
-                    raise SecXbrlStatementPacketPersistenceError(
-                        "sec_xbrl_statement_packet_persistence_raw_authority_not_admitted",
-                        "SEC XBRL statement packet persistence cannot store raw values or raw authority identifiers.",
-                        details={"field": key_text},
-                    )
-            if key_match in RESIDUAL_MAGNITUDE_KEYS and item is not None:
-                raise SecXbrlStatementPacketPersistenceError(
-                    "sec_xbrl_statement_packet_persistence_residual_magnitudes_not_admitted",
-                    "SEC XBRL statement packet persistence cannot store residual magnitude fields.",
-                    details={"field": key_text},
-                )
-            _reject_raw_or_local_authority(item)
+    violation = raw_or_local_authority_violation(
+        value,
+        raw_value_keys=RAW_VALUE_KEYS,
+        raw_authority_keys=RAW_AUTHORITY_KEYS,
+        residual_magnitude_keys=RESIDUAL_MAGNITUDE_KEYS,
+    )
+    if violation is None:
         return
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-        for item in value:
-            _reject_raw_or_local_authority(item)
-        return
-    if isinstance(value, str):
-        if (
-            ACCESSION_RE.search(value)
-            or SEC_URL_RE.search(value)
-            or WINDOWS_ABS_PATH_RE.search(value)
-            or LOCAL_REF_RE.search(value)
-            or RAW_PERIOD_DATE_RE.search(value)
-        ):
-            raise SecXbrlStatementPacketPersistenceError(
-                "sec_xbrl_statement_packet_persistence_raw_reference_not_admitted",
-                "SEC XBRL statement packet persistence cannot store raw accession, SEC URL, period date, or local path strings.",
-            )
+    if violation.kind == "raw_authority":
+        raise SecXbrlStatementPacketPersistenceError(
+            "sec_xbrl_statement_packet_persistence_raw_authority_not_admitted",
+            "SEC XBRL statement packet persistence cannot store raw values or raw authority identifiers.",
+            details={"field": str(violation.field or "")},
+        )
+    if violation.kind == "residual_magnitude":
+        raise SecXbrlStatementPacketPersistenceError(
+            "sec_xbrl_statement_packet_persistence_residual_magnitudes_not_admitted",
+            "SEC XBRL statement packet persistence cannot store residual magnitude fields.",
+            details={"field": str(violation.field or "")},
+        )
+    raise SecXbrlStatementPacketPersistenceError(
+        "sec_xbrl_statement_packet_persistence_raw_reference_not_admitted",
+        "SEC XBRL statement packet persistence cannot store raw accession, SEC URL, period date, or local path strings.",
+    )
