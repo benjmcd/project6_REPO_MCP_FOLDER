@@ -1,6 +1,6 @@
 # Adequacy Audit
 
-Status: planning-pack self-audit for scope, justification, consistency, and implementation readiness. This audit now accounts for Phase P1 through Phase P10D implementation closeouts and the current-main SEC HTML/iXBRL reconciliation closeout; see `07-p1-closeout.md` through `22-sec-ixbrl-reconcile-closeout.md`.
+Status: planning-pack self-audit for scope, justification, consistency, and implementation readiness. This audit now accounts for Phase P1 through Phase P10E implementation closeouts and the current-main SEC HTML/iXBRL reconciliation closeout; see `07-p1-closeout.md` through `23-p10e-raw-mixed-trace-closeout.md`.
 
 ## Audit Question
 
@@ -35,6 +35,7 @@ Confirmed from live source:
 - Layer 3 selected-pass execution/result/package commit now preserves single `dataset_version` source identity for APS-derived dataset packages.
 - Layer 3 material preview now emits selected-material source trace detail for APS-derived `DatasetVersion` rows, and the Gate B material ledger renders that trace without requiring raw JSON inspection.
 - Layer 3 workbench can now list/select indexed APS content documents, material preview can emit DB-backed `aps_content_document` candidates from `ApsContentDocument`, `ApsContentChunk`, and `ApsContentLinkage`, and the Gate B material ledger renders document/chunk/linkage trace detail without requiring raw JSON inspection.
+- Layer 3 candidate and selected-material trace surfaces now label admitted server-owned raw mixed materialized `DatasetVersion` rows as `server_owned_raw_mixed` while preserving separate governance for mixed package semantics.
 
 Confirmed from planning/status docs:
 
@@ -85,7 +86,7 @@ No contradiction found:
 - `03-implementation.md` converts the contract into bounded phases.
 - `04-validation.md` defines the fixture and regression matrix.
 - `05-decisions.md` records settled decisions and open questions.
-- `07-p1-closeout.md` through `22-sec-ixbrl-reconcile-closeout.md` record implemented branch state, reconciliation state, and validation caveats.
+- `07-p1-closeout.md` through `23-p10e-raw-mixed-trace-closeout.md` record implemented branch state, reconciliation state, and validation caveats.
 
 ## Grill-Me Self-Audit
 
@@ -278,4 +279,4 @@ Caveat:
 
 ## Final Planning Verdict
 
-The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P10D are now implemented in this branch, and current main separately admits the governed SEC-specific HTML/iXBRL receipt chain with a recorded reconciliation checkpoint. The next correct action is a narrow document/refused/mixed-source trace/detail surfacing pass backed by server authority, a separately scoped mixed-source package-semantics pass, or a legacy CSV bridge deprecation decision after generic table bridge adoption evidence is sufficient, while preserving all existing PDF/document, Candidate B PDF-only, generic XML/HTML refusal, and Layer 3 source-shape behavior.
+The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P10E are now implemented in this branch, and current main separately admits the governed SEC-specific HTML/iXBRL receipt chain with a recorded reconciliation checkpoint. The next correct action is a narrow refused-artifact trace/detail surfacing pass backed by server authority, a separately scoped mixed-source package-semantics pass, or a legacy CSV bridge deprecation decision after generic table bridge adoption evidence is sufficient, while preserving all existing PDF/document, Candidate B PDF-only, generic XML/HTML refusal, and Layer 3 source-shape behavior.
