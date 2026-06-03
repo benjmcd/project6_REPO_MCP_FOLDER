@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from app.services.layer3_sec_xbrl_report_leak_guard import (
+    diagnostic_resolved_fact_redaction_scan_payload,
     raw_value_key_found,
     reject_report_public_text_references,
     reject_report_leaks,
@@ -67,6 +70,26 @@ def test_report_leak_flags_can_preserve_diagnostic_raw_value_key_variants() -> N
         raw_value_keys=("_value", "value", "effective_value", "amount"),
         ignore_case=True,
     )
+
+
+def test_diagnostic_resolved_fact_redaction_scan_payload_supports_extra_patterns() -> None:
+    safe = diagnostic_resolved_fact_redaction_scan_payload(
+        {"redacted": True},
+        raw_resolved_fact_id_pattern=re.compile(r"\brf[-_][A-Za-z0-9]"),
+        extra_patterns={"raw_total_fact_counts_found": re.compile(r'"total_fact_count"')},
+    )
+    unsafe = diagnostic_resolved_fact_redaction_scan_payload(
+        {"summary": {"total_fact_count": 3}, "ref": "rf-example"},
+        raw_resolved_fact_id_pattern=re.compile(r"\brf[-_][A-Za-z0-9]"),
+        extra_patterns={"raw_total_fact_counts_found": re.compile(r'"total_fact_count"')},
+    )
+
+    assert safe["passed"] is True
+    assert safe["raw_resolved_fact_ids_found"] is False
+    assert safe["raw_total_fact_counts_found"] is False
+    assert unsafe["passed"] is False
+    assert unsafe["raw_resolved_fact_ids_found"] is True
+    assert unsafe["raw_total_fact_counts_found"] is True
 
 
 def test_reject_report_leaks_uses_service_exception_factory() -> None:
