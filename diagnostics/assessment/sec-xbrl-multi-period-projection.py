@@ -25,6 +25,7 @@ from app.services.layer3_sec_xbrl_report_leak_guard import diagnostic_authority_
 from app.services.layer3_utils import stable_hash  # noqa: E402
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import report_envelope as _report_envelope  # noqa: E402
 from sec_xbrl_runtime_posture import (  # noqa: E402
     committed_runtime_posture,
     runtime_posture_criterion_evidence,
@@ -76,26 +77,26 @@ def build_report(
         period_limit=period_limit,
         include_sector_families=bool(bundle.get("include_sector_families") is True),
     )
-    report: dict[str, Any] = {
-        "schema_id": REPORT_SCHEMA_ID,
-        "target": TARGET,
-        "next_slice": NEXT_SLICE,
-        "decision": "sec_xbrl_multi_period_projection_validate_only_ready",
-        "source_mode": "governed_sidecar_value_store_reference_bundle",
-        "validate_only": True,
-        "live_network_used": False,
-        "arelle_invoked": False,
-        "value_reveal_performed": False,
-        "runtime_defaults_changed": False,
-        "value_authority": "governed_arelle_sidecar_value_store",
-        "oracle_authority": "companyfacts_period_key_validation_only",
-        "period_selection_rule": "document_period_end_first_then_comparative_fy_periods",
-        "summary": _summary(result),
-        "periods": [_public_period(item) for item in result.get("periods") or []],
-        "blocking_reasons": list(result.get("blocking_reasons") or []),
-        "redaction": {},
-        "criteria": [],
-        "non_goals_preserved": {
+    report: dict[str, Any] = _report_envelope(
+        schema_id=REPORT_SCHEMA_ID,
+        target=TARGET,
+        next_slice=NEXT_SLICE,
+        decision="sec_xbrl_multi_period_projection_validate_only_ready",
+        source_mode="governed_sidecar_value_store_reference_bundle",
+        validate_only=True,
+        live_network_used=False,
+        arelle_invoked=False,
+        value_reveal_performed=False,
+        runtime_defaults_changed=False,
+        value_authority="governed_arelle_sidecar_value_store",
+        oracle_authority="companyfacts_period_key_validation_only",
+        period_selection_rule="document_period_end_first_then_comparative_fy_periods",
+        summary=_summary(result),
+        periods=[_public_period(item) for item in result.get("periods") or []],
+        blocking_reasons=list(result.get("blocking_reasons") or []),
+        redaction={},
+        criteria=[],
+        non_goals_preserved={
             "value_reveal_performed": False,
             "persisted_store_claimed": False,
             "statement_assembly_changed": False,
@@ -104,7 +105,7 @@ def build_report(
             "runtime_default_enabled": False,
             "final_financial_statement_semantics_claimed": False,
         },
-    }
+    )
     report["redaction"] = _redaction_scan_payload(report)
     report["criteria"] = _criteria(report=report, runtime_posture=runtime_posture)
     report["blocking_reasons"] = list(report["blocking_reasons"]) + _blocking_reasons(report["criteria"])
