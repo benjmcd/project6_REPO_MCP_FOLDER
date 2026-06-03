@@ -1,5 +1,24 @@
 # Layer3 Progress Board
 
+## SEC XBRL Custom Guard and Redaction Audit
+
+Milestone:
+`sec_xbrl_custom_guard_redaction_audit_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md`.
+
+Status: branch-local docs-only audit ready for review on
+`codex/secxbrl-custom-guard-audit`.
+
+Scope: records the remaining custom SEC XBRL guard/redaction surfaces after the shared diagnostic framework, report leak guard, public authority guard, raw-value-key, and text-leak consolidation slices. The audit separates exact diagnostic redaction extensions from service wrappers that preserve custom error classes, error codes, blocked-key details, scan variants, and output-policy behavior.
+
+Containment: no runtime behavior, route behavior, persistence, schema, UI, config, models, proof JSONs, committed report JSONs, source acquisition, Arelle invocation, live SEC network use, value reveal, default-on posture, or activation-lane authorization changed.
+
+Verification: full `backend/tests/test_sec_xbrl*.py` suite passed with 460 tests and 3 warnings; `python ./tools/l3-progress-check.py` passed; `python ./tools/l3-target-selection-validate.py --expect frozen` passed; `git diff --check` passed.
+
+Next posture: future migrations must be service-family-specific, byte-stable for diagnostic reports, and exact-shape preserving for runtime/public error surfaces. Do not bulk-migrate custom guard wrappers.
+
 ## SEC XBRL Public Authority Guard Auth-Binding Consolidation
 
 Milestone:
