@@ -4,6 +4,7 @@ import json
 import re
 from collections.abc import Callable
 from collections.abc import Iterable
+from collections.abc import Mapping
 from typing import Any
 
 from app.services.layer3_sec_xbrl_canonical_concepts import report_redaction_scan_payload
@@ -15,6 +16,7 @@ RAW_VALUE_KEYS = ("_value", "value", "amount", "effective_value", "raw_value", "
 DIAGNOSTIC_AUTHORITY_RAW_VALUE_KEYS = ("_value", "value", "effective_value", "amount")
 DIAGNOSTIC_AUTHORITY_KEY_RE = re.compile(r'"(?:resolved_fact_id|fact_id_or_order_key)"\s*:', re.IGNORECASE)
 DIAGNOSTIC_ISSUER_IDENTITY_TOKENS = ("issuer_ref", "issuer_hash", "issuer_name", "entity_name", "company_name")
+DIAGNOSTIC_CANONICAL_ISSUER_IDENTITY_TOKENS = ("issuer_ref", "issuer_hash", "issuer_name")
 
 
 def report_leak_flags(
@@ -108,6 +110,35 @@ def diagnostic_authority_redaction_scan_payload(
         and not raw_value_key_found
         and not raw_authority_key_found
         and not issuer_identity_found,
+    }
+
+
+def diagnostic_resolved_fact_redaction_scan_payload(
+    value: Any,
+    *,
+    raw_resolved_fact_id_pattern: re.Pattern[str],
+    issuer_identity_tokens: Iterable[str] = DIAGNOSTIC_CANONICAL_ISSUER_IDENTITY_TOKENS,
+    extra_patterns: Mapping[str, re.Pattern[str]] | None = None,
+) -> dict[str, bool]:
+    text = json.dumps(value, sort_keys=True) if not isinstance(value, str) else value
+    base = report_redaction_scan_payload(value)
+    extra_flags = {
+        key: bool(pattern.search(text))
+        for key, pattern in dict(extra_patterns or {}).items()
+    }
+    raw_resolved_fact_ids_found = bool(raw_resolved_fact_id_pattern.search(text))
+    raw_issuer_identity_found = any(token in text for token in issuer_identity_tokens)
+    return {
+        **base,
+        "raw_resolved_fact_ids_found": raw_resolved_fact_ids_found,
+        "raw_issuer_identity_found": raw_issuer_identity_found,
+        **extra_flags,
+        "passed": (
+            base.get("passed") is True
+            and not raw_resolved_fact_ids_found
+            and not raw_issuer_identity_found
+            and not any(extra_flags.values())
+        ),
     }
 
 
