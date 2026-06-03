@@ -43,6 +43,8 @@ def test_public_authority_guard_supports_value_reveal_text_variants() -> None:
 def test_public_authority_guard_supports_auth_binding_text_variants() -> None:
     assert raw_or_local_authority_violation("sec.gov") is None
     assert raw_or_local_authority_violation("sec.gov", scan_bare_sec_domain=True).kind == "raw_reference"
+    assert raw_or_local_authority_violation("\\\\server\\share\\id", scan_standard_local_refs=False) is None
+    assert raw_or_local_authority_violation("/opt/release", scan_standard_local_refs=False) is None
     assert raw_or_local_authority_violation("prefixC:/raw", scan_windows_abs_path_anywhere=True).kind == (
         "raw_reference"
     )

@@ -637,6 +637,7 @@ def _reject_raw_reference(value: str) -> None:
         scan_raw_period_dates=False,
         scan_operator_contact=True,
         scan_bare_sec_domain=True,
+        scan_standard_local_refs=False,
         scan_windows_abs_path_anywhere=True,
         scan_local_ref_segment=True,
     ):
