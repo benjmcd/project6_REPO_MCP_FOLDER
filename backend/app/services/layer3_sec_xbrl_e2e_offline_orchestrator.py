@@ -20,7 +20,10 @@ from app.services.layer3_sec_xbrl_operator_review_workflow import (
 from app.services.layer3_sec_xbrl_projection_persistence import (
     materialize_redacted_projection_set,
 )
-from app.services.layer3_sec_xbrl_public_authority_guard import public_text_reference_detected
+from app.services.layer3_sec_xbrl_public_authority_guard import (
+    reject_public_output_policy,
+    reject_public_text_references,
+)
 from app.services.layer3_sec_xbrl_statement_packet_persistence import (
     materialize_redacted_statement_packet,
 )
@@ -566,38 +569,24 @@ def _positive_int(value: Any, field: str) -> int:
 
 
 def _reject_public_raw_or_local_authority(value: Any) -> None:
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            key_text = str(key)
-            if key_text.strip().lower() in RAW_PUBLIC_KEYS and item is not None:
-                raise SecXbrlE2EOfflineOrchestratorError(
-                    "sec_xbrl_e2e_offline_orchestrator_raw_public_authority_not_admitted",
-                    "SEC XBRL offline orchestration output cannot carry raw identity, path, or source references.",
-                    details={"field": key_text},
-                )
-            _reject_public_raw_or_local_authority(item)
-        return
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-        for item in value:
-            _reject_public_raw_or_local_authority(item)
-        return
-    _reject_public_text_patterns(value, field="value")
+    reject_public_output_policy(
+        value,
+        error_type=SecXbrlE2EOfflineOrchestratorError,
+        raw_output_code="sec_xbrl_e2e_offline_orchestrator_raw_public_authority_not_admitted",
+        raw_output_message="SEC XBRL offline orchestration output cannot carry raw identity, path, or source references.",
+        raw_reference_code="sec_xbrl_e2e_offline_orchestrator_raw_reference_not_admitted",
+        raw_reference_message="SEC XBRL offline orchestration public output cannot carry raw accession, SEC URL, or local path strings.",
+        raw_output_keys=RAW_PUBLIC_KEYS,
+        scan_raw_period_dates=False,
+    )
 
 
 def _reject_public_text_patterns(value: Any, *, field: str) -> None:
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            _reject_public_text_patterns(item, field=str(key))
-        return
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-        for item in value:
-            _reject_public_text_patterns(item, field=field)
-        return
-    if not isinstance(value, str):
-        return
-    if public_text_reference_detected(value, scan_raw_period_dates=False):
-        raise SecXbrlE2EOfflineOrchestratorError(
-            "sec_xbrl_e2e_offline_orchestrator_raw_reference_not_admitted",
-            "SEC XBRL offline orchestration public output cannot carry raw accession, SEC URL, or local path strings.",
-            details={"field": field},
-        )
+    reject_public_text_references(
+        value,
+        error_type=SecXbrlE2EOfflineOrchestratorError,
+        raw_reference_code="sec_xbrl_e2e_offline_orchestrator_raw_reference_not_admitted",
+        raw_reference_message="SEC XBRL offline orchestration public output cannot carry raw accession, SEC URL, or local path strings.",
+        field=field,
+        scan_raw_period_dates=False,
+    )
