@@ -22,6 +22,11 @@ from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
 )
 from app.services.layer3_sec_xbrl_report_guards import rows_have_unique_required_key  # noqa: E402
 
+from sec_xbrl_runtime_posture import (  # noqa: E402
+    committed_runtime_posture,
+    runtime_posture_criterion_evidence,
+    runtime_posture_criterion_passed,
+)
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-canonical-coverage-breadth-report.json")
 TARGET = "sec_xbrl_canonical_coverage_breadth_validate_only_v1"
@@ -48,13 +53,13 @@ def main() -> int:
 
 
 def build_report(*, source_root: Path, sector_results: Sequence[Mapping[str, Any]] | None = None) -> dict[str, Any]:
-    config_text = (source_root / "backend" / "app" / "core" / "config.py").read_text(encoding="utf-8")
+    runtime_posture = committed_runtime_posture(source_root=source_root)
     report = _reference_summary_report(
         sector_results=list(sector_results or _reference_sector_results()),
-        config_defaults_off=_config_defaults_off(config_text),
+        runtime_posture=runtime_posture,
     )
     report["redaction"] = report_redaction_scan_payload(report)
-    report["criteria"] = _criteria(report=report, config_defaults_off=_config_defaults_off(config_text))
+    report["criteria"] = _criteria(report=report, runtime_posture=runtime_posture)
     report["blocking_reasons"] = _blocking_reasons(report["criteria"])
     if report["blocking_reasons"]:
         report["decision"] = "canonical_coverage_breadth_validate_only_blocked"
@@ -65,7 +70,7 @@ def build_report(*, source_root: Path, sector_results: Sequence[Mapping[str, Any
 def _reference_summary_report(
     *,
     sector_results: Sequence[Mapping[str, Any]],
-    config_defaults_off: bool,
+    runtime_posture: Mapping[str, Any],
 ) -> dict[str, Any]:
     concept_inventory = canonical_concept_inventory()
     sectors = [_sector_summary(item) for item in sector_results]
@@ -120,7 +125,7 @@ def _reference_summary_report(
             "linkbase_relationships_required_or_consumed": False,
         },
     }
-    report["criteria"] = _criteria(report=report, config_defaults_off=config_defaults_off)
+    report["criteria"] = _criteria(report=report, runtime_posture=runtime_posture)
     report["blocking_reasons"] = _blocking_reasons(report["criteria"])
     if report["blocking_reasons"]:
         report["decision"] = "canonical_coverage_breadth_validate_only_blocked"
@@ -248,7 +253,7 @@ def _sector_summary(item: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def _criteria(*, report: Mapping[str, Any], config_defaults_off: bool) -> list[dict[str, Any]]:
+def _criteria(*, report: Mapping[str, Any], runtime_posture: Mapping[str, Any]) -> list[dict[str, Any]]:
     redaction = report_redaction_scan_payload(report)
     summary = dict(report.get("summary") or {})
     sectors = list(report.get("sector_classes") or [])
@@ -257,8 +262,8 @@ def _criteria(*, report: Mapping[str, Any], config_defaults_off: bool) -> list[d
     return [
         _criterion(
             "committed_runtime_defaults_remain_off",
-            config_defaults_off,
-            {"config_defaults_off": config_defaults_off},
+            runtime_posture_criterion_passed(runtime_posture),
+            runtime_posture_criterion_evidence(runtime_posture),
             "canonical_coverage_breadth_defaults_not_off",
         ),
         _criterion(
@@ -381,15 +386,6 @@ def _blocking_reasons(criteria: Sequence[Mapping[str, Any]]) -> list[dict[str, A
 
 def _rate(numerator: int, denominator: int) -> float | None:
     return round(numerator / denominator, 4) if denominator else None
-
-
-def _config_defaults_off(config_text: str) -> bool:
-    return (
-        "layer3_sec_edgar_live_network_enabled: bool = Field(\n        default=False," in config_text
-        and "layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=False,"
-        in config_text
-        and "layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False," in config_text
-    )
 
 
 def _resolve_path(path: str) -> Path:

@@ -25,6 +25,7 @@ def test_reference_summary_projection_counts_are_internally_consistent(tmp_path:
     diagnostic = _diagnostic_module()
     report = diagnostic.build_report(source_root=_source_root(tmp_path))
     issuer = report["per_issuer"][0]
+    text = json.dumps(report, sort_keys=True)
 
     assert report["decision"] == "canonical_projection_validate_only_ready"
     assert report["include_sector_families"] is False
@@ -38,6 +39,10 @@ def test_reference_summary_projection_counts_are_internally_consistent(tmp_path:
     assert issuer["provenance_complete_count"] == issuer["projected_count"]
     assert issuer["oracle_confirmed_count"] == 21
     assert issuer["legitimately_absent_count"] == 1
+    assert report["summary"]["statement_identity_residual_magnitudes_redacted"] is True
+    assert report["statement_identity_residuals"][0]["within_tolerance"] is True
+    assert "relative_magnitude" not in text
+    assert "residual_abs" not in text
 
 
 def test_projection_sources_fy_sidecar_value_and_provenance() -> None:
@@ -266,6 +271,8 @@ def test_projection_report_redacts_values_and_authority_ids(tmp_path: Path) -> N
     assert "rf-revenue-fy" not in text
     assert "sidecar-ref" not in text
     assert "4321" not in text
+    assert "relative_magnitude" not in text
+    assert "residual_abs" not in text
 
 
 def test_projection_uses_sidecar_primary_taxonomy_not_companyfacts_presence() -> None:
