@@ -763,6 +763,7 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
         "material_preview_id",
         "material_preview_hash",
         "material_candidates",
+        "mixed_source_package_semantics",
         "partial_retrieval",
         "authority_rail",
     } <= set(material_schema["required"])
@@ -17509,6 +17510,75 @@ def test_layer3_api_aps_content_document_material_preview_carries_trace(client: 
     assert candidate["source_trace"]["chunk_summary"]["loaded_chunk_count"] == 2
     assert candidate["source_trace"]["aps_trace_refs"]["run_id"] == run_id
     assert candidate["source_trace"]["aps_trace_refs"]["target_id"] == target_id
+
+
+def test_layer3_api_material_preview_surfaces_mixed_source_package_readiness(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    run_id = "api-mixed-readiness-run-001"
+    target_id = "api-mixed-readiness-target-001"
+    content_id = "api-mixed-readiness-content-001"
+    dataset_version_id = "api-mixed-readiness-dv-001"
+    with client.layer3_session_factory() as db:
+        _seed_aps_derived_dataset_version(db, tmp_path, dataset_version_id=dataset_version_id)
+        _seed_aps_content_fixture(
+            db,
+            tmp_path,
+            run_id=run_id,
+            target_id=target_id,
+            content_id=content_id,
+        )
+        db.commit()
+
+    preflight = client.post(
+        "/api/v1/layer3/preflight",
+        json={
+            "client_request_id": "api-preflight-mixed-readiness",
+            "natural_language_intent": "Review indexed APS narrative and extracted table together.",
+            "manual_constraints": {"source_classes": ["dataset_version", "aps_content_document"]},
+        },
+    )
+    assert preflight.status_code == 200
+    source = client.post(
+        "/api/v1/layer3/source-preview",
+        json={
+            "client_request_id": "api-source-mixed-readiness",
+            "preflight_id": preflight.json()["preflight_id"],
+            "selected_source_classes": ["dataset_version", "aps_content_document"],
+        },
+    )
+    assert source.status_code == 200
+    material = client.post(
+        "/api/v1/layer3/material-preview",
+        json={
+            "client_request_id": "api-material-mixed-readiness",
+            "preflight_id": preflight.json()["preflight_id"],
+            "source_set_id": source.json()["source_set_id"],
+            "source_candidate_ids": [item["source_candidate_id"] for item in source.json()["source_candidates"]],
+            "dataset_version_ids": [dataset_version_id],
+            "aps_content_document_ids": [content_id],
+            "query_basis": {"terms": ["mixed", "package"]},
+        },
+    )
+
+    assert material.status_code == 200
+    body = material.json()
+    mixed = body["mixed_source_package_semantics"]
+    assert {item["source_class"] for item in body["material_candidates"]} == {
+        "dataset_version",
+        "aps_content_document",
+    }
+    assert mixed["schema_id"] == "layer3.mixed_source_package_semantics_readiness.v1"
+    assert mixed["material_authority_state"] == "mixed_material_authority_present"
+    assert mixed["package_semantics_state"] == "governed_contract_required"
+    assert mixed["package_construction_enabled"] is False
+    assert mixed["package_review_preview_enabled"] is False
+    assert mixed["handoff_enabled"] is False
+    assert mixed["dataset_version_ids"] == [dataset_version_id]
+    assert mixed["aps_content_document_ids"] == [content_id]
+    assert mixed["next_allowed_actions"] == ["define_mixed_source_package_contract"]
+    assert "no_onlook_work" in mixed["non_goals"]
 
 
 def test_layer3_api_gate_b_no_approved_material_is_blocked_error(client: TestClient) -> None:

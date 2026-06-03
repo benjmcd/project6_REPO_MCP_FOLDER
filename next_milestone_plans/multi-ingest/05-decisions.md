@@ -200,6 +200,20 @@ Risk avoided:
 
 Avoids duplicating APS document provenance, widening Candidate B, or implying that mixed-source package semantics are solved merely because indexed document chunks are selectable.
 
+### D16: P11 Readiness Is Not Package Admission
+
+Decision:
+
+Mixed `dataset_version` plus `aps_content_document` selections should surface a read-only package semantics readiness contract from material preview before any mixed-source package construction or handoff is enabled.
+
+Reason:
+
+The repo now has admitted material authority for both typed table data and indexed document chunks. That is enough to tell operators that mixed material authority is present, but it is not enough to define narrative-table linking, package payload semantics, review preview behavior, package commit behavior, or handoff policy.
+
+Risk avoided:
+
+Avoids silently treating colocated material candidates as a governed package while still giving the next implementation pass a precise contract boundary.
+
 ### D12: P5 Uses Existing DatasetVersion Source Shape
 
 Decision:
@@ -320,13 +334,13 @@ Answer: Yes. `04-validation.md` requires positive and negative fixture coverage 
 
 Question: What could still be missing?
 
-Answer: Parser-level APS unsupported-media artifact refusal traces are now surfaced from persisted artifact-ingestion run/target reports. Remaining items are when to connect admitted SEC narrative-plus-table output into governed mixed-source package semantics, whether the legacy CSV bridge compatibility path can be deprecated after generic table bridge adoption is proven, and future refusal trace classes only when new server-owned failure authority needs UI surfacing. Current-main SEC-specific HTML/iXBRL authority is now reconciled in `22-sec-ixbrl-reconcile-closeout.md`, so any further reconciliation should be triggered by newly discovered drift rather than assumed.
+Answer: Parser-level APS unsupported-media artifact refusal traces are now surfaced from persisted artifact-ingestion run/target reports. Material preview now exposes mixed-source package readiness when admitted `dataset_version` and `aps_content_document` material are selected together, but package construction, review mutation, handoff, narrative-table linking, and payload semantics remain deferred. Remaining items are defining that governed mixed-source package contract, deciding whether the legacy CSV bridge compatibility path can be deprecated after generic table bridge adoption is proven, and future refusal trace classes only when new server-owned failure authority needs UI surfacing. Current-main SEC-specific HTML/iXBRL authority is now reconciled in `22-sec-ixbrl-reconcile-closeout.md`, so any further reconciliation should be triggered by newly discovered drift rather than assumed.
 
 ## Immediate Next Action
 
-Do not repeat P10H parser-level unsupported-media artifact refusal trace/detail surfacing. The next pass should choose one of the remaining bounded lanes: governed mixed-source package semantics over admitted parser/material authority, legacy CSV bridge deprecation after generic table bridge adoption evidence, or a newly audited refusal trace class only if persisted server-owned run/target authority exists:
+Do not repeat P11 mixed-source package readiness. The next pass should choose one of the remaining bounded lanes: define the governed mixed-source package contract over the new readiness projection, legacy CSV bridge deprecation only after generic table bridge adoption evidence, or a newly audited refusal trace class only if persisted server-owned run/target authority exists:
 
 - Reuse the P10B candidate-panel guardrails and P10C selected-material trace detail as server authority for what is admitted/materialized versus deferred/refused.
 - Preserve backend-owned material-preview, Gate B, execution/result, and package contracts.
 - Do not add schema changes or source shapes in the same PR.
-- Keep document trace/document chunks separate from typed dataset selection unless a new mixed-source contract is explicitly defined.
+- Keep document trace/document chunks separate from typed dataset selection until the mixed-source package contract explicitly defines narrative-table linking and payload semantics.
