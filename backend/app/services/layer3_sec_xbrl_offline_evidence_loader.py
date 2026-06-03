@@ -14,8 +14,7 @@ from app.services.layer3_sec_edgar_html_inline_xbrl_fact_statement_classificatio
     classification_receipt_hash_basis,
 )
 from app.services.layer3_utils import stable_hash
-from app.services.layer3_sec_xbrl_public_authority_guard import report_text_reference_flags
-from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_leaks
+from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_leaks, report_text_leak_flags
 
 
 SCHEMA_ID = "layer3.sec_xbrl_offline_evidence_loader.v1"
@@ -613,7 +612,7 @@ def _required_text(value: Any, field: str) -> str:
             "SEC XBRL offline evidence requires a non-empty field.",
             details={"field": field},
         )
-    if any(report_text_reference_flags(text).values()):
+    if any(report_text_leak_flags(text).values()):
         raise SecXbrlOfflineEvidenceLoaderError(
             "sec_xbrl_offline_evidence_loader_raw_reference_not_admitted",
             "SEC XBRL offline evidence public references cannot carry raw accession, SEC URL, or local path text.",
