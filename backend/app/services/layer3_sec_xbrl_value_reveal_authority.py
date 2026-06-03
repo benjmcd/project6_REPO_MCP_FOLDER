@@ -26,8 +26,7 @@ from app.services import layer3_sec_xbrl_operator_review_workflow, layer3_sec_xb
 from app.services.layer3_sec_xbrl_public_authority_guard import (
     RAW_AUTHORITY_KEYS as PUBLIC_RAW_AUTHORITY_KEYS,
     RAW_VALUE_KEYS,
-    blocked_authority_keys_violation,
-    raw_or_local_authority_violation,
+    reject_raw_or_local_authority_with_blocked_keys,
 )
 from app.services.layer3_utils import json_clone, stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
@@ -581,27 +580,17 @@ def _required_hash(value: Any, field: str) -> str:
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:
-    blocked_keys = blocked_authority_keys_violation(
+    reject_raw_or_local_authority_with_blocked_keys(
         value,
-        raw_value_keys=RAW_VALUE_KEYS,
-        raw_authority_keys=VALUE_REVEAL_RAW_AUTHORITY_KEYS,
-    )
-    if blocked_keys:
-        raise SecXbrlValueRevealAuthorityError(
-            "sec_xbrl_value_reveal_authority_raw_authority_not_admitted",
-            "SEC XBRL value-reveal authority only admits server-owned hash authority.",
-            details={"blocked_keys": blocked_keys},
-            http_status=400,
-        )
-    if raw_or_local_authority_violation(
-        value,
-        raw_value_keys=frozenset(),
-        raw_authority_keys=frozenset(),
+        error_type=SecXbrlValueRevealAuthorityError,
+        raw_authority_code="sec_xbrl_value_reveal_authority_raw_authority_not_admitted",
+        raw_authority_message="SEC XBRL value-reveal authority only admits server-owned hash authority.",
+        raw_reference_code="sec_xbrl_value_reveal_authority_raw_reference_not_admitted",
+        raw_reference_message=(
+            "SEC XBRL value-reveal authority cannot expose raw identities, paths, SEC URLs, accessions, or period dates."
+        ),
+        blocked_raw_value_keys=RAW_VALUE_KEYS,
+        blocked_raw_authority_keys=VALUE_REVEAL_RAW_AUTHORITY_KEYS,
         scan_cik=True,
         scan_operator_contact=True,
-    ):
-        raise SecXbrlValueRevealAuthorityError(
-            "sec_xbrl_value_reveal_authority_raw_reference_not_admitted",
-            "SEC XBRL value-reveal authority cannot expose raw identities, paths, SEC URLs, accessions, or period dates.",
-            http_status=400,
-        )
+    )
