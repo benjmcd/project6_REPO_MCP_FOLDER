@@ -3,11 +3,18 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
+
+from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-in-app-auth-policy-validation-report.json")
 TARGET = "sec_xbrl_nonlocal_in_app_auth_policy_validation_v1"
 SCHEMA_ID = "diagnostics.sec_xbrl_nonlocal_in_app_auth_policy_validation.v1"
@@ -774,15 +781,6 @@ def _family_by_name(
         if family.get("route_family") == route_family:
             return family
     return None
-
-
-def _criterion(name: str, passed: bool, evidence: dict[str, Any], blocked_reason: str) -> dict[str, Any]:
-    return {
-        "criterion": name,
-        "state": "passed" if passed else "blocked",
-        "blocked_reason": None if passed else blocked_reason,
-        "evidence": evidence,
-    }
 
 
 def _stable_hash(value: Any) -> str:
