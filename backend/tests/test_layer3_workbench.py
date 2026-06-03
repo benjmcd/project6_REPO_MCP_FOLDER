@@ -1900,7 +1900,13 @@ def test_aps_dataset_version_candidates_list_uses_dataset_source_provenance(db_s
     assert summary["selection_shape"] == "dataset_version"
     assert summary["observed_candidate_counts"] == {"csv_table": 1}
     admitted_parser_families = {item["parser_family"] for item in summary["admitted_materialized_families"]}
-    assert {"csv_table", "xlsx_workbook", "json_recordset", "sec_edgar_filing"} <= admitted_parser_families
+    assert {
+        "csv_table",
+        "xlsx_workbook",
+        "json_recordset",
+        "sec_edgar_filing",
+        "sec_edgar_html_inline_xbrl_source_family_parser_v1",
+    } <= admitted_parser_families
     assert any(item["source_family"] == "xml_html_inline_xbrl" for item in summary["not_admitted_or_deferred_families"])
     assert result["authority_rail"]["read_only"] is True
 
@@ -1925,6 +1931,30 @@ def test_aps_dataset_version_candidates_surface_sec_edgar_family_scope(db_sessio
     assert candidate["source_family_label"] == "SEC/EDGAR text table"
     assert "complete-submission text" in candidate["source_family_scope"]
     assert result["source_family_summary"]["observed_candidate_counts"] == {"sec_edgar_filing": 1}
+
+
+def test_aps_dataset_version_candidates_surface_sec_html_ixbrl_family_scope(db_session, tmp_path) -> None:
+    dataset_version_id = _seed_aps_derived_dataset_version(
+        db_session,
+        tmp_path,
+        dataset_version_id="dv-aps-sec-html-ixbrl-001",
+        parser_family="sec_edgar_html_inline_xbrl_source_family_parser_v1",
+        typed_content_contract_id="sec_edgar_html_inline_xbrl_material_units_v1",
+        source_mode="artifact_sec_edgar_html_inline_xbrl_parser",
+        parser_contract_id="sec_edgar_html_inline_xbrl_source_family_parse_receipt_v1",
+    )
+
+    result = layer3_workbench.aps_dataset_version_candidates(db_session)
+
+    candidate = result["dataset_version_candidates"][0]
+    assert candidate["dataset_version_id"] == dataset_version_id
+    assert candidate["parser_family"] == "sec_edgar_html_inline_xbrl_source_family_parser_v1"
+    assert candidate["source_family"] == "sec_edgar_html_inline_xbrl"
+    assert candidate["source_family_label"] == "SEC/EDGAR HTML inline XBRL"
+    assert "HTML/iXBRL" in candidate["source_family_scope"]
+    assert result["source_family_summary"]["observed_candidate_counts"] == {
+        "sec_edgar_html_inline_xbrl_source_family_parser_v1": 1
+    }
 
 
 def test_dataset_version_candidates_include_server_owned_raw_mixed_materialization(db_session, tmp_path) -> None:
