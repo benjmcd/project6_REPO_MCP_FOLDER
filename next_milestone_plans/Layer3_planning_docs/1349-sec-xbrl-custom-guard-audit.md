@@ -2,6 +2,15 @@
 
 Target: `sec_xbrl_custom_guard_redaction_audit_v1`.
 
+Progress registration:
+
+- `next_milestone_plans/layer3_progress_manifest.json` records the audit target
+  as a docs-only SEC XBRL guard/redaction tracking milestone;
+- `next_milestone_plans/layer3_workbench_proof_manifest.json` records the
+  corresponding proof posture and verification gates;
+- `next_milestone_plans/layer3_progress_board.md` records the current board
+  status and next-posture constraint.
+
 This slice records the post-framework, post-public-authority-guard state of the
 remaining SEC XBRL guard and redaction helpers. It is design/audit only. It
 does not migrate custom runtime wrappers, change report bytes, alter runtime
@@ -79,9 +88,14 @@ it with persistence or E2E guard work.
 ### E2E output family
 
 The E2E offline orchestrator and integration helpers remain custom because they
-protect public output shape, not just raw/local authority text. They reject raw
-public keys, projection private keys, residual magnitude keys, and recursively
-scan nested output.
+protect public output shape, not just raw/local authority text. Their policies
+are related but not identical:
+
+- `layer3_sec_xbrl_e2e_offline_orchestrator.py` rejects raw public keys,
+  recursively scans nested output, and applies public text-pattern checks;
+- `layer3_sec_xbrl_e2e_integration.py` rejects residual magnitude keys,
+  projection-private keys, raw reference/public keys, recursively scans nested
+  output, and applies public text-pattern checks.
 
 Affected surfaces:
 
@@ -142,6 +156,26 @@ not generic public report leak checks.
 
 Safe next slice, if pursued: extract a diagnostic-local helper only if both
 reports remain byte-identical and the helper names the exact extra flags.
+
+### Migrated diagnostics with remaining custom redaction extensions
+
+These diagnostics already use shared framework/report-leak helpers for the
+exact-match portions that were proven byte-stable, but still retain
+diagnostic-specific redaction extensions:
+
+- `sec-xbrl-multi-period-projection.py`;
+- `sec-xbrl-statement-assembly.py`;
+- `sec-xbrl-sector-family-coverage.py`.
+
+The remaining custom checks include raw-value variants, authority/reference
+keys, issuer identity, SIC, accession, and path evidence depending on the
+diagnostic. They are not "remaining exact-match" helpers; they are
+diagnostic-specific policy extensions layered around already-shared helpers.
+
+Safe next slice, if pursued: migrate only one exact variant group at a time and
+prove each affected committed diagnostic report remains byte-identical. If any
+variant changes report bytes, stop and treat the mismatch as a design finding
+rather than forcing the migration.
 
 ### Default-on admission restatement and real corpus runner
 
