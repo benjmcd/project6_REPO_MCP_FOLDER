@@ -39,7 +39,7 @@ REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_offline_evidence_proof_capability.v1"
 ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
 LOCAL_PATH_RE = re.compile(r"[A-Za-z]:[\\/]|\\\\|file://|/(?:Users|home|tmp|workspace|var|mnt|private)(?:/|$)")
-RAW_VALUE_KEY_RE = re.compile(r'"(?:effective_value|raw_value|lexical_value)"')
+RAW_VALUE_KEY_RE = re.compile(r'"(?:_value|value|amount|effective_value|raw_value|lexical_value)"')
 _reject_report_leaks = partial(
     reject_report_leaks,
     exception_factory=lambda: ValueError(
@@ -171,6 +171,7 @@ def inspect_sec_xbrl_offline_evidence_proof_capability(
             redaction_scan=redaction_scan,
             isolated_persistence_counts=_mapping_or_empty(isolated.get("persisted_counts")),
             operator_evidence_files_read=True,
+            isolated_db_persistence_performed=True,
         )
     redaction_issue = _redaction_block_reason(redaction_scan)
     if redaction_issue:
@@ -191,6 +192,7 @@ def inspect_sec_xbrl_offline_evidence_proof_capability(
             redaction_scan=redaction_scan,
             isolated_persistence_counts=_mapping_or_empty(isolated.get("persisted_counts")),
             operator_evidence_files_read=True,
+            isolated_db_persistence_performed=True,
         )
     persistence_issue = _isolated_persistence_block_reason(_mapping_or_empty(isolated.get("persisted_counts")))
     if persistence_issue:
@@ -211,6 +213,7 @@ def inspect_sec_xbrl_offline_evidence_proof_capability(
             redaction_scan=redaction_scan,
             isolated_persistence_counts=_mapping_or_empty(isolated.get("persisted_counts")),
             operator_evidence_files_read=True,
+            isolated_db_persistence_performed=True,
         )
     transaction_issue = _single_transaction_block_reason(isolated_response)
     if transaction_issue:
@@ -231,6 +234,7 @@ def inspect_sec_xbrl_offline_evidence_proof_capability(
             redaction_scan=redaction_scan,
             isolated_persistence_counts=_mapping_or_empty(isolated.get("persisted_counts")),
             operator_evidence_files_read=True,
+            isolated_db_persistence_performed=True,
         )
     proof_result_hash = _proof_result_hash(
         proof_source_hash=proof_source_hash,
@@ -359,6 +363,7 @@ def _blocked_report(
     redaction_scan: Mapping[str, Any] | None = None,
     isolated_persistence_counts: Mapping[str, Any] | None = None,
     operator_evidence_files_read: bool = False,
+    isolated_db_persistence_performed: bool = False,
 ) -> dict[str, Any]:
     blocked_reason: dict[str, Any] = {"reason": reason, "message": message}
     if details:
@@ -385,13 +390,13 @@ def _blocked_report(
             "production_admission_blocked_reason": reason,
         },
         "containment": {
-            "isolated_in_memory_db_used": False,
+            "isolated_in_memory_db_used": isolated_db_persistence_performed,
             "production_database_touched": False,
             "single_transaction_claimed": False,
         },
         "controls": _controls(
             operator_evidence_files_read=operator_evidence_files_read,
-            isolated_db_persistence_performed=False,
+            isolated_db_persistence_performed=isolated_db_persistence_performed,
         ),
         "proof_artifact_policy": _proof_artifact_policy(),
         "redaction_scan": dict(redaction_scan or {

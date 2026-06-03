@@ -286,6 +286,12 @@ def test_proof_capability_rejects_report_leaks(monkeypatch) -> None:
     assert "operator-storage" not in json.dumps(report, sort_keys=True)
 
 
+def test_proof_capability_raw_value_key_scan_covers_common_value_fields() -> None:
+    assert proof.RAW_VALUE_KEY_RE.search(json.dumps({"value": "123"}, sort_keys=True))
+    assert proof.RAW_VALUE_KEY_RE.search(json.dumps({"amount": "123"}, sort_keys=True))
+    assert proof.RAW_VALUE_KEY_RE.search(json.dumps({"effective_value": "123"}, sort_keys=True))
+
+
 def test_proof_capability_blocks_when_single_transaction_is_unproven(monkeypatch) -> None:
     monkeypatch.setattr(
         proof,
@@ -341,6 +347,8 @@ def test_proof_capability_blocks_when_single_transaction_is_unproven(monkeypatch
         "existing_materializers_commit_per_stage": True,
     }
     assert report["readiness"]["operator_review_creation_ready"] is False
+    assert report["containment"]["isolated_in_memory_db_used"] is True
+    assert report["controls"]["isolated_db_persistence_performed"] is True
     assert "proof_result_hash" not in report["authority_refs"]
 
 
@@ -388,6 +396,8 @@ def test_proof_capability_blocks_when_redaction_scan_fails(monkeypatch) -> None:
     assert report["readiness"]["operator_review_creation_ready"] is False
     assert report["redaction_scan"]["public_response_raw_accession_found"] is True
     assert report["controls"]["operator_evidence_files_read"] is True
+    assert report["containment"]["isolated_in_memory_db_used"] is True
+    assert report["controls"]["isolated_db_persistence_performed"] is True
 
 
 def test_proof_capability_blocks_when_isolated_persistence_is_incomplete(monkeypatch) -> None:
@@ -439,6 +449,8 @@ def test_proof_capability_blocks_when_isolated_persistence_is_incomplete(monkeyp
     assert report["blocked_reasons"][0]["reason"] == "offline_evidence_proof_isolated_persistence_incomplete"
     assert report["readiness"]["operator_review_creation_ready"] is False
     assert report["summary"]["isolated_persistence_operator_review_workflow_count"] == 0
+    assert report["containment"]["isolated_in_memory_db_used"] is True
+    assert report["controls"]["isolated_db_persistence_performed"] is True
 
 
 def test_proof_capability_blocks_when_isolated_source_hash_is_unbound(monkeypatch) -> None:
@@ -484,6 +496,8 @@ def test_proof_capability_blocks_when_isolated_source_hash_is_unbound(monkeypatc
     assert report["status"] == "offline_evidence_proof_capability_blocked"
     assert report["blocked_reasons"][0]["reason"] == "offline_evidence_proof_source_hash_unbound"
     assert report["blocked_reasons"][0]["details"] == {"source_report_hash_bound": False}
+    assert report["containment"]["isolated_in_memory_db_used"] is True
+    assert report["controls"]["isolated_db_persistence_performed"] is True
     assert "proof_source_report_hash" in report["authority_refs"]
     assert "proof_result_hash" not in report["authority_refs"]
 

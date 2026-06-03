@@ -109,6 +109,12 @@ def open_redacted_operator_review_from_offline_evidence(
             "SEC XBRL offline orchestration fault injection is only admitted for single-transaction mode.",
             details={"fault_injection_point": fault},
         )
+    if not atomic and commit is False:
+        raise SecXbrlE2EOfflineOrchestratorError(
+            "sec_xbrl_e2e_offline_orchestrator_commit_false_requires_atomic_transaction",
+            "SEC XBRL offline orchestration commit=false is only admitted for single-transaction mode.",
+            details={"single_transaction": False, "commit": False},
+        )
     companyfacts = _required_mapping(evidence_map.get("companyfacts"), "companyfacts")
     sidecar_receipt = _required_mapping(evidence_map.get("sidecar_receipt"), "sidecar_receipt")
     value_store = _required_mapping(evidence_map.get("value_store"), "value_store")
@@ -229,6 +235,11 @@ def open_redacted_operator_review_from_offline_evidence(
         )
         _raise_if_atomic_fault(fault, ATOMIC_FAULT_AFTER_OPERATOR_REVIEW_WORKFLOW)
         if atomic:
+            _raise_if_partial_atomic_replay(
+                projection_response=projection_response,
+                packet_response=packet_response,
+                workflow_response=workflow_response,
+            )
             if commit:
                 db.commit()
             else:
@@ -308,6 +319,25 @@ def _raise_if_atomic_fault(actual: str | None, expected: str) -> None:
         "Injected SEC XBRL offline orchestration fault for transaction rollback proof.",
         details={"fault_injection_point": expected},
     )
+
+
+def _raise_if_partial_atomic_replay(
+    *,
+    projection_response: Mapping[str, Any],
+    packet_response: Mapping[str, Any],
+    workflow_response: Mapping[str, Any],
+) -> None:
+    replay_flags = {
+        "projection": projection_response.get("idempotent_replay") is True,
+        "statement_packet": packet_response.get("idempotent_replay") is True,
+        "operator_review_workflow": workflow_response.get("idempotent_replay") is True,
+    }
+    if any(replay_flags.values()) and not all(replay_flags.values()):
+        raise SecXbrlE2EOfflineOrchestratorError(
+            "sec_xbrl_e2e_offline_orchestrator_partial_atomic_replay_not_admitted",
+            "SEC XBRL offline orchestration cannot claim an atomic transaction from a partial idempotent replay.",
+            details={"idempotent_replay": replay_flags},
+        )
 
 
 def _examined_absent_period_refs(canonical_projection: Mapping[str, Any]) -> list[str]:
