@@ -21,6 +21,11 @@ from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
     report_redaction_scan_payload,
 )
 from app.services.layer3_utils import stable_hash  # noqa: E402
+from sec_xbrl_runtime_posture import (  # noqa: E402
+    committed_runtime_posture,
+    runtime_posture_criterion_evidence,
+    runtime_posture_criterion_passed,
+)
 
 
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_multi_period_projection.v1"
@@ -57,7 +62,7 @@ def build_report(
     issuer_bundle: Mapping[str, Any] | None = None,
     period_limit: int = 2,
 ) -> dict[str, Any]:
-    config_text = (source_root / "backend" / "app" / "core" / "config.py").read_text(encoding="utf-8")
+    runtime_posture = committed_runtime_posture(source_root=source_root)
     bundle = dict(issuer_bundle or _reference_bundle())
     result = project_issuer_canonical_facts_by_periods(
         companyfacts=dict(bundle.get("companyfacts") or {}),
@@ -100,7 +105,7 @@ def build_report(
         },
     }
     report["redaction"] = _redaction_scan_payload(report)
-    report["criteria"] = _criteria(report=report, config_defaults_off=_config_defaults_off(config_text))
+    report["criteria"] = _criteria(report=report, runtime_posture=runtime_posture)
     report["blocking_reasons"] = list(report["blocking_reasons"]) + _blocking_reasons(report["criteria"])
     if report["blocking_reasons"]:
         report["decision"] = (
@@ -152,15 +157,15 @@ def _public_period(period_item: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def _criteria(*, report: Mapping[str, Any], config_defaults_off: bool) -> list[dict[str, Any]]:
+def _criteria(*, report: Mapping[str, Any], runtime_posture: Mapping[str, Any]) -> list[dict[str, Any]]:
     summary = dict(report.get("summary") or {})
     periods = list(report.get("periods") or [])
     non_goals = dict(report.get("non_goals_preserved") or {})
     return [
         _criterion(
             "committed_runtime_defaults_remain_off",
-            config_defaults_off,
-            {"config_defaults_off": config_defaults_off},
+            runtime_posture_criterion_passed(runtime_posture),
+            runtime_posture_criterion_evidence(runtime_posture),
             "multi_period_projection_defaults_not_off",
         ),
         _criterion(
@@ -331,15 +336,6 @@ def _blocking_reasons(criteria: Sequence[Mapping[str, Any]]) -> list[dict[str, A
         for item in criteria
         if item.get("state") != "passed"
     ]
-
-
-def _config_defaults_off(config_text: str) -> bool:
-    required = (
-        "layer3_sec_edgar_live_network_enabled: bool = Field(\n        default=False",
-        "layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=False",
-        "layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False",
-    )
-    return all(item in config_text for item in required)
 
 
 def _resolve_path(path_text: str) -> Path:

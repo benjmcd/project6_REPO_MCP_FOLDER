@@ -246,6 +246,7 @@ def test_canonical_report_redacts_identity_and_preserves_residuals(tmp_path: Pat
     identities = report["per_issuer"][0]["statement_identity_residuals"]
 
     assert report["decision"] == "canonical_comparability_validate_only_ready"
+    assert report["summary"]["statement_identity_residual_magnitudes_redacted"] is True
     assert any(
         item["identity_id"] == "current_assets_plus_noncurrent_assets_equals_total_assets"
         and item["within_tolerance"] is True
@@ -260,6 +261,8 @@ def test_canonical_report_redacts_identity_and_preserves_residuals(tmp_path: Pat
     assert not re.search(r"\b\d{4}-\d{2}-\d{2}\b", text)
     assert ":/" + "/" not in text
     assert "C:" + "\\" not in text
+    assert "relative_magnitude" not in text
+    assert "residual_abs" not in text
     assert report["redaction"]["passed"] is True
 
 

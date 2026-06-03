@@ -20,6 +20,11 @@ from app.services.layer3_sec_xbrl_canonical_concepts import report_redaction_sca
 from app.services.layer3_sec_xbrl_canonical_statement_organization import ALIGNMENT_MAP_VERSION  # noqa: E402
 from app.services.layer3_sec_xbrl_report_guards import rows_have_unique_required_key  # noqa: E402
 
+from sec_xbrl_runtime_posture import (  # noqa: E402
+    committed_runtime_posture,
+    runtime_posture_criterion_evidence,
+    runtime_posture_criterion_passed,
+)
 
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_canonical_statement_organization.v1"
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-canonical-statement-organization-report.json")
@@ -122,7 +127,7 @@ def build_report(
     a_divergent: Sequence[Mapping[str, Any]] | None = None,
     a_role_unknown: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    config_text = (source_root / "backend" / "app" / "core" / "config.py").read_text(encoding="utf-8")
+    runtime_posture = committed_runtime_posture(source_root=source_root)
     selected_results = REFERENCE_TAXONOMY_RESULTS if taxonomy_results is None else taxonomy_results
     selected_divergent = REFERENCE_A_DIVERGENT if a_divergent is None else a_divergent
     selected_unknown = REFERENCE_A_ROLE_UNKNOWN if a_role_unknown is None else a_role_unknown
@@ -130,10 +135,10 @@ def build_report(
         taxonomy_results=list(selected_results),
         a_divergent=list(selected_divergent),
         a_role_unknown=list(selected_unknown),
-        config_defaults_off=_config_defaults_off(config_text),
+        runtime_posture=runtime_posture,
     )
     report["redaction"] = _redaction_scan_payload(report)
-    report["criteria"] = _criteria(report=report, config_defaults_off=_config_defaults_off(config_text))
+    report["criteria"] = _criteria(report=report, runtime_posture=runtime_posture)
     report["blocking_reasons"] = _blocking_reasons(report["criteria"])
     if report["blocking_reasons"]:
         report["decision"] = (
@@ -150,7 +155,7 @@ def _reference_summary_report(
     taxonomy_results: Sequence[Mapping[str, Any]],
     a_divergent: Sequence[Mapping[str, Any]],
     a_role_unknown: Sequence[Mapping[str, Any]],
-    config_defaults_off: bool,
+    runtime_posture: Mapping[str, Any],
 ) -> dict[str, Any]:
     per_taxonomy = [_taxonomy_summary(item) for item in taxonomy_results]
     summary = _summary(per_taxonomy)
@@ -192,7 +197,7 @@ def _reference_summary_report(
         },
     }
     report["redaction"] = _redaction_scan_payload(report)
-    report["criteria"] = _criteria(report=report, config_defaults_off=config_defaults_off)
+    report["criteria"] = _criteria(report=report, runtime_posture=runtime_posture)
     report["blocking_reasons"] = _blocking_reasons(report["criteria"])
     if report["blocking_reasons"]:
         report["decision"] = (
@@ -289,7 +294,7 @@ def _summary(per_taxonomy: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _criteria(*, report: Mapping[str, Any], config_defaults_off: bool) -> list[dict[str, Any]]:
+def _criteria(*, report: Mapping[str, Any], runtime_posture: Mapping[str, Any]) -> list[dict[str, Any]]:
     redaction = _redaction_scan_payload(report)
     summary = dict(report.get("summary") or {})
     per_taxonomy = list(report.get("per_taxonomy") or [])
@@ -297,8 +302,8 @@ def _criteria(*, report: Mapping[str, Any], config_defaults_off: bool) -> list[d
     return [
         _criterion(
             "committed_runtime_defaults_remain_off",
-            config_defaults_off,
-            {"config_defaults_off": config_defaults_off},
+            runtime_posture_criterion_passed(runtime_posture),
+            runtime_posture_criterion_evidence(runtime_posture),
             "canonical_statement_organization_defaults_not_off",
         ),
         _criterion(
@@ -510,15 +515,6 @@ def _redaction_scan_payload(payload: Any) -> dict[str, bool]:
             and not raw_issuer_identity_found
         ),
     }
-
-
-def _config_defaults_off(config_text: str) -> bool:
-    return (
-        "layer3_sec_edgar_live_network_enabled: bool = Field(\n        default=False," in config_text
-        and "layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=False,"
-        in config_text
-        and "layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False," in config_text
-    )
 
 
 def _resolve_path(path: str) -> Path:

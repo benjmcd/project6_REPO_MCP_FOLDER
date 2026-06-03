@@ -35,7 +35,13 @@
       "blocked_reason": null,
       "criterion": "committed_runtime_defaults_remain_off",
       "evidence": {
-        "config_defaults_off": true
+        "arelle_cutover_default_on_admitted": true,
+        "config_defaults_off": false,
+        "config_safety_defaults_off": true,
+        "controlled_value_reveal_submit_default_off": true,
+        "live_network_default_off": true,
+        "superseded_by_default_on_runtime": true,
+        "value_reveal_default_off": true
       },
       "state": "passed"
     },

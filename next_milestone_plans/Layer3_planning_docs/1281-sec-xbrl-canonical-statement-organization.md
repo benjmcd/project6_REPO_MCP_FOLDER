@@ -58,8 +58,8 @@ These IFRS divergences document Lineage A heuristic limitations and do not fail 
 
 ## Guardrails
 
-- Runtime defaults remain off.
-- This is validate-only: no live SEC network, no Arelle invocation, no value reveal, no source acquisition, no runtime artifact generation, no persistence, and no config change.
+- Under 1317, Arelle fact-authority cutover is admitted default-on; live SEC network, value reveal, and controlled value-reveal submit remain default-off.
+- This is validate-only: no live SEC network, no Arelle invocation, no value reveal, no source acquisition, no runtime artifact generation, no persistence, and no config change beyond the already-admitted 1317 cutover posture.
 - Existing canonical concept resolution/projection logic is not changed.
 - Existing retained coherence logic is not changed.
 - Existing Lineage A classifier rules and gated entrypoint behavior are not changed.

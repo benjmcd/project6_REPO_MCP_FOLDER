@@ -126,6 +126,7 @@ def test_diagnostic_report_builds_redacted_review_packet(tmp_path: Path) -> None
     diagnostic = _diagnostic_module()
 
     report = diagnostic.build_report(source_root=_source_root(tmp_path))
+    text = json.dumps(report, sort_keys=True)
 
     assert report["decision"] == "sec_xbrl_statement_assembly_validate_only_ready"
     assert report["summary"]["packet_status"] == "statement_assembly_ready"
@@ -138,6 +139,15 @@ def test_diagnostic_report_builds_redacted_review_packet(tmp_path: Path) -> None
     assert report["statements"][0]["family_counts"] == {"banking": 1, "universal": 1}
     assert report["linkbase_required_for_review_packet"] is False
     assert report["redaction"]["passed"] is True
+    assert report["identity_rollup"]["identity_residuals"] == [
+        {
+            "identity_id": "current_assets_plus_noncurrent_assets_equals_total_assets",
+            "status": "evaluated",
+            "within_tolerance": True,
+        }
+    ]
+    assert "relative_magnitude" not in text
+    assert "residual_abs" not in text
     assert any(item["criterion"] == "statement_packet_ready_fail_closed" for item in report["criteria"])
 
 
@@ -165,6 +175,8 @@ def test_committed_statement_assembly_report_is_redacted_review_packet() -> None
     assert '"_value"' not in text
     assert '"effective_value"' not in text
     assert '"amount"' not in text
+    assert '"relative_magnitude"' not in text
+    assert '"residual_abs"' not in text
     assert '"resolved_fact_id"' not in text
     assert "issuer_ref" not in text
     assert "issuer_hash" not in text

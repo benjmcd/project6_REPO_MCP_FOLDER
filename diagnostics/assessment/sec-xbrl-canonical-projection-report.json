@@ -278,7 +278,13 @@
       "blocked_reason": null,
       "criterion": "committed_runtime_defaults_remain_off",
       "evidence": {
-        "config_defaults_off": true
+        "arelle_cutover_default_on_admitted": true,
+        "config_defaults_off": false,
+        "config_safety_defaults_off": true,
+        "controlled_value_reveal_submit_default_off": true,
+        "live_network_default_off": true,
+        "superseded_by_default_on_runtime": true,
+        "value_reveal_default_off": true
       },
       "state": "passed"
     },
@@ -391,36 +397,26 @@
   "statement_identity_residuals": [
     {
       "identity_id": "current_assets_plus_noncurrent_assets_equals_total_assets",
-      "relative_magnitude": "0E+2",
-      "residual_abs": "0",
       "source_mode": "redacted_reference_summary",
       "within_tolerance": true
     },
     {
       "identity_id": "total_liabilities_plus_equity_equals_total_assets",
-      "relative_magnitude": "0E+2",
-      "residual_abs": "0",
       "source_mode": "redacted_reference_summary",
       "within_tolerance": true
     },
     {
       "identity_id": "derived_total_liabilities_equals_assets_minus_equity_and_split",
-      "relative_magnitude": "0E+2",
-      "residual_abs": "0",
       "source_mode": "redacted_reference_summary",
       "within_tolerance": true
     },
     {
       "identity_id": "revenue_minus_cost_of_sales_equals_gross_profit",
-      "relative_magnitude": "0E+2",
-      "residual_abs": "0",
       "source_mode": "redacted_reference_summary",
       "within_tolerance": true
     },
     {
       "identity_id": "current_liabilities_plus_noncurrent_liabilities_equals_total_liabilities",
-      "relative_magnitude": "0E+2",
-      "residual_abs": "0",
       "source_mode": "redacted_reference_summary",
       "within_tolerance": true
     }
@@ -432,7 +428,7 @@
     "oracle_confirmed_count": 21,
     "projected_count": 21,
     "provenance_complete_count": 21,
-    "statement_identity_residuals_committed_as_magnitudes_only": true,
+    "statement_identity_residual_magnitudes_redacted": true,
     "statement_identity_residuals_reference_within_tolerance": true
   },
   "target": "sec_xbrl_canonical_projection_artifact_validate_only_v1",

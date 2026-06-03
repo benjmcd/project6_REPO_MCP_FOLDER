@@ -46013,5 +46013,35 @@
     "committed_sec_xbrl_report_redaction_residual_scan": "PASS: 49 committed SEC XBRL reports scanned with 0 identity hits, 0 raw scalar value hits, and 0 nonzero residual magnitudes",
     "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only",
     "next_required_operator_input": "governed offline storage whose statement-classification receipt carries a top-level fact_inventory_hash matching authority_hashes.fact_inventory_hash, then operator-acquired offline CompanyFacts JSON for the same filing authority; do not download, synthesize, substitute, or infer it"
-  }
+  },
+  "sec_xbrl_predecessor_default_on_reconciliation_tracking": {
+    "status": "sec_xbrl_predecessor_default_on_reconciliation_ready_for_review",
+    "milestone": "sec_xbrl_predecessor_default_on_reconciliation_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1334-default-on-reconcile.md",
+    "authority_docs": [
+      "next_milestone_plans/Layer3_planning_docs/1314-default-on-admission-restatement.md",
+      "next_milestone_plans/Layer3_planning_docs/1317-default-on-runtime-design.md"
+    ],
+    "diagnostics_reconciled": [
+      "sec-xbrl-canonical-projection",
+      "sec-xbrl-canonical-comparability",
+      "sec-xbrl-canonical-coverage-breadth",
+      "sec-xbrl-canonical-retained-coherence",
+      "sec-xbrl-canonical-statement-organization",
+      "sec-xbrl-multi-period-projection",
+      "sec-xbrl-sector-family-coverage",
+      "sec-xbrl-statement-assembly"
+    ],
+    "posture": {
+      "config_defaults_off": false,
+      "config_safety_defaults_off": true,
+      "arelle_fact_authority_cutover_default_on_admitted": true,
+      "live_network_default_off": true,
+      "value_reveal_default_off": true,
+      "controlled_value_reveal_submit_default_off": true
+    },
+    "residual_magnitude_key_redaction": "exact-zero residual-magnitude keys removed from projection, comparability, and statement-assembly reports",
+    "comparability_family_enrichment": "accepted current-code canonical_concepts[].family regeneration to align with sibling canonical reports"
+  },
+  "latest_sec_xbrl_predecessor_default_on_reconciliation_summary": "Slice 1334 reconciles eight predecessor SEC XBRL validate-only diagnostics with 1317 default-on posture, adds a posture-freshness guard, and redacts exact-zero residual-magnitude keys."
 }
