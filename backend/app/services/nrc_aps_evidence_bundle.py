@@ -644,9 +644,13 @@ def get_persisted_bundle_page(
 ) -> dict[str, Any]:
     payload, _candidate_path = load_persisted_bundle_artifact(bundle_id=bundle_id)
     mode = str(payload.get("mode") or contract.APS_MODE_BROWSE)
-    resolved_limit, resolved_offset = contract.resolve_limit_offset(
-        mode=mode,
-        limit_value=limit,
-        offset_value=offset,
-    )
+    try:
+        resolved_limit, resolved_offset = contract.resolve_limit_offset(
+            mode=mode,
+            limit_value=limit,
+            offset_value=offset,
+        )
+    except ValueError as exc:
+        code = str(exc) or contract.APS_RUNTIME_FAILURE_INVALID_REQUEST
+        raise EvidenceBundleError(code, f"invalid request: {code}", status_code=422) from None
     return _with_pagination(payload=payload, limit=resolved_limit, offset=resolved_offset)
