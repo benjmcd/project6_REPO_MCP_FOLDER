@@ -22,10 +22,17 @@ def test_framework_migrated_diagnostic_reports_remain_byte_stable(tmp_path: Path
         assert regenerated_path.read_bytes() == report_path.read_bytes(), report_path.relative_to(ROOT).as_posix()
         checked.append(report_path.relative_to(ROOT).as_posix())
 
-    assert len(checked) >= 11
+    assert len(checked) >= 18
     assert checked == sorted(checked)
     assert "diagnostics/assessment/sec-xbrl-default-on-admission-restatement-report.json" in checked
     assert "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json" in checked
+    assert "diagnostics/assessment/sec-xbrl-auth-owner-binding-strategy-report.json" in checked
+    assert "diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json" in checked
+    assert "diagnostics/assessment/sec-xbrl-default-on-gate-report.json" in checked
+    assert "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json" in checked
+    assert "diagnostics/assessment/sec-xbrl-in-app-auth-policy-validation-report.json" in checked
+    assert "diagnostics/assessment/sec-xbrl-operator-runbook-matrix-selection-report.json" in checked
+    assert "diagnostics/assessment/sec-xbrl-stratified-matrix-readiness-decision-report.json" in checked
 
 
 def test_framework_matches_pilot_criterion_and_blocking_shapes() -> None:
@@ -74,20 +81,46 @@ def _module_from_path(module_name: str, path: Path) -> ModuleType:
 def _build_report(diagnostic: ModuleType) -> dict:
     parameters = inspect.signature(diagnostic.build_report).parameters
     kwargs = {}
-    if "source_root" in parameters:
-        kwargs["source_root"] = ROOT
-    if "report_paths" in parameters:
-        kwargs["report_paths"] = {
-            name: ROOT / path for name, path in diagnostic.DEFAULT_REQUIRED_REPORTS.items()
-        }
-    if "default_on_gate_report_path" in parameters:
-        kwargs["default_on_gate_report_path"] = ROOT / diagnostic.DEFAULT_DEFAULT_ON_GATE_REPORT
-    if "product_path_report_path" in parameters:
-        kwargs["product_path_report_path"] = ROOT / diagnostic.DEFAULT_PRODUCT_PATH_REPORT
-    if "real_product_runner_report_path" in parameters:
-        kwargs["real_product_runner_report_path"] = ROOT / diagnostic.DEFAULT_REAL_PRODUCT_RUNNER_REPORT
-    return diagnostic.build_report(**kwargs)
+    explicit_path_lists = {
+        "value_report_paths": ("DEFAULT_VALUE_REPORT", "DEFAULT_EXPANDED_VALUE_REPORT"),
+    }
+    explicit_path_maps = {
+        "report_paths": "DEFAULT_REQUIRED_REPORTS",
+    }
 
+    for name, parameter in parameters.items():
+        if name == "source_root":
+            kwargs[name] = ROOT
+            continue
+
+        if name in explicit_path_lists:
+            kwargs[name] = [ROOT / getattr(diagnostic, constant) for constant in explicit_path_lists[name]]
+            continue
+
+        if name in explicit_path_maps:
+            kwargs[name] = {
+                key: ROOT / value for key, value in getattr(diagnostic, explicit_path_maps[name]).items()
+            }
+            continue
+
+        if name.endswith("_path"):
+            constant_base = name[: -len("_path")].upper()
+            candidates = (f"DEFAULT_{constant_base}", constant_base)
+            for constant in candidates:
+                if hasattr(diagnostic, constant):
+                    kwargs[name] = ROOT / getattr(diagnostic, constant)
+                    break
+            else:
+                if parameter.default is inspect.Parameter.empty:
+                    raise AssertionError(
+                        f"{diagnostic.__name__}.build_report requires unsupported path parameter {name!r}"
+                    )
+            continue
+
+        if parameter.default is inspect.Parameter.empty:
+            raise AssertionError(f"{diagnostic.__name__}.build_report requires unsupported parameter {name!r}")
+
+    return diagnostic.build_report(**kwargs)
 
 def _framework_migrated_reports() -> list[tuple[str, Path, Path]]:
     reports = []

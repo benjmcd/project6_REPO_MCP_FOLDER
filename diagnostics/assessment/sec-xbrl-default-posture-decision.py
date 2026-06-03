@@ -2,11 +2,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any, Mapping
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
+
+from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-default-posture-decision-report.json")
 DEFAULT_BROADER_RELIABILITY_REPORT = Path(
     "diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json"
@@ -441,15 +448,6 @@ def _redaction_summary(redaction: Mapping[str, Any]) -> dict[str, Any]:
         "raw_tickers_committed": redaction.get("raw_tickers_committed"),
         "raw_values_committed": redaction.get("raw_values_committed"),
         "local_storage_roots_committed": redaction.get("local_storage_roots_committed"),
-    }
-
-
-def _criterion(criterion: str, passed: bool, evidence: Mapping[str, Any], blocked_reason: str) -> dict[str, Any]:
-    return {
-        "criterion": criterion,
-        "state": "passed" if passed else "blocked",
-        "blocked_reason": None if passed else blocked_reason,
-        "evidence": dict(evidence),
     }
 
 
