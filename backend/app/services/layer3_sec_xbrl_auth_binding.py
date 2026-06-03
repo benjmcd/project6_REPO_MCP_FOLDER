@@ -19,6 +19,7 @@ from app.models.models import (
     L3_SEC_XBRL_AUTH_BINDING_REDACTION_POLICY,
     L3_SEC_XBRL_AUTH_BINDING_STATE_OWNER_BOUND,
 )
+from app.services.layer3_sec_xbrl_public_authority_guard import raw_or_local_authority_violation
 from app.services.layer3_utils import json_clone, stable_hash
 
 
@@ -27,11 +28,6 @@ AUTH_BINDING_MODE = "sec_xbrl_in_app_auth_owner_binding_receipt_v1"
 OWNER_ROLE = "owner"
 AUDITOR_ROLE = "auditor"
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
-ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
-SEC_URL_RE = re.compile(r"(?:https?://)?(?:www\.)?sec\.gov", re.IGNORECASE)
-OPERATOR_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
-WINDOWS_ABS_PATH_RE = re.compile(r"[A-Za-z]:[\\/]")
-LOCAL_REF_RE = re.compile(r"(^|[\\/])(?:workspace|tmp|temp|users|home)[\\/]", re.IGNORECASE)
 
 SOURCE_RECEIPTS = {
     "operator_review_workflow": (
@@ -634,12 +630,15 @@ def _required_text(value: Any, field_name: str) -> str:
 
 def _reject_raw_reference(value: str) -> None:
     text = str(value or "").strip()
-    if (
-        ACCESSION_RE.search(text)
-        or SEC_URL_RE.search(text)
-        or OPERATOR_CONTACT_RE.search(text)
-        or WINDOWS_ABS_PATH_RE.search(text)
-        or LOCAL_REF_RE.search(text)
+    if raw_or_local_authority_violation(
+        text,
+        raw_value_keys=frozenset(),
+        raw_authority_keys=frozenset(),
+        scan_raw_period_dates=False,
+        scan_operator_contact=True,
+        scan_bare_sec_domain=True,
+        scan_windows_abs_path_anywhere=True,
+        scan_local_ref_segment=True,
     ):
         raise SecXbrlAuthBindingError(
             "sec_xbrl_auth_binding_raw_reference_not_admitted",

@@ -36,7 +36,9 @@ RAW_AUTHORITY_KEYS = frozenset(
 
 ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
+BARE_SEC_DOMAIN_RE = re.compile(r"(?:https?://)?(?:www\.)?sec\.gov", re.IGNORECASE)
 WINDOWS_ABS_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
+WINDOWS_ABS_PATH_ANYWHERE_RE = re.compile(r"[A-Za-z]:[\\/]")
 LOCAL_REF_RE = re.compile(
     r"(?i)(?:"
     r"file://"
@@ -44,6 +46,7 @@ LOCAL_REF_RE = re.compile(
     r"|(?:^|[\s\"'=])/(?:workspace|tmp|home|users|var|mnt|opt|private)(?:/|$)"
     r")"
 )
+LOCAL_REF_SEGMENT_RE = re.compile(r"(^|[\\/])(?:workspace|tmp|temp|users|home)[\\/]", re.IGNORECASE)
 RAW_PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 CIK_RE = re.compile(r"\b\d{10}\b")
 OPERATOR_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
@@ -65,6 +68,9 @@ def raw_or_local_authority_violation(
     scan_cik: bool = False,
     scan_cik_fullmatch: bool = False,
     scan_operator_contact: bool = False,
+    scan_bare_sec_domain: bool = False,
+    scan_windows_abs_path_anywhere: bool = False,
+    scan_local_ref_segment: bool = False,
 ) -> PublicAuthorityGuardViolation | None:
     if isinstance(value, Mapping):
         for key, item in value.items():
@@ -84,6 +90,9 @@ def raw_or_local_authority_violation(
                 scan_cik=scan_cik,
                 scan_cik_fullmatch=scan_cik_fullmatch,
                 scan_operator_contact=scan_operator_contact,
+                scan_bare_sec_domain=scan_bare_sec_domain,
+                scan_windows_abs_path_anywhere=scan_windows_abs_path_anywhere,
+                scan_local_ref_segment=scan_local_ref_segment,
             )
             if nested is not None:
                 return nested
@@ -99,6 +108,9 @@ def raw_or_local_authority_violation(
                 scan_cik=scan_cik,
                 scan_cik_fullmatch=scan_cik_fullmatch,
                 scan_operator_contact=scan_operator_contact,
+                scan_bare_sec_domain=scan_bare_sec_domain,
+                scan_windows_abs_path_anywhere=scan_windows_abs_path_anywhere,
+                scan_local_ref_segment=scan_local_ref_segment,
             )
             if nested is not None:
                 return nested
@@ -111,6 +123,9 @@ def raw_or_local_authority_violation(
         scan_cik=scan_cik,
         scan_cik_fullmatch=scan_cik_fullmatch,
         scan_operator_contact=scan_operator_contact,
+        scan_bare_sec_domain=scan_bare_sec_domain,
+        scan_windows_abs_path_anywhere=scan_windows_abs_path_anywhere,
+        scan_local_ref_segment=scan_local_ref_segment,
     ):
         return PublicAuthorityGuardViolation("raw_reference")
     return None
@@ -123,13 +138,19 @@ def public_text_reference_detected(
     scan_cik: bool = False,
     scan_cik_fullmatch: bool = False,
     scan_operator_contact: bool = False,
+    scan_bare_sec_domain: bool = False,
+    scan_windows_abs_path_anywhere: bool = False,
+    scan_local_ref_segment: bool = False,
 ) -> bool:
     text = str(value or "").strip()
     return bool(
         ACCESSION_RE.search(text)
         or SEC_URL_RE.search(text)
+        or (scan_bare_sec_domain and BARE_SEC_DOMAIN_RE.search(text))
         or WINDOWS_ABS_PATH_RE.search(text)
+        or (scan_windows_abs_path_anywhere and WINDOWS_ABS_PATH_ANYWHERE_RE.search(text))
         or LOCAL_REF_RE.search(text)
+        or (scan_local_ref_segment and LOCAL_REF_SEGMENT_RE.search(text))
         or (scan_raw_period_dates and RAW_PERIOD_DATE_RE.search(text))
         or (scan_cik and CIK_RE.search(text))
         or (scan_cik_fullmatch and CIK_RE.fullmatch(text))

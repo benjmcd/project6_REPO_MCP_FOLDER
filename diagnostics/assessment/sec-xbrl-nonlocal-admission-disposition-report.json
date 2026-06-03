@@ -50,7 +50,7 @@
         },
         "source_hashes": {
           "api": "0b08c5983a89c1040197a6cba998e1297006a7bdb28e601d1bb607eaf2b3db02",
-          "auth_binding_service": "7586da59006e30be5cf19c798a203850d5aa28cbc1ee8a546c0f17a0eec51833",
+          "auth_binding_service": "515f58d60b875286470a729e5326658088129850bff3a8472443dd6c50de1347",
           "readiness_reconciliation_doc": "f1a4fa9613d581b53fd3fdea439abbf5f68b55852e65e54d118801d7b2d8a53f",
           "route_enforcement_doc": "cb07c179520e1d4f141afe3474eb07bd202cdfdccd97de7e1b6e4a99c9cfcb51"
         }
@@ -441,7 +441,7 @@
     },
     "source_hashes": {
       "api": "0b08c5983a89c1040197a6cba998e1297006a7bdb28e601d1bb607eaf2b3db02",
-      "auth_binding_service": "7586da59006e30be5cf19c798a203850d5aa28cbc1ee8a546c0f17a0eec51833",
+      "auth_binding_service": "515f58d60b875286470a729e5326658088129850bff3a8472443dd6c50de1347",
       "readiness_reconciliation_doc": "f1a4fa9613d581b53fd3fdea439abbf5f68b55852e65e54d118801d7b2d8a53f",
       "route_enforcement_doc": "cb07c179520e1d4f141afe3474eb07bd202cdfdccd97de7e1b6e4a99c9cfcb51"
     }
