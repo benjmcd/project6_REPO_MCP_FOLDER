@@ -290,6 +290,7 @@ def test_proof_capability_raw_value_key_scan_covers_common_value_fields() -> Non
     assert proof.RAW_VALUE_KEY_RE.search(json.dumps({"value": "123"}, sort_keys=True))
     assert proof.RAW_VALUE_KEY_RE.search(json.dumps({"amount": "123"}, sort_keys=True))
     assert proof.RAW_VALUE_KEY_RE.search(json.dumps({"effective_value": "123"}, sort_keys=True))
+    assert not proof.RAW_VALUE_KEY_RE.search(json.dumps({"field": "value"}, sort_keys=True))
 
 
 def test_proof_capability_blocks_when_single_transaction_is_unproven(monkeypatch) -> None:
