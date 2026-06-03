@@ -1,0 +1,59 @@
+{
+  "authority_refs": {},
+  "blocked_reasons": [
+    {
+      "message": "Operator-supplied governed offline storage was not supplied.",
+      "reason": "offline_evidence_proof_operator_storage_missing"
+    }
+  ],
+  "containment": {
+    "isolated_in_memory_db_used": false,
+    "production_database_touched": false,
+    "single_transaction_claimed": false
+  },
+  "controls": {
+    "api_route_enabled": false,
+    "arelle_invoked": false,
+    "isolated_db_persistence_performed": false,
+    "network_performed": false,
+    "offline_storage_read_only": true,
+    "operator_evidence_files_read": false,
+    "production_db_persistence_performed": false,
+    "production_readiness_claimed": false,
+    "source_acquisition_performed": false,
+    "value_reveal_performed": false
+  },
+  "paths_redacted": true,
+  "proof_artifact_policy": {
+    "default_reports_remain_blocked_without_operator_evidence": true,
+    "hash_count_state_only": true,
+    "operator_supplied_evidence_required": true,
+    "production_admission_claimed": false,
+    "proof_lineage_hashes_are_raw_evidence_refs": false,
+    "proof_lineage_hashes_are_redacted_authority_handles": true,
+    "raw_companyfacts_committed": false,
+    "raw_storage_committed": false
+  },
+  "readiness": {
+    "operator_review_creation_blocked_reason": "offline_evidence_proof_operator_storage_missing",
+    "operator_review_creation_ready": false,
+    "production_admission_blocked_reason": "offline_evidence_proof_operator_storage_missing",
+    "production_admission_ready": false
+  },
+  "redaction_scan": {
+    "projection_facts_all_value_redacted": false,
+    "public_response_local_path_found": false,
+    "public_response_raw_accession_found": false,
+    "public_response_raw_value_key_found": false,
+    "public_response_sec_url_found": false,
+    "statement_rows_all_value_redacted": false
+  },
+  "schema_id": "diagnostics.sec_xbrl_offline_evidence_proof_capability.v1",
+  "schema_version": 1,
+  "status": "offline_evidence_proof_capability_blocked",
+  "storage_marker": "",
+  "summary": {
+    "loader_status": "not_run",
+    "oracle_status": "not_run"
+  }
+}
