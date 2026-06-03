@@ -11,7 +11,7 @@ Answer: yes for the current bounded implementation lane. The pack is ready to go
 Residual decisions:
 
 - Whether existing dataset provenance models are sufficient or a dedicated APS artifact-to-dataset bridge table is required.
-- Which SEC/EDGAR filing format is admitted after the bounded complete-submission text-file slice.
+- How to connect the current-main SEC-specific HTML/iXBRL receipt chain to governed mixed-source package semantics without widening generic XML/HTML admission.
 
 ## Evidence Recheck
 
@@ -25,6 +25,7 @@ Confirmed from live source:
 - CSV parser diagnostics are implemented for bounded standalone CSV and ZIP CSV members.
 - JSON parser diagnostics are implemented for bounded standalone JSON recordsets.
 - SEC/EDGAR parser diagnostics are implemented for bounded complete submission text files with plain document text and simple delimited `<TABLE>` blocks.
+- Current main separately admits `sec_edgar_html_inline_xbrl_source_family_parser_v1` as a governed SEC-specific HTML/iXBRL parser receipt chain; generic APS XML/HTML admission remains refused/deferred.
 - A callable CSV dataset bridge is implemented using existing dataset, row, profile, identity, and provenance models.
 - Content indexing is built around normalized text, ordered units, content documents, content chunks, and chunk unit kinds.
 - Layer 3 workbench supports `dataset_version` and `aps_content_document`.
@@ -49,12 +50,12 @@ Adequately scoped:
 - The current verdict is limited to audited document-chunk paths, existing dataset paths, explicit APS-derived CSV/XLSX/JSON/SEC-EDGAR table dataset admission through `dataset_version`, and selected-pass execution/package proof for that path.
 - The target design separates current implementation from future parser/bridge/workbench admission.
 - Phase P1 is narrow: classification/refusal hardening and fixture coverage only.
-- Broad SEC/EDGAR HTML/XML/inline-XBRL parsing, broad source-shape expansion, archive-member XLSX/JSON/SEC-EDGAR orchestration, arbitrary JSON document semantics, nested JSON flattening, broad workbook semantics, and mixed-source package semantics are explicitly deferred. Bounded `.xlsx` parsing/materialization is implemented as Phase P7, bounded standalone XLSX connector table bridge orchestration is implemented as Phase P7.5, bounded standalone JSON recordset parser/materialization is implemented as Phase P8, and bounded SEC/EDGAR complete-submission text parsing/materialization is implemented as Phase P9.
+- Broad generic XML/HTML parsing, broad source-shape expansion, archive-member XLSX/JSON/SEC-EDGAR orchestration, arbitrary JSON document semantics, nested JSON flattening, broad workbook semantics, and mixed-source package semantics are explicitly deferred. Bounded `.xlsx` parsing/materialization is implemented as Phase P7, bounded standalone XLSX connector table bridge orchestration is implemented as Phase P7.5, bounded standalone JSON recordset parser/materialization is implemented as Phase P8, bounded SEC/EDGAR complete-submission text parsing/materialization is implemented as Phase P9, and current main separately admits the governed SEC-specific HTML/iXBRL receipt chain.
 
 Not over-scoped:
 
 - The pack does not try to solve all heterogeneous ingestion at once.
-- It does not claim arbitrary JSON, XML, HTML, broad SEC/EDGAR, financial filings, mixed-source packages, arbitrary workbooks, archive-member XLSX/JSON/SEC-EDGAR, or arbitrary time-series APS artifacts are already supported end to end. CSV is end-to-end through the explicit bridge/UI path; XLSX is bounded to standalone parser diagnostics plus explicit or opt-in connector table-unit materialization; JSON is bounded to standalone recordset parser diagnostics plus explicit or opt-in connector table-unit materialization; SEC/EDGAR is bounded to complete submission text files with plain document text and simple delimited table blocks.
+- It does not claim arbitrary JSON, generic XML/HTML, broad SEC/EDGAR, financial filings, mixed-source packages, arbitrary workbooks, archive-member XLSX/JSON/SEC-EDGAR, or arbitrary time-series APS artifacts are already supported end to end. CSV is end-to-end through the explicit bridge/UI path; XLSX is bounded to standalone parser diagnostics plus explicit or opt-in connector table-unit materialization; JSON is bounded to standalone recordset parser diagnostics plus explicit or opt-in connector table-unit materialization; SEC/EDGAR is bounded to complete submission text files with plain document text and simple delimited table blocks plus the separate governed SEC-specific HTML/iXBRL receipt chain.
 - It does not modify existing progress manifests because doing so would imply governance admission beyond this planning-entry pack.
 
 Not under-scoped:
@@ -71,7 +72,7 @@ The docs are internally consistent on these boundaries:
 - `dataset_version` means typed quantitative/tabular/time-series analysis material.
 - Candidate B means PDF-only OpenDataLoader PDF processing.
 - CSV-as-text is not tabular support.
-- JSON is admitted only for bounded recordsets; arbitrary JSON, XML, and HTML remain refused until parser families are explicitly admitted.
+- JSON is admitted only for bounded recordsets; arbitrary JSON and generic XML/HTML remain refused until parser families are explicitly admitted. The current SEC-specific HTML/iXBRL receipt chain is already admitted and remains separate from broad generic XML/HTML admission.
 - XLSX must not be accepted as generic ZIP; `.xlsx` must route through `xlsx_workbook`, while `.xls`, `.xlsm`, encrypted, formula-bearing, empty, or ambiguous workbooks fail closed.
 - UI projection must not become parser/source authority.
 - Schema or migration work requires a separate freeze.
@@ -110,7 +111,7 @@ Answer: Targeted file families must have deterministic detection, parser fixture
 
 Question: Did P2 accidentally widen parser behavior?
 
-Answer: No. P2 introduced metadata-only parser admission for already-existing processor families. CSV, XLSX, JSON recordset, and bounded SEC/EDGAR parser/materialization/orchestration work were added later in bounded phases; arbitrary JSON, broad SEC/EDGAR HTML/XML/inline-XBRL support, schema, new Layer 3 source-shape, and broad UI work remain deferred.
+Answer: No. P2 introduced metadata-only parser admission for already-existing processor families. CSV, XLSX, JSON recordset, bounded SEC/EDGAR complete-submission parser/materialization/orchestration work, and the separate SEC-specific HTML/iXBRL receipt chain were added later in bounded phases; arbitrary JSON, broad generic XML/HTML support, schema, new Layer 3 source-shape, and broad UI work remain deferred.
 
 Question: Did P3 overclaim CSV support?
 
@@ -134,7 +135,7 @@ Answer: No. P8 admits only standalone table-like JSON recordsets with flat recor
 
 Question: Did P9 overclaim SEC/EDGAR support?
 
-Answer: No. P9 admits only complete submission text files with SEC signature sniffing, admitted form types, plain document text, deterministic metadata/section extraction, and simple delimited `<TABLE>` materialization. It keeps HTML/XML/inline XBRL, unsupported forms, ambiguous financial statements, archive-member filing orchestration, schema changes, new Layer 3 source semantics, and mixed-source package semantics out of scope.
+Answer: No. P9 admits only complete submission text files with SEC signature sniffing, admitted form types, plain document text, deterministic metadata/section extraction, and simple delimited `<TABLE>` materialization. Current main separately admits the SEC-specific HTML/iXBRL receipt chain. P9 still keeps unsupported forms, broad generic XML/HTML admission, ambiguous financial statements, archive-member filing orchestration, schema changes, new Layer 3 source semantics, and mixed-source package semantics out of scope.
 
 ## Validation Performed For The Initial Planning Pass
 
@@ -277,4 +278,4 @@ Caveat:
 
 ## Final Planning Verdict
 
-The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P10C are now implemented in this branch; the next correct action is a narrow document/refused/mixed-source trace/detail surfacing pass backed by server authority or a separately scoped SEC/EDGAR HTML/XML/inline-XBRL contract, while preserving all existing PDF/document, Candidate B PDF-only, and Layer 3 source-shape behavior.
+The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P10D are now implemented in this branch, and current main separately admits the governed SEC-specific HTML/iXBRL receipt chain. The next correct action is a narrow document/refused/mixed-source trace/detail surfacing pass backed by server authority, further planning/status reconciliation for admitted SEC-specific HTML/iXBRL authority, or a separately scoped mixed-source package-semantics pass, while preserving all existing PDF/document, Candidate B PDF-only, generic XML/HTML refusal, and Layer 3 source-shape behavior.
