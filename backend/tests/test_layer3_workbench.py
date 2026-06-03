@@ -1975,7 +1975,10 @@ def test_dataset_version_candidates_include_server_owned_raw_mixed_materializati
     assert candidate["dataset_version_id"] == dataset_version_id
     assert candidate["source_system"] == "local_operator_staged_server_owned_manifest"
     assert candidate["source_mode"] == "raw_mixed_materialized"
+    assert candidate["source_family"] == "server_owned_raw_mixed"
+    assert candidate["source_family_label"] == "Server-owned raw mixed materialization"
     assert candidate["source_admission_state"] == "admitted_materialized_dataset_version"
+    assert "mixed package semantics remain separately governed" in candidate["source_family_scope"]
     assert result["source_family_summary"]["ui_scope"].startswith(
         "This endpoint surfaces server-backed materialized DatasetVersion choices only"
     )
@@ -2010,15 +2013,20 @@ def test_dataset_version_candidates_include_server_owned_raw_mixed_materializati
 
     material_candidate = material["material_candidates"][0]
     source_provenance = material_candidate["source_provenance"]
-    assert material_candidate["source_family"] == "csv"
+    assert material_candidate["source_family"] == "server_owned_raw_mixed"
+    assert material_candidate["source_family_label"] == "Server-owned raw mixed materialization"
     assert material_candidate["source_admission_state"] == "admitted_materialized_dataset_version"
+    assert "mixed package semantics remain separately governed" in material_candidate["source_family_scope"]
     assert source_provenance["aps_derived"] is True
-    assert source_provenance["source_family"] == "csv"
+    assert source_provenance["source_family"] == "server_owned_raw_mixed"
+    assert source_provenance["source_family_label"] == "Server-owned raw mixed materialization"
     assert source_provenance["source_admission_state"] == "admitted_materialized_dataset_version"
+    assert "mixed package semantics remain separately governed" in source_provenance["source_family_scope"]
     assert (
         material_candidate["source_trace"]["trace_readiness"]
         == "traceable_aps_dataset_version"
     )
+    assert material_candidate["source_trace"]["source_family"] == "server_owned_raw_mixed"
     assert (
         source_provenance["aps_source_provenance"][0]["source_system"]
         == "local_operator_staged_server_owned_manifest"

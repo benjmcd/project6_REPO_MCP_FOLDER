@@ -2,6 +2,7 @@ from app.services.layer3_aps_source_family import (
     APS_ADMITTED_TABLE_SOURCE_FAMILIES,
     APS_NOT_ADMITTED_SOURCE_FAMILIES,
     source_family_for_parser,
+    source_family_for_provenance,
     source_family_summary,
 )
 
@@ -43,6 +44,34 @@ def test_source_family_for_parser_returns_unknown_metadata_copy() -> None:
         "admission_state": "admitted_materialized_dataset_version",
         "scope": "materialized APS-derived DatasetVersion with parser family metadata unavailable",
     }
+
+
+def test_source_family_for_provenance_labels_server_owned_raw_mixed_materialization() -> None:
+    metadata = source_family_for_provenance(
+        {
+            "source_system": "local_operator_staged_server_owned_manifest",
+            "source_mode": "raw_mixed_materialized",
+            "parser_family": "csv_table",
+        }
+    )
+
+    assert metadata["source_family"] == "server_owned_raw_mixed"
+    assert metadata["source_family_label"] == "Server-owned raw mixed materialization"
+    assert metadata["admission_state"] == "admitted_materialized_dataset_version"
+    assert "mixed package semantics remain separately governed" in metadata["scope"]
+
+
+def test_source_family_for_provenance_keeps_parser_family_for_regular_aps_tables() -> None:
+    metadata = source_family_for_provenance(
+        {
+            "source_system": "nrc_adams_aps",
+            "source_mode": "artifact_csv_parser",
+            "parser_family": "csv_table",
+        }
+    )
+
+    assert metadata["source_family"] == "csv"
+    assert metadata["source_family_label"] == "CSV table"
 
 
 def test_source_family_summary_counts_observed_parsers_and_returns_copies() -> None:
