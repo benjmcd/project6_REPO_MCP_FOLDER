@@ -402,6 +402,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".aps-content-document-candidate" in css.text
     assert ".source-family-summary" in css.text
     assert ".source-family-trace" in css.text
+    assert ".refused-artifact-traces" in css.text
+    assert ".refused-artifact-trace" in css.text
     assert ".unsupported-material-trace" in css.text
     assert ".ledger-chip-field" in css.text
     assert ".diagram-chip-grid" in css.text
@@ -858,6 +860,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "aps_content_document_ids: apsContentDocumentIds" in js.text
     assert "getJson('/dataset-version-candidates')" in js.text
     assert "getJson('/aps-content-document-candidates')" in js.text
+    assert "getJson('/aps-refused-artifact-traces')" in js.text
+    assert "loadApsRefusedArtifactTraces" in js.text
     assert "renderSourceFamilySummary" in js.text
     assert "function sourceIntakeRenderedControls" in js.text
     assert "{ id: 'source-intake-rendered-controls', key: 'source_intake'" in js.text
@@ -877,6 +881,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "not_admitted_or_deferred_families" in js.text
     assert "trace_detail" in js.text
     assert "source-family-trace" in js.text
+    assert "Parser-level refused artifacts" in js.text
+    assert "trace.materialization_state" in js.text
+    assert "trace.admission_state" in js.text
     assert "unsupported-material-trace" in js.text
     assert "unsupported_material" in js.text
     assert "renderMaterialTrace" in js.text
