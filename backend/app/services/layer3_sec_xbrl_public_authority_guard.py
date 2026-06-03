@@ -69,6 +69,7 @@ def raw_or_local_authority_violation(
     scan_cik_fullmatch: bool = False,
     scan_operator_contact: bool = False,
     scan_bare_sec_domain: bool = False,
+    scan_standard_local_refs: bool = True,
     scan_windows_abs_path_anywhere: bool = False,
     scan_local_ref_segment: bool = False,
 ) -> PublicAuthorityGuardViolation | None:
@@ -91,6 +92,7 @@ def raw_or_local_authority_violation(
                 scan_cik_fullmatch=scan_cik_fullmatch,
                 scan_operator_contact=scan_operator_contact,
                 scan_bare_sec_domain=scan_bare_sec_domain,
+                scan_standard_local_refs=scan_standard_local_refs,
                 scan_windows_abs_path_anywhere=scan_windows_abs_path_anywhere,
                 scan_local_ref_segment=scan_local_ref_segment,
             )
@@ -109,6 +111,7 @@ def raw_or_local_authority_violation(
                 scan_cik_fullmatch=scan_cik_fullmatch,
                 scan_operator_contact=scan_operator_contact,
                 scan_bare_sec_domain=scan_bare_sec_domain,
+                scan_standard_local_refs=scan_standard_local_refs,
                 scan_windows_abs_path_anywhere=scan_windows_abs_path_anywhere,
                 scan_local_ref_segment=scan_local_ref_segment,
             )
@@ -124,6 +127,7 @@ def raw_or_local_authority_violation(
         scan_cik_fullmatch=scan_cik_fullmatch,
         scan_operator_contact=scan_operator_contact,
         scan_bare_sec_domain=scan_bare_sec_domain,
+        scan_standard_local_refs=scan_standard_local_refs,
         scan_windows_abs_path_anywhere=scan_windows_abs_path_anywhere,
         scan_local_ref_segment=scan_local_ref_segment,
     ):
@@ -139,6 +143,7 @@ def public_text_reference_detected(
     scan_cik_fullmatch: bool = False,
     scan_operator_contact: bool = False,
     scan_bare_sec_domain: bool = False,
+    scan_standard_local_refs: bool = True,
     scan_windows_abs_path_anywhere: bool = False,
     scan_local_ref_segment: bool = False,
 ) -> bool:
@@ -149,7 +154,7 @@ def public_text_reference_detected(
         or (scan_bare_sec_domain and BARE_SEC_DOMAIN_RE.search(text))
         or WINDOWS_ABS_PATH_RE.search(text)
         or (scan_windows_abs_path_anywhere and WINDOWS_ABS_PATH_ANYWHERE_RE.search(text))
-        or LOCAL_REF_RE.search(text)
+        or (scan_standard_local_refs and LOCAL_REF_RE.search(text))
         or (scan_local_ref_segment and LOCAL_REF_SEGMENT_RE.search(text))
         or (scan_raw_period_dates and RAW_PERIOD_DATE_RE.search(text))
         or (scan_cik and CIK_RE.search(text))

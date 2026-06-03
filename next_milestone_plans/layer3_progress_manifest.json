@@ -45985,8 +45985,7 @@
     },
     "non_goals_preserved": {
       "config_models_alembic_api_ui_persistence_schema_changed": false,
-      "proof_json_changed": false,
-      "diagnostic_report_refreshed_for_auth_binding_source_hash_only": "diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition-report.json",
+      "proof_json_or_diagnostic_reports_changed": false,
       "source_acquisition_or_arelle_or_live_sec_network_changed": false,
       "runtime_default_or_activation_lane_changed": false,
       "value_store_behavior_changed": false,
