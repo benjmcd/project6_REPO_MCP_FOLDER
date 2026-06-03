@@ -126,6 +126,21 @@ def raw_identity_hits_for_row(
     return hits
 
 
+def label_contains_raw_identity(
+    label: str,
+    *,
+    regexes: Sequence[Any],
+    token_pattern: Any | None = None,
+    admitted_tokens: Iterable[str] = (),
+) -> bool:
+    if any(regex.search(label) for regex in regexes):
+        return True
+    if token_pattern is None:
+        return False
+    admitted = {str(token).upper() for token in admitted_tokens}
+    return any(token.upper() in admitted for token in token_pattern.findall(label))
+
+
 def string_leaves(value: Any, *, field_path: str = ""):
     if isinstance(value, Mapping):
         for key, item in value.items():
