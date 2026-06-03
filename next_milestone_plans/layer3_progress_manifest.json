@@ -45915,6 +45915,48 @@
     "json_manifest_validation": "PASS: utf-8-sig JSON parse for layer3_progress_manifest.json and layer3_workbench_proof_manifest.json",
     "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only"
   },
+  "sec_xbrl_public_authority_guard_value_reveal_family_tracking": {
+    "tracking_kind": "sec_xbrl_public_authority_guard_value_reveal_family_tracking",
+    "milestone": "sec_xbrl_public_authority_guard_value_reveal_family_v1",
+    "branch": "codex/secxbrl-authority-guard-tranche2",
+    "base_authority": "project6-origin/main after PR #2120",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1347-sec-xbrl-public-authority-guard-value-reveal.md",
+    "files_in_scope": [
+      "backend/app/services/layer3_sec_xbrl_public_authority_guard.py",
+      "backend/app/services/layer3_sec_xbrl_value_reveal_authority.py",
+      "backend/app/services/layer3_sec_xbrl_controlled_value_reveal_submit.py",
+      "backend/tests/test_sec_xbrl_public_authority_guard.py",
+      "next_milestone_plans/Layer3_planning_docs/1347-sec-xbrl-public-authority-guard-value-reveal.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "scope_summary": "Extends the shared SEC XBRL public-authority guard with value-reveal-safe variant controls and migrates value-reveal authority plus controlled value-reveal submit raw/local authority checks without changing service-specific error surfaces.",
+    "verification_status": "branch-local verification passed",
+    "verification": {
+      "focused_value_reveal_guard_suite": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_public_authority_guard.py ./backend/tests/test_sec_xbrl_operator_review_workflow.py -q -> 83 passed, 3 warnings",
+      "full_sec_xbrl_suite": "PASS: full backend/tests/test_sec_xbrl*.py suite -> 454 passed, 3 warnings",
+      "l3_progress_check": "PASS",
+      "l3_target_selection_validate_frozen": "PASS",
+      "manifest_json_parse": "PASS",
+      "git_diff_check": "PASS: git diff --check exited 0 with line-ending warnings only"
+    },
+    "non_goals_preserved": {
+      "config_models_alembic_api_ui_persistence_schema_changed": false,
+      "proof_json_or_diagnostic_reports_changed": false,
+      "source_acquisition_or_arelle_or_live_sec_network_changed": false,
+      "runtime_default_or_activation_lane_changed": false,
+      "value_store_behavior_changed": false,
+      "production_readiness_claimed": false
+    },
+    "remaining_after_this_tranche": [
+      "operator-review workflow authority guard variant",
+      "E2E integration and offline-orchestrator public-output guard variants",
+      "auth-binding raw-reference helper variant",
+      "multi-filing evidence authority gate response-leak variant",
+      "remaining report/redaction helper service consolidation where behavior-preserving"
+    ]
+  },
   "sec_xbrl_public_authority_guard_persistence_family_tracking": {
     "status": "branch_local_persistence_family_guard_consolidation",
     "milestone": "sec_xbrl_public_authority_guard_persistence_family_v1",

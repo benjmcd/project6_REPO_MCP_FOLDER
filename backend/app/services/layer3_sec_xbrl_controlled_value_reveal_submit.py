@@ -23,6 +23,10 @@ from app.services import (
     layer3_sec_xbrl_sidecar,
     layer3_sec_xbrl_value_reveal_authority,
 )
+from app.services.layer3_sec_xbrl_public_authority_guard import (
+    blocked_authority_keys,
+    raw_or_local_authority_violation,
+)
 from app.services.layer3_utils import json_clone, stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -34,19 +38,6 @@ SUBMIT_OPERATOR_DECISION = "submit_explicit_sec_xbrl_value_reveal_from_authority
 SUBMIT_RECEIPT_REF_PREFIX = "sec-xbrl-controlled-value-reveal-submit"
 MAX_REVEAL_RECORDS = 1000
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
-ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
-SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
-EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
-LOCAL_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
-LOCAL_REF_RE = re.compile(
-    r"(?i)(?:"
-    r"file://"
-    r"|\\\\[^\\/]+[\\/]"
-    r"|(?:^|[\s\"'=])/(?:workspace|tmp|home|users|var|mnt|opt|private)(?:/|$)"
-    r")"
-)
-PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
-CIK_RE = re.compile(r"\b\d{10}\b")
 RAW_REQUEST_KEYS = {
     "sidecar_receipt_id",
     "sidecar_receipt_hash",
@@ -425,14 +416,15 @@ def _controlled_reveal_records(
 
 def _value_text_requires_redaction(*values: str) -> bool:
     text = " ".join(str(value or "") for value in values)
-    return bool(
-        ACCESSION_RE.search(text)
-        or SEC_URL_RE.search(text)
-        or EMAIL_RE.search(text)
-        or LOCAL_PATH_RE.search(text)
-        or LOCAL_REF_RE.search(text)
-        or PERIOD_DATE_RE.search(text)
-        or CIK_RE.fullmatch(text.strip())
+    return (
+        raw_or_local_authority_violation(
+            text,
+            raw_value_keys=frozenset(),
+            raw_authority_keys=frozenset(),
+            scan_cik_fullmatch=True,
+            scan_operator_contact=True,
+        )
+        is not None
     )
 
 
@@ -789,8 +781,11 @@ def _required_hash(value: Any, field: str) -> str:
 
 def _reject_raw_or_local_authority(value: Any) -> None:
     if isinstance(value, Mapping):
-        lower_keys = {str(key).lower() for key in value}
-        blocked_keys = sorted(lower_keys & RAW_REQUEST_KEYS)
+        blocked_keys = blocked_authority_keys(
+            value,
+            raw_value_keys=frozenset(),
+            raw_authority_keys=RAW_REQUEST_KEYS,
+        )
         if blocked_keys:
             raise SecXbrlControlledValueRevealSubmitError(
                 "sec_xbrl_controlled_value_reveal_submit_raw_authority_not_admitted",
