@@ -2,11 +2,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any, Mapping
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
+
+from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-stratified-matrix-readiness-decision-report.json")
 DEFAULT_MATRIX_LIVE_REPORT = Path(
     "diagnostics/assessment/sec-xbrl-stratified-real-filing-validation-matrix-live-report.json"
@@ -437,15 +444,6 @@ def _public_matrix_summary(*, matrix_summary: Mapping[str, Any], matrix_plan: Ma
         "missing_strata": strata.get("missing_strata"),
         "blocked_strata": strata.get("blocked_strata"),
         "unknown_strata": strata.get("unknown_strata"),
-    }
-
-
-def _criterion(criterion: str, passed: bool, evidence: Mapping[str, Any], blocked_reason: str) -> dict[str, Any]:
-    return {
-        "criterion": criterion,
-        "state": "passed" if passed else "blocked",
-        "blocked_reason": None if passed else blocked_reason,
-        "evidence": dict(evidence),
     }
 
 
