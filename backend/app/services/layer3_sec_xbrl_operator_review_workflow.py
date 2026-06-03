@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from typing import Any
 
 from sqlalchemy.exc import IntegrityError
@@ -25,6 +25,12 @@ from app.models.models import (
     L3_SEC_XBRL_STATEMENT_PACKET_STATUS_MATERIALIZED,
 )
 from app.services.layer3_response_contract import base_response
+from app.services.layer3_sec_xbrl_public_authority_guard import (
+    RAW_AUTHORITY_KEYS as PUBLIC_RAW_AUTHORITY_KEYS,
+    RAW_VALUE_KEYS,
+    raw_or_local_authority_violation,
+    unadmitted_keys,
+)
 from app.services.layer3_utils import json_clone, stable_hash
 
 
@@ -69,34 +75,13 @@ POST_DECISION_BLOCKED_CONTROLS = (
     ("open_operator_review_workflow", "workflow_open_api_not_admitted"),
     ("render_operator_review_decision_submit_control", "rendered_decision_submit_not_admitted"),
 )
-RAW_VALUE_KEYS = {"_value", "value", "effective_value", "amount", "lexical_value"}
-RAW_AUTHORITY_KEYS = {
-    "resolved_fact_id",
-    "resolved_fact_ids",
-    "derived_from_resolved_fact_ids",
-    "raw_resolved_fact_authority",
-    "raw_resolved_fact_authorities",
-    "cik",
-    "cik_or_filer_ref",
-    "filer_or_cik",
-    "accession",
-    "accession_number",
-    "company_name",
-    "issuer_name",
-    "registrant",
-    "registrant_name",
-    "ticker",
-    "contact",
+RAW_AUTHORITY_KEYS = PUBLIC_RAW_AUTHORITY_KEYS | frozenset(
+    {
     "operator_contact",
     "operator_email",
     "operator_name",
-    "user_agent",
-    "local_path",
-    "raw_path",
-    "storage_dir",
-    "storage_root",
-    "sec_url",
-}
+    }
+)
 RESIDUAL_MAGNITUDE_KEYS = {
     "relative_magnitude",
     "residual_abs",
@@ -117,20 +102,8 @@ REASON_CODES_BY_DECISION = {
     "rejected": {"authority_gap", "redaction_gap", "operator_blocked"},
     "blocked": {"operator_blocked", "authority_gap", "redaction_gap"},
 }
-ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
-SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
-WINDOWS_ABS_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
-LOCAL_REF_RE = re.compile(
-    r"(?i)(?:"
-    r"file://"
-    r"|\\\\[^\\/]+[\\/]"
-    r"|(?:^|[\s\"'=])/(?:workspace|tmp|home|users|var|mnt|opt|private)(?:/|$)"
-    r")"
-)
-RAW_PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 OPERATOR_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 RAW_DECIMAL_RE = re.compile(r"(?<![A-Za-z0-9_])-?\d+\.\d+(?![A-Za-z0-9_])")
-CIK_RE = re.compile(r"\b\d{10}\b")
 IDENTITY_ROLLUP_KEYS = {
     "identity_residual_count",
     "identity_residual_evaluated_count",
@@ -1532,7 +1505,7 @@ def _reject_unadmitted_keys(
     error_code: str,
     message: str,
 ) -> None:
-    unknown = sorted(str(key) for key in value if str(key) not in admitted)
+    unknown = unadmitted_keys(value, admitted=admitted)
     if unknown:
         raise SecXbrlOperatorReviewWorkflowError(
             error_code,
@@ -1542,39 +1515,28 @@ def _reject_unadmitted_keys(
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            key_text = str(key)
-            key_match = key_text.strip().lower()
-            if key_match in RAW_VALUE_KEYS or key_match in RAW_AUTHORITY_KEYS:
-                if item is not None:
-                    raise SecXbrlOperatorReviewWorkflowError(
-                        "sec_xbrl_operator_review_workflow_raw_authority_not_admitted",
-                        "SEC XBRL operator review workflow cannot store raw values or raw authority identifiers.",
-                        details={"field": key_text},
-                    )
-            if key_match in RESIDUAL_MAGNITUDE_KEYS and item is not None:
-                raise SecXbrlOperatorReviewWorkflowError(
-                    "sec_xbrl_operator_review_workflow_residual_magnitudes_not_admitted",
-                    "SEC XBRL operator review workflow cannot store residual magnitude fields.",
-                    details={"field": key_text},
-                )
-            _reject_raw_or_local_authority(item)
+    violation = raw_or_local_authority_violation(
+        value,
+        raw_value_keys=RAW_VALUE_KEYS,
+        raw_authority_keys=RAW_AUTHORITY_KEYS,
+        residual_magnitude_keys=RESIDUAL_MAGNITUDE_KEYS,
+        scan_cik=True,
+    )
+    if violation is None:
         return
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-        for item in value:
-            _reject_raw_or_local_authority(item)
-        return
-    if isinstance(value, str):
-        if (
-            ACCESSION_RE.search(value)
-            or SEC_URL_RE.search(value)
-            or WINDOWS_ABS_PATH_RE.search(value)
-            or LOCAL_REF_RE.search(value)
-            or RAW_PERIOD_DATE_RE.search(value)
-            or CIK_RE.search(value)
-        ):
-            raise SecXbrlOperatorReviewWorkflowError(
-                "sec_xbrl_operator_review_workflow_raw_reference_not_admitted",
-                "SEC XBRL operator review workflow cannot store raw accession, SEC URL, period date, or local path strings.",
-            )
+    if violation.kind == "raw_authority":
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_raw_authority_not_admitted",
+            "SEC XBRL operator review workflow cannot store raw values or raw authority identifiers.",
+            details={"field": violation.field},
+        )
+    if violation.kind == "residual_magnitude":
+        raise SecXbrlOperatorReviewWorkflowError(
+            "sec_xbrl_operator_review_workflow_residual_magnitudes_not_admitted",
+            "SEC XBRL operator review workflow cannot store residual magnitude fields.",
+            details={"field": violation.field},
+        )
+    raise SecXbrlOperatorReviewWorkflowError(
+        "sec_xbrl_operator_review_workflow_raw_reference_not_admitted",
+        "SEC XBRL operator review workflow cannot store raw accession, SEC URL, period date, or local path strings.",
+    )
