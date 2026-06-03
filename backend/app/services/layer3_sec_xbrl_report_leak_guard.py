@@ -7,6 +7,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from app.services.layer3_sec_xbrl_canonical_concepts import report_redaction_scan_payload
+from app.services.layer3_sec_xbrl_public_authority_guard import public_text_reference_detected
 from app.services.layer3_sec_xbrl_public_authority_guard import report_text_reference_flags
 
 
@@ -51,6 +52,14 @@ def report_text_leak_flags(
     return flags
 
 
+def report_public_text_reference_found(
+    text: str,
+    *,
+    scan_raw_period_dates: bool = True,
+) -> bool:
+    return public_text_reference_detected(text, scan_raw_period_dates=scan_raw_period_dates)
+
+
 def raw_value_key_found(
     text: str,
     *,
@@ -60,6 +69,16 @@ def raw_value_key_found(
     key_pattern = "|".join(re.escape(key) for key in raw_value_keys)
     flags = re.IGNORECASE if ignore_case else 0
     return bool(re.search(rf'"(?:{key_pattern})"\s*:', text, flags))
+
+
+def reject_report_public_text_references(
+    text: str,
+    *,
+    exception_factory: Callable[[], Exception],
+    scan_raw_period_dates: bool = True,
+) -> None:
+    if report_public_text_reference_found(text, scan_raw_period_dates=scan_raw_period_dates):
+        raise exception_factory()
 
 
 

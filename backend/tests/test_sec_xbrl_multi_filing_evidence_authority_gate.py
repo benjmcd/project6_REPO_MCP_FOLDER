@@ -134,6 +134,17 @@ def test_multi_filing_evidence_authority_gate_reports_ready_for_three_redacted_r
     assert report["controls"]["production_readiness_claimed"] is False
 
 
+def test_multi_filing_response_leak_guard_allows_period_dates_but_rejects_accessions() -> None:
+    gate._reject_response_leaks({"period_label": "2024-12-31"})
+
+    try:
+        gate._reject_response_leaks({"accession_ref": "0000000000-00-000000"})
+    except ValueError as exc:
+        assert str(exc) == "SEC XBRL multi-filing evidence authority gate leaked raw authority references."
+    else:
+        raise AssertionError("expected multi-filing response leak rejection")
+
+
 def test_multi_filing_evidence_authority_gate_accepts_nested_proof_hashes() -> None:
     report = gate.inspect_sec_xbrl_multi_filing_evidence_authority_gate(
         filing_evidence={
