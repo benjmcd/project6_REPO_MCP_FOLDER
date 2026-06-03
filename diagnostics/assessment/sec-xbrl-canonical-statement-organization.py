@@ -25,6 +25,7 @@ from app.services.layer3_sec_xbrl_report_guards import rows_have_unique_required
 
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import report_envelope as _report_envelope  # noqa: E402
 from sec_xbrl_runtime_posture import (  # noqa: E402
     committed_runtime_posture,
     runtime_posture_criterion_evidence,
@@ -163,30 +164,30 @@ def _reference_summary_report(
 ) -> dict[str, Any]:
     per_taxonomy = [_taxonomy_summary(item) for item in taxonomy_results]
     summary = _summary(per_taxonomy)
-    report: dict[str, Any] = {
-        "schema_id": REPORT_SCHEMA_ID,
-        "alignment_map_version": ALIGNMENT_MAP_VERSION,
-        "target": TARGET,
-        "next_slice": NEXT_SLICE,
-        "decision": "canonical_statement_organization_validate_only_ready",
-        "source_mode": "redacted_reference_taxonomy_summary",
-        "evidence_scope": "operator_run_reference_summary_covers_three_issuers_not_all_taxonomies",
-        "validate_only": True,
-        "live_network_used": False,
-        "arelle_invoked": False,
-        "value_reveal_performed": False,
-        "runtime_defaults_changed": False,
-        "canonical_statement_authority": "canonical_projection_reviewed_statement_crosswalk",
-        "a_role_authority": "statement_classification_candidate_role_heuristic",
-        "a_role_used_as_pass_gate": False,
-        "summary": summary,
-        "per_taxonomy": per_taxonomy,
-        "a_divergent": _public_concept_set(a_divergent),
-        "a_role_unknown": _public_concept_set(a_role_unknown),
-        "redaction": {},
-        "criteria": [],
-        "blocking_reasons": [],
-        "non_goals_preserved": {
+    report: dict[str, Any] = _report_envelope(
+        schema_id=REPORT_SCHEMA_ID,
+        target=TARGET,
+        next_slice=NEXT_SLICE,
+        decision="canonical_statement_organization_validate_only_ready",
+        source_mode="redacted_reference_taxonomy_summary",
+        validate_only=True,
+        alignment_map_version=ALIGNMENT_MAP_VERSION,
+        evidence_scope="operator_run_reference_summary_covers_three_issuers_not_all_taxonomies",
+        live_network_used=False,
+        arelle_invoked=False,
+        value_reveal_performed=False,
+        runtime_defaults_changed=False,
+        canonical_statement_authority="canonical_projection_reviewed_statement_crosswalk",
+        a_role_authority="statement_classification_candidate_role_heuristic",
+        a_role_used_as_pass_gate=False,
+        summary=summary,
+        per_taxonomy=per_taxonomy,
+        a_divergent=_public_concept_set(a_divergent),
+        a_role_unknown=_public_concept_set(a_role_unknown),
+        redaction={},
+        criteria=[],
+        blocking_reasons=[],
+        non_goals_preserved={
             "statement_assembly_claimed": False,
             "statement_role_semantics_finalized": False,
             "final_financial_statement_semantics_claimed": False,
@@ -199,7 +200,7 @@ def _reference_summary_report(
             "default_on_readiness_claimed": False,
             "production_readiness_claimed": False,
         },
-    }
+    )
     report["redaction"] = _redaction_scan_payload(report)
     report["criteria"] = _criteria(report=report, runtime_posture=runtime_posture)
     report["blocking_reasons"] = _blocking_reasons(report["criteria"])

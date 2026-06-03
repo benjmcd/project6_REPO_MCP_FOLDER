@@ -24,6 +24,7 @@ from app.services.layer3_sec_xbrl_report_guards import rows_have_unique_required
 
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import report_envelope as _report_envelope  # noqa: E402
 from sec_xbrl_runtime_posture import (  # noqa: E402
     committed_runtime_posture,
     runtime_posture_criterion_evidence,
@@ -133,33 +134,33 @@ def _reference_summary_report(
         and all(item["contract_value_reconciled"] for item in sectors)
         and all(item["contract_a_strict_superset"] for item in sectors)
     )
-    report: dict[str, Any] = {
-        "schema_id": REPORT_SCHEMA_ID,
-        "target": TARGET,
-        "decision": "canonical_retained_coherence_validate_only_ready",
-        "source_mode": "redacted_reference_sector_class_summary",
-        "evidence_scope": "operator_run_reference_summary_covers_three_issuers_not_all_sectors",
-        "validate_only": True,
-        "live_network_used": False,
-        "arelle_invoked": False,
-        "value_reveal_performed": False,
-        "runtime_defaults_changed": False,
-        "value_authority": "governed_arelle_sidecar_value_store",
-        "retained_view_authority": "statement_classification_sidecar_fact_projection",
-        "canonical_view_authority": "canonical_projection_resolved_fact_ids",
-        "summary": {
+    report: dict[str, Any] = _report_envelope(
+        schema_id=REPORT_SCHEMA_ID,
+        target=TARGET,
+        next_slice=NEXT_SLICE,
+        decision="canonical_retained_coherence_validate_only_ready",
+        source_mode="redacted_reference_sector_class_summary",
+        validate_only=True,
+        evidence_scope="operator_run_reference_summary_covers_three_issuers_not_all_sectors",
+        live_network_used=False,
+        arelle_invoked=False,
+        value_reveal_performed=False,
+        runtime_defaults_changed=False,
+        value_authority="governed_arelle_sidecar_value_store",
+        retained_view_authority="statement_classification_sidecar_fact_projection",
+        canonical_view_authority="canonical_projection_resolved_fact_ids",
+        summary={
             "contract_passed": contract_passed,
             "total_normalized": total_normalized,
             "total_bound": total_bound,
             "total_missing": total_missing,
             "total_value_mismatch": total_value_mismatch,
         },
-        "per_sector_class": sectors,
-        "redaction": {},
-        "criteria": [],
-        "blocking_reasons": [],
-        "next_slice": NEXT_SLICE,
-        "non_goals_preserved": {
+        per_sector_class=sectors,
+        redaction={},
+        criteria=[],
+        blocking_reasons=[],
+        non_goals_preserved={
             "sector_families_implemented": False,
             "statement_assembly_claimed": False,
             "per_period_projection_claimed": False,
@@ -169,7 +170,7 @@ def _reference_summary_report(
             "value_reveal_performed": False,
             "live_network_or_arelle_required": False,
         },
-    }
+    )
     report["criteria"] = _criteria(report=report, runtime_posture=runtime_posture)
     report["blocking_reasons"] = _blocking_reasons(report["criteria"])
     if report["blocking_reasons"]:
