@@ -23,6 +23,12 @@ from app.models.models import (
     L3_SEC_XBRL_VALUE_REVEAL_AUTHORITY_STATE_READY,
 )
 from app.services import layer3_sec_xbrl_operator_review_workflow, layer3_sec_xbrl_sidecar
+from app.services.layer3_sec_xbrl_public_authority_guard import (
+    RAW_AUTHORITY_KEYS as PUBLIC_RAW_AUTHORITY_KEYS,
+    RAW_VALUE_KEYS,
+    blocked_authority_keys,
+    raw_or_local_authority_violation,
+)
 from app.services.layer3_utils import json_clone, stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -33,50 +39,17 @@ AUTHORITY_OPERATOR_DECISION = "prepare_sec_xbrl_value_reveal_authority"
 NEXT_ALLOWED_ACTION = "submit_explicit_sec_xbrl_value_reveal_from_authority_receipt"
 AUTHORITY_RECEIPT_REF_PREFIX = "sec-xbrl-value-reveal-authority"
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
-ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
-SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
-WINDOWS_ABS_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
-LOCAL_REF_RE = re.compile(
-    r"(?i)(?:"
-    r"file://"
-    r"|\\\\[^\\/]+[\\/]"
-    r"|(?:^|[\s\"'=])/(?:workspace|tmp|home|users|var|mnt|opt|private)(?:/|$)"
-    r")"
-)
-RAW_PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 OPERATOR_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 RAW_DECIMAL_RE = re.compile(r"(?<![A-Za-z0-9_])-?\d+\.\d+(?![A-Za-z0-9_])")
-CIK_RE = re.compile(r"\b\d{10}\b")
-RAW_VALUE_KEYS = {"_value", "value", "effective_value", "amount", "lexical_value"}
-RAW_AUTHORITY_KEYS = {
-    "resolved_fact_id",
-    "resolved_fact_ids",
-    "derived_from_resolved_fact_ids",
-    "raw_resolved_fact_authority",
-    "raw_resolved_fact_authorities",
-    "sidecar_receipt_id",
-    "raw_sidecar_receipt_id",
-    "cik",
-    "cik_or_filer_ref",
-    "filer_or_cik",
-    "accession",
-    "accession_number",
-    "company_name",
-    "issuer_name",
-    "registrant",
-    "registrant_name",
-    "ticker",
-    "contact",
-    "operator_contact",
-    "operator_email",
-    "operator_name",
-    "user_agent",
-    "local_path",
-    "raw_path",
-    "storage_dir",
-    "storage_root",
-    "sec_url",
-}
+VALUE_REVEAL_RAW_AUTHORITY_KEYS = PUBLIC_RAW_AUTHORITY_KEYS | frozenset(
+    {
+        "sidecar_receipt_id",
+        "raw_sidecar_receipt_id",
+        "operator_contact",
+        "operator_email",
+        "operator_name",
+    }
+)
 
 
 class SecXbrlValueRevealAuthorityError(ValueError):
@@ -609,8 +582,11 @@ def _required_hash(value: Any, field: str) -> str:
 
 def _reject_raw_or_local_authority(value: Any) -> None:
     if isinstance(value, Mapping):
-        lower_keys = {str(key).lower() for key in value}
-        blocked_keys = sorted((lower_keys & RAW_VALUE_KEYS) | (lower_keys & RAW_AUTHORITY_KEYS))
+        blocked_keys = blocked_authority_keys(
+            value,
+            raw_value_keys=RAW_VALUE_KEYS,
+            raw_authority_keys=VALUE_REVEAL_RAW_AUTHORITY_KEYS,
+        )
         if blocked_keys:
             raise SecXbrlValueRevealAuthorityError(
                 "sec_xbrl_value_reveal_authority_raw_authority_not_admitted",
@@ -627,14 +603,12 @@ def _reject_raw_or_local_authority(value: Any) -> None:
         return
     if isinstance(value, str):
         text = value.strip()
-        if (
-            ACCESSION_RE.search(text)
-            or SEC_URL_RE.search(text)
-            or WINDOWS_ABS_PATH_RE.search(text)
-            or LOCAL_REF_RE.search(text)
-            or RAW_PERIOD_DATE_RE.search(text)
-            or OPERATOR_CONTACT_RE.search(text)
-            or CIK_RE.search(text)
+        if raw_or_local_authority_violation(
+            text,
+            raw_value_keys=frozenset(),
+            raw_authority_keys=frozenset(),
+            scan_cik=True,
+            scan_operator_contact=True,
         ):
             raise SecXbrlValueRevealAuthorityError(
                 "sec_xbrl_value_reveal_authority_raw_reference_not_admitted",
