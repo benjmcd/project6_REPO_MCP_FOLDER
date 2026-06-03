@@ -22,7 +22,7 @@ def test_framework_migrated_diagnostic_reports_remain_byte_stable(tmp_path: Path
         assert regenerated_path.read_bytes() == report_path.read_bytes(), report_path.relative_to(ROOT).as_posix()
         checked.append(report_path.relative_to(ROOT).as_posix())
 
-    assert len(checked) >= 18
+    assert len(checked) >= 22
     assert checked == sorted(checked)
     assert "diagnostics/assessment/sec-xbrl-default-on-admission-restatement-report.json" in checked
     assert "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json" in checked
@@ -33,6 +33,10 @@ def test_framework_migrated_diagnostic_reports_remain_byte_stable(tmp_path: Path
     assert "diagnostics/assessment/sec-xbrl-in-app-auth-policy-validation-report.json" in checked
     assert "diagnostics/assessment/sec-xbrl-operator-runbook-matrix-selection-report.json" in checked
     assert "diagnostics/assessment/sec-xbrl-stratified-matrix-readiness-decision-report.json" in checked
+    assert "diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition-report.json" in checked
+    assert "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json" in checked
+    assert "diagnostics/assessment/sec-xbrl-stratified-real-filing-validation-matrix-preflight-report.json" in checked
+    assert "diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-report.json" in checked
 
 
 def test_framework_matches_pilot_criterion_and_blocking_shapes() -> None:
