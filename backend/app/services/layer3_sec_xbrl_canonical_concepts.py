@@ -6,6 +6,11 @@ from decimal import Decimal, InvalidOperation
 import re
 from typing import Any, Mapping, Sequence
 
+from app.services.layer3_sec_xbrl_public_authority_guard import (
+    any_url_reference_found,
+    raw_accession_reference_found,
+    windows_local_path_reference_found,
+)
 from app.services.layer3_utils import stable_hash
 
 
@@ -324,9 +329,6 @@ _NONCURRENT_DERIVATIONS = (
     ("NoncurrentLiabilities[total]", "TotalLiabilities[total]", "CurrentLiabilities[total]"),
 )
 _DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
-_ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
-_URL_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*:" + "/" + "/")
-_LOCAL_PATH_RE = re.compile(r"[A-Za-z]:[\\/]")
 _CONTACT_RE = re.compile("contact" + r"@nexonpvp\.net", re.IGNORECASE)
 
 
@@ -1046,20 +1048,25 @@ def build_redacted_comparability_report(
 
 def report_redaction_scan_payload(payload: Any) -> dict[str, bool]:
     text = str(payload)
+    raw_accession_found = raw_accession_reference_found(text)
+    raw_contact_found = bool(_CONTACT_RE.search(text))
+    raw_local_path_found = windows_local_path_reference_found(text)
+    raw_period_date_found = bool(_DATE_RE.search(text))
+    raw_url_found = any_url_reference_found(text)
     return {
-        "raw_accession_found": bool(_ACCESSION_RE.search(text)),
-        "raw_contact_found": bool(_CONTACT_RE.search(text)),
-        "raw_local_path_found": bool(_LOCAL_PATH_RE.search(text)),
-        "raw_period_date_found": bool(_DATE_RE.search(text)),
-        "raw_url_found": bool(_URL_RE.search(text)),
+        "raw_accession_found": raw_accession_found,
+        "raw_contact_found": raw_contact_found,
+        "raw_local_path_found": raw_local_path_found,
+        "raw_period_date_found": raw_period_date_found,
+        "raw_url_found": raw_url_found,
         "raw_values_in_report": False,
         "passed": not any(
             (
-                _ACCESSION_RE.search(text),
-                _CONTACT_RE.search(text),
-                _LOCAL_PATH_RE.search(text),
-                _DATE_RE.search(text),
-                _URL_RE.search(text),
+                raw_accession_found,
+                raw_contact_found,
+                raw_local_path_found,
+                raw_period_date_found,
+                raw_url_found,
             )
         ),
     }

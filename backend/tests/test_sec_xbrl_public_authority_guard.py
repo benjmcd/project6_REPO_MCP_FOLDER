@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from app.services.layer3_sec_xbrl_public_authority_guard import (
+    any_url_reference_found,
     blocked_authority_keys,
     blocked_authority_keys_violation,
     raw_or_local_authority_violation,
+    raw_accession_reference_found,
     report_text_reference_flags,
     unadmitted_keys,
+    windows_local_path_reference_found,
 )
 
 
@@ -64,6 +67,14 @@ def test_public_authority_guard_reports_report_text_reference_flags() -> None:
     }
     assert report_text_reference_flags("https://www.sec.gov/Archives/example")["sec_url_found"] is True
     assert report_text_reference_flags("C:/Users/example/raw.json")["local_path_found"] is True
+
+
+def test_public_authority_guard_exposes_report_reference_predicate_variants() -> None:
+    assert raw_accession_reference_found("prefix 0000000000-00-000000 suffix") is True
+    assert any_url_reference_found("https://example.com/archive") is True
+    assert report_text_reference_flags("https://example.com/archive")["sec_url_found"] is False
+    assert windows_local_path_reference_found("prefixC:/raw/filing.json") is True
+    assert windows_local_path_reference_found("/Users/example/raw.json") is False
 
 
 def test_public_authority_guard_detects_residual_magnitude_keys_when_configured() -> None:
