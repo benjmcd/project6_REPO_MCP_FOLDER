@@ -16,6 +16,12 @@ import urllib.request
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
+
+from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+
 BACKEND = ROOT / "backend"
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
@@ -2877,15 +2883,6 @@ def _criteria(
             "operator_value_or_non_admitted_semantics_exposed",
         ),
     ]
-
-
-def _criterion(name: str, passed: bool, evidence: Mapping[str, Any], blocked_reason: str) -> dict[str, Any]:
-    return {
-        "criterion": name,
-        "state": "passed" if passed else "blocked",
-        "evidence": dict(evidence),
-        "blocked_reason": None if passed else blocked_reason,
-    }
 
 
 def _live_preflight(*, live: bool, user_agent: str) -> dict[str, Any]:
