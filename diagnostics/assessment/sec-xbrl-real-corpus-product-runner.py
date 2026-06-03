@@ -21,6 +21,7 @@ if str(ASSESSMENT) not in sys.path:
     sys.path.insert(0, str(ASSESSMENT))
 
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import text_redaction_scan as _framework_text_redaction_scan  # noqa: E402
 
 BACKEND = ROOT / "backend"
 if str(BACKEND) not in sys.path:
@@ -2710,15 +2711,17 @@ def _offline_product_report_summary_evidence(summary: Mapping[str, Any]) -> dict
 
 
 def _offline_product_report_redaction_scan(text: str) -> dict[str, Any]:
-    hits = {
-        "raw_accession_found": bool(RAW_ACCESSION_RE.search(text)),
-        "raw_cik_found": bool(RAW_CIK_FIELD_RE.search(text)),
-        "raw_sec_url_found": bool(SEC_URL_RE.search(text)),
-        "raw_local_path_found": bool(LOCAL_PATH_RE.search(text)),
-        "raw_operator_contact_found": bool(RAW_CONTACT_RE.search(text)),
-        "raw_value_magnitude_found": bool(RAW_DECIMAL_MAGNITUDE_RE.search(text)),
-    }
-    return {"passed": not any(hits.values()), **hits}
+    return _framework_text_redaction_scan(
+        [text],
+        regexes={
+            "raw_accession_found": RAW_ACCESSION_RE,
+            "raw_cik_found": RAW_CIK_FIELD_RE,
+            "raw_sec_url_found": SEC_URL_RE,
+            "raw_local_path_found": LOCAL_PATH_RE,
+            "raw_operator_contact_found": RAW_CONTACT_RE,
+            "raw_value_magnitude_found": RAW_DECIMAL_MAGNITUDE_RE,
+        },
+    )
 
 
 def _public_offline_redacted_product_report_validation(validation: Mapping[str, Any]) -> dict[str, Any]:
