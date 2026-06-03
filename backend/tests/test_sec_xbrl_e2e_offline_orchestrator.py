@@ -92,6 +92,68 @@ def test_offline_orchestrator_opens_redacted_review_workflow_from_governed_evide
     assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 1
 
 
+def test_offline_orchestrator_single_transaction_commits_complete_review_workflow(db_session) -> None:
+    response = orchestrator.open_redacted_operator_review_from_offline_evidence(
+        db_session,
+        client_request_id="offline-orchestrator-atomic-redacted-flow",
+        evidence=_evidence(),
+        period_limit=2,
+        single_transaction=True,
+    )
+    text = json.dumps(response, sort_keys=True)
+
+    assert response["status"] == "review_ready"
+    assert response["containment"]["single_transaction_claimed"] is True
+    assert response["containment"]["existing_materializers_commit_per_stage"] is False
+    assert response["containment"]["transaction_boundary"] == "caller_owned_session"
+    assert response["controls"]["value_reveal_performed"] is False
+    assert response["controls"]["api_route_enabled"] is False
+    assert response["controls"]["production_readiness_claimed"] is False
+    assert '"effective_value"' not in text
+    assert db_session.query(L3SecXbrlProjectionSet).count() == 1
+    assert db_session.query(L3SecXbrlProjectionFact).count() == 6
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 1
+    assert db_session.query(L3SecXbrlStatementPacketRow).count() == 6
+    assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 1
+
+
+@pytest.mark.parametrize("fault", sorted(orchestrator.ATOMIC_FAULT_INJECTION_POINTS))
+def test_offline_orchestrator_single_transaction_rolls_back_stage_faults(db_session, fault: str) -> None:
+    with pytest.raises(orchestrator.SecXbrlE2EOfflineOrchestratorError) as exc:
+        orchestrator.open_redacted_operator_review_from_offline_evidence(
+            db_session,
+            client_request_id=f"offline-orchestrator-atomic-fault-{fault}",
+            evidence=_evidence(),
+            period_limit=2,
+            single_transaction=True,
+            fault_injection_point=fault,
+        )
+
+    assert exc.value.code == "sec_xbrl_e2e_offline_orchestrator_atomic_fault_injected"
+    assert exc.value.details == {"fault_injection_point": fault}
+    assert db_session.query(L3SecXbrlProjectionSet).count() == 0
+    assert db_session.query(L3SecXbrlProjectionFact).count() == 0
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
+    assert db_session.query(L3SecXbrlStatementPacketRow).count() == 0
+    assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 0
+
+
+def test_offline_orchestrator_fault_injection_requires_single_transaction(db_session) -> None:
+    with pytest.raises(orchestrator.SecXbrlE2EOfflineOrchestratorError) as exc:
+        orchestrator.open_redacted_operator_review_from_offline_evidence(
+            db_session,
+            client_request_id="offline-orchestrator-fault-without-atomic",
+            evidence=_evidence(),
+            period_limit=2,
+            fault_injection_point=orchestrator.ATOMIC_FAULT_AFTER_PROJECTION,
+        )
+
+    assert exc.value.code == "sec_xbrl_e2e_offline_orchestrator_fault_requires_atomic_transaction"
+    assert db_session.query(L3SecXbrlProjectionSet).count() == 0
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
+    assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 0
+
+
 def test_offline_orchestrator_persists_review_workflow_with_ready_empty_later_period(
     db_session,
 ) -> None:
