@@ -134,6 +134,43 @@ def test_multi_filing_evidence_authority_gate_reports_ready_for_three_redacted_r
     assert report["controls"]["production_readiness_claimed"] is False
 
 
+def test_multi_filing_evidence_authority_gate_accepts_nested_proof_hashes() -> None:
+    report = gate.inspect_sec_xbrl_multi_filing_evidence_authority_gate(
+        filing_evidence={
+            "filings": [
+                _ready_nested_filing("fizz-10k-proof"),
+                _ready_nested_filing("fizz-10q-proof", char="2"),
+                _ready_nested_filing("ccj-10k-proof", char="3"),
+            ]
+        }
+    )
+
+    assert report["status"] == gate.STATUS_READY
+    assert report["ready"] is True
+    assert report["blocked_reasons"] == []
+    assert report["summary"]["ready_filing_handles"] == ["ccj-10k-proof", "fizz-10k-proof", "fizz-10q-proof"]
+    assert report["summary"]["filings"] == [
+        {
+            "filing_handle": "ccj-10k-proof",
+            "ready": True,
+            "authority_hash_count": len(gate.REQUIRED_AUTHORITY_HASHES),
+            "blocked_reason_count": 0,
+        },
+        {
+            "filing_handle": "fizz-10k-proof",
+            "ready": True,
+            "authority_hash_count": len(gate.REQUIRED_AUTHORITY_HASHES),
+            "blocked_reason_count": 0,
+        },
+        {
+            "filing_handle": "fizz-10q-proof",
+            "ready": True,
+            "authority_hash_count": len(gate.REQUIRED_AUTHORITY_HASHES),
+            "blocked_reason_count": 0,
+        },
+    ]
+
+
 def _ready_filing(handle: str, *, char: str = "1") -> dict[str, object]:
     value: dict[str, object] = {
         "filing_handle": handle,
@@ -141,6 +178,25 @@ def _ready_filing(handle: str, *, char: str = "1") -> dict[str, object]:
     }
     for key in gate.REQUIRED_AUTHORITY_HASHES:
         value[key] = _hash(char)
+    value.update({key: True for key in gate.REQUIRED_READY_FLAGS})
+    value.update({key: False for key in gate.NEGATIVE_READY_FLAGS})
+    return value
+
+
+def _ready_nested_filing(handle: str, *, char: str = "1") -> dict[str, object]:
+    value: dict[str, object] = {
+        "filing_handle": handle,
+        "status": "filing_evidence_authority_ready",
+        "authority_refs": {
+            "proof_source_report_hash": _hash(char),
+            "proof_result_hash": _hash(char),
+        },
+        "authority_hashes": {
+            "sidecar_receipt_hash": _hash(char),
+            "value_store_hash": _hash(char),
+            "companyfacts_payload_hash": _hash(char),
+        },
+    }
     value.update({key: True for key in gate.REQUIRED_READY_FLAGS})
     value.update({key: False for key in gate.NEGATIVE_READY_FLAGS})
     return value
