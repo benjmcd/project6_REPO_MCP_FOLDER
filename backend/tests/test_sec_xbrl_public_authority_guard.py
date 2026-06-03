@@ -6,6 +6,7 @@ from app.services.layer3_sec_xbrl_public_authority_guard import (
     blocked_authority_keys_violation,
     raw_or_local_authority_violation,
     raw_accession_reference_found,
+    reject_raw_or_local_authority_with_blocked_keys,
     report_text_reference_flags,
     unadmitted_keys,
     windows_local_path_reference_found,
@@ -115,6 +116,61 @@ def test_blocked_authority_keys_violation_recurses_without_value_filter() -> Non
         ).kind
         == "raw_reference"
     )
+
+
+def test_reject_raw_or_local_authority_with_blocked_keys_preserves_value_reveal_error_shape() -> None:
+    class GuardError(ValueError):
+        def __init__(
+            self,
+            code: str,
+            message: str,
+            *,
+            details: dict[str, object] | None = None,
+            http_status: int = 409,
+        ) -> None:
+            self.code = code
+            self.message = message
+            self.details = dict(details or {})
+            self.http_status = http_status
+
+    try:
+        reject_raw_or_local_authority_with_blocked_keys(
+            {"nested": {"sidecar_receipt_id": "raw"}},
+            error_type=GuardError,
+            raw_authority_code="raw_authority",
+            raw_authority_message="raw authority blocked",
+            raw_reference_code="raw_reference",
+            raw_reference_message="raw reference blocked",
+            blocked_raw_value_keys=frozenset(),
+            blocked_raw_authority_keys={"sidecar_receipt_id"},
+        )
+    except GuardError as exc:
+        assert exc.code == "raw_authority"
+        assert exc.message == "raw authority blocked"
+        assert exc.details == {"blocked_keys": ["sidecar_receipt_id"]}
+        assert exc.http_status == 400
+    else:
+        raise AssertionError("expected blocked-key guard error")
+
+    try:
+        reject_raw_or_local_authority_with_blocked_keys(
+            "operator@example.com",
+            error_type=GuardError,
+            raw_authority_code="raw_authority",
+            raw_authority_message="raw authority blocked",
+            raw_reference_code="raw_reference",
+            raw_reference_message="raw reference blocked",
+            blocked_raw_value_keys=frozenset(),
+            blocked_raw_authority_keys=frozenset(),
+            scan_operator_contact=True,
+        )
+    except GuardError as exc:
+        assert exc.code == "raw_reference"
+        assert exc.message == "raw reference blocked"
+        assert exc.details == {}
+        assert exc.http_status == 400
+    else:
+        raise AssertionError("expected raw-reference guard error")
 
 
 def test_unadmitted_keys_returns_sorted_public_key_inventory() -> None:
