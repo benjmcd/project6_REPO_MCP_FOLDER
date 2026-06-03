@@ -2,11 +2,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
+
+from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-auth-owner-binding-strategy-report.json")
 TARGET = "sec_xbrl_nonlocal_in_app_auth_owner_binding_strategy_v1"
 SCHEMA_ID = "diagnostics.sec_xbrl_nonlocal_in_app_auth_owner_binding_strategy.v1"
@@ -421,15 +428,6 @@ def _class_block(source: str, class_name: str) -> str:
     if next_class == -1:
         return source[start:]
     return source[start:next_class]
-
-
-def _criterion(name: str, passed: bool, evidence: dict[str, Any], blocked_reason: str) -> dict[str, Any]:
-    return {
-        "criterion": name,
-        "state": "passed" if passed else "blocked",
-        "blocked_reason": None if passed else blocked_reason,
-        "evidence": evidence,
-    }
 
 
 def _read(path: Path) -> str:
