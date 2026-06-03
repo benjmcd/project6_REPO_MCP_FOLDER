@@ -287,10 +287,10 @@ def test_proof_capability_rejects_report_leaks(monkeypatch) -> None:
 
 
 def test_proof_capability_raw_value_key_scan_covers_common_value_fields() -> None:
-    assert proof.RAW_VALUE_KEY_RE.search(json.dumps({"value": "123"}, sort_keys=True))
-    assert proof.RAW_VALUE_KEY_RE.search(json.dumps({"amount": "123"}, sort_keys=True))
-    assert proof.RAW_VALUE_KEY_RE.search(json.dumps({"effective_value": "123"}, sort_keys=True))
-    assert not proof.RAW_VALUE_KEY_RE.search(json.dumps({"field": "value"}, sort_keys=True))
+    assert proof.report_leak_flags({"value": "123"}, include_raw_value_keys=True)["raw_value_key_found"] is True
+    assert proof.report_leak_flags({"amount": "123"}, include_raw_value_keys=True)["raw_value_key_found"] is True
+    assert proof.report_leak_flags({"effective_value": "123"}, include_raw_value_keys=True)["raw_value_key_found"] is True
+    assert proof.report_leak_flags({"field": "value"}, include_raw_value_keys=True)["raw_value_key_found"] is False
 
 
 def test_proof_capability_blocks_when_single_transaction_is_unproven(monkeypatch) -> None:
