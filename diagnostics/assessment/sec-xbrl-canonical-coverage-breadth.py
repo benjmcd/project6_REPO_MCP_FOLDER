@@ -10,6 +10,9 @@ from typing import Any, Mapping, Sequence
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "backend"
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
@@ -22,6 +25,8 @@ from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
 )
 from app.services.layer3_sec_xbrl_report_guards import rows_have_unique_required_key  # noqa: E402
 
+from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
+from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
 from sec_xbrl_runtime_posture import (  # noqa: E402
     committed_runtime_posture,
     runtime_posture_criterion_evidence,
@@ -356,32 +361,6 @@ def _sector_counts_consistent(*, sectors: Sequence[Mapping[str, Any]], summary: 
         and total_absent == int(summary.get("legitimately_absent_count") or 0)
         and total_direct + total_derived + total_absent == total_cells
     )
-
-
-def _criterion(
-    criterion: str,
-    passed: bool,
-    evidence: Mapping[str, Any],
-    blocked_reason: str,
-) -> dict[str, Any]:
-    return {
-        "criterion": criterion,
-        "state": "passed" if passed else "blocked",
-        "blocked_reason": None if passed else blocked_reason,
-        "evidence": dict(evidence),
-    }
-
-
-def _blocking_reasons(criteria: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
-    return [
-        {
-            "criterion": str(item.get("criterion") or ""),
-            "reason": str(item.get("blocked_reason") or ""),
-            "evidence": item.get("evidence") if isinstance(item.get("evidence"), Mapping) else {},
-        }
-        for item in criteria
-        if item.get("state") != "passed"
-    ]
 
 
 def _rate(numerator: int, denominator: int) -> float | None:

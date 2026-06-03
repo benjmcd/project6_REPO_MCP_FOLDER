@@ -4,10 +4,17 @@ import argparse
 import json
 import re
 from pathlib import Path
+import sys
 from typing import Any, Iterable, Mapping
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
+from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
+from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-default-on-admission-restatement-report.json")
 NEXT_AFTER_DEFAULT_ON_RUNTIME = "sec_xbrl_default_on_nonlocal_production_readiness_design_v1"
 
@@ -845,27 +852,6 @@ def _criterion_state(report: Mapping[str, Any], criterion: str) -> str | None:
         if isinstance(item, Mapping) and item.get("criterion") == criterion:
             return item.get("state")
     return None
-
-
-def _criterion(criterion: str, passed: bool, evidence: Mapping[str, Any], blocked_reason: str) -> dict[str, Any]:
-    return {
-        "criterion": criterion,
-        "state": "passed" if passed else "blocked",
-        "blocked_reason": None if passed else blocked_reason,
-        "evidence": dict(evidence),
-    }
-
-
-def _blocking_reasons(criteria: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
-    return [
-        {
-            "reason": item.get("blocked_reason"),
-            "criterion": item.get("criterion"),
-            "evidence": item.get("evidence"),
-        }
-        for item in criteria
-        if item.get("state") != "passed"
-    ]
 
 
 def _decision(
