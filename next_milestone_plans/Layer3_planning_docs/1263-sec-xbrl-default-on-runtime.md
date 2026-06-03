@@ -6,6 +6,9 @@
 
 ## Superseded Posture
 
+> Superseded by 1313-1317 for current default-on posture: retained as historical candidate evidence, not live posture authority.
+
+
 This packet is historical candidate/default-on runtime planning. It is superseded by PR #1966 and `1261-sec-xbrl-arelle-governance-remediation.md`.
 
 Current main restores:

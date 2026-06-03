@@ -46,8 +46,8 @@ The evidence covers the redacted operator-run issuers only. It does not claim al
 
 ## Guardrails
 
-- Runtime defaults remain off.
-- This is validate-only: no live SEC network, no Arelle invocation, no value reveal, no source acquisition, no runtime artifact generation, no persistence, and no config change.
+- Under 1317, Arelle fact-authority cutover is admitted default-on; live SEC network, value reveal, and controlled value-reveal submit remain default-off.
+- This is validate-only: no live SEC network, no Arelle invocation, no value reveal, no source acquisition, no runtime artifact generation, no persistence, and no config change beyond the already-admitted 1317 cutover posture.
 - Existing canonical concept resolution/projection logic and tests are not changed.
 - Existing statement classification and material-bridge product behavior is not changed.
 - Sector-conditioned canonical families, statement assembly, per-period projection, persisted store behavior, linkbase relationship extraction, FX/scale normalization, provider/model/RAG/auth behavior, and default-on readiness remain deferred.
