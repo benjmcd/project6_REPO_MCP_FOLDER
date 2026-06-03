@@ -2086,6 +2086,13 @@ def test_dataset_version_candidates_include_server_owned_raw_mixed_materializati
     assert candidate["source_family_label"] == "Server-owned raw mixed materialization"
     assert candidate["source_admission_state"] == "admitted_materialized_dataset_version"
     assert "mixed package semantics remain separately governed" in candidate["source_family_scope"]
+    summary = result["source_family_summary"]
+    assert summary["observed_candidate_counts"] == {"server_owned_raw_mixed": 1}
+    admitted_families = {
+        item["source_family"]: item for item in summary["admitted_materialized_families"]
+    }
+    assert "server_owned_raw_mixed" in admitted_families
+    assert admitted_families["server_owned_raw_mixed"]["parser_family"] is None
     assert result["source_family_summary"]["ui_scope"].startswith(
         "This endpoint surfaces server-backed materialized DatasetVersion choices only"
     )

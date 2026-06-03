@@ -59,6 +59,11 @@ RAW_MIXED_MATERIALIZED_SOURCE_FAMILY: dict[str, Any] = {
     ),
 }
 
+APS_ADMITTED_MATERIALIZED_SOURCE_FAMILIES: tuple[dict[str, Any], ...] = (
+    *APS_ADMITTED_TABLE_SOURCE_FAMILIES,
+    RAW_MIXED_MATERIALIZED_SOURCE_FAMILY,
+)
+
 APS_NOT_ADMITTED_SOURCE_FAMILIES: tuple[dict[str, Any], ...] = (
     {
         "source_family": "xml_html_inline_xbrl",
@@ -155,13 +160,19 @@ def source_family_for_provenance(provenance: Mapping[str, Any]) -> dict[str, Any
 def source_family_summary(candidates: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     observed_counts: dict[str, int] = {}
     for candidate in candidates:
-        parser_family = str(candidate.get("parser_family") or "unknown")
-        observed_counts[parser_family] = observed_counts.get(parser_family, 0) + 1
+        source_family = str(candidate.get("source_family") or "")
+        if source_family == RAW_MIXED_MATERIALIZED_SOURCE_FAMILY["source_family"]:
+            count_key = source_family
+        else:
+            count_key = str(candidate.get("parser_family") or source_family or "unknown")
+        observed_counts[count_key] = observed_counts.get(count_key, 0) + 1
     return {
         "schema_id": "layer3.aps_source_family_summary.v1",
         "authority_source": "dataset_source_provenance_and_parser_contracts",
         "selection_shape": "dataset_version",
-        "admitted_materialized_families": [dict(item) for item in APS_ADMITTED_TABLE_SOURCE_FAMILIES],
+        "admitted_materialized_families": [
+            dict(item) for item in APS_ADMITTED_MATERIALIZED_SOURCE_FAMILIES
+        ],
         "not_admitted_or_deferred_families": [
             _source_family_with_guardrail_trace(item) for item in APS_NOT_ADMITTED_SOURCE_FAMILIES
         ],
