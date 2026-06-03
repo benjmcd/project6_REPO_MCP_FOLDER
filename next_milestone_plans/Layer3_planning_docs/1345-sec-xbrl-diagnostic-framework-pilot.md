@@ -42,6 +42,7 @@ diagnostics:
 - `criterion(name, passed, evidence, blocked_reason=None)`;
 - `blocking_reasons(criteria)`;
 - `decision(criteria, *, ready, blocked)`;
+- `report_header(...)`;
 - `report_envelope(...)`;
 - `controls(...)`.
 
@@ -60,6 +61,12 @@ diagnostics:
 
 `decision` is intentionally a small helper over criteria state. It does not
 invent new status values.
+
+`report_header` covers the older header-only report shape used by diagnostics
+that already expose `schema_id`, `target`, `next_slice`, and `decision` but do
+not expose `source_mode` or a top-level `validate_only` flag. It exists so
+later rollout slices can remove duplicated header construction without adding
+new report fields or changing committed report bytes.
 
 `report_envelope` and `controls` provide a common report and negative-control
 shape for later migrations. The pilot does not use them in the three migrated
