@@ -40,6 +40,18 @@ def test_public_authority_guard_supports_value_reveal_text_variants() -> None:
     assert raw_or_local_authority_violation("0000000000", scan_cik_fullmatch=True).kind == "raw_reference"
 
 
+def test_public_authority_guard_supports_auth_binding_text_variants() -> None:
+    assert raw_or_local_authority_violation("sec.gov") is None
+    assert raw_or_local_authority_violation("sec.gov", scan_bare_sec_domain=True).kind == "raw_reference"
+    assert raw_or_local_authority_violation("prefixC:/raw", scan_windows_abs_path_anywhere=True).kind == (
+        "raw_reference"
+    )
+    assert raw_or_local_authority_violation("root/workspace/raw", scan_local_ref_segment=True).kind == (
+        "raw_reference"
+    )
+    assert raw_or_local_authority_violation("2024-12-31", scan_raw_period_dates=False) is None
+
+
 def test_public_authority_guard_detects_residual_magnitude_keys_when_configured() -> None:
     absent = raw_or_local_authority_violation({"relative_magnitude": "1E+0"})
     present = raw_or_local_authority_violation(

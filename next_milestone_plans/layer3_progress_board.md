@@ -1,5 +1,34 @@
 # Layer3 Progress Board
 
+## SEC XBRL Public Authority Guard Auth-Binding Consolidation
+
+Milestone:
+`sec_xbrl_public_authority_guard_auth_binding_family_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1348-sec-xbrl-public-authority-guard-auth-binding.md`.
+
+Status: branch-local auth-binding family consolidation on
+`codex/secxbrl-auth-binding-guard`.
+
+Scope: extend the shared SEC XBRL public-authority guard with auth-binding-safe
+raw-reference variants, then migrate auth-binding receipt/reference checks to
+the shared helper without changing service-specific error codes, messages, or
+raw period-date behavior. The only diagnostic report edit is a source-hash-only refresh for the nonlocal admission-disposition diagnostic that embeds the auth-binding service hash.
+
+Containment: no schema, `models.py`, Alembic migration, backend API/UI,
+diagnostic report, proof JSON, source acquisition, Arelle subprocess
+invocation, live SEC network access, runtime-default change, value-reveal
+behavior change, or production-readiness behavior is admitted. Operator-review,
+E2E, multi-filing, and remaining redaction-helper service variants stay out of
+scope for later tranches.
+
+Verification: focused auth-binding guard suites pass with `18 passed`; full SEC XBRL suite passes with `455 passed, 3 warnings`; target-selection frozen check, progress check, manifest JSON parse, and `git diff --check` pass.
+
+Next exact posture:
+finish auth-binding family verification, merge only if CI and review-thread
+authority are clean, then continue with a separate service-family tranche.
+
 ## SEC XBRL Public Authority Guard Value-Reveal Consolidation
 
 Milestone:
