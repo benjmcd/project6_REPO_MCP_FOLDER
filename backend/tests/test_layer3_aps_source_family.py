@@ -108,7 +108,12 @@ def test_source_family_summary_counts_observed_parsers_and_returns_copies() -> N
         "sec_edgar_filing": 1,
         "unknown": 1,
     }
-    assert summary["admitted_materialized_families"] == list(APS_ADMITTED_TABLE_SOURCE_FAMILIES)
+    admitted = summary["admitted_materialized_families"]
+    assert admitted[: len(APS_ADMITTED_TABLE_SOURCE_FAMILIES)] == list(
+        APS_ADMITTED_TABLE_SOURCE_FAMILIES
+    )
+    assert admitted[-1]["source_family"] == "server_owned_raw_mixed"
+    assert admitted[-1]["parser_family"] is None
     assert len(summary["not_admitted_or_deferred_families"]) == len(APS_NOT_ADMITTED_SOURCE_FAMILIES)
     guardrail = summary["not_admitted_or_deferred_families"][0]
     assert guardrail["source_family"] == APS_NOT_ADMITTED_SOURCE_FAMILIES[0]["source_family"]
@@ -116,6 +121,14 @@ def test_source_family_summary_counts_observed_parsers_and_returns_copies() -> N
     assert guardrail["trace_detail"]["selectable"] is False
 
     summary["admitted_materialized_families"][0]["source_family"] = "mutated"
+    summary["admitted_materialized_families"][-1]["source_family"] = "mutated"
     summary["not_admitted_or_deferred_families"][0]["trace_detail"]["source_family"] = "mutated"
     assert APS_ADMITTED_TABLE_SOURCE_FAMILIES[0]["source_family"] == "csv"
     assert APS_NOT_ADMITTED_SOURCE_FAMILIES[0]["source_family"] == "xml_html_inline_xbrl"
+
+    raw_mixed_summary = source_family_summary(
+        [{"parser_family": "csv_table", "source_family": "server_owned_raw_mixed"}]
+    )
+    assert raw_mixed_summary["observed_candidate_counts"] == {
+        "server_owned_raw_mixed": 1
+    }
