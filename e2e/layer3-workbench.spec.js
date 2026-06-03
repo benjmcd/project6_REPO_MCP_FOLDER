@@ -18576,6 +18576,19 @@ test('Layer 3 workbench keeps unsupported-only Gate C material out of 3C routed-
         material_snapshot_id: 'unsupported-snapshot-1',
         owner_service_source_shape: 'unsupported_shape',
         reason: 'unsupported-only visual proof',
+        trace_detail: {
+          schema_id: 'layer3.gate_c_unsupported_material_trace.v1',
+          trace_readiness: 'unsupported_material_snapshot_traceable',
+          admission_state: 'not_admitted_to_gate_c_typing',
+          selectable: false,
+          payload_hash: 'f'.repeat(64),
+          authority_refs: {
+            authority_source: 'l3_material_snapshot',
+            typing_rule_source: 'SUPPORTED_TYPING_RULES',
+            selection_authority: 'none',
+          },
+          ui_summary: 'Gate C cannot type this material snapshot because its owner-service source shape has no admitted typing rule.',
+        },
       }],
       authority_rail: authorityRail,
     };
@@ -18590,6 +18603,12 @@ test('Layer 3 workbench keeps unsupported-only Gate C material out of 3C routed-
   await expect(page.locator('.modality-bucket.modality-unclassified')).toContainText('Unsupported material');
   await expect(page.locator('.modality-bucket.modality-unclassified .diagram-chip')).toHaveCount(1);
   await expect(page.locator('.analysis-plane .plane-inputs .diagram-chip')).toHaveCount(0);
+  const unsupportedCard = page.locator('.unsupported-material-card');
+  await expect(unsupportedCard).toContainText('unsupported material snapshot traceable');
+  await expect(unsupportedCard).toContainText('not admitted to gate c typing');
+  await expect(unsupportedCard).toContainText('l3 material snapshot');
+  await expect(unsupportedCard).toContainText('SUPPORTED_TYPING_RULES');
+  await expect(unsupportedCard).toContainText('not selectable');
   await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'session|typed|structural');
   await expect(page.locator('.state-3c')).toContainText('Structural only');
 });

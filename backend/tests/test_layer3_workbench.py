@@ -2295,6 +2295,55 @@ def test_gate_c_preview_is_non_authoritative_and_override_is_unavailable(db_sess
     assert override["error_code"] == "override_unavailable"
 
 
+def test_gate_c_preview_traces_unsupported_material_snapshot(db_session) -> None:
+    preflight, source, material = _preflight_source_material()
+    gate_b = layer3_workbench.gate_b_decision(db_session, _gate_b_payload(preflight, source, material))
+    existing_snapshot = db_session.query(L3MaterialSnapshot).first()
+    assert existing_snapshot is not None
+    unsupported_snapshot = L3MaterialSnapshot(
+        material_snapshot_id="unsupported-snapshot-trace-001",
+        session_id=gate_b["session_id"],
+        descriptor_id=existing_snapshot.descriptor_id,
+        source_plane="gate_b_material",
+        source_shape="unsupported_shape",
+        payload_ref="layer3://unsupported-snapshot-trace-001",
+        payload_hash="f" * 64,
+        source_identity_json={
+            "source_class": "unsupported_shape",
+            "artifact_id": "unsupported-artifact-001",
+        },
+        source_provenance_json={
+            "schema_id": "layer3.unsupported_fixture_provenance.v1",
+            "reason": "unsupported_typing_shape",
+        },
+        co_retrieval_group_id="unsupported-group-001",
+        load_summary_json={"loaded_records": 0, "failed_records": 1},
+    )
+    db_session.add(unsupported_snapshot)
+    db_session.commit()
+
+    preview = layer3_workbench.gate_c_preview(
+        db_session,
+        {"client_request_id": "req-gate-c-unsupported-trace", "session_id": gate_b["session_id"]},
+    )
+
+    assert preview["next_state"] == "blocked_typing_unavailable"
+    assert len(preview["typing_records"]) >= 1
+    unsupported = preview["unsupported_material"][0]
+    assert unsupported["material_snapshot_id"] == "unsupported-snapshot-trace-001"
+    assert unsupported["owner_service_source_shape"] == "unsupported_shape"
+    assert unsupported["reason"] == "unsupported_typing_shape"
+    trace = unsupported["trace_detail"]
+    assert trace["schema_id"] == "layer3.gate_c_unsupported_material_trace.v1"
+    assert trace["trace_readiness"] == "unsupported_material_snapshot_traceable"
+    assert trace["admission_state"] == "not_admitted_to_gate_c_typing"
+    assert trace["selectable"] is False
+    assert trace["authority_refs"]["selection_authority"] == "none"
+    assert trace["payload_hash"] == "f" * 64
+    assert trace["source_identity"]["artifact_id"] == "unsupported-artifact-001"
+    assert trace["load_summary"]["failed_records"] == 1
+
+
 def test_gate_c_commit_typing_materializes_owner_service_records(db_session) -> None:
     preflight, source, material = _preflight_source_material()
     gate_b = layer3_workbench.gate_b_decision(db_session, _gate_b_payload(preflight, source, material))

@@ -1,6 +1,6 @@
 # Adequacy Audit
 
-Status: planning-pack self-audit for scope, justification, consistency, and implementation readiness. This audit now accounts for Phase P1 through Phase P10F implementation closeouts and the current-main SEC HTML/iXBRL reconciliation closeout; see `07-p1-closeout.md` through `24-p10f-guardrail-trace-closeout.md`.
+Status: planning-pack self-audit for scope, justification, consistency, and implementation readiness. This audit now accounts for Phase P1 through Phase P10G implementation closeouts and the current-main SEC HTML/iXBRL reconciliation closeout; see `07-p1-closeout.md` through `25-p10g-gate-c-unsupported-trace-closeout.md`.
 
 ## Audit Question
 
@@ -37,6 +37,7 @@ Confirmed from live source:
 - Layer 3 workbench can now list/select indexed APS content documents, material preview can emit DB-backed `aps_content_document` candidates from `ApsContentDocument`, `ApsContentChunk`, and `ApsContentLinkage`, and the Gate B material ledger renders document/chunk/linkage trace detail without requiring raw JSON inspection.
 - Layer 3 candidate and selected-material trace surfaces now label admitted server-owned raw mixed materialized `DatasetVersion` rows as `server_owned_raw_mixed` while preserving separate governance for mixed package semantics.
 - Layer 3 workbench now renders source-family guardrail trace detail for refused/deferred families while preserving non-selectable status and no materialized `DatasetVersion` authority.
+- Layer 3 Gate C unsupported material snapshots now carry trace detail from persisted `L3MaterialSnapshot` authority while preserving blocked typing and non-selectable status.
 
 Confirmed from planning/status docs:
 
@@ -48,8 +49,8 @@ Confirmed from planning/status docs:
 
 Adequately scoped:
 
-- The initial pack was docs-only. The current branch now also includes Phase P1 source/test changes recorded in `07-p1-closeout.md`, Phase P2 parser-registry source/test changes recorded in `08-p2-closeout.md`, Phase P3 CSV diagnostics source/test changes recorded in `09-p3-closeout.md`, Phase P4 dataset-bridge source/test changes recorded in `10-p4-closeout.md`, and subsequent closeout files through Phase P10F.
-- The current verdict is limited to audited document-chunk paths, existing dataset paths, explicit APS-derived CSV/XLSX/JSON/SEC-EDGAR table dataset admission through `dataset_version`, selected-pass execution/package proof for that path, selected material trace detail, and non-selectable guardrail trace detail.
+- The initial pack was docs-only. The current branch now also includes Phase P1 source/test changes recorded in `07-p1-closeout.md`, Phase P2 parser-registry source/test changes recorded in `08-p2-closeout.md`, Phase P3 CSV diagnostics source/test changes recorded in `09-p3-closeout.md`, Phase P4 dataset-bridge source/test changes recorded in `10-p4-closeout.md`, and subsequent closeout files through Phase P10G.
+- The current verdict is limited to audited document-chunk paths, existing dataset paths, explicit APS-derived CSV/XLSX/JSON/SEC-EDGAR table dataset admission through `dataset_version`, selected-pass execution/package proof for that path, selected material trace detail, non-selectable guardrail trace detail, and Gate C unsupported material snapshot trace detail.
 - The target design separates current implementation from future parser/bridge/workbench admission.
 - Phase P1 is narrow: classification/refusal hardening and fixture coverage only.
 - Broad generic XML/HTML parsing, broad source-shape expansion, archive-member XLSX/JSON/SEC-EDGAR orchestration, arbitrary JSON document semantics, nested JSON flattening, broad workbook semantics, and mixed-source package semantics are explicitly deferred. Bounded `.xlsx` parsing/materialization is implemented as Phase P7, bounded standalone XLSX connector table bridge orchestration is implemented as Phase P7.5, bounded standalone JSON recordset parser/materialization is implemented as Phase P8, bounded SEC/EDGAR complete-submission text parsing/materialization is implemented as Phase P9, and current main separately admits the governed SEC-specific HTML/iXBRL receipt chain.
@@ -280,4 +281,4 @@ Caveat:
 
 ## Final Planning Verdict
 
-The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P10F are now implemented in this branch, and current main separately admits the governed SEC-specific HTML/iXBRL receipt chain with a recorded reconciliation checkpoint. The next correct action is a narrow per-artifact refused trace/detail surfacing pass backed by server authority, a separately scoped mixed-source package-semantics pass, or a legacy CSV bridge deprecation decision after generic table bridge adoption evidence is sufficient, while preserving all existing PDF/document, Candidate B PDF-only, generic XML/HTML refusal, and Layer 3 source-shape behavior.
+The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P10G are now implemented in this branch, and current main separately admits the governed SEC-specific HTML/iXBRL receipt chain with a recorded reconciliation checkpoint. The next correct action is a narrow parser-level refused artifact trace/detail surfacing pass backed by server authority, a separately scoped mixed-source package-semantics pass, or a legacy CSV bridge deprecation decision after generic table bridge adoption evidence is sufficient, while preserving all existing PDF/document, Candidate B PDF-only, generic XML/HTML refusal, and Layer 3 source-shape behavior.
