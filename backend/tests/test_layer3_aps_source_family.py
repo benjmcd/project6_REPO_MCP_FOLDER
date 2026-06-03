@@ -2,6 +2,7 @@ from app.services.layer3_aps_source_family import (
     APS_ADMITTED_TABLE_SOURCE_FAMILIES,
     APS_NOT_ADMITTED_SOURCE_FAMILIES,
     source_family_for_parser,
+    source_family_guardrail_trace,
     source_family_for_provenance,
     source_family_summary,
 )
@@ -74,6 +75,21 @@ def test_source_family_for_provenance_keeps_parser_family_for_regular_aps_tables
     assert metadata["source_family_label"] == "CSV table"
 
 
+def test_source_family_guardrail_trace_marks_refused_family_non_selectable() -> None:
+    family = APS_NOT_ADMITTED_SOURCE_FAMILIES[0]
+    trace = source_family_guardrail_trace(family)
+
+    assert trace["schema_id"] == "layer3.aps_source_family_guardrail_trace.v1"
+    assert trace["trace_scope"] == "source_family_guardrail"
+    assert trace["trace_readiness"] == "guardrail_not_selectable"
+    assert trace["source_family"] == "xml_html_inline_xbrl"
+    assert trace["source_admission_state"] == "not_admitted_or_refused"
+    assert trace["selectable"] is False
+    assert trace["materialization_state"] == "refused_without_parser_contract"
+    assert trace["authority_refs"]["selection_authority"] == "none"
+    assert "not a selectable material candidate" in trace["ui_summary"]
+
+
 def test_source_family_summary_counts_observed_parsers_and_returns_copies() -> None:
     summary = source_family_summary(
         [
@@ -93,7 +109,13 @@ def test_source_family_summary_counts_observed_parsers_and_returns_copies() -> N
         "unknown": 1,
     }
     assert summary["admitted_materialized_families"] == list(APS_ADMITTED_TABLE_SOURCE_FAMILIES)
-    assert summary["not_admitted_or_deferred_families"] == list(APS_NOT_ADMITTED_SOURCE_FAMILIES)
+    assert len(summary["not_admitted_or_deferred_families"]) == len(APS_NOT_ADMITTED_SOURCE_FAMILIES)
+    guardrail = summary["not_admitted_or_deferred_families"][0]
+    assert guardrail["source_family"] == APS_NOT_ADMITTED_SOURCE_FAMILIES[0]["source_family"]
+    assert guardrail["trace_detail"]["trace_readiness"] == "guardrail_not_selectable"
+    assert guardrail["trace_detail"]["selectable"] is False
 
     summary["admitted_materialized_families"][0]["source_family"] = "mutated"
+    summary["not_admitted_or_deferred_families"][0]["trace_detail"]["source_family"] = "mutated"
     assert APS_ADMITTED_TABLE_SOURCE_FAMILIES[0]["source_family"] == "csv"
+    assert APS_NOT_ADMITTED_SOURCE_FAMILIES[0]["source_family"] == "xml_html_inline_xbrl"

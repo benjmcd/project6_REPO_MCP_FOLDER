@@ -1907,7 +1907,15 @@ def test_aps_dataset_version_candidates_list_uses_dataset_source_provenance(db_s
         "sec_edgar_filing",
         "sec_edgar_html_inline_xbrl_source_family_parser_v1",
     } <= admitted_parser_families
-    assert any(item["source_family"] == "xml_html_inline_xbrl" for item in summary["not_admitted_or_deferred_families"])
+    refused_guardrails = {
+        item["source_family"]: item for item in summary["not_admitted_or_deferred_families"]
+    }
+    assert "xml_html_inline_xbrl" in refused_guardrails
+    refused_trace = refused_guardrails["xml_html_inline_xbrl"]["trace_detail"]
+    assert refused_trace["schema_id"] == "layer3.aps_source_family_guardrail_trace.v1"
+    assert refused_trace["trace_readiness"] == "guardrail_not_selectable"
+    assert refused_trace["selectable"] is False
+    assert refused_trace["authority_refs"]["selection_authority"] == "none"
     assert result["authority_rail"]["read_only"] is True
 
 
