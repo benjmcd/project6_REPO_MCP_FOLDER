@@ -31167,7 +31167,10 @@ def _check_aps_source_family_extraction(errors: list[str]) -> None:
         "\"server_owned_raw_mixed\"",
         "\"xml_html_inline_xbrl\"",
         "\"broad_workbook_semantics\"",
-        "refused/deferred families are explanatory guardrails, not selectable source classes",
+        "def source_family_guardrail_trace(",
+        "\"layer3.aps_source_family_guardrail_trace.v1\"",
+        "\"guardrail_not_selectable\"",
+        "refused/deferred families are explanatory guardrails with trace detail, not selectable source classes",
     ):
         if term not in service_text:
             errors.append(f"{_rel(APS_SOURCE_FAMILY_SERVICE)} missing APS source-family extraction term: {term}")
@@ -31199,8 +31202,10 @@ def _check_aps_source_family_extraction(errors: list[str]) -> None:
         "test_source_family_for_parser_returns_unknown_metadata_copy",
         "test_source_family_for_provenance_labels_server_owned_raw_mixed_materialization",
         "test_source_family_for_provenance_keeps_parser_family_for_regular_aps_tables",
+        "test_source_family_guardrail_trace_marks_refused_family_non_selectable",
         "test_source_family_summary_counts_observed_parsers_and_returns_copies",
         "APS_ADMITTED_TABLE_SOURCE_FAMILIES[0][\"source_family\"] == \"csv\"",
+        "APS_NOT_ADMITTED_SOURCE_FAMILIES[0][\"source_family\"] == \"xml_html_inline_xbrl\"",
     ):
         if term not in test_text:
             errors.append(f"{_rel(APS_SOURCE_FAMILY_TEST)} missing APS source-family proof test term: {term}")

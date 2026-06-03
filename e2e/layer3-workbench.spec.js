@@ -4544,6 +4544,12 @@ test('Layer 3 workbench surfaces typed and deferred APS source-family guardrails
     'archive_member_table_or_filing_orchestration',
     'mixed_source_package_semantics',
   ]));
+  const refusedGuardrail = candidates.source_family_summary.not_admitted_or_deferred_families.find(
+    (family) => family.source_family === 'xml_html_inline_xbrl',
+  );
+  expect(refusedGuardrail.trace_detail.trace_readiness).toBe('guardrail_not_selectable');
+  expect(refusedGuardrail.trace_detail.selectable).toBe(false);
+  expect(refusedGuardrail.trace_detail.materialization_state).toBe('refused_without_parser_contract');
 
   const summary = page.locator('.source-family-summary');
   await expect(summary).toContainText('Server-backed typed families');
@@ -4554,8 +4560,11 @@ test('Layer 3 workbench surfaces typed and deferred APS source-family guardrails
   await expect(summary).toContainText('SEC/EDGAR HTML inline XBRL');
   await expect(summary).toContainText('Deferred / refused guardrails');
   await expect(summary).toContainText('XML/HTML/inline XBRL');
+  await expect(summary).toContainText('guardrail not selectable');
+  await expect(summary).toContainText('refused without parser contract');
+  await expect(summary).toContainText('parser contract admission policy');
   await expect(summary).toContainText(
-    'This endpoint surfaces server-backed materialized DatasetVersion choices only; refused/deferred families are explanatory guardrails, not selectable source classes.',
+    'This endpoint surfaces server-backed materialized DatasetVersion choices only; refused/deferred families are explanatory guardrails with trace detail, not selectable source classes.',
   );
 });
 
