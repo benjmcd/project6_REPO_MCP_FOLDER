@@ -4,11 +4,18 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
+
+from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json")
 RUNTIME_REPORT = "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
 IN_APP_AUTH_POLICY_REPORT = "diagnostics/assessment/sec-xbrl-in-app-auth-policy-validation-report.json"
@@ -659,20 +666,6 @@ def _non_admitted_surfaces_hold(sources: dict[str, Any]) -> bool:
             '"value_reveal_default_on_claimed": false',
         )
     )
-
-
-def _criterion(
-    name: str,
-    passed: bool,
-    evidence: dict[str, Any],
-    blocked_reason: str | None,
-) -> dict[str, Any]:
-    return {
-        "criterion": name,
-        "state": "passed" if passed else "blocked",
-        "evidence": evidence,
-        "blocked_reason": None if passed else blocked_reason,
-    }
 
 
 def _all_tokens(text: str, tokens: tuple[str, ...]) -> bool:
