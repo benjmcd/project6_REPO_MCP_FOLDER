@@ -1,8 +1,10 @@
 # Multi-Type APS Ingestion Plan
 
-Status: planning/design pack plus implemented Phase P1 media hardening, Phase P2 parser registry skeleton, Phase P3 CSV typed diagnostics, Phase P4 callable dataset bridge, Phase P4.5 opt-in CSV connector orchestration, Phase P5 Layer 3 APS-derived dataset admission, Phase P6 execution/package proof, bounded Phase P10A operator selection surfacing, Phase P7 bounded XLSX parser/materialization, Phase P7.5 opt-in generic table dataset bridge orchestration, bounded Phase P8 JSON recordset parser/materialization, bounded Phase P9 plain-text SEC/EDGAR filing parser/materialization, bounded Phase P10B typed/refused workbench source-family surfacing, bounded Phase P10C selected-material dataset trace/detail surfacing, bounded Phase P10D selected APS content-document trace/detail surfacing, and current-main SEC-specific HTML/iXBRL source-family admission through the governed SEC parser receipt chain.
+Status: planning/design pack plus implemented Phase P1 media hardening, Phase P2 parser registry skeleton, Phase P3 CSV typed diagnostics, Phase P4 callable dataset bridge, Phase P4.5 opt-in CSV connector orchestration, Phase P5 Layer 3 APS-derived dataset admission, Phase P6 execution/package proof, bounded Phase P10A operator selection surfacing, Phase P7 bounded XLSX parser/materialization, Phase P7.5 opt-in generic table dataset bridge orchestration, bounded Phase P8 JSON recordset parser/materialization, bounded Phase P9 plain-text SEC/EDGAR filing parser/materialization, bounded Phase P10B typed/refused workbench source-family surfacing, bounded Phase P10C selected-material dataset trace/detail surfacing, bounded Phase P10D selected APS content-document trace/detail surfacing, current-main SEC-specific HTML/iXBRL source-family admission through the governed SEC parser receipt chain, and a current-main SEC HTML/iXBRL reconciliation closeout.
 
 Last audited main authority before the Phase P9 branch: `project6-origin/main` at `61df2c0d77a398d4aa582bb864caf6a209679e47`.
+
+Current SEC HTML/iXBRL reconciliation authority: `project6-origin/main` at `86b9786df4723135c62a60ed145c5bbff04b3703`.
 
 Historical seed worktree: `worktrees/multi-ingest-plan`.
 
@@ -145,9 +147,8 @@ Phase P1 detection/classification hardening has been implemented in this branch 
 The next implementation pass should not repeat the APS-derived dataset selection, source-family surfacing, or selected-material trace-detail slices. Remaining work is:
 
 1. Broader Phase P10 trace/detail surfacing for refused/mixed source families only as those families become backed by server authority and need more than candidate-panel and selected-material ledger detail.
-2. Reconcile broader APS heterogeneous-ingestion docs and surfaces with the current-main SEC-specific HTML/iXBRL receipt chain without widening the generic XML/HTML refusal boundary.
-3. Mixed qualitative-plus-table package semantics only after the admitted SEC parser/material authority is connected to governed package semantics.
-4. Decide whether to deprecate the legacy `csv_dataset_bridge_enabled`/`aps.csv_dataset_bridge_run.v1` compatibility path after downstream consumers have adopted the generic table bridge contract.
+2. Mixed qualitative-plus-table package semantics only after the admitted SEC parser/material authority is connected to governed package semantics.
+3. Decide whether to deprecate the legacy `csv_dataset_bridge_enabled`/`aps.csv_dataset_bridge_run.v1` compatibility path after downstream consumers have adopted the generic table bridge contract.
 
 ## Pack Files
 
@@ -174,3 +175,4 @@ This section intentionally lists the supporting pack files. `README.md` is the f
 - `19-p10b-closeout.md` records the bounded Phase P10B Layer 3 workbench source-family surfacing boundary, validation, and residual caveats.
 - `20-p10c-closeout.md` records the bounded Phase P10C selected-material trace/detail surfacing boundary, validation, and residual caveats.
 - `21-p10d-closeout.md` records the bounded Phase P10D APS content-document selection and selected-material trace/detail boundary, validation, and residual caveats.
+- `22-sec-ixbrl-reconcile-closeout.md` records the current-main reconciliation boundary for SEC-specific HTML/iXBRL admission through the governed SEC parser receipt chain while preserving generic XML/HTML refusal.
