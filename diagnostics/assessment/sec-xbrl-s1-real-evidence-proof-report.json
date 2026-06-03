@@ -1,0 +1,193 @@
+{
+  "aggregate_counts": {
+    "total_operator_review_workflow_count": 3,
+    "total_oracle_confirmed_count": 82,
+    "total_orchestrator_review_exception_count": 4,
+    "total_projected_count": 86,
+    "total_provenance_complete_count": 86,
+    "total_statement_packet_row_count": 86
+  },
+  "aggregate_proof_hash": "d77be290a8ca34ff4aa133e8d23d8534e2ed3197d7431c9a78c63aa2eaacaa9b",
+  "controls": {
+    "arelle_invoked_by_proof": false,
+    "isolated_in_memory_db_used_for_operator_review": true,
+    "production_admission_blocked_reason": "s1_validate_only_not_production_admission",
+    "production_admission_ready": false,
+    "production_database_touched": false,
+    "single_transaction_claimed_for_operator_review": true,
+    "source_acquisition_performed_by_proof": false,
+    "validate_only": true,
+    "value_reveal_performed": false
+  },
+  "filings": [
+    {
+      "authority_hashes": {
+        "companyfacts_payload_hash": "bf4092eb28f921cd3850f013f12786025b9a37fb45057e3e6cecf81494a2e8cf",
+        "dataset_version_id_hash": "b593fbccac9a213a3d188099",
+        "proof_result_hash": "98d3f725d378b3d38c01014b34e66eedbbcf7bb44d5a30b48fa8b617a0eae53e",
+        "proof_source_report_hash": "61dc6f9e9d3cb215e2039d7a59c2d340179028d74fd11bd991451e8ba409d9de",
+        "sidecar_receipt_hash": "16cdcfc6e5486ccfdb2991fac7f46a03f53d802d60841f2e0ff6c488cdf5bb9d",
+        "statement_classification_receipt_hash": "bd95ba6d396a7d645f11e8e0bc4f8e7ca5f6e12f2ec9f50a5f250f43ae938666",
+        "statement_role_view_hash": "b7cad950f48596f630c77459d123827f157a5b9819329d9de605b2b37cf9b7ba",
+        "value_store_hash": "1db5495f71e58fe782aa8af8a8670b94e9e556584aad87d94daf03d023de7ea1"
+      },
+      "containment": {
+        "existing_materializers_commit_per_stage": false,
+        "isolated_in_memory_db_used": true,
+        "pre_persistence_projection_and_packet_preflight_passed": true,
+        "production_database_touched": false,
+        "single_transaction_claimed": true,
+        "transaction_boundary": "caller_owned_session"
+      },
+      "counts": {
+        "isolated_persistence_operator_review_workflow_count": 1,
+        "isolated_persistence_projection_fact_count": 22,
+        "isolated_persistence_statement_packet_row_count": 22,
+        "loader_resolved_fact_count": 643,
+        "loader_statement_role_record_count": 643,
+        "loader_value_record_count": 643,
+        "oracle_companyfacts_concept_count": 284,
+        "oracle_companyfacts_observation_count": 15010,
+        "oracle_companyfacts_taxonomy_count": 3,
+        "oracle_oracle_confirmed_count": 20,
+        "oracle_projected_count": 22,
+        "oracle_provenance_complete_count": 22,
+        "orchestrator_projected_count": 22,
+        "orchestrator_review_exception_count": 2,
+        "orchestrator_row_count": 22,
+        "orchestrator_statement_count": 3
+      },
+      "form_family": "annual",
+      "operator_review_creation_ready": true,
+      "production_admission_blocked_reason": "diagnostic_validate_only_not_production_admission",
+      "production_admission_ready": false,
+      "proof_slot": "issuer-a-annual",
+      "redaction_scan": {
+        "projection_facts_all_value_redacted": true,
+        "public_response_local_path_found": false,
+        "public_response_raw_accession_found": false,
+        "public_response_raw_value_key_found": false,
+        "public_response_sec_url_found": false,
+        "statement_rows_all_value_redacted": true
+      },
+      "status": "offline_evidence_proof_capability_ready"
+    },
+    {
+      "authority_hashes": {
+        "companyfacts_payload_hash": "bf4092eb28f921cd3850f013f12786025b9a37fb45057e3e6cecf81494a2e8cf",
+        "dataset_version_id_hash": "f43da84d387ab6dec00216b9",
+        "proof_result_hash": "65b4491f6c8165ec06dda29295e71173e23d32e29fee339a0b886cf805f021a6",
+        "proof_source_report_hash": "564dbd4c6f784e64fe584acd5db9b550c95d9e7caa36c16566e25dcf90319cd8",
+        "sidecar_receipt_hash": "156c4ad4bf55bb5650042cb5eedcbd6aade07f6c59e6cd81e22561527a597daa",
+        "statement_classification_receipt_hash": "a1271d84a2e36b14782185925fd1e438a6978c97e1eabde82e86c22051363192",
+        "statement_role_view_hash": "976591add6a916ad31912fbd01781ece8f7552e42b1508409763ab0d1d64d38e",
+        "value_store_hash": "c56241bc339d8e6be3f5c7ad51665bf2808ae22f8b15a718e02f95c3abe8e2c2"
+      },
+      "containment": {
+        "existing_materializers_commit_per_stage": false,
+        "isolated_in_memory_db_used": true,
+        "pre_persistence_projection_and_packet_preflight_passed": true,
+        "production_database_touched": false,
+        "single_transaction_claimed": true,
+        "transaction_boundary": "caller_owned_session"
+      },
+      "counts": {
+        "isolated_persistence_operator_review_workflow_count": 1,
+        "isolated_persistence_projection_fact_count": 22,
+        "isolated_persistence_statement_packet_row_count": 22,
+        "loader_resolved_fact_count": 483,
+        "loader_statement_role_record_count": 483,
+        "loader_value_record_count": 483,
+        "oracle_companyfacts_concept_count": 284,
+        "oracle_companyfacts_observation_count": 15010,
+        "oracle_companyfacts_taxonomy_count": 3,
+        "oracle_oracle_confirmed_count": 20,
+        "oracle_projected_count": 22,
+        "oracle_provenance_complete_count": 22,
+        "orchestrator_projected_count": 22,
+        "orchestrator_review_exception_count": 2,
+        "orchestrator_row_count": 22,
+        "orchestrator_statement_count": 3
+      },
+      "form_family": "quarterly",
+      "operator_review_creation_ready": true,
+      "production_admission_blocked_reason": "diagnostic_validate_only_not_production_admission",
+      "production_admission_ready": false,
+      "proof_slot": "issuer-a-quarterly",
+      "redaction_scan": {
+        "projection_facts_all_value_redacted": true,
+        "public_response_local_path_found": false,
+        "public_response_raw_accession_found": false,
+        "public_response_raw_value_key_found": false,
+        "public_response_sec_url_found": false,
+        "statement_rows_all_value_redacted": true
+      },
+      "status": "offline_evidence_proof_capability_ready"
+    },
+    {
+      "authority_hashes": {
+        "companyfacts_payload_hash": "e3e4a625a3f81aff270d70ef0e75531d2b920d128a2c0e63fbeadaeca1faf95a",
+        "dataset_version_id_hash": "f515d5d11911343edbf63918",
+        "proof_result_hash": "88f6fd091fcd9fcf20660c18547f87810c8472a0901c95a0030202755ce7ea9f",
+        "proof_source_report_hash": "c4bfac6042457d33ead93fe7ed82852408a78eeb0eba7f64faec44fa2dbcf9f3",
+        "sidecar_receipt_hash": "464692a23482f0738351588bc4186d694f169ba4e43217b7fd4ea1625f8296f1",
+        "statement_classification_receipt_hash": "9ef180df9d9c0512248dbb7ba2cbc9f1bd0642af2e73e34f2175c48c91ae6bee",
+        "statement_role_view_hash": "5b23f5bf1de0bd21e30a97687d5faa91d062237c3208161db4c1b0342087b545",
+        "value_store_hash": "bcac10025ae05501f2ac2d08df5636e0b09813bbf3ced602cd7e9b1dbae129b3"
+      },
+      "containment": {
+        "existing_materializers_commit_per_stage": false,
+        "isolated_in_memory_db_used": true,
+        "pre_persistence_projection_and_packet_preflight_passed": true,
+        "production_database_touched": false,
+        "single_transaction_claimed": true,
+        "transaction_boundary": "caller_owned_session"
+      },
+      "counts": {
+        "isolated_persistence_operator_review_workflow_count": 1,
+        "isolated_persistence_projection_fact_count": 42,
+        "isolated_persistence_statement_packet_row_count": 42,
+        "loader_resolved_fact_count": 2670,
+        "loader_statement_role_record_count": 2670,
+        "loader_value_record_count": 2670,
+        "oracle_companyfacts_concept_count": 252,
+        "oracle_companyfacts_observation_count": 3343,
+        "oracle_companyfacts_taxonomy_count": 2,
+        "oracle_oracle_confirmed_count": 42,
+        "oracle_projected_count": 42,
+        "oracle_provenance_complete_count": 42,
+        "orchestrator_projected_count": 42,
+        "orchestrator_review_exception_count": 0,
+        "orchestrator_row_count": 42,
+        "orchestrator_statement_count": 3
+      },
+      "form_family": "annual",
+      "operator_review_creation_ready": true,
+      "production_admission_blocked_reason": "diagnostic_validate_only_not_production_admission",
+      "production_admission_ready": false,
+      "proof_slot": "issuer-b-annual",
+      "redaction_scan": {
+        "projection_facts_all_value_redacted": true,
+        "public_response_local_path_found": false,
+        "public_response_raw_accession_found": false,
+        "public_response_raw_value_key_found": false,
+        "public_response_sec_url_found": false,
+        "statement_rows_all_value_redacted": true
+      },
+      "status": "offline_evidence_proof_capability_ready"
+    }
+  ],
+  "schema_id": "diagnostics.sec_xbrl_s1_real_evidence_proof.v1",
+  "schema_version": 1,
+  "scope": {
+    "annual_slot_count": 2,
+    "proof_slot_count": 3,
+    "quarterly_slot_count": 1,
+    "raw_accessions_redacted": true,
+    "raw_company_identities_redacted": true,
+    "raw_storage_paths_redacted": true,
+    "raw_values_redacted": true,
+    "real_companyfacts_payload_count": 2
+  },
+  "status": "s1_real_evidence_proof_ready"
+}
