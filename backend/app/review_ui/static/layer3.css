@@ -3429,6 +3429,16 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     overflow-wrap: anywhere;
 }
 
+.refused-artifact-traces {
+    display: grid;
+    gap: 6px;
+}
+
+.source-family-summary .refused-artifact-trace {
+    border-style: solid;
+    border-left: 3px solid var(--warning-color);
+}
+
 .dataset-version-candidate,
 .aps-content-document-candidate {
     display: grid;

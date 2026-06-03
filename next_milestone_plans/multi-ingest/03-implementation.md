@@ -452,7 +452,8 @@ Stop condition:
 - P10E stop condition is met when server-owned raw mixed materialized `DatasetVersion` candidates and selected materials are labeled as server-owned raw mixed authority instead of inheriting lower-level parser-family labels.
 - P10F stop condition is met when refused/deferred source-family guardrails include server-owned trace detail and render as non-selectable guardrails in the workbench.
 - P10G stop condition is met when Gate C unsupported material snapshots include server-owned trace detail and render as non-selectable, not-admitted-to-typing records in the workbench.
-- A broader trace/detail UI tranche remains separate from P10G and should not be claimed as completed until operators can inspect richer detail views for parser-level refused artifacts and mixed filings without reading raw JSON.
+- P10H stop condition is met when parser-level APS unsupported-media artifact refusals include server-owned trace detail from persisted artifact-ingestion run/target reports and render as non-selectable, not-admitted-to-material rows in the workbench.
+- Mixed-filing/package semantic work remains separate from P10H and should not be claimed as completed until admitted parser/material authority is connected to a governed mixed-source package contract.
 
 ## Target Implementation Flow
 
@@ -474,8 +475,9 @@ flowchart TD
     N --> O["P10E: raw mixed trace labeling"]
     O --> P["P10F: guardrail trace detail"]
     P --> Q["P10G: Gate C unsupported trace detail"]
+    Q --> R["P10H: parser-level refused artifact trace detail"]
 ```
 
 ## Immediate Recommendation
 
-The next implementation PR should not repeat P10A APS-derived dataset selection, P10B source-family guardrails, P10C selected dataset trace detail, P10D selected APS content-document trace detail, P10E raw mixed trace labeling, P10F guardrail trace detail, P10G Gate C unsupported material trace detail, P8 JSON recordset materialization, P9 bounded SEC/EDGAR complete-submission materialization, the already-admitted SEC-specific HTML/iXBRL parser receipt chain, or the SEC HTML/iXBRL reconciliation checkpoint. The next narrow slice should either add parser-level refused artifact trace surfacing only where backed by server authority, connect admitted SEC parser/material authority to governed mixed-source package semantics without widening generic XML/HTML admission, or decide whether the legacy CSV bridge compatibility path can be deprecated after proving generic table bridge adoption.
+The next implementation PR should not repeat P10A APS-derived dataset selection, P10B source-family guardrails, P10C selected dataset trace detail, P10D selected APS content-document trace detail, P10E raw mixed trace labeling, P10F guardrail trace detail, P10G Gate C unsupported material trace detail, P10H parser-level unsupported-media artifact refusal trace detail, P8 JSON recordset materialization, P9 bounded SEC/EDGAR complete-submission materialization, the already-admitted SEC-specific HTML/iXBRL parser receipt chain, or the SEC HTML/iXBRL reconciliation checkpoint. The next narrow slice should either connect admitted SEC parser/material authority to governed mixed-source package semantics without widening generic XML/HTML admission, decide whether the legacy CSV bridge compatibility path can be deprecated after proving generic table bridge adoption, or extend refusal trace surfacing only for a newly audited failure class with server-owned run/target authority.

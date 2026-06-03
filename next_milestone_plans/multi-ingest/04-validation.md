@@ -588,6 +588,32 @@ Browser validation:
 
 - Run the focused unsupported-only Gate C Layer 3 workbench E2E in both headless and headed Chrome where local browser validation is available.
 
+## Phase P10H Parser-Level Refused Artifact Trace Detail Validation
+
+Status: implemented for APS unsupported-media target failures backed by persisted `aps.artifact_ingestion_run.v1` and `aps.artifact_ingestion_target.v1` reports.
+
+Required assertions:
+
+- `layer3.aps_refused_artifact_traces.v1` reads artifact-ingestion report refs from `ConnectorRun.query_plan_json.aps_artifact_ingestion_report_refs`.
+- Each surfaced trace is backed by a valid `aps.artifact_ingestion_target.v1` target payload and uses `layer3.aps_refused_artifact_trace.v1`.
+- Any declared target-row SHA-256 must match the referenced target file bytes before a trace is emitted.
+- The trace filter is limited to `artifact_unsupported_media_type`; checksum mismatches, invalid refs, missing refs, wrong schema IDs, wrong schema versions, malformed nested target payloads, non-target payloads, and other failure classes do not become parser-level refused artifact rows.
+- Trace detail states `trace_readiness="refused_artifact_traceable"`, `selectable=false`, `materialization_state="refused_without_material_candidate"`, and `admission_state="not_admitted_to_layer3_material"`.
+- The workbench renders parser-level refused artifacts in the existing source-family summary panel as diagnostics, not candidate controls.
+- No refused artifact becomes a material candidate, parser admission, source shape, package semantic, persisted schema change, seeded artifact, or Onlook artifact.
+
+Focused commands:
+
+- `python -m pytest .\backend\tests\test_layer3_workbench.py .\backend\tests\test_layer3_page.py -q`
+- `python .\tools\validate_structure.py`
+- `python .\tools\l3-progress-check.py`
+- `python .\tools\l3-target-selection-validate.py --expect frozen`
+- `git diff --check`
+
+Browser validation:
+
+- Run the focused Layer 3 workbench source-family guardrail E2E in both headless and headed Chrome where local browser validation is available.
+
 ## Completion Definition
 
 The overall heterogeneous ingestion lane is complete only when all of the following are true:

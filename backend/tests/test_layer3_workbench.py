@@ -47,7 +47,7 @@ from app.models.models import (
     L3TypingRecord,
     VariableDefinition,
 )
-from app.services import layer3_provider_private_signed_url, layer3_workbench
+from app.services import layer3_provider_private_signed_url, layer3_workbench, nrc_aps_artifact_ingestion
 from app.services.layer3_workbench import Layer3WorkbenchError
 from app.services.layer3_state_action_contract import STATE_ACTION_CONTRACT_SCHEMA_ID
 from app.services.layer3_authority_matrix_contract import (
@@ -1461,6 +1461,105 @@ def _seed_aps_content_document(
     return content_id
 
 
+def _unsupported_media_target_payload(*, run_id: str, target_id: str) -> tuple[dict, dict]:
+    failure = {
+        "code": nrc_aps_artifact_ingestion.APS_FAILURE_ARTIFACT_UNSUPPORTED_MEDIA_TYPE,
+        "stage": "media_detection",
+        "message": "Unsupported APS artifact media type.",
+        "evidence": {
+            "run_id": run_id,
+            "target_id": target_id,
+            "pipeline_mode": nrc_aps_artifact_ingestion.APS_PIPELINE_MODE_HYDRATE_PROCESS,
+            "declared_content_type": "text/html",
+            "sniffed_content_type": "text/html",
+            "detected_content_type": "text/html",
+            "media_detection_status": "unsupported",
+            "allowed_content_types": sorted(nrc_aps_artifact_ingestion.APS_SUPPORTED_CONTENT_TYPES),
+            "blob_ref": "nrc_adams_aps/blobs/sha256/aa/bb/blob.bin",
+            "blob_sha256": "a" * 64,
+        },
+    }
+    return (
+        nrc_aps_artifact_ingestion.build_target_artifact_payload(
+            run_id=run_id,
+            target_id=target_id,
+            accession_number="ML26001A999",
+            pipeline_mode=nrc_aps_artifact_ingestion.APS_PIPELINE_MODE_HYDRATE_PROCESS,
+            artifact_required_for_target_success=True,
+            outcome_status="failed",
+            target_success=False,
+            evidence={"discovery_ref": "discovery.json", "selection_ref": "selection.json"},
+            source_metadata_ref="source-metadata.json",
+            failure=failure,
+            download={
+                "blob_ref": "nrc_adams_aps/blobs/sha256/aa/bb/blob.bin",
+                "blob_sha256": "a" * 64,
+                "content_type": "text/html",
+            },
+        ),
+        failure,
+    )
+
+
+def _seed_refused_artifact_run(
+    db,
+    tmp_path: Path,
+    *,
+    suffix: str,
+    target_payload: dict | None = None,
+    target_row_sha256: str | None = None,
+    target_ref: str | None = None,
+) -> None:
+    reports_dir = tmp_path / f"aps-reports-{suffix}"
+    reports_dir.mkdir()
+    run_id = f"run-refused-artifact-{suffix}"
+    target_id = f"target-refused-artifact-{suffix}"
+    if target_payload is None:
+        target_payload, failure = _unsupported_media_target_payload(run_id=run_id, target_id=target_id)
+    else:
+        failure_value = target_payload.get("failure")
+        failure = failure_value if isinstance(failure_value, dict) else {}
+    target_path = reports_dir / "target-refused.json"
+    target_path.write_text(json.dumps(target_payload), encoding="utf-8")
+    target_ref_value = target_ref if target_ref is not None else str(target_path)
+    target_sha = target_row_sha256
+    if target_sha is None:
+        target_sha = hashlib.sha256(target_path.read_bytes()).hexdigest()
+    run_payload = nrc_aps_artifact_ingestion.build_run_artifact_payload(
+        run_id=run_id,
+        run_status="completed_with_warnings",
+        pipeline_mode=nrc_aps_artifact_ingestion.APS_PIPELINE_MODE_HYDRATE_PROCESS,
+        artifact_required_for_target_success=True,
+        selected_targets=1,
+        target_artifacts=[
+            {
+                "target_id": target_id,
+                "status": "failed",
+                "outcome_status": "failed",
+                "ref": target_ref_value,
+                "sha256": target_sha,
+                "failure": failure,
+            }
+        ],
+    )
+    run_path = reports_dir / "run-refused.json"
+    run_path.write_text(json.dumps(run_payload), encoding="utf-8")
+    db.add(
+        ConnectorRun(
+            connector_run_id=run_id,
+            connector_key="nrc_adams_aps",
+            source_system="nrc_adams_aps",
+            status="completed_with_warnings",
+            query_plan_json={
+                "aps_artifact_ingestion_report_refs": {
+                    "aps_artifact_ingestion": str(run_path),
+                }
+            },
+        )
+    )
+    db.flush()
+
+
 def test_bootstrap_is_explicit_about_first_slice_limits() -> None:
     result = layer3_workbench.bootstrap()
 
@@ -2190,6 +2289,89 @@ def test_aps_content_document_candidates_list_uses_content_linkage(db_session, t
     assert candidate["content_units_ref"].endswith("_content_units.json")
     assert candidate["chunk_count"] == 2
     assert candidate["page_count"] == 2
+
+
+def test_aps_refused_artifact_traces_surface_unsupported_media_target_payload(db_session, tmp_path) -> None:
+    _seed_refused_artifact_run(db_session, tmp_path, suffix="001")
+
+    result = layer3_workbench.aps_refused_artifact_traces(db_session)
+
+    assert result["schema_id"] == "layer3.aps_refused_artifact_traces.v1"
+    assert result["trace_count"] == 1
+    assert result["authority_rail"]["selection_authority"] == "none"
+    trace = result["refused_artifact_traces"][0]
+    assert trace["schema_id"] == "layer3.aps_refused_artifact_trace.v1"
+    assert trace["target_id"] == "target-refused-artifact-001"
+    assert trace["accession_number"] == "ML26001A999"
+    assert trace["failure_code"] == nrc_aps_artifact_ingestion.APS_FAILURE_ARTIFACT_UNSUPPORTED_MEDIA_TYPE
+    assert trace["trace_readiness"] == "refused_artifact_traceable"
+    assert trace["selectable"] is False
+    assert trace["materialization_state"] == "refused_without_material_candidate"
+    assert trace["authority_refs"]["authority_source"] == "aps_artifact_ingestion_target"
+    assert trace["media_evidence"]["detected_content_type"] == "text/html"
+    assert trace["media_evidence"]["blob_ref"].endswith("blob.bin")
+
+
+def test_aps_refused_artifact_traces_fail_closed_for_invalid_target_authority(db_session, tmp_path) -> None:
+    missing_ref_payload, _ = _unsupported_media_target_payload(
+        run_id="run-refused-artifact-missing-ref",
+        target_id="target-refused-artifact-missing-ref",
+    )
+    wrong_schema_payload, _ = _unsupported_media_target_payload(
+        run_id="run-refused-artifact-wrong-schema",
+        target_id="target-refused-artifact-wrong-schema",
+    )
+    wrong_schema_payload["schema_id"] = "wrong.schema"
+    wrong_version_payload, _ = _unsupported_media_target_payload(
+        run_id="run-refused-artifact-wrong-version",
+        target_id="target-refused-artifact-wrong-version",
+    )
+    wrong_version_payload["schema_version"] = 999
+    wrong_failure_payload, _ = _unsupported_media_target_payload(
+        run_id="run-refused-artifact-wrong-failure",
+        target_id="target-refused-artifact-wrong-failure",
+    )
+    wrong_failure_payload["failure"]["code"] = nrc_aps_artifact_ingestion.APS_FAILURE_ARTIFACT_DOWNLOAD_FAILED
+    wrong_failure_payload["failure"]["evidence"] = {
+        "download_exchange_ref": "download-exchange.json",
+        "attempt_count": 1,
+        "error_class": "TimeoutError",
+    }
+    malformed_failure_payload, _ = _unsupported_media_target_payload(
+        run_id="run-refused-artifact-malformed-failure",
+        target_id="target-refused-artifact-malformed-failure",
+    )
+    malformed_failure_payload["failure"] = "not-a-dict"
+
+    _seed_refused_artifact_run(
+        db_session,
+        tmp_path,
+        suffix="checksum",
+        target_row_sha256="0" * 64,
+    )
+    _seed_refused_artifact_run(
+        db_session,
+        tmp_path,
+        suffix="missing-ref",
+        target_payload=missing_ref_payload,
+        target_ref=str(tmp_path / "missing-target.json"),
+    )
+    _seed_refused_artifact_run(db_session, tmp_path, suffix="wrong-schema", target_payload=wrong_schema_payload)
+    _seed_refused_artifact_run(db_session, tmp_path, suffix="wrong-version", target_payload=wrong_version_payload)
+    _seed_refused_artifact_run(db_session, tmp_path, suffix="wrong-failure", target_payload=wrong_failure_payload)
+    _seed_refused_artifact_run(
+        db_session,
+        tmp_path,
+        suffix="malformed-failure",
+        target_payload=malformed_failure_payload,
+    )
+
+    result = layer3_workbench.aps_refused_artifact_traces(db_session)
+
+    assert result["schema_id"] == "layer3.aps_refused_artifact_traces.v1"
+    assert result["trace_count"] == 0
+    assert result["refused_artifact_traces"] == []
+    assert result["inspected_run_count"] == 6
 
 
 def test_aps_content_document_flows_from_material_preview_to_gate_b(db_session, tmp_path) -> None:

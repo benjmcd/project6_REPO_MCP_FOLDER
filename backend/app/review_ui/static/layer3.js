@@ -605,6 +605,8 @@ const State = {
     datasetVersionCandidateError: null,
     apsContentDocumentCandidates: null,
     apsContentDocumentCandidateError: null,
+    refusedArtifactTraces: null,
+    refusedArtifactTraceError: null,
     rawMixedMaterialization: null,
     rawMixedMaterializationError: null,
     rawMixedMaterializationPending: false,
@@ -6359,6 +6361,9 @@ function renderSourceFamilySummary(summary) {
         ? summary.not_admitted_or_deferred_families
         : [];
     const observed = summary.observed_candidate_counts || {};
+    const refusedTraces = Array.isArray(State.refusedArtifactTraces?.refused_artifact_traces)
+        ? State.refusedArtifactTraces.refused_artifact_traces
+        : [];
     const admittedRows = admitted.map((family) => {
         const parserFamily = family.parser_family || family.source_family || 'unknown';
         const observedCount = observed[parserFamily] || 0;
@@ -6396,6 +6401,37 @@ function renderSourceFamilySummary(summary) {
             </li>
         `;
     }).join('');
+    const refusedTraceRows = refusedTraces.map((trace) => {
+        const media = trace.media_evidence || {};
+        const traceRows = [
+            ['failure', trace.failure_code ? humanizeToken(trace.failure_code) : null],
+            ['admission', trace.admission_state ? humanizeToken(trace.admission_state) : null],
+            ['materialization', trace.materialization_state ? humanizeToken(trace.materialization_state) : null],
+            ['detected type', media.detected_content_type || media.sniffed_content_type || media.declared_content_type || null],
+            ['selection', trace.selectable === false ? 'not selectable' : null],
+            ['authority', trace.authority_refs?.authority_source ? humanizeToken(trace.authority_refs.authority_source) : null],
+        ].filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '');
+        return `
+            <li class="refused-artifact-trace">
+                <strong>${escapeHtml(trace.accession_number || trace.target_id || 'Refused APS artifact')}</strong>
+                <span>${escapeHtml(shortText(trace.ui_summary || trace.failure_message || 'Artifact refused by APS ingestion.', 120))}</span>
+                <em>${escapeHtml(trace.target_id || trace.connector_run_id || 'target authority retained')}</em>
+                ${traceRows.length ? `
+                    <dl class="source-family-trace">
+                        ${traceRows.map(([label, value]) => `
+                            <div>
+                                <dt>${escapeHtml(label)}</dt>
+                                <dd>${escapeHtml(shortText(value, 54))}</dd>
+                            </div>
+                        `).join('')}
+                    </dl>
+                ` : ''}
+            </li>
+        `;
+    }).join('');
+    const refusedTraceStatus = State.refusedArtifactTraceError
+        ? `<li><strong>Parser-level refused artifact trace lookup failed</strong><span>${escapeHtml(State.refusedArtifactTraceError)}</span></li>`
+        : '<li><strong>No parser-level refused artifacts reported</strong><span>Artifact-ingestion run reports did not expose unsupported-media refusal targets.</span></li>';
     return `
         <section class="source-family-summary" aria-label="APS typed and refused source family boundary">
             <div>
@@ -6405,6 +6441,10 @@ function renderSourceFamilySummary(summary) {
             <div>
                 <span class="source-family-kicker">Deferred / refused guardrails</span>
                 <ul>${deferredRows || '<li><strong>No deferred families reported</strong><span>Candidate endpoint did not report refusal guardrails.</span></li>'}</ul>
+            </div>
+            <div class="refused-artifact-traces">
+                <span class="source-family-kicker">Parser-level refused artifacts</span>
+                <ul>${refusedTraceRows || refusedTraceStatus}</ul>
             </div>
             <p>${escapeHtml(summary.ui_scope || 'Only materialized APS-derived DatasetVersion records are selectable here.')}</p>
         </section>
@@ -28131,11 +28171,25 @@ async function loadApsContentDocumentCandidates() {
     }
 }
 
+async function loadApsRefusedArtifactTraces() {
+    try {
+        State.refusedArtifactTraces = await getJson('/aps-refused-artifact-traces');
+        State.refusedArtifactTraceError = null;
+        addEvent(`Loaded ${State.refusedArtifactTraces.trace_count || 0} parser-level refused APS artifact trace(s).`);
+        return true;
+    } catch (error) {
+        State.refusedArtifactTraceError = error.message;
+        addEvent(`Parser-level refused artifact trace lookup blocked: ${error.message}`);
+        return false;
+    }
+}
+
 async function init() {
     try {
         State.bootstrap = await getJson('/bootstrap');
         await loadDatasetVersionCandidates();
         await loadApsContentDocumentCandidates();
+        await loadApsRefusedArtifactTraces();
         const sessionRecovered = await recoverSessionFromStorage();
         if (!sessionRecovered) {
             restoreGateBDraftSnapshot();
