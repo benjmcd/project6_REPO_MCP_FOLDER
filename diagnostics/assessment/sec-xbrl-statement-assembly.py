@@ -26,6 +26,7 @@ from app.services.layer3_sec_xbrl_statement_assembly import (  # noqa: E402
 from app.services.layer3_sec_xbrl_report_leak_guard import diagnostic_authority_redaction_scan_payload  # noqa: E402
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import report_envelope as _report_envelope  # noqa: E402
 from sec_xbrl_report_redaction import strip_residual_magnitude_fields  # noqa: E402
 from sec_xbrl_runtime_posture import (  # noqa: E402
     committed_runtime_posture,
@@ -174,30 +175,30 @@ def build_report(
         organization_result=dict(REFERENCE_ORGANIZATION_RESULT if organization_result is None else organization_result),
         identity_residuals=list(REFERENCE_IDENTITY_RESIDUALS if identity_residuals is None else identity_residuals),
     )
-    report: dict[str, Any] = {
-        "schema_id": REPORT_SCHEMA_ID,
-        "target": TARGET,
-        "next_slice": NEXT_SLICE,
-        "decision": "sec_xbrl_statement_assembly_validate_only_ready",
-        "source_mode": "redacted_reference_projection_and_statement_organization_summary",
-        "validate_only": True,
-        "live_network_used": False,
-        "arelle_invoked": False,
-        "value_reveal_performed": False,
-        "runtime_defaults_changed": False,
-        "runtime_schema_id": STATEMENT_ASSEMBLY_SCHEMA_ID,
-        "value_policy": packet["value_policy"],
-        "canonical_projection_authority": packet["canonical_projection_authority"],
-        "statement_organization_authority": packet["statement_organization_authority"],
-        "linkbase_required_for_review_packet": False,
-        "summary": _summary(packet),
-        "statements": packet["statements"],
-        "identity_rollup": packet["identity_rollup"],
-        "organization_contract": packet["organization_contract"],
-        "blocking_reasons": list(packet["blocking_reasons"]),
-        "redaction": {},
-        "criteria": [],
-        "non_goals_preserved": {
+    report: dict[str, Any] = _report_envelope(
+        schema_id=REPORT_SCHEMA_ID,
+        target=TARGET,
+        next_slice=NEXT_SLICE,
+        decision="sec_xbrl_statement_assembly_validate_only_ready",
+        source_mode="redacted_reference_projection_and_statement_organization_summary",
+        validate_only=True,
+        live_network_used=False,
+        arelle_invoked=False,
+        value_reveal_performed=False,
+        runtime_defaults_changed=False,
+        runtime_schema_id=STATEMENT_ASSEMBLY_SCHEMA_ID,
+        value_policy=packet["value_policy"],
+        canonical_projection_authority=packet["canonical_projection_authority"],
+        statement_organization_authority=packet["statement_organization_authority"],
+        linkbase_required_for_review_packet=False,
+        summary=_summary(packet),
+        statements=packet["statements"],
+        identity_rollup=packet["identity_rollup"],
+        organization_contract=packet["organization_contract"],
+        blocking_reasons=list(packet["blocking_reasons"]),
+        redaction={},
+        criteria=[],
+        non_goals_preserved={
             "final_financial_statement_semantics_claimed": False,
             "linkbase_emission_claimed": False,
             "per_period_projection_claimed": False,
@@ -207,7 +208,7 @@ def build_report(
             "production_readiness_claimed": False,
             "provider_or_connector_dispatch_performed": False,
         },
-    }
+    )
     report = strip_residual_magnitude_fields(report)
     report["redaction"] = _redaction_scan_payload(report)
     report["criteria"] = _criteria(report=report, runtime_posture=runtime_posture)

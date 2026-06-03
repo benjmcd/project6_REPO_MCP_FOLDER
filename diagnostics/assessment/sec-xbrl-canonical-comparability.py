@@ -27,6 +27,7 @@ from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
 from app.services.layer3_utils import stable_hash  # noqa: E402
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import report_envelope as _report_envelope  # noqa: E402
 from sec_xbrl_report_redaction import strip_residual_magnitude_fields  # noqa: E402
 from sec_xbrl_runtime_posture import (  # noqa: E402
     committed_runtime_posture,
@@ -117,20 +118,21 @@ def _reference_summary_report(*, runtime_posture: Mapping[str, Any]) -> dict[str
     resolved = sum(int(item["headline_canonical_resolved"]) for item in issuer_summaries)
     absent = sum(int(item["headline_canonical_legitimately_absent"]) for item in issuer_summaries)
     cell_count = len(concept_inventory) * len(issuer_summaries)
-    report: dict[str, Any] = {
-        "schema_id": REPORT_SCHEMA_ID,
-        "target": TARGET,
-        "decision": "canonical_comparability_validate_only_ready",
-        "source_mode": "redacted_reference_summary_plus_committed_registry",
-        "validate_only": True,
-        "live_network_used": False,
-        "arelle_invoked": False,
-        "value_reveal_performed": False,
-        "runtime_defaults_changed": False,
-        "coverage_framing": "headline_canonical_resolved_over_defined_only_not_filing_wide",
-        "canonical_concept_defined_count": len(concept_inventory),
-        "issuer_hash_count": len(issuer_summaries),
-        "summary": {
+    report: dict[str, Any] = _report_envelope(
+        schema_id=REPORT_SCHEMA_ID,
+        target=TARGET,
+        next_slice=NEXT_SLICE,
+        decision="canonical_comparability_validate_only_ready",
+        source_mode="redacted_reference_summary_plus_committed_registry",
+        validate_only=True,
+        live_network_used=False,
+        arelle_invoked=False,
+        value_reveal_performed=False,
+        runtime_defaults_changed=False,
+        coverage_framing="headline_canonical_resolved_over_defined_only_not_filing_wide",
+        canonical_concept_defined_count=len(concept_inventory),
+        issuer_hash_count=len(issuer_summaries),
+        summary={
             "headline_canonical_cell_count": cell_count,
             "headline_canonical_resolved_count": resolved,
             "headline_canonical_legitimately_absent_count": absent,
@@ -138,13 +140,12 @@ def _reference_summary_report(*, runtime_posture: Mapping[str, Any]) -> dict[str
             "statement_identity_residuals_reference_within_tolerance": True,
             "statement_identity_residual_magnitudes_redacted": True,
         },
-        "canonical_concepts": concept_inventory,
-        "per_issuer": issuer_summaries,
-        "statement_identity_residuals": _reference_identity_residuals(),
-        "criteria": [],
-        "blocking_reasons": [],
-        "next_slice": NEXT_SLICE,
-        "non_goals_preserved": {
+        canonical_concepts=concept_inventory,
+        per_issuer=issuer_summaries,
+        statement_identity_residuals=_reference_identity_residuals(),
+        criteria=[],
+        blocking_reasons=[],
+        non_goals_preserved={
             "default_on_readiness_claimed": False,
             "production_readiness_claimed": False,
             "final_financial_statement_semantics_claimed": False,
@@ -152,7 +153,7 @@ def _reference_summary_report(*, runtime_posture: Mapping[str, Any]) -> dict[str
             "statement_assembly_claimed": False,
             "linkbase_relationships_required_or_consumed": False,
         },
-    }
+    )
     report["criteria"] = _criteria(
         report=report,
         runtime_posture=runtime_posture,
