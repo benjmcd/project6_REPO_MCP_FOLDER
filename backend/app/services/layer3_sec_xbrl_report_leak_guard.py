@@ -30,6 +30,23 @@ def report_leak_flags(
     return flags
 
 
+def report_text_leak_flags(
+    text: str,
+    *,
+    include_raw_value_keys: bool = False,
+    raw_value_keys: Iterable[str] = RAW_VALUE_KEYS,
+    raw_value_key_ignore_case: bool = False,
+) -> dict[str, bool]:
+    flags = report_text_reference_flags(text)
+    if include_raw_value_keys:
+        flags["raw_value_key_found"] = raw_value_key_found(
+            text,
+            raw_value_keys=raw_value_keys,
+            ignore_case=raw_value_key_ignore_case,
+        )
+    return flags
+
+
 def raw_value_key_found(
     text: str,
     *,
