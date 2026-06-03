@@ -45915,6 +45915,48 @@
     "json_manifest_validation": "PASS: utf-8-sig JSON parse for layer3_progress_manifest.json and layer3_workbench_proof_manifest.json",
     "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only"
   },
+  "sec_xbrl_public_authority_guard_auth_binding_family_tracking": {
+    "tracking_kind": "sec_xbrl_public_authority_guard_auth_binding_family_tracking",
+    "milestone": "sec_xbrl_public_authority_guard_auth_binding_family_v1",
+    "branch": "codex/secxbrl-auth-binding-guard",
+    "base_authority": "project6-origin/main after PR #2121",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1348-sec-xbrl-public-authority-guard-auth-binding.md",
+    "files_in_scope": [
+      "backend/app/services/layer3_sec_xbrl_public_authority_guard.py",
+      "backend/app/services/layer3_sec_xbrl_auth_binding.py",
+      "backend/tests/test_sec_xbrl_public_authority_guard.py",
+      "diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition-report.json",
+      "next_milestone_plans/Layer3_planning_docs/1348-sec-xbrl-public-authority-guard-auth-binding.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "scope_summary": "Extends the shared SEC XBRL public-authority guard with auth-binding-safe raw-reference variants and migrates auth-binding receipt/reference checks without changing service-specific error surfaces or period-date behavior; refreshes one source-hash-bound nonlocal diagnostic report without decision/posture widening.",
+    "verification_status": "branch-local verification passed",
+    "verification": {
+      "focused_auth_binding_guard_suite": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_public_authority_guard.py ./backend/tests/test_sec_xbrl_auth_binding_receipt.py -q -> 18 passed",
+      "full_sec_xbrl_suite": "PASS: full backend/tests/test_sec_xbrl*.py suite -> 455 passed, 3 warnings",
+      "l3_progress_check": "PASS",
+      "l3_target_selection_validate_frozen": "PASS",
+      "manifest_json_parse": "PASS",
+      "git_diff_check": "PASS: git diff --check exited 0 with line-ending warnings only"
+    },
+    "non_goals_preserved": {
+      "config_models_alembic_api_ui_persistence_schema_changed": false,
+      "proof_json_changed": false,
+      "diagnostic_report_refreshed_for_auth_binding_source_hash_only": "diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition-report.json",
+      "source_acquisition_or_arelle_or_live_sec_network_changed": false,
+      "runtime_default_or_activation_lane_changed": false,
+      "value_reveal_behavior_changed": false,
+      "production_readiness_claimed": false
+    },
+    "remaining_after_this_tranche": [
+      "operator-review workflow authority guard variant",
+      "E2E integration and offline-orchestrator public-output guard variants",
+      "multi-filing evidence authority gate response-leak variant",
+      "remaining report/redaction helper service consolidation where behavior-preserving"
+    ]
+  },
   "sec_xbrl_public_authority_guard_value_reveal_family_tracking": {
     "tracking_kind": "sec_xbrl_public_authority_guard_value_reveal_family_tracking",
     "milestone": "sec_xbrl_public_authority_guard_value_reveal_family_v1",
@@ -45943,7 +45985,8 @@
     },
     "non_goals_preserved": {
       "config_models_alembic_api_ui_persistence_schema_changed": false,
-      "proof_json_or_diagnostic_reports_changed": false,
+      "proof_json_changed": false,
+      "diagnostic_report_refreshed_for_auth_binding_source_hash_only": "diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition-report.json",
       "source_acquisition_or_arelle_or_live_sec_network_changed": false,
       "runtime_default_or_activation_lane_changed": false,
       "value_store_behavior_changed": false,
