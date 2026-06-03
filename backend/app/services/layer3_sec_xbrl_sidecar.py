@@ -18,6 +18,10 @@ from app.services import (
     layer3_sec_edgar_live_source_artifact,
     layer3_sec_edgar_real_filing_acquisition_connector,
 )
+from app.services.layer3_sec_xbrl_public_authority_guard import (
+    any_url_reference_found,
+    windows_local_path_start_reference_found,
+)
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -111,8 +115,6 @@ _FORBIDDEN_INPUT_KEYS = {
     "url",
     "urls",
 }
-_LOCAL_PATH_RE = __import__("re").compile(r"^[a-zA-Z]:[\\/]")
-_RAW_URL_RE = __import__("re").compile(r"[a-zA-Z][a-zA-Z0-9+.-]*://")
 _DOCUMENT_RE = re.compile(r"<DOCUMENT>(?P<body>.*?)</DOCUMENT>", re.IGNORECASE | re.DOTALL)
 _TEXT_RE = re.compile(r"<TEXT>(?P<text>.*?)</TEXT>", re.IGNORECASE | re.DOTALL)
 _TAG_RE = re.compile(r"<([A-Z0-9-]+)>\s*([^\r\n<]*)", re.IGNORECASE)
@@ -1302,7 +1304,9 @@ def _find_forbidden_nested_fields(value: Any, prefix: str = "") -> list[str]:
     elif isinstance(value, list):
         for index, nested in enumerate(value):
             found.extend(_find_forbidden_nested_fields(nested, f"{prefix}[{index}]"))
-    elif isinstance(value, str) and (_RAW_URL_RE.search(value) or _LOCAL_PATH_RE.search(value)):
+    elif isinstance(value, str) and (
+        any_url_reference_found(value) or windows_local_path_start_reference_found(value)
+    ):
         found.append(prefix or "request_body")
     return found
 
@@ -1314,7 +1318,10 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
         return any(_contains_forbidden_output_ref(item) for item in value)
     if isinstance(value, str):
         text = value.strip()
-        return bool(_LOCAL_PATH_RE.search(text) or text.startswith(("http://", "https://", "file://", "\\\\")))
+        return bool(
+            windows_local_path_start_reference_found(text)
+            or text.startswith(("http://", "https://", "file://", "\\\\"))
+        )
     return False
 
 
