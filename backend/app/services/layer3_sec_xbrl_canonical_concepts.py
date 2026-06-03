@@ -1496,7 +1496,9 @@ def _companyfacts_oracle_confirmation(
     period_seen = False
     tolerance = _decimals_tolerance(decimals)
     for fact in facts:
-        if not isinstance(fact, Mapping) or fact.get("fp") != PERIOD_CLASS:
+        if not isinstance(fact, Mapping):
+            continue
+        if fiscal_year is not None and fact.get("fp") != PERIOD_CLASS:
             continue
         if fiscal_year is not None and str(fact.get("fy") or "") != str(fiscal_year):
             continue
