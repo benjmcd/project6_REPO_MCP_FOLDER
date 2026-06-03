@@ -417,7 +417,7 @@ Implemented P9 focused commands:
 
 P9 residual no-go list:
 
-- HTML/XML/inline XBRL filing documents remain refused.
+- Generic APS HTML/XML/inline XBRL filing documents remain refused by the bounded complete-submission text parser. Current main separately admits the SEC-specific `sec_edgar_html_inline_xbrl_source_family_parser_v1` receipt chain under governed Layer 3 SEC authority; P9 still does not broaden generic XML/HTML admission.
 - Unsupported form types remain fail-closed unless explicitly admitted by config.
 - Ambiguous financial statement extraction, nested filing semantics, archive-member filing orchestration, schema/model/migration changes, new Layer 3 source shapes, and mixed-source package semantics remain deferred.
 
@@ -469,4 +469,4 @@ flowchart TD
 
 ## Immediate Recommendation
 
-The next implementation PR should not repeat P10A APS-derived dataset selection, P10B source-family guardrails, P10C selected dataset trace detail, P10D selected APS content-document trace detail, P8 JSON recordset materialization, or P9 bounded SEC/EDGAR complete-submission materialization. The next narrow slice should either add refused/mixed-source trace surfacing only where backed by server authority, or add a separate SEC/EDGAR HTML/XML/inline-XBRL parser only after a dedicated contract is specified.
+The next implementation PR should not repeat P10A APS-derived dataset selection, P10B source-family guardrails, P10C selected dataset trace detail, P10D selected APS content-document trace detail, P8 JSON recordset materialization, P9 bounded SEC/EDGAR complete-submission materialization, or the already-admitted SEC-specific HTML/iXBRL parser receipt chain. The next narrow slice should either add refused/mixed-source trace surfacing only where backed by server authority, reconcile remaining planning/status surfaces with the admitted SEC-specific HTML/iXBRL chain, or connect admitted SEC parser/material authority to governed mixed-source package semantics without widening generic XML/HTML admission.

@@ -228,7 +228,7 @@ CSV is simpler than spreadsheets and SEC filings, and it exercises the key downs
 
 Decision needed later:
 
-Implemented for Phase P9: bounded SEC/EDGAR complete submission text files with plain document text, admitted default forms, filing metadata, section ordered units, simple delimited `<TABLE>` table units, and generic table bridge materialization. Remaining sequencing decisions are broader typed/refused UI surfacing, HTML/XML/inline-XBRL filing parser admission, mixed-source package semantics, and when the legacy CSV bridge contract can be deprecated after generic table bridge adoption.
+Implemented for Phase P9: bounded SEC/EDGAR complete submission text files with plain document text, admitted default forms, filing metadata, section ordered units, simple delimited `<TABLE>` table units, and generic table bridge materialization. Current main separately admits the SEC-specific HTML/iXBRL parser receipt chain. Remaining sequencing decisions are broader typed/refused UI surfacing, governed mixed-source package semantics, any future generic XML/HTML admission, and when the legacy CSV bridge contract can be deprecated after generic table bridge adoption.
 
 ### Q2: Reuse Dataset Models Or Add A Bridge Table?
 
@@ -258,7 +258,7 @@ Implemented for Phase P9: choose complete submission text files first, sniffed b
 
 Decision needed later:
 
-Whether and how to admit HTML/XML/inline XBRL filings, richer financial-statement table semantics, unsupported form families, archive-member filing orchestration, and governed mixed-source package behavior.
+How to connect the admitted SEC-specific HTML/iXBRL receipt chain to richer governed financial-statement and mixed-source package semantics, whether any broader generic XML/HTML admission is needed, and how to handle unsupported form families or archive-member filing orchestration.
 
 ### Q5: Does Workbench Need A New Source Shape?
 
@@ -292,15 +292,15 @@ Answer: The docs preserve the fact that `dataset_version` time-series/tabular an
 
 Question: Is CSV support being represented accurately?
 
-Answer: Yes. The docs state standalone CSV and ZIP CSV members now emit typed parser diagnostics, can be materialized through an explicit dataset bridge, can be invoked from connector finalization through the legacy CSV gate or generic table gate, and can enter Layer 3 when selected by explicit `dataset_version_id`. That is not broad heterogeneous support because arbitrary JSON, broad SEC/EDGAR HTML/XML/inline-XBRL parsing, and mixed package semantics remain deferred.
+Answer: Yes. The docs state standalone CSV and ZIP CSV members now emit typed parser diagnostics, can be materialized through an explicit dataset bridge, can be invoked from connector finalization through the legacy CSV gate or generic table gate, and can enter Layer 3 when selected by explicit `dataset_version_id`. That is not broad heterogeneous support because arbitrary JSON, generic XML/HTML admission, and mixed package semantics remain deferred.
 
 Question: Is JSON/XML/HTML support being represented accurately?
 
-Answer: Yes. The docs state JSON is admitted only for bounded recordset parsing and materialization. Arbitrary JSON, XML, and HTML remain refused until specific parser families are admitted.
+Answer: Yes. The docs state JSON is admitted only for bounded recordset parsing and materialization. Arbitrary JSON plus generic XML/HTML remain refused until specific parser families are admitted. The current SEC-specific HTML/iXBRL receipt chain is separately admitted and should not be described as broad generic XML/HTML support.
 
 Question: Is SEC/EDGAR support being represented accurately?
 
-Answer: Yes. The docs state Phase P9 admits only complete submission text files with plain document text, deterministic metadata/section extraction, and simple delimited `<TABLE>` materialization. HTML/XML/inline XBRL, unsupported forms, ambiguous financial statement extraction, archive-member orchestration, schema changes, new Layer 3 source shapes, and mixed-source package semantics remain out of scope.
+Answer: Yes. The docs state Phase P9 admits only complete submission text files with plain document text, deterministic metadata/section extraction, and simple delimited `<TABLE>` materialization. Current main separately admits the SEC-specific HTML/iXBRL parser receipt chain. Unsupported forms, broad generic XML/HTML admission, ambiguous financial statement extraction, archive-member orchestration, schema changes, new Layer 3 source shapes, and mixed-source package semantics remain out of scope.
 
 Question: Is XLSX risk explicitly handled?
 
@@ -320,11 +320,11 @@ Answer: Yes. `04-validation.md` requires positive and negative fixture coverage 
 
 Question: What could still be missing?
 
-Answer: The remaining items are trace/detail surfacing beyond selected APS-derived `DatasetVersion` material, whether and how to admit SEC/EDGAR HTML/XML/inline-XBRL, and when to connect mixed SEC/EDGAR narrative-plus-table output into governed package semantics. These are recorded as open questions rather than assumed.
+Answer: The remaining items are trace/detail surfacing beyond selected APS-derived `DatasetVersion` material, reconciliation of current-main SEC-specific HTML/iXBRL authority across planning/status surfaces, and when to connect SEC narrative-plus-table output into governed mixed-source package semantics. These are recorded as open questions rather than assumed.
 
 ## Immediate Next Action
 
-Proceed with a narrow document/refused/mixed-source trace/detail UI surfacing pass only after auditing the active workbench UI state and confirming server authority for the details, or with a separately scoped SEC/EDGAR HTML/XML/inline-XBRL parser contract if trace/detail surfacing is intentionally deferred:
+Proceed with a narrow document/refused/mixed-source trace/detail UI surfacing pass only after auditing the active workbench UI state and confirming server authority for the details, or with a separately scoped mixed-source package semantics pass over admitted SEC parser/material authority if trace/detail surfacing is intentionally deferred:
 
 - Reuse the P10B candidate-panel guardrails and P10C selected-material trace detail as server authority for what is admitted/materialized versus deferred/refused.
 - Preserve backend-owned material-preview, Gate B, execution/result, and package contracts.
