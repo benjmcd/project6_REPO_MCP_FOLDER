@@ -33,8 +33,8 @@ The existing Slice 1 resolver remains compatible. `_inline_confirmation` now ret
 
 ## Guardrails
 
-- Runtime defaults remain off.
-- This is validate-only: no live SEC network, no Arelle invocation, no value reveal, no runtime artifact generation, and no default/config change.
+- Under 1317, Arelle fact-authority cutover is admitted default-on; live SEC network, value reveal, and controlled value-reveal submit remain default-off.
+- This is validate-only: no live SEC network, no Arelle invocation, no value reveal, no runtime artifact generation, and no config change beyond the already-admitted 1317 cutover posture.
 - Existing Slice 1 behavior and committed reports remain unchanged.
 - The committed projection report is redacted summary evidence only: hashes, counts, coverage, provenance-presence booleans, concept identifiers, reason codes, and identity residual magnitudes.
 - The slice does not claim production readiness, default-on readiness, final financial-statement semantics, statement assembly, linkbase relationship extraction, or FX comparability.

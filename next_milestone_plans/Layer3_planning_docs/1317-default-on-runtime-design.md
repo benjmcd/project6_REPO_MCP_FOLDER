@@ -270,3 +270,5 @@ That lane should be code plus report/test updates only for runtime default
 selection and gate hardening. It should not add schema, migrations, new
 persistence, API/UI, source acquisition, synchronous Arelle, value reveal
 default-on, export/delivery, or production-readiness claims.
+
+Follow-up addendum: slice 1334 completes the predecessor validate-only diagnostic reconciliation required by this posture, so the eight predecessor reports now distinguish admitted Arelle fact-authority cutover default-on from still-hard-off live network, value reveal, and controlled submit boundaries.

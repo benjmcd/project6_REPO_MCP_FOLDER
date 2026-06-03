@@ -1,4 +1,4 @@
-# Layer3 Progress Board
+﻿# Layer3 Progress Board
 
 ## SEC XBRL Offline CompanyFacts Oracle Packet
 
@@ -10037,7 +10037,7 @@ Report: `diagnostics/assessment/sec-xbrl-canonical-comparability-report.json`.
 
 Status: additive validate-only comparability diagnostic. The reviewed 22-concept headline statement crosswalk is versioned in `backend/app/services/layer3_sec_xbrl_canonical_concepts.py`, and the diagnostic report frames coverage only as headline canonical resolved/defined, never as whole-filing canonicalization.
 
-The diagnostic covers primary-taxonomy source preference, FY period scoping, explicit total-to-parent basis fallback, legitimately absent cells, divided-unit support, and redacted statement-identity residual magnitudes. Runtime defaults remain off and no live network, Arelle invocation, value reveal, statement assembly, FX conversion, or default-on readiness is admitted.
+The diagnostic covers primary-taxonomy source preference, FY period scoping, explicit total-to-parent basis fallback, legitimately absent cells, divided-unit support, and redacted statement-identity residual magnitudes. Arelle fact-authority cutover is admitted default-on under 1317, while live network, Arelle invocation, value reveal, statement assembly, FX conversion, or default-on readiness is admitted.
 
 Next exact posture: `sec_xbrl_canonical_projection_artifact_validate_only_v1`.
 
@@ -10051,7 +10051,7 @@ Report: `diagnostics/assessment/sec-xbrl-canonical-projection-report.json`.
 
 Status: additive validate-only projection diagnostic. Projection values are sourced from the governed Arelle sidecar value store through resolved facts; CompanyFacts is used only as a period-aware oracle.
 
-The projection path covers sidecar-derived primary taxonomy, sidecar-derived primary FY period, complete provenance for projected facts, explicit total-to-parent fallback, divided-unit support, `oracle_absent` coverage gain handling, and redacted statement-identity residual magnitudes. Runtime defaults remain off and no live network, Arelle invocation, value reveal, statement assembly, FX conversion, or default-on readiness is admitted.
+The projection path covers sidecar-derived primary taxonomy, sidecar-derived primary FY period, complete provenance for projected facts, explicit total-to-parent fallback, divided-unit support, `oracle_absent` coverage gain handling, and redacted statement-identity residual magnitudes. Arelle fact-authority cutover is admitted default-on under 1317, while live network, Arelle invocation, value reveal, statement assembly, FX conversion, or default-on readiness is admitted.
 
 Next exact posture: `sec_xbrl_canonical_coverage_breadth_validate_only_v1`.
 
@@ -10065,7 +10065,7 @@ Report: `diagnostics/assessment/sec-xbrl-canonical-coverage-breadth-report.json`
 
 Status: additive validate-only coverage-breadth diagnostic. The canonical resolver and projection path now include a post-pass that derives `NoncurrentAssets[total]` and `NoncurrentLiabilities[total]` from governed Total minus Current inputs when both source facts are resolved. Derived facts use `status="derived"`, `mapping_method="derived_total_minus_current"`, and dual-input resolved-fact provenance.
 
-The committed report records only per-sector-class headline canonical counts, derived counts, coverage rates, concept identifiers, and the sector-structure limitation. It does not include issuer identities, source accessions, period dates, source URLs, local paths, raw filing text, or financial values. Runtime defaults remain off and no live network, Arelle invocation, value reveal, statement assembly, FX conversion, sector-family implementation, or default-on readiness is admitted.
+The committed report records only per-sector-class headline canonical counts, derived counts, coverage rates, concept identifiers, and the sector-structure limitation. It does not include issuer identities, source accessions, period dates, source URLs, local paths, raw filing text, or financial values. Arelle fact-authority cutover is admitted default-on under 1317, while live network, Arelle invocation, value reveal, statement assembly, FX conversion, sector-family implementation, or default-on readiness is admitted.
 
 Next exact posture: `sec_xbrl_canonical_retained_coherence_validate_only_v1`.
 
@@ -10079,7 +10079,7 @@ Report: `diagnostics/assessment/sec-xbrl-canonical-retained-coherence-report.jso
 
 Status: additive validate-only coherence diagnostic. The new reconciliation primitive is decoupled from both SEC XBRL lineages and consumes only canonical projection outputs plus retained statement-classification fact-view outputs plus governed value-store hashes. Lineage A exposes a thin public retained-view accessor that maps the existing statement-classification sidecar flattening function without changing material-bridge or statement-classification behavior.
 
-The committed report records only per-sector-class aggregate binding counts, single-authority counts, value-hash reconciliation counts, contract booleans, and retained-view superset booleans. It does not include issuer identities, source accessions, period dates, source URLs, local paths, raw financial values, raw resolved fact authorities, or raw retained total-fact counts. Runtime defaults remain off and no live network, Arelle invocation, value reveal, statement assembly, per-period projection, persisted store, sector-family implementation, or default-on readiness is admitted.
+The committed report records only per-sector-class aggregate binding counts, single-authority counts, value-hash reconciliation counts, contract booleans, and retained-view superset booleans. It does not include issuer identities, source accessions, period dates, source URLs, local paths, raw financial values, raw resolved fact authorities, or raw retained total-fact counts. Arelle fact-authority cutover is admitted default-on under 1317, while live network, Arelle invocation, value reveal, statement assembly, per-period projection, persisted store, sector-family implementation, or default-on readiness is admitted.
 
 Next exact posture: `sec_xbrl_canonical_statement_organization_validate_only_v1`.
 
@@ -10093,7 +10093,7 @@ Report: `diagnostics/assessment/sec-xbrl-canonical-statement-organization-report
 
 Status: additive validate-only organization diagnostic. The new primitive consumes B canonical projection items that already carry the reviewed `statement` crosswalk plus A's per-fact statement-role view, joins them by resolved fact authority, and validates B's authoritative statement organization while reporting A corroboration, divergence, and unknown-role counts by taxonomy.
 
-The committed report records only taxonomy aggregate counts, public canonical concept ids, taxonomy tokens, statement roles, and contract booleans. It documents the known IFRS A-classifier drift set without making A agreement a pass gate. Runtime defaults remain off and no live network, Arelle invocation, value reveal, source acquisition, statement assembly, per-period projection, persisted store, linkbase emission, sector-family implementation, A-classifier behavior change, or default-on readiness is admitted.
+The committed report records only taxonomy aggregate counts, public canonical concept ids, taxonomy tokens, statement roles, and contract booleans. It documents the known IFRS A-classifier drift set without making A agreement a pass gate. Arelle fact-authority cutover is admitted default-on under 1317, while live network, Arelle invocation, value reveal, source acquisition, statement assembly, per-period projection, persisted store, linkbase emission, sector-family implementation, A-classifier behavior change, or default-on readiness is admitted.
 
 Next exact posture: `sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1`.
 
@@ -10107,7 +10107,7 @@ Report: `diagnostics/assessment/sec-xbrl-sector-family-coverage-report.json`.
 
 Status: additive validate-only sector-family design and coverage diagnostic. The design records `dei:EntityPrimarySicNumber` as a sector-class label source only, documents SEC submissions metadata as the fallback, and rejects primary-SIC gating in favor of concept-presence conditioning so diversified filers retain reported banking and insurance headline families.
 
-The committed report records only sector-class labels, family ids, public canonical concept ids, standard taxonomy concept ids, taxonomy tokens, counts, coverage rates, and booleans. It excludes issuer names, raw SIC numbers, accessions, periods, URLs, local paths, raw values, and resolved fact authorities. Runtime defaults remain off and no live network, Arelle invocation, value reveal, source acquisition, statement assembly, per-period projection, persisted store, dimensional roll-forward handling, or default-on readiness is admitted by the diagnostic. The follow-on opt-in runtime resolution slice is tracked separately in 1283.
+The committed report records only sector-class labels, family ids, public canonical concept ids, standard taxonomy concept ids, taxonomy tokens, counts, coverage rates, and booleans. It excludes issuer names, raw SIC numbers, accessions, periods, URLs, local paths, raw values, and resolved fact authorities. Arelle fact-authority cutover is admitted default-on under 1317, while live network, Arelle invocation, value reveal, source acquisition, statement assembly, per-period projection, persisted store, dimensional roll-forward handling, or default-on readiness is admitted by the diagnostic. The follow-on opt-in runtime resolution slice is tracked separately in 1283.
 
 Status flags: `sector_conditioned_families_design_complete=true`; `sector_conditioned_families_implemented=false`.
 
@@ -11133,3 +11133,18 @@ The pass hardens the operator-exercise runner so it cannot report ready from unr
 Non-goals preserved: no live network, no Arelle subprocess, no sidecar creation, no dataset creation, no audit receipt creation, no value reveal request, no default enablement, no parser/corpus/CompanyFacts expansion, no UI expansion, no Candidate B routing for SEC semantics, no RAG/model/provider/auth behavior, no final financial-statement semantics claim, and no cross-company comparability claim.
 
 Next exact posture after merge: `sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1_after_review_debt_merge`.
+
+### 1334 - SEC XBRL predecessor default-on reconciliation
+
+Status: implementation PR pending independent review.
+
+Scope: reconcile the eight predecessor SEC XBRL validate-only diagnostics with 1317's admitted Arelle fact-authority cutover default-on posture while preserving live network, value reveal, and controlled value-reveal submit as default-off safety boundaries.
+
+Artifacts:
+- `next_milestone_plans/Layer3_planning_docs/1334-default-on-reconcile.md`
+- `diagnostics/assessment/sec_xbrl_runtime_posture.py`
+- eight predecessor `diagnostics/assessment/sec-xbrl-*-report.json` files
+- `backend/tests/test_sec_xbrl_runtime_posture_freshness.py`
+- `backend/tests/test_sec_xbrl_committed_report_redaction.py`
+
+Residual-key posture: projection, comparability, and statement-assembly reports remove exact-zero residual-magnitude keys. Comparability also accepts the current-code `canonical_concepts[].family` enrichment.

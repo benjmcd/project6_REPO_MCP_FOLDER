@@ -1,5 +1,8 @@
 # 1269 - SEC XBRL Default-Posture Decision
 
+> Superseded by 1313-1317: this file is retained as historical pre-cutover posture evidence; current posture is governed by the default-on admission restatement and runtime design lineage.
+
+
 ## Target
 
 `sec_edgar_arelle_default_posture_decision_v1`
