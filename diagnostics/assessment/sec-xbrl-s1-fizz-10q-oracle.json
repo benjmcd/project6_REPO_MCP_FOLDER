@@ -1,0 +1,59 @@
+{
+  "authority_refs": {
+    "companyfacts_payload_hash": "bf4092eb28f921cd3850f013f12786025b9a37fb45057e3e6cecf81494a2e8cf",
+    "dataset_version_id_hash": "f43da84d387ab6dec00216b9",
+    "sidecar_receipt_hash": "156c4ad4bf55bb5650042cb5eedcbd6aade07f6c59e6cd81e22561527a597daa",
+    "statement_classification_receipt_hash": "a1271d84a2e36b14782185925fd1e438a6978c97e1eabde82e86c22051363192",
+    "statement_role_view_hash": "976591add6a916ad31912fbd01781ece8f7552e42b1508409763ab0d1d64d38e",
+    "value_store_hash": "c56241bc339d8e6be3f5c7ad51665bf2808ae22f8b15a718e02f95c3abe8e2c2"
+  },
+  "base_evidence_status": "offline_evidence_bundle_ready_without_companyfacts_oracle",
+  "blocked_reasons": [
+    {
+      "message": "Offline CompanyFacts oracle did not confirm any projected facts.",
+      "reason": "companyfacts_oracle_packet_oracle_confirmation_missing"
+    }
+  ],
+  "controls": {
+    "api_route_enabled": false,
+    "arelle_invoked": false,
+    "db_persistence_performed": false,
+    "network_performed": false,
+    "offline_storage_read_only": true,
+    "production_readiness_claimed": false,
+    "source_acquisition_performed": false,
+    "value_reveal_performed": false
+  },
+  "paths_redacted": true,
+  "readiness": {
+    "companyfacts_oracle_packet_supplied": false,
+    "operator_review_creation_blocked_reason": "companyfacts_oracle_packet_oracle_confirmation_missing",
+    "operator_review_creation_ready": false,
+    "production_admission_blocked_reason": "companyfacts_oracle_packet_oracle_confirmation_missing",
+    "production_admission_ready": false
+  },
+  "schema_id": "diagnostics.sec_xbrl_offline_companyfacts_oracle_packet.v1",
+  "schema_version": 1,
+  "status": "offline_companyfacts_oracle_packet_blocked",
+  "storage_marker": "5613c556680c9b740dd8ce73",
+  "summary": {
+    "companyfacts_authority_state": "supplied",
+    "companyfacts_concept_count": 284,
+    "companyfacts_observation_count": 15010,
+    "companyfacts_oracle_supplied": true,
+    "companyfacts_taxonomy_count": 3,
+    "companyfacts_unit_group_count": 284,
+    "oracle_confirmed_count": 0,
+    "period_result_count": 2,
+    "projected_count": 22,
+    "projection_blocking_reasons": [],
+    "projection_period_count": 2,
+    "projection_ready_period_count": 2,
+    "projection_status": "canonical_multi_period_projection_ready",
+    "provenance_complete_count": 22,
+    "resolved_fact_count": 483,
+    "resolved_fact_projection_count": 483,
+    "statement_role_record_count": 483,
+    "value_record_count": 483
+  }
+}

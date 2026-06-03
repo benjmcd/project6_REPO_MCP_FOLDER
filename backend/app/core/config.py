@@ -114,6 +114,10 @@ class Settings(BaseSettings):
         default=False,
         alias="LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
     )
+    layer3_sec_xbrl_operator_review_workflow_open_enabled: bool = Field(
+        default=False,
+        alias="LAYER3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_OPEN_ENABLED",
+    )
     allowed_origins: str = Field(default="*", alias="ALLOWED_ORIGINS")
     cors_allow_credentials: bool | None = Field(default=None, alias="CORS_ALLOW_CREDENTIALS")
     auth_owner: Literal["none", "proxy"] = Field(default="none", alias="AUTH_OWNER")

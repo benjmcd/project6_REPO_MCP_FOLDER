@@ -46043,5 +46043,57 @@
     "residual_magnitude_key_redaction": "exact-zero residual-magnitude keys removed from projection, comparability, and statement-assembly reports",
     "comparability_family_enrichment": "accepted current-code canonical_concepts[].family regeneration to align with sibling canonical reports"
   },
-  "latest_sec_xbrl_predecessor_default_on_reconciliation_summary": "Slice 1334 reconciles eight predecessor SEC XBRL validate-only diagnostics with 1317 default-on posture, adds a posture-freshness guard, and redacts exact-zero residual-magnitude keys."
+  "latest_sec_xbrl_predecessor_default_on_reconciliation_summary": "Slice 1334 reconciles eight predecessor SEC XBRL validate-only diagnostics with 1317 default-on posture, adds a posture-freshness guard, and redacts exact-zero residual-magnitude keys.",
+  "sec_xbrl_s1_m1_realignment_checkpoint_tracking": {
+    "status": "branch_local_alignment_checkpoint_recorded",
+    "milestone": "sec_xbrl_s1_m1_realignment_checkpoint_v1",
+    "scope": "Register the branch-local SEC XBRL 1335-1350 planning/doc/code work as an alignment checkpoint, not as production readiness or completed S1 authority.",
+    "planning_docs_under_checkpoint": [
+      "next_milestone_plans/Layer3_planning_docs/1335-offline-evidence-proof-capability.md",
+      "next_milestone_plans/Layer3_planning_docs/1336-transaction-safe-review.md",
+      "next_milestone_plans/Layer3_planning_docs/1337-production-admission-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1338-operator-api-contract-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1339-operator-ui-controls-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1340-controlled-value-reveal-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1341-rollback-monitoring-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1342-runbook-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1343-targeted-validation-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1344-multi-filing-evidence-authority-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1345-production-admission-gate-chain.md",
+      "next_milestone_plans/Layer3_planning_docs/1346-operator-review-open-api.md",
+      "next_milestone_plans/Layer3_planning_docs/1347-operator-authority-resolver-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1348-production-release-decision-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1349-controlled-release-activation-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1350-controlled-release-status-api.md"
+    ],
+    "alignment_assessment": {
+      "s1_offline_evidence_authority": "partial_only; FIZZ 10-K local proof-capability is represented, but the requested three-filing FIZZ 10-K, FIZZ 10-Q, and CCJ 10-K proof-of-capability is not complete",
+      "m1_transaction_safety": "partial_branch_local; atomic orchestrator and caller-controlled commit work exist, but current-branch validation has not been rerun in this checkpoint",
+      "later_gate_scaffolding": "deferred_until_s1_and_m1_are_proven; 1337-1350 are planning/status/gate scaffolding and must not be treated as production-admission evidence"
+    },
+    "current_branch_claims": {
+      "production_readiness_claimed": false,
+      "production_admission_ready": false,
+      "controlled_release_executed": false,
+      "controlled_release_activation_executed": false,
+      "value_reveal_performed": false,
+      "live_sec_network_performed": false,
+      "arelle_subprocess_invoked": false,
+      "raw_companyfacts_committed": false,
+      "raw_storage_committed": false,
+      "rendered_ui_proven": false,
+      "headed_browser_proof_run": false,
+      "headless_browser_proof_run": false
+    },
+    "required_before_closeout": [
+      "Produce or explicitly defer the three-filing S1 hash/count-only proof-of-capability for FIZZ 10-K, FIZZ 10-Q, and CCJ 10-K.",
+      "Run targeted M1 validation proving single-transaction persistence and rollback/fault containment.",
+      "Consolidate or justify repeated gate module patterns before adding further gate surfaces.",
+      "Run manifest/proof/board validation and targeted SEC XBRL tests before any PR-readiness claim.",
+      "Run headed and headless browser proof before claiming rendered operator UI readiness."
+    ],
+    "validation_status": "not_run_for_this_checkpoint",
+    "next_posture": "return_to_s1_multi_filing_evidence_authority_or_explicitly_defer_later_gate_scaffolding"
+  },
+  "latest_sec_xbrl_s1_m1_realignment_checkpoint_summary": "Branch-local checkpoint registers docs 1335-1350 without overclaiming readiness: S1 is partial, M1 is partial, later production/release/status gates are deferred until three-filing evidence authority and transaction validation are proven."
 }

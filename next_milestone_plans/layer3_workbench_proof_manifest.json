@@ -44138,5 +44138,42 @@
     "residual_magnitude_key_redaction": "exact-zero residual-magnitude keys removed from projection, comparability, and statement-assembly reports",
     "comparability_family_enrichment": "accepted current-code canonical_concepts[].family regeneration to align with sibling canonical reports"
   },
-  "latest_sec_xbrl_predecessor_default_on_reconciliation_summary": "Slice 1334 reconciles eight predecessor SEC XBRL validate-only diagnostics with 1317 default-on posture, adds a posture-freshness guard, and redacts exact-zero residual-magnitude keys."
+  "latest_sec_xbrl_predecessor_default_on_reconciliation_summary": "Slice 1334 reconciles eight predecessor SEC XBRL validate-only diagnostics with 1317 default-on posture, adds a posture-freshness guard, and redacts exact-zero residual-magnitude keys.",
+  "sec_xbrl_s1_m1_realignment_checkpoint_proof": {
+    "status": "branch_local_alignment_checkpoint_recorded",
+    "milestone": "sec_xbrl_s1_m1_realignment_checkpoint_v1",
+    "proof_posture": "checkpoint_only_not_validation",
+    "tracked_planning_docs": [
+      "next_milestone_plans/Layer3_planning_docs/1335-offline-evidence-proof-capability.md",
+      "next_milestone_plans/Layer3_planning_docs/1336-transaction-safe-review.md",
+      "next_milestone_plans/Layer3_planning_docs/1337-production-admission-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1338-operator-api-contract-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1339-operator-ui-controls-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1340-controlled-value-reveal-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1341-rollback-monitoring-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1342-runbook-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1343-targeted-validation-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1344-multi-filing-evidence-authority-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1345-production-admission-gate-chain.md",
+      "next_milestone_plans/Layer3_planning_docs/1346-operator-review-open-api.md",
+      "next_milestone_plans/Layer3_planning_docs/1347-operator-authority-resolver-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1348-production-release-decision-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1349-controlled-release-activation-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/1350-controlled-release-status-api.md"
+    ],
+    "evidence_limits": [
+      "The checkpoint does not prove the three-filing S1 authority artifact.",
+      "The checkpoint does not prove current-branch targeted tests.",
+      "The checkpoint does not prove rendered operator UI readiness.",
+      "The checkpoint does not prove production admission, release execution, activation execution, value reveal, live SEC network, or Arelle subprocess execution."
+    ],
+    "next_required_evidence": [
+      "hash/count-only S1 proof-of-capability for FIZZ 10-K, FIZZ 10-Q, and CCJ 10-K",
+      "single-transaction persistence and rollback/fault containment validation",
+      "manifest/proof/board validation after registration",
+      "headed and headless browser proof before rendered UI readiness is claimed"
+    ],
+    "validation_status": "not_run_for_this_checkpoint"
+  },
+  "latest_sec_xbrl_s1_m1_realignment_checkpoint_summary": "Checkpoint records the current SEC XBRL branch posture without treating gate/status scaffolding as proof: S1 remains partial, M1 remains unvalidated in this checkpoint, and later production/release/UI claims remain blocked."
 }

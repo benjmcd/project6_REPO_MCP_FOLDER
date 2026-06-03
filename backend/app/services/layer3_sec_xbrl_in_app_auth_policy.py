@@ -15,6 +15,11 @@ OWNER_ROLE = "owner"
 AUDITOR_ROLE = "auditor"
 
 PROTECTED_ROUTE_FAMILIES: dict[str, dict[str, Any]] = {
+    "sec_xbrl_operator_review_workflow_open_write": {
+        "allowed_roles": {OWNER_ROLE},
+        "mutating": True,
+        "may_expose_revealed_values": False,
+    },
     "sec_xbrl_operator_review_workflow_status_read": {
         "allowed_roles": {OWNER_ROLE, AUDITOR_ROLE},
         "mutating": False,

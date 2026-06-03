@@ -11148,3 +11148,39 @@ Artifacts:
 - `backend/tests/test_sec_xbrl_committed_report_redaction.py`
 
 Residual-key posture: projection, comparability, and statement-assembly reports remove exact-zero residual-magnitude keys. Comparability also accepts the current-code `canonical_concepts[].family` enrichment.
+
+### 1335-1350 - SEC XBRL S1/M1 realignment checkpoint
+
+Status: branch-local alignment checkpoint recorded, not validated.
+
+Milestone: `sec_xbrl_s1_m1_realignment_checkpoint_v1`.
+
+Scope: register the current branch-local SEC XBRL planning and gate/status work
+from docs `1335` through `1350` without treating it as completed S1 authority,
+production admission, controlled release, rendered UI readiness, or current-branch
+validation evidence.
+
+Current posture: S1 offline evidence authority is partial only. The branch
+contains proof-capability and gate/status work, but the requested three-filing
+hash/count-only proof for FIZZ 10-K, FIZZ 10-Q, and CCJ 10-K is not complete.
+M1 transaction-safety work is also partial branch-local work until targeted
+single-transaction and rollback/fault-containment validation is rerun.
+
+Deferred posture: docs `1337` through `1350` are later production-admission,
+operator API/UI, controlled value reveal, rollback, runbook, validation,
+release-decision, activation, and status scaffolding. They must not be used as
+production-admission evidence until S1 multi-filing evidence authority and M1
+transaction safety are directly proven.
+
+Non-goals preserved: no production readiness claim, no production admission, no
+release execution, no activation execution, no value reveal, no live SEC network,
+no Arelle subprocess invocation, no raw CompanyFacts commit, no raw storage
+commit, and no rendered UI readiness claim.
+
+Required before closeout: produce or explicitly defer the three-filing S1
+proof-of-capability; prove the M1 atomic transaction path and rollback/fault
+containment; consolidate or justify repeated gate patterns; run targeted SEC
+XBRL tests plus manifest/proof/board validation; and run headed plus headless
+browser proof before any rendered operator UI readiness claim.
+
+Verification: not run for this checkpoint.

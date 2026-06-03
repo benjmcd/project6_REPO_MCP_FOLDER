@@ -1576,7 +1576,7 @@ class L3SecXbrlAuthBindingReceipt(Base):
             name="ck_l3_sec_xbrl_auth_binding_source_kind",
         ),
         CheckConstraint(
-            "route_family IN ('sec_xbrl_operator_review_workflow_status_read', 'sec_xbrl_operator_review_decision_submit_write', 'sec_xbrl_operator_review_decision_status_read', 'sec_xbrl_value_reveal_authority_prepare_write', 'sec_xbrl_controlled_value_reveal_submit_write', 'sec_xbrl_controlled_value_reveal_submit_status_read')",
+            "route_family IN ('sec_xbrl_operator_review_workflow_open_write', 'sec_xbrl_operator_review_workflow_status_read', 'sec_xbrl_operator_review_decision_submit_write', 'sec_xbrl_operator_review_decision_status_read', 'sec_xbrl_value_reveal_authority_prepare_write', 'sec_xbrl_controlled_value_reveal_submit_write', 'sec_xbrl_controlled_value_reveal_submit_status_read')",
             name="ck_l3_sec_xbrl_auth_binding_route_family",
         ),
         CheckConstraint("role IN ('owner', 'auditor')", name="ck_l3_sec_xbrl_auth_binding_role"),

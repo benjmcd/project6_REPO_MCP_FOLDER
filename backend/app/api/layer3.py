@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
+from app.core.config import settings
 from app.services import (
     layer3_connector_dispatch_entry,
     layer3_connector_local_destination_receipt,
@@ -61,9 +62,12 @@ from app.services import (
     layer3_sec_edgar_repeatability_trial,
     layer3_sec_edgar_source_acquisition,
     layer3_sec_xbrl_auth_binding,
+    layer3_sec_xbrl_controlled_release_activation_gate,
     layer3_sec_xbrl_controlled_value_reveal_submit,
     layer3_sec_xbrl_in_app_auth_policy,
+    layer3_sec_xbrl_operator_review_api,
     layer3_sec_xbrl_operator_review_workflow,
+    layer3_sec_xbrl_production_release_decision_gate,
     layer3_sec_xbrl_value_reveal_authority,
     layer3_provider_private_signed_url,
     layer3_provider_public_url,
@@ -1175,6 +1179,17 @@ class Layer3SecXbrlOperatorReviewWorkflowStatusRequest(BaseModel):
     workflow_basis_hash: str | None = Field(default=None, min_length=64, max_length=64)
 
 
+class Layer3SecXbrlOperatorReviewWorkflowOpenRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    client_request_id: str = Field(min_length=1)
+    open_mode: Literal["sec_xbrl_operator_review_workflow_open_v1"]
+    operator_decision: Literal["open_sec_xbrl_operator_review_workflow_from_authority"]
+    operator_review_authority_handle: str = Field(min_length=1)
+    proof_source_report_hash: str = Field(min_length=64, max_length=64)
+    period_limit: int | None = Field(default=3, ge=1)
+
+
 class Layer3SecXbrlOperatorReviewDecisionSubmitRequest(BaseModel):
     model_config = ConfigDict(extra="allow")
 
@@ -1226,6 +1241,26 @@ class Layer3SecXbrlControlledValueRevealSubmitRequest(BaseModel):
     operator_reveal_confirmation: Literal[True]
     max_records: int | None = Field(default=None, ge=1)
     page_cursor: str | None = None
+
+
+class Layer3SecXbrlProductionReleaseDecisionStatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    status_mode: Literal["sec_xbrl_production_release_decision_status_v1"]
+    operator_decision: Literal["inspect_sec_xbrl_production_release_decision_gate"]
+    production_admission_gate: dict[str, Any] | None = None
+    release_decision_spec: dict[str, Any] | None = None
+
+
+class Layer3SecXbrlControlledReleaseActivationStatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    status_mode: Literal["sec_xbrl_controlled_release_activation_status_v1"]
+    operator_decision: Literal["inspect_sec_xbrl_controlled_release_activation_gate"]
+    production_release_decision_gate: dict[str, Any] | None = None
+    activation_spec: dict[str, Any] | None = None
 
 
 class Layer3RawMixedCorpusSeedRequest(BaseModel):
@@ -9239,6 +9274,29 @@ class Layer3SecXbrlOperatorReviewWorkflowStatusResponse(Layer3BaseResponse):
     next_allowed_actions: list[str]
 
 
+class Layer3SecXbrlOperatorReviewWorkflowOpenResponse(Layer3BaseResponse):
+    model_config = ConfigDict(extra="allow")
+
+    client_request_id: str | None = None
+    sec_xbrl_projection_set_id: str | None = None
+    sec_xbrl_statement_packet_set_id: str | None = None
+    sec_xbrl_operator_review_workflow_id: str | None = None
+    workflow_basis_hash: str | None = None
+    source_report_schema_id: str | None = None
+    source_report_hash: str | None = None
+    auth_binding_ref: str | None = None
+    auth_binding_basis_hash: str | None = None
+    auth_binding_route_family: str | None = None
+    operator_review_open_api_route_enabled: bool | None = None
+    status_api_route_enabled: bool | None = None
+    rendered_ui_enabled: bool | None = None
+    runtime_default_enabled: bool | None = None
+    value_reveal_performed: bool | None = None
+    source_acquisition_performed: bool | None = None
+    arelle_invoked: bool | None = None
+    production_readiness_claimed: bool | None = None
+
+
 class Layer3SecXbrlOperatorReviewDecisionSubmitResponse(Layer3BaseResponse):
     sec_xbrl_operator_review_decision_id: str
     sec_xbrl_operator_review_workflow_id: str
@@ -9396,6 +9454,32 @@ class Layer3SecXbrlControlledValueRevealSubmitResponse(Layer3BaseResponse):
     rendered_ui_enabled: bool
     production_readiness_claimed: bool
     next_allowed_actions: list[str]
+
+
+class Layer3SecXbrlProductionReleaseDecisionStatusResponse(Layer3BaseResponse):
+    model_config = ConfigDict(extra="allow")
+
+    ready: bool | None = None
+    blocked_reasons: list[dict[str, Any]] | None = None
+    authority_refs: dict[str, Any] | None = None
+    summary: dict[str, Any] | None = None
+    readiness: dict[str, Any] | None = None
+    controls: dict[str, Any] | None = None
+    public_surface: dict[str, Any] | None = None
+    release_decision_status_api_route_enabled: bool | None = None
+
+
+class Layer3SecXbrlControlledReleaseActivationStatusResponse(Layer3BaseResponse):
+    model_config = ConfigDict(extra="allow")
+
+    ready: bool | None = None
+    blocked_reasons: list[dict[str, Any]] | None = None
+    authority_refs: dict[str, Any] | None = None
+    summary: dict[str, Any] | None = None
+    readiness: dict[str, Any] | None = None
+    controls: dict[str, Any] | None = None
+    public_surface: dict[str, Any] | None = None
+    controlled_release_activation_status_api_route_enabled: bool | None = None
 
 
 class Layer3ApsContentDocumentCandidatesResponse(Layer3BaseResponse):
@@ -13740,6 +13824,7 @@ def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JS
 def _sec_xbrl_operator_review_workflow_error_response(
     exc: layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError,
 ) -> JSONResponse:
+    blocked_fields = exc.details.get("blocked_fields") or exc.details.get("required_any_of") or []
     return JSONResponse(
         status_code=exc.http_status,
         content=workbench_error_response(
@@ -13748,7 +13833,7 @@ def _sec_xbrl_operator_review_workflow_error_response(
                 message=exc.message,
                 status="blocked",
                 http_status=exc.http_status,
-                blocked_fields=[str(field) for field in exc.details.get("required_any_of", [])],
+                blocked_fields=[str(field) for field in blocked_fields],
                 next_allowed_actions=["inspect_existing_sec_xbrl_operator_review_workflow_authority"],
             )
         ),
@@ -16442,6 +16527,89 @@ def get_sec_edgar_durable_delivery_archive_status(
 
 
 @router.post(
+    "/sec-xbrl/operator-review/workflow/open",
+    response_model=Layer3SecXbrlOperatorReviewWorkflowOpenResponse,
+    responses=_workbench_error_responses(400, 409),
+)
+def open_sec_xbrl_operator_review_workflow(
+    payload: Layer3SecXbrlOperatorReviewWorkflowOpenRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    extra_fields = sorted((payload.model_extra or {}).keys())
+    if extra_fields:
+        return _sec_xbrl_operator_review_workflow_error_response(
+            layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError(
+                "sec_xbrl_operator_review_workflow_open_request_fields_not_admitted",
+                "SEC XBRL operator-review workflow open requests must not include raw or undeclared evidence fields.",
+                details={"blocked_fields": extra_fields},
+                http_status=400,
+            )
+        )
+
+    if not settings.layer3_sec_xbrl_operator_review_workflow_open_enabled:
+        return _sec_xbrl_operator_review_workflow_error_response(
+            layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError(
+                "sec_xbrl_operator_review_workflow_open_feature_flag_disabled",
+                "SEC XBRL operator-review workflow open API route is disabled by default.",
+                details={"operator_review_open_api_route_enabled": False},
+                http_status=409,
+            )
+        )
+
+    route_family = "sec_xbrl_operator_review_workflow_open_write"
+    try:
+        policy_decision = _sec_xbrl_policy_decision(
+            request,
+            payload,
+            route_family=route_family,
+        )
+        workflow_response = layer3_sec_xbrl_operator_review_api.open_atomic_sec_xbrl_operator_review_from_authority(
+            db,
+            client_request_id=payload.client_request_id,
+            operator_review_authority_handle=payload.operator_review_authority_handle,
+            source_report_hash=payload.proof_source_report_hash,
+            period_limit=payload.period_limit or 3,
+            commit=False,
+        )
+        binding = _sec_xbrl_record_binding(
+            db,
+            client_request_id=payload.client_request_id,
+            source_receipt_kind="operator_review_workflow",
+            source_receipt_id=workflow_response["sec_xbrl_operator_review_workflow_id"],
+            source_receipt_basis_hash=workflow_response["workflow_basis_hash"],
+            route_family=route_family,
+            policy_decision=policy_decision,
+            commit=False,
+        )
+        _sec_xbrl_commit_bound_receipts(db)
+    except layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError as exc:
+        db.rollback()
+        return _sec_xbrl_auth_policy_error_response(exc)
+    except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
+        db.rollback()
+        return _sec_xbrl_operator_review_workflow_error_response(exc)
+
+    return {
+        **base_response(
+            workflow_response["schema_id"],
+            request_id=payload.client_request_id,
+            status=workflow_response["status"],
+        ),
+        **workflow_response,
+        **_sec_xbrl_auth_binding_projection(binding),
+        "operator_review_open_api_route_enabled": True,
+        "status_api_route_enabled": True,
+        "rendered_ui_enabled": False,
+        "runtime_default_enabled": False,
+        "value_reveal_performed": False,
+        "source_acquisition_performed": False,
+        "arelle_invoked": False,
+        "production_readiness_claimed": False,
+    }
+
+
+@router.post(
     "/sec-xbrl/operator-review/workflow/status",
     response_model=Layer3SecXbrlOperatorReviewWorkflowStatusResponse,
     responses=_workbench_error_responses(400, 404, 409),
@@ -16854,6 +17022,96 @@ def get_sec_xbrl_controlled_value_reveal_submit_status(
         return _sec_xbrl_auth_policy_error_response(exc)
     except layer3_sec_xbrl_controlled_value_reveal_submit.SecXbrlControlledValueRevealSubmitError as exc:
         return _sec_xbrl_controlled_value_reveal_submit_error_response(exc)
+
+
+@router.post(
+    "/sec-xbrl/production-release/decision/status",
+    response_model=Layer3SecXbrlProductionReleaseDecisionStatusResponse,
+    response_model_exclude_none=True,
+    responses=_workbench_error_responses(400, 409),
+)
+def post_sec_xbrl_production_release_decision_status(
+    payload: Layer3SecXbrlProductionReleaseDecisionStatusRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        report = layer3_sec_xbrl_production_release_decision_gate.inspect_sec_xbrl_production_release_decision_gate(
+            production_admission_gate=payload.production_admission_gate,
+            release_decision_spec=payload.release_decision_spec,
+        )
+    except ValueError as exc:
+        return JSONResponse(
+            status_code=400,
+            content=workbench_error_response(
+                Layer3WorkbenchError(
+                    error_code="sec_xbrl_production_release_decision_status_containment_error",
+                    message=str(exc),
+                    status="blocked",
+                    http_status=400,
+                    blocked_fields=[],
+                    next_allowed_actions=["inspect_redacted_production_release_decision_evidence"],
+                )
+            ),
+        )
+    return {
+        **base_response(
+            report["schema_id"],
+            request_id=payload.client_request_id,
+            status=report["status"],
+        ),
+        **report,
+        "release_decision_status_api_route_enabled": True,
+        "runtime_default_enabled": False,
+        "api_route_enabled": False,
+        "rendered_ui_enabled": False,
+        "value_reveal_performed": False,
+        "production_database_touched": False,
+        "production_readiness_claimed": False,
+    }
+
+
+@router.post(
+    "/sec-xbrl/controlled-release/activation/status",
+    response_model=Layer3SecXbrlControlledReleaseActivationStatusResponse,
+    response_model_exclude_none=True,
+    responses=_workbench_error_responses(400, 409),
+)
+def post_sec_xbrl_controlled_release_activation_status(
+    payload: Layer3SecXbrlControlledReleaseActivationStatusRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        report = layer3_sec_xbrl_controlled_release_activation_gate.inspect_sec_xbrl_controlled_release_activation_gate(
+            production_release_decision_gate=payload.production_release_decision_gate,
+            activation_spec=payload.activation_spec,
+        )
+    except ValueError as exc:
+        return JSONResponse(
+            status_code=400,
+            content=workbench_error_response(
+                Layer3WorkbenchError(
+                    error_code="sec_xbrl_controlled_release_activation_status_containment_error",
+                    message=str(exc),
+                    status="blocked",
+                    http_status=400,
+                    blocked_fields=[],
+                    next_allowed_actions=["inspect_redacted_controlled_release_activation_evidence"],
+                )
+            ),
+        )
+    return {
+        **base_response(
+            report["schema_id"],
+            request_id=payload.client_request_id,
+            status=report["status"],
+        ),
+        **report,
+        "controlled_release_activation_status_api_route_enabled": True,
+        "runtime_default_enabled": False,
+        "api_route_enabled": False,
+        "rendered_ui_enabled": False,
+        "value_reveal_performed": False,
+        "production_database_touched": False,
+        "production_readiness_claimed": False,
+    }
 
 
 @router.post(
