@@ -279,6 +279,34 @@ Caveat:
 
 - Pytest emitted the known Windows temp cleanup `PermissionError` after the green result for `pytest-current`.
 
+## Validation Performed For Phase P10H
+
+Passed:
+
+- `python -m pytest .\backend\tests\test_layer3_workbench.py .\backend\tests\test_layer3_page.py -q`
+- `python -m pytest .\backend\tests\test_layer3_api.py -q`
+- `python .\tools\validate_structure.py`
+- `python .\tools\l3-progress-check.py`
+- `python .\tools\l3-target-selection-validate.py --expect frozen`
+- `git diff --check`
+- `npx playwright test .\e2e\layer3-workbench.spec.js --project=chromium --grep "typed and deferred APS source-family guardrails"`
+- `npx playwright test .\e2e\layer3-workbench.spec.js --project=chromium --headed --grep "typed and deferred APS source-family guardrails"`
+
+Result:
+
+- Focused workbench/page tests: `47 passed`, `3 warnings`.
+- Layer 3 API regression: `276 passed`, `4 warnings`.
+- Structure validation: `errors: 0`, `warnings: 283` existing local-path/documentation warnings.
+- Layer 3 progress check: `PASS`.
+- Target selection validation: `PASS (frozen)`.
+- Diff check: passed with line-ending conversion warnings only.
+- Focused headless Chromium E2E: `1 passed`.
+- Focused headed Chromium E2E: `1 passed`.
+
+Caveat:
+
+- Pytest/browser validation emitted existing dependency warnings for `pypdf`, `requests`, `python_multipart`, and one `httpx` raw-content deprecation warning.
+
 ## Final Planning Verdict
 
-The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P10G are now implemented in this branch, and current main separately admits the governed SEC-specific HTML/iXBRL receipt chain with a recorded reconciliation checkpoint. The next correct action is a narrow parser-level refused artifact trace/detail surfacing pass backed by server authority, a separately scoped mixed-source package-semantics pass, or a legacy CSV bridge deprecation decision after generic table bridge adoption evidence is sufficient, while preserving all existing PDF/document, Candidate B PDF-only, generic XML/HTML refusal, and Layer 3 source-shape behavior.
+The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P10H are now implemented in this branch, and current main separately admits the governed SEC-specific HTML/iXBRL receipt chain with a recorded reconciliation checkpoint. The next correct action is a separately scoped mixed-source package-semantics pass, a legacy CSV bridge deprecation decision after generic table bridge adoption evidence is sufficient, or a newly audited refusal trace class only when persisted server-owned failure authority exists, while preserving all existing PDF/document, Candidate B PDF-only, generic XML/HTML refusal, and Layer 3 source-shape behavior.
