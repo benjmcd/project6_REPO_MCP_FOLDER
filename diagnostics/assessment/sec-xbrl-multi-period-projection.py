@@ -4,7 +4,6 @@ import argparse
 import json
 import os
 from pathlib import Path
-import re
 import sys
 from typing import Any, Mapping, Sequence
 
@@ -21,9 +20,8 @@ os.environ.setdefault("DB_INIT_MODE", "none")
 
 from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
     project_issuer_canonical_facts_by_periods,
-    report_redaction_scan_payload,
 )
-from app.services.layer3_sec_xbrl_report_leak_guard import report_leak_flags  # noqa: E402
+from app.services.layer3_sec_xbrl_report_leak_guard import diagnostic_authority_redaction_scan_payload  # noqa: E402
 from app.services.layer3_utils import stable_hash  # noqa: E402
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
@@ -38,9 +36,6 @@ REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_multi_period_projection.v1"
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-multi-period-projection-report.json")
 TARGET = "sec_xbrl_multi_period_projection_design_v1"
 NEXT_SLICE = "sec_xbrl_sector_family_real_filer_validation_v1"
-_RAW_VALUE_KEYS = ("_value", "value", "effective_value", "amount")
-_RAW_AUTHORITY_KEY_RE = re.compile(r'"(?:resolved_fact_id|fact_id_or_order_key)"\s*:', re.IGNORECASE)
-_ISSUER_IDENTITY_TOKENS = ("issuer_ref", "issuer_hash", "issuer_name", "entity_name", "company_name")
 
 
 def main() -> int:
@@ -224,26 +219,7 @@ def _period_summaries_consistent(*, periods: Sequence[Mapping[str, Any]], summar
 
 
 def _redaction_scan_payload(report: Mapping[str, Any]) -> dict[str, bool]:
-    base = report_redaction_scan_payload(report)
-    text = json.dumps(report, sort_keys=True)
-    raw_value_key_found = report_leak_flags(
-        report,
-        include_raw_value_keys=True,
-        raw_value_keys=_RAW_VALUE_KEYS,
-        raw_value_key_ignore_case=True,
-    )["raw_value_key_found"]
-    raw_authority_key_found = bool(_RAW_AUTHORITY_KEY_RE.search(text))
-    issuer_identity_found = any(token in text for token in _ISSUER_IDENTITY_TOKENS)
-    return {
-        **base,
-        "raw_value_key_found": raw_value_key_found,
-        "raw_resolved_fact_authority_key_found": raw_authority_key_found,
-        "raw_issuer_identity_found": issuer_identity_found,
-        "passed": base["passed"]
-        and not raw_value_key_found
-        and not raw_authority_key_found
-        and not issuer_identity_found,
-    }
+    return diagnostic_authority_redaction_scan_payload(report)
 
 
 def _reference_bundle() -> dict[str, Any]:
