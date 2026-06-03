@@ -10,6 +10,12 @@ from typing import Any, Iterator, Mapping
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
+
+from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+
 BACKEND = ROOT / "backend"
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-run-report.json")
 SIDECAR_RECEIPT_DIR = "layer3-sec-edgar-arelle-resolved-fact-authority"
@@ -503,15 +509,6 @@ def _dedupe_blockers(blockers: list[dict[str, Any]]) -> list[dict[str, Any]]:
         seen.add(reason)
         output.append(blocker)
     return output
-
-
-def _criterion(criterion: str, passed: bool, evidence: Mapping[str, Any], blocked_reason: str) -> dict[str, Any]:
-    return {
-        "criterion": criterion,
-        "state": "passed" if passed else "blocked",
-        "blocked_reason": None if passed else blocked_reason,
-        "evidence": dict(evidence),
-    }
 
 
 def _non_negative_int(value: Any) -> tuple[int | None, dict[str, Any] | None]:
