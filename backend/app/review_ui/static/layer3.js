@@ -6814,16 +6814,39 @@ function renderGateCPanel() {
             </div>
         </article>
     `);
-    const unsupportedRows = unsupported.map((item) => `
-        <article class="typing-card">
-            <h3>Unsupported Material</h3>
-            <div class="typing-meta">
-                <span>Snapshot: ${escapeHtml(item.material_snapshot_id)}</span>
-                <span>Shape: ${escapeHtml(item.owner_service_source_shape)}</span>
-                <span>Reason: ${escapeHtml(item.reason)}</span>
-            </div>
-        </article>
-    `);
+    const unsupportedRows = unsupported.map((item) => {
+        const trace = item.trace_detail || {};
+        const traceRows = [
+            ['readiness', trace.trace_readiness ? humanizeToken(trace.trace_readiness) : null],
+            ['admission', trace.admission_state ? humanizeToken(trace.admission_state) : null],
+            ['authority', trace.authority_refs?.authority_source ? humanizeToken(trace.authority_refs.authority_source) : null],
+            ['typing rules', trace.authority_refs?.typing_rule_source],
+            ['selection', trace.selectable === false ? 'not selectable' : null],
+            ['payload', trace.payload_hash],
+            ['group', trace.co_retrieval_group_id],
+        ].filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '');
+        return `
+            <article class="typing-card unsupported-material-card">
+                <h3>Unsupported Material</h3>
+                <div class="typing-meta">
+                    <span>Snapshot: ${escapeHtml(item.material_snapshot_id)}</span>
+                    <span>Shape: ${escapeHtml(item.owner_service_source_shape)}</span>
+                    <span>Reason: ${escapeHtml(item.reason)}</span>
+                </div>
+                ${traceRows.length ? `
+                    <dl class="unsupported-material-trace">
+                        ${traceRows.map(([label, value]) => `
+                            <div>
+                                <dt>${escapeHtml(label)}</dt>
+                                <dd>${escapeHtml(shortText(value, 54))}</dd>
+                            </div>
+                        `).join('')}
+                    </dl>
+                ` : ''}
+                ${trace.ui_summary ? `<p>${escapeHtml(trace.ui_summary)}</p>` : ''}
+            </article>
+        `;
+    });
     elements.gateCPanel.innerHTML = [...cards, ...unsupportedRows].join('');
 }
 

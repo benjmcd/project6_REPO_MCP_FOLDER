@@ -220,7 +220,7 @@ Avoids source-shape proliferation and keeps typed quantitative data aligned with
 
 Current status:
 
-CSV/delimited table diagnostics, bounded XLSX parsing, bounded JSON recordset parsing, bounded SEC/EDGAR complete-submission parsing, the callable dataset bridge, opt-in legacy CSV connector/runtime orchestration, generic CSV/XLSX/JSON/SEC-EDGAR table connector/runtime orchestration, explicit Layer 3 APS-derived dataset admission, selected-pass execution/package proof, bounded operator/UI selection, bounded typed/refused source-family guardrails, selected APS-derived `DatasetVersion` material trace/detail, selected APS content-document trace/detail, server-owned raw mixed trace labeling, and refused/deferred source-family guardrail trace detail are implemented. The next decision is per-artifact refused trace-detail sequencing versus new parser-family admission.
+CSV/delimited table diagnostics, bounded XLSX parsing, bounded JSON recordset parsing, bounded SEC/EDGAR complete-submission parsing, the callable dataset bridge, opt-in legacy CSV connector/runtime orchestration, generic CSV/XLSX/JSON/SEC-EDGAR table connector/runtime orchestration, explicit Layer 3 APS-derived dataset admission, selected-pass execution/package proof, bounded operator/UI selection, bounded typed/refused source-family guardrails, selected APS-derived `DatasetVersion` material trace/detail, selected APS content-document trace/detail, server-owned raw mixed trace labeling, refused/deferred source-family guardrail trace detail, and Gate C unsupported material snapshot trace detail are implemented. The next decision is parser-level refused artifact trace-detail sequencing versus new parser-family admission.
 
 Why:
 
@@ -274,7 +274,7 @@ Whether `aps_dataset_version`, `aps_tabular_dataset`, or another source shape is
 
 Current recommendation:
 
-Backend authority now proves explicit typed source admission and selected-pass execution/package preservation for APS-derived CSV, XLSX, JSON recordset, and bounded SEC/EDGAR table datasets. The workbench candidate panel now surfaces admitted/materialized source families and non-selectable deferred/refused guardrails with trace detail. The Gate B material ledger now surfaces selected-material trace detail for APS-derived `DatasetVersion` rows, selected APS content documents, and the already-admitted server-owned raw mixed materialization sentinel. The next UI step should be per-artifact refused trace/detail surfacing only if server authority exists for those details.
+Backend authority now proves explicit typed source admission and selected-pass execution/package preservation for APS-derived CSV, XLSX, JSON recordset, and bounded SEC/EDGAR table datasets. The workbench candidate panel now surfaces admitted/materialized source families and non-selectable deferred/refused guardrails with trace detail. The Gate B material ledger now surfaces selected-material trace detail for APS-derived `DatasetVersion` rows, selected APS content documents, and the already-admitted server-owned raw mixed materialization sentinel. The Gate C panel now surfaces unsupported material snapshot trace detail for persisted snapshots that cannot be typed. The next UI step should be parser-level refused artifact trace/detail surfacing only if server authority exists for those details.
 
 Decision needed later:
 
@@ -320,11 +320,11 @@ Answer: Yes. `04-validation.md` requires positive and negative fixture coverage 
 
 Question: What could still be missing?
 
-Answer: The remaining items are per-artifact refused trace/detail surfacing beyond the current source-family guardrails, selected APS-derived `DatasetVersion`, APS content-document, and server-owned raw mixed materialized sources, when to connect SEC narrative-plus-table output into governed mixed-source package semantics, and whether the legacy CSV bridge compatibility path can be deprecated after generic table bridge adoption is proven. Current-main SEC-specific HTML/iXBRL authority is now reconciled in `22-sec-ixbrl-reconcile-closeout.md`, so any further reconciliation should be triggered by newly discovered drift rather than assumed.
+Answer: The remaining items are parser-level refused artifact trace/detail surfacing beyond the current source-family guardrails, Gate C unsupported material snapshots, selected APS-derived `DatasetVersion`, APS content-document, and server-owned raw mixed materialized sources, when to connect SEC narrative-plus-table output into governed mixed-source package semantics, and whether the legacy CSV bridge compatibility path can be deprecated after generic table bridge adoption is proven. Current-main SEC-specific HTML/iXBRL authority is now reconciled in `22-sec-ixbrl-reconcile-closeout.md`, so any further reconciliation should be triggered by newly discovered drift rather than assumed.
 
 ## Immediate Next Action
 
-Proceed with a narrow per-artifact refused trace/detail UI surfacing pass only after auditing the active workbench UI state and confirming server authority for the details, with a separately scoped mixed-source package semantics pass over admitted SEC parser/material authority if trace/detail surfacing is intentionally deferred, or with a legacy CSV bridge deprecation decision if downstream generic table bridge adoption evidence is sufficient:
+Proceed with a narrow parser-level refused artifact trace/detail UI surfacing pass only after auditing the active workbench UI state and confirming server authority for the details, with a separately scoped mixed-source package semantics pass over admitted SEC parser/material authority if trace/detail surfacing is intentionally deferred, or with a legacy CSV bridge deprecation decision if downstream generic table bridge adoption evidence is sufficient:
 
 - Reuse the P10B candidate-panel guardrails and P10C selected-material trace detail as server authority for what is admitted/materialized versus deferred/refused.
 - Preserve backend-owned material-preview, Gate B, execution/result, and package contracts.
