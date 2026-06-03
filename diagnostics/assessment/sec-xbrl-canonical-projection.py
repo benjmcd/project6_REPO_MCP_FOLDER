@@ -10,6 +10,9 @@ from typing import Any, Mapping, Sequence
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "backend"
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
@@ -22,6 +25,12 @@ from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
     report_redaction_scan_payload,
 )
 from app.services.layer3_utils import stable_hash  # noqa: E402
+from sec_xbrl_report_redaction import strip_residual_magnitude_fields  # noqa: E402
+from sec_xbrl_runtime_posture import (  # noqa: E402
+    committed_runtime_posture,
+    runtime_posture_criterion_evidence,
+    runtime_posture_criterion_passed,
+)
 
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-canonical-projection-report.json")
@@ -65,15 +74,15 @@ def build_report(
     issuer_bundles: Sequence[Mapping[str, Any]] | None = None,
     fiscal_year: int | str | None = None,
 ) -> dict[str, Any]:
-    config_text = (source_root / "backend" / "app" / "core" / "config.py").read_text(encoding="utf-8")
+    runtime_posture = committed_runtime_posture(source_root=source_root)
     if issuer_bundles is None:
-        report = _reference_summary_report(config_defaults_off=_config_defaults_off(config_text))
+        report = _reference_summary_report(runtime_posture=runtime_posture)
     else:
         report = build_redacted_projection_report(issuer_bundles=issuer_bundles, fiscal_year=fiscal_year)
         report["source_mode"] = "supplied_governed_source_bundles"
         report["criteria"] = _criteria(
             report=report,
-            config_defaults_off=_config_defaults_off(config_text),
+            runtime_posture=runtime_posture,
             reference_summary_mode=False,
         )
         report["blocking_reasons"] = _blocking_reasons(report["criteria"]) + list(report.get("blocking_reasons") or [])
@@ -83,11 +92,20 @@ def build_report(
             else "canonical_projection_validate_only_blocked"
         )
         report["next_slice"] = NEXT_SLICE if not report["blocking_reasons"] else "canonical_projection_remediation_v1"
+    _mark_residual_magnitudes_redacted(report)
+    report = strip_residual_magnitude_fields(report)
     report["redaction"] = report_redaction_scan_payload(report)
     return report
 
 
-def _reference_summary_report(*, config_defaults_off: bool) -> dict[str, Any]:
+def _mark_residual_magnitudes_redacted(report: dict[str, Any]) -> None:
+    summary = report.get("summary")
+    if isinstance(summary, dict):
+        summary.pop("statement_identity_residuals_committed_as_magnitudes_only", None)
+        summary["statement_identity_residual_magnitudes_redacted"] = True
+
+
+def _reference_summary_report(*, runtime_posture: Mapping[str, Any]) -> dict[str, Any]:
     concept_inventory = canonical_concept_inventory()
     issuer_summaries = []
     for item in REFERENCE_ISSUER_RESULTS:
@@ -145,7 +163,7 @@ def _reference_summary_report(*, config_defaults_off: bool) -> dict[str, Any]:
             "legitimately_absent_count": absent_total,
             "provenance_complete_count": provenance_total,
             "statement_identity_residuals_reference_within_tolerance": True,
-            "statement_identity_residuals_committed_as_magnitudes_only": True,
+            "statement_identity_residual_magnitudes_redacted": True,
         },
         "canonical_concepts": concept_inventory,
         "per_issuer": issuer_summaries,
@@ -166,7 +184,7 @@ def _reference_summary_report(*, config_defaults_off: bool) -> dict[str, Any]:
     }
     report["criteria"] = _criteria(
         report=report,
-        config_defaults_off=config_defaults_off,
+        runtime_posture=runtime_posture,
         reference_summary_mode=True,
     )
     report["blocking_reasons"] = _blocking_reasons(report["criteria"])
@@ -199,7 +217,7 @@ def _reference_identity(identity_id: str) -> dict[str, Any]:
 def _criteria(
     *,
     report: Mapping[str, Any],
-    config_defaults_off: bool,
+    runtime_posture: Mapping[str, Any],
     reference_summary_mode: bool,
 ) -> list[dict[str, Any]]:
     redaction = report_redaction_scan_payload(report)
@@ -210,8 +228,8 @@ def _criteria(
     return [
         _criterion(
             "committed_runtime_defaults_remain_off",
-            config_defaults_off,
-            {"config_defaults_off": config_defaults_off},
+            runtime_posture_criterion_passed(runtime_posture),
+            runtime_posture_criterion_evidence(runtime_posture),
             "canonical_projection_defaults_not_off",
         ),
         _criterion(
@@ -285,15 +303,6 @@ def _blocking_reasons(criteria: Sequence[Mapping[str, Any]]) -> list[dict[str, A
         for item in criteria
         if item.get("state") != "passed"
     ]
-
-
-def _config_defaults_off(config_text: str) -> bool:
-    return (
-        "layer3_sec_edgar_live_network_enabled: bool = Field(\n        default=False," in config_text
-        and "layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=False,"
-        in config_text
-        and "layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False," in config_text
-    )
 
 
 def _resolve_path(path: str) -> Path:

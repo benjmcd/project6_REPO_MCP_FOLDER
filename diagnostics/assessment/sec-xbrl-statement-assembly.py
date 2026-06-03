@@ -11,6 +11,9 @@ from typing import Any, Mapping, Sequence
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "backend"
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
@@ -20,6 +23,12 @@ from app.services.layer3_sec_xbrl_canonical_concepts import report_redaction_sca
 from app.services.layer3_sec_xbrl_statement_assembly import (  # noqa: E402
     STATEMENT_ASSEMBLY_SCHEMA_ID,
     assemble_reviewable_statement_packet,
+)
+from sec_xbrl_report_redaction import strip_residual_magnitude_fields  # noqa: E402
+from sec_xbrl_runtime_posture import (  # noqa: E402
+    committed_runtime_posture,
+    runtime_posture_criterion_evidence,
+    runtime_posture_criterion_passed,
 )
 
 
@@ -160,7 +169,7 @@ def build_report(
     organization_result: Mapping[str, Any] | None = None,
     identity_residuals: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    config_text = (source_root / "backend" / "app" / "core" / "config.py").read_text(encoding="utf-8")
+    runtime_posture = committed_runtime_posture(source_root=source_root)
     packet = assemble_reviewable_statement_packet(
         projection_items=list(REFERENCE_PROJECTION_ITEMS if projection_items is None else projection_items),
         organization_result=dict(REFERENCE_ORGANIZATION_RESULT if organization_result is None else organization_result),
@@ -200,8 +209,9 @@ def build_report(
             "provider_or_connector_dispatch_performed": False,
         },
     }
+    report = strip_residual_magnitude_fields(report)
     report["redaction"] = _redaction_scan_payload(report)
-    report["criteria"] = _criteria(report=report, config_defaults_off=_config_defaults_off(config_text))
+    report["criteria"] = _criteria(report=report, runtime_posture=runtime_posture)
     report["blocking_reasons"] = list(report["blocking_reasons"]) + _blocking_reasons(report["criteria"])
     if report["blocking_reasons"]:
         report["decision"] = (
@@ -229,15 +239,15 @@ def _summary(packet: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def _criteria(*, report: Mapping[str, Any], config_defaults_off: bool) -> list[dict[str, Any]]:
+def _criteria(*, report: Mapping[str, Any], runtime_posture: Mapping[str, Any]) -> list[dict[str, Any]]:
     summary = dict(report.get("summary") or {})
     statements = list(report.get("statements") or [])
     non_goals = dict(report.get("non_goals_preserved") or {})
     return [
         _criterion(
             "committed_runtime_defaults_remain_off",
-            config_defaults_off,
-            {"config_defaults_off": config_defaults_off},
+            runtime_posture_criterion_passed(runtime_posture),
+            runtime_posture_criterion_evidence(runtime_posture),
             "statement_assembly_defaults_not_off",
         ),
         _criterion(
@@ -332,15 +342,6 @@ def _blocking_reasons(criteria: Sequence[Mapping[str, Any]]) -> list[dict[str, A
         for item in criteria
         if item.get("state") != "passed"
     ]
-
-
-def _config_defaults_off(config_text: str) -> bool:
-    required = (
-        "layer3_sec_edgar_live_network_enabled: bool = Field(\n        default=False",
-        "layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=False",
-        "layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False",
-    )
-    return all(item in config_text for item in required)
 
 
 def _resolve_path(path_text: str) -> Path:
