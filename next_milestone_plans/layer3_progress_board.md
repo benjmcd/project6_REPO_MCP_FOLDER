@@ -64,6 +64,38 @@ py_compile, JSON/redaction/residual scans, and `git diff --check`.
 Next exact posture:
 `sec_xbrl_offline_companyfacts_oracle_packet_v1`.
 
+## SEC XBRL Transaction-Safe Operator Review
+
+Milestone:
+`sec_xbrl_transaction_safe_operator_review_persistence_v1_review_debt_closeout`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1336-transaction-safe-review.md`.
+
+Status: branch-local Tier-2 review-debt remediation on
+`codex/secxbrl-review-debt`.
+
+Scope: tighten the opt-in atomic offline orchestrator boundary from the first
+transaction-safe implementation step. Non-atomic `commit=false` now fails
+closed instead of silently allowing stage-owned commits, and atomic mode rejects
+partial idempotent replays so a projection-only replay cannot be combined with
+new statement-packet/workflow writes while claiming a single transaction.
+
+Containment: no schema, `models.py`, Alembic migration, backend API/UI,
+source acquisition, Arelle subprocess invocation, live SEC network access,
+value reveal, runtime-default change, raw runtime artifact, operator source
+workflow, or production-readiness behavior is admitted. The S1 proof-capability
+blocked-report controls and multi-filing authority gate are also tightened to
+match current proof artifact shapes and raw-value-key redaction rules.
+
+Verification: focused review-debt suites pass with `37 passed`; full SEC XBRL
+suite passes with `447 passed, 3 warnings`; target-selection frozen check,
+progress check, manifest JSON parse, and `git diff --check` pass.
+
+Next exact posture:
+continue SEC XBRL readiness/consolidation only after this review debt is
+thread-settled and merged.
+
 ## SEC XBRL Offline Evidence Orchestrator
 
 Milestone:

@@ -9,7 +9,7 @@ from typing import Any
 ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
 LOCAL_PATH_RE = re.compile(r"[A-Za-z]:[\\/]|\\\\|file://|/(?:Users|home|tmp|workspace|var|mnt|private)(?:/|$)")
-RAW_VALUE_KEY_RE = re.compile(r'"(?:effective_value|raw_value|lexical_value)"')
+RAW_VALUE_KEY_RE = re.compile(r'"(?:_value|value|amount|effective_value|raw_value|lexical_value)"')
 
 
 def report_leak_flags(value: Any, *, include_raw_value_keys: bool = False) -> dict[str, bool]:

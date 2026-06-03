@@ -180,6 +180,13 @@ readiness if the isolated response does not prove both
 `single_transaction_claimed=true` and
 `existing_materializers_commit_per_stage=false`.
 
+Review-debt closeout tightens the first atomic implementation step by rejecting
+`commit=false` outside `single_transaction=true` and by failing closed when an
+atomic run sees only a partial idempotent replay across the projection,
+statement-packet, and operator-review workflow stages. A mixed replay cannot
+claim a single transaction boundary; only a fresh all-new atomic run or a
+completed all-stage replay is admissible.
+
 This is still not a production-admission claim. It advances the transaction
 boundary required before API/UI activation, but the future gates remain:
 live validation against operator evidence, broader filing authority repair,
