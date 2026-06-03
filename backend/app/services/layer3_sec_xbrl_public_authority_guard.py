@@ -36,6 +36,7 @@ RAW_AUTHORITY_KEYS = frozenset(
 
 ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
+ANY_URL_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*:" + "/" + "/")
 BARE_SEC_DOMAIN_RE = re.compile(r"(?:https?://)?(?:www\.)?sec\.gov", re.IGNORECASE)
 WINDOWS_ABS_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
 WINDOWS_ABS_PATH_ANYWHERE_RE = re.compile(r"[A-Za-z]:[\\/]")
@@ -167,12 +168,31 @@ def public_text_reference_detected(
     )
 
 
+def raw_accession_reference_found(value: str) -> bool:
+    return bool(ACCESSION_RE.search(str(value or "")))
+
+
+def sec_url_reference_found(value: str) -> bool:
+    return bool(SEC_URL_RE.search(str(value or "")))
+
+
+def any_url_reference_found(value: str) -> bool:
+    return bool(ANY_URL_RE.search(str(value or "")))
+
+
+def report_local_path_reference_found(value: str) -> bool:
+    return bool(REPORT_LOCAL_PATH_RE.search(str(value or "")))
+
+
+def windows_local_path_reference_found(value: str) -> bool:
+    return bool(WINDOWS_ABS_PATH_ANYWHERE_RE.search(str(value or "")))
+
+
 def report_text_reference_flags(value: str) -> dict[str, bool]:
-    text = str(value or "")
     return {
-        "raw_accession_found": bool(ACCESSION_RE.search(text)),
-        "sec_url_found": bool(SEC_URL_RE.search(text)),
-        "local_path_found": bool(REPORT_LOCAL_PATH_RE.search(text)),
+        "raw_accession_found": raw_accession_reference_found(value),
+        "sec_url_found": sec_url_reference_found(value),
+        "local_path_found": report_local_path_reference_found(value),
     }
 
 
