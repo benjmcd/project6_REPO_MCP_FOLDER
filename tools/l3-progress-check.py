@@ -31158,11 +31158,13 @@ def _check_aps_source_family_extraction(errors: list[str]) -> None:
         "APS_NOT_ADMITTED_SOURCE_FAMILIES",
         "APS_ADMITTED_SOURCE_FAMILY_BY_PARSER",
         "def source_family_for_parser(",
+        "def source_family_for_provenance(",
         "def source_family_summary(",
         "\"csv_table\"",
         "\"xlsx_workbook\"",
         "\"json_recordset\"",
         "\"sec_edgar_filing\"",
+        "\"server_owned_raw_mixed\"",
         "\"xml_html_inline_xbrl\"",
         "\"broad_workbook_semantics\"",
         "refused/deferred families are explanatory guardrails, not selectable source classes",
@@ -31173,9 +31175,10 @@ def _check_aps_source_family_extraction(errors: list[str]) -> None:
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     for term in (
         "from app.services.layer3_aps_source_family import",
-        "source_family_for_parser as _source_family_for_parser",
+        "source_family_for_provenance as _source_family_for_provenance",
         "source_family_summary as _source_family_summary",
-        "_source_family_for_parser(provenance.get(\"parser_family\"))",
+        "_source_family_for_provenance(provenance)",
+        "_source_family_for_provenance(aps_provenance[0])",
         "\"source_family_summary\": _source_family_summary(candidates)",
     ):
         if term not in workbench_text:
@@ -31194,6 +31197,8 @@ def _check_aps_source_family_extraction(errors: list[str]) -> None:
     for term in (
         "test_source_family_for_parser_maps_admitted_aps_table_families",
         "test_source_family_for_parser_returns_unknown_metadata_copy",
+        "test_source_family_for_provenance_labels_server_owned_raw_mixed_materialization",
+        "test_source_family_for_provenance_keeps_parser_family_for_regular_aps_tables",
         "test_source_family_summary_counts_observed_parsers_and_returns_copies",
         "APS_ADMITTED_TABLE_SOURCE_FAMILIES[0][\"source_family\"] == \"csv\"",
     ):

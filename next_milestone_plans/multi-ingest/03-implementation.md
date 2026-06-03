@@ -423,7 +423,7 @@ P9 residual no-go list:
 
 ## Phase P10: UI And Operator Surfacing
 
-Status: partially implemented as bounded Phase P10A for Layer 3 APS-derived `DatasetVersion` candidate listing and explicit selection, bounded Phase P10B for source-family admission/refusal guardrails in that same workbench panel, bounded Phase P10C for selected-material dataset trace/detail surfacing in the Gate B material ledger, and bounded Phase P10D for selected APS content-document candidate listing plus selected-material trace/detail surfacing.
+Status: partially implemented as bounded Phase P10A for Layer 3 APS-derived `DatasetVersion` candidate listing and explicit selection, bounded Phase P10B for source-family admission/refusal guardrails in that same workbench panel, bounded Phase P10C for selected-material dataset trace/detail surfacing in the Gate B material ledger, bounded Phase P10D for selected APS content-document candidate listing plus selected-material trace/detail surfacing, and bounded Phase P10E for server-owned raw mixed materialization trace labeling.
 
 Goal:
 
@@ -439,6 +439,7 @@ Requirements:
 - P10B specifically adds server-owned source-family metadata for admitted/materialized APS table families and deferred/refused guardrails, then renders that metadata in the existing Layer 3 candidate-selection panel without adding schema, migration, parser, or source-shape changes.
 - P10C specifically adds server-owned selected-material source trace metadata to material preview for APS-derived `DatasetVersion` rows, then renders parser contract, dataset/version, variable, storage, source artifact, diagnostics, target, and accession refs in the Gate B material ledger without adding a new endpoint or source shape.
 - P10D specifically adds a read-only Layer 3 `aps-content-document-candidates` endpoint backed by `ApsContentDocument` and `ApsContentLinkage`, workbench controls that select/paste APS content IDs as `aps_content_document_ids`, and selected-material trace metadata from `ApsContentDocument`, `ApsContentChunk`, and `ApsContentLinkage` authority.
+- P10E specifically adds provenance-aware source-family labeling for already-admitted server-owned raw mixed materialized `DatasetVersion` rows without adding mixed-source package semantics.
 
 Stop condition:
 
@@ -446,6 +447,7 @@ Stop condition:
 - P10B stop condition is met when an operator can distinguish server-backed CSV, XLSX, JSON recordset, and bounded SEC/EDGAR text table dataset-version candidates from explicitly deferred/refused families in the Layer 3 workbench without reading raw JSON.
 - P10C stop condition is met when an operator can inspect selected APS-derived `DatasetVersion` source trace detail in the Gate B material ledger without reading raw JSON.
 - P10D stop condition is met when an operator can discover/select indexed APS content documents and inspect selected document/chunk/linkage trace detail in the Gate B material ledger without reading raw JSON.
+- P10E stop condition is met when server-owned raw mixed materialized `DatasetVersion` candidates and selected materials are labeled as server-owned raw mixed authority instead of inheriting lower-level parser-family labels.
 - A broader trace/detail UI tranche remains separate from P10D and should not be claimed as completed until operators can inspect richer detail views for mixed filings and refused artifacts without reading raw JSON.
 
 ## Target Implementation Flow
@@ -465,8 +467,9 @@ flowchart TD
     K --> L["P10B: typed/refused UI guardrails"]
     L --> M["P10C: selected material trace detail"]
     M --> N["P10D: APS content document trace detail"]
+    N --> O["P10E: raw mixed trace labeling"]
 ```
 
 ## Immediate Recommendation
 
-The next implementation PR should not repeat P10A APS-derived dataset selection, P10B source-family guardrails, P10C selected dataset trace detail, P10D selected APS content-document trace detail, P8 JSON recordset materialization, P9 bounded SEC/EDGAR complete-submission materialization, the already-admitted SEC-specific HTML/iXBRL parser receipt chain, or the SEC HTML/iXBRL reconciliation checkpoint. The next narrow slice should either add refused/mixed-source trace surfacing only where backed by server authority, connect admitted SEC parser/material authority to governed mixed-source package semantics without widening generic XML/HTML admission, or decide whether the legacy CSV bridge compatibility path can be deprecated after proving generic table bridge adoption.
+The next implementation PR should not repeat P10A APS-derived dataset selection, P10B source-family guardrails, P10C selected dataset trace detail, P10D selected APS content-document trace detail, P10E raw mixed trace labeling, P8 JSON recordset materialization, P9 bounded SEC/EDGAR complete-submission materialization, the already-admitted SEC-specific HTML/iXBRL parser receipt chain, or the SEC HTML/iXBRL reconciliation checkpoint. The next narrow slice should either add refused-artifact trace surfacing only where backed by server authority, connect admitted SEC parser/material authority to governed mixed-source package semantics without widening generic XML/HTML admission, or decide whether the legacy CSV bridge compatibility path can be deprecated after proving generic table bridge adoption.

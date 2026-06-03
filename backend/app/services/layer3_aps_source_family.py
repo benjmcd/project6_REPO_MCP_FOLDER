@@ -45,6 +45,20 @@ APS_ADMITTED_TABLE_SOURCE_FAMILIES: tuple[dict[str, Any], ...] = (
     },
 )
 
+RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM = "local_operator_staged_server_owned_manifest"
+RAW_MIXED_SOURCE_MODE = "raw_mixed_materialized"
+RAW_MIXED_MATERIALIZED_SOURCE_FAMILY: dict[str, Any] = {
+    "parser_family": None,
+    "source_family": "server_owned_raw_mixed",
+    "source_family_label": "Server-owned raw mixed materialization",
+    "typed_content_contract_id": None,
+    "admission_state": "admitted_materialized_dataset_version",
+    "scope": (
+        "server-owned raw mixed manifest materialized to DatasetVersion authority; "
+        "mixed package semantics remain separately governed"
+    ),
+}
+
 APS_NOT_ADMITTED_SOURCE_FAMILIES: tuple[dict[str, Any], ...] = (
     {
         "source_family": "xml_html_inline_xbrl",
@@ -89,6 +103,17 @@ def source_family_for_parser(parser_family: str | None) -> dict[str, Any]:
         "admission_state": "admitted_materialized_dataset_version",
         "scope": "materialized APS-derived DatasetVersion with parser family metadata unavailable",
     }
+
+
+def source_family_for_provenance(provenance: Mapping[str, Any]) -> dict[str, Any]:
+    if (
+        str(provenance.get("source_system") or "") == RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM
+        and str(provenance.get("source_mode") or "") == RAW_MIXED_SOURCE_MODE
+    ):
+        return dict(RAW_MIXED_MATERIALIZED_SOURCE_FAMILY)
+    return source_family_for_parser(
+        str(provenance.get("parser_family")) if provenance.get("parser_family") is not None else None
+    )
 
 
 def source_family_summary(candidates: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
