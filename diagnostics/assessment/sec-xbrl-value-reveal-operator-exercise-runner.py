@@ -15,6 +15,7 @@ if str(ASSESSMENT) not in sys.path:
     sys.path.insert(0, str(ASSESSMENT))
 
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import report_header as _report_header  # noqa: E402
 
 BACKEND = ROOT / "backend"
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-run-report.json")
@@ -97,31 +98,36 @@ def build_report(*, source_root: Path, storage_dir: Path | None = None, db: Any 
     ]
     blockers = [item for item in criteria if item["state"] != "passed"]
     ready = not blockers
-    return {
-        "schema_id": "diagnostics.sec_xbrl_value_reveal_operator_exercise_run.v1",
-        "target": "sec_edgar_arelle_value_reveal_operator_exercise_v1",
-        "decision": (
+    return _report_header(
+        schema_id="diagnostics.sec_xbrl_value_reveal_operator_exercise_run.v1",
+        target="sec_edgar_arelle_value_reveal_operator_exercise_v1",
+        next_slice=(
+            "sec_edgar_arelle_value_reveal_operator_exercise_v1"
+            if ready
+            else "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1"
+        ),
+        decision=(
             "value_reveal_operator_exercise_ready_to_run"
             if ready
             else "value_reveal_operator_exercise_blocked_missing_authority"
         ),
-        "headline": (
+        headline=(
             "Configured storage has the persisted sidecar and bridge dataset authority required for an isolated operator exercise."
             if ready
             else "Operator exercise cannot run from current configured storage because persisted sidecar/dataset authority is missing."
         ),
-        "operator_exercise_performed": False,
-        "ready_to_run_operator_exercise": ready,
-        "criteria": criteria,
-        "blocking_reasons": blockers + list(selection["blocking_reasons"]),
-        "redacted_inventory": inventory,
-        "selected_authority_bundle": selection["selected_bundle"],
-        "required_next_action": (
+        operator_exercise_performed=False,
+        ready_to_run_operator_exercise=ready,
+        criteria=criteria,
+        blocking_reasons=blockers + list(selection["blocking_reasons"]),
+        redacted_inventory=inventory,
+        selected_authority_bundle=selection["selected_bundle"],
+        required_next_action=(
             "run_isolated_value_reveal_operator_exercise_against_existing_authorities"
             if ready
             else "provision_or_point_to_existing_real_filing_sidecar_and_dataset_authorities_then_rerun"
         ),
-        "non_goals_preserved": {
+        non_goals_preserved={
             "cutover_default_enabled": False,
             "value_reveal_default_enabled": False,
             "sec_network_fetch_performed": False,
@@ -136,12 +142,7 @@ def build_report(*, source_root: Path, storage_dir: Path | None = None, db: Any 
             "final_financial_statement_semantics_claimed": False,
             "cross_company_comparability_claimed": False,
         },
-        "next_slice": (
-            "sec_edgar_arelle_value_reveal_operator_exercise_v1"
-            if ready
-            else "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1"
-        ),
-    }
+    )
 
 
 def _inventory_storage(storage: Path) -> dict[str, Any]:

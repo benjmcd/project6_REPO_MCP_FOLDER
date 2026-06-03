@@ -13,6 +13,7 @@ if str(ASSESSMENT) not in sys.path:
     sys.path.insert(0, str(ASSESSMENT))
 
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import report_header as _report_header  # noqa: E402
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-report.json")
 
@@ -167,20 +168,23 @@ def build_report(*, source_root: Path) -> dict[str, Any]:
     ]
     blockers = [item for item in criteria if item["state"] != "passed"]
     ready = not blockers
-    return {
-        "schema_id": "diagnostics.sec_xbrl_value_reveal_operator_exercise.v1",
-        "target": "sec_edgar_arelle_value_reveal_operator_exercise_v1",
-        "decision": "value_reveal_operator_exercise_ready" if ready else "value_reveal_operator_exercise_blocked",
-        "headline": (
+    return _report_header(
+        schema_id="diagnostics.sec_xbrl_value_reveal_operator_exercise.v1",
+        target="sec_edgar_arelle_value_reveal_operator_exercise_v1",
+        next_slice="sec_edgar_arelle_value_reveal_operator_exercise_v1"
+        if ready
+        else "sec_edgar_arelle_governed_value_reveal_v1",
+        decision="value_reveal_operator_exercise_ready" if ready else "value_reveal_operator_exercise_blocked",
+        headline=(
             "Governed value reveal is ready for an isolated operator exercise; this check did not perform the exercise."
             if ready
             else "Governed value reveal is not ready for operator exercise; see blocking reasons."
         ),
-        "ready_for_operator_exercise": ready,
-        "operator_exercise_performed": False,
-        "criteria": criteria,
-        "blocking_reasons": blockers,
-        "operator_exercise_requirements": [
+        ready_for_operator_exercise=ready,
+        operator_exercise_performed=False,
+        criteria=criteria,
+        blocking_reasons=blockers,
+        operator_exercise_requirements=[
             "enable LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED only in isolated local/operator runtime",
             "bind a persisted READY Arelle sidecar receipt id/hash and matching dataset_version id/hash",
             "submit an explicit actor self-attestation and operator_reveal_confirmation=true",
@@ -189,9 +193,8 @@ def build_report(*, source_root: Path) -> dict[str, Any]:
             "verify the default product surface over the same filing still returns no raw values",
             "turn the reveal flag back off after the exercise",
         ],
-        "non_goals_preserved": non_goals,
-        "next_slice": "sec_edgar_arelle_value_reveal_operator_exercise_v1" if ready else "sec_edgar_arelle_governed_value_reveal_v1",
-    }
+        non_goals_preserved=non_goals,
+    )
 
 
 def _source_text(source_root: Path) -> dict[str, str]:
