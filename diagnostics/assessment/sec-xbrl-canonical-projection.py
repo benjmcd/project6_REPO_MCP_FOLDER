@@ -27,6 +27,7 @@ from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
 from app.services.layer3_utils import stable_hash  # noqa: E402
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import report_envelope as _report_envelope  # noqa: E402
 from sec_xbrl_report_redaction import strip_residual_magnitude_fields  # noqa: E402
 from sec_xbrl_runtime_posture import (  # noqa: E402
     committed_runtime_posture,
@@ -139,25 +140,26 @@ def _reference_summary_report(*, runtime_posture: Mapping[str, Any]) -> dict[str
     oracle_absent_total = sum(int(item["oracle_absent_count"]) for item in issuer_summaries)
     absent_total = sum(int(item["legitimately_absent_count"]) for item in issuer_summaries)
     provenance_total = sum(int(item["provenance_complete_count"]) for item in issuer_summaries)
-    report: dict[str, Any] = {
-        "schema_id": PROJECTION_REPORT_SCHEMA_ID,
-        "target": TARGET,
-        "decision": "canonical_projection_validate_only_ready",
-        "source_mode": "redacted_reference_summary_plus_committed_registry",
-        "validate_only": True,
-        "live_network_used": False,
-        "arelle_invoked": False,
-        "value_reveal_performed": False,
-        "runtime_defaults_changed": False,
-        "value_authority": "governed_arelle_sidecar_value_store",
-        "oracle_authority": "companyfacts_period_aware_validation_only",
-        "coverage_framing": "headline_canonical_projected_over_defined_not_filing_wide",
-        "canonical_concept_defined_count": len(concept_inventory),
-        "universal_canonical_concept_defined_count": len(concept_inventory),
-        "sector_family_canonical_concept_defined_count": 0,
-        "include_sector_families": False,
-        "issuer_hash_count": len(issuer_summaries),
-        "summary": {
+    report: dict[str, Any] = _report_envelope(
+        schema_id=PROJECTION_REPORT_SCHEMA_ID,
+        target=TARGET,
+        next_slice=NEXT_SLICE,
+        decision="canonical_projection_validate_only_ready",
+        source_mode="redacted_reference_summary_plus_committed_registry",
+        validate_only=True,
+        live_network_used=False,
+        arelle_invoked=False,
+        value_reveal_performed=False,
+        runtime_defaults_changed=False,
+        value_authority="governed_arelle_sidecar_value_store",
+        oracle_authority="companyfacts_period_aware_validation_only",
+        coverage_framing="headline_canonical_projected_over_defined_not_filing_wide",
+        canonical_concept_defined_count=len(concept_inventory),
+        universal_canonical_concept_defined_count=len(concept_inventory),
+        sector_family_canonical_concept_defined_count=0,
+        include_sector_families=False,
+        issuer_hash_count=len(issuer_summaries),
+        summary={
             "headline_canonical_cell_count": len(concept_inventory) * len(issuer_summaries),
             "projected_count": projected_total,
             "oracle_confirmed_count": confirmed_total,
@@ -167,13 +169,12 @@ def _reference_summary_report(*, runtime_posture: Mapping[str, Any]) -> dict[str
             "statement_identity_residuals_reference_within_tolerance": True,
             "statement_identity_residual_magnitudes_redacted": True,
         },
-        "canonical_concepts": concept_inventory,
-        "per_issuer": issuer_summaries,
-        "statement_identity_residuals": _reference_identity_residuals(),
-        "criteria": [],
-        "blocking_reasons": [],
-        "next_slice": NEXT_SLICE,
-        "non_goals_preserved": {
+        canonical_concepts=concept_inventory,
+        per_issuer=issuer_summaries,
+        statement_identity_residuals=_reference_identity_residuals(),
+        criteria=[],
+        blocking_reasons=[],
+        non_goals_preserved={
             "default_on_readiness_claimed": False,
             "production_readiness_claimed": False,
             "final_financial_statement_semantics_claimed": False,
@@ -183,7 +184,7 @@ def _reference_summary_report(*, runtime_posture: Mapping[str, Any]) -> dict[str
             "live_network_or_arelle_required": False,
             "value_reveal_performed": False,
         },
-    }
+    )
     report["criteria"] = _criteria(
         report=report,
         runtime_posture=runtime_posture,
