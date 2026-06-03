@@ -1,5 +1,37 @@
 ﻿# Layer3 Progress Board
 
+## SEC XBRL Public Authority Guard Consolidation
+
+Milestone:
+`sec_xbrl_public_authority_guard_persistence_family_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1346-sec-xbrl-public-authority-guard.md`.
+
+Status: branch-local persistence-family consolidation on
+`codex/secxbrl-authority-guard`.
+
+Scope: extract the duplicated SEC XBRL raw/local public-authority scanner used
+by projection persistence and statement-packet persistence into
+`layer3_sec_xbrl_public_authority_guard.py`, while keeping service-local
+exception classes, error codes, messages, and residual-magnitude variants.
+
+Containment: no schema, `models.py`, Alembic migration, backend API/UI,
+diagnostic report, proof JSON, source acquisition, Arelle subprocess
+invocation, live SEC network access, value reveal, runtime-default change, raw
+runtime artifact, or production-readiness behavior is admitted. Operator-review,
+value-reveal, controlled-submit, E2E, auth-binding, and multi-filing guards stay
+out of scope for later service-family tranches.
+
+Verification: focused persistence-family guard suites pass with `43 passed`;
+full SEC XBRL suite passes with `452 passed, 3 warnings`; target-selection
+frozen check, progress check, manifest JSON parse, and `git diff --check`
+pass.
+
+Next exact posture:
+continue raw/local authority guard consolidation in smaller service-family
+tranches only after this persistence-family pilot is verified and merged.
+
 ## SEC XBRL Offline CompanyFacts Oracle Packet
 
 Milestone:
