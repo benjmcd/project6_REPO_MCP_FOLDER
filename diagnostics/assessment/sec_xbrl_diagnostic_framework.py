@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any
 
 
@@ -99,6 +99,18 @@ def redaction_hit_classes(
         if key.lower() in raw_key_set:
             hits.append("raw_or_local_authority_key")
     return hits
+
+
+def text_redaction_scan(
+    texts: Iterable[str],
+    *,
+    regexes: Mapping[str, Any],
+) -> dict[str, Any]:
+    hits = {str(name): False for name in regexes}
+    for text in texts:
+        for name, regex in regexes.items():
+            hits[str(name)] = hits[str(name)] or bool(regex.search(text))
+    return {"passed": not any(hits.values()), **hits}
 
 
 def _iter_keys(value: Any) -> list[str]:
