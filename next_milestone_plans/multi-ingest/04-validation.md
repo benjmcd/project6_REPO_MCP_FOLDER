@@ -4,7 +4,7 @@ Status: required checks for the planning pack and later implementation phases.
 
 ## Current Branch Validation
 
-This branch now contains Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Phase P5, Phase P6, bounded Phase P10A source/test/UI changes, Phase P7 XLSX parser/materialization, Phase P7.5 generic table bridge orchestration, Phase P8 JSON recordset parser/materialization, bounded Phase P9 SEC/EDGAR text filing parser/materialization, bounded Phase P10B typed/refused workbench guardrails, bounded Phase P10C selected dataset trace/detail surfacing, bounded Phase P10D selected APS content-document trace/detail surfacing, bounded Phase P10E server-owned raw mixed trace labeling, and the planning pack. Required validation for this pass:
+This branch now contains Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Phase P5, Phase P6, bounded Phase P10A source/test/UI changes, Phase P7 XLSX parser/materialization, Phase P7.5 generic table bridge orchestration, Phase P8 JSON recordset parser/materialization, bounded Phase P9 SEC/EDGAR text filing parser/materialization, bounded Phase P10B typed/refused workbench guardrails, bounded Phase P10C selected dataset trace/detail surfacing, bounded Phase P10D selected APS content-document trace/detail surfacing, bounded Phase P10E server-owned raw mixed trace labeling, bounded Phase P10F refused/deferred guardrail trace detail, and the planning pack. Required validation for this pass:
 
 - `git diff --check`
 - `git status --short --branch`
@@ -538,6 +538,30 @@ Focused commands:
 - `python .\tools\l3-progress-check.py`
 - `python .\tools\l3-target-selection-validate.py --expect frozen`
 - `git diff --check`
+
+## Phase P10F Refused/Deferred Guardrail Trace Detail Validation
+
+Status: implemented for existing source-family guardrails only.
+
+Required assertions:
+
+- Refused/deferred families in `source_family_summary.not_admitted_or_deferred_families` include `layer3.aps_source_family_guardrail_trace.v1` trace detail.
+- Guardrail trace detail states `trace_readiness="guardrail_not_selectable"` and `selectable=false`.
+- Refused guardrails expose `materialization_state="refused_without_parser_contract"`; deferred guardrails expose `materialization_state="deferred_until_governed_contract"`.
+- The workbench renders guardrail trace readiness, materialization state, and parser-admission authority in the existing source-family summary panel.
+- No refused guardrail becomes a selectable material candidate, parser admission, source shape, package semantic, or Onlook artifact.
+
+Focused commands:
+
+- `python -m pytest .\backend\tests\test_layer3_aps_source_family.py .\backend\tests\test_layer3_workbench.py .\backend\tests\test_layer3_page.py -q`
+- `python .\tools\validate_structure.py`
+- `python .\tools\l3-progress-check.py`
+- `python .\tools\l3-target-selection-validate.py --expect frozen`
+- `git diff --check`
+
+Browser validation:
+
+- Run the focused Layer 3 workbench source-family guardrail E2E in both headless and headed Chrome where local browser validation is available.
 
 ## Completion Definition
 

@@ -6370,13 +6370,32 @@ function renderSourceFamilySummary(summary) {
             </li>
         `;
     }).join('');
-    const deferredRows = deferred.map((family) => `
+    const deferredRows = deferred.map((family) => {
+        const trace = family.trace_detail || {};
+        const traceRows = [
+            ['readiness', trace.trace_readiness ? humanizeToken(trace.trace_readiness) : null],
+            ['materialization', trace.materialization_state ? humanizeToken(trace.materialization_state) : null],
+            ['selection', trace.selectable === false ? 'not selectable' : null],
+            ['authority', trace.authority_refs?.authority_source ? humanizeToken(trace.authority_refs.authority_source) : null],
+        ].filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '');
+        return `
             <li>
                 <strong>${escapeHtml(family.source_family_label || family.source_family || 'Deferred source family')}</strong>
                 <span>${escapeHtml(family.scope || family.admission_state || 'not admitted')}</span>
                 <em>${escapeHtml(humanizeToken(family.admission_state || 'deferred'))}</em>
+                ${traceRows.length ? `
+                    <dl class="source-family-trace">
+                        ${traceRows.map(([label, value]) => `
+                            <div>
+                                <dt>${escapeHtml(label)}</dt>
+                                <dd>${escapeHtml(shortText(value, 54))}</dd>
+                            </div>
+                        `).join('')}
+                    </dl>
+                ` : ''}
             </li>
-        `).join('');
+        `;
+    }).join('');
     return `
         <section class="source-family-summary" aria-label="APS typed and refused source family boundary">
             <div>

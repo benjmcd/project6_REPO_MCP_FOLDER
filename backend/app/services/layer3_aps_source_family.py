@@ -91,6 +91,42 @@ APS_ADMITTED_SOURCE_FAMILY_BY_PARSER: dict[str, dict[str, Any]] = {
 }
 
 
+def source_family_guardrail_trace(family: Mapping[str, Any]) -> dict[str, Any]:
+    source_family = str(family.get("source_family") or "unknown_source_family")
+    admission_state = str(family.get("admission_state") or "deferred")
+    return {
+        "schema_id": "layer3.aps_source_family_guardrail_trace.v1",
+        "trace_scope": "source_family_guardrail",
+        "selection_shape": "dataset_version",
+        "trace_readiness": "guardrail_not_selectable",
+        "source_family": source_family,
+        "source_family_label": family.get("source_family_label"),
+        "source_admission_state": admission_state,
+        "source_family_scope": family.get("scope"),
+        "selectable": False,
+        "materialization_state": (
+            "refused_without_parser_contract"
+            if admission_state == "not_admitted_or_refused"
+            else "deferred_until_governed_contract"
+        ),
+        "authority_refs": {
+            "authority_source": "parser_contract_admission_policy",
+            "candidate_endpoint_schema_id": "layer3.aps_dataset_version_candidates.v1",
+            "selection_authority": "none",
+        },
+        "ui_summary": (
+            "This source family is exposed as a server-owned guardrail only; "
+            "it is not a selectable material candidate and has no materialized DatasetVersion authority."
+        ),
+    }
+
+
+def _source_family_with_guardrail_trace(family: Mapping[str, Any]) -> dict[str, Any]:
+    traced = dict(family)
+    traced["trace_detail"] = source_family_guardrail_trace(family)
+    return traced
+
+
 def source_family_for_parser(parser_family: str | None) -> dict[str, Any]:
     metadata = APS_ADMITTED_SOURCE_FAMILY_BY_PARSER.get(str(parser_family or ""))
     if metadata:
@@ -126,10 +162,12 @@ def source_family_summary(candidates: Iterable[Mapping[str, Any]]) -> dict[str, 
         "authority_source": "dataset_source_provenance_and_parser_contracts",
         "selection_shape": "dataset_version",
         "admitted_materialized_families": [dict(item) for item in APS_ADMITTED_TABLE_SOURCE_FAMILIES],
-        "not_admitted_or_deferred_families": [dict(item) for item in APS_NOT_ADMITTED_SOURCE_FAMILIES],
+        "not_admitted_or_deferred_families": [
+            _source_family_with_guardrail_trace(item) for item in APS_NOT_ADMITTED_SOURCE_FAMILIES
+        ],
         "observed_candidate_counts": observed_counts,
         "ui_scope": (
             "This endpoint surfaces server-backed materialized DatasetVersion choices only; "
-            "refused/deferred families are explanatory guardrails, not selectable source classes."
+            "refused/deferred families are explanatory guardrails with trace detail, not selectable source classes."
         ),
     }

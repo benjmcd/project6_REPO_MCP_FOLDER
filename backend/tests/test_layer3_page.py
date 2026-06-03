@@ -401,6 +401,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".aps-content-document-selector" in css.text
     assert ".aps-content-document-candidate" in css.text
     assert ".source-family-summary" in css.text
+    assert ".source-family-trace" in css.text
     assert ".ledger-chip-field" in css.text
     assert ".diagram-chip-grid" in css.text
     assert ".plane-arrow" in css.text
@@ -873,6 +874,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "Commit Preview To Gate B" in js.text
     assert "source-intake-gate-b-submit" in js.text
     assert "not_admitted_or_deferred_families" in js.text
+    assert "trace_detail" in js.text
+    assert "source-family-trace" in js.text
     assert "renderMaterialTrace" in js.text
     assert "source_trace" in js.text
     assert "content_units_ref" in js.text
