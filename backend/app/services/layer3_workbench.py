@@ -1884,6 +1884,84 @@ def _aps_content_document_material_candidates(
     return candidates
 
 
+def _mixed_source_package_semantics(candidates: list[dict[str, Any]]) -> dict[str, Any]:
+    dataset_candidates = [
+        item
+        for item in candidates
+        if item.get("source_class") == "dataset_version"
+        and item.get("validation_status") == "valid"
+    ]
+    document_candidates = [
+        item
+        for item in candidates
+        if item.get("source_class") == "aps_content_document"
+        and item.get("validation_status") == "valid"
+    ]
+    dataset_ids = [
+        str((item.get("source_identity") or {}).get("dataset_version_id") or "").strip()
+        for item in dataset_candidates
+    ]
+    document_ids = [
+        str((item.get("source_identity") or {}).get("content_id") or "").strip()
+        for item in document_candidates
+    ]
+    dataset_ids = [item for item in dataset_ids if item]
+    document_ids = [item for item in document_ids if item]
+    material_authority_present = bool(dataset_candidates and document_candidates)
+    return {
+        "schema_id": "layer3.mixed_source_package_semantics_readiness.v1",
+        "readiness_scope": "material_preview",
+        "selection_shape": "dataset_version_plus_aps_content_document",
+        "material_authority_state": (
+            "mixed_material_authority_present"
+            if material_authority_present
+            else "mixed_material_authority_not_present"
+        ),
+        "package_semantics_state": (
+            "governed_contract_required"
+            if material_authority_present
+            else "not_applicable_without_mixed_material"
+        ),
+        "package_construction_enabled": False,
+        "package_review_preview_enabled": False,
+        "handoff_enabled": False,
+        "admitted_source_classes": sorted(
+            {
+                str(item.get("source_class") or "")
+                for item in candidates
+                if item.get("validation_status") == "valid"
+            }
+            - {""}
+        ),
+        "dataset_version_ids": dataset_ids,
+        "aps_content_document_ids": document_ids,
+        "candidate_ids": [
+            str(item.get("candidate_id") or "")
+            for item in (*dataset_candidates, *document_candidates)
+            if item.get("candidate_id")
+        ],
+        "required_governance": [
+            "mixed_source_package_contract",
+            "narrative_table_linking_contract",
+            "package_payload_semantics",
+            "downstream_handoff_policy",
+        ],
+        "next_allowed_actions": (
+            ["define_mixed_source_package_contract"]
+            if material_authority_present
+            else ["select_dataset_version_and_aps_content_document_material"]
+        ),
+        "non_goals": [
+            "no_schema_change",
+            "no_source_shape_expansion",
+            "no_package_mutation",
+            "no_generic_xml_html_admission",
+            "no_archive_member_orchestration",
+            "no_onlook_work",
+        ],
+    }
+
+
 def material_preview(payload: dict[str, Any], db: Session | None = None) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or uuid_str())
     source_ids = [str(item) for item in payload.get("source_candidate_ids") or []]
@@ -1966,6 +2044,7 @@ def material_preview(payload: dict[str, Any], db: Session | None = None) -> dict
         "material_preview_id": preview_id,
         "material_preview_hash": material_hash,
         "material_candidates": candidates,
+        "mixed_source_package_semantics": _mixed_source_package_semantics(candidates),
         "partial_retrieval": False,
         "authority_rail": _authority_rail(
             preflight_id=str(payload.get("preflight_id") or "none"),
