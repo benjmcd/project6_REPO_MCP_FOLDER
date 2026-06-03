@@ -11290,3 +11290,28 @@ Artifacts:
 - `backend/tests/test_sec_xbrl_committed_report_redaction.py`
 
 Residual-key posture: projection, comparability, and statement-assembly reports remove exact-zero residual-magnitude keys. Comparability also accepts the current-code `canonical_concepts[].family` enrichment.
+
+## P10F Refused/Deferred Source-Family Guardrail Trace Current-Main Sync
+
+Milestone: `p10f_refused_deferred_source_family_guardrail_trace_detail`.
+
+Status: current-main synced through PR `#2151`, merge commit
+`4dc261d2a07bb68166b9b420be86b75cd8420d18`, and present in current main
+`e0a73305559d51bfa913fd7efad4f64c1cae0898`.
+
+Planning doc:
+`next_milestone_plans/multi-ingest/24-p10f-guardrail-trace-closeout.md`.
+
+Scope: Layer 3 source-family summary exposes
+`layer3.aps_source_family_guardrail_trace.v1` detail for refused/deferred APS
+source-family guardrails while keeping those families non-selectable and keeping
+the candidate endpoint limited to server-backed materialized `DatasetVersion`
+choices.
+
+Non-goals: no selectable refused material candidates, parser behavior, source
+shape, schema, migration, mixed-source package semantics, generic XML/HTML
+admission, archive-member orchestration, or Onlook work.
+
+Next posture: after this review-debt closeout, select either governed
+mixed qualitative-plus-table package semantics or the legacy CSV bridge
+deprecation decision lane; do not repeat P10F guardrail trace work.
