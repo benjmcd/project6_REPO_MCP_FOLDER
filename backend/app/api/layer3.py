@@ -8062,6 +8062,7 @@ class Layer3MaterialPreviewResponse(Layer3BaseResponse):
     material_preview_id: str
     material_preview_hash: str
     material_candidates: list[dict[str, Any]]
+    mixed_source_package_semantics: dict[str, Any]
     partial_retrieval: bool
     authority_rail: dict[str, Any]
 
