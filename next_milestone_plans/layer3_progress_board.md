@@ -1,4 +1,34 @@
-﻿# Layer3 Progress Board
+# Layer3 Progress Board
+
+## SEC XBRL Public Authority Guard Value-Reveal Consolidation
+
+Milestone:
+`sec_xbrl_public_authority_guard_value_reveal_family_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1347-sec-xbrl-public-authority-guard-value-reveal.md`.
+
+Status: branch-local value-reveal family consolidation on
+`codex/secxbrl-authority-guard-tranche2`.
+
+Scope: extend the shared SEC XBRL public-authority guard with
+behavior-preserving variant controls, then migrate value-reveal authority and
+controlled value-reveal submit raw/local authority checks to the shared helper
+without changing service-specific error codes, messages, details, or denylist
+boundaries.
+
+Containment: no schema, `models.py`, Alembic migration, backend API/UI,
+diagnostic report, proof JSON, source acquisition, Arelle subprocess
+invocation, live SEC network access, runtime-default change, raw runtime
+artifact, value-store behavior change, or production-readiness behavior is
+admitted. Operator-review, E2E, auth-binding, multi-filing, and remaining
+redaction-helper service variants stay out of scope for later tranches.
+
+Verification: focused value-reveal guard suites pass with `83 passed, 3 warnings`; full SEC XBRL suite passes with `454 passed, 3 warnings`; target-selection frozen check, progress check, manifest JSON parse, and `git diff --check` pass.
+
+Next exact posture:
+finish value-reveal family verification, merge only if CI and review-thread
+authority are clean, then continue with a separate service-family tranche.
 
 ## SEC XBRL Public Authority Guard Consolidation
 

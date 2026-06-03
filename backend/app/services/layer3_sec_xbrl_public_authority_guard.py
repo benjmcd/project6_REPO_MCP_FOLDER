@@ -46,6 +46,7 @@ LOCAL_REF_RE = re.compile(
 )
 RAW_PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 CIK_RE = re.compile(r"\b\d{10}\b")
+OPERATOR_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -62,6 +63,8 @@ def raw_or_local_authority_violation(
     residual_magnitude_keys: set[str] | frozenset[str] = frozenset(),
     scan_raw_period_dates: bool = True,
     scan_cik: bool = False,
+    scan_cik_fullmatch: bool = False,
+    scan_operator_contact: bool = False,
 ) -> PublicAuthorityGuardViolation | None:
     if isinstance(value, Mapping):
         for key, item in value.items():
@@ -79,6 +82,8 @@ def raw_or_local_authority_violation(
                 residual_magnitude_keys=residual_magnitude_keys,
                 scan_raw_period_dates=scan_raw_period_dates,
                 scan_cik=scan_cik,
+                scan_cik_fullmatch=scan_cik_fullmatch,
+                scan_operator_contact=scan_operator_contact,
             )
             if nested is not None:
                 return nested
@@ -92,22 +97,54 @@ def raw_or_local_authority_violation(
                 residual_magnitude_keys=residual_magnitude_keys,
                 scan_raw_period_dates=scan_raw_period_dates,
                 scan_cik=scan_cik,
+                scan_cik_fullmatch=scan_cik_fullmatch,
+                scan_operator_contact=scan_operator_contact,
             )
             if nested is not None:
                 return nested
         return None
     if not isinstance(value, str):
         return None
-    if (
-        ACCESSION_RE.search(value)
-        or SEC_URL_RE.search(value)
-        or WINDOWS_ABS_PATH_RE.search(value)
-        or LOCAL_REF_RE.search(value)
-        or (scan_raw_period_dates and RAW_PERIOD_DATE_RE.search(value))
-        or (scan_cik and CIK_RE.search(value))
+    if public_text_reference_detected(
+        value,
+        scan_raw_period_dates=scan_raw_period_dates,
+        scan_cik=scan_cik,
+        scan_cik_fullmatch=scan_cik_fullmatch,
+        scan_operator_contact=scan_operator_contact,
     ):
         return PublicAuthorityGuardViolation("raw_reference")
     return None
+
+
+def public_text_reference_detected(
+    value: str,
+    *,
+    scan_raw_period_dates: bool = True,
+    scan_cik: bool = False,
+    scan_cik_fullmatch: bool = False,
+    scan_operator_contact: bool = False,
+) -> bool:
+    text = str(value or "").strip()
+    return bool(
+        ACCESSION_RE.search(text)
+        or SEC_URL_RE.search(text)
+        or WINDOWS_ABS_PATH_RE.search(text)
+        or LOCAL_REF_RE.search(text)
+        or (scan_raw_period_dates and RAW_PERIOD_DATE_RE.search(text))
+        or (scan_cik and CIK_RE.search(text))
+        or (scan_cik_fullmatch and CIK_RE.fullmatch(text))
+        or (scan_operator_contact and OPERATOR_CONTACT_RE.search(text))
+    )
+
+
+def blocked_authority_keys(
+    value: Mapping[str, Any],
+    *,
+    raw_value_keys: set[str] | frozenset[str] = RAW_VALUE_KEYS,
+    raw_authority_keys: set[str] | frozenset[str] = RAW_AUTHORITY_KEYS,
+) -> list[str]:
+    lower_keys = {str(key).lower() for key in value}
+    return sorted((lower_keys & set(raw_value_keys)) | (lower_keys & set(raw_authority_keys)))
 
 
 def unadmitted_keys(value: Mapping[str, Any], *, admitted: set[str]) -> list[str]:
