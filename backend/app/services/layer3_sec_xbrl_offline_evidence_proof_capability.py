@@ -31,14 +31,12 @@ from app.services.layer3_sec_xbrl_offline_evidence_loader import (
     load_sec_xbrl_offline_evidence_bundle,
 )
 from app.services.layer3_utils import stable_hash
+from app.services.layer3_sec_xbrl_public_authority_guard import report_text_reference_flags
 from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_leaks
 
 
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_offline_evidence_proof_capability.v1"
 
-ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
-SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
-LOCAL_PATH_RE = re.compile(r"[A-Za-z]:[\\/]|\\\\|file://|/(?:Users|home|tmp|workspace|var|mnt|private)(?:/|$)")
 RAW_VALUE_KEY_RE = re.compile(r'"(?:_value|value|amount|effective_value|raw_value|lexical_value)"\s*:')
 _reject_report_leaks = partial(
     reject_report_leaks,
@@ -325,6 +323,7 @@ def _run_isolated_orchestrator(
         projection_facts = db.query(L3SecXbrlProjectionFact).all()
         packet_rows = db.query(L3SecXbrlStatementPacketRow).all()
         response_text = json.dumps(response, sort_keys=True)
+        response_reference_flags = report_text_reference_flags(response_text)
         return {
             "response": response,
             "persisted_counts": {
@@ -335,9 +334,9 @@ def _run_isolated_orchestrator(
                 "operator_review_workflow_count": db.query(L3SecXbrlOperatorReviewWorkflow).count(),
             },
             "redaction_scan": {
-                "public_response_raw_accession_found": bool(ACCESSION_RE.search(response_text)),
-                "public_response_sec_url_found": bool(SEC_URL_RE.search(response_text)),
-                "public_response_local_path_found": bool(LOCAL_PATH_RE.search(response_text)),
+                "public_response_raw_accession_found": response_reference_flags["raw_accession_found"],
+                "public_response_sec_url_found": response_reference_flags["sec_url_found"],
+                "public_response_local_path_found": response_reference_flags["local_path_found"],
                 "public_response_raw_value_key_found": bool(RAW_VALUE_KEY_RE.search(response_text)),
                 "projection_facts_all_value_redacted": all(row.value_redacted is True for row in projection_facts),
                 "statement_rows_all_value_redacted": all(row.value_redacted is True for row in packet_rows),

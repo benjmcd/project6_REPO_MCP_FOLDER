@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 from collections.abc import Mapping
 from functools import partial
 from pathlib import Path
@@ -18,10 +17,6 @@ from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_leaks
 
 
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_offline_companyfacts_oracle_packet.v1"
-
-ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
-SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
-LOCAL_PATH_RE = re.compile(r"[A-Za-z]:[\\/]|\\\\|file://|/(?:Users|home|tmp|workspace|var|mnt|private)(?:/|$)")
 
 
 def inspect_sec_xbrl_offline_companyfacts_oracle_packet(
