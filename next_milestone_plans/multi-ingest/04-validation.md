@@ -479,8 +479,8 @@ Status: implemented for the existing Layer 3 APS-derived `DatasetVersion` candid
 
 Required assertions:
 
-- The candidate endpoint returns admitted/materialized source-family metadata for CSV, XLSX, JSON recordset, and bounded SEC/EDGAR text table parser families.
-- The same endpoint returns deferred/refused guardrails for XML/HTML/inline-XBRL, broad workbook semantics, archive-member typed orchestration, and mixed-source package semantics.
+- The candidate endpoint returns admitted/materialized source-family metadata for CSV, XLSX, JSON recordset, bounded SEC/EDGAR text table, and current-main SEC-specific HTML/iXBRL parser families.
+- The same endpoint returns deferred/refused guardrails for generic XML/HTML/inline-XBRL, broad workbook semantics, archive-member typed orchestration, and mixed-source package semantics.
 - Candidate rows carry source-family label, admission state, and scope without changing the `dataset_version` source shape.
 - Material preview preserves source-family metadata inside source provenance/load summary for selected APS-derived `DatasetVersion` rows.
 - Static Layer 3 UI copy and rendering distinguish selectable server-backed dataset versions from non-selectable deferred/refused families.
