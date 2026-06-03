@@ -6,6 +6,7 @@ from app.services.layer3_sec_xbrl_public_authority_guard import (
     blocked_authority_keys_violation,
     raw_or_local_authority_violation,
     raw_accession_reference_found,
+    reject_public_output_policy,
     reject_raw_or_local_authority_with_blocked_keys,
     report_text_reference_flags,
     unadmitted_keys,
@@ -171,6 +172,79 @@ def test_reject_raw_or_local_authority_with_blocked_keys_preserves_value_reveal_
         assert exc.http_status == 400
     else:
         raise AssertionError("expected raw-reference guard error")
+
+
+def test_reject_public_output_policy_preserves_e2e_policy_variants() -> None:
+    class GuardError(ValueError):
+        def __init__(self, code: str, message: str, *, details: dict[str, object] | None = None) -> None:
+            self.code = code
+            self.message = message
+            self.details = dict(details or {})
+
+    reject_public_output_policy(
+        {"public_text": "period 2024-12-31 is allowed in offline mode"},
+        error_type=GuardError,
+        raw_output_code="offline_raw_output",
+        raw_output_message="offline raw output",
+        raw_reference_code="offline_raw_reference",
+        raw_reference_message="offline raw reference",
+        raw_output_keys={"issuer_name"},
+        scan_raw_period_dates=False,
+    )
+
+    try:
+        reject_public_output_policy(
+            {"public_text": "period 2024-12-31 is blocked in integration mode"},
+            error_type=GuardError,
+            raw_output_code="integration_raw_output",
+            raw_output_message="integration raw output",
+            raw_reference_code="integration_raw_reference",
+            raw_reference_message="integration raw reference",
+            raw_output_keys={"issuer_name"},
+        )
+    except GuardError as exc:
+        assert exc.code == "integration_raw_reference"
+        assert exc.message == "integration raw reference"
+        assert exc.details == {"field": "value"}
+    else:
+        raise AssertionError("expected integration raw-reference guard error")
+
+    try:
+        reject_public_output_policy(
+            {"identity_rollup": {"relative_magnitude": None}},
+            error_type=GuardError,
+            raw_output_code="integration_raw_output",
+            raw_output_message="integration raw output",
+            raw_reference_code="integration_raw_reference",
+            raw_reference_message="integration raw reference",
+            raw_output_keys={"issuer_name"},
+            residual_magnitude_keys={"relative_magnitude"},
+            residual_magnitude_message="integration residual magnitude",
+        )
+    except GuardError as exc:
+        assert exc.code == "integration_raw_output"
+        assert exc.message == "integration residual magnitude"
+        assert exc.details == {"field": "relative_magnitude"}
+    else:
+        raise AssertionError("expected residual-magnitude guard error")
+
+    try:
+        reject_public_output_policy(
+            {"issuer_name": "Example Corp"},
+            error_type=GuardError,
+            raw_output_code="offline_raw_output",
+            raw_output_message="offline raw output",
+            raw_reference_code="offline_raw_reference",
+            raw_reference_message="offline raw reference",
+            raw_output_keys={"issuer_name"},
+            scan_raw_period_dates=False,
+        )
+    except GuardError as exc:
+        assert exc.code == "offline_raw_output"
+        assert exc.message == "offline raw output"
+        assert exc.details == {"field": "issuer_name"}
+    else:
+        raise AssertionError("expected raw-output guard error")
 
 
 def test_unadmitted_keys_returns_sorted_public_key_inventory() -> None:

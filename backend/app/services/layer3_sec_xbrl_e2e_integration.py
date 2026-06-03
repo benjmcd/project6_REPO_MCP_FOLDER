@@ -10,7 +10,10 @@ from app.services.layer3_sec_xbrl_canonical_statement_organization import (
 from app.services.layer3_sec_xbrl_statement_assembly import (
     assemble_reviewable_statement_packet,
 )
-from app.services.layer3_sec_xbrl_public_authority_guard import public_text_reference_detected
+from app.services.layer3_sec_xbrl_public_authority_guard import (
+    reject_public_output_policy,
+    reject_public_text_references,
+)
 from app.services.layer3_utils import json_clone
 
 
@@ -333,49 +336,28 @@ def _reject_input_raw_reference_fields(item: Mapping[str, Any]) -> None:
 
 
 def _reject_output_raw_or_local_authority(value: Any) -> None:
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            key_text = str(key)
-            key_match = key_text.strip().lower()
-            if key_match in RESIDUAL_MAGNITUDE_KEYS:
-                raise SecXbrlE2EIntegrationError(
-                    "sec_xbrl_e2e_integration_raw_output_not_admitted",
-                    "SEC XBRL end-to-end integration output cannot carry residual magnitude fields.",
-                    details={"field": key_text},
-                )
-            if key_match in PROJECTION_PRIVATE_KEYS or key_match in RAW_REFERENCE_KEYS:
-                if item is not None:
-                    raise SecXbrlE2EIntegrationError(
-                        "sec_xbrl_e2e_integration_raw_output_not_admitted",
-                        "SEC XBRL end-to-end integration output cannot carry raw values or raw authority.",
-                        details={"field": key_text},
-                    )
-            _reject_output_raw_or_local_authority(item)
-        return
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-        for item in value:
-            _reject_output_raw_or_local_authority(item)
-        return
-    _reject_public_text_patterns(value, field="value")
+    reject_public_output_policy(
+        value,
+        error_type=SecXbrlE2EIntegrationError,
+        raw_output_code="sec_xbrl_e2e_integration_raw_output_not_admitted",
+        raw_output_message="SEC XBRL end-to-end integration output cannot carry raw values or raw authority.",
+        raw_reference_code="sec_xbrl_e2e_integration_raw_reference_not_admitted",
+        raw_reference_message="SEC XBRL end-to-end integration does not admit raw accession, SEC URL, period date, or local path strings.",
+        raw_output_keys=PROJECTION_PRIVATE_KEYS | RAW_REFERENCE_KEYS,
+        residual_magnitude_keys=RESIDUAL_MAGNITUDE_KEYS,
+        residual_magnitude_code="sec_xbrl_e2e_integration_raw_output_not_admitted",
+        residual_magnitude_message="SEC XBRL end-to-end integration output cannot carry residual magnitude fields.",
+    )
 
 
 def _reject_public_text_patterns(value: Any, *, field: str) -> None:
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            _reject_public_text_patterns(item, field=str(key))
-        return
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-        for item in value:
-            _reject_public_text_patterns(item, field=field)
-        return
-    if not isinstance(value, str):
-        return
-    if public_text_reference_detected(value):
-        raise SecXbrlE2EIntegrationError(
-            "sec_xbrl_e2e_integration_raw_reference_not_admitted",
-            "SEC XBRL end-to-end integration does not admit raw accession, SEC URL, period date, or local path strings.",
-            details={"field": field},
-        )
+    reject_public_text_references(
+        value,
+        error_type=SecXbrlE2EIntegrationError,
+        raw_reference_code="sec_xbrl_e2e_integration_raw_reference_not_admitted",
+        raw_reference_message="SEC XBRL end-to-end integration does not admit raw accession, SEC URL, period date, or local path strings.",
+        field=field,
+    )
 
 
 def _required_public_text(value: Any, field: str) -> str:
