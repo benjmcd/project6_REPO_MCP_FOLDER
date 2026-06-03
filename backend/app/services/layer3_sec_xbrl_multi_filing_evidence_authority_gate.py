@@ -6,6 +6,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from app.services.layer3_sec_xbrl_public_authority_guard import public_text_reference_detected
+from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_public_text_references
 from app.services.layer3_utils import stable_hash
 
 
@@ -323,8 +324,13 @@ def _raw_or_local_reference_found(value: Any) -> bool:
 
 def _reject_response_leaks(value: Any) -> None:
     text = json.dumps(value, sort_keys=True)
-    if public_text_reference_detected(text, scan_raw_period_dates=False):
-        raise ValueError("SEC XBRL multi-filing evidence authority gate leaked raw authority references.")
+    reject_report_public_text_references(
+        text,
+        exception_factory=lambda: ValueError(
+            "SEC XBRL multi-filing evidence authority gate leaked raw authority references."
+        ),
+        scan_raw_period_dates=False,
+    )
 
 
 def _positive_int(value: Any, field: str) -> int:
