@@ -99,7 +99,10 @@ def raw_or_local_authority_violation(
             if nested is not None:
                 return nested
         return None
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+    if (
+        isinstance(value, Sequence)
+        and not isinstance(value, (str, bytes))
+    ) or isinstance(value, set):
         for item in value:
             nested = raw_or_local_authority_violation(
                 item,
@@ -171,6 +174,40 @@ def blocked_authority_keys(
 ) -> list[str]:
     lower_keys = {str(key).lower() for key in value}
     return sorted((lower_keys & set(raw_value_keys)) | (lower_keys & set(raw_authority_keys)))
+
+
+def blocked_authority_keys_violation(
+    value: Any,
+    *,
+    raw_value_keys: set[str] | frozenset[str] = RAW_VALUE_KEYS,
+    raw_authority_keys: set[str] | frozenset[str] = RAW_AUTHORITY_KEYS,
+) -> list[str] | None:
+    if isinstance(value, Mapping):
+        blocked_keys = blocked_authority_keys(
+            value,
+            raw_value_keys=raw_value_keys,
+            raw_authority_keys=raw_authority_keys,
+        )
+        if blocked_keys:
+            return blocked_keys
+        children = value.values()
+    elif (
+        isinstance(value, Sequence)
+        and not isinstance(value, (str, bytes))
+    ) or isinstance(value, set):
+        children = value
+    else:
+        return None
+
+    for item in children:
+        blocked_keys = blocked_authority_keys_violation(
+            item,
+            raw_value_keys=raw_value_keys,
+            raw_authority_keys=raw_authority_keys,
+        )
+        if blocked_keys:
+            return blocked_keys
+    return None
 
 
 def unadmitted_keys(value: Mapping[str, Any], *, admitted: set[str]) -> list[str]:

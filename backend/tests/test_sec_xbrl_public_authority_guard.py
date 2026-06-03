@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from app.services.layer3_sec_xbrl_public_authority_guard import (
     blocked_authority_keys,
+    blocked_authority_keys_violation,
     raw_or_local_authority_violation,
     unadmitted_keys,
 )
@@ -73,6 +74,22 @@ def test_blocked_authority_keys_returns_current_mapping_inventory_without_value_
         raw_value_keys=frozenset(),
         raw_authority_keys={"sidecar_receipt_id", "raw_path"},
     ) == ["raw_path", "sidecar_receipt_id"]
+
+
+def test_blocked_authority_keys_violation_recurses_without_value_filter() -> None:
+    assert blocked_authority_keys_violation(
+        {"outer": [{"sidecar_receipt_id": None, "raw_path": "", "allowed": True}]},
+        raw_value_keys=frozenset(),
+        raw_authority_keys={"sidecar_receipt_id", "raw_path"},
+    ) == ["raw_path", "sidecar_receipt_id"]
+    assert (
+        raw_or_local_authority_violation(
+            {"values": {"2024-12-31"}},
+            raw_value_keys=frozenset(),
+            raw_authority_keys=frozenset(),
+        ).kind
+        == "raw_reference"
+    )
 
 
 def test_unadmitted_keys_returns_sorted_public_key_inventory() -> None:
