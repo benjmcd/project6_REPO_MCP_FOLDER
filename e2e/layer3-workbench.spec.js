@@ -4534,6 +4534,7 @@ test('Layer 3 workbench surfaces typed and deferred APS source-family guardrails
     'xlsx_workbook',
     'json_recordset',
     'sec_edgar_filing',
+    'sec_edgar_html_inline_xbrl_source_family_parser_v1',
   ]));
   expect(
     candidates.source_family_summary.not_admitted_or_deferred_families.map((family) => family.source_family),
@@ -4550,6 +4551,7 @@ test('Layer 3 workbench surfaces typed and deferred APS source-family guardrails
   await expect(summary).toContainText('XLSX workbook table');
   await expect(summary).toContainText('JSON recordset');
   await expect(summary).toContainText('SEC/EDGAR text table');
+  await expect(summary).toContainText('SEC/EDGAR HTML inline XBRL');
   await expect(summary).toContainText('Deferred / refused guardrails');
   await expect(summary).toContainText('XML/HTML/inline XBRL');
   await expect(summary).toContainText(
