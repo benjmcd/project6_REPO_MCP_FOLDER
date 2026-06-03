@@ -5,6 +5,7 @@ import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from app.services.layer3_sec_xbrl_public_authority_guard import public_text_reference_detected
 from app.services.layer3_utils import stable_hash
 
 
@@ -65,12 +66,6 @@ RAW_AUTHORITY_KEYS = {
     "ticker",
     "value_store",
 }
-ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
-SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
-WINDOWS_ABS_PATH_RE = re.compile(r"\b[A-Za-z]:[\\/]")
-LOCAL_REF_RE = re.compile(
-    r"(?i)(?:file://|\\\\[^\\/]+[\\/]|(?:^|[\s\"'=])/(?:workspace|tmp|home|users|var|mnt|opt|private)(?:/|$))"
-)
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -322,18 +317,13 @@ def _raw_or_local_reference_found(value: Any) -> bool:
     if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
         return any(_raw_or_local_reference_found(item) for item in value)
     if isinstance(value, str):
-        return bool(
-            ACCESSION_RE.search(value)
-            or SEC_URL_RE.search(value)
-            or WINDOWS_ABS_PATH_RE.search(value)
-            or LOCAL_REF_RE.search(value)
-        )
+        return public_text_reference_detected(value, scan_raw_period_dates=False)
     return False
 
 
 def _reject_response_leaks(value: Any) -> None:
     text = json.dumps(value, sort_keys=True)
-    if ACCESSION_RE.search(text) or SEC_URL_RE.search(text) or WINDOWS_ABS_PATH_RE.search(text) or LOCAL_REF_RE.search(text):
+    if public_text_reference_detected(text, scan_raw_period_dates=False):
         raise ValueError("SEC XBRL multi-filing evidence authority gate leaked raw authority references.")
 
 
