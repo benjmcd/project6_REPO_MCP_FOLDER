@@ -160,6 +160,31 @@ def test_framework_report_envelope_preserves_shared_validate_only_shape() -> Non
     }
 
 
+def test_framework_report_header_preserves_minimal_report_shape() -> None:
+    framework = _module_from_path(
+        "sec_xbrl_diagnostic_framework_header_unit",
+        ASSESSMENT / "sec_xbrl_diagnostic_framework.py",
+    )
+
+    report = framework.report_header(
+        schema_id="diagnostics.example_header.v1",
+        target="example_header_target_v1",
+        next_slice="example_header_next_slice_v1",
+        decision="example_header_ready",
+        headline="Header-only diagnostic.",
+        non_goals_preserved={"raw_values_committed": False},
+    )
+
+    assert report == {
+        "schema_id": "diagnostics.example_header.v1",
+        "target": "example_header_target_v1",
+        "next_slice": "example_header_next_slice_v1",
+        "decision": "example_header_ready",
+        "headline": "Header-only diagnostic.",
+        "non_goals_preserved": {"raw_values_committed": False},
+    }
+
+
 def test_framework_nonlocal_redaction_hit_classes_keep_custom_ref_policy() -> None:
     framework = _module_from_path(
         "sec_xbrl_diagnostic_framework_redaction_unit",
