@@ -3950,6 +3950,40 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     font-size: 0.84rem;
 }
 
+.unsupported-material-card p {
+    margin: 8px 0 0;
+    color: var(--muted-text);
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+
+.unsupported-material-trace {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 5px;
+    margin: 8px 0 0;
+}
+
+.unsupported-material-trace div {
+    min-width: 0;
+}
+
+.unsupported-material-trace dt,
+.unsupported-material-trace dd {
+    margin: 0;
+    font-size: 0.72rem;
+    line-height: 1.32;
+}
+
+.unsupported-material-trace dt {
+    color: var(--muted-text);
+}
+
+.unsupported-material-trace dd {
+    color: var(--text-color);
+    overflow-wrap: anywhere;
+}
+
 .context-panel {
     border-right: none;
     border-left: 1px solid var(--border-color);

@@ -21,6 +21,34 @@ from app.services.layer3_utils import json_clone
 SUBLAYER_VISUALIZATION_STATE_SCHEMA_ID = "layer3.sublayer_visualization_state.v1"
 
 
+def unsupported_snapshot_trace(snapshot: L3MaterialSnapshot) -> dict[str, Any]:
+    return {
+        "schema_id": "layer3.gate_c_unsupported_material_trace.v1",
+        "trace_scope": "gate_c_typing_projection",
+        "trace_readiness": "unsupported_material_snapshot_traceable",
+        "material_snapshot_id": snapshot.material_snapshot_id,
+        "owner_service_source_shape": snapshot.source_shape,
+        "source_plane": snapshot.source_plane,
+        "payload_hash": snapshot.payload_hash,
+        "co_retrieval_group_id": snapshot.co_retrieval_group_id,
+        "source_identity": json_clone(snapshot.source_identity_json or {}),
+        "source_provenance": json_clone(snapshot.source_provenance_json or {}),
+        "load_summary": json_clone(snapshot.load_summary_json or {}),
+        "admission_state": "not_admitted_to_gate_c_typing",
+        "blocked_reason": "unsupported_typing_shape",
+        "selectable": False,
+        "authority_refs": {
+            "authority_source": "l3_material_snapshot",
+            "typing_rule_source": "SUPPORTED_TYPING_RULES",
+            "selection_authority": "none",
+        },
+        "ui_summary": (
+            "Gate C cannot type this material snapshot because its owner-service source shape "
+            "has no admitted typing rule."
+        ),
+    }
+
+
 def snapshot_projection(
     snapshot: L3MaterialSnapshot,
 ) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
@@ -30,6 +58,7 @@ def snapshot_projection(
             "material_snapshot_id": snapshot.material_snapshot_id,
             "owner_service_source_shape": snapshot.source_shape,
             "reason": "unsupported_typing_shape",
+            "trace_detail": unsupported_snapshot_trace(snapshot),
         }
     return {
         "typing_record_id": None,

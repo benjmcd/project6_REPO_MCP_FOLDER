@@ -71,10 +71,21 @@ def test_snapshot_projection_reports_unsupported_shape_without_side_effects() ->
     projection, unsupported = sublayer_state.snapshot_projection(snapshot)
 
     assert projection is None
-    assert unsupported == {
-        "material_snapshot_id": "snapshot-unsupported",
-        "owner_service_source_shape": "unsupported-shape",
-        "reason": "unsupported_typing_shape",
+    assert unsupported is not None
+    assert unsupported["material_snapshot_id"] == "snapshot-unsupported"
+    assert unsupported["owner_service_source_shape"] == "unsupported-shape"
+    assert unsupported["reason"] == "unsupported_typing_shape"
+    trace = unsupported["trace_detail"]
+    assert trace["schema_id"] == "layer3.gate_c_unsupported_material_trace.v1"
+    assert trace["trace_scope"] == "gate_c_typing_projection"
+    assert trace["trace_readiness"] == "unsupported_material_snapshot_traceable"
+    assert trace["admission_state"] == "not_admitted_to_gate_c_typing"
+    assert trace["blocked_reason"] == "unsupported_typing_shape"
+    assert trace["selectable"] is False
+    assert trace["authority_refs"] == {
+        "authority_source": "l3_material_snapshot",
+        "typing_rule_source": "SUPPORTED_TYPING_RULES",
+        "selection_authority": "none",
     }
     assert layer3_workbench._snapshot_projection(snapshot) == (projection, unsupported)
 
