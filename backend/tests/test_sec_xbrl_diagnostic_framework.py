@@ -132,6 +132,34 @@ def test_framework_matches_pilot_criterion_and_blocking_shapes() -> None:
     assert framework.decision(criteria, ready="ready_decision", blocked="blocked_decision") == "blocked_decision"
 
 
+def test_framework_report_envelope_preserves_shared_validate_only_shape() -> None:
+    framework = _module_from_path(
+        "sec_xbrl_diagnostic_framework_envelope_unit",
+        ASSESSMENT / "sec_xbrl_diagnostic_framework.py",
+    )
+
+    report = framework.report_envelope(
+        schema_id="diagnostics.example.v1",
+        target="example_target_v1",
+        next_slice="example_next_slice_v1",
+        decision="example_ready",
+        source_mode="redacted_reference_summary",
+        live_network_used=False,
+        non_goals_preserved={"production_readiness_claimed": False},
+    )
+
+    assert report == {
+        "schema_id": "diagnostics.example.v1",
+        "target": "example_target_v1",
+        "next_slice": "example_next_slice_v1",
+        "decision": "example_ready",
+        "source_mode": "redacted_reference_summary",
+        "validate_only": True,
+        "live_network_used": False,
+        "non_goals_preserved": {"production_readiness_claimed": False},
+    }
+
+
 def test_framework_nonlocal_redaction_hit_classes_keep_custom_ref_policy() -> None:
     framework = _module_from_path(
         "sec_xbrl_diagnostic_framework_redaction_unit",
