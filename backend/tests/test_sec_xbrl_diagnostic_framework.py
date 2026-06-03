@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import importlib.util
 import inspect
 import json
@@ -10,20 +11,39 @@ from types import ModuleType
 ROOT = Path(__file__).resolve().parents[2]
 ASSESSMENT = ROOT / "diagnostics" / "assessment"
 
+RUNTIME_BOUND_FRAMEWORK_REPORTS = {
+    "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json": (
+        "historical offline product report import stores non-portable report-path and storage markers"
+    ),
+    "diagnostics/assessment/sec-xbrl-value-reveal-authority-provisioning-preflight-report.json": (
+        "historical operator-exercise summary is bound to committed runtime inventory shape"
+    ),
+    "diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-run-report.json": (
+        "historical configured-storage marker is derived from a local absolute runtime path"
+    ),
+}
+
 
 def test_framework_migrated_diagnostic_reports_remain_byte_stable(tmp_path: Path) -> None:
     checked = []
+    runtime_bound = []
     for module_name, diagnostic_path, report_path in _framework_migrated_reports():
+        report_relative_path = report_path.relative_to(ROOT).as_posix()
+        if report_relative_path in RUNTIME_BOUND_FRAMEWORK_REPORTS:
+            runtime_bound.append(report_relative_path)
+            continue
+
         diagnostic = _module_from_path(module_name, diagnostic_path)
         generated = _build_report(diagnostic)
         regenerated_path = tmp_path / report_path.name
         regenerated_path.write_text(json.dumps(generated, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
-        assert regenerated_path.read_bytes() == report_path.read_bytes(), report_path.relative_to(ROOT).as_posix()
-        checked.append(report_path.relative_to(ROOT).as_posix())
+        assert regenerated_path.read_bytes() == report_path.read_bytes(), report_relative_path
+        checked.append(report_relative_path)
 
     assert len(checked) >= 22
     assert checked == sorted(checked)
+    assert runtime_bound == sorted(RUNTIME_BOUND_FRAMEWORK_REPORTS)
     assert "diagnostics/assessment/sec-xbrl-default-on-admission-restatement-report.json" in checked
     assert "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json" in checked
     assert "diagnostics/assessment/sec-xbrl-auth-owner-binding-strategy-report.json" in checked
@@ -37,6 +57,38 @@ def test_framework_migrated_diagnostic_reports_remain_byte_stable(tmp_path: Path
     assert "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json" in checked
     assert "diagnostics/assessment/sec-xbrl-stratified-real-filing-validation-matrix-preflight-report.json" in checked
     assert "diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-report.json" in checked
+
+
+def test_framework_runtime_bound_reports_are_explicitly_declared() -> None:
+    migrated_reports = {
+        report_path.relative_to(ROOT).as_posix()
+        for _, _, report_path in _framework_migrated_reports()
+    }
+
+    assert set(RUNTIME_BOUND_FRAMEWORK_REPORTS).issubset(migrated_reports)
+    for report_relative_path, reason in RUNTIME_BOUND_FRAMEWORK_REPORTS.items():
+        assert reason
+        report = json.loads((ROOT / report_relative_path).read_text(encoding="utf-8"))
+        non_goals = report.get("non_goals_preserved", {})
+        redaction = report.get("redaction", {})
+        assert report.get("schema_id")
+        assert report.get("target")
+        assert non_goals.get("raw_values_committed", redaction.get("raw_values_committed")) is False
+        assert (
+            non_goals.get("raw_identity_committed", redaction.get("raw_identity_committed")) is False
+            or redaction.get("identity_hash_only") is True
+        )
+
+
+def test_framework_rollout_has_no_local_criterion_or_blocking_helpers() -> None:
+    local_helpers = []
+    for diagnostic_path in sorted(ASSESSMENT.glob("sec-xbrl*.py")):
+        tree = ast.parse(diagnostic_path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name in {"_criterion", "_blocking_reasons"}:
+                local_helpers.append(f"{diagnostic_path.relative_to(ROOT).as_posix()}::{node.name}")
+
+    assert local_helpers == []
 
 
 def test_framework_matches_pilot_criterion_and_blocking_shapes() -> None:

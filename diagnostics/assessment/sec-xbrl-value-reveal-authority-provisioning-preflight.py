@@ -10,6 +10,12 @@ from typing import Any, Mapping
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
+
+from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-value-reveal-authority-provisioning-preflight-report.json")
 RUN_REPORT = Path("diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-run-report.json")
 
@@ -180,15 +186,6 @@ def _settings_live_network(source_root: Path) -> tuple[bool, bool]:
         bool(getattr(settings, "layer3_sec_edgar_live_network_enabled", False)),
         bool(str(getattr(settings, "layer3_sec_edgar_user_agent", "") or "").strip()),
     )
-
-
-def _criterion(criterion: str, passed: bool, evidence: Mapping[str, Any], blocked_reason: str) -> dict[str, Any]:
-    return {
-        "criterion": criterion,
-        "state": "passed" if passed else "blocked",
-        "blocked_reason": None if passed else blocked_reason,
-        "evidence": dict(evidence),
-    }
 
 
 def _read_json(path: Path) -> dict[str, Any]:
