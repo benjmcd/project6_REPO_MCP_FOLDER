@@ -16,7 +16,7 @@ from app.models.models import (
 from app.services.layer3_sec_xbrl_public_authority_guard import (
     RAW_AUTHORITY_KEYS,
     RAW_VALUE_KEYS,
-    raw_or_local_authority_violation,
+    reject_raw_or_local_authority as reject_public_authority,
     unadmitted_keys,
 )
 from app.services.layer3_utils import json_clone, stable_hash
@@ -629,20 +629,13 @@ def _reject_unadmitted_keys(
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:
-    violation = raw_or_local_authority_violation(
+    reject_public_authority(
         value,
+        error_type=SecXbrlProjectionPersistenceError,
+        raw_authority_code="sec_xbrl_projection_persistence_raw_authority_not_admitted",
+        raw_authority_message="SEC XBRL projection persistence cannot store raw values or raw authority identifiers.",
+        raw_reference_code="sec_xbrl_projection_persistence_raw_reference_not_admitted",
+        raw_reference_message="SEC XBRL projection persistence cannot store raw accession, SEC URL, period date, or local path strings.",
         raw_value_keys=RAW_VALUE_KEYS,
         raw_authority_keys=RAW_AUTHORITY_KEYS,
-    )
-    if violation is None:
-        return
-    if violation.kind == "raw_authority":
-        raise SecXbrlProjectionPersistenceError(
-            "sec_xbrl_projection_persistence_raw_authority_not_admitted",
-            "SEC XBRL projection persistence cannot store raw values or raw authority identifiers.",
-            details={"field": str(violation.field or "")},
-        )
-    raise SecXbrlProjectionPersistenceError(
-        "sec_xbrl_projection_persistence_raw_reference_not_admitted",
-        "SEC XBRL projection persistence cannot store raw accession, SEC URL, period date, or local path strings.",
     )

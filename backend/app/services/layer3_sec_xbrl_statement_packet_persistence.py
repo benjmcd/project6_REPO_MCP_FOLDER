@@ -21,7 +21,7 @@ from app.models.models import (
 from app.services.layer3_sec_xbrl_public_authority_guard import (
     RAW_AUTHORITY_KEYS,
     RAW_VALUE_KEYS,
-    raw_or_local_authority_violation,
+    reject_raw_or_local_authority as reject_public_authority,
     unadmitted_keys,
 )
 from app.services.layer3_sec_xbrl_statement_assembly import STATEMENT_ASSEMBLY_SCHEMA_ID
@@ -734,27 +734,16 @@ def _reject_unadmitted_keys(
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:
-    violation = raw_or_local_authority_violation(
+    reject_public_authority(
         value,
+        error_type=SecXbrlStatementPacketPersistenceError,
+        raw_authority_code="sec_xbrl_statement_packet_persistence_raw_authority_not_admitted",
+        raw_authority_message="SEC XBRL statement packet persistence cannot store raw values or raw authority identifiers.",
+        raw_reference_code="sec_xbrl_statement_packet_persistence_raw_reference_not_admitted",
+        raw_reference_message="SEC XBRL statement packet persistence cannot store raw accession, SEC URL, period date, or local path strings.",
+        residual_magnitude_code="sec_xbrl_statement_packet_persistence_residual_magnitudes_not_admitted",
+        residual_magnitude_message="SEC XBRL statement packet persistence cannot store residual magnitude fields.",
         raw_value_keys=RAW_VALUE_KEYS,
         raw_authority_keys=RAW_AUTHORITY_KEYS,
         residual_magnitude_keys=RESIDUAL_MAGNITUDE_KEYS,
-    )
-    if violation is None:
-        return
-    if violation.kind == "raw_authority":
-        raise SecXbrlStatementPacketPersistenceError(
-            "sec_xbrl_statement_packet_persistence_raw_authority_not_admitted",
-            "SEC XBRL statement packet persistence cannot store raw values or raw authority identifiers.",
-            details={"field": str(violation.field or "")},
-        )
-    if violation.kind == "residual_magnitude":
-        raise SecXbrlStatementPacketPersistenceError(
-            "sec_xbrl_statement_packet_persistence_residual_magnitudes_not_admitted",
-            "SEC XBRL statement packet persistence cannot store residual magnitude fields.",
-            details={"field": str(violation.field or "")},
-        )
-    raise SecXbrlStatementPacketPersistenceError(
-        "sec_xbrl_statement_packet_persistence_raw_reference_not_admitted",
-        "SEC XBRL statement packet persistence cannot store raw accession, SEC URL, period date, or local path strings.",
     )

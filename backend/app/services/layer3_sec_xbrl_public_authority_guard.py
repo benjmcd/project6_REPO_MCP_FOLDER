@@ -210,5 +210,58 @@ def blocked_authority_keys_violation(
     return None
 
 
+def reject_raw_or_local_authority(
+    value: Any,
+    *,
+    error_type: type[Exception],
+    raw_authority_code: str,
+    raw_authority_message: str,
+    raw_reference_code: str,
+    raw_reference_message: str,
+    residual_magnitude_code: str | None = None,
+    residual_magnitude_message: str | None = None,
+    raw_value_keys: set[str] | frozenset[str] = RAW_VALUE_KEYS,
+    raw_authority_keys: set[str] | frozenset[str] = RAW_AUTHORITY_KEYS,
+    residual_magnitude_keys: set[str] | frozenset[str] = frozenset(),
+    scan_raw_period_dates: bool = True,
+    scan_cik: bool = False,
+    scan_cik_fullmatch: bool = False,
+    scan_operator_contact: bool = False,
+    scan_bare_sec_domain: bool = False,
+    scan_standard_local_refs: bool = True,
+    scan_windows_abs_path_anywhere: bool = False,
+    scan_local_ref_segment: bool = False,
+) -> None:
+    violation = raw_or_local_authority_violation(
+        value,
+        raw_value_keys=raw_value_keys,
+        raw_authority_keys=raw_authority_keys,
+        residual_magnitude_keys=residual_magnitude_keys,
+        scan_raw_period_dates=scan_raw_period_dates,
+        scan_cik=scan_cik,
+        scan_cik_fullmatch=scan_cik_fullmatch,
+        scan_operator_contact=scan_operator_contact,
+        scan_bare_sec_domain=scan_bare_sec_domain,
+        scan_standard_local_refs=scan_standard_local_refs,
+        scan_windows_abs_path_anywhere=scan_windows_abs_path_anywhere,
+        scan_local_ref_segment=scan_local_ref_segment,
+    )
+    if violation is None:
+        return
+    if violation.kind == "raw_authority":
+        raise error_type(
+            raw_authority_code,
+            raw_authority_message,
+            details={"field": str(violation.field or "")},
+        )
+    if violation.kind == "residual_magnitude":
+        raise error_type(
+            residual_magnitude_code or raw_authority_code,
+            residual_magnitude_message or raw_authority_message,
+            details={"field": str(violation.field or "")},
+        )
+    raise error_type(raw_reference_code, raw_reference_message)
+
+
 def unadmitted_keys(value: Mapping[str, Any], *, admitted: set[str]) -> list[str]:
     return sorted(str(key) for key in value if str(key) not in admitted)
