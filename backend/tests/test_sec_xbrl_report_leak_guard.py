@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-from app.services.layer3_sec_xbrl_report_leak_guard import report_leak_flags, raw_value_key_found, reject_report_leaks
+from app.services.layer3_sec_xbrl_report_leak_guard import (
+    raw_value_key_found,
+    reject_report_leaks,
+    report_leak_flags,
+    report_text_leak_flags,
+)
 
 
 def test_report_leak_flags_detect_raw_authority_patterns() -> None:
@@ -31,6 +36,16 @@ def test_report_leak_flags_can_include_raw_value_keys() -> None:
     assert report_leak_flags({"value": "123"}, include_raw_value_keys=True)["raw_value_key_found"] is True
     assert report_leak_flags({"amount": "123"}, include_raw_value_keys=True)["raw_value_key_found"] is True
     assert report_leak_flags({"field": "value"}, include_raw_value_keys=True)["raw_value_key_found"] is False
+
+
+def test_report_text_leak_flags_preserves_text_scan_semantics() -> None:
+    assert report_text_leak_flags("0000000000-00-000000") == {
+        "raw_accession_found": True,
+        "sec_url_found": False,
+        "local_path_found": False,
+    }
+    assert report_text_leak_flags("C:/Users/example/raw.json")["local_path_found"] is True
+    assert report_text_leak_flags('{"value": "123"}', include_raw_value_keys=True)["raw_value_key_found"] is True
 
 
 def test_report_leak_flags_can_preserve_diagnostic_raw_value_key_variants() -> None:
