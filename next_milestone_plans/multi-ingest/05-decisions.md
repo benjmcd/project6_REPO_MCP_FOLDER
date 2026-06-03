@@ -320,11 +320,11 @@ Answer: Yes. `04-validation.md` requires positive and negative fixture coverage 
 
 Question: What could still be missing?
 
-Answer: The remaining items are trace/detail surfacing beyond selected APS-derived `DatasetVersion` material, reconciliation of current-main SEC-specific HTML/iXBRL authority across planning/status surfaces, and when to connect SEC narrative-plus-table output into governed mixed-source package semantics. These are recorded as open questions rather than assumed.
+Answer: The remaining items are trace/detail surfacing beyond selected APS-derived `DatasetVersion` and APS content-document material, when to connect SEC narrative-plus-table output into governed mixed-source package semantics, and whether the legacy CSV bridge compatibility path can be deprecated after generic table bridge adoption is proven. Current-main SEC-specific HTML/iXBRL authority is now reconciled in `22-sec-ixbrl-reconcile-closeout.md`, so any further reconciliation should be triggered by newly discovered drift rather than assumed.
 
 ## Immediate Next Action
 
-Proceed with a narrow document/refused/mixed-source trace/detail UI surfacing pass only after auditing the active workbench UI state and confirming server authority for the details, or with a separately scoped mixed-source package semantics pass over admitted SEC parser/material authority if trace/detail surfacing is intentionally deferred:
+Proceed with a narrow document/refused/mixed-source trace/detail UI surfacing pass only after auditing the active workbench UI state and confirming server authority for the details, with a separately scoped mixed-source package semantics pass over admitted SEC parser/material authority if trace/detail surfacing is intentionally deferred, or with a legacy CSV bridge deprecation decision if downstream generic table bridge adoption evidence is sufficient:
 
 - Reuse the P10B candidate-panel guardrails and P10C selected-material trace detail as server authority for what is admitted/materialized versus deferred/refused.
 - Preserve backend-owned material-preview, Gate B, execution/result, and package contracts.

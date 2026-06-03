@@ -1,12 +1,12 @@
 # Adequacy Audit
 
-Status: planning-pack self-audit for scope, justification, consistency, and implementation readiness. This audit now accounts for Phase P1 through Phase P10D implementation closeouts; see `07-p1-closeout.md` through `21-p10d-closeout.md`.
+Status: planning-pack self-audit for scope, justification, consistency, and implementation readiness. This audit now accounts for Phase P1 through Phase P10D implementation closeouts and the current-main SEC HTML/iXBRL reconciliation closeout; see `07-p1-closeout.md` through `22-sec-ixbrl-reconcile-closeout.md`.
 
 ## Audit Question
 
 Are the multi-type APS ingestion planning docs adequately laid out, constrained, scoped, justified, and aligned with live source and existing planning boundaries?
 
-Answer: yes for the current bounded implementation lane. The pack is ready to govern the next implementation tranche, with explicit residual decisions preserved as open questions rather than assumptions.
+Answer: yes for the current bounded implementation lane. The pack is ready to govern the next implementation tranche, with explicit residual decisions preserved as open questions rather than assumptions. The SEC-specific HTML/iXBRL reconciliation checkpoint is now recorded as current-main authority rather than treated as an implicit exception to generic XML/HTML refusal.
 
 Residual decisions:
 
@@ -72,7 +72,7 @@ The docs are internally consistent on these boundaries:
 - `dataset_version` means typed quantitative/tabular/time-series analysis material.
 - Candidate B means PDF-only OpenDataLoader PDF processing.
 - CSV-as-text is not tabular support.
-- JSON is admitted only for bounded recordsets; arbitrary JSON and generic XML/HTML remain refused until parser families are explicitly admitted. The current SEC-specific HTML/iXBRL receipt chain is already admitted and remains separate from broad generic XML/HTML admission.
+- JSON is admitted only for bounded recordsets; arbitrary JSON and generic XML/HTML remain refused until parser families are explicitly admitted. The current SEC-specific HTML/iXBRL receipt chain is already admitted, recorded in `22-sec-ixbrl-reconcile-closeout.md`, and remains separate from broad generic XML/HTML admission.
 - XLSX must not be accepted as generic ZIP; `.xlsx` must route through `xlsx_workbook`, while `.xls`, `.xlsm`, encrypted, formula-bearing, empty, or ambiguous workbooks fail closed.
 - UI projection must not become parser/source authority.
 - Schema or migration work requires a separate freeze.
@@ -85,7 +85,7 @@ No contradiction found:
 - `03-implementation.md` converts the contract into bounded phases.
 - `04-validation.md` defines the fixture and regression matrix.
 - `05-decisions.md` records settled decisions and open questions.
-- `07-p1-closeout.md` through `21-p10d-closeout.md` record implemented branch state and validation caveats.
+- `07-p1-closeout.md` through `22-sec-ixbrl-reconcile-closeout.md` record implemented branch state, reconciliation state, and validation caveats.
 
 ## Grill-Me Self-Audit
 
@@ -278,4 +278,4 @@ Caveat:
 
 ## Final Planning Verdict
 
-The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P10D are now implemented in this branch, and current main separately admits the governed SEC-specific HTML/iXBRL receipt chain. The next correct action is a narrow document/refused/mixed-source trace/detail surfacing pass backed by server authority, further planning/status reconciliation for admitted SEC-specific HTML/iXBRL authority, or a separately scoped mixed-source package-semantics pass, while preserving all existing PDF/document, Candidate B PDF-only, generic XML/HTML refusal, and Layer 3 source-shape behavior.
+The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P10D are now implemented in this branch, and current main separately admits the governed SEC-specific HTML/iXBRL receipt chain with a recorded reconciliation checkpoint. The next correct action is a narrow document/refused/mixed-source trace/detail surfacing pass backed by server authority, a separately scoped mixed-source package-semantics pass, or a legacy CSV bridge deprecation decision after generic table bridge adoption evidence is sufficient, while preserving all existing PDF/document, Candidate B PDF-only, generic XML/HTML refusal, and Layer 3 source-shape behavior.
