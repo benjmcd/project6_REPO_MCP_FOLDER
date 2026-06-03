@@ -21,6 +21,7 @@ if str(ASSESSMENT) not in sys.path:
     sys.path.insert(0, str(ASSESSMENT))
 
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import label_contains_raw_identity as _framework_label_contains_raw_identity  # noqa: E402
 from sec_xbrl_diagnostic_framework import text_redaction_scan as _framework_text_redaction_scan  # noqa: E402
 
 BACKEND = ROOT / "backend"
@@ -3063,20 +3064,18 @@ def _external_strata(value: Any) -> tuple[str, ...]:
 
 
 def _matrix_label_contains_raw_identity(label: str) -> bool:
-    if RAW_ACCESSION_RE.search(label):
-        return True
-    if RAW_URL_RE.search(label):
-        return True
-    if RAW_CONTACT_RE.search(label):
-        return True
-    if RAW_PATH_RE.search(label):
-        return True
-    if LABEL_CIK_TOKEN_RE.search(label):
-        return True
-    for token in LABEL_TOKEN_RE.findall(label):
-        if token.upper() in ADMITTED_COMPANY_REFS:
-            return True
-    return False
+    return _framework_label_contains_raw_identity(
+        label,
+        regexes=(
+            RAW_ACCESSION_RE,
+            RAW_URL_RE,
+            RAW_CONTACT_RE,
+            RAW_PATH_RE,
+            LABEL_CIK_TOKEN_RE,
+        ),
+        token_pattern=LABEL_TOKEN_RE,
+        admitted_tokens=ADMITTED_COMPANY_REFS,
+    )
 
 
 def _matrix_chunks_from_readiness(

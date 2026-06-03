@@ -210,6 +210,30 @@ def test_framework_raw_identity_hits_for_row_preserves_nested_paths_and_kinds() 
     ]
 
 
+def test_framework_label_contains_raw_identity_preserves_token_allowlist() -> None:
+    framework = _module_from_path(
+        "sec_xbrl_diagnostic_framework_label_identity_unit",
+        ASSESSMENT / "sec_xbrl_diagnostic_framework.py",
+    )
+
+    assert framework.label_contains_raw_identity(
+        "matrix 0000000000-00-000000",
+        regexes=(re.compile(r"\b\d{10}-\d{2}-\d{6}\b"),),
+    ) is True
+    assert framework.label_contains_raw_identity(
+        "matrix issuer ACME",
+        regexes=(),
+        token_pattern=re.compile(r"[A-Za-z][A-Za-z0-9]*"),
+        admitted_tokens={"ACME"},
+    ) is True
+    assert framework.label_contains_raw_identity(
+        "matrix issuer redacted",
+        regexes=(),
+        token_pattern=re.compile(r"[A-Za-z][A-Za-z0-9]*"),
+        admitted_tokens={"ACME"},
+    ) is False
+
+
 def _module_from_path(module_name: str, path: Path) -> ModuleType:
     spec = importlib.util.spec_from_file_location(module_name, path)
     module = importlib.util.module_from_spec(spec)
