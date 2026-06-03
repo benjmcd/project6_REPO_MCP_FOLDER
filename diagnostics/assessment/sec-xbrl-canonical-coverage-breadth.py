@@ -27,6 +27,7 @@ from app.services.layer3_sec_xbrl_report_guards import rows_have_unique_required
 
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import report_envelope as _report_envelope  # noqa: E402
 from sec_xbrl_runtime_posture import (  # noqa: E402
     committed_runtime_posture,
     runtime_posture_criterion_evidence,
@@ -83,20 +84,21 @@ def _reference_summary_report(
     total_direct = sum(int(item["direct_resolved_count"]) for item in sectors)
     total_derived = sum(int(item["derived_count"]) for item in sectors)
     total_absent = sum(int(item["legitimately_absent_count"]) for item in sectors)
-    report: dict[str, Any] = {
-        "schema_id": COVERAGE_BREADTH_REPORT_SCHEMA_ID,
-        "target": TARGET,
-        "decision": "canonical_coverage_breadth_validate_only_ready",
-        "source_mode": "redacted_reference_sector_summary_plus_committed_registry",
-        "validate_only": True,
-        "live_network_used": False,
-        "arelle_invoked": False,
-        "value_reveal_performed": False,
-        "runtime_defaults_changed": False,
-        "coverage_framing": "headline_canonical_coverage_by_sector_class_not_filing_wide",
-        "canonical_concept_defined_count": len(concept_inventory),
-        "sector_class_count": len(sectors),
-        "summary": {
+    report: dict[str, Any] = _report_envelope(
+        schema_id=COVERAGE_BREADTH_REPORT_SCHEMA_ID,
+        target=TARGET,
+        next_slice=NEXT_SLICE,
+        decision="canonical_coverage_breadth_validate_only_ready",
+        source_mode="redacted_reference_sector_summary_plus_committed_registry",
+        validate_only=True,
+        live_network_used=False,
+        arelle_invoked=False,
+        value_reveal_performed=False,
+        runtime_defaults_changed=False,
+        coverage_framing="headline_canonical_coverage_by_sector_class_not_filing_wide",
+        canonical_concept_defined_count=len(concept_inventory),
+        sector_class_count=len(sectors),
+        summary={
             "headline_canonical_cell_count": total_cells,
             "direct_resolved_count": total_direct,
             "derived_count": total_derived,
@@ -104,9 +106,9 @@ def _reference_summary_report(
             "legitimately_absent_count": total_absent,
             "coverage_rate_including_derived": _rate(total_direct + total_derived, total_cells),
         },
-        "canonical_concepts": concept_inventory,
-        "sector_classes": sectors,
-        "sector_structure_limitation": {
+        canonical_concepts=concept_inventory,
+        sector_classes=sectors,
+        sector_structure_limitation={
             "status": "known_limitation",
             "limitation": (
                 "The current 22-concept headline industrial schema does not represent financial sector "
@@ -115,11 +117,10 @@ def _reference_summary_report(
             "deferred_design": "sector_conditioned_canonical_families_selected_by_sic_or_industry",
             "implementation_in_this_slice": False,
         },
-        "criteria": [],
-        "blocking_reasons": [],
-        "redaction": {},
-        "next_slice": NEXT_SLICE,
-        "non_goals_preserved": {
+        criteria=[],
+        blocking_reasons=[],
+        redaction={},
+        non_goals_preserved={
             "default_on_readiness_claimed": False,
             "production_readiness_claimed": False,
             "filing_wide_canonicalization_claimed": False,
@@ -129,7 +130,7 @@ def _reference_summary_report(
             "statement_assembly_claimed": False,
             "linkbase_relationships_required_or_consumed": False,
         },
-    }
+    )
     report["criteria"] = _criteria(report=report, runtime_posture=runtime_posture)
     report["blocking_reasons"] = _blocking_reasons(report["criteria"])
     if report["blocking_reasons"]:

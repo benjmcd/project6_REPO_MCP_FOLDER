@@ -32,6 +32,7 @@ from app.services.layer3_sec_xbrl_report_guards import rows_have_unique_required
 
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import report_envelope as _report_envelope  # noqa: E402
 from sec_xbrl_runtime_posture import (  # noqa: E402
     committed_runtime_posture,
     runtime_posture_criterion_evidence,
@@ -133,26 +134,26 @@ def classify_sector_family_presence(*, primary_sic: Any, reported_concepts: Sequ
 
 def _reference_summary_report(*, per_family: Sequence[Mapping[str, Any]], runtime_posture: Mapping[str, Any]) -> dict[str, Any]:
     family_rows = [_family_summary(item) for item in per_family]
-    report: dict[str, Any] = {
-        "schema_id": REPORT_SCHEMA_ID,
-        "target": TARGET,
-        "next_slice": NEXT_SLICE,
-        "decision": "sector_family_coverage_validate_only_ready",
-        "source_mode": "redacted_reference_family_summary",
-        "evidence_scope": "operator_run_reference_summary_covers_three_redacted_filers_not_all_sectors",
-        "sector_class_source_concept": "dei:EntityPrimarySicNumber",
-        "sector_class_source_fallback_documented": "sec_submissions_metadata",
-        "sic_range_table_version": SIC_RANGE_TABLE_VERSION,
-        "sector_conditioning": "concept_presence_not_sic_gated",
-        "family_registry_version": SECTOR_FAMILY_REGISTRY_VERSION,
-        "validate_only": True,
-        "live_network_used": False,
-        "arelle_invoked": False,
-        "value_reveal_performed": False,
-        "runtime_defaults_changed": False,
-        "per_family": family_rows,
-        "summary": _summary(family_rows),
-        "diversified_filer_guard": classify_sector_family_presence(
+    report: dict[str, Any] = _report_envelope(
+        schema_id=REPORT_SCHEMA_ID,
+        target=TARGET,
+        next_slice=NEXT_SLICE,
+        decision="sector_family_coverage_validate_only_ready",
+        source_mode="redacted_reference_family_summary",
+        validate_only=True,
+        evidence_scope="operator_run_reference_summary_covers_three_redacted_filers_not_all_sectors",
+        sector_class_source_concept="dei:EntityPrimarySicNumber",
+        sector_class_source_fallback_documented="sec_submissions_metadata",
+        sic_range_table_version=SIC_RANGE_TABLE_VERSION,
+        sector_conditioning="concept_presence_not_sic_gated",
+        family_registry_version=SECTOR_FAMILY_REGISTRY_VERSION,
+        live_network_used=False,
+        arelle_invoked=False,
+        value_reveal_performed=False,
+        runtime_defaults_changed=False,
+        per_family=family_rows,
+        summary=_summary(family_rows),
+        diversified_filer_guard=classify_sector_family_presence(
             primary_sic="3651",
             reported_concepts=[
                 "ifrs-full:InsuranceRevenue",
@@ -163,10 +164,10 @@ def _reference_summary_report(*, per_family: Sequence[Mapping[str, Any]], runtim
                 "us-gaap:InterestExpense",
             ],
         ),
-        "redaction": {},
-        "criteria": [],
-        "blocking_reasons": [],
-        "non_goals_preserved": {
+        redaction={},
+        criteria=[],
+        blocking_reasons=[],
+        non_goals_preserved={
             "sector_conditioned_families_design_complete": True,
             "coverage_diagnostic_runtime_mutation_performed": False,
             "coverage_diagnostic_canonical_model_mutation_performed": False,
@@ -181,7 +182,7 @@ def _reference_summary_report(*, per_family: Sequence[Mapping[str, Any]], runtim
             "default_on_readiness_claimed": False,
             "production_readiness_claimed": False,
         },
-    }
+    )
     report["redaction"] = _redaction_scan_payload(report)
     report["criteria"] = _criteria(report=report, runtime_posture=runtime_posture)
     report["blocking_reasons"] = _blocking_reasons(report["criteria"])
