@@ -4,7 +4,7 @@ Status: required checks for the planning pack and later implementation phases.
 
 ## Current Branch Validation
 
-This branch now contains Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Phase P5, Phase P6, bounded Phase P10A source/test/UI changes, Phase P7 XLSX parser/materialization, Phase P7.5 generic table bridge orchestration, Phase P8 JSON recordset parser/materialization, bounded Phase P9 SEC/EDGAR text filing parser/materialization, bounded Phase P10B typed/refused workbench guardrails, bounded Phase P10C selected dataset trace/detail surfacing, bounded Phase P10D selected APS content-document trace/detail surfacing, and the planning pack. Required validation for this pass:
+This branch now contains Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Phase P5, Phase P6, bounded Phase P10A source/test/UI changes, Phase P7 XLSX parser/materialization, Phase P7.5 generic table bridge orchestration, Phase P8 JSON recordset parser/materialization, bounded Phase P9 SEC/EDGAR text filing parser/materialization, bounded Phase P10B typed/refused workbench guardrails, bounded Phase P10C selected dataset trace/detail surfacing, bounded Phase P10D selected APS content-document trace/detail surfacing, bounded Phase P10E server-owned raw mixed trace labeling, and the planning pack. Required validation for this pass:
 
 - `git diff --check`
 - `git status --short --branch`
@@ -518,6 +518,26 @@ Focused commands:
 - `npm run validate:structure`
 - `git diff --check`
 - Headless and headed browser coverage for `e2e/layer3-workbench.spec.js` because rendered UI assets changed.
+
+## Phase P10E Server-Owned Raw Mixed Trace Labeling Validation
+
+Status: implemented for already-admitted server-owned raw mixed materialized `DatasetVersion` rows.
+
+Required assertions:
+
+- Provenance-aware source-family mapping labels `source_system="local_operator_staged_server_owned_manifest"` and `source_mode="raw_mixed_materialized"` as `server_owned_raw_mixed`.
+- Regular APS parser-family rows still use parser-family metadata such as CSV, XLSX, JSON recordset, and SEC/EDGAR families.
+- DatasetVersion candidate rows and selected-material source traces carry the server-owned raw mixed label, admission state, and scope.
+- The scope text explicitly keeps mixed package semantics separately governed.
+- Raw mixed shortcuts without the server-owned sentinel remain rejected.
+
+Focused commands:
+
+- `python -m pytest .\backend\tests\test_layer3_aps_source_family.py .\backend\tests\test_layer3_workbench.py -q`
+- `python .\tools\validate_structure.py`
+- `python .\tools\l3-progress-check.py`
+- `python .\tools\l3-target-selection-validate.py --expect frozen`
+- `git diff --check`
 
 ## Completion Definition
 

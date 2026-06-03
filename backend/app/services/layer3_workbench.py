@@ -215,7 +215,7 @@ from app.services.layer3_aps_handoff import (
     materialize_aps_handoff,
 )
 from app.services.layer3_aps_source_family import (
-    source_family_for_parser as _source_family_for_parser,
+    source_family_for_provenance as _source_family_for_provenance,
     source_family_summary as _source_family_summary,
 )
 from app.services.layer3_session_entry import (
@@ -1353,7 +1353,7 @@ def aps_dataset_version_candidates(db: Session, *, limit: int = 50) -> dict[str,
         dataset = db.get(Dataset, version.dataset_id)
         variables = _dataset_version_variables(db, dataset_version_id=version.dataset_version_id)
         provenance = _serialize_aps_dataset_provenance(row)
-        source_family = _source_family_for_parser(provenance.get("parser_family"))
+        source_family = _source_family_for_provenance(provenance)
         candidates.append(
             {
                 "schema_id": "layer3.aps_dataset_version_candidate.v1",
@@ -1485,7 +1485,7 @@ def _dataset_version_material_candidates(
             for row in _aps_dataset_provenance_rows(db, dataset_version_id=dataset_version_id)
         ]
         source_family = (
-            _source_family_for_parser(aps_provenance[0].get("parser_family"))
+            _source_family_for_provenance(aps_provenance[0])
             if aps_provenance
             else {
                 "source_family": "dataset_version",
