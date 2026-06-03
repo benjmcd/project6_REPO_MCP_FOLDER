@@ -126,6 +126,25 @@ this slice was created:
 - no network, source acquisition, Arelle, API route, value reveal, or
   production-readiness claim.
 
+## Historical S1 proof snapshots
+
+PR #2109 added dated, operator-supplied S1 proof snapshots under
+`diagnostics/assessment`:
+
+- `sec-xbrl-s1-fizz-10k-proof.json`;
+- `sec-xbrl-s1-fizz-10q-proof.json`;
+- `sec-xbrl-s1-ccj-10k-proof.json`;
+- `sec-xbrl-s1-fizz-10q-oracle.json`;
+- `sec-xbrl-s1-real-evidence-proof-report.json`.
+
+These artifacts are frozen, hash-bound, point-in-time proof records. They were
+derived from governed operator evidence and are not repo-reproducible without
+that external evidence. Do not edit the proof JSON files in place: changing their
+bytes would break their historical hash binding. Instead, keep additive guard
+tests that load the committed snapshots, validate them against the current
+proof-capability invariants, and fail if schema, redaction, lineage-hash, or
+non-production posture expectations drift.
+
 ## Known remaining work
 
 - Run the diagnostic against the operator-supplied FIZZ 10-K evidence and decide
