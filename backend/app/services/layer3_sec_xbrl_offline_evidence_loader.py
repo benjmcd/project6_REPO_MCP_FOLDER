@@ -14,6 +14,7 @@ from app.services.layer3_sec_edgar_html_inline_xbrl_fact_statement_classificatio
     classification_receipt_hash_basis,
 )
 from app.services.layer3_utils import stable_hash
+from app.services.layer3_sec_xbrl_public_authority_guard import report_text_reference_flags
 from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_leaks
 
 
@@ -25,9 +26,6 @@ STATEMENT_CLASSIFICATION_DIR = "layer3-sec-edgar-html-inline-xbrl-fact-statement
 
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 SIDECAR_RECEIPT_ID_RE = re.compile(r"^sec-edgar-arelle-resolved-fact-authority-[0-9a-f]{24}$")
-ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
-SEC_URL_RE = re.compile(r"https?://(?:www\.)?sec\.gov", re.IGNORECASE)
-LOCAL_PATH_RE = re.compile(r"[A-Za-z]:[\\/]|\\\\|file://|/(?:Users|home|tmp|workspace|var|mnt|private)(?:/|$)")
 
 
 class SecXbrlOfflineEvidenceLoaderError(ValueError):
@@ -615,7 +613,7 @@ def _required_text(value: Any, field: str) -> str:
             "SEC XBRL offline evidence requires a non-empty field.",
             details={"field": field},
         )
-    if ACCESSION_RE.search(text) or SEC_URL_RE.search(text) or LOCAL_PATH_RE.search(text):
+    if any(report_text_reference_flags(text).values()):
         raise SecXbrlOfflineEvidenceLoaderError(
             "sec_xbrl_offline_evidence_loader_raw_reference_not_admitted",
             "SEC XBRL offline evidence public references cannot carry raw accession, SEC URL, or local path text.",
