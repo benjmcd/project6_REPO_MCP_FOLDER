@@ -4,8 +4,10 @@ import pytest
 
 from app.services.layer3_sec_xbrl_report_leak_guard import (
     raw_value_key_found,
+    reject_report_public_text_references,
     reject_report_leaks,
     report_leak_flags,
+    report_public_text_reference_found,
     report_text_leak_flags,
 )
 
@@ -48,6 +50,12 @@ def test_report_text_leak_flags_preserves_text_scan_semantics() -> None:
     assert report_text_leak_flags('{"value": "123"}', include_raw_value_keys=True)["raw_value_key_found"] is True
 
 
+def test_report_public_text_reference_scan_can_disable_raw_period_dates() -> None:
+    assert report_public_text_reference_found("period 2024-12-31") is True
+    assert report_public_text_reference_found("period 2024-12-31", scan_raw_period_dates=False) is False
+    assert report_public_text_reference_found("0000000000-00-000000", scan_raw_period_dates=False) is True
+
+
 def test_report_leak_flags_can_preserve_diagnostic_raw_value_key_variants() -> None:
     assert raw_value_key_found(
         '{"_VALUE": "123"}',
@@ -70,4 +78,21 @@ def test_reject_report_leaks_uses_service_exception_factory() -> None:
         reject_report_leaks(
             {"local_path": "file://operator/raw.json"},
             exception_factory=lambda: GuardError("leaked"),
+        )
+
+
+def test_reject_report_public_text_references_uses_service_exception_factory() -> None:
+    class GuardError(ValueError):
+        pass
+
+    reject_report_public_text_references(
+        "period 2024-12-31",
+        exception_factory=lambda: GuardError("leaked"),
+        scan_raw_period_dates=False,
+    )
+    with pytest.raises(GuardError, match="leaked"):
+        reject_report_public_text_references(
+            "0000000000-00-000000",
+            exception_factory=lambda: GuardError("leaked"),
+            scan_raw_period_dates=False,
         )
