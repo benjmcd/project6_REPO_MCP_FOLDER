@@ -19,8 +19,8 @@ if str(BACKEND) not in sys.path:
 
 os.environ.setdefault("DB_INIT_MODE", "none")
 
-from app.services.layer3_sec_xbrl_canonical_concepts import report_redaction_scan_payload  # noqa: E402
 from app.services.layer3_sec_xbrl_canonical_statement_organization import ALIGNMENT_MAP_VERSION  # noqa: E402
+from app.services.layer3_sec_xbrl_report_leak_guard import diagnostic_resolved_fact_redaction_scan_payload  # noqa: E402
 from app.services.layer3_sec_xbrl_report_guards import rows_have_unique_required_key  # noqa: E402
 
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
@@ -36,7 +36,6 @@ DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-canonical-statement-organ
 TARGET = "sec_xbrl_canonical_statement_organization_validate_only_v1"
 NEXT_SLICE = "sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1"
 _RAW_RESOLVED_FACT_ID_RE = re.compile(r"\b(?:rf|fact)[-_][A-Za-z0-9]")
-_ISSUER_IDENTITY_TOKENS = ("issuer" + "_ref", "issuer" + "_hash", "issuer" + "_name")
 
 
 REFERENCE_TAXONOMY_RESULTS = (
@@ -480,20 +479,10 @@ def _public_concept_set(records: Sequence[Mapping[str, Any]]) -> list[dict[str, 
 
 
 def _redaction_scan_payload(payload: Any) -> dict[str, bool]:
-    text = json.dumps(payload, sort_keys=True) if not isinstance(payload, str) else payload
-    base = report_redaction_scan_payload(payload)
-    raw_resolved_fact_ids_found = bool(_RAW_RESOLVED_FACT_ID_RE.search(text))
-    raw_issuer_identity_found = any(token in text for token in _ISSUER_IDENTITY_TOKENS)
-    return {
-        **base,
-        "raw_resolved_fact_ids_found": raw_resolved_fact_ids_found,
-        "raw_issuer_identity_found": raw_issuer_identity_found,
-        "passed": (
-            base.get("passed") is True
-            and not raw_resolved_fact_ids_found
-            and not raw_issuer_identity_found
-        ),
-    }
+    return diagnostic_resolved_fact_redaction_scan_payload(
+        payload,
+        raw_resolved_fact_id_pattern=_RAW_RESOLVED_FACT_ID_RE,
+    )
 
 
 def _resolve_path(path: str) -> Path:
