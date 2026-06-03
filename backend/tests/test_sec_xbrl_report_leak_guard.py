@@ -6,6 +6,7 @@ import pytest
 
 from app.services.layer3_sec_xbrl_report_leak_guard import (
     diagnostic_resolved_fact_redaction_scan_payload,
+    diagnostic_sector_family_redaction_scan_payload,
     raw_value_key_found,
     reject_report_public_text_references,
     reject_report_leaks,
@@ -90,6 +91,29 @@ def test_diagnostic_resolved_fact_redaction_scan_payload_supports_extra_patterns
     assert unsafe["passed"] is False
     assert unsafe["raw_resolved_fact_ids_found"] is True
     assert unsafe["raw_total_fact_counts_found"] is True
+
+
+def test_diagnostic_sector_family_redaction_scan_payload_preserves_custom_flags() -> None:
+    safe = diagnostic_sector_family_redaction_scan_payload({"redacted": True})
+    unsafe = diagnostic_sector_family_redaction_scan_payload(
+        {
+            "primary_sic": "3651",
+            "issuer_hash": "hash-only",
+            "val": "123",
+            "source_path": "C:/operator/raw.json",
+        }
+    )
+
+    assert safe["passed"] is True
+    assert safe["raw_sic_found"] is False
+    assert safe["raw_issuer_identity_found"] is False
+    assert safe["raw_value_found"] is False
+    assert safe["raw_path_or_accession_found"] is False
+    assert unsafe["passed"] is False
+    assert unsafe["raw_sic_found"] is True
+    assert unsafe["raw_issuer_identity_found"] is True
+    assert unsafe["raw_value_found"] is True
+    assert unsafe["raw_path_or_accession_found"] is True
 
 
 def test_reject_report_leaks_uses_service_exception_factory() -> None:
