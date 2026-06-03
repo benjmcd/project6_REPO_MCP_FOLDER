@@ -59,6 +59,8 @@ def test_framework_migrated_diagnostic_reports_remain_byte_stable(tmp_path: Path
     assert "diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-report.json" in checked
     assert "diagnostics/assessment/sec-xbrl-multi-period-projection-report.json" in checked
     assert "diagnostics/assessment/sec-xbrl-statement-assembly-report.json" in checked
+    assert "diagnostics/assessment/sec-xbrl-canonical-retained-coherence-report.json" in checked
+    assert "diagnostics/assessment/sec-xbrl-canonical-statement-organization-report.json" in checked
 
 
 def test_framework_runtime_bound_reports_are_explicitly_declared() -> None:
