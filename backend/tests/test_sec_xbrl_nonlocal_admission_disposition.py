@@ -68,9 +68,31 @@ def test_nonlocal_admission_disposition_blocks_without_packets() -> None:
     ]
     assert report["readiness_gate_summary"]["admissible"] is True
     assert report["route_and_backfill_evidence_summary"]["admissible"] is True
+    source_hashes = report["route_and_backfill_evidence_summary"]["source_hashes"]
+    assert "api" not in source_hashes
+    assert "api_route_evidence" in source_hashes
+    assert report["route_and_backfill_evidence_summary"]["source_hash_basis"] == {
+        "api_route_evidence": "required API route/binding token counts, not full backend/app/api/layer3.py",
+    }
     assert report["final_admission_packet_summary"]["packet_present"] is False
     assert report["historical_backfill_disposition_summary"]["packet_present"] is False
     assert report["next_slice"] == "sec_xbrl_nonlocal_final_admission_packet_and_backfill_disposition_v1"
+
+
+def test_nonlocal_admission_api_route_evidence_hash_ignores_unrelated_api_text() -> None:
+    module = _gate_module()
+    api_text = "\n".join(module.API_ROUTE_EVIDENCE_TOKENS)
+
+    base_hash = module._required_token_hash(api_text, module.API_ROUTE_EVIDENCE_TOKENS)
+
+    assert module._required_token_hash(
+        api_text + "\n# unrelated workbench route",
+        module.API_ROUTE_EVIDENCE_TOKENS,
+    ) == base_hash
+    assert module._required_token_hash(
+        api_text + "\n" + module.API_ROUTE_EVIDENCE_TOKENS[0],
+        module.API_ROUTE_EVIDENCE_TOKENS,
+    ) != base_hash
 
 
 def test_nonlocal_admission_disposition_reports_operator_packet_contract() -> None:
