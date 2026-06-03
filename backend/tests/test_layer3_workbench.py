@@ -1977,6 +1977,57 @@ def test_aps_derived_dataset_material_preview_uses_newest_provenance(db_session,
     assert candidate["source_provenance"]["aps_source_provenance"][0]["parser_family"] == "xlsx_workbook"
 
 
+def test_material_preview_exposes_mixed_source_package_readiness_without_admitting_package(
+    db_session,
+    tmp_path,
+) -> None:
+    dataset_version_id = _seed_aps_derived_dataset_version(db_session, tmp_path)
+    content_id = _seed_aps_content_document(db_session, tmp_path)
+    preflight = layer3_workbench.preflight(
+        {
+            "client_request_id": "req-preflight-mixed-readiness",
+            "natural_language_intent": "Review APS narrative and extracted table together.",
+            "manual_constraints": {"source_classes": ["dataset_version", "aps_content_document"]},
+        }
+    )
+    source = layer3_workbench.source_preview(
+        {
+            "client_request_id": "req-source-mixed-readiness",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version", "aps_content_document"],
+        }
+    )
+    material = layer3_workbench.material_preview(
+        {
+            "client_request_id": "req-material-mixed-readiness",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "source_candidate_ids": [item["source_candidate_id"] for item in source["source_candidates"]],
+            "dataset_version_ids": [dataset_version_id],
+            "aps_content_document_ids": [content_id],
+            "query_basis": {"terms": ["mixed", "package"]},
+        },
+        db_session,
+    )
+
+    assert {item["source_class"] for item in material["material_candidates"]} == {
+        "dataset_version",
+        "aps_content_document",
+    }
+    mixed = material["mixed_source_package_semantics"]
+    assert mixed["schema_id"] == "layer3.mixed_source_package_semantics_readiness.v1"
+    assert mixed["material_authority_state"] == "mixed_material_authority_present"
+    assert mixed["package_semantics_state"] == "governed_contract_required"
+    assert mixed["package_construction_enabled"] is False
+    assert mixed["package_review_preview_enabled"] is False
+    assert mixed["handoff_enabled"] is False
+    assert mixed["dataset_version_ids"] == [dataset_version_id]
+    assert mixed["aps_content_document_ids"] == [content_id]
+    assert set(mixed["admitted_source_classes"]) == {"dataset_version", "aps_content_document"}
+    assert mixed["next_allowed_actions"] == ["define_mixed_source_package_contract"]
+    assert "no_onlook_work" in mixed["non_goals"]
+
+
 def test_aps_dataset_version_candidates_list_uses_dataset_source_provenance(db_session, tmp_path) -> None:
     dataset_version_id = _seed_aps_derived_dataset_version(db_session, tmp_path)
 
