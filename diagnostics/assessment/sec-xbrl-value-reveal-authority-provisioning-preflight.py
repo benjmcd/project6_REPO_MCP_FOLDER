@@ -15,6 +15,7 @@ if str(ASSESSMENT) not in sys.path:
     sys.path.insert(0, str(ASSESSMENT))
 
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import report_header as _report_header  # noqa: E402
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-value-reveal-authority-provisioning-preflight-report.json")
 RUN_REPORT = Path("diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-run-report.json")
@@ -84,32 +85,33 @@ def build_report(*, source_root: Path, run_report_path: Path, env: Mapping[str, 
     ]
     blockers = [item for item in criteria if item["state"] != "passed"]
     env_ready = not blockers
-    return {
-        "schema_id": "diagnostics.sec_xbrl_value_reveal_authority_provisioning_preflight.v1",
-        "target": "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1",
-        "decision": (
+    return _report_header(
+        schema_id="diagnostics.sec_xbrl_value_reveal_authority_provisioning_preflight.v1",
+        target="sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1",
+        next_slice="sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1",
+        decision=(
             "authority_provisioning_preflight_ready_for_explicit_granted_run"
             if env_ready
             else "authority_provisioning_preflight_requires_explicit_grant_or_environment"
         ),
-        "headline": (
+        headline=(
             "Authority provisioning can proceed only in a separately granted live run with network, user-agent, and Arelle environment enabled."
         ),
-        "criteria": criteria,
-        "blocking_reasons": blockers,
-        "live_network_preflight": live_network,
-        "arelle_environment_preflight": arelle,
-        "operator_exercise_run_report_summary": {
+        criteria=criteria,
+        blocking_reasons=blockers,
+        live_network_preflight=live_network,
+        arelle_environment_preflight=arelle,
+        operator_exercise_run_report_summary={
             "decision": run_report.get("decision"),
             "ready_to_run_operator_exercise": run_report.get("ready_to_run_operator_exercise"),
             "redacted_inventory": run_report.get("redacted_inventory"),
         },
-        "required_next_action": (
+        required_next_action=(
             "run_authority_provisioning_with_explicit_operator_grant"
             if env_ready
             else "obtain_explicit_operator_grant_and_arelle_network_environment_then_rerun_preflight"
         ),
-        "non_goals_preserved": {
+        non_goals_preserved={
             "sec_network_fetch_performed": False,
             "arelle_subprocess_invoked": False,
             "sidecar_receipt_created": False,
@@ -124,8 +126,7 @@ def build_report(*, source_root: Path, run_report_path: Path, env: Mapping[str, 
             "final_financial_statement_semantics_claimed": False,
             "cross_company_comparability_claimed": False,
         },
-        "next_slice": "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1",
-    }
+    )
 
 
 def _arelle_env(env: Mapping[str, str]) -> dict[str, Any]:

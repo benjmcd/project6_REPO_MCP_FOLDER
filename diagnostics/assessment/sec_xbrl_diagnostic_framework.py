@@ -38,6 +38,23 @@ def decision(criteria: Sequence[Mapping[str, Any]], *, ready: str, blocked: str)
     return ready if not blocking_reasons(criteria) else blocked
 
 
+def report_header(
+    *,
+    schema_id: str,
+    target: str,
+    next_slice: str,
+    decision: str,
+    **payload: Any,
+) -> dict[str, Any]:
+    return {
+        "schema_id": schema_id,
+        "target": target,
+        "next_slice": next_slice,
+        "decision": decision,
+        **payload,
+    }
+
+
 def report_envelope(
     *,
     schema_id: str,
