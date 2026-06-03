@@ -1,0 +1,137 @@
+# 1345 SEC XBRL diagnostic framework pilot
+
+Target: `sec_xbrl_diagnostic_framework_pilot_v1`.
+
+This slice begins consolidation of duplicated SEC XBRL diagnostic scaffolding.
+It is design plus pilot only. It does not activate production SEC XBRL behavior,
+does not migrate diagnostics beyond the three named pilots, and does not alter
+committed report bytes.
+
+## Purpose
+
+The SEC XBRL assessment scripts duplicate the same criterion and blocking-reason
+construction across most diagnostics. A repo-confirmed inventory on live main
+found:
+
+- 30 SEC XBRL diagnostic scripts under `diagnostics/assessment`;
+- 25 local `_criterion` helpers;
+- 9 local `_blocking_reasons` helpers.
+
+That duplication is a cross-cutting-change risk: a posture or redaction change
+can land in some diagnostics while others keep stale helper logic. The framework
+starts with the smallest behavior-preserving extraction so subsequent batches
+can migrate without changing report shape.
+
+## Pilot scope
+
+This pilot migrates exactly three diagnostics:
+
+- `diagnostics/assessment/sec-xbrl-canonical-projection.py`;
+- `diagnostics/assessment/sec-xbrl-canonical-comparability.py`;
+- `diagnostics/assessment/sec-xbrl-statement-assembly.py`.
+
+The pilot removes only their local `_criterion` and `_blocking_reasons` helper
+definitions and replaces them with imports from
+`diagnostics/assessment/sec_xbrl_diagnostic_framework.py`.
+
+## Shared API
+
+The framework API is derived from the duplicated shapes already present in the
+diagnostics:
+
+- `criterion(name, passed, evidence, blocked_reason=None)`;
+- `blocking_reasons(criteria)`;
+- `decision(criteria, *, ready, blocked)`;
+- `report_envelope(...)`;
+- `controls(...)`.
+
+`criterion` returns the existing four-key shape:
+
+- `criterion`;
+- `state`, with values `passed` or `blocked`;
+- `blocked_reason`, always `None` for passed criteria;
+- `evidence`, copied into a plain dictionary.
+
+`blocking_reasons` returns the existing blocked-criterion public shape:
+
+- `criterion`;
+- `reason`;
+- `evidence`.
+
+`decision` is intentionally a small helper over criteria state. It does not
+invent new status values.
+
+`report_envelope` and `controls` provide a common report and negative-control
+shape for later migrations. The pilot does not use them in the three migrated
+diagnostics because the acceptance gate is byte-identical committed reports.
+
+## Variant inventory
+
+The pilot migration is limited to helpers with the exact criterion and
+blocking-reason shape used by the three pilot diagnostics.
+
+Observed `_criterion` variants:
+
+- Most helpers return the same four logical fields:
+  `criterion`, `state`, `blocked_reason`, and `evidence`.
+- Some helpers use parameter name `name`; others use `criterion`.
+- Some helpers type `evidence` as `dict[str, Any]`; others use
+  `Mapping[str, Any]`.
+- A small set emits the same four fields with `evidence` before
+  `blocked_reason`; those are not migrated in this pilot because byte-stable
+  report key order matters.
+- One default-runtime helper carries nearby module-main content in the parsed
+  inventory and is intentionally out of scope.
+
+Observed `_blocking_reasons` variants:
+
+- The canonical and statement-family helpers use the pilot shape:
+  `criterion`, `reason`, and `evidence`, filtered by `state != "passed"`.
+- One admission-restatement helper emits `reason` before `criterion`; it is not
+  migrated in this pilot because report key order must remain byte-stable.
+
+The shared API can cover the pilot shape exactly. Non-pilot variants require
+separate byte-stable slices or a compatibility option after this pilot is
+reviewed.
+
+## Redaction and runtime posture boundary
+
+The framework does not replace existing redaction or runtime-posture authority.
+Diagnostics must continue to use:
+
+- `sec_xbrl_report_redaction.strip_residual_magnitude_fields`;
+- `layer3_sec_xbrl_canonical_concepts.report_redaction_scan_payload`;
+- `sec_xbrl_runtime_posture.committed_runtime_posture`;
+- `sec_xbrl_runtime_posture.runtime_posture_criterion_evidence`;
+- `sec_xbrl_runtime_posture.runtime_posture_criterion_passed`.
+
+This prevents the consolidation from becoming an unreviewed redaction or
+posture rewrite.
+
+## Acceptance gate
+
+The pilot is acceptable only if:
+
+- the three pilot diagnostics regenerate byte-identical committed reports;
+- all other committed reports remain untouched;
+- SEC XBRL tests pass;
+- committed-report redaction and residual scans pass;
+- `python ./tools/l3-progress-check.py` passes;
+- `python ./tools/l3-target-selection-validate.py --expect frozen` passes;
+- `git diff --check` passes.
+
+## Explicit non-scope
+
+This slice does not:
+
+- migrate any diagnostic beyond the three pilots;
+- migrate redaction-helper services;
+- touch `config.py`, `models.py`, Alembic, API routes, UI, or persistence;
+- seed, generate, or commit new runtime evidence;
+- activate the parked production-admission lane;
+- implement the proof-snapshot guard.
+
+After review accepts the pilot, later slices can migrate the remaining
+diagnostics in small byte-stable batches, then address the duplicated
+redaction-helper services, then return to proof-snapshot hardening and the
+parked activation lane.
