@@ -24,8 +24,8 @@ from app.services import (
     layer3_sec_xbrl_value_reveal_authority,
 )
 from app.services.layer3_sec_xbrl_public_authority_guard import (
-    blocked_authority_keys_violation,
     raw_or_local_authority_violation,
+    reject_raw_or_local_authority_with_blocked_keys,
 )
 from app.services.layer3_utils import json_clone, stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
@@ -780,27 +780,15 @@ def _required_hash(value: Any, field: str) -> str:
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:
-    blocked_keys = blocked_authority_keys_violation(
+    reject_raw_or_local_authority_with_blocked_keys(
         value,
-        raw_value_keys=frozenset(),
-        raw_authority_keys=RAW_REQUEST_KEYS,
-    )
-    if blocked_keys:
-        raise SecXbrlControlledValueRevealSubmitError(
-            "sec_xbrl_controlled_value_reveal_submit_raw_authority_not_admitted",
-            "SEC XBRL controlled value reveal only admits authority-receipt fields from the browser.",
-            details={"blocked_keys": blocked_keys},
-            http_status=400,
-        )
-    if raw_or_local_authority_violation(
-        value,
-        raw_value_keys=frozenset(),
-        raw_authority_keys=frozenset(),
+        error_type=SecXbrlControlledValueRevealSubmitError,
+        raw_authority_code="sec_xbrl_controlled_value_reveal_submit_raw_authority_not_admitted",
+        raw_authority_message="SEC XBRL controlled value reveal only admits authority-receipt fields from the browser.",
+        raw_reference_code="sec_xbrl_controlled_value_reveal_submit_raw_reference_not_admitted",
+        raw_reference_message="SEC XBRL controlled value reveal rejects raw identities, paths, SEC URLs, accessions, and period dates.",
+        blocked_raw_value_keys=frozenset(),
+        blocked_raw_authority_keys=RAW_REQUEST_KEYS,
         scan_cik_fullmatch=True,
         scan_operator_contact=True,
-    ):
-        raise SecXbrlControlledValueRevealSubmitError(
-            "sec_xbrl_controlled_value_reveal_submit_raw_reference_not_admitted",
-            "SEC XBRL controlled value reveal rejects raw identities, paths, SEC URLs, accessions, and period dates.",
-            http_status=400,
-        )
+    )

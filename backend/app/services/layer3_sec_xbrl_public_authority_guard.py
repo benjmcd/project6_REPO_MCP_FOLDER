@@ -245,6 +245,53 @@ def blocked_authority_keys_violation(
     return None
 
 
+def reject_raw_or_local_authority_with_blocked_keys(
+    value: Any,
+    *,
+    error_type: type[Exception],
+    raw_authority_code: str,
+    raw_authority_message: str,
+    raw_reference_code: str,
+    raw_reference_message: str,
+    blocked_raw_value_keys: set[str] | frozenset[str] = RAW_VALUE_KEYS,
+    blocked_raw_authority_keys: set[str] | frozenset[str] = RAW_AUTHORITY_KEYS,
+    reference_raw_value_keys: set[str] | frozenset[str] = frozenset(),
+    reference_raw_authority_keys: set[str] | frozenset[str] = frozenset(),
+    scan_raw_period_dates: bool = True,
+    scan_cik: bool = False,
+    scan_cik_fullmatch: bool = False,
+    scan_operator_contact: bool = False,
+    raw_authority_http_status: int = 400,
+    raw_reference_http_status: int = 400,
+) -> None:
+    blocked_keys = blocked_authority_keys_violation(
+        value,
+        raw_value_keys=blocked_raw_value_keys,
+        raw_authority_keys=blocked_raw_authority_keys,
+    )
+    if blocked_keys:
+        raise error_type(
+            raw_authority_code,
+            raw_authority_message,
+            details={"blocked_keys": blocked_keys},
+            http_status=raw_authority_http_status,
+        )
+    if raw_or_local_authority_violation(
+        value,
+        raw_value_keys=reference_raw_value_keys,
+        raw_authority_keys=reference_raw_authority_keys,
+        scan_raw_period_dates=scan_raw_period_dates,
+        scan_cik=scan_cik,
+        scan_cik_fullmatch=scan_cik_fullmatch,
+        scan_operator_contact=scan_operator_contact,
+    ):
+        raise error_type(
+            raw_reference_code,
+            raw_reference_message,
+            http_status=raw_reference_http_status,
+        )
+
+
 def reject_raw_or_local_authority(
     value: Any,
     *,
