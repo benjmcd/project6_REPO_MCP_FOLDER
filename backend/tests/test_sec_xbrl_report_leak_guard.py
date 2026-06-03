@@ -30,6 +30,7 @@ def test_report_leak_flags_can_include_raw_value_keys() -> None:
     assert report_leak_flags({"raw_value": "123"}, include_raw_value_keys=True)["raw_value_key_found"] is True
     assert report_leak_flags({"value": "123"}, include_raw_value_keys=True)["raw_value_key_found"] is True
     assert report_leak_flags({"amount": "123"}, include_raw_value_keys=True)["raw_value_key_found"] is True
+    assert report_leak_flags({"field": "value"}, include_raw_value_keys=True)["raw_value_key_found"] is False
 
 
 def test_reject_report_leaks_uses_service_exception_factory() -> None:
