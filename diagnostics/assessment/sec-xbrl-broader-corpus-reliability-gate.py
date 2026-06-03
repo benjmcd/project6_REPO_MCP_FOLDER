@@ -3,10 +3,16 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import sys
 from typing import Any, Mapping
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ASSESSMENT = Path(__file__).resolve().parent
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
+from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json")
 DEFAULT_DEFAULT_ON_GATE_REPORT = Path("diagnostics/assessment/sec-xbrl-default-on-gate-report.json")
 DEFAULT_PRODUCT_PATH_REPORT = Path("diagnostics/assessment/sec-xbrl-product-path-corpus-validation-report.json")
@@ -304,15 +310,6 @@ def build_report(
             if admitted
             else "sec_edgar_real_corpus_product_path_runner_v1"
         ),
-    }
-
-
-def _criterion(criterion: str, passed: bool, evidence: Mapping[str, Any], blocked_reason: str) -> dict[str, Any]:
-    return {
-        "criterion": criterion,
-        "state": "passed" if passed else "blocked",
-        "blocked_reason": None if passed else blocked_reason,
-        "evidence": dict(evidence),
     }
 
 
