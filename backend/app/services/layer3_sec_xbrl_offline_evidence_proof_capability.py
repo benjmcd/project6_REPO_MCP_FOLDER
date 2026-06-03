@@ -31,13 +31,11 @@ from app.services.layer3_sec_xbrl_offline_evidence_loader import (
     load_sec_xbrl_offline_evidence_bundle,
 )
 from app.services.layer3_utils import stable_hash
-from app.services.layer3_sec_xbrl_public_authority_guard import report_text_reference_flags
-from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_leaks
+from app.services.layer3_sec_xbrl_report_leak_guard import report_leak_flags, reject_report_leaks
 
 
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_offline_evidence_proof_capability.v1"
 
-RAW_VALUE_KEY_RE = re.compile(r'"(?:_value|value|amount|effective_value|raw_value|lexical_value)"\s*:')
 _reject_report_leaks = partial(
     reject_report_leaks,
     exception_factory=lambda: ValueError(
@@ -322,8 +320,7 @@ def _run_isolated_orchestrator(
         )
         projection_facts = db.query(L3SecXbrlProjectionFact).all()
         packet_rows = db.query(L3SecXbrlStatementPacketRow).all()
-        response_text = json.dumps(response, sort_keys=True)
-        response_reference_flags = report_text_reference_flags(response_text)
+        response_reference_flags = report_leak_flags(response, include_raw_value_keys=True)
         return {
             "response": response,
             "persisted_counts": {
@@ -337,7 +334,7 @@ def _run_isolated_orchestrator(
                 "public_response_raw_accession_found": response_reference_flags["raw_accession_found"],
                 "public_response_sec_url_found": response_reference_flags["sec_url_found"],
                 "public_response_local_path_found": response_reference_flags["local_path_found"],
-                "public_response_raw_value_key_found": bool(RAW_VALUE_KEY_RE.search(response_text)),
+                "public_response_raw_value_key_found": response_reference_flags["raw_value_key_found"],
                 "projection_facts_all_value_redacted": all(row.value_redacted is True for row in projection_facts),
                 "statement_rows_all_value_redacted": all(row.value_redacted is True for row in packet_rows),
             },
