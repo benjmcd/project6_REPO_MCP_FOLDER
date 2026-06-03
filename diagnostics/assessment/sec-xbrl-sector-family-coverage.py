@@ -4,7 +4,6 @@ import argparse
 import json
 import os
 from pathlib import Path
-import re
 import sys
 from typing import Any, Mapping, Sequence
 
@@ -24,10 +23,11 @@ from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
     SIC_RANGE_TO_SECTOR_CLASS,
     UNKNOWN_SECTOR_CLASS,
     classify_sector_family_presence as runtime_classify_sector_family_presence,
-    report_redaction_scan_payload,
     sector_class_from_sic as runtime_sector_class_from_sic,
 )
-from app.services.layer3_sec_xbrl_report_leak_guard import raw_value_key_found  # noqa: E402
+from app.services.layer3_sec_xbrl_report_leak_guard import (  # noqa: E402
+    diagnostic_sector_family_redaction_scan_payload,
+)
 from app.services.layer3_sec_xbrl_report_guards import rows_have_unique_required_key  # noqa: E402
 
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
@@ -78,15 +78,6 @@ REFERENCE_FAMILY_EVIDENCE: tuple[dict[str, Any], ...] = (
         },
     },
 )
-
-_RAW_SIC_NUMBER_RE = re.compile(
-    r"(?:raw[_-]?sic|primary[_-]?sic|EntityPrimarySicNumber|dei:EntityPrimarySicNumber)[^0-9]{0,20}[0-9]{3,4}",
-    re.IGNORECASE,
-)
-_RAW_VALUE_KEYS = ("value", "amount", "effective_value", "val")
-_ISSUER_IDENTITY_TOKENS = ("issuer_ref", "issuer_hash", "issuer_name", "entity_name", "company_name")
-_RAW_PATH_KEY_RE = re.compile(r'"(?:source_path|local_path|file_path|resolved_fact_id)"\s*:', re.IGNORECASE)
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(
@@ -384,26 +375,7 @@ def _family_definition(family_id: str) -> Mapping[str, Any]:
 
 
 def _redaction_scan_payload(payload: Any) -> dict[str, bool]:
-    text = json.dumps(payload, sort_keys=True) if not isinstance(payload, str) else payload
-    base = report_redaction_scan_payload(payload)
-    raw_sic_found = bool(_RAW_SIC_NUMBER_RE.search(text))
-    raw_issuer_identity_found = any(token in text for token in _ISSUER_IDENTITY_TOKENS)
-    raw_value_found = raw_value_key_found(text, raw_value_keys=_RAW_VALUE_KEYS, ignore_case=True)
-    raw_path_or_accession_found = bool(_RAW_PATH_KEY_RE.search(text))
-    return {
-        **base,
-        "raw_sic_found": raw_sic_found,
-        "raw_issuer_identity_found": raw_issuer_identity_found,
-        "raw_value_found": raw_value_found,
-        "raw_path_or_accession_found": raw_path_or_accession_found,
-        "passed": (
-            base.get("passed") is True
-            and not raw_sic_found
-            and not raw_issuer_identity_found
-            and not raw_value_found
-            and not raw_path_or_accession_found
-        ),
-    }
+    return diagnostic_sector_family_redaction_scan_payload(payload)
 
 
 def _resolve_path(path: str) -> Path:
