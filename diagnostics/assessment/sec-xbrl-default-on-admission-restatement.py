@@ -14,6 +14,7 @@ if str(ASSESSMENT) not in sys.path:
     sys.path.insert(0, str(ASSESSMENT))
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import text_redaction_scan as _framework_text_redaction_scan  # noqa: E402
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-default-on-admission-restatement-report.json")
 NEXT_AFTER_DEFAULT_ON_RUNTIME = "sec_xbrl_default_on_nonlocal_production_readiness_design_v1"
@@ -974,26 +975,17 @@ def _live_proof_safety_defaults_off(live_defaults: Mapping[str, Any]) -> bool:
 
 
 def _redaction_scan(texts: Iterable[str]) -> dict[str, Any]:
-    hits = {
-        "raw_accession_found": False,
-        "raw_cik_found": False,
-        "raw_sec_url_found": False,
-        "raw_local_path_found": False,
-        "raw_operator_contact_found": False,
-        "raw_value_magnitude_found": False,
-    }
-    for text in texts:
-        hits["raw_accession_found"] = hits["raw_accession_found"] or bool(RAW_ACCESSION_RE.search(text))
-        hits["raw_cik_found"] = hits["raw_cik_found"] or bool(RAW_CIK_FIELD_RE.search(text))
-        hits["raw_sec_url_found"] = hits["raw_sec_url_found"] or bool(SEC_URL_RE.search(text))
-        hits["raw_local_path_found"] = hits["raw_local_path_found"] or bool(LOCAL_PATH_RE.search(text))
-        hits["raw_operator_contact_found"] = hits["raw_operator_contact_found"] or bool(
-            OPERATOR_CONTACT_RE.search(text)
-        )
-        hits["raw_value_magnitude_found"] = hits["raw_value_magnitude_found"] or bool(
-            RAW_DECIMAL_MAGNITUDE_RE.search(text)
-        )
-    return {"passed": not any(hits.values()), **hits}
+    return _framework_text_redaction_scan(
+        texts,
+        regexes={
+            "raw_accession_found": RAW_ACCESSION_RE,
+            "raw_cik_found": RAW_CIK_FIELD_RE,
+            "raw_sec_url_found": SEC_URL_RE,
+            "raw_local_path_found": LOCAL_PATH_RE,
+            "raw_operator_contact_found": OPERATOR_CONTACT_RE,
+            "raw_value_magnitude_found": RAW_DECIMAL_MAGNITUDE_RE,
+        },
+    )
 
 
 def _redaction_summary(redaction: Mapping[str, Any]) -> dict[str, Any]:
