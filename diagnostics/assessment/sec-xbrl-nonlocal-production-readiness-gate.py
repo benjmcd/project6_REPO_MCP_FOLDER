@@ -15,6 +15,7 @@ if str(ASSESSMENT) not in sys.path:
     sys.path.insert(0, str(ASSESSMENT))
 
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import redaction_hit_classes as _framework_redaction_hit_classes  # noqa: E402
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json")
 RUNTIME_REPORT = "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
@@ -575,25 +576,21 @@ def _invalid_authority_fields(
 
 
 def _redaction_hit_classes(packet_text: str, packet: Any) -> list[str]:
-    hits: list[str] = []
-    regexes = {
-        "raw_operator_email": EMAIL_RE,
-        "raw_accession": ACCESSION_RE,
-        "raw_cik": RAW_CIK_RE,
-        "sec_url": SEC_URL_RE,
-        "local_path": LOCAL_PATH_RE,
-        "raw_period_date": PERIOD_DATE_RE,
-        "raw_decimal_or_residual_magnitude": RAW_DECIMAL_RE,
-    }
-    for name, regex in regexes.items():
-        if regex.search(packet_text):
-            hits.append(name)
-    if isinstance(packet, dict) and _invalid_redacted_ref_fields(packet):
-        hits.append("raw_or_unreduced_authority_ref")
-    for key in _iter_keys(packet):
-        if key.lower() in RAW_KEYS:
-            hits.append("raw_or_local_authority_key")
-    return hits
+    return _framework_redaction_hit_classes(
+        packet_text,
+        packet,
+        regexes={
+            "raw_operator_email": EMAIL_RE,
+            "raw_accession": ACCESSION_RE,
+            "raw_cik": RAW_CIK_RE,
+            "sec_url": SEC_URL_RE,
+            "local_path": LOCAL_PATH_RE,
+            "raw_period_date": PERIOD_DATE_RE,
+            "raw_decimal_or_residual_magnitude": RAW_DECIMAL_RE,
+        },
+        raw_keys=RAW_KEYS,
+        authority_ref_invalid=lambda value: isinstance(value, dict) and bool(_invalid_redacted_ref_fields(value)),
+    )
 
 
 def _invalid_redacted_ref_fields(packet: dict[str, Any]) -> list[str]:
@@ -604,21 +601,6 @@ def _invalid_redacted_ref_fields(packet: dict[str, Any]) -> list[str]:
     }
     authority_ref_fields.update(field for field in REF_FIELDS if field in packet)
     return sorted(field for field in authority_ref_fields if not _redacted_ref(packet.get(field)))
-
-
-def _iter_keys(value: Any) -> list[str]:
-    if isinstance(value, dict):
-        keys: list[str] = []
-        for key, nested in value.items():
-            keys.append(str(key))
-            keys.extend(_iter_keys(nested))
-        return keys
-    if isinstance(value, list):
-        keys = []
-        for item in value:
-            keys.extend(_iter_keys(item))
-        return keys
-    return []
 
 
 def _nonlocal_guardrails_hold(config: str, api_tests: str) -> bool:
