@@ -169,6 +169,73 @@ def test_multi_period_projection_projects_distinct_fy_periods() -> None:
     assert _find(comparative["concepts"], "Revenue", "total")["resolved_fact_id"] == "rf-revenue-old"
 
 
+def test_multi_period_projection_confirms_quarterly_companyfacts_by_exact_period_key() -> None:
+    sidecar_records = [
+        _record(
+            "rf-revenue-q3-ytd",
+            "us-gaap",
+            "RevenueFromContractWithCustomerExcludingAssessedTax",
+            "USD",
+            start="2025-05-04",
+            end="2026-01-31",
+        ),
+        _record("rf-assets-q3", "us-gaap", "Assets", "USD", end="2026-01-31", instant=True),
+        _record("rf-period-end", "dei", "DocumentPeriodEndDate", "unitless", end="2026-01-31", instant=True),
+    ]
+    value_records = [
+        _value("rf-revenue-q3-ytd", "100"),
+        _value("rf-assets-q3", "200"),
+        _value("rf-period-end", "2026-01-31"),
+    ]
+    companyfacts = {
+        "us-gaap": {
+            "RevenueFromContractWithCustomerExcludingAssessedTax": {
+                "units": {
+                    "USD": [
+                        {
+                            "fp": "Q3",
+                            "fy": "2026",
+                            "val": "100",
+                            "start": "2025-05-04",
+                            "end": "2026-01-31",
+                        }
+                    ]
+                }
+            },
+            "Assets": {
+                "units": {
+                    "USD": [
+                        {
+                            "fp": "Q3",
+                            "fy": "2026",
+                            "val": "200",
+                            "end": "2026-01-31",
+                        }
+                    ]
+                }
+            },
+        }
+    }
+
+    result = canonical.project_issuer_canonical_facts_by_periods(
+        companyfacts=companyfacts,
+        sidecar_records=sidecar_records,
+        value_records=value_records,
+        sidecar_receipt_id="sidecar-ref",
+        sidecar_receipt_hash="sidecar-hash",
+        value_store_hash=stable_hash(value_records),
+        dataset_version_id="dataset-ref",
+        period_limit=1,
+    )
+    latest = result["periods"][0]["projection"]
+
+    assert result["status"] == "canonical_multi_period_projection_ready"
+    assert latest["fy_period"]["duration_period_key"] == ("d", "2025-05-04", "2026-01-31")
+    assert _find(latest["concepts"], "Revenue", "total")["status"] == "projected_oracle_confirmed"
+    assert _find(latest["concepts"], "TotalAssets", "total")["status"] == "projected_oracle_confirmed"
+    assert latest["oracle_confirmed_count"] == 2
+
+
 def test_projection_handles_total_parent_fallback_and_divided_units() -> None:
     sidecar_records = [
         _record("rf-equity-parent", "us-gaap", "StockholdersEquity", "USD", end="end-2", instant=True),
