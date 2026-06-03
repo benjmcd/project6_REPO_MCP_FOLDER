@@ -17,6 +17,22 @@ DIAGNOSTIC_AUTHORITY_RAW_VALUE_KEYS = ("_value", "value", "effective_value", "am
 DIAGNOSTIC_AUTHORITY_KEY_RE = re.compile(r'"(?:resolved_fact_id|fact_id_or_order_key)"\s*:', re.IGNORECASE)
 DIAGNOSTIC_ISSUER_IDENTITY_TOKENS = ("issuer_ref", "issuer_hash", "issuer_name", "entity_name", "company_name")
 DIAGNOSTIC_CANONICAL_ISSUER_IDENTITY_TOKENS = ("issuer_ref", "issuer_hash", "issuer_name")
+DIAGNOSTIC_SECTOR_RAW_VALUE_KEYS = ("value", "amount", "effective_value", "val")
+DIAGNOSTIC_SECTOR_ISSUER_IDENTITY_TOKENS = (
+    "issuer_ref",
+    "issuer_hash",
+    "issuer_name",
+    "entity_name",
+    "company_name",
+)
+DIAGNOSTIC_SECTOR_RAW_SIC_RE = re.compile(
+    r"(?:raw[_-]?sic|primary[_-]?sic|EntityPrimarySicNumber|dei:EntityPrimarySicNumber)[^0-9]{0,20}[0-9]{3,4}",
+    re.IGNORECASE,
+)
+DIAGNOSTIC_SECTOR_RAW_PATH_OR_ACCESSION_KEY_RE = re.compile(
+    r'"(?:source_path|local_path|file_path|resolved_fact_id)"\s*:',
+    re.IGNORECASE,
+)
 
 
 def report_leak_flags(
@@ -138,6 +154,36 @@ def diagnostic_resolved_fact_redaction_scan_payload(
             and not raw_resolved_fact_ids_found
             and not raw_issuer_identity_found
             and not any(extra_flags.values())
+        ),
+    }
+
+
+def diagnostic_sector_family_redaction_scan_payload(
+    value: Any,
+    *,
+    raw_sic_pattern: re.Pattern[str] = DIAGNOSTIC_SECTOR_RAW_SIC_RE,
+    issuer_identity_tokens: Iterable[str] = DIAGNOSTIC_SECTOR_ISSUER_IDENTITY_TOKENS,
+    raw_value_keys: Iterable[str] = DIAGNOSTIC_SECTOR_RAW_VALUE_KEYS,
+    raw_path_or_accession_key_pattern: re.Pattern[str] = DIAGNOSTIC_SECTOR_RAW_PATH_OR_ACCESSION_KEY_RE,
+) -> dict[str, bool]:
+    text = json.dumps(value, sort_keys=True) if not isinstance(value, str) else value
+    base = report_redaction_scan_payload(value)
+    raw_sic_found = bool(raw_sic_pattern.search(text))
+    raw_issuer_identity_found = any(token in text for token in issuer_identity_tokens)
+    raw_value_found = raw_value_key_found(text, raw_value_keys=raw_value_keys, ignore_case=True)
+    raw_path_or_accession_found = bool(raw_path_or_accession_key_pattern.search(text))
+    return {
+        **base,
+        "raw_sic_found": raw_sic_found,
+        "raw_issuer_identity_found": raw_issuer_identity_found,
+        "raw_value_found": raw_value_found,
+        "raw_path_or_accession_found": raw_path_or_accession_found,
+        "passed": (
+            base.get("passed") is True
+            and not raw_sic_found
+            and not raw_issuer_identity_found
+            and not raw_value_found
+            and not raw_path_or_accession_found
         ),
     }
 
