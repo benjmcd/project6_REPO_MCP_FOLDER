@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 
@@ -78,3 +78,39 @@ def controls(
         "production_database_touched": production_database_touched,
         "production_readiness_claimed": production_readiness_claimed,
     }
+
+
+def redaction_hit_classes(
+    packet_text: str,
+    packet: Any,
+    *,
+    regexes: Mapping[str, Any],
+    raw_keys: Sequence[str] | set[str] | frozenset[str],
+    authority_ref_invalid: Callable[[Any], bool],
+) -> list[str]:
+    hits: list[str] = []
+    for name, regex in regexes.items():
+        if regex.search(packet_text):
+            hits.append(str(name))
+    if authority_ref_invalid(packet):
+        hits.append("raw_or_unreduced_authority_ref")
+    raw_key_set = {str(key).lower() for key in raw_keys}
+    for key in _iter_keys(packet):
+        if key.lower() in raw_key_set:
+            hits.append("raw_or_local_authority_key")
+    return hits
+
+
+def _iter_keys(value: Any) -> list[str]:
+    if isinstance(value, dict):
+        keys: list[str] = []
+        for key, nested in value.items():
+            keys.append(str(key))
+            keys.extend(_iter_keys(nested))
+        return keys
+    if isinstance(value, list):
+        keys = []
+        for item in value:
+            keys.extend(_iter_keys(item))
+        return keys
+    return []

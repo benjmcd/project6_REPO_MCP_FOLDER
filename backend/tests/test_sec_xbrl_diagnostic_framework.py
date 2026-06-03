@@ -5,6 +5,7 @@ import importlib.util
 import inspect
 import json
 from pathlib import Path
+import re
 from types import ModuleType
 
 
@@ -129,6 +130,32 @@ def test_framework_matches_pilot_criterion_and_blocking_shapes() -> None:
     ]
     assert framework.decision(criteria[:1], ready="ready_decision", blocked="blocked_decision") == "ready_decision"
     assert framework.decision(criteria, ready="ready_decision", blocked="blocked_decision") == "blocked_decision"
+
+
+def test_framework_nonlocal_redaction_hit_classes_keep_custom_ref_policy() -> None:
+    framework = _module_from_path(
+        "sec_xbrl_diagnostic_framework_redaction_unit",
+        ASSESSMENT / "sec_xbrl_diagnostic_framework.py",
+    )
+
+    hits = framework.redaction_hit_classes(
+        "operator@example.com 0000000000-00-000000",
+        {"payload": [{"nested": {"raw_value": "redacted"}}], "owner_ref": "raw-owner"},
+        regexes={
+            "raw_operator_email": re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE),
+            "raw_accession": re.compile(r"\b\d{10}-\d{2}-\d{6}\b"),
+        },
+        raw_keys={"payload", "raw_value"},
+        authority_ref_invalid=lambda value: isinstance(value, dict) and value.get("owner_ref") == "raw-owner",
+    )
+
+    assert hits == [
+        "raw_operator_email",
+        "raw_accession",
+        "raw_or_unreduced_authority_ref",
+        "raw_or_local_authority_key",
+        "raw_or_local_authority_key",
+    ]
 
 
 def _module_from_path(module_name: str, path: Path) -> ModuleType:

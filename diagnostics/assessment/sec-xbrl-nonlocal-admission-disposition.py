@@ -15,6 +15,7 @@ if str(ASSESSMENT) not in sys.path:
     sys.path.insert(0, str(ASSESSMENT))
 
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import redaction_hit_classes as _framework_redaction_hit_classes  # noqa: E402
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition-report.json")
 READINESS_REPORT = "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json"
@@ -617,27 +618,27 @@ def _invalid_packet_fields(packet: Mapping[str, Any], *, packet_kind: str) -> li
 
 
 def _redaction_hit_classes(packet_text: str, packet: Any) -> list[str]:
-    hits: list[str] = []
-    regexes = {
-        "raw_operator_email": EMAIL_RE,
-        "raw_accession": ACCESSION_RE,
-        "raw_cik": RAW_CIK_RE,
-        "sec_url": SEC_URL_RE,
-        "local_path": LOCAL_PATH_RE,
-        "raw_period_date": PERIOD_DATE_RE,
-        "raw_decimal_or_residual_magnitude": RAW_DECIMAL_RE,
-    }
-    for name, regex in regexes.items():
-        if regex.search(packet_text):
-            hits.append(name)
-    if isinstance(packet, dict):
-        for field, value in packet.items():
-            if str(field).endswith("_ref") and not _redacted_ref(value):
-                hits.append("raw_or_unreduced_authority_ref")
-    for key in _iter_keys(packet):
-        if key.lower() in RAW_KEYS:
-            hits.append("raw_or_local_authority_key")
-    return hits
+    return _framework_redaction_hit_classes(
+        packet_text,
+        packet,
+        regexes={
+            "raw_operator_email": EMAIL_RE,
+            "raw_accession": ACCESSION_RE,
+            "raw_cik": RAW_CIK_RE,
+            "sec_url": SEC_URL_RE,
+            "local_path": LOCAL_PATH_RE,
+            "raw_period_date": PERIOD_DATE_RE,
+            "raw_decimal_or_residual_magnitude": RAW_DECIMAL_RE,
+        },
+        raw_keys=RAW_KEYS,
+        authority_ref_invalid=_raw_or_unreduced_authority_ref_found,
+    )
+
+
+def _raw_or_unreduced_authority_ref_found(packet: Any) -> bool:
+    if not isinstance(packet, dict):
+        return False
+    return any(str(field).endswith("_ref") and not _redacted_ref(value) for field, value in packet.items())
 
 
 def _standing_non_admissions_preserved(readiness: Mapping[str, Any]) -> bool:
@@ -685,21 +686,6 @@ def _hash(value: Any) -> bool:
 
 def _all_tokens(text: str, tokens: tuple[str, ...]) -> bool:
     return all(token in text for token in tokens)
-
-
-def _iter_keys(value: Any) -> list[str]:
-    if isinstance(value, dict):
-        keys: list[str] = []
-        for key, nested in value.items():
-            keys.append(str(key))
-            keys.extend(_iter_keys(nested))
-        return keys
-    if isinstance(value, list):
-        keys = []
-        for item in value:
-            keys.extend(_iter_keys(item))
-        return keys
-    return []
 
 
 def _stable_hash(value: Any) -> str:
