@@ -28,6 +28,14 @@ from app.services.layer3_utils import json_clone, stable_hash
 
 SCHEMA_ID = "layer3.sec_xbrl_e2e_offline_evidence_orchestrator.v1"
 SOURCE_REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_e2e_offline_evidence_authority.v1"
+ATOMIC_FAULT_AFTER_PROJECTION = "after_projection_flush"
+ATOMIC_FAULT_AFTER_STATEMENT_PACKET = "after_statement_packet_flush"
+ATOMIC_FAULT_AFTER_OPERATOR_REVIEW_WORKFLOW = "after_operator_review_workflow_flush"
+ATOMIC_FAULT_INJECTION_POINTS = {
+    ATOMIC_FAULT_AFTER_PROJECTION,
+    ATOMIC_FAULT_AFTER_STATEMENT_PACKET,
+    ATOMIC_FAULT_AFTER_OPERATOR_REVIEW_WORKFLOW,
+}
 
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
@@ -84,12 +92,23 @@ def open_redacted_operator_review_from_offline_evidence(
     source_report_hash: str | None = None,
     period_limit: int = 3,
     include_sector_families: bool = False,
+    single_transaction: bool = False,
+    commit: bool = True,
+    fault_injection_point: str | None = None,
 ) -> dict[str, Any]:
     """Compose already-loaded offline SEC XBRL evidence into an open redacted review workflow."""
 
     request_id = _required_public_text(client_request_id, "client_request_id")
     evidence_map = _required_mapping(evidence, "evidence")
     limit = _positive_int(period_limit, "period_limit")
+    atomic = bool(single_transaction)
+    fault = _normalise_fault_injection_point(fault_injection_point)
+    if fault is not None and not atomic:
+        raise SecXbrlE2EOfflineOrchestratorError(
+            "sec_xbrl_e2e_offline_orchestrator_fault_requires_atomic_transaction",
+            "SEC XBRL offline orchestration fault injection is only admitted for single-transaction mode.",
+            details={"fault_injection_point": fault},
+        )
     companyfacts = _required_mapping(evidence_map.get("companyfacts"), "companyfacts")
     sidecar_receipt = _required_mapping(evidence_map.get("sidecar_receipt"), "sidecar_receipt")
     value_store = _required_mapping(evidence_map.get("value_store"), "value_store")
@@ -184,24 +203,40 @@ def open_redacted_operator_review_from_offline_evidence(
             },
         )
 
-    projection_response = materialize_redacted_projection_set(
-        db,
-        client_request_id=f"{request_id}:projection",
-        projection=projection_payload,
-        source_report_schema_id=source_schema,
-        source_report_hash=report_hash,
-    )
-    packet_response = materialize_redacted_statement_packet(
-        db,
-        client_request_id=f"{request_id}:statement-packet",
-        sec_xbrl_projection_set_id=projection_response["sec_xbrl_projection_set_id"],
-        packet=statement_packet,
-    )
-    workflow_response = open_redacted_operator_review_workflow(
-        db,
-        client_request_id=f"{request_id}:operator-review",
-        sec_xbrl_statement_packet_set_id=packet_response["sec_xbrl_statement_packet_set_id"],
-    )
+    try:
+        projection_response = materialize_redacted_projection_set(
+            db,
+            client_request_id=f"{request_id}:projection",
+            projection=projection_payload,
+            source_report_schema_id=source_schema,
+            source_report_hash=report_hash,
+            commit=not atomic,
+        )
+        _raise_if_atomic_fault(fault, ATOMIC_FAULT_AFTER_PROJECTION)
+        packet_response = materialize_redacted_statement_packet(
+            db,
+            client_request_id=f"{request_id}:statement-packet",
+            sec_xbrl_projection_set_id=projection_response["sec_xbrl_projection_set_id"],
+            packet=statement_packet,
+            commit=not atomic,
+        )
+        _raise_if_atomic_fault(fault, ATOMIC_FAULT_AFTER_STATEMENT_PACKET)
+        workflow_response = open_redacted_operator_review_workflow(
+            db,
+            client_request_id=f"{request_id}:operator-review",
+            sec_xbrl_statement_packet_set_id=packet_response["sec_xbrl_statement_packet_set_id"],
+            commit=not atomic,
+        )
+        _raise_if_atomic_fault(fault, ATOMIC_FAULT_AFTER_OPERATOR_REVIEW_WORKFLOW)
+        if atomic:
+            if commit:
+                db.commit()
+            else:
+                db.flush()
+    except Exception:
+        if atomic:
+            db.rollback()
+        raise
     examined_absent_period_refs = _examined_absent_period_refs(canonical_projection)
     response = {
         "schema_id": SCHEMA_ID,
@@ -210,6 +245,9 @@ def open_redacted_operator_review_from_offline_evidence(
         "sec_xbrl_projection_set_id": projection_response["sec_xbrl_projection_set_id"],
         "sec_xbrl_statement_packet_set_id": packet_response["sec_xbrl_statement_packet_set_id"],
         "sec_xbrl_operator_review_workflow_id": workflow_response["sec_xbrl_operator_review_workflow_id"],
+        "workflow_basis_hash": workflow_response.get("workflow_basis_hash"),
+        "statement_packet_basis_hash": workflow_response.get("statement_packet_basis_hash"),
+        "source_projection_basis_hash": workflow_response.get("source_projection_basis_hash"),
         "source_report_schema_id": source_schema,
         "source_report_hash": report_hash,
         "authority_refs": {
@@ -228,8 +266,9 @@ def open_redacted_operator_review_from_offline_evidence(
             "review_exception_count": workflow_response["review_exception_count"],
         },
         "containment": {
-            "existing_materializers_commit_per_stage": True,
-            "single_transaction_claimed": False,
+            "existing_materializers_commit_per_stage": not atomic,
+            "single_transaction_claimed": atomic,
+            "transaction_boundary": "caller_owned_session" if atomic else "stage_owned_commits",
             "pre_persistence_projection_and_packet_preflight_passed": True,
         },
         "controls": {
@@ -244,6 +283,31 @@ def open_redacted_operator_review_from_offline_evidence(
     }
     _reject_public_raw_or_local_authority(response)
     return response
+
+
+def _normalise_fault_injection_point(value: str | None) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    if text not in ATOMIC_FAULT_INJECTION_POINTS:
+        raise SecXbrlE2EOfflineOrchestratorError(
+            "sec_xbrl_e2e_offline_orchestrator_fault_point_invalid",
+            "SEC XBRL offline orchestration received an unknown transaction fault injection point.",
+            details={"fault_injection_point": text},
+        )
+    return text
+
+
+def _raise_if_atomic_fault(actual: str | None, expected: str) -> None:
+    if actual != expected:
+        return
+    raise SecXbrlE2EOfflineOrchestratorError(
+        "sec_xbrl_e2e_offline_orchestrator_atomic_fault_injected",
+        "Injected SEC XBRL offline orchestration fault for transaction rollback proof.",
+        details={"fault_injection_point": expected},
+    )
 
 
 def _examined_absent_period_refs(canonical_projection: Mapping[str, Any]) -> list[str]:

@@ -99,6 +99,7 @@ def materialize_redacted_projection_set(
     projection: Mapping[str, Any],
     source_report_schema_id: str,
     source_report_hash: str,
+    commit: bool = True,
 ) -> dict[str, Any]:
     request_id = _required_text(client_request_id, "client_request_id")
     _reject_raw_or_local_authority(request_id)
@@ -202,7 +203,10 @@ def materialize_redacted_projection_set(
                     derived_from_concepts_json=json_clone(fact["derived_from_concepts"]),
                 )
             )
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
     except IntegrityError as exc:
         db.rollback()
         raise SecXbrlProjectionPersistenceError(

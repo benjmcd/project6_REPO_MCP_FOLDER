@@ -451,6 +451,7 @@ def open_redacted_operator_review_workflow(
     *,
     client_request_id: str,
     sec_xbrl_statement_packet_set_id: str,
+    commit: bool = True,
 ) -> dict[str, Any]:
     request_id = _required_text(client_request_id, "client_request_id")
     _reject_raw_or_local_authority(request_id)
@@ -551,7 +552,10 @@ def open_redacted_operator_review_workflow(
     )
     try:
         db.add(workflow)
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
     except IntegrityError as exc:
         db.rollback()
         raise SecXbrlOperatorReviewWorkflowError(

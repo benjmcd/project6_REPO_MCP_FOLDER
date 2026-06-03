@@ -102,6 +102,7 @@ def materialize_redacted_statement_packet(
     client_request_id: str,
     sec_xbrl_projection_set_id: str,
     packet: Mapping[str, Any],
+    commit: bool = True,
 ) -> dict[str, Any]:
     request_id = _required_text(client_request_id, "client_request_id")
     _reject_raw_or_local_authority(request_id)
@@ -269,7 +270,10 @@ def materialize_redacted_statement_packet(
                         derived_from_concepts_json=json_clone(row["derived_from_concepts"]),
                     )
                 )
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
     except IntegrityError as exc:
         db.rollback()
         raise SecXbrlStatementPacketPersistenceError(
