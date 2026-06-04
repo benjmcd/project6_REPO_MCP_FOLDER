@@ -11782,11 +11782,26 @@ EXECUTION_RESULT_REVIEW_REQUEST_SCHEMA: dict[str, Any] = {
 PACKAGE_REVIEW_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
-    "description": "Strict package-review preview fields; explicit package/handoff/source-widening fields remain fail-closed.",
+    "description": "Strict package-review preview fields; selected-pass and material-preview request shapes are mutually exclusive, and explicit package/handoff/source-widening fields remain fail-closed.",
     "required": ["session_id"],
-    "anyOf": [
-        {"required": ["session_id", "analysis_plan_id", "pass_run_id", "preview_id", "preview_hash"]},
-        {"required": ["session_id", "material_preview_id", "material_preview_hash"]},
+    "oneOf": [
+        {
+            "required": ["session_id", "analysis_plan_id", "pass_run_id", "preview_id", "preview_hash"],
+            "not": {"anyOf": [{"required": ["material_preview_id"]}, {"required": ["material_preview_hash"]}]},
+        },
+        {
+            "required": ["session_id", "material_preview_id", "material_preview_hash"],
+            "not": {
+                "anyOf": [
+                    {"required": ["analysis_plan_id"]},
+                    {"required": ["pass_run_id"]},
+                    {"required": ["preview_id"]},
+                    {"required": ["preview_hash"]},
+                    {"required": ["result_review_record_ref"]},
+                    {"required": ["analysis_run_id"]},
+                ]
+            },
+        },
     ],
     "properties": {
         "client_request_id": {"type": "string"},
