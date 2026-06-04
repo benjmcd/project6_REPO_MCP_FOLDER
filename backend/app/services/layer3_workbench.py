@@ -134,6 +134,7 @@ from app.services.layer3_package_entry import (
 )
 from app.services.layer3_package_submit_response import (
     COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+    MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
     PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
     QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
     SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
@@ -285,6 +286,7 @@ from app.services.layer3_workbench_package_state import (
     PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE,
     PACKAGE_REVIEW_PREVIEW_READY_STATE,
     PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID,
+    MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
     QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
     SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
     PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
@@ -6730,6 +6732,21 @@ MIXED_SOURCE_PACKAGE_CONSTRUCTION_SELECTED_PASS_FIELDS = frozenset(
         "analysis_run_id",
     }
 )
+MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_SELECTED_PASS_FIELDS = frozenset(
+    {
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "analysis_run_id",
+    }
+)
+MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_REJECTED_FIELDS = frozenset(
+    {
+        "payload_refs",
+    }
+)
 
 
 def _public_mixed_package_payload_ref(package: L3OutputPackage) -> str:
@@ -6772,7 +6789,11 @@ def _mixed_source_package_construction_commit(db: Session, payload: dict[str, An
             blocked_fields=missing,
             next_allowed_actions=["submit_complete_mixed_source_package_construction_request"],
         )
-    expected_package_kinds = payload.get("expected_package_kinds") or list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    expected_package_kinds = (
+        payload["expected_package_kinds"]
+        if "expected_package_kinds" in payload
+        else list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    )
     if expected_package_kinds != list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS):
         raise Layer3WorkbenchError(
             "mixed_source_package_construction_kinds_mismatch",
@@ -6889,14 +6910,14 @@ def _mixed_source_package_construction_commit(db: Session, payload: dict[str, An
         "source_dataset_version_ids": preview_body["selected_source_ids"]["dataset_version_ids"],
         "reviewed_output_item_summary": None,
         "package_commit_enabled": False,
-        "package_review_submit_enabled": False,
+        "package_review_submit_enabled": True,
         "handoff_enabled": False,
         "aps_handoff_enabled": False,
         "external_export_download_enabled": False,
         "connector_dispatch_enabled": False,
         "provider_public_url_enabled": False,
         "downstream_unavailable": list(commit_summary.get("downstream_unavailable") or []),
-        "next_allowed_actions": [],
+        "next_allowed_actions": ["submit_mixed_source_package_review"],
         "next_state": PACKAGE_CONSTRUCTED_STATE,
         "authority_rail": _authority_rail(
             session_id=session_id,
@@ -6907,6 +6928,398 @@ def _mixed_source_package_construction_commit(db: Session, payload: dict[str, An
             package_review_enabled=False,
         ),
     }
+
+
+def _mixed_source_package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or "").strip()
+    session_id = str(payload.get("session_id") or "").strip()
+    material_preview_id = str(payload.get("material_preview_id") or "").strip()
+    material_preview_hash = str(payload.get("material_preview_hash") or "").strip()
+    supplied_package_preview_hash = str(payload.get("package_review_preview_hash") or "").strip()
+    supplied_contract_hash = str(payload.get("contract_hash") or "").strip()
+    supplied_construction_basis_hash = str(payload.get("construction_basis_hash") or "").strip()
+    reconciliation_record_id = str(payload.get("reconciliation_record_id") or "").strip()
+    operator_decision = str(payload.get("operator_decision") or "").strip()
+    decision_notes = str(payload.get("decision_notes") or "").strip()
+    raw_output_package_ids = payload.get("output_package_ids")
+    raw_payload_hashes = payload.get("payload_hashes")
+    blocked_payload_fields = package_review_submit_blocked_fields(payload)
+    if blocked_payload_fields:
+        blocked_text = ", ".join(blocked_payload_fields)
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_scope_not_admitted",
+            f"Mixed-source package-review submit request includes non-admitted fields: {blocked_text}.",
+            status="invalid",
+            blocked_fields=blocked_payload_fields,
+            next_allowed_actions=["submit_bounded_mixed_source_package_review_submit_request"],
+        )
+    legacy_fields = sorted(field for field in MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_SELECTED_PASS_FIELDS if field in payload)
+    forbidden_fields = sorted(field for field in MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_REJECTED_FIELDS if field in payload)
+    if legacy_fields or forbidden_fields:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_scope_not_admitted",
+            "Mixed-source package-review submit is admitted only from material-authority package fields.",
+            status="invalid",
+            blocked_fields=legacy_fields + forbidden_fields,
+            next_allowed_actions=["submit_mixed_source_material_authority_package_review_submit_request"],
+        )
+    missing = [
+        field
+        for field, value in (
+            ("client_request_id", request_id),
+            ("session_id", session_id),
+            ("material_preview_id", material_preview_id),
+            ("material_preview_hash", material_preview_hash),
+            ("package_review_preview_hash", supplied_package_preview_hash),
+            ("contract_hash", supplied_contract_hash),
+            ("construction_basis_hash", supplied_construction_basis_hash),
+            ("reconciliation_record_id", reconciliation_record_id),
+            ("operator_decision", operator_decision),
+        )
+        if not value
+    ]
+    if not raw_output_package_ids:
+        missing.append("output_package_ids")
+    if not raw_payload_hashes:
+        missing.append("payload_hashes")
+    if missing:
+        raise Layer3WorkbenchError(
+            "missing_mixed_source_package_review_submit_fields",
+            f"Mixed-source package-review submit request is missing required fields: {', '.join(missing)}.",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_mixed_source_package_review_submit_request"],
+        )
+    if operator_decision not in PACKAGE_REVIEW_SUBMIT_DECISIONS:
+        raise Layer3WorkbenchError(
+            "unsupported_package_review_submit_decision",
+            "operator_decision must be approved, changes_requested, rejected, or blocked.",
+            status="invalid",
+            blocked_fields=["operator_decision"],
+        )
+    if operator_decision in PACKAGE_REVIEW_SUBMIT_NOTE_REQUIRED_DECISIONS and not decision_notes:
+        raise Layer3WorkbenchError(
+            "package_review_submit_notes_required",
+            "decision_notes are required for changes_requested, rejected, or blocked package-review decisions.",
+            status="invalid",
+            blocked_fields=["decision_notes"],
+        )
+    expected_package_kinds = (
+        payload["expected_package_kinds"]
+        if "expected_package_kinds" in payload
+        else list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    )
+    if expected_package_kinds != list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS):
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_kinds_mismatch",
+            "Mixed-source package-review submit admits exactly canonical_internal, user_facing, and review_facing package kinds.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["expected_package_kinds"],
+        )
+
+    preview_body = _mixed_source_package_review_preview(
+        db,
+        {
+            "client_request_id": request_id,
+            "session_id": session_id,
+            "material_preview_id": material_preview_id,
+            "material_preview_hash": material_preview_hash,
+        },
+    )
+    if preview_body.get("package_review_preview_hash") != supplied_package_preview_hash:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_preview_mismatch",
+            "Mixed-source package-review submit must reference the current server-recomputed package-review preview hash.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["package_review_preview_hash"],
+            next_allowed_actions=["refresh_package_review_preview"],
+        )
+    if preview_body.get("contract_hash") != supplied_contract_hash:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_contract_mismatch",
+            "Mixed-source package-review submit must reference the current server-recomputed contract hash.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["contract_hash"],
+            next_allowed_actions=["refresh_package_review_preview"],
+        )
+
+    session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().one_or_none()
+    if session is None:
+        raise Layer3WorkbenchError("session_not_found", f"Layer 3 session '{session_id}' was not found.", http_status=404)
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(
+            L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+            L3ReconciliationRecord.session_id == session_id,
+        )
+        .with_for_update()
+        .one_or_none()
+    )
+    if reconciliation is None:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_requires_package_construction",
+            "Mixed-source package-review submit requires a P15 mixed-source package construction reconciliation.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+            next_allowed_actions=["package_construction_commit"],
+        )
+    reconciliation_summary = _json_clone(reconciliation.summary_json or {})
+    if reconciliation_summary.get("source_gate") != SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_construction_source_gate_mismatch",
+            "Mixed-source package-review submit requires P15 mixed-source package construction authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
+    commit_summary = reconciliation_summary.get("workbench_package_commit")
+    if not isinstance(commit_summary, dict):
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_non_workbench_package_state",
+            "Mixed-source package-review submit requires workbench package-construction commit provenance.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    commit_mismatches = [
+        field
+        for field, expected in {
+            "material_preview_id": material_preview_id,
+            "material_preview_hash": material_preview_hash,
+            "package_review_preview_hash": supplied_package_preview_hash,
+            "contract_hash": supplied_contract_hash,
+            "package_construction_source_gate": SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
+        }.items()
+        if str(commit_summary.get(field) or "") != str(expected)
+    ]
+    if commit_mismatches:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_construction_mismatch",
+            "Stored mixed-source package construction provenance does not match the supplied submit authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=commit_mismatches,
+        )
+    expected_construction_basis_hash = str(
+        commit_summary.get("construction_basis_hash") or commit_summary.get("authority_basis_hash") or ""
+    )
+    if supplied_construction_basis_hash != expected_construction_basis_hash:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_construction_basis_mismatch",
+            "Supplied construction_basis_hash does not match the persisted mixed-source package construction.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["construction_basis_hash"],
+        )
+
+    all_packages = (
+        db.query(L3OutputPackage)
+        .filter(
+            L3OutputPackage.session_id == session_id,
+            L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
+        )
+        .order_by(L3OutputPackage.package_kind.asc())
+        .with_for_update()
+        .all()
+    )
+    unexpected_package_kinds = _unexpected_package_kinds(all_packages)
+    if unexpected_package_kinds:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_unexpected_package_state",
+            "Mixed-source package-review submit cannot proceed with unexpected package kinds on the reconciliation.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_kinds"],
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    packages = _review_source_packages(all_packages)
+    if (
+        len(packages) != len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+        or {package.package_kind for package in packages} != set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    ):
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_requires_complete_package_set",
+            "Mixed-source package-review submit requires exactly the constructed canonical_internal, user_facing, and review_facing packages.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["output_package_ids"],
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    ordered_packages = _packages_in_review_order(packages)
+    if not isinstance(raw_output_package_ids, list):
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_package_ids_invalid",
+            "output_package_ids must be a list of the three constructed output package ids.",
+            status="invalid",
+            blocked_fields=["output_package_ids"],
+        )
+    supplied_package_ids = [str(item or "").strip() for item in raw_output_package_ids]
+    expected_package_ids = [package.output_package_id for package in ordered_packages]
+    if len(supplied_package_ids) != len(expected_package_ids) or supplied_package_ids != expected_package_ids:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_package_ids_mismatch",
+            "Supplied output_package_ids do not match the constructed mixed-source package set.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["output_package_ids"],
+        )
+    if not isinstance(raw_payload_hashes, (list, dict)):
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_payload_hashes_invalid",
+            "payload_hashes must be either a list of package hashes or a mapping keyed by package kind or package id.",
+            status="invalid",
+            blocked_fields=["payload_hashes"],
+        )
+    canonical_payload_hashes = _canonical_payload_hashes(payload_hashes=raw_payload_hashes, packages=packages)
+    if canonical_payload_hashes is None:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_payload_hashes_mismatch",
+            "Supplied payload_hashes do not match the constructed mixed-source package payload hashes.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["payload_hashes"],
+        )
+
+    selected_source_ids = preview_body.get("selected_source_ids") or {}
+    package_kinds = [package.package_kind for package in ordered_packages]
+    submit_basis = {
+        "schema_id": "layer3.mixed_source_package_review_submit_authority.v1",
+        "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+        "client_request_id": request_id,
+        "session_id": session_id,
+        "material_preview_id": material_preview_id,
+        "material_preview_hash": material_preview_hash,
+        "contract_hash": supplied_contract_hash,
+        "package_review_preview_hash": supplied_package_preview_hash,
+        "construction_basis_hash": expected_construction_basis_hash,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": package_kinds,
+        "payload_hashes": canonical_payload_hashes,
+        "expected_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+        "operator_decision": operator_decision,
+        "decision_notes": decision_notes or None,
+    }
+    submit_record_ref = _stable_id("l3-mixed-source-package-review-submit", submit_basis)
+    existing_submit = _package_review_submit_from_reconciliation(reconciliation)
+    if existing_submit is not None:
+        if str(existing_submit.get("submit_record_ref") or "") == submit_record_ref:
+            return _package_review_submit_response(
+                request_id=request_id,
+                status="already_submitted",
+                session_id=session_id,
+                analysis_plan_id="",
+                pass_run_id="",
+                preview_id="",
+                preview_hash="",
+                analysis_run_id=None,
+                result_review_record_ref="",
+                package_review_preview_hash=supplied_package_preview_hash,
+                reconciliation_record=reconciliation,
+                packages=packages,
+                review_state=existing_submit,
+            )
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_already_recorded",
+            "This mixed-source package set already has a package-review submit decision.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["client_request_id", "operator_decision"],
+        )
+
+    package_review_state = PACKAGE_REVIEW_SUBMIT_STATE_BY_DECISION[operator_decision]
+    downstream_unavailable = _package_review_submit_downstream_unavailable(
+        package_review_state,
+        mixed_source_submit=True,
+    )
+    negative_authority_flags = _json_clone(preview_body.get("negative_authority_flags") or {})
+    submit_state = {
+        "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+        "package_review_submit_schema_id": MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+        "client_request_id": request_id,
+        "submit_record_ref": submit_record_ref,
+        "authority_basis": submit_basis,
+        "package_review_state": package_review_state,
+        "operator_decision": operator_decision,
+        "decision_notes": decision_notes or None,
+        "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+        "material_preview_id": material_preview_id,
+        "material_preview_hash": material_preview_hash,
+        "contract_hash": supplied_contract_hash,
+        "package_review_preview_hash": supplied_package_preview_hash,
+        "construction_basis_hash": expected_construction_basis_hash,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": package_kinds,
+        "payload_refs": None,
+        "payload_hashes": canonical_payload_hashes,
+        "pass_type": None,
+        "pass_scope": None,
+        "method": None,
+        "source_gate": SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
+        "package_construction_source_gate": SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
+        "source_shape": "dataset_version_plus_aps_content_document",
+        "source_dataset_version_ids": _json_clone(selected_source_ids.get("dataset_version_ids") or []),
+        "aps_content_document_ids": _json_clone(selected_source_ids.get("aps_content_document_ids") or []),
+        "negative_authority_flags": negative_authority_flags,
+        "recorded_at": _utcnow_iso(),
+        "package_review_submit_enabled": False,
+        "handoff_enabled": False,
+        "export_enabled": False,
+        "downstream_unavailable": list(downstream_unavailable),
+    }
+    commit_summary = {**commit_summary, "package_review_submit_enabled": False}
+    reconciliation.summary_json = {
+        **reconciliation_summary,
+        "workbench_package_commit": commit_summary,
+        "package_review_submit": submit_state,
+    }
+    session.summary_json = {
+        **_json_clone(session.summary_json or {}),
+        "package_review_submit": {
+            "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+            "package_review_submit_schema_id": MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+            "submit_record_ref": submit_record_ref,
+            "package_review_state": package_review_state,
+            "operator_decision": operator_decision,
+            "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+            "material_preview_id": material_preview_id,
+            "material_preview_hash": material_preview_hash,
+            "contract_hash": supplied_contract_hash,
+            "reconciliation_record_id": reconciliation_record_id,
+            "output_package_ids": expected_package_ids,
+            "package_kinds": package_kinds,
+            "source_gate": SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
+            "package_construction_source_gate": SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
+            "source_shape": "dataset_version_plus_aps_content_document",
+            "source_dataset_version_ids": _json_clone(selected_source_ids.get("dataset_version_ids") or []),
+            "aps_content_document_ids": _json_clone(selected_source_ids.get("aps_content_document_ids") or []),
+            "package_review_submit_enabled": False,
+            "handoff_enabled": False,
+            "export_enabled": False,
+            "downstream_unavailable": list(downstream_unavailable),
+        },
+    }
+    db.commit()
+    return _package_review_submit_response(
+        request_id=request_id,
+        status="submitted",
+        session_id=session_id,
+        analysis_plan_id="",
+        pass_run_id="",
+        preview_id="",
+        preview_hash="",
+        analysis_run_id=None,
+        result_review_record_ref="",
+        package_review_preview_hash=supplied_package_preview_hash,
+        reconciliation_record=reconciliation,
+        packages=packages,
+        review_state=submit_state,
+    )
 
 
 def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
@@ -7425,6 +7838,12 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
     raw_payload_refs = payload.get("payload_refs")
     raw_payload_hashes = payload.get("payload_hashes")
 
+    material_authority_fields_present = any(
+        field in payload for field in ("material_preview_id", "material_preview_hash", "contract_hash")
+    )
+    if material_authority_fields_present:
+        return _mixed_source_package_review_submit(db, payload)
+
     missing = [
         field
         for field, value in (
@@ -7690,6 +8109,15 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             status="blocked",
             http_status=409,
             blocked_fields=["result_review_record_ref"],
+        )
+    if _package_family_for_review_state(review_state) == PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_submit_requires_material_authority",
+            "Mixed-source package-review submit must use material-preview and P15 package-construction authority, not selected-pass authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["analysis_plan_id", "pass_run_id", "preview_id", "preview_hash", "result_review_record_ref"],
+            next_allowed_actions=["submit_mixed_source_material_authority_package_review_submit_request"],
         )
     _require_package_family_action_admitted(
         review_state,
@@ -12346,6 +12774,9 @@ def _package_review_submit_summary(
     source_intake_package_construction = (
         reconciliation_summary.get("source_gate") == SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE
     )
+    mixed_source_package_construction = (
+        reconciliation_summary.get("source_gate") == SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE
+    )
     recorded_submit = _package_review_submit_from_reconciliation(reconciliation)
     if (
         recorded_submit is None
@@ -12353,6 +12784,7 @@ def _package_review_submit_summary(
         and not cohort_package_construction
         and not qualitative_package_construction
         and not source_intake_package_construction
+        and not mixed_source_package_construction
     ):
         downstream_unavailable = commit_summary.get("downstream_unavailable")
         if not isinstance(downstream_unavailable, list):
@@ -12391,14 +12823,24 @@ def _package_review_submit_summary(
             )
             == SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE
         )
+        recorded_mixed_source_submit = (
+            (
+                recorded_submit.get("package_construction_source_gate")
+                or reconciliation_summary.get("source_gate")
+            )
+            == SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE
+        )
         downstream_unavailable = _package_review_submit_downstream_unavailable(
             str(recorded_submit.get("package_review_state") or ""),
             associated_cohort_submit=recorded_cohort_submit,
             qualitative_aps_submit=recorded_qualitative_submit,
             source_intake_submit=recorded_source_intake_submit,
+            mixed_source_submit=recorded_mixed_source_submit,
         )
         recorded_submit_schema_id = (
-            SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+            MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+            if recorded_mixed_source_submit
+            else SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
             if recorded_source_intake_submit
             else QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
             if recorded_qualitative_submit
@@ -12418,12 +12860,21 @@ def _package_review_submit_summary(
             "decision_notes": recorded_submit.get("decision_notes"),
             "analysis_run_id": recorded_submit.get("analysis_run_id"),
             "result_review_record_ref": recorded_submit.get("result_review_record_ref"),
+            "material_preview_id": recorded_submit.get("material_preview_id"),
+            "material_preview_hash": recorded_submit.get("material_preview_hash"),
+            "contract_hash": recorded_submit.get("contract_hash"),
+            "package_family": recorded_submit.get("package_family"),
+            "negative_authority_flags": _json_clone(recorded_submit.get("negative_authority_flags") or {}),
             "package_review_preview_hash": recorded_submit.get("package_review_preview_hash"),
             "reconciliation_record_id": reconciliation_record_id,
             "output_package_ids": [package.output_package_id for package in ordered_packages],
             "package_kinds": [package.package_kind for package in ordered_packages],
-            "payload_refs": recorded_submit.get("payload_refs")
-            or [package.payload_ref for package in ordered_packages],
+            "payload_refs": (
+                [_public_mixed_package_payload_ref(package) for package in ordered_packages]
+                if recorded_mixed_source_submit
+                else recorded_submit.get("payload_refs")
+                or [package.payload_ref for package in ordered_packages]
+            ),
             "payload_hashes": [package.payload_hash for package in ordered_packages],
             "construction_basis_hash": recorded_submit.get("construction_basis_hash"),
             "pass_type": recorded_submit.get("pass_type"),
@@ -12448,6 +12899,8 @@ def _package_review_submit_summary(
     ready_downstream_unavailable = (
         SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
         if source_intake_package_construction
+        else MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+        if mixed_source_package_construction
         else COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
         if cohort_package_construction
         else QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
@@ -12457,7 +12910,9 @@ def _package_review_submit_summary(
     return {
         "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
         "package_review_submit_schema_id": (
-            SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+            MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+            if mixed_source_package_construction
+            else SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
             if source_intake_package_construction
             else QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
             if qualitative_package_construction
@@ -12471,9 +12926,17 @@ def _package_review_submit_summary(
         "reconciliation_record_id": reconciliation_record_id,
         "output_package_ids": [package.output_package_id for package in ordered_packages],
         "package_kinds": [package.package_kind for package in ordered_packages],
-        "payload_refs": [package.payload_ref for package in ordered_packages],
+        "payload_refs": (
+            [_public_mixed_package_payload_ref(package) for package in ordered_packages]
+            if mixed_source_package_construction
+            else [package.payload_ref for package in ordered_packages]
+        ),
         "payload_hashes": [package.payload_hash for package in ordered_packages],
         "package_review_preview_hash": commit_summary.get("package_review_preview_hash"),
+        "material_preview_id": commit_summary.get("material_preview_id"),
+        "material_preview_hash": commit_summary.get("material_preview_hash"),
+        "contract_hash": commit_summary.get("contract_hash"),
+        "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT if mixed_source_package_construction else None,
         "construction_basis_hash": commit_summary.get("construction_basis_hash")
         or commit_summary.get("authority_basis_hash"),
         "package_construction_source_gate": reconciliation_summary.get("source_gate"),
