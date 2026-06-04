@@ -11673,3 +11673,33 @@ and `git diff --check`.
 
 Next posture: after this runtime lands and is current-main synced, define a
 separate mixed-source package-review submit freeze before any submit runtime.
+
+## P16 Mixed-Source Package Review Submit Freeze
+
+Milestone: `p16_mixed_source_package_review_submit_freeze`.
+
+Planning doc:
+`next_milestone_plans/multi-ingest/34-p16-mixed-submit-freeze.md`.
+
+Status: branch-local planning/control freeze only; no runtime behavior admitted.
+
+Scope: freezes the next mixed-source package-review submit boundary over the
+P15 manifest packages. Future submit must derive from committed Gate B material
+authority, server-recomputed P14/P12 authority, the P15 construction basis, and
+the persisted P15 reconciliation/package rows. The future decision vocabulary
+is `approved`, `changes_requested`, `rejected`, and `blocked`, with
+`decision_notes` required for non-approval decisions.
+
+Non-goals: no submit runtime, no handoff/export, no schema/model/migration, no
+parser behavior, no source-shape expansion, no request-supplied payload rewrite,
+no package reconstruction, no legacy CSV bridge deprecation, no excluded-tool
+behavior, and no production-readiness activation.
+
+Verification target: docs/manifests only. Required checks are manifest JSON
+syntax, Layer 3 authority-index validation, target-selection frozen validation,
+progress check, and `git diff --check`.
+
+Next posture: after this freeze lands and is current-main synced, implement
+mixed-source package-review submit under this boundary while keeping handoff,
+export, parser, schema, source-shape, payload rewrite, legacy bridge,
+excluded-tool behavior, and production readiness blocked.
