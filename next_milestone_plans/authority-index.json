@@ -6,14 +6,17 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "1b51445978903696f7e51e83093567bd57493620",
-    "verified_at_utc": "2026-06-04T20:17:58Z",
-    "verification_summary": "Live main includes PR #2206 P17 review-debt follow-up after PR #2205 P17 mixed-source handoff/export prepare runtime. This branch adds only the P17A rendered/operator status freeze for a future material-authority UI path. No runtime code, SEC XBRL surface, UI behavior, backend route, schema, parser, source-shape, payload rewrite, APS handoff, external export/download, connector dispatch, provider URL, excluded-tool behavior, or production readiness is admitted.",
+    "commit": "4bdbd0ebc18d2a0de0e5ddb1a77ef5f246a94d76",
+    "verified_at_utc": "2026-06-04T20:49:54Z",
+    "verification_summary": "Live main includes SEC-only PR #2208 and this branch implements only the P17A rendered material-authority mixed-source handoff/export prepare path. Runtime scope is limited to layer3.js and focused page tests; no SEC XBRL surface, backend route, schema, parser, source-shape, payload rewrite, APS handoff, external export/download, connector dispatch, provider URL, excluded-tool behavior, or production readiness is admitted.",
     "commands": [
       "git fetch project6-origin main --prune",
       "gh pr list --state open --json number,title,headRefName,baseRefName,isDraft,updatedAt",
       "git rev-parse project6-origin/main",
-      "git cat-file -t 1b51445978903696f7e51e83093567bd57493620",
+      "git cat-file -t 4bdbd0ebc18d2a0de0e5ddb1a77ef5f246a94d76",
+      "node --check .\\backend\\app\\review_ui\\static\\layer3.js",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_page.py -q",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"mixed_source_handoff_export_prepare or package_family_handoff_export_prepare\"",
       "python -B -m json.tool .\\next_milestone_plans\\authority-index.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
@@ -67,7 +70,7 @@
       "lane_id": "multi_ingest_mixed_package",
       "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
       "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
-      "current_state": "branch_local_p17a_mixed_source_rendered_handoff_status_freeze",
+      "current_state": "branch_local_p17a_mixed_source_rendered_handoff_prepare_runtime",
       "source_of_truth": [
         {
           "path": "next_milestone_plans/multi-ingest/README.md",
@@ -89,7 +92,21 @@
             "current-main Phase P16 mixed-source package-review submit runtime",
             "bounded Phase P17 mixed-source handoff/export prepare freeze",
             "current-main Phase P17 mixed-source handoff/export prepare runtime",
-            "bounded Phase P17A mixed-source rendered handoff status freeze"
+            "bounded Phase P17A mixed-source rendered handoff status freeze",
+            "Phase P17A freezes and then implements the rendered material-authority status/control path",
+            "39-p17a-rendered-runtime-closeout.md"
+          ]
+        },
+        {
+          "path": "next_milestone_plans/multi-ingest/39-p17a-rendered-runtime-closeout.md",
+          "kind": "closeout",
+          "authority": "mixed-source rendered material-authority handoff/export prepare control boundary",
+          "freshness": "current_closeout",
+          "required_terms": [
+            "Status: branch-local runtime implementation verified on current",
+            "rendered_mixed_source_handoff_export_prepare_control",
+            "State.sessionSummary.handoff_export_prepare material authority",
+            "No backend API route change."
           ]
         },
         {
@@ -249,6 +266,7 @@
         }
       ],
       "current_truth_order": [
+        "P17A mixed-source rendered handoff prepare runtime closeout",
         "P17A mixed-source rendered handoff status freeze",
         "P17 mixed-source handoff/export prepare runtime closeout",
         "P17 mixed-source handoff/export prepare freeze",
@@ -265,14 +283,14 @@
         "multi-ingest README front door"
       ],
       "known_limits": [
-        "P17A is planning/control only; it freezes a future rendered material-authority UI path and does not change runtime or UI behavior by itself.",
+        "P17A now admits only the rendered material-authority control for the existing P17 mixed-source handoff/export prepare API; it does not admit APS handoff, external export/download, connector/provider behavior, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool, or production-readiness behavior.",
         "P17 admits reference-only mixed-source handoff/export prepare over approved P16 submit authority; pre-prepare rendered session-summary readiness remains unavailable until a separate material-authority UI path is implemented from the P17A freeze; it does not admit APS handoff, external export/download, connector dispatch, provider URLs, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool, or production-readiness behavior.",
         "Mixed-source APS handoff, external export/download, and payload rewrite runtime semantics remain not admitted.",
         "P16 submit runtime records one package-review submit state only; P17 is the separate prepare-only runtime and still does not admit APS handoff, external export/download, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool, or production-readiness behavior.",
         "Narrative-table linking is deterministic preview and package-manifest metadata only; no request-supplied package payload mutation is admitted.",
         "Legacy CSV bridge deprecation is separate from mixed-source package semantics."
       ],
-      "next_decision": "After the P17A rendered handoff status freeze lands and current-main is synced, implement only the material-authority rendered status/prepare-control path before selecting APS handoff or external export/download readiness; keep connector/provider/parser/schema/source-shape/payload-rewrite scope closed unless that exact later freeze admits it."
+      "next_decision": "Freeze exactly one next mixed-source downstream surface before runtime, likely APS handoff or external export/download readiness; keep connector/provider/parser/schema/source-shape/payload-rewrite scope closed unless that exact later freeze admits it."
     },
     {
       "lane_id": "analyst_insight",

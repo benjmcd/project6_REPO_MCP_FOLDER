@@ -1257,6 +1257,99 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "schema_migration:" not in signed_slice
 
 
+def test_layer3_mixed_source_rendered_handoff_prepare_uses_material_authority() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+    assert js.status_code == 200
+    js_text = js.text.replace("\r\n", "\n")
+
+    authority_slice = _js_slice(
+        js_text,
+        "function mixedSourceHandoffExportPrepareAuthorityPacket",
+        "function isMixedSourceHandoffExportPrepareAuthority",
+    )
+    gate_slice = _js_slice(
+        js_text,
+        "function canSubmitHandoffExportPrepare",
+        "function canSubmitApsHandoffDispatch",
+    )
+    payload_slice = _js_slice(
+        js_text,
+        "function mixedSourceHandoffExportPreparePayload",
+        "function apsHandoffDispatchPayload",
+    )
+    panel_slice = _js_slice(
+        js_text,
+        "function handoffExportPanelState",
+        "function apsHandoffPanelState",
+    )
+    submit_slice = _js_slice(
+        js_text,
+        "async function submitHandoffExportPrepare",
+        "async function submitApsHandoffDispatch",
+    )
+    operation_dock_slice = _js_slice(
+        js_text,
+        "function operationDockStatus",
+        "function renderOperationDockSummary",
+    )
+
+    for required in (
+        "MIXED_SOURCE_HANDOFF_EXPORT_PREPARE_SCHEMA_ID",
+        "MIXED_SOURCE_HANDOFF_EXPORT_TARGET",
+        "MIXED_SOURCE_HANDOFF_EXPORT_MODE",
+        "handoff.package_family === 'mixed_dataset_document'",
+        "handoff.handoff_export_prepare_schema_id === MIXED_SOURCE_HANDOFF_EXPORT_PREPARE_SCHEMA_ID",
+        "packet.package_review_state !== 'package_review_approved'",
+        "packet.handoff_target !== MIXED_SOURCE_HANDOFF_EXPORT_TARGET",
+        "packet.export_mode !== MIXED_SOURCE_HANDOFF_EXPORT_MODE",
+        "exactPackageKinds(packageKinds)",
+    ):
+        assert required in authority_slice or required in js_text
+    assert "packageKindsFromState()" not in authority_slice
+    assert "const mixedSourcePacket = mixedSourceHandoffExportPrepareAuthorityPacket()" in gate_slice
+    assert gate_slice.find("const mixedSourcePacket = mixedSourceHandoffExportPrepareAuthorityPacket()") < gate_slice.find("handoff.available === true")
+    assert "mixedSourceMode" in submit_slice
+    assert "mixedSourceHandoffExportPreparePayload()" in submit_slice
+    assert "Mixed-source handoff/export preparation recorded." in submit_slice
+    assert "rendered_mixed_source_handoff_export_prepare_control" in panel_slice
+    assert "State.sessionSummary.handoff_export_prepare material authority" in panel_slice
+    assert "mixed_source_handoff_export_material_authority_ready" in panel_slice
+    assert "material authority ready" in operation_dock_slice
+    assert operation_dock_slice.find("mixedSourceHandoffExportPrepareAuthorityPacket()") < operation_dock_slice.find("State.sessionSummary?.handoff_export_prepare?.available === true")
+    for required in (
+        "material_preview_id: packet.material_preview_id",
+        "material_preview_hash: packet.material_preview_hash",
+        "package_review_preview_hash: packet.package_review_preview_hash",
+        "contract_hash: packet.contract_hash",
+        "construction_basis_hash: packet.construction_basis_hash",
+        "reconciliation_record_id: packet.reconciliation_record_id",
+        "output_package_ids: packet.output_package_ids",
+        "payload_hashes: packet.payload_hashes",
+        "package_review_submit_record_ref: packet.package_review_submit_record_ref",
+        "package_review_state: packet.package_review_state",
+        "handoff_target: MIXED_SOURCE_HANDOFF_EXPORT_TARGET",
+        "export_mode: MIXED_SOURCE_HANDOFF_EXPORT_MODE",
+        "expected_package_kinds: packet.package_kinds",
+    ):
+        assert required in payload_slice
+    for forbidden in (
+        "analysis_plan_id:",
+        "pass_run_id:",
+        "preview_id:",
+        "preview_hash:",
+        "result_review_record_ref:",
+        "payload_refs:",
+        "provider_public_url",
+        "connector_run_id",
+        "destination",
+        "local_file_path",
+        "package_payload",
+        "schema_migration",
+        "source_expansion",
+    ):
+        assert f"\n        {forbidden}" not in payload_slice
+
+
 def test_layer3_provider_public_url_use_rendered_control_is_bounded() -> None:
     html = client.get("/review/layer3").text
     js = client.get("/review/layer3/static/layer3.js").text

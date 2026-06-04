@@ -1,5 +1,41 @@
 # Layer3 Progress Board
 
+## P17A Mixed-Source Rendered Handoff Prepare Runtime
+
+Milestone:
+`p17a_mixed_source_rendered_handoff_prepare_runtime`.
+
+Closeout doc:
+`next_milestone_plans/multi-ingest/39-p17a-rendered-runtime-closeout.md`.
+
+Status: branch-local rendered runtime implementation verified on current
+`project6-origin/main` after SEC-only PR `#2208`.
+
+Scope: implements only the rendered `/review/layer3` material-authority
+handoff/export prepare path selected by the P17A freeze. The control derives
+authority from server-owned mixed-source session summary/package submit/package
+construction state, requires `package_review_approved`, exact
+`canonical_internal`, `user_facing`, and `review_facing` package kinds, complete
+package IDs and payload hashes, P17 material-preview/contract/construction
+hashes, and submits target `mixed_source_review_package` with mode
+`reference_envelope_only`.
+
+Non-goals: no backend route, DTO, model, migration, parser, source-shape,
+package construction, package-review submit, handoff/export persistence, APS
+handoff, external export/download, connector/provider/local-outbox behavior,
+payload rewrite, excluded-tool behavior, or production-readiness change.
+
+Proof: `node --check ./backend/app/review_ui/static/layer3.js` passed;
+`python -B -m pytest ./backend/tests/test_layer3_page.py -q` passed with
+`22 passed, 3 warnings`; focused mixed-source handoff/export API contract slice
+passed with `1 passed, 290 deselected, 3 warnings`.
+
+Next posture: after this rendered runtime lands and current main syncs, freeze
+exactly one next mixed-source downstream surface before runtime, likely APS
+handoff or external export/download readiness. Keep connector/provider/parser/
+schema/source-shape/payload-rewrite/excluded-tool/production-readiness scope
+closed unless that later freeze admits it.
+
 ## P17A Mixed-Source Rendered Handoff Status Freeze
 
 Milestone:
