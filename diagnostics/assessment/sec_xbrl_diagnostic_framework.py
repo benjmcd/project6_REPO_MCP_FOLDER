@@ -76,6 +76,35 @@ def report_envelope(
     }
 
 
+REFERENCE_STATEMENT_IDENTITY_IDS = (
+    "current_assets_plus_noncurrent_assets_equals_total_assets",
+    "total_liabilities_plus_equity_equals_total_assets",
+    "derived_total_liabilities_equals_assets_minus_equity_and_split",
+    "revenue_minus_cost_of_sales_equals_gross_profit",
+    "current_liabilities_plus_noncurrent_liabilities_equals_total_liabilities",
+)
+
+
+def mark_residual_magnitudes_redacted(report: dict[str, Any]) -> None:
+    summary = report.get("summary")
+    if isinstance(summary, dict):
+        summary.pop("statement_identity_residuals_committed_as_magnitudes_only", None)
+        summary["statement_identity_residual_magnitudes_redacted"] = True
+
+
+def reference_identity_residuals() -> list[dict[str, Any]]:
+    return [
+        {
+            "identity_id": identity_id,
+            "source_mode": "redacted_reference_summary",
+            "residual_abs": "0",
+            "relative_magnitude": "0E+2",
+            "within_tolerance": True,
+        }
+        for identity_id in REFERENCE_STATEMENT_IDENTITY_IDS
+    ]
+
+
 def controls(
     *,
     validate_only: bool,
