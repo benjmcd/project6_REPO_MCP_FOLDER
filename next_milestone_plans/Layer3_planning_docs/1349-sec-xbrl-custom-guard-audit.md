@@ -123,6 +123,11 @@ Safe next slice, if pursued: extract a value-reveal-family adapter that wraps
 the shared guard while preserving `blocked_keys`, HTTP status, exact error
 codes, CIK/contact scan variants, and response traversal behavior. Do not merge
 it with persistence or E2E guard work.
+The value-reveal-family raw/local authority adapter is now extracted in the
+shared guard. The authority and controlled-submit services still own their
+service-specific exception classes, error codes, messages, and blocked-key
+sets, while the shared adapter owns the common CIK/contextual-CIK/operator
+contact scan posture.
 
 ### E2E output family
 
