@@ -6,9 +6,9 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "3ecaf0cc114c9eeaace31ce4b5799ad6c77eadbb",
-    "verified_at_utc": "2026-06-04T15:35:57Z",
-    "verification_summary": "Live main includes PR #2196 P15 post-merge docs sync. This branch adds a P16 mixed-source package-review submit freeze only; runtime submit, handoff, export, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool behavior, and production readiness remain blocked.",
+    "commit": "4825fdc07699d1a634c1fb8a6b3686de2ac74ace",
+    "verified_at_utc": "2026-06-04T16:27:00Z",
+    "verification_summary": "Live main includes PR #2198 SEC docs follow-up. This branch adds P16 mixed-source package-review submit runtime over P15 package rows; handoff, export, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool behavior, and production readiness remain blocked.",
     "commands": [
       "git fetch project6-origin main --prune",
       "gh pr list --state open --json number,title,headRefName,baseRefName,isDraft,updatedAt",
@@ -67,7 +67,7 @@
       "lane_id": "multi_ingest_mixed_package",
       "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
       "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
-      "current_state": "branch_local_p16_mixed_source_package_review_submit_freeze_no_runtime_submit",
+      "current_state": "branch_local_p16_mixed_source_package_review_submit_runtime_verified",
       "source_of_truth": [
         {
           "path": "next_milestone_plans/multi-ingest/README.md",
@@ -86,6 +86,19 @@
             "bounded Phase P15 mixed-source package construction commit freeze",
             "current-main Phase P15 mixed-source package construction commit runtime",
             "bounded Phase P16 mixed-source package-review submit freeze"
+          ]
+        },
+        {
+          "path": "next_milestone_plans/multi-ingest/35-p16-runtime-closeout.md",
+          "kind": "closeout",
+          "authority": "mixed-source package-review submit runtime boundary",
+          "freshness": "current_closeout",
+          "required_terms": [
+            "Status: branch-local runtime implementation verified.",
+            "layer3.mixed_source_package_review_submit.v1",
+            "explicit `expected_package_kinds: []` fails closed",
+            "material-authority routing is based on field presence",
+            "No package payload rewrite from request data."
           ]
         },
         {
@@ -193,6 +206,7 @@
         }
       ],
       "current_truth_order": [
+        "P16 mixed-source package-review submit runtime closeout",
         "P16 mixed-source package-review submit freeze",
         "P15 mixed-source package construction commit runtime closeout",
         "P15 mixed-source package construction commit freeze",
@@ -205,12 +219,12 @@
         "multi-ingest README front door"
       ],
       "known_limits": [
-        "Mixed-source package-review submit runtime, handoff, export, and payload rewrite semantics remain not admitted.",
-        "P16 is a freeze over P15 manifest-package decision semantics only; it does not change package-family policy or runtime behavior.",
+        "Mixed-source handoff, export, and payload rewrite semantics remain not admitted.",
+        "P16 submit runtime records one package-review submit state only; it does not admit handoff/export, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool, or production-readiness behavior.",
         "Narrative-table linking is deterministic preview and package-manifest metadata only; no request-supplied package payload mutation is admitted.",
         "Legacy CSV bridge deprecation is separate from mixed-source package semantics."
       ],
-      "next_decision": "After the P16 freeze is merged and current-main synced, implement mixed-source package-review submit only from material authority over the P15 package manifests while keeping handoff/export and production readiness blocked."
+      "next_decision": "After the P16 submit runtime is merged and current-main synced, freeze a separate P17 mixed-source handoff/export authority boundary while keeping parser/schema/source-shape/payload-rewrite scope closed."
     },
     {
       "lane_id": "analyst_insight",

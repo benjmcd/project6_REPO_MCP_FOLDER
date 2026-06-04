@@ -11703,3 +11703,42 @@ Next posture: after this freeze lands and is current-main synced, implement
 mixed-source package-review submit under this boundary while keeping handoff,
 export, parser, schema, source-shape, payload rewrite, legacy bridge,
 excluded-tool behavior, and production readiness blocked.
+
+## P16 Mixed-Source Package Review Submit Runtime
+
+Milestone: `p16_mixed_source_package_review_submit_runtime`.
+
+Closeout doc:
+`next_milestone_plans/multi-ingest/35-p16-runtime-closeout.md`.
+
+Status: branch-local runtime implementation verified.
+
+Scope: admits material-authority mixed-source package-review submit over the
+P15 reconciliation/package rows. The route recomputes P14/P12 authority
+server-side, requires matching material preview, preview hash, contract hash,
+construction basis hash, reconciliation ID, package IDs, package kinds, and
+payload hashes, then records one package-review submit state in reconciliation
+and session summaries.
+
+Review-debt closure: explicit empty `expected_package_kinds` fails closed;
+material-authority dispatch uses field presence rather than truthiness; mixed
+status/submit payload refs are public `layer3://mixed-source-package/...` refs;
+submit idempotency records `client_request_id` and rejects conflicting
+post-submit requests.
+
+Non-goals: no handoff/export, no schema/model/migration, no parser behavior,
+no source-shape expansion, no request-supplied payload rewrite, no package
+reconstruction, no legacy CSV bridge deprecation, no excluded-tool behavior,
+and no production-readiness activation.
+
+Verification: touched API/service/test compile passed; focused
+package-family/contract/workbench-state/submit-response/workbench suite passed
+with `71 passed, 2 warnings`; focused Layer 3 API mixed-source/package
+submit/construction/preview slice passed with `33 passed, 254 deselected, 3
+warnings`; manifest JSON syntax, Layer 3 authority-index validation,
+target-selection frozen validation, and progress check passed.
+
+Next posture: after this runtime lands and is current-main synced, freeze a
+separate P17 mixed-source handoff/export authority boundary. Do not widen
+parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool, or
+production-readiness behavior in the submit runtime lane.

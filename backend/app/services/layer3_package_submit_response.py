@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.models.models import L3OutputPackage, L3ReconciliationRecord
+from app.services.layer3_package_entry import SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE
 from app.services.layer3_authority_rail import authority_rail
 from app.services.layer3_preview_contract import preview_identity
 from app.services.layer3_response_contract import base_response
@@ -17,6 +18,11 @@ PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.package_review_submit.v1"
 COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.cohort_package_review_submit.v1"
 QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.qual_aps_package_review_submit.v1"
 SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.source_intake_package_review_submit.v1"
+MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.mixed_source_package_review_submit.v1"
+
+
+def _public_mixed_package_payload_ref(package: L3OutputPackage) -> str:
+    return f"layer3://mixed-source-package/{package.output_package_id}/{package.package_kind}"
 
 
 def package_review_submit_response(
@@ -47,11 +53,21 @@ def package_review_submit_response(
         str(review_state.get("package_construction_source_gate") or "")
         == "314_SOURCE_INTAKE_PACKAGE_CONSTRUCTION_COMMIT_BOUNDARY_FREEZE"
     )
+    mixed_source_submit = (
+        str(review_state.get("package_construction_source_gate") or "")
+        == SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE
+    )
     downstream_unavailable = package_review_submit_downstream_unavailable(
         str(review_state.get("package_review_state") or ""),
         associated_cohort_submit=associated_cohort_submit,
         qualitative_aps_submit=qualitative_aps_submit,
         source_intake_submit=source_intake_submit,
+        mixed_source_submit=mixed_source_submit,
+    )
+    payload_refs = (
+        [_public_mixed_package_payload_ref(package) for package in ordered_packages]
+        if mixed_source_submit
+        else [package.payload_ref for package in ordered_packages]
     )
     body = {
         **base_response(PACKAGE_REVIEW_SUBMIT_SCHEMA_ID, request_id=request_id, status=status),
@@ -62,11 +78,16 @@ def package_review_submit_response(
         "analysis_run_id": analysis_run_id,
         "result_review_record_ref": result_review_record_ref,
         "package_review_preview_hash": package_review_preview_hash,
+        "material_preview_id": review_state.get("material_preview_id"),
+        "material_preview_hash": review_state.get("material_preview_hash"),
+        "contract_hash": review_state.get("contract_hash"),
+        "package_family": review_state.get("package_family"),
+        "negative_authority_flags": json_clone(review_state.get("negative_authority_flags") or {}),
         "construction_basis_hash": review_state.get("construction_basis_hash"),
         "reconciliation_record_id": reconciliation_record.reconciliation_record_id,
         "output_package_ids": [package.output_package_id for package in ordered_packages],
         "package_kinds": [package.package_kind for package in ordered_packages],
-        "payload_refs": [package.payload_ref for package in ordered_packages],
+        "payload_refs": payload_refs,
         "payload_hashes": [package.payload_hash for package in ordered_packages],
         "operator_decision": review_state["operator_decision"],
         "decision_notes": review_state.get("decision_notes"),
@@ -96,6 +117,9 @@ def package_review_submit_response(
             session_id=session_id,
             current_gate="package",
             persistence_mode=(
+                "durable_mixed_source_package_review_submit"
+                if mixed_source_submit
+                else
                 "durable_source_intake_package_review_submit"
                 if source_intake_submit
                 else "durable_package_review_submit"
@@ -111,4 +135,6 @@ def package_review_submit_response(
         body["schema_id"] = QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
     if source_intake_submit:
         body["schema_id"] = SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+    if mixed_source_submit:
+        body["schema_id"] = MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
     return body
