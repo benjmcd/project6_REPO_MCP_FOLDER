@@ -44523,7 +44523,7 @@
     "proof_kind": "sec_xbrl_default_report_leak_adapter_proof",
     "milestone": "sec_xbrl_default_report_leak_adapter_v1",
     "status": "current_main_behavior_preserving_service_adapter_merged",
-    "branch": "codex/secxbrl-guard-audit",
+    "source_pr": "#2193",
     "merge_commit": "dc49fb73baf38d6277ae34ccead10b794dc55cff",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md",
     "proof_terms": "Only the exact default reject_report_leaks service adapter is extracted; offline evidence loader and CompanyFacts oracle packet preserve service-local exception class, code, and message with include_raw_value_keys=False. Proof-capability and multi-filing leak guards remain local because their scan posture differs.",

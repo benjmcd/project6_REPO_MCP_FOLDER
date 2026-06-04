@@ -41,7 +41,7 @@ Milestone:
 Planning doc:
 `next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md`.
 
-Status: merged as PR #2193 at commit `dc49fb73` (`cb0420bc`
+Status: merged as PR #2193 at commit `dc49fb73` (`7f530e65`
 implementation, `dc49fb73` merge).
 
 Scope: extracts only the exact default report-leak service adapter shared by
