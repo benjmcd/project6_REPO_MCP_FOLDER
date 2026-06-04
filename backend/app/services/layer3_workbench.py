@@ -7343,7 +7343,7 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             next_allowed_actions=["submit_bounded_package_construction_commit_request"],
         )
     material_authority_fields_present = any(
-        field in payload and payload.get(field) is not None
+        str(payload.get(field) or "").strip()
         for field in ("material_preview_id", "material_preview_hash", "contract_hash")
     )
     if material_authority_fields_present:
@@ -7839,7 +7839,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
     raw_payload_hashes = payload.get("payload_hashes")
 
     material_authority_fields_present = any(
-        field in payload and payload.get(field) is not None
+        str(payload.get(field) or "").strip()
         for field in ("material_preview_id", "material_preview_hash", "contract_hash")
     )
     if material_authority_fields_present:

@@ -18210,9 +18210,18 @@ def test_layer3_api_mixed_source_package_review_submit_records_decision(
     assert needs_notes.json()["error_code"] == "package_review_submit_notes_required"
 
 
-def test_layer3_api_package_review_submit_ignores_nullable_mixed_authority_fields_for_selected_pass(
+@pytest.mark.parametrize(
+    ("material_field_value", "request_suffix"),
+    [
+        (None, "nullable"),
+        ("", "blank"),
+    ],
+)
+def test_layer3_api_package_review_submit_ignores_nullable_or_blank_mixed_authority_fields_for_selected_pass(
     client: TestClient,
     tmp_path,
+    material_field_value,
+    request_suffix: str,
 ) -> None:
     (
         session_id,
@@ -18227,11 +18236,11 @@ def test_layer3_api_package_review_submit_ignores_nullable_mixed_authority_field
     ) = _construct_quant_package_set(
         client,
         tmp_path,
-        request_id="api-package-submit-nullable-mixed-fields",
+        request_id=f"api-package-submit-{request_suffix}-mixed-fields",
     )
     pass_run_id = selection_body["pass_run_ids"][0]
     payload = {
-        "client_request_id": "api-package-submit-nullable-mixed-fields-submit",
+        "client_request_id": f"api-package-submit-{request_suffix}-mixed-fields-submit",
         "session_id": session_id,
         "analysis_plan_id": approval_body["analysis_plan_id"],
         "pass_run_id": pass_run_id,
@@ -18245,9 +18254,9 @@ def test_layer3_api_package_review_submit_ignores_nullable_mixed_authority_field
         "payload_hashes": commit_body["payload_hashes"],
         "operator_decision": "approved",
         "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
-        "material_preview_id": None,
-        "material_preview_hash": None,
-        "contract_hash": None,
+        "material_preview_id": material_field_value,
+        "material_preview_hash": material_field_value,
+        "contract_hash": material_field_value,
     }
 
     response = client.post("/api/v1/layer3/package/review/submit", json=payload)
@@ -18257,6 +18266,66 @@ def test_layer3_api_package_review_submit_ignores_nullable_mixed_authority_field
     assert body["analysis_plan_id"] == approval_body["analysis_plan_id"]
     assert body["pass_run_id"] == pass_run_id
     assert body["package_review_state"] == "package_review_approved"
+
+
+def test_layer3_api_package_construction_commit_ignores_blank_mixed_authority_fields_for_selected_pass(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        _status_body,
+        review_body,
+    ) = _execute_and_approve_quant_result_review(
+        client,
+        tmp_path,
+        request_id="api-package-commit-blank-mixed-fields",
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+    package_preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": "api-package-commit-blank-mixed-fields-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert package_preview.status_code == 200
+
+    response = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": "api-package-commit-blank-mixed-fields-commit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": package_preview.json()["package_review_preview_hash"],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+            "material_preview_id": "",
+            "material_preview_hash": "",
+            "contract_hash": "",
+        },
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.package_construction_commit.v1"
+    assert body["analysis_plan_id"] == approval_body["analysis_plan_id"]
+    assert body["pass_run_id"] == pass_run_id
+    assert len(body["output_package_ids"]) == 3
+    assert body["package_review_submit_enabled"] is True
 
 
 def test_layer3_api_mixed_source_package_review_preview_rejects_stale_authority(
