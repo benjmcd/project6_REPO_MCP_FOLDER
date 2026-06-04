@@ -45405,10 +45405,11 @@
   "latest_p18_mixed_source_aps_handoff_dispatch_freeze_proof_summary": "P18 is a docs/control freeze for future mixed-source APS handoff dispatch. It selects dispatch as the prerequisite before external export/download readiness, admits no runtime behavior by itself, and keeps downstream export/download/provider/connector/schema/parser/source-shape/payload/production scope closed.",
   "p18_mixed_source_aps_handoff_dispatch_runtime_proof": {
     "milestone": "p18_mixed_source_aps_handoff_dispatch_runtime",
-    "status": "branch_local_runtime_implementation_proof",
+    "status": "current_main_runtime_verified_after_pr_2216_and_2217",
     "runtime_doc": "next_milestone_plans/multi-ingest/42-p18-runtime-closeout.md",
+    "current_main_sync_doc": "next_milestone_plans/multi-ingest/43-p18-current-main-sync.md",
     "freeze_doc": "next_milestone_plans/multi-ingest/41-p18-mixed-aps-handoff-freeze.md",
-    "proof_terms": "P18 runtime branch-locally admits only reference-only mixed-source APS handoff dispatch state after P17 mixed-source handoff/export prepare. It does not create an APS evidence-bundle package row, local artifact, local path, external export/download readiness, connector/provider behavior, schema/model/migration, parser/source-shape expansion, package payload rewrite, excluded-tool behavior, or production-readiness behavior.",
+    "proof_terms": "P18 runtime admits current-main reference-only mixed-source APS handoff dispatch state after P17 mixed-source handoff/export prepare. It does not create an APS evidence-bundle package row, local artifact, local path, external export/download readiness, connector/provider behavior, schema/model/migration, parser/source-shape expansion, package payload rewrite, excluded-tool behavior, or production-readiness behavior.",
     "authority_basis": [
       "P18 mixed-source APS handoff dispatch freeze",
       "P17A rendered material-authority handoff prepare runtime",
@@ -45466,9 +45467,52 @@
       "python -m pytest .\\backend\\tests\\test_layer3_api.py -k \"mixed_source_aps_handoff_dispatch_records_reference_state or layer3_handoff_openapi_contracts\" --maxfail=1 -q -> 2 passed, 290 deselected, 3 warnings",
       "python -m pytest .\\backend\\tests\\test_layer3_api.py -k \"mixed_source_package or mixed_source_handoff_export_prepare_records_reference_envelope or mixed_source_aps_handoff_dispatch_records_reference_state or aps_handoff_dispatch_materializes_owner_service_bundle_without_mutating_sources or aps_handoff_dispatch_prechecks_fail_closed or aps_handoff_dispatch_requires_prepared_state\" --maxfail=1 -q -> 12 passed, 280 deselected, 3 warnings",
       "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -> 292 passed, 4 warnings",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -k \"layer3_handoff_openapi_contracts or aps_handoff_dispatch_blank_or_null_mixed_authority_fields_fail_closed\" --maxfail=1 -q -> 3 passed, 289 deselected, 3 warnings",
       "manifest JSON syntax and governance validators passed"
     ],
-    "next_posture": "merge_and_current_main_sync_p18_runtime_then_freeze_mixed_source_external_export_download_readiness_before_implementation"
+    "next_posture": "freeze_mixed_source_external_export_download_readiness_before_implementation"
   },
-  "latest_p18_mixed_source_aps_handoff_dispatch_runtime_proof_summary": "P18 runtime proof branch-locally implements reference-only mixed-source APS handoff dispatch over P17 prepared mixed-source authority. It validates the full P14/P15/P16/P17 material-authority chain, records JSON state only, emits public refs, creates no APS evidence-bundle package row or local artifact, and leaves mixed-source external export/download readiness for a later freeze after merge/current-main sync."
+  "p18_mixed_source_aps_handoff_dispatch_current_main_sync_proof": {
+    "milestone": "p18_mixed_source_aps_handoff_dispatch_current_main_sync",
+    "status": "docs_control_current_main_sync_only",
+    "sync_doc": "next_milestone_plans/multi-ingest/43-p18-current-main-sync.md",
+    "runtime_doc": "next_milestone_plans/multi-ingest/42-p18-runtime-closeout.md",
+    "live_main_commit_synced": "a182a33e32eea7b235859fd23cbe40c06307ed09",
+    "runtime_pr": "#2216",
+    "runtime_merge_commit": "7c8c7fcd2cef4228b7fff17645920ea75ef53eeb",
+    "review_debt_followup_pr": "#2217",
+    "review_debt_followup_merge_commit": "a182a33e32eea7b235859fd23cbe40c06307ed09",
+    "proof_terms": "P18 current-main sync records that mixed-source APS handoff dispatch is live after PR #2216 and PR #2217, while this sync itself changes no runtime, UI/static, schema/model/migration, parser/source-shape, package payload, external export/download, connector/provider, excluded-tool, or production-readiness behavior.",
+    "positive_sync_effects": [
+      "P18 runtime closeout now cites current-main verification",
+      "P18 sync doc records PR #2216 and PR #2217 authority",
+      "multi-ingest README and progress board select mixed-source external export/download readiness as the next freeze",
+      "authority/progress/proof manifests expose current-main P18 state"
+    ],
+    "negative_authority_flags": {
+      "runtime_behavior_changed_by_sync": false,
+      "rendered_ui_behavior_changed_by_sync": false,
+      "backend_route_changed_by_sync": false,
+      "schema_or_migration_changed_by_sync": false,
+      "parser_behavior_changed_by_sync": false,
+      "new_source_shape_admitted_by_sync": false,
+      "package_payload_rewrite_performed_by_sync": false,
+      "external_export_download_enabled_by_sync": false,
+      "connector_dispatch_enabled_by_sync": false,
+      "provider_url_enabled_by_sync": false,
+      "excluded_tool_included_by_sync": false,
+      "production_readiness_claimed_by_sync": false
+    },
+    "verification": [
+      "python -B -m json.tool .\\next_milestone_plans\\authority-index.json",
+      "python -B -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -B -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "python -B .\\tools\\l3-authority-index-validate.py",
+      "python -B .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "python -B .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ],
+    "next_posture": "freeze_mixed_source_external_export_download_readiness_before_implementation"
+  },
+  "latest_p18_mixed_source_aps_handoff_dispatch_runtime_proof_summary": "P18 runtime now implements current-main reference-only mixed-source APS handoff dispatch over P17 prepared mixed-source authority after PR #2216 and PR #2217. It validates the full P14/P15/P16/P17 material-authority chain, records JSON state only, emits public refs, creates no APS evidence-bundle package row or local artifact, and unblocks mixed-source external export/download readiness for a separate freeze before implementation."
 }
