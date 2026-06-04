@@ -11544,3 +11544,35 @@ Next posture: implement read-only mixed-source package review preview only after
 proving P11 material-preview readiness, P12 contract authority, and P13/P13A
 policy gates; keep mixed-source commit, submit, handoff, export, parser,
 schema, source-shape, and Onlook behavior blocked.
+
+## P14 Mixed-Source Package Review Preview
+
+Milestone: `p14_mixed_source_package_review_preview`.
+
+Planning doc:
+`next_milestone_plans/multi-ingest/31-p14-mixed-preview.md`.
+
+Status: branch implementation pending merge.
+
+Scope: admits only read-only package-review preview for `mixed_dataset_document`
+when the request supplies `session_id`, `material_preview_id`, and
+`material_preview_hash` matching committed Gate B material authority. The route
+derives selected `dataset_version` and `aps_content_document` IDs from the
+server-owned Gate B decision manifest, emits deterministic narrative-table link
+metadata, and returns the governed `layer3.mixed_source_package_contract.v1`
+contract hash.
+
+Non-goals: no mixed-source package construction commit, package-review submit,
+handoff, export, schema, migration, parser behavior, source-shape expansion,
+generic XML/HTML admission, archive-member orchestration, payload rewrite,
+legacy CSV bridge deprecation, or Onlook work.
+
+Verification: manifest JSON syntax, Layer 3 authority-index validation,
+target-selection frozen validation, and progress check passed; package-family,
+package-state, package-review contract, package-submit response, and workbench
+tests passed with `70 passed, 2 warnings`; broader Gate B/package-review
+preview API keyword slice passed with `17 passed, 268 deselected, 3 warnings`.
+
+Next posture: decide the first mixed-source package construction commit
+boundary from the P14 preview hash only if deterministic package payload
+semantics and downstream blocking remain explicit.

@@ -1572,6 +1572,8 @@ class Layer3PackageReviewPreviewRequest(BaseModel):
 
     client_request_id: str | None = None
     session_id: str | None = None
+    material_preview_id: str | None = None
+    material_preview_hash: str | None = None
     analysis_plan_id: str | None = None
     pass_run_id: str | None = None
     preview_id: str | None = None
@@ -1601,6 +1603,7 @@ class Layer3PackageReviewPreviewRequest(BaseModel):
     runtime_db_write: Any | None = None
     artifact_manifest: Any | None = None
     aps_handoff: Any | None = None
+    onlook: Any | None = None
     edited_findings: Any | None = None
     rewrite_output: Any | None = None
 
@@ -9609,8 +9612,18 @@ class Layer3PackageReviewPreviewResponse(Layer3BaseResponse):
     session_id: str
     analysis_plan_id: str
     pass_run_id: str
+    material_preview_id: str | None = None
+    material_preview_hash: str | None = None
     preview_identity: dict[str, Any]
     package_review_preview_hash: str
+    package_family: str | None = None
+    contract_schema_id: str | None = None
+    contract_hash: str | None = None
+    selected_source_ids: dict[str, list[str]] | None = None
+    narrative_table_link_count: int | None = None
+    missing_authority_inputs: list[str] | None = None
+    negative_authority_flags: dict[str, bool] | None = None
+    mixed_source_package_review_preview: dict[str, Any] | None = None
     analysis_run_id: str | None
     result_status_available: bool
     result_review_state: str | None
@@ -11770,10 +11783,16 @@ PACKAGE_REVIEW_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
     "description": "Strict package-review preview fields; explicit package/handoff/source-widening fields remain fail-closed.",
-    "required": ["session_id", "analysis_plan_id", "pass_run_id", "preview_id", "preview_hash"],
+    "required": ["session_id"],
+    "anyOf": [
+        {"required": ["session_id", "analysis_plan_id", "pass_run_id", "preview_id", "preview_hash"]},
+        {"required": ["session_id", "material_preview_id", "material_preview_hash"]},
+    ],
     "properties": {
         "client_request_id": {"type": "string"},
         "session_id": {"type": "string"},
+        "material_preview_id": {"type": "string"},
+        "material_preview_hash": {"type": "string"},
         "analysis_plan_id": {"type": "string"},
         "pass_run_id": {"type": "string"},
         "preview_id": {"type": "string"},
@@ -11803,6 +11822,7 @@ PACKAGE_REVIEW_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
         "runtime_db_write": _forbidden_request_field_schema(),
         "artifact_manifest": _forbidden_request_field_schema(),
         "aps_handoff": _forbidden_request_field_schema(),
+        "onlook": _forbidden_request_field_schema(),
         "edited_findings": _forbidden_request_field_schema(),
         "rewrite_output": _forbidden_request_field_schema(),
     },

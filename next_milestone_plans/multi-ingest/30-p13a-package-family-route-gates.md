@@ -42,3 +42,11 @@ Observed focused results:
 ## Residual Work
 
 The next implementation pass may implement read-only mixed-source package review preview only if it derives authority from P11 material-preview readiness, satisfies the P12 contract requirements, consumes the P13/P13A policy gates, and keeps mixed-source commit, submit, handoff, export, parser, schema, source-shape, and excluded-tool behavior blocked.
+
+## P14 Supersession Note
+
+P13A remains the historical route-gate closeout for selected-pass package
+lifecycle effects. P14 supersedes only the P13A "does not enable mixed-source
+package review preview" posture by adding a separate material-authority preview
+request shape. Legacy selected-pass review states marked `mixed_dataset_document`
+still fail closed and must use the P14 material-preview authority fields.

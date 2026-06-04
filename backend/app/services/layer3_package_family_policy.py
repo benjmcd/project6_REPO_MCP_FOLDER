@@ -86,6 +86,16 @@ MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM = (
     "connector_dispatch",
     "provider_public_url",
 )
+MIXED_DATASET_DOCUMENT_PREVIEW_DOWNSTREAM = (
+    "package_construction",
+    "package_review_submit",
+    "handoff",
+    "export",
+    "aps_handoff",
+    "external_export_download",
+    "connector_dispatch",
+    "provider_public_url",
+)
 
 
 @dataclass(frozen=True)
@@ -245,17 +255,20 @@ PACKAGE_FAMILY_POLICIES: dict[str, PackageFamilyPolicy] = {
     PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT: _policy(
         PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
         contract_schema_id="layer3.mixed_source_package_contract.v1",
-        preview_admitted=False,
+        preview_admitted=True,
         commit_admitted=False,
         submit_admitted=False,
         handoff_admitted=False,
         candidate_package_kinds=(),
-        preview_downstream_unavailable=MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM,
+        preview_downstream_unavailable=MIXED_DATASET_DOCUMENT_PREVIEW_DOWNSTREAM,
         construction_downstream_unavailable=MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM,
         submit_downstream_unavailable=MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM,
         handoff_downstream_unavailable=MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM,
-        admission_boundary="mixed_package_contract_defined_runtime_not_admitted",
-        reason="P12 defines the mixed-source contract, but runtime preview, commit, submit, and handoff remain blocked.",
+        admission_boundary="mixed_package_review_preview_read_only_runtime_admitted",
+        reason=(
+            "Mixed-source material authority admits read-only package-review preview; "
+            "package construction, submit, handoff, and export remain blocked."
+        ),
     ),
 }
 
