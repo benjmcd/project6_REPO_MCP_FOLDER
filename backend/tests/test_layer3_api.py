@@ -18255,10 +18255,10 @@ def test_layer3_api_mixed_source_package_review_submit_records_decision(
     assert summary_response.status_code == 200, summary_response.text
     summary_body = summary_response.json()
     handoff_summary = summary_body["handoff_export_prepare"]
-    assert handoff_summary["available"] is True
-    assert handoff_summary["state"] == "handoff_export_ready"
-    assert handoff_summary["blocked_reason"] is None
-    assert handoff_summary["handoff_export_prepare_enabled"] is True
+    assert handoff_summary["available"] is False
+    assert handoff_summary["state"] == "handoff_export_unavailable"
+    assert handoff_summary["blocked_reason"] == "mixed_source_handoff_export_prepare_rendered_control_not_admitted"
+    assert handoff_summary["handoff_export_prepare_enabled"] is False
     assert handoff_summary["handoff_target"] == "mixed_source_review_package"
     assert handoff_summary["export_mode"] == "reference_envelope_only"
     assert "aps_handoff" in handoff_summary["downstream_unavailable"]
@@ -18346,8 +18346,11 @@ def test_layer3_api_mixed_source_handoff_export_prepare_records_reference_envelo
     )
     ready_summary = client.get(f"/api/v1/layer3/session/{gate_b['session_id']}")
     assert ready_summary.status_code == 200, ready_summary.text
-    assert ready_summary.json()["handoff_export_prepare"]["available"] is True
-    assert ready_summary.json()["handoff_export_prepare"]["package_review_state"] == "package_review_approved"
+    ready_handoff = ready_summary.json()["handoff_export_prepare"]
+    assert ready_handoff["available"] is False
+    assert ready_handoff["handoff_export_prepare_enabled"] is False
+    assert ready_handoff["blocked_reason"] == "mixed_source_handoff_export_prepare_rendered_control_not_admitted"
+    assert ready_handoff["package_review_state"] == "package_review_approved"
 
     def files_under_tmp() -> list[str]:
         return sorted(str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*") if path.is_file())

@@ -45202,7 +45202,7 @@
       "unsupported handoff target fails closed",
       "decision notes are required for non-authorization decisions",
       "provider/public URL request fields fail closed",
-      "session summary reports mixed prepare readiness and recorded state",
+      "session summary carries mixed material authority while pre-prepare rendered readiness is disabled, then reports recorded state after prepare",
       "APS handoff dispatch remains blocked for mixed-source prepare state",
       "OpenAPI request contract exposes selected-pass and mixed material-authority oneOf branches"
     ],
@@ -45216,5 +45216,5 @@
     ],
     "next_posture": "merge_and_current_main_sync_then_freeze_next_mixed_source_downstream_surface"
   },
-  "latest_p17_mixed_source_handoff_export_prepare_runtime_proof_summary": "P17 runtime proof is branch-local implemented. It records material-authority mixed-source handoff/export prepare over approved P16 submit state, verifies reference-only public refs, idempotency, stale-authority rejection, cross-shape rejection, policy admission, and downstream APS/export/provider/connector blocking, while keeping schema/parser/source-shape/payload-rewrite/package-mutation/production-readiness behavior blocked."
+  "latest_p17_mixed_source_handoff_export_prepare_runtime_proof_summary": "P17 runtime proof is current-main implemented through PR #2205. This follow-up proves pre-prepare rendered session-summary readiness is disabled until a material-authority UI path is separately frozen, while the direct material-authority API prepare path, reference-only public refs, idempotency, stale-authority rejection, cross-shape rejection, policy admission, recorded prepared state, and downstream APS/export/provider/connector blocking remain covered."
 }

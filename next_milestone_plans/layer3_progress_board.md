@@ -9,9 +9,9 @@ Planning docs:
 `next_milestone_plans/multi-ingest/36-p17-mixed-handoff-freeze.md`;
 `next_milestone_plans/multi-ingest/37-p17-runtime-closeout.md`.
 
-Status: branch-local runtime implementation on `codex/p17-runtime-0604`,
-based on `project6-origin/main` at
-`83a16914ef57f6eba139e8cd097531cb3660e752`.
+Status: current-main runtime implementation from PR `#2205`, with this
+post-merge review-debt follow-up keeping pre-prepare rendered readiness
+disabled until a separate material-authority UI path is frozen.
 
 Scope: admits material-authority mixed-source handoff/export prepare-only
 runtime over approved P16 submit state. The route recomputes P14 authority
@@ -25,14 +25,16 @@ model, migration, parser, source-shape, package payload rewrite, package
 mutation/reconstruction, legacy bridge deprecation, excluded-tool behavior, or
 production-readiness behavior is admitted.
 
-Verification: touched compile, focused mixed-source handoff/API slices, full
-Layer 3 API suite, focused package-family/package-contract/workbench-state/
-submit-response/workbench suite, manifest JSON, authority-index,
-target-selection frozen, progress, and `git diff --check` gates passed.
+Verification: PR `#2205` post-merge proof passed touched compile, focused
+mixed-source handoff/API slices, full Layer 3 API suite, focused
+package-family/package-contract/workbench-state/submit-response/workbench
+suite, manifest JSON, authority-index, target-selection frozen, progress, and
+`git diff --check` gates. This follow-up adds focused proof that pre-prepare
+session summary remains unavailable to rendered selected-pass UI controls.
 
-Next posture: after merge/current-main sync, freeze exactly one next
-mixed-source downstream surface before runtime, likely APS handoff, external
-export/download readiness, or rendered/operator status.
+Next posture: after this review-debt follow-up lands, freeze exactly one next
+mixed-source downstream surface before runtime, likely rendered/operator status,
+APS handoff, or external export/download readiness.
 
 ## SEC XBRL Resolved-Fact Diagnostic Redaction Cleanup
 
