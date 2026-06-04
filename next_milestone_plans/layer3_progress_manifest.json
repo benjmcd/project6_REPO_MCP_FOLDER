@@ -46223,6 +46223,78 @@
     "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only",
     "next_required_operator_input": "governed offline storage whose statement-classification receipt carries a top-level fact_inventory_hash matching authority_hashes.fact_inventory_hash, then operator-acquired offline CompanyFacts JSON for the same filing authority; do not download, synthesize, substitute, or infer it"
   },
+  "sec_xbrl_offline_evidence_proof_capability_historical_tracking": {
+    "tracking_kind": "sec_xbrl_offline_evidence_proof_capability_historical_tracking",
+    "milestone": "sec_xbrl_offline_evidence_proof_capability_v1",
+    "status": "current_main_historical_operator_snapshot_traceability_registered",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1335-offline-evidence-proof-capability.md",
+    "traceability_reason": "Register the frozen S1 proof-capability planning doc and committed proof snapshots in the progress/proof manifests without editing hash-bound proof JSON artifacts.",
+    "artifact_posture": "historical_operator_supplied_point_in_time_snapshots_not_repo_reproducible",
+    "historical_artifacts": [
+      "diagnostics/assessment/sec-xbrl-s1-ccj-10k-proof.json",
+      "diagnostics/assessment/sec-xbrl-s1-fizz-10k-proof.json",
+      "diagnostics/assessment/sec-xbrl-s1-fizz-10q-proof.json",
+      "diagnostics/assessment/sec-xbrl-s1-fizz-10q-oracle.json",
+      "diagnostics/assessment/sec-xbrl-s1-real-evidence-proof-report.json"
+    ],
+    "source_acquisition_performed_by_tracking": false,
+    "arelle_subprocess_invoked_by_tracking": false,
+    "live_sec_network_run_performed_by_tracking": false,
+    "runtime_default_changed_by_tracking": false,
+    "backend_api_contract_changed_by_tracking": false,
+    "rendered_ui_changed_by_tracking": false,
+    "schema_models_changed_by_tracking": false,
+    "migration_changed_by_tracking": false,
+    "durable_persistence_changed_by_tracking": false,
+    "proof_json_changed_by_tracking": false,
+    "report_json_changed_by_tracking": false,
+    "value_reveal_default_enabled_by_tracking": false,
+    "activation_lane_authorized": false,
+    "production_readiness_claimed": false,
+    "next_posture": "keep S1 proof artifacts frozen and use current invariant guard tests as stale-schema detection; do not regenerate or edit proof JSONs without a separate operator-evidence lane",
+    "files_in_scope": [
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ]
+  },
+  "sec_xbrl_diagnostic_framework_pilot_tracking": {
+    "tracking_kind": "sec_xbrl_diagnostic_framework_pilot_tracking",
+    "milestone": "sec_xbrl_diagnostic_framework_pilot_v1",
+    "status": "current_main_framework_traceability_registered",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1345-sec-xbrl-diagnostic-framework-pilot.md",
+    "traceability_reason": "Register the shared SEC XBRL diagnostic-framework pilot after the framework/report-envelope rollout so planning docs, progress manifest, proof manifest, and board are mutually reachable.",
+    "implemented_framework_surfaces": [
+      "diagnostics/assessment/sec_xbrl_diagnostic_framework.py",
+      "backend/tests/test_sec_xbrl_diagnostic_framework.py"
+    ],
+    "scope_posture": "behavior_preserving_framework_registration_only",
+    "runtime_default_changed_by_tracking": false,
+    "backend_api_contract_changed_by_tracking": false,
+    "rendered_ui_changed_by_tracking": false,
+    "schema_models_changed_by_tracking": false,
+    "migration_changed_by_tracking": false,
+    "durable_persistence_changed_by_tracking": false,
+    "proof_json_changed_by_tracking": false,
+    "report_json_changed_by_tracking": false,
+    "source_acquisition_performed_by_tracking": false,
+    "arelle_subprocess_invoked_by_tracking": false,
+    "live_sec_network_run_performed_by_tracking": false,
+    "value_reveal_default_enabled_by_tracking": false,
+    "activation_lane_authorized": false,
+    "production_readiness_claimed": false,
+    "remaining_work": [
+      "continue only behavior-preserving diagnostic/report helper rollout in byte-stable batches",
+      "separate exact diagnostic redaction wrappers from custom runtime/public error-surface guards",
+      "keep activation lane parked until explicitly authorized"
+    ],
+    "next_posture": "service-family-specific guard/redaction migrations only after exact semantics are proven and planning/proof traceability stays current",
+    "files_in_scope": [
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ]
+  },
   "sec_xbrl_custom_guard_redaction_audit_tracking": {
     "tracking_kind": "sec_xbrl_custom_guard_redaction_audit_tracking",
     "milestone": "sec_xbrl_custom_guard_redaction_audit_v1",
