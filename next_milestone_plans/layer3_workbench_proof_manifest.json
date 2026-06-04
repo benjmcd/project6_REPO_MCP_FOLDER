@@ -45149,7 +45149,7 @@
     "base_main_commit": "83a16914ef57f6eba139e8cd097531cb3660e752",
     "runtime_doc": "next_milestone_plans/multi-ingest/37-p17-runtime-closeout.md",
     "freeze_doc": "next_milestone_plans/multi-ingest/36-p17-mixed-handoff-freeze.md",
-    "proof_terms": "P17 proof records branch-local mixed-source handoff/export prepare runtime over approved P16 submit authority. It admits one reference-only prepare state and keeps APS handoff, external export/download, connector dispatch, provider URLs, schema, parser, source-shape, payload rewrite, package mutation, and production readiness blocked.",
+    "proof_terms": "P17 proof records current-main mixed-source handoff/export prepare runtime over approved P16 submit authority. It admits one reference-only prepare state and keeps APS handoff, external export/download, connector dispatch, provider URLs, schema, parser, source-shape, payload rewrite, package mutation, and production readiness blocked.",
     "prepare_schema_id": "layer3.mixed_source_handoff_export_prepare.v1",
     "handoff_export_envelope_schema_id": "layer3.mixed_source_handoff_export_envelope.v1",
     "authority_basis": [
@@ -45214,7 +45214,58 @@
       "package-family/package-contract/workbench-state/submit-response/workbench focused suite passed: 71 passed, 2 warnings",
       "manifest JSON syntax and governance validators passed"
     ],
-    "next_posture": "merge_and_current_main_sync_then_freeze_next_mixed_source_downstream_surface"
+    "next_posture": "p17a_rendered_handoff_status_freeze"
   },
-  "latest_p17_mixed_source_handoff_export_prepare_runtime_proof_summary": "P17 runtime proof is current-main implemented through PR #2205. This follow-up proves pre-prepare rendered session-summary readiness is disabled until a material-authority UI path is separately frozen, while the direct material-authority API prepare path, reference-only public refs, idempotency, stale-authority rejection, cross-shape rejection, policy admission, recorded prepared state, and downstream APS/export/provider/connector blocking remain covered."
+  "latest_p17_mixed_source_handoff_export_prepare_runtime_proof_summary": "P17 runtime proof is current-main implemented through PR #2205 plus PR #2206 review follow-up. Pre-prepare rendered session-summary readiness is disabled until a material-authority UI path is separately frozen, while the direct material-authority API prepare path, reference-only public refs, idempotency, stale-authority rejection, cross-shape rejection, policy admission, recorded prepared state, and downstream APS/export/provider/connector blocking remain covered.",
+  "p17a_mixed_source_rendered_handoff_status_freeze_proof": {
+    "milestone": "p17a_mixed_source_rendered_handoff_status_freeze",
+    "status": "branch_local_docs_control_freeze_only",
+    "planning_doc": "next_milestone_plans/multi-ingest/38-p17a-rendered-status-freeze.md",
+    "proof_terms": "P17A freezes only the future rendered material-authority handoff/export status and prepare-control path for mixed-source packages. No runtime code, rendered UI behavior, backend route, schema, parser, source-shape, payload rewrite, APS handoff, external export/download, connector/provider, excluded-tool behavior, or production-readiness behavior is admitted.",
+    "authority_basis": [
+      "P17 mixed-source handoff/export prepare runtime closeout",
+      "P17 mixed-source handoff/export prepare freeze",
+      "P16 mixed-source package-review submit runtime",
+      "P15 mixed-source package construction commit runtime",
+      "P14 mixed-source package review preview",
+      "committed Gate B material decision"
+    ],
+    "current_main_facts": [
+      "direct P17 API material-authority prepare is live",
+      "pre-prepare mixed summary is unavailable to rendered selected-pass controls",
+      "existing rendered handoff/export prepare payload is selected-pass shaped",
+      "future mixed rendered path must use mixed_source_review_package and reference_envelope_only"
+    ],
+    "positive_runtime_effects": [],
+    "negative_authority_flags": {
+      "runtime_behavior_changed": false,
+      "rendered_ui_behavior_changed": false,
+      "backend_route_changed": false,
+      "aps_handoff_enabled": false,
+      "external_export_enabled": false,
+      "connector_dispatch_enabled": false,
+      "provider_url_enabled": false,
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "package_reconstruction_enabled": false,
+      "package_mutation_enabled": false,
+      "excluded_tool_included": false,
+      "production_readiness_claimed": false
+    },
+    "future_handoff_target": "mixed_source_review_package",
+    "future_export_mode": "reference_envelope_only",
+    "proof_coverage": [
+      "freeze names current UI selected-pass shape mismatch",
+      "freeze requires material-authority rendered submission fields",
+      "freeze keeps pre-prepare rendered readiness blocked until implementation",
+      "freeze blocks backend, schema, parser, source-shape, payload, APS, export, connector, provider, and production-readiness scope"
+    ],
+    "verification": [
+      "manifest JSON syntax and governance validators required"
+    ],
+    "next_posture": "implement_mixed_source_rendered_material_authority_handoff_status_after_freeze_merge_and_current_main_sync"
+  },
+  "latest_p17a_mixed_source_rendered_handoff_status_freeze_proof_summary": "P17A is a docs/control freeze for a future rendered material-authority mixed-source handoff/export prepare path. It does not change runtime or UI behavior by itself and keeps downstream APS/export/provider/connector/schema/parser/source-shape/payload/production scope closed."
 }
