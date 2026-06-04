@@ -44037,7 +44037,7 @@
     "branch": "codex/secxbrl-auth-binding-guard",
     "milestone": "sec_xbrl_public_authority_guard_auth_binding_family_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1348-sec-xbrl-public-authority-guard-auth-binding.md",
-    "proof_status": "branch-local verification passed",
+    "proof_status": "current-main merged verification registered",
     "files_in_scope": [
       "backend/app/services/layer3_sec_xbrl_public_authority_guard.py",
       "backend/app/services/layer3_sec_xbrl_auth_binding.py",
@@ -44064,14 +44064,19 @@
       "runtime_default_or_activation_lane_changed": false,
       "value_reveal_behavior_changed": false,
       "production_readiness_claimed": false
-    }
+    },
+    "status": "current_main_merged_verification_registered",
+    "merged_pr": 2122,
+    "merge_commit": "4867001bfdacb7dcd034dc78605f31bed4747325",
+    "verification_status": "current-main merged verification registered",
+    "current_main_alignment": "Progress board, manifest, and proof manifest all classify this guard-family tranche as merged current-main behavior; do not re-merge the branch without fresh diff proof."
   },
   "sec_xbrl_public_authority_guard_value_reveal_family_proof": {
     "proof_kind": "sec_xbrl_public_authority_guard_value_reveal_family_proof",
     "branch": "codex/secxbrl-authority-guard-tranche2",
     "milestone": "sec_xbrl_public_authority_guard_value_reveal_family_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1347-sec-xbrl-public-authority-guard-value-reveal.md",
-    "proof_status": "branch-local verification passed",
+    "proof_status": "current-main merged verification registered",
     "files_in_scope": [
       "backend/app/services/layer3_sec_xbrl_public_authority_guard.py",
       "backend/app/services/layer3_sec_xbrl_value_reveal_authority.py",
@@ -44097,11 +44102,16 @@
       "runtime_default_or_activation_lane_changed": false,
       "value_store_behavior_changed": false,
       "production_readiness_claimed": false
-    }
+    },
+    "status": "current_main_merged_verification_registered",
+    "merged_pr": 2121,
+    "merge_commit": "5a829b864df500125e1d3a17f9ba1c84824894d9",
+    "verification_status": "current-main merged verification registered",
+    "current_main_alignment": "Progress board, manifest, and proof manifest all classify this guard-family tranche as merged current-main behavior; do not re-merge the branch without fresh diff proof."
   },
   "sec_xbrl_public_authority_guard_persistence_family_proof": {
     "proof_kind": "sec_xbrl_public_authority_guard_persistence_family_proof",
-    "status": "branch_local_persistence_family_guard_consolidation",
+    "status": "current_main_merged_verification_registered",
     "milestone": "sec_xbrl_public_authority_guard_persistence_family_v1",
     "branch": "codex/secxbrl-authority-guard",
     "base_main": "33ad95c2dcdc744b27d670a127ccac15dba3a444",
@@ -44134,14 +44144,17 @@
     "raw_runtime_artifacts_added_by_proof": false,
     "operator_source_workflow_added_by_proof": false,
     "containment_or_rollback_notes": "No schema or migration rollback is required; revert the shared guard module, the two persistence service delegations, focused guard test, and 1346 planning/progress/proof entries to roll back.",
-    "verification_status": "branch-local verification passed",
+    "verification_status": "current-main merged verification registered",
     "focused_persistence_guard_suite": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_public_authority_guard.py ./backend/tests/test_sec_xbrl_projection_persistence.py ./backend/tests/test_sec_xbrl_statement_packet_persistence.py -q -> 43 passed",
     "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 452 passed, 3 warnings",
     "target_selection_validation": "PASS: python ./tools/l3-target-selection-validate.py --expect frozen",
     "progress_check": "PASS: python ./tools/l3-progress-check.py",
     "json_manifest_validation": "PASS: utf-8-sig JSON parse for layer3_progress_manifest.json and layer3_workbench_proof_manifest.json",
     "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only",
-    "next_posture": "continue raw/local authority guard consolidation in smaller service-family tranches after this persistence-family pilot is verified and merged"
+    "next_posture": "continue raw/local authority guard consolidation in smaller service-family tranches after this persistence-family pilot is verified and merged",
+    "merged_pr": 2120,
+    "merge_commit": "4bd31e6fbd5535cef24bb73ed31abbc935e20a11",
+    "current_main_alignment": "Progress board, manifest, and proof manifest all classify this guard-family tranche as merged current-main behavior; do not re-merge the branch without fresh diff proof."
   },
   "sec_xbrl_offline_evidence_loader_diagnostic_proof": {
     "proof_kind": "sec_xbrl_offline_evidence_loader_diagnostic_proof",
@@ -44640,5 +44653,47 @@
       "Authority index JSON parses."
     ]
   },
-  "latest_p13_package_family_policy_registry_proof_summary": "P13 proof records a no-behavior-change package-family policy registry. Existing package families keep current policy answers, unknown families fail closed, and mixed_dataset_document remains blocked for runtime package review preview, commit, submit, handoff, export, parser, schema, source-shape, legacy CSV bridge, and Onlook behavior."
+  "latest_p13_package_family_policy_registry_proof_summary": "P13 proof records a no-behavior-change package-family policy registry. Existing package families keep current policy answers, unknown families fail closed, and mixed_dataset_document remains blocked for runtime package review preview, commit, submit, handoff, export, parser, schema, source-shape, legacy CSV bridge, and Onlook behavior.",
+  "sec_xbrl_activation_lane_selection_proof": {
+    "proof_kind": "sec_xbrl_activation_lane_selection_proof",
+    "milestone": "sec_xbrl_activation_lane_selection_v1",
+    "status": "current_main_planning_control_registered",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1350-sec-xbrl-activation-lane-selection.md",
+    "source_prs": [
+      2174,
+      2175
+    ],
+    "registration_repair_branch": "codex/secxbrl-audit-0604",
+    "proof_terms": [
+      "activation entry decision is deferred_pending_auth_framework",
+      "selected_activation_mode remains null",
+      "runtime_status remains not_implemented",
+      "doc 200 selected_mode remains null",
+      "no activation surface is authorized by this registration"
+    ],
+    "runtime_behavior_changed_by_proof": false,
+    "backend_api_contract_changed_by_proof": false,
+    "rendered_ui_changed_by_proof": false,
+    "schema_models_changed_by_proof": false,
+    "migration_changed_by_proof": false,
+    "durable_persistence_changed_by_proof": false,
+    "diagnostic_report_changed_by_proof": false,
+    "proof_json_changed_by_proof": false,
+    "source_acquisition_performed_by_proof": false,
+    "arelle_subprocess_invoked_by_proof": false,
+    "live_sec_network_run_performed_by_proof": false,
+    "runtime_default_changed_by_proof": false,
+    "value_reveal_default_enabled_by_proof": false,
+    "controlled_submit_enabled_by_proof": false,
+    "e2e_integration_live_by_proof": false,
+    "multi_filing_gate_live_by_proof": false,
+    "in_app_auth_policy_live_by_proof": false,
+    "activation_lane_authorized": false,
+    "verification_status": "current-main planning-control validation passed",
+    "remaining_work": [
+      "Select an auth/security mode in doc 200 before in-app auth activation.",
+      "Define operator acceptance criteria before value-reveal activation.",
+      "Create a separate freeze/contract/proof for exactly one activation surface before runtime work."
+    ]
+  }
 }
