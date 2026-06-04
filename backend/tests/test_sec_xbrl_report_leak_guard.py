@@ -15,6 +15,7 @@ from app.services.layer3_sec_xbrl_report_leak_guard import (
     reject_report_leaks_with_error,
     report_leak_flags,
     report_public_text_reference_found,
+    report_scan_text,
     report_text_leak_flags,
 )
 
@@ -62,6 +63,13 @@ def test_report_leak_flags_preserves_raw_key_scan_for_mixed_key_payloads() -> No
     flags = report_leak_flags({1: "meta", "raw_value": Decimal("123.45")}, include_raw_value_keys=True)
 
     assert flags["raw_value_key_found"] is True
+
+
+def test_report_scan_text_preserves_mixed_key_decimal_payloads() -> None:
+    text = report_scan_text({1: "meta", "payload": {"amount": Decimal("123.45")}})
+
+    assert '"1": "meta"' in text
+    assert '"amount": "123.45"' in text
 
 
 def test_diagnostic_authority_redaction_scan_payload_preserves_mixed_key_scan_semantics() -> None:
