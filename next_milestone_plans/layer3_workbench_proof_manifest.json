@@ -45402,5 +45402,73 @@
     ],
     "next_posture": "implement_mixed_source_aps_handoff_dispatch_after_freeze_merge_and_current_main_sync_then_freeze_external_export_download_readiness"
   },
-  "latest_p18_mixed_source_aps_handoff_dispatch_freeze_proof_summary": "P18 is a docs/control freeze for future mixed-source APS handoff dispatch. It selects dispatch as the prerequisite before external export/download readiness, admits no runtime behavior by itself, and keeps downstream export/download/provider/connector/schema/parser/source-shape/payload/production scope closed."
+  "latest_p18_mixed_source_aps_handoff_dispatch_freeze_proof_summary": "P18 is a docs/control freeze for future mixed-source APS handoff dispatch. It selects dispatch as the prerequisite before external export/download readiness, admits no runtime behavior by itself, and keeps downstream export/download/provider/connector/schema/parser/source-shape/payload/production scope closed.",
+  "p18_mixed_source_aps_handoff_dispatch_runtime_proof": {
+    "milestone": "p18_mixed_source_aps_handoff_dispatch_runtime",
+    "status": "branch_local_runtime_implementation_proof",
+    "runtime_doc": "next_milestone_plans/multi-ingest/42-p18-runtime-closeout.md",
+    "freeze_doc": "next_milestone_plans/multi-ingest/41-p18-mixed-aps-handoff-freeze.md",
+    "proof_terms": "P18 runtime branch-locally admits only reference-only mixed-source APS handoff dispatch state after P17 mixed-source handoff/export prepare. It does not create an APS evidence-bundle package row, local artifact, local path, external export/download readiness, connector/provider behavior, schema/model/migration, parser/source-shape expansion, package payload rewrite, excluded-tool behavior, or production-readiness behavior.",
+    "authority_basis": [
+      "P18 mixed-source APS handoff dispatch freeze",
+      "P17A rendered material-authority handoff prepare runtime",
+      "P17 mixed-source handoff/export prepare runtime",
+      "P16 mixed-source package-review submit runtime",
+      "P15 mixed-source package construction commit runtime",
+      "P14 mixed-source package review preview",
+      "committed Gate B material decision"
+    ],
+    "schema_id": "layer3.mixed_source_aps_handoff_dispatch.v1",
+    "handoff_target": "mixed_source_review_package",
+    "export_mode": "reference_envelope_only",
+    "aps_handoff_target": "mixed_source_aps_evidence_bundle",
+    "dispatch_mode": "server_side_mixed_source_aps_handoff",
+    "operator_decision": "dispatch_mixed_source_aps_handoff",
+    "positive_runtime_effects": [
+      "material-authority request shape admitted for mixed-source APS handoff dispatch",
+      "P14 mixed-source package review preview and contract authority recomputed server-side before dispatch",
+      "P15 reconciliation and exactly three package rows reloaded before dispatch",
+      "P16 approved package-review submit state required before dispatch",
+      "P17 handoff/export prepare record and reference envelope required before dispatch",
+      "one reference-only dispatch state recorded in existing reconciliation/session JSON",
+      "public layer3://mixed-source-package/... and layer3://mixed-source-aps-handoff/... refs emitted"
+    ],
+    "negative_authority_flags": {
+      "rendered_ui_behavior_changed": false,
+      "backend_route_changed": false,
+      "api_contract_changed": true,
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "aps_evidence_bundle_package_row_created": false,
+      "local_artifact_written": false,
+      "external_export_download_enabled": false,
+      "connector_dispatch_enabled": false,
+      "provider_url_enabled": false,
+      "excluded_tool_included": false,
+      "production_readiness_claimed": false
+    },
+    "proof_coverage": [
+      "dispatch records reference-only mixed-source APS handoff state",
+      "same client_request_id with same authority replays recorded dispatch result",
+      "different client_request_id after dispatch fails closed",
+      "stale construction basis fails closed",
+      "selected-pass fields on mixed request fail closed",
+      "request-supplied payload refs fail closed",
+      "explicit empty expected_package_kinds fails closed",
+      "selected-pass APS evidence-bundle package rows remain rejected on the mixed-source path",
+      "session summary keeps external_export_download not prepared after dispatch",
+      "OpenAPI request contract documents selected-pass and mixed-source APS handoff dispatch fields"
+    ],
+    "verification": [
+      "python -B -m py_compile .\\backend\\app\\api\\layer3.py .\\backend\\app\\services\\layer3_handoff_contract.py .\\backend\\app\\services\\layer3_workbench.py .\\backend\\tests\\test_layer3_api.py -> PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -k \"mixed_source_aps_handoff_dispatch_records_reference_state or layer3_handoff_openapi_contracts\" --maxfail=1 -q -> 2 passed, 290 deselected, 3 warnings",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -k \"mixed_source_package or mixed_source_handoff_export_prepare_records_reference_envelope or mixed_source_aps_handoff_dispatch_records_reference_state or aps_handoff_dispatch_materializes_owner_service_bundle_without_mutating_sources or aps_handoff_dispatch_prechecks_fail_closed or aps_handoff_dispatch_requires_prepared_state\" --maxfail=1 -q -> 12 passed, 280 deselected, 3 warnings",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -> 292 passed, 4 warnings",
+      "manifest JSON syntax and governance validators passed"
+    ],
+    "next_posture": "merge_and_current_main_sync_p18_runtime_then_freeze_mixed_source_external_export_download_readiness_before_implementation"
+  },
+  "latest_p18_mixed_source_aps_handoff_dispatch_runtime_proof_summary": "P18 runtime proof branch-locally implements reference-only mixed-source APS handoff dispatch over P17 prepared mixed-source authority. It validates the full P14/P15/P16/P17 material-authority chain, records JSON state only, emits public refs, creates no APS evidence-bundle package row or local artifact, and leaves mixed-source external export/download readiness for a later freeze after merge/current-main sync."
 }

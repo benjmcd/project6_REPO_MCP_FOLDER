@@ -167,6 +167,32 @@ APS_HANDOFF_DISPATCH_ALLOWED_FIELDS = frozenset(
         "analysis_run_id",
     }
 )
+MIXED_SOURCE_APS_HANDOFF_DISPATCH_ALLOWED_FIELDS = frozenset(
+    {
+        "client_request_id",
+        "session_id",
+        "material_preview_id",
+        "material_preview_hash",
+        "package_review_preview_hash",
+        "contract_hash",
+        "construction_basis_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "operator_decision",
+        "decision_notes",
+        "expected_package_kinds",
+    }
+)
 
 
 def handoff_export_prepare_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
@@ -183,5 +209,11 @@ def mixed_source_handoff_export_prepare_blocked_fields(payload: Mapping[str, Any
 
 def aps_handoff_dispatch_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
     unknown = sorted(key for key in payload if key not in APS_HANDOFF_DISPATCH_ALLOWED_FIELDS)
+    forbidden = sorted(key for key in APS_HANDOFF_DISPATCH_FORBIDDEN_FIELDS if key in payload)
+    return sorted(set(unknown) | set(forbidden))
+
+
+def mixed_source_aps_handoff_dispatch_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
+    unknown = sorted(key for key in payload if key not in MIXED_SOURCE_APS_HANDOFF_DISPATCH_ALLOWED_FIELDS)
     forbidden = sorted(key for key in APS_HANDOFF_DISPATCH_FORBIDDEN_FIELDS if key in payload)
     return sorted(set(unknown) | set(forbidden))
