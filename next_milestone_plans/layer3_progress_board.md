@@ -11521,7 +11521,7 @@ Milestone: `p13a_package_family_route_policy_gates`.
 Planning doc:
 `next_milestone_plans/multi-ingest/30-p13a-package-family-route-gates.md`.
 
-Status: branch-local route-level policy hardening on `codex/pkg-gates-0604`.
+Status: current-main route-level policy hardening from PR `#2179`.
 
 Scope: wires the P13 package-family policy registry into package-review
 preview, package construction commit, package-review submit, and handoff/export
