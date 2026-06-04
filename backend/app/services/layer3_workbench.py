@@ -1907,7 +1907,7 @@ def _mixed_source_package_semantics(candidates: list[dict[str, Any]]) -> dict[st
     ]
     dataset_ids = [item for item in dataset_ids if item]
     document_ids = [item for item in document_ids if item]
-    material_authority_present = bool(dataset_candidates and document_candidates)
+    material_authority_present = bool(dataset_ids and document_ids)
     return {
         "schema_id": "layer3.mixed_source_package_semantics_readiness.v1",
         "readiness_scope": "material_preview",

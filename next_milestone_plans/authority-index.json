@@ -6,17 +6,16 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "27e6abdb87469f8fd030ec975cf9c2a44effb774",
-    "verified_at_utc": "2026-06-04T04:27:41Z",
-    "verification_summary": "Live main includes PRs #2164, #2165, #2166, #2167, and #2168. SEC XBRL diagnostic hash proof, framework proof traceability, exact redaction-wrapper cleanup, and the mixed-source package contract are registered on current main; the roadmap authority index remains intentionally scoped and validator-clean.",
+    "commit": "88907075a198c98cdc21e660df1e2e2463c95fbd",
+    "verified_at_utc": "2026-06-04T10:03:22Z",
+    "verification_summary": "Live main includes PR #2176 governance repair. This follow-up verifies the authority index remains intentionally scoped, rejects unsupported and excluded-tool metadata, and stays aligned with Layer 3 and SEC XBRL current-main review-debt fixes.",
     "commands": [
       "git fetch project6-origin main --prune",
       "python .\\tools\\l3-progress-check.py",
       "python .\\tools\\l3-target-selection-validate.py --expect frozen",
-      "python -m pytest .\\backend\\tests\\test_layer3_package_review_contract.py .\\backend\\tests\\test_layer3_workbench_package_state.py .\\backend\\tests\\test_layer3_package_submit_response.py -q",
-      "python -m pytest .\\backend\\tests\\test_sec_xbrl_nonlocal_admission_disposition.py .\\backend\\tests\\test_sec_xbrl_diagnostic_framework.py -q",
-      "python -m pytest <all backend/tests/test_sec_xbrl_*.py files> -q",
       "python .\\tools\\l3-authority-index-validate.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_workbench.py .\\backend\\tests\\test_sec_xbrl_statement_assembly.py .\\backend\\tests\\test_sec_xbrl_statement_packet_persistence.py .\\backend\\tests\\test_sec_xbrl_e2e_integration.py .\\tests\\test_l3_authority_index_validate.py",
+      "python -m pytest <all backend/tests/test_sec_xbrl_*.py files>",
       "git diff --check"
     ]
   },
@@ -130,7 +129,7 @@
         "Narrative-table linking is specified as a contract but not implemented as runtime behavior.",
         "Legacy CSV bridge deprecation is separate from mixed-source package semantics."
       ],
-      "next_decision": "Implement read-only mixed-source package review preview only after proving P11 readiness, P12 contract authority, and P13 registry policy; keep commit, submit, handoff, export, parser, schema, source-shape, and Onlook behavior blocked."
+      "next_decision": "Implement read-only mixed-source package review preview only after proving P11 readiness, P12 contract authority, and P13 registry policy; keep commit, submit, handoff, export, parser, schema, source-shape, and excluded-tool behavior blocked."
     },
     {
       "lane_id": "analyst_insight",
