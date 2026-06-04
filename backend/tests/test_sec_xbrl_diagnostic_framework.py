@@ -179,6 +179,75 @@ def test_framework_report_envelope_preserves_shared_validate_only_shape() -> Non
     }
 
 
+def test_framework_reference_identity_residuals_preserve_redacted_fixture_shape() -> None:
+    framework = _module_from_path(
+        "sec_xbrl_diagnostic_framework_residual_unit",
+        ASSESSMENT / "sec_xbrl_diagnostic_framework.py",
+    )
+
+    residuals = framework.reference_identity_residuals()
+
+    assert residuals == [
+        {
+            "identity_id": "current_assets_plus_noncurrent_assets_equals_total_assets",
+            "source_mode": "redacted_reference_summary",
+            "residual_abs": "0",
+            "relative_magnitude": "0E+2",
+            "within_tolerance": True,
+        },
+        {
+            "identity_id": "total_liabilities_plus_equity_equals_total_assets",
+            "source_mode": "redacted_reference_summary",
+            "residual_abs": "0",
+            "relative_magnitude": "0E+2",
+            "within_tolerance": True,
+        },
+        {
+            "identity_id": "derived_total_liabilities_equals_assets_minus_equity_and_split",
+            "source_mode": "redacted_reference_summary",
+            "residual_abs": "0",
+            "relative_magnitude": "0E+2",
+            "within_tolerance": True,
+        },
+        {
+            "identity_id": "revenue_minus_cost_of_sales_equals_gross_profit",
+            "source_mode": "redacted_reference_summary",
+            "residual_abs": "0",
+            "relative_magnitude": "0E+2",
+            "within_tolerance": True,
+        },
+        {
+            "identity_id": "current_liabilities_plus_noncurrent_liabilities_equals_total_liabilities",
+            "source_mode": "redacted_reference_summary",
+            "residual_abs": "0",
+            "relative_magnitude": "0E+2",
+            "within_tolerance": True,
+        },
+    ]
+
+
+def test_framework_mark_residual_magnitudes_redacted_preserves_summary_mutation() -> None:
+    framework = _module_from_path(
+        "sec_xbrl_diagnostic_framework_residual_marker_unit",
+        ASSESSMENT / "sec_xbrl_diagnostic_framework.py",
+    )
+    report = {
+        "summary": {
+            "statement_identity_residuals_committed_as_magnitudes_only": True,
+            "other": "kept",
+        }
+    }
+
+    framework.mark_residual_magnitudes_redacted(report)
+
+    assert report == {
+        "summary": {
+            "other": "kept",
+            "statement_identity_residual_magnitudes_redacted": True,
+        }
+    }
+
+
 def test_framework_report_header_preserves_minimal_report_shape() -> None:
     framework = _module_from_path(
         "sec_xbrl_diagnostic_framework_header_unit",
