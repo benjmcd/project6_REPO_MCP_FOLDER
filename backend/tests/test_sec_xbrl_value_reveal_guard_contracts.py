@@ -78,4 +78,50 @@ def test_controlled_value_reveal_submit_response_scan_blocks_nested_raw_keys_and
     assert submit._response_has_forbidden_reference({"public": [{"sidecar_receipt_id": "raw"}]}) is True
     assert submit._response_has_forbidden_reference({"public": ["operator@example.com"]}) is True
     assert submit._response_has_forbidden_reference({"public": ["issuer 0000123456 packet"]}) is True
+    assert submit._response_has_forbidden_reference({"public": ["1000000000"]}) is False
     assert submit._response_has_forbidden_reference({"public": ["redacted public label"]}) is False
+
+
+def test_controlled_value_reveal_records_preserve_plain_ten_digit_fact_values(monkeypatch) -> None:
+    monkeypatch.setattr(
+        submit.layer3_sec_edgar_arelle_value_reveal,
+        "_reveal_records",
+        lambda *_args, **_kwargs: [
+            _raw_reveal_record("1000000000"),
+            _raw_reveal_record("issuer 0000123456 packet", source_order=2),
+        ],
+    )
+
+    records = submit._controlled_reveal_records({}, {}, dataset_version_hash="a" * 64)
+
+    assert records[0]["effective_value"] == "1000000000"
+    assert records[0]["lexical_value"] == "1000000000"
+    assert records[0]["value_redacted"] is False
+    assert records[0]["value_redaction_reason"] is None
+    assert records[1]["effective_value"] == ""
+    assert records[1]["lexical_value"] == ""
+    assert records[1]["value_redacted"] is True
+    assert records[1]["value_redaction_reason"] == "sec_xbrl_controlled_value_reveal_identity_or_raw_reference_redacted"
+
+
+def _raw_reveal_record(value: str, *, source_order: int = 1) -> dict[str, object]:
+    return {
+        "fact_identity_hash": f"fact-{source_order}",
+        "resolved_fact_id_hash": f"resolved-{source_order}",
+        "source_order": source_order,
+        "entry_document_index": source_order,
+        "effective_value": value,
+        "lexical_value": value,
+        "value_redacted": False,
+        "value_hash": f"value-{source_order}",
+        "value_semantics": "inline_xbrl_transformed_value_v1",
+        "concept": {
+            "qname": "us-gaap:Revenue",
+            "local_name": "Revenue",
+            "standard": True,
+            "extension": False,
+        },
+        "transform_inputs": {},
+        "hidden": False,
+        "continued": False,
+    }
