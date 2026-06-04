@@ -97,6 +97,25 @@ def test_framework_rollout_has_no_local_criterion_or_blocking_helpers() -> None:
     assert local_helpers == []
 
 
+def test_resolved_fact_redaction_diagnostics_use_shared_binding_without_local_wrapper() -> None:
+    targets = (
+        ASSESSMENT / "sec-xbrl-canonical-retained-coherence.py",
+        ASSESSMENT / "sec-xbrl-canonical-statement-organization.py",
+    )
+
+    for diagnostic_path in targets:
+        text = diagnostic_path.read_text(encoding="utf-8")
+        tree = ast.parse(text)
+        local_wrappers = [
+            node.name
+            for node in ast.walk(tree)
+            if isinstance(node, ast.FunctionDef) and node.name == "_redaction_scan_payload"
+        ]
+
+        assert "diagnostic_resolved_fact_redaction_scan_payload" in text
+        assert local_wrappers == [], diagnostic_path.relative_to(ROOT).as_posix()
+
+
 def test_framework_matches_pilot_criterion_and_blocking_shapes() -> None:
     framework = _module_from_path(
         "sec_xbrl_diagnostic_framework_unit",
