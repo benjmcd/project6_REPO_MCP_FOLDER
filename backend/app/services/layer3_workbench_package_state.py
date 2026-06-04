@@ -8,6 +8,7 @@ from app.services.layer3_package_entry import (
     SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE,
 )
 from app.services.layer3_package_family_policy import (
+    MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM,
     PACKAGE_FAMILY_ASSOCIATED_COHORT,
     PACKAGE_FAMILY_DATASET_VERSION,
     PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
@@ -405,8 +406,13 @@ def package_review_preview_summary(
     source_intake = bool(
         package_family == PACKAGE_FAMILY_SOURCE_INTAKE_QUALITATIVE
     )
-    downstream_unavailable = policy.preview_downstream_unavailable
-    preview_available = bool(approved and policy.preview_admitted)
+    mixed_selected_pass_review = package_family == PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT
+    downstream_unavailable = (
+        MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM
+        if mixed_selected_pass_review
+        else policy.preview_downstream_unavailable
+    )
+    preview_available = bool(approved and policy.preview_admitted and not mixed_selected_pass_review)
     package_commit_enabled = bool(approved and policy.commit_admitted)
     readiness_reason = (
         "candidate family is eligible for bounded qualitative APS package construction commit"
