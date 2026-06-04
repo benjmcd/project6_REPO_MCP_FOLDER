@@ -177,20 +177,23 @@ documentation or test strengthening unless a repeated variant emerges.
 
 ## Remaining diagnostic redaction inventory
 
-### Canonical retained/statement organization diagnostics
+### Exact resolved-fact diagnostic redaction wrappers migrated
 
-These diagnostics layer diagnostic-specific guards on top of canonical report
-redaction:
+The canonical retained-coherence and statement-organization diagnostics now
+bind the shared `diagnostic_resolved_fact_redaction_scan_payload` helper
+directly under the local `_redaction_scan_payload` name instead of retaining
+local wrapper functions:
 
-- `sec-xbrl-canonical-retained-coherence.py`;
-- `sec-xbrl-canonical-statement-organization.py`.
+- `sec-xbrl-canonical-retained-coherence.py` binds the shared helper with the
+  retained/total fact-count extra pattern;
+- `sec-xbrl-canonical-statement-organization.py` binds the shared helper with
+  its resolved-fact ID pattern.
 
-They scan for raw resolved fact IDs, issuer identity tokens, and in retained
-coherence, raw total fact count keys. These are diagnostic evidence policies,
-not generic public report leak checks.
-
-Safe next slice, if pursued: extract a diagnostic-local helper only if both
-reports remain byte-identical and the helper names the exact extra flags.
+The migration is behavior-preserving: both affected committed reports remain
+covered by the data-driven framework byte-stability test and regenerate
+byte-identically. It does not migrate diagnostic text/hit-class policies,
+service runtime wrappers, value-reveal, E2E, multi-filing, auth-binding,
+default-on, or production-readiness behavior.
 
 ### Exact pass-through diagnostic wrappers migrated
 
@@ -254,7 +257,8 @@ Recommended future order:
 4. E2E output-policy adapter design and tests, separately from value reveal.
 5. Multi-filing response leak scan variant, only if a text helper can preserve
    `scan_raw_period_dates=False`.
-6. Diagnostic text/hit-class helper extraction in byte-stable batches.
+6. Diagnostic text/hit-class helper extraction in byte-stable batches;
+   resolved-fact diagnostic redaction wrappers are already migrated.
 7. Reassess activation-lane readiness only after the guard/redaction
    consolidation debt is either retired or explicitly accepted.
 
