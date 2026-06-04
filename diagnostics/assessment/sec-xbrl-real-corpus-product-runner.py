@@ -47,6 +47,7 @@ from app.services import (
     layer3_sec_xbrl_canonical_concepts,
     layer3_sec_xbrl_sidecar,
 )
+from app.services.layer3_sec_xbrl_report_leak_guard import report_scan_text
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -2450,7 +2451,7 @@ def _offline_redacted_product_report_validation(
                     blocked_reasons.append("offline_product_report_top_level_not_object")
     elif report is not None:
         payload = dict(report)
-        report_text = json.dumps(payload, sort_keys=True)
+        report_text = report_scan_text(payload)
     else:
         return _offline_redacted_product_report_not_requested()
 
