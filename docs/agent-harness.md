@@ -67,6 +67,7 @@ Pick checks based on touched files:
 - Layer3 API surface: `npm run test:layer3-api`.
 - Browser/UI behavior: `npm run test:e2e` and a headed slice when practical.
 - JSON manifests: `python -m json.tool <file>`.
+- Layer3 roadmap authority/freshness index: `python ./tools/l3-authority-index-validate.py`.
 
 Validation-only actions must fail closed on missing runtime state and must not seed or generate runtime artifacts unless the command explicitly declares that behavior.
 
