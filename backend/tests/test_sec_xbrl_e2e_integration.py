@@ -377,6 +377,26 @@ def test_e2e_output_guard_rejects_residual_magnitude_keys() -> None:
     assert exc.value.details == {"field": "relative_magnitude"}
 
 
+def test_e2e_output_guard_preserves_raw_output_field_error_shape() -> None:
+    with pytest.raises(integration.SecXbrlE2EIntegrationError) as exc:
+        integration._reject_output_raw_or_local_authority({"rows": [{"effective_value": "100"}]})
+
+    assert exc.value.code == "sec_xbrl_e2e_integration_raw_output_not_admitted"
+    assert exc.value.message == "SEC XBRL end-to-end integration output cannot carry raw values or raw authority."
+    assert exc.value.details == {"field": "effective_value"}
+
+
+def test_e2e_output_guard_rejects_period_date_strings() -> None:
+    with pytest.raises(integration.SecXbrlE2EIntegrationError) as exc:
+        integration._reject_output_raw_or_local_authority({"period": "2025-12-31"})
+
+    assert exc.value.code == "sec_xbrl_e2e_integration_raw_reference_not_admitted"
+    assert exc.value.message == (
+        "SEC XBRL end-to-end integration does not admit raw accession, SEC URL, period date, or local path strings."
+    )
+    assert exc.value.details == {"field": "value"}
+
+
 def test_e2e_adapter_fails_closed_without_resolved_fact_authority(db_session) -> None:
     private_projection = _private_projection(periods=1)
     private_projection["periods"][0]["projection"]["concepts"][0]["resolved_fact_id"] = None
