@@ -514,6 +514,37 @@ def reject_e2e_public_text_references(
     )
 
 
+def reject_persistence_public_authority(
+    value: Any,
+    *,
+    error_type: type[Exception],
+    raw_authority_code: str,
+    raw_authority_message: str,
+    raw_reference_code: str,
+    raw_reference_message: str,
+    residual_magnitude_code: str | None = None,
+    residual_magnitude_message: str | None = None,
+    raw_value_keys: set[str] | frozenset[str] = RAW_VALUE_KEYS,
+    raw_authority_keys: set[str] | frozenset[str] = RAW_AUTHORITY_KEYS,
+    residual_magnitude_keys: set[str] | frozenset[str] = frozenset(),
+) -> None:
+    reject_raw_or_local_authority(
+        value,
+        error_type=error_type,
+        raw_authority_code=raw_authority_code,
+        raw_authority_message=raw_authority_message,
+        raw_reference_code=raw_reference_code,
+        raw_reference_message=raw_reference_message,
+        residual_magnitude_code=residual_magnitude_code,
+        residual_magnitude_message=residual_magnitude_message,
+        raw_value_keys=raw_value_keys,
+        raw_authority_keys=raw_authority_keys,
+        residual_magnitude_keys=residual_magnitude_keys,
+        scan_cik_fullmatch=True,
+        scan_contextual_cik=True,
+    )
+
+
 def reject_raw_or_local_authority(
     value: Any,
     *,
