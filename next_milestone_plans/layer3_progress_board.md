@@ -1,5 +1,37 @@
 # Layer3 Progress Board
 
+## SEC XBRL Resolved-Fact Diagnostic Redaction Cleanup
+
+Milestone:
+`sec_xbrl_resolved_fact_diagnostic_redaction_cleanup_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md`.
+
+Status: branch-local behavior-preserving diagnostic redaction cleanup on
+`codex/secxbrl-resolved-fact-redaction`.
+
+Scope: removes the two remaining local resolved-fact diagnostic
+`_redaction_scan_payload` wrapper functions by binding the existing shared
+`diagnostic_resolved_fact_redaction_scan_payload` helper in canonical
+retained-coherence and canonical statement-organization. The retained-coherence
+extra `raw_total_fact_counts_found` pattern is preserved.
+
+Containment: no runtime behavior, route behavior, persistence, schema, UI,
+config, models, proof JSONs, committed report JSONs, source acquisition,
+Arelle invocation, live SEC network use, value reveal, default-on posture,
+production-readiness posture, or activation-lane authorization is changed.
+
+Verification: target duplicate-wrapper scan finds no local
+`def _redaction_scan_payload` definitions in the two diagnostics; focused
+framework/canonical/report-leak suites pass with `43 passed, 2 warnings`; full
+SEC XBRL suite passes with `477 passed, 3 warnings`; progress,
+target-selection, authority-index, and `git diff --check` gates pass.
+
+Next posture: continue only byte-stable diagnostic text/hit-class extraction or
+service-family-specific runtime guard migrations after exact semantics are
+proven; do not bulk-migrate custom wrappers.
+
 ## SEC XBRL Unadmitted-Key Adapter Consolidation
 
 Milestone:

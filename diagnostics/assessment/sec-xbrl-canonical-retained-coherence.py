@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from functools import partial
 import json
 import os
 from pathlib import Path
@@ -37,6 +38,12 @@ TARGET = "sec_xbrl_canonical_retained_coherence_validate_only_v1"
 NEXT_SLICE = "sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1"
 _RAW_RESOLVED_FACT_ID_RE = re.compile(r"\brf[-_][A-Za-z0-9]")
 _RAW_TOTAL_FACT_COUNT_KEY_RE = re.compile(r'"(?:retained_fact_count|total_fact_count)"')
+
+_redaction_scan_payload = partial(
+    diagnostic_resolved_fact_redaction_scan_payload,
+    raw_resolved_fact_id_pattern=_RAW_RESOLVED_FACT_ID_RE,
+    extra_patterns={"raw_total_fact_counts_found": _RAW_TOTAL_FACT_COUNT_KEY_RE},
+)
 
 
 REFERENCE_SECTOR_CLASS_RESULTS = (
@@ -335,14 +342,6 @@ def _sector_counts_consistent(*, sectors: Sequence[Mapping[str, Any]], summary: 
         and total_bound == int(summary.get("total_bound") or 0)
         and total_missing == int(summary.get("total_missing") or 0)
         and total_bound + total_missing == total_normalized
-    )
-
-
-def _redaction_scan_payload(payload: Any) -> dict[str, bool]:
-    return diagnostic_resolved_fact_redaction_scan_payload(
-        payload,
-        raw_resolved_fact_id_pattern=_RAW_RESOLVED_FACT_ID_RE,
-        extra_patterns={"raw_total_fact_counts_found": _RAW_TOTAL_FACT_COUNT_KEY_RE},
     )
 
 
