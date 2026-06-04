@@ -29,7 +29,7 @@ from app.services.layer3_sec_xbrl_public_authority_guard import (
     RAW_AUTHORITY_KEYS as PUBLIC_RAW_AUTHORITY_KEYS,
     RAW_VALUE_KEYS,
     reject_raw_or_local_authority as reject_public_authority,
-    unadmitted_keys,
+    reject_unadmitted_keys as _reject_unadmitted_keys,
 )
 from app.services.layer3_utils import json_clone, stable_hash
 
@@ -1269,6 +1269,7 @@ def _public_identity_rollup(value: Any) -> dict[str, Any]:
     _reject_raw_or_local_authority(value)
     _reject_unadmitted_keys(
         value,
+        error_type=SecXbrlOperatorReviewWorkflowError,
         admitted=IDENTITY_ROLLUP_KEYS,
         error_code="sec_xbrl_operator_review_workflow_identity_rollup_invalid",
         message="Operator review workflow identity rollup only admits public rollup fields.",
@@ -1306,6 +1307,7 @@ def _public_organization_contract(value: Any) -> dict[str, Any]:
     _reject_raw_or_local_authority(value)
     _reject_unadmitted_keys(
         value,
+        error_type=SecXbrlOperatorReviewWorkflowError,
         admitted=ORGANIZATION_CONTRACT_KEYS,
         error_code="sec_xbrl_operator_review_workflow_organization_contract_invalid",
         message="Operator review workflow organization contract only admits public contract fields.",
@@ -1334,6 +1336,7 @@ def _public_packet_summary(value: Any) -> dict[str, Any]:
     _reject_raw_or_local_authority(value)
     _reject_unadmitted_keys(
         value,
+        error_type=SecXbrlOperatorReviewWorkflowError,
         admitted=PACKET_SUMMARY_KEYS,
         error_code="sec_xbrl_operator_review_workflow_packet_summary_invalid",
         message="Operator review workflow packet summary only admits public summary fields.",
@@ -1356,6 +1359,7 @@ def _public_review_summary(value: Any) -> dict[str, Any]:
     _reject_raw_or_local_authority(value)
     _reject_unadmitted_keys(
         value,
+        error_type=SecXbrlOperatorReviewWorkflowError,
         admitted=REVIEW_SUMMARY_KEYS,
         error_code="sec_xbrl_operator_review_workflow_status_review_summary_invalid",
         message="Operator review workflow review summary only admits public summary fields.",
@@ -1379,6 +1383,7 @@ def _public_decision_summary(value: Any) -> dict[str, Any]:
     _reject_raw_or_local_authority(value)
     _reject_unadmitted_keys(
         value,
+        error_type=SecXbrlOperatorReviewWorkflowError,
         admitted=DECISION_SUMMARY_KEYS,
         error_code="sec_xbrl_operator_review_decision_status_summary_invalid",
         message="Operator review decision status summary only admits public summary fields.",
@@ -1420,6 +1425,7 @@ def _public_decision_authority_refs(value: Any) -> dict[str, Any]:
     _reject_raw_or_local_authority(value)
     _reject_unadmitted_keys(
         value,
+        error_type=SecXbrlOperatorReviewWorkflowError,
         admitted=DECISION_AUTHORITY_REF_KEYS,
         error_code="sec_xbrl_operator_review_decision_status_authority_refs_invalid",
         message="Operator review decision status authority refs only admit governed hash/id fields.",
@@ -1454,6 +1460,7 @@ def _public_workflow_authority_refs(value: Any) -> dict[str, Any]:
     _reject_raw_or_local_authority(value)
     _reject_unadmitted_keys(
         value,
+        error_type=SecXbrlOperatorReviewWorkflowError,
         admitted={
             "sec_xbrl_statement_packet_set_id",
             "sec_xbrl_projection_set_id",
@@ -1497,21 +1504,6 @@ def _public_workflow_authority_refs(value: Any) -> dict[str, Any]:
         ),
     }
 
-
-def _reject_unadmitted_keys(
-    value: Mapping[str, Any],
-    *,
-    admitted: set[str],
-    error_code: str,
-    message: str,
-) -> None:
-    unknown = unadmitted_keys(value, admitted=admitted)
-    if unknown:
-        raise SecXbrlOperatorReviewWorkflowError(
-            error_code,
-            message,
-            details={"fields": unknown},
-        )
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:

@@ -8,6 +8,7 @@ from app.services.layer3_sec_xbrl_public_authority_guard import (
     raw_accession_reference_found,
     reject_public_output_policy,
     reject_raw_or_local_authority_with_blocked_keys,
+    reject_unadmitted_keys,
     report_text_reference_flags,
     unadmitted_keys,
     windows_local_path_reference_found,
@@ -252,3 +253,34 @@ def test_unadmitted_keys_returns_sorted_public_key_inventory() -> None:
         "alpha",
         "zeta",
     ]
+
+
+def test_reject_unadmitted_keys_preserves_service_error_shape() -> None:
+    class GuardError(ValueError):
+        def __init__(self, code: str, message: str, *, details: dict[str, object] | None = None) -> None:
+            self.code = code
+            self.message = message
+            self.details = dict(details or {})
+
+    reject_unadmitted_keys(
+        {"known": True},
+        admitted={"known"},
+        error_type=GuardError,
+        error_code="invalid_fields",
+        message="Only public fields are admitted.",
+    )
+
+    try:
+        reject_unadmitted_keys(
+            {"known": True, "zeta": True, "alpha": True},
+            admitted={"known"},
+            error_type=GuardError,
+            error_code="invalid_fields",
+            message="Only public fields are admitted.",
+        )
+    except GuardError as exc:
+        assert exc.code == "invalid_fields"
+        assert exc.message == "Only public fields are admitted."
+        assert exc.details == {"fields": ["alpha", "zeta"]}
+    else:
+        raise AssertionError("expected unadmitted-key guard error")

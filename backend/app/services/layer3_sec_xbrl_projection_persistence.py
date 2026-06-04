@@ -17,7 +17,7 @@ from app.services.layer3_sec_xbrl_public_authority_guard import (
     RAW_AUTHORITY_KEYS,
     RAW_VALUE_KEYS,
     reject_raw_or_local_authority as reject_public_authority,
-    unadmitted_keys,
+    reject_unadmitted_keys as _reject_unadmitted_keys,
 )
 from app.services.layer3_utils import json_clone, stable_hash
 
@@ -363,6 +363,7 @@ def _public_sector_family_presence(value: Mapping[str, Any]) -> dict[str, Any]:
     _reject_raw_or_local_authority(value)
     _reject_unadmitted_keys(
         value,
+        error_type=SecXbrlProjectionPersistenceError,
         admitted=SECTOR_FAMILY_PRESENCE_KEYS,
         error_code="sec_xbrl_projection_persistence_sector_family_presence_invalid",
         message="SEC XBRL projection persistence only admits public sector-family presence fields.",
@@ -409,6 +410,7 @@ def _public_sector_family_evidence(value: Any) -> list[dict[str, Any]]:
         _reject_raw_or_local_authority(item)
         _reject_unadmitted_keys(
             item,
+            error_type=SecXbrlProjectionPersistenceError,
             admitted=SECTOR_FAMILY_EVIDENCE_KEYS,
             error_code="sec_xbrl_projection_persistence_sector_family_presence_invalid",
             message="SEC XBRL sector-family evidence only admits public evidence fields.",
@@ -611,21 +613,6 @@ def _public_concept_list(value: Any) -> list[str]:
         concepts.append(concept)
     return concepts
 
-
-def _reject_unadmitted_keys(
-    value: Mapping[str, Any],
-    *,
-    admitted: set[str],
-    error_code: str,
-    message: str,
-) -> None:
-    unknown = unadmitted_keys(value, admitted=admitted)
-    if unknown:
-        raise SecXbrlProjectionPersistenceError(
-            error_code,
-            message,
-            details={"fields": unknown},
-        )
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:
