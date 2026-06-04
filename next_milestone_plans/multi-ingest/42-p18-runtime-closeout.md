@@ -1,8 +1,7 @@
 # P18 Mixed-Source APS Handoff Dispatch Runtime Closeout
 
-Status: branch-local runtime implementation proof. Current-main merge and
-detached post-merge proof are still required before this can be cited as live
-authority.
+Status: current-main runtime implementation verified after PR #2216 and
+review-debt follow-up PR #2217.
 
 ## Scope
 
@@ -136,7 +135,36 @@ Branch-local verification passed:
 - Layer 3 progress check
 - `git diff --check`
 
-Post-merge control-spine verification must include:
+Detached post-merge proof after PR #2216 passed:
+
+- `python -B -m py_compile ./backend/app/api/layer3.py ./backend/app/services/layer3_handoff_contract.py ./backend/app/services/layer3_workbench.py ./backend/tests/test_layer3_api.py`
+- `python -m pytest ./backend/tests/test_layer3_api.py -k "mixed_source_aps_handoff_dispatch_records_reference_state or layer3_handoff_openapi_contracts" --maxfail=1 -q`
+  (`2 passed, 290 deselected, 3 warnings`)
+- `python -m pytest ./backend/tests/test_layer3_api.py -k "mixed_source_package or mixed_source_handoff_export_prepare_records_reference_envelope or mixed_source_aps_handoff_dispatch_records_reference_state or aps_handoff_dispatch_materializes_owner_service_bundle_without_mutating_sources or aps_handoff_dispatch_prechecks_fail_closed or aps_handoff_dispatch_requires_prepared_state" --maxfail=1 -q`
+  (`12 passed, 280 deselected, 3 warnings`)
+- `python -m pytest ./backend/tests/test_layer3_api.py -q`
+  (`292 passed, 4 warnings`)
+- manifest JSON syntax
+- Layer 3 authority-index validation
+- Layer 3 target-selection frozen validation
+- Layer 3 progress check
+- `git diff --check`
+
+Review-debt follow-up PR #2217 passed and is merged on current main:
+
+- OpenAPI request schema splits selected-pass and mixed-source APS handoff
+  dispatch requests with `oneOf`.
+- selected-pass requests carrying blank or null mixed material-authority
+  markers fail closed as cross-shape requests instead of silently routing to
+  selected-pass behavior.
+- focused follow-up tests passed with `3 passed, 289 deselected, 3 warnings`.
+- full `backend/tests/test_layer3_api.py` passed with `292 passed, 4 warnings`.
+- post-merge manifest JSON syntax, authority-index validation, frozen
+  target-selection validation, progress check, and `git diff --check` passed.
+
+PR #2216 review threads are resolved, and PR #2217 has zero review threads.
+
+Current-main docs/control sync verification must include:
 
 - manifest JSON syntax
 - Layer 3 authority-index validation
@@ -146,10 +174,10 @@ Post-merge control-spine verification must include:
 
 ## Next Posture
 
-After this runtime merges and current main is synced, mixed-source external
-export/download readiness is the next safe downstream surface to freeze before
-implementation. That later pass must decide how reference-only mixed-source APS
-handoff identity is converted into external export/download readiness without
-creating download, provider, connector, public URL, signed-reference, schema,
-parser, source-shape, payload-rewrite, or production-readiness behavior in the
-freeze itself.
+After current main is synced, mixed-source external export/download readiness is
+the next safe downstream surface to freeze before implementation. That later
+pass must decide how reference-only mixed-source APS handoff identity is
+converted into external export/download readiness without creating download,
+provider, connector, public URL, signed-reference, schema, parser,
+source-shape, payload-rewrite, or production-readiness behavior in the freeze
+itself.
