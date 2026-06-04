@@ -6,20 +6,21 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "ca8382045be6a7cc44d4e751317d596bc05e25d9",
-    "verified_at_utc": "2026-06-04T10:35:16Z",
-    "verification_summary": "Live main includes PR #2177 governance and review-debt repair. This branch verifies P13A route-level package-family policy gates while keeping the authority index intentionally scoped and mixed-source package runtime behavior not admitted.",
+    "commit": "54d821dae29a943a74e81c73bdb7d524c4c7a812",
+    "verified_at_utc": "2026-06-04T12:11:36Z",
+    "verification_summary": "Live main includes PR #2179 P13A route-level package-family policy gates plus later SEC XBRL closeout merges. This sync records P13A as current-main authority while keeping the authority index intentionally scoped and mixed-source package runtime behavior not admitted.",
     "commands": [
       "git fetch project6-origin main --prune",
+      "python -B -m json.tool .\\next_milestone_plans\\authority-index.json",
+      "python -B -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -B -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
       "python -B -m py_compile .\\backend\\app\\services\\layer3_package_family_policy.py .\\backend\\app\\services\\layer3_workbench_package_state.py .\\backend\\app\\services\\layer3_workbench.py .\\backend\\app\\api\\layer3.py",
       "python -B -m pytest .\\backend\\tests\\test_layer3_package_family_policy.py .\\backend\\tests\\test_layer3_workbench_package_state.py .\\backend\\tests\\test_layer3_package_review_contract.py .\\backend\\tests\\test_layer3_package_submit_response.py -q",
       "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"mixed_source_package_readiness or material_preview_surfaces_mixed_source_package_readiness or package_review_preview_requires_approved_result_review_and_is_read_only or package_construction_commit_materializes_three_packages_idempotently or package_review_submit_records_decision_without_mutating_packages or handoff_export_prepare_records_reference_envelope_without_side_effects or package_review_submit_prechecks_fail_closed or package_construction_commit_prechecks_fail_closed or package_review_preview_prechecks_fail_closed or package_review_preview_blocks_unadmitted_package_family or package_construction_commit_blocks_unadmitted_package_family or package_review_submit_blocks_unadmitted_package_family or handoff_export_prepare_blocks_unadmitted_package_family\"",
       "python -B -m pytest .\\backend\\tests\\test_layer3_source_directory_qualitative_analysis.py .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py -q -k \"package_commit or package_review_submit or handoff_export_prepare or external_export_download\"",
-      "python .\\tools\\l3-progress-check.py",
-      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
-      "python .\\tools\\l3-authority-index-validate.py",
-      "python -m pytest .\\backend\\tests\\test_layer3_workbench.py .\\backend\\tests\\test_sec_xbrl_statement_assembly.py .\\backend\\tests\\test_sec_xbrl_statement_packet_persistence.py .\\backend\\tests\\test_sec_xbrl_e2e_integration.py .\\tests\\test_l3_authority_index_validate.py",
-      "python -m pytest <all backend/tests/test_sec_xbrl_*.py files>",
+      "python -B .\\tools\\l3-progress-check.py",
+      "python -B .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "python -B .\\tools\\l3-authority-index-validate.py",
       "git diff --check"
     ]
   },
@@ -67,7 +68,7 @@
       "lane_id": "multi_ingest_mixed_package",
       "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
       "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
-      "current_state": "mixed_material_readiness_contract_policy_registry_current_and_route_gates_branch_local_mixed_runtime_not_admitted",
+      "current_state": "mixed_material_readiness_contract_policy_registry_and_route_gates_current_mixed_runtime_not_admitted",
       "source_of_truth": [
         {
           "path": "next_milestone_plans/multi-ingest/README.md",
