@@ -2017,14 +2017,14 @@ def test_material_preview_exposes_mixed_source_package_readiness_without_admitti
     mixed = material["mixed_source_package_semantics"]
     assert mixed["schema_id"] == "layer3.mixed_source_package_semantics_readiness.v1"
     assert mixed["material_authority_state"] == "mixed_material_authority_present"
-    assert mixed["package_semantics_state"] == "governed_contract_required"
+    assert mixed["package_semantics_state"] == "read_only_preview_requires_gate_b_material_authority"
     assert mixed["package_construction_enabled"] is False
-    assert mixed["package_review_preview_enabled"] is False
+    assert mixed["package_review_preview_enabled"] is True
     assert mixed["handoff_enabled"] is False
     assert mixed["dataset_version_ids"] == [dataset_version_id]
     assert mixed["aps_content_document_ids"] == [content_id]
     assert set(mixed["admitted_source_classes"]) == {"dataset_version", "aps_content_document"}
-    assert mixed["next_allowed_actions"] == ["define_mixed_source_package_contract"]
+    assert mixed["next_allowed_actions"] == ["commit_gate_b_material_decision"]
     assert "no_onlook_work" in mixed["non_goals"]
 
 

@@ -317,6 +317,7 @@ from app.services.layer3_package_family_policy import (
     PACKAGE_FAMILY_ACTION_HANDOFF,
     PACKAGE_FAMILY_ACTION_PREVIEW,
     PACKAGE_FAMILY_ACTION_SUBMIT,
+    PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
     package_family_policy as _package_family_policy,
 )
 from app.services.layer3_state_action_contract import build_state_action_contract
@@ -428,6 +429,8 @@ PLAN_APPROVAL_SCOPE = "owner_service_default"
 PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.package_review_preview.v1"
 SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.source_intake_package_review_preview.v1"
 QUAL_APS_PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.qual_aps_package_review_preview.v1"
+MIXED_SOURCE_PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.mixed_source_package_review_preview.v1"
+MIXED_SOURCE_PACKAGE_CONTRACT_SCHEMA_ID = "layer3.mixed_source_package_contract.v1"
 PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.package_construction_commit.v1"
 SOURCE_INTAKE_PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.source_intake_package_construction_commit.v1"
 QUAL_APS_PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.qual_aps_package_construction_commit.v1"
@@ -1926,12 +1929,12 @@ def _mixed_source_package_semantics(candidates: list[dict[str, Any]]) -> dict[st
             else "mixed_material_authority_not_present"
         ),
         "package_semantics_state": (
-            "governed_contract_required"
+            "read_only_preview_requires_gate_b_material_authority"
             if material_authority_present
             else "not_applicable_without_mixed_material"
         ),
         "package_construction_enabled": False,
-        "package_review_preview_enabled": False,
+        "package_review_preview_enabled": material_authority_present,
         "handoff_enabled": False,
         "admitted_source_classes": sorted(
             {
@@ -1955,7 +1958,7 @@ def _mixed_source_package_semantics(candidates: list[dict[str, Any]]) -> dict[st
             "downstream_handoff_policy",
         ],
         "next_allowed_actions": (
-            ["define_mixed_source_package_contract"]
+            ["commit_gate_b_material_decision"]
             if material_authority_present
             else ["select_dataset_version_and_aps_content_document_material"]
         ),
@@ -5872,8 +5875,378 @@ def _package_construction_summary(
     }
 
 
+MIXED_SOURCE_PACKAGE_REVIEW_PREVIEW_SELECTED_PASS_FIELDS = frozenset(
+    {
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "analysis_run_id",
+    }
+)
+MIXED_SOURCE_PACKAGE_ALLOWED_SOURCE_CLASSES = frozenset({"dataset_version", "aps_content_document"})
+
+
+def _mixed_source_package_negative_authority_flags() -> dict[str, bool]:
+    return {
+        "schema_or_migration_changed": False,
+        "parser_behavior_changed": False,
+        "new_source_shape_admitted": False,
+        "package_payload_rewrite_performed": False,
+        "handoff_enabled": False,
+        "export_enabled": False,
+        "onlook_included": False,
+    }
+
+
+def _mixed_source_package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or "").strip() or None
+    session_id = str(payload.get("session_id") or "").strip()
+    material_preview_id = str(payload.get("material_preview_id") or "").strip()
+    material_preview_hash = str(payload.get("material_preview_hash") or "").strip()
+    legacy_fields = sorted(field for field in MIXED_SOURCE_PACKAGE_REVIEW_PREVIEW_SELECTED_PASS_FIELDS if field in payload)
+    if legacy_fields:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_preview_scope_not_admitted",
+            "Mixed-source package-review preview is admitted only from material-preview authority fields.",
+            status="invalid",
+            blocked_fields=legacy_fields,
+            next_allowed_actions=["submit_mixed_source_material_authority_preview_request"],
+        )
+    missing = [
+        field
+        for field, value in (
+            ("session_id", session_id),
+            ("material_preview_id", material_preview_id),
+            ("material_preview_hash", material_preview_hash),
+        )
+        if not value
+    ]
+    if missing:
+        raise Layer3WorkbenchError(
+            "missing_mixed_source_package_review_preview_fields",
+            f"Mixed-source package-review preview request is missing required fields: {', '.join(missing)}.",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_mixed_source_package_review_preview_request"],
+        )
+    if len(material_preview_hash) != 64:
+        raise Layer3WorkbenchError(
+            "invalid_mixed_source_package_review_preview_hash",
+            "material_preview_hash must be the 64-character hash emitted by material-preview/Gate B authority.",
+            status="invalid",
+            blocked_fields=["material_preview_hash"],
+            next_allowed_actions=["refresh_material_preview"],
+        )
+    policy = _package_family_policy(PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT)
+    if not policy.action_admitted(PACKAGE_FAMILY_ACTION_PREVIEW):
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_preview_not_admitted",
+            "Mixed-source package-review preview is not admitted by the package-family policy registry.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_family"],
+            next_allowed_actions=["inspect_package_family_policy"],
+        )
+    session = db.get(L3Session, session_id)
+    if session is None:
+        raise Layer3WorkbenchError(
+            "session_not_found",
+            f"Layer 3 session '{session_id}' was not found.",
+            status="not_found",
+            http_status=404,
+            blocked_fields=["session_id"],
+            next_allowed_actions=["commit_gate_b_material_decision"],
+        )
+    gate_b_record = gate_b_idempotency_from_session(session)
+    if gate_b_record is None:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_preview_requires_gate_b_material_authority",
+            "Mixed-source package-review preview requires a committed Gate B material decision on the session.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["session_id"],
+            next_allowed_actions=["commit_gate_b_material_decision"],
+        )
+    if (
+        str(gate_b_record.get("material_preview_id") or "") != material_preview_id
+        or str(gate_b_record.get("material_preview_hash") or "") != material_preview_hash
+    ):
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_preview_material_preview_mismatch",
+            "Supplied material-preview authority does not match the committed Gate B session authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["material_preview_id", "material_preview_hash"],
+            next_allowed_actions=["refresh_material_preview"],
+        )
+    operator_context = session.operator_context_json or {}
+    decision_manifest = operator_context.get("layer3_gate_b_decision_manifest_v1")
+    gate_b_decision_manifest_id = str(gate_b_record.get("gate_b_decision_manifest_id") or "").strip()
+    if (
+        not isinstance(decision_manifest, dict)
+        or build_gate_b_decision_manifest_id(decision_manifest) != gate_b_decision_manifest_id
+    ):
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_preview_gate_b_authority_inconsistent",
+            "Committed Gate B session authority is missing or inconsistent with its decision manifest.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["session_id"],
+            next_allowed_actions=["inspect_gate_b_material_authority"],
+        )
+    manifest_items = decision_manifest.get("items")
+    if not isinstance(manifest_items, list):
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_preview_gate_b_authority_inconsistent",
+            "Committed Gate B decision manifest is malformed.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["session_id"],
+            next_allowed_actions=["inspect_gate_b_material_authority"],
+        )
+    approved_items = [
+        item
+        for item in manifest_items
+        if isinstance(item, dict) and str(item.get("decision") or "").strip() == "approved"
+    ]
+    unexpected_source_classes = sorted(
+        {
+            str(item.get("source_class") or "").strip()
+            for item in approved_items
+            if str(item.get("source_class") or "").strip() not in MIXED_SOURCE_PACKAGE_ALLOWED_SOURCE_CLASSES
+        }
+    )
+    if unexpected_source_classes:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_preview_unexpected_source_class",
+            "Mixed-source package-review preview admits only dataset_version and aps_content_document authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["candidate_decisions.source_class"],
+            next_allowed_actions=["refresh_material_preview"],
+        )
+    dataset_items = [item for item in approved_items if item.get("source_class") == "dataset_version"]
+    document_items = [item for item in approved_items if item.get("source_class") == "aps_content_document"]
+    dataset_version_ids = sorted(
+        str((item.get("source_identity") or {}).get("dataset_version_id") or "").strip()
+        for item in dataset_items
+        if isinstance(item.get("source_identity"), dict)
+        and str((item.get("source_identity") or {}).get("dataset_version_id") or "").strip()
+    )
+    aps_content_document_ids = sorted(
+        str((item.get("source_identity") or {}).get("content_id") or "").strip()
+        for item in document_items
+        if isinstance(item.get("source_identity"), dict)
+        and str((item.get("source_identity") or {}).get("content_id") or "").strip()
+    )
+    missing_authority_inputs = []
+    if not dataset_version_ids:
+        missing_authority_inputs.append("dataset_version")
+    if not aps_content_document_ids:
+        missing_authority_inputs.append("aps_content_document")
+    if missing_authority_inputs:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_preview_authority_missing",
+            "Mixed-source package-review preview requires approved dataset_version and aps_content_document material.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=missing_authority_inputs,
+            next_allowed_actions=["refresh_material_preview"],
+        )
+    if len(dataset_version_ids) != len(set(dataset_version_ids)) or len(aps_content_document_ids) != len(set(aps_content_document_ids)):
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_preview_duplicate_source_identity",
+            "Mixed-source package-review preview requires unique selected dataset and APS document source identities.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["source_identity"],
+            next_allowed_actions=["refresh_material_preview"],
+        )
+
+    source_manifest = {
+        "schema_id": "layer3.mixed_source_package_source_manifest.v1",
+        "material_preview_id": material_preview_id,
+        "material_preview_hash": material_preview_hash,
+        "gate_b_decision_manifest_id": gate_b_decision_manifest_id,
+        "selected_sources": {
+            "dataset_version_ids": dataset_version_ids,
+            "aps_content_document_ids": aps_content_document_ids,
+        },
+        "candidate_ids": sorted(str(item.get("candidate_id") or "") for item in approved_items if item.get("candidate_id")),
+    }
+    narrative_table_links = [
+        {
+            "link_id": _stable_id(
+                "mixed-source-link",
+                {
+                    "material_preview_hash": material_preview_hash,
+                    "dataset_version_id": dataset_version_id,
+                    "aps_content_document_id": content_id,
+                },
+                digest_chars=20,
+            ),
+            "link_type": "operator_selected_pair",
+            "link_basis": "gate_b_approved_material_pair",
+            "dataset_version_id": dataset_version_id,
+            "aps_content_document_id": content_id,
+        }
+        for dataset_version_id in dataset_version_ids
+        for content_id in aps_content_document_ids
+    ]
+    negative_authority_flags = _mixed_source_package_negative_authority_flags()
+    contract_basis = {
+        "schema_id": "layer3.mixed_source_package_contract_basis.v1",
+        "contract_schema_id": MIXED_SOURCE_PACKAGE_CONTRACT_SCHEMA_ID,
+        "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+        "material_preview_id": material_preview_id,
+        "material_preview_hash": material_preview_hash,
+        "gate_b_decision_manifest_id": gate_b_decision_manifest_id,
+        "source_manifest": source_manifest,
+        "narrative_table_links": narrative_table_links,
+        "negative_authority_flags": negative_authority_flags,
+    }
+    contract_hash = _stable_hash(contract_basis)
+    package_review_preview_hash = _stable_id(
+        "l3-mixed-package-preview",
+        {
+            "schema_id": "layer3.mixed_source_package_review_preview_hash.v1",
+            "contract_hash": contract_hash,
+            "contract_schema_id": MIXED_SOURCE_PACKAGE_CONTRACT_SCHEMA_ID,
+            "material_preview_hash": material_preview_hash,
+        },
+        digest_chars=24,
+    )
+    downstream_unavailable = list(policy.preview_downstream_unavailable)
+    preview_payload = {
+        "schema_id": "layer3.mixed_source_package_review_preview_payload.v1",
+        "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+        "contract_schema_id": MIXED_SOURCE_PACKAGE_CONTRACT_SCHEMA_ID,
+        "contract_hash": contract_hash,
+        "source_manifest": source_manifest,
+        "narrative_table_links": narrative_table_links,
+        "blocked_downstream": downstream_unavailable,
+        "missing_authority_inputs": [],
+        "negative_authority_flags": negative_authority_flags,
+    }
+    selected_source_ids = {
+        "dataset_version_ids": dataset_version_ids,
+        "aps_content_document_ids": aps_content_document_ids,
+    }
+    return {
+        **_base_response(
+            MIXED_SOURCE_PACKAGE_REVIEW_PREVIEW_SCHEMA_ID,
+            request_id=request_id,
+            status="available",
+        ),
+        "session_id": session_id,
+        "analysis_plan_id": "",
+        "pass_run_id": "",
+        "material_preview_id": material_preview_id,
+        "material_preview_hash": material_preview_hash,
+        "preview_identity": {
+            "material_preview_id": material_preview_id,
+            "material_preview_hash": material_preview_hash,
+            "gate_b_decision_manifest_id": gate_b_decision_manifest_id,
+        },
+        "package_review_preview_hash": package_review_preview_hash,
+        "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+        "contract_schema_id": MIXED_SOURCE_PACKAGE_CONTRACT_SCHEMA_ID,
+        "contract_hash": contract_hash,
+        "selected_source_ids": selected_source_ids,
+        "narrative_table_link_count": len(narrative_table_links),
+        "missing_authority_inputs": [],
+        "negative_authority_flags": negative_authority_flags,
+        "mixed_source_package_review_preview": preview_payload,
+        "analysis_run_id": None,
+        "result_status_available": False,
+        "result_review_state": "mixed_material_authority_present",
+        "result_review_record_ref": None,
+        "package_review_preview_enabled": True,
+        "package_commit_enabled": False,
+        "package_review_enabled": False,
+        "package_review_submit_enabled": False,
+        "handoff_enabled": False,
+        "aps_handoff_enabled": False,
+        "external_export_download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_url_enabled": False,
+        "candidate_package_kinds": [],
+        "package_owner_compatibility": {
+            "schema_id": "layer3.mixed_source_package_owner_compatibility.v1",
+            "owner_service": "layer3_workbench_package_state",
+            "assessment_basis": [
+                "committed_gate_b_material_decision",
+                "dataset_version_plus_aps_content_document_authority",
+                "read_only_mixed_source_package_contract",
+            ],
+            "material_preview_authority_present": True,
+            "package_review_preview_callable": True,
+            "package_commit_callable": False,
+            "workbench_package_commit_callable": False,
+            "preview_candidate_projection_compatible": False,
+            "construction_compatible_with_current_workbench_state": False,
+            "missing_owner_service_inputs": [],
+            "status": "mixed_source_package_review_preview_read_only",
+            "reason": "Mixed-source authority is inspectable, but package construction and downstream handoff/export remain blocked.",
+        },
+        "blocked_reasons": [],
+        "downstream_unavailable": downstream_unavailable,
+        "next_state": PACKAGE_REVIEW_PREVIEW_READY_STATE,
+        "output_metadata_summary": {
+            "readable": False,
+            "material_authority_basis": "gate_b_decision_manifest",
+            "material_preview_id": material_preview_id,
+            "material_preview_hash": material_preview_hash,
+            "gate_b_decision_manifest_id": gate_b_decision_manifest_id,
+            "selected_source_ids": selected_source_ids,
+        },
+        "trace_summary": {
+            "material_preview_id": material_preview_id,
+            "material_preview_hash": material_preview_hash,
+            "gate_b_decision_manifest_id": gate_b_decision_manifest_id,
+            "selected_source_ids": selected_source_ids,
+            "narrative_table_link_count": len(narrative_table_links),
+        },
+        "reviewed_output_item_summary": None,
+        "unresolved_trace_count": 0,
+        "pass_type": None,
+        "engine_family": "mixed_dataset_document",
+        "pass_scope": None,
+        "method": None,
+        "selected_method_name": None,
+        "source_gate": "gate_b_material_authority",
+        "source_dataset_version_ids": dataset_version_ids,
+        "source_shape": "dataset_version_plus_aps_content_document",
+        "content_id": aps_content_document_ids[0] if len(aps_content_document_ids) == 1 else None,
+        "authority_rail": _authority_rail(
+            session_id=session_id,
+            current_gate="package",
+            persistence_mode="read_only_mixed_source_package_review_preview",
+            downstream_unavailable=downstream_unavailable,
+            execution_enabled=False,
+            package_review_enabled=False,
+        ),
+    }
+
+
 def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     session_id = str(payload.get("session_id") or "").strip()
+    blocked_payload_fields = package_review_preview_blocked_fields(payload)
+    if blocked_payload_fields:
+        blocked_text = ", ".join(blocked_payload_fields)
+        raise Layer3WorkbenchError(
+            "package_review_preview_scope_not_admitted",
+            f"Package-review preview request includes non-admitted fields: {blocked_text}.",
+            status="invalid",
+            blocked_fields=blocked_payload_fields,
+            next_allowed_actions=["submit_read_only_package_review_preview_request"],
+        )
+    material_preview_id = str(payload.get("material_preview_id") or "").strip()
+    material_preview_hash = str(payload.get("material_preview_hash") or "").strip()
+    if material_preview_id or material_preview_hash:
+        return _mixed_source_package_review_preview(db, payload)
     analysis_plan_id = str(payload.get("analysis_plan_id") or "").strip()
     pass_run_id = str(payload.get("pass_run_id") or "").strip()
     preview_id = str(payload.get("preview_id") or "").strip()
@@ -5900,17 +6273,6 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             status="invalid",
             blocked_fields=missing,
             next_allowed_actions=["submit_complete_package_review_preview_request"],
-        )
-
-    blocked_payload_fields = package_review_preview_blocked_fields(payload)
-    if blocked_payload_fields:
-        blocked_text = ", ".join(blocked_payload_fields)
-        raise Layer3WorkbenchError(
-            "package_review_preview_scope_not_admitted",
-            f"Package-review preview request includes non-admitted fields: {blocked_text}.",
-            status="invalid",
-            blocked_fields=blocked_payload_fields,
-            next_allowed_actions=["submit_read_only_package_review_preview_request"],
         )
 
     status_payload = {
@@ -6033,6 +6395,15 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             status="blocked",
             http_status=409,
             blocked_fields=["result_review_record_ref"],
+        )
+    if _package_family_for_review_state(review_state) == PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_preview_requires_material_authority",
+            "Mixed-source package-review preview must be requested with committed material-preview authority fields.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["material_preview_id", "material_preview_hash"],
+            next_allowed_actions=["submit_mixed_source_material_authority_preview_request"],
         )
     _require_package_family_action_admitted(
         review_state,

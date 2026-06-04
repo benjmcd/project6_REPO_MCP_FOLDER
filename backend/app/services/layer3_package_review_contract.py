@@ -28,6 +28,7 @@ PACKAGE_REVIEW_PREVIEW_FORBIDDEN_FIELDS = frozenset(
         "runtime_db_write",
         "artifact_manifest",
         "aps_handoff",
+        "onlook",
         "edited_findings",
         "rewrite_output",
     }
@@ -35,6 +36,8 @@ PACKAGE_REVIEW_PREVIEW_FORBIDDEN_FIELDS = frozenset(
 PACKAGE_REVIEW_PREVIEW_ALLOWED_FIELDS = frozenset(
     {
         "session_id",
+        "material_preview_id",
+        "material_preview_hash",
         "analysis_plan_id",
         "pass_run_id",
         "preview_id",

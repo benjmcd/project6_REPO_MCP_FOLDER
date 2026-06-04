@@ -372,6 +372,61 @@ def _prepare_material(client: TestClient) -> tuple[dict, dict, dict]:
     return preflight, source, material
 
 
+def _prepare_mixed_material(
+    client: TestClient,
+    tmp_path,
+    *,
+    request_id: str,
+) -> tuple[dict, dict, dict, str, str]:
+    dataset_version_id = f"{request_id}-dv"
+    content_id = f"{request_id}-content"
+    with client.layer3_session_factory() as db:
+        _seed_aps_derived_dataset_version(db, tmp_path, dataset_version_id=dataset_version_id)
+        _seed_aps_content_fixture(
+            db,
+            tmp_path,
+            run_id=f"{request_id}-run",
+            target_id=f"{request_id}-target",
+            content_id=content_id,
+        )
+        db.commit()
+
+    preflight_response = client.post(
+        "/api/v1/layer3/preflight",
+        json={
+            "client_request_id": f"{request_id}-preflight",
+            "natural_language_intent": "Review indexed APS narrative and extracted table together.",
+            "manual_constraints": {"source_classes": ["dataset_version", "aps_content_document"]},
+        },
+    )
+    assert preflight_response.status_code == 200
+    preflight = preflight_response.json()
+    source_response = client.post(
+        "/api/v1/layer3/source-preview",
+        json={
+            "client_request_id": f"{request_id}-source",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version", "aps_content_document"],
+        },
+    )
+    assert source_response.status_code == 200
+    source = source_response.json()
+    material_response = client.post(
+        "/api/v1/layer3/material-preview",
+        json={
+            "client_request_id": f"{request_id}-material",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "source_candidate_ids": [item["source_candidate_id"] for item in source["source_candidates"]],
+            "dataset_version_ids": [dataset_version_id],
+            "aps_content_document_ids": [content_id],
+            "query_basis": {"terms": ["mixed", "package"]},
+        },
+    )
+    assert material_response.status_code == 200
+    return preflight, source, material_response.json(), dataset_version_id, content_id
+
+
 def _gate_b_decision_basis(candidate: dict) -> dict:
     return {
         "source_ref": candidate["source_ref"],
@@ -382,6 +437,40 @@ def _gate_b_decision_basis(candidate: dict) -> dict:
         "payload": candidate["payload"],
         "load_summary": candidate["load_summary"],
     }
+
+
+def _commit_mixed_gate_b(
+    client: TestClient,
+    *,
+    request_id: str,
+    preflight: dict,
+    source: dict,
+    material: dict,
+    approve_source_classes: set[str],
+):
+    decisions = []
+    for candidate in material["material_candidates"]:
+        approved = candidate["source_class"] in approve_source_classes
+        decisions.append(
+            {
+                "candidate_id": candidate["candidate_id"],
+                "decision": "approved" if approved else "denied",
+                "operator_reason": "" if approved else "Not admitted for this mixed preview.",
+                "decision_basis": _gate_b_decision_basis(candidate),
+            }
+        )
+    return client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": f"{request_id}-gate-b",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "material_preview_id": material["material_preview_id"],
+            "material_preview_hash": material["material_preview_hash"],
+            "candidate_decisions": decisions,
+            "actor": "pytest",
+        },
+    )
 
 
 def _assert_common_response_envelope(body: dict) -> None:
@@ -10224,18 +10313,30 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
         "application/json"
     ]["schema"]
     assert preview_request_schema["additionalProperties"] is False
-    assert set(preview_request_schema["required"]) == {
-        "session_id",
-        "analysis_plan_id",
-        "pass_run_id",
-        "preview_id",
-        "preview_hash",
+    assert preview_request_schema["required"] == ["session_id"]
+    assert {tuple(item["required"]) for item in preview_request_schema["anyOf"]} == {
+        ("session_id", "analysis_plan_id", "pass_run_id", "preview_id", "preview_hash"),
+        ("session_id", "material_preview_id", "material_preview_hash"),
     }
+    assert "material_preview_id" in preview_request_schema["properties"]
+    assert "material_preview_hash" in preview_request_schema["properties"]
     assert preview_request_schema["properties"]["package"]["description"].startswith("Known but non-admitted")
+    assert preview_request_schema["properties"]["onlook"]["description"].startswith("Known but non-admitted")
     assert preview_request_schema["properties"]["source_expansion"]["description"].startswith("Known but non-admitted")
 
     preview_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/preview", "post")
     assert preview_schema["title"] == "Layer3PackageReviewPreviewResponse"
+    assert {
+        "material_preview_id",
+        "material_preview_hash",
+        "package_family",
+        "contract_schema_id",
+        "contract_hash",
+        "selected_source_ids",
+        "narrative_table_link_count",
+        "negative_authority_flags",
+        "mixed_source_package_review_preview",
+    } <= set(preview_schema["properties"])
     assert {
         "schema_id",
         "schema_version",
@@ -17590,14 +17691,215 @@ def test_layer3_api_material_preview_surfaces_mixed_source_package_readiness(
     }
     assert mixed["schema_id"] == "layer3.mixed_source_package_semantics_readiness.v1"
     assert mixed["material_authority_state"] == "mixed_material_authority_present"
-    assert mixed["package_semantics_state"] == "governed_contract_required"
+    assert mixed["package_semantics_state"] == "read_only_preview_requires_gate_b_material_authority"
     assert mixed["package_construction_enabled"] is False
-    assert mixed["package_review_preview_enabled"] is False
+    assert mixed["package_review_preview_enabled"] is True
     assert mixed["handoff_enabled"] is False
     assert mixed["dataset_version_ids"] == [dataset_version_id]
     assert mixed["aps_content_document_ids"] == [content_id]
-    assert mixed["next_allowed_actions"] == ["define_mixed_source_package_contract"]
+    assert mixed["next_allowed_actions"] == ["commit_gate_b_material_decision"]
     assert "no_onlook_work" in mixed["non_goals"]
+
+
+def test_layer3_api_mixed_source_package_review_preview_is_read_only(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    preflight, source, material, dataset_version_id, content_id = _prepare_mixed_material(
+        client,
+        tmp_path,
+        request_id="api-mixed-preview-read-only",
+    )
+    gate_b = _commit_mixed_gate_b(
+        client,
+        request_id="api-mixed-preview-read-only",
+        preflight=preflight,
+        source=source,
+        material=material,
+        approve_source_classes={"dataset_version", "aps_content_document"},
+    )
+    assert gate_b.status_code == 200
+
+    preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": "api-mixed-preview-read-only-package-preview",
+            "session_id": gate_b.json()["session_id"],
+            "material_preview_id": material["material_preview_id"],
+            "material_preview_hash": material["material_preview_hash"],
+        },
+    )
+
+    assert preview.status_code == 200
+    body = preview.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.mixed_source_package_review_preview.v1"
+    assert body["status"] == "available"
+    assert body["package_family"] == "mixed_dataset_document"
+    assert body["contract_schema_id"] == "layer3.mixed_source_package_contract.v1"
+    assert len(body["contract_hash"]) == 64
+    assert body["package_review_preview_hash"].startswith("l3-mixed-package-preview-")
+    assert body["selected_source_ids"] == {
+        "dataset_version_ids": [dataset_version_id],
+        "aps_content_document_ids": [content_id],
+    }
+    assert body["narrative_table_link_count"] == 1
+    assert body["package_review_preview_enabled"] is True
+    assert body["package_commit_enabled"] is False
+    assert body["package_review_submit_enabled"] is False
+    assert body["handoff_enabled"] is False
+    assert body["external_export_download_enabled"] is False
+    assert body["candidate_package_kinds"] == []
+    assert body["missing_authority_inputs"] == []
+    assert body["negative_authority_flags"] == {
+        "schema_or_migration_changed": False,
+        "parser_behavior_changed": False,
+        "new_source_shape_admitted": False,
+        "package_payload_rewrite_performed": False,
+        "handoff_enabled": False,
+        "export_enabled": False,
+        "onlook_included": False,
+    }
+    assert "package_construction" in body["downstream_unavailable"]
+    assert "package_review_preview" not in body["downstream_unavailable"]
+    payload = body["mixed_source_package_review_preview"]
+    assert payload["source_manifest"]["selected_sources"] == body["selected_source_ids"]
+    assert payload["narrative_table_links"][0]["link_type"] == "operator_selected_pair"
+    assert payload["blocked_downstream"] == body["downstream_unavailable"]
+    with client.layer3_session_factory() as db:
+        assert db.query(L3OutputPackage).count() == 0
+        assert db.query(L3ReconciliationRecord).count() == 0
+
+
+def test_layer3_api_mixed_source_package_review_preview_rejects_stale_authority(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    preflight, source, material, _dataset_version_id, _content_id = _prepare_mixed_material(
+        client,
+        tmp_path,
+        request_id="api-mixed-preview-stale",
+    )
+    gate_b = _commit_mixed_gate_b(
+        client,
+        request_id="api-mixed-preview-stale",
+        preflight=preflight,
+        source=source,
+        material=material,
+        approve_source_classes={"dataset_version", "aps_content_document"},
+    )
+    assert gate_b.status_code == 200
+
+    stale = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": "api-mixed-preview-stale-package-preview",
+            "session_id": gate_b.json()["session_id"],
+            "material_preview_id": material["material_preview_id"],
+            "material_preview_hash": "0" * 64,
+        },
+    )
+
+    assert stale.status_code == 409
+    body = stale.json()
+    _assert_common_response_envelope(body)
+    assert body["error_code"] == "mixed_source_package_review_preview_material_preview_mismatch"
+    assert body["blocked_fields"] == ["material_preview_id", "material_preview_hash"]
+    with client.layer3_session_factory() as db:
+        assert db.query(L3OutputPackage).count() == 0
+        assert db.query(L3ReconciliationRecord).count() == 0
+
+
+def test_layer3_api_mixed_source_package_review_preview_requires_both_material_classes(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    preflight, source, material, _dataset_version_id, _content_id = _prepare_mixed_material(
+        client,
+        tmp_path,
+        request_id="api-mixed-preview-missing-doc",
+    )
+    gate_b = _commit_mixed_gate_b(
+        client,
+        request_id="api-mixed-preview-missing-doc",
+        preflight=preflight,
+        source=source,
+        material=material,
+        approve_source_classes={"dataset_version"},
+    )
+    assert gate_b.status_code == 200
+
+    missing = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": "api-mixed-preview-missing-doc-package-preview",
+            "session_id": gate_b.json()["session_id"],
+            "material_preview_id": material["material_preview_id"],
+            "material_preview_hash": material["material_preview_hash"],
+        },
+    )
+
+    assert missing.status_code == 409
+    body = missing.json()
+    _assert_common_response_envelope(body)
+    assert body["error_code"] == "mixed_source_package_review_preview_authority_missing"
+    assert body["blocked_fields"] == ["aps_content_document"]
+    assert body["next_allowed_actions"] == ["refresh_material_preview"]
+    with client.layer3_session_factory() as db:
+        assert db.query(L3OutputPackage).count() == 0
+        assert db.query(L3ReconciliationRecord).count() == 0
+
+
+def test_layer3_api_mixed_source_package_review_preview_rejects_legacy_and_onlook_fields(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    preflight, source, material, _dataset_version_id, _content_id = _prepare_mixed_material(
+        client,
+        tmp_path,
+        request_id="api-mixed-preview-scope",
+    )
+    gate_b = _commit_mixed_gate_b(
+        client,
+        request_id="api-mixed-preview-scope",
+        preflight=preflight,
+        source=source,
+        material=material,
+        approve_source_classes={"dataset_version", "aps_content_document"},
+    )
+    assert gate_b.status_code == 200
+    base_payload = {
+        "session_id": gate_b.json()["session_id"],
+        "material_preview_id": material["material_preview_id"],
+        "material_preview_hash": material["material_preview_hash"],
+    }
+
+    legacy = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            **base_payload,
+            "client_request_id": "api-mixed-preview-scope-legacy",
+            "analysis_plan_id": "legacy-plan",
+        },
+    )
+    assert legacy.status_code == 400
+    assert legacy.json()["error_code"] == "mixed_source_package_review_preview_scope_not_admitted"
+    assert legacy.json()["blocked_fields"] == ["analysis_plan_id"]
+
+    onlook = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            **base_payload,
+            "client_request_id": "api-mixed-preview-scope-onlook",
+            "onlook": {"enabled": True},
+        },
+    )
+    assert onlook.status_code == 400
+    assert onlook.json()["error_code"] == "package_review_preview_scope_not_admitted"
+    assert onlook.json()["blocked_fields"] == ["onlook"]
+    with client.layer3_session_factory() as db:
+        assert db.query(L3OutputPackage).count() == 0
+        assert db.query(L3ReconciliationRecord).count() == 0
 
 
 def test_layer3_api_gate_b_no_approved_material_is_blocked_error(client: TestClient) -> None:
@@ -32701,25 +33003,42 @@ def test_layer3_api_package_review_preview_blocks_unadmitted_package_family(
         "result_review_record_ref": review_body["review_record_ref"],
     }
 
-    for package_family in ("mixed_dataset_document", "future_unregistered_family"):
-        _set_package_family_for_pass_review(
-            client,
-            pass_run_id=pass_run_id,
-            package_family=package_family,
-        )
-        blocked = client.post(
-            "/api/v1/layer3/package/review/preview",
-            json={
-                **base_payload,
-                "client_request_id": f"api-package-preview-family-policy-{package_family}",
-            },
-        )
-        assert blocked.status_code == 409
-        body = blocked.json()
-        assert body["error_code"] == "package_review_preview_family_not_admitted"
-        assert body["blocked_fields"] == ["package_family"]
-        assert body["next_allowed_actions"] == ["inspect_package_family_policy"]
-        assert package_family in body["message"]
+    _set_package_family_for_pass_review(
+        client,
+        pass_run_id=pass_run_id,
+        package_family="mixed_dataset_document",
+    )
+    mixed_blocked = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            **base_payload,
+            "client_request_id": "api-package-preview-family-policy-mixed_dataset_document",
+        },
+    )
+    assert mixed_blocked.status_code == 409
+    mixed_body = mixed_blocked.json()
+    assert mixed_body["error_code"] == "mixed_source_package_review_preview_requires_material_authority"
+    assert mixed_body["blocked_fields"] == ["material_preview_id", "material_preview_hash"]
+    assert mixed_body["next_allowed_actions"] == ["submit_mixed_source_material_authority_preview_request"]
+
+    _set_package_family_for_pass_review(
+        client,
+        pass_run_id=pass_run_id,
+        package_family="future_unregistered_family",
+    )
+    blocked = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            **base_payload,
+            "client_request_id": "api-package-preview-family-policy-future_unregistered_family",
+        },
+    )
+    assert blocked.status_code == 409
+    body = blocked.json()
+    assert body["error_code"] == "package_review_preview_family_not_admitted"
+    assert body["blocked_fields"] == ["package_family"]
+    assert body["next_allowed_actions"] == ["inspect_package_family_policy"]
+    assert "future_unregistered_family" in body["message"]
 
     db = client.layer3_session_factory()
     try:

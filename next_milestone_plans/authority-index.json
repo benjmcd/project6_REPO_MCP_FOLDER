@@ -6,18 +6,17 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "54d821dae29a943a74e81c73bdb7d524c4c7a812",
-    "verified_at_utc": "2026-06-04T12:11:36Z",
-    "verification_summary": "Live main includes PR #2179 P13A route-level package-family policy gates plus later SEC XBRL closeout merges. This sync records P13A as current-main authority while keeping the authority index intentionally scoped and mixed-source package runtime behavior not admitted.",
+    "commit": "f80030e6a8a338a2c24024bd2c056eb52edcb5c9",
+    "verified_at_utc": "2026-06-04T12:55:50Z",
+    "verification_summary": "Live main includes PR #2182 P13A current-main planning status plus later SEC XBRL CIK guard hardening commits. This branch records P14 read-only mixed-source package review preview as pending-merge branch authority while keeping mixed-source construction, submit, handoff, export, parser, schema, source-shape, payload rewrite, legacy bridge, and excluded-tool behavior blocked.",
     "commands": [
       "git fetch project6-origin main --prune",
       "python -B -m json.tool .\\next_milestone_plans\\authority-index.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
-      "python -B -m py_compile .\\backend\\app\\services\\layer3_package_family_policy.py .\\backend\\app\\services\\layer3_workbench_package_state.py .\\backend\\app\\services\\layer3_workbench.py .\\backend\\app\\api\\layer3.py",
-      "python -B -m pytest .\\backend\\tests\\test_layer3_package_family_policy.py .\\backend\\tests\\test_layer3_workbench_package_state.py .\\backend\\tests\\test_layer3_package_review_contract.py .\\backend\\tests\\test_layer3_package_submit_response.py -q",
-      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"mixed_source_package_readiness or material_preview_surfaces_mixed_source_package_readiness or package_review_preview_requires_approved_result_review_and_is_read_only or package_construction_commit_materializes_three_packages_idempotently or package_review_submit_records_decision_without_mutating_packages or handoff_export_prepare_records_reference_envelope_without_side_effects or package_review_submit_prechecks_fail_closed or package_construction_commit_prechecks_fail_closed or package_review_preview_prechecks_fail_closed or package_review_preview_blocks_unadmitted_package_family or package_construction_commit_blocks_unadmitted_package_family or package_review_submit_blocks_unadmitted_package_family or handoff_export_prepare_blocks_unadmitted_package_family\"",
-      "python -B -m pytest .\\backend\\tests\\test_layer3_source_directory_qualitative_analysis.py .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py -q -k \"package_commit or package_review_submit or handoff_export_prepare or external_export_download\"",
+      "python -B -m py_compile .\\backend\\app\\api\\layer3.py .\\backend\\app\\services\\layer3_workbench.py .\\backend\\app\\services\\layer3_package_review_contract.py .\\backend\\app\\services\\layer3_package_family_policy.py .\\backend\\app\\services\\layer3_workbench_package_state.py .\\backend\\tests\\test_layer3_api.py .\\backend\\tests\\test_layer3_package_family_policy.py .\\backend\\tests\\test_layer3_workbench.py",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_package_family_policy.py .\\backend\\tests\\test_layer3_workbench_package_state.py .\\backend\\tests\\test_layer3_package_review_contract.py .\\backend\\tests\\test_layer3_package_submit_response.py .\\backend\\tests\\test_layer3_workbench.py -q",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"mixed_source_package or package_review_preview or gate_b\"",
       "python -B .\\tools\\l3-progress-check.py",
       "python -B .\\tools\\l3-target-selection-validate.py --expect frozen",
       "python -B .\\tools\\l3-authority-index-validate.py",
@@ -68,7 +67,7 @@
       "lane_id": "multi_ingest_mixed_package",
       "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
       "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
-      "current_state": "mixed_material_readiness_contract_policy_registry_and_route_gates_current_mixed_runtime_not_admitted",
+      "current_state": "mixed_source_package_review_preview_read_only_branch_implemented_commit_submit_handoff_export_blocked",
       "source_of_truth": [
         {
           "path": "next_milestone_plans/multi-ingest/README.md",
@@ -81,7 +80,22 @@
             "The next implementation pass should not repeat",
             "bounded Phase P12 governed mixed-source package contract",
             "bounded Phase P13 package-family policy registry",
-            "bounded Phase P13A route-level package-family policy gates"
+            "bounded Phase P13A route-level package-family policy gates",
+            "bounded Phase P14 read-only mixed-source package review preview",
+            "P14 read-only mixed preview slices"
+          ]
+        },
+        {
+          "path": "next_milestone_plans/multi-ingest/31-p14-mixed-preview.md",
+          "kind": "closeout",
+          "authority": "read-only mixed-source package review preview runtime boundary",
+          "freshness": "current_closeout",
+          "required_terms": [
+            "Status: implemented in this branch as a read-only mixed-source package review preview runtime, pending merge.",
+            "layer3.mixed_source_package_review_preview.v1",
+            "mixed_source_package_review_preview_requires_material_authority",
+            "No mixed-source package construction commit.",
+            "excluded-tool behavior remain blocked"
           ]
         },
         {
@@ -137,19 +151,20 @@
         }
       ],
       "current_truth_order": [
-        "Route-level package-family policy gate source and focused API tests",
-        "Package-family policy registry source and focused tests",
-        "Layer 3 workbench/API source and focused tests",
-        "P11 mixed readiness closeout",
+        "P14 mixed-source package review preview source and focused API tests",
+        "P14 mixed-source package review preview closeout",
+        "P13A route-level package-family policy gates",
+        "P13 package-family policy registry",
         "P12 mixed package contract",
+        "P11 mixed readiness closeout",
         "multi-ingest README front door"
       ],
       "known_limits": [
-        "Mixed-source package review preview, construction, submit, handoff, export, and payload runtime semantics remain not admitted.",
-        "Narrative-table linking is specified as a contract but not implemented as runtime behavior.",
+        "Mixed-source package construction commit, submit, handoff, export, and payload runtime semantics remain not admitted.",
+        "Narrative-table linking is deterministic preview metadata only; no package payload mutation is admitted.",
         "Legacy CSV bridge deprecation is separate from mixed-source package semantics."
       ],
-      "next_decision": "Implement read-only mixed-source package review preview only after proving P11 readiness, P12 contract authority, and P13/P13A registry and route policy gates; keep commit, submit, handoff, export, parser, schema, source-shape, and excluded-tool behavior blocked."
+      "next_decision": "Decide and implement the first mixed-source package construction commit boundary from the P14 preview hash only if deterministic package payload semantics, rollback/containment, and downstream blocking remain explicit."
     },
     {
       "lane_id": "analyst_insight",
