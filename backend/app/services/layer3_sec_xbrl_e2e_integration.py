@@ -350,6 +350,8 @@ def _reject_output_raw_or_local_authority(value: Any) -> None:
         residual_magnitude_keys=RESIDUAL_MAGNITUDE_KEYS,
         residual_magnitude_code="sec_xbrl_e2e_integration_raw_output_not_admitted",
         residual_magnitude_message="SEC XBRL end-to-end integration output cannot carry residual magnitude fields.",
+        scan_cik_fullmatch=True,
+        scan_contextual_cik=True,
     )
 
 
@@ -360,6 +362,8 @@ def _reject_public_text_patterns(value: Any, *, field: str) -> None:
         raw_reference_code="sec_xbrl_e2e_integration_raw_reference_not_admitted",
         raw_reference_message="SEC XBRL end-to-end integration does not admit raw accession, SEC URL, period date, or local path strings.",
         field=field,
+        scan_cik_fullmatch=True,
+        scan_contextual_cik=True,
     )
 
 

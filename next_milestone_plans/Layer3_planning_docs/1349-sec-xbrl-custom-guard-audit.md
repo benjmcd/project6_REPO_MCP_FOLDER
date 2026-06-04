@@ -147,6 +147,10 @@ Safe next slice, if pursued: design an output-policy adapter that keeps each
 service's existing exception class, error code, field detail, residual policy,
 and recursive traversal behavior. Do not route this through a generic
 report-leak helper unless field-level errors remain byte/shape-equivalent.
+The output-policy helper now exposes default-off exact/contextual CIK scan
+options, and the E2E offline/integration wrappers opt into those scans while
+preserving their service-specific public-output, residual, period-date, and
+field-detail behavior.
 
 ### Multi-filing evidence authority gate
 
