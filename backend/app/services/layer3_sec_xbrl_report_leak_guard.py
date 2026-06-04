@@ -212,7 +212,7 @@ def reject_report_leaks_with_error(
     )
 
 
-def _scan_text(value: Any) -> str:
+def report_scan_text(value: Any) -> str:
     try:
         return json.dumps(value, sort_keys=True, default=str)
     except (TypeError, ValueError):
@@ -220,3 +220,7 @@ def _scan_text(value: Any) -> str:
             return json.dumps(value, default=str)
         except (TypeError, ValueError):
             return str(value)
+
+
+def _scan_text(value: Any) -> str:
+    return report_scan_text(value)
