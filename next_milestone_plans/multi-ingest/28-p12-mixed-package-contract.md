@@ -95,6 +95,12 @@ Required top-level payload fields:
 - `export_enabled`
 - `onlook_included`
 
+P14 current-runtime note: P14 admits only read-only mixed-source package review
+preview from committed Gate B material authority and this contract. Package
+construction, submit, handoff, export, parser, schema, source-shape, payload
+rewrite, legacy bridge deprecation, and Onlook behavior remain outside the
+admitted runtime.
+
 ## Review Preview Requirements
 
 Before package review preview is enabled for mixed sources, implementation must add a package-family policy registry that can answer whether `mixed_dataset_document` is admitted for preview, commit, submit, and handoff independently.

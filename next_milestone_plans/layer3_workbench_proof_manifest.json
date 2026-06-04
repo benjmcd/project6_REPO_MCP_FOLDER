@@ -44736,5 +44736,49 @@
       "Define operator acceptance criteria before value-reveal activation.",
       "Create a separate freeze/contract/proof for exactly one activation surface before runtime work."
     ]
-  }
+  },
+  "p14_mixed_source_package_review_preview_proof": {
+    "proof_kind": "p14_mixed_source_package_review_preview_proof",
+    "milestone": "p14_mixed_source_package_review_preview",
+    "status": "branch_implemented_targeted_tests_passed_pending_merge",
+    "source_branch": "codex/mixed-preview-0604",
+    "planning_doc": "next_milestone_plans/multi-ingest/31-p14-mixed-preview.md",
+    "proof_terms": "Read-only mixed-source package review preview is derived from committed Gate B material authority and emits deterministic contract/source/link metadata without package construction or downstream lifecycle effects.",
+    "preview_schema_id": "layer3.mixed_source_package_review_preview.v1",
+    "contract_schema_id": "layer3.mixed_source_package_contract.v1",
+    "authority_basis": [
+      "P11 material-preview readiness",
+      "committed Gate B material decision",
+      "P12 mixed-source package contract",
+      "P13 package-family policy registry",
+      "P13A route-level selected-pass mixed-family guard"
+    ],
+    "negative_authority_flags": {
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "handoff_enabled": false,
+      "export_enabled": false,
+      "excluded_tool_included": false
+    },
+    "fail_closed_cases": [
+      "missing_or_stale_material_preview_authority",
+      "missing_gate_b_material_authority",
+      "missing_dataset_or_aps_document_material_class",
+      "unexpected_source_class",
+      "duplicate_source_identity",
+      "legacy_selected_pass_fields_on_mixed_preview",
+      "explicit_forbidden_package_handoff_export_source_widening_or_excluded_tool_fields"
+    ],
+    "verification": [
+      "py_compile touched API/service/test files passed",
+      "JSON manifest syntax passed",
+      "Layer 3 authority-index, target-selection, and progress validators passed",
+      "package-family/package-state/contract/submit response/workbench suite passed: 70 passed, 2 warnings",
+      "broader Gate B/package-review API keyword slice passed: 17 passed, 268 deselected, 3 warnings"
+    ],
+    "next_posture": "first_mixed_source_package_construction_commit_boundary_decision"
+  },
+  "latest_p14_mixed_source_package_review_preview_proof_summary": "P14 proof records a read-only mixed-source package review preview over committed Gate B material authority. It proves selected source IDs, contract hash, narrative-table link metadata, stale-authority rejection, missing-class rejection, legacy selected-pass blocking, forbidden-field blocking, and no package/reconciliation row creation."
 }

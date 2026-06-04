@@ -1,5 +1,6 @@
 from app.services.layer3_package_family_policy import (
     MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM,
+    MIXED_DATASET_DOCUMENT_PREVIEW_DOWNSTREAM,
     PACKAGE_FAMILY_ACTION_COMMIT,
     PACKAGE_FAMILY_ACTION_HANDOFF,
     PACKAGE_FAMILY_ACTION_PREVIEW,
@@ -83,21 +84,21 @@ def test_existing_package_families_keep_current_action_admissions() -> None:
         assert policy.candidate_package_kinds == PACKAGE_REVIEW_CANDIDATE_KINDS
 
 
-def test_mixed_dataset_document_policy_is_explicitly_blocked_until_runtime_pass() -> None:
+def test_mixed_dataset_document_policy_admits_read_only_preview_only() -> None:
     policy = package_family_policy(PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT)
 
     assert policy.known_family is True
     assert policy.contract_schema_id == "layer3.mixed_source_package_contract.v1"
-    assert policy.preview_admitted is False
+    assert policy.preview_admitted is True
     assert policy.commit_admitted is False
     assert policy.submit_admitted is False
     assert policy.handoff_admitted is False
     assert policy.candidate_package_kinds == ()
-    assert policy.preview_downstream_unavailable == MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM
+    assert policy.preview_downstream_unavailable == MIXED_DATASET_DOCUMENT_PREVIEW_DOWNSTREAM
     assert policy.construction_downstream_unavailable == MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM
     assert policy.submit_downstream_unavailable == MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM
     assert policy.handoff_downstream_unavailable == MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM
-    assert package_family_action_admitted(PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT, PACKAGE_FAMILY_ACTION_PREVIEW) is False
+    assert package_family_action_admitted(PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT, PACKAGE_FAMILY_ACTION_PREVIEW) is True
     assert package_family_action_admitted(PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT, PACKAGE_FAMILY_ACTION_COMMIT) is False
     assert package_family_action_admitted(PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT, PACKAGE_FAMILY_ACTION_SUBMIT) is False
     assert package_family_action_admitted(PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT, PACKAGE_FAMILY_ACTION_HANDOFF) is False
@@ -140,7 +141,7 @@ def test_review_state_family_classification_matches_current_authority_markers() 
     )
 
 
-def test_mixed_family_preview_summary_remains_not_admitted() -> None:
+def test_mixed_family_selected_pass_preview_summary_requires_material_authority() -> None:
     summary = package_review_preview_summary(
         _approved_review_state(package_family=PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT),
         approved_review_state="execution_result_review_approved",

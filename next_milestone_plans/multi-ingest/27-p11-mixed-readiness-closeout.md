@@ -36,6 +36,12 @@ For valid mixed selections, it reports:
 - `handoff_enabled`: `false`;
 - `next_allowed_actions`: `["define_mixed_source_package_contract"]`.
 
+P14 current-runtime note: after the P12 contract, P13 policy registry, and P13A
+route gates landed, the material-preview readiness surface now advertises
+read-only preview admission with `next_allowed_actions` set to
+`["commit_gate_b_material_decision"]`. The P11 closeout above remains the
+historical pre-contract readiness boundary.
+
 If both material classes are not validly present, it reports that mixed material authority is not present and directs the operator to select both material classes.
 
 ## Validation

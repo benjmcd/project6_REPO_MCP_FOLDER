@@ -53,4 +53,13 @@ Focused pytest result: `39 passed, 2 warnings`. The warnings are dependency warn
 
 The next implementation pass may implement read-only mixed-source package review preview only if it consumes this registry, derives authority from the P11 material-preview readiness response and P12 contract, and keeps mixed-source commit, submit, handoff, export, parser, schema, source-shape, and Onlook behavior blocked.
 
+## P14 Supersession Note
+
+P13 remains the historical registry closeout. P14 supersedes only the P13
+preview-blocking answer for `mixed_dataset_document` by admitting read-only
+package-review preview from committed Gate B material authority. P14 does not
+admit mixed-source package construction, submit, handoff, export, parser,
+schema, source-shape, payload rewrite, legacy bridge deprecation, or Onlook
+behavior.
+
 Legacy CSV bridge deprecation remains a separate decision and must not be coupled to mixed-source package semantics.
