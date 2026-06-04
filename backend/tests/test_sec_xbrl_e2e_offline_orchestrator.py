@@ -317,6 +317,32 @@ def test_offline_orchestrator_rejects_unbound_statement_roles_before_persistence
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
 
 
+def test_offline_orchestrator_output_guard_preserves_raw_key_error_shape() -> None:
+    with pytest.raises(orchestrator.SecXbrlE2EOfflineOrchestratorError) as exc:
+        orchestrator._reject_public_raw_or_local_authority({"summary": {"accession": "0000123456-24-000001"}})
+
+    assert exc.value.code == "sec_xbrl_e2e_offline_orchestrator_raw_public_authority_not_admitted"
+    assert exc.value.message == (
+        "SEC XBRL offline orchestration output cannot carry raw identity, path, or source references."
+    )
+    assert exc.value.details == {"field": "accession"}
+
+
+def test_offline_orchestrator_output_guard_allows_public_period_dates() -> None:
+    orchestrator._reject_public_raw_or_local_authority({"public_period": "2025-12-31"})
+
+
+def test_offline_orchestrator_text_guard_rejects_raw_accession_shape() -> None:
+    with pytest.raises(orchestrator.SecXbrlE2EOfflineOrchestratorError) as exc:
+        orchestrator._reject_public_text_patterns("0000123456-24-000001", field="receipt")
+
+    assert exc.value.code == "sec_xbrl_e2e_offline_orchestrator_raw_reference_not_admitted"
+    assert exc.value.message == (
+        "SEC XBRL offline orchestration public output cannot carry raw accession, SEC URL, or local path strings."
+    )
+    assert exc.value.details == {"field": "receipt"}
+
+
 def _evidence() -> dict[str, Any]:
     sidecar_records = [
         _record(
