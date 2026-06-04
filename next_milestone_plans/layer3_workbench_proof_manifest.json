@@ -45267,5 +45267,51 @@
     ],
     "next_posture": "implement_mixed_source_rendered_material_authority_handoff_status_after_freeze_merge_and_current_main_sync"
   },
-  "latest_p17a_mixed_source_rendered_handoff_status_freeze_proof_summary": "P17A is a docs/control freeze for a future rendered material-authority mixed-source handoff/export prepare path. It does not change runtime or UI behavior by itself and keeps downstream APS/export/provider/connector/schema/parser/source-shape/payload/production scope closed."
+  "latest_p17a_mixed_source_rendered_handoff_status_freeze_proof_summary": "P17A is a docs/control freeze for a future rendered material-authority mixed-source handoff/export prepare path. It does not change runtime or UI behavior by itself and keeps downstream APS/export/provider/connector/schema/parser/source-shape/payload/production scope closed.",
+  "p17a_mixed_source_rendered_handoff_prepare_runtime_proof": {
+    "milestone": "p17a_mixed_source_rendered_handoff_prepare_runtime",
+    "status": "branch_local_rendered_runtime_implemented",
+    "runtime_doc": "next_milestone_plans/multi-ingest/39-p17a-rendered-runtime-closeout.md",
+    "proof_terms": "P17A rendered runtime submits only the P17 mixed-source material-authority handoff/export prepare shape from server-owned summary state and does not admit backend route, schema, parser, source-shape, APS handoff, external export/download, connector/provider, payload rewrite, excluded-tool, or production-readiness behavior.",
+    "authority_basis": [
+      "P17A rendered status freeze",
+      "P17 mixed-source handoff/export prepare runtime",
+      "P16 mixed-source package-review submit runtime",
+      "P15 mixed-source package construction commit runtime",
+      "P14 mixed-source package review preview",
+      "committed Gate B material decision"
+    ],
+    "positive_runtime_effects": [
+      "rendered mixed-source control detects complete material-authority packet",
+      "rendered mixed-source payload uses mixed_source_review_package and reference_envelope_only",
+      "rendered mixed-source payload omits selected-pass IDs and payload refs",
+      "selected-pass and source-directory handoff/export flows remain separate"
+    ],
+    "negative_authority_flags": {
+      "backend_route_changed": false,
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "aps_handoff_enabled": false,
+      "external_export_enabled": false,
+      "connector_dispatch_enabled": false,
+      "provider_url_enabled": false,
+      "excluded_tool_included": false,
+      "production_readiness_claimed": false
+    },
+    "proof_coverage": [
+      "static test locks material-authority packet selection and exact mixed target/mode",
+      "static test forbids selected-pass fields, payload refs, provider, connector, destination, local path, package payload, schema migration, and source expansion fields in mixed rendered payload",
+      "full layer3 page pytest covers existing rendered controls after JS change",
+      "focused API test keeps P17 server-side mixed handoff/export prepare contract green"
+    ],
+    "verification": [
+      "node --check .\\backend\\app\\review_ui\\static\\layer3.js -> PASS",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_page.py -q -> 22 passed, 3 warnings",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"mixed_source_handoff_export_prepare or package_family_handoff_export_prepare\" -> 1 passed, 290 deselected, 3 warnings"
+    ],
+    "next_posture": "freeze_next_mixed_source_downstream_surface_before_runtime"
+  },
+  "latest_p17a_mixed_source_rendered_handoff_prepare_runtime_proof_summary": "P17A rendered runtime implements only the /review/layer3 material-authority control for the existing P17 mixed-source handoff/export prepare API. The UI now selects server-owned mixed-source material authority, submits mixed_source_review_package plus reference_envelope_only without selected-pass IDs or payload refs, preserves selected-pass and source-directory flows, and keeps APS handoff, external export/download, connector/provider, schema, parser, source-shape, payload rewrite, excluded-tool behavior, and production readiness blocked."
 }
