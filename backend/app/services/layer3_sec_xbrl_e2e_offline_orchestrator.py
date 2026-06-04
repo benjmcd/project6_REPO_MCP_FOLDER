@@ -21,8 +21,8 @@ from app.services.layer3_sec_xbrl_projection_persistence import (
     materialize_redacted_projection_set,
 )
 from app.services.layer3_sec_xbrl_public_authority_guard import (
-    reject_public_output_policy,
-    reject_public_text_references,
+    reject_e2e_public_output_policy,
+    reject_e2e_public_text_references,
 )
 from app.services.layer3_sec_xbrl_statement_packet_persistence import (
     materialize_redacted_statement_packet,
@@ -569,7 +569,7 @@ def _positive_int(value: Any, field: str) -> int:
 
 
 def _reject_public_raw_or_local_authority(value: Any) -> None:
-    reject_public_output_policy(
+    reject_e2e_public_output_policy(
         value,
         error_type=SecXbrlE2EOfflineOrchestratorError,
         raw_output_code="sec_xbrl_e2e_offline_orchestrator_raw_public_authority_not_admitted",
@@ -578,19 +578,15 @@ def _reject_public_raw_or_local_authority(value: Any) -> None:
         raw_reference_message="SEC XBRL offline orchestration public output cannot carry raw accession, SEC URL, or local path strings.",
         raw_output_keys=RAW_PUBLIC_KEYS,
         scan_raw_period_dates=False,
-        scan_cik_fullmatch=True,
-        scan_contextual_cik=True,
     )
 
 
 def _reject_public_text_patterns(value: Any, *, field: str) -> None:
-    reject_public_text_references(
+    reject_e2e_public_text_references(
         value,
         error_type=SecXbrlE2EOfflineOrchestratorError,
         raw_reference_code="sec_xbrl_e2e_offline_orchestrator_raw_reference_not_admitted",
         raw_reference_message="SEC XBRL offline orchestration public output cannot carry raw accession, SEC URL, or local path strings.",
         field=field,
         scan_raw_period_dates=False,
-        scan_cik_fullmatch=True,
-        scan_contextual_cik=True,
     )
