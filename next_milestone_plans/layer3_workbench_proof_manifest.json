@@ -44617,8 +44617,10 @@
   "p13_package_family_policy_registry_proof": {
     "proof_kind": "p13_package_family_policy_registry_proof",
     "milestone": "p13_package_family_policy_registry",
-    "status": "branch_local_implemented_targeted_tests_passed",
+    "status": "current_main_implemented_targeted_tests_passed",
+    "source_pr": "#2170",
     "source_branch": "codex/package-family-policy",
+    "source_merge_commit": "57623418aba964213da08e4d54e8f20ad52c2381",
     "planning_doc": "next_milestone_plans/multi-ingest/29-p13-package-family-policy.md",
     "predecessor_contract_doc": "next_milestone_plans/multi-ingest/28-p12-mixed-package-contract.md",
     "owner_service": "backend/app/services/layer3_package_family_policy.py",
@@ -44654,6 +44656,45 @@
     ]
   },
   "latest_p13_package_family_policy_registry_proof_summary": "P13 proof records a no-behavior-change package-family policy registry. Existing package families keep current policy answers, unknown families fail closed, and mixed_dataset_document remains blocked for runtime package review preview, commit, submit, handoff, export, parser, schema, source-shape, legacy CSV bridge, and Onlook behavior.",
+  "p13a_package_family_route_policy_gates_proof": {
+    "proof_kind": "p13a_package_family_route_policy_gates_proof",
+    "milestone": "p13a_package_family_route_policy_gates",
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "source_branch": "codex/pkg-gates-0604",
+    "planning_doc": "next_milestone_plans/multi-ingest/30-p13a-package-family-route-gates.md",
+    "predecessor_policy_doc": "next_milestone_plans/multi-ingest/29-p13-package-family-policy.md",
+    "owner_service": "backend/app/services/layer3_package_family_policy.py",
+    "wired_service": "backend/app/services/layer3_workbench.py",
+    "proof_terms": "Route-level package-family policy gate proof for package lifecycle routes; mixed_dataset_document and unknown package families are rejected from server-owned selected-pass result-review state before route effects.",
+    "gated_routes": [
+      "package_review_preview",
+      "package_construction_commit",
+      "package_review_submit",
+      "handoff_export_prepare"
+    ],
+    "server_owned_review_state_required_by_proof": true,
+    "existing_package_family_behavior_preserved_by_proof": true,
+    "unknown_package_family_fails_closed_by_proof": true,
+    "mixed_dataset_document_preview_enabled_by_proof": false,
+    "mixed_dataset_document_commit_enabled_by_proof": false,
+    "mixed_dataset_document_submit_enabled_by_proof": false,
+    "mixed_dataset_document_handoff_enabled_by_proof": false,
+    "schema_models_changed_by_proof": false,
+    "migration_changed_by_proof": false,
+    "parser_behavior_changed_by_proof": false,
+    "source_shape_expanded_by_proof": false,
+    "generic_xml_html_admitted_by_proof": false,
+    "archive_member_orchestration_admitted_by_proof": false,
+    "legacy_csv_bridge_deprecated_by_proof": false,
+    "onlook_included_by_proof": false,
+    "verification": [
+      "Package-family/package-state/contract/submit response tests passed.",
+      "Mixed readiness plus package lifecycle route tests passed.",
+      "Source-directory package/handoff/export compatibility tests passed.",
+      "Authority index, progress state, and frozen target-selection checks passed."
+    ]
+  },
+  "latest_p13a_package_family_route_policy_gates_proof_summary": "P13A proof records route-level package-family policy enforcement at package preview, commit, submit, and handoff/export prepare. Mixed and unknown package families fail closed before package lifecycle effects, while existing admitted families keep current behavior and mixed-source commit, submit, handoff, export, parser, schema, source-shape, legacy CSV bridge, and Onlook work remain blocked.",
   "sec_xbrl_activation_lane_selection_proof": {
     "proof_kind": "sec_xbrl_activation_lane_selection_proof",
     "milestone": "sec_xbrl_activation_lane_selection_v1",
