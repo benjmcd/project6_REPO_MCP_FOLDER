@@ -16,7 +16,7 @@ from app.models.models import (
 from app.services.layer3_sec_xbrl_public_authority_guard import (
     RAW_AUTHORITY_KEYS,
     RAW_VALUE_KEYS,
-    reject_raw_or_local_authority as reject_public_authority,
+    reject_persistence_public_authority,
     reject_unadmitted_keys as _reject_unadmitted_keys,
 )
 from app.services.layer3_utils import json_clone, stable_hash
@@ -616,7 +616,7 @@ def _public_concept_list(value: Any) -> list[str]:
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:
-    reject_public_authority(
+    reject_persistence_public_authority(
         value,
         error_type=SecXbrlProjectionPersistenceError,
         raw_authority_code="sec_xbrl_projection_persistence_raw_authority_not_admitted",
@@ -625,6 +625,4 @@ def _reject_raw_or_local_authority(value: Any) -> None:
         raw_reference_message="SEC XBRL projection persistence cannot store raw accession, SEC URL, period date, or local path strings.",
         raw_value_keys=RAW_VALUE_KEYS,
         raw_authority_keys=RAW_AUTHORITY_KEYS,
-        scan_cik_fullmatch=True,
-        scan_contextual_cik=True,
     )
