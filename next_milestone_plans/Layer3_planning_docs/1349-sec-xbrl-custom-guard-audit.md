@@ -287,18 +287,20 @@ Recommended future order:
 
 1. Keep planning/proof authority synchronized with current main before
    starting another migration slice.
-2. After the exact `_reject_unadmitted_keys` adapter, continue only with
-   service-family-specific guard/redaction migrations when service-local error
-   shape can be proven unchanged.
-3. Value-reveal-family adapter design and tests, if repeated wrapper risk
-   justifies the churn.
-4. E2E output-policy adapter design and tests, separately from value reveal.
-5. Multi-filing response leak scan variant, only if a text helper can preserve
-   `scan_raw_period_dates=False`.
-6. Diagnostic text/hit-class helper extraction in byte-stable batches;
-   resolved-fact diagnostic redaction wrappers are already migrated.
-7. Reassess activation-lane readiness only after the guard/redaction
-   consolidation debt is either retired or explicitly accepted.
+2. Treat the exact unadmitted-key, value-reveal-family, E2E output-policy,
+   persistence-family, and default report-leak adapters as completed
+   consolidation slices.
+3. Do not extract another runtime/public guard helper unless a fresh
+   current-main audit proves exact error shape, scan posture, raw-key sets,
+   residual/value policy, and service contract equivalence.
+4. Preserve operator-review, auth-binding, multi-filing, proof-capability,
+   and value-reveal response traversal as intentional local policy unless a
+   repeated exact-equivalence class emerges.
+5. Continue diagnostic text/hit-class helper extraction only in byte-stable
+   batches; resolved-fact diagnostic redaction wrappers are already migrated.
+6. Reassess activation-lane readiness only after the remaining local guard
+   seams are either documented as intentional policy or retired by a proven
+   exact-equivalence slice.
 
 ## Acceptance for future migration slices
 
@@ -316,13 +318,15 @@ Every future slice must prove:
 - GitHub closeout uses CI green, review-settle window, thread-aware GraphQL
   `reviewThreads`, merge if authorized, detached post-merge proof, and final
   thread scan.
+- If no exact-equivalence class is proven, the correct outcome is a
+  no-runtime-edit audit closeout rather than another consolidation PR.
 
 ## Explicit non-scope
 
 This audit and its bounded follow-up traces do not:
 
-- migrate any remaining custom service wrapper beyond the exact
-  `_reject_unadmitted_keys` adapter recorded above;
+- migrate any remaining custom service wrapper beyond the exact adapters
+  recorded above;
 - change runtime behavior, route behavior, persistence, schema, UI, config, or
   models;
 - regenerate or edit proof JSONs or committed diagnostic reports;
