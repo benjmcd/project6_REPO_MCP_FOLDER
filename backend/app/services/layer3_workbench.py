@@ -125,9 +125,11 @@ from app.services.layer3_package_entry import (
     PACKAGE_KIND_REVIEW_FACING,
     PACKAGE_KIND_USER_FACING,
     SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
+    SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
     SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
     SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE,
     Layer3PackageEntryError,
+    materialize_mixed_source_package_commit,
     materialize_workbench_package_commit,
 )
 from app.services.layer3_package_submit_response import (
@@ -432,6 +434,7 @@ QUAL_APS_PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.qual_aps_package_review_prev
 MIXED_SOURCE_PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.mixed_source_package_review_preview.v1"
 MIXED_SOURCE_PACKAGE_CONTRACT_SCHEMA_ID = "layer3.mixed_source_package_contract.v1"
 PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.package_construction_commit.v1"
+MIXED_SOURCE_PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.mixed_source_package_construction_commit.v1"
 SOURCE_INTAKE_PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.source_intake_package_construction_commit.v1"
 QUAL_APS_PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.qual_aps_package_construction_commit.v1"
 PACKAGE_CONSTRUCTION_COMMIT_STATE_SCHEMA_ID = "layer3.package_construction_commit_state.v1"
@@ -6164,7 +6167,7 @@ def _mixed_source_package_review_preview(db: Session, payload: dict[str, Any]) -
         "result_review_state": "mixed_material_authority_present",
         "result_review_record_ref": None,
         "package_review_preview_enabled": True,
-        "package_commit_enabled": False,
+        "package_commit_enabled": True,
         "package_review_enabled": False,
         "package_review_submit_enabled": False,
         "handoff_enabled": False,
@@ -6172,7 +6175,11 @@ def _mixed_source_package_review_preview(db: Session, payload: dict[str, Any]) -
         "external_export_download_enabled": False,
         "connector_dispatch_enabled": False,
         "provider_public_url_enabled": False,
-        "candidate_package_kinds": [],
+        "candidate_package_kinds": package_review_candidate_projection(
+            package_commit_enabled=True,
+            package_family=PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+            readiness_reason="mixed-source package construction commit is admitted for committed material authority",
+        ),
         "package_owner_compatibility": {
             "schema_id": "layer3.mixed_source_package_owner_compatibility.v1",
             "owner_service": "layer3_workbench_package_state",
@@ -6183,13 +6190,13 @@ def _mixed_source_package_review_preview(db: Session, payload: dict[str, Any]) -
             ],
             "material_preview_authority_present": True,
             "package_review_preview_callable": True,
-            "package_commit_callable": False,
-            "workbench_package_commit_callable": False,
-            "preview_candidate_projection_compatible": False,
-            "construction_compatible_with_current_workbench_state": False,
+            "package_commit_callable": True,
+            "workbench_package_commit_callable": True,
+            "preview_candidate_projection_compatible": True,
+            "construction_compatible_with_current_workbench_state": True,
             "missing_owner_service_inputs": [],
-            "status": "mixed_source_package_review_preview_read_only",
-            "reason": "Mixed-source authority is inspectable, but package construction and downstream handoff/export remain blocked.",
+            "status": "mixed_source_package_construction_preconditions_satisfied",
+            "reason": "Mixed-source material authority can be committed into package construction; submit and downstream handoff/export remain blocked.",
         },
         "blocked_reasons": [],
         "downstream_unavailable": downstream_unavailable,
@@ -6713,6 +6720,195 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
     }
 
 
+MIXED_SOURCE_PACKAGE_CONSTRUCTION_SELECTED_PASS_FIELDS = frozenset(
+    {
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "analysis_run_id",
+    }
+)
+
+
+def _public_mixed_package_payload_ref(package: L3OutputPackage) -> str:
+    return f"layer3://mixed-source-package/{package.output_package_id}/{package.package_kind}"
+
+
+def _mixed_source_package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or "").strip()
+    session_id = str(payload.get("session_id") or "").strip()
+    material_preview_id = str(payload.get("material_preview_id") or "").strip()
+    material_preview_hash = str(payload.get("material_preview_hash") or "").strip()
+    supplied_package_preview_hash = str(payload.get("package_review_preview_hash") or "").strip()
+    supplied_contract_hash = str(payload.get("contract_hash") or "").strip()
+    legacy_fields = sorted(field for field in MIXED_SOURCE_PACKAGE_CONSTRUCTION_SELECTED_PASS_FIELDS if field in payload)
+    if legacy_fields:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_construction_scope_not_admitted",
+            "Mixed-source package construction is admitted only from material-preview authority fields.",
+            status="invalid",
+            blocked_fields=legacy_fields,
+            next_allowed_actions=["submit_mixed_source_material_authority_package_construction_request"],
+        )
+    missing = [
+        field
+        for field, value in (
+            ("client_request_id", request_id),
+            ("session_id", session_id),
+            ("material_preview_id", material_preview_id),
+            ("material_preview_hash", material_preview_hash),
+            ("package_review_preview_hash", supplied_package_preview_hash),
+            ("contract_hash", supplied_contract_hash),
+        )
+        if not value
+    ]
+    if missing:
+        raise Layer3WorkbenchError(
+            "missing_mixed_source_package_construction_fields",
+            f"Mixed-source package construction request is missing required fields: {', '.join(missing)}.",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_mixed_source_package_construction_request"],
+        )
+    expected_package_kinds = payload.get("expected_package_kinds") or list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    if expected_package_kinds != list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS):
+        raise Layer3WorkbenchError(
+            "mixed_source_package_construction_kinds_mismatch",
+            "Mixed-source package construction admits exactly canonical_internal, user_facing, and review_facing package kinds.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["expected_package_kinds"],
+        )
+    preview_body = _mixed_source_package_review_preview(
+        db,
+        {
+            "client_request_id": request_id,
+            "session_id": session_id,
+            "material_preview_id": material_preview_id,
+            "material_preview_hash": material_preview_hash,
+        },
+    )
+    if preview_body.get("package_review_preview_hash") != supplied_package_preview_hash:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_review_preview_mismatch",
+            "Mixed-source package construction must reference the current server-recomputed package-review preview hash.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["package_review_preview_hash"],
+            next_allowed_actions=["refresh_package_review_preview"],
+        )
+    if preview_body.get("contract_hash") != supplied_contract_hash:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_contract_hash_mismatch",
+            "Mixed-source package construction must reference the current server-recomputed contract hash.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["contract_hash"],
+            next_allowed_actions=["refresh_package_review_preview"],
+        )
+    session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().one_or_none()
+    if session is None:
+        raise Layer3WorkbenchError("session_not_found", f"Layer 3 session '{session_id}' was not found.", http_status=404)
+    preview_payload = preview_body.get("mixed_source_package_review_preview")
+    if not isinstance(preview_payload, dict):
+        raise Layer3WorkbenchError(
+            "mixed_source_package_construction_preview_unavailable",
+            "Mixed-source package construction requires server-derived package-review preview payload.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["package_review_preview_hash"],
+        )
+    try:
+        result = materialize_mixed_source_package_commit(
+            db,
+            session=session,
+            client_request_id=request_id,
+            package_review_preview_hash=supplied_package_preview_hash,
+            contract_hash=supplied_contract_hash,
+            material_preview_id=material_preview_id,
+            material_preview_hash=material_preview_hash,
+            source_manifest=preview_payload["source_manifest"],
+            narrative_table_links=preview_payload["narrative_table_links"],
+            negative_authority_flags=preview_payload["negative_authority_flags"],
+            expected_package_kinds=expected_package_kinds,
+        )
+    except Layer3PackageEntryError as exc:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_construction_commit_blocked",
+            str(exc),
+            status="conflict",
+            http_status=409,
+            next_allowed_actions=["inspect_existing_package_state"],
+        ) from exc
+    db.commit()
+    packages = list(result.output_packages)
+    reconciliation_summary = result.reconciliation_record.summary_json or {}
+    commit_summary = reconciliation_summary.get("workbench_package_commit") or {}
+    public_refs = [_public_mixed_package_payload_ref(package) for package in packages]
+    return {
+        **_base_response(
+            MIXED_SOURCE_PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID,
+            request_id=request_id,
+            status="already_committed" if result.replayed else "committed",
+        ),
+        "session_id": session_id,
+        "analysis_plan_id": "",
+        "pass_run_id": "",
+        "material_preview_id": material_preview_id,
+        "material_preview_hash": material_preview_hash,
+        "preview_identity": preview_body["preview_identity"],
+        "analysis_run_id": None,
+        "result_review_record_ref": "",
+        "package_review_preview_hash": supplied_package_preview_hash,
+        "contract_hash": supplied_contract_hash,
+        "selected_source_ids": preview_body["selected_source_ids"],
+        "narrative_table_link_count": preview_body["narrative_table_link_count"],
+        "construction_basis_hash": commit_summary.get("construction_basis_hash"),
+        "reconciliation_record_id": result.reconciliation_record.reconciliation_record_id,
+        "output_packages": [
+            {
+                "output_package_id": package.output_package_id,
+                "package_kind": package.package_kind,
+                "status": package.status,
+                "payload_ref": public_ref,
+                "payload_hash": package.payload_hash,
+            }
+            for package, public_ref in zip(packages, public_refs, strict=True)
+        ],
+        "output_package_ids": [package.output_package_id for package in packages],
+        "package_kinds": [package.package_kind for package in packages],
+        "payload_refs": public_refs,
+        "payload_hashes": [package.payload_hash for package in packages],
+        "pass_scope": None,
+        "method": None,
+        "source_gate": SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
+        "package_construction_source_gate": SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
+        "source_shape": "dataset_version_plus_aps_content_document",
+        "source_dataset_version_ids": preview_body["selected_source_ids"]["dataset_version_ids"],
+        "reviewed_output_item_summary": None,
+        "package_commit_enabled": False,
+        "package_review_submit_enabled": False,
+        "handoff_enabled": False,
+        "aps_handoff_enabled": False,
+        "external_export_download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_url_enabled": False,
+        "downstream_unavailable": list(commit_summary.get("downstream_unavailable") or []),
+        "next_allowed_actions": [],
+        "next_state": PACKAGE_CONSTRUCTED_STATE,
+        "authority_rail": _authority_rail(
+            session_id=session_id,
+            current_gate="package",
+            persistence_mode="durable_mixed_source_package_construction",
+            downstream_unavailable=list(commit_summary.get("downstream_unavailable") or []),
+            execution_enabled=False,
+            package_review_enabled=False,
+        ),
+    }
+
+
 def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or "").strip()
     if not request_id:
@@ -6723,6 +6919,22 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             blocked_fields=["client_request_id"],
             next_allowed_actions=["submit_idempotent_package_construction_commit"],
         )
+    blocked_payload_fields = package_construction_commit_blocked_fields(payload)
+    if blocked_payload_fields:
+        blocked_text = ", ".join(blocked_payload_fields)
+        raise Layer3WorkbenchError(
+            "package_construction_commit_scope_not_admitted",
+            f"Package construction commit request includes non-admitted fields: {blocked_text}.",
+            status="invalid",
+            blocked_fields=blocked_payload_fields,
+            next_allowed_actions=["submit_bounded_package_construction_commit_request"],
+        )
+    material_authority_fields_present = any(
+        str(payload.get(field) or "").strip()
+        for field in ("material_preview_id", "material_preview_hash", "contract_hash")
+    )
+    if material_authority_fields_present:
+        return _mixed_source_package_construction_commit(db, payload)
     session_id = str(payload.get("session_id") or "").strip()
     analysis_plan_id = str(payload.get("analysis_plan_id") or "").strip()
     pass_run_id = str(payload.get("pass_run_id") or "").strip()
@@ -6752,17 +6964,6 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             status="invalid",
             blocked_fields=missing,
             next_allowed_actions=["submit_complete_package_construction_commit_request"],
-        )
-
-    blocked_payload_fields = package_construction_commit_blocked_fields(payload)
-    if blocked_payload_fields:
-        blocked_text = ", ".join(blocked_payload_fields)
-        raise Layer3WorkbenchError(
-            "package_construction_commit_scope_not_admitted",
-            f"Package construction commit request includes non-admitted fields: {blocked_text}.",
-            status="invalid",
-            blocked_fields=blocked_payload_fields,
-            next_allowed_actions=["submit_bounded_package_construction_commit_request"],
         )
 
     expected_package_kinds = payload.get("expected_package_kinds")
@@ -6916,6 +7117,15 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             status="blocked",
             http_status=409,
             blocked_fields=["result_review_record_ref"],
+        )
+    if _package_family_for_review_state(review_state) == PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT:
+        raise Layer3WorkbenchError(
+            "mixed_source_package_construction_requires_material_authority",
+            "Mixed-source package construction must be requested with committed material-preview authority fields.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["material_preview_id", "material_preview_hash", "contract_hash"],
+            next_allowed_actions=["submit_mixed_source_material_authority_package_construction_request"],
         )
     _require_package_family_action_admitted(
         review_state,

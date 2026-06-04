@@ -63,6 +63,7 @@ SOURCE_GATE_D_PACKAGE_FREEZE = "08_GATED_PACKAGE_FREEZE"
 SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE = "50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE"
 SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE = "88_COHORT_PACKAGE_CONSTRUCTION_FREEZE"
 SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE = "140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE"
+SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE = "32_P15_MIXED_PACKAGE_CONSTRUCTION_FREEZE"
 SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE = (
     "804_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE"
 )
@@ -1246,6 +1247,184 @@ def materialize_workbench_package_commit(
         }
     db.flush()
 
+    return Layer3PackageEntryResult(
+        reconciliation_record=reconciliation_record,
+        output_packages=tuple(package_rows),
+        replayed=False,
+    )
+
+
+def materialize_mixed_source_package_commit(
+    db: Session,
+    *,
+    session: L3Session,
+    client_request_id: str,
+    package_review_preview_hash: str,
+    contract_hash: str,
+    material_preview_id: str,
+    material_preview_hash: str,
+    source_manifest: dict[str, Any],
+    narrative_table_links: list[dict[str, Any]],
+    negative_authority_flags: dict[str, bool],
+    expected_package_kinds: list[str] | tuple[str, ...],
+) -> Layer3PackageEntryResult:
+    expected = (
+        PACKAGE_KIND_CANONICAL_INTERNAL,
+        PACKAGE_KIND_USER_FACING,
+        PACKAGE_KIND_REVIEW_FACING,
+    )
+    if tuple(expected_package_kinds) != expected:
+        raise Layer3PackageEntryError("mixed-source construction requires canonical package kinds")
+    source_gate = SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE
+    selected_sources = dict((source_manifest or {}).get("selected_sources") or {})
+    link_ids = sorted(
+        str(link.get("link_id") or "").strip()
+        for link in narrative_table_links
+        if isinstance(link, dict) and str(link.get("link_id") or "").strip()
+    )
+    authority_basis = {
+        "schema_id": "layer3.mixed_source_package_construction_authority.v1",
+        "client_request_id": client_request_id,
+        "session_id": session.session_id,
+        "package_family": "mixed_dataset_document",
+        "material_preview_id": material_preview_id,
+        "material_preview_hash": material_preview_hash,
+        "contract_hash": contract_hash,
+        "package_review_preview_hash": package_review_preview_hash,
+        "dataset_version_ids": sorted(str(item) for item in selected_sources.get("dataset_version_ids") or []),
+        "aps_content_document_ids": sorted(str(item) for item in selected_sources.get("aps_content_document_ids") or []),
+        "narrative_table_link_ids": link_ids,
+        "expected_package_kinds": list(expected),
+        "source_gate": source_gate,
+    }
+    authority_basis_hash = _workbench_authority_basis_hash(authority_basis)
+    existing = _existing_workbench_package_result(
+        db,
+        session_id=session.session_id,
+        authority_basis_hash=authority_basis_hash,
+        client_request_id=client_request_id,
+    )
+    if existing is not None:
+        return existing
+
+    unavailable = [
+        "package_review_submit",
+        "handoff",
+        "export",
+        "aps_handoff",
+        "external_export_download",
+        "connector_dispatch",
+        "provider_public_url",
+    ]
+    package_status = PACKAGE_STATUS_REVIEW_ONLY
+    package_payloads: dict[str, dict[str, Any]] = {}
+    for package_kind in expected:
+        package_payloads[package_kind] = {
+            "schema_id": "layer3.mixed_source_package_payload.v1",
+            "package_header": _package_header(
+                session_id=session.session_id,
+                package_kind=package_kind,
+                package_status=package_status,
+                source_gate=source_gate,
+            ),
+            "package_family": "mixed_dataset_document",
+            "contract_schema_id": "layer3.mixed_source_package_contract.v1",
+            "contract_hash": contract_hash,
+            "package_review_preview_hash": package_review_preview_hash,
+            "material_preview_id": material_preview_id,
+            "material_preview_hash": material_preview_hash,
+            "source_manifest": _json_clone(source_manifest),
+            "narrative_table_links": _json_clone(narrative_table_links),
+            "negative_authority_flags": _json_clone(negative_authority_flags),
+            "downstream_unavailable": list(unavailable),
+        }
+
+    reconciliation_summary = {
+        "analysis_plan_id": None,
+        "pass_run_ids_json": [],
+        "accepted_pass_run_ids_json": [],
+        "warning_pass_run_ids_json": [],
+        "failed_pass_run_ids_json": [],
+        "package_status": package_status,
+        "source_gate": source_gate,
+        "workbench_package_commit": {
+            "schema_id": "layer3.mixed_source_package_commit_summary.v1",
+            "client_request_id": client_request_id,
+            "authority_basis": _json_clone(authority_basis),
+            "authority_basis_hash": authority_basis_hash,
+            "package_review_preview_hash": package_review_preview_hash,
+            "result_review_record_ref": None,
+            "analysis_run_id": None,
+            "pass_type": None,
+            "pass_scope": None,
+            "method": None,
+            "source_gate": source_gate,
+            "package_construction_source_gate": source_gate,
+            "source_shape": "dataset_version_plus_aps_content_document",
+            "source_dataset_version_ids": _json_clone(authority_basis["dataset_version_ids"]),
+            "aps_content_document_ids": _json_clone(authority_basis["aps_content_document_ids"]),
+            "material_preview_id": material_preview_id,
+            "material_preview_hash": material_preview_hash,
+            "contract_hash": contract_hash,
+            "package_review_submit_enabled": False,
+            "handoff_enabled": False,
+            "downstream_unavailable": list(unavailable),
+        },
+    }
+    reconciliation_record = L3ReconciliationRecord(
+        reconciliation_record_id=uuid_str(),
+        session_id=session.session_id,
+        status=RECONCILIATION_STATUS_REVIEW_ONLY,
+        summary_json=reconciliation_summary,
+    )
+    db.add(reconciliation_record)
+    db.flush()
+
+    package_rows: list[L3OutputPackage] = []
+    for package_kind in expected:
+        payload = package_payloads[package_kind]
+        payload_ref, payload_hash = _persist_package_payload(
+            session_id=session.session_id,
+            package_kind=package_kind,
+            payload=payload,
+        )
+        package_rows.append(
+            L3OutputPackage(
+                output_package_id=uuid_str(),
+                session_id=session.session_id,
+                reconciliation_record_id=reconciliation_record.reconciliation_record_id,
+                package_kind=package_kind,
+                status=package_status,
+                payload_ref=payload_ref,
+                payload_hash=payload_hash,
+                summary_json=_output_package_summary(
+                    package_kind=package_kind,
+                    payload=payload,
+                    package_status=package_status,
+                    findings=[],
+                    contradictions=[],
+                    caveats=[],
+                    source_gate=source_gate,
+                ),
+            )
+        )
+    db.add_all(package_rows)
+    db.flush()
+    construction_basis_hash = _workbench_authority_basis_hash(
+        {
+            **authority_basis,
+            "package_kinds": [package.package_kind for package in package_rows],
+            "payload_hashes": [package.payload_hash for package in package_rows],
+        }
+    )
+    reconciliation_summary["workbench_package_commit"]["construction_basis_hash"] = construction_basis_hash
+    reconciliation_record.summary_json = reconciliation_summary
+    for package in package_rows:
+        package.summary_json = {
+            **_json_clone(package.summary_json or {}),
+            "construction_basis_hash": construction_basis_hash,
+        }
+    db.flush()
     return Layer3PackageEntryResult(
         reconciliation_record=reconciliation_record,
         output_packages=tuple(package_rows),

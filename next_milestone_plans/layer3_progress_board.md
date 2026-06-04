@@ -11610,3 +11610,31 @@ progress check, and `git diff --check`.
 
 Next posture: after this freeze lands and is current-main synced, implement the
 first mixed-source package construction commit runtime under this boundary.
+
+## P15 Mixed-Source Package Construction Commit Runtime
+
+Milestone: `p15_mixed_source_package_construction_commit_runtime`.
+
+Closeout doc:
+`next_milestone_plans/multi-ingest/33-p15-runtime-closeout.md`.
+
+Status: branch-local runtime implementation pending PR merge.
+
+Scope: admits mixed-source package construction commit from committed Gate B
+material authority. The route recomputes the P14 package-review preview
+server-side, requires matching `package_review_preview_hash` and
+`contract_hash`, and writes one reconciliation record plus three package rows:
+`canonical_internal`, `user_facing`, and `review_facing`.
+
+Non-goals: no mixed-source package-review submit, no handoff/export, no schema
+or migration, no parser behavior, no source-shape expansion, no request-supplied
+package payloads, no legacy CSV bridge deprecation, and no excluded-tool
+behavior. Legacy selected-pass mixed package markers remain blocked.
+
+Verification target: focused package-family/contract/package-state tests,
+focused Layer 3 API mixed-source/package-construction/OpenAPI tests, manifest
+JSON validation, Layer 3 authority-index validation, target-selection frozen
+validation, progress check, and `git diff --check`.
+
+Next posture: after this runtime lands and is current-main synced, define a
+separate mixed-source package-review submit freeze before any submit runtime.

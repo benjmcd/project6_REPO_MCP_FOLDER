@@ -1617,6 +1617,9 @@ class Layer3PackageConstructionCommitRequest(BaseModel):
     pass_run_id: str | None = None
     preview_id: str | None = None
     preview_hash: str | None = None
+    material_preview_id: str | None = None
+    material_preview_hash: str | None = None
+    contract_hash: str | None = None
     result_review_record_ref: str | None = None
     package_review_preview_hash: str | None = None
     analysis_run_id: str | None = None
@@ -1643,6 +1646,12 @@ class Layer3PackageConstructionCommitRequest(BaseModel):
     artifact_manifest: Any | None = None
     analysis_artifact: Any | None = None
     aps_handoff: Any | None = None
+    external_export_download: Any | None = None
+    provider_public_url: Any | None = None
+    public_url: Any | None = None
+    connector_ref: Any | None = None
+    connector_dispatch: Any | None = None
+    onlook: Any | None = None
     edited_findings: Any | None = None
     rewrite_output: Any | None = None
     package_payload: Any | None = None
@@ -9671,10 +9680,15 @@ class Layer3PackageConstructionCommitResponse(Layer3BaseResponse):
     session_id: str
     analysis_plan_id: str
     pass_run_id: str
+    material_preview_id: str | None = None
+    material_preview_hash: str | None = None
     preview_identity: dict[str, Any]
     analysis_run_id: str | None
     result_review_record_ref: str
     package_review_preview_hash: str
+    contract_hash: str | None = None
+    selected_source_ids: dict[str, list[str]] | None = None
+    narrative_table_link_count: int | None = None
     construction_basis_hash: str | None = None
     reconciliation_record_id: str
     output_packages: list[dict[str, Any]]
@@ -10807,6 +10821,9 @@ EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA: dict[str, Any] = {
         "pass_run_id",
         "preview_id",
         "preview_hash",
+        "material_preview_id",
+        "material_preview_hash",
+        "contract_hash",
         "result_review_record_ref",
         "package_review_preview_hash",
         "reconciliation_record_id",
@@ -11773,6 +11790,12 @@ EXECUTION_RESULT_REVIEW_REQUEST_SCHEMA: dict[str, Any] = {
         "artifact_manifest": _forbidden_request_field_schema(),
         "package_variant": _forbidden_request_field_schema(),
         "aps_handoff": _forbidden_request_field_schema(),
+        "external_export_download": _forbidden_request_field_schema(),
+        "provider_public_url": _forbidden_request_field_schema(),
+        "public_url": _forbidden_request_field_schema(),
+        "connector_ref": _forbidden_request_field_schema(),
+        "connector_dispatch": _forbidden_request_field_schema(),
+        "onlook": _forbidden_request_field_schema(),
         "edited_findings": _forbidden_request_field_schema(),
         "rewrite_output": _forbidden_request_field_schema(),
     },
@@ -11847,16 +11870,48 @@ PACKAGE_REVIEW_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
 PACKAGE_CONSTRUCTION_COMMIT_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
-    "description": "Strict package construction commit fields; explicit review/handoff/source-widening/package-payload fields remain fail-closed.",
-    "required": [
-        "client_request_id",
-        "session_id",
-        "analysis_plan_id",
-        "pass_run_id",
-        "preview_id",
-        "preview_hash",
-        "result_review_record_ref",
-        "package_review_preview_hash",
+    "description": "Strict package construction commit fields; selected-pass and material-authority request shapes are mutually exclusive, and explicit review/handoff/source-widening/package-payload fields remain fail-closed.",
+    "required": ["client_request_id", "session_id", "package_review_preview_hash"],
+    "oneOf": [
+        {
+            "required": [
+                "client_request_id",
+                "session_id",
+                "analysis_plan_id",
+                "pass_run_id",
+                "preview_id",
+                "preview_hash",
+                "result_review_record_ref",
+                "package_review_preview_hash",
+            ],
+            "not": {
+                "anyOf": [
+                    {"required": ["material_preview_id"]},
+                    {"required": ["material_preview_hash"]},
+                    {"required": ["contract_hash"]},
+                ]
+            },
+        },
+        {
+            "required": [
+                "client_request_id",
+                "session_id",
+                "material_preview_id",
+                "material_preview_hash",
+                "package_review_preview_hash",
+                "contract_hash",
+            ],
+            "not": {
+                "anyOf": [
+                    {"required": ["analysis_plan_id"]},
+                    {"required": ["pass_run_id"]},
+                    {"required": ["preview_id"]},
+                    {"required": ["preview_hash"]},
+                    {"required": ["result_review_record_ref"]},
+                    {"required": ["analysis_run_id"]},
+                ]
+            },
+        },
     ],
     "properties": {
         "client_request_id": {"type": "string"},
@@ -11865,6 +11920,9 @@ PACKAGE_CONSTRUCTION_COMMIT_REQUEST_SCHEMA: dict[str, Any] = {
         "pass_run_id": {"type": "string"},
         "preview_id": {"type": "string"},
         "preview_hash": {"type": "string"},
+        "material_preview_id": {"type": "string"},
+        "material_preview_hash": {"type": "string"},
+        "contract_hash": {"type": "string"},
         "result_review_record_ref": {"type": "string"},
         "package_review_preview_hash": {"type": "string"},
         "analysis_run_id": {"type": "string"},
@@ -11894,6 +11952,12 @@ PACKAGE_CONSTRUCTION_COMMIT_REQUEST_SCHEMA: dict[str, Any] = {
         "artifact_manifest": _forbidden_request_field_schema(),
         "analysis_artifact": _forbidden_request_field_schema(),
         "aps_handoff": _forbidden_request_field_schema(),
+        "external_export_download": _forbidden_request_field_schema(),
+        "provider_public_url": _forbidden_request_field_schema(),
+        "public_url": _forbidden_request_field_schema(),
+        "connector_ref": _forbidden_request_field_schema(),
+        "connector_dispatch": _forbidden_request_field_schema(),
+        "onlook": _forbidden_request_field_schema(),
         "edited_findings": _forbidden_request_field_schema(),
         "rewrite_output": _forbidden_request_field_schema(),
         "package_payload": _forbidden_request_field_schema(),

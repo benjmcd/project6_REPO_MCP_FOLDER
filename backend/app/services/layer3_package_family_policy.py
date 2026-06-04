@@ -87,7 +87,6 @@ MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM = (
     "provider_public_url",
 )
 MIXED_DATASET_DOCUMENT_PREVIEW_DOWNSTREAM = (
-    "package_construction",
     "package_review_submit",
     "handoff",
     "export",
@@ -256,18 +255,18 @@ PACKAGE_FAMILY_POLICIES: dict[str, PackageFamilyPolicy] = {
         PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
         contract_schema_id="layer3.mixed_source_package_contract.v1",
         preview_admitted=True,
-        commit_admitted=False,
+        commit_admitted=True,
         submit_admitted=False,
         handoff_admitted=False,
-        candidate_package_kinds=(),
+        candidate_package_kinds=PACKAGE_REVIEW_CANDIDATE_KINDS,
         preview_downstream_unavailable=MIXED_DATASET_DOCUMENT_PREVIEW_DOWNSTREAM,
         construction_downstream_unavailable=MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM,
         submit_downstream_unavailable=MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM,
         handoff_downstream_unavailable=MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM,
-        admission_boundary="mixed_package_review_preview_read_only_runtime_admitted",
+        admission_boundary="mixed_package_construction_commit_runtime_admitted",
         reason=(
-            "Mixed-source material authority admits read-only package-review preview; "
-            "package construction, submit, handoff, and export remain blocked."
+            "Mixed-source material authority admits package-review preview and "
+            "construction commit; submit, handoff, and export remain blocked."
         ),
     ),
 }
