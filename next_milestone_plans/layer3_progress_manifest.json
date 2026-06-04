@@ -46990,9 +46990,15 @@
   "p16_mixed_source_package_review_submit_runtime_tracking": {
     "tracking_kind": "p16_mixed_source_package_review_submit_runtime_tracking",
     "milestone": "p16_mixed_source_package_review_submit_runtime",
-    "status": "branch_local_runtime_implementation_verified",
-    "source_branch": "codex/p16-submit-runtime-0604",
+    "status": "current_main_implemented_post_merge_proof_passed",
+    "source_prs": [
+      "#2199",
+      "#2200"
+    ],
     "base_main_commit": "4825fdc07699d1a634c1fb8a6b3686de2ac74ace",
+    "implementation_merge_commit": "7362a786e4cc1c6d2038194c60b83d35f129d30f",
+    "review_followup_merge_commit": "b37235f0fcd4ab3a07f2be4e96e64171805b95e2",
+    "current_main_commit": "b37235f0fcd4ab3a07f2be4e96e64171805b95e2",
     "planning_doc": "next_milestone_plans/multi-ingest/35-p16-runtime-closeout.md",
     "freeze_predecessor_doc": "next_milestone_plans/multi-ingest/34-p16-mixed-submit-freeze.md",
     "construction_predecessor_doc": "next_milestone_plans/multi-ingest/33-p15-runtime-closeout.md",
@@ -47042,7 +47048,7 @@
     "status_payload_ref_redaction": "mixed_package_status_and_submit_surfaces_return_public_layer3_refs_not_local_storage_paths",
     "review_debt_closed": [
       "explicit_empty_expected_package_kinds_fail_closed",
-      "material_authority_dispatch_uses_field_presence_not_truthiness",
+      "material_authority_dispatch_requires_non_empty_stripped_value",
       "mixed_package_payload_refs_redacted_to_public_refs"
     ],
     "fail_closed_cases": [
@@ -47069,11 +47075,12 @@
     "verification": [
       "python -B -m py_compile touched API/service/test files -> PASS",
       "python -B -m pytest .\\backend\\tests\\test_layer3_package_family_policy.py .\\backend\\tests\\test_layer3_package_review_contract.py .\\backend\\tests\\test_layer3_workbench_package_state.py .\\backend\\tests\\test_layer3_package_submit_response.py .\\backend\\tests\\test_layer3_workbench.py -q -> 71 passed, 2 warnings",
-      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"mixed_source_package or package_construction_commit or package_review_preview or package_review_submit or package_openapi_contracts or gate_b\" -> 33 passed, 254 deselected, 3 warnings",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"mixed_source_package or package_construction_commit or package_review_preview or package_review_submit or package_openapi_contracts or gate_b\" -> 36 passed, 254 deselected, 3 warnings",
       "python -B -m json.tool authority/progress/proof manifests -> PASS",
       "python -B .\\tools\\l3-authority-index-validate.py -> PASS",
       "python -B .\\tools\\l3-target-selection-validate.py --expect frozen -> PASS",
-      "python -B .\\tools\\l3-progress-check.py -> PASS"
+      "python -B .\\tools\\l3-progress-check.py -> PASS",
+      "detached post-merge proof from current main b37235f0fcd4ab3a07f2be4e96e64171805b95e2 -> PASS"
     ],
     "files_in_scope": [
       "backend/app/api/layer3.py",
@@ -47095,5 +47102,84 @@
     ],
     "next_posture": "mixed_source_handoff_export_freeze_after_submit_runtime_merge_and_current_main_sync"
   },
-  "latest_p16_mixed_source_package_review_submit_runtime_summary": "P16 runtime is branch-local verified. It admits mixed-source package-review submit only from material authority over existing P15 reconciliation/package rows, records one submit state, closes explicit-empty expected-package-kind, field-presence dispatch, and mixed payload-ref redaction review debt, and keeps handoff, export, parser, schema, source-shape, payload rewrite, package reconstruction, legacy bridge deprecation, excluded-tool behavior, and production readiness blocked."
+  "latest_p16_mixed_source_package_review_submit_runtime_summary": "P16 runtime is current-main implemented through PR #2199 plus PR #2200 review follow-up. It admits mixed-source package-review submit only from material authority over existing P15 reconciliation/package rows, records one submit state, closes explicit-empty expected-package-kind, non-empty material-authority dispatch, blank/null selected-pass compatibility, public mixed payload-ref, mixed handoff status blocking, and client-request tracking review debt, and keeps handoff, export, parser, schema, source-shape, payload rewrite, package reconstruction, legacy bridge deprecation, excluded-tool behavior, and production readiness blocked.",
+  "p17_mixed_source_handoff_export_prepare_freeze_tracking": {
+    "tracking_kind": "p17_mixed_source_handoff_export_prepare_freeze_tracking",
+    "milestone": "p17_mixed_source_handoff_export_prepare_freeze",
+    "status": "branch_local_planning_control_freeze_no_runtime_behavior_admitted",
+    "base_main_commit": "b37235f0fcd4ab3a07f2be4e96e64171805b95e2",
+    "planning_doc": "next_milestone_plans/multi-ingest/36-p17-mixed-handoff-freeze.md",
+    "submit_predecessor_doc": "next_milestone_plans/multi-ingest/35-p16-runtime-closeout.md",
+    "construction_predecessor_doc": "next_milestone_plans/multi-ingest/33-p15-runtime-closeout.md",
+    "preview_predecessor_doc": "next_milestone_plans/multi-ingest/31-p14-mixed-preview.md",
+    "contract_predecessor_doc": "next_milestone_plans/multi-ingest/28-p12-mixed-package-contract.md",
+    "owner_service": "backend/app/services/layer3_workbench.py",
+    "policy_service": "backend/app/services/layer3_package_family_policy.py",
+    "request_contract_service": "backend/app/services/layer3_handoff_contract.py",
+    "traceability_reason": "Freeze only the future P17 mixed-source handoff/export prepare authority boundary over approved P16 submit state.",
+    "future_prepare_schema_id": "layer3.mixed_source_handoff_export_prepare.v1",
+    "material_authority_shape": "session_id_plus_material_preview_id_plus_material_preview_hash_plus_contract_hash_plus_package_review_preview_hash_plus_construction_basis_hash_plus_reconciliation_record_id_plus_package_review_submit_record_ref_plus_package_ids_and_hashes",
+    "runtime_behavior_changed_by_tracking": false,
+    "package_family_policy_changed_by_tracking": false,
+    "handoff_export_prepare_enabled_by_tracking": false,
+    "external_export_enabled_by_tracking": false,
+    "aps_handoff_enabled_by_tracking": false,
+    "connector_dispatch_enabled_by_tracking": false,
+    "provider_url_enabled_by_tracking": false,
+    "schema_or_migration_changed_by_tracking": false,
+    "parser_behavior_changed_by_tracking": false,
+    "source_shape_expanded_by_tracking": false,
+    "payload_rewrite_enabled_by_tracking": false,
+    "package_reconstruction_enabled_by_tracking": false,
+    "excluded_tool_behavior_enabled_by_tracking": false,
+    "production_readiness_claimed_by_tracking": false,
+    "future_handoff_target": "mixed_source_review_package",
+    "future_export_mode": "reference_envelope_only",
+    "operator_decisions": [
+      "authorize_prepare",
+      "hold",
+      "decline",
+      "blocked"
+    ],
+    "decision_notes_required_for": [
+      "hold",
+      "decline",
+      "blocked"
+    ],
+    "fail_closed_cases": [
+      "missing_client_request_id",
+      "missing_material_preview_authority",
+      "stale_or_mismatched_material_preview_id",
+      "stale_or_mismatched_material_preview_hash",
+      "stale_or_mismatched_package_review_preview_hash",
+      "stale_or_mismatched_contract_hash",
+      "stale_or_mismatched_construction_basis_hash",
+      "missing_or_mismatched_p15_reconciliation_record",
+      "missing_or_mismatched_p16_submit_state",
+      "non_approved_package_review_state",
+      "package_family_policy_handoff_admission_false",
+      "unsupported_handoff_target_or_export_mode",
+      "selected_pass_lifecycle_fields_on_material_authority_request",
+      "request_supplied_payload_rewrite_export_connector_provider_or_dispatch_fields"
+    ],
+    "verification": [
+      "docs_and_manifest_validation_required_only",
+      "python -B -m json.tool authority/progress/proof manifests",
+      "python -B .\\tools\\l3-authority-index-validate.py",
+      "python -B .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "python -B .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ],
+    "files_in_scope": [
+      "next_milestone_plans/multi-ingest/36-p17-mixed-handoff-freeze.md",
+      "next_milestone_plans/multi-ingest/35-p16-runtime-closeout.md",
+      "next_milestone_plans/multi-ingest/README.md",
+      "next_milestone_plans/authority-index.json",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "next_posture": "mixed_source_handoff_export_prepare_runtime_after_freeze_merge_and_current_main_sync"
+  },
+  "latest_p17_mixed_source_handoff_export_prepare_freeze_summary": "P17 freezes a future mixed-source handoff/export prepare-only boundary over approved P16 submit state. It defines material-authority inputs, reference-only envelope semantics, idempotency, fail-closed cases, and non-goals while keeping runtime handoff/export prepare, APS handoff, external export/download, connector dispatch, provider URLs, schema, parser, source-shape, payload rewrite, package mutation, legacy bridge deprecation, excluded-tool behavior, and production readiness blocked."
 }
