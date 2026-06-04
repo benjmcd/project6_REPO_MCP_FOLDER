@@ -62,7 +62,7 @@
       "lane_id": "multi_ingest_mixed_package",
       "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
       "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
-      "current_state": "mixed_material_readiness_projection_live_contract_defined_runtime_not_admitted",
+      "current_state": "mixed_material_readiness_contract_and_policy_registry_live_mixed_runtime_not_admitted",
       "source_of_truth": [
         {
           "path": "next_milestone_plans/multi-ingest/README.md",
@@ -73,7 +73,8 @@
             "bounded Phase P11 mixed-source package semantics readiness",
             "It still does not change schema",
             "The next implementation pass should not repeat",
-            "bounded Phase P12 governed mixed-source package contract"
+            "bounded Phase P12 governed mixed-source package contract",
+            "bounded Phase P13 package-family policy registry"
           ]
         },
         {
@@ -100,19 +101,34 @@
             "package-family policy registry",
             "Legacy CSV bridge deprecation remains a separate decision"
           ]
+        },
+        {
+          "path": "next_milestone_plans/multi-ingest/29-p13-package-family-policy.md",
+          "kind": "closeout",
+          "authority": "package-family policy registry and mixed-source runtime block",
+          "freshness": "current_closeout",
+          "required_terms": [
+            "Status: implemented as a no-behavior-change package-family policy registry",
+            "mixed-source runtime behavior remains not admitted",
+            "mixed_dataset_document",
+            "Unknown package families fail closed",
+            "Legacy CSV bridge deprecation remains a separate decision"
+          ]
         }
       ],
       "current_truth_order": [
+        "Package-family policy registry source and focused tests",
         "Layer 3 workbench/API source and focused tests",
         "P11 mixed readiness closeout",
+        "P12 mixed package contract",
         "multi-ingest README front door"
       ],
       "known_limits": [
-        "Mixed-source package construction, review preview, submit, handoff, and payload runtime semantics remain not admitted.",
+        "Mixed-source package review preview, construction, submit, handoff, export, and payload runtime semantics remain not admitted.",
         "Narrative-table linking is specified as a contract but not implemented as runtime behavior.",
         "Legacy CSV bridge deprecation is separate from mixed-source package semantics."
       ],
-      "next_decision": "Introduce a package-family policy registry before enabling mixed-source package construction or handoff behavior."
+      "next_decision": "Implement read-only mixed-source package review preview only after proving P11 readiness, P12 contract authority, and P13 registry policy; keep commit, submit, handoff, export, parser, schema, source-shape, and Onlook behavior blocked."
     },
     {
       "lane_id": "analyst_insight",
