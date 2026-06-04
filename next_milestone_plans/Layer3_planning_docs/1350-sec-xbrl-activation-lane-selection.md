@@ -62,6 +62,12 @@ reason: |
   The consolidation work is complete. The activation is NOT blocked by code gaps —
   it is blocked by governance decisions that require product-authority input.
 
+exit_condition_for_deferred: |
+  This deferred status lifts when doc 200 (200_AUTH_SECURITY_ENTRY_CONTRACT.md)
+  sets selected_mode to a non-null auth mode AND all three open blockers in the
+  evidence ledger below (auth_framework, operator_acceptance_criteria,
+  activation_lane_isolation_plan) reach status: verified.
+
 next_follow_up: |
   One of:
   (A) sec_xbrl_default_on_runtime_activation_freeze — authorize only item 1
