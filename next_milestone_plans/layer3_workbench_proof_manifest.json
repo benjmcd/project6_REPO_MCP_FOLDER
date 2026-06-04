@@ -44340,7 +44340,7 @@
   "sec_xbrl_exact_diagnostic_redaction_wrapper_cleanup_proof": {
     "proof_kind": "sec_xbrl_exact_diagnostic_redaction_wrapper_cleanup_proof",
     "milestone": "sec_xbrl_exact_diagnostic_redaction_wrapper_cleanup_v1",
-    "status": "branch_local_behavior_preserving_wrapper_cleanup",
+    "status": "current_main_behavior_preserving_wrapper_cleanup_merged",
     "branch": "codex/secxbrl-redaction-wrapper-cleanup",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md",
     "proof_terms": "Only one-line diagnostic redaction pass-through wrappers are removed; the same shared scanner functions are imported as _redaction_scan_payload, affected reports regenerate byte-identically, and custom resolved-fact, nonlocal, default-on, value-reveal, and runtime/public error-surface guard semantics remain untouched.",
@@ -44384,7 +44384,7 @@
   "sec_xbrl_custom_guard_redaction_audit_proof": {
     "proof_kind": "sec_xbrl_custom_guard_redaction_audit_proof",
     "milestone": "sec_xbrl_custom_guard_redaction_audit_v1",
-    "status": "branch_local_design_audit_ready_for_review",
+    "status": "current_main_design_audit_registered",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md",
     "proof_terms": "Docs-only audit/proof registration for remaining custom SEC XBRL guard and redaction surfaces; no runtime artifact generation, no evidence seeding, no proof JSON edits, no report JSON edits, and no activation-lane authorization.",
     "touched_surfaces": [
@@ -44408,7 +44408,7 @@
     "production_readiness_claimed": false,
     "activation_lane_authorized": false,
     "verification": [
-      "Full SEC XBRL suite remains green: 460 passed, 3 warnings.",
+      "Full SEC XBRL suite remains green: original audit 460 passed, 3 warnings; current-main planning-authority revalidation at 27e6abdb 475 passed, 3 warnings.",
       "Layer 3 progress check passes.",
       "Layer 3 target-selection validation remains frozen.",
       "git diff --check passes."

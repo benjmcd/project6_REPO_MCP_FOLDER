@@ -12,9 +12,11 @@ Progress registration:
   status and next-posture constraint.
 
 This slice records the post-framework, post-public-authority-guard state of the
-remaining SEC XBRL guard and redaction helpers. It is design/audit only. It
-does not migrate custom runtime wrappers, change report bytes, alter runtime
-defaults, or authorize the parked activation lane.
+remaining SEC XBRL guard and redaction helpers. It landed as design/audit only
+in PR #2138, and PR #2168 later landed the exact diagnostic redaction
+pass-through cleanup recorded below. Neither change migrates custom runtime
+wrappers, changes report bytes, alters runtime defaults, or authorizes the
+parked activation lane.
 
 ## Purpose
 
@@ -63,6 +65,14 @@ preserving service-local exception classes, error codes, messages, and details:
 Future work here should not replace the wrappers blindly. Their value is the
 service-local public error contract. Only small follow-ups that reduce repeated
 wrapper construction without changing those contracts are acceptable.
+
+A separate exact adapter seam remains in these same service families:
+`_reject_unadmitted_keys` delegates to the shared `unadmitted_keys` predicate
+and raises the service-local exception with `details={"fields": unknown}`.
+That is a plausible bounded follow-up only if it preserves each service
+exception class, error code, message, and details shape; because it touches
+persistence/operator workflow services, treat it as Tier-2-shaped even when
+behavior-preserving.
 
 ### Value-reveal authority family
 
@@ -209,13 +219,17 @@ ordered hit list remains identical and committed reports are byte-stable.
 
 Recommended future order:
 
-1. Value-reveal-family adapter design and tests, if repeated wrapper risk
+1. Keep planning/proof authority synchronized with current main before
+   starting another migration slice.
+2. Extract only exact adapter seams such as `_reject_unadmitted_keys` when
+   service-local error shape can be proven unchanged.
+3. Value-reveal-family adapter design and tests, if repeated wrapper risk
    justifies the churn.
-2. E2E output-policy adapter design and tests, separately from value reveal.
-3. Multi-filing response leak scan variant, only if a text helper can preserve
+4. E2E output-policy adapter design and tests, separately from value reveal.
+5. Multi-filing response leak scan variant, only if a text helper can preserve
    `scan_raw_period_dates=False`.
-4. Diagnostic text/hit-class helper extraction in byte-stable batches.
-5. Reassess activation-lane readiness only after the guard/redaction
+6. Diagnostic text/hit-class helper extraction in byte-stable batches.
+7. Reassess activation-lane readiness only after the guard/redaction
    consolidation debt is either retired or explicitly accepted.
 
 ## Acceptance for future migration slices
