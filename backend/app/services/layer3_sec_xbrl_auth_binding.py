@@ -635,6 +635,8 @@ def _reject_raw_reference(value: str) -> None:
         raw_value_keys=frozenset(),
         raw_authority_keys=frozenset(),
         scan_raw_period_dates=False,
+        scan_cik=True,
+        scan_contextual_cik=True,
         scan_operator_contact=True,
         scan_bare_sec_domain=True,
         scan_standard_local_refs=False,
@@ -643,7 +645,7 @@ def _reject_raw_reference(value: str) -> None:
     ):
         raise SecXbrlAuthBindingError(
             "sec_xbrl_auth_binding_raw_reference_not_admitted",
-            "SEC XBRL auth binding rejects raw local paths, SEC URLs, and SEC accession-like receipt references.",
+            "SEC XBRL auth binding rejects raw local paths, SEC URLs, CIKs, and SEC accession-like receipt references.",
             http_status=400,
         )
 
