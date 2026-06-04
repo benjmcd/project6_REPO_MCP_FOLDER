@@ -156,6 +156,11 @@ The output-policy helper now exposes default-off exact/contextual CIK scan
 options, and the E2E offline/integration wrappers opt into those scans while
 preserving their service-specific public-output, residual, period-date, and
 field-detail behavior.
+The E2E-family public output/text adapters are now extracted in the shared
+guard. The offline orchestrator and integration services still own their
+exception classes, error codes, messages, raw-output key sets, residual policy,
+and period-date scan posture, while the shared adapters own the common
+exact/contextual CIK scan posture for E2E public outputs and public text.
 
 ### Multi-filing evidence authority gate
 

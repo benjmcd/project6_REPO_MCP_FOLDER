@@ -462,6 +462,58 @@ def reject_public_output_policy(
     )
 
 
+def reject_e2e_public_output_policy(
+    value: Any,
+    *,
+    error_type: type[Exception],
+    raw_output_code: str,
+    raw_output_message: str,
+    raw_reference_code: str,
+    raw_reference_message: str,
+    raw_output_keys: set[str] | frozenset[str],
+    residual_magnitude_keys: set[str] | frozenset[str] = frozenset(),
+    residual_magnitude_code: str | None = None,
+    residual_magnitude_message: str | None = None,
+    scan_raw_period_dates: bool = True,
+) -> None:
+    reject_public_output_policy(
+        value,
+        error_type=error_type,
+        raw_output_code=raw_output_code,
+        raw_output_message=raw_output_message,
+        raw_reference_code=raw_reference_code,
+        raw_reference_message=raw_reference_message,
+        raw_output_keys=raw_output_keys,
+        residual_magnitude_keys=residual_magnitude_keys,
+        residual_magnitude_code=residual_magnitude_code,
+        residual_magnitude_message=residual_magnitude_message,
+        scan_raw_period_dates=scan_raw_period_dates,
+        scan_cik_fullmatch=True,
+        scan_contextual_cik=True,
+    )
+
+
+def reject_e2e_public_text_references(
+    value: Any,
+    *,
+    error_type: type[Exception],
+    raw_reference_code: str,
+    raw_reference_message: str,
+    field: str,
+    scan_raw_period_dates: bool = True,
+) -> None:
+    reject_public_text_references(
+        value,
+        error_type=error_type,
+        raw_reference_code=raw_reference_code,
+        raw_reference_message=raw_reference_message,
+        field=field,
+        scan_raw_period_dates=scan_raw_period_dates,
+        scan_cik_fullmatch=True,
+        scan_contextual_cik=True,
+    )
+
+
 def reject_raw_or_local_authority(
     value: Any,
     *,
