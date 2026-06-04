@@ -23,7 +23,9 @@ from app.services.layer3_sec_xbrl_statement_assembly import (  # noqa: E402
     STATEMENT_ASSEMBLY_SCHEMA_ID,
     assemble_reviewable_statement_packet,
 )
-from app.services.layer3_sec_xbrl_report_leak_guard import diagnostic_authority_redaction_scan_payload  # noqa: E402
+from app.services.layer3_sec_xbrl_report_leak_guard import (  # noqa: E402
+    diagnostic_authority_redaction_scan_payload as _redaction_scan_payload,
+)
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
 from sec_xbrl_diagnostic_framework import report_envelope as _report_envelope  # noqa: E402
@@ -303,10 +305,6 @@ def _statement_rows_consistent(*, statements: Sequence[Mapping[str, Any]], summa
         and total_rows > 0
         and all(len(list(item.get("rows") or [])) == int(item.get("line_count") or 0) for item in statements)
     )
-
-
-def _redaction_scan_payload(report: Mapping[str, Any]) -> dict[str, bool]:
-    return diagnostic_authority_redaction_scan_payload(report)
 
 
 def _resolve_path(path_text: str) -> Path:
