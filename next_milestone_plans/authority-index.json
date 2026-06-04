@@ -6,9 +6,9 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "1ff72190a21facee30ae23f05a24c1fea7902785",
-    "verified_at_utc": "2026-06-04T03:32:04Z",
-    "verification_summary": "Live main includes PR #2164 and restores the SEC XBRL diagnostic hash proof. Layer 3 progress, frozen target-selection, package contract, focused SEC diagnostic, and full SEC XBRL test slices passed after merge.",
+    "commit": "535ec4247099eed5728b7ab6988e7175c4f66b38",
+    "verified_at_utc": "2026-06-04T04:07:54Z",
+    "verification_summary": "Live main includes PRs #2164, #2166, and #2165. SEC XBRL diagnostic hash proof is restored, the roadmap authority index is live, and SEC XBRL framework proof traceability is registered in the progress/proof manifests.",
     "commands": [
       "git fetch project6-origin main --prune",
       "python .\\tools\\l3-progress-check.py",
@@ -62,7 +62,7 @@
       "lane_id": "multi_ingest_mixed_package",
       "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
       "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
-      "current_state": "mixed_material_readiness_projection_live_package_semantics_not_admitted",
+      "current_state": "mixed_material_readiness_projection_live_contract_defined_runtime_not_admitted",
       "source_of_truth": [
         {
           "path": "next_milestone_plans/multi-ingest/README.md",
@@ -73,7 +73,7 @@
             "bounded Phase P11 mixed-source package semantics readiness",
             "It still does not change schema",
             "The next implementation pass should not repeat",
-            "Define the governed mixed-source package contract"
+            "bounded Phase P12 governed mixed-source package contract"
           ]
         },
         {
@@ -87,6 +87,19 @@
             "package_semantics_state",
             "define_mixed_source_package_contract"
           ]
+        },
+        {
+          "path": "next_milestone_plans/multi-ingest/28-p12-mixed-package-contract.md",
+          "kind": "contract",
+          "authority": "governed mixed-source package contract before runtime admission",
+          "freshness": "current_closeout",
+          "required_terms": [
+            "Status: governed contract defined; no runtime behavior admitted.",
+            "layer3.mixed_source_package_contract.v1",
+            "Narrative-Table Linking",
+            "package-family policy registry",
+            "Legacy CSV bridge deprecation remains a separate decision"
+          ]
         }
       ],
       "current_truth_order": [
@@ -95,11 +108,11 @@
         "multi-ingest README front door"
       ],
       "known_limits": [
-        "Mixed-source package construction, review preview, submit, handoff, and payload semantics remain not admitted.",
-        "Narrative-table linking is not yet specified.",
+        "Mixed-source package construction, review preview, submit, handoff, and payload runtime semantics remain not admitted.",
+        "Narrative-table linking is specified as a contract but not implemented as runtime behavior.",
         "Legacy CSV bridge deprecation is separate from mixed-source package semantics."
       ],
-      "next_decision": "Define the governed mixed-source package contract before enabling package construction or handoff behavior."
+      "next_decision": "Introduce a package-family policy registry before enabling mixed-source package construction or handoff behavior."
     },
     {
       "lane_id": "analyst_insight",

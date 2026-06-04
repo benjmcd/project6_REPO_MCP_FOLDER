@@ -44473,5 +44473,45 @@
       "no Onlook work"
     ]
   },
-  "latest_p10f_guardrail_trace_current_main_sync_proof_summary": "P10F proof is registered as current-main synced through PR #2151 at 4dc261d2. The proof boundary is non-selectable refused/deferred source-family guardrail trace detail on the Layer 3 workbench, with DatasetVersion candidate selection, parser behavior, schema, mixed-source package semantics, generic XML/HTML admission, archive-member orchestration, and Onlook work unchanged."
+  "latest_p10f_guardrail_trace_current_main_sync_proof_summary": "P10F proof is registered as current-main synced through PR #2151 at 4dc261d2. The proof boundary is non-selectable refused/deferred source-family guardrail trace detail on the Layer 3 workbench, with DatasetVersion candidate selection, parser behavior, schema, mixed-source package semantics, generic XML/HTML admission, archive-member orchestration, and Onlook work unchanged.",
+  "p12_mixed_source_package_contract_proof": {
+    "proof_kind": "p12_mixed_source_package_contract_proof",
+    "milestone": "p12_mixed_source_package_contract",
+    "status": "governed_contract_traceability_registered_runtime_not_admitted",
+    "source_pr": "#2167",
+    "source_branch": "codex/mixed-package-contract",
+    "planning_doc": "next_milestone_plans/multi-ingest/28-p12-mixed-package-contract.md",
+    "readiness_predecessor_doc": "next_milestone_plans/multi-ingest/27-p11-mixed-readiness-closeout.md",
+    "proof_terms": "Traceability-only registration for the governed mixed-source package contract selected by P11 readiness; this proof entry does not enable package construction, review preview, submit, handoff, export, schema, parser, source-shape, or Onlook behavior.",
+    "contract_schema_id": "layer3.mixed_source_package_contract.v1",
+    "payload_schema_id": "layer3.mixed_source_package_payload.v1",
+    "required_future_runtime_order": [
+      "package_family_policy_registry",
+      "mixed_source_package_review_preview_read_only",
+      "mixed_source_package_construction_commit",
+      "mixed_source_package_review_submit",
+      "mixed_source_handoff_export_prepare_after_downstream_policy"
+    ],
+    "runtime_behavior_changed_by_proof": false,
+    "package_construction_enabled_by_proof": false,
+    "package_review_preview_enabled_by_proof": false,
+    "package_review_submit_enabled_by_proof": false,
+    "handoff_enabled_by_proof": false,
+    "export_enabled_by_proof": false,
+    "schema_models_changed_by_proof": false,
+    "migration_changed_by_proof": false,
+    "parser_behavior_changed_by_proof": false,
+    "source_shape_expanded_by_proof": false,
+    "generic_xml_html_admitted_by_proof": false,
+    "archive_member_orchestration_admitted_by_proof": false,
+    "legacy_csv_bridge_deprecated_by_proof": false,
+    "onlook_included_by_proof": false,
+    "verification": [
+      "Layer 3 authority index validation passes.",
+      "Layer 3 progress check passes.",
+      "Layer 3 target-selection validation remains frozen.",
+      "Focused mixed-source material-preview workbench/API tests pass."
+    ]
+  },
+  "latest_p12_mixed_source_package_contract_proof_summary": "P12 proof registers the governed mixed-source package contract as planning/proof authority only. Runtime package construction, review preview, submit, handoff, export, parser behavior, schema changes, source-shape expansion, legacy CSV bridge deprecation, and Onlook work remain not admitted."
 }
