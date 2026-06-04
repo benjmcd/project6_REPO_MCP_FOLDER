@@ -45352,5 +45352,55 @@
     ],
     "next_posture": "freeze_exactly_one_next_mixed_source_downstream_surface_before_runtime"
   },
-  "latest_p17a_mixed_source_rendered_handoff_prepare_current_main_sync_proof_summary": "P17A current-main sync is docs/control only after PR #2210 and PR #2211. It changes no runtime behavior and leaves APS handoff, external export/download, connector/provider, schema, parser, source-shape, payload rewrite, excluded-tool behavior, and production readiness blocked."
+  "latest_p17a_mixed_source_rendered_handoff_prepare_current_main_sync_proof_summary": "P17A current-main sync is docs/control only after PR #2210 and PR #2211. It changes no runtime behavior and leaves APS handoff, external export/download, connector/provider, schema, parser, source-shape, payload rewrite, excluded-tool behavior, and production readiness blocked.",
+  "p18_mixed_source_aps_handoff_dispatch_freeze_proof": {
+    "milestone": "p18_mixed_source_aps_handoff_dispatch_freeze",
+    "status": "branch_local_docs_control_freeze_only",
+    "planning_doc": "next_milestone_plans/multi-ingest/41-p18-mixed-aps-handoff-freeze.md",
+    "proof_terms": "P18 freezes only the future mixed-source APS handoff dispatch path after P17/P17A mixed-source handoff/export prepare. No runtime code, rendered UI behavior, backend route, schema, parser, source-shape, payload rewrite, external export/download readiness, connector/provider, excluded-tool behavior, or production-readiness behavior is admitted.",
+    "authority_basis": [
+      "P17A rendered material-authority handoff prepare runtime",
+      "P17 mixed-source handoff/export prepare runtime",
+      "P16 mixed-source package-review submit runtime",
+      "P15 mixed-source package construction commit runtime",
+      "P14 mixed-source package review preview",
+      "committed Gate B material decision"
+    ],
+    "selection_basis": [
+      "current mixed-source package-family policy still marks aps_handoff and external_export_download unavailable after handoff prepare",
+      "current external export/download readiness requires recorded APS handoff dispatch",
+      "current APS handoff dispatch rejects mixed-source reconciliation state",
+      "external export/download readiness therefore remains blocked until mixed-source APS handoff dispatch runtime lands"
+    ],
+    "future_schema_id": "layer3.mixed_source_aps_handoff_dispatch.v1",
+    "future_aps_handoff_target": "mixed_source_aps_evidence_bundle",
+    "future_dispatch_mode": "server_side_mixed_source_aps_handoff",
+    "positive_runtime_effects": [],
+    "negative_authority_flags": {
+      "runtime_behavior_changed": false,
+      "rendered_ui_behavior_changed": false,
+      "backend_route_changed": false,
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "aps_handoff_enabled": false,
+      "external_export_download_enabled": false,
+      "connector_dispatch_enabled": false,
+      "provider_url_enabled": false,
+      "excluded_tool_included": false,
+      "production_readiness_claimed": false
+    },
+    "proof_coverage": [
+      "freeze names APS handoff dispatch as the exact selected downstream surface",
+      "freeze explains why external export/download readiness is not yet selectable as runtime",
+      "freeze requires server-owned material-authority package and P17 prepare state",
+      "freeze blocks backend, UI/static, schema, parser, source-shape, payload, export/download, connector, provider, and production-readiness scope"
+    ],
+    "verification": [
+      "manifest JSON syntax and governance validators required"
+    ],
+    "next_posture": "implement_mixed_source_aps_handoff_dispatch_after_freeze_merge_and_current_main_sync_then_freeze_external_export_download_readiness"
+  },
+  "latest_p18_mixed_source_aps_handoff_dispatch_freeze_proof_summary": "P18 is a docs/control freeze for future mixed-source APS handoff dispatch. It selects dispatch as the prerequisite before external export/download readiness, admits no runtime behavior by itself, and keeps downstream export/download/provider/connector/schema/parser/source-shape/payload/production scope closed."
 }
