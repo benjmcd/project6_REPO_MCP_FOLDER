@@ -25,7 +25,7 @@ from app.services import (
 )
 from app.services.layer3_sec_xbrl_public_authority_guard import (
     raw_or_local_authority_violation,
-    reject_raw_or_local_authority_with_blocked_keys,
+    reject_value_reveal_raw_or_local_authority,
 )
 from app.services.layer3_utils import json_clone, stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
@@ -780,7 +780,7 @@ def _required_hash(value: Any, field: str) -> str:
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:
-    reject_raw_or_local_authority_with_blocked_keys(
+    reject_value_reveal_raw_or_local_authority(
         value,
         error_type=SecXbrlControlledValueRevealSubmitError,
         raw_authority_code="sec_xbrl_controlled_value_reveal_submit_raw_authority_not_admitted",
@@ -789,7 +789,4 @@ def _reject_raw_or_local_authority(value: Any) -> None:
         raw_reference_message="SEC XBRL controlled value reveal rejects raw identities, paths, SEC URLs, accessions, and period dates.",
         blocked_raw_value_keys=frozenset(),
         blocked_raw_authority_keys=RAW_REQUEST_KEYS,
-        scan_cik=True,
-        scan_contextual_cik=True,
-        scan_operator_contact=True,
     )

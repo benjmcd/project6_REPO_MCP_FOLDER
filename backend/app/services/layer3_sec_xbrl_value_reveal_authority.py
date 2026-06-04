@@ -26,7 +26,7 @@ from app.services import layer3_sec_xbrl_operator_review_workflow, layer3_sec_xb
 from app.services.layer3_sec_xbrl_public_authority_guard import (
     RAW_AUTHORITY_KEYS as PUBLIC_RAW_AUTHORITY_KEYS,
     RAW_VALUE_KEYS,
-    reject_raw_or_local_authority_with_blocked_keys,
+    reject_value_reveal_raw_or_local_authority,
 )
 from app.services.layer3_utils import json_clone, stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
@@ -580,7 +580,7 @@ def _required_hash(value: Any, field: str) -> str:
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:
-    reject_raw_or_local_authority_with_blocked_keys(
+    reject_value_reveal_raw_or_local_authority(
         value,
         error_type=SecXbrlValueRevealAuthorityError,
         raw_authority_code="sec_xbrl_value_reveal_authority_raw_authority_not_admitted",
@@ -591,7 +591,4 @@ def _reject_raw_or_local_authority(value: Any) -> None:
         ),
         blocked_raw_value_keys=RAW_VALUE_KEYS,
         blocked_raw_authority_keys=VALUE_REVEAL_RAW_AUTHORITY_KEYS,
-        scan_cik=True,
-        scan_contextual_cik=True,
-        scan_operator_contact=True,
     )

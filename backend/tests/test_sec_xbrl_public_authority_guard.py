@@ -9,6 +9,7 @@ from app.services.layer3_sec_xbrl_public_authority_guard import (
     reject_public_output_policy,
     reject_raw_or_local_authority_with_blocked_keys,
     reject_unadmitted_keys,
+    reject_value_reveal_raw_or_local_authority,
     report_text_reference_flags,
     unadmitted_keys,
     windows_local_path_reference_found,
@@ -177,6 +178,90 @@ def test_reject_raw_or_local_authority_with_blocked_keys_preserves_value_reveal_
         assert exc.http_status == 400
     else:
         raise AssertionError("expected raw-reference guard error")
+
+
+def test_reject_value_reveal_raw_or_local_authority_preserves_family_policy() -> None:
+    class GuardError(ValueError):
+        def __init__(
+            self,
+            code: str,
+            message: str,
+            *,
+            details: dict[str, object] | None = None,
+            http_status: int = 409,
+        ) -> None:
+            self.code = code
+            self.message = message
+            self.details = dict(details or {})
+            self.http_status = http_status
+
+    try:
+        reject_value_reveal_raw_or_local_authority(
+            {"sidecar_receipt_id": "raw-sidecar"},
+            error_type=GuardError,
+            raw_authority_code="value_raw_authority",
+            raw_authority_message="value raw authority",
+            raw_reference_code="value_raw_reference",
+            raw_reference_message="value raw reference",
+            blocked_raw_value_keys=frozenset(),
+            blocked_raw_authority_keys={"sidecar_receipt_id"},
+        )
+    except GuardError as exc:
+        assert exc.code == "value_raw_authority"
+        assert exc.message == "value raw authority"
+        assert exc.details == {"blocked_keys": ["sidecar_receipt_id"]}
+        assert exc.http_status == 400
+    else:
+        raise AssertionError("expected value-reveal raw-authority guard error")
+
+    try:
+        reject_value_reveal_raw_or_local_authority(
+            "issuer 0000123456 packet",
+            error_type=GuardError,
+            raw_authority_code="value_raw_authority",
+            raw_authority_message="value raw authority",
+            raw_reference_code="value_raw_reference",
+            raw_reference_message="value raw reference",
+            blocked_raw_value_keys=frozenset(),
+            blocked_raw_authority_keys={"sidecar_receipt_id"},
+        )
+    except GuardError as exc:
+        assert exc.code == "value_raw_reference"
+        assert exc.message == "value raw reference"
+        assert exc.details == {}
+        assert exc.http_status == 400
+    else:
+        raise AssertionError("expected value-reveal raw-reference guard error")
+
+    try:
+        reject_value_reveal_raw_or_local_authority(
+            "operator@example.com",
+            error_type=GuardError,
+            raw_authority_code="value_raw_authority",
+            raw_authority_message="value raw authority",
+            raw_reference_code="value_raw_reference",
+            raw_reference_message="value raw reference",
+            blocked_raw_value_keys=frozenset(),
+            blocked_raw_authority_keys={"sidecar_receipt_id"},
+        )
+    except GuardError as exc:
+        assert exc.code == "value_raw_reference"
+        assert exc.message == "value raw reference"
+        assert exc.details == {}
+        assert exc.http_status == 400
+    else:
+        raise AssertionError("expected value-reveal operator-contact guard error")
+
+    reject_value_reveal_raw_or_local_authority(
+        "redacted public label",
+        error_type=GuardError,
+        raw_authority_code="value_raw_authority",
+        raw_authority_message="value raw authority",
+        raw_reference_code="value_raw_reference",
+        raw_reference_message="value raw reference",
+        blocked_raw_value_keys=frozenset(),
+        blocked_raw_authority_keys={"sidecar_receipt_id"},
+    )
 
 
 def test_reject_public_output_policy_preserves_e2e_policy_variants() -> None:
