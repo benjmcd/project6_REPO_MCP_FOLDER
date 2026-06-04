@@ -11488,8 +11488,8 @@ Milestone: `p13_package_family_policy_registry`.
 Planning doc:
 `next_milestone_plans/multi-ingest/29-p13-package-family-policy.md`.
 
-Status: branch-local no-behavior-change package-family policy registry on
-`codex/package-family-policy`.
+Status: current-main no-behavior-change package-family policy registry merged
+through PR #2170 at `57623418aba964213da08e4d54e8f20ad52c2381`.
 
 Scope: adds `backend/app/services/layer3_package_family_policy.py` and focused
 tests so `dataset_version`, `associated_cohort`,
@@ -11509,7 +11509,38 @@ Verification: package-family registry and package-state compile; focused
 package-family, package-state, and package-review contract tests passed with
 `39 passed, 2 warnings`.
 
+Next posture: P13A route-level policy gates satisfy the direct lifecycle-route
+enforcement prerequisite before read-only mixed-source package review preview;
+keep mixed-source commit, submit, handoff, export, parser, schema, source-shape,
+and Onlook behavior blocked.
+
+## P13A Package-Family Route Policy Gates
+
+Milestone: `p13a_package_family_route_policy_gates`.
+
+Planning doc:
+`next_milestone_plans/multi-ingest/30-p13a-package-family-route-gates.md`.
+
+Status: branch-local route-level policy hardening on `codex/pkg-gates-0604`.
+
+Scope: wires the P13 package-family policy registry into package-review
+preview, package construction commit, package-review submit, and handoff/export
+prepare. The gates derive package family from server-owned selected-pass
+result-review state and reject `mixed_dataset_document` plus unknown package
+families before package lifecycle effects are computed or persisted.
+
+Non-goals: no mixed-source package review preview, package construction,
+package-review submit, handoff, export, schema, migration, parser behavior,
+source-shape expansion, generic XML/HTML admission, archive-member
+orchestration, legacy CSV bridge deprecation, or Onlook work.
+
+Verification: package-family/package-state/contract/submit response tests
+passed with `42 passed, 2 warnings`; focused mixed readiness plus package
+lifecycle route tests passed with `12 passed, 269 deselected, 3 warnings`;
+source-directory package/handoff/export compatibility tests passed with
+`16 passed, 26 deselected, 3 warnings`.
+
 Next posture: implement read-only mixed-source package review preview only after
-proving P11 material-preview readiness, P12 contract authority, and P13 registry
-policy; keep mixed-source commit, submit, handoff, export, parser, schema,
-source-shape, and Onlook behavior blocked.
+proving P11 material-preview readiness, P12 contract authority, and P13/P13A
+policy gates; keep mixed-source commit, submit, handoff, export, parser,
+schema, source-shape, and Onlook behavior blocked.

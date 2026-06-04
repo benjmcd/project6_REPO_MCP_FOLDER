@@ -13287,6 +13287,25 @@ def _execute_and_approve_quant_result_review(
     return session_id, preview_body, approval_body, selection_body, start_body, status_body, review_body
 
 
+def _set_package_family_for_pass_review(
+    client: TestClient,
+    *,
+    pass_run_id: str,
+    package_family: str,
+) -> None:
+    db = client.layer3_session_factory()
+    try:
+        stored_pass = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).one()
+        summary = dict(stored_pass.summary_json or {})
+        review_state = dict(summary["execution_result_review"])
+        review_state["package_family"] = package_family
+        summary["execution_result_review"] = review_state
+        stored_pass.summary_json = summary
+        db.commit()
+    finally:
+        db.close()
+
+
 def _construct_quant_package_set(
     client: TestClient,
     tmp_path,
@@ -32652,6 +32671,263 @@ def test_layer3_api_package_review_preview_prechecks_fail_closed(
     )
     assert existing_package_state.status_code == 409
     assert existing_package_state.json()["error_code"] == "package_review_preview_existing_package_state"
+
+
+def test_layer3_api_package_review_preview_blocks_unadmitted_package_family(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        _status_body,
+        review_body,
+    ) = _execute_and_approve_quant_result_review(
+        client,
+        tmp_path,
+        request_id="api-package-preview-family-policy",
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+    base_payload = {
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_body["preview_id"],
+        "preview_hash": preview_body["preview_hash"],
+        "analysis_run_id": start_body["analysis_run_id"],
+        "result_review_record_ref": review_body["review_record_ref"],
+    }
+
+    for package_family in ("mixed_dataset_document", "future_unregistered_family"):
+        _set_package_family_for_pass_review(
+            client,
+            pass_run_id=pass_run_id,
+            package_family=package_family,
+        )
+        blocked = client.post(
+            "/api/v1/layer3/package/review/preview",
+            json={
+                **base_payload,
+                "client_request_id": f"api-package-preview-family-policy-{package_family}",
+            },
+        )
+        assert blocked.status_code == 409
+        body = blocked.json()
+        assert body["error_code"] == "package_review_preview_family_not_admitted"
+        assert body["blocked_fields"] == ["package_family"]
+        assert body["next_allowed_actions"] == ["inspect_package_family_policy"]
+        assert package_family in body["message"]
+
+    db = client.layer3_session_factory()
+    try:
+        stored_pass = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).one()
+        assert "package_review_preview" not in (stored_pass.summary_json or {})
+        assert db.query(L3OutputPackage).count() == 0
+        assert db.query(L3ReconciliationRecord).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_package_construction_commit_blocks_unadmitted_package_family(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        _status_body,
+        review_body,
+    ) = _execute_and_approve_quant_result_review(
+        client,
+        tmp_path,
+        request_id="api-package-commit-family-policy",
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+    package_preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": "api-package-commit-family-policy-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert package_preview.status_code == 200
+    base_payload = {
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_body["preview_id"],
+        "preview_hash": preview_body["preview_hash"],
+        "analysis_run_id": start_body["analysis_run_id"],
+        "result_review_record_ref": review_body["review_record_ref"],
+        "package_review_preview_hash": package_preview.json()["package_review_preview_hash"],
+        "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+    }
+
+    for package_family in ("mixed_dataset_document", "future_unregistered_family"):
+        _set_package_family_for_pass_review(
+            client,
+            pass_run_id=pass_run_id,
+            package_family=package_family,
+        )
+        blocked = client.post(
+            "/api/v1/layer3/package/review/commit",
+            json={
+                **base_payload,
+                "client_request_id": f"api-package-commit-family-policy-{package_family}",
+            },
+        )
+        assert blocked.status_code == 409
+        body = blocked.json()
+        assert body["error_code"] == "package_construction_commit_family_not_admitted"
+        assert body["blocked_fields"] == ["package_family"]
+        assert body["next_allowed_actions"] == ["inspect_package_family_policy"]
+        assert package_family in body["message"]
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3OutputPackage).count() == 0
+        assert db.query(L3ReconciliationRecord).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_package_review_submit_blocks_unadmitted_package_family(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _commit_payload,
+    ) = _construct_quant_package_set(
+        client,
+        tmp_path,
+        request_id="api-package-submit-family-policy",
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+    base_payload = {
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_body["preview_id"],
+        "preview_hash": preview_body["preview_hash"],
+        "analysis_run_id": start_body["analysis_run_id"],
+        "result_review_record_ref": review_body["review_record_ref"],
+        "package_review_preview_hash": commit_body["package_review_preview_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_ids": [package["output_package_id"] for package in commit_body["output_packages"]],
+        "payload_hashes": commit_body["payload_hashes"],
+        "operator_decision": "approved",
+        "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+    }
+
+    for package_family in ("mixed_dataset_document", "future_unregistered_family"):
+        _set_package_family_for_pass_review(
+            client,
+            pass_run_id=pass_run_id,
+            package_family=package_family,
+        )
+        blocked = client.post(
+            "/api/v1/layer3/package/review/submit",
+            json={
+                **base_payload,
+                "client_request_id": f"api-package-submit-family-policy-{package_family}",
+            },
+        )
+        assert blocked.status_code == 409
+        body = blocked.json()
+        assert body["error_code"] == "package_review_submit_family_not_admitted"
+        assert body["blocked_fields"] == ["package_family"]
+        assert body["next_allowed_actions"] == ["inspect_package_family_policy"]
+        assert package_family in body["message"]
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).one()
+        assert "package_review_submit" not in reconciliation.summary_json
+        assert db.query(L3OutputPackage).count() == 3
+    finally:
+        db.close()
+
+
+def test_layer3_api_handoff_export_prepare_blocks_unadmitted_package_family(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _submit_payload,
+        submit_body,
+    ) = _submit_quant_package_review(
+        client,
+        tmp_path,
+        request_id="api-handoff-prepare-family-policy",
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+    base_payload = _handoff_export_prepare_payload(
+        request_id="api-handoff-prepare-family-policy-base",
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+    )
+
+    for package_family in ("mixed_dataset_document", "future_unregistered_family"):
+        _set_package_family_for_pass_review(
+            client,
+            pass_run_id=pass_run_id,
+            package_family=package_family,
+        )
+        blocked = client.post(
+            "/api/v1/layer3/handoff/export/prepare",
+            json={
+                **base_payload,
+                "client_request_id": f"api-handoff-prepare-family-policy-{package_family}",
+            },
+        )
+        assert blocked.status_code == 409
+        body = blocked.json()
+        assert body["error_code"] == "handoff_export_prepare_family_not_admitted"
+        assert body["blocked_fields"] == ["package_family"]
+        assert body["next_allowed_actions"] == ["inspect_package_family_policy"]
+        assert package_family in body["message"]
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).one()
+        assert "handoff_export_prepare" not in reconciliation.summary_json
+        assert reconciliation.summary_json["package_review_submit"]["package_review_state"] == "package_review_approved"
+    finally:
+        db.close()
 
 
 def test_layer3_api_execution_result_review_records_non_approval_decision(
