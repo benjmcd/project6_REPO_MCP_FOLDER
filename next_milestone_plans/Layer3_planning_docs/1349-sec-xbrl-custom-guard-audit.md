@@ -71,6 +71,13 @@ raw-reference detection through the shared guard; operator review workflow keeps
 its broader CIK scan. The wrappers remain service-local so their exception
 classes, error codes, messages, and details stay stable.
 
+Projection and statement-packet persistence now delegate their common
+exact/contextual CIK public-authority scan posture through the shared
+`reject_persistence_public_authority` adapter. The adapter does not own service
+exception classes, error codes, messages, raw-key sets, or residual-magnitude
+policy; those remain caller-owned so persistence behavior stays
+service-specific and behavior-preserving.
+
 A separate exact adapter seam in these same service families is now extracted:
 `_reject_unadmitted_keys` delegates to the shared `unadmitted_keys` predicate
 and raises the service-local exception with `details={"fields": unknown}` via
