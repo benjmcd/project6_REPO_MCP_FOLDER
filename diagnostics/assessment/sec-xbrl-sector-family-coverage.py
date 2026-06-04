@@ -26,7 +26,7 @@ from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
     sector_class_from_sic as runtime_sector_class_from_sic,
 )
 from app.services.layer3_sec_xbrl_report_leak_guard import (  # noqa: E402
-    diagnostic_sector_family_redaction_scan_payload,
+    diagnostic_sector_family_redaction_scan_payload as _redaction_scan_payload,
 )
 from app.services.layer3_sec_xbrl_report_guards import rows_have_unique_required_key  # noqa: E402
 
@@ -373,10 +373,6 @@ def _family_definition(family_id: str) -> Mapping[str, Any]:
         if definition["family_id"] == family_id:
             return definition
     raise ValueError(f"unknown sector family: {family_id}")
-
-
-def _redaction_scan_payload(payload: Any) -> dict[str, bool]:
-    return diagnostic_sector_family_redaction_scan_payload(payload)
 
 
 def _resolve_path(path: str) -> Path:

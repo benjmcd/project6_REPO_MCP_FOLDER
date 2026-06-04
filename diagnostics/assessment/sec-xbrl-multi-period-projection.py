@@ -21,7 +21,9 @@ os.environ.setdefault("DB_INIT_MODE", "none")
 from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
     project_issuer_canonical_facts_by_periods,
 )
-from app.services.layer3_sec_xbrl_report_leak_guard import diagnostic_authority_redaction_scan_payload  # noqa: E402
+from app.services.layer3_sec_xbrl_report_leak_guard import (  # noqa: E402
+    diagnostic_authority_redaction_scan_payload as _redaction_scan_payload,
+)
 from app.services.layer3_utils import stable_hash  # noqa: E402
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
@@ -217,10 +219,6 @@ def _period_summaries_consistent(*, periods: Sequence[Mapping[str, Any]], summar
         and periods[0].get("matches_document_period_end_date") is True
         and any(item.get("matches_document_period_end_date") is False for item in periods[1:])
     )
-
-
-def _redaction_scan_payload(report: Mapping[str, Any]) -> dict[str, bool]:
-    return diagnostic_authority_redaction_scan_payload(report)
 
 
 def _reference_bundle() -> dict[str, Any]:

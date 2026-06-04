@@ -157,25 +157,25 @@ not generic public report leak checks.
 Safe next slice, if pursued: extract a diagnostic-local helper only if both
 reports remain byte-identical and the helper names the exact extra flags.
 
-### Migrated diagnostics with remaining custom redaction extensions
+### Exact pass-through diagnostic wrappers migrated
 
-These diagnostics already use shared framework/report-leak helpers for the
-exact-match portions that were proven byte-stable, but still retain
-diagnostic-specific redaction extensions:
+The following diagnostics now import the shared diagnostic redaction scanner
+directly under the local `_redaction_scan_payload` name instead of retaining a
+one-line local pass-through wrapper:
 
 - `sec-xbrl-multi-period-projection.py`;
 - `sec-xbrl-statement-assembly.py`;
 - `sec-xbrl-sector-family-coverage.py`.
 
-The remaining custom checks include raw-value variants, authority/reference
-keys, issuer identity, SIC, accession, and path evidence depending on the
-diagnostic. They are not "remaining exact-match" helpers; they are
-diagnostic-specific policy extensions layered around already-shared helpers.
+The migration is behavior-preserving: the affected committed reports regenerate
+byte-identically and no report JSON is changed. This does not migrate any
+custom resolved-fact, value-reveal, nonlocal, default-on, or runtime/public
+error-surface guard semantics.
 
-Safe next slice, if pursued: migrate only one exact variant group at a time and
-prove each affected committed diagnostic report remains byte-identical. If any
-variant changes report bytes, stop and treat the mismatch as a design finding
-rather than forcing the migration.
+Safe next slice, if pursued: keep exact pass-through cleanup separate from
+diagnostic-specific policy extraction. If a helper requires custom flags,
+blocked-key semantics, exception shape, or report-byte changes, treat it as a
+design/audit-first surface rather than an exact-match migration.
 
 ### Default-on admission restatement and real corpus runner
 
