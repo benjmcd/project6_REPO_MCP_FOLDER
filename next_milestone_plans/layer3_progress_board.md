@@ -11342,3 +11342,27 @@ admission, archive-member orchestration, or Onlook work.
 Next posture: after this review-debt closeout, select either governed
 mixed qualitative-plus-table package semantics or the legacy CSV bridge
 deprecation decision lane; do not repeat P10F guardrail trace work.
+
+## P12 Mixed-Source Package Contract
+
+Milestone: `p12_mixed_source_package_contract`.
+
+Planning doc:
+`next_milestone_plans/multi-ingest/28-p12-mixed-package-contract.md`.
+
+Status: governed mixed-source package contract registered for the
+`dataset_version` plus `aps_content_document` material-preview readiness path.
+
+Scope: defines `layer3.mixed_source_package_contract.v1`, narrative-table link
+records, payload manifest semantics, review-preview requirements, future commit
+idempotency basis, and handoff policy prerequisites. This is contract-only
+traceability for the next implementation boundary after Phase P11 readiness.
+
+Non-goals: no runtime behavior, package construction, package review preview,
+package review submit, handoff, export, schema, migration, parser behavior,
+source-shape expansion, generic XML/HTML admission, archive-member
+orchestration, legacy CSV bridge deprecation, or Onlook work.
+
+Next posture: introduce a package-family policy registry and keep
+`mixed_dataset_document` blocked for commit, submit, and handoff until separate
+runtime passes prove the contract.

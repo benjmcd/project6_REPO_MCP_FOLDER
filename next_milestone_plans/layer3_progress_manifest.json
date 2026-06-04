@@ -46393,5 +46393,42 @@
     ],
     "next_posture": "select_next_mixed_source_package_semantics_or_legacy_csv_bridge_deprecation_lane_after_current_review_debt_closeout"
   },
-  "latest_p10f_guardrail_trace_current_main_sync_summary": "P10F is current-main synced through PR #2151 at 4dc261d2 and records refused/deferred source-family guardrail trace detail as non-selectable APS source-family evidence. It does not admit refused material candidates, parser behavior, source-shape expansion, schema changes, mixed-source package semantics, generic XML/HTML admission, archive-member orchestration, or Onlook work."
+  "latest_p10f_guardrail_trace_current_main_sync_summary": "P10F is current-main synced through PR #2151 at 4dc261d2 and records refused/deferred source-family guardrail trace detail as non-selectable APS source-family evidence. It does not admit refused material candidates, parser behavior, source-shape expansion, schema changes, mixed-source package semantics, generic XML/HTML admission, archive-member orchestration, or Onlook work.",
+  "p12_mixed_source_package_contract_tracking": {
+    "tracking_kind": "p12_mixed_source_package_contract_tracking",
+    "milestone": "p12_mixed_source_package_contract",
+    "status": "governed_contract_traceability_registered_runtime_not_admitted",
+    "source_pr": "#2167",
+    "source_branch": "codex/mixed-package-contract",
+    "planning_doc": "next_milestone_plans/multi-ingest/28-p12-mixed-package-contract.md",
+    "readiness_predecessor_doc": "next_milestone_plans/multi-ingest/27-p11-mixed-readiness-closeout.md",
+    "contract_schema_id": "layer3.mixed_source_package_contract.v1",
+    "payload_schema_id": "layer3.mixed_source_package_payload.v1",
+    "contract_scope": "dataset_version_plus_aps_content_document",
+    "traceability_reason": "Register the governed mixed-source package contract selected by the P11 material-preview readiness projection before any mixed-source package runtime behavior is admitted.",
+    "runtime_behavior_changed_by_tracking": false,
+    "package_construction_enabled_by_tracking": false,
+    "package_review_preview_enabled_by_tracking": false,
+    "package_review_submit_enabled_by_tracking": false,
+    "handoff_enabled_by_tracking": false,
+    "export_enabled_by_tracking": false,
+    "schema_models_changed_by_tracking": false,
+    "migration_changed_by_tracking": false,
+    "parser_behavior_changed_by_tracking": false,
+    "source_shape_expanded_by_tracking": false,
+    "generic_xml_html_admitted_by_tracking": false,
+    "archive_member_orchestration_admitted_by_tracking": false,
+    "legacy_csv_bridge_deprecated_by_tracking": false,
+    "onlook_included_by_tracking": false,
+    "next_posture": "package_family_policy_registry_before_mixed_source_package_runtime",
+    "files_in_scope": [
+      "next_milestone_plans/multi-ingest/28-p12-mixed-package-contract.md",
+      "next_milestone_plans/multi-ingest/README.md",
+      "next_milestone_plans/authority-index.json",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ]
+  },
+  "latest_p12_mixed_source_package_contract_summary": "P12 registers the governed mixed-source package contract for valid dataset_version plus aps_content_document material-preview authority. It defines narrative-table linking, payload manifest semantics, preview requirements, future commit idempotency, and handoff prerequisites without admitting runtime package construction, review preview, submit, handoff, export, parser behavior, schema changes, source-shape expansion, legacy CSV bridge deprecation, or Onlook work."
 }
