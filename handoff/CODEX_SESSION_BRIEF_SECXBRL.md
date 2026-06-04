@@ -1,7 +1,9 @@
 # SEC XBRL Track — Session Brief (2026-06-04)
 
-Start from a clean worktree off `origin/main`. Read `AGENTS.md` first.
-Note: on this machine the remote is `origin`, not `project6-origin`. Use `git fetch origin main --prune`.
+Start from a clean worktree off `project6-origin/main`. Read `AGENTS.md` first.
+Use `git fetch project6-origin main --prune` and compare `HEAD` to
+`project6-origin/main` before editing. In this workspace, `origin` is not the
+project6 authority remote.
 
 ---
 
@@ -9,7 +11,14 @@ Note: on this machine the remote is `origin`, not `project6-origin`. Use `git fe
 
 ### Consolidation Series Complete
 
-PRs #2120–#2174 are all merged. Current main is `fa205665` (sprint planning docs + manifest refresh, 2026-06-04). The shared modules are in place: diagnostic framework, public authority guard (persistence/value-reveal/auth-binding families — PRs #2120/#2121/#2122), report leak guard, canonical concepts, redaction helpers, package-family policy, mixed-source contract, unadmitted-key adapter, resolved-fact redaction wrappers.
+PRs #2120-#2173 are merged for the SEC XBRL consolidation series. PRs #2174 and
+#2175 added/corrected session handoff and activation-planning docs. Current
+main at this repair checkpoint is `82dee6d6` (2026-06-04). The shared modules
+are in place: diagnostic framework, public authority guard
+(persistence/value-reveal/auth-binding families -- PRs #2120/#2121/#2122),
+report leak guard, canonical concepts, redaction helpers, package-family
+policy, mixed-source contract, unadmitted-key adapter, and resolved-fact
+redaction wrappers.
 
 **Test state (last verified):** `477 passed, 3 warnings` on the full SEC XBRL suite.
 
@@ -31,66 +40,71 @@ runtime_status: not_implemented
 
 **Guard branches 1346/1347/1348 are already merged** (PRs #2120, #2121, #2122). Do not attempt to re-merge them.
 
-**Also already merged** (0 commits ahead of main): `codex/secxbrl-review-debt`, `codex/secxbrl-residual-review-closeout`.
+**Patch-equivalent to current main; do not re-merge as new work without a fresh
+diff audit:** `codex/secxbrl-review-debt`,
+`codex/secxbrl-residual-review-closeout`, `codex/secxbrl-2082-review-closeout`,
+`codex/secxbrl-2083-review-closeout`, `codex/secxbrl-2086-ref-redaction-fix`,
+`codex/secxbrl-late-review-ledger-closeout`, and
+`codex/secxbrl-review-thread-closeout`.
 
-Current unmerged work — merge in this priority order:
+Current branch-local candidates that still have non-patch-equivalent commits
+relative to `project6-origin/main`:
 
-**Tier A — Review-debt** (merge in sequence — these branches share `sec-xbrl-nonlocal-admission-disposition.py` and wrong order causes conflicts):
+**Tier A -- Review-debt**
+
+No Tier A review-debt branch is currently actionable from this handoff. Re-run
+`git cherry -v project6-origin/main project6-origin/<branch>` before reviving
+any old review-debt branch.
 
 | Branch | Content |
 |--------|---------|
-| `codex/secxbrl-2082-review-closeout` | PR #2082 readiness gate threads |
-| `codex/secxbrl-2083-review-closeout` | PR #2083 admission disposition threads |
-| `codex/secxbrl-2086-ref-redaction-fix` | Admission disposition ref redaction fix (same file as 2083 — merge after) |
-| `codex/secxbrl-late-review-ledger-closeout` | Late ledger threads + both diagnostic files + manifests |
-| `codex/secxbrl-review-thread-closeout` | Authority gap closeout |
+| none | stale queue cleared by patch-equivalence audit |
 
-**Tier B — Hardening + UI** (rebase check against current main before PR):
+**Tier B -- Hardening + UI** (rebase check against current main before PR):
 
 | Branch | Content | Risk |
 |--------|---------|------|
-| `codex/secxbrl-2039-review-fix` | Migration 0043 downgrade safety guard + `layer3.js` SEC XBRL review-decision UI additions + tests | Tier-2 (migration hardening, bounded) |
-| `codex/secxbrl-tier2-redaction-remediation` | Modifies `backend/app/models/models.py` + migration `0041` + 3 persistence/review services + 3 tests | **Tier-2 (models.py + schema)** — higher-risk; rebase required (~130 commits behind main); record exact surfaces and justification in PR body |
+| `codex/secxbrl-2039-review-fix` | Migration 0043 downgrade safety guard + `layer3.js` SEC XBRL review-decision UI additions + tests | Tier-2 because it touches migration/UI surfaces; rebase and verify as its own lane |
+| `codex/secxbrl-tier2-redaction-remediation` | Modifies `backend/app/models/models.py` + migration `0041` + 3 persistence/review services + 3 tests | Tier-2 (`models.py` + schema); higher-risk; rebase required; record exact surfaces and justification in PR body |
 
-**Tier C — Complex rebase required** (~130 commits behind current main):
+**Tier C -- Complex rebase required**:
 
 | Branch | Notes |
 |--------|-------|
-| `codex/secxbrl-offline-gate` | Sector family offline gate hardening; rebase required before PR; progress board and manifests in branch are stale relative to PRs #2120–#2174 |
+| `codex/secxbrl-offline-gate` | Sector family offline gate hardening; rebase required before PR; progress board and manifests in branch are stale relative to PRs #2120-#2175 |
 
-Then continue with deeper items in order from the progress board (verify each with `git log origin/main..origin/<branch> --oneline` to confirm they're not already merged before creating a PR).
+Then continue with deeper items in order from the progress board (check patch equivalence with `git cherry -v project6-origin/main project6-origin/<branch>` before creating a PR).
 
 ---
 
 ## Prioritized Work Queue
 
-### 1. Merge review-debt branches (IMMEDIATE — in exact order to avoid conflicts)
+### 1. Do not re-merge stale review-debt branches
 
-For each Tier A branch in sequence (2082 → 2083 → 2086 → late-review-ledger → review-thread-closeout):
+For any old Tier A branch, first prove it is not already patch-equivalent:
 
 ```
-git fetch origin <branch>
-# Confirm not already merged:
-git log origin/main..origin/<branch> --oneline
-git checkout -b local-verify origin/<branch>
+git fetch project6-origin <branch>
+git cherry -v project6-origin/main project6-origin/<branch>
+```
+
+Only if this shows real `+` commits that still matter after current-main audit,
+create a dedicated rebase lane and run:
+
+```
 python -m pytest backend/tests/test_sec_xbrl*.py -q
 python tools/l3-progress-check.py
 git diff --check
-gh pr create --title "..." --base main --head <branch>
 ```
-
-After each merge, rebase the next branch on the new main before verifying.
 
 **Tier B**: After Tier A is clear, work through in order:
 1. `codex/secxbrl-2039-review-fix` — rebase against current main; run SEC XBRL suite + `npx playwright test --project=chromium e2e/layer3-workbench.spec.js`
 2. `codex/secxbrl-tier2-redaction-remediation` — rebase against current main; Tier-2 (modifies `models.py` + migration `0041`); record exact surfaces in PR body; run full SEC XBRL suite including persistence suites
 
-**Tier C**: After Tier B, rebase `codex/secxbrl-offline-gate` against current main (progress board and manifest in the branch are stale; resolve conflicts carefully). Then verify and PR.
-
 ### 2. Continue with deeper branch-local items
 
 After Tier A/B/C merge, work through remaining branch-local items in order from the progress board. For each:
-1. Confirm not already merged: `git log origin/main..origin/<branch> --oneline`
+1. Confirm not already merged: `git cherry -v project6-origin/main project6-origin/<branch>`
 2. Check out and run the verification commands from the progress board entry
 3. If clean: create PR, let CI run, merge
 4. Update `next_milestone_plans/layer3_progress_board.md` status to reflect the merge
@@ -110,8 +124,8 @@ Only after branch-local queue is clear: check `1336-transaction-safe-review.md` 
 - E2E integration route activation
 - Multi-filing evidence authority gate activation
 - In-app auth policy activation
-- Frontend/UI changes
-- Alembic migrations
+- New unplanned frontend/UI changes outside an explicitly selected Tier-2 lane
+- New unplanned Alembic migrations outside an explicitly selected Tier-2 lane
 - Source acquisition (no live Arelle invocation, no live SEC network calls)
 - Layer 3 workbench services (`layer3_workbench.py`, `layer3_sec_edgar_*.py`) — owned by Layer 3 session
 
@@ -122,7 +136,7 @@ Only after branch-local queue is clear: check `1336-transaction-safe-review.md` 
 This session owns:
 - `backend/app/services/layer3_sec_xbrl_*.py`
 - `backend/tests/test_sec_xbrl*.py`
-- `diagnostics/assessment/sec_xbrl_*.py`
+- `diagnostics/assessment/sec_xbrl_*.py` and `diagnostics/assessment/sec-xbrl-*.py`
 - `next_milestone_plans/Layer3_planning_docs/1349-*.md`, `1350-*.md`, and future SEC XBRL docs
 
 **Do NOT touch:**
@@ -131,7 +145,7 @@ This session owns:
 - `backend/app/review_ui/static/layer3.js` or `.html` — **exception**: `codex/secxbrl-2039-review-fix` contains bounded SEC XBRL review-decision UI additions to `layer3.js`; land that branch before the Layer 3 session begins new UI work
 - `backend/app/api/layer3.py`
 - `next_milestone_plans/Layer3_planning_docs/199_*.md`, `200_*.md`
-- `next_milestone_plans/layer3_progress_manifest.json` and `layer3_workbench_proof_manifest.json` — for any branch you are PR-ing, manifest changes present in that branch's merge base are pre-existing; PR them as-is. Do not introduce NEW manifest mutations in this session's own work.
+- `next_milestone_plans/layer3_progress_manifest.json` and `layer3_workbench_proof_manifest.json` -- do not introduce new manifest mutations in feature branches unless the lane is explicitly a governance/manifest repair. Pre-existing branch-local manifest edits must still be re-audited against current main before PR.
 
 ---
 

@@ -1,7 +1,9 @@
 # Layer 3 Workbench Track — Session Brief (2026-06-04)
 
-Start from a clean worktree off `origin/main`. Read `AGENTS.md` first.
-Note: on this machine the remote is `origin`, not `project6-origin`. Use `git fetch origin main --prune`.
+Start from a clean worktree off `project6-origin/main`. Read `AGENTS.md`
+first. Use `git fetch project6-origin main --prune` and compare `HEAD` to
+`project6-origin/main` before editing. In this workspace, `origin` is not the
+project6 authority remote.
 
 ---
 
@@ -20,7 +22,7 @@ Note: on this machine the remote is `origin`, not `project6-origin`. Use `git fe
 ### Layer 3 Track Last Confirmed Planning Position
 
 - **Doc 1252** (`1252-sec-edgar-period-unit-context-dimension-rendered-detail-ui.md`) is the last Layer 3 workbench planning doc on main.
-- `entry_main_commit: dfb150c54cc9c5c4c796e450c24bee8ab8624eae` (current main is `fa205665` — sprint planning commit 2026-06-04, after PRs #2174/#2175)
+- `entry_main_commit: dfb150c54cc9c5c4c796e450c24bee8ab8624eae`; current main at this repair checkpoint is `82dee6d6` (2026-06-04, after PRs #2174/#2175).
 - `runtime_status: implemented_branch_local` — the implementation is on a remote branch, not yet merged.
 - **Next exact posture**: `sec_edgar_statement_role_quality_profile_rendered_detail_ui_v1`
 
@@ -33,7 +35,7 @@ There are 43 `codex/sec-edgar-*` branches on the remote. Before writing new plan
 - `codex/sec-edgar-live-closeout-readiness`
 - `codex/sec-edgar-current-main-sync`
 
-**First action:** Run `git ls-remote origin 'refs/heads/codex/sec-edgar*'` to list these branches, then check the progress board and each branch's tip commit against current main to identify which are ready to merge.
+**First action:** Run `git ls-remote project6-origin 'refs/heads/codex/sec-edgar*'` to list these branches, then check the progress board and each branch's tip commit against current main to identify which are ready to merge.
 
 ### Doc Numbering
 
@@ -49,7 +51,7 @@ PR #2174 (`claude/sprint-20260604`) is merged. Doc `1350-sec-xbrl-activation-lan
 
 For each unmerged `codex/sec-edgar-*` branch:
 1. Check if it has an open PR (`gh pr list --head codex/sec-edgar-<name>`)
-2. If no PR, fetch the branch and compare to current main (`git log origin/sec-edgar-<name>..origin/main --oneline`)
+2. If no PR, fetch the branch and compare to current main (`git cherry -v project6-origin/main project6-origin/<branch>`)
 3. If the branch has new commits relative to main: run the branch's verification commands, create a PR, merge it
 4. Follow the Tier classification from the branch's planning doc (Tier-1 = self-verify + CI; Tier-2 = independent review or recorded justification before merge)
 
@@ -89,14 +91,22 @@ Only after the planning doc is merged: implement the bounded UI control, verify 
 
 ## Progress Manifest Refresh
 
-The progress manifest (`next_milestone_plans/layer3_progress_manifest.json`) has been refreshed: `snapshot_date: 2026-06-04`, `snapshot_base_main_commit: 3c7ab08e` (PR #2174 merge, updated in commit `fa205665`). The notes entries below the header are accurate only through PR #609 / `ad51b1c6` (2026-05-06) — a full notes refresh for docs 868-929 and 1115-1350 is pending. After each batch of new implementations merges, run a separate manifest-refresh PR to bring the notes up to date.
+The progress manifest (`next_milestone_plans/layer3_progress_manifest.json`) is
+intentionally scoped: its snapshot commit fields remain anchored to the PR #609
+APS source-family extraction proof boundary (`ad51b1c6`). Later sprint and
+handoff state should be recorded in explicit milestone/current-state entries,
+not by overwriting those scoped snapshot fields. The notes entries below the
+header are accurate only through PR #609 / `ad51b1c6` (2026-05-06) -- a full
+notes refresh for docs 868-929 and 1115-1350 is pending. After each batch of
+new implementations merges, run a separate manifest-refresh PR to bring the
+notes up to date.
 
 ---
 
 ## What Is EXPLICITLY OUT OF SCOPE for this session
 
 - SEC XBRL services (`backend/app/services/layer3_sec_xbrl_*.py`) — owned by SEC XBRL session
-- `backend/tests/test_sec_xbrl*.py` and `diagnostics/assessment/sec_xbrl_*.py`
+- `backend/tests/test_sec_xbrl*.py`, `diagnostics/assessment/sec_xbrl_*.py`, and `diagnostics/assessment/sec-xbrl-*.py`
 - `next_milestone_plans/Layer3_planning_docs/1344-*.md` through `1350-*.md`
 - Auth/security implementation (zero auth infrastructure; see `200_AUTH_SECURITY_ENTRY_CONTRACT.md`)
 - Provider/public URL runtime
@@ -120,7 +130,7 @@ This session owns:
 **Do NOT touch:**
 - `backend/app/services/layer3_sec_xbrl_*.py`
 - `backend/tests/test_sec_xbrl*.py`
-- `diagnostics/assessment/sec_xbrl_*.py`
+- `diagnostics/assessment/sec_xbrl_*.py` and `diagnostics/assessment/sec-xbrl-*.py`
 - `next_milestone_plans/Layer3_planning_docs/1344-*.md` through `1350-*.md`
 
 ---

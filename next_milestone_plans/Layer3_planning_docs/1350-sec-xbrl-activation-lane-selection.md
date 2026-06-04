@@ -18,9 +18,14 @@ makes the first governance decision about that parked lane.
 The activation lane refers to enabling the following behaviors, which have been built and
 tested in validate-only or default-off postures:
 
-1. **Default-on runtime posture**: `layer3_sec_xbrl_default_on_admission_restatement.py`
-   - Currently in a `default_off` admission posture
-   - Would make the SEC XBRL data flow available to operators without an explicit opt-in flag
+1. **Default-on runtime posture**:
+   `diagnostics/assessment/sec-xbrl-default-on-admission-restatement.py` and
+   `diagnostics/assessment/sec-xbrl-default-on-runtime.py`
+   - Current committed diagnostics classify the default-on runtime lineage as
+     already superseding the earlier admission restatement, but this doc does
+     not activate a new runtime surface.
+   - A future activation freeze would need to identify the exact route/config
+     or operator surface being changed before implementation.
 
 2. **Value-reveal authorization**: `layer3_sec_xbrl_value_reveal_authority.py`
    - Currently validate-only; actual value reveal is blocked
@@ -95,7 +100,8 @@ evidence_ledger:
   default_on_admission_module:
     status: verified
     evidence:
-      - backend/app/services/layer3_sec_xbrl_default_on_admission_restatement.py (exists)
+      - diagnostics/assessment/sec-xbrl-default-on-admission-restatement.py (exists)
+      - diagnostics/assessment/sec-xbrl-default-on-runtime.py (exists)
   value_reveal_module:
     status: verified
     evidence:
