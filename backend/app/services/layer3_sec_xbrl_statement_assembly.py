@@ -35,7 +35,7 @@ def assemble_reviewable_statement_packet(
         )
 
     grouped: dict[str, list[dict[str, Any]]] = {statement: [] for statement in STATEMENT_ORDER}
-    row_counts_by_statement_period: dict[tuple[str, str, int], int] = defaultdict(int)
+    row_counts_by_statement_period: dict[tuple[str, str], int] = defaultdict(int)
     unassigned: list[dict[str, Any]] = []
     for index, item in enumerate(projected_items, start=1):
         row = _public_row(item=item, source_index=index)
@@ -147,10 +147,9 @@ def _has_raw_value(item: Mapping[str, Any]) -> bool:
     return any(key in item and item.get(key) is not None for key in ("_value", "value", "effective_value", "amount"))
 
 
-def _row_index_key(row: Mapping[str, Any]) -> tuple[str, str, int]:
+def _row_index_key(row: Mapping[str, Any]) -> tuple[str, str]:
     period_ref = str(row.get("period_ref") or "")
-    period_index = int(row.get("period_index") or 0)
-    return (str(row.get("statement") or ""), period_ref, period_index)
+    return (period_ref, str(row.get("statement") or ""))
 
 
 def _row_ref(row: Mapping[str, Any]) -> dict[str, str]:

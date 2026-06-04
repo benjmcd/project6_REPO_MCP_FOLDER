@@ -213,8 +213,11 @@ def _projection_periods(canonical_projection: Mapping[str, Any]) -> list[dict[st
     if status == "canonical_projection_ready":
         return [
             {
-                "period_ref": "fy-period-1",
-                "period_index": 1,
+                "period_ref": _required_public_text(
+                    canonical_projection.get("period_ref") or "fy-period-1",
+                    "period_ref",
+                ),
+                "period_index": _positive_int(canonical_projection.get("period_index") or 1, "period_index"),
                 "projection": canonical_projection,
             }
         ]

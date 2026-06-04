@@ -77,7 +77,26 @@ def _is_nonempty_string(value: Any) -> bool:
 
 
 def _is_string_list(value: Any) -> bool:
-    return isinstance(value, list) and all(_is_nonempty_string(item) for item in value)
+    return isinstance(value, list) and bool(value) and all(_is_nonempty_string(item) for item in value)
+
+
+def _reject_unknown_keys(
+    value: dict[str, Any],
+    *,
+    allowed: set[str],
+    label: str,
+    issues: list[ValidationIssue],
+) -> None:
+    for key in sorted(set(value) - allowed):
+        _issue(issues, "unsupported_field", f"{label} has unsupported field {key!r}")
+
+
+def _contains_onlook_text(value: Any) -> bool:
+    if isinstance(value, str):
+        return ONLOOK_RE.search(value) is not None
+    if isinstance(value, list):
+        return any(_contains_onlook_text(item) for item in value)
+    return False
 
 
 def _is_safe_repo_path(path_value: str) -> bool:
@@ -99,6 +118,7 @@ def _read_json(path: Path) -> tuple[dict[str, Any] | None, list[ValidationIssue]
 
 def validate_payload(payload: dict[str, Any], *, root: Path = ROOT) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
+    _reject_unknown_keys(payload, allowed=REQUIRED_TOP_LEVEL, label="index", issues=issues)
     missing_top = REQUIRED_TOP_LEVEL - set(payload)
     for key in sorted(missing_top):
         _issue(issues, "missing_top_level_key", f"missing top-level key {key!r}")
@@ -122,6 +142,12 @@ def validate_payload(payload: dict[str, Any], *, root: Path = ROOT) -> list[Vali
     if not isinstance(last_verified, dict):
         _issue(issues, "invalid_last_verified", "last_verified must be an object")
     else:
+        _reject_unknown_keys(
+            last_verified,
+            allowed=REQUIRED_LAST_VERIFIED,
+            label="last_verified",
+            issues=issues,
+        )
         for key in sorted(REQUIRED_LAST_VERIFIED - set(last_verified)):
             _issue(issues, "missing_last_verified_key", f"last_verified missing {key!r}")
         if last_verified.get("remote") != "project6-origin/main":
@@ -148,6 +174,7 @@ def validate_payload(payload: dict[str, Any], *, root: Path = ROOT) -> list[Vali
         if not isinstance(lane, dict):
             _issue(issues, "invalid_lane", f"{lane_label} must be an object")
             continue
+        _reject_unknown_keys(lane, allowed=REQUIRED_LANE, label=lane_label, issues=issues)
         for key in sorted(REQUIRED_LANE - set(lane)):
             _issue(issues, "missing_lane_key", f"{lane_label} missing {key!r}")
         lane_id = lane.get("lane_id")
@@ -160,9 +187,13 @@ def validate_payload(payload: dict[str, Any], *, root: Path = ROOT) -> list[Vali
         for key in ("lane_name", "lane_scope", "current_state", "next_decision"):
             if key in lane and not _is_nonempty_string(lane[key]):
                 _issue(issues, "invalid_lane_string", f"{lane_label}.{key} must be non-empty")
+            if key in lane and _contains_onlook_text(lane[key]):
+                _issue(issues, "onlook_lane_metadata", f"{lane_label}.{key} must not reference Onlook")
         for key in ("current_truth_order", "known_limits"):
             if key in lane and not _is_string_list(lane[key]):
                 _issue(issues, "invalid_lane_list", f"{lane_label}.{key} must be a non-empty string list")
+            if key in lane and _contains_onlook_text(lane[key]):
+                _issue(issues, "onlook_lane_metadata", f"{lane_label}.{key} must not reference Onlook")
         sources = lane.get("source_of_truth")
         if not isinstance(sources, list) or not sources:
             _issue(issues, "invalid_source_of_truth", f"{lane_label}.source_of_truth must be non-empty")
@@ -183,6 +214,7 @@ def _validate_source(
     if not isinstance(source, dict):
         _issue(issues, "invalid_source", f"{source_label} must be an object")
         return
+    _reject_unknown_keys(source, allowed=REQUIRED_SOURCE, label=source_label, issues=issues)
     for key in sorted(REQUIRED_SOURCE - set(source)):
         _issue(issues, "missing_source_key", f"{source_label} missing {key!r}")
     path_value = source.get("path")
