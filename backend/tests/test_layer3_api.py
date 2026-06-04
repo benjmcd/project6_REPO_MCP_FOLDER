@@ -10418,26 +10418,61 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
         "application/json"
     ]["schema"]
     assert commit_request_schema["additionalProperties"] is False
-    assert set(commit_request_schema["required"]) == {
-        "client_request_id",
-        "session_id",
-        "analysis_plan_id",
-        "pass_run_id",
-        "preview_id",
-        "preview_hash",
-        "result_review_record_ref",
-        "package_review_preview_hash",
+    assert set(commit_request_schema["required"]) == {"client_request_id", "session_id", "package_review_preview_hash"}
+    commit_request_shape_branches = commit_request_schema["oneOf"]
+    assert len(commit_request_shape_branches) == 2
+
+    def _matches_commit_request_branch(branch: dict, payload: dict) -> bool:
+        return all(field in payload for field in branch.get("required", [])) and not any(
+            all(field in payload for field in blocked["required"]) for blocked in branch.get("not", {}).get("anyOf", [])
+        )
+
+    def _matching_commit_request_branch_count(payload: dict) -> int:
+        return sum(_matches_commit_request_branch(branch, payload) for branch in commit_request_shape_branches)
+
+    selected_pass_commit_payload = {
+        "client_request_id": "request-1",
+        "session_id": "session-1",
+        "analysis_plan_id": "plan-1",
+        "pass_run_id": "pass-1",
+        "preview_id": "preview-1",
+        "preview_hash": "hash-1",
+        "result_review_record_ref": "review-ref",
+        "package_review_preview_hash": "preview-hash",
     }
+    material_commit_payload = {
+        "client_request_id": "request-1",
+        "session_id": "session-1",
+        "material_preview_id": "material-1",
+        "material_preview_hash": "hash-1",
+        "package_review_preview_hash": "preview-hash",
+        "contract_hash": "contract-hash",
+    }
+    assert _matching_commit_request_branch_count(selected_pass_commit_payload) == 1
+    assert _matching_commit_request_branch_count(material_commit_payload) == 1
+    assert _matching_commit_request_branch_count({**selected_pass_commit_payload, "material_preview_id": "m-1"}) == 0
+    assert _matching_commit_request_branch_count({**material_commit_payload, "preview_id": "preview-1"}) == 0
     assert commit_request_schema["properties"]["expected_package_kinds"]["items"]["enum"] == [
         "canonical_internal",
         "user_facing",
         "review_facing",
     ]
+    assert "material_preview_id" in commit_request_schema["properties"]
+    assert "material_preview_hash" in commit_request_schema["properties"]
+    assert "contract_hash" in commit_request_schema["properties"]
     assert commit_request_schema["properties"]["handoff"]["description"].startswith("Known but non-admitted")
     assert commit_request_schema["properties"]["package_payload"]["description"].startswith("Known but non-admitted")
+    assert commit_request_schema["properties"]["onlook"]["description"].startswith("Known but non-admitted")
 
     commit_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/commit", "post")
     assert commit_schema["title"] == "Layer3PackageConstructionCommitResponse"
+    assert {
+        "material_preview_id",
+        "material_preview_hash",
+        "contract_hash",
+        "selected_source_ids",
+        "narrative_table_link_count",
+    } <= set(commit_schema["properties"])
     assert {
         "schema_id",
         "schema_version",
@@ -17749,7 +17784,7 @@ def test_layer3_api_material_preview_surfaces_mixed_source_package_readiness(
     assert "no_onlook_work" in mixed["non_goals"]
 
 
-def test_layer3_api_mixed_source_package_review_preview_is_read_only(
+def test_layer3_api_mixed_source_package_review_preview_admits_construction(
     client: TestClient,
     tmp_path,
 ) -> None:
@@ -17793,11 +17828,15 @@ def test_layer3_api_mixed_source_package_review_preview_is_read_only(
     }
     assert body["narrative_table_link_count"] == 1
     assert body["package_review_preview_enabled"] is True
-    assert body["package_commit_enabled"] is False
+    assert body["package_commit_enabled"] is True
     assert body["package_review_submit_enabled"] is False
     assert body["handoff_enabled"] is False
     assert body["external_export_download_enabled"] is False
-    assert body["candidate_package_kinds"] == []
+    assert [candidate["package_kind"] for candidate in body["candidate_package_kinds"]] == [
+        "canonical_internal",
+        "user_facing",
+        "review_facing",
+    ]
     assert body["missing_authority_inputs"] == []
     assert body["negative_authority_flags"] == {
         "schema_or_migration_changed": False,
@@ -17808,7 +17847,7 @@ def test_layer3_api_mixed_source_package_review_preview_is_read_only(
         "export_enabled": False,
         "onlook_included": False,
     }
-    assert "package_construction" in body["downstream_unavailable"]
+    assert "package_construction" not in body["downstream_unavailable"]
     assert "package_review_preview" not in body["downstream_unavailable"]
     payload = body["mixed_source_package_review_preview"]
     assert payload["source_manifest"]["selected_sources"] == body["selected_source_ids"]
@@ -17817,6 +17856,145 @@ def test_layer3_api_mixed_source_package_review_preview_is_read_only(
     with client.layer3_session_factory() as db:
         assert db.query(L3OutputPackage).count() == 0
         assert db.query(L3ReconciliationRecord).count() == 0
+
+
+def test_layer3_api_mixed_source_package_construction_commit_materializes_manifest_packages(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    preflight, source, material, dataset_version_id, content_id = _prepare_mixed_material(
+        client,
+        tmp_path,
+        request_id="api-mixed-construction-success",
+    )
+    gate_b = _commit_mixed_gate_b(
+        client,
+        request_id="api-mixed-construction-success",
+        preflight=preflight,
+        source=source,
+        material=material,
+        approve_source_classes={"dataset_version", "aps_content_document"},
+    )
+    assert gate_b.status_code == 200
+    preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": "api-mixed-construction-preview",
+            "session_id": gate_b.json()["session_id"],
+            "material_preview_id": material["material_preview_id"],
+            "material_preview_hash": material["material_preview_hash"],
+        },
+    )
+    assert preview.status_code == 200, preview.text
+    preview_body = preview.json()
+
+    commit_payload = {
+        "client_request_id": "api-mixed-construction-commit",
+        "session_id": gate_b.json()["session_id"],
+        "material_preview_id": material["material_preview_id"],
+        "material_preview_hash": material["material_preview_hash"],
+        "package_review_preview_hash": preview_body["package_review_preview_hash"],
+        "contract_hash": preview_body["contract_hash"],
+        "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+    }
+    commit = client.post("/api/v1/layer3/package/review/commit", json=commit_payload)
+    assert commit.status_code == 200, commit.text
+    body = commit.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.mixed_source_package_construction_commit.v1"
+    assert body["status"] == "committed"
+    assert body["analysis_plan_id"] == ""
+    assert body["pass_run_id"] == ""
+    assert body["result_review_record_ref"] == ""
+    assert body["material_preview_id"] == material["material_preview_id"]
+    assert body["material_preview_hash"] == material["material_preview_hash"]
+    assert body["contract_hash"] == preview_body["contract_hash"]
+    assert body["selected_source_ids"] == {
+        "dataset_version_ids": [dataset_version_id],
+        "aps_content_document_ids": [content_id],
+    }
+    assert body["package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+    assert len(body["output_packages"]) == 3
+    assert all(ref.startswith("layer3://mixed-source-package/") for ref in body["payload_refs"])
+    assert str(tmp_path) not in commit.text
+    assert body["package_review_submit_enabled"] is False
+    assert body["handoff_enabled"] is False
+    assert body["external_export_download_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["provider_public_url_enabled"] is False
+    assert "package_review_submit" in body["downstream_unavailable"]
+    assert body["next_allowed_actions"] == []
+
+    with client.layer3_session_factory() as db:
+        packages = db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        assert len(packages) == 3
+        for package in packages:
+            payload_path = Path(package.payload_ref)
+            assert payload_path.exists()
+            payload = json.loads(payload_path.read_text(encoding="utf-8"))
+            assert payload["schema_id"] == "layer3.mixed_source_package_payload.v1"
+            assert payload["source_manifest"]["selected_sources"] == body["selected_source_ids"]
+            assert payload["contract_hash"] == body["contract_hash"]
+            assert payload["negative_authority_flags"]["package_payload_rewrite_performed"] is False
+            assert str(tmp_path) not in json.dumps(payload, sort_keys=True)
+        reconciliation = db.query(L3ReconciliationRecord).one()
+        summary = reconciliation.summary_json["workbench_package_commit"]
+        assert summary["schema_id"] == "layer3.mixed_source_package_commit_summary.v1"
+        assert summary["package_review_submit_enabled"] is False
+        assert summary["handoff_enabled"] is False
+        assert summary["source_shape"] == "dataset_version_plus_aps_content_document"
+
+    replay = client.post("/api/v1/layer3/package/review/commit", json=commit_payload)
+    assert replay.status_code == 200, replay.text
+    assert replay.json()["status"] == "already_committed"
+    assert replay.json()["payload_hashes"] == body["payload_hashes"]
+
+    changed_request = {
+        **commit_payload,
+        "client_request_id": "api-mixed-construction-conflict",
+    }
+    conflict = client.post("/api/v1/layer3/package/review/commit", json=changed_request)
+    assert conflict.status_code == 409
+    assert conflict.json()["error_code"] == "mixed_source_package_construction_commit_blocked"
+
+    stale_contract = {
+        **commit_payload,
+        "client_request_id": "api-mixed-construction-stale-contract",
+        "contract_hash": "0" * 64,
+    }
+    stale = client.post("/api/v1/layer3/package/review/commit", json=stale_contract)
+    assert stale.status_code == 409
+    assert stale.json()["error_code"] == "mixed_source_package_contract_hash_mismatch"
+
+    stale_preview = {
+        **commit_payload,
+        "client_request_id": "api-mixed-construction-stale-preview",
+        "package_review_preview_hash": "1" * 64,
+    }
+    stale_preview_response = client.post("/api/v1/layer3/package/review/commit", json=stale_preview)
+    assert stale_preview_response.status_code == 409
+    assert stale_preview_response.json()["error_code"] == "mixed_source_package_review_preview_mismatch"
+
+    missing_authority = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": "api-mixed-construction-missing-authority",
+            "session_id": gate_b.json()["session_id"],
+            "material_preview_id": material["material_preview_id"],
+            "package_review_preview_hash": preview_body["package_review_preview_hash"],
+        },
+    )
+    assert missing_authority.status_code == 400
+    assert missing_authority.json()["error_code"] == "missing_mixed_source_package_construction_fields"
+    assert set(missing_authority.json()["blocked_fields"]) == {"material_preview_hash", "contract_hash"}
+
+    legacy = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={**commit_payload, "analysis_plan_id": "legacy-plan"},
+    )
+    assert legacy.status_code == 400
+    assert legacy.json()["error_code"] == "mixed_source_package_construction_scope_not_admitted"
+    assert legacy.json()["blocked_fields"] == ["analysis_plan_id"]
 
 
 def test_layer3_api_mixed_source_package_review_preview_rejects_stale_authority(
@@ -33157,10 +33335,17 @@ def test_layer3_api_package_construction_commit_blocks_unadmitted_package_family
         )
         assert blocked.status_code == 409
         body = blocked.json()
-        assert body["error_code"] == "package_construction_commit_family_not_admitted"
-        assert body["blocked_fields"] == ["package_family"]
-        assert body["next_allowed_actions"] == ["inspect_package_family_policy"]
-        assert package_family in body["message"]
+        if package_family == "mixed_dataset_document":
+            assert body["error_code"] == "mixed_source_package_construction_requires_material_authority"
+            assert body["blocked_fields"] == ["material_preview_id", "material_preview_hash", "contract_hash"]
+            assert body["next_allowed_actions"] == [
+                "submit_mixed_source_material_authority_package_construction_request"
+            ]
+        else:
+            assert body["error_code"] == "package_construction_commit_family_not_admitted"
+            assert body["blocked_fields"] == ["package_family"]
+            assert body["next_allowed_actions"] == ["inspect_package_family_policy"]
+            assert package_family in body["message"]
 
     db = client.layer3_session_factory()
     try:

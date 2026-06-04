@@ -413,7 +413,7 @@ def package_review_preview_summary(
         else policy.preview_downstream_unavailable
     )
     preview_available = bool(approved and policy.preview_admitted and not mixed_selected_pass_review)
-    package_commit_enabled = bool(approved and policy.commit_admitted)
+    package_commit_enabled = bool(approved and policy.commit_admitted and not mixed_selected_pass_review)
     readiness_reason = (
         "candidate family is eligible for bounded qualitative APS package construction commit"
         if qualitative_aps
