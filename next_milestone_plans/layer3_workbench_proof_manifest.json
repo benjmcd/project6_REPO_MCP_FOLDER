@@ -45141,5 +45141,80 @@
     ],
     "next_posture": "mixed_source_handoff_export_prepare_runtime_after_freeze_merge_and_current_main_sync"
   },
-  "latest_p17_mixed_source_handoff_export_prepare_freeze_proof_summary": "P17 proof records a docs-only mixed-source handoff/export prepare freeze. It defines future material-authority prepare inputs, reference-only envelope semantics, idempotency, fail-closed cases, and non-goals while keeping runtime prepare, APS handoff, external export/download, connector dispatch, provider URLs, schema/parser/source-shape/payload-rewrite/package-mutation behavior, and production readiness blocked."
+  "latest_p17_mixed_source_handoff_export_prepare_freeze_proof_summary": "P17 proof records a docs-only mixed-source handoff/export prepare freeze. It defines future material-authority prepare inputs, reference-only envelope semantics, idempotency, fail-closed cases, and non-goals while keeping runtime prepare, APS handoff, external export/download, connector dispatch, provider URLs, schema/parser/source-shape/payload-rewrite/package-mutation behavior, and production readiness blocked.",
+  "p17_mixed_source_handoff_export_prepare_runtime_proof": {
+    "proof_kind": "p17_mixed_source_handoff_export_prepare_runtime_proof",
+    "milestone": "p17_mixed_source_handoff_export_prepare_runtime",
+    "status": "branch_local_runtime_implemented",
+    "base_main_commit": "83a16914ef57f6eba139e8cd097531cb3660e752",
+    "runtime_doc": "next_milestone_plans/multi-ingest/37-p17-runtime-closeout.md",
+    "freeze_doc": "next_milestone_plans/multi-ingest/36-p17-mixed-handoff-freeze.md",
+    "proof_terms": "P17 proof records branch-local mixed-source handoff/export prepare runtime over approved P16 submit authority. It admits one reference-only prepare state and keeps APS handoff, external export/download, connector dispatch, provider URLs, schema, parser, source-shape, payload rewrite, package mutation, and production readiness blocked.",
+    "prepare_schema_id": "layer3.mixed_source_handoff_export_prepare.v1",
+    "handoff_export_envelope_schema_id": "layer3.mixed_source_handoff_export_envelope.v1",
+    "authority_basis": [
+      "P17 handoff/export prepare freeze",
+      "P16 mixed-source package-review submit runtime",
+      "P15 mixed-source package construction commit runtime",
+      "P14 mixed-source package review preview",
+      "committed Gate B material decision",
+      "P12 mixed-source package contract",
+      "P13 package-family policy registry",
+      "P13A route-level gates"
+    ],
+    "positive_runtime_effects": [
+      "material-authority request shape admitted for mixed-source handoff/export prepare",
+      "server-side P14 preview and contract authority recomputed before prepare",
+      "P15 reconciliation and package rows reloaded before prepare",
+      "P16 approved submit state required before prepare",
+      "one prepare state recorded in existing reconciliation/session JSON",
+      "reference-only envelope ref emitted with public mixed package refs"
+    ],
+    "negative_authority_flags": {
+      "aps_handoff_enabled": false,
+      "external_export_enabled": false,
+      "connector_dispatch_enabled": false,
+      "provider_url_enabled": false,
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "package_reconstruction_enabled": false,
+      "package_mutation_enabled": false,
+      "legacy_bridge_deprecated": false,
+      "excluded_tool_included": false,
+      "production_readiness_claimed": false
+    },
+    "handoff_target": "mixed_source_review_package",
+    "export_mode": "reference_envelope_only",
+    "operator_decisions": [
+      "authorize_prepare",
+      "hold",
+      "decline",
+      "blocked"
+    ],
+    "proof_coverage": [
+      "prepare records reference envelope from approved P16 submit authority",
+      "same client_request_id replays recorded prepare result",
+      "different client_request_id after prepare fails closed",
+      "stale construction basis fails closed",
+      "selected-pass fields on mixed request fail closed",
+      "unsupported handoff target fails closed",
+      "decision notes are required for non-authorization decisions",
+      "provider/public URL request fields fail closed",
+      "session summary reports mixed prepare readiness and recorded state",
+      "APS handoff dispatch remains blocked for mixed-source prepare state",
+      "OpenAPI request contract exposes selected-pass and mixed material-authority oneOf branches"
+    ],
+    "verification": [
+      "py_compile touched API/service/test files passed",
+      "mixed-source handoff/export prepare and affected API contract slice passed: 4 passed, 293 deselected, 4 warnings",
+      "mixed-source/package-submit/handoff Layer 3 API slice passed: 31 passed, 260 deselected, 3 warnings",
+      "full Layer 3 API suite passed: 291 passed, 4 warnings",
+      "package-family/package-contract/workbench-state/submit-response/workbench focused suite passed: 71 passed, 2 warnings",
+      "manifest JSON syntax and governance validators passed"
+    ],
+    "next_posture": "merge_and_current_main_sync_then_freeze_next_mixed_source_downstream_surface"
+  },
+  "latest_p17_mixed_source_handoff_export_prepare_runtime_proof_summary": "P17 runtime proof is branch-local implemented. It records material-authority mixed-source handoff/export prepare over approved P16 submit state, verifies reference-only public refs, idempotency, stale-authority rejection, cross-shape rejection, policy admission, and downstream APS/export/provider/connector blocking, while keeping schema/parser/source-shape/payload-rewrite/package-mutation/production-readiness behavior blocked."
 }
