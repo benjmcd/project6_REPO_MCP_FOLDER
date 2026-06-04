@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from functools import partial
 import json
 import os
 from pathlib import Path
@@ -37,6 +38,11 @@ DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-canonical-statement-organ
 TARGET = "sec_xbrl_canonical_statement_organization_validate_only_v1"
 NEXT_SLICE = "sec_xbrl_sector_conditioned_canonical_families_deferred_design_v1"
 _RAW_RESOLVED_FACT_ID_RE = re.compile(r"\b(?:rf|fact)[-_][A-Za-z0-9]")
+
+_redaction_scan_payload = partial(
+    diagnostic_resolved_fact_redaction_scan_payload,
+    raw_resolved_fact_id_pattern=_RAW_RESOLVED_FACT_ID_RE,
+)
 
 
 REFERENCE_TAXONOMY_RESULTS = (
@@ -477,13 +483,6 @@ def _public_concept_set(records: Sequence[Mapping[str, Any]]) -> list[dict[str, 
             seen.add(marker)
             public_records.append(public)
     return public_records
-
-
-def _redaction_scan_payload(payload: Any) -> dict[str, bool]:
-    return diagnostic_resolved_fact_redaction_scan_payload(
-        payload,
-        raw_resolved_fact_id_pattern=_RAW_RESOLVED_FACT_ID_RE,
-    )
 
 
 def _resolve_path(path: str) -> Path:
