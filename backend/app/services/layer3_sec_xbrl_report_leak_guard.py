@@ -5,6 +5,7 @@ import re
 from collections.abc import Callable
 from collections.abc import Iterable
 from collections.abc import Mapping
+from collections.abc import Sequence
 from typing import Any
 
 from app.services.layer3_sec_xbrl_canonical_concepts import report_redaction_scan_payload
@@ -216,10 +217,36 @@ def report_scan_text(value: Any) -> str:
     try:
         return json.dumps(value, sort_keys=True, default=str)
     except (TypeError, ValueError):
+        value = _stringify_mapping_keys(value)
         try:
-            return json.dumps(value, default=str)
+            return json.dumps(value, sort_keys=True, default=str)
         except (TypeError, ValueError):
+            pass
+    try:
+        return json.dumps(value, default=str)
+    except (TypeError, ValueError):
+        try:
             return str(value)
+        except (TypeError, ValueError):
+            return ""
+
+
+def _stringify_mapping_keys(value: Any, seen: set[int] | None = None) -> Any:
+    seen = seen or set()
+    value_id = id(value)
+    if value_id in seen:
+        return str(value)
+    if isinstance(value, Mapping):
+        seen.add(value_id)
+        output = {str(key): _stringify_mapping_keys(item, seen) for key, item in value.items()}
+        seen.remove(value_id)
+        return output
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        seen.add(value_id)
+        output = [_stringify_mapping_keys(item, seen) for item in value]
+        seen.remove(value_id)
+        return output
+    return value
 
 
 def _scan_text(value: Any) -> str:
