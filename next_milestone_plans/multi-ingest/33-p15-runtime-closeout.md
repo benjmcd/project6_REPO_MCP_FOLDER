@@ -1,6 +1,6 @@
 # P15 Mixed-Source Package Construction Runtime Closeout
 
-Status: branch-local runtime implementation pending PR merge.
+Status: current-main merged runtime implementation.
 
 ## Scope
 
@@ -58,7 +58,7 @@ filesystem paths.
 
 ## Verification
 
-Focused branch-local checks:
+Focused implementation and post-merge checks:
 
 - `python -B -m py_compile` for touched API/service/test files.
 - `python -B -m pytest .\backend\tests\test_layer3_package_family_policy.py .\backend\tests\test_layer3_package_review_contract.py .\backend\tests\test_layer3_workbench_package_state.py -q`
