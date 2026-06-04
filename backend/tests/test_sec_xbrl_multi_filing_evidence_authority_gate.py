@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from decimal import Decimal
 
 from app.services import layer3_sec_xbrl_multi_filing_evidence_authority_gate as gate
 
@@ -139,6 +140,25 @@ def test_multi_filing_response_leak_guard_allows_period_dates_but_rejects_access
 
     try:
         gate._reject_response_leaks({"accession_ref": "0000000000-00-000000"})
+    except ValueError as exc:
+        assert str(exc) == "SEC XBRL multi-filing evidence authority gate leaked raw authority references."
+    else:
+        raise AssertionError("expected multi-filing response leak rejection")
+
+
+def test_multi_filing_response_leak_guard_preserves_scan_for_mixed_key_payloads() -> None:
+    gate._reject_response_leaks({1: "metadata", "payload": {"amount": Decimal("1.23")}})
+
+    try:
+        gate._reject_response_leaks(
+            {
+                1: "metadata",
+                "payload": {
+                    "accession_ref": "0000000000-00-000000",
+                    "amount": Decimal("1.23"),
+                },
+            }
+        )
     except ValueError as exc:
         assert str(exc) == "SEC XBRL multi-filing evidence authority gate leaked raw authority references."
     else:

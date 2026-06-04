@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import json
 import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
 from app.services.layer3_sec_xbrl_public_authority_guard import public_text_reference_detected
 from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_public_text_references
+from app.services.layer3_sec_xbrl_report_leak_guard import report_scan_text
 from app.services.layer3_utils import stable_hash
 
 
@@ -323,7 +323,7 @@ def _raw_or_local_reference_found(value: Any) -> bool:
 
 
 def _reject_response_leaks(value: Any) -> None:
-    text = json.dumps(value, sort_keys=True)
+    text = report_scan_text(value)
     reject_report_public_text_references(
         text,
         exception_factory=lambda: ValueError(
