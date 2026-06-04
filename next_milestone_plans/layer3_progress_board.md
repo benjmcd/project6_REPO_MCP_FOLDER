@@ -1,5 +1,38 @@
 # Layer3 Progress Board
 
+## P17A Mixed-Source Rendered Handoff Status Freeze
+
+Milestone:
+`p17a_mixed_source_rendered_handoff_status_freeze`.
+
+Planning doc:
+`next_milestone_plans/multi-ingest/38-p17a-rendered-status-freeze.md`.
+
+Status: branch-local planning/control freeze only; no runtime behavior
+admitted.
+
+Scope: freezes the next rendered/operator path after current-main P17. Future
+implementation may make `/review/layer3` submit the already-live P17
+material-authority prepare request only from server-owned mixed-source session
+summary authority. It must not use selected-pass `result_review_record_ref`
+fallbacks, selected-pass `internal_export_envelope`/`prepare_only` defaults,
+browser-authored package authority, local paths, or request-supplied package
+payloads.
+
+Non-goals: no backend API route change, no P17 API contract change, no
+package-family policy change, no schema/model/migration, no parser behavior, no
+source-shape expansion, no package construction/submit/prepare backend behavior
+change, no APS handoff, no external export/download, no connector/provider/local
+outbox/network behavior, no package payload rewrite, and no production-readiness
+behavior.
+
+Verification: docs/control validation only: manifest JSON, authority-index,
+target-selection frozen, progress check, and `git diff --check`.
+
+Next posture: after this freeze lands and current-main syncs, implement only the
+rendered material-authority handoff/export prepare status/control path before
+selecting any APS handoff or external export/download tranche.
+
 ## P17 Mixed-Source Handoff Export Prepare Runtime
 
 Milestone:
