@@ -2824,6 +2824,9 @@ class Layer3HandoffExportPrepareRequest(BaseModel):
     pass_run_id: str | None = None
     preview_id: str | None = None
     preview_hash: str | None = None
+    material_preview_id: str | None = None
+    material_preview_hash: str | None = None
+    contract_hash: str | None = None
     result_review_record_ref: str | None = None
     package_review_preview_hash: str | None = None
     construction_basis_hash: str | None = None
@@ -2846,6 +2849,14 @@ class Layer3HandoffExportPrepareRequest(BaseModel):
     external_export: Any | None = None
     external_target: Any | None = None
     download: Any | None = None
+    download_url: Any | None = None
+    provider_public_url: Any | None = None
+    provider_url: Any | None = None
+    public_url: Any | None = None
+    signed_url: Any | None = None
+    destination: Any | None = None
+    connector_dispatch: Any | None = None
+    connector_ref: Any | None = None
     connector_run_id: Any | None = None
     runtime_db_write: Any | None = None
     analysis_artifact: Any | None = None
@@ -10123,6 +10134,11 @@ class Layer3HandoffExportPrepareResponse(Layer3BaseResponse):
     analysis_run_id: str | None
     result_review_record_ref: str
     package_review_preview_hash: str
+    material_preview_id: str | None = None
+    material_preview_hash: str | None = None
+    contract_hash: str | None = None
+    package_family: str | None = None
+    negative_authority_flags: dict[str, Any] | None = None
     construction_basis_hash: str | None = None
     reconciliation_record_id: str
     output_package_ids: list[str]
@@ -10152,6 +10168,7 @@ class Layer3HandoffExportPrepareResponse(Layer3BaseResponse):
     handoff_export_state: str
     handoff_target: str
     export_mode: str
+    handoff_export_envelope_ref: str | None = None
     external_handoff_enabled: bool
     external_export_enabled: bool
     dispatch_enabled: bool
@@ -13082,25 +13099,84 @@ PACKAGE_REPLACEMENT_ACTIVATION_COMMIT_REQUEST_SCHEMA: dict[str, Any] = {
 HANDOFF_EXPORT_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
-    "description": "decision_notes are required by runtime for hold, decline, and blocked decisions.",
+    "description": (
+        "Handoff/export prepare accepts exactly one authority shape: selected-pass lifecycle authority "
+        "or mixed-source material authority. decision_notes are required by runtime for hold, decline, "
+        "and blocked decisions."
+    ),
     "required": [
         "client_request_id",
         "session_id",
-        "analysis_plan_id",
-        "pass_run_id",
-        "preview_id",
-        "preview_hash",
-        "result_review_record_ref",
         "package_review_preview_hash",
         "reconciliation_record_id",
         "output_package_ids",
         "payload_hashes",
         "package_review_submit_record_ref",
         "package_review_state",
-        "package_review_submit_schema_id",
         "handoff_target",
         "export_mode",
         "operator_decision",
+    ],
+    "oneOf": [
+        {
+            "required": [
+                "client_request_id",
+                "session_id",
+                "analysis_plan_id",
+                "pass_run_id",
+                "preview_id",
+                "preview_hash",
+                "result_review_record_ref",
+                "package_review_preview_hash",
+                "reconciliation_record_id",
+                "output_package_ids",
+                "payload_hashes",
+                "package_review_submit_record_ref",
+                "package_review_state",
+                "package_review_submit_schema_id",
+                "handoff_target",
+                "export_mode",
+                "operator_decision",
+            ],
+            "not": {
+                "anyOf": [
+                    {"required": ["material_preview_id"]},
+                    {"required": ["material_preview_hash"]},
+                    {"required": ["contract_hash"]},
+                ]
+            },
+        },
+        {
+            "required": [
+                "client_request_id",
+                "session_id",
+                "material_preview_id",
+                "material_preview_hash",
+                "package_review_preview_hash",
+                "contract_hash",
+                "construction_basis_hash",
+                "reconciliation_record_id",
+                "output_package_ids",
+                "payload_hashes",
+                "package_review_submit_record_ref",
+                "package_review_state",
+                "handoff_target",
+                "export_mode",
+                "operator_decision",
+            ],
+            "not": {
+                "anyOf": [
+                    {"required": ["analysis_plan_id"]},
+                    {"required": ["pass_run_id"]},
+                    {"required": ["preview_id"]},
+                    {"required": ["preview_hash"]},
+                    {"required": ["result_review_record_ref"]},
+                    {"required": ["analysis_run_id"]},
+                    {"required": ["payload_refs"]},
+                    {"required": ["package_review_submit_schema_id"]},
+                ]
+            },
+        },
     ],
     "properties": {
         "client_request_id": {"type": "string"},
@@ -13109,6 +13185,9 @@ HANDOFF_EXPORT_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
         "pass_run_id": {"type": "string"},
         "preview_id": {"type": "string"},
         "preview_hash": {"type": "string"},
+        "material_preview_id": {"type": "string"},
+        "material_preview_hash": {"type": "string"},
+        "contract_hash": {"type": "string"},
         "result_review_record_ref": {"type": "string"},
         "package_review_preview_hash": {"type": "string"},
         "construction_basis_hash": {"type": "string"},
@@ -13123,8 +13202,8 @@ HANDOFF_EXPORT_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
         "package_review_submit_record_ref": {"type": "string"},
         "package_review_state": {"type": "string", "enum": ["package_review_approved"]},
         "package_review_submit_schema_id": {"type": "string"},
-        "handoff_target": {"type": "string", "enum": ["internal_export_envelope"]},
-        "export_mode": {"type": "string", "enum": ["prepare_only"]},
+        "handoff_target": {"type": "string", "enum": ["internal_export_envelope", "mixed_source_review_package"]},
+        "export_mode": {"type": "string", "enum": ["prepare_only", "reference_envelope_only"]},
         "operator_decision": {"type": "string", "enum": ["authorize_prepare", "hold", "decline", "blocked"]},
         "decision_notes": {"type": "string"},
         "analysis_run_id": {"type": "string"},
@@ -13138,6 +13217,14 @@ HANDOFF_EXPORT_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
         "external_export": _forbidden_request_field_schema(),
         "external_target": _forbidden_request_field_schema(),
         "download": _forbidden_request_field_schema(),
+        "download_url": _forbidden_request_field_schema(),
+        "provider_public_url": _forbidden_request_field_schema(),
+        "provider_url": _forbidden_request_field_schema(),
+        "public_url": _forbidden_request_field_schema(),
+        "signed_url": _forbidden_request_field_schema(),
+        "destination": _forbidden_request_field_schema(),
+        "connector_dispatch": _forbidden_request_field_schema(),
+        "connector_ref": _forbidden_request_field_schema(),
         "connector_run_id": _forbidden_request_field_schema(),
         "runtime_db_write": _forbidden_request_field_schema(),
         "analysis_artifact": _forbidden_request_field_schema(),

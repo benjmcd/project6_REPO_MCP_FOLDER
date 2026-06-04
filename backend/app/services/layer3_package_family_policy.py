@@ -103,6 +103,13 @@ MIXED_DATASET_DOCUMENT_SUBMIT_DOWNSTREAM = (
     "connector_dispatch",
     "provider_public_url",
 )
+MIXED_DATASET_DOCUMENT_HANDOFF_DOWNSTREAM = (
+    "aps_handoff",
+    "external_export",
+    "external_export_download",
+    "connector_dispatch",
+    "provider_public_url",
+)
 
 
 @dataclass(frozen=True)
@@ -265,16 +272,17 @@ PACKAGE_FAMILY_POLICIES: dict[str, PackageFamilyPolicy] = {
         preview_admitted=True,
         commit_admitted=True,
         submit_admitted=True,
-        handoff_admitted=False,
+        handoff_admitted=True,
         candidate_package_kinds=PACKAGE_REVIEW_CANDIDATE_KINDS,
         preview_downstream_unavailable=MIXED_DATASET_DOCUMENT_PREVIEW_DOWNSTREAM,
         construction_downstream_unavailable=MIXED_DATASET_DOCUMENT_SUBMIT_DOWNSTREAM,
         submit_downstream_unavailable=MIXED_DATASET_DOCUMENT_SUBMIT_DOWNSTREAM,
-        handoff_downstream_unavailable=MIXED_DATASET_DOCUMENT_BLOCKED_DOWNSTREAM,
-        admission_boundary="mixed_package_review_submit_runtime_admitted",
+        handoff_downstream_unavailable=MIXED_DATASET_DOCUMENT_HANDOFF_DOWNSTREAM,
+        admission_boundary="mixed_handoff_export_prepare_runtime_admitted",
         reason=(
             "Mixed-source material authority admits package-review preview and "
-            "construction commit plus package-review submit; handoff and export remain blocked."
+            "construction commit, package-review submit, and reference-only handoff/export prepare; "
+            "APS handoff, external export/download, connector dispatch, and provider URL behavior remain blocked."
         ),
     ),
 }

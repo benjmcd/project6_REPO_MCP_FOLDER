@@ -11,6 +11,14 @@ HANDOFF_EXPORT_PREPARE_FORBIDDEN_FIELDS = frozenset(
         "external_export",
         "external_target",
         "download",
+        "download_url",
+        "provider_public_url",
+        "provider_url",
+        "public_url",
+        "signed_url",
+        "destination",
+        "connector_dispatch",
+        "connector_ref",
         "connector_run_id",
         "runtime_db_write",
         "analysis_artifact",
@@ -50,6 +58,9 @@ HANDOFF_EXPORT_PREPARE_ALLOWED_FIELDS = frozenset(
         "pass_run_id",
         "preview_id",
         "preview_hash",
+        "material_preview_id",
+        "material_preview_hash",
+        "contract_hash",
         "result_review_record_ref",
         "package_review_preview_hash",
         "construction_basis_hash",
@@ -66,6 +77,27 @@ HANDOFF_EXPORT_PREPARE_ALLOWED_FIELDS = frozenset(
         "client_request_id",
         "decision_notes",
         "analysis_run_id",
+        "expected_package_kinds",
+    }
+)
+MIXED_SOURCE_HANDOFF_EXPORT_PREPARE_ALLOWED_FIELDS = frozenset(
+    {
+        "client_request_id",
+        "session_id",
+        "material_preview_id",
+        "material_preview_hash",
+        "package_review_preview_hash",
+        "contract_hash",
+        "construction_basis_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "handoff_target",
+        "export_mode",
+        "operator_decision",
+        "decision_notes",
         "expected_package_kinds",
     }
 )
@@ -139,6 +171,12 @@ APS_HANDOFF_DISPATCH_ALLOWED_FIELDS = frozenset(
 
 def handoff_export_prepare_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
     unknown = sorted(key for key in payload if key not in HANDOFF_EXPORT_PREPARE_ALLOWED_FIELDS)
+    forbidden = sorted(key for key in HANDOFF_EXPORT_PREPARE_FORBIDDEN_FIELDS if key in payload)
+    return sorted(set(unknown) | set(forbidden))
+
+
+def mixed_source_handoff_export_prepare_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
+    unknown = sorted(key for key in payload if key not in MIXED_SOURCE_HANDOFF_EXPORT_PREPARE_ALLOWED_FIELDS)
     forbidden = sorted(key for key in HANDOFF_EXPORT_PREPARE_FORBIDDEN_FIELDS if key in payload)
     return sorted(set(unknown) | set(forbidden))
 
