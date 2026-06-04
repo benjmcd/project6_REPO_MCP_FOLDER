@@ -4,11 +4,16 @@ from typing import Any, Iterable
 
 from app.models.models import L3OutputPackage, L3ReconciliationRecord
 from app.services.layer3_package_entry import (
-    PACKAGE_KIND_CANONICAL_INTERNAL,
-    PACKAGE_KIND_REVIEW_FACING,
-    PACKAGE_KIND_USER_FACING,
     SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
     SOURCE_WORKBENCH_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE,
+)
+from app.services.layer3_package_family_policy import (
+    PACKAGE_FAMILY_ASSOCIATED_COHORT,
+    PACKAGE_FAMILY_DATASET_VERSION,
+    PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+    PACKAGE_FAMILY_QUALITATIVE_APS_DOCUMENT,
+    PACKAGE_FAMILY_SOURCE_INTAKE_QUALITATIVE,
+    package_family_policy,
 )
 from app.services.layer3_pass_entry import (
     COHORT_REQUESTED_METHOD_SOURCE,
@@ -22,42 +27,23 @@ from app.services.layer3_utils import json_clone, stable_id
 
 PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID = "layer3.package_review_preview_state.v1"
 PACKAGE_REVIEW_PREVIEW_READY_STATE = "package_review_preview_ready"
-PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
-    "package_review_submit",
-    "handoff",
-    "export",
-)
-COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
-    "package_review_submit",
-    "handoff",
-    "export",
-    "aps_handoff",
-    "external_export_download",
-    "connector",
-)
-QUAL_APS_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
-    "package_review_submit",
-    "handoff",
-    "export",
-    "aps_handoff",
-    "external_export_download",
-    "connector_dispatch",
-    "provider_public_url",
-)
-SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
-    "package_review_submit",
-    "handoff",
-    "export",
-    "aps_handoff",
-    "external_export_download",
-    "connector_dispatch",
-    "provider_public_url",
-)
-QUAL_APS_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = QUAL_APS_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
+PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = package_family_policy(
+    PACKAGE_FAMILY_DATASET_VERSION
+).preview_downstream_unavailable
+COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = package_family_policy(
+    PACKAGE_FAMILY_ASSOCIATED_COHORT
+).preview_downstream_unavailable
+QUAL_APS_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = package_family_policy(
+    PACKAGE_FAMILY_QUALITATIVE_APS_DOCUMENT
+).preview_downstream_unavailable
+SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = package_family_policy(
+    PACKAGE_FAMILY_SOURCE_INTAKE_QUALITATIVE
+).preview_downstream_unavailable
+QUAL_APS_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = package_family_policy(
+    PACKAGE_FAMILY_QUALITATIVE_APS_DOCUMENT
+).preview_downstream_unavailable
 PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS = (
-    PACKAGE_KIND_CANONICAL_INTERNAL,
-    PACKAGE_KIND_USER_FACING,
-    PACKAGE_KIND_REVIEW_FACING,
+    *package_family_policy(PACKAGE_FAMILY_DATASET_VERSION).candidate_package_kinds,
 )
 PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID = "layer3.package_review_submit_state.v1"
 PACKAGE_REVIEW_APPROVED_STATE = "package_review_approved"
@@ -87,31 +73,21 @@ PACKAGE_REVIEW_SUBMIT_PROVENANCE_AUTHORITY_FIELDS = (
     "source_shape",
     "source_dataset_version_ids",
 )
-PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = ("handoff", "export")
-COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = (
-    "handoff",
-    "export",
-    "aps_handoff",
-    "external_export_download",
-    "connector",
-)
-QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = (
-    "handoff",
-    "export",
-    "aps_handoff",
-    "external_export_download",
-    "connector_dispatch",
-    "provider_public_url",
-)
-SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = (
-    "handoff",
-    "export",
-    "aps_handoff",
-    "external_export_download",
-    "connector_dispatch",
-    "provider_public_url",
-)
-HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE = ("aps_handoff", "external_export", "downstream_dispatch")
+PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = package_family_policy(
+    PACKAGE_FAMILY_DATASET_VERSION
+).submit_downstream_unavailable
+COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = package_family_policy(
+    PACKAGE_FAMILY_ASSOCIATED_COHORT
+).submit_downstream_unavailable
+QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = package_family_policy(
+    PACKAGE_FAMILY_QUALITATIVE_APS_DOCUMENT
+).submit_downstream_unavailable
+SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = package_family_policy(
+    PACKAGE_FAMILY_SOURCE_INTAKE_QUALITATIVE
+).submit_downstream_unavailable
+HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE = package_family_policy(
+    PACKAGE_FAMILY_DATASET_VERSION
+).handoff_downstream_unavailable
 HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID = "layer3.handoff_export_prepare_state.v1"
 APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID = "layer3.aps_handoff_dispatch_state.v1"
 EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID = "layer3.external_export_download_prepare_state.v1"
@@ -188,6 +164,27 @@ def review_state_is_admitted_associated_cohort(review_state: dict[str, Any] | No
         and review_state.get("requested_method_name") == "descriptive_summary"
         and review_state.get("requested_method_source") == COHORT_REQUESTED_METHOD_SOURCE
     )
+
+
+def package_family_for_review_state(review_state: dict[str, Any] | None) -> str:
+    if not isinstance(review_state, dict):
+        return PACKAGE_FAMILY_DATASET_VERSION
+    explicit_family = str(review_state.get("package_family") or "").strip()
+    if explicit_family:
+        return explicit_family
+    if str(review_state.get("engine_family") or "").strip() == PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT:
+        return PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT
+    if review_state_is_admitted_associated_cohort(review_state):
+        return PACKAGE_FAMILY_ASSOCIATED_COHORT
+    if review_state.get("engine_family") == "qualitative_aps_document":
+        return PACKAGE_FAMILY_QUALITATIVE_APS_DOCUMENT
+    if (
+        review_state.get("engine_family") == "source_intake_qualitative_preview"
+        or review_state.get("pass_scope") == "qualitative_single_item_operator_uploaded_source"
+        or bool(str(review_state.get("source_intake_record_id") or "").strip())
+    ):
+        return PACKAGE_FAMILY_SOURCE_INTAKE_QUALITATIVE
+    return PACKAGE_FAMILY_DATASET_VERSION
 
 
 def package_source_shape(
@@ -341,21 +338,34 @@ def package_review_submit_downstream_unavailable(
     source_intake_submit: bool = False,
 ) -> tuple[str, ...]:
     if source_intake_submit:
-        return SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+        return package_family_policy(
+            PACKAGE_FAMILY_SOURCE_INTAKE_QUALITATIVE
+        ).submit_downstream_unavailable
     if associated_cohort_submit:
-        return COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+        return package_family_policy(
+            PACKAGE_FAMILY_ASSOCIATED_COHORT
+        ).submit_downstream_unavailable
     if qualitative_aps_submit:
-        return QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+        return package_family_policy(
+            PACKAGE_FAMILY_QUALITATIVE_APS_DOCUMENT
+        ).submit_downstream_unavailable
     if package_review_state == PACKAGE_REVIEW_APPROVED_STATE:
-        return HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE
-    return PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+        return package_family_policy(
+            PACKAGE_FAMILY_DATASET_VERSION
+        ).handoff_downstream_unavailable
+    return package_family_policy(
+        PACKAGE_FAMILY_DATASET_VERSION
+    ).submit_downstream_unavailable
 
 
 def package_review_candidate_projection(
     *,
     package_commit_enabled: bool = True,
     readiness_reason: str | None = None,
+    package_family: str = PACKAGE_FAMILY_DATASET_VERSION,
 ) -> list[dict[str, Any]]:
+    policy = package_family_policy(package_family)
+    package_commit_enabled = bool(package_commit_enabled and policy.commit_admitted)
     if readiness_reason is None:
         readiness_reason = (
             "candidate family is eligible for bounded package construction commit"
@@ -371,7 +381,7 @@ def package_review_candidate_projection(
             "handoff_enabled": False,
             "readiness_reason": readiness_reason,
         }
-        for package_kind in PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS
+        for package_kind in policy.candidate_package_kinds
     ]
 
 
@@ -386,29 +396,18 @@ def package_review_preview_summary(
         and review_state.get("operator_decision") == "approved"
         and int(review_state.get("unresolved_trace_count") or 0) == 0
     )
-    associated_cohort = bool(review_state_is_admitted_associated_cohort(review_state))
+    package_family = package_family_for_review_state(review_state)
+    policy = package_family_policy(package_family)
+    associated_cohort = package_family == PACKAGE_FAMILY_ASSOCIATED_COHORT
     qualitative_aps = bool(
-        isinstance(review_state, dict)
-        and review_state.get("engine_family") == "qualitative_aps_document"
+        package_family == PACKAGE_FAMILY_QUALITATIVE_APS_DOCUMENT
     )
     source_intake = bool(
-        isinstance(review_state, dict)
-        and (
-            review_state.get("engine_family") == "source_intake_qualitative_preview"
-            or review_state.get("pass_scope") == "qualitative_single_item_operator_uploaded_source"
-            or bool(str(review_state.get("source_intake_record_id") or "").strip())
-        )
+        package_family == PACKAGE_FAMILY_SOURCE_INTAKE_QUALITATIVE
     )
-    downstream_unavailable = (
-        COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
-        if associated_cohort
-        else QUAL_APS_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
-        if qualitative_aps
-        else SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
-        if source_intake
-        else PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
-    )
-    package_commit_enabled = bool(approved)
+    downstream_unavailable = policy.preview_downstream_unavailable
+    preview_available = bool(approved and policy.preview_admitted)
+    package_commit_enabled = bool(approved and policy.commit_admitted)
     readiness_reason = (
         "candidate family is eligible for bounded qualitative APS package construction commit"
         if qualitative_aps
@@ -418,12 +417,12 @@ def package_review_preview_summary(
     )
     return {
         "schema_id": PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID,
-        "available": approved,
-        "state": PACKAGE_REVIEW_PREVIEW_READY_STATE if approved else None,
+        "available": preview_available,
+        "state": PACKAGE_REVIEW_PREVIEW_READY_STATE if preview_available else None,
         "result_review_state": review_state.get("review_state") if isinstance(review_state, dict) else None,
         "result_review_record_ref": review_state.get("review_record_ref") if isinstance(review_state, dict) else None,
         "requires_preview_endpoint_validation": True,
-        "package_review_preview_enabled": approved,
+        "package_review_preview_enabled": preview_available,
         "package_commit_enabled": package_commit_enabled,
         "package_review_enabled": False,
         "handoff_enabled": False,
@@ -431,8 +430,9 @@ def package_review_preview_summary(
             package_review_candidate_projection(
                 package_commit_enabled=package_commit_enabled,
                 readiness_reason=readiness_reason,
+                package_family=package_family,
             )
-            if approved
+            if preview_available
             else []
         ),
         "pass_type": review_state.get("pass_type") if isinstance(review_state, dict) else None,
