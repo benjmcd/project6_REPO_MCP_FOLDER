@@ -295,6 +295,7 @@ from app.services.layer3_workbench_package_state import (
     external_export_download_prepare_from_reconciliation as _external_export_download_prepare_from_reconciliation,
     handoff_export_prepare_from_reconciliation as _handoff_export_prepare_from_reconciliation,
     legacy_package_review_submit_record_ref as _legacy_package_review_submit_record_ref,
+    package_family_for_review_state as _package_family_for_review_state,
     package_owner_compatibility as _package_owner_compatibility,
     package_review_candidate_projection,
     package_review_preview_hash as _package_review_preview_hash,
@@ -310,6 +311,13 @@ from app.services.layer3_workbench_package_state import (
     review_source_packages as _review_source_packages,
     review_state_is_admitted_associated_cohort,
     unexpected_package_kinds as package_state_unexpected_package_kinds,
+)
+from app.services.layer3_package_family_policy import (
+    PACKAGE_FAMILY_ACTION_COMMIT,
+    PACKAGE_FAMILY_ACTION_HANDOFF,
+    PACKAGE_FAMILY_ACTION_PREVIEW,
+    PACKAGE_FAMILY_ACTION_SUBMIT,
+    package_family_policy as _package_family_policy,
 )
 from app.services.layer3_state_action_contract import build_state_action_contract
 from app.services.layer3_state_model_contract import build_workbench_state_model
@@ -5355,6 +5363,27 @@ def _unexpected_package_kinds(
     )
 
 
+def _require_package_family_action_admitted(
+    review_state: dict[str, Any],
+    *,
+    action: str,
+    error_code: str,
+    action_label: str,
+) -> None:
+    package_family = _package_family_for_review_state(review_state)
+    policy = _package_family_policy(package_family)
+    if policy.action_admitted(action):
+        return
+    raise Layer3WorkbenchError(
+        error_code,
+        f"Package family '{policy.package_family}' is not admitted for {action_label}.",
+        status="blocked",
+        http_status=409,
+        blocked_fields=["package_family"],
+        next_allowed_actions=["inspect_package_family_policy"],
+    )
+
+
 def _active_package_downstream_unavailable(
     *,
     package_construction_state: dict[str, Any],
@@ -6005,6 +6034,12 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             blocked_fields=["result_review_record_ref"],
         )
+    _require_package_family_action_admitted(
+        review_state,
+        action=PACKAGE_FAMILY_ACTION_PREVIEW,
+        error_code="package_review_preview_family_not_admitted",
+        action_label="package-review preview",
+    )
 
     reconciliation_count = (
         db.query(L3ReconciliationRecord)
@@ -6511,6 +6546,12 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             http_status=409,
             blocked_fields=["result_review_record_ref"],
         )
+    _require_package_family_action_admitted(
+        review_state,
+        action=PACKAGE_FAMILY_ACTION_COMMIT,
+        error_code="package_construction_commit_family_not_admitted",
+        action_label="package construction commit",
+    )
 
     qualitative_basis: dict[str, Any] | None = None
     if source_intake_commit:
@@ -7069,6 +7110,12 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             http_status=409,
             blocked_fields=["result_review_record_ref"],
         )
+    _require_package_family_action_admitted(
+        review_state,
+        action=PACKAGE_FAMILY_ACTION_SUBMIT,
+        error_code="package_review_submit_family_not_admitted",
+        action_label="package-review submit",
+    )
 
     if source_intake_submit:
         expected_package_preview_hash = _source_intake_package_review_preview_hash(
@@ -7845,6 +7892,12 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             blocked_fields=["result_review_record_ref"],
         )
+    _require_package_family_action_admitted(
+        review_state,
+        action=PACKAGE_FAMILY_ACTION_HANDOFF,
+        error_code="handoff_export_prepare_family_not_admitted",
+        action_label="handoff/export preparation",
+    )
 
     analysis_run_id = str(status_body.get("analysis_run_id") or "") or None
     if source_intake_prepare:
