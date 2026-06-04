@@ -306,6 +306,32 @@ def reject_raw_or_local_authority_with_blocked_keys(
         )
 
 
+def reject_value_reveal_raw_or_local_authority(
+    value: Any,
+    *,
+    error_type: type[Exception],
+    raw_authority_code: str,
+    raw_authority_message: str,
+    raw_reference_code: str,
+    raw_reference_message: str,
+    blocked_raw_value_keys: set[str] | frozenset[str],
+    blocked_raw_authority_keys: set[str] | frozenset[str],
+) -> None:
+    reject_raw_or_local_authority_with_blocked_keys(
+        value,
+        error_type=error_type,
+        raw_authority_code=raw_authority_code,
+        raw_authority_message=raw_authority_message,
+        raw_reference_code=raw_reference_code,
+        raw_reference_message=raw_reference_message,
+        blocked_raw_value_keys=blocked_raw_value_keys,
+        blocked_raw_authority_keys=blocked_raw_authority_keys,
+        scan_cik=True,
+        scan_contextual_cik=True,
+        scan_operator_contact=True,
+    )
+
+
 def reject_public_text_references(
     value: Any,
     *,
