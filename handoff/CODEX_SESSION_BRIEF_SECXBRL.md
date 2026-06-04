@@ -1,9 +1,6 @@
-# Codex Session Brief — SEC XBRL Track
+# SEC XBRL Track — Session Brief (2026-06-04)
 
-**Date:** 2026-06-04  
-**Branch scope:** Start from a clean worktree off `project6-origin/main` (currently at `a2775067`, PR #2173).  
-**Authority file:** `AGENTS.md` governs all work. Read it before starting.  
-**This brief:** Provides context, current state, and a prioritized work queue for the SEC XBRL track.
+Start from a clean worktree off `project6-origin/main` (`a2775067`, PR #2173). Read `AGENTS.md` first.
 
 ---
 
@@ -160,12 +157,3 @@ python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json > 
 # Clean diff
 git diff --check
 ```
-
----
-
-## Reference
-
-- Planning doc authority: `next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md`
-- Merge gate policy: `next_milestone_plans/Layer3_planning_docs/SEC-XBRL-MERGE-GATE-VERIFIER-POLICY.md`
-- Progress board: `next_milestone_plans/layer3_progress_board.md`
-- AGENTS.md (canonical harness entry)

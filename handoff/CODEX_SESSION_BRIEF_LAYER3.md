@@ -1,9 +1,6 @@
-# Codex Session Brief — Layer 3 Workbench Track
+# Layer 3 Workbench Track — Session Brief (2026-06-04)
 
-**Date:** 2026-06-04  
-**Branch scope:** Start from a clean worktree off `project6-origin/main` (currently at `a2775067`, PR #2173).  
-**Authority file:** `AGENTS.md` governs all work. Read it before starting.  
-**This brief:** Provides context, current state, and a prioritized work queue for the Layer 3 workbench track.
+Start from a clean worktree off `project6-origin/main` (`a2775067`, PR #2173). Read `AGENTS.md` first.
 
 ---
 
@@ -29,7 +26,7 @@ Before doing any work, read the following in order:
 
 ### SEC XBRL Work That Followed (out of scope for this session)
 
-After PR #1544, the Codex sessions spent May 31–June 3 on SEC XBRL consolidation (PRs #2128–#2173). That work is tracked separately in docs 1344–1349 and is owned by the SEC XBRL session. **Do not touch those files.**
+After PR #1544, the SEC XBRL consolidation series ran through PRs #2128–#2173 (docs 1344–1349). That work is tracked separately and is owned by the SEC XBRL track session. **Do not touch those files.**
 
 ### Current Exact Next Posture (from doc 929)
 
@@ -116,29 +113,19 @@ Reference: `next_milestone_plans/Layer3_planning_docs/917_FULL_MOCKUP_ACTIVATION
 
 ## Progress Manifest Refresh
 
-**Note:** The progress manifest (`next_milestone_plans/layer3_progress_manifest.json`) has
-`snapshot_date: 2026-05-06` which predates doc 929 (merged before June 2). The manifest
-needs updating to include docs 867–929 history.
-
-**How to update:**
-- Read the planning docs from 868 to 929 in order
-- Add notes entries for each merged doc (pattern: match existing notes style)
-- Update `snapshot_date` to `2026-06-04`
-- Update `snapshot_base_main_commit` to `a2775067`
-- Run `python tools/l3-progress-check.py` after
-
-**This is optional for the first PR** — do it as a separate clean PR after doc 930 merges.
+The progress manifest (`next_milestone_plans/layer3_progress_manifest.json`) has
+`snapshot_date: 2026-05-06`, predating doc 929. After doc 930 merges, run a separate
+manifest-refresh PR: read docs 868–929 in order, add notes entries matching existing
+style, update `snapshot_date` and `snapshot_base_main_commit` to `a2775067`, verify
+with `python tools/l3-progress-check.py`.
 
 ---
 
 ## Auth/Security Note
 
-Doc 200 (`200_AUTH_SECURITY_ENTRY_CONTRACT.md`) currently has `entry_decision: deferred` and
-`selected_mode: null`. A Claude sprint doc has been added:
-`next_milestone_plans/Layer3_planning_docs/200_AUTH_SECURITY_ENTRY_CONTRACT.md` (read the
-stop conditions there before making any auth decisions).
-
-**Do not implement auth until the mode selection is explicitly authorized in a follow-up freeze.**
+Doc 200 (`200_AUTH_SECURITY_ENTRY_CONTRACT.md`) has `entry_decision: deferred`,
+`selected_mode: null`. Read its stop conditions before any auth work. Do not implement
+auth until a follow-up freeze explicitly authorizes a mode.
 
 ---
 
@@ -198,15 +185,3 @@ python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json > 
 # Clean diff
 git diff --check
 ```
-
----
-
-## Reference
-
-- Last synced doc: `next_milestone_plans/Layer3_planning_docs/929_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE_CURRENT_MAIN_SYNC.md`
-- Gap freeze: `next_milestone_plans/Layer3_planning_docs/928_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE.md`
-- Full mockup blockers: `next_milestone_plans/Layer3_planning_docs/917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md`
-- Progress manifest: `next_milestone_plans/layer3_progress_manifest.json`
-- Auth scoping: `next_milestone_plans/Layer3_planning_docs/200_AUTH_SECURITY_ENTRY_CONTRACT.md`
-- AGENTS.md (canonical harness entry)
-- Agent harness: `docs/agent-harness.md`
