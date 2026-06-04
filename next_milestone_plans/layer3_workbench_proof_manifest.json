@@ -44331,7 +44331,7 @@
     "activation_lane_authorized": false,
     "production_readiness_claimed": false,
     "remaining_work": [
-      "continue only behavior-preserving diagnostic/report helper rollout in byte-stable batches",
+      "keep completed criterion/blocking-reason/report-envelope framework surfaces byte-stable while future service-family-specific guard/redaction slices proceed",
       "separate exact diagnostic redaction wrappers from custom runtime/public error-surface guards",
       "keep activation lane parked until explicitly authorized"
     ],
@@ -44420,7 +44420,7 @@
     ]
   },
   "sec_xbrl_predecessor_default_on_reconciliation_proof": {
-    "status": "sec_xbrl_predecessor_default_on_reconciliation_ready_for_review",
+    "status": "sec_xbrl_predecessor_default_on_reconciliation_merged_superseded",
     "milestone": "sec_xbrl_predecessor_default_on_reconciliation_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1334-default-on-reconcile.md",
     "authority_docs": [
