@@ -66,6 +66,10 @@ preserving service-local exception classes, error codes, messages, and details:
 Future work here should not replace the wrappers blindly. Their value is the
 service-local public error contract. Only small follow-ups that reduce repeated
 wrapper construction without changing those contracts are acceptable.
+Projection and statement-packet persistence now opt into exact/contextual CIK
+raw-reference detection through the shared guard; operator review workflow keeps
+its broader CIK scan. The wrappers remain service-local so their exception
+classes, error codes, messages, and details stay stable.
 
 A separate exact adapter seam in these same service families is now extracted:
 `_reject_unadmitted_keys` delegates to the shared `unadmitted_keys` predicate

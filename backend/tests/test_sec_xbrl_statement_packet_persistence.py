@@ -361,6 +361,33 @@ def test_statement_packet_persistence_rejects_local_ref_client_request_id(db_ses
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
 
 
+def test_statement_packet_persistence_rejects_cik_public_refs(db_session) -> None:
+    raw_references = ("0000123456", "issuer 0000123456 packet", "CIK0000123456")
+    for index, raw_reference in enumerate(raw_references):
+        projection = _persisted_projection(db_session)
+        packet = _packet()
+        packet["statement_organization_authority"] = raw_reference
+
+        with pytest.raises(packet_persistence.SecXbrlStatementPacketPersistenceError) as exc:
+            packet_persistence.materialize_redacted_statement_packet(
+                db_session,
+                client_request_id=f"packet-cik-ref-{index}",
+                sec_xbrl_projection_set_id=projection["sec_xbrl_projection_set_id"],
+                packet=packet,
+            )
+
+        assert exc.value.code == "sec_xbrl_statement_packet_persistence_raw_reference_not_admitted"
+        assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
+        assert db_session.query(L3SecXbrlStatementPacketRow).count() == 0
+
+
+def test_statement_packet_persistence_preserves_digit_bearing_request_id(db_session) -> None:
+    response = _materialize(db_session, request_id="packet-request-1000000000")
+
+    assert response["status"] == "materialized"
+    assert db_session.query(L3SecXbrlStatementPacketSet).count() == 1
+
+
 def test_statement_packet_persistence_rejects_residual_magnitudes(db_session) -> None:
     projection = _persisted_projection(db_session)
     packet = _packet()
