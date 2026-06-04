@@ -6,16 +6,16 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "f80030e6a8a338a2c24024bd2c056eb52edcb5c9",
-    "verified_at_utc": "2026-06-04T12:55:50Z",
-    "verification_summary": "Live main includes PR #2182 P13A current-main planning status plus later SEC XBRL CIK guard hardening commits. This branch records P14 read-only mixed-source package review preview as pending-merge branch authority while keeping mixed-source construction, submit, handoff, export, parser, schema, source-shape, payload rewrite, legacy bridge, and excluded-tool behavior blocked.",
+    "commit": "e6b34c55c06bff1ac467ce03f9e627e44083f432",
+    "verified_at_utc": "2026-06-04T13:28:11Z",
+    "verification_summary": "Live main includes PR #2185 P14 read-only mixed-source package review preview plus PR #2186 OpenAPI request-shape exclusivity repair. P14 is current-main authority for read-only mixed preview while mixed-source construction, submit, handoff, export, parser, schema, source-shape, payload rewrite, legacy bridge, and excluded-tool behavior remain blocked.",
     "commands": [
       "git fetch project6-origin main --prune",
       "python -B -m json.tool .\\next_milestone_plans\\authority-index.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
-      "python -B -m py_compile .\\backend\\app\\api\\layer3.py .\\backend\\app\\services\\layer3_workbench.py .\\backend\\app\\services\\layer3_package_review_contract.py .\\backend\\app\\services\\layer3_package_family_policy.py .\\backend\\app\\services\\layer3_workbench_package_state.py .\\backend\\tests\\test_layer3_api.py .\\backend\\tests\\test_layer3_package_family_policy.py .\\backend\\tests\\test_layer3_workbench.py",
-      "python -B -m pytest .\\backend\\tests\\test_layer3_package_family_policy.py .\\backend\\tests\\test_layer3_workbench_package_state.py .\\backend\\tests\\test_layer3_package_review_contract.py .\\backend\\tests\\test_layer3_package_submit_response.py .\\backend\\tests\\test_layer3_workbench.py -q",
+      "python -B -m py_compile .\\backend\\app\\api\\layer3.py .\\backend\\tests\\test_layer3_api.py",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_package_openapi_contracts -q",
       "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"mixed_source_package or package_review_preview or gate_b\"",
       "python -B .\\tools\\l3-progress-check.py",
       "python -B .\\tools\\l3-target-selection-validate.py --expect frozen",
@@ -67,7 +67,7 @@
       "lane_id": "multi_ingest_mixed_package",
       "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
       "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
-      "current_state": "mixed_source_package_review_preview_read_only_branch_implemented_commit_submit_handoff_export_blocked",
+      "current_state": "mixed_source_package_review_preview_read_only_current_main_implemented_commit_submit_handoff_export_blocked",
       "source_of_truth": [
         {
           "path": "next_milestone_plans/multi-ingest/README.md",
@@ -91,7 +91,7 @@
           "authority": "read-only mixed-source package review preview runtime boundary",
           "freshness": "current_closeout",
           "required_terms": [
-            "Status: implemented in this branch as a read-only mixed-source package review preview runtime, pending merge.",
+            "Status: current-main implemented read-only mixed-source package review preview runtime.",
             "layer3.mixed_source_package_review_preview.v1",
             "mixed_source_package_review_preview_requires_material_authority",
             "No mixed-source package construction commit.",

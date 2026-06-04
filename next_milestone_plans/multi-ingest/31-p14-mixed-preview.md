@@ -1,6 +1,6 @@
 # P14 Mixed-Source Package Review Preview
 
-Status: implemented in this branch as a read-only mixed-source package review preview runtime, pending merge.
+Status: current-main implemented read-only mixed-source package review preview runtime. PR #2185 landed the runtime and planning/proof packet; PR #2186 repaired the package-review preview OpenAPI request-shape contract so selected-pass and material-preview requests are mutually exclusive, including partial cross-shape fields.
 
 ## Scope
 
