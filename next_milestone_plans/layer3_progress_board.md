@@ -11582,3 +11582,31 @@ contract test with `1 passed, 3 warnings`, the broader API keyword slice with
 Next posture: decide the first mixed-source package construction commit
 boundary from the P14 preview hash only if deterministic package payload
 semantics and downstream blocking remain explicit.
+
+## P15 Mixed-Source Package Construction Commit Freeze
+
+Milestone: `p15_mixed_source_package_construction_commit_freeze`.
+
+Planning doc:
+`next_milestone_plans/multi-ingest/32-p15-mixed-construction-freeze.md`.
+
+Status: branch-local planning/control freeze only; no runtime behavior admitted.
+
+Scope: freezes the next mixed-source package construction commit boundary from
+P14 preview authority. Future construction must derive from `session_id`,
+`client_request_id`, `material_preview_id`, `material_preview_hash`,
+`package_review_preview_hash`, and `contract_hash`, then recompute all source
+IDs, source manifest, narrative-table links, contract hash, and preview hash
+from committed Gate B material authority.
+
+Non-goals: no package-family policy flip, no mixed-source construction runtime,
+no submit, no handoff/export, no schema/model/migration, no parser behavior,
+no source-shape expansion, no request-supplied package payloads, no legacy CSV
+bridge deprecation, and no Onlook behavior.
+
+Verification target: docs/manifests only. Required checks are manifest JSON
+syntax, Layer 3 authority-index validation, target-selection frozen validation,
+progress check, and `git diff --check`.
+
+Next posture: after this freeze lands and is current-main synced, implement the
+first mixed-source package construction commit runtime under this boundary.
