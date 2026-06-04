@@ -6,6 +6,7 @@ from decimal import Decimal
 import pytest
 
 from app.services.layer3_sec_xbrl_report_leak_guard import (
+    diagnostic_authority_redaction_scan_payload,
     diagnostic_resolved_fact_redaction_scan_payload,
     diagnostic_sector_family_redaction_scan_payload,
     raw_value_key_found,
@@ -61,6 +62,22 @@ def test_report_leak_flags_preserves_raw_key_scan_for_mixed_key_payloads() -> No
     flags = report_leak_flags({1: "meta", "raw_value": Decimal("123.45")}, include_raw_value_keys=True)
 
     assert flags["raw_value_key_found"] is True
+
+
+def test_diagnostic_authority_redaction_scan_payload_preserves_mixed_key_scan_semantics() -> None:
+    scan = diagnostic_authority_redaction_scan_payload(
+        {
+            1: "metadata",
+            "effective_value": Decimal("123.45"),
+            "resolved_fact_id": "rf-authority",
+            "issuer_name": "Example Corp",
+        }
+    )
+
+    assert scan["passed"] is False
+    assert scan["raw_value_key_found"] is True
+    assert scan["raw_resolved_fact_authority_key_found"] is True
+    assert scan["raw_issuer_identity_found"] is True
 
 
 def test_report_text_leak_flags_preserves_text_scan_semantics() -> None:
