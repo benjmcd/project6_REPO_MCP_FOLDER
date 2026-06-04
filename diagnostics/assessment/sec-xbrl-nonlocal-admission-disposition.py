@@ -486,7 +486,7 @@ def _route_and_backfill_evidence_summary(sources: Mapping[str, str], *, root: Pa
             "readiness_reconciliation_doc": _file_hash(root / RECONCILIATION_DOC),
         },
         "source_hash_basis": {
-            "api_route_evidence": "required API route/binding token counts, not full backend/app/api/layer3.py",
+                "api_route_evidence": "required API route/binding evidence lines and enclosing scopes, not full backend/app/api/layer3.py",
         },
         "historical_backfill_performed_by_gate": False,
     }
@@ -689,15 +689,42 @@ def _hash(value: Any) -> bool:
 
 
 def _all_tokens(text: str, tokens: tuple[str, ...]) -> bool:
-    return all(token in text for token in tokens)
+    evidence = _required_token_evidence(text, tokens)
+    return all(evidence[token] for token in tokens)
 
 
 def _stable_hash(value: Any) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
+def _required_token_evidence(text: str, tokens: tuple[str, ...]) -> dict[str, list[dict[str, str]]]:
+    lines = text.splitlines()
+    evidence: dict[str, list[dict[str, str]]] = {token: [] for token in tokens}
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        for token in tokens:
+            if token in line:
+                evidence[token].append(
+                    {
+                        "scope": _enclosing_python_scope(lines, index),
+                        "line": stripped,
+                    }
+                )
+    return evidence
+
+
+def _enclosing_python_scope(lines: list[str], index: int) -> str:
+    for scope_index in range(index, -1, -1):
+        stripped = lines[scope_index].strip()
+        if stripped.startswith("def ") or stripped.startswith("async def "):
+            return stripped
+    return "<module>"
+
+
 def _required_token_hash(text: str, tokens: tuple[str, ...]) -> str:
-    return _stable_hash({token: text.count(token) for token in tokens})
+    return _stable_hash(_required_token_evidence(text, tokens))
 
 
 def _file_hash(path: Path) -> str:

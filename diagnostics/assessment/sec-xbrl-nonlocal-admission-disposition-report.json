@@ -49,10 +49,10 @@
           "route_enforcement_doc": "next_milestone_plans/Layer3_planning_docs/1326-auth-owner-binding-route-enforcement.md"
         },
         "source_hash_basis": {
-          "api_route_evidence": "required API route/binding token counts, not full backend/app/api/layer3.py"
+          "api_route_evidence": "required API route/binding evidence lines and enclosing scopes, not full backend/app/api/layer3.py"
         },
         "source_hashes": {
-          "api_route_evidence": "e78988fb03dece121ea8e74a4eb448ba070ba1aa17692dbfbe0f624b221a3af2",
+          "api_route_evidence": "b538dfa05d9f786acf1222c9fe7b01ad30d3c218cd36245933af6d452040cf5f",
           "auth_binding_service": "69cb7a01d38fae1cdc2fb9e83ad9422f4407eb83a0ee9fd79baf31bf9a99f41d",
           "readiness_reconciliation_doc": "f1a4fa9613d581b53fd3fdea439abbf5f68b55852e65e54d118801d7b2d8a53f",
           "route_enforcement_doc": "cb07c179520e1d4f141afe3474eb07bd202cdfdccd97de7e1b6e4a99c9cfcb51"
@@ -443,10 +443,10 @@
       "route_enforcement_doc": "next_milestone_plans/Layer3_planning_docs/1326-auth-owner-binding-route-enforcement.md"
     },
     "source_hash_basis": {
-      "api_route_evidence": "required API route/binding token counts, not full backend/app/api/layer3.py"
+      "api_route_evidence": "required API route/binding evidence lines and enclosing scopes, not full backend/app/api/layer3.py"
     },
     "source_hashes": {
-      "api_route_evidence": "e78988fb03dece121ea8e74a4eb448ba070ba1aa17692dbfbe0f624b221a3af2",
+      "api_route_evidence": "b538dfa05d9f786acf1222c9fe7b01ad30d3c218cd36245933af6d452040cf5f",
       "auth_binding_service": "69cb7a01d38fae1cdc2fb9e83ad9422f4407eb83a0ee9fd79baf31bf9a99f41d",
       "readiness_reconciliation_doc": "f1a4fa9613d581b53fd3fdea439abbf5f68b55852e65e54d118801d7b2d8a53f",
       "route_enforcement_doc": "cb07c179520e1d4f141afe3474eb07bd202cdfdccd97de7e1b6e4a99c9cfcb51"
