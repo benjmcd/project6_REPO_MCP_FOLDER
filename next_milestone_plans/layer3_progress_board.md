@@ -1,5 +1,37 @@
 # Layer3 Progress Board
 
+## SEC XBRL Unadmitted-Key Adapter Consolidation
+
+Milestone:
+`sec_xbrl_unadmitted_key_adapter_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md`.
+
+Status: branch-local behavior-preserving service-adapter consolidation on
+`codex/secxbrl-unadmitted-key-adapter`.
+
+Scope: extracts the exact `_reject_unadmitted_keys` service adapter into
+`layer3_sec_xbrl_public_authority_guard.reject_unadmitted_keys` and migrates
+projection persistence, statement-packet persistence, and operator-review
+workflow to call it while preserving service-local exception classes, error
+codes, messages, and `details.fields` shape.
+
+Containment: no schema, `models.py`, Alembic migration, backend API/UI,
+diagnostic report, proof JSON, source acquisition, Arelle subprocess
+invocation, live SEC network access, runtime-default change, value-reveal
+behavior change, production-readiness behavior, or activation-lane
+authorization is admitted.
+
+Verification: focused public-authority/persistence/operator-review suites pass
+with `128 passed, 4 warnings`; full SEC XBRL suite passes with `476 passed, 3
+warnings`; progress, target-selection, authority-index, and `git diff --check`
+gates pass.
+
+Next posture: continue service-family-specific guard/redaction migrations only
+after exact semantics are proven; do not bulk-migrate custom runtime/public
+error-surface wrappers.
+
 ## SEC XBRL Exact Diagnostic Redaction Wrapper Cleanup
 
 Milestone:
