@@ -24624,6 +24624,7 @@ function setGateControls() {
         && !State.externalExportDownloadDeliveryPending
     );
     const sourceDirectoryHandoffExportControlsEnabled = isSourceDirectoryQualitativePackageAuthoritySelected();
+    const mixedSourceHandoffExportControlsEnabled = Boolean(mixedSourceHandoffExportPrepareAuthorityPacket());
     const handoffExportControlsEnabled = Boolean(
         (
             (
@@ -24631,6 +24632,7 @@ function setGateControls() {
                 && (packageReviewSubmitState()?.package_review_state || packageReviewSubmitState()?.state) === 'package_review_approved'
             )
             || sourceDirectoryHandoffExportControlsEnabled
+            || mixedSourceHandoffExportControlsEnabled
         )
         && !recordedHandoffExportPrepare()
         && !replacementPackageSetAuthorityBusy()
