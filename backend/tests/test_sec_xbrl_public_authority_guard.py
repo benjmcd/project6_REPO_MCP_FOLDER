@@ -6,6 +6,8 @@ from app.services.layer3_sec_xbrl_public_authority_guard import (
     blocked_authority_keys_violation,
     raw_or_local_authority_violation,
     raw_accession_reference_found,
+    reject_e2e_public_output_policy,
+    reject_e2e_public_text_references,
     reject_public_output_policy,
     reject_raw_or_local_authority_with_blocked_keys,
     reject_unadmitted_keys,
@@ -375,6 +377,104 @@ def test_reject_public_output_policy_can_opt_into_cik_text_references() -> None:
             assert exc.details == {"field": "value"}
         else:
             raise AssertionError("expected CIK raw-reference guard error")
+
+
+def test_reject_e2e_public_policy_adapters_preserve_family_scan_posture() -> None:
+    class GuardError(ValueError):
+        def __init__(self, code: str, message: str, *, details: dict[str, object] | None = None) -> None:
+            self.code = code
+            self.message = message
+            self.details = dict(details or {})
+
+    reject_e2e_public_output_policy(
+        {"public_text": "period 2025-12-31 is allowed offline"},
+        error_type=GuardError,
+        raw_output_code="offline_raw_output",
+        raw_output_message="offline raw output",
+        raw_reference_code="offline_raw_reference",
+        raw_reference_message="offline raw reference",
+        raw_output_keys={"issuer_name"},
+        scan_raw_period_dates=False,
+    )
+
+    try:
+        reject_e2e_public_output_policy(
+            {"period": "2025-12-31"},
+            error_type=GuardError,
+            raw_output_code="integration_raw_output",
+            raw_output_message="integration raw output",
+            raw_reference_code="integration_raw_reference",
+            raw_reference_message="integration raw reference",
+            raw_output_keys={"issuer_name"},
+        )
+    except GuardError as exc:
+        assert exc.code == "integration_raw_reference"
+        assert exc.message == "integration raw reference"
+        assert exc.details == {"field": "value"}
+    else:
+        raise AssertionError("expected e2e period-date raw-reference guard error")
+
+    try:
+        reject_e2e_public_output_policy(
+            {"identity_rollup": {"relative_magnitude": None}},
+            error_type=GuardError,
+            raw_output_code="integration_raw_output",
+            raw_output_message="integration raw output",
+            raw_reference_code="integration_raw_reference",
+            raw_reference_message="integration raw reference",
+            raw_output_keys={"issuer_name"},
+            residual_magnitude_keys={"relative_magnitude"},
+            residual_magnitude_message="integration residual magnitude",
+        )
+    except GuardError as exc:
+        assert exc.code == "integration_raw_output"
+        assert exc.message == "integration residual magnitude"
+        assert exc.details == {"field": "relative_magnitude"}
+    else:
+        raise AssertionError("expected e2e residual-magnitude guard error")
+
+    for raw_reference in ("0000123456", "issuer 0000123456 packet", "CIK0000123456"):
+        try:
+            reject_e2e_public_output_policy(
+                {"public_text": raw_reference},
+                error_type=GuardError,
+                raw_output_code="raw_output",
+                raw_output_message="raw output",
+                raw_reference_code="raw_reference",
+                raw_reference_message="raw reference",
+                raw_output_keys={"issuer_name"},
+            )
+        except GuardError as exc:
+            assert exc.code == "raw_reference"
+            assert exc.message == "raw reference"
+            assert exc.details == {"field": "value"}
+        else:
+            raise AssertionError("expected e2e CIK raw-reference guard error")
+
+    try:
+        reject_e2e_public_text_references(
+            "issuer 0000123456 packet",
+            error_type=GuardError,
+            raw_reference_code="text_raw_reference",
+            raw_reference_message="text raw reference",
+            field="receipt",
+            scan_raw_period_dates=False,
+        )
+    except GuardError as exc:
+        assert exc.code == "text_raw_reference"
+        assert exc.message == "text raw reference"
+        assert exc.details == {"field": "receipt"}
+    else:
+        raise AssertionError("expected e2e text CIK raw-reference guard error")
+
+    reject_e2e_public_text_references(
+        "period 2025-12-31 is allowed offline",
+        error_type=GuardError,
+        raw_reference_code="text_raw_reference",
+        raw_reference_message="text raw reference",
+        field="receipt",
+        scan_raw_period_dates=False,
+    )
 
 
 def test_unadmitted_keys_returns_sorted_public_key_inventory() -> None:
