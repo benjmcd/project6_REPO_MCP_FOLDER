@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from decimal import Decimal
 
 import pytest
 
@@ -43,6 +44,23 @@ def test_report_leak_flags_can_include_raw_value_keys() -> None:
     assert report_leak_flags({"value": "123"}, include_raw_value_keys=True)["raw_value_key_found"] is True
     assert report_leak_flags({"amount": "123"}, include_raw_value_keys=True)["raw_value_key_found"] is True
     assert report_leak_flags({"field": "value"}, include_raw_value_keys=True)["raw_value_key_found"] is False
+
+
+def test_report_leak_flags_preserves_scan_semantics_for_decimal_values() -> None:
+    flags = report_leak_flags({"raw_value": Decimal("123.45")}, include_raw_value_keys=True)
+
+    assert flags == {
+        "raw_accession_found": False,
+        "sec_url_found": False,
+        "local_path_found": False,
+        "raw_value_key_found": True,
+    }
+
+
+def test_report_leak_flags_preserves_raw_key_scan_for_mixed_key_payloads() -> None:
+    flags = report_leak_flags({1: "meta", "raw_value": Decimal("123.45")}, include_raw_value_keys=True)
+
+    assert flags["raw_value_key_found"] is True
 
 
 def test_report_text_leak_flags_preserves_text_scan_semantics() -> None:
@@ -94,6 +112,18 @@ def test_diagnostic_resolved_fact_redaction_scan_payload_supports_extra_patterns
     assert unsafe["raw_total_fact_counts_found"] is True
 
 
+def test_diagnostic_resolved_fact_redaction_scan_payload_handles_decimal_values() -> None:
+    scan = diagnostic_resolved_fact_redaction_scan_payload(
+        {"summary": {"total_fact_count": Decimal("3")}},
+        raw_resolved_fact_id_pattern=re.compile(r"\brf[-_][A-Za-z0-9]"),
+        extra_patterns={"raw_total_fact_counts_found": re.compile(r'"total_fact_count"')},
+    )
+
+    assert scan["passed"] is False
+    assert scan["raw_resolved_fact_ids_found"] is False
+    assert scan["raw_total_fact_counts_found"] is True
+
+
 def test_diagnostic_sector_family_redaction_scan_payload_preserves_custom_flags() -> None:
     safe = diagnostic_sector_family_redaction_scan_payload({"redacted": True})
     unsafe = diagnostic_sector_family_redaction_scan_payload(
@@ -115,6 +145,13 @@ def test_diagnostic_sector_family_redaction_scan_payload_preserves_custom_flags(
     assert unsafe["raw_issuer_identity_found"] is True
     assert unsafe["raw_value_found"] is True
     assert unsafe["raw_path_or_accession_found"] is True
+
+
+def test_diagnostic_sector_family_redaction_scan_payload_handles_decimal_values() -> None:
+    scan = diagnostic_sector_family_redaction_scan_payload({"safe": Decimal("1")})
+
+    assert scan["passed"] is True
+    assert scan["raw_value_found"] is False
 
 
 def test_reject_report_leaks_uses_service_exception_factory() -> None:
