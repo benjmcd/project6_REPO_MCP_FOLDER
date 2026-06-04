@@ -173,8 +173,7 @@ Milestone:
 Planning doc:
 `next_milestone_plans/Layer3_planning_docs/1348-sec-xbrl-public-authority-guard-auth-binding.md`.
 
-Status: branch-local auth-binding family consolidation on
-`codex/secxbrl-auth-binding-guard`.
+Status: merged as PR #2122 from `codex/secxbrl-auth-binding-guard`.
 
 Scope: extend the shared SEC XBRL public-authority guard with auth-binding-safe
 raw-reference variants, then migrate auth-binding receipt/reference checks to
@@ -191,8 +190,7 @@ scope for later tranches.
 Verification: focused auth-binding guard suites pass with `18 passed`; full SEC XBRL suite passes with `455 passed, 3 warnings`; target-selection frozen check, progress check, manifest JSON parse, and `git diff --check` pass.
 
 Next exact posture:
-finish auth-binding family verification, merge only if CI and review-thread
-authority are clean, then continue with a separate service-family tranche.
+continue with separate service-family tranches; auth-binding family consolidation is complete.
 
 ## SEC XBRL Public Authority Guard Value-Reveal Consolidation
 
@@ -202,8 +200,7 @@ Milestone:
 Planning doc:
 `next_milestone_plans/Layer3_planning_docs/1347-sec-xbrl-public-authority-guard-value-reveal.md`.
 
-Status: branch-local value-reveal family consolidation on
-`codex/secxbrl-authority-guard-tranche2`.
+Status: merged as PR #2121 from `codex/secxbrl-authority-guard-tranche2`.
 
 Scope: extend the shared SEC XBRL public-authority guard with
 behavior-preserving variant controls, then migrate value-reveal authority and
@@ -221,8 +218,7 @@ redaction-helper service variants stay out of scope for later tranches.
 Verification: focused value-reveal guard suites pass with `83 passed, 3 warnings`; full SEC XBRL suite passes with `454 passed, 3 warnings`; target-selection frozen check, progress check, manifest JSON parse, and `git diff --check` pass.
 
 Next exact posture:
-finish value-reveal family verification, merge only if CI and review-thread
-authority are clean, then continue with a separate service-family tranche.
+continue with separate service-family tranches; value-reveal family consolidation is complete.
 
 ## SEC XBRL Public Authority Guard Consolidation
 
@@ -232,8 +228,7 @@ Milestone:
 Planning doc:
 `next_milestone_plans/Layer3_planning_docs/1346-sec-xbrl-public-authority-guard.md`.
 
-Status: branch-local persistence-family consolidation on
-`codex/secxbrl-authority-guard`.
+Status: merged as PR #2120 from `codex/secxbrl-authority-guard`.
 
 Scope: extract the duplicated SEC XBRL raw/local public-authority scanner used
 by projection persistence and statement-packet persistence into
@@ -254,7 +249,7 @@ pass.
 
 Next exact posture:
 continue raw/local authority guard consolidation in smaller service-family
-tranches only after this persistence-family pilot is verified and merged.
+tranches; persistence-family pilot is complete.
 
 ## SEC XBRL Offline CompanyFacts Oracle Packet
 
