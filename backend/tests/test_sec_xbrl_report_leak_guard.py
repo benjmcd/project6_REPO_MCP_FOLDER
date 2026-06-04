@@ -72,6 +72,13 @@ def test_report_scan_text_preserves_mixed_key_decimal_payloads() -> None:
     assert '"amount": "123.45"' in text
 
 
+def test_report_scan_text_preserves_json_shape_after_non_json_keys() -> None:
+    text = report_scan_text({("tuple", "key"): "meta", "payload": {"raw_value": Decimal("123.45")}})
+
+    assert '"(' in text
+    assert '"raw_value": "123.45"' in text
+
+
 def test_diagnostic_authority_redaction_scan_payload_preserves_mixed_key_scan_semantics() -> None:
     scan = diagnostic_authority_redaction_scan_payload(
         {
