@@ -10898,6 +10898,25 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
     assert {
         "client_request_id",
         "session_id",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "operator_decision",
+    } == set(dispatch_request_schema["required"])
+    selected_dispatch_schema, mixed_dispatch_schema = dispatch_request_schema["oneOf"]
+    assert {
+        "client_request_id",
+        "session_id",
         "analysis_plan_id",
         "pass_run_id",
         "preview_id",
@@ -10919,7 +10938,34 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
         "aps_handoff_target",
         "dispatch_mode",
         "operator_decision",
-    } == set(dispatch_request_schema["required"])
+    } == set(selected_dispatch_schema["required"])
+    assert {
+        "client_request_id",
+        "session_id",
+        "material_preview_id",
+        "material_preview_hash",
+        "package_review_preview_hash",
+        "contract_hash",
+        "construction_basis_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "operator_decision",
+    } == set(mixed_dispatch_schema["required"])
+    assert {"required": ["material_preview_id"]} in selected_dispatch_schema["not"]["anyOf"]
+    assert {"required": ["construction_basis_hash"]} in selected_dispatch_schema["not"]["anyOf"]
+    assert {"required": ["analysis_plan_id"]} in mixed_dispatch_schema["not"]["anyOf"]
+    assert {"required": ["package_kinds"]} in mixed_dispatch_schema["not"]["anyOf"]
+    assert {"required": ["payload_refs"]} in mixed_dispatch_schema["not"]["anyOf"]
     for mixed_property in (
         "material_preview_id",
         "material_preview_hash",
@@ -33518,6 +33564,16 @@ def test_layer3_api_aps_handoff_dispatch_prechecks_fail_closed(
         response = client.post("/api/v1/layer3/handoff/aps/dispatch", json=payload)
         assert response.status_code == expected_status
         assert response.json()["error_code"] == expected_error
+
+    for blank_marker in ("", None):
+        cross_shape = client.post(
+            "/api/v1/layer3/handoff/aps/dispatch",
+            json={**base_payload, "material_preview_id": blank_marker},
+        )
+        assert cross_shape.status_code == 400
+        assert cross_shape.json()["error_code"] == "mixed_source_aps_handoff_dispatch_scope_not_admitted"
+        assert "analysis_plan_id" in cross_shape.json()["blocked_fields"]
+        assert "payload_refs" in cross_shape.json()["blocked_fields"]
 
     unknown_extra = client.post(
         "/api/v1/layer3/handoff/aps/dispatch",
