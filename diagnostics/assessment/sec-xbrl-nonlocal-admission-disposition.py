@@ -27,6 +27,12 @@ AUTH_BINDING_TEST = "backend/tests/test_sec_xbrl_auth_binding_receipt.py"
 OPERATOR_WORKFLOW_TEST = "backend/tests/test_sec_xbrl_operator_review_workflow.py"
 TARGET = "sec_xbrl_nonlocal_production_admission_or_historical_backfill_disposition_v1"
 REDACTION_POLICY_ID = "sec_xbrl_nonlocal_admission_disposition_redaction_v1"
+API_ROUTE_EVIDENCE_TOKENS = (
+    "_sec_xbrl_record_binding",
+    "sec_xbrl_auth_binding_atomic_commit_failed",
+    "source_auth_binding_ref",
+    "auth_binding_required",
+)
 PACKET_DIR_ADMISSION_FILENAME = "sec-xbrl-final-admission-packet.json"
 PACKET_DIR_BACKFILL_DISPOSITION_FILENAME = "sec-xbrl-backfill-disposition-packet.json"
 
@@ -445,12 +451,7 @@ def _route_and_backfill_evidence_summary(sources: Mapping[str, str], *, root: Pa
         ),
         "api_records_source_and_binding_atomically": _all_tokens(
             sources["api"],
-            (
-                "_sec_xbrl_record_binding",
-                "sec_xbrl_auth_binding_atomic_commit_failed",
-                "source_auth_binding_ref",
-                "auth_binding_required",
-            ),
+            API_ROUTE_EVIDENCE_TOKENS,
         ),
         "tests_prove_fail_closed_unbound_and_rollback": _all_tokens(
             tests,
@@ -480,9 +481,12 @@ def _route_and_backfill_evidence_summary(sources: Mapping[str, str], *, root: Pa
         },
         "source_hashes": {
             "auth_binding_service": _file_hash(root / AUTH_BINDING_SERVICE),
-            "api": _file_hash(root / API_FILE),
+            "api_route_evidence": _required_token_hash(sources["api"], API_ROUTE_EVIDENCE_TOKENS),
             "route_enforcement_doc": _file_hash(root / ROUTE_ENFORCEMENT_DOC),
             "readiness_reconciliation_doc": _file_hash(root / RECONCILIATION_DOC),
+        },
+        "source_hash_basis": {
+                "api_route_evidence": "required API route/binding evidence lines and enclosing scopes, not full backend/app/api/layer3.py",
         },
         "historical_backfill_performed_by_gate": False,
     }
@@ -685,11 +689,42 @@ def _hash(value: Any) -> bool:
 
 
 def _all_tokens(text: str, tokens: tuple[str, ...]) -> bool:
-    return all(token in text for token in tokens)
+    evidence = _required_token_evidence(text, tokens)
+    return all(evidence[token] for token in tokens)
 
 
 def _stable_hash(value: Any) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def _required_token_evidence(text: str, tokens: tuple[str, ...]) -> dict[str, list[dict[str, str]]]:
+    lines = text.splitlines()
+    evidence: dict[str, list[dict[str, str]]] = {token: [] for token in tokens}
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        for token in tokens:
+            if token in line:
+                evidence[token].append(
+                    {
+                        "scope": _enclosing_python_scope(lines, index),
+                        "line": stripped,
+                    }
+                )
+    return evidence
+
+
+def _enclosing_python_scope(lines: list[str], index: int) -> str:
+    for scope_index in range(index, -1, -1):
+        stripped = lines[scope_index].strip()
+        if stripped.startswith("def ") or stripped.startswith("async def "):
+            return stripped
+    return "<module>"
+
+
+def _required_token_hash(text: str, tokens: tuple[str, ...]) -> str:
+    return _stable_hash(_required_token_evidence(text, tokens))
 
 
 def _file_hash(path: Path) -> str:

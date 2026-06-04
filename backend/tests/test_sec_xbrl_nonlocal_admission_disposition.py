@@ -68,9 +68,68 @@ def test_nonlocal_admission_disposition_blocks_without_packets() -> None:
     ]
     assert report["readiness_gate_summary"]["admissible"] is True
     assert report["route_and_backfill_evidence_summary"]["admissible"] is True
+    source_hashes = report["route_and_backfill_evidence_summary"]["source_hashes"]
+    assert "api" not in source_hashes
+    assert "api_route_evidence" in source_hashes
+    assert report["route_and_backfill_evidence_summary"]["source_hash_basis"] == {
+        "api_route_evidence": "required API route/binding evidence lines and enclosing scopes, not full backend/app/api/layer3.py",
+    }
     assert report["final_admission_packet_summary"]["packet_present"] is False
     assert report["historical_backfill_disposition_summary"]["packet_present"] is False
     assert report["next_slice"] == "sec_xbrl_nonlocal_final_admission_packet_and_backfill_disposition_v1"
+
+
+def test_nonlocal_admission_api_route_evidence_hash_ignores_unrelated_api_text() -> None:
+    module = _gate_module()
+    api_text = "\n".join(
+        [
+            "async def sec_xbrl_expected_route():",
+            f"    {module.API_ROUTE_EVIDENCE_TOKENS[0]}()",
+            f"    raise RuntimeError('{module.API_ROUTE_EVIDENCE_TOKENS[1]}')",
+            f"    payload['{module.API_ROUTE_EVIDENCE_TOKENS[2]}'] = source_ref",
+            f"    payload['{module.API_ROUTE_EVIDENCE_TOKENS[3]}'] = True",
+        ]
+    )
+
+    base_hash = module._required_token_hash(api_text, module.API_ROUTE_EVIDENCE_TOKENS)
+
+    assert module._required_token_hash(
+        api_text + "\n# unrelated workbench route",
+        module.API_ROUTE_EVIDENCE_TOKENS,
+    ) == base_hash
+    assert module._required_token_hash(
+        api_text + f"\n# {module.API_ROUTE_EVIDENCE_TOKENS[0]}",
+        module.API_ROUTE_EVIDENCE_TOKENS,
+    ) == base_hash
+
+
+def test_nonlocal_admission_api_route_evidence_hash_tracks_matched_evidence() -> None:
+    module = _gate_module()
+    api_text = "\n".join(
+        [
+            "async def sec_xbrl_expected_route():",
+            f"    {module.API_ROUTE_EVIDENCE_TOKENS[0]}()",
+            f"    raise RuntimeError('{module.API_ROUTE_EVIDENCE_TOKENS[1]}')",
+            f"    payload['{module.API_ROUTE_EVIDENCE_TOKENS[2]}'] = source_ref",
+            f"    payload['{module.API_ROUTE_EVIDENCE_TOKENS[3]}'] = True",
+        ]
+    )
+    unrelated_route_text = api_text.replace(
+        "async def sec_xbrl_expected_route():",
+        "async def unrelated_workbench_route():",
+    )
+    comment_only_text = "\n".join(f"# {token}" for token in module.API_ROUTE_EVIDENCE_TOKENS)
+    base_hash = module._required_token_hash(api_text, module.API_ROUTE_EVIDENCE_TOKENS)
+
+    assert module._required_token_hash(
+        unrelated_route_text,
+        module.API_ROUTE_EVIDENCE_TOKENS,
+    ) != base_hash
+    assert module._required_token_hash(
+        comment_only_text,
+        module.API_ROUTE_EVIDENCE_TOKENS,
+    ) != base_hash
+    assert not module._all_tokens(comment_only_text, module.API_ROUTE_EVIDENCE_TOKENS)
 
 
 def test_nonlocal_admission_disposition_reports_operator_packet_contract() -> None:
