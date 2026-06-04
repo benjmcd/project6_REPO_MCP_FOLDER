@@ -11396,6 +11396,39 @@ package review submit, handoff, export, schema, migration, parser behavior,
 source-shape expansion, generic XML/HTML admission, archive-member
 orchestration, legacy CSV bridge deprecation, or Onlook work.
 
-Next posture: introduce a package-family policy registry and keep
-`mixed_dataset_document` blocked for commit, submit, and handoff until separate
-runtime passes prove the contract.
+Next posture: P13 satisfies the package-family policy registry prerequisite;
+keep `mixed_dataset_document` blocked for preview, commit, submit, handoff, and
+export until separate runtime passes prove the contract.
+
+## P13 Package-Family Policy Registry
+
+Milestone: `p13_package_family_policy_registry`.
+
+Planning doc:
+`next_milestone_plans/multi-ingest/29-p13-package-family-policy.md`.
+
+Status: branch-local no-behavior-change package-family policy registry on
+`codex/package-family-policy`.
+
+Scope: adds `backend/app/services/layer3_package_family_policy.py` and focused
+tests so `dataset_version`, `associated_cohort`,
+`qualitative_aps_document`, `source_intake_qualitative`, and
+`mixed_dataset_document` have explicit preview, commit, submit, and handoff
+policy answers. Existing package families keep their current candidate-kind and
+downstream-unavailable behavior; unknown package families fail closed.
+
+Containment: `mixed_dataset_document` remains blocked for package-review
+preview, package construction, package-review submit, handoff, export, APS
+handoff, external export/download, connector dispatch, provider-public URL
+behavior, parser behavior, schema/model/migration change, source-shape
+expansion, generic XML/HTML admission, archive-member orchestration, legacy CSV
+bridge deprecation, and Onlook work.
+
+Verification: package-family registry and package-state compile; focused
+package-family, package-state, and package-review contract tests passed with
+`39 passed, 2 warnings`.
+
+Next posture: implement read-only mixed-source package review preview only after
+proving P11 material-preview readiness, P12 contract authority, and P13 registry
+policy; keep mixed-source commit, submit, handoff, export, parser, schema,
+source-shape, and Onlook behavior blocked.

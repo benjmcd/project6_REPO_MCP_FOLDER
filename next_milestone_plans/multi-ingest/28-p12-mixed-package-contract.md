@@ -155,6 +155,6 @@ Each runtime pass must include focused tests for happy path, missing authority, 
 
 ## Residual Work
 
-The next implementation pass should create the package-family policy registry and prove that existing package families keep their current behavior while `mixed_dataset_document` remains explicitly blocked for commit, submit, and handoff until its own runtime pass.
+The package-family policy registry prerequisite is satisfied by `29-p13-package-family-policy.md`. Mixed-source package review preview, construction commit, package-review submit, handoff, and export remain separate future runtime passes; `mixed_dataset_document` remains explicitly blocked until those passes prove this contract.
 
 Legacy CSV bridge deprecation remains a separate decision and must not be coupled to mixed-source package semantics.

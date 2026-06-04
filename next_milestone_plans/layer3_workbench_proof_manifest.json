@@ -44513,5 +44513,45 @@
       "Focused mixed-source material-preview workbench/API tests pass."
     ]
   },
-  "latest_p12_mixed_source_package_contract_proof_summary": "P12 proof registers the governed mixed-source package contract as planning/proof authority only. Runtime package construction, review preview, submit, handoff, export, parser behavior, schema changes, source-shape expansion, legacy CSV bridge deprecation, and Onlook work remain not admitted."
+  "latest_p12_mixed_source_package_contract_proof_summary": "P12 proof registers the governed mixed-source package contract as planning/proof authority only. Runtime package construction, review preview, submit, handoff, export, parser behavior, schema changes, source-shape expansion, legacy CSV bridge deprecation, and Onlook work remain not admitted.",
+  "p13_package_family_policy_registry_proof": {
+    "proof_kind": "p13_package_family_policy_registry_proof",
+    "milestone": "p13_package_family_policy_registry",
+    "status": "branch_local_implemented_targeted_tests_passed",
+    "source_branch": "codex/package-family-policy",
+    "planning_doc": "next_milestone_plans/multi-ingest/29-p13-package-family-policy.md",
+    "predecessor_contract_doc": "next_milestone_plans/multi-ingest/28-p12-mixed-package-contract.md",
+    "owner_service": "backend/app/services/layer3_package_family_policy.py",
+    "wired_service": "backend/app/services/layer3_workbench_package_state.py",
+    "proof_terms": "No-behavior-change registry proof for package-family admission answers; mixed_dataset_document is registered but preview, commit, submit, handoff, and export remain blocked.",
+    "known_package_families": [
+      "dataset_version",
+      "associated_cohort",
+      "qualitative_aps_document",
+      "source_intake_qualitative",
+      "mixed_dataset_document"
+    ],
+    "mixed_dataset_document_runtime_admitted": false,
+    "unknown_package_family_fails_closed": true,
+    "runtime_behavior_changed_by_proof": false,
+    "package_construction_enabled_by_proof": false,
+    "package_review_preview_enabled_by_proof": false,
+    "package_review_submit_enabled_by_proof": false,
+    "handoff_enabled_by_proof": false,
+    "export_enabled_by_proof": false,
+    "schema_models_changed_by_proof": false,
+    "migration_changed_by_proof": false,
+    "parser_behavior_changed_by_proof": false,
+    "source_shape_expanded_by_proof": false,
+    "generic_xml_html_admitted_by_proof": false,
+    "archive_member_orchestration_admitted_by_proof": false,
+    "legacy_csv_bridge_deprecated_by_proof": false,
+    "onlook_included_by_proof": false,
+    "verification": [
+      "Package-family registry and package-state modules compile.",
+      "Focused package-family, package-state, and package-review contract tests pass.",
+      "Authority index JSON parses."
+    ]
+  },
+  "latest_p13_package_family_policy_registry_proof_summary": "P13 proof records a no-behavior-change package-family policy registry. Existing package families keep current policy answers, unknown families fail closed, and mixed_dataset_document remains blocked for runtime package review preview, commit, submit, handoff, export, parser, schema, source-shape, legacy CSV bridge, and Onlook behavior."
 }
