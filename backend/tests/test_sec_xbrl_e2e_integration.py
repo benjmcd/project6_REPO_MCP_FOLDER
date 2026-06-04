@@ -397,6 +397,30 @@ def test_e2e_output_guard_rejects_period_date_strings() -> None:
     assert exc.value.details == {"field": "value"}
 
 
+def test_e2e_output_guard_rejects_cik_public_refs() -> None:
+    for raw_reference in ("0000123456", "issuer 0000123456 packet", "CIK0000123456"):
+        with pytest.raises(integration.SecXbrlE2EIntegrationError) as exc:
+            integration._reject_output_raw_or_local_authority({"summary": {"public_ref": raw_reference}})
+
+        assert exc.value.code == "sec_xbrl_e2e_integration_raw_reference_not_admitted"
+        assert exc.value.message == (
+            "SEC XBRL end-to-end integration does not admit raw accession, SEC URL, period date, or local path strings."
+        )
+        assert exc.value.details == {"field": "value"}
+
+
+def test_e2e_text_guard_rejects_contextual_cik_refs() -> None:
+    with pytest.raises(integration.SecXbrlE2EIntegrationError) as exc:
+        integration._reject_public_text_patterns("issuer 0000123456 packet", field="receipt")
+
+    assert exc.value.code == "sec_xbrl_e2e_integration_raw_reference_not_admitted"
+    assert exc.value.details == {"field": "receipt"}
+
+
+def test_e2e_text_guard_avoids_broad_cik_substring_match() -> None:
+    integration._reject_public_text_patterns("batch 1000000000 archived", field="receipt")
+
+
 def test_e2e_adapter_fails_closed_without_resolved_fact_authority(db_session) -> None:
     private_projection = _private_projection(periods=1)
     private_projection["periods"][0]["projection"]["concepts"][0]["resolved_fact_id"] = None

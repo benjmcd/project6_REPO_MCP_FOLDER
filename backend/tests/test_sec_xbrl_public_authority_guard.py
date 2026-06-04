@@ -252,6 +252,46 @@ def test_reject_public_output_policy_preserves_e2e_policy_variants() -> None:
         raise AssertionError("expected raw-output guard error")
 
 
+def test_reject_public_output_policy_can_opt_into_cik_text_references() -> None:
+    class GuardError(ValueError):
+        def __init__(self, code: str, message: str, *, details: dict[str, object] | None = None) -> None:
+            self.code = code
+            self.message = message
+            self.details = dict(details or {})
+
+    reject_public_output_policy(
+        {"public_text": "batch 1000000000 archived"},
+        error_type=GuardError,
+        raw_output_code="raw_output",
+        raw_output_message="raw output",
+        raw_reference_code="raw_reference",
+        raw_reference_message="raw reference",
+        raw_output_keys={"issuer_name"},
+        scan_cik_fullmatch=True,
+        scan_contextual_cik=True,
+    )
+
+    for raw_reference in ("0000123456", "issuer 0000123456 packet", "CIK0000123456"):
+        try:
+            reject_public_output_policy(
+                {"public_text": raw_reference},
+                error_type=GuardError,
+                raw_output_code="raw_output",
+                raw_output_message="raw output",
+                raw_reference_code="raw_reference",
+                raw_reference_message="raw reference",
+                raw_output_keys={"issuer_name"},
+                scan_cik_fullmatch=True,
+                scan_contextual_cik=True,
+            )
+        except GuardError as exc:
+            assert exc.code == "raw_reference"
+            assert exc.message == "raw reference"
+            assert exc.details == {"field": "value"}
+        else:
+            raise AssertionError("expected CIK raw-reference guard error")
+
+
 def test_unadmitted_keys_returns_sorted_public_key_inventory() -> None:
     assert unadmitted_keys({"known": True, "zeta": True, "alpha": True}, admitted={"known"}) == [
         "alpha",

@@ -578,6 +578,8 @@ def _reject_public_raw_or_local_authority(value: Any) -> None:
         raw_reference_message="SEC XBRL offline orchestration public output cannot carry raw accession, SEC URL, or local path strings.",
         raw_output_keys=RAW_PUBLIC_KEYS,
         scan_raw_period_dates=False,
+        scan_cik_fullmatch=True,
+        scan_contextual_cik=True,
     )
 
 
@@ -589,4 +591,6 @@ def _reject_public_text_patterns(value: Any, *, field: str) -> None:
         raw_reference_message="SEC XBRL offline orchestration public output cannot carry raw accession, SEC URL, or local path strings.",
         field=field,
         scan_raw_period_dates=False,
+        scan_cik_fullmatch=True,
+        scan_contextual_cik=True,
     )
