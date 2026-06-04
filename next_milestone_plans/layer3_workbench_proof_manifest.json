@@ -44267,6 +44267,76 @@
     "next_required_operator_input": "governed offline storage whose statement-classification receipt carries a top-level fact_inventory_hash matching authority_hashes.fact_inventory_hash, then operator-acquired offline CompanyFacts JSON for the same filing authority; do not download, synthesize, substitute, or infer it",
     "next_posture": "sec_xbrl_offline_companyfacts_oracle_packet_operator_supply_v1"
   },
+  "sec_xbrl_offline_evidence_proof_capability_historical_proof": {
+    "proof_kind": "sec_xbrl_offline_evidence_proof_capability_historical_proof",
+    "milestone": "sec_xbrl_offline_evidence_proof_capability_v1",
+    "status": "current_main_historical_operator_snapshot_traceability_registered",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1335-offline-evidence-proof-capability.md",
+    "proof_terms": "Traceability-only registration for frozen S1 operator-supplied proof snapshots; this proof entry does not regenerate proof JSONs, seed operator evidence, edit hash-bound artifacts, change runtime behavior, or authorize production activation.",
+    "historical_artifacts": [
+      "diagnostics/assessment/sec-xbrl-s1-ccj-10k-proof.json",
+      "diagnostics/assessment/sec-xbrl-s1-fizz-10k-proof.json",
+      "diagnostics/assessment/sec-xbrl-s1-fizz-10q-proof.json",
+      "diagnostics/assessment/sec-xbrl-s1-fizz-10q-oracle.json",
+      "diagnostics/assessment/sec-xbrl-s1-real-evidence-proof-report.json"
+    ],
+    "touched_surfaces": [
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "proof_json_changed_by_proof": false,
+    "report_json_changed_by_proof": false,
+    "runtime_default_changed_by_proof": false,
+    "backend_api_contract_changed_by_proof": false,
+    "rendered_ui_changed_by_proof": false,
+    "schema_models_changed_by_proof": false,
+    "migration_changed_by_proof": false,
+    "durable_persistence_changed_by_proof": false,
+    "source_acquisition_performed_by_proof": false,
+    "arelle_subprocess_invoked_by_proof": false,
+    "live_sec_network_run_performed_by_proof": false,
+    "value_reveal_default_enabled_by_proof": false,
+    "activation_lane_authorized": false,
+    "production_readiness_claimed": false,
+    "next_posture": "keep S1 proof artifacts frozen and use current invariant guard tests as stale-schema detection; do not regenerate or edit proof JSONs without a separate operator-evidence lane"
+  },
+  "sec_xbrl_diagnostic_framework_pilot_proof": {
+    "proof_kind": "sec_xbrl_diagnostic_framework_pilot_proof",
+    "milestone": "sec_xbrl_diagnostic_framework_pilot_v1",
+    "status": "current_main_framework_traceability_registered",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1345-sec-xbrl-diagnostic-framework-pilot.md",
+    "proof_terms": "Traceability-only registration for the behavior-preserving SEC XBRL diagnostic-framework pilot and follow-on framework rollout; this entry does not migrate additional diagnostics, regenerate report JSONs, alter runtime behavior, or authorize activation.",
+    "implemented_framework_surfaces": [
+      "diagnostics/assessment/sec_xbrl_diagnostic_framework.py",
+      "backend/tests/test_sec_xbrl_diagnostic_framework.py"
+    ],
+    "touched_surfaces": [
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "proof_json_changed_by_proof": false,
+    "report_json_changed_by_proof": false,
+    "runtime_default_changed_by_proof": false,
+    "backend_api_contract_changed_by_proof": false,
+    "rendered_ui_changed_by_proof": false,
+    "schema_models_changed_by_proof": false,
+    "migration_changed_by_proof": false,
+    "durable_persistence_changed_by_proof": false,
+    "source_acquisition_performed_by_proof": false,
+    "arelle_subprocess_invoked_by_proof": false,
+    "live_sec_network_run_performed_by_proof": false,
+    "value_reveal_default_enabled_by_proof": false,
+    "activation_lane_authorized": false,
+    "production_readiness_claimed": false,
+    "remaining_work": [
+      "continue only behavior-preserving diagnostic/report helper rollout in byte-stable batches",
+      "separate exact diagnostic redaction wrappers from custom runtime/public error-surface guards",
+      "keep activation lane parked until explicitly authorized"
+    ],
+    "next_posture": "service-family-specific guard/redaction migrations only after exact semantics are proven and planning/proof traceability stays current"
+  },
   "sec_xbrl_custom_guard_redaction_audit_proof": {
     "proof_kind": "sec_xbrl_custom_guard_redaction_audit_proof",
     "milestone": "sec_xbrl_custom_guard_redaction_audit_v1",
