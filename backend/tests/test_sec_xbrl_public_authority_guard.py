@@ -8,6 +8,7 @@ from app.services.layer3_sec_xbrl_public_authority_guard import (
     raw_accession_reference_found,
     reject_e2e_public_output_policy,
     reject_e2e_public_text_references,
+    reject_persistence_public_authority,
     reject_public_output_policy,
     reject_raw_or_local_authority_with_blocked_keys,
     reject_unadmitted_keys,
@@ -475,6 +476,68 @@ def test_reject_e2e_public_policy_adapters_preserve_family_scan_posture() -> Non
         field="receipt",
         scan_raw_period_dates=False,
     )
+
+
+def test_reject_persistence_public_authority_preserves_family_scan_posture() -> None:
+    class GuardError(ValueError):
+        def __init__(
+            self,
+            code: str,
+            message: str,
+            *,
+            details: dict[str, object] | None = None,
+            http_status: int = 400,
+        ) -> None:
+            self.code = code
+            self.message = message
+            self.details = dict(details or {})
+            self.http_status = http_status
+
+    reject_persistence_public_authority(
+        {"public_id": "projection_statement_income"},
+        error_type=GuardError,
+        raw_authority_code="raw_authority",
+        raw_authority_message="raw authority",
+        raw_reference_code="raw_reference",
+        raw_reference_message="raw reference",
+    )
+
+    try:
+        reject_persistence_public_authority(
+            {"identity": "issuer 0000123456 packet"},
+            error_type=GuardError,
+            raw_authority_code="raw_authority",
+            raw_authority_message="raw authority",
+            raw_reference_code="raw_reference",
+            raw_reference_message="raw reference",
+        )
+    except GuardError as exc:
+        assert exc.code == "raw_reference"
+        assert exc.message == "raw reference"
+        assert exc.details == {}
+        assert exc.http_status == 400
+    else:
+        raise AssertionError("expected persistence contextual-CIK raw-reference guard error")
+
+    try:
+        reject_persistence_public_authority(
+            {"identity": {"relative_magnitude": "1E+0"}},
+            error_type=GuardError,
+            raw_authority_code="raw_authority",
+            raw_authority_message="raw authority",
+            raw_reference_code="raw_reference",
+            raw_reference_message="raw reference",
+            residual_magnitude_code="residual_magnitude",
+            residual_magnitude_message="residual magnitude",
+            residual_magnitude_keys={"relative_magnitude"},
+        )
+    except GuardError as exc:
+        assert exc.code == "residual_magnitude"
+        assert exc.message == "residual magnitude"
+        assert exc.details == {"field": "relative_magnitude"}
+        assert exc.http_status == 400
+    else:
+        raise AssertionError("expected persistence residual-magnitude guard error")
 
 
 def test_unadmitted_keys_returns_sorted_public_key_inventory() -> None:
