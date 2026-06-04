@@ -47,6 +47,9 @@ def test_public_authority_guard_supports_value_reveal_text_variants() -> None:
     assert raw_or_local_authority_violation("prefix 0000000000 suffix", scan_cik=True).kind == "raw_reference"
     assert raw_or_local_authority_violation("prefix 0000000000 suffix", scan_cik_fullmatch=True) is None
     assert raw_or_local_authority_violation("0000000000", scan_cik_fullmatch=True).kind == "raw_reference"
+    assert raw_or_local_authority_violation("issuer 0000000000", scan_contextual_cik=True).kind == "raw_reference"
+    assert raw_or_local_authority_violation("CIK0000000000", scan_contextual_cik=True).kind == "raw_reference"
+    assert raw_or_local_authority_violation("1000000000", scan_contextual_cik=True) is None
 
 
 def test_public_authority_guard_supports_auth_binding_text_variants() -> None:
@@ -60,6 +63,7 @@ def test_public_authority_guard_supports_auth_binding_text_variants() -> None:
     assert raw_or_local_authority_violation("root/workspace/raw", scan_local_ref_segment=True).kind == (
         "raw_reference"
     )
+    assert raw_or_local_authority_violation("CIK0000000000", scan_contextual_cik=True).kind == "raw_reference"
     assert raw_or_local_authority_violation("2024-12-31", scan_raw_period_dates=False) is None
 
 
