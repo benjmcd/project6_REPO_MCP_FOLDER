@@ -6,17 +6,20 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "a7a2b57607e5e717f29fa3df44a14a70fa654857",
-    "verified_at_utc": "2026-06-04T15:14:48Z",
-    "verification_summary": "Live main includes PR #2194 P15 mixed-source package construction commit runtime and later SEC XBRL PR #2195. Current main keeps mixed-source submit, handoff, export, parser, schema, source-shape, payload rewrite, legacy bridge, and excluded-tool behavior blocked.",
+    "commit": "3ecaf0cc114c9eeaace31ce4b5799ad6c77eadbb",
+    "verified_at_utc": "2026-06-04T15:35:57Z",
+    "verification_summary": "Live main includes PR #2196 P15 post-merge docs sync. This branch adds a P16 mixed-source package-review submit freeze only; runtime submit, handoff, export, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool behavior, and production readiness remain blocked.",
     "commands": [
       "git fetch project6-origin main --prune",
+      "gh pr list --state open --json number,title,headRefName,baseRefName,isDraft,updatedAt",
+      "git rev-parse project6-origin/main",
+      "git cat-file -t 3ecaf0cc114c9eeaace31ce4b5799ad6c77eadbb",
       "python -B -m json.tool .\\next_milestone_plans\\authority-index.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
-      "python -B .\\tools\\l3-progress-check.py",
-      "python -B .\\tools\\l3-target-selection-validate.py --expect frozen",
       "python -B .\\tools\\l3-authority-index-validate.py",
+      "python -B .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "python -B .\\tools\\l3-progress-check.py",
       "git diff --check"
     ]
   },
@@ -64,7 +67,7 @@
       "lane_id": "multi_ingest_mixed_package",
       "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
       "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
-      "current_state": "mixed_source_package_construction_commit_runtime_current_main_submit_handoff_export_blocked",
+      "current_state": "branch_local_p16_mixed_source_package_review_submit_freeze_no_runtime_submit",
       "source_of_truth": [
         {
           "path": "next_milestone_plans/multi-ingest/README.md",
@@ -81,7 +84,21 @@
             "bounded Phase P14 read-only mixed-source package review preview",
             "P14 mixed preview slices",
             "bounded Phase P15 mixed-source package construction commit freeze",
-            "current-main Phase P15 mixed-source package construction commit runtime"
+            "current-main Phase P15 mixed-source package construction commit runtime",
+            "bounded Phase P16 mixed-source package-review submit freeze"
+          ]
+        },
+        {
+          "path": "next_milestone_plans/multi-ingest/34-p16-mixed-submit-freeze.md",
+          "kind": "freeze",
+          "authority": "mixed-source package-review submit entry gate and runtime non-admission boundary",
+          "freshness": "snapshot_guardrail",
+          "required_terms": [
+            "Status: branch-local planning/control freeze only.",
+            "layer3.mixed_source_package_review_submit.v1",
+            "No mixed-source package-review submit admission in this freeze.",
+            "Implementation may begin only after this freeze is merged and current-main synced.",
+            "No package payload rewrite from request data."
           ]
         },
         {
@@ -176,6 +193,7 @@
         }
       ],
       "current_truth_order": [
+        "P16 mixed-source package-review submit freeze",
         "P15 mixed-source package construction commit runtime closeout",
         "P15 mixed-source package construction commit freeze",
         "P14 mixed-source package review preview source and focused API tests",
@@ -187,11 +205,12 @@
         "multi-ingest README front door"
       ],
       "known_limits": [
-        "Mixed-source package-review submit, handoff, export, and payload rewrite semantics remain not admitted.",
+        "Mixed-source package-review submit runtime, handoff, export, and payload rewrite semantics remain not admitted.",
+        "P16 is a freeze over P15 manifest-package decision semantics only; it does not change package-family policy or runtime behavior.",
         "Narrative-table linking is deterministic preview and package-manifest metadata only; no request-supplied package payload mutation is admitted.",
         "Legacy CSV bridge deprecation is separate from mixed-source package semantics."
       ],
-      "next_decision": "After this runtime lands and is current-main synced, select a separate mixed-source package-review submit freeze only if review-decision semantics over P15 manifest packages are explicit."
+      "next_decision": "After the P16 freeze is merged and current-main synced, implement mixed-source package-review submit only from material authority over the P15 package manifests while keeping handoff/export and production readiness blocked."
     },
     {
       "lane_id": "analyst_insight",
