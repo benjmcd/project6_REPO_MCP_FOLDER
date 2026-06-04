@@ -198,6 +198,31 @@ def test_sec_xbrl_projection_persistence_rejects_raw_identity_and_paths(db_sessi
     assert db_session.query(L3SecXbrlProjectionSet).count() == 0
 
 
+def test_sec_xbrl_projection_persistence_rejects_cik_public_refs(db_session) -> None:
+    raw_references = ("0000123456", "issuer 0000123456 packet", "CIK0000123456")
+    for index, raw_reference in enumerate(raw_references):
+        row = _row("CashAndDueFromBanks", "balance")
+        row["source_qname"] = raw_reference
+
+        with pytest.raises(persistence.SecXbrlProjectionPersistenceError) as exc:
+            _materialize(
+                db_session,
+                _projection(rows=[row]),
+                request_id=f"projection-cik-ref-{index}",
+            )
+
+        assert exc.value.code == "sec_xbrl_projection_persistence_raw_reference_not_admitted"
+        assert db_session.query(L3SecXbrlProjectionSet).count() == 0
+        assert db_session.query(L3SecXbrlProjectionFact).count() == 0
+
+
+def test_sec_xbrl_projection_persistence_preserves_digit_bearing_request_id(db_session) -> None:
+    response = _materialize(db_session, request_id="projection-request-1000000000")
+
+    assert response["status"] == "materialized"
+    assert db_session.query(L3SecXbrlProjectionSet).count() == 1
+
+
 def test_sec_xbrl_projection_persistence_rejects_local_ref_client_request_id(db_session) -> None:
     with pytest.raises(persistence.SecXbrlProjectionPersistenceError) as exc:
         _materialize(db_session, request_id="/workspace/project/runtime/sec/filing.json")
