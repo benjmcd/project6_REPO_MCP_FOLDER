@@ -47252,7 +47252,7 @@
       "request_supplied_payload_rewrite_export_connector_provider_dispatch_or_destination_fields",
       "existing_conflicting_prepare_state"
     ],
-    "status_surface_review_followup": "Session summary carries mixed material-authority fields after approved P16 submit state, but pre-prepare rendered readiness remains unavailable until a material-authority UI path is separately frozen; after direct API prepare, recorded prepared state is reported.",
+    "status_surface_review_followup": "Session summary carries mixed material-authority fields after approved P16 submit state; later P17A rendered controls consume that material authority without changing the P17 backend route. After direct API prepare, recorded prepared state is reported.",
     "verification": [
       "python -B -m py_compile touched API/service/test files -> PASS",
       "python -B -m pytest .\\backend\\tests\\test_layer3_package_family_policy.py .\\backend\\tests\\test_layer3_api.py -q -k \"mixed_source_handoff_export_prepare or mixed_source_package_review_submit_records_decision or handoff_openapi_contracts or handoff_export_prepare_blocks_unadmitted_package_family\" -> 4 passed, 293 deselected, 4 warnings",
@@ -47279,7 +47279,7 @@
     ],
     "next_posture": "p17a_rendered_handoff_status_freeze"
   },
-  "latest_p17_mixed_source_handoff_export_prepare_runtime_summary": "P17 runtime is current-main implemented through PR #2205 plus PR #2206 review follow-up. It admits a direct material-authority mixed-source handoff/export prepare-only reference envelope over approved P16 submit state, records one prepare state in existing JSON-bearing session/reconciliation state, exposes only public layer3://mixed-source-package refs, keeps selected-pass and mixed authority shapes distinct, keeps pre-prepare rendered readiness disabled until a material-authority UI path is separately frozen, and keeps APS handoff, external export/download, connector dispatch, provider URLs, schema, parser, source-shape, payload rewrite, package mutation/reconstruction, legacy bridge deprecation, excluded-tool behavior, and production readiness blocked.",
+  "latest_p17_mixed_source_handoff_export_prepare_runtime_summary": "P17 runtime is current-main implemented through PR #2205 plus PR #2206 review follow-up. It admits a direct material-authority mixed-source handoff/export prepare-only reference envelope over approved P16 submit state, records one prepare state in existing JSON-bearing session/reconciliation state, exposes only public layer3://mixed-source-package refs, keeps selected-pass and mixed authority shapes distinct, and leaves rendered material-authority consumption to the later P17A control path. It keeps APS handoff, external export/download, connector dispatch, provider URLs, schema, parser, source-shape, payload rewrite, package mutation/reconstruction, legacy bridge deprecation, excluded-tool behavior, and production readiness blocked.",
   "p17a_mixed_source_rendered_handoff_status_freeze_tracking": {
     "tracking_kind": "p17a_mixed_source_rendered_handoff_status_freeze_tracking",
     "milestone": "p17a_mixed_source_rendered_handoff_status_freeze",
@@ -47362,9 +47362,12 @@
   "p17a_mixed_source_rendered_handoff_prepare_runtime_tracking": {
     "tracking_kind": "p17a_mixed_source_rendered_handoff_prepare_runtime_tracking",
     "milestone": "p17a_mixed_source_rendered_handoff_prepare_runtime",
-    "status": "branch_local_rendered_runtime_implemented",
+    "status": "current_main_rendered_runtime_implemented",
     "base_main_commit": "4bdbd0ebc18d2a0de0e5ddb1a77ef5f246a94d76",
+    "runtime_merge_commit": "5dad54d2bf32cdcff9c0a1d35a6e23acf4b61680",
+    "review_debt_merge_commit": "86ecc1fa168c605004bfdfabe08fa6cb054d17c1",
     "runtime_doc": "next_milestone_plans/multi-ingest/39-p17a-rendered-runtime-closeout.md",
+    "current_main_sync_doc": "next_milestone_plans/multi-ingest/40-p17a-current-main-sync.md",
     "freeze_doc": "next_milestone_plans/multi-ingest/38-p17a-rendered-status-freeze.md",
     "p17_runtime_predecessor_doc": "next_milestone_plans/multi-ingest/37-p17-runtime-closeout.md",
     "ui_surface": "backend/app/review_ui/static/layer3.js",
@@ -47415,19 +47418,57 @@
     "verification": [
       "node --check .\\backend\\app\\review_ui\\static\\layer3.js -> PASS",
       "python -B -m pytest .\\backend\\tests\\test_layer3_page.py -q -> 22 passed, 3 warnings",
-      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"mixed_source_handoff_export_prepare or package_family_handoff_export_prepare\" -> 1 passed, 290 deselected, 3 warnings"
+      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"mixed_source_handoff_export_prepare or package_family_handoff_export_prepare\" -> 1 passed, 290 deselected, 3 warnings",
+      "post-PR2211 detached current-main proof: manifest JSON syntax, authority-index, target-selection frozen, progress check, and git diff --check -> PASS"
     ],
     "files_in_scope": [
       "backend/app/review_ui/static/layer3.js",
       "backend/tests/test_layer3_page.py",
       "next_milestone_plans/multi-ingest/39-p17a-rendered-runtime-closeout.md",
+      "next_milestone_plans/multi-ingest/40-p17a-current-main-sync.md",
       "next_milestone_plans/multi-ingest/README.md",
       "next_milestone_plans/authority-index.json",
       "next_milestone_plans/layer3_progress_board.md",
       "next_milestone_plans/layer3_progress_manifest.json",
       "next_milestone_plans/layer3_workbench_proof_manifest.json"
     ],
-    "next_posture": "freeze_next_mixed_source_downstream_surface_before_runtime"
+    "next_posture": "current_main_synced_freeze_next_mixed_source_downstream_surface_before_runtime"
   },
-  "latest_p17a_mixed_source_rendered_handoff_prepare_runtime_summary": "P17A rendered runtime implements only the /review/layer3 material-authority control for the existing P17 mixed-source handoff/export prepare API. The UI now selects server-owned mixed-source material authority, submits mixed_source_review_package plus reference_envelope_only without selected-pass IDs or payload refs, preserves selected-pass and source-directory flows, and keeps APS handoff, external export/download, connector/provider, schema, parser, source-shape, payload rewrite, excluded-tool behavior, and production readiness blocked."
+  "latest_p17a_mixed_source_rendered_handoff_prepare_runtime_summary": "P17A rendered runtime is current-main implemented through PR #2210 and PR #2211. It implements only the /review/layer3 material-authority control for the existing P17 mixed-source handoff/export prepare API, enables decision and notes controls from the mixed material-authority packet, submits mixed_source_review_package plus reference_envelope_only without selected-pass IDs or payload refs, preserves selected-pass and source-directory flows, and keeps APS handoff, external export/download, connector/provider, schema, parser, source-shape, payload rewrite, excluded-tool behavior, and production readiness blocked.",
+  "p17a_mixed_source_rendered_handoff_prepare_current_main_sync": {
+    "tracking_kind": "p17a_mixed_source_rendered_handoff_prepare_current_main_sync",
+    "milestone": "p17a_mixed_source_rendered_handoff_prepare_current_main_sync",
+    "status": "docs_control_current_main_sync_only",
+    "live_main_commit": "313d516c4766851110598dc16dc9c60270016dc9",
+    "runtime_merge_commit": "5dad54d2bf32cdcff9c0a1d35a6e23acf4b61680",
+    "review_debt_merge_commit": "86ecc1fa168c605004bfdfabe08fa6cb054d17c1",
+    "sync_doc": "next_milestone_plans/multi-ingest/40-p17a-current-main-sync.md",
+    "runtime_doc": "next_milestone_plans/multi-ingest/39-p17a-rendered-runtime-closeout.md",
+    "scope": "Synchronize P17A rendered handoff prepare runtime and PR #2211 review-debt closeout to current-main planning authority.",
+    "runtime_behavior_changed_by_sync": false,
+    "rendered_ui_behavior_changed_by_sync": false,
+    "backend_route_changed_by_sync": false,
+    "schema_or_migration_changed_by_sync": false,
+    "parser_behavior_changed_by_sync": false,
+    "source_shape_expanded_by_sync": false,
+    "payload_rewrite_enabled_by_sync": false,
+    "aps_handoff_enabled_by_sync": false,
+    "external_export_enabled_by_sync": false,
+    "connector_dispatch_enabled_by_sync": false,
+    "provider_url_enabled_by_sync": false,
+    "excluded_tool_behavior_enabled_by_sync": false,
+    "production_readiness_claimed_by_sync": false,
+    "github_state": [
+      "PR #2210 merged with one review thread resolved",
+      "PR #2211 merged with zero review threads"
+    ],
+    "verification": [
+      "post-PR2211 detached current-main static JS check passed",
+      "post-PR2211 detached current-main Layer 3 page tests passed",
+      "post-PR2211 detached current-main focused mixed-source handoff/export API slice passed",
+      "manifest JSON syntax, authority-index, target-selection frozen, progress check, and git diff --check passed"
+    ],
+    "next_posture": "freeze_exactly_one_next_mixed_source_downstream_surface_before_runtime"
+  },
+  "latest_p17a_mixed_source_rendered_handoff_prepare_current_main_sync_summary": "P17A rendered handoff prepare runtime is synced to current main at 313d516c after PR #2210, PR #2211, and later SEC-only PR #2212. The next mixed-source pass must be a separate freeze for exactly one downstream surface before any APS handoff or external export/download runtime."
 }
