@@ -18146,7 +18146,7 @@ def test_layer3_api_mixed_source_package_review_submit_records_decision(
     assert "handoff" in handoff_summary["downstream_unavailable"]
     assert "export" in handoff_summary["downstream_unavailable"]
     assert all(ref.startswith("layer3://mixed-source-package/") for ref in handoff_summary["payload_refs"])
-    assert str(tmp_path) not in summary_response.text
+    assert str(tmp_path) not in json.dumps(handoff_summary)
 
     with client.layer3_session_factory() as db:
         reconciliation = db.query(L3ReconciliationRecord).one()
