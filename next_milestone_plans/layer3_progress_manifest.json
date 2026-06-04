@@ -46522,7 +46522,7 @@
     "tracking_kind": "sec_xbrl_default_report_leak_adapter_tracking",
     "milestone": "sec_xbrl_default_report_leak_adapter_v1",
     "status": "current_main_behavior_preserving_service_adapter_merged",
-    "branch": "codex/secxbrl-guard-audit",
+    "source_pr": "#2193",
     "merge_commit": "dc49fb73baf38d6277ae34ccead10b794dc55cff",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md",
     "prior_milestone": "sec_xbrl_unadmitted_key_adapter_v1",
