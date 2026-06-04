@@ -257,6 +257,76 @@ def test_e2e_adapter_carries_multi_period_projection_to_workflow(db_session) -> 
     assert workflow_response["arelle_invoked"] is False
 
 
+def test_e2e_adapter_preserves_single_period_public_ref(db_session) -> None:
+    private_projection = _private_projection(periods=1)["periods"][0]["projection"]
+    private_projection["period_ref"] = "fy-2025"
+    private_projection["period_index"] = 7
+
+    projection_payload = integration.redacted_projection_persistence_payload(private_projection)
+    assert [(period["period_ref"], period["period_index"]) for period in projection_payload["periods"]] == [
+        ("fy-2025", 7)
+    ]
+    projection_response = projection_persistence.materialize_redacted_projection_set(
+        db_session,
+        client_request_id="projection-e2e-single-period-ref",
+        projection=projection_payload,
+        source_report_schema_id="diagnostics.sec_xbrl_sector_family_real_filer_validation_report.v1",
+        source_report_hash=_hash("a"),
+    )
+
+    packet = integration.build_reviewable_statement_packet_from_projection(
+        canonical_projection=private_projection,
+        statement_role_view_records=_statement_role_records(periods=1),
+    )
+    income_rows = next(item for item in packet["statements"] if item["statement"] == "income")["rows"]
+    assert [(row["period_ref"], row["period_index"], row["statement_row_index"]) for row in income_rows] == [
+        ("fy-2025", 7, 1)
+    ]
+
+    packet_response = packet_persistence.materialize_redacted_statement_packet(
+        db_session,
+        client_request_id="packet-e2e-single-period-ref",
+        sec_xbrl_projection_set_id=projection_response["sec_xbrl_projection_set_id"],
+        packet=packet,
+    )
+
+    assert packet_response["status"] == "materialized"
+    assert packet_response["row_count"] == 3
+
+
+def test_e2e_adapter_matches_projection_row_indexes_for_duplicate_period_refs(db_session) -> None:
+    private_projection = _private_projection(periods=2)
+    private_projection["periods"][1]["period_ref"] = "fy-period-1"
+    projection_payload = integration.redacted_projection_persistence_payload(private_projection)
+    projection_response = projection_persistence.materialize_redacted_projection_set(
+        db_session,
+        client_request_id="projection-e2e-duplicate-period-ref",
+        projection=projection_payload,
+        source_report_schema_id="diagnostics.sec_xbrl_sector_family_real_filer_validation_report.v1",
+        source_report_hash=_hash("a"),
+    )
+
+    packet = integration.build_reviewable_statement_packet_from_projection(
+        canonical_projection=private_projection,
+        statement_role_view_records=_statement_role_records(periods=2),
+    )
+    income_rows = next(item for item in packet["statements"] if item["statement"] == "income")["rows"]
+    assert [(row["period_ref"], row["period_index"], row["statement_row_index"]) for row in income_rows] == [
+        ("fy-period-1", 1, 1),
+        ("fy-period-1", 2, 2),
+    ]
+
+    packet_response = packet_persistence.materialize_redacted_statement_packet(
+        db_session,
+        client_request_id="packet-e2e-duplicate-period-ref",
+        sec_xbrl_projection_set_id=projection_response["sec_xbrl_projection_set_id"],
+        packet=packet,
+    )
+
+    assert packet_response["status"] == "materialized"
+    assert packet_response["row_count"] == 6
+
+
 def test_statement_packet_bridge_redacts_residual_magnitudes_before_persistence(db_session) -> None:
     private_projection = _private_projection(periods=2)
     projection_payload = integration.redacted_projection_persistence_payload(private_projection)

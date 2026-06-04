@@ -2028,6 +2028,44 @@ def test_material_preview_exposes_mixed_source_package_readiness_without_admitti
     assert "no_onlook_work" in mixed["non_goals"]
 
 
+def test_material_preview_requires_real_ids_for_mixed_source_package_authority() -> None:
+    preflight = layer3_workbench.preflight(
+        {
+            "client_request_id": "req-preflight-mixed-source-only",
+            "natural_language_intent": "Review APS narrative and extracted table together.",
+            "manual_constraints": {"source_classes": ["dataset_version", "aps_content_document"]},
+        }
+    )
+    source = layer3_workbench.source_preview(
+        {
+            "client_request_id": "req-source-mixed-source-only",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version", "aps_content_document"],
+        }
+    )
+
+    material = layer3_workbench.material_preview(
+        {
+            "client_request_id": "req-material-mixed-source-only",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "source_candidate_ids": [item["source_candidate_id"] for item in source["source_candidates"]],
+            "query_basis": {"terms": ["mixed", "package"]},
+        }
+    )
+
+    mixed = material["mixed_source_package_semantics"]
+    assert {item["source_class"] for item in material["material_candidates"]} == {
+        "dataset_version",
+        "aps_content_document",
+    }
+    assert mixed["dataset_version_ids"] == []
+    assert mixed["aps_content_document_ids"] == []
+    assert mixed["material_authority_state"] == "mixed_material_authority_not_present"
+    assert mixed["package_semantics_state"] == "not_applicable_without_mixed_material"
+    assert mixed["next_allowed_actions"] == ["select_dataset_version_and_aps_content_document_material"]
+
+
 def test_aps_dataset_version_candidates_list_uses_dataset_source_provenance(db_session, tmp_path) -> None:
     dataset_version_id = _seed_aps_derived_dataset_version(db_session, tmp_path)
 
