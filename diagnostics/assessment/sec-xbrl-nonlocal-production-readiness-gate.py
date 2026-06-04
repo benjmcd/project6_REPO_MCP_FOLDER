@@ -16,6 +16,7 @@ if str(ASSESSMENT) not in sys.path:
 
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
 from sec_xbrl_diagnostic_framework import redaction_hit_classes as _framework_redaction_hit_classes  # noqa: E402
+from sec_xbrl_diagnostic_framework import redacted_ref as _framework_redacted_ref  # noqa: E402
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json")
 RUNTIME_REPORT = "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
@@ -655,23 +656,19 @@ def _all_tokens(text: str, tokens: tuple[str, ...]) -> bool:
 
 
 def _redacted_ref(value: Any) -> bool:
-    return (
-        isinstance(value, str)
-        and bool(value.strip())
-        and bool(REDACTED_REF_RE.fullmatch(value.strip()))
-        and not any(
-            regex.search(value)
-            for regex in (
-                EMAIL_RE,
-                ACCESSION_RE,
-                CIK_RE,
-                BARE_CIK_RE,
-                SEC_URL_RE,
-                LOCAL_PATH_RE,
-                PERIOD_DATE_RE,
-                RAW_DECIMAL_RE,
-            )
-        )
+    return _framework_redacted_ref(
+        value,
+        ref_pattern=REDACTED_REF_RE,
+        forbidden_regexes=(
+            EMAIL_RE,
+            ACCESSION_RE,
+            CIK_RE,
+            BARE_CIK_RE,
+            SEC_URL_RE,
+            LOCAL_PATH_RE,
+            PERIOD_DATE_RE,
+            RAW_DECIMAL_RE,
+        ),
     )
 
 

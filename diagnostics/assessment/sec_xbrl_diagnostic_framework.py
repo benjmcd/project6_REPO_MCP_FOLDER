@@ -118,6 +118,20 @@ def redaction_hit_classes(
     return hits
 
 
+def redacted_ref(
+    value: Any,
+    *,
+    ref_pattern: Any,
+    forbidden_regexes: Sequence[Any],
+) -> bool:
+    return (
+        isinstance(value, str)
+        and bool(value.strip())
+        and bool(ref_pattern.fullmatch(value.strip()))
+        and not any(regex.search(value) for regex in forbidden_regexes)
+    )
+
+
 def text_redaction_scan(
     texts: Iterable[str],
     *,

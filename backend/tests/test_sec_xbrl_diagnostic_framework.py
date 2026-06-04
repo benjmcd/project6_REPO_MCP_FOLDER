@@ -230,6 +230,46 @@ def test_framework_nonlocal_redaction_hit_classes_keep_custom_ref_policy() -> No
     ]
 
 
+def test_framework_redacted_ref_preserves_nonlocal_ref_policy() -> None:
+    framework = _module_from_path(
+        "sec_xbrl_diagnostic_framework_redacted_ref_unit",
+        ASSESSMENT / "sec_xbrl_diagnostic_framework.py",
+    )
+    ref_pattern = re.compile(r"[a-z]+-ref-[a-z]+")
+    forbidden_regexes = (
+        re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE),
+        re.compile(r"\b\d{10}-\d{2}-\d{6}\b"),
+        re.compile(r"[A-Za-z]:[\\/]"),
+    )
+
+    assert framework.redacted_ref(
+        "owner-ref-alpha",
+        ref_pattern=ref_pattern,
+        forbidden_regexes=forbidden_regexes,
+    ) is True
+    assert framework.redacted_ref("", ref_pattern=ref_pattern, forbidden_regexes=forbidden_regexes) is False
+    assert framework.redacted_ref(
+        "owner@example.com",
+        ref_pattern=ref_pattern,
+        forbidden_regexes=forbidden_regexes,
+    ) is False
+    assert framework.redacted_ref(
+        "0000000000-00-000000",
+        ref_pattern=ref_pattern,
+        forbidden_regexes=forbidden_regexes,
+    ) is False
+    assert framework.redacted_ref(
+        "C:/Users/benny/raw.json",
+        ref_pattern=ref_pattern,
+        forbidden_regexes=forbidden_regexes,
+    ) is False
+    assert framework.redacted_ref(
+        {"owner_ref": "owner-ref-alpha"},
+        ref_pattern=ref_pattern,
+        forbidden_regexes=forbidden_regexes,
+    ) is False
+
+
 def test_framework_text_redaction_scan_preserves_named_flags() -> None:
     framework = _module_from_path(
         "sec_xbrl_diagnostic_framework_text_redaction_unit",
