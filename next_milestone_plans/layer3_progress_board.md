@@ -33,6 +33,38 @@ service-family-specific runtime guard migrations after exact semantics are
 proven; do not bulk-migrate custom wrappers. Activation lane selection captured
 in `1350-sec-xbrl-activation-lane-selection.md`.
 
+## SEC XBRL Default Report-Leak Adapter Consolidation
+
+Milestone:
+`sec_xbrl_default_report_leak_adapter_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md`.
+
+Status: merged as PR #2193 at commit `dc49fb73` (`cb0420bc`
+implementation, `dc49fb73` merge).
+
+Scope: extracts only the exact default report-leak service adapter shared by
+offline evidence loader and CompanyFacts oracle packet report guards. The
+adapter preserves each service error class, code, and message while keeping
+`include_raw_value_keys=False`.
+
+Containment: no runtime default, route behavior, persistence, schema, API/UI,
+config, models, proof JSONs, committed report JSONs, source acquisition,
+Arelle invocation, live SEC network use, value reveal, production-readiness
+posture, or activation-lane authorization changed.
+
+Verification: focused report/offline guard suites passed with `45 passed, 2
+warnings`; redaction/residual scan slice passed with `4 passed`; full SEC XBRL
+suite passed with `509 passed, 3 warnings`; progress, target-selection,
+authority-index, `git diff --check`, GitHub checks, GraphQL review-thread scan,
+and detached post-merge proof all passed.
+
+Next posture: stop guard consolidation unless a fresh current-main audit proves
+another exact-equivalence class. Remaining operator-review, auth-binding,
+multi-filing, proof-capability, and value-reveal response traversal guards are
+intentional local policy on current evidence.
+
 ## SEC XBRL Activation Lane Selection
 
 Milestone:
