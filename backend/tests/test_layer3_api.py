@@ -585,6 +585,40 @@ def _mixed_handoff_export_prepare_payload(
     return payload
 
 
+def _mixed_aps_handoff_dispatch_payload(
+    *,
+    request_id: str,
+    gate_b: dict,
+    material: dict,
+    commit_body: dict,
+    submit_body: dict,
+    prepare_body: dict,
+) -> dict:
+    return {
+        "client_request_id": request_id,
+        "session_id": gate_b["session_id"],
+        "material_preview_id": material["material_preview_id"],
+        "material_preview_hash": material["material_preview_hash"],
+        "package_review_preview_hash": commit_body["package_review_preview_hash"],
+        "contract_hash": commit_body["contract_hash"],
+        "construction_basis_hash": commit_body["construction_basis_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_ids": commit_body["output_package_ids"],
+        "payload_hashes": commit_body["payload_hashes"],
+        "package_review_submit_record_ref": submit_body["submit_record_ref"],
+        "package_review_state": submit_body["package_review_state"],
+        "prepare_record_ref": prepare_body["prepare_record_ref"],
+        "handoff_export_state": prepare_body["handoff_export_state"],
+        "handoff_export_envelope_ref": prepare_body["handoff_export_envelope_ref"],
+        "handoff_target": "mixed_source_review_package",
+        "export_mode": "reference_envelope_only",
+        "aps_handoff_target": "mixed_source_aps_evidence_bundle",
+        "dispatch_mode": "server_side_mixed_source_aps_handoff",
+        "operator_decision": "dispatch_mixed_source_aps_handoff",
+        "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+    }
+
+
 def _assert_common_response_envelope(body: dict) -> None:
     assert body["schema_id"].startswith("layer3.")
     assert body["schema_version"] == 1
@@ -10886,9 +10920,32 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
         "dispatch_mode",
         "operator_decision",
     } == set(dispatch_request_schema["required"])
-    assert dispatch_request_schema["properties"]["aps_handoff_target"]["enum"] == ["aps_evidence_bundle"]
-    assert dispatch_request_schema["properties"]["dispatch_mode"]["enum"] == ["server_side_aps_handoff"]
-    assert dispatch_request_schema["properties"]["operator_decision"]["enum"] == ["dispatch_aps_handoff"]
+    for mixed_property in (
+        "material_preview_id",
+        "material_preview_hash",
+        "contract_hash",
+        "construction_basis_hash",
+        "expected_package_kinds",
+    ):
+        assert mixed_property in dispatch_request_schema["properties"]
+        assert mixed_property not in dispatch_request_schema["required"]
+    assert dispatch_request_schema["properties"]["handoff_target"]["enum"] == [
+        "internal_export_envelope",
+        "mixed_source_review_package",
+    ]
+    assert dispatch_request_schema["properties"]["export_mode"]["enum"] == ["prepare_only", "reference_envelope_only"]
+    assert dispatch_request_schema["properties"]["aps_handoff_target"]["enum"] == [
+        "aps_evidence_bundle",
+        "mixed_source_aps_evidence_bundle",
+    ]
+    assert dispatch_request_schema["properties"]["dispatch_mode"]["enum"] == [
+        "server_side_aps_handoff",
+        "server_side_mixed_source_aps_handoff",
+    ]
+    assert dispatch_request_schema["properties"]["operator_decision"]["enum"] == [
+        "dispatch_aps_handoff",
+        "dispatch_mixed_source_aps_handoff",
+    ]
     _assert_string_array_or_string_map_schema(dispatch_request_schema["properties"]["payload_refs"])
     _assert_string_array_or_string_map_schema(dispatch_request_schema["properties"]["payload_hashes"])
     assert dispatch_request_schema["properties"]["connector_dispatch"]["description"].startswith(
@@ -18573,6 +18630,243 @@ def test_layer3_api_mixed_source_handoff_export_prepare_records_reference_envelo
     assert public_url.status_code == 400
     assert public_url.json()["error_code"] == "mixed_source_handoff_export_prepare_scope_not_admitted"
     assert public_url.json()["blocked_fields"] == ["provider_public_url"]
+
+
+def test_layer3_api_mixed_source_aps_handoff_dispatch_records_reference_state(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    gate_b, material, _preview_body, commit_body, submit_body, _source = _submit_mixed_package_review(
+        client,
+        tmp_path,
+        request_id="api-mixed-aps-dispatch-success",
+    )
+    prepare_payload = _mixed_handoff_export_prepare_payload(
+        request_id="api-mixed-aps-dispatch-prepare",
+        gate_b=gate_b,
+        material=material,
+        commit_body=commit_body,
+        submit_body=submit_body,
+    )
+    prepare = client.post("/api/v1/layer3/handoff/export/prepare", json=prepare_payload)
+    assert prepare.status_code == 200, prepare.text
+    prepare_body = prepare.json()
+    payload = _mixed_aps_handoff_dispatch_payload(
+        request_id="api-mixed-aps-dispatch-record",
+        gate_b=gate_b,
+        material=material,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+    )
+
+    def files_under_tmp() -> list[str]:
+        return sorted(str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*") if path.is_file())
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "packages": db.query(L3OutputPackage).count(),
+            "aps_packages": db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+        packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+    finally:
+        db.close()
+    files_before = files_under_tmp()
+
+    dispatch = client.post("/api/v1/layer3/handoff/aps/dispatch", json=payload)
+    assert dispatch.status_code == 200, dispatch.text
+    body = dispatch.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.mixed_source_aps_handoff_dispatch.v1"
+    assert body["status"] == "dispatched"
+    assert body["session_id"] == gate_b["session_id"]
+    assert body["analysis_plan_id"] == ""
+    assert body["pass_run_id"] == ""
+    assert body["preview_identity"]["preview_id"] == ""
+    assert body["preview_identity"]["preview_hash"] == ""
+    assert body["analysis_run_id"] is None
+    assert body["result_review_record_ref"] == ""
+    assert body["package_family"] == "mixed_dataset_document"
+    assert body["material_preview_id"] == material["material_preview_id"]
+    assert body["material_preview_hash"] == material["material_preview_hash"]
+    assert body["contract_hash"] == commit_body["contract_hash"]
+    assert body["package_review_preview_hash"] == commit_body["package_review_preview_hash"]
+    assert body["construction_basis_hash"] == commit_body["construction_basis_hash"]
+    assert body["reconciliation_record_id"] == commit_body["reconciliation_record_id"]
+    assert body["output_package_ids"] == commit_body["output_package_ids"]
+    assert body["package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+    assert body["payload_hashes"] == commit_body["payload_hashes"]
+    assert all(ref.startswith("layer3://mixed-source-package/") for ref in body["payload_refs"])
+    assert all(ref.startswith("layer3://mixed-source-package/") for ref in body["source_package_refs"].values())
+    assert body["package_review_submit_record_ref"] == submit_body["submit_record_ref"]
+    assert body["package_review_state"] == "package_review_approved"
+    assert body["prepare_record_ref"] == prepare_body["prepare_record_ref"]
+    assert body["handoff_export_state"] == "handoff_export_prepared"
+    assert body["handoff_export_envelope_ref"] == prepare_body["handoff_export_envelope_ref"]
+    assert body["handoff_target"] == "mixed_source_review_package"
+    assert body["export_mode"] == "reference_envelope_only"
+    assert body["aps_handoff_target"] == "mixed_source_aps_evidence_bundle"
+    assert body["dispatch_mode"] == "server_side_mixed_source_aps_handoff"
+    assert body["operator_decision"] == "dispatch_mixed_source_aps_handoff"
+    assert body["aps_handoff_state"] == "aps_handoff_dispatched"
+    assert body["aps_output_package_kind"] == "mixed_source_aps_evidence_bundle_reference"
+    assert body["aps_bundle_ref"].startswith("layer3://mixed-source-aps-handoff/")
+    assert body["aps_schema_id"] == "layer3.mixed_source_aps_evidence_bundle_reference.v1"
+    assert body["external_export_enabled"] is False
+    assert body["download_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["provider_public_url_enabled"] is False
+    assert "external_export_download" in body["downstream_unavailable"]
+    assert body["next_allowed_actions"] == ["select_mixed_source_external_export_download_readiness_freeze"]
+    assert body["authority_rail"]["persistence_mode"] == "durable_mixed_source_aps_handoff_dispatch"
+    assert body["negative_authority_flags"]["package_payload_rewrite_performed"] is False
+    assert str(tmp_path) not in dispatch.text
+    for forbidden_key in (
+        "package_payload",
+        "download_url",
+        "provider_public_url",
+        "connector_run_id",
+        "source_rows",
+        "dataset_rows",
+        "raw_document_text",
+    ):
+        assert forbidden_key not in body
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "packages": db.query(L3OutputPackage).count(),
+            "aps_packages": db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == counts_before
+        packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after == packages_before
+        reconciliation = db.query(L3ReconciliationRecord).one()
+        dispatch_state = reconciliation.summary_json["aps_handoff_dispatch"]
+        assert dispatch_state["aps_handoff_record_ref"] == body["aps_handoff_record_ref"]
+        assert dispatch_state["aps_handoff_dispatch_schema_id"] == "layer3.mixed_source_aps_handoff_dispatch.v1"
+        assert dispatch_state["payload_refs"] == body["payload_refs"]
+    finally:
+        db.close()
+    assert files_under_tmp() == files_before
+
+    replay = client.post("/api/v1/layer3/handoff/aps/dispatch", json=payload)
+    assert replay.status_code == 200, replay.text
+    assert replay.json()["status"] == "already_dispatched"
+    assert replay.json()["aps_handoff_record_ref"] == body["aps_handoff_record_ref"]
+
+    changed_request = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json={**payload, "client_request_id": "api-mixed-aps-dispatch-new-request"},
+    )
+    assert changed_request.status_code == 409
+    assert changed_request.json()["error_code"] == "mixed_source_aps_handoff_dispatch_already_recorded"
+
+    summary = client.get(f"/api/v1/layer3/session/{gate_b['session_id']}")
+    assert summary.status_code == 200, summary.text
+    summary_body = summary.json()
+    assert summary_body["aps_handoff_dispatch"]["state"] == "aps_handoff_dispatched"
+    assert summary_body["aps_handoff_dispatch"]["aps_handoff_target"] == "mixed_source_aps_evidence_bundle"
+    assert summary_body["aps_handoff_dispatch"]["dispatch_mode"] == "server_side_mixed_source_aps_handoff"
+    assert summary_body["aps_handoff_dispatch"]["aps_bundle_ref"].startswith("layer3://mixed-source-aps-handoff/")
+    assert summary_body["external_export_download"]["external_export_download_prepare_enabled"] is False
+    assert summary_body["external_export_download"]["state"] != "external_export_download_prepared"
+
+    stale_basis = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json={
+            **_mixed_aps_handoff_dispatch_payload(
+                request_id="api-mixed-aps-dispatch-stale-basis",
+                gate_b=gate_b,
+                material=material,
+                commit_body=commit_body,
+                submit_body=submit_body,
+                prepare_body=prepare_body,
+            ),
+            "construction_basis_hash": "0" * 64,
+        },
+    )
+    assert stale_basis.status_code == 409
+    assert stale_basis.json()["error_code"] == "mixed_source_aps_handoff_dispatch_construction_basis_mismatch"
+
+    legacy = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json={
+            **_mixed_aps_handoff_dispatch_payload(
+                request_id="api-mixed-aps-dispatch-legacy",
+                gate_b=gate_b,
+                material=material,
+                commit_body=commit_body,
+                submit_body=submit_body,
+                prepare_body=prepare_body,
+            ),
+            "analysis_plan_id": "legacy-plan",
+        },
+    )
+    assert legacy.status_code == 400
+    assert legacy.json()["error_code"] == "mixed_source_aps_handoff_dispatch_scope_not_admitted"
+    assert legacy.json()["blocked_fields"] == ["analysis_plan_id"]
+
+    payload_ref_override = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json={
+            **_mixed_aps_handoff_dispatch_payload(
+                request_id="api-mixed-aps-dispatch-payload-ref",
+                gate_b=gate_b,
+                material=material,
+                commit_body=commit_body,
+                submit_body=submit_body,
+                prepare_body=prepare_body,
+            ),
+            "payload_refs": ["file:///not-admitted"],
+        },
+    )
+    assert payload_ref_override.status_code == 400
+    assert payload_ref_override.json()["error_code"] == "mixed_source_aps_handoff_dispatch_scope_not_admitted"
+    assert payload_ref_override.json()["blocked_fields"] == ["payload_refs"]
+
+    explicit_empty_kinds = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json={
+            **_mixed_aps_handoff_dispatch_payload(
+                request_id="api-mixed-aps-dispatch-empty-kinds",
+                gate_b=gate_b,
+                material=material,
+                commit_body=commit_body,
+                submit_body=submit_body,
+                prepare_body=prepare_body,
+            ),
+            "expected_package_kinds": [],
+        },
+    )
+    assert explicit_empty_kinds.status_code == 409
+    assert explicit_empty_kinds.json()["error_code"] == "mixed_source_aps_handoff_dispatch_kinds_mismatch"
 
 
 @pytest.mark.parametrize(
