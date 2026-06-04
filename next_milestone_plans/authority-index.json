@@ -6,9 +6,9 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "e6b34c55c06bff1ac467ce03f9e627e44083f432",
-    "verified_at_utc": "2026-06-04T13:28:11Z",
-    "verification_summary": "Live main includes PR #2185 P14 read-only mixed-source package review preview plus PR #2186 OpenAPI request-shape exclusivity repair. P14 is current-main authority for read-only mixed preview while mixed-source construction, submit, handoff, export, parser, schema, source-shape, payload rewrite, legacy bridge, and excluded-tool behavior remain blocked.",
+    "commit": "fd0b208cfa167437a412bd26bc99fe070ad5eeef",
+    "verified_at_utc": "2026-06-04T13:41:29Z",
+    "verification_summary": "Live main includes PR #2185 P14 read-only mixed-source package review preview, PR #2186 OpenAPI request-shape exclusivity repair, and PR #2188 P14 current-main status sync. P14 is current-main authority for read-only mixed preview while mixed-source construction, submit, handoff, export, parser, schema, source-shape, payload rewrite, legacy bridge, and excluded-tool behavior remain blocked.",
     "commands": [
       "git fetch project6-origin main --prune",
       "python -B -m json.tool .\\next_milestone_plans\\authority-index.json",
