@@ -1166,8 +1166,9 @@ def test_sec_xbrl_real_corpus_product_runner_import_scan_preserves_mixed_key_pay
 ) -> None:
     module = _runner_module()
     storage, plan, source_report = _redacted_product_report_fixture(module, monkeypatch, tmp_path)
-    source_report[1] = "metadata"
+    source_report[("tuple", "key")] = "metadata"
     source_report["diagnostic_decimal"] = Decimal("1.23")
+    source_report["raw_cik"] = "123456"
     source_report["raw_sec_url_variant"] = "www.sec.gov/Archives/edgar/data/redacted"
 
     report = module.build_report(
@@ -1181,6 +1182,7 @@ def test_sec_xbrl_real_corpus_product_runner_import_scan_preserves_mixed_key_pay
 
     scan = report["offline_redacted_product_report_import"]["evidence"]["redaction_scan"]
     assert report["decision"] == "real_corpus_default_on_blocked"
+    assert scan["raw_cik_found"] is True
     assert scan["raw_sec_url_found"] is True
     assert "offline_product_report_redaction_scan_failed" in report["offline_redacted_product_report_import"][
         "blocked_reasons"
