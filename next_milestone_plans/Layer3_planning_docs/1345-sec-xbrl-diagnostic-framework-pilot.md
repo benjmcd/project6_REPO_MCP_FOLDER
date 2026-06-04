@@ -11,18 +11,19 @@ activation lane.
 
 ## Purpose
 
-The SEC XBRL assessment scripts duplicate the same criterion and blocking-reason
-construction across most diagnostics. A repo-confirmed inventory on live main
-found:
+The SEC XBRL assessment scripts historically duplicated the same criterion and
+blocking-reason construction across most diagnostics. At pilot time, a
+repo-confirmed inventory found:
 
 - 30 SEC XBRL diagnostic scripts under `diagnostics/assessment`;
 - 25 local `_criterion` helpers;
 - 9 local `_blocking_reasons` helpers.
 
-That duplication is a cross-cutting-change risk: a posture or redaction change
-can land in some diagnostics while others keep stale helper logic. The framework
-starts with the smallest behavior-preserving extraction so subsequent batches
-can migrate without changing report shape.
+Current main has since retired the exact local helper definitions: a
+`git grep` check on the merged tree finds no `def _criterion(` or
+`def _blocking_reasons(` definitions under `diagnostics/assessment`. The
+historical duplication remains the reason the framework was introduced, but
+it is no longer the current-main helper inventory.
 
 ## Pilot scope
 
