@@ -6,16 +6,18 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "535ec4247099eed5728b7ab6988e7175c4f66b38",
-    "verified_at_utc": "2026-06-04T04:07:54Z",
-    "verification_summary": "Live main includes PRs #2164, #2166, and #2165. SEC XBRL diagnostic hash proof is restored, the roadmap authority index is live, and SEC XBRL framework proof traceability is registered in the progress/proof manifests.",
+    "commit": "27e6abdb87469f8fd030ec975cf9c2a44effb774",
+    "verified_at_utc": "2026-06-04T04:27:41Z",
+    "verification_summary": "Live main includes PRs #2164, #2165, #2166, #2167, and #2168. SEC XBRL diagnostic hash proof, framework proof traceability, exact redaction-wrapper cleanup, and the mixed-source package contract are registered on current main; the roadmap authority index remains intentionally scoped and validator-clean.",
     "commands": [
       "git fetch project6-origin main --prune",
       "python .\\tools\\l3-progress-check.py",
       "python .\\tools\\l3-target-selection-validate.py --expect frozen",
       "python -m pytest .\\backend\\tests\\test_layer3_package_review_contract.py .\\backend\\tests\\test_layer3_workbench_package_state.py .\\backend\\tests\\test_layer3_package_submit_response.py -q",
       "python -m pytest .\\backend\\tests\\test_sec_xbrl_nonlocal_admission_disposition.py .\\backend\\tests\\test_sec_xbrl_diagnostic_framework.py -q",
-      "python -m pytest <all backend/tests/test_sec_xbrl_*.py files> -q"
+      "python -m pytest <all backend/tests/test_sec_xbrl_*.py files> -q",
+      "python .\\tools\\l3-authority-index-validate.py",
+      "git diff --check"
     ]
   },
   "authority_order": [

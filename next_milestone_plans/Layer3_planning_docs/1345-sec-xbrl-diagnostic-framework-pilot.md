@@ -2,10 +2,12 @@
 
 Target: `sec_xbrl_diagnostic_framework_pilot_v1`.
 
-This slice begins consolidation of duplicated SEC XBRL diagnostic scaffolding.
-It is design plus pilot only. It does not activate production SEC XBRL behavior,
-does not migrate diagnostics beyond the three named pilots, and does not alter
-committed report bytes.
+This slice began consolidation of duplicated SEC XBRL diagnostic scaffolding as
+a design plus pilot. Current main has since completed the behavior-preserving
+criterion/blocking-reason rollout and adopted report-envelope helpers in later
+byte-stable batches. Those follow-on merges do not activate production SEC
+XBRL behavior, change committed report bytes, or authorize the parked
+activation lane.
 
 ## Purpose
 
@@ -24,7 +26,7 @@ can migrate without changing report shape.
 
 ## Pilot scope
 
-This pilot migrates exactly three diagnostics:
+The original pilot migrated exactly three diagnostics:
 
 - `diagnostics/assessment/sec-xbrl-canonical-projection.py`;
 - `diagnostics/assessment/sec-xbrl-canonical-comparability.py`;
@@ -68,9 +70,11 @@ not expose `source_mode` or a top-level `validate_only` flag. It exists so
 later rollout slices can remove duplicated header construction without adding
 new report fields or changing committed report bytes.
 
-`report_envelope` and `controls` provide a common report and negative-control
-shape for later migrations. The pilot does not use them in the three migrated
-diagnostics because the acceptance gate is byte-identical committed reports.
+`report_envelope` provides a common report shape and is now adopted by
+behavior-preserving follow-on report-envelope slices, including the original
+pilot diagnostics, after byte-stability checks. `controls` remains the common
+negative-control shape available for future slices; adopting it still requires
+the same byte-stable/report-shape-preserving proof.
 
 ## Variant inventory
 
@@ -164,7 +168,9 @@ This slice does not:
 - activate the parked production-admission lane;
 - implement the proof-snapshot guard.
 
-After review accepts the pilot, later slices can migrate the remaining
-diagnostics in small byte-stable batches, then address the duplicated
-redaction-helper services, then return to proof-snapshot hardening and the
-parked activation lane.
+Current-main follow-on slices have migrated the remaining exact
+criterion/blocking-reason helpers and registered S1 proof-snapshot
+traceability. Remaining work is no longer broad framework rollout; it is
+service-family-specific guard/redaction consolidation plus planning/proof
+traceability upkeep, with the activation lane still parked until explicitly
+authorized.

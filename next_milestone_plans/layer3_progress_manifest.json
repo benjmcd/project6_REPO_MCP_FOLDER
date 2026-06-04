@@ -46298,7 +46298,7 @@
   "sec_xbrl_exact_diagnostic_redaction_wrapper_cleanup_tracking": {
     "tracking_kind": "sec_xbrl_exact_diagnostic_redaction_wrapper_cleanup_tracking",
     "milestone": "sec_xbrl_exact_diagnostic_redaction_wrapper_cleanup_v1",
-    "status": "branch_local_behavior_preserving_wrapper_cleanup",
+    "status": "current_main_behavior_preserving_wrapper_cleanup_merged",
     "branch": "codex/secxbrl-redaction-wrapper-cleanup",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md",
     "design_decision": "remove only one-line diagnostic redaction pass-through wrappers by aliasing existing shared scanner imports as _redaction_scan_payload; leave custom resolved-fact, nonlocal, default-on, value-reveal, and runtime/public error-surface guard semantics untouched",
@@ -46342,7 +46342,7 @@
   "sec_xbrl_custom_guard_redaction_audit_tracking": {
     "tracking_kind": "sec_xbrl_custom_guard_redaction_audit_tracking",
     "milestone": "sec_xbrl_custom_guard_redaction_audit_v1",
-    "status": "branch_local_design_audit_ready_for_review",
+    "status": "current_main_design_audit_registered",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md",
     "prior_milestone": "sec_xbrl_public_authority_guard_auth_binding_family_v1",
     "next_posture": "service-family-specific guard/redaction migrations only after exact semantics are proven",
@@ -46381,8 +46381,8 @@
       "E2E offline and integration output guards have related but distinct blocked-key policies and must not be collapsed into a generic report-leak helper.",
       "Diagnostic redaction extensions include custom hit classes and report-byte-sensitive evidence policies."
     ],
-    "verification_status": "branch-local docs-only audit verification passed",
-    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 460 passed, 3 warnings",
+    "verification_status": "current-main docs-only audit verification revalidated at 27e6abdb",
+    "full_sec_xbrl_suite": "PASS: original audit suite -> 460 passed, 3 warnings; current-main planning-authority revalidation at 27e6abdb -> 475 passed, 3 warnings",
     "target_selection_validation": "PASS: python ./tools/l3-target-selection-validate.py --expect frozen",
     "progress_check": "PASS: python ./tools/l3-progress-check.py",
     "diff_check": "PASS: git diff --check exited 0"
