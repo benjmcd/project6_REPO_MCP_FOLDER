@@ -1,5 +1,39 @@
 # Layer3 Progress Board
 
+## P17 Mixed-Source Handoff Export Prepare Runtime
+
+Milestone:
+`p17_mixed_source_handoff_export_prepare_runtime`.
+
+Planning docs:
+`next_milestone_plans/multi-ingest/36-p17-mixed-handoff-freeze.md`;
+`next_milestone_plans/multi-ingest/37-p17-runtime-closeout.md`.
+
+Status: branch-local runtime implementation on `codex/p17-runtime-0604`,
+based on `project6-origin/main` at
+`83a16914ef57f6eba139e8cd097531cb3660e752`.
+
+Scope: admits material-authority mixed-source handoff/export prepare-only
+runtime over approved P16 submit state. The route recomputes P14 authority
+server-side, verifies P15 reconciliation/package rows and P16 submit state,
+records one prepare state in existing reconciliation/session JSON, and emits a
+reference-only envelope with public `layer3://mixed-source-package/...` refs.
+
+Containment: no APS handoff, external export/download, connector dispatch,
+provider URL, signed URL, public URL, local outbox, network egress, schema,
+model, migration, parser, source-shape, package payload rewrite, package
+mutation/reconstruction, legacy bridge deprecation, excluded-tool behavior, or
+production-readiness behavior is admitted.
+
+Verification: touched compile, focused mixed-source handoff/API slices, full
+Layer 3 API suite, focused package-family/package-contract/workbench-state/
+submit-response/workbench suite, manifest JSON, authority-index,
+target-selection frozen, progress, and `git diff --check` gates passed.
+
+Next posture: after merge/current-main sync, freeze exactly one next
+mixed-source downstream surface before runtime, likely APS handoff, external
+export/download readiness, or rendered/operator status.
+
 ## SEC XBRL Resolved-Fact Diagnostic Redaction Cleanup
 
 Milestone:

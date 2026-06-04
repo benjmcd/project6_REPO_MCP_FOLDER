@@ -6,14 +6,17 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "b37235f0fcd4ab3a07f2be4e96e64171805b95e2",
-    "verified_at_utc": "2026-06-04T17:13:56Z",
-    "verification_summary": "Live main includes PR #2199 P16 mixed-source package-review submit runtime plus PR #2200 review follow-up. This branch adds only a P17 mixed-source handoff/export prepare freeze; runtime handoff/export prepare, APS handoff, external export/download, connector dispatch, provider URLs, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool behavior, and production readiness remain blocked.",
+    "commit": "83a16914ef57f6eba139e8cd097531cb3660e752",
+    "verified_at_utc": "2026-06-04T19:17:11Z",
+    "verification_summary": "Live main includes PR #2204 SEC XBRL test-only guard coverage after the P17 freeze/P15 debt closeouts. This branch adds only P17 mixed-source handoff/export prepare runtime: a reference-only prepare state over approved P16 submit authority. APS handoff, external export/download, connector dispatch, provider URLs, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool behavior, and production readiness remain blocked.",
     "commands": [
       "git fetch project6-origin main --prune",
       "gh pr list --state open --json number,title,headRefName,baseRefName,isDraft,updatedAt",
       "git rev-parse project6-origin/main",
-      "git cat-file -t b37235f0fcd4ab3a07f2be4e96e64171805b95e2",
+      "git cat-file -t 83a16914ef57f6eba139e8cd097531cb3660e752",
+      "python -B -m py_compile touched API/service/test files",
+      "python -B -m pytest focused mixed-source handoff/API slices",
+      "python -B -m pytest focused package-family/package-contract/workbench-state/submit-response/workbench suite",
       "python -B -m json.tool .\\next_milestone_plans\\authority-index.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
@@ -67,7 +70,7 @@
       "lane_id": "multi_ingest_mixed_package",
       "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
       "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
-      "current_state": "branch_local_p17_mixed_source_handoff_export_prepare_freeze",
+      "current_state": "branch_local_p17_mixed_source_handoff_export_prepare_runtime",
       "source_of_truth": [
         {
           "path": "next_milestone_plans/multi-ingest/README.md",
@@ -87,14 +90,28 @@
             "current-main Phase P15 mixed-source package construction commit runtime",
             "bounded Phase P16 mixed-source package-review submit freeze",
             "current-main Phase P16 mixed-source package-review submit runtime",
-            "bounded Phase P17 mixed-source handoff/export prepare freeze"
+            "bounded Phase P17 mixed-source handoff/export prepare freeze",
+            "branch-local Phase P17 mixed-source handoff/export prepare runtime"
+          ]
+        },
+        {
+          "path": "next_milestone_plans/multi-ingest/37-p17-runtime-closeout.md",
+          "kind": "closeout",
+          "authority": "mixed-source handoff/export prepare runtime boundary",
+          "freshness": "current_closeout",
+          "required_terms": [
+            "Status: branch-local runtime implementation verified",
+            "layer3.mixed_source_handoff_export_prepare.v1",
+            "layer3.mixed_source_handoff_export_envelope.v1",
+            "Selected-pass handoff/export prepare remains distinct.",
+            "No APS handoff behavior."
           ]
         },
         {
           "path": "next_milestone_plans/multi-ingest/36-p17-mixed-handoff-freeze.md",
           "kind": "freeze",
           "authority": "mixed-source handoff/export prepare entry gate and runtime non-admission boundary",
-          "freshness": "current_closeout",
+          "freshness": "snapshot_guardrail",
           "required_terms": [
             "Status: branch-local planning/control freeze only.",
             "layer3.mixed_source_handoff_export_prepare.v1",
@@ -221,6 +238,7 @@
         }
       ],
       "current_truth_order": [
+        "P17 mixed-source handoff/export prepare runtime closeout",
         "P17 mixed-source handoff/export prepare freeze",
         "P16 mixed-source package-review submit runtime closeout",
         "P16 mixed-source package-review submit freeze",
@@ -235,13 +253,13 @@
         "multi-ingest README front door"
       ],
       "known_limits": [
-        "P17 is a planning/control freeze only; it does not admit mixed-source handoff/export prepare runtime.",
-        "Mixed-source handoff, export, and payload rewrite runtime semantics remain not admitted.",
-        "P16 submit runtime records one package-review submit state only; it does not admit runtime handoff/export prepare, APS handoff, external export/download, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool, or production-readiness behavior.",
+        "P17 admits reference-only mixed-source handoff/export prepare over approved P16 submit authority; it does not admit APS handoff, external export/download, connector dispatch, provider URLs, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool, or production-readiness behavior.",
+        "Mixed-source APS handoff, external export/download, and payload rewrite runtime semantics remain not admitted.",
+        "P16 submit runtime records one package-review submit state only; P17 is the separate prepare-only runtime and still does not admit APS handoff, external export/download, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool, or production-readiness behavior.",
         "Narrative-table linking is deterministic preview and package-manifest metadata only; no request-supplied package payload mutation is admitted.",
         "Legacy CSV bridge deprecation is separate from mixed-source package semantics."
       ],
-      "next_decision": "After the P17 freeze is merged and current-main synced, implement mixed-source handoff/export prepare-only runtime under that exact authority boundary while keeping APS handoff, external export/download, connector dispatch, provider URLs, parser/schema/source-shape/payload-rewrite scope closed."
+      "next_decision": "After P17 runtime merges and current-main is synced, freeze exactly one next mixed-source downstream surface before implementation: APS handoff, external export/download readiness, or rendered/operator status; keep connector/provider/parser/schema/source-shape/payload-rewrite scope closed unless that exact later freeze admits it."
     },
     {
       "lane_id": "analyst_insight",
