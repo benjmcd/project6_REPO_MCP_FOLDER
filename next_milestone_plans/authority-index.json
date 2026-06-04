@@ -6,14 +6,14 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "4825fdc07699d1a634c1fb8a6b3686de2ac74ace",
-    "verified_at_utc": "2026-06-04T16:27:00Z",
-    "verification_summary": "Live main includes PR #2198 SEC docs follow-up. This branch adds P16 mixed-source package-review submit runtime over P15 package rows; handoff, export, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool behavior, and production readiness remain blocked.",
+    "commit": "b37235f0fcd4ab3a07f2be4e96e64171805b95e2",
+    "verified_at_utc": "2026-06-04T17:13:56Z",
+    "verification_summary": "Live main includes PR #2199 P16 mixed-source package-review submit runtime plus PR #2200 review follow-up. This branch adds only a P17 mixed-source handoff/export prepare freeze; runtime handoff/export prepare, APS handoff, external export/download, connector dispatch, provider URLs, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool behavior, and production readiness remain blocked.",
     "commands": [
       "git fetch project6-origin main --prune",
       "gh pr list --state open --json number,title,headRefName,baseRefName,isDraft,updatedAt",
       "git rev-parse project6-origin/main",
-      "git cat-file -t 3ecaf0cc114c9eeaace31ce4b5799ad6c77eadbb",
+      "git cat-file -t b37235f0fcd4ab3a07f2be4e96e64171805b95e2",
       "python -B -m json.tool .\\next_milestone_plans\\authority-index.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
@@ -67,7 +67,7 @@
       "lane_id": "multi_ingest_mixed_package",
       "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
       "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
-      "current_state": "branch_local_p16_mixed_source_package_review_submit_runtime_verified",
+      "current_state": "branch_local_p17_mixed_source_handoff_export_prepare_freeze",
       "source_of_truth": [
         {
           "path": "next_milestone_plans/multi-ingest/README.md",
@@ -85,7 +85,22 @@
             "P14 mixed preview slices",
             "bounded Phase P15 mixed-source package construction commit freeze",
             "current-main Phase P15 mixed-source package construction commit runtime",
-            "bounded Phase P16 mixed-source package-review submit freeze"
+            "bounded Phase P16 mixed-source package-review submit freeze",
+            "current-main Phase P16 mixed-source package-review submit runtime",
+            "bounded Phase P17 mixed-source handoff/export prepare freeze"
+          ]
+        },
+        {
+          "path": "next_milestone_plans/multi-ingest/36-p17-mixed-handoff-freeze.md",
+          "kind": "freeze",
+          "authority": "mixed-source handoff/export prepare entry gate and runtime non-admission boundary",
+          "freshness": "current_closeout",
+          "required_terms": [
+            "Status: branch-local planning/control freeze only.",
+            "layer3.mixed_source_handoff_export_prepare.v1",
+            "reference_envelope_only",
+            "No mixed-source handoff/export prepare admission in this freeze.",
+            "Implementation may begin only after this freeze is merged and current-main synced."
           ]
         },
         {
@@ -94,10 +109,10 @@
           "authority": "mixed-source package-review submit runtime boundary",
           "freshness": "current_closeout",
           "required_terms": [
-            "Status: branch-local runtime implementation verified.",
+            "Status: current-main runtime implementation verified.",
             "layer3.mixed_source_package_review_submit.v1",
             "explicit `expected_package_kinds: []` fails closed",
-            "material-authority routing is based on field presence",
+            "material-authority routing requires a non-empty stripped material field",
             "No package payload rewrite from request data."
           ]
         },
@@ -206,6 +221,7 @@
         }
       ],
       "current_truth_order": [
+        "P17 mixed-source handoff/export prepare freeze",
         "P16 mixed-source package-review submit runtime closeout",
         "P16 mixed-source package-review submit freeze",
         "P15 mixed-source package construction commit runtime closeout",
@@ -219,12 +235,13 @@
         "multi-ingest README front door"
       ],
       "known_limits": [
-        "Mixed-source handoff, export, and payload rewrite semantics remain not admitted.",
-        "P16 submit runtime records one package-review submit state only; it does not admit handoff/export, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool, or production-readiness behavior.",
+        "P17 is a planning/control freeze only; it does not admit mixed-source handoff/export prepare runtime.",
+        "Mixed-source handoff, export, and payload rewrite runtime semantics remain not admitted.",
+        "P16 submit runtime records one package-review submit state only; it does not admit runtime handoff/export prepare, APS handoff, external export/download, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool, or production-readiness behavior.",
         "Narrative-table linking is deterministic preview and package-manifest metadata only; no request-supplied package payload mutation is admitted.",
         "Legacy CSV bridge deprecation is separate from mixed-source package semantics."
       ],
-      "next_decision": "After the P16 submit runtime is merged and current-main synced, freeze a separate P17 mixed-source handoff/export authority boundary while keeping parser/schema/source-shape/payload-rewrite scope closed."
+      "next_decision": "After the P17 freeze is merged and current-main synced, implement mixed-source handoff/export prepare-only runtime under that exact authority boundary while keeping APS handoff, external export/download, connector dispatch, provider URLs, parser/schema/source-shape/payload-rewrite scope closed."
     },
     {
       "lane_id": "analyst_insight",

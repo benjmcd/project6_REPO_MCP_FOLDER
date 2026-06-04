@@ -1,6 +1,6 @@
 # P16 Mixed-Source Package Review Submit Runtime Closeout
 
-Status: branch-local runtime implementation verified.
+Status: current-main runtime implementation verified.
 
 ## Scope
 
@@ -74,8 +74,9 @@ open after the P15 construction runtime:
 
 - explicit `expected_package_kinds: []` fails closed instead of falling through
   to default package kinds
-- material-authority routing is based on field presence, not truthiness, so
-  empty strings cannot become selected-pass authority
+- material-authority routing requires a non-empty stripped material field, so
+  nullable or blank optional material fields remain absent for selected-pass
+  clients while incomplete mixed material authority still fails closed
 - mixed-source package status/submit response payload refs are public
   `layer3://mixed-source-package/...` refs, not local storage paths
 - mixed submit idempotency records `client_request_id`; same request replay
@@ -135,6 +136,15 @@ Verification for this branch passed:
 - Layer 3 authority-index validation passed
 - Layer 3 target-selection frozen validation passed
 - Layer 3 progress check passed
+
+Post-merge current-main follow-up proof for PR `#2200` passed from detached
+`project6-origin/main` at `b37235f0fcd4ab3a07f2be4e96e64171805b95e2`.
+That follow-up repairs late review debt without changing the P16 admission
+boundary: mixed submit UI payload wiring, nullable/blank material-authority
+routing, mixed handoff/export-ready status blocking, and blank optional
+material-field construction routing were verified with focused API slices,
+package/workbench suites, governance validators, `node --check`, and
+`git diff --check`.
 
 ## Next Posture
 
