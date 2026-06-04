@@ -42,7 +42,7 @@ def report_leak_flags(
     raw_value_keys: Iterable[str] = RAW_VALUE_KEYS,
     raw_value_key_ignore_case: bool = False,
 ) -> dict[str, bool]:
-    text = json.dumps(value, sort_keys=True)
+    text = _scan_text(value)
     flags = report_text_reference_flags(text)
     if include_raw_value_keys:
         flags["raw_value_key_found"] = raw_value_key_found(
@@ -108,7 +108,7 @@ def diagnostic_authority_redaction_scan_payload(
     issuer_identity_tokens: Iterable[str] = DIAGNOSTIC_ISSUER_IDENTITY_TOKENS,
 ) -> dict[str, bool]:
     base = report_redaction_scan_payload(value)
-    text = json.dumps(value, sort_keys=True)
+    text = _scan_text(value)
     raw_value_key_found = report_leak_flags(
         value,
         include_raw_value_keys=True,
@@ -136,7 +136,7 @@ def diagnostic_resolved_fact_redaction_scan_payload(
     issuer_identity_tokens: Iterable[str] = DIAGNOSTIC_CANONICAL_ISSUER_IDENTITY_TOKENS,
     extra_patterns: Mapping[str, re.Pattern[str]] | None = None,
 ) -> dict[str, bool]:
-    text = json.dumps(value, sort_keys=True) if not isinstance(value, str) else value
+    text = _scan_text(value) if not isinstance(value, str) else value
     base = report_redaction_scan_payload(value)
     extra_flags = {
         key: bool(pattern.search(text))
@@ -166,7 +166,7 @@ def diagnostic_sector_family_redaction_scan_payload(
     raw_value_keys: Iterable[str] = DIAGNOSTIC_SECTOR_RAW_VALUE_KEYS,
     raw_path_or_accession_key_pattern: re.Pattern[str] = DIAGNOSTIC_SECTOR_RAW_PATH_OR_ACCESSION_KEY_RE,
 ) -> dict[str, bool]:
-    text = json.dumps(value, sort_keys=True) if not isinstance(value, str) else value
+    text = _scan_text(value) if not isinstance(value, str) else value
     base = report_redaction_scan_payload(value)
     raw_sic_found = bool(raw_sic_pattern.search(text))
     raw_issuer_identity_found = any(token in text for token in issuer_identity_tokens)
@@ -210,3 +210,13 @@ def reject_report_leaks_with_error(
         value,
         exception_factory=lambda: error_type(error_code, message),
     )
+
+
+def _scan_text(value: Any) -> str:
+    try:
+        return json.dumps(value, sort_keys=True, default=str)
+    except (TypeError, ValueError):
+        try:
+            return json.dumps(value, default=str)
+        except (TypeError, ValueError):
+            return str(value)
