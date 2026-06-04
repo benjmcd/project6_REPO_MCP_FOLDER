@@ -1,5 +1,36 @@
 # Layer3 Progress Board
 
+## SEC XBRL Exact Diagnostic Redaction Wrapper Cleanup
+
+Milestone:
+`sec_xbrl_exact_diagnostic_redaction_wrapper_cleanup_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md`.
+
+Status: branch-local behavior-preserving cleanup on
+`codex/secxbrl-redaction-wrapper-cleanup`.
+
+Scope: removes three one-line diagnostic redaction pass-through wrappers by
+aliasing the existing shared diagnostic redaction scanner imports as
+`_redaction_scan_payload` in `sec-xbrl-multi-period-projection.py`,
+`sec-xbrl-statement-assembly.py`, and `sec-xbrl-sector-family-coverage.py`.
+
+Containment: no runtime behavior, route behavior, persistence, schema, UI,
+config, models, proof JSONs, committed report JSONs, source acquisition,
+Arelle invocation, live SEC network use, value reveal, default-on posture, or
+activation-lane authorization changed. The three affected reports regenerate
+byte-identically.
+
+Verification: affected diagnostics regenerated their committed reports with no
+report diff; targeted SEC XBRL tests passed with `37 passed`; full SEC XBRL
+suite passed with `475 passed, 3 warnings`; progress, target-selection,
+authority-index, and `git diff --check` gates passed.
+
+Next posture: continue only service-family-specific or diagnostic-policy
+extraction after exact semantics are proven; do not bulk-migrate custom guard
+wrappers.
+
 ## SEC XBRL Framework and S1 Proof Traceability Registration
 
 Milestones:

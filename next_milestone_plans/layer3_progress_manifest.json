@@ -46295,6 +46295,50 @@
       "next_milestone_plans/layer3_workbench_proof_manifest.json"
     ]
   },
+  "sec_xbrl_exact_diagnostic_redaction_wrapper_cleanup_tracking": {
+    "tracking_kind": "sec_xbrl_exact_diagnostic_redaction_wrapper_cleanup_tracking",
+    "milestone": "sec_xbrl_exact_diagnostic_redaction_wrapper_cleanup_v1",
+    "status": "branch_local_behavior_preserving_wrapper_cleanup",
+    "branch": "codex/secxbrl-redaction-wrapper-cleanup",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md",
+    "design_decision": "remove only one-line diagnostic redaction pass-through wrappers by aliasing existing shared scanner imports as _redaction_scan_payload; leave custom resolved-fact, nonlocal, default-on, value-reveal, and runtime/public error-surface guard semantics untouched",
+    "files_in_scope": [
+      "diagnostics/assessment/sec-xbrl-multi-period-projection.py",
+      "diagnostics/assessment/sec-xbrl-sector-family-coverage.py",
+      "diagnostics/assessment/sec-xbrl-statement-assembly.py",
+      "next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "affected_reports": [
+      "diagnostics/assessment/sec-xbrl-multi-period-projection-report.json",
+      "diagnostics/assessment/sec-xbrl-sector-family-coverage-report.json",
+      "diagnostics/assessment/sec-xbrl-statement-assembly-report.json"
+    ],
+    "report_json_changed_by_tracking": false,
+    "proof_json_changed_by_tracking": false,
+    "runtime_default_changed_by_tracking": false,
+    "backend_api_contract_changed_by_tracking": false,
+    "rendered_ui_changed_by_tracking": false,
+    "schema_models_changed_by_tracking": false,
+    "migration_changed_by_tracking": false,
+    "durable_persistence_changed_by_tracking": false,
+    "source_acquisition_performed_by_tracking": false,
+    "arelle_subprocess_invoked_by_tracking": false,
+    "live_sec_network_run_performed_by_tracking": false,
+    "value_reveal_default_enabled_by_tracking": false,
+    "activation_lane_authorized": false,
+    "production_readiness_claimed": false,
+    "byte_stability": "PASS: the three affected diagnostics regenerated committed reports with no report diff",
+    "focused_suite": "PASS: python -m pytest affected diagnostic/framework/leak-guard tests -q -> 37 passed",
+    "full_sec_xbrl_suite": "PASS: full backend/tests/test_sec_xbrl*.py suite -> 475 passed, 3 warnings",
+    "progress_check": "PASS: python ./tools/l3-progress-check.py",
+    "target_selection_validation": "PASS: python ./tools/l3-target-selection-validate.py --expect frozen",
+    "authority_index_validation": "PASS: python ./tools/l3-authority-index-validate.py",
+    "diff_check": "PASS: git diff --check exited 0 with line-ending warnings only",
+    "next_posture": "continue service-family-specific guard/redaction migrations only after exact semantics are proven; do not bulk-migrate custom guard wrappers"
+  },
   "sec_xbrl_custom_guard_redaction_audit_tracking": {
     "tracking_kind": "sec_xbrl_custom_guard_redaction_audit_tracking",
     "milestone": "sec_xbrl_custom_guard_redaction_audit_v1",
