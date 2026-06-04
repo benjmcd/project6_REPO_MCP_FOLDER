@@ -6,9 +6,9 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "dc49fb7324f8c89b7f3b1acaecf44d7f58796884",
-    "verified_at_utc": "2026-06-04T15:10:32Z",
-    "verification_summary": "Live main includes PR #2191 P15 construction freeze plus later SEC XBRL PRs #2192 and #2193. This branch records the P15 mixed-source package construction commit runtime while keeping submit, handoff, export, parser, schema, source-shape, payload rewrite, legacy bridge, and excluded-tool behavior blocked.",
+    "commit": "a7a2b57607e5e717f29fa3df44a14a70fa654857",
+    "verified_at_utc": "2026-06-04T15:14:48Z",
+    "verification_summary": "Live main includes PR #2194 P15 mixed-source package construction commit runtime and later SEC XBRL PR #2195. Current main keeps mixed-source submit, handoff, export, parser, schema, source-shape, payload rewrite, legacy bridge, and excluded-tool behavior blocked.",
     "commands": [
       "git fetch project6-origin main --prune",
       "python -B -m json.tool .\\next_milestone_plans\\authority-index.json",
@@ -64,7 +64,7 @@
       "lane_id": "multi_ingest_mixed_package",
       "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
       "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
-      "current_state": "mixed_source_package_construction_commit_runtime_branch_registered_submit_handoff_export_blocked",
+      "current_state": "mixed_source_package_construction_commit_runtime_current_main_submit_handoff_export_blocked",
       "source_of_truth": [
         {
           "path": "next_milestone_plans/multi-ingest/README.md",
@@ -81,7 +81,7 @@
             "bounded Phase P14 read-only mixed-source package review preview",
             "P14 mixed preview slices",
             "bounded Phase P15 mixed-source package construction commit freeze",
-            "branch-local Phase P15 mixed-source package construction commit runtime"
+            "current-main Phase P15 mixed-source package construction commit runtime"
           ]
         },
         {
@@ -90,7 +90,7 @@
           "authority": "mixed-source package construction commit runtime boundary",
           "freshness": "snapshot_guardrail",
           "required_terms": [
-            "Status: branch-local runtime implementation pending PR merge.",
+            "Status: current-main merged runtime implementation.",
             "layer3.mixed_source_package_construction_commit.v1",
             "No schema/model/migration change.",
             "No request-supplied package payload bytes",
