@@ -1,5 +1,44 @@
 # Layer3 Progress Board
 
+## P18 Mixed-Source APS Handoff Dispatch Runtime
+
+Milestone:
+`p18_mixed_source_aps_handoff_dispatch_runtime`.
+
+Closeout doc:
+`next_milestone_plans/multi-ingest/42-p18-runtime-closeout.md`.
+
+Status: branch-local runtime implementation proof over live
+`project6-origin/main` `f7b4d865586161277572a78fa5b1153e24535160`.
+Current-main merge and detached post-merge proof are still required before this
+entry can be cited as live authority.
+
+Scope: implements only mixed-source APS handoff dispatch over the already-live
+P17 reference-only handoff/export prepare state selected by the P18 freeze. The
+runtime recomputes P14/P15/P16/P17 authority server-side, records reference-only
+dispatch state in reconciliation/session JSON, emits public
+`layer3://mixed-source-package/...` and
+`layer3://mixed-source-aps-handoff/...` refs, and does not create an APS
+evidence-bundle package row, local artifact, local path, external export,
+download, connector, provider, destination, or delivery behavior.
+
+Non-goals: no rendered UI/static behavior, schema/model/migration, parser,
+source-shape expansion, package payload rewrite, package reconstruction,
+external export/download readiness, connector/provider/local-outbox behavior,
+excluded-tool behavior, or production readiness change.
+
+Proof: branch-local py_compile passed for the touched API/service/test files;
+the focused P18 API/OpenAPI slice passed with `2 passed, 290 deselected, 3
+warnings`; the affected mixed-source/package/APS dispatch API slice passed with
+`12 passed, 280 deselected, 3 warnings`; the full Layer 3 API suite passed with
+`292 passed, 4 warnings`; manifest JSON syntax, authority-index validation,
+frozen target-selection validation, progress check, and `git diff --check`
+passed.
+
+Next posture: merge and current-main-sync this runtime first. Only after that,
+freeze mixed-source external export/download readiness as the next exact
+downstream surface before implementation.
+
 ## P18 Mixed-Source APS Handoff Dispatch Freeze
 
 Milestone:
@@ -8,7 +47,9 @@ Milestone:
 Planning doc:
 `next_milestone_plans/multi-ingest/41-p18-mixed-aps-handoff-freeze.md`.
 
-Status: branch-local docs/control freeze only. No runtime behavior is admitted.
+Status: current-main docs/control freeze merged through PR #2215 at
+`f7b4d865586161277572a78fa5b1153e24535160`. The freeze admitted no runtime
+behavior by itself.
 
 Scope: selects mixed-source APS handoff dispatch as the next exact downstream
 surface after P17/P17A. This is the prerequisite surface before mixed-source
@@ -26,10 +67,9 @@ Proof: docs/control validation only is required for this freeze: manifest JSON
 syntax, authority-index validation, frozen target-selection validation,
 progress check, and `git diff --check`.
 
-Next posture: after this freeze merges and current-main syncs, implement only
-mixed-source APS handoff dispatch. Mixed-source external export/download
-readiness remains blocked until that runtime lands and proves recorded dispatch
-state.
+Next posture: P18 runtime may implement only mixed-source APS handoff dispatch.
+Mixed-source external export/download readiness remains blocked until that
+runtime lands, current main syncs, and a separate readiness freeze is selected.
 
 ## P17A Mixed-Source Current-Main Sync
 

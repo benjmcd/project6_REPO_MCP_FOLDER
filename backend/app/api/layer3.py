@@ -2898,6 +2898,10 @@ class Layer3ApsHandoffDispatchRequest(BaseModel):
     pass_run_id: str | None = None
     preview_id: str | None = None
     preview_hash: str | None = None
+    material_preview_id: str | None = None
+    material_preview_hash: str | None = None
+    contract_hash: str | None = None
+    construction_basis_hash: str | None = None
     result_review_record_ref: str | None = None
     package_review_preview_hash: str | None = None
     reconciliation_record_id: str | None = None
@@ -2916,6 +2920,7 @@ class Layer3ApsHandoffDispatchRequest(BaseModel):
     dispatch_mode: str | None = None
     operator_decision: str | None = None
     decision_notes: str | None = None
+    expected_package_kinds: Any | None = None
     analysis_run_id: str | None = None
     external_export: Any | None = None
     external_target: Any | None = None
@@ -10191,6 +10196,10 @@ class Layer3ApsHandoffDispatchResponse(Layer3BaseResponse):
     analysis_run_id: str | None
     result_review_record_ref: str
     package_review_preview_hash: str
+    material_preview_id: str | None = None
+    material_preview_hash: str | None = None
+    contract_hash: str | None = None
+    construction_basis_hash: str | None = None
     reconciliation_record_id: str
     output_package_ids: list[str]
     package_kinds: list[str]
@@ -10212,6 +10221,10 @@ class Layer3ApsHandoffDispatchResponse(Layer3BaseResponse):
     active_payload_refs: list[str] | None = None
     active_payload_hashes: list[str] | None = None
     replacement_activation_basis_hash: str | None = None
+    aps_handoff_dispatch_schema_id: str | None = None
+    package_family: str | None = None
+    expected_package_kinds: list[str] | None = None
+    negative_authority_flags: dict[str, Any] | None = None
     content_id: str | None = None
     content_contract_id: str | None = None
     chunking_contract_id: str | None = None
@@ -13294,6 +13307,10 @@ APS_HANDOFF_DISPATCH_REQUEST_SCHEMA: dict[str, Any] = {
         "pass_run_id": {"type": "string"},
         "preview_id": {"type": "string"},
         "preview_hash": {"type": "string"},
+        "material_preview_id": {"type": "string"},
+        "material_preview_hash": {"type": "string"},
+        "contract_hash": {"type": "string"},
+        "construction_basis_hash": {"type": "string"},
         "result_review_record_ref": {"type": "string"},
         "package_review_preview_hash": {"type": "string"},
         "reconciliation_record_id": {"type": "string"},
@@ -13310,12 +13327,20 @@ APS_HANDOFF_DISPATCH_REQUEST_SCHEMA: dict[str, Any] = {
         "prepare_record_ref": {"type": "string"},
         "handoff_export_state": {"type": "string", "enum": ["handoff_export_prepared"]},
         "handoff_export_envelope_ref": {"type": "string"},
-        "handoff_target": {"type": "string", "enum": ["internal_export_envelope"]},
-        "export_mode": {"type": "string", "enum": ["prepare_only"]},
-        "aps_handoff_target": {"type": "string", "enum": ["aps_evidence_bundle"]},
-        "dispatch_mode": {"type": "string", "enum": ["server_side_aps_handoff"]},
-        "operator_decision": {"type": "string", "enum": ["dispatch_aps_handoff"]},
+        "handoff_target": {"type": "string", "enum": ["internal_export_envelope", "mixed_source_review_package"]},
+        "export_mode": {"type": "string", "enum": ["prepare_only", "reference_envelope_only"]},
+        "aps_handoff_target": {"type": "string", "enum": ["aps_evidence_bundle", "mixed_source_aps_evidence_bundle"]},
+        "dispatch_mode": {"type": "string", "enum": ["server_side_aps_handoff", "server_side_mixed_source_aps_handoff"]},
+        "operator_decision": {"type": "string", "enum": ["dispatch_aps_handoff", "dispatch_mixed_source_aps_handoff"]},
         "decision_notes": {"type": "string"},
+        "expected_package_kinds": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": (
+                "Optional mixed-source material-authority package kind guard; when provided it must be "
+                "canonical_internal, user_facing, and review_facing in order."
+            ),
+        },
         "analysis_run_id": {"type": "string"},
         "external_export": _forbidden_request_field_schema(),
         "external_target": _forbidden_request_field_schema(),
