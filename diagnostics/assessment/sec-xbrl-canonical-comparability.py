@@ -27,6 +27,8 @@ from app.services.layer3_sec_xbrl_canonical_concepts import (  # noqa: E402
 from app.services.layer3_utils import stable_hash  # noqa: E402
 from sec_xbrl_diagnostic_framework import blocking_reasons as _blocking_reasons  # noqa: E402
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_diagnostic_framework import mark_residual_magnitudes_redacted as _mark_residual_magnitudes_redacted  # noqa: E402
+from sec_xbrl_diagnostic_framework import reference_identity_residuals as _reference_identity_residuals  # noqa: E402
 from sec_xbrl_diagnostic_framework import report_envelope as _report_envelope  # noqa: E402
 from sec_xbrl_report_redaction import strip_residual_magnitude_fields  # noqa: E402
 from sec_xbrl_runtime_posture import (  # noqa: E402
@@ -95,13 +97,6 @@ def build_report(
     return report
 
 
-def _mark_residual_magnitudes_redacted(report: dict[str, Any]) -> None:
-    summary = report.get("summary")
-    if isinstance(summary, dict):
-        summary.pop("statement_identity_residuals_committed_as_magnitudes_only", None)
-        summary["statement_identity_residual_magnitudes_redacted"] = True
-
-
 def _reference_summary_report(*, runtime_posture: Mapping[str, Any]) -> dict[str, Any]:
     concept_inventory = canonical_concept_inventory()
     issuer_summaries = [
@@ -164,26 +159,6 @@ def _reference_summary_report(*, runtime_posture: Mapping[str, Any]) -> dict[str
         report["decision"] = "canonical_comparability_validate_only_blocked"
         report["next_slice"] = "canonical_comparability_remediation_v1"
     return report
-
-
-def _reference_identity_residuals() -> list[dict[str, Any]]:
-    return [
-        _reference_identity("current_assets_plus_noncurrent_assets_equals_total_assets"),
-        _reference_identity("total_liabilities_plus_equity_equals_total_assets"),
-        _reference_identity("derived_total_liabilities_equals_assets_minus_equity_and_split"),
-        _reference_identity("revenue_minus_cost_of_sales_equals_gross_profit"),
-        _reference_identity("current_liabilities_plus_noncurrent_liabilities_equals_total_liabilities"),
-    ]
-
-
-def _reference_identity(identity_id: str) -> dict[str, Any]:
-    return {
-        "identity_id": identity_id,
-        "source_mode": "redacted_reference_summary",
-        "residual_abs": "0",
-        "relative_magnitude": "0E+2",
-        "within_tolerance": True,
-    }
 
 
 def _criteria(
