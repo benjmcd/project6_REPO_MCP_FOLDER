@@ -1,0 +1,208 @@
+{
+  "artifact_version": 1,
+  "artifact_name": "project6-roadmap-authority-index",
+  "index_scope": "intentionally_scoped",
+  "non_exhaustive_reason": "This index covers the live roadmap authority surfaces needed for the analyst insight and heterogeneous ingestion roadmap. Other planning docs remain historical, supplemental, or lane-local unless live code, tests, PR state, or this index promotes them.",
+  "onlook_policy": "excluded",
+  "last_verified": {
+    "remote": "project6-origin/main",
+    "commit": "1ff72190a21facee30ae23f05a24c1fea7902785",
+    "verified_at_utc": "2026-06-04T03:32:04Z",
+    "verification_summary": "Live main includes PR #2164 and restores the SEC XBRL diagnostic hash proof. Layer 3 progress, frozen target-selection, package contract, focused SEC diagnostic, and full SEC XBRL test slices passed after merge.",
+    "commands": [
+      "git fetch project6-origin main --prune",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "python -m pytest .\\backend\\tests\\test_layer3_package_review_contract.py .\\backend\\tests\\test_layer3_workbench_package_state.py .\\backend\\tests\\test_layer3_package_submit_response.py -q",
+      "python -m pytest .\\backend\\tests\\test_sec_xbrl_nonlocal_admission_disposition.py .\\backend\\tests\\test_sec_xbrl_diagnostic_framework.py -q",
+      "python -m pytest <all backend/tests/test_sec_xbrl_*.py files> -q"
+    ]
+  },
+  "authority_order": [
+    "live_code_tests_and_current_worktree",
+    "github_pr_check_and_review_state",
+    "tracked_status_and_planning_docs",
+    "generated_or_snapshot_manifests",
+    "historical_exports_or_session_logs"
+  ],
+  "lanes": [
+    {
+      "lane_id": "sec_xbrl_policy",
+      "lane_name": "SEC XBRL merge policy and diagnostics",
+      "lane_scope": "SEC XBRL Layer 3 PR governance, diagnostics, validate-only reports, and risk-tier merge gates.",
+      "current_state": "active_policy_with_live_main_sec_suite_restored_after_pr2164",
+      "source_of_truth": [
+        {
+          "path": "next_milestone_plans/Layer3_planning_docs/SEC-XBRL-MERGE-GATE-VERIFIER-POLICY.md",
+          "kind": "process_policy",
+          "authority": "canonical SEC XBRL verifier-tier and merge-gate policy",
+          "freshness": "active_process_policy",
+          "required_terms": [
+            "Status: active process policy",
+            "Tier 1",
+            "Tier 2",
+            "Independent review is recommended",
+            "Process governance only"
+          ]
+        }
+      ],
+      "current_truth_order": [
+        "SEC source, diagnostic scripts, reports, and tests",
+        "GitHub PR check and review-thread state",
+        "SEC XBRL merge-gate policy"
+      ],
+      "known_limits": [
+        "Tier 2 review is risk-assessed, not a blanket independent-review blocker.",
+        "Diagnostic committed reports are proof artifacts only when runtime regeneration matches committed output.",
+        "Future report hash changes should prefer scoped evidence bases over whole-file churn."
+      ],
+      "next_decision": "Keep SEC diagnostics green while preventing shared Layer 3 API edits from creating unrelated report drift."
+    },
+    {
+      "lane_id": "multi_ingest_mixed_package",
+      "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
+      "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
+      "current_state": "mixed_material_readiness_projection_live_package_semantics_not_admitted",
+      "source_of_truth": [
+        {
+          "path": "next_milestone_plans/multi-ingest/README.md",
+          "kind": "planning_front_door",
+          "authority": "current multi-ingest status, limits, and remaining work",
+          "freshness": "current_lane_front_door",
+          "required_terms": [
+            "bounded Phase P11 mixed-source package semantics readiness",
+            "It still does not change schema",
+            "The next implementation pass should not repeat",
+            "Define the governed mixed-source package contract"
+          ]
+        },
+        {
+          "path": "next_milestone_plans/multi-ingest/27-p11-mixed-readiness-closeout.md",
+          "kind": "closeout",
+          "authority": "bounded P11 readiness implementation boundary",
+          "freshness": "current_closeout",
+          "required_terms": [
+            "Status: implemented as a bounded material-preview readiness projection.",
+            "construct mixed-source packages",
+            "package_semantics_state",
+            "define_mixed_source_package_contract"
+          ]
+        }
+      ],
+      "current_truth_order": [
+        "Layer 3 workbench/API source and focused tests",
+        "P11 mixed readiness closeout",
+        "multi-ingest README front door"
+      ],
+      "known_limits": [
+        "Mixed-source package construction, review preview, submit, handoff, and payload semantics remain not admitted.",
+        "Narrative-table linking is not yet specified.",
+        "Legacy CSV bridge deprecation is separate from mixed-source package semantics."
+      ],
+      "next_decision": "Define the governed mixed-source package contract before enabling package construction or handoff behavior."
+    },
+    {
+      "lane_id": "analyst_insight",
+      "lane_name": "Analyst insight product surface",
+      "lane_scope": "Product-facing deterministic integration, validation, and insight routes plus current legacy compatibility posture.",
+      "current_state": "stable_current_scope_with_legacy_market_pipeline_supported",
+      "source_of_truth": [
+        {
+          "path": "docs/analyst_insight/analyst_insight_status_handoff.md",
+          "kind": "status_handoff",
+          "authority": "canonical live-repo status surface for analyst insight",
+          "freshness": "current_status_doc",
+          "required_terms": [
+            "canonical live-repo status surface",
+            "Repo truth precedence",
+            "Legacy market-pipeline routes",
+            "No deprecation decision"
+          ]
+        }
+      ],
+      "current_truth_order": [
+        "analyst insight routes, static assets, and tests",
+        "analyst insight status handoff",
+        "broader README signposts"
+      ],
+      "known_limits": [
+        "No legacy market-pipeline route deprecation mechanism is selected.",
+        "Internal module names still use market naming.",
+        "OpenAPI tags remain mixed between analyst-insight and legacy names."
+      ],
+      "next_decision": "Open a separate deprecation or navigation lane only after the product compatibility target is named."
+    },
+    {
+      "lane_id": "layer3_product_flow",
+      "lane_name": "Layer 3 product-flow map",
+      "lane_scope": "Non-SEC source to package to handoff/export product-flow authority map and risk register.",
+      "current_state": "snapshot_guardrail_requiring_live_source_revalidation",
+      "source_of_truth": [
+        {
+          "path": "next_milestone_plans/layer3-product-flow/layer3_product_flow_authority_map_v1.md",
+          "kind": "authority_map",
+          "authority": "non-SEC product-flow guardrail and stale-doc risk map",
+          "freshness": "snapshot_guardrail",
+          "required_terms": [
+            "Authority snapshot",
+            "docs-only",
+            "No universal product-source registry",
+            "Product-flow gaps"
+          ]
+        }
+      ],
+      "current_truth_order": [
+        "live source and tests for any product-flow claim",
+        "product-flow authority map as guardrail",
+        "older planning docs only as historical context"
+      ],
+      "known_limits": [
+        "The map records an older main commit and must be re-grounded before implementation claims.",
+        "It is not implementation proof.",
+        "It identifies the product-source registry gap but does not close it."
+      ],
+      "next_decision": "Use this as a guardrail while moving actual mixed-source and source-family work into code-backed contracts."
+    },
+    {
+      "lane_id": "layer3_control_spine",
+      "lane_name": "Layer 3 control spine and proof manifests",
+      "lane_scope": "Shared Layer 3 progress and proof surfaces that gate planning claims.",
+      "current_state": "validated_but_snapshot_heavy",
+      "source_of_truth": [
+        {
+          "path": "next_milestone_plans/layer3_progress_manifest.json",
+          "kind": "manifest",
+          "authority": "tracked progress metadata and historical proof spine",
+          "freshness": "snapshot_manifest",
+          "required_terms": [
+            "artifact_version",
+            "snapshot_base_main_commit",
+            "Do not treat snapshot_base_main_commit as a self-updating claim"
+          ]
+        },
+        {
+          "path": "next_milestone_plans/layer3_workbench_proof_manifest.json",
+          "kind": "manifest",
+          "authority": "workbench proof metadata with nested latest entries",
+          "freshness": "snapshot_manifest",
+          "required_terms": [
+            "layer3-workbench-proof-readiness-manifest",
+            "scope_metadata_semantics",
+            "nested latest_* fields"
+          ]
+        }
+      ],
+      "current_truth_order": [
+        "tools/l3-progress-check.py",
+        "tools/l3-target-selection-validate.py",
+        "manifest contents after validator proof"
+      ],
+      "known_limits": [
+        "Large manifests are expensive to audit and easy to overread.",
+        "Snapshot commits are not self-updating current-main claims.",
+        "Lane-specific current-state ledgers should eventually replace broad narrative accretion."
+      ],
+      "next_decision": "Keep shared manifest edits out of feature lanes unless the lane explicitly changes tracked milestone claims."
+    }
+  ]
+}
