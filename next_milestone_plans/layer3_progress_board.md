@@ -8,8 +8,8 @@ Milestone:
 Planning doc:
 `next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md`.
 
-Status: branch-local behavior-preserving diagnostic redaction cleanup on
-`codex/secxbrl-resolved-fact-redaction`.
+Status: merged as PR #2173 at commit `a2775067` (`685efc39` implementation,
+`a2775067` merge).
 
 Scope: removes the two remaining local resolved-fact diagnostic
 `_redaction_scan_payload` wrapper functions by binding the existing shared
@@ -30,7 +30,29 @@ target-selection, authority-index, and `git diff --check` gates pass.
 
 Next posture: continue only byte-stable diagnostic text/hit-class extraction or
 service-family-specific runtime guard migrations after exact semantics are
-proven; do not bulk-migrate custom wrappers.
+proven; do not bulk-migrate custom wrappers. Activation lane selection captured
+in `1350-sec-xbrl-activation-lane-selection.md`.
+
+## SEC XBRL Activation Lane Selection
+
+Milestone:
+`sec_xbrl_activation_lane_selection_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1350-sec-xbrl-activation-lane-selection.md`.
+
+Status: planning/control only. Activation deferred pending auth framework
+(doc 200 follow-up) and operator acceptance criteria for value-reveal.
+
+Scope: documents the six activation-lane surfaces (default-on runtime,
+value-reveal, controlled-submit, E2E integration, multi-filing gate,
+in-app auth policy) and selects `deferred_pending_auth_framework` as the
+entry decision. No runtime, route, schema, UI, proof JSON, diagnostic
+report, or activation-lane authorization change.
+
+Next posture: proceed with either (A) `sec_xbrl_default_on_runtime_activation_freeze`
+(standalone narrowest activation) after product-authority sign-off, or (B) wait for
+auth mode selection (doc 200 follow-up) before attempting in-app auth policy activation.
 
 ## SEC XBRL Unadmitted-Key Adapter Consolidation
 
@@ -40,8 +62,8 @@ Milestone:
 Planning doc:
 `next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md`.
 
-Status: branch-local behavior-preserving service-adapter consolidation on
-`codex/secxbrl-unadmitted-key-adapter`.
+Status: merged as PR #2172 at commit `dbbc84d7` (`e966900e` implementation,
+`dbbc84d7` merge).
 
 Scope: extracts the exact `_reject_unadmitted_keys` service adapter into
 `layer3_sec_xbrl_public_authority_guard.reject_unadmitted_keys` and migrates
