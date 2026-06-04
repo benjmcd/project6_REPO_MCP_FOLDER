@@ -1292,6 +1292,11 @@ def test_layer3_mixed_source_rendered_handoff_prepare_uses_material_authority() 
         "function operationDockStatus",
         "function renderOperationDockSummary",
     )
+    controls_slice = _js_slice(
+        js_text,
+        "function setGateControls",
+        "function renderAll",
+    )
 
     for required in (
         "MIXED_SOURCE_HANDOFF_EXPORT_PREPARE_SCHEMA_ID",
@@ -1311,6 +1316,10 @@ def test_layer3_mixed_source_rendered_handoff_prepare_uses_material_authority() 
     assert "mixedSourceMode" in submit_slice
     assert "mixedSourceHandoffExportPreparePayload()" in submit_slice
     assert "Mixed-source handoff/export preparation recorded." in submit_slice
+    assert "const mixedSourceHandoffExportControlsEnabled = Boolean(mixedSourceHandoffExportPrepareAuthorityPacket())" in controls_slice
+    assert "|| mixedSourceHandoffExportControlsEnabled" in controls_slice
+    assert "elements.handoffExportPrepareDecision.disabled = !handoffExportControlsEnabled" in controls_slice
+    assert "elements.handoffExportPrepareNotes.disabled = !handoffExportControlsEnabled" in controls_slice
     assert "rendered_mixed_source_handoff_export_prepare_control" in panel_slice
     assert "State.sessionSummary.handoff_export_prepare material authority" in panel_slice
     assert "mixed_source_handoff_export_material_authority_ready" in panel_slice
