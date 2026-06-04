@@ -1,5 +1,36 @@
 # Layer3 Progress Board
 
+## P18 Mixed-Source APS Handoff Dispatch Freeze
+
+Milestone:
+`p18_mixed_source_aps_handoff_dispatch_freeze`.
+
+Planning doc:
+`next_milestone_plans/multi-ingest/41-p18-mixed-aps-handoff-freeze.md`.
+
+Status: branch-local docs/control freeze only. No runtime behavior is admitted.
+
+Scope: selects mixed-source APS handoff dispatch as the next exact downstream
+surface after P17/P17A. This is the prerequisite surface before mixed-source
+external export/download readiness can be pursued because the existing
+external-export/download readiness path requires recorded APS handoff dispatch
+authority, while current mixed-source P17/P17A authority only reaches
+reference-only handoff/export prepare.
+
+Non-goals: no backend route, runtime behavior, DTO, model, migration, UI/static
+behavior, parser, source-shape, package payload rewrite, APS handoff runtime,
+external export/download readiness, connector/provider/local-outbox behavior,
+excluded-tool behavior, or production readiness change.
+
+Proof: docs/control validation only is required for this freeze: manifest JSON
+syntax, authority-index validation, frozen target-selection validation,
+progress check, and `git diff --check`.
+
+Next posture: after this freeze merges and current-main syncs, implement only
+mixed-source APS handoff dispatch. Mixed-source external export/download
+readiness remains blocked until that runtime lands and proves recorded dispatch
+state.
+
 ## P17A Mixed-Source Current-Main Sync
 
 Milestone:
