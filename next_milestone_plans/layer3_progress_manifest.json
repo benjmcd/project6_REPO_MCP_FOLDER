@@ -47184,8 +47184,8 @@
   "p17_mixed_source_handoff_export_prepare_runtime_tracking": {
     "tracking_kind": "p17_mixed_source_handoff_export_prepare_runtime_tracking",
     "milestone": "p17_mixed_source_handoff_export_prepare_runtime",
-    "status": "branch_local_runtime_implemented",
-    "base_main_commit": "83a16914ef57f6eba139e8cd097531cb3660e752",
+    "status": "current_main_runtime_implemented_with_rendered_readiness_review_followup_branch_local",
+    "base_main_commit": "c0e0223dc4fe80c387bdfe36d1422416fe6e6bde",
     "runtime_doc": "next_milestone_plans/multi-ingest/37-p17-runtime-closeout.md",
     "freeze_doc": "next_milestone_plans/multi-ingest/36-p17-mixed-handoff-freeze.md",
     "submit_predecessor_doc": "next_milestone_plans/multi-ingest/35-p16-runtime-closeout.md",
@@ -47204,6 +47204,7 @@
     "runtime_behavior_changed_by_tracking": true,
     "package_family_policy_changed_by_tracking": true,
     "handoff_export_prepare_enabled_by_tracking": true,
+    "pre_prepare_rendered_readiness_enabled_by_tracking": false,
     "external_export_enabled_by_tracking": false,
     "aps_handoff_enabled_by_tracking": false,
     "connector_dispatch_enabled_by_tracking": false,
@@ -47251,6 +47252,7 @@
       "request_supplied_payload_rewrite_export_connector_provider_dispatch_or_destination_fields",
       "existing_conflicting_prepare_state"
     ],
+    "status_surface_review_followup": "Session summary carries mixed material-authority fields after approved P16 submit state, but pre-prepare rendered readiness remains unavailable until a material-authority UI path is separately frozen; after direct API prepare, recorded prepared state is reported.",
     "verification": [
       "python -B -m py_compile touched API/service/test files -> PASS",
       "python -B -m pytest .\\backend\\tests\\test_layer3_package_family_policy.py .\\backend\\tests\\test_layer3_api.py -q -k \"mixed_source_handoff_export_prepare or mixed_source_package_review_submit_records_decision or handoff_openapi_contracts or handoff_export_prepare_blocks_unadmitted_package_family\" -> 4 passed, 293 deselected, 4 warnings",
@@ -47277,5 +47279,5 @@
     ],
     "next_posture": "merge_and_current_main_sync_then_freeze_next_mixed_source_downstream_surface"
   },
-  "latest_p17_mixed_source_handoff_export_prepare_runtime_summary": "P17 runtime is branch-local implemented against current main 83a16914. It admits a material-authority mixed-source handoff/export prepare-only reference envelope over approved P16 submit state, records one prepare state in existing JSON-bearing session/reconciliation state, exposes only public layer3://mixed-source-package refs, keeps selected-pass and mixed authority shapes distinct, and keeps APS handoff, external export/download, connector dispatch, provider URLs, schema, parser, source-shape, payload rewrite, package mutation/reconstruction, legacy bridge deprecation, excluded-tool behavior, and production readiness blocked."
+  "latest_p17_mixed_source_handoff_export_prepare_runtime_summary": "P17 runtime is current-main implemented through PR #2205. It admits a direct material-authority mixed-source handoff/export prepare-only reference envelope over approved P16 submit state, records one prepare state in existing JSON-bearing session/reconciliation state, exposes only public layer3://mixed-source-package refs, keeps selected-pass and mixed authority shapes distinct, keeps pre-prepare rendered readiness disabled until a material-authority UI path is separately frozen, and keeps APS handoff, external export/download, connector dispatch, provider URLs, schema, parser, source-shape, payload rewrite, package mutation/reconstruction, legacy bridge deprecation, excluded-tool behavior, and production readiness blocked."
 }

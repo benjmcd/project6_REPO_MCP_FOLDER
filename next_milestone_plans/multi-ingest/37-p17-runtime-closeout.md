@@ -1,7 +1,8 @@
 # P17 Mixed-Source Handoff Export Prepare Runtime Closeout
 
-Status: branch-local runtime implementation verified against current
-`project6-origin/main` at `83a16914ef57f6eba139e8cd097531cb3660e752`.
+Status: current-main runtime implementation verified after PR #2205.
+Post-merge review-debt follow-up keeps pre-prepare rendered readiness disabled
+until a material-authority UI path is separately frozen.
 
 ## Scope
 
@@ -88,9 +89,12 @@ package payload bytes.
 
 ## Status Surfaces
 
-Session summary and package status now report mixed-source handoff/export
-prepare readiness after an approved P16 submit state. After prepare, they
-report the recorded `handoff_export_prepared` state, public package refs, the
+Session summary and package status carry the mixed material-authority fields
+after an approved P16 submit state, but they do not advertise pre-prepare
+rendered readiness because the existing UI submits only the selected-pass
+payload shape. Direct API runtime remains admitted for callers that provide the
+P17 material-authority shape. After prepare, the status surfaces report the
+recorded `handoff_export_prepared` state, public package refs, the
 reference-envelope ref, mixed material authority, package family, and negative
 authority flags.
 
@@ -158,7 +162,7 @@ The runtime fails closed for:
 
 ## Verification
 
-Branch-local verification passed:
+PR #2205 branch-local and post-merge verification passed:
 
 - touched API/service/test compile passed
 - focused mixed-source handoff/export prepare and affected API contract slice
@@ -166,6 +170,8 @@ Branch-local verification passed:
 - focused Layer 3 API mixed-source/package submit/handoff slice passed with
   `31 passed, 260 deselected, 3 warnings`
 - full Layer 3 API suite passed with `291 passed, 4 warnings`
+- post-merge review-debt follow-up keeps pre-prepare rendered readiness
+  disabled until a material-authority UI path is separately frozen
 - focused package-family/package-contract/workbench-state/submit-response/
   workbench suite passed with `71 passed, 2 warnings`
 
