@@ -10,6 +10,7 @@ from app.services.layer3_sec_xbrl_report_leak_guard import (
     raw_value_key_found,
     reject_report_public_text_references,
     reject_report_leaks,
+    reject_report_leaks_with_error,
     report_leak_flags,
     report_public_text_reference_found,
     report_text_leak_flags,
@@ -126,6 +127,33 @@ def test_reject_report_leaks_uses_service_exception_factory() -> None:
             {"local_path": "file://operator/raw.json"},
             exception_factory=lambda: GuardError("leaked"),
         )
+
+
+def test_reject_report_leaks_with_error_preserves_service_error_shape() -> None:
+    class GuardError(ValueError):
+        def __init__(self, code: str, message: str) -> None:
+            super().__init__(message)
+            self.code = code
+            self.message = message
+
+    reject_report_leaks_with_error(
+        {"safe": "hash-only"},
+        error_type=GuardError,
+        error_code="report_redaction_failed",
+        message="Report leaked raw authority references.",
+    )
+
+    with pytest.raises(GuardError) as exc:
+        reject_report_leaks_with_error(
+            {"local_path": "file://operator/raw.json"},
+            error_type=GuardError,
+            error_code="report_redaction_failed",
+            message="Report leaked raw authority references.",
+        )
+
+    assert exc.value.code == "report_redaction_failed"
+    assert exc.value.message == "Report leaked raw authority references."
+    assert str(exc.value) == "Report leaked raw authority references."
 
 
 def test_reject_report_public_text_references_uses_service_exception_factory() -> None:
