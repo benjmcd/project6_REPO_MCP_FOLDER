@@ -78,6 +78,7 @@ def test_controlled_value_reveal_submit_response_scan_blocks_nested_raw_keys_and
     assert submit._response_has_forbidden_reference({"public": [{"sidecar_receipt_id": "raw"}]}) is True
     assert submit._response_has_forbidden_reference({"public": ["operator@example.com"]}) is True
     assert submit._response_has_forbidden_reference({"public": ["issuer 0000123456 packet"]}) is True
+    assert submit._response_has_forbidden_reference({"public": ["CIK0000123456"]}) is True
     assert submit._response_has_forbidden_reference({"public": ["1000000000"]}) is False
     assert submit._response_has_forbidden_reference({"public": ["redacted public label"]}) is False
 
@@ -89,6 +90,7 @@ def test_controlled_value_reveal_records_preserve_plain_ten_digit_fact_values(mo
         lambda *_args, **_kwargs: [
             _raw_reveal_record("1000000000"),
             _raw_reveal_record("issuer 0000123456 packet", source_order=2),
+            _raw_reveal_record("CIK0000123456", source_order=3),
         ],
     )
 
@@ -102,6 +104,10 @@ def test_controlled_value_reveal_records_preserve_plain_ten_digit_fact_values(mo
     assert records[1]["lexical_value"] == ""
     assert records[1]["value_redacted"] is True
     assert records[1]["value_redaction_reason"] == "sec_xbrl_controlled_value_reveal_identity_or_raw_reference_redacted"
+    assert records[2]["effective_value"] == ""
+    assert records[2]["lexical_value"] == ""
+    assert records[2]["value_redacted"] is True
+    assert records[2]["value_redaction_reason"] == "sec_xbrl_controlled_value_reveal_identity_or_raw_reference_redacted"
 
 
 def _raw_reveal_record(value: str, *, source_order: int = 1) -> dict[str, object]:

@@ -39,7 +39,8 @@ SUBMIT_RECEIPT_REF_PREFIX = "sec-xbrl-controlled-value-reveal-submit"
 MAX_REVEAL_RECORDS = 1000
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 CONTEXTUAL_CIK_RE = re.compile(
-    r"\b(?:cik|filer|issuer|registrant|company)\b[^\n]{0,40}\b\d{10}\b"
+    r"\bcik[-:\s]*\d{10}\b"
+    r"|\b(?:filer|issuer|registrant|company)\b[^\n]{0,40}\b\d{10}\b"
     r"|\b\d{10}\b[^\n]{0,40}\b(?:cik|filer|issuer|registrant|company)\b",
     re.IGNORECASE,
 )
