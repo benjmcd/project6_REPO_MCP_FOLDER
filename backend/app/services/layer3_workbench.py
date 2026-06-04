@@ -7839,7 +7839,8 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
     raw_payload_hashes = payload.get("payload_hashes")
 
     material_authority_fields_present = any(
-        field in payload for field in ("material_preview_id", "material_preview_hash", "contract_hash")
+        str(payload.get(field) or "").strip()
+        for field in ("material_preview_id", "material_preview_hash", "contract_hash")
     )
     if material_authority_fields_present:
         return _mixed_source_package_review_submit(db, payload)
@@ -13046,6 +13047,39 @@ def _handoff_export_prepare_summary(
         else package_review_submit_state.get("package_review_submit_schema_id")
         or PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
     )
+    if package_construction_source_gate == SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE:
+        return {
+            "schema_id": HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID,
+            "available": False,
+            "state": HANDOFF_EXPORT_UNAVAILABLE_STATE,
+            "blocked_reason": "mixed_source_handoff_export_not_admitted",
+            "analysis_run_id": package_review_submit_state.get("analysis_run_id"),
+            "result_review_record_ref": package_review_submit_state.get("result_review_record_ref"),
+            "package_review_preview_hash": package_review_submit_state.get("package_review_preview_hash"),
+            "construction_basis_hash": package_review_submit_state.get("construction_basis_hash"),
+            "reconciliation_record_id": reconciliation_record_id,
+            "output_package_ids": [package.output_package_id for package in ordered_packages],
+            "package_kinds": [package.package_kind for package in ordered_packages],
+            "payload_refs": [_public_mixed_package_payload_ref(package) for package in ordered_packages],
+            "payload_hashes": [package.payload_hash for package in ordered_packages],
+            "package_review_submit_record_ref": submit_record_ref,
+            "package_review_state": package_review_submit_state.get("state"),
+            "package_construction_source_gate": package_construction_source_gate,
+            "source_shape": package_review_submit_state.get("source_shape"),
+            "source_dataset_version_ids": _json_clone(
+                package_review_submit_state.get("source_dataset_version_ids") or []
+            ),
+            "package_review_submit_schema_id": prepare_submit_schema_id,
+            "handoff_export_prepare_enabled": False,
+            "external_handoff_enabled": False,
+            "external_export_enabled": False,
+            "dispatch_enabled": False,
+            "aps_handoff_enabled": False,
+            "external_export_download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "provider_public_url_enabled": False,
+            "downstream_unavailable": list(MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+        }
     recorded_prepare = _handoff_export_prepare_from_reconciliation(reconciliation)
     if recorded_prepare is not None:
         recorded_envelope = recorded_prepare.get("handoff_export_envelope")
