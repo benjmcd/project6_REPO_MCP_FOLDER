@@ -20,7 +20,7 @@ Note: on this machine the remote is `origin`, not `project6-origin`. Use `git fe
 ### Layer 3 Track Last Confirmed Planning Position
 
 - **Doc 1252** (`1252-sec-edgar-period-unit-context-dimension-rendered-detail-ui.md`) is the last Layer 3 workbench planning doc on main.
-- `entry_main_commit: dfb150c54cc9c5c4c796e450c24bee8ab8624eae` (current main is `a2775067` after PR #2173)
+- `entry_main_commit: dfb150c54cc9c5c4c796e450c24bee8ab8624eae` (current main is `fa205665` — sprint planning commit 2026-06-04, after PRs #2174/#2175)
 - `runtime_status: implemented_branch_local` — the implementation is on a remote branch, not yet merged.
 - **Next exact posture**: `sec_edgar_statement_role_quality_profile_rendered_detail_ui_v1`
 
@@ -35,9 +35,9 @@ There are 43 `codex/sec-edgar-*` branches on the remote. Before writing new plan
 
 **First action:** Run `git ls-remote origin 'refs/heads/codex/sec-edgar*'` to list these branches, then check the progress board and each branch's tip commit against current main to identify which are ready to merge.
 
-### Doc Numbering After PR #2174
+### Doc Numbering
 
-The sprint planning PR (#2174, `claude/sprint-20260604`) writes `1350-sec-xbrl-activation-lane-selection.md`. After PR #2174 merges, the next available Layer 3 planning doc number is **1351**. If PR #2174 has not yet merged when this session starts, check whether 1350 exists before writing new docs.
+PR #2174 (`claude/sprint-20260604`) is merged. Doc `1350-sec-xbrl-activation-lane-selection.md` is confirmed on main. The next available Layer 3 planning doc number is **1351**.
 
 ---
 
@@ -89,7 +89,7 @@ Only after the planning doc is merged: implement the bounded UI control, verify 
 
 ## Progress Manifest Refresh
 
-The progress manifest (`next_milestone_plans/layer3_progress_manifest.json`) has `snapshot_date: 2026-05-06` and `snapshot_base_main_commit: ad51b1c6`. Current main is `a2775067`. After each batch of new implementations merges, run a separate manifest-refresh PR covering the new docs and updating `snapshot_date` and `snapshot_base_main_commit`.
+The progress manifest (`next_milestone_plans/layer3_progress_manifest.json`) has been refreshed: `snapshot_date: 2026-06-04`, `snapshot_base_main_commit: 3c7ab08e` (PR #2174 merge, updated in commit `fa205665`). The notes entries below the header are accurate only through PR #609 / `ad51b1c6` (2026-05-06) — a full notes refresh for docs 868-929 and 1115-1350 is pending. After each batch of new implementations merges, run a separate manifest-refresh PR to bring the notes up to date.
 
 ---
 
