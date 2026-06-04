@@ -421,7 +421,7 @@ def _value_text_requires_redaction(*values: str) -> bool:
             text,
             raw_value_keys=frozenset(),
             raw_authority_keys=frozenset(),
-            scan_cik_fullmatch=True,
+            scan_cik=True,
             scan_operator_contact=True,
         )
         is not None
@@ -789,6 +789,6 @@ def _reject_raw_or_local_authority(value: Any) -> None:
         raw_reference_message="SEC XBRL controlled value reveal rejects raw identities, paths, SEC URLs, accessions, and period dates.",
         blocked_raw_value_keys=frozenset(),
         blocked_raw_authority_keys=RAW_REQUEST_KEYS,
-        scan_cik_fullmatch=True,
+        scan_cik=True,
         scan_operator_contact=True,
     )
