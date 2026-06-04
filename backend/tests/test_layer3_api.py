@@ -473,6 +473,53 @@ def _commit_mixed_gate_b(
     )
 
 
+def _construct_mixed_package_set(
+    client: TestClient,
+    tmp_path,
+    *,
+    request_id: str,
+) -> tuple[dict, dict, dict, dict, dict]:
+    preflight, source, material, _dataset_version_id, _content_id = _prepare_mixed_material(
+        client,
+        tmp_path,
+        request_id=request_id,
+    )
+    gate_b = _commit_mixed_gate_b(
+        client,
+        request_id=request_id,
+        preflight=preflight,
+        source=source,
+        material=material,
+        approve_source_classes={"dataset_version", "aps_content_document"},
+    )
+    assert gate_b.status_code == 200, gate_b.text
+    preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": f"{request_id}-package-preview",
+            "session_id": gate_b.json()["session_id"],
+            "material_preview_id": material["material_preview_id"],
+            "material_preview_hash": material["material_preview_hash"],
+        },
+    )
+    assert preview.status_code == 200, preview.text
+    preview_body = preview.json()
+    commit = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": f"{request_id}-package-commit",
+            "session_id": gate_b.json()["session_id"],
+            "material_preview_id": material["material_preview_id"],
+            "material_preview_hash": material["material_preview_hash"],
+            "package_review_preview_hash": preview_body["package_review_preview_hash"],
+            "contract_hash": preview_body["contract_hash"],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert commit.status_code == 200, commit.text
+    return gate_b.json(), material, preview_body, commit.json(), source
+
+
 def _assert_common_response_envelope(body: dict) -> None:
     assert body["schema_id"].startswith("layer3.")
     assert body["schema_version"] == 1
@@ -10505,6 +10552,17 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
     assert set(submit_request_schema["required"]) == {
         "client_request_id",
         "session_id",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "payload_hashes",
+        "operator_decision",
+    }
+    assert len(submit_request_schema["oneOf"]) == 2
+    selected_submit_schema, mixed_submit_schema = submit_request_schema["oneOf"]
+    assert set(selected_submit_schema["required"]) == {
+        "client_request_id",
+        "session_id",
         "analysis_plan_id",
         "pass_run_id",
         "preview_id",
@@ -10516,6 +10574,22 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
         "payload_hashes",
         "operator_decision",
     }
+    assert set(mixed_submit_schema["required"]) == {
+        "client_request_id",
+        "session_id",
+        "material_preview_id",
+        "material_preview_hash",
+        "package_review_preview_hash",
+        "contract_hash",
+        "construction_basis_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "payload_hashes",
+        "operator_decision",
+    }
+    assert {"required": ["material_preview_id"]} in selected_submit_schema["not"]["anyOf"]
+    assert {"required": ["analysis_run_id"]} in mixed_submit_schema["not"]["anyOf"]
+    assert {"required": ["payload_refs"]} in mixed_submit_schema["not"]["anyOf"]
     assert submit_request_schema["properties"]["operator_decision"]["enum"] == [
         "approved",
         "changes_requested",
@@ -10523,14 +10597,26 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
         "blocked",
     ]
     assert submit_request_schema["properties"]["output_package_ids"]["type"] == "array"
+    assert submit_request_schema["properties"]["material_preview_id"]["type"] == "string"
+    assert submit_request_schema["properties"]["material_preview_hash"]["type"] == "string"
+    assert submit_request_schema["properties"]["contract_hash"]["type"] == "string"
     assert submit_request_schema["properties"]["construction_basis_hash"]["type"] == "string"
     _assert_string_array_or_string_map_schema(submit_request_schema["properties"]["payload_refs"])
     _assert_string_array_or_string_map_schema(submit_request_schema["properties"]["payload_hashes"])
     assert submit_request_schema["properties"]["handoff"]["description"].startswith("Known but non-admitted")
     assert submit_request_schema["properties"]["package_payload"]["description"].startswith("Known but non-admitted")
+    assert submit_request_schema["properties"]["provider_public_url"]["description"].startswith("Known but non-admitted")
+    assert submit_request_schema["properties"]["connector_dispatch"]["description"].startswith("Known but non-admitted")
 
     submit_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/submit", "post")
     assert submit_schema["title"] == "Layer3PackageReviewSubmitResponse"
+    assert {
+        "material_preview_id",
+        "material_preview_hash",
+        "contract_hash",
+        "package_family",
+        "negative_authority_flags",
+    } <= set(submit_schema["properties"])
     assert {
         "schema_id",
         "schema_version",
@@ -17917,13 +18003,13 @@ def test_layer3_api_mixed_source_package_construction_commit_materializes_manife
     assert len(body["output_packages"]) == 3
     assert all(ref.startswith("layer3://mixed-source-package/") for ref in body["payload_refs"])
     assert str(tmp_path) not in commit.text
-    assert body["package_review_submit_enabled"] is False
+    assert body["package_review_submit_enabled"] is True
     assert body["handoff_enabled"] is False
     assert body["external_export_download_enabled"] is False
     assert body["connector_dispatch_enabled"] is False
     assert body["provider_public_url_enabled"] is False
-    assert "package_review_submit" in body["downstream_unavailable"]
-    assert body["next_allowed_actions"] == []
+    assert "package_review_submit" not in body["downstream_unavailable"]
+    assert body["next_allowed_actions"] == ["submit_mixed_source_package_review"]
 
     with client.layer3_session_factory() as db:
         packages = db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
@@ -17940,7 +18026,7 @@ def test_layer3_api_mixed_source_package_construction_commit_materializes_manife
         reconciliation = db.query(L3ReconciliationRecord).one()
         summary = reconciliation.summary_json["workbench_package_commit"]
         assert summary["schema_id"] == "layer3.mixed_source_package_commit_summary.v1"
-        assert summary["package_review_submit_enabled"] is False
+        assert summary["package_review_submit_enabled"] is True
         assert summary["handoff_enabled"] is False
         assert summary["source_shape"] == "dataset_version_plus_aps_content_document"
 
@@ -17995,6 +18081,120 @@ def test_layer3_api_mixed_source_package_construction_commit_materializes_manife
     assert legacy.status_code == 400
     assert legacy.json()["error_code"] == "mixed_source_package_construction_scope_not_admitted"
     assert legacy.json()["blocked_fields"] == ["analysis_plan_id"]
+
+
+def test_layer3_api_mixed_source_package_review_submit_records_decision(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    gate_b, material, preview_body, commit_body, _source = _construct_mixed_package_set(
+        client,
+        tmp_path,
+        request_id="api-mixed-submit-success",
+    )
+    submit_payload = {
+        "client_request_id": "api-mixed-submit-decision",
+        "session_id": gate_b["session_id"],
+        "material_preview_id": material["material_preview_id"],
+        "material_preview_hash": material["material_preview_hash"],
+        "package_review_preview_hash": commit_body["package_review_preview_hash"],
+        "contract_hash": commit_body["contract_hash"],
+        "construction_basis_hash": commit_body["construction_basis_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_ids": commit_body["output_package_ids"],
+        "payload_hashes": commit_body["payload_hashes"],
+        "operator_decision": "approved",
+        "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+    }
+    submit = client.post("/api/v1/layer3/package/review/submit", json=submit_payload)
+    assert submit.status_code == 200, submit.text
+    body = submit.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.mixed_source_package_review_submit.v1"
+    assert body["status"] == "submitted"
+    assert body["analysis_plan_id"] == ""
+    assert body["pass_run_id"] == ""
+    assert body["result_review_record_ref"] == ""
+    assert body["package_family"] == "mixed_dataset_document"
+    assert body["material_preview_id"] == material["material_preview_id"]
+    assert body["material_preview_hash"] == material["material_preview_hash"]
+    assert body["contract_hash"] == preview_body["contract_hash"]
+    assert body["package_review_preview_hash"] == commit_body["package_review_preview_hash"]
+    assert body["construction_basis_hash"] == commit_body["construction_basis_hash"]
+    assert body["output_package_ids"] == commit_body["output_package_ids"]
+    assert body["payload_hashes"] == commit_body["payload_hashes"]
+    assert all(ref.startswith("layer3://mixed-source-package/") for ref in body["payload_refs"])
+    assert str(tmp_path) not in submit.text
+    assert body["package_review_state"] == "package_review_approved"
+    assert body["package_review_submit_enabled"] is False
+    assert body["handoff_enabled"] is False
+    assert body["export_enabled"] is False
+    assert "package_review_submit" not in body["downstream_unavailable"]
+    assert "handoff" in body["downstream_unavailable"]
+    assert "export" in body["downstream_unavailable"]
+    assert body["authority_rail"]["persistence_mode"] == "durable_mixed_source_package_review_submit"
+    assert body["negative_authority_flags"]["package_payload_rewrite_performed"] is False
+
+    with client.layer3_session_factory() as db:
+        reconciliation = db.query(L3ReconciliationRecord).one()
+        summary = reconciliation.summary_json
+        submit_state = summary["package_review_submit"]
+        assert submit_state["package_review_submit_schema_id"] == "layer3.mixed_source_package_review_submit.v1"
+        assert submit_state["submit_record_ref"] == body["submit_record_ref"]
+        assert submit_state["package_family"] == "mixed_dataset_document"
+        assert submit_state["payload_refs"] is None
+        assert submit_state["payload_hashes"] == commit_body["payload_hashes"]
+        assert summary["workbench_package_commit"]["package_review_submit_enabled"] is False
+        assert db.query(L3OutputPackage).count() == 3
+
+    replay = client.post("/api/v1/layer3/package/review/submit", json=submit_payload)
+    assert replay.status_code == 200, replay.text
+    assert replay.json()["status"] == "already_submitted"
+    assert replay.json()["submit_record_ref"] == body["submit_record_ref"]
+
+    conflict = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={**submit_payload, "client_request_id": "api-mixed-submit-conflict"},
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["error_code"] == "mixed_source_package_review_submit_already_recorded"
+
+    stale_basis = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={**submit_payload, "construction_basis_hash": "0" * 64},
+    )
+    assert stale_basis.status_code == 409
+    assert stale_basis.json()["error_code"] == "mixed_source_package_review_submit_construction_basis_mismatch"
+
+    legacy = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={**submit_payload, "analysis_plan_id": "legacy-plan"},
+    )
+    assert legacy.status_code == 400
+    assert legacy.json()["error_code"] == "mixed_source_package_review_submit_scope_not_admitted"
+    assert legacy.json()["blocked_fields"] == ["analysis_plan_id"]
+
+    payload_refs = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={**submit_payload, "payload_refs": commit_body["payload_refs"]},
+    )
+    assert payload_refs.status_code == 400
+    assert payload_refs.json()["error_code"] == "mixed_source_package_review_submit_scope_not_admitted"
+    assert payload_refs.json()["blocked_fields"] == ["payload_refs"]
+
+    stale_hashes = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={**submit_payload, "payload_hashes": ["0" * 64 for _ in commit_body["payload_hashes"]]},
+    )
+    assert stale_hashes.status_code == 409
+    assert stale_hashes.json()["error_code"] == "mixed_source_package_review_submit_payload_hashes_mismatch"
+
+    needs_notes = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={**submit_payload, "operator_decision": "rejected", "client_request_id": "api-mixed-submit-rejected"},
+    )
+    assert needs_notes.status_code == 400
+    assert needs_notes.json()["error_code"] == "package_review_submit_notes_required"
 
 
 def test_layer3_api_mixed_source_package_review_preview_rejects_stale_authority(
@@ -33406,10 +33606,23 @@ def test_layer3_api_package_review_submit_blocks_unadmitted_package_family(
         )
         assert blocked.status_code == 409
         body = blocked.json()
-        assert body["error_code"] == "package_review_submit_family_not_admitted"
-        assert body["blocked_fields"] == ["package_family"]
-        assert body["next_allowed_actions"] == ["inspect_package_family_policy"]
-        assert package_family in body["message"]
+        if package_family == "mixed_dataset_document":
+            assert body["error_code"] == "mixed_source_package_review_submit_requires_material_authority"
+            assert body["blocked_fields"] == [
+                "analysis_plan_id",
+                "pass_run_id",
+                "preview_id",
+                "preview_hash",
+                "result_review_record_ref",
+            ]
+            assert body["next_allowed_actions"] == [
+                "submit_mixed_source_material_authority_package_review_submit_request"
+            ]
+        else:
+            assert body["error_code"] == "package_review_submit_family_not_admitted"
+            assert body["blocked_fields"] == ["package_family"]
+            assert body["next_allowed_actions"] == ["inspect_package_family_policy"]
+            assert package_family in body["message"]
 
     db = client.layer3_session_factory()
     try:

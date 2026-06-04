@@ -86,6 +86,9 @@ QUAL_APS_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = package_family_policy(
 SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = package_family_policy(
     PACKAGE_FAMILY_SOURCE_INTAKE_QUALITATIVE
 ).submit_downstream_unavailable
+MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = package_family_policy(
+    PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT
+).submit_downstream_unavailable
 HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE = package_family_policy(
     PACKAGE_FAMILY_DATASET_VERSION
 ).handoff_downstream_unavailable
@@ -337,7 +340,12 @@ def package_review_submit_downstream_unavailable(
     associated_cohort_submit: bool = False,
     qualitative_aps_submit: bool = False,
     source_intake_submit: bool = False,
+    mixed_source_submit: bool = False,
 ) -> tuple[str, ...]:
+    if mixed_source_submit:
+        return package_family_policy(
+            PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT
+        ).submit_downstream_unavailable
     if source_intake_submit:
         return package_family_policy(
             PACKAGE_FAMILY_SOURCE_INTAKE_QUALITATIVE

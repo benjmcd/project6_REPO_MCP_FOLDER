@@ -78,3 +78,30 @@ def test_package_review_contract_blocks_same_fields_as_legacy_logic() -> None:
         contract.PACKAGE_REVIEW_SUBMIT_ALLOWED_FIELDS,
         contract.PACKAGE_REVIEW_SUBMIT_FORBIDDEN_FIELDS,
     )
+
+
+def test_package_review_submit_contract_admits_mixed_material_fields_only_at_contract_layer() -> None:
+    mixed_submit_payload = {
+        "client_request_id": "mixed-submit",
+        "session_id": "session-1",
+        "material_preview_id": "material-preview-1",
+        "material_preview_hash": "a" * 64,
+        "package_review_preview_hash": "preview-hash",
+        "contract_hash": "b" * 64,
+        "construction_basis_hash": "c" * 64,
+        "reconciliation_record_id": "reconciliation-1",
+        "output_package_ids": ["pkg-1", "pkg-2", "pkg-3"],
+        "payload_hashes": ["h1", "h2", "h3"],
+        "operator_decision": "approved",
+    }
+    assert contract.package_review_submit_blocked_fields(mixed_submit_payload) == []
+
+    blocked = contract.package_review_submit_blocked_fields(
+        {
+            **mixed_submit_payload,
+            "provider_public_url": "https://example.invalid/package",
+            "connector_dispatch": {"target": "external"},
+            "onlook": {"include": True},
+        }
+    )
+    assert blocked == ["connector_dispatch", "onlook", "provider_public_url"]

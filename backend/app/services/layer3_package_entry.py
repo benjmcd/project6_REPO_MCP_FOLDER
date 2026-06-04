@@ -1238,7 +1238,13 @@ def materialize_workbench_package_commit(
             "payload_hashes": [package.payload_hash for package in package_rows],
         }
     )
-    reconciliation_summary["workbench_package_commit"]["construction_basis_hash"] = construction_basis_hash
+    reconciliation_summary = {
+        **reconciliation_summary,
+        "workbench_package_commit": {
+            **reconciliation_summary["workbench_package_commit"],
+            "construction_basis_hash": construction_basis_hash,
+        },
+    }
     reconciliation_record.summary_json = reconciliation_summary
     for package in package_rows:
         package.summary_json = {
@@ -1308,7 +1314,6 @@ def materialize_mixed_source_package_commit(
         return existing
 
     unavailable = [
-        "package_review_submit",
         "handoff",
         "export",
         "aps_handoff",
@@ -1366,7 +1371,7 @@ def materialize_mixed_source_package_commit(
             "material_preview_id": material_preview_id,
             "material_preview_hash": material_preview_hash,
             "contract_hash": contract_hash,
-            "package_review_submit_enabled": False,
+            "package_review_submit_enabled": True,
             "handoff_enabled": False,
             "downstream_unavailable": list(unavailable),
         },
@@ -1417,7 +1422,13 @@ def materialize_mixed_source_package_commit(
             "payload_hashes": [package.payload_hash for package in package_rows],
         }
     )
-    reconciliation_summary["workbench_package_commit"]["construction_basis_hash"] = construction_basis_hash
+    reconciliation_summary = {
+        **reconciliation_summary,
+        "workbench_package_commit": {
+            **reconciliation_summary["workbench_package_commit"],
+            "construction_basis_hash": construction_basis_hash,
+        },
+    }
     reconciliation_record.summary_json = reconciliation_summary
     for package in package_rows:
         package.summary_json = {

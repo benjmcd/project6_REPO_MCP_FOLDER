@@ -127,6 +127,12 @@ PACKAGE_REVIEW_SUBMIT_FORBIDDEN_FIELDS = frozenset(
         "runtime_db_write",
         "artifact_manifest",
         "analysis_artifact",
+        "external_export_download",
+        "provider_public_url",
+        "public_url",
+        "connector_ref",
+        "connector_dispatch",
+        "onlook",
     }
 )
 PACKAGE_REVIEW_SUBMIT_ALLOWED_FIELDS = frozenset(
@@ -136,6 +142,9 @@ PACKAGE_REVIEW_SUBMIT_ALLOWED_FIELDS = frozenset(
         "pass_run_id",
         "preview_id",
         "preview_hash",
+        "material_preview_id",
+        "material_preview_hash",
+        "contract_hash",
         "result_review_record_ref",
         "package_review_preview_hash",
         "reconciliation_record_id",
