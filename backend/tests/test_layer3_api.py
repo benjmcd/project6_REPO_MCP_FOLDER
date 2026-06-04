@@ -18135,6 +18135,19 @@ def test_layer3_api_mixed_source_package_review_submit_records_decision(
     assert body["authority_rail"]["persistence_mode"] == "durable_mixed_source_package_review_submit"
     assert body["negative_authority_flags"]["package_payload_rewrite_performed"] is False
 
+    summary_response = client.get(f"/api/v1/layer3/session/{gate_b['session_id']}")
+    assert summary_response.status_code == 200, summary_response.text
+    summary_body = summary_response.json()
+    handoff_summary = summary_body["handoff_export_prepare"]
+    assert handoff_summary["available"] is False
+    assert handoff_summary["state"] == "handoff_export_unavailable"
+    assert handoff_summary["blocked_reason"] == "mixed_source_handoff_export_not_admitted"
+    assert handoff_summary["handoff_export_prepare_enabled"] is False
+    assert "handoff" in handoff_summary["downstream_unavailable"]
+    assert "export" in handoff_summary["downstream_unavailable"]
+    assert all(ref.startswith("layer3://mixed-source-package/") for ref in handoff_summary["payload_refs"])
+    assert str(tmp_path) not in summary_response.text
+
     with client.layer3_session_factory() as db:
         reconciliation = db.query(L3ReconciliationRecord).one()
         summary = reconciliation.summary_json
@@ -18195,6 +18208,55 @@ def test_layer3_api_mixed_source_package_review_submit_records_decision(
     )
     assert needs_notes.status_code == 400
     assert needs_notes.json()["error_code"] == "package_review_submit_notes_required"
+
+
+def test_layer3_api_package_review_submit_ignores_nullable_mixed_authority_fields_for_selected_pass(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _commit_payload,
+    ) = _construct_quant_package_set(
+        client,
+        tmp_path,
+        request_id="api-package-submit-nullable-mixed-fields",
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+    payload = {
+        "client_request_id": "api-package-submit-nullable-mixed-fields-submit",
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_body["preview_id"],
+        "preview_hash": preview_body["preview_hash"],
+        "analysis_run_id": start_body["analysis_run_id"],
+        "result_review_record_ref": review_body["review_record_ref"],
+        "package_review_preview_hash": commit_body["package_review_preview_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_ids": [package["output_package_id"] for package in commit_body["output_packages"]],
+        "payload_hashes": commit_body["payload_hashes"],
+        "operator_decision": "approved",
+        "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        "material_preview_id": None,
+        "material_preview_hash": None,
+        "contract_hash": None,
+    }
+
+    response = client.post("/api/v1/layer3/package/review/submit", json=payload)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.package_review_submit.v1"
+    assert body["analysis_plan_id"] == approval_body["analysis_plan_id"]
+    assert body["pass_run_id"] == pass_run_id
+    assert body["package_review_state"] == "package_review_approved"
 
 
 def test_layer3_api_mixed_source_package_review_preview_rejects_stale_authority(

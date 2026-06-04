@@ -32,6 +32,7 @@ const PROVIDER_PUBLIC_URL_REPLACEABLE_STATES = new Set([
 ]);
 const GATE_B_DRAFT_TTL_MS = 12 * 60 * 60 * 1000;
 const QUAL_APS_PACKAGE_CONSTRUCTION_SOURCE_GATE = '140_QUAL_APS_PACKAGE_CONSTRUCTION_FREEZE';
+const MIXED_SOURCE_PACKAGE_CONSTRUCTION_SOURCE_GATE = '32_P15_MIXED_PACKAGE_CONSTRUCTION_FREEZE';
 const QUAL_APS_PASS_SCOPE = 'single_aps_doc_qualitative_pass';
 const QUAL_APS_SOURCE_GATE = '119_L3_QUAL_APS_EXEC_ENTRY_FREEZE';
 const QUAL_APS_SOURCE_SHAPE = 'aps_content_document';
@@ -3403,6 +3404,10 @@ function packageReviewSubmitState() {
             payload_hashes: construction.payload_hashes,
             construction_basis_hash: construction.construction_basis_hash,
             package_review_preview_hash: construction.package_review_preview_hash,
+            material_preview_id: construction.material_preview_id,
+            material_preview_hash: construction.material_preview_hash,
+            contract_hash: construction.contract_hash,
+            package_family: construction.package_family,
             result_review_record_ref: construction.result_review_record_ref,
             package_construction_source_gate: construction.package_construction_source_gate,
             pass_type: construction.pass_type,
@@ -3449,6 +3454,20 @@ function isQualitativeApsPackageSubmitState(
         || construction.pass_scope === QUAL_APS_PASS_SCOPE
         || submit.source_shape === QUAL_APS_SOURCE_SHAPE
         || construction.source_shape === QUAL_APS_SOURCE_SHAPE
+    );
+}
+
+function isMixedSourcePackageSubmitState(
+    submit = packageReviewSubmitState() || {},
+    construction = packageConstructionState() || {},
+) {
+    return Boolean(
+        submit.package_construction_source_gate === MIXED_SOURCE_PACKAGE_CONSTRUCTION_SOURCE_GATE
+        || construction.package_construction_source_gate === MIXED_SOURCE_PACKAGE_CONSTRUCTION_SOURCE_GATE
+        || submit.package_family === 'mixed_dataset_document'
+        || construction.package_family === 'mixed_dataset_document'
+        || submit.package_review_submit_schema_id === 'layer3.mixed_source_package_review_submit.v1'
+        || submit.schema_id === 'layer3.mixed_source_package_review_submit.v1'
     );
 }
 
@@ -4964,7 +4983,36 @@ function canSubmitPackageReview() {
     const cohort = associatedCohortProjection(authority);
     const notes = elements.packageReviewSubmitNotes.value.trim();
     const qualitativeAps = isQualitativeApsPackageSubmitState(submit, construction);
+    const mixedSource = isMixedSourcePackageSubmitState(submit, construction);
     const previewHash = packageReviewPreviewHash();
+    const constructionBasisHash = packageConstructionBasisHash();
+    const noPendingLifecycleWork = Boolean(
+        !State.resultReviewPending
+        && !State.packageReviewPreviewPending
+        && !State.packageConstructionPending
+        && !State.packageReviewSubmitPending
+        && !replacementPackageSetAuthorityBusy()
+        && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
+        && !State.externalExportDownloadDeliveryPending
+        && (!packageReviewSubmitDecisionNeedsNotes() || notes)
+    );
+    if (mixedSource) {
+        return Boolean(
+            (submit.session_id || construction.session_id || currentSessionId())
+            && submit.package_review_submit_enabled === true
+            && submit.reconciliation_record_id
+            && submit.material_preview_id
+            && submit.material_preview_hash
+            && submit.contract_hash
+            && previewHash
+            && constructionBasisHash
+            && packageOutputPackageIds().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+            && packagePayloadHashes().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+            && noPendingLifecycleWork
+        );
+    }
     return Boolean(
         hasResultAuthorityIdentity(authority)
         && authority.selected
@@ -4978,16 +5026,7 @@ function canSubmitPackageReview() {
         && packagePayloadRefs().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
         && packagePayloadHashes().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
         && (!qualitativeAps || submit.construction_basis_hash || construction.construction_basis_hash)
-        && !State.resultReviewPending
-        && !State.packageReviewPreviewPending
-        && !State.packageConstructionPending
-        && !State.packageReviewSubmitPending
-        && !replacementPackageSetAuthorityBusy()
-        && !State.handoffExportPreparePending
-        && !State.apsHandoffDispatchPending
-        && !State.externalExportDownloadPreparePending
-        && !State.externalExportDownloadDeliveryPending
-        && (!packageReviewSubmitDecisionNeedsNotes() || notes)
+        && noPendingLifecycleWork
     );
 }
 
@@ -24741,8 +24780,26 @@ function packageReviewSubmitPayload(authority = selectedResultAuthority()) {
     const submit = packageReviewSubmitState() || {};
     const construction = packageConstructionState() || {};
     const qualitativeAps = isQualitativeApsPackageSubmitState(submit, construction);
+    const mixedSource = isMixedSourcePackageSubmitState(submit, construction);
     const constructionBasisHash = packageConstructionBasisHash();
     const previewHash = packageReviewPreviewHash();
+    if (mixedSource) {
+        return {
+            client_request_id: requestId(),
+            session_id: submit.session_id || construction.session_id || currentSessionId(),
+            material_preview_id: submit.material_preview_id || construction.material_preview_id,
+            material_preview_hash: submit.material_preview_hash || construction.material_preview_hash,
+            contract_hash: submit.contract_hash || construction.contract_hash,
+            package_review_preview_hash: previewHash,
+            construction_basis_hash: constructionBasisHash,
+            reconciliation_record_id: submit.reconciliation_record_id,
+            output_package_ids: packageOutputPackageIds(),
+            payload_hashes: packagePayloadHashes(),
+            operator_decision: elements.packageReviewSubmitDecision.value,
+            decision_notes: elements.packageReviewSubmitNotes.value.trim(),
+            expected_package_kinds: PACKAGE_REVIEW_PACKAGE_KINDS,
+        };
+    }
     const payload = {
         client_request_id: requestId(),
         session_id: authority.sessionId,
