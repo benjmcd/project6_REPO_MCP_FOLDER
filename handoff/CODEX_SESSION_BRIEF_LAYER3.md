@@ -1,146 +1,109 @@
 # Layer 3 Workbench Track — Session Brief (2026-06-04)
 
-Start from a clean worktree off `project6-origin/main` (`a2775067`, PR #2173). Read `AGENTS.md` first.
+Start from a clean worktree off `origin/main`. Read `AGENTS.md` first.
+Note: on this machine the remote is `origin`, not `project6-origin`. Use `git fetch origin main --prune`.
 
 ---
 
 ## Orientation — Read These First
 
-Before doing any work, read the following in order:
-
 1. `AGENTS.md` (harness rules, editing constraints, validation protocol)
-2. `docs/agent-harness.md` (short command-oriented execution map)
-3. `next_milestone_plans/layer3_progress_board.md` (current workbench milestone status)
-4. `next_milestone_plans/Layer3_planning_docs/929_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE_CURRENT_MAIN_SYNC.md` (the last confirmed current-main sync)
-5. `next_milestone_plans/Layer3_planning_docs/928_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE.md` (the gap freeze that 929 synced)
+2. `docs/agent-harness.md` (command-oriented execution map)
+3. `next_milestone_plans/layer3_progress_board.md` (current milestone status — read `Layer 3 Workbench Current Decision` and `Current Focus` sections first)
+4. `next_milestone_plans/Layer3_planning_docs/1252-sec-edgar-period-unit-context-dimension-rendered-detail-ui.md` (last Layer 3 workbench planning doc on main)
+5. `next_milestone_plans/Layer3_planning_docs/1251-sec-edgar-durable-delivery-archive-status-rendered-ui.md` (prior doc for context)
 
 ---
 
 ## Current State (verified against git log and planning docs, 2026-06-04)
 
-### Layer 3 Track Last Confirmed Position
+### Layer 3 Track Last Confirmed Planning Position
 
-- **Doc 929** (`929_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE_CURRENT_MAIN_SYNC.md`) merged as PR #1544.
-- Merge commit: `a7ec760f387e9b790146354ac874aab1fb01e225`
-- Merge date: before 2026-06-02 (confirmed in planning doc)
+- **Doc 1252** (`1252-sec-edgar-period-unit-context-dimension-rendered-detail-ui.md`) is the last Layer 3 workbench planning doc on main.
+- `entry_main_commit: dfb150c54cc9c5c4c796e450c24bee8ab8624eae` (current main is `a2775067` after PR #2173)
+- `runtime_status: implemented_branch_local` — the implementation is on a remote branch, not yet merged.
+- **Next exact posture**: `sec_edgar_statement_role_quality_profile_rendered_detail_ui_v1`
 
-### SEC XBRL Work That Followed (out of scope for this session)
+### Unmerged Implementation Branches
 
-After PR #1544, the SEC XBRL consolidation series ran through PRs #2128–#2173 (docs 1344–1349). That work is tracked separately and is owned by the SEC XBRL track session. **Do not touch those files.**
+There are 43 `codex/sec-edgar-*` branches on the remote. Before writing new planning docs, check which of these have unmerged implementation work that should be PR'd and merged. Key examples visible in the remote:
+- `codex/sec-edgar-html-ixbrl-*` series (parser, material bridge, operator status, rendered status, downstream proof)
+- `codex/sec-edgar-downstream-*` series
+- `codex/l3-sec-edgar-p9`
+- `codex/sec-edgar-live-closeout-readiness`
+- `codex/sec-edgar-current-main-sync`
 
-### Current Exact Next Posture (from doc 929)
+**First action:** Run `git ls-remote origin 'refs/heads/codex/sec-edgar*'` to list these branches, then check the progress board and each branch's tip commit against current main to identify which are ready to merge.
 
-> `select_source_directory_package_supersession_commit_route_state_contract_after_gap_freeze_sync`
+### Doc Numbering After PR #2174
 
-This means: write a new planning doc (doc 930) that selects the exact route/state contract
-for resolving the source-directory package supersession commit mismatch identified in the
-gap freeze.
-
-### What the Gap Freeze Found (from doc 928/929)
-
-The existing route `POST /api/v1/layer3/package/supersession/commit` uses:
-- `backend/app/services/layer3_package_supersession_commit.py`
-- `backend/app/services/layer3_source_directory_qualitative_analysis.py` (for preview)
-- `backend/app/services/layer3_replacement_package_set_authority.py` (replacement authority)
-
-The gap: the source-directory preview/replacement authority hash bases are not compatible
-with the existing generic package supersession commit route contract. The blocked target
-remains `/review/layer3 #package-supersession-commit-panel`.
+The sprint planning PR (#2174, `claude/sprint-20260604`) writes `1350-sec-xbrl-activation-lane-selection.md`. After PR #2174 merges, the next available Layer 3 planning doc number is **1351**. If PR #2174 has not yet merged when this session starts, check whether 1350 exists before writing new docs.
 
 ---
 
 ## Prioritized Work Queue
 
-### 1. Write contract-selection doc (doc 930) — IMMEDIATE
+### 1. Verify and merge ready sec-edgar implementation branches (IMMEDIATE)
 
-**Goal:** Write `next_milestone_plans/Layer3_planning_docs/930_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_CONTRACT_SELECTION.md`.
+**Goal:** Bring branch-local sec-edgar implementations to current main before starting new work.
 
-This doc selects the exact route/state contract that resolves the gap identified in doc 928.
+For each unmerged `codex/sec-edgar-*` branch:
+1. Check if it has an open PR (`gh pr list --head codex/sec-edgar-<name>`)
+2. If no PR, fetch the branch and compare to current main (`git log origin/sec-edgar-<name>..origin/main --oneline`)
+3. If the branch has new commits relative to main: run the branch's verification commands, create a PR, merge it
+4. Follow the Tier classification from the branch's planning doc (Tier-1 = self-verify + CI; Tier-2 = independent review or recorded justification before merge)
 
-**What to include in doc 930:**
-- The exact route surface: `POST /api/v1/layer3/package/supersession/commit`
-- The exact hash-compatibility fix: how source-directory preview hashes will be compatible with the commit contract
-- The exact state transitions admitted: what happens after a successful commit
-- The exact non-admission list: no new routes, no model/migration changes, no RAG/provider/connector widening
-- A capability isolation matrix (same format as doc 199)
-- Stop conditions
-
-**Before writing:** Read these files to understand the gap:
-- `backend/app/services/layer3_package_supersession_commit.py` (current commit service)
-- `backend/app/services/layer3_replacement_package_set_authority.py` (replacement authority)
-- `backend/app/services/layer3_source_directory_qualitative_analysis.py` (preview service)
-- `backend/tests/test_layer3_package_supersession_commit.py` (if it exists)
-
-**Verification for this PR (docs only, no code):**
-```powershell
+**Verification for each branch:**
+```
+python -m pytest backend/tests/test_layer3*.py -q
 python tools/l3-progress-check.py
-python -m json.tool next_milestone_plans/layer3_progress_manifest.json > $null
+python -m json.tool next_milestone_plans/layer3_progress_manifest.json > /dev/null
 git diff --check
 ```
 
-### 2. Implement the route/state contract fix (doc 931) — after doc 930 merges
+### 2. Write next planning doc (after branch-local merges resolve)
 
-**Goal:** Write the implementation freeze doc (931) and implement the hash-compatibility fix.
+**Goal:** Write the next Layer 3 workbench planning doc continuing from doc 1252's posture.
 
-This is a bounded backend fix: modify `layer3_package_supersession_commit.py` to accept
-source-directory preview hashes using the contract defined in doc 930.
+- Next posture from doc 1252: `sec_edgar_statement_role_quality_profile_rendered_detail_ui_v1`
+- Write doc 1351 (or the next available number after 1350 is confirmed taken): `1351-sec-edgar-statement-role-quality-profile-rendered-detail-ui.md`
+- Before writing: read docs 1248–1252 for the existing arc of operator product surface / rendered UI controls for SEC EDGAR to ensure the new doc is consistent.
 
-**Constraints:**
-- Backend-only: no UI changes yet
-- No new routes
-- No model/migration changes
-- Full backend test suite must pass
+**Stop conditions for the planning doc:**
+- No code changes in this PR
+- No new routes, schema, or persistence in this PR
+- Doc only: capability isolation matrix, evidence ledger, entry decision, stop conditions
 
-### 3. Implement the rendered commit control UI (doc 932) — after doc 931 merges
+**Verification:**
+```
+python tools/l3-progress-check.py
+python -m json.tool next_milestone_plans/layer3_progress_manifest.json > /dev/null
+git diff --check
+```
 
-**Goal:** Write the rendered UI doc (932) and implement `/review/layer3 #package-supersession-commit-panel`.
+### 3. Implement per new planning doc
 
-This completes the source-directory package supersession commit UI chain started in doc 918/919.
-
-**Constraints:**
-- `layer3.js` only (no new HTML elements if avoidable)
-- Requires headed AND headless Chromium proof via Playwright
-- No full mockup activation
-- No frontend-only durable authority
-
-### 4. Select next full mockup blocker (after rendered commit merges)
-
-**Goal:** Write the next gap-selection or blocker-selection doc.
-
-Reference: `next_milestone_plans/Layer3_planning_docs/917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md` — read this to understand the full mockup program's remaining blockers.
+Only after the planning doc is merged: implement the bounded UI control, verify with Playwright headed + headless, and merge.
 
 ---
 
 ## Progress Manifest Refresh
 
-The progress manifest (`next_milestone_plans/layer3_progress_manifest.json`) has
-`snapshot_date: 2026-05-06`, predating doc 929. After doc 930 merges, run a separate
-manifest-refresh PR: read docs 868–929 in order, add notes entries matching existing
-style, update `snapshot_date` and `snapshot_base_main_commit` to `a2775067`, verify
-with `python tools/l3-progress-check.py`.
-
----
-
-## Auth/Security Note
-
-Doc 200 (`200_AUTH_SECURITY_ENTRY_CONTRACT.md`) has `entry_decision: deferred`,
-`selected_mode: null`. Read its stop conditions before any auth work. Do not implement
-auth until a follow-up freeze explicitly authorizes a mode.
+The progress manifest (`next_milestone_plans/layer3_progress_manifest.json`) has `snapshot_date: 2026-05-06` and `snapshot_base_main_commit: ad51b1c6`. Current main is `a2775067`. After each batch of new implementations merges, run a separate manifest-refresh PR covering the new docs and updating `snapshot_date` and `snapshot_base_main_commit`.
 
 ---
 
 ## What Is EXPLICITLY OUT OF SCOPE for this session
 
 - SEC XBRL services (`backend/app/services/layer3_sec_xbrl_*.py`) — owned by SEC XBRL session
-- `backend/tests/test_sec_xbrl*.py` — owned by SEC XBRL session
-- `diagnostics/assessment/sec_xbrl_*.py`
+- `backend/tests/test_sec_xbrl*.py` and `diagnostics/assessment/sec_xbrl_*.py`
 - `next_milestone_plans/Layer3_planning_docs/1344-*.md` through `1350-*.md`
-- Auth/security implementation (zero auth infrastructure; see doc 200)
-- Full mockup program activation (blocked by doc 917 remaining items)
+- Auth/security implementation (zero auth infrastructure; see `200_AUTH_SECURITY_ENTRY_CONTRACT.md`)
 - Provider/public URL runtime
 - Connector/destination dispatch runtime
-- Qualitative/hybrid/RAG execution (beyond already-admitted)
-- Source breadth expansion beyond recursive server-configured ingestion
+- Qualitative/hybrid/RAG execution beyond already-admitted
+- Source breadth expansion beyond server-configured recursive ingestion
+- Full mockup program activation (blocked; see doc 917)
 
 ---
 
@@ -148,26 +111,23 @@ auth until a follow-up freeze explicitly authorizes a mode.
 
 This session owns:
 - `backend/app/review_ui/static/layer3.js`, `layer3.html`, `layer3.css`
-- `backend/app/services/layer3_workbench.py` and workbench services (non-SEC XBRL)
-- `backend/app/services/layer3_package_supersession_commit.py`
-- `backend/app/services/layer3_replacement_package_set_authority.py`
+- `backend/app/services/layer3_sec_edgar_*.py` and other Layer 3 workbench services (non-SEC XBRL)
 - `backend/app/api/layer3.py`
 - `e2e/layer3-workbench.spec.js`, `e2e/layer3-handoff.spec.js`
 - `next_milestone_plans/layer3_progress_manifest.json`
-- `next_milestone_plans/Layer3_planning_docs/930_*.md` and beyond
+- `next_milestone_plans/Layer3_planning_docs/1351_*.md` and beyond (non-SEC XBRL docs)
 
 **Do NOT touch:**
 - `backend/app/services/layer3_sec_xbrl_*.py`
 - `backend/tests/test_sec_xbrl*.py`
 - `diagnostics/assessment/sec_xbrl_*.py`
 - `next_milestone_plans/Layer3_planning_docs/1344-*.md` through `1350-*.md`
-- `next_milestone_plans/layer3_progress_board.md` (for SEC XBRL entries — those are owned by the SEC XBRL session)
 
 ---
 
 ## Verification Commands (run after each PR)
 
-```powershell
+```
 # Backend Layer 3 tests
 python -m pytest backend/tests/test_layer3*.py -q
 
@@ -179,8 +139,8 @@ npx playwright test --project=chromium e2e/layer3-workbench.spec.js
 python tools/l3-progress-check.py
 
 # JSON validity
-python -m json.tool next_milestone_plans/layer3_progress_manifest.json > $null
-python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json > $null
+python -m json.tool next_milestone_plans/layer3_progress_manifest.json > /dev/null
+python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json > /dev/null
 
 # Clean diff
 git diff --check

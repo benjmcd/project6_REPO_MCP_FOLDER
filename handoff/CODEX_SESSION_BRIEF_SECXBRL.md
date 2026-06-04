@@ -1,149 +1,131 @@
 # SEC XBRL Track — Session Brief (2026-06-04)
 
-Start from a clean worktree off `project6-origin/main` (`a2775067`, PR #2173). Read `AGENTS.md` first.
+Start from a clean worktree off `origin/main`. Read `AGENTS.md` first.
+Note: on this machine the remote is `origin`, not `project6-origin`. Use `git fetch origin main --prune`.
+
+**Wait for PR #2174 (`claude/sprint-20260604`) to merge before starting.** It updates the progress board (marks PRs #2172/#2173 as merged) and adds doc 1350 (activation lane selection).
 
 ---
 
 ## Current State (verified against git log, 2026-06-04)
 
-The last two milestones recorded on the progress board as "branch-local" are **already merged**:
+### Consolidation Series Complete
 
-- `sec_xbrl_unadmitted_key_adapter_v1` → merged as PR #2172 (`dbbc84d7`)
-- `sec_xbrl_resolved_fact_diagnostic_redaction_cleanup_v1` → merged as PR #2173 (`a2775067`)
-
-**First action:** Update `next_milestone_plans/layer3_progress_board.md` to mark these as `merged`
-rather than `branch-local`. Use a focused PR that touches only the board and manifest JSON files
-(no code). Verify with `tools/l3-progress-check.py` after.
-
----
-
-## What Was Built (consolidation series, PRs #2128–#2173)
-
-The consolidation work landed the following shared modules:
-- `diagnostics/assessment/sec_xbrl_diagnostic_framework.py` — diagnostic criterion/blocking-reason/decision/report-envelope helpers
-- `backend/app/services/layer3_sec_xbrl_public_authority_guard.py` — raw/local authority violation detection + `reject_unadmitted_keys` adapter
-- `backend/app/services/layer3_sec_xbrl_report_leak_guard.py` — public-report leak flags, text-leak, raw-value-key, report-leak rejection
-- `backend/app/services/layer3_sec_xbrl_canonical_concepts.py` — canonical report redaction scan payloads
-- `diagnostics/assessment/sec_xbrl_report_redaction.py` — diagnostic residual magnitude stripping
-- Report-envelope, matrix-label, stratified-identity, nonlocal-hit-class, and sector redaction helpers (batches 1–3)
-- Package-family policy registry and mixed-source package contract
+PRs #2128–#2173 (docs 1344–1349) are all merged. Current main is `a2775067` (PR #2173 merge). The shared modules are in place: diagnostic framework, public authority guard, report leak guard, canonical concepts, redaction helpers, package-family policy, mixed-source contract, unadmitted-key adapter, resolved-fact redaction wrappers.
 
 **Test state (last verified):** `477 passed, 3 warnings` on the full SEC XBRL suite.
 
----
+### Activation Lane (Doc 1350)
 
-## Next Posture (per planning doc 1349)
+After PR #2174 merges, doc `1350-sec-xbrl-activation-lane-selection.md` is on main with:
+```yaml
+entry_decision: deferred_pending_auth_framework
+selected_activation_mode: null
+runtime_status: not_implemented
+```
 
-From the progress board "Next posture":
-> Continue only byte-stable diagnostic text/hit-class extraction or
-> service-family-specific runtime guard migrations after exact semantics are
-> proven; do not bulk-migrate custom wrappers.
+**Do NOT activate any of the six activation surfaces** (default-on runtime, value-reveal, controlled-submit, E2E integration, multi-filing gate, in-app auth policy) until:
+- Auth framework mode is selected (doc 200 `selected_mode` is still null)
+- Operator acceptance criteria are defined
+- Each activation surface has its own separate freeze/contract/proof
 
-**Remaining custom surfaces (do NOT bulk-migrate):**
-- `layer3_sec_xbrl_projection_persistence._reject_raw_or_local_authority` (already delegates to shared guard; no migration needed)
-- `layer3_sec_xbrl_statement_packet_persistence._reject_raw_or_local_authority` (same)
-- `layer3_sec_xbrl_operator_review_workflow._reject_raw_or_local_authority` (same)
-- CIK/contact scan variants, auth-binding helpers, residual-magnitude policy surfaces
+### Branch-Local Items (Priority Merge Queue)
 
-These are NOT exact duplicates of the shared guard — they preserve service-specific error contracts.
-**Do not touch them** until a focused planning doc defines the exact semantics.
+The following guard consolidation branches are on the remote, verified but unmerged. Merge in this order (each depends on the prior):
+
+| Doc | Branch | Milestone |
+|-----|--------|-----------|
+| 1346 | `codex/secxbrl-authority-guard` | `sec_xbrl_public_authority_guard_persistence_family_v1` |
+| 1347 | `codex/secxbrl-authority-guard-tranche2` | `sec_xbrl_public_authority_guard_value_reveal_family_v1` |
+| 1348 | `codex/secxbrl-auth-binding-guard` | `sec_xbrl_public_authority_guard_auth_binding_family_v1` |
+
+Then continue with the deeper items (in order from the progress board):
+
+| Branch | Milestone |
+|--------|-----------|
+| `codex/secxbrl-review-debt` | `sec_xbrl_transaction_safe_operator_review_persistence_v1_review_debt_closeout` |
+| `codex/secxbrl-e2e-offline-orchestrator` | `sec_xbrl_e2e_offline_evidence_orchestrator_v1` |
+| `codex/secxbrl-e2e-integration-design` | E2E contract adapter + design |
+| `codex/secxbrl-packet-dir-intake` | Nonlocal admission/backfill disposition |
+| `codex/secxbrl-residual-review-closeout` | Residual review-thread closeout #2070/#2074 |
 
 ---
 
 ## Prioritized Work Queue
 
-### 1. Progress board sync (IMMEDIATE, ~30 min)
+### 1. Merge guard consolidation branches (IMMEDIATE)
 
-**Goal:** Correct the stale board before any further SEC XBRL work.
+For each branch (1346 → 1347 → 1348 in order):
 
 ```
-Task: Merge the two stale board entries (PR #2172, #2173)
-Files: next_milestone_plans/layer3_progress_board.md
-       next_milestone_plans/layer3_progress_manifest.json (snapshot_base_main_commit, notes)
-       next_milestone_plans/layer3_workbench_proof_manifest.json (if affected)
-Verification:
-  - python tools/l3-progress-check.py passes
-  - git diff --check clean
-  - No code or behavior change
-PR title: "Sync SEC XBRL progress board to merged PR #2172-#2173"
+# Check out branch and verify
+git fetch origin codex/secxbrl-authority-guard
+git checkout -b local-verify origin/codex/secxbrl-authority-guard
+
+# Run verification
+python -m pytest backend/tests/test_sec_xbrl*.py -q
+python tools/l3-progress-check.py
+git diff --check
+
+# If clean: create PR and merge
+gh pr create --title "..." --base main --head codex/secxbrl-authority-guard
 ```
 
-### 2. SEC XBRL activation lane — write planning doc 1350 (AFTER board sync)
+After persistence-family merges, rebase or re-verify value-reveal and auth-binding branches on the new main before merging them.
 
-**Goal:** Write `next_milestone_plans/Layer3_planning_docs/1350-sec-xbrl-activation-lane-selection.md`.
+**Tier classification**: per doc 1346/1347/1348. All three are Tier-1 behavior-preserving consolidations — verify + CI pass is sufficient; independent review not required unless a concrete risk trigger appears.
 
-This is the **activation planning doc** that authorizes (or explicitly defers) the parked
-activation lane. The consolidation work (#2128–#2173) was the prerequisite. Now the question
-is whether and how to enable the default-on runtime.
+### 2. Continue with deeper branch-local items
 
-**Template to follow:** `199_AUTH_SECURITY_ENTRY_FREEZE.md` (same structure with capability
-isolation matrix, evidence ledger, stop conditions, and entry_decision field).
+After the three guard branches merge, work through the remaining branch-local items in the order shown in the progress board (top = newest, merge in reverse order = oldest first). For each:
+1. Check out the branch
+2. Run the verification commands listed in the progress board entry for that milestone
+3. If clean: create PR, let CI run, merge
+4. Update `next_milestone_plans/layer3_progress_board.md` status to reflect the merge
 
-**The activation lane covers:**
-- `layer3_sec_xbrl_default_on_admission_restatement.py` — default-on runtime posture
-- `backend/app/services/layer3_sec_xbrl_value_reveal_authority.py` — value-reveal authorization
-- `backend/app/services/layer3_sec_xbrl_controlled_value_reveal_submit.py` — controlled reveal submit
-- E2E integration path (`layer3_sec_xbrl_e2e_integration.py`, `layer3_sec_xbrl_e2e_offline_orchestrator.py`)
-- Multi-filing evidence authority gate (`layer3_sec_xbrl_multi_filing_evidence_authority_gate.py`)
-- In-app auth policy (`layer3_sec_xbrl_in_app_auth_policy.py`)
+### 3. New work after branch-local queue clears
 
-**Entry decision choices:**
-- `deferred_pending_auth_security_framework` (RECOMMENDED if auth is not yet implemented)
-- `deferred_pending_operator_acceptance_criteria`
-- `proceed_with_bounded_default_on_validation_only`
-
-**Stop conditions for this planning doc:**
-- Do NOT change any runtime default in this PR
-- Do NOT enable value-reveal or controlled-submit behavior
-- Do NOT modify E2E integration routes
-- Doc only: capability isolation matrix + evidence ledger + entry decision
-
-**Verification for this PR:**
-- `python tools/l3-progress-check.py` passes
-- Full SEC XBRL suite: `python -m pytest backend/tests/test_sec_xbrl*.py -q` — no regression
-- `git diff --check` clean
-
-### 3. After planning doc 1350 is merged
-
-Only then: implement whatever entry_decision 1350 selects. If `deferred`, stop and coordinate
-with the Layer 3 / Auth track. If `proceed_with_bounded_default_on_validation_only`, write
-the corresponding contract doc (1351) before any code.
+Only after branch-local queue is clear: check `1336-transaction-safe-review.md` for the next design gate, then write the next implementation doc. The activation lane (doc 1350) stays deferred until auth framework is unblocked.
 
 ---
 
 ## What Is EXPLICITLY OUT OF SCOPE for this session
 
-- Auth/security implementation (zero auth infrastructure exists; see `200_AUTH_SECURITY_ENTRY_CONTRACT.md`)
+- Auth/security framework implementation (see doc 200 `selected_mode: null`)
+- Default-on runtime activation
+- Value-reveal behavior changes
+- Controlled-submit behavior changes
+- E2E integration route activation
+- Multi-filing evidence authority gate activation
+- In-app auth policy activation
 - Frontend/UI changes
 - Alembic migrations
 - Source acquisition (no live Arelle invocation, no live SEC network calls)
-- Value-reveal behavior changes
-- `layer3_sec_xbrl_operator_review_workflow.py` beyond the already-merged `_reject_unadmitted_keys` migration
-- Any new `_reject_raw_or_local_authority` wrapper consolidation (these are NOT exact duplicates)
+- Layer 3 workbench services (`layer3_workbench.py`, `layer3_sec_edgar_*.py`) — owned by Layer 3 session
 
 ---
 
 ## File Ownership — Avoid Collisions with Layer 3 Session
 
 This session owns:
-- `backend/app/services/layer3_sec_xbrl_*.py` files
-- `backend/tests/test_sec_xbrl*.py` files
+- `backend/app/services/layer3_sec_xbrl_*.py`
+- `backend/tests/test_sec_xbrl*.py`
 - `diagnostics/assessment/sec_xbrl_*.py`
-- `next_milestone_plans/Layer3_planning_docs/1349-*.md`, `1350-*.md`
-- `next_milestone_plans/layer3_progress_board.md` (for SEC XBRL entries only)
+- `next_milestone_plans/Layer3_planning_docs/1349-*.md`, `1350-*.md`, and future SEC XBRL docs
 
 **Do NOT touch:**
-- `backend/app/services/layer3_workbench.py` or other Layer 3 workbench services
+- `backend/app/services/layer3_workbench.py` or Layer 3 workbench services
+- `backend/app/services/layer3_sec_edgar_*.py`
 - `backend/app/review_ui/static/layer3.js` or `.html`
 - `backend/app/api/layer3.py`
 - `next_milestone_plans/Layer3_planning_docs/199_*.md`, `200_*.md`
-- `next_milestone_plans/layer3_progress_manifest.json` (owned by Layer 3 session for APS/workbench entries)
+- `next_milestone_plans/layer3_progress_manifest.json` (owned by Layer 3 session)
 
 ---
 
 ## Verification Commands (run after each PR)
 
-```powershell
+```
 # Full SEC XBRL suite
 python -m pytest backend/tests/test_sec_xbrl*.py -q
 
@@ -151,8 +133,8 @@ python -m pytest backend/tests/test_sec_xbrl*.py -q
 python tools/l3-progress-check.py
 
 # JSON validity
-python -m json.tool next_milestone_plans/layer3_progress_manifest.json > $null
-python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json > $null
+python -m json.tool next_milestone_plans/layer3_progress_manifest.json > /dev/null
+python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json > /dev/null
 
 # Clean diff
 git diff --check
