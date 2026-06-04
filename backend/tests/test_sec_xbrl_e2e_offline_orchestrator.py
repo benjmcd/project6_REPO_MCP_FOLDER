@@ -343,6 +343,30 @@ def test_offline_orchestrator_text_guard_rejects_raw_accession_shape() -> None:
     assert exc.value.details == {"field": "receipt"}
 
 
+def test_offline_orchestrator_output_guard_rejects_cik_public_refs() -> None:
+    for raw_reference in ("0000123456", "issuer 0000123456 packet", "CIK0000123456"):
+        with pytest.raises(orchestrator.SecXbrlE2EOfflineOrchestratorError) as exc:
+            orchestrator._reject_public_raw_or_local_authority({"summary": {"public_ref": raw_reference}})
+
+        assert exc.value.code == "sec_xbrl_e2e_offline_orchestrator_raw_reference_not_admitted"
+        assert exc.value.message == (
+            "SEC XBRL offline orchestration public output cannot carry raw accession, SEC URL, or local path strings."
+        )
+        assert exc.value.details == {"field": "value"}
+
+
+def test_offline_orchestrator_text_guard_rejects_contextual_cik_refs() -> None:
+    with pytest.raises(orchestrator.SecXbrlE2EOfflineOrchestratorError) as exc:
+        orchestrator._reject_public_text_patterns("issuer 0000123456 packet", field="receipt")
+
+    assert exc.value.code == "sec_xbrl_e2e_offline_orchestrator_raw_reference_not_admitted"
+    assert exc.value.details == {"field": "receipt"}
+
+
+def test_offline_orchestrator_text_guard_avoids_broad_cik_substring_match() -> None:
+    orchestrator._reject_public_text_patterns("batch 1000000000 archived", field="receipt")
+
+
 def _evidence() -> dict[str, Any]:
     sidecar_records = [
         _record(

@@ -314,6 +314,8 @@ def reject_public_text_references(
     raw_reference_message: str,
     field: str,
     scan_raw_period_dates: bool = True,
+    scan_cik_fullmatch: bool = False,
+    scan_contextual_cik: bool = False,
 ) -> None:
     if isinstance(value, Mapping):
         for key, item in value.items():
@@ -324,6 +326,8 @@ def reject_public_text_references(
                 raw_reference_message=raw_reference_message,
                 field=str(key),
                 scan_raw_period_dates=scan_raw_period_dates,
+                scan_cik_fullmatch=scan_cik_fullmatch,
+                scan_contextual_cik=scan_contextual_cik,
             )
         return
     if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
@@ -335,11 +339,18 @@ def reject_public_text_references(
                 raw_reference_message=raw_reference_message,
                 field=field,
                 scan_raw_period_dates=scan_raw_period_dates,
+                scan_cik_fullmatch=scan_cik_fullmatch,
+                scan_contextual_cik=scan_contextual_cik,
             )
         return
     if not isinstance(value, str):
         return
-    if public_text_reference_detected(value, scan_raw_period_dates=scan_raw_period_dates):
+    if public_text_reference_detected(
+        value,
+        scan_raw_period_dates=scan_raw_period_dates,
+        scan_cik_fullmatch=scan_cik_fullmatch,
+        scan_contextual_cik=scan_contextual_cik,
+    ):
         raise error_type(
             raw_reference_code,
             raw_reference_message,
@@ -360,6 +371,8 @@ def reject_public_output_policy(
     residual_magnitude_code: str | None = None,
     residual_magnitude_message: str | None = None,
     scan_raw_period_dates: bool = True,
+    scan_cik_fullmatch: bool = False,
+    scan_contextual_cik: bool = False,
 ) -> None:
     if isinstance(value, Mapping):
         for key, item in value.items():
@@ -389,6 +402,8 @@ def reject_public_output_policy(
                 residual_magnitude_code=residual_magnitude_code,
                 residual_magnitude_message=residual_magnitude_message,
                 scan_raw_period_dates=scan_raw_period_dates,
+                scan_cik_fullmatch=scan_cik_fullmatch,
+                scan_contextual_cik=scan_contextual_cik,
             )
         return
     if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
@@ -405,6 +420,8 @@ def reject_public_output_policy(
                 residual_magnitude_code=residual_magnitude_code,
                 residual_magnitude_message=residual_magnitude_message,
                 scan_raw_period_dates=scan_raw_period_dates,
+                scan_cik_fullmatch=scan_cik_fullmatch,
+                scan_contextual_cik=scan_contextual_cik,
             )
         return
     reject_public_text_references(
@@ -414,6 +431,8 @@ def reject_public_output_policy(
         raw_reference_message=raw_reference_message,
         field="value",
         scan_raw_period_dates=scan_raw_period_dates,
+        scan_cik_fullmatch=scan_cik_fullmatch,
+        scan_contextual_cik=scan_contextual_cik,
     )
 
 
