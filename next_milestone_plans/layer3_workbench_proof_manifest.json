@@ -44986,5 +44986,82 @@
     ],
     "next_posture": "mixed_source_package_review_submit_runtime_after_freeze_merge_and_current_main_sync"
   },
-  "latest_p16_mixed_source_package_review_submit_freeze_proof_summary": "P16 proof records a docs-only submit freeze for mixed-source packages. It defines future material-authority submit inputs, review decision semantics, idempotency, fail-closed cases, and non-goals while keeping submit runtime and all downstream lifecycle behavior blocked."
+  "latest_p16_mixed_source_package_review_submit_freeze_proof_summary": "P16 proof records a docs-only submit freeze for mixed-source packages. It defines future material-authority submit inputs, review decision semantics, idempotency, fail-closed cases, and non-goals while keeping submit runtime and all downstream lifecycle behavior blocked.",
+  "p16_mixed_source_package_review_submit_runtime_proof": {
+    "proof_kind": "p16_mixed_source_package_review_submit_runtime_proof",
+    "milestone": "p16_mixed_source_package_review_submit_runtime",
+    "status": "branch_local_runtime_implementation_verified",
+    "source_branch": "codex/p16-submit-runtime-0604",
+    "base_main_commit": "4825fdc07699d1a634c1fb8a6b3686de2ac74ace",
+    "planning_doc": "next_milestone_plans/multi-ingest/35-p16-runtime-closeout.md",
+    "proof_terms": "Mixed-source package-review submit is admitted only from material authority over existing P15 reconciliation/package rows and records one submit decision state without handoff, export, parser, schema, source-shape, request payload rewrite, package reconstruction, or production-readiness effects.",
+    "submit_schema_id": "layer3.mixed_source_package_review_submit.v1",
+    "authority_basis": [
+      "P16 submit freeze",
+      "P15 mixed-source package construction commit runtime",
+      "P14 mixed-source package review preview",
+      "committed Gate B material decision",
+      "P12 mixed-source package contract",
+      "P13 package-family policy registry",
+      "P13A route-level gates"
+    ],
+    "operator_decisions": [
+      "approved",
+      "changes_requested",
+      "rejected",
+      "blocked"
+    ],
+    "positive_runtime_effects": [
+      "one L3ReconciliationRecord.summary_json.package_review_submit state",
+      "one L3Session.summary_json.package_review_submit state",
+      "mixed-source package-review submit response with public payload refs"
+    ],
+    "negative_authority_flags": {
+      "handoff_enabled": false,
+      "export_enabled": false,
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "package_reconstruction_enabled": false,
+      "legacy_bridge_deprecated": false,
+      "excluded_tool_included": false,
+      "production_readiness_claimed": false
+    },
+    "review_debt_closed": [
+      "explicit_empty_expected_package_kinds_fail_closed",
+      "material_authority_dispatch_uses_field_presence_not_truthiness",
+      "mixed_package_payload_refs_redacted_to_public_refs",
+      "client_request_id_submit_tracking_recorded"
+    ],
+    "fail_closed_cases": [
+      "missing_material_preview_authority",
+      "stale_or_mismatched_material_preview_id",
+      "stale_or_mismatched_material_preview_hash",
+      "stale_or_mismatched_package_review_preview_hash",
+      "stale_or_mismatched_contract_hash",
+      "stale_or_mismatched_construction_basis_hash",
+      "missing_gate_b_material_authority",
+      "missing_or_mismatched_p15_reconciliation_record",
+      "missing_partial_or_extra_package_rows",
+      "explicit_empty_or_unexpected_package_kinds",
+      "stale_or_mismatched_output_package_ids",
+      "stale_or_mismatched_payload_hashes",
+      "unsupported_operator_decision",
+      "missing_decision_notes_for_non_approval_decisions",
+      "selected_pass_lifecycle_fields_on_mixed_submit_request",
+      "request_supplied_payload_refs",
+      "handoff_export_provider_connector_or_excluded_tool_fields",
+      "existing_conflicting_submit_state"
+    ],
+    "verification": [
+      "py_compile touched API/service/test files passed",
+      "package-family/package-contract/workbench-state/submit-response/workbench focused suite passed: 71 passed, 2 warnings",
+      "mixed-source/package-submit/package-construction/API keyword slice passed: 33 passed, 254 deselected, 3 warnings",
+      "manifest JSON syntax passed",
+      "Layer 3 authority-index, target-selection, and progress validators passed"
+    ],
+    "next_posture": "mixed_source_handoff_export_freeze_after_submit_runtime_merge_and_current_main_sync"
+  },
+  "latest_p16_mixed_source_package_review_submit_runtime_proof_summary": "P16 runtime proof is branch-local verified. It records material-authority mixed-source package-review submit over P15 package rows, proves review-debt closure for empty expected package kinds, field-presence dispatch, public mixed payload refs, and client-request tracking, and keeps handoff/export/schema/parser/source-shape/payload-rewrite/package-reconstruction/production-readiness behavior blocked."
 }

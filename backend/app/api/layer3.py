@@ -1667,6 +1667,9 @@ class Layer3PackageReviewSubmitRequest(BaseModel):
     pass_run_id: str | None = None
     preview_id: str | None = None
     preview_hash: str | None = None
+    material_preview_id: str | None = None
+    material_preview_hash: str | None = None
+    contract_hash: str | None = None
     result_review_record_ref: str | None = None
     package_review_preview_hash: str | None = None
     construction_basis_hash: str | None = None
@@ -1703,6 +1706,12 @@ class Layer3PackageReviewSubmitRequest(BaseModel):
     runtime_db_write: Any | None = None
     artifact_manifest: Any | None = None
     analysis_artifact: Any | None = None
+    external_export_download: Any | None = None
+    provider_public_url: Any | None = None
+    public_url: Any | None = None
+    connector_ref: Any | None = None
+    connector_dispatch: Any | None = None
+    onlook: Any | None = None
 
 
 class Layer3PackageSupersessionPreviewRequest(BaseModel):
@@ -9732,6 +9741,11 @@ class Layer3PackageReviewSubmitResponse(Layer3BaseResponse):
     analysis_run_id: str | None
     result_review_record_ref: str
     package_review_preview_hash: str
+    material_preview_id: str | None = None
+    material_preview_hash: str | None = None
+    contract_hash: str | None = None
+    package_family: str | None = None
+    negative_authority_flags: dict[str, bool] | None = None
     construction_basis_hash: str | None
     reconciliation_record_id: str
     output_package_ids: list[str]
@@ -11969,20 +11983,70 @@ PACKAGE_CONSTRUCTION_COMMIT_REQUEST_SCHEMA: dict[str, Any] = {
 PACKAGE_REVIEW_SUBMIT_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
-    "description": "decision_notes are required by runtime for changes_requested, rejected, and blocked decisions.",
+    "description": (
+        "Package-review submit accepts exactly one authority shape: selected-pass lifecycle authority "
+        "or mixed-source material authority. decision_notes are required by runtime for changes_requested, "
+        "rejected, and blocked decisions."
+    ),
     "required": [
         "client_request_id",
         "session_id",
-        "analysis_plan_id",
-        "pass_run_id",
-        "preview_id",
-        "preview_hash",
-        "result_review_record_ref",
         "package_review_preview_hash",
         "reconciliation_record_id",
         "output_package_ids",
         "payload_hashes",
         "operator_decision",
+    ],
+    "oneOf": [
+        {
+            "required": [
+                "client_request_id",
+                "session_id",
+                "analysis_plan_id",
+                "pass_run_id",
+                "preview_id",
+                "preview_hash",
+                "result_review_record_ref",
+                "package_review_preview_hash",
+                "reconciliation_record_id",
+                "output_package_ids",
+                "payload_hashes",
+                "operator_decision",
+            ],
+            "not": {
+                "anyOf": [
+                    {"required": ["material_preview_id"]},
+                    {"required": ["material_preview_hash"]},
+                    {"required": ["contract_hash"]},
+                ]
+            },
+        },
+        {
+            "required": [
+                "client_request_id",
+                "session_id",
+                "material_preview_id",
+                "material_preview_hash",
+                "package_review_preview_hash",
+                "contract_hash",
+                "construction_basis_hash",
+                "reconciliation_record_id",
+                "output_package_ids",
+                "payload_hashes",
+                "operator_decision",
+            ],
+            "not": {
+                "anyOf": [
+                    {"required": ["analysis_plan_id"]},
+                    {"required": ["pass_run_id"]},
+                    {"required": ["preview_id"]},
+                    {"required": ["preview_hash"]},
+                    {"required": ["result_review_record_ref"]},
+                    {"required": ["analysis_run_id"]},
+                    {"required": ["payload_refs"]},
+                ]
+            },
+        },
     ],
     "properties": {
         "client_request_id": {"type": "string"},
@@ -11991,6 +12055,9 @@ PACKAGE_REVIEW_SUBMIT_REQUEST_SCHEMA: dict[str, Any] = {
         "pass_run_id": {"type": "string"},
         "preview_id": {"type": "string"},
         "preview_hash": {"type": "string"},
+        "material_preview_id": {"type": "string"},
+        "material_preview_hash": {"type": "string"},
+        "contract_hash": {"type": "string"},
         "result_review_record_ref": {"type": "string"},
         "package_review_preview_hash": {"type": "string"},
         "construction_basis_hash": {"type": "string"},
@@ -12034,6 +12101,12 @@ PACKAGE_REVIEW_SUBMIT_REQUEST_SCHEMA: dict[str, Any] = {
         "runtime_db_write": _forbidden_request_field_schema(),
         "artifact_manifest": _forbidden_request_field_schema(),
         "analysis_artifact": _forbidden_request_field_schema(),
+        "external_export_download": _forbidden_request_field_schema(),
+        "provider_public_url": _forbidden_request_field_schema(),
+        "public_url": _forbidden_request_field_schema(),
+        "connector_ref": _forbidden_request_field_schema(),
+        "connector_dispatch": _forbidden_request_field_schema(),
+        "onlook": _forbidden_request_field_schema(),
     },
 }
 
