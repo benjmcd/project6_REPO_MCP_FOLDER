@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import sys
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -1154,6 +1155,33 @@ def test_sec_xbrl_real_corpus_product_runner_import_scan_rejects_common_url_and_
     assert report["decision"] == "real_corpus_default_on_blocked"
     assert scan["raw_sec_url_found"] is True
     assert scan["raw_local_path_found"] is True
+    assert "offline_product_report_redaction_scan_failed" in report["offline_redacted_product_report_import"][
+        "blocked_reasons"
+    ]
+
+
+def test_sec_xbrl_real_corpus_product_runner_import_scan_preserves_mixed_key_payloads(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    storage, plan, source_report = _redacted_product_report_fixture(module, monkeypatch, tmp_path)
+    source_report[1] = "metadata"
+    source_report["diagnostic_decimal"] = Decimal("1.23")
+    source_report["raw_sec_url_variant"] = "www.sec.gov/Archives/edgar/data/redacted"
+
+    report = module.build_report(
+        live=False,
+        storage_dir=storage,
+        sector_family_storage_dir=storage,
+        matrix_plan=plan,
+        redacted_product_runner_report=source_report,
+        user_agent="",
+    )
+
+    scan = report["offline_redacted_product_report_import"]["evidence"]["redaction_scan"]
+    assert report["decision"] == "real_corpus_default_on_blocked"
+    assert scan["raw_sec_url_found"] is True
     assert "offline_product_report_redaction_scan_failed" in report["offline_redacted_product_report_import"][
         "blocked_reasons"
     ]
