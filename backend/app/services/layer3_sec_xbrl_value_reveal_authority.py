@@ -592,5 +592,6 @@ def _reject_raw_or_local_authority(value: Any) -> None:
         blocked_raw_value_keys=RAW_VALUE_KEYS,
         blocked_raw_authority_keys=VALUE_REVEAL_RAW_AUTHORITY_KEYS,
         scan_cik=True,
+        scan_contextual_cik=True,
         scan_operator_contact=True,
     )

@@ -52,6 +52,12 @@ REPORT_LOCAL_PATH_RE = re.compile(r"[A-Za-z]:[\\/]|\\\\|file://|/(?:Users|home|t
 LOCAL_REF_SEGMENT_RE = re.compile(r"(^|[\\/])(?:workspace|tmp|temp|users|home)[\\/]", re.IGNORECASE)
 RAW_PERIOD_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 CIK_RE = re.compile(r"\b\d{10}\b")
+CONTEXTUAL_CIK_RE = re.compile(
+    r"\bcik[-:\s]*\d{10}\b"
+    r"|\b(?:filer|issuer|registrant|company)\b[^\n]{0,40}\b\d{10}\b"
+    r"|\b\d{10}\b[^\n]{0,40}\b(?:cik|filer|issuer|registrant|company)\b",
+    re.IGNORECASE,
+)
 OPERATOR_CONTACT_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 
 
@@ -70,6 +76,7 @@ def raw_or_local_authority_violation(
     scan_raw_period_dates: bool = True,
     scan_cik: bool = False,
     scan_cik_fullmatch: bool = False,
+    scan_contextual_cik: bool = False,
     scan_operator_contact: bool = False,
     scan_bare_sec_domain: bool = False,
     scan_standard_local_refs: bool = True,
@@ -93,6 +100,7 @@ def raw_or_local_authority_violation(
                 scan_raw_period_dates=scan_raw_period_dates,
                 scan_cik=scan_cik,
                 scan_cik_fullmatch=scan_cik_fullmatch,
+                scan_contextual_cik=scan_contextual_cik,
                 scan_operator_contact=scan_operator_contact,
                 scan_bare_sec_domain=scan_bare_sec_domain,
                 scan_standard_local_refs=scan_standard_local_refs,
@@ -115,6 +123,7 @@ def raw_or_local_authority_violation(
                 scan_raw_period_dates=scan_raw_period_dates,
                 scan_cik=scan_cik,
                 scan_cik_fullmatch=scan_cik_fullmatch,
+                scan_contextual_cik=scan_contextual_cik,
                 scan_operator_contact=scan_operator_contact,
                 scan_bare_sec_domain=scan_bare_sec_domain,
                 scan_standard_local_refs=scan_standard_local_refs,
@@ -131,6 +140,7 @@ def raw_or_local_authority_violation(
         scan_raw_period_dates=scan_raw_period_dates,
         scan_cik=scan_cik,
         scan_cik_fullmatch=scan_cik_fullmatch,
+        scan_contextual_cik=scan_contextual_cik,
         scan_operator_contact=scan_operator_contact,
         scan_bare_sec_domain=scan_bare_sec_domain,
         scan_standard_local_refs=scan_standard_local_refs,
@@ -147,6 +157,7 @@ def public_text_reference_detected(
     scan_raw_period_dates: bool = True,
     scan_cik: bool = False,
     scan_cik_fullmatch: bool = False,
+    scan_contextual_cik: bool = False,
     scan_operator_contact: bool = False,
     scan_bare_sec_domain: bool = False,
     scan_standard_local_refs: bool = True,
@@ -165,6 +176,7 @@ def public_text_reference_detected(
         or (scan_raw_period_dates and RAW_PERIOD_DATE_RE.search(text))
         or (scan_cik and CIK_RE.search(text))
         or (scan_cik_fullmatch and CIK_RE.fullmatch(text))
+        or (scan_contextual_cik and CONTEXTUAL_CIK_RE.search(text))
         or (scan_operator_contact and OPERATOR_CONTACT_RE.search(text))
     )
 
@@ -260,6 +272,7 @@ def reject_raw_or_local_authority_with_blocked_keys(
     scan_raw_period_dates: bool = True,
     scan_cik: bool = False,
     scan_cik_fullmatch: bool = False,
+    scan_contextual_cik: bool = False,
     scan_operator_contact: bool = False,
     raw_authority_http_status: int = 400,
     raw_reference_http_status: int = 400,
@@ -283,6 +296,7 @@ def reject_raw_or_local_authority_with_blocked_keys(
         scan_raw_period_dates=scan_raw_period_dates,
         scan_cik=scan_cik,
         scan_cik_fullmatch=scan_cik_fullmatch,
+        scan_contextual_cik=scan_contextual_cik,
         scan_operator_contact=scan_operator_contact,
     ):
         raise error_type(
@@ -419,6 +433,7 @@ def reject_raw_or_local_authority(
     scan_raw_period_dates: bool = True,
     scan_cik: bool = False,
     scan_cik_fullmatch: bool = False,
+    scan_contextual_cik: bool = False,
     scan_operator_contact: bool = False,
     scan_bare_sec_domain: bool = False,
     scan_standard_local_refs: bool = True,
@@ -433,6 +448,7 @@ def reject_raw_or_local_authority(
         scan_raw_period_dates=scan_raw_period_dates,
         scan_cik=scan_cik,
         scan_cik_fullmatch=scan_cik_fullmatch,
+        scan_contextual_cik=scan_contextual_cik,
         scan_operator_contact=scan_operator_contact,
         scan_bare_sec_domain=scan_bare_sec_domain,
         scan_standard_local_refs=scan_standard_local_refs,

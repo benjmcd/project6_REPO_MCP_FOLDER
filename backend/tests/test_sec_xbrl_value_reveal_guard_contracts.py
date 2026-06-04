@@ -22,6 +22,7 @@ def test_value_reveal_authority_rejects_raw_authority_keys_with_service_contract
     [
         "operator@example.com",
         "issuer 0000123456 packet",
+        "CIK0000123456",
     ],
 )
 def test_value_reveal_authority_rejects_raw_reference_text_with_service_contract(
@@ -56,6 +57,7 @@ def test_controlled_value_reveal_submit_rejects_raw_authority_keys_with_service_
     [
         "operator@example.com",
         "issuer 0000123456 packet",
+        "CIK0000123456",
     ],
 )
 def test_controlled_value_reveal_submit_rejects_raw_reference_text_with_service_contract(
