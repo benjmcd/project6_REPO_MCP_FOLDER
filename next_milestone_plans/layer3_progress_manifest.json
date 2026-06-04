@@ -46733,8 +46733,12 @@
   "p14_mixed_source_package_review_preview_tracking": {
     "tracking_kind": "p14_mixed_source_package_review_preview_tracking",
     "milestone": "p14_mixed_source_package_review_preview",
-    "status": "branch_implemented_targeted_tests_passed_pending_merge",
+    "status": "current_main_implemented_targeted_tests_passed",
     "source_branch": "codex/mixed-preview-0604",
+    "implementation_pr": "#2185",
+    "implementation_merge_commit": "a6e3036910138ddeecbfc390ad83f486acf2d8a5",
+    "openapi_followup_pr": "#2186",
+    "openapi_followup_merge_commit": "e6b34c55c06bff1ac467ce03f9e627e44083f432",
     "planning_doc": "next_milestone_plans/multi-ingest/31-p14-mixed-preview.md",
     "readiness_predecessor_doc": "next_milestone_plans/multi-ingest/27-p11-mixed-readiness-closeout.md",
     "contract_predecessor_doc": "next_milestone_plans/multi-ingest/28-p12-mixed-package-contract.md",
@@ -46766,6 +46770,7 @@
       "python -B .\\tools\\l3-target-selection-validate.py --expect frozen -> PASS",
       "python -B .\\tools\\l3-progress-check.py -> PASS",
       "python -B -m pytest .\\backend\\tests\\test_layer3_package_family_policy.py .\\backend\\tests\\test_layer3_workbench_package_state.py .\\backend\\tests\\test_layer3_package_review_contract.py .\\backend\\tests\\test_layer3_package_submit_response.py .\\backend\\tests\\test_layer3_workbench.py -q -> 70 passed, 2 warnings",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_package_openapi_contracts -q -> 1 passed, 3 warnings",
       "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -k \"mixed_source_package or package_review_preview or gate_b\" -> 17 passed, 268 deselected, 3 warnings"
     ],
     "next_posture": "mixed_source_package_construction_commit_boundary_decision_after_p14_preview_hash",
@@ -46786,5 +46791,5 @@
       "next_milestone_plans/layer3_workbench_proof_manifest.json"
     ]
   },
-  "latest_p14_mixed_source_package_review_preview_summary": "P14 admits read-only mixed-source package review preview from committed Gate B material authority and the P12 contract while keeping mixed-source construction, submit, handoff, export, parser, schema, source-shape, payload rewrite, legacy bridge, and excluded-tool behavior blocked."
+  "latest_p14_mixed_source_package_review_preview_summary": "P14 is current-main implemented through PR #2185, with PR #2186 repairing the OpenAPI request-shape exclusivity contract. It admits read-only mixed-source package review preview from committed Gate B material authority and the P12 contract while keeping mixed-source construction, submit, handoff, export, parser, schema, source-shape, payload rewrite, legacy bridge, and excluded-tool behavior blocked."
 }

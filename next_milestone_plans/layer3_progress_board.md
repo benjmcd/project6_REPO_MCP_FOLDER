@@ -11552,7 +11552,8 @@ Milestone: `p14_mixed_source_package_review_preview`.
 Planning doc:
 `next_milestone_plans/multi-ingest/31-p14-mixed-preview.md`.
 
-Status: branch implementation pending merge.
+Status: current-main implementation merged through PR `#2185`, with the
+OpenAPI request-shape exclusivity follow-up merged through PR `#2186`.
 
 Scope: admits only read-only package-review preview for `mixed_dataset_document`
 when the request supplies `session_id`, `material_preview_id`, and
@@ -11567,11 +11568,16 @@ handoff, export, schema, migration, parser behavior, source-shape expansion,
 generic XML/HTML admission, archive-member orchestration, payload rewrite,
 legacy CSV bridge deprecation, or Onlook work.
 
-Verification: manifest JSON syntax, Layer 3 authority-index validation,
-target-selection frozen validation, and progress check passed; package-family,
-package-state, package-review contract, package-submit response, and workbench
-tests passed with `70 passed, 2 warnings`; broader Gate B/package-review
-preview API keyword slice passed with `17 passed, 268 deselected, 3 warnings`.
+Verification: PR `#2185` CI passed and post-merge proof on current main passed
+manifest JSON syntax, Layer 3 authority-index validation, target-selection
+frozen validation, progress check, touched-file compile, and
+package-family/package-state/contract/submit response/workbench tests with
+`70 passed, 2 warnings`; broader Gate B/package-review preview API keyword
+slice passed with `17 passed, 268 deselected, 3 warnings`, and
+`git diff --check` passed. PR `#2186`
+CI passed and post-merge proof passed touched-file compile, the OpenAPI
+contract test with `1 passed, 3 warnings`, the broader API keyword slice with
+`17 passed, 268 deselected, 3 warnings`, and `git diff --check`.
 
 Next posture: decide the first mixed-source package construction commit
 boundary from the P14 preview hash only if deterministic package payload
