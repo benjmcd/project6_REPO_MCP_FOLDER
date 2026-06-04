@@ -6,7 +6,7 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "a7a2b576ff0f00de1f0ef03332e854abf38c6797",
+    "commit": "a7a2b57607e5e717f29fa3df44a14a70fa654857",
     "verified_at_utc": "2026-06-04T15:14:48Z",
     "verification_summary": "Live main includes PR #2194 P15 mixed-source package construction commit runtime and later SEC XBRL PR #2195. Current main keeps mixed-source submit, handoff, export, parser, schema, source-shape, payload rewrite, legacy bridge, and excluded-tool behavior blocked.",
     "commands": [
