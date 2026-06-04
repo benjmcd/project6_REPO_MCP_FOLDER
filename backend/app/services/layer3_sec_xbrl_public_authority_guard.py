@@ -458,3 +458,20 @@ def reject_raw_or_local_authority(
 
 def unadmitted_keys(value: Mapping[str, Any], *, admitted: set[str]) -> list[str]:
     return sorted(str(key) for key in value if str(key) not in admitted)
+
+
+def reject_unadmitted_keys(
+    value: Mapping[str, Any],
+    *,
+    admitted: set[str],
+    error_type: type[Exception],
+    error_code: str,
+    message: str,
+) -> None:
+    unknown = unadmitted_keys(value, admitted=admitted)
+    if unknown:
+        raise error_type(
+            error_code,
+            message,
+            details={"fields": unknown},
+        )

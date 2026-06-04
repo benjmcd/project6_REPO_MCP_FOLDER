@@ -46295,6 +46295,69 @@
       "next_milestone_plans/layer3_workbench_proof_manifest.json"
     ]
   },
+  "sec_xbrl_unadmitted_key_adapter_tracking": {
+    "tracking_kind": "sec_xbrl_unadmitted_key_adapter_tracking",
+    "milestone": "sec_xbrl_unadmitted_key_adapter_v1",
+    "status": "branch_local_behavior_preserving_service_adapter_consolidation",
+    "branch": "codex/secxbrl-unadmitted-key-adapter",
+    "base_main": "156dc6b1e7c0970b3e699c1afb2a82187c943864",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md",
+    "prior_milestone": "sec_xbrl_exact_diagnostic_redaction_wrapper_cleanup_v1",
+    "design_decision": "extract only the exact _reject_unadmitted_keys service adapter into the shared public authority guard while preserving service-local exception classes, error codes, messages, and details.fields shape",
+    "next_posture": "continue service-family-specific guard/redaction migrations only after exact semantics are proven; do not bulk-migrate custom runtime/public error-surface wrappers",
+    "tier_classification": "Tier-2-shaped service-adapter consolidation because persistence/operator workflow services are touched, but behavior-preserving and non-schema/non-runtime-default/non-activation.",
+    "tier2_surfaces_touched": [
+      "backend/app/services/layer3_sec_xbrl_projection_persistence.py",
+      "backend/app/services/layer3_sec_xbrl_statement_packet_persistence.py",
+      "backend/app/services/layer3_sec_xbrl_operator_review_workflow.py",
+      "backend/app/services/layer3_sec_xbrl_public_authority_guard.py"
+    ],
+    "tier1_supporting_surfaces_touched": [
+      "backend/tests/test_sec_xbrl_public_authority_guard.py",
+      "next_milestone_plans/Layer3_planning_docs/1349-sec-xbrl-custom-guard-audit.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "runtime_default_changed_by_tracking": false,
+    "backend_api_contract_changed_by_tracking": false,
+    "rendered_ui_changed_by_tracking": false,
+    "schema_models_changed_by_tracking": false,
+    "migration_changed_by_tracking": false,
+    "durable_persistence_changed_by_tracking": false,
+    "source_acquisition_performed_by_tracking": false,
+    "arelle_subprocess_invoked_by_tracking": false,
+    "live_sec_network_run_performed_by_tracking": false,
+    "value_reveal_default_enabled_by_tracking": false,
+    "controlled_value_reveal_submit_default_enabled_by_tracking": false,
+    "raw_internal_value_store_default_enabled_by_tracking": false,
+    "delivery_or_export_performed": false,
+    "provider_or_connector_dispatch_performed": false,
+    "raw_values_committed_by_tracking": false,
+    "raw_identity_committed_by_tracking": false,
+    "raw_runtime_artifacts_added_by_tracking": false,
+    "operator_source_workflow_added_by_tracking": false,
+    "production_readiness_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "cross_company_comparability_claimed": false,
+    "source_evidence": [
+      "shared reject_unadmitted_keys remains a small adapter over unadmitted_keys and raises the caller-supplied service exception with details.fields",
+      "projection persistence, statement-packet persistence, and operator-review workflow call the shared adapter through the existing local _reject_unadmitted_keys name",
+      "no admitted-field sets, raw/local authority scans, persistence writes, operator decisions, public API routes, or runtime defaults are changed"
+    ],
+    "known_hard_seams": [
+      "value-reveal, E2E, multi-filing, auth-binding, and diagnostic hit-class policies still require service-family-specific treatment",
+      "this slice reduces exact unknown-field rejection duplication but does not complete all custom guard/redaction consolidation"
+    ],
+    "containment_or_rollback_notes": "No schema or migration rollback is required. Revert the shared adapter helper, three service delegations, focused guard test, and 1349 planning/progress/proof entries to roll back this slice.",
+    "verification_status": "branch-local verification passed",
+    "focused_service_adapter_suite": "PASS: python -m pytest ./backend/tests/test_sec_xbrl_public_authority_guard.py ./backend/tests/test_sec_xbrl_projection_persistence.py ./backend/tests/test_sec_xbrl_statement_packet_persistence.py ./backend/tests/test_sec_xbrl_operator_review_workflow.py -q -> 128 passed, 4 warnings",
+    "full_sec_xbrl_suite": "PASS: explicit Get-ChildItem enumeration of ./backend/tests/test_sec_xbrl*.py with python -m pytest -> 476 passed, 3 warnings",
+    "target_selection_validation": "PASS: python ./tools/l3-target-selection-validate.py --expect frozen",
+    "progress_check": "PASS: python ./tools/l3-progress-check.py",
+    "authority_index_validation": "PASS: python ./tools/l3-authority-index-validate.py",
+    "diff_check": "PASS: git diff --check exited 0 with line-ending warnings only"
+  },
   "sec_xbrl_exact_diagnostic_redaction_wrapper_cleanup_tracking": {
     "tracking_kind": "sec_xbrl_exact_diagnostic_redaction_wrapper_cleanup_tracking",
     "milestone": "sec_xbrl_exact_diagnostic_redaction_wrapper_cleanup_v1",
