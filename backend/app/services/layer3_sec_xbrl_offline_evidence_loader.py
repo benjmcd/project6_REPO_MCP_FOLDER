@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Mapping, Sequence
-from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +13,7 @@ from app.services.layer3_sec_edgar_html_inline_xbrl_fact_statement_classificatio
     classification_receipt_hash_basis,
 )
 from app.services.layer3_utils import stable_hash
-from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_leaks, report_text_leak_flags
+from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_leaks_with_error, report_text_leak_flags
 
 
 SCHEMA_ID = "layer3.sec_xbrl_offline_evidence_loader.v1"
@@ -47,13 +46,13 @@ class SecXbrlOfflineEvidenceLoaderError(ValueError):
         }
 
 
-_reject_report_leaks = partial(
-    reject_report_leaks,
-    exception_factory=lambda: SecXbrlOfflineEvidenceLoaderError(
-        "sec_xbrl_offline_evidence_loader_report_redaction_failed",
-        "SEC XBRL offline evidence loader report leaked raw authority references.",
-    ),
-)
+def _reject_report_leaks(value: Any) -> None:
+    reject_report_leaks_with_error(
+        value,
+        error_type=SecXbrlOfflineEvidenceLoaderError,
+        error_code="sec_xbrl_offline_evidence_loader_report_redaction_failed",
+        message="SEC XBRL offline evidence loader report leaked raw authority references.",
+    )
 
 
 def load_sec_xbrl_offline_evidence_bundle(

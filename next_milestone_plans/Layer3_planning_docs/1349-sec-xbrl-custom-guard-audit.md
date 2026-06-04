@@ -110,6 +110,19 @@ with the same code/message and `details={"fields": [...]}`. It is not a
 general service-wrapper consolidation and it does not migrate value-reveal,
 E2E, multi-filing, auth-binding, or diagnostic hit-class policies.
 
+### Exact default report-leak service adapter migrated
+
+The offline evidence loader and CompanyFacts oracle packet report guards share
+one exact default report-leak posture: `reject_report_leaks` with
+`include_raw_value_keys=False`, preserving service-specific error class, code,
+and message. That construction now delegates through
+`layer3_sec_xbrl_report_leak_guard.reject_report_leaks_with_error`.
+
+This adapter does not migrate proof-capability report leak checks because that
+surface enables `include_raw_value_keys=True`. It also does not migrate the
+multi-filing response leak check because that surface uses public-text-only
+scanning with raw period dates disabled.
+
 ### Value-reveal authority family
 
 The value-reveal authority and controlled-submit helpers remain custom because

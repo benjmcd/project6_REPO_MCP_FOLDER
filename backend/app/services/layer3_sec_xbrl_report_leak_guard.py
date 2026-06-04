@@ -197,3 +197,16 @@ def reject_report_leaks(
     flags = report_leak_flags(value, include_raw_value_keys=include_raw_value_keys)
     if any(flags.values()):
         raise exception_factory()
+
+
+def reject_report_leaks_with_error(
+    value: Any,
+    *,
+    error_type: type[Exception],
+    error_code: str,
+    message: str,
+) -> None:
+    reject_report_leaks(
+        value,
+        exception_factory=lambda: error_type(error_code, message),
+    )
