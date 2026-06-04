@@ -46649,7 +46649,7 @@
   "p13a_package_family_route_policy_gates_tracking": {
     "tracking_kind": "p13a_package_family_route_policy_gates_tracking",
     "milestone": "p13a_package_family_route_policy_gates",
-    "status": "branch_local_implemented_targeted_tests_passed",
+    "status": "current_main_implemented_targeted_tests_passed",
     "source_branch": "codex/pkg-gates-0604",
     "planning_doc": "next_milestone_plans/multi-ingest/30-p13a-package-family-route-gates.md",
     "predecessor_policy_doc": "next_milestone_plans/multi-ingest/29-p13-package-family-policy.md",
