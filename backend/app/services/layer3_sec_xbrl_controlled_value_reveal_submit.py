@@ -38,6 +38,12 @@ SUBMIT_OPERATOR_DECISION = "submit_explicit_sec_xbrl_value_reveal_from_authority
 SUBMIT_RECEIPT_REF_PREFIX = "sec-xbrl-controlled-value-reveal-submit"
 MAX_REVEAL_RECORDS = 1000
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
+CONTEXTUAL_CIK_RE = re.compile(
+    r"\bcik[-:\s]*\d{10}\b"
+    r"|\b(?:filer|issuer|registrant|company)\b[^\n]{0,40}\b\d{10}\b"
+    r"|\b\d{10}\b[^\n]{0,40}\b(?:cik|filer|issuer|registrant|company)\b",
+    re.IGNORECASE,
+)
 RAW_REQUEST_KEYS = {
     "sidecar_receipt_id",
     "sidecar_receipt_hash",
@@ -421,10 +427,10 @@ def _value_text_requires_redaction(*values: str) -> bool:
             text,
             raw_value_keys=frozenset(),
             raw_authority_keys=frozenset(),
-            scan_cik_fullmatch=True,
             scan_operator_contact=True,
         )
         is not None
+        or CONTEXTUAL_CIK_RE.search(text) is not None
     )
 
 
@@ -789,6 +795,6 @@ def _reject_raw_or_local_authority(value: Any) -> None:
         raw_reference_message="SEC XBRL controlled value reveal rejects raw identities, paths, SEC URLs, accessions, and period dates.",
         blocked_raw_value_keys=frozenset(),
         blocked_raw_authority_keys=RAW_REQUEST_KEYS,
-        scan_cik_fullmatch=True,
+        scan_cik=True,
         scan_operator_contact=True,
     )
