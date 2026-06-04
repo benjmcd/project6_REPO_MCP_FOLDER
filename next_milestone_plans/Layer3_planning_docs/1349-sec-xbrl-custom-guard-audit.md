@@ -14,9 +14,10 @@ Progress registration:
 This slice records the post-framework, post-public-authority-guard state of the
 remaining SEC XBRL guard and redaction helpers. It landed as design/audit only
 in PR #2138, and PR #2168 later landed the exact diagnostic redaction
-pass-through cleanup recorded below. Neither change migrates custom runtime
-wrappers, changes report bytes, alters runtime defaults, or authorizes the
-parked activation lane.
+pass-through cleanup recorded below. The unadmitted-key adapter slice then
+extracts the exact service-local `_reject_unadmitted_keys` seam recorded below.
+These changes do not migrate custom runtime wrappers, change report bytes,
+alter runtime defaults, or authorize the parked activation lane.
 
 ## Purpose
 
@@ -66,13 +67,37 @@ Future work here should not replace the wrappers blindly. Their value is the
 service-local public error contract. Only small follow-ups that reduce repeated
 wrapper construction without changing those contracts are acceptable.
 
-A separate exact adapter seam remains in these same service families:
+A separate exact adapter seam in these same service families is now extracted:
 `_reject_unadmitted_keys` delegates to the shared `unadmitted_keys` predicate
-and raises the service-local exception with `details={"fields": unknown}`.
-That is a plausible bounded follow-up only if it preserves each service
-exception class, error code, message, and details shape; because it touches
-persistence/operator workflow services, treat it as Tier-2-shaped even when
-behavior-preserving.
+and raises the service-local exception with `details={"fields": unknown}` via
+`layer3_sec_xbrl_public_authority_guard.reject_unadmitted_keys`. The migrated
+services are projection persistence, statement-packet persistence, and
+operator-review workflow. The slice preserves each service exception class,
+error code, message, and details shape; because it touches
+persistence/operator workflow services, treat it as Tier-2-shaped even though
+it is behavior-preserving.
+
+### Exact unadmitted-key service adapter migrated
+
+The unadmitted-key adapter migration removes only the repeated local
+`_reject_unadmitted_keys` helper bodies from:
+
+- `layer3_sec_xbrl_projection_persistence.py`;
+- `layer3_sec_xbrl_statement_packet_persistence.py`;
+- `layer3_sec_xbrl_operator_review_workflow.py`.
+
+Each service imports the shared helper under the same local
+`_reject_unadmitted_keys` name and supplies its service-local exception class,
+error code, and message. The shared helper remains a small adapter over
+`unadmitted_keys`; it does not alter admitted-field sets, raw/local authority
+scans, persistence writes, operator decisions, runtime defaults, or public API
+contracts.
+
+The proof obligation for this slice is exact error-shape preservation:
+unknown-field failures must continue to raise the service-specific exception
+with the same code/message and `details={"fields": [...]}`. It is not a
+general service-wrapper consolidation and it does not migrate value-reveal,
+E2E, multi-filing, auth-binding, or diagnostic hit-class policies.
 
 ### Value-reveal authority family
 
@@ -221,8 +246,9 @@ Recommended future order:
 
 1. Keep planning/proof authority synchronized with current main before
    starting another migration slice.
-2. Extract only exact adapter seams such as `_reject_unadmitted_keys` when
-   service-local error shape can be proven unchanged.
+2. After the exact `_reject_unadmitted_keys` adapter, continue only with
+   service-family-specific guard/redaction migrations when service-local error
+   shape can be proven unchanged.
 3. Value-reveal-family adapter design and tests, if repeated wrapper risk
    justifies the churn.
 4. E2E output-policy adapter design and tests, separately from value reveal.
@@ -251,9 +277,10 @@ Every future slice must prove:
 
 ## Explicit non-scope
 
-This audit does not:
+This audit and its bounded follow-up traces do not:
 
-- migrate any remaining service wrapper;
+- migrate any remaining custom service wrapper beyond the exact
+  `_reject_unadmitted_keys` adapter recorded above;
 - change runtime behavior, route behavior, persistence, schema, UI, config, or
   models;
 - regenerate or edit proof JSONs or committed diagnostic reports;

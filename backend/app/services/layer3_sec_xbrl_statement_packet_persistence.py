@@ -22,7 +22,7 @@ from app.services.layer3_sec_xbrl_public_authority_guard import (
     RAW_AUTHORITY_KEYS,
     RAW_VALUE_KEYS,
     reject_raw_or_local_authority as reject_public_authority,
-    unadmitted_keys,
+    reject_unadmitted_keys as _reject_unadmitted_keys,
 )
 from app.services.layer3_sec_xbrl_statement_assembly import STATEMENT_ASSEMBLY_SCHEMA_ID
 from app.services.layer3_utils import json_clone, stable_hash
@@ -480,6 +480,7 @@ def _public_organization_contract(value: Any) -> dict[str, Any]:
     _reject_raw_or_local_authority(value)
     _reject_unadmitted_keys(
         value,
+        error_type=SecXbrlStatementPacketPersistenceError,
         admitted=ORGANIZATION_CONTRACT_KEYS,
         error_code="sec_xbrl_statement_packet_persistence_organization_contract_invalid",
         message="Statement packet organization contract only admits public contract fields.",
@@ -716,21 +717,6 @@ def _public_concept_list(value: Any) -> list[str]:
         concepts.append(concept)
     return concepts
 
-
-def _reject_unadmitted_keys(
-    value: Mapping[str, Any],
-    *,
-    admitted: set[str],
-    error_code: str,
-    message: str,
-) -> None:
-    unknown = unadmitted_keys(value, admitted=admitted)
-    if unknown:
-        raise SecXbrlStatementPacketPersistenceError(
-            error_code,
-            message,
-            details={"fields": unknown},
-        )
 
 
 def _reject_raw_or_local_authority(value: Any) -> None:
