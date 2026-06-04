@@ -4,8 +4,10 @@ from typing import Any
 
 from app.models.models import L3OutputPackage, L3ReconciliationRecord
 from app.services.layer3_authority_rail import authority_rail
+from app.services.layer3_package_entry import SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE
 from app.services.layer3_package_submit_response import (
     COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+    MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
     QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
     SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
 )
@@ -22,6 +24,7 @@ HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.handoff_export_prepare.v1"
 COHORT_HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.cohort_handoff_export_prepare.v1"
 QUAL_APS_HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.qual_aps_handoff_export_prepare.v1"
 SOURCE_INTAKE_HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.source_intake_handoff_export_prepare.v1"
+MIXED_SOURCE_HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.mixed_source_handoff_export_prepare.v1"
 
 
 def handoff_export_prepare_response(
@@ -53,6 +56,9 @@ def handoff_export_prepare_response(
     payload_hashes = prepare_state.get("payload_hashes")
     if not isinstance(payload_hashes, list):
         payload_hashes = [package.payload_hash for package in ordered_packages]
+    downstream_unavailable = tuple(
+        prepare_state.get("downstream_unavailable") or HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE
+    )
     body = {
         **base_response(HANDOFF_EXPORT_PREPARE_SCHEMA_ID, request_id=request_id, status=status),
         "session_id": session_id,
@@ -73,8 +79,8 @@ def handoff_export_prepare_response(
         "operator_decision": prepare_state["operator_decision"],
         "decision_notes": prepare_state.get("decision_notes"),
         "handoff_export_state": prepare_state["handoff_export_state"],
-        "handoff_target": "internal_export_envelope",
-        "export_mode": "prepare_only",
+        "handoff_target": prepare_state.get("handoff_target") or "internal_export_envelope",
+        "export_mode": prepare_state.get("export_mode") or "prepare_only",
         "external_handoff_enabled": False,
         "external_export_enabled": False,
         "dispatch_enabled": False,
@@ -82,14 +88,14 @@ def handoff_export_prepare_response(
         "external_export_download_enabled": False,
         "connector_dispatch_enabled": False,
         "provider_public_url_enabled": False,
-        "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
+        "downstream_unavailable": list(downstream_unavailable),
         "next_state": prepare_state["handoff_export_state"],
         "prepare_record_ref": prepare_state["prepare_record_ref"],
         "authority_rail": authority_rail(
             session_id=session_id,
             current_gate="package",
             persistence_mode="durable_handoff_export_prepare",
-            downstream_unavailable=HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE,
+            downstream_unavailable=downstream_unavailable,
             execution_enabled=False,
             package_review_enabled=False,
         ),
@@ -97,6 +103,7 @@ def handoff_export_prepare_response(
     envelope = prepare_state.get("handoff_export_envelope")
     if isinstance(envelope, dict):
         body["handoff_export_envelope"] = envelope
+        body["handoff_export_envelope_ref"] = str(envelope.get("envelope_ref") or "").strip() or None
     if cohort_package_construction_source(prepare_state.get("package_construction_source_gate")):
         body["schema_id"] = COHORT_HANDOFF_EXPORT_PREPARE_SCHEMA_ID
         body["package_review_submit_schema_id"] = COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
@@ -107,7 +114,16 @@ def handoff_export_prepare_response(
         body["schema_id"] = SOURCE_INTAKE_HANDOFF_EXPORT_PREPARE_SCHEMA_ID
         body["package_review_submit_schema_id"] = SOURCE_INTAKE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
         body["authority_rail"]["persistence_mode"] = "durable_source_intake_handoff_export_prepare"
+    if prepare_state.get("package_construction_source_gate") == SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE:
+        body["schema_id"] = MIXED_SOURCE_HANDOFF_EXPORT_PREPARE_SCHEMA_ID
+        body["package_review_submit_schema_id"] = MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+        body["authority_rail"]["persistence_mode"] = "durable_mixed_source_handoff_export_prepare"
     for key in (
+        "material_preview_id",
+        "material_preview_hash",
+        "contract_hash",
+        "package_family",
+        "negative_authority_flags",
         "pass_type",
         "pass_scope",
         "method",
