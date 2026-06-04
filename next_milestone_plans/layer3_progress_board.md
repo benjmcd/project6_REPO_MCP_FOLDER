@@ -1,5 +1,39 @@
 # Layer3 Progress Board
 
+## P17A Mixed-Source Current-Main Sync
+
+Milestone:
+`p17a_mixed_source_rendered_handoff_prepare_current_main_sync`.
+
+Sync doc:
+`next_milestone_plans/multi-ingest/40-p17a-current-main-sync.md`.
+
+Status: docs/control current-main sync for PR #2210 and review-debt follow-up
+PR #2211 at live `project6-origin/main`
+`313d516c4766851110598dc16dc9c60270016dc9`.
+
+Scope: records that the P17A rendered material-authority handoff/export
+prepare control is current-main behavior and that the PR #2210 rendered-control
+review debt is closed. The decision select and notes textarea now enable from
+the same mixed-source material-authority predicate and lifecycle blockers as
+the submit button.
+
+Non-goals: no runtime code, backend route, DTO, model, migration, parser,
+source-shape, package construction, package-review submit, handoff/export
+persistence, APS handoff, external export/download, connector/provider/local
+outbox behavior, payload rewrite, excluded-tool behavior, or production
+readiness change.
+
+Proof: detached current-main proof after PR #2211 passed static JS check, full
+Layer 3 page tests, focused mixed-source handoff/export API slice, manifest
+JSON syntax, authority-index validation, frozen target-selection validation,
+progress check, and `git diff --check`. PR #2210 has one resolved review
+thread; PR #2211 has zero review threads.
+
+Next posture: freeze exactly one next mixed-source downstream surface before
+runtime. APS handoff and external export/download readiness remain likely
+candidates, but neither is selected by this sync.
+
 ## P17A Mixed-Source Rendered Handoff Prepare Runtime
 
 Milestone:
@@ -8,8 +42,8 @@ Milestone:
 Closeout doc:
 `next_milestone_plans/multi-ingest/39-p17a-rendered-runtime-closeout.md`.
 
-Status: branch-local rendered runtime implementation verified on current
-`project6-origin/main` after SEC-only PR `#2208`.
+Status: current-main rendered runtime implementation merged through PR #2210
+and review-debt follow-up PR #2211.
 
 Scope: implements only the rendered `/review/layer3` material-authority
 handoff/export prepare path selected by the P17A freeze. The control derives
@@ -28,13 +62,14 @@ payload rewrite, excluded-tool behavior, or production-readiness change.
 Proof: `node --check ./backend/app/review_ui/static/layer3.js` passed;
 `python -B -m pytest ./backend/tests/test_layer3_page.py -q` passed with
 `22 passed, 3 warnings`; focused mixed-source handoff/export API contract slice
-passed with `1 passed, 290 deselected, 3 warnings`.
+passed with `1 passed, 290 deselected, 3 warnings`. PR #2211 additionally
+proves the mixed-source decision select and notes textarea enable when the
+material-authority packet is complete.
 
-Next posture: after this rendered runtime lands and current main syncs, freeze
-exactly one next mixed-source downstream surface before runtime, likely APS
-handoff or external export/download readiness. Keep connector/provider/parser/
-schema/source-shape/payload-rewrite/excluded-tool/production-readiness scope
-closed unless that later freeze admits it.
+Next posture: freeze exactly one next mixed-source downstream surface before
+runtime, likely APS handoff or external export/download readiness. Keep
+connector/provider/parser/schema/source-shape/payload-rewrite/excluded-tool/
+production-readiness scope closed unless that later freeze admits it.
 
 ## P17A Mixed-Source Rendered Handoff Status Freeze
 
@@ -65,9 +100,9 @@ behavior.
 Verification: docs/control validation only: manifest JSON, authority-index,
 target-selection frozen, progress check, and `git diff --check`.
 
-Next posture: after this freeze lands and current-main syncs, implement only the
-rendered material-authority handoff/export prepare status/control path before
-selecting any APS handoff or external export/download tranche.
+Next posture: completed by the P17A rendered runtime and current-main sync.
+Future work must freeze one downstream mixed-source surface before selecting
+APS handoff or external export/download runtime.
 
 ## P17 Mixed-Source Handoff Export Prepare Runtime
 
@@ -78,9 +113,9 @@ Planning docs:
 `next_milestone_plans/multi-ingest/36-p17-mixed-handoff-freeze.md`;
 `next_milestone_plans/multi-ingest/37-p17-runtime-closeout.md`.
 
-Status: current-main runtime implementation from PR `#2205`, with this
-post-merge review-debt follow-up keeping pre-prepare rendered readiness
-disabled until a separate material-authority UI path is frozen.
+Status: current-main runtime implementation from PR `#2205`. Later P17A work
+adds the separate rendered material-authority UI path for this prepare API
+without changing P17 backend route behavior.
 
 Scope: admits material-authority mixed-source handoff/export prepare-only
 runtime over approved P16 submit state. The route recomputes P14 authority

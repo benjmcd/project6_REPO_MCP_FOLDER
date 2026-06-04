@@ -1,7 +1,8 @@
 # P17A Mixed-Source Rendered Handoff Prepare Runtime Closeout
 
-Status: branch-local runtime implementation verified on current
-`project6-origin/main` after SEC-only PR #2208.
+Status: current-main runtime implementation merged through PR #2210 and
+review-debt follow-up PR #2211. Live `project6-origin/main` is
+`313d516c4766851110598dc16dc9c60270016dc9`.
 
 ## Scope
 
@@ -65,6 +66,13 @@ material-authority packet is complete. Before that packet is complete, the
 panel remains fail-closed under the existing unavailable/blocked server
 summary state.
 
+PR #2211 also closes the rendered-control review debt from PR #2210: when the
+mixed-source material-authority packet is complete, the decision select and
+notes textarea are enabled under the same lifecycle blockers as the submit
+button. Operators can therefore choose `hold`, `decline`, or `blocked` and
+enter the required notes instead of being limited to the default
+`authorize_prepare` value.
+
 ## Fail-Closed Cases
 
 The rendered control stays disabled for:
@@ -110,7 +118,7 @@ for stale, mismatched, missing, cross-shape, and disallowed fields.
 
 ## Verification
 
-Branch-local verification after rebasing to current `project6-origin/main`
+Branch verification after rebasing to current `project6-origin/main`
 `4bdbd0ebc18d2a0de0e5ddb1a77ef5f246a94d76` passed:
 
 - `node --check ./backend/app/review_ui/static/layer3.js`
@@ -120,7 +128,8 @@ Branch-local verification after rebasing to current `project6-origin/main`
   "mixed_source_handoff_export_prepare or package_family_handoff_export_prepare"`
   (`1 passed, 290 deselected, 3 warnings`)
 
-Final branch verification must also include:
+Post-merge proof after PR #2211 at
+`86ecc1fa168c605004bfdfabe08fa6cb054d17c1` passed:
 
 - JSON syntax for changed manifests
 - Layer 3 authority-index validation
@@ -128,10 +137,13 @@ Final branch verification must also include:
 - Layer 3 progress check
 - `git diff --check`
 
+GitHub state: PR #2210 is merged with its single review thread resolved; PR
+#2211 is merged with zero review threads.
+
 ## Next Posture
 
-After this rendered runtime lands and current main is synced, the next safe
-mixed-source tranche must be a separate freeze before admitting any APS
-handoff, external export/download readiness, connector/provider behavior,
-schema/model/migration change, parser/source-shape expansion, package payload
-rewrite, excluded-tool behavior, or production-readiness claim.
+The rendered runtime is current-main synced. The next safe mixed-source tranche
+must be a separate freeze before admitting any APS handoff, external
+export/download readiness, connector/provider behavior, schema/model/migration
+change, parser/source-shape expansion, package payload rewrite, excluded-tool
+behavior, or production-readiness claim.
