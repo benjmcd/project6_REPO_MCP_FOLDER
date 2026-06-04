@@ -44873,9 +44873,11 @@
   "p15_mixed_source_package_construction_commit_runtime_proof": {
     "proof_kind": "p15_mixed_source_package_construction_commit_runtime_proof",
     "milestone": "p15_mixed_source_package_construction_commit_runtime",
-    "status": "branch_local_runtime_implemented_targeted_tests_passed",
+    "status": "current_main_implemented_post_merge_proof_passed",
     "source_branch": "codex/p15-runtime-0604",
     "base_main_commit": "dc49fb7324f8c89b7f3b1acaecf44d7f58796884",
+    "implementation_pr": "#2194",
+    "implementation_merge_commit": "6948b82ec3372d29aaae5309e5a30e27907113ed",
     "planning_doc": "next_milestone_plans/multi-ingest/33-p15-runtime-closeout.md",
     "proof_terms": "Mixed-source package construction commit is admitted only from server-recomputed P14/P12 material authority and creates bounded package-construction records without submit, handoff, export, parser, schema, source-shape, or request payload rewrite effects.",
     "commit_schema_id": "layer3.mixed_source_package_construction_commit.v1",
@@ -44923,5 +44925,5 @@
     ],
     "next_posture": "mixed_source_package_review_submit_freeze_after_runtime_merge_and_current_main_sync"
   },
-  "latest_p15_mixed_source_package_construction_commit_runtime_proof_summary": "P15 runtime proof records branch-local construction commit admission for mixed-source packages from server-recomputed P14 preview, P12 contract, and committed Gate B material authority. It proves bounded record creation, idempotency, stale authority rejection, cross-shape rejection, public response refs, and continued submit/handoff/export/schema/parser/source-shape/payload-rewrite blocks."
+  "latest_p15_mixed_source_package_construction_commit_runtime_proof_summary": "P15 runtime proof records current-main construction commit admission for mixed-source packages through PR #2194 from server-recomputed P14 preview, P12 contract, and committed Gate B material authority. It proves bounded record creation, idempotency, stale authority rejection, cross-shape rejection, public response refs, and continued submit/handoff/export/schema/parser/source-shape/payload-rewrite blocks."
 }
