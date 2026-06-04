@@ -625,4 +625,6 @@ def _reject_raw_or_local_authority(value: Any) -> None:
         raw_reference_message="SEC XBRL projection persistence cannot store raw accession, SEC URL, period date, or local path strings.",
         raw_value_keys=RAW_VALUE_KEYS,
         raw_authority_keys=RAW_AUTHORITY_KEYS,
+        scan_cik_fullmatch=True,
+        scan_contextual_cik=True,
     )

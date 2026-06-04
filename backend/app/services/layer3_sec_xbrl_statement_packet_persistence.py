@@ -732,4 +732,6 @@ def _reject_raw_or_local_authority(value: Any) -> None:
         raw_value_keys=RAW_VALUE_KEYS,
         raw_authority_keys=RAW_AUTHORITY_KEYS,
         residual_magnitude_keys=RESIDUAL_MAGNITUDE_KEYS,
+        scan_cik_fullmatch=True,
+        scan_contextual_cik=True,
     )
