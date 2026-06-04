@@ -10314,10 +10314,58 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
     ]["schema"]
     assert preview_request_schema["additionalProperties"] is False
     assert preview_request_schema["required"] == ["session_id"]
-    assert {tuple(item["required"]) for item in preview_request_schema["anyOf"]} == {
+    assert "anyOf" not in preview_request_schema
+    request_shape_branches = preview_request_schema["oneOf"]
+    assert {tuple(item["required"]) for item in request_shape_branches} == {
         ("session_id", "analysis_plan_id", "pass_run_id", "preview_id", "preview_hash"),
         ("session_id", "material_preview_id", "material_preview_hash"),
     }
+    selected_pass_branch = next(
+        branch for branch in request_shape_branches if "analysis_plan_id" in branch["required"]
+    )
+    material_preview_branch = next(
+        branch for branch in request_shape_branches if "material_preview_id" in branch["required"]
+    )
+    assert {tuple(item["required"]) for item in selected_pass_branch["not"]["anyOf"]} == {
+        ("material_preview_id",),
+        ("material_preview_hash",),
+    }
+    assert {tuple(item["required"]) for item in material_preview_branch["not"]["anyOf"]} == {
+        ("analysis_plan_id",),
+        ("pass_run_id",),
+        ("preview_id",),
+        ("preview_hash",),
+        ("result_review_record_ref",),
+        ("analysis_run_id",),
+    }
+
+    def _matches_preview_request_branch(branch: dict, payload: dict) -> bool:
+        if any(field not in payload for field in branch["required"]):
+            return False
+        return not any(
+            all(field in payload for field in blocked["required"]) for blocked in branch.get("not", {}).get("anyOf", [])
+        )
+
+    def _matching_preview_request_branch_count(payload: dict) -> int:
+        return sum(_matches_preview_request_branch(branch, payload) for branch in request_shape_branches)
+
+    selected_pass_payload = {
+        "session_id": "session-1",
+        "analysis_plan_id": "plan-1",
+        "pass_run_id": "pass-1",
+        "preview_id": "preview-1",
+        "preview_hash": "hash-1",
+    }
+    material_preview_payload = {
+        "session_id": "session-1",
+        "material_preview_id": "material-1",
+        "material_preview_hash": "hash-1",
+    }
+    assert _matching_preview_request_branch_count(selected_pass_payload) == 1
+    assert _matching_preview_request_branch_count(material_preview_payload) == 1
+    assert _matching_preview_request_branch_count({**selected_pass_payload, "material_preview_id": "material-1"}) == 0
+    assert _matching_preview_request_branch_count({**material_preview_payload, "preview_id": "preview-1"}) == 0
+    assert _matching_preview_request_branch_count({**selected_pass_payload, **material_preview_payload}) == 0
     assert "material_preview_id" in preview_request_schema["properties"]
     assert "material_preview_hash" in preview_request_schema["properties"]
     assert preview_request_schema["properties"]["package"]["description"].startswith("Known but non-admitted")
