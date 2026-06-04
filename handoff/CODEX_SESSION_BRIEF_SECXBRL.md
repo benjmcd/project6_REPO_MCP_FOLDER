@@ -47,9 +47,10 @@ Current unmerged work — merge in this priority order:
 
 **Tier B — Hardening + UI** (rebase check against current main before PR):
 
-| Branch | Content |
-|--------|---------|
-| `codex/secxbrl-2039-review-fix` | Migration 0043 downgrade safety guard + `layer3.js` SEC XBRL review-decision UI additions + tests |
+| Branch | Content | Risk |
+|--------|---------|------|
+| `codex/secxbrl-2039-review-fix` | Migration 0043 downgrade safety guard + `layer3.js` SEC XBRL review-decision UI additions + tests | Tier-2 (migration hardening, bounded) |
+| `codex/secxbrl-tier2-redaction-remediation` | Modifies `backend/app/models/models.py` + migration `0041` + 3 persistence/review services + 3 tests | **Tier-2 (models.py + schema)** — higher-risk; rebase required (~130 commits behind main); record exact surfaces and justification in PR body |
 
 **Tier C — Complex rebase required** (~130 commits behind current main):
 
@@ -80,7 +81,9 @@ gh pr create --title "..." --base main --head <branch>
 
 After each merge, rebase the next branch on the new main before verifying.
 
-**Tier B**: After Tier A is clear, check out `codex/secxbrl-2039-review-fix`, verify rebase against current main, then run the full SEC XBRL suite plus `npx playwright test --project=chromium e2e/layer3-workbench.spec.js` (branch contains bounded `layer3.js` SEC XBRL review-decision UI additions).
+**Tier B**: After Tier A is clear, work through in order:
+1. `codex/secxbrl-2039-review-fix` — rebase against current main; run SEC XBRL suite + `npx playwright test --project=chromium e2e/layer3-workbench.spec.js`
+2. `codex/secxbrl-tier2-redaction-remediation` — rebase against current main; Tier-2 (modifies `models.py` + migration `0041`); record exact surfaces in PR body; run full SEC XBRL suite including persistence suites
 
 **Tier C**: After Tier B, rebase `codex/secxbrl-offline-gate` against current main (progress board and manifest in the branch are stale; resolve conflicts carefully). Then verify and PR.
 
@@ -128,7 +131,7 @@ This session owns:
 - `backend/app/review_ui/static/layer3.js` or `.html` — **exception**: `codex/secxbrl-2039-review-fix` contains bounded SEC XBRL review-decision UI additions to `layer3.js`; land that branch before the Layer 3 session begins new UI work
 - `backend/app/api/layer3.py`
 - `next_milestone_plans/Layer3_planning_docs/199_*.md`, `200_*.md`
-- `next_milestone_plans/layer3_progress_manifest.json` (owned by Layer 3 session)
+- `next_milestone_plans/layer3_progress_manifest.json` and `layer3_workbench_proof_manifest.json` — for any branch you are PR-ing, manifest changes present in that branch's merge base are pre-existing; PR them as-is. Do not introduce NEW manifest mutations in this session's own work.
 
 ---
 
