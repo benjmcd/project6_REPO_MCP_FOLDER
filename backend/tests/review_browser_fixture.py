@@ -623,6 +623,9 @@ def capture_review_browser_patch_state() -> dict[str, object]:
         "layer3_sec_edgar_client": layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT,
         "layer3_sec_edgar_sleep": layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP,
         "settings_layer3_sec_edgar_user_agent": getattr(settings, "layer3_sec_edgar_user_agent", None),
+        "settings_layer3_sec_edgar_live_network_enabled": getattr(
+            settings, "layer3_sec_edgar_live_network_enabled", None
+        ),
         "settings_layer3_sec_edgar_rate_limit_per_second": getattr(
             settings, "layer3_sec_edgar_rate_limit_per_second", None
         ),
@@ -655,6 +658,9 @@ def restore_review_browser_patches(patch_state: dict[str, object]) -> None:
     layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT = patch_state["layer3_sec_edgar_client"]
     layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP = patch_state["layer3_sec_edgar_sleep"]
     settings.layer3_sec_edgar_user_agent = patch_state["settings_layer3_sec_edgar_user_agent"]
+    settings.layer3_sec_edgar_live_network_enabled = patch_state[
+        "settings_layer3_sec_edgar_live_network_enabled"
+    ]
     settings.layer3_sec_edgar_rate_limit_per_second = patch_state[
         "settings_layer3_sec_edgar_rate_limit_per_second"
     ]

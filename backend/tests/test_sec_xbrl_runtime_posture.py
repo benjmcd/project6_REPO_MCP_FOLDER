@@ -31,6 +31,7 @@ def default_sec_xbrl_posture_flags(monkeypatch) -> None:
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_corpus_validation_enabled", False)
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_value_reveal_enabled", False)
     monkeypatch.setattr(settings, "layer3_sec_xbrl_controlled_value_reveal_submit_enabled", True)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "")
     monkeypatch.setattr(settings, "auth_owner", "none")
     monkeypatch.setattr(settings, "trusted_proxy_mode", False)
 
@@ -60,6 +61,7 @@ def test_runtime_posture_default_reports_controlled_reveal_available_and_live_pa
     assert flags["arelle_fact_authority_cutover_enabled"] is True
     assert flags["arelle_fact_authority_nonlocal_authorized"] is False
     assert flags["live_sec_edgar_network_enabled"] is False
+    assert flags["sec_edgar_user_agent_configured"] is False
 
     activated = _capabilities(posture["activated_capabilities"])
     assert activated["controlled_value_reveal_submit"]["runtime_state"] == (
@@ -95,7 +97,9 @@ def test_runtime_posture_default_reports_controlled_reveal_available_and_live_pa
     assert live_source["operator_surface_rendered"] is True
     assert live_source["rendered_panel_id"] == "sec-edgar-live-source-artifact-acquisition-panel"
     assert live_source["browser_supplied_url_allowed"] is False
+    assert live_source["sec_edgar_user_agent_configured"] is False
     assert "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED" in live_source["required_flags"]
+    assert "LAYER3_SEC_EDGAR_USER_AGENT" in live_source["required_configuration"]
     assert "POST /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire" in live_source[
         "api_routes"
     ]
@@ -159,8 +163,24 @@ def test_arelle_activation_surface_reports_cutover_flag_when_cutover_disabled(mo
     assert posture["arelle_invoked"] is False
 
 
+def test_live_activation_surface_requires_user_agent_without_exposing_user_agent(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_live_network_enabled", True)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "")
+
+    posture = build_sec_xbrl_runtime_posture()
+
+    surfaces = _surfaces(posture["activation_surfaces"])
+    live_source = surfaces["live_sec_edgar_network_source_acquisition"]
+    assert live_source["runtime_enabled"] is False
+    assert live_source["surface_state"] == "gated_by_sec_edgar_user_agent_configuration"
+    assert live_source["required_flags"] == []
+    assert live_source["required_configuration"] == ["LAYER3_SEC_EDGAR_USER_AGENT"]
+    assert live_source["next_operator_action"] == "configure_sec_edgar_user_agent_before_source_acquisition"
+
+
 def test_runtime_posture_reflects_enabled_runtime_flags_without_side_effect_claims(monkeypatch) -> None:
     monkeypatch.setattr(settings, "layer3_sec_edgar_live_network_enabled", True)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_nonlocal_authorized", True)
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_internal_value_store_enabled", True)
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_corpus_validation_enabled", True)
@@ -170,6 +190,7 @@ def test_runtime_posture_reflects_enabled_runtime_flags_without_side_effect_clai
 
     flags = posture["runtime_flags"]
     assert flags["live_sec_edgar_network_enabled"] is True
+    assert flags["sec_edgar_user_agent_configured"] is True
     assert flags["arelle_fact_authority_nonlocal_authorized"] is True
     assert flags["arelle_internal_value_store_enabled"] is True
     assert flags["arelle_corpus_validation_enabled"] is True
@@ -190,6 +211,8 @@ def test_runtime_posture_reflects_enabled_runtime_flags_without_side_effect_clai
     assert live_source["surface_state"] == "operator_surface_available_when_live_network_authorized"
     assert live_source["runtime_enabled"] is True
     assert live_source["required_flags"] == []
+    assert live_source["required_configuration"] == []
+    assert "Layer3 Test contact@example.com" not in json.dumps(posture)
     arelle_surface = surfaces["arelle_invocation_and_governed_sibling_value_reveal"]
     assert arelle_surface["runtime_enabled"] is True
     assert arelle_surface["surface_state"] == "gated_until_explicit_arelle_invocation_proof"
