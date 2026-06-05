@@ -8391,6 +8391,8 @@ test('Layer 3 workbench drives raw mixed rendered external export download prepa
 
 test('Layer 3 workbench renders P21 mixed-source external export download delivery control', async ({ page }) => {
   const deliveryRequests = [];
+  const sourceDirectoryDeliveryRequests = [];
+  const sourceDirectoryDeliveryStatusRequests = [];
   await page.route('**/api/v1/layer3/handoff/export/download/deliver', async (route, request) => {
     deliveryRequests.push(formPostPayload(request));
     await route.fulfill({
@@ -8399,6 +8401,20 @@ test('Layer 3 workbench renders P21 mixed-source external export download delive
       body: '',
     });
   });
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver/status',
+    async (route, request) => {
+      sourceDirectoryDeliveryStatusRequests.push(formPostPayload(request));
+      await route.fulfill({ status: 418, contentType: 'application/json', body: '{}' });
+    },
+  );
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver',
+    async (route, request) => {
+      sourceDirectoryDeliveryRequests.push(formPostPayload(request));
+      await route.fulfill({ status: 418, contentType: 'text/html', body: '' });
+    },
+  );
 
   await page.goto('/review/layer3');
   await page.evaluate((readiness) => {
@@ -8407,7 +8423,16 @@ test('Layer 3 workbench renders P21 mixed-source external export download delive
         session_id: 'session-p21-rendered',
         external_export_download_readiness: ${JSON.stringify(readiness)}
       };
-      State.externalExportDownloadPrepare = null;
+      State.externalExportDownloadPrepare = {
+        schema_id: 'layer3.source_directory_qualitative_analysis_external_export_download_prepare.v1',
+        external_export_download_target: 'source_directory_qualitative_analysis_package_download_reference',
+        external_export_download_state: 'external_export_download_prepared',
+        external_export_download_record_ref: 'layer3://source-directory-external-export-download/stale',
+        export_download_descriptor_ref: 'layer3://source-directory-external-export-download-descriptor/stale',
+        package_kinds: ['user_facing'],
+        output_package_ids: ['source-dir-stale-package'],
+        payload_hashes: ['${'2'.repeat(64)}'],
+      };
       State.externalExportDownloadDelivery = null;
       State.externalExportDownloadSignedReference = null;
       State.externalExportDownloadSignedReferenceUse = null;
@@ -8425,6 +8450,8 @@ test('Layer 3 workbench renders P21 mixed-source external export download delive
   await expect(panel).toContainText('same_origin_artifact_stream');
   await expect(panel).toContainText('review_facing');
   await expect(panel).toContainText('layer3://mixed-source-package/pkg-p21-review');
+  await expect(panel).toContainText('/handoff/export/download/deliver');
+  await expect(panel).not.toContainText('server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver');
   await expect(page.locator('#external-export-download-delivery-submit')).toBeEnabled();
   await expect(page.locator('#external-export-download-signed-reference-generate')).toBeDisabled();
   await expect(page.locator('#external-export-download-signed-reference-panel')).toContainText(
@@ -8433,6 +8460,8 @@ test('Layer 3 workbench renders P21 mixed-source external export download delive
 
   await page.locator('#external-export-download-delivery-submit').click();
   await expect.poll(() => deliveryRequests.length).toBe(1);
+  expect(sourceDirectoryDeliveryStatusRequests).toHaveLength(0);
+  expect(sourceDirectoryDeliveryRequests).toHaveLength(0);
   const payload = deliveryRequests[0];
   expectOnlyPayloadKeys(payload, [
     'client_request_id',

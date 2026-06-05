@@ -3678,8 +3678,8 @@ function mixedSourceExternalExportDownloadSelectedPackage(readiness = mixedSourc
 
 function mixedSourceExternalExportDownloadDeliveryState() {
     const candidates = [
-        State.externalExportDownloadDelivery,
         State.sessionSummary?.external_export_download_delivery,
+        State.externalExportDownloadDelivery,
     ];
     return candidates.find((delivery) => (
         delivery
@@ -23027,8 +23027,8 @@ function renderExternalExportDownloadDeliveryPanel() {
                     ${fieldItem('download mode', mixedSourceMode ? 'existing_package_artifact_stream' : (external.download_mode || descriptor.download_mode || 'reference_only_prepare'))}
                     ${fieldItem('delivery mode', mixedSourceMode ? MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_MODE : 'same_origin_artifact_stream')}
                     ${fieldItem('decision', mixedSourceMode ? MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION : (sourceDirectoryMode ? 'deliver_source_directory_external_export_download' : 'deliver_external_export_download'))}
-                    ${fieldItem('delivery route', sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH : '/handoff/export/download/deliver', { code: true })}
-                    ${fieldItem('status route', sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH : 'not_required_for_generic_delivery', { code: true })}
+                    ${fieldItem('delivery route', !mixedSourceMode && sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH : '/handoff/export/download/deliver', { code: true })}
+                    ${fieldItem('status route', !mixedSourceMode && sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH : 'not_required_for_generic_delivery', { code: true })}
                     ${fieldItem('server UI state', deliveryUi.state)}
                     ${fieldItem('server UI available', deliveryUi.available)}
                     ${fieldItem('server UI basis', deliveryUi.server_authority)}
@@ -27626,7 +27626,7 @@ async function submitExternalExportDownloadDelivery(event) {
     renderAll();
     setBusy(elements.externalExportDownloadDeliverySubmit, true, 'Deliver External Bundle');
     try {
-        if (sourceDirectoryMode) {
+        if (!mixedSourceMode && sourceDirectoryMode) {
             State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusPending = true;
             State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatus = await postJson(
                 SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH,
@@ -27639,7 +27639,7 @@ async function submitExternalExportDownloadDelivery(event) {
             sourceDirectoryStatusValidated = true;
         }
         const delivery = await submitAttachmentForm(
-            sourceDirectoryMode
+            !mixedSourceMode && sourceDirectoryMode
                 ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH
                 : '/handoff/export/download/deliver',
             payload,
