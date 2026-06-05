@@ -14670,6 +14670,43 @@ function secXbrlRuntimePostureRouteFamilyItems(values) {
     `).join('');
 }
 
+function secXbrlRuntimePostureActivationSurfaceItems(values) {
+    const items = Array.isArray(values) ? values : [];
+    if (!items.length) return '<li>none</li>';
+    return items.map((item) => {
+        const flags = Array.isArray(item?.required_flags) ? item.required_flags.join(', ') : '';
+        const evidence = Array.isArray(item?.required_evidence) ? item.required_evidence.join(', ') : '';
+        const routes = Array.isArray(item?.api_routes) ? item.api_routes : [];
+        const families = Array.isArray(item?.route_families) ? item.route_families : [];
+        const sideEffects = Boolean(
+            item?.current_posture_performs_side_effect
+            || item?.source_acquisition_performed
+            || item?.arelle_invoked
+            || item?.value_reveal_performed
+            || item?.delivery_export_performed
+            || item?.runtime_db_write
+            || item?.frontend_durable_authority
+            || item?.raw_authority_exposed
+            || item?.production_readiness_claimed
+        );
+        return `
+            <li>
+                <code>${escapeHtml(item?.surface_id || 'activation_surface')}</code>:
+                surface state ${escapeHtml(item?.surface_state || 'surface_state_unreported')}
+                <span class="rail-label">runtime enabled ${escapeHtml(item?.runtime_enabled)}</span>
+                <span class="rail-label">rendered panel ${escapeHtml(item?.rendered_panel_id || 'none')}</span>
+                <span class="rail-label">operator surface rendered ${escapeHtml(item?.operator_surface_rendered)}</span>
+                <span class="rail-label">side effects ${sideEffects ? 'reported' : 'none'}</span>
+                ${flags ? `<span class="rail-label">required flags ${escapeHtml(flags)}</span>` : ''}
+                ${evidence ? `<span class="rail-label">required evidence ${escapeHtml(evidence)}</span>` : ''}
+                ${routes.length ? `<span class="rail-label">primary route ${escapeHtml(routes[0])}</span>` : ''}
+                ${families.length ? `<span class="rail-label">primary route family ${escapeHtml(families[0])}</span>` : ''}
+                ${item?.next_operator_action ? `<span class="rail-label">next action ${escapeHtml(item.next_operator_action)}</span>` : ''}
+            </li>
+        `;
+    }).join('');
+}
+
 function secXbrlRuntimePostureRows(posture) {
     if (!posture) return '';
     const flags = posture.runtime_flags || {};
@@ -14701,6 +14738,10 @@ function secXbrlRuntimePostureRows(posture) {
             <section class="result-review-card">
                 <strong>Gated Capabilities</strong>
                 <ul>${secXbrlRuntimePostureCapabilityItems(posture.gated_capabilities)}</ul>
+            </section>
+            <section class="result-review-card sec-xbrl-runtime-posture-activation-card">
+                <strong>Activation Surfaces</strong>
+                <ul>${secXbrlRuntimePostureActivationSurfaceItems(posture.activation_surfaces)}</ul>
             </section>
             <section class="result-review-card">
                 <strong>Protected Route Families</strong>
