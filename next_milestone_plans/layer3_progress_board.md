@@ -12544,3 +12544,31 @@ or use it as the prerequisite audit surface for a live SEC source-acquisition/Ar
 activation freeze. Do not claim full production readiness until live source acquisition, Arelle
 invocation, multi-filing gate enforcement, export/package/status delivery, and nonlocal operator auth
 are all proven.
+
+## SEC XBRL Runtime Posture Rendered Status
+
+Milestone: `sec_xbrl_runtime_posture_rendered_status_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1355-sec-xbrl-runtime-posture-rendered.md`.
+
+Status: branch-local rendered read-only posture panel. Adds
+`#sec-xbrl-runtime-posture-panel` to `/review/layer3`, consumes
+`GET /api/v1/layer3/sec-xbrl/runtime/posture`, and renders the returned
+`sec_xbrl_runtime_posture` projection as runtime flags, identity-authority posture, protected route
+families, activated capabilities, gated capabilities, negative boundaries, and next actions.
+
+Scope: operator usability only. The rendered control has one `Inspect Runtime Posture` button, no
+request body, no operator-supplied authority fields, no local/browser durable authority, and
+`data-production-readiness-claimed=false`.
+
+Non-goals preserved: no POST route, SEC EDGAR network fetch, Arelle invocation, source acquisition,
+value reveal, export/delivery, runtime default change, DB/storage write, raw identity/header/value/
+residual/path/URL exposure, schema/model/migration change, or production-readiness claim.
+
+Verification target: focused static Layer3 page test, focused Playwright SEC XBRL runtime posture
+proof in Chromium, and `git diff --check`.
+
+Next posture: use the rendered posture panel as the operator-facing readiness entry before choosing
+one next activation surface: live SEC source acquisition, Arelle invocation, export/package/status
+delivery, or nonlocal operator-auth hardening.
