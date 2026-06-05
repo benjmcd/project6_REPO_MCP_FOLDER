@@ -1,5 +1,40 @@
 # Layer3 Progress Board
 
+## P20 Mixed-Source Current-Main Sync
+
+Milestone:
+`p20_mixed_source_external_export_download_delivery_current_main_sync`.
+
+Sync doc:
+`next_milestone_plans/multi-ingest/49-p20-current-main-sync.md`.
+
+Status: docs/control current-main sync for PR #2223 at live
+`project6-origin/main` `6ca7835c6d8724715c9ac2d7a92ca34de2898ef2`.
+
+Scope: records that P20 mixed-source same-origin external export/download
+delivery is current-main runtime behavior. PR #2223 streams one existing
+server-owned mixed-source package artifact only after revalidating recorded P19
+readiness, P14/P15/P16/P17/P18/P19 authority, current package rows, selected
+package id/kind/hash, and artifact hash. This sync changes no runtime code.
+
+Non-goals: no runtime code, rendered UI/static behavior, browser download
+control, download URL, signed reference, public/provider URL,
+connector/provider/local-outbox/destination behavior, schema/model/migration,
+parser, source-shape expansion, package payload rewrite, package
+reconstruction/mutation, SEC XBRL surface, excluded-tool behavior, or
+production-readiness change.
+
+Proof: detached post-merge proof after PR #2223 passed touched compile, focused
+P20/API delivery and OpenAPI slice with `23 passed, 273 deselected, 4 warnings`,
+affected external export contract/response helper tests with `11 passed, 2
+warnings`, bounded E2E slice with `1 passed, 3 deselected, 4 warnings`, full
+Layer 3 API suite with `296 passed, 4 warnings`, manifest JSON syntax,
+authority-index validation, frozen target-selection validation, progress check,
+and `git diff --check`. PR #2223 had zero review threads.
+
+Next posture: freeze exactly one next mixed-source downstream surface before
+implementation.
+
 ## P20 Mixed-Source External Export/Download Delivery Runtime
 
 Milestone:
@@ -8,8 +43,7 @@ Milestone:
 Closeout doc:
 `next_milestone_plans/multi-ingest/48-p20-runtime-closeout.md`.
 
-Status: branch-local runtime implementation proof. Current-main authority begins
-only after this branch merges and detached post-merge proof passes.
+Status: current-main runtime implementation verified after PR #2223.
 
 Scope: implements exactly one same-origin artifact-stream delivery surface over
 recorded P19 mixed-source external export/download readiness. The runtime
@@ -24,15 +58,14 @@ package payload rewrite, package reconstruction/mutation, SEC XBRL surface,
 excluded-tool behavior, or production-readiness change.
 
 Proof: branch-local compile and focused delivery/API/helper/bounded E2E slices
-passed. Full affected Layer 3 API suite, manifest JSON syntax, authority-index
-validation, frozen target-selection validation, progress check, and
-`git diff --check` remain required before merge. Detached post-merge proof is
-required after merge.
+passed before PR #2223. Detached post-merge proof from live main repeated
+touched compile, focused API/helper/E2E slices, full Layer 3 API suite, manifest
+JSON syntax, governance validators, progress check, and `git diff --check`.
 
-Next posture: after P20 runtime lands and current main is synced, freeze exactly
-one next mixed-source downstream surface: rendered delivery controls,
-signed-reference governance, provider/public URL governance,
-connector/destination dispatch, or a stop-for-product-authority checkpoint.
+Next posture: after `49-p20-current-main-sync.md`, freeze exactly one next
+mixed-source downstream surface: rendered delivery controls, signed-reference
+governance, provider/public URL governance, connector/destination dispatch, or a
+stop-for-product-authority checkpoint.
 
 ## P20 Mixed-Source External Export/Download Delivery Freeze
 

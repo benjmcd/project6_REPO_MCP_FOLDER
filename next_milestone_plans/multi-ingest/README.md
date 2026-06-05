@@ -33,8 +33,8 @@ P18 mixed-source APS handoff dispatch runtime, current-main P18 sync, bounded
 Phase P19 mixed-source external export/download readiness freeze, current-main
 Phase P19 mixed-source external export/download readiness runtime,
 current-main P19 sync, bounded Phase P20 mixed-source external export/download
-delivery freeze, and branch-local Phase P20 mixed-source external
-export/download delivery runtime proof.
+delivery freeze, current-main Phase P20 mixed-source external
+export/download delivery runtime, and current-main P20 sync.
 
 Last audited main authority before the Phase P9 branch: `project6-origin/main` at `61df2c0d77a398d4aa582bb864caf6a209679e47`.
 
@@ -83,9 +83,9 @@ handoff/export prepare controls over that P17 API path, current-main
 reference-only mixed-source APS handoff dispatch state over the P17 prepare
 state, current-main reference-only mixed-source external export/download
 readiness state over the P18 dispatch state, a P20 same-origin delivery freeze
-over that readiness state, and branch-local P20 same-origin mixed-source
-artifact-stream delivery proof over current package rows and recorded P19
-readiness. Connector run/report refs expose the generic table dataset bridge
+over that readiness state, current-main P20 same-origin mixed-source
+artifact-stream delivery over current package rows and recorded P19 readiness,
+and current-main P20 sync. Connector run/report refs expose the generic table dataset bridge
 only when explicitly enabled.
 
 P18 now has current-main runtime proof for mixed-source APS handoff dispatch as the prerequisite downstream surface before external export/download readiness can be pursued. The runtime records reference-only dispatch state and does not admit external export/download, delivery, provider, connector, destination, local outbox, schema, parser, source-shape, payload rewrite, or production-readiness behavior.
@@ -93,10 +93,10 @@ P18 now has current-main runtime proof for mixed-source APS handoff dispatch as 
 P19 has current-main runtime proof for mixed-source external export/download readiness over the recorded P18 reference-only APS handoff dispatch state. The runtime records reference-only readiness state only and does not admit external export/download delivery, download, signed reference, public URL, connector, provider, destination, local outbox, schema, parser, source-shape, package payload rewrite, excluded-tool behavior, or production-readiness behavior.
 
 P20 freezes mixed-source external export/download delivery as the next exact
-downstream surface over the recorded P19 readiness state. This branch implements
-only same-origin artifact-stream delivery for a server-revalidated existing
-mixed-source package artifact. It still does not admit rendered browser download
-controls, download URLs, signed references, public/provider URLs,
+downstream surface over the recorded P19 readiness state. Current main now
+implements only same-origin artifact-stream delivery for a server-revalidated
+existing mixed-source package artifact. It still does not admit rendered browser
+download controls, download URLs, signed references, public/provider URLs,
 connector/provider/destination behavior, schema/model/migration changes,
 parser/source-shape expansion, package payload rewrite, excluded-tool behavior,
 or production-readiness behavior.
@@ -250,7 +250,7 @@ APS handoff dispatch state as the next exact downstream prerequisite before
 mixed-source external export/download readiness. P19 now has current-main
 runtime proof for mixed-source external export/download readiness as a
 reference-only readiness state over P18 dispatch authority. P20 now freezes and
-this branch implements same-origin mixed-source external export/download
+current main implements same-origin mixed-source external export/download
 delivery over that P19 readiness state. The repo still does not admit
 unsupported forms, ambiguous financial-statement semantics, archive-member
 orchestration, broad generic XML/HTML parsing, rendered browser download
@@ -260,7 +260,7 @@ mixed-source payload rewrite semantics.
 
 ## Immediate Next Tranche
 
-Phase P20 freezes and this branch implements mixed-source external
+Phase P20 freezes and current main implements mixed-source external
 export/download delivery as same-origin artifact-stream delivery over the
 recorded P19 readiness state. It still keeps rendered browser download controls,
 download URLs, signed references, public/provider URLs,
@@ -279,19 +279,18 @@ handoff/export prepare runtime slice, the P17A rendered status/runtime slices,
 this P18 mixed-source APS handoff dispatch freeze, the P18 mixed-source APS
 handoff dispatch runtime slice, this P19 mixed-source external export/download
 readiness freeze, this P19 readiness runtime slice, this P19 current-main sync,
-this P20 mixed-source external export/download delivery freeze, or this P20
-same-origin delivery runtime slice. Remaining work is:
+this P20 mixed-source external export/download delivery freeze, this P20
+same-origin delivery runtime slice, or this P20 current-main sync. Remaining
+work is:
 
-1. Land P20 delivery runtime and sync current main after detached post-merge
-   proof.
-2. Freeze exactly one next mixed-source downstream surface: rendered delivery
+1. Freeze exactly one next mixed-source downstream surface: rendered delivery
    controls, signed-reference governance, provider/public URL governance,
    connector/destination dispatch, or a stop-for-product-authority checkpoint.
-3. Decide whether to deprecate the legacy
+2. Decide whether to deprecate the legacy
    `csv_dataset_bridge_enabled`/`aps.csv_dataset_bridge_run.v1` compatibility
    path after downstream consumers have adopted the generic table bridge
    contract.
-4. Pursue future parser-level refusal trace work only when a new failure class
+3. Pursue future parser-level refusal trace work only when a new failure class
    has server-owned run/target authority and requires more than the current
    unsupported-media diagnostic rows.
 
@@ -346,4 +345,5 @@ This section intentionally lists the supporting pack files. `README.md` is the f
 - `45-p19-runtime-closeout.md` records the current-main mixed-source external export/download readiness runtime proof over P18 dispatch authority.
 - `46-p19-current-main-sync.md` records the current-main sync after PR #2220.
 - `47-p20-mixed-export-download-delivery-freeze.md` freezes mixed-source same-origin external export/download delivery as the next exact downstream surface over the recorded P19 readiness state, without admitting runtime behavior.
-- `48-p20-runtime-closeout.md` records the branch-local mixed-source same-origin external export/download delivery runtime proof over recorded P19 readiness.
+- `48-p20-runtime-closeout.md` records the current-main mixed-source same-origin external export/download delivery runtime proof over recorded P19 readiness.
+- `49-p20-current-main-sync.md` records the current-main sync after PR #2223.
