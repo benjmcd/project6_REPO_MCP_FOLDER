@@ -48118,8 +48118,7 @@
       "python -B .\\tools\\l3-progress-check.py -> PASS",
       "git diff --check -> PASS"
     ],
-    "final_validation_required": [
-    ],
+    "final_validation_required": [],
     "files_in_scope": [
       "backend/app/api/layer3.py",
       "backend/app/services/layer3_external_export_contract.py",
@@ -48245,14 +48244,14 @@
   "p21_mixed_source_rendered_delivery_controls_runtime_tracking": {
     "tracking_kind": "p21_mixed_source_rendered_delivery_controls_runtime_tracking",
     "milestone": "p21_mixed_source_rendered_delivery_controls_runtime",
-    "status": "branch_local_runtime_implementation_proof_not_current_main_until_merge",
+    "status": "current_main_runtime_implementation_verified",
     "base_main_commit": "9e25d6e99254bfbaf7598b16410208a83c84bfa7",
     "planning_doc": "next_milestone_plans/multi-ingest/50-p21-rendered-delivery-freeze.md",
     "runtime_closeout_doc": "next_milestone_plans/multi-ingest/51-p21-rendered-runtime-closeout.md",
     "runtime_predecessor_doc": "next_milestone_plans/multi-ingest/48-p20-runtime-closeout.md",
     "current_main_sync_predecessor_doc": "next_milestone_plans/multi-ingest/49-p20-current-main-sync.md",
     "selection": "mixed_source_rendered_delivery_controls",
-    "selection_reason": "P20 already admits same-origin artifact-stream delivery over recorded P19 mixed-source readiness; the branch-local runtime implements only the rendered operator controls selected by P21, using server-owned P19/P20 session-summary authority and the existing P20 delivery route.",
+    "selection_reason": "P20 already admits same-origin artifact-stream delivery over recorded P19 mixed-source readiness; current main now implements only the rendered operator controls selected by P21, using server-owned P19/P20 session-summary authority and the existing P20 delivery route.",
     "rendered_source_of_truth": "State.sessionSummary.external_export_download_readiness",
     "route": "POST /api/v1/layer3/handoff/export/download/deliver",
     "schema_id": "layer3.mixed_source_external_export_download_delivery.v1",
@@ -48279,6 +48278,8 @@
     "positive_runtime_effects": [
       "rendered /review/layer3 delivery control can submit a mixed-source P20 delivery request when complete P19/P20 material authority is present",
       "browser-managed form delivery records mixed_source_external_export_download_delivery_submitted as UI-local submitted state",
+      "refreshed server-delivered session state takes precedence over optimistic local submitted state",
+      "stale source-directory prepare state cannot route mixed-source delivery payloads to source-directory status or delivery endpoints",
       "rendered delivery panel shows mixed-source readiness, package id, package kind, package hash, public package ref, route, mode, and operator decision",
       "signed-reference controls are blocked when mixed-source readiness is the active delivery authority"
     ],
@@ -48300,6 +48301,7 @@
     "files_in_scope": [
       "backend/app/review_ui/static/layer3.js",
       "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js",
       "next_milestone_plans/multi-ingest/51-p21-rendered-runtime-closeout.md",
       "next_milestone_plans/multi-ingest/README.md",
       "next_milestone_plans/authority-index.json",
@@ -48320,7 +48322,76 @@
       "progress check required",
       "git diff --check required"
     ],
-    "next_posture": "after_runtime_merge_and_current_main_sync_freeze_one_next_downstream_surface_before_implementation"
+    "next_posture": "freeze_one_next_mixed_source_downstream_surface_before_implementation",
+    "runtime_pr": "#2226",
+    "runtime_merge_commit": "dcd0e159b5bb0ac7eb1c6af6b6609e4c9b31b48d",
+    "current_main_sync_doc": "next_milestone_plans/multi-ingest/52-p21-current-main-sync.md",
+    "current_main_validation": [
+      "node --check ./backend/app/review_ui/static/layer3.js",
+      "python -B -m pytest ./backend/tests/test_layer3_page.py -q -> 23 passed, 3 warnings",
+      "python -B -m pytest ./backend/tests/test_layer3_api.py -q -k \"mixed_source_external_export_download_readiness or mixed_source_external_export_download_deliver\" -> 4 passed, 292 deselected, 3 warnings",
+      "python -B -m pytest ./backend/tests/test_layer3_external_export_response.py::test_mixed_external_export_delivery_response_helper_is_shared_with_workbench -q -> 1 passed, 2 warnings",
+      "npm run test:e2e -- --grep \"P21 mixed-source\" -> 1 passed",
+      "npm run test:e2e:headed -- --grep \"P21 mixed-source\" -> 1 passed",
+      "manifest JSON syntax passed",
+      "authority-index validation passed",
+      "frozen target-selection validation passed",
+      "progress check passed",
+      "git diff --check passed"
+    ]
   },
-  "latest_p21_mixed_source_rendered_delivery_controls_runtime_summary": "P21 branch-local runtime proof implements only rendered mixed-source delivery controls over the existing P20 same-origin external export/download route. It uses State.sessionSummary.external_export_download_readiness, selects only review_facing, submits deliver_mixed_source_external_export_download, blocks signed-reference controls for mixed readiness, and keeps backend route changes, download URLs, signed references, public/provider URLs, connector/destination behavior, schema/parser/source-shape, package payload rewrite, SEC XBRL, excluded-tool behavior, and production readiness out."
+  "latest_p21_mixed_source_rendered_delivery_controls_runtime_summary": "P21 current main implements rendered /review/layer3 mixed-source delivery controls over the existing P20 same-origin delivery route. It uses State.sessionSummary.external_export_download_readiness, selects only the review_facing mixed package, prefers refreshed delivered state over optimistic local submitted state, keeps stale source-directory prepare state from taking over mixed-source routes, and leaves download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, package payload rewrite, SEC XBRL, excluded-tool, value-reveal, default-on, and production-readiness scope blocked.",
+  "p21_mixed_source_rendered_delivery_controls_current_main_sync_tracking": {
+    "tracking_kind": "p21_mixed_source_rendered_delivery_controls_current_main_sync_tracking",
+    "milestone": "p21_mixed_source_rendered_delivery_controls_current_main_sync",
+    "status": "docs_control_current_main_sync_only",
+    "sync_doc": "next_milestone_plans/multi-ingest/52-p21-current-main-sync.md",
+    "runtime_closeout_doc": "next_milestone_plans/multi-ingest/51-p21-rendered-runtime-closeout.md",
+    "runtime_pr": "#2226",
+    "runtime_merge_commit": "dcd0e159b5bb0ac7eb1c6af6b6609e4c9b31b48d",
+    "runtime_behavior_changed_by_sync": false,
+    "rendered_ui_behavior_changed_by_sync": false,
+    "backend_route_changed_by_sync": false,
+    "schema_or_migration_changed_by_sync": false,
+    "parser_behavior_changed_by_sync": false,
+    "source_shape_expanded_by_sync": false,
+    "payload_rewrite_enabled_by_sync": false,
+    "browser_download_control_enabled_by_sync": false,
+    "download_url_enabled_by_sync": false,
+    "signed_reference_enabled_by_sync": false,
+    "public_or_provider_url_enabled_by_sync": false,
+    "connector_dispatch_enabled_by_sync": false,
+    "provider_behavior_enabled_by_sync": false,
+    "destination_behavior_enabled_by_sync": false,
+    "excluded_tool_behavior_enabled_by_sync": false,
+    "value_reveal_enabled_by_sync": false,
+    "default_on_enabled_by_sync": false,
+    "production_readiness_claimed_by_sync": false,
+    "synced_route": "POST /api/v1/layer3/handoff/export/download/deliver",
+    "synced_schema_id": "layer3.mixed_source_external_export_download_delivery.v1",
+    "synced_operator_decision": "deliver_mixed_source_external_export_download",
+    "synced_selected_package_kind": "review_facing",
+    "detached_post_merge_proof": [
+      "node --check ./backend/app/review_ui/static/layer3.js",
+      "python -B -m pytest ./backend/tests/test_layer3_page.py -q -> 23 passed, 3 warnings",
+      "python -B -m pytest ./backend/tests/test_layer3_api.py -q -k \"mixed_source_external_export_download_readiness or mixed_source_external_export_download_deliver\" -> 4 passed, 292 deselected, 3 warnings",
+      "python -B -m pytest ./backend/tests/test_layer3_external_export_response.py::test_mixed_external_export_delivery_response_helper_is_shared_with_workbench -q -> 1 passed, 2 warnings",
+      "npm run test:e2e -- --grep \"P21 mixed-source\" -> 1 passed",
+      "npm run test:e2e:headed -- --grep \"P21 mixed-source\" -> 1 passed",
+      "manifest JSON syntax passed",
+      "authority-index validation passed",
+      "frozen target-selection validation passed",
+      "progress check passed",
+      "git diff --check passed"
+    ],
+    "validation": [
+      "python -B -m json.tool authority/progress/proof manifests",
+      "python -B ./tools/l3-authority-index-validate.py",
+      "python -B ./tools/l3-target-selection-validate.py --expect frozen",
+      "python -B ./tools/l3-progress-check.py",
+      "git diff --check"
+    ],
+    "next_posture": "freeze_one_next_mixed_source_downstream_surface_before_implementation"
+  },
+  "latest_p21_mixed_source_rendered_delivery_controls_current_main_sync_summary": "P21 current-main sync records PR #2226 at dcd0e159b5bb0ac7eb1c6af6b6609e4c9b31b48d as the live rendered mixed-source delivery controls runtime. The sync changes docs/control only and keeps download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, package payload rewrite, SEC XBRL, excluded-tool, value-reveal, default-on, and production-readiness scope blocked."
 }

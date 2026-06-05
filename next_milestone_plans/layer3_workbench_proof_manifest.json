@@ -45826,8 +45826,7 @@
       "progress check -> PASS",
       "git diff --check -> PASS"
     ],
-    "final_validation_required": [
-    ],
+    "final_validation_required": [],
     "next_posture": "after_runtime_merge_and_current_main_sync_freeze_one_next_downstream_surface_or_stop_for_product_authority"
   },
   "latest_p20_mixed_source_external_export_download_delivery_runtime_proof_summary": "P20 current main implements only same-origin artifact-stream delivery for one existing mixed-source package artifact over recorded P19 readiness and current package rows. It records reference-only delivery status, keeps package rows and payloads unchanged, and leaves rendered controls, download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, payload rewrite, SEC XBRL, excluded-tool, and production-readiness scope blocked.",
@@ -45939,10 +45938,10 @@
   "latest_p21_mixed_source_rendered_delivery_controls_freeze_proof_summary": "P21 is a docs/control freeze for future rendered mixed-source delivery controls over the existing P20 same-origin delivery runtime. It selects one UI/operator surface, admits no UI/runtime behavior by itself, and keeps download URL, signed-reference, provider/public URL, connector/destination, schema/parser/source-shape, package payload rewrite, SEC XBRL, excluded-tool, and production-readiness scope closed.",
   "p21_mixed_source_rendered_delivery_controls_runtime_proof": {
     "milestone": "p21_mixed_source_rendered_delivery_controls_runtime",
-    "status": "branch_local_runtime_implementation_proof_not_current_main_until_merge",
+    "status": "current_main_runtime_implementation_verified",
     "planning_doc": "next_milestone_plans/multi-ingest/50-p21-rendered-delivery-freeze.md",
     "runtime_closeout_doc": "next_milestone_plans/multi-ingest/51-p21-rendered-runtime-closeout.md",
-    "proof_terms": "P21 branch-local runtime implements only the rendered /review/layer3 mixed-source delivery controls over the existing P20 same-origin external export/download delivery route. It uses server-owned State.sessionSummary.external_export_download_readiness, submits deliver_mixed_source_external_export_download only for the review_facing mixed package when P19/P20 authority is complete, and keeps signed-reference/provider/public URL/connector/destination/schema/parser/source-shape/package payload rewrite/SEC XBRL/excluded-tool/production-readiness scope closed.",
+    "proof_terms": "P21 current main implements only the rendered /review/layer3 mixed-source delivery controls over the existing P20 same-origin external export/download delivery route. It uses server-owned State.sessionSummary.external_export_download_readiness, submits deliver_mixed_source_external_export_download only for the review_facing mixed package when P19/P20 authority is complete, prefers refreshed delivered state over optimistic local submitted state, blocks stale source-directory route takeover, and keeps signed-reference/provider/public URL/connector/destination/schema/parser/source-shape/package payload rewrite/SEC XBRL/excluded-tool/value-reveal/default-on/production-readiness scope closed.",
     "authority_basis": [
       "P21 rendered delivery controls freeze",
       "P20 same-origin mixed-source external export/download delivery runtime",
@@ -45959,7 +45958,8 @@
       "rendered delivery control can submit the P20 mixed-source delivery packet when complete server-owned authority is present",
       "rendered delivery panel projects mixed-source readiness and selected package authority without local paths or payload bytes",
       "browser-managed form timeout records mixed_source_external_export_download_delivery_submitted as UI-local state",
-      "server-delivered state records mixed_source_external_export_download_delivered when returned",
+      "server-delivered state records mixed_source_external_export_download_delivered when returned and takes precedence after session refresh",
+      "stale source-directory prepare state cannot route mixed-source delivery payloads to source-directory status or delivery endpoints",
       "signed-reference controls are blocked while mixed-source readiness is active"
     ],
     "negative_authority_flags": {
@@ -45995,7 +45995,82 @@
       "progress check required",
       "git diff --check required"
     ],
-    "next_posture": "after_runtime_merge_and_current_main_sync_freeze_one_next_downstream_surface_before_implementation"
+    "next_posture": "freeze_one_next_mixed_source_downstream_surface_before_implementation",
+    "runtime_pr": "#2226",
+    "runtime_merge_commit": "dcd0e159b5bb0ac7eb1c6af6b6609e4c9b31b48d",
+    "current_main_sync_doc": "next_milestone_plans/multi-ingest/52-p21-current-main-sync.md",
+    "current_main_validation": [
+      "node --check ./backend/app/review_ui/static/layer3.js -> PASS",
+      "python -B -m pytest ./backend/tests/test_layer3_page.py -q -> 23 passed, 3 warnings",
+      "python -B -m pytest ./backend/tests/test_layer3_api.py -q -k \"mixed_source_external_export_download_readiness or mixed_source_external_export_download_deliver\" -> 4 passed, 292 deselected, 3 warnings",
+      "python -B -m pytest ./backend/tests/test_layer3_external_export_response.py::test_mixed_external_export_delivery_response_helper_is_shared_with_workbench -q -> 1 passed, 2 warnings",
+      "npm run test:e2e -- --grep \"P21 mixed-source\" -> 1 passed",
+      "npm run test:e2e:headed -- --grep \"P21 mixed-source\" -> 1 passed",
+      "manifest JSON syntax -> PASS",
+      "authority-index validation -> PASS",
+      "frozen target-selection validation -> PASS",
+      "progress check -> PASS",
+      "git diff --check -> PASS"
+    ]
   },
-  "latest_p21_mixed_source_rendered_delivery_controls_runtime_proof_summary": "P21 branch-local runtime proof implements only rendered mixed-source delivery controls over the existing P20 same-origin route. It uses State.sessionSummary.external_export_download_readiness, selects review_facing, blocks signed-reference controls under mixed readiness, and preserves backend route, schema/parser/source-shape, package payload, URL/provider/connector/destination, SEC XBRL, excluded-tool, and production-readiness non-goals."
+  "latest_p21_mixed_source_rendered_delivery_controls_runtime_proof_summary": "P21 current main implements only rendered /review/layer3 mixed-source delivery controls over the existing P20 same-origin delivery route. It uses server-owned P19/P20 readiness authority, selects review_facing only, prefers refreshed delivered state over optimistic local submitted state, blocks stale source-directory route takeover, and keeps signed-reference/provider/public URL/connector/destination/schema/parser/source-shape/payload/SEC/excluded-tool/value-reveal/default-on/production-readiness scope closed.",
+  "p21_mixed_source_rendered_delivery_controls_current_main_sync_proof": {
+    "milestone": "p21_mixed_source_rendered_delivery_controls_current_main_sync",
+    "status": "docs_control_current_main_sync_only",
+    "sync_doc": "next_milestone_plans/multi-ingest/52-p21-current-main-sync.md",
+    "runtime_closeout_doc": "next_milestone_plans/multi-ingest/51-p21-rendered-runtime-closeout.md",
+    "runtime_pr": "#2226",
+    "runtime_merge_commit": "dcd0e159b5bb0ac7eb1c6af6b6609e4c9b31b48d",
+    "proof_terms": "P21 rendered mixed-source delivery controls are current-main behavior after PR #2226. This sync changes docs/control only and admits no new backend route/runtime change, schema/model/migration, parser behavior, source-shape expansion, package payload rewrite, browser download URL, signed reference, public/provider URL, connector/provider/destination behavior, SEC XBRL surface, excluded-tool behavior, value reveal, default-on behavior, or production readiness.",
+    "synced_route": "POST /api/v1/layer3/handoff/export/download/deliver",
+    "synced_schema_id": "layer3.mixed_source_external_export_download_delivery.v1",
+    "synced_operator_decision": "deliver_mixed_source_external_export_download",
+    "synced_selected_package_kind": "review_facing",
+    "positive_runtime_effects": [],
+    "negative_authority_flags": {
+      "runtime_behavior_changed_by_sync": false,
+      "backend_route_changed": false,
+      "api_schema_or_dto_changed": false,
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "package_mutation_performed": false,
+      "browser_download_url_enabled": false,
+      "signed_reference_enabled": false,
+      "public_or_provider_url_enabled": false,
+      "connector_dispatch_enabled": false,
+      "provider_behavior_enabled": false,
+      "destination_behavior_enabled": false,
+      "local_outbox_enabled": false,
+      "source_acquisition_enabled": false,
+      "sec_xbrl_surface_changed": false,
+      "excluded_tool_included": false,
+      "value_reveal_enabled": false,
+      "default_on_enabled": false,
+      "production_readiness_claimed": false
+    },
+    "detached_post_merge_proof": [
+      "node --check ./backend/app/review_ui/static/layer3.js -> PASS",
+      "python -B -m pytest ./backend/tests/test_layer3_page.py -q -> 23 passed, 3 warnings",
+      "python -B -m pytest ./backend/tests/test_layer3_api.py -q -k \"mixed_source_external_export_download_readiness or mixed_source_external_export_download_deliver\" -> 4 passed, 292 deselected, 3 warnings",
+      "python -B -m pytest ./backend/tests/test_layer3_external_export_response.py::test_mixed_external_export_delivery_response_helper_is_shared_with_workbench -q -> 1 passed, 2 warnings",
+      "npm run test:e2e -- --grep \"P21 mixed-source\" -> 1 passed",
+      "npm run test:e2e:headed -- --grep \"P21 mixed-source\" -> 1 passed",
+      "manifest JSON syntax -> PASS",
+      "authority-index validation -> PASS",
+      "frozen target-selection validation -> PASS",
+      "progress check -> PASS",
+      "git diff --check -> PASS"
+    ],
+    "verification": [
+      "python -B -m json.tool authority/progress/proof manifests -> PASS",
+      "python -B ./tools/l3-authority-index-validate.py -> PASS",
+      "python -B ./tools/l3-target-selection-validate.py --expect frozen -> PASS",
+      "python -B ./tools/l3-progress-check.py -> PASS",
+      "git diff --check -> PASS"
+    ],
+    "next_posture": "freeze_one_next_mixed_source_downstream_surface_before_implementation"
+  },
+  "latest_p21_mixed_source_rendered_delivery_controls_current_main_sync_proof_summary": "P21 current-main sync records PR #2226 at dcd0e159b5bb0ac7eb1c6af6b6609e4c9b31b48d as the live rendered mixed-source delivery controls runtime. The sync changes docs/control only and keeps download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, package payload rewrite, SEC XBRL, excluded-tool, value-reveal, default-on, and production-readiness scope blocked."
 }
