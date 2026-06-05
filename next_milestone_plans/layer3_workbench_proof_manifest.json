@@ -45759,10 +45759,13 @@
   "latest_p20_mixed_source_external_export_download_delivery_freeze_proof_summary": "P20 is a docs/control freeze for future mixed-source same-origin external export/download delivery over recorded P19 readiness. It selects delivery as the next surface, admits no runtime behavior by itself, and keeps rendered controls/download URL/signed-reference/public-provider URL/connector-destination/schema/parser/source-shape/payload/production scope closed.",
   "p20_mixed_source_external_export_download_delivery_runtime_proof": {
     "milestone": "p20_mixed_source_external_export_download_delivery_runtime",
-    "status": "branch_local_runtime_implementation_proof",
+    "status": "current_main_runtime_implementation_verified",
     "planning_doc": "next_milestone_plans/multi-ingest/47-p20-mixed-export-download-delivery-freeze.md",
     "runtime_closeout_doc": "next_milestone_plans/multi-ingest/48-p20-runtime-closeout.md",
-    "proof_terms": "P20 branch-local runtime implements only mixed-source same-origin artifact-stream delivery over recorded P19 readiness and current package rows. It admits no rendered UI/static behavior, browser download control, download URL, signed reference, public/provider URL, connector/provider/destination behavior, schema/model/migration change, parser behavior, source-shape expansion, package payload rewrite, SEC XBRL surface, excluded-tool behavior, or production-readiness behavior.",
+    "runtime_pr": "#2223",
+    "runtime_merge_commit": "6ca7835c6d8724715c9ac2d7a92ca34de2898ef2",
+    "current_main_sync_doc": "next_milestone_plans/multi-ingest/49-p20-current-main-sync.md",
+    "proof_terms": "P20 current main implements only mixed-source same-origin artifact-stream delivery over recorded P19 readiness and current package rows. It admits no rendered UI/static behavior, browser download control, download URL, signed reference, public/provider URL, connector/provider/destination behavior, schema/model/migration change, parser behavior, source-shape expansion, package payload rewrite, SEC XBRL surface, excluded-tool behavior, or production-readiness behavior.",
     "runtime_schema_id": "layer3.mixed_source_external_export_download_delivery.v1",
     "runtime_state_schema_id": "layer3.mixed_source_external_export_download_delivery_state.v1",
     "delivery_state": "mixed_source_external_export_download_delivered",
@@ -45824,9 +45827,60 @@
       "git diff --check -> PASS"
     ],
     "final_validation_required": [
-      "detached post-merge proof after merge"
     ],
     "next_posture": "after_runtime_merge_and_current_main_sync_freeze_one_next_downstream_surface_or_stop_for_product_authority"
   },
-  "latest_p20_mixed_source_external_export_download_delivery_runtime_proof_summary": "P20 branch-local runtime proof implements only same-origin artifact-stream delivery for one existing mixed-source package artifact over recorded P19 readiness and current package rows. It records reference-only delivery status, keeps package rows and payloads unchanged, and leaves rendered controls, download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, payload rewrite, SEC XBRL, excluded-tool, and production-readiness scope blocked."
+  "latest_p20_mixed_source_external_export_download_delivery_runtime_proof_summary": "P20 current main implements only same-origin artifact-stream delivery for one existing mixed-source package artifact over recorded P19 readiness and current package rows. It records reference-only delivery status, keeps package rows and payloads unchanged, and leaves rendered controls, download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, payload rewrite, SEC XBRL, excluded-tool, and production-readiness scope blocked.",
+  "p20_mixed_source_external_export_download_delivery_current_main_sync_proof": {
+    "milestone": "p20_mixed_source_external_export_download_delivery_current_main_sync",
+    "status": "docs_control_current_main_sync_only",
+    "sync_doc": "next_milestone_plans/multi-ingest/49-p20-current-main-sync.md",
+    "runtime_closeout_doc": "next_milestone_plans/multi-ingest/48-p20-runtime-closeout.md",
+    "runtime_pr": "#2223",
+    "runtime_merge_commit": "6ca7835c6d8724715c9ac2d7a92ca34de2898ef2",
+    "proof_terms": "P20 delivery runtime is current-main behavior after PR #2223. This sync changes docs/control only and admits no new backend runtime, rendered UI/static behavior, schema/model/migration, parser behavior, source-shape expansion, package payload rewrite, browser download control, download URL, signed reference, public/provider URL, connector/provider/destination behavior, SEC XBRL surface, excluded-tool behavior, or production readiness.",
+    "synced_runtime_state": "mixed_source_external_export_download_delivered",
+    "synced_schema_id": "layer3.mixed_source_external_export_download_delivery.v1",
+    "synced_state_schema_id": "layer3.mixed_source_external_export_download_delivery_state.v1",
+    "positive_runtime_effects": [],
+    "negative_authority_flags": {
+      "runtime_behavior_changed_by_sync": false,
+      "rendered_ui_behavior_changed": false,
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "browser_download_control_enabled": false,
+      "download_url_enabled": false,
+      "signed_reference_enabled": false,
+      "public_or_provider_url_enabled": false,
+      "connector_dispatch_enabled": false,
+      "provider_behavior_enabled": false,
+      "destination_behavior_enabled": false,
+      "excluded_tool_included": false,
+      "sec_xbrl_surface_changed": false,
+      "production_readiness_claimed": false
+    },
+    "detached_post_merge_proof": [
+      "touched-file py_compile passed",
+      "focused P20/API delivery and OpenAPI slice passed with 23 passed, 273 deselected, 4 warnings",
+      "external export contract/response helper tests passed with 11 passed, 2 warnings",
+      "bounded E2E slice passed with 1 passed, 3 deselected, 4 warnings",
+      "full backend/tests/test_layer3_api.py passed with 296 passed, 4 warnings",
+      "manifest JSON syntax passed",
+      "authority-index validation passed",
+      "target-selection frozen validation passed",
+      "progress check passed",
+      "git diff --check passed"
+    ],
+    "verification": [
+      "python -B -m json.tool authority/progress/proof manifests -> PASS",
+      "python -B .\\tools\\l3-authority-index-validate.py -> PASS",
+      "python -B .\\tools\\l3-target-selection-validate.py --expect frozen -> PASS",
+      "python -B .\\tools\\l3-progress-check.py -> PASS",
+      "git diff --check -> PASS"
+    ],
+    "next_posture": "freeze_one_next_mixed_source_downstream_surface_or_stop_for_product_authority"
+  },
+  "latest_p20_mixed_source_external_export_download_delivery_current_main_sync_proof_summary": "P20 current-main sync records PR #2223 at 6ca7835c6d8724715c9ac2d7a92ca34de2898ef2 as the live mixed-source same-origin external export/download delivery runtime. The sync changes docs/control only and keeps rendered controls, download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, payload rewrite, SEC XBRL, excluded-tool, and production-readiness scope blocked."
 }
