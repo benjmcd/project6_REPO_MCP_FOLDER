@@ -162,6 +162,7 @@ from app.services.layer3_external_export_response import (
     external_export_download_recorded_prepare_response as _external_export_download_recorded_prepare_response,
     external_export_download_prepare_response as _external_export_download_prepare_response,
     external_export_download_prepare_summary as _external_export_download_prepare_summary,
+    mixed_source_external_export_download_delivery_response as _mixed_source_external_export_download_delivery_response,
     qualitative_aps_external_export_download_admitted as _qualitative_aps_external_export_download_admitted,
     qualitative_aps_external_export_download_deferred as _qualitative_aps_external_export_download_deferred,
     safe_download_token as _safe_download_token,
@@ -398,6 +399,9 @@ from app.services.layer3_external_export_contract import (
     external_export_download_delivery_readiness_mismatches,
     external_export_download_delivery_request_fields,
     external_export_download_prepare_blocked_fields,
+    mixed_source_external_export_download_delivery_blocked_fields,
+    mixed_source_external_export_download_delivery_request_fields,
+    mixed_source_external_export_download_delivery_requested,
 )
 from app.services.layer3_response_contract import (
     LAYER3_SCHEMA_VERSION as SCHEMA_VERSION,
@@ -710,6 +714,15 @@ MIXED_SOURCE_APS_EVIDENCE_BUNDLE_PACKAGE_KIND = "mixed_source_aps_evidence_bundl
 MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_SCHEMA_ID = "layer3.mixed_source_external_export_download_readiness.v1"
 MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READY_STATE = "mixed_source_external_export_download_ready"
 MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_OPERATOR_DECISION = "record_mixed_source_external_export_download_readiness"
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.mixed_source_external_export_download_delivery.v1"
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATE_SCHEMA_ID = (
+    "layer3.mixed_source_external_export_download_delivery_state.v1"
+)
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE = "mixed_source_external_export_download_delivered"
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION = (
+    "deliver_mixed_source_external_export_download"
+)
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ADMITTED = True
 EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = "prepare_external_export_download"
 PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
     "package_review_submit",
@@ -11729,6 +11742,530 @@ def mixed_source_external_export_download_readiness(db: Session, payload: dict[s
     return _mixed_source_external_export_download_readiness(db, payload)
 
 
+def _mixed_source_external_export_download_deliver(
+    db: Session,
+    payload: dict[str, Any],
+) -> ExternalExportDownloadDelivery:
+    delivery_request = mixed_source_external_export_download_delivery_request_fields(payload)
+    request_id = delivery_request.request_id
+    if not request_id:
+        raise Layer3WorkbenchError(
+            "client_request_id_required",
+            "client_request_id is required for mixed-source external export/download delivery.",
+            status="invalid",
+            blocked_fields=["client_request_id"],
+            next_allowed_actions=["submit_idempotent_mixed_source_external_export_download_delivery_request"],
+        )
+    if delivery_request.missing_fields:
+        raise Layer3WorkbenchError(
+            "missing_mixed_source_external_export_download_delivery_fields",
+            (
+                "Mixed-source external export/download delivery request is missing required fields: "
+                f"{', '.join(delivery_request.missing_fields)}."
+            ),
+            status="invalid",
+            blocked_fields=delivery_request.missing_fields,
+            next_allowed_actions=["submit_complete_mixed_source_external_export_download_delivery_request"],
+        )
+    blocked_payload_fields = mixed_source_external_export_download_delivery_blocked_fields(payload)
+    if blocked_payload_fields:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_scope_not_admitted",
+            (
+                "Mixed-source external export/download delivery request includes non-admitted fields: "
+                f"{', '.join(blocked_payload_fields)}."
+            ),
+            status="invalid",
+            blocked_fields=blocked_payload_fields,
+            next_allowed_actions=["submit_bounded_mixed_source_external_export_download_delivery_request"],
+        )
+    if not MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ADMITTED:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_not_admitted",
+            "Mixed-source same-origin external export/download delivery is not admitted by the current runtime gate.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["operator_decision"],
+            next_allowed_actions=["select_mixed_source_external_export_download_delivery_freeze"],
+        )
+    expected_package_kinds = (
+        payload["expected_package_kinds"]
+        if "expected_package_kinds" in payload
+        else list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    )
+    if expected_package_kinds != list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS):
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_kinds_mismatch",
+            "Mixed-source external export/download delivery admits exactly canonical_internal, user_facing, and review_facing package kinds.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["expected_package_kinds"],
+        )
+    invalid_values = [
+        field
+        for field, expected in {
+            "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+            "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+            "handoff_target": "mixed_source_review_package",
+            "export_mode": "reference_envelope_only",
+            "aps_handoff_target": MIXED_SOURCE_APS_HANDOFF_TARGET,
+            "dispatch_mode": MIXED_SOURCE_APS_HANDOFF_DISPATCH_MODE,
+            "aps_handoff_state": APS_HANDOFF_DISPATCHED_STATE,
+            "external_export_download_readiness_state": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READY_STATE,
+            "delivery_mode": "same_origin_artifact_stream",
+            "operator_decision": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION,
+        }.items()
+        if str(getattr(delivery_request, "readiness_state" if field == "external_export_download_readiness_state" else field, "") or "")
+        != expected
+    ]
+    if invalid_values:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_value_not_admitted",
+            "Mixed-source external export/download delivery request contains unsupported lifecycle values.",
+            status="invalid",
+            blocked_fields=sorted(invalid_values),
+        )
+
+    session = (
+        db.query(L3Session)
+        .filter(L3Session.session_id == delivery_request.session_id)
+        .with_for_update()
+        .one_or_none()
+    )
+    if session is None:
+        raise Layer3WorkbenchError(
+            "session_not_found",
+            f"Layer 3 session '{delivery_request.session_id}' was not found.",
+            http_status=404,
+        )
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(
+            L3ReconciliationRecord.reconciliation_record_id == delivery_request.reconciliation_record_id,
+            L3ReconciliationRecord.session_id == delivery_request.session_id,
+        )
+        .with_for_update()
+        .one_or_none()
+    )
+    readiness_state = _mixed_source_external_export_download_readiness_from_reconciliation(reconciliation)
+    if readiness_state is None:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_requires_readiness",
+            "Mixed-source external export/download delivery requires recorded P19 readiness.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["external_export_download_readiness_record_ref"],
+            next_allowed_actions=["record_mixed_source_external_export_download_readiness"],
+        )
+    if not str(readiness_state.get("client_request_id") or "").strip():
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_readiness_request_id_missing",
+            "Recorded mixed-source external export/download readiness is missing its idempotency basis.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["external_export_download_readiness_record_ref"],
+        )
+    request_mismatches = [
+        field
+        for field, expected in {
+            "material_preview_id": readiness_state.get("material_preview_id"),
+            "material_preview_hash": readiness_state.get("material_preview_hash"),
+            "package_review_preview_hash": readiness_state.get("package_review_preview_hash"),
+            "contract_hash": readiness_state.get("contract_hash"),
+            "construction_basis_hash": readiness_state.get("construction_basis_hash"),
+            "reconciliation_record_id": readiness_state.get("reconciliation_record_id"),
+            "package_review_submit_record_ref": readiness_state.get("package_review_submit_record_ref"),
+            "package_review_state": readiness_state.get("package_review_state"),
+            "prepare_record_ref": readiness_state.get("prepare_record_ref"),
+            "handoff_export_state": readiness_state.get("handoff_export_state"),
+            "handoff_export_envelope_ref": readiness_state.get("handoff_export_envelope_ref"),
+            "handoff_target": readiness_state.get("handoff_target"),
+            "export_mode": readiness_state.get("export_mode"),
+            "aps_handoff_target": readiness_state.get("aps_handoff_target"),
+            "dispatch_mode": readiness_state.get("dispatch_mode"),
+            "aps_handoff_record_ref": readiness_state.get("aps_handoff_record_ref"),
+            "aps_handoff_state": readiness_state.get("aps_handoff_state"),
+            "external_export_download_readiness_record_ref": readiness_state.get(
+                "external_export_download_readiness_record_ref"
+            ),
+            "external_export_download_readiness_ref": readiness_state.get("external_export_download_readiness_ref"),
+            "external_export_download_readiness_state": readiness_state.get(
+                "external_export_download_readiness_state"
+            ),
+        }.items()
+        if str(payload.get(field) or "") != str(expected or "")
+    ]
+    if request_mismatches:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_readiness_mismatch",
+            "Supplied mixed-source delivery authority does not match recorded P19 readiness.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=sorted(request_mismatches),
+        )
+
+    session_summary = session.summary_json if isinstance(session.summary_json, dict) else {}
+    session_readiness = session_summary.get("external_export_download_readiness")
+    session_readiness_mismatches: list[str] = []
+    if not isinstance(session_readiness, dict):
+        session_readiness_mismatches.append("session.external_export_download_readiness")
+    else:
+        for field in (
+            "external_export_download_readiness_record_ref",
+            "external_export_download_readiness_ref",
+            "external_export_download_readiness_state",
+            "package_review_submit_record_ref",
+            "prepare_record_ref",
+            "aps_handoff_record_ref",
+            "reconciliation_record_id",
+            "output_package_ids",
+            "package_kinds",
+            "payload_hashes",
+        ):
+            if session_readiness.get(field) != readiness_state.get(field):
+                session_readiness_mismatches.append(field)
+    if session_readiness_mismatches:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_session_readiness_mismatch",
+            "Session mixed-source external export/download readiness no longer matches reconciliation authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=sorted(session_readiness_mismatches),
+        )
+
+    replay_payload = {
+        "client_request_id": str(readiness_state.get("client_request_id") or "").strip(),
+        "session_id": delivery_request.session_id,
+        "material_preview_id": delivery_request.material_preview_id,
+        "material_preview_hash": delivery_request.material_preview_hash,
+        "package_review_preview_hash": delivery_request.package_review_preview_hash,
+        "contract_hash": delivery_request.contract_hash,
+        "construction_basis_hash": delivery_request.construction_basis_hash,
+        "reconciliation_record_id": delivery_request.reconciliation_record_id,
+        "output_package_ids": _json_clone(readiness_state.get("output_package_ids") or []),
+        "payload_hashes": _json_clone(readiness_state.get("payload_hashes") or []),
+        "package_review_submit_record_ref": delivery_request.package_review_submit_record_ref,
+        "package_review_state": delivery_request.package_review_state,
+        "prepare_record_ref": delivery_request.prepare_record_ref,
+        "handoff_export_state": delivery_request.handoff_export_state,
+        "handoff_export_envelope_ref": delivery_request.handoff_export_envelope_ref,
+        "handoff_target": delivery_request.handoff_target,
+        "export_mode": delivery_request.export_mode,
+        "aps_handoff_target": delivery_request.aps_handoff_target,
+        "dispatch_mode": delivery_request.dispatch_mode,
+        "aps_handoff_record_ref": delivery_request.aps_handoff_record_ref,
+        "aps_handoff_state": delivery_request.aps_handoff_state,
+        "operator_decision": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_OPERATOR_DECISION,
+        "expected_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+    }
+    if readiness_state.get("decision_notes") is not None:
+        replay_payload["decision_notes"] = readiness_state.get("decision_notes")
+    replay_response = _mixed_source_external_export_download_readiness(db, replay_payload)
+    if (
+        replay_response.get("external_export_download_readiness_record_ref")
+        != delivery_request.readiness_record_ref
+        or replay_response.get("external_export_download_readiness_ref") != delivery_request.readiness_ref
+        or replay_response.get("external_export_download_readiness_state") != delivery_request.readiness_state
+    ):
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_recomputed_readiness_mismatch",
+            "Recomputed mixed-source P19 readiness does not match the requested delivery authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=[
+                "external_export_download_readiness_record_ref",
+                "external_export_download_readiness_ref",
+            ],
+        )
+
+    all_packages = (
+        db.query(L3OutputPackage)
+        .filter(
+            L3OutputPackage.session_id == delivery_request.session_id,
+            L3OutputPackage.reconciliation_record_id == delivery_request.reconciliation_record_id,
+        )
+        .order_by(L3OutputPackage.package_kind.asc())
+        .with_for_update()
+        .all()
+    )
+    unexpected_package_kinds = _unexpected_package_kinds(all_packages)
+    if unexpected_package_kinds:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_unexpected_package_state",
+            "Mixed-source external export/download delivery cannot proceed with unexpected package kinds on the reconciliation.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_kinds"],
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    packages = _review_source_packages(all_packages)
+    if (
+        len(packages) != len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+        or {package.package_kind for package in packages} != set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    ):
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_requires_complete_package_set",
+            "Mixed-source external export/download delivery requires exactly canonical_internal, user_facing, and review_facing packages.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["output_package_id"],
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    ordered_packages = _packages_in_review_order(packages)
+    expected_package_ids = [package.output_package_id for package in ordered_packages]
+    expected_package_kind_values = [package.package_kind for package in ordered_packages]
+    expected_payload_hashes = [package.payload_hash for package in ordered_packages]
+    expected_payload_refs = [_public_mixed_package_payload_ref(package) for package in ordered_packages]
+    package_set_mismatches = []
+    if list(readiness_state.get("output_package_ids") or []) != expected_package_ids:
+        package_set_mismatches.append("output_package_ids")
+    if list(readiness_state.get("package_kinds") or []) != expected_package_kind_values:
+        package_set_mismatches.append("package_kinds")
+    if list(readiness_state.get("payload_hashes") or []) != expected_payload_hashes:
+        package_set_mismatches.append("payload_hashes")
+    if list(readiness_state.get("payload_refs") or []) != expected_payload_refs:
+        package_set_mismatches.append("payload_refs")
+    if package_set_mismatches:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_package_set_mismatch",
+            "Recorded P19 readiness package authority does not match current package rows.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=sorted(package_set_mismatches),
+        )
+    selected_package = next(
+        (package for package in ordered_packages if package.output_package_id == delivery_request.output_package_id),
+        None,
+    )
+    if selected_package is None:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_output_package_id_mismatch",
+            "Supplied output_package_id does not match the constructed mixed-source package set.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["output_package_id"],
+        )
+    selected_mismatches = [
+        field
+        for field, expected in {
+            "package_kind": selected_package.package_kind,
+            "package_payload_hash": selected_package.payload_hash,
+        }.items()
+        if str(payload.get(field) or "") != str(expected or "")
+    ]
+    if selected_mismatches:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_package_mismatch",
+            "Supplied package delivery fields do not match the selected server-owned package row.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=selected_mismatches,
+        )
+
+    delivery_basis = {
+        "schema_id": "layer3.mixed_source_external_export_download_delivery_authority.v1",
+        "delivery_schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
+        "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+        "client_request_id": request_id,
+        "session_id": delivery_request.session_id,
+        "material_preview_id": delivery_request.material_preview_id,
+        "material_preview_hash": delivery_request.material_preview_hash,
+        "contract_hash": delivery_request.contract_hash,
+        "package_review_preview_hash": delivery_request.package_review_preview_hash,
+        "construction_basis_hash": delivery_request.construction_basis_hash,
+        "reconciliation_record_id": delivery_request.reconciliation_record_id,
+        "package_review_submit_record_ref": delivery_request.package_review_submit_record_ref,
+        "prepare_record_ref": delivery_request.prepare_record_ref,
+        "handoff_export_envelope_ref": delivery_request.handoff_export_envelope_ref,
+        "aps_handoff_record_ref": delivery_request.aps_handoff_record_ref,
+        "external_export_download_readiness_record_ref": delivery_request.readiness_record_ref,
+        "external_export_download_readiness_ref": delivery_request.readiness_ref,
+        "output_package_id": selected_package.output_package_id,
+        "package_kind": selected_package.package_kind,
+        "package_payload_hash": selected_package.payload_hash,
+        "expected_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+        "handoff_target": delivery_request.handoff_target,
+        "export_mode": delivery_request.export_mode,
+        "aps_handoff_target": delivery_request.aps_handoff_target,
+        "dispatch_mode": delivery_request.dispatch_mode,
+        "external_export_download_readiness_state": delivery_request.readiness_state,
+        "delivery_mode": delivery_request.delivery_mode,
+        "operator_decision": delivery_request.operator_decision,
+        "decision_notes": delivery_request.decision_notes or None,
+    }
+    delivery_record_ref = _stable_id("l3-mixed-source-external-export-download-delivery", delivery_basis)
+    delivery_ref = f"layer3://mixed-source-external-export-delivery/{delivery_record_ref}"
+    reconciliation_summary = reconciliation.summary_json if isinstance(reconciliation.summary_json, dict) else {}
+    existing_delivery = reconciliation_summary.get("external_export_download_delivery")
+    if isinstance(existing_delivery, dict):
+        if (
+            existing_delivery.get("schema_id") == MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATE_SCHEMA_ID
+            and existing_delivery.get("external_export_download_delivery_record_ref") == delivery_record_ref
+            and existing_delivery.get("client_request_id") == request_id
+        ):
+            status = "already_delivered"
+        else:
+            raise Layer3WorkbenchError(
+                "mixed_source_external_export_download_delivery_already_recorded",
+                "This mixed-source external export/download readiness already has a delivery decision.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["client_request_id", "operator_decision"],
+            )
+    else:
+        status = "delivered"
+    validation_body = {
+        **_base_response(
+            MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
+            request_id=request_id,
+            status=status,
+        ),
+        "session_id": delivery_request.session_id,
+        "material_preview_id": delivery_request.material_preview_id,
+        "material_preview_hash": delivery_request.material_preview_hash,
+        "contract_hash": delivery_request.contract_hash,
+        "package_review_preview_hash": delivery_request.package_review_preview_hash,
+        "construction_basis_hash": delivery_request.construction_basis_hash,
+        "reconciliation_record_id": delivery_request.reconciliation_record_id,
+        "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+        "output_package_id": selected_package.output_package_id,
+        "package_kind": selected_package.package_kind,
+        "package_payload_hash": selected_package.payload_hash,
+        "package_review_submit_record_ref": delivery_request.package_review_submit_record_ref,
+        "package_review_state": delivery_request.package_review_state,
+        "prepare_record_ref": delivery_request.prepare_record_ref,
+        "handoff_export_state": delivery_request.handoff_export_state,
+        "handoff_export_envelope_ref": delivery_request.handoff_export_envelope_ref,
+        "handoff_target": delivery_request.handoff_target,
+        "export_mode": delivery_request.export_mode,
+        "aps_handoff_target": delivery_request.aps_handoff_target,
+        "dispatch_mode": delivery_request.dispatch_mode,
+        "aps_handoff_record_ref": delivery_request.aps_handoff_record_ref,
+        "aps_handoff_state": delivery_request.aps_handoff_state,
+        "external_export_download_readiness_record_ref": delivery_request.readiness_record_ref,
+        "external_export_download_readiness_ref": delivery_request.readiness_ref,
+        "external_export_download_readiness_state": delivery_request.readiness_state,
+        "external_export_download_delivery_record_ref": delivery_record_ref,
+        "external_export_download_delivery_ref": delivery_ref,
+        "external_export_download_delivery_state": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE,
+        "delivery_mode": delivery_request.delivery_mode,
+        "operator_decision": delivery_request.operator_decision,
+        "decision_notes": delivery_request.decision_notes or None,
+        "download_url_enabled": False,
+        "signed_reference_enabled": False,
+        "provider_public_url_enabled": False,
+        "provider_private_signed_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "destination_selection_enabled": False,
+        "package_payload_rewrite_enabled": False,
+        "package_mutation_enabled": False,
+        "schema_runtime_source_widening_enabled": False,
+    }
+    delivery = _mixed_source_external_export_download_delivery_response(
+        session_id=delivery_request.session_id,
+        output_package_id=selected_package.output_package_id,
+        package_kind=selected_package.package_kind,
+        package_payload_hash=selected_package.payload_hash,
+        package_payload_ref=str(selected_package.payload_ref or ""),
+        readiness_record_ref=delivery_request.readiness_record_ref,
+        validation_body=validation_body,
+    )
+    if status == "already_delivered":
+        db.rollback()
+        return delivery
+
+    recorded_at = _utcnow_iso()
+    delivery_state = {
+        "schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATE_SCHEMA_ID,
+        "external_export_download_delivery_schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
+        "client_request_id": request_id,
+        "external_export_download_delivery_record_ref": delivery_record_ref,
+        "external_export_download_delivery_ref": delivery_ref,
+        "external_export_download_delivery_state": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE,
+        "authority_basis": delivery_basis,
+        "recorded_at": recorded_at,
+        **{
+            key: validation_body[key]
+            for key in (
+                "package_family",
+                "material_preview_id",
+                "material_preview_hash",
+                "contract_hash",
+                "package_review_preview_hash",
+                "construction_basis_hash",
+                "reconciliation_record_id",
+                "output_package_id",
+                "package_kind",
+                "package_payload_hash",
+                "package_review_submit_record_ref",
+                "package_review_state",
+                "prepare_record_ref",
+                "handoff_export_state",
+                "handoff_export_envelope_ref",
+                "handoff_target",
+                "export_mode",
+                "aps_handoff_target",
+                "dispatch_mode",
+                "aps_handoff_record_ref",
+                "aps_handoff_state",
+                "external_export_download_readiness_record_ref",
+                "external_export_download_readiness_ref",
+                "external_export_download_readiness_state",
+                "delivery_mode",
+                "operator_decision",
+                "decision_notes",
+                "download_url_enabled",
+                "signed_reference_enabled",
+                "provider_public_url_enabled",
+                "provider_private_signed_url_enabled",
+                "connector_dispatch_enabled",
+                "destination_selection_enabled",
+                "package_payload_rewrite_enabled",
+                "package_mutation_enabled",
+                "schema_runtime_source_widening_enabled",
+            )
+        },
+    }
+    reconciliation.summary_json = {
+        **reconciliation_summary,
+        "external_export_download_delivery": delivery_state,
+    }
+    session.summary_json = {
+        **session_summary,
+        "external_export_download_delivery": {
+            key: _json_clone(delivery_state.get(key))
+            for key in (
+                "schema_id",
+                "external_export_download_delivery_schema_id",
+                "client_request_id",
+                "external_export_download_delivery_record_ref",
+                "external_export_download_delivery_ref",
+                "external_export_download_delivery_state",
+                "recorded_at",
+                "package_family",
+                "reconciliation_record_id",
+                "output_package_id",
+                "package_kind",
+                "package_payload_hash",
+                "external_export_download_readiness_record_ref",
+                "external_export_download_readiness_ref",
+                "delivery_mode",
+                "download_url_enabled",
+                "signed_reference_enabled",
+                "provider_public_url_enabled",
+                "provider_private_signed_url_enabled",
+                "connector_dispatch_enabled",
+                "destination_selection_enabled",
+                "package_payload_rewrite_enabled",
+                "package_mutation_enabled",
+                "schema_runtime_source_widening_enabled",
+            )
+        },
+    }
+    db.commit()
+    return delivery
+
+
 def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or "").strip()
     if not request_id:
@@ -14113,6 +14650,9 @@ def external_export_download_prepare(
 
 
 def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> ExternalExportDownloadDelivery:
+    if mixed_source_external_export_download_delivery_requested(payload):
+        return _mixed_source_external_export_download_deliver(db, payload)
+
     delivery_request = external_export_download_delivery_request_fields(payload)
     request_id = delivery_request.request_id
     if not request_id:

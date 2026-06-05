@@ -50,6 +50,7 @@ QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.qual_aps_external_
 QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.qual_aps_external_export_download_delivery.v1"
 SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.source_intake_external_export_download_prepare.v1"
 SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.source_intake_external_export_download_delivery.v1"
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.mixed_source_external_export_download_delivery.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_SCHEMA_ID = "layer3.external_export_download_delivery_ui.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION = "deliver_external_export_download"
 EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = "prepare_external_export_download"
@@ -1278,6 +1279,60 @@ def external_export_download_delivery_response(
             "X-Layer3-Delivery-State": EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE,
             "X-Layer3-Source-Artifact-Hash": artifact_hash,
             "X-Layer3-External-Export-Download-Record-Ref": supplied_readiness_ref,
+        },
+        authority=json_clone(validation_body),
+    )
+
+
+def mixed_source_external_export_download_delivery_response(
+    *,
+    session_id: str,
+    output_package_id: str,
+    package_kind: str,
+    package_payload_hash: str,
+    package_payload_ref: str,
+    readiness_record_ref: str,
+    validation_body: dict[str, Any],
+) -> ExternalExportDownloadDelivery:
+    filename = (
+        f"layer3-{safe_download_token(session_id, fallback='session')}-"
+        f"{safe_download_token(output_package_id, fallback='package')}-"
+        f"{safe_download_token(package_kind, fallback='mixed-source')}.json"
+    )
+    artifact_path = Path(package_payload_ref)
+    if not artifact_path.exists() or not artifact_path.is_file():
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_package_artifact_unavailable",
+            "Mixed-source external export/download delivery could not find the existing package artifact.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["output_package_id"],
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    artifact_hash = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+    if artifact_hash != package_payload_hash:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_delivery_package_artifact_hash_mismatch",
+            "Mixed-source package artifact hash does not match recorded package authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["package_payload_hash"],
+        )
+    return ExternalExportDownloadDelivery(
+        artifact_path=artifact_path,
+        media_type="application/json",
+        filename=filename,
+        headers={
+            "X-Layer3-Schema-Id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
+            "X-Layer3-Delivery-State": "mixed_source_external_export_download_delivered",
+            "X-Layer3-Package-Family": "mixed_dataset_document",
+            "X-Layer3-Output-Package-Id": output_package_id,
+            "X-Layer3-Package-Kind": package_kind,
+            "X-Layer3-Package-Payload-Hash": artifact_hash,
+            "X-Layer3-External-Export-Download-Readiness-Record-Ref": readiness_record_ref,
+            "X-Layer3-External-Export-Download-Delivery-Record-Ref": str(
+                validation_body.get("external_export_download_delivery_record_ref") or ""
+            ),
         },
         authority=json_clone(validation_body),
     )

@@ -137,6 +137,133 @@ EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_ALLOWED_FIELDS = EXTERNAL_EXPORT_DOWNLOAD_PREP
         "delivery_mode",
     }
 )
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION = (
+    "deliver_mixed_source_external_export_download"
+)
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUIRED_FIELDS = (
+    "client_request_id",
+    "session_id",
+    "material_preview_id",
+    "material_preview_hash",
+    "package_review_preview_hash",
+    "contract_hash",
+    "construction_basis_hash",
+    "reconciliation_record_id",
+    "output_package_id",
+    "package_kind",
+    "package_payload_hash",
+    "package_review_submit_record_ref",
+    "package_review_state",
+    "prepare_record_ref",
+    "handoff_export_state",
+    "handoff_export_envelope_ref",
+    "handoff_target",
+    "export_mode",
+    "aps_handoff_target",
+    "dispatch_mode",
+    "aps_handoff_record_ref",
+    "aps_handoff_state",
+    "external_export_download_readiness_record_ref",
+    "external_export_download_readiness_ref",
+    "external_export_download_readiness_state",
+    "delivery_mode",
+    "operator_decision",
+)
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_ALLOWED_FIELDS = frozenset(
+    {
+        *MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUIRED_FIELDS,
+        "decision_notes",
+        "expected_package_kinds",
+    }
+)
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORBIDDEN_FIELDS = frozenset(
+    {
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "analysis_run_id",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "external_export_download_record_ref",
+        "export_download_descriptor_ref",
+        "external_export_download_state",
+        "export_download_target",
+        "download_mode",
+        "aps_output_package_id",
+        "aps_output_package_kind",
+        "aps_bundle_ref",
+        "aps_bundle_id",
+        "aps_schema_id",
+        "aps_bundle_hash",
+        "aps_bundle_size_bytes",
+        "external_export",
+        "external_target",
+        "download",
+        "download_url",
+        "download_token",
+        "public_url",
+        "signed_url",
+        "provider_url",
+        "provider_public_url",
+        "provider_private_signed_url",
+        "local_file_path",
+        "local_path",
+        "raw_local_path",
+        "destination",
+        "destination_selector",
+        "destination_id",
+        "destination_url",
+        "connector_key",
+        "connector_run_id",
+        "connector_dispatch",
+        "generic_dispatch",
+        "dispatch",
+        "send",
+        "local_outbox",
+        "outbox",
+        "runtime_db_write",
+        "analysis_artifact",
+        "artifact_manifest",
+        "create_package",
+        "rebuild_package",
+        "package_payload",
+        "package_variant_content",
+        "rewrite_output",
+        "edited_findings",
+        "result_review_amendment",
+        "package_review_amendment",
+        "handoff_export_amendment",
+        "aps_handoff_amendment",
+        "rerun",
+        "retry",
+        "recover",
+        "cancel",
+        "selected_pass_ids",
+        "pass_run_ids",
+        "new_analysis_plan",
+        "plan_revision",
+        "source_expansion",
+        "local_upload",
+        "local_directory",
+        "schema_migration",
+        "excluded_tool",
+        "web_connector",
+        "rag_vector_settings",
+        "prompt_model_settings",
+    }
+)
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_DISPATCH_FIELDS = frozenset(
+    {
+        "external_export_download_readiness_record_ref",
+        "external_export_download_readiness_ref",
+        "external_export_download_readiness_state",
+        "output_package_id",
+        "package_payload_hash",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -167,6 +294,40 @@ class ExternalExportDownloadDeliveryRequestFields:
     raw_package_kinds: Any
     raw_payload_refs: Any
     raw_payload_hashes: Any
+    missing_fields: list[str]
+
+
+@dataclass(frozen=True)
+class MixedSourceExternalExportDownloadDeliveryRequestFields:
+    request_id: str
+    session_id: str
+    material_preview_id: str
+    material_preview_hash: str
+    package_review_preview_hash: str
+    contract_hash: str
+    construction_basis_hash: str
+    reconciliation_record_id: str
+    output_package_id: str
+    package_kind: str
+    package_payload_hash: str
+    package_review_submit_record_ref: str
+    package_review_state: str
+    prepare_record_ref: str
+    handoff_export_state: str
+    handoff_export_envelope_ref: str
+    handoff_target: str
+    export_mode: str
+    aps_handoff_target: str
+    dispatch_mode: str
+    aps_handoff_record_ref: str
+    aps_handoff_state: str
+    readiness_record_ref: str
+    readiness_ref: str
+    readiness_state: str
+    delivery_mode: str
+    operator_decision: str
+    raw_expected_package_kinds: Any
+    decision_notes: str | None
     missing_fields: list[str]
 
 
@@ -260,6 +421,55 @@ def external_export_download_delivery_request_fields(
     )
 
 
+def mixed_source_external_export_download_delivery_requested(payload: Mapping[str, Any]) -> bool:
+    if _payload_text(payload, "operator_decision") == MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION:
+        return True
+    return any(field in payload for field in MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_DISPATCH_FIELDS)
+
+
+def mixed_source_external_export_download_delivery_request_fields(
+    payload: Mapping[str, Any],
+) -> MixedSourceExternalExportDownloadDeliveryRequestFields:
+    values = {
+        field: _payload_text(payload, field)
+        for field in MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUIRED_FIELDS
+    }
+    missing = [field for field in MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUIRED_FIELDS if not values[field]]
+    decision_notes = payload.get("decision_notes")
+    return MixedSourceExternalExportDownloadDeliveryRequestFields(
+        request_id=values["client_request_id"],
+        session_id=values["session_id"],
+        material_preview_id=values["material_preview_id"],
+        material_preview_hash=values["material_preview_hash"],
+        package_review_preview_hash=values["package_review_preview_hash"],
+        contract_hash=values["contract_hash"],
+        construction_basis_hash=values["construction_basis_hash"],
+        reconciliation_record_id=values["reconciliation_record_id"],
+        output_package_id=values["output_package_id"],
+        package_kind=values["package_kind"],
+        package_payload_hash=values["package_payload_hash"],
+        package_review_submit_record_ref=values["package_review_submit_record_ref"],
+        package_review_state=values["package_review_state"],
+        prepare_record_ref=values["prepare_record_ref"],
+        handoff_export_state=values["handoff_export_state"],
+        handoff_export_envelope_ref=values["handoff_export_envelope_ref"],
+        handoff_target=values["handoff_target"],
+        export_mode=values["export_mode"],
+        aps_handoff_target=values["aps_handoff_target"],
+        dispatch_mode=values["dispatch_mode"],
+        aps_handoff_record_ref=values["aps_handoff_record_ref"],
+        aps_handoff_state=values["aps_handoff_state"],
+        readiness_record_ref=values["external_export_download_readiness_record_ref"],
+        readiness_ref=values["external_export_download_readiness_ref"],
+        readiness_state=values["external_export_download_readiness_state"],
+        delivery_mode=values["delivery_mode"],
+        operator_decision=values["operator_decision"],
+        raw_expected_package_kinds=payload.get("expected_package_kinds"),
+        decision_notes=str(decision_notes).strip() if decision_notes is not None else None,
+        missing_fields=missing,
+    )
+
+
 def external_export_download_delivery_readiness_mismatches(
     request_fields: ExternalExportDownloadDeliveryRequestFields,
     readiness_state: Mapping[str, Any],
@@ -302,5 +512,15 @@ def external_export_download_delivery_blocked_fields(payload: Mapping[str, Any])
     )
     forbidden = sorted(
         key for key in EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORBIDDEN_FIELDS if key in payload
+    )
+    return sorted(set(unknown) | set(forbidden))
+
+
+def mixed_source_external_export_download_delivery_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
+    unknown = sorted(
+        key for key in payload if key not in MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_ALLOWED_FIELDS
+    )
+    forbidden = sorted(
+        key for key in MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORBIDDEN_FIELDS if key in payload
     )
     return sorted(set(unknown) | set(forbidden))

@@ -45756,5 +45756,77 @@
     ],
     "next_posture": "implement_mixed_source_external_export_download_delivery_after_freeze_merge_and_current_main_sync"
   },
-  "latest_p20_mixed_source_external_export_download_delivery_freeze_proof_summary": "P20 is a docs/control freeze for future mixed-source same-origin external export/download delivery over recorded P19 readiness. It selects delivery as the next surface, admits no runtime behavior by itself, and keeps rendered controls/download URL/signed-reference/public-provider URL/connector-destination/schema/parser/source-shape/payload/production scope closed."
+  "latest_p20_mixed_source_external_export_download_delivery_freeze_proof_summary": "P20 is a docs/control freeze for future mixed-source same-origin external export/download delivery over recorded P19 readiness. It selects delivery as the next surface, admits no runtime behavior by itself, and keeps rendered controls/download URL/signed-reference/public-provider URL/connector-destination/schema/parser/source-shape/payload/production scope closed.",
+  "p20_mixed_source_external_export_download_delivery_runtime_proof": {
+    "milestone": "p20_mixed_source_external_export_download_delivery_runtime",
+    "status": "branch_local_runtime_implementation_proof",
+    "planning_doc": "next_milestone_plans/multi-ingest/47-p20-mixed-export-download-delivery-freeze.md",
+    "runtime_closeout_doc": "next_milestone_plans/multi-ingest/48-p20-runtime-closeout.md",
+    "proof_terms": "P20 branch-local runtime implements only mixed-source same-origin artifact-stream delivery over recorded P19 readiness and current package rows. It admits no rendered UI/static behavior, browser download control, download URL, signed reference, public/provider URL, connector/provider/destination behavior, schema/model/migration change, parser behavior, source-shape expansion, package payload rewrite, SEC XBRL surface, excluded-tool behavior, or production-readiness behavior.",
+    "runtime_schema_id": "layer3.mixed_source_external_export_download_delivery.v1",
+    "runtime_state_schema_id": "layer3.mixed_source_external_export_download_delivery_state.v1",
+    "delivery_state": "mixed_source_external_export_download_delivered",
+    "delivery_mode": "same_origin_artifact_stream",
+    "operator_decision": "deliver_mixed_source_external_export_download",
+    "authority_basis": [
+      "committed Gate B mixed material authority",
+      "server-recomputed P14 package-review preview",
+      "P15 mixed-source package construction commit",
+      "P16 approved mixed-source package-review submit",
+      "P17 mixed-source handoff/export prepare",
+      "P18 mixed-source APS handoff dispatch",
+      "P19 mixed-source external export/download readiness",
+      "current L3OutputPackage row and package artifact hash"
+    ],
+    "positive_runtime_effects": [
+      "POST /api/v1/layer3/handoff/export/download/deliver can stream one selected mixed-source package artifact when P19 readiness and current package authority match",
+      "L3ReconciliationRecord.summary_json.external_export_download_delivery records reference-only mixed-source delivery state",
+      "L3Session.summary_json.external_export_download_delivery records reference-only mixed-source delivery status"
+    ],
+    "negative_authority_flags": {
+      "rendered_ui_behavior_changed": false,
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "browser_download_control_enabled": false,
+      "download_url_enabled": false,
+      "signed_reference_enabled": false,
+      "public_or_provider_url_enabled": false,
+      "connector_dispatch_enabled": false,
+      "provider_behavior_enabled": false,
+      "destination_behavior_enabled": false,
+      "excluded_tool_included": false,
+      "sec_xbrl_surface_changed": false,
+      "production_readiness_claimed": false
+    },
+    "proof_coverage": [
+      "delivery revalidates recorded P19 readiness and readiness refs",
+      "delivery replays P19 readiness with the recorded P19 idempotency basis",
+      "delivery validates current P15 package rows and selected package id/kind/hash",
+      "delivery streams server-owned package artifact bytes only after artifact hash validation",
+      "delivery headers expose mixed schema, delivery state, package id/kind/hash, readiness ref, and delivery ref without local path headers",
+      "delivery status records omit local path and payload_ref fields",
+      "explicit empty expected_package_kinds fails closed",
+      "blocked URL/provider/connector/selected-pass fields fail closed",
+      "conflicting repeated delivery decision fails closed"
+    ],
+    "verification": [
+      "python -B -m py_compile touched API/service/test files -> PASS",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"mixed_source_external_export_download or external_export_download_deliver or external_export_download_contracts or openapi\" -> 23 passed, 273 deselected, 4 warnings",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_external_export_contract.py .\\backend\\tests\\test_layer3_external_export_response.py -q -> 11 passed, 2 warnings",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_bounded_e2e.py -q -k \"download_delivery or external_export_download\" -> 1 passed, 3 deselected, 4 warnings",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -q -> 296 passed, 4 warnings",
+      "manifest JSON syntax -> PASS",
+      "authority-index validation -> PASS",
+      "frozen target-selection validation -> PASS",
+      "progress check -> PASS",
+      "git diff --check -> PASS"
+    ],
+    "final_validation_required": [
+      "detached post-merge proof after merge"
+    ],
+    "next_posture": "after_runtime_merge_and_current_main_sync_freeze_one_next_downstream_surface_or_stop_for_product_authority"
+  },
+  "latest_p20_mixed_source_external_export_download_delivery_runtime_proof_summary": "P20 branch-local runtime proof implements only same-origin artifact-stream delivery for one existing mixed-source package artifact over recorded P19 readiness and current package rows. It records reference-only delivery status, keeps package rows and payloads unchanged, and leaves rendered controls, download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, payload rewrite, SEC XBRL, excluded-tool, and production-readiness scope blocked."
 }
