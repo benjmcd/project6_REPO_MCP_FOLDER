@@ -22,7 +22,7 @@
         ],
         "readiness_decision": "nonlocal_production_readiness_blocked",
         "source_report": "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json",
-        "source_report_hash": "2ba21f147f3061a26aad3bf368770254e12dd32991b834bd3b2235627ae4990b"
+        "source_report_hash": "39a791b251068d1aabf6029f59d6533ad49d3978b68851df5d3c1dc828114e6a"
       },
       "state": "passed"
     },
@@ -421,7 +421,7 @@
     ],
     "readiness_decision": "nonlocal_production_readiness_blocked",
     "source_report": "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json",
-    "source_report_hash": "2ba21f147f3061a26aad3bf368770254e12dd32991b834bd3b2235627ae4990b"
+    "source_report_hash": "39a791b251068d1aabf6029f59d6533ad49d3978b68851df5d3c1dc828114e6a"
   },
   "route_and_backfill_evidence_summary": {
     "admissible": true,
