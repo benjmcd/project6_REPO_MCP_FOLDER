@@ -35,7 +35,8 @@ Phase P19 mixed-source external export/download readiness runtime,
 current-main P19 sync, bounded Phase P20 mixed-source external export/download
 delivery freeze, current-main Phase P20 mixed-source external
 export/download delivery runtime, current-main P20 sync, and bounded Phase P21
-mixed-source rendered delivery controls freeze.
+mixed-source rendered delivery controls freeze, plus branch-local Phase P21
+mixed-source rendered delivery controls runtime proof.
 
 Last audited main authority before the Phase P9 branch: `project6-origin/main` at `61df2c0d77a398d4aa582bb864caf6a209679e47`.
 
@@ -111,6 +112,17 @@ does not admit UI/static behavior by itself, download URLs, signed references,
 provider/public URL behavior, connector/destination behavior, schema/model/
 migration changes, parser/source-shape expansion, package payload rewrite,
 excluded-tool behavior, or production readiness.
+
+The branch-local Phase P21 mixed-source rendered delivery controls runtime proof
+implements only the rendered
+material-authority delivery controls selected by that freeze. It uses
+`State.sessionSummary.external_export_download_readiness` as the rendered
+source of truth, submits the existing P20 delivery route with
+`operator_decision: deliver_mixed_source_external_export_download`, selects only
+the `review_facing` mixed package, and keeps signed-reference, provider/public
+URL, connector/destination, schema/parser/source-shape, package payload rewrite,
+SEC XBRL, excluded-tool, and production-readiness behavior blocked until a
+separate freeze selects them.
 
 This folder is the front door for the new lane. Shared progress manifests and Layer 3 control packets are updated only when this heterogeneous-ingestion lane changes a tracked milestone claim. Lane-local docs remain planning authority until source, tests, and control-spine entries support a current implementation claim.
 
@@ -364,3 +376,4 @@ This section intentionally lists the supporting pack files. `README.md` is the f
 - `48-p20-runtime-closeout.md` records the current-main mixed-source same-origin external export/download delivery runtime proof over recorded P19 readiness.
 - `49-p20-current-main-sync.md` records the current-main sync after PR #2223.
 - `50-p21-rendered-delivery-freeze.md` freezes rendered mixed-source delivery controls over the existing P20 same-origin delivery runtime, without admitting UI/static or runtime behavior.
+- `51-p21-rendered-runtime-closeout.md` records the branch-local Phase P21 mixed-source rendered delivery controls runtime proof over current-main P20/P19 authority.
