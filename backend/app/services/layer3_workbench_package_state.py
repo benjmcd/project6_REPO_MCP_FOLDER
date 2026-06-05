@@ -95,6 +95,7 @@ HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE = package_family_policy(
 HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID = "layer3.handoff_export_prepare_state.v1"
 APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID = "layer3.aps_handoff_dispatch_state.v1"
 EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID = "layer3.external_export_download_prepare_state.v1"
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_STATE_SCHEMA_ID = "layer3.mixed_source_external_export_download_readiness_state.v1"
 
 
 def reconciliation_state(
@@ -150,6 +151,16 @@ def external_export_download_prepare_from_reconciliation(
         reconciliation,
         state_key="external_export_download_prepare",
         schema_id=EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+    )
+
+
+def mixed_source_external_export_download_readiness_from_reconciliation(
+    reconciliation: L3ReconciliationRecord | None,
+) -> dict[str, Any] | None:
+    return reconciliation_state(
+        reconciliation,
+        state_key="external_export_download_readiness",
+        schema_id=MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_STATE_SCHEMA_ID,
     )
 
 

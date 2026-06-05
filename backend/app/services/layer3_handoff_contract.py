@@ -193,6 +193,83 @@ MIXED_SOURCE_APS_HANDOFF_DISPATCH_ALLOWED_FIELDS = frozenset(
         "expected_package_kinds",
     }
 )
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_ALLOWED_FIELDS = frozenset(
+    {
+        "client_request_id",
+        "session_id",
+        "material_preview_id",
+        "material_preview_hash",
+        "package_review_preview_hash",
+        "contract_hash",
+        "construction_basis_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "operator_decision",
+        "decision_notes",
+        "expected_package_kinds",
+    }
+)
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_FORBIDDEN_FIELDS = frozenset(
+    {
+        "external_export",
+        "external_target",
+        "download",
+        "download_url",
+        "destination",
+        "destination_selector",
+        "connector_run_id",
+        "connector_dispatch",
+        "dispatch",
+        "send",
+        "runtime_db_write",
+        "analysis_artifact",
+        "artifact_manifest",
+        "create_package",
+        "rebuild_package",
+        "package_payload",
+        "package_variant_content",
+        "rewrite_output",
+        "edited_findings",
+        "result_review_amendment",
+        "package_review_amendment",
+        "rerun",
+        "retry",
+        "recover",
+        "cancel",
+        "selected_pass_ids",
+        "pass_run_ids",
+        "new_analysis_plan",
+        "plan_revision",
+        "source_expansion",
+        "local_upload",
+        "local_directory",
+        "schema_migration",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "analysis_run_id",
+        "signed_url",
+        "provider_public_url",
+        "provider_url",
+        "public_url",
+        "local_outbox",
+        "outbox",
+    }
+)
 
 
 def handoff_export_prepare_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
@@ -216,4 +293,10 @@ def aps_handoff_dispatch_blocked_fields(payload: Mapping[str, Any]) -> list[str]
 def mixed_source_aps_handoff_dispatch_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
     unknown = sorted(key for key in payload if key not in MIXED_SOURCE_APS_HANDOFF_DISPATCH_ALLOWED_FIELDS)
     forbidden = sorted(key for key in APS_HANDOFF_DISPATCH_FORBIDDEN_FIELDS if key in payload)
+    return sorted(set(unknown) | set(forbidden))
+
+
+def mixed_source_external_export_download_readiness_blocked_fields(payload: Mapping[str, Any]) -> list[str]:
+    unknown = sorted(key for key in payload if key not in MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_ALLOWED_FIELDS)
+    forbidden = sorted(key for key in MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_FORBIDDEN_FIELDS if key in payload)
     return sorted(set(unknown) | set(forbidden))
