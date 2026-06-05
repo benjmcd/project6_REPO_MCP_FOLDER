@@ -45882,5 +45882,59 @@
     ],
     "next_posture": "freeze_one_next_mixed_source_downstream_surface_or_stop_for_product_authority"
   },
-  "latest_p20_mixed_source_external_export_download_delivery_current_main_sync_proof_summary": "P20 current-main sync records PR #2223 at 6ca7835c6d8724715c9ac2d7a92ca34de2898ef2 as the live mixed-source same-origin external export/download delivery runtime. The sync changes docs/control only and keeps rendered controls, download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, payload rewrite, SEC XBRL, excluded-tool, and production-readiness scope blocked."
+  "latest_p20_mixed_source_external_export_download_delivery_current_main_sync_proof_summary": "P20 current-main sync records PR #2223 at 6ca7835c6d8724715c9ac2d7a92ca34de2898ef2 as the live mixed-source same-origin external export/download delivery runtime. The sync changes docs/control only and keeps rendered controls, download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, payload rewrite, SEC XBRL, excluded-tool, and production-readiness scope blocked.",
+  "p21_mixed_source_rendered_delivery_controls_freeze_proof": {
+    "milestone": "p21_mixed_source_rendered_delivery_controls_freeze",
+    "status": "branch_local_docs_control_freeze_only",
+    "planning_doc": "next_milestone_plans/multi-ingest/50-p21-rendered-delivery-freeze.md",
+    "proof_terms": "P21 freezes only the future rendered /review/layer3 mixed-source delivery controls over the existing P20 same-origin external export/download delivery runtime. No runtime code, rendered UI behavior, backend route, schema, parser, source-shape, package payload rewrite, download URL, signed reference, public/provider URL, connector/provider/destination, local outbox, SEC XBRL, excluded-tool behavior, or production-readiness behavior is admitted.",
+    "authority_basis": [
+      "P20 current-main same-origin mixed-source external export/download delivery runtime",
+      "P20 current-main sync after PR #2223",
+      "P19 recorded mixed-source external export/download readiness authority",
+      "P17A rendered mixed-source material-authority handoff/export prepare precedent",
+      "existing /review/layer3 selected-pass/source-directory delivery controls are precedent only, not mixed-source activation authority"
+    ],
+    "future_route": "POST /api/v1/layer3/handoff/export/download/deliver",
+    "future_schema_id": "layer3.mixed_source_external_export_download_delivery.v1",
+    "future_delivery_mode": "same_origin_artifact_stream",
+    "future_operator_decision": "deliver_mixed_source_external_export_download",
+    "positive_runtime_effects": [],
+    "negative_authority_flags": {
+      "runtime_behavior_changed": false,
+      "rendered_ui_behavior_changed": false,
+      "backend_route_changed": false,
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "browser_download_control_enabled": false,
+      "download_url_enabled": false,
+      "signed_reference_enabled": false,
+      "public_or_provider_url_enabled": false,
+      "connector_dispatch_enabled": false,
+      "provider_behavior_enabled": false,
+      "destination_behavior_enabled": false,
+      "local_outbox_enabled": false,
+      "excluded_tool_included": false,
+      "sec_xbrl_surface_changed": false,
+      "production_readiness_claimed": false
+    },
+    "required_future_proof": [
+      "page/static proof that mixed-source delivery controls use server-owned P20/P19/session-summary authority",
+      "proof that selected-pass and source-directory delivery paths remain separate",
+      "proof that local paths, payload refs, package bytes, download URLs, signed references, public/provider URLs, connector refs, destination refs, credentials, and local outbox targets are not exposed or submitted",
+      "headed and headless browser proof if rendered behavior changes",
+      "focused backend/API proof only if a backend defect is discovered and separately scoped"
+    ],
+    "verification_required": [
+      "manifest JSON syntax",
+      "authority-index validation",
+      "frozen target-selection validation",
+      "progress check",
+      "git diff --check"
+    ],
+    "next_posture": "implement_rendered_mixed_source_delivery_controls_after_freeze_merge_and_current_main_sync"
+  },
+  "latest_p21_mixed_source_rendered_delivery_controls_freeze_proof_summary": "P21 is a docs/control freeze for future rendered mixed-source delivery controls over the existing P20 same-origin delivery runtime. It selects one UI/operator surface, admits no UI/runtime behavior by itself, and keeps download URL, signed-reference, provider/public URL, connector/destination, schema/parser/source-shape, package payload rewrite, SEC XBRL, excluded-tool, and production-readiness scope closed."
 }
