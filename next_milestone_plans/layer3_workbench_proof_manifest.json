@@ -45699,5 +45699,62 @@
       "git diff --check -> PASS"
     ],
     "next_posture": "freeze_mixed_source_external_export_download_delivery_over_recorded_p19_readiness"
-  }
+  },
+  "p20_mixed_source_external_export_download_delivery_freeze_proof": {
+    "milestone": "p20_mixed_source_external_export_download_delivery_freeze",
+    "status": "branch_local_docs_control_freeze_only",
+    "planning_doc": "next_milestone_plans/multi-ingest/47-p20-mixed-export-download-delivery-freeze.md",
+    "proof_terms": "P20 freezes only the future mixed-source same-origin external export/download delivery path after P19 mixed-source external export/download readiness. No runtime code, rendered UI behavior, backend route, schema, parser, source-shape, payload rewrite, download URL, signed reference, public/provider URL, connector/provider/destination, local outbox, SEC XBRL, excluded-tool behavior, or production-readiness behavior is admitted.",
+    "authority_basis": [
+      "P19 reference-only mixed-source external export/download readiness runtime",
+      "P18 reference-only mixed-source APS handoff dispatch runtime",
+      "P17A rendered material-authority handoff prepare runtime",
+      "P17 mixed-source handoff/export prepare runtime",
+      "P16 mixed-source package-review submit runtime",
+      "P15 mixed-source package construction commit runtime",
+      "P14 mixed-source package review preview",
+      "committed Gate B material decision"
+    ],
+    "selection_basis": [
+      "current main records P19 readiness over P18 dispatch authority",
+      "same-origin artifact-stream delivery is the existing bounded delivery class for other Layer 3 surfaces",
+      "mixed-source delivery needs a mixed-source-specific authority reader before any generic route reuse can be admitted",
+      "provider/public URL, signed-reference, connector/destination, local outbox, and rendered delivery controls remain separate later surfaces"
+    ],
+    "future_schema_id": "layer3.mixed_source_external_export_download_delivery.v1",
+    "future_delivery_mode": "same_origin_artifact_stream",
+    "future_operator_decision": "deliver_mixed_source_external_export_download",
+    "positive_runtime_effects": [],
+    "negative_authority_flags": {
+      "runtime_behavior_changed": false,
+      "rendered_ui_behavior_changed": false,
+      "backend_route_changed": false,
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "external_export_download_delivery_enabled": false,
+      "browser_download_control_enabled": false,
+      "download_url_enabled": false,
+      "signed_reference_enabled": false,
+      "public_or_provider_url_enabled": false,
+      "connector_dispatch_enabled": false,
+      "provider_behavior_enabled": false,
+      "destination_behavior_enabled": false,
+      "excluded_tool_included": false,
+      "sec_xbrl_surface_changed": false,
+      "production_readiness_claimed": false
+    },
+    "proof_coverage": [
+      "freeze names mixed-source same-origin external export/download delivery as the exact selected downstream surface",
+      "freeze explains why recorded P19 readiness satisfies the delivery precondition",
+      "freeze requires server-owned P14/P15/P16/P17/P18/P19 authority before delivery",
+      "freeze blocks backend, UI/static, schema, parser, source-shape, payload, download URL, signed reference, connector, provider, destination, SEC XBRL, and production-readiness scope"
+    ],
+    "verification": [
+      "manifest JSON syntax and governance validators required"
+    ],
+    "next_posture": "implement_mixed_source_external_export_download_delivery_after_freeze_merge_and_current_main_sync"
+  },
+  "latest_p20_mixed_source_external_export_download_delivery_freeze_proof_summary": "P20 is a docs/control freeze for future mixed-source same-origin external export/download delivery over recorded P19 readiness. It selects delivery as the next surface, admits no runtime behavior by itself, and keeps rendered controls/download URL/signed-reference/public-provider URL/connector-destination/schema/parser/source-shape/payload/production scope closed."
 }

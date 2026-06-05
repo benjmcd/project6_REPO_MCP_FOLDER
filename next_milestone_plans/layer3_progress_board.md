@@ -1,5 +1,40 @@
 # Layer3 Progress Board
 
+## P20 Mixed-Source External Export/Download Delivery Freeze
+
+Milestone:
+`p20_mixed_source_external_export_download_delivery_freeze`.
+
+Planning doc:
+`next_milestone_plans/multi-ingest/47-p20-mixed-export-download-delivery-freeze.md`.
+
+Status: branch-local docs/control freeze only. No runtime behavior is admitted.
+
+Scope: selects mixed-source same-origin external export/download delivery as the
+next exact downstream surface over recorded P19 readiness. The future runtime
+may return only a server-revalidated same-origin artifact stream for one
+existing mixed-source package artifact if P14/P15/P16/P17/P18/P19 authority,
+package id, package kind, package payload hash, readiness ref, and delivery
+mode all match server-owned state.
+
+Non-goals: no backend runtime in this freeze, rendered UI/static behavior,
+browser download control, download URL, signed reference, public/provider URL,
+connector/provider/local-outbox/destination behavior, schema/model/migration,
+parser, source-shape expansion, package payload rewrite, package
+reconstruction/mutation, SEC XBRL surface, excluded-tool behavior, or
+production-readiness change.
+
+Proof: docs/control validation only is required for this freeze: manifest JSON
+syntax, authority-index validation, frozen target-selection validation,
+progress check, and `git diff --check`.
+
+Next posture: after this freeze merges and current main is synced, implement
+only mixed-source same-origin external export/download delivery over recorded
+P19 readiness. Rendered delivery controls, download URLs, signed references,
+public/provider URLs, connector/provider/destination behavior, schema/parser
+source-shape widening, payload rewrite, excluded-tool behavior, and production
+readiness remain blocked until later freezes select them.
+
 ## P19 Mixed-Source Current-Main Sync
 
 Milestone:
