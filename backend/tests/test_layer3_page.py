@@ -2913,6 +2913,38 @@ def test_layer3_sec_xbrl_controlled_value_reveal_rendered_control_is_bounded() -
         assert forbidden not in submit_payload_slice
 
 
+def test_layer3_legacy_arelle_value_reveal_rendered_ui_is_disabled() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+
+    assert js.status_code == 200
+    assert "const SEC_EDGAR_ARELLE_VALUE_REVEAL_RENDERED_UI_ENABLED = false;" in js.text
+
+    can_reveal_start = js.text.find("function canRevealSecEdgarArelleValues")
+    render_start = js.text.find("function renderSecEdgarOperatorProductSurfacePanel")
+    update_start = js.text.find("function updateSecEdgarOperatorProductSurfaceControls")
+    async_start = js.text.find("async function revealSecEdgarArelleValues")
+    archive_start = js.text.find("async function inspectSecEdgarDurableDeliveryArchiveStatus")
+    assert can_reveal_start != -1
+    assert render_start != -1
+    assert update_start != -1
+    assert async_start != -1
+    assert archive_start != -1
+
+    can_reveal_slice = js.text[can_reveal_start:render_start]
+    render_slice = js.text[render_start:update_start]
+    async_slice = js.text[async_start:archive_start]
+    assert "SEC_EDGAR_ARELLE_VALUE_REVEAL_RENDERED_UI_ENABLED" in can_reveal_slice
+    assert 'data-rendered-value-reveal-enabled="false"' in render_slice
+    assert 'data-controlled-value-reveal-replacement="true"' in render_slice
+    assert 'fieldset disabled data-legacy-sibling-reveal-rendered-disabled="true"' in render_slice
+    assert 'id="sec-edgar-arelle-value-reveal-submit" type="submit" disabled' in render_slice
+    assert "sec_edgar_arelle_value_reveal_rendered_ui_replaced_by_controlled_submit" in async_slice
+    assert "SEC_EDGAR_ARELLE_VALUE_REVEAL_ENDPOINT" in async_slice
+    assert async_slice.find("sec_edgar_arelle_value_reveal_rendered_ui_replaced_by_controlled_submit") < async_slice.find(
+        "SEC_EDGAR_ARELLE_VALUE_REVEAL_ENDPOINT"
+    )
+
+
 def test_layer3_shell_does_not_remove_adjacent_review_pages() -> None:
     assert client.get("/review/nrc-aps").status_code == 200
     assert client.get("/review/nrc-aps/workbench-compare").status_code == 200

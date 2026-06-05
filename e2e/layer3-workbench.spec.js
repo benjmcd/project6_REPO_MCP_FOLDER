@@ -12958,6 +12958,9 @@ test('Layer 3 workbench prepares and submits SEC XBRL controlled value reveal th
   const prepareButton = page.locator('#sec-xbrl-value-reveal-authority-prepare-submit');
   const revealButton = page.locator('#sec-xbrl-controlled-value-reveal-submit');
   const statusButton = page.locator('#sec-xbrl-controlled-value-reveal-status-submit');
+  const legacyRevealForm = page.locator('#sec-edgar-arelle-value-reveal-form');
+  const legacyRevealFieldset = legacyRevealForm.locator('fieldset');
+  const legacyRevealButton = page.locator('#sec-edgar-arelle-value-reveal-submit');
   await expect(panel).toBeVisible();
   await expect(panel).toHaveAttribute('data-rendered-mode', 'rendered_sec_xbrl_controlled_value_reveal_ui_control');
   await expect(panel).toHaveAttribute('data-frontend-durable-authority', 'false');
@@ -12971,6 +12974,12 @@ test('Layer 3 workbench prepares and submits SEC XBRL controlled value reveal th
   await expect(prepareButton).toBeDisabled();
   await expect(revealButton).toBeDisabled();
   await expect(statusButton).toBeDisabled();
+  await expect(legacyRevealForm).toHaveAttribute('data-rendered-value-reveal-enabled', 'false');
+  await expect(legacyRevealForm).toHaveAttribute('data-controlled-value-reveal-replacement', 'true');
+  await expect(legacyRevealFieldset).toHaveAttribute('data-legacy-sibling-reveal-rendered-disabled', 'true');
+  await expect(legacyRevealFieldset).toHaveAttribute('disabled', '');
+  await expect(legacyRevealButton).toBeDisabled();
+  await expect(legacyRevealButton).toHaveText('Use Controlled Reveal');
 
   await page.locator('#sec-xbrl-value-reveal-authority-decision-id').fill(decisionId);
   await page.locator('#sec-xbrl-value-reveal-authority-decision-basis-hash').fill(decisionBasisHash.toUpperCase());

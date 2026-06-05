@@ -3744,6 +3744,15 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     margin: 8px 0 10px;
 }
 
+.candidate-b-final-proof-status-form fieldset {
+    border: 0;
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    min-width: 0;
+    padding: 0;
+}
+
 .candidate-b-final-proof-status-form label {
     display: grid;
     gap: 5px;
