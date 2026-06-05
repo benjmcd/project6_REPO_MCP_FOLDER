@@ -1430,6 +1430,7 @@ def test_layer3_mixed_source_rendered_aps_and_readiness_use_material_authority()
         "packet.handoff_export_state !== 'handoff_export_prepared'",
         "dispatchPacket.prepare_record_ref",
         "dispatchPacket.handoff_export_envelope_ref",
+        "downstream_unavailable: handoff.downstream_unavailable",
         "aps_handoff_target: MIXED_SOURCE_APS_HANDOFF_TARGET",
         "dispatch_mode: MIXED_SOURCE_APS_HANDOFF_MODE",
     ):
@@ -1442,6 +1443,8 @@ def test_layer3_mixed_source_rendered_aps_and_readiness_use_material_authority()
         assert required in readiness_authority_slice or required in js_text
 
     assert "const mixedSourcePacket = mixedSourceApsHandoffDispatchAuthorityPacket()" in aps_state_slice
+    assert "const handoff = handoffExportPrepareState()" in aps_state_slice
+    assert "downstream_unavailable: mixedSourcePacket.downstream_unavailable" in aps_state_slice
     assert "rendered_mixed_source_aps_handoff_dispatch_control" in aps_panel_slice
     assert "State.handoffExportPrepare mixed-source material authority" in aps_panel_slice
     assert "mixed_source_aps_handoff_ready" in aps_panel_slice
@@ -1463,6 +1466,7 @@ def test_layer3_mixed_source_rendered_aps_and_readiness_use_material_authority()
     assert "mixedSourceExternalExportDownloadReadinessPayload()" in js_text
     assert "MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_PATH" in readiness_submit_slice
     assert "Mixed-source external export/download readiness recorded." in readiness_submit_slice
+    assert "&& !recordedMixedSourceExternalExportDownloadDelivery()" in js_text
 
     for required in (
         "material_preview_id: packet.material_preview_id",
