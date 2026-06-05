@@ -394,6 +394,8 @@ const SEC_XBRL_OPERATOR_REVIEW_DECISION_SUBMIT_ENDPOINT = '/sec-xbrl/operator-re
 const SEC_XBRL_OPERATOR_REVIEW_DECISION_STATUS_MODE = 'sec_xbrl_operator_review_decision_status_v1';
 const SEC_XBRL_OPERATOR_REVIEW_DECISION_STATUS_OPERATOR_DECISION = 'inspect_sec_xbrl_operator_review_decision_status';
 const SEC_XBRL_OPERATOR_REVIEW_DECISION_STATUS_ENDPOINT = '/sec-xbrl/operator-review/workflow/decision/status';
+const SEC_XBRL_RUNTIME_POSTURE_RENDERED_MODE = 'rendered_sec_xbrl_runtime_posture_projection_control';
+const SEC_XBRL_RUNTIME_POSTURE_ENDPOINT = '/sec-xbrl/runtime/posture';
 const SEC_XBRL_OPERATOR_REVIEW_DECISION_BLOCKED_RENDERED_CONTROLS = [
     'open_operator_review_workflow',
     'reveal_values',
@@ -904,6 +906,9 @@ const State = {
     secXbrlControlledValueRevealStatusInput: {
         submitReceiptId: '',
     },
+    secXbrlRuntimePosture: null,
+    secXbrlRuntimePostureError: null,
+    secXbrlRuntimePosturePending: false,
     candidateBFullCorpusOperatorWorkflowStatus: null,
     candidateBFullCorpusOperatorWorkflowStatusError: null,
     candidateBFullCorpusOperatorWorkflowStatusPending: false,
@@ -1161,6 +1166,7 @@ const elements = {
     secEdgarDownstreamRepeatabilityTrialPanel: document.getElementById('sec-edgar-downstream-repeatability-trial-panel'),
     secEdgarOperatorProductSurfacePanel: document.getElementById('sec-edgar-operator-product-surface-panel'),
     secEdgarDurableDeliveryArchiveStatusPanel: document.getElementById('sec-edgar-durable-delivery-archive-status-panel'),
+    secXbrlRuntimePosturePanel: document.getElementById('sec-xbrl-runtime-posture-panel'),
     secXbrlOperatorReviewWorkflowStatusPanel: document.getElementById('sec-xbrl-operator-review-workflow-status-panel'),
     secXbrlOperatorReviewDecisionSubmitPanel: document.getElementById('sec-xbrl-operator-review-decision-submit-panel'),
     secXbrlControlledValueRevealPanel: document.getElementById('sec-xbrl-controlled-value-reveal-panel'),
@@ -11760,6 +11766,10 @@ function canInspectSecEdgarDurableDeliveryArchiveStatus() {
     );
 }
 
+function canInspectSecXbrlRuntimePosture() {
+    return !State.secXbrlRuntimePosturePending;
+}
+
 function canInspectSecXbrlOperatorReviewWorkflowStatus() {
     const values = secXbrlOperatorReviewWorkflowStatusInputValues();
     return Boolean(
@@ -12763,6 +12773,26 @@ function secEdgarDurableDeliveryArchiveStatusPanelState() {
         return { label: 'sec_edgar_durable_delivery_archive_status_surface_ready', pill: 'ok' };
     }
     return { label: 'sec_edgar_durable_delivery_archive_status_not_inspected', pill: 'preview' };
+}
+
+function secXbrlRuntimePosturePanelState() {
+    if (State.secXbrlRuntimePosturePending) {
+        return { label: 'sec_xbrl_runtime_posture_pending', pill: 'preview' };
+    }
+    if (State.secXbrlRuntimePostureError) {
+        const detail = State.secXbrlRuntimePostureError?.payload?.error || {};
+        return {
+            label: detail.code || 'sec_xbrl_runtime_posture_blocked',
+            pill: 'blocked',
+        };
+    }
+    if (State.secXbrlRuntimePosture?.runtime_flags?.controlled_value_reveal_submit_enabled === true) {
+        return { label: State.secXbrlRuntimePosture.posture_state || 'sec_xbrl_runtime_posture_available', pill: 'ok' };
+    }
+    if (State.secXbrlRuntimePosture?.posture_state) {
+        return { label: State.secXbrlRuntimePosture.posture_state, pill: 'blocked' };
+    }
+    return { label: 'sec_xbrl_runtime_posture_not_inspected', pill: 'preview' };
 }
 
 function secXbrlOperatorReviewWorkflowStatusPanelState() {
@@ -14607,6 +14637,98 @@ function secXbrlMapItems(values) {
     return Object.entries(values)
         .map(([key, value]) => fieldItem(key, value, { code: typeof value === 'string' }))
         .join('');
+}
+
+function secXbrlRuntimePostureCapabilityItems(values) {
+    const items = Array.isArray(values) ? values : [];
+    if (!items.length) return '<li>none</li>';
+    return items.map((item) => {
+        const routes = Array.isArray(item?.route_families) ? item.route_families.join(', ') : '';
+        const evidence = Array.isArray(item?.required_evidence) ? item.required_evidence.join(', ') : '';
+        return `
+            <li>
+                <code>${escapeHtml(item?.capability || 'capability')}</code>:
+                ${escapeHtml(item?.runtime_state || 'runtime_state_unreported')}
+                ${item?.required_flag ? `<span class="rail-label">flag ${escapeHtml(item.required_flag)}</span>` : ''}
+                ${routes ? `<span class="rail-label">routes ${escapeHtml(routes)}</span>` : ''}
+                ${evidence ? `<span class="rail-label">evidence ${escapeHtml(evidence)}</span>` : ''}
+            </li>
+        `;
+    }).join('');
+}
+
+function secXbrlRuntimePostureRouteFamilyItems(values) {
+    const items = Array.isArray(values) ? values : [];
+    if (!items.length) return '<li>none</li>';
+    return items.map((item) => `
+        <li>
+            <code>${escapeHtml(item?.route_family || 'route_family')}</code>:
+            roles ${escapeHtml(Array.isArray(item?.allowed_roles) ? item.allowed_roles.join(', ') : 'none')};
+            mutating ${escapeHtml(item?.mutating)};
+            may expose revealed values ${escapeHtml(item?.may_expose_revealed_values)}
+        </li>
+    `).join('');
+}
+
+function secXbrlRuntimePostureRows(posture) {
+    if (!posture) return '';
+    const flags = posture.runtime_flags || {};
+    const identity = posture.identity_authority || {};
+    return `
+        <div id="sec-xbrl-runtime-posture-output" class="candidate-b-final-proof-status-grid sec-xbrl-runtime-posture-output-grid" data-read-only="true" data-posture-projection="true">
+            <section class="result-review-card">
+                <strong>SEC XBRL Runtime Posture</strong>
+                <ul>
+                    ${fieldItem('schema id', posture.schema_id, { code: true })}
+                    ${fieldItem('posture mode', posture.posture_mode, { code: true })}
+                    ${fieldItem('posture state', posture.posture_state, { code: true })}
+                    ${fieldItem('posture basis hash', posture.posture_basis_hash, { code: true })}
+                    ${fieldItem('production readiness claimed', posture.production_readiness_claimed)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Runtime Flags</strong>
+                <ul>${secXbrlMapItems(flags)}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Identity Authority</strong>
+                <ul>${secXbrlMapItems(identity)}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Activated Capabilities</strong>
+                <ul>${secXbrlRuntimePostureCapabilityItems(posture.activated_capabilities)}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Gated Capabilities</strong>
+                <ul>${secXbrlRuntimePostureCapabilityItems(posture.gated_capabilities)}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Protected Route Families</strong>
+                <ul>${secXbrlRuntimePostureRouteFamilyItems(posture.protected_route_families)}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Negative Boundaries</strong>
+                <ul>
+                    ${secXbrlCodeListItems(posture.negative_boundaries)}
+                    ${fieldItem('source acquisition performed', posture.source_acquisition_performed)}
+                    ${fieldItem('Arelle invoked', posture.arelle_invoked)}
+                    ${fieldItem('value reveal performed', posture.value_reveal_performed)}
+                    ${fieldItem('delivery export enabled', posture.delivery_export_enabled)}
+                    ${fieldItem('runtime DB write', posture.runtime_db_write)}
+                    ${fieldItem('raw operator identity exposed', posture.raw_operator_identity_exposed)}
+                    ${fieldItem('raw proxy header exposed', posture.raw_proxy_header_exposed)}
+                    ${fieldItem('raw workspace identity exposed', posture.raw_workspace_identity_exposed)}
+                    ${fieldItem('raw value exposed', posture.raw_value_exposed)}
+                    ${fieldItem('residual magnitude exposed', posture.residual_magnitude_exposed)}
+                    ${fieldItem('local path or URL exposed', posture.local_path_or_url_exposed)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Operator Next Actions</strong>
+                <ul>${secXbrlCodeListItems(posture.operator_next_actions)}</ul>
+            </section>
+        </div>
+    `;
 }
 
 function secXbrlOperatorReviewWorkflowStatusRows(status) {
@@ -17086,6 +17208,24 @@ function secEdgarDurableDeliveryArchiveStatusError() {
     `;
 }
 
+function secXbrlRuntimePostureError() {
+    const error = State.secXbrlRuntimePostureError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = (
+        detail.code
+        || error.payload?.error_code
+        || 'sec_xbrl_runtime_posture_error'
+    );
+    const message = detail.message || error.payload?.message || error.message;
+    return `
+        <div id="sec-xbrl-runtime-posture-error" class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function secXbrlOperatorReviewWorkflowStatusError() {
     const error = State.secXbrlOperatorReviewWorkflowStatusError;
     if (!error) return '';
@@ -18751,6 +18891,49 @@ function updateSecEdgarDurableDeliveryArchiveStatusControls() {
     const submit = document.getElementById('sec-edgar-durable-delivery-archive-status-submit');
     if (submit) {
         submit.disabled = !canInspectSecEdgarDurableDeliveryArchiveStatus();
+    }
+}
+
+function renderSecXbrlRuntimePosturePanel() {
+    if (!elements.secXbrlRuntimePosturePanel) return;
+    const postureState = secXbrlRuntimePosturePanelState();
+    elements.secXbrlRuntimePosturePanel.dataset.frontendDurableAuthority = 'false';
+    elements.secXbrlRuntimePosturePanel.dataset.readOnly = 'true';
+    elements.secXbrlRuntimePosturePanel.dataset.valueRevealEnabled = 'false';
+    elements.secXbrlRuntimePosturePanel.dataset.deliveryExportEnabled = 'false';
+    elements.secXbrlRuntimePosturePanel.dataset.sourceAcquisitionEnabled = 'false';
+    elements.secXbrlRuntimePosturePanel.dataset.arelleInvocationEnabled = 'false';
+    elements.secXbrlRuntimePosturePanel.dataset.runtimeDefaultEnabled = 'false';
+    elements.secXbrlRuntimePosturePanel.dataset.productionReadinessClaimed = 'false';
+    elements.secXbrlRuntimePosturePanel.innerHTML = `
+        <div class="workband-heading">
+            <div>
+                <span class="section-kicker">SEC XBRL runtime posture</span>
+                <h2>Runtime Posture</h2>
+            </div>
+            <span class="status-pill ${escapeHtml(postureState.pill)}">${escapeHtml(postureState.label)}</span>
+        </div>
+        <div class="candidate-b-default-promotion-status-grid">
+            <section class="result-review-card sec-xbrl-runtime-posture-card">
+                <strong>Inspect Runtime Posture</strong>
+                <form id="sec-xbrl-runtime-posture-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_XBRL_RUNTIME_POSTURE_RENDERED_MODE)}" data-frontend-durable-authority="false" data-read-only="true" data-value-reveal-enabled="false" data-delivery-export-enabled="false" data-source-acquisition-enabled="false" data-arelle-invocation-enabled="false" data-runtime-default-enabled="false" data-production-readiness-claimed="false">
+                    <button id="sec-xbrl-runtime-posture-submit" type="submit" ${canInspectSecXbrlRuntimePosture() ? '' : 'disabled'}>Inspect Runtime Posture</button>
+                </form>
+                <div class="result-review-status" id="sec-xbrl-runtime-posture-status" data-read-only="true">
+                    <span class="status-pill ${escapeHtml(postureState.pill)}">${escapeHtml(postureState.label)}</span>
+                    <span class="rail-label">Server-owned posture projection only. This rendered control cannot reveal values, fetch SEC content, invoke Arelle, export or deliver packets, mutate receipts, change runtime defaults, supply identity, or create frontend durable authority.</span>
+                </div>
+                ${secXbrlRuntimePostureRows(State.secXbrlRuntimePosture)}
+                ${secXbrlRuntimePostureError()}
+            </section>
+        </div>
+    `;
+}
+
+function updateSecXbrlRuntimePostureControls() {
+    const submit = document.getElementById('sec-xbrl-runtime-posture-submit');
+    if (submit) {
+        submit.disabled = !canInspectSecXbrlRuntimePosture();
     }
 }
 
@@ -20748,6 +20931,29 @@ async function inspectSecEdgarDurableDeliveryArchiveStatus(event) {
         addEvent(`SEC EDGAR durable delivery archive status surface blocked: ${error.message}`);
     } finally {
         State.secEdgarDurableDeliveryArchiveStatusPending = false;
+        renderAll();
+    }
+}
+
+async function inspectSecXbrlRuntimePosture(event) {
+    event.preventDefault();
+    if (!canInspectSecXbrlRuntimePosture()) {
+        return;
+    }
+    State.secXbrlRuntimePosturePending = true;
+    State.secXbrlRuntimePostureError = null;
+    renderSecXbrlRuntimePosturePanel();
+    try {
+        const response = await getJson(SEC_XBRL_RUNTIME_POSTURE_ENDPOINT);
+        State.secXbrlRuntimePosture = response.sec_xbrl_runtime_posture || response;
+        State.secXbrlRuntimePostureError = null;
+        addEvent('SEC XBRL runtime posture inspected through read-only server projection.');
+    } catch (error) {
+        State.secXbrlRuntimePosture = null;
+        State.secXbrlRuntimePostureError = error;
+        addEvent(`SEC XBRL runtime posture blocked: ${error.message}`);
+    } finally {
+        State.secXbrlRuntimePosturePending = false;
         renderAll();
     }
 }
@@ -25028,6 +25234,7 @@ function renderAll() {
     renderSecEdgarDownstreamRepeatabilityTrialPanel();
     renderSecEdgarOperatorProductSurfacePanel();
     renderSecEdgarDurableDeliveryArchiveStatusPanel();
+    renderSecXbrlRuntimePosturePanel();
     renderSecXbrlOperatorReviewWorkflowStatusPanel();
     renderSecXbrlOperatorReviewDecisionSubmitPanel();
     renderSecXbrlControlledValueRevealPanel();
@@ -29098,6 +29305,11 @@ elements.secEdgarDurableDeliveryArchiveStatusPanel.addEventListener('change', (e
         } else {
             updateSecEdgarDurableDeliveryArchiveStatusControls();
         }
+    }
+});
+elements.secXbrlRuntimePosturePanel.addEventListener('submit', (event) => {
+    if (event.target?.id === 'sec-xbrl-runtime-posture-form') {
+        inspectSecXbrlRuntimePosture(event);
     }
 });
 elements.secXbrlOperatorReviewWorkflowStatusPanel.addEventListener('submit', (event) => {
