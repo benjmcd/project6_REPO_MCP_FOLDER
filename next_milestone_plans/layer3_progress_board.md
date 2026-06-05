@@ -1,5 +1,38 @@
 # Layer3 Progress Board
 
+## P21 Mixed-Source Rendered Delivery Controls Freeze
+
+Milestone:
+`p21_mixed_source_rendered_delivery_controls_freeze`.
+
+Planning doc:
+`next_milestone_plans/multi-ingest/50-p21-rendered-delivery-freeze.md`.
+
+Status: branch-local docs/control freeze only. No runtime behavior or rendered
+UI/static behavior is admitted.
+
+Scope: selects rendered `/review/layer3` operator controls over the already-live
+P20 mixed-source same-origin external export/download delivery runtime as the
+next exact downstream surface. Future implementation may use only server-owned
+P20/P19/session-summary material authority and the existing
+`POST /api/v1/layer3/handoff/export/download/deliver` route.
+
+Non-goals: no backend runtime, API route, rendered UI/static behavior, browser
+download control, download URL, signed reference, public/provider URL,
+connector/provider/destination/local-outbox behavior, schema/model/migration,
+parser/source-shape expansion, package payload rewrite, SEC XBRL surface,
+excluded-tool behavior, or production-readiness change.
+
+Proof: this branch-local freeze requires manifest JSON syntax, authority-index
+validation, frozen target-selection validation, progress check, and
+`git diff --check`.
+
+Next posture: after this freeze merges and current-main syncs, implement only
+rendered mixed-source delivery controls over the existing P20 same-origin
+stream; stop for a separate freeze if any signed-reference, provider,
+connector, destination, schema, parser, source-shape, package payload rewrite,
+local outbox, or download URL behavior is required.
+
 ## P20 Mixed-Source Current-Main Sync
 
 Milestone:
