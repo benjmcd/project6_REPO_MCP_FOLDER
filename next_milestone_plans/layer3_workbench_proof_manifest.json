@@ -45514,5 +45514,59 @@
     ],
     "next_posture": "freeze_mixed_source_external_export_download_readiness_before_implementation"
   },
-  "latest_p18_mixed_source_aps_handoff_dispatch_runtime_proof_summary": "P18 runtime now implements current-main reference-only mixed-source APS handoff dispatch over P17 prepared mixed-source authority after PR #2216 and PR #2217. It validates the full P14/P15/P16/P17 material-authority chain, records JSON state only, emits public refs, creates no APS evidence-bundle package row or local artifact, and unblocks mixed-source external export/download readiness for a separate freeze before implementation."
+  "latest_p18_mixed_source_aps_handoff_dispatch_runtime_proof_summary": "P18 runtime now implements current-main reference-only mixed-source APS handoff dispatch over P17 prepared mixed-source authority after PR #2216 and PR #2217. It validates the full P14/P15/P16/P17 material-authority chain, records JSON state only, emits public refs, creates no APS evidence-bundle package row or local artifact, and unblocks mixed-source external export/download readiness for a separate freeze before implementation.",
+  "p19_mixed_source_external_export_download_readiness_freeze_proof": {
+    "milestone": "p19_mixed_source_external_export_download_readiness_freeze",
+    "status": "branch_local_docs_control_freeze_only",
+    "planning_doc": "next_milestone_plans/multi-ingest/44-p19-mixed-export-download-readiness-freeze.md",
+    "proof_terms": "P19 freezes only the future mixed-source external export/download readiness path after P18 mixed-source APS handoff dispatch. No runtime code, rendered UI behavior, backend route, schema, parser, source-shape, payload rewrite, external export/download delivery, download URL, signed reference, public/provider URL, connector/provider, excluded-tool behavior, or production-readiness behavior is admitted.",
+    "authority_basis": [
+      "P18 reference-only mixed-source APS handoff dispatch runtime",
+      "P17A rendered material-authority handoff prepare runtime",
+      "P17 mixed-source handoff/export prepare runtime",
+      "P16 mixed-source package-review submit runtime",
+      "P15 mixed-source package construction commit runtime",
+      "P14 mixed-source package review preview",
+      "committed Gate B material decision"
+    ],
+    "selection_basis": [
+      "current mixed-source package-family policy still marks external_export_download unavailable after APS handoff dispatch",
+      "current external export/download readiness requires a recorded APS handoff dispatch",
+      "P18 now records reference-only mixed-source APS handoff dispatch state on current main",
+      "external export/download readiness is therefore the next selectable surface, while external export/download delivery remains blocked until a later freeze"
+    ],
+    "future_schema_id": "layer3.mixed_source_external_export_download_readiness.v1",
+    "future_readiness_state": "mixed_source_external_export_download_ready",
+    "future_operator_decision": "record_mixed_source_external_export_download_readiness",
+    "positive_runtime_effects": [],
+    "negative_authority_flags": {
+      "runtime_behavior_changed": false,
+      "rendered_ui_behavior_changed": false,
+      "backend_route_changed": false,
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "aps_handoff_enabled": false,
+      "external_export_download_readiness_enabled": false,
+      "external_export_download_delivery_enabled": false,
+      "download_url_enabled": false,
+      "signed_reference_enabled": false,
+      "connector_dispatch_enabled": false,
+      "provider_url_enabled": false,
+      "excluded_tool_included": false,
+      "production_readiness_claimed": false
+    },
+    "proof_coverage": [
+      "freeze names external export/download readiness as the exact selected downstream surface",
+      "freeze explains why the recorded P18 APS handoff dispatch state satisfies the readiness precondition",
+      "freeze requires server-owned material-authority package, P17 prepare, and P18 dispatch state",
+      "freeze blocks backend, UI/static, schema, parser, source-shape, payload, delivery, download, signed reference, connector, provider, and production-readiness scope"
+    ],
+    "verification": [
+      "manifest JSON syntax and governance validators required"
+    ],
+    "next_posture": "implement_mixed_source_external_export_download_readiness_after_freeze_merge_and_current_main_sync_then_freeze_external_export_download_delivery"
+  },
+  "latest_p19_mixed_source_external_export_download_readiness_freeze_proof_summary": "P19 is a docs/control freeze for future mixed-source external export/download readiness. It selects readiness as the next surface after the recorded P18 reference-only APS handoff dispatch state, admits no runtime behavior by itself, and keeps downstream delivery/download/signed-reference/public-URL/provider/connector/schema/parser/source-shape/payload/production scope closed."
 }
