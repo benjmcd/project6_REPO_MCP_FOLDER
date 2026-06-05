@@ -88,6 +88,9 @@ def build_sec_xbrl_runtime_posture() -> dict[str, Any]:
 def _runtime_flags() -> dict[str, bool]:
     return {
         "live_sec_edgar_network_enabled": bool(settings.layer3_sec_edgar_live_network_enabled),
+        "sec_edgar_user_agent_configured": bool(
+            str(settings.layer3_sec_edgar_user_agent or "").strip()
+        ),
         "arelle_fact_authority_cutover_enabled": bool(
             settings.layer3_sec_edgar_arelle_fact_authority_cutover_enabled
         ),
@@ -237,14 +240,20 @@ def _controlled_value_reveal_surface(flags: dict[str, bool]) -> dict[str, Any]:
 
 
 def _live_sec_source_acquisition_surface(flags: dict[str, bool]) -> dict[str, Any]:
-    enabled = flags["live_sec_edgar_network_enabled"]
+    live_network_enabled = flags["live_sec_edgar_network_enabled"]
+    user_agent_configured = flags["sec_edgar_user_agent_configured"]
+    enabled = live_network_enabled and user_agent_configured
+    surface_state = "operator_surface_available_when_live_network_authorized"
+    next_operator_action = "use_sec_edgar_live_source_artifact_acquisition_panel"
+    if not live_network_enabled:
+        surface_state = "gated_by_live_network_feature_flag"
+        next_operator_action = "authorize_live_sec_network_before_source_acquisition"
+    elif not user_agent_configured:
+        surface_state = "gated_by_sec_edgar_user_agent_configuration"
+        next_operator_action = "configure_sec_edgar_user_agent_before_source_acquisition"
     return {
         **_base_activation_surface("live_sec_edgar_network_source_acquisition"),
-        "surface_state": (
-            "operator_surface_available_when_live_network_authorized"
-            if enabled
-            else "gated_by_live_network_feature_flag"
-        ),
+        "surface_state": surface_state,
         "runtime_enabled": enabled,
         "operator_surface_rendered": True,
         "rendered_panel_id": "sec-edgar-live-source-artifact-acquisition-panel",
@@ -256,13 +265,15 @@ def _live_sec_source_acquisition_surface(flags: dict[str, bool]) -> dict[str, An
         "operator_confirmation_required": True,
         "server_derives_external_sec_url": True,
         "browser_supplied_url_allowed": False,
-        "required_flags": ([] if enabled else ["LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED"]),
-        "required_evidence": ["live_sec_source_artifact_e2e"],
-        "next_operator_action": (
-            "use_sec_edgar_live_source_artifact_acquisition_panel"
-            if enabled
-            else "authorize_live_sec_network_before_source_acquisition"
+        "sec_edgar_user_agent_configured": user_agent_configured,
+        "required_flags": (
+            [] if live_network_enabled else ["LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED"]
         ),
+        "required_configuration": (
+            [] if user_agent_configured else ["LAYER3_SEC_EDGAR_USER_AGENT"]
+        ),
+        "required_evidence": ["live_sec_source_artifact_e2e"],
+        "next_operator_action": next_operator_action,
     }
 
 

@@ -14675,6 +14675,7 @@ function secXbrlRuntimePostureActivationSurfaceItems(values) {
     if (!items.length) return '<li>none</li>';
     return items.map((item) => {
         const flags = Array.isArray(item?.required_flags) ? item.required_flags.join(', ') : '';
+        const configuration = Array.isArray(item?.required_configuration) ? item.required_configuration.join(', ') : '';
         const evidence = Array.isArray(item?.required_evidence) ? item.required_evidence.join(', ') : '';
         const routes = Array.isArray(item?.api_routes) ? item.api_routes : [];
         const families = Array.isArray(item?.route_families) ? item.route_families : [];
@@ -14698,6 +14699,7 @@ function secXbrlRuntimePostureActivationSurfaceItems(values) {
                 <span class="rail-label">operator surface rendered ${escapeHtml(item?.operator_surface_rendered)}</span>
                 <span class="rail-label">side effects ${sideEffects ? 'reported' : 'none'}</span>
                 ${flags ? `<span class="rail-label">required flags ${escapeHtml(flags)}</span>` : ''}
+                ${configuration ? `<span class="rail-label">required configuration ${escapeHtml(configuration)}</span>` : ''}
                 ${evidence ? `<span class="rail-label">required evidence ${escapeHtml(evidence)}</span>` : ''}
                 ${routes.length ? `<span class="rail-label">primary route ${escapeHtml(routes[0])}</span>` : ''}
                 ${families.length ? `<span class="rail-label">primary route family ${escapeHtml(families[0])}</span>` : ''}
