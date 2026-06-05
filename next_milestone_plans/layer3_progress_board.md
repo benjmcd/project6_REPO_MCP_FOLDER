@@ -1,5 +1,39 @@
 # Layer3 Progress Board
 
+## P20 Mixed-Source External Export/Download Delivery Runtime
+
+Milestone:
+`p20_mixed_source_external_export_download_delivery_runtime`.
+
+Closeout doc:
+`next_milestone_plans/multi-ingest/48-p20-runtime-closeout.md`.
+
+Status: branch-local runtime implementation proof. Current-main authority begins
+only after this branch merges and detached post-merge proof passes.
+
+Scope: implements exactly one same-origin artifact-stream delivery surface over
+recorded P19 mixed-source external export/download readiness. The runtime
+revalidates P14/P15/P16/P17/P18/P19 authority, current package rows, selected
+package id/kind/hash, readiness refs, and server-owned package artifact hash
+before streaming an existing mixed-source package artifact.
+
+Non-goals: no rendered UI/static behavior, browser download control, download
+URL, signed reference, public/provider URL, connector/provider/local-outbox/
+destination behavior, schema/model/migration, parser, source-shape expansion,
+package payload rewrite, package reconstruction/mutation, SEC XBRL surface,
+excluded-tool behavior, or production-readiness change.
+
+Proof: branch-local compile and focused delivery/API/helper/bounded E2E slices
+passed. Full affected Layer 3 API suite, manifest JSON syntax, authority-index
+validation, frozen target-selection validation, progress check, and
+`git diff --check` remain required before merge. Detached post-merge proof is
+required after merge.
+
+Next posture: after P20 runtime lands and current main is synced, freeze exactly
+one next mixed-source downstream surface: rendered delivery controls,
+signed-reference governance, provider/public URL governance,
+connector/destination dispatch, or a stop-for-product-authority checkpoint.
+
 ## P20 Mixed-Source External Export/Download Delivery Freeze
 
 Milestone:
