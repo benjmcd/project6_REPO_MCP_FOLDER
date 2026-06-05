@@ -5812,7 +5812,8 @@
     "next_milestone_plans/Layer3_planning_docs/118_L3_GOAL_AUDIT.md",
     "next_milestone_plans/Layer3_planning_docs/120_L3_CLOSEOUT.md",
     "backend/app/services/layer3_approved_plan_correction.py",
-    "backend/tests/test_layer3_approved_plan_correction.py"
+    "backend/tests/test_layer3_approved_plan_correction.py",
+    "next_milestone_plans/multi-ingest/46-p19-current-main-sync.md"
   ],
   "package_replacement_namespace_runtime": {
     "mode": "replacement_package_namespace_rows",
@@ -7837,7 +7838,8 @@
     "latest_source_directory_material_preview_gate_b_rendered_control_current_main_sync_server_authoritative_full_mockup_activation_introduced_by_sync": false,
     "latest_source_directory_material_preview_gate_b_rendered_control_current_main_sync_frontend_durable_authority_enabled": false,
     "latest_source_directory_material_preview_gate_b_rendered_control_current_main_sync_next_posture": "select_next_blocker_retirement_lane_after_source_directory_material_preview_gate_b_rendered_control_current_main_sync",
-    "latest_source_directory_material_preview_gate_b_rendered_control_current_main_sync_summary": "Doc 916 syncs PR #1530 to current main as the bounded source-directory material-preview and Gate B rendered control extension over existing source-directory scan/status, material-preview, and Gate B route/state authority. This sync introduces no runtime, rendered, backend, route/API/DTO/model/migration/service, executable test, production UI, full mockup activation, or frontend-only durable authority."
+    "latest_source_directory_material_preview_gate_b_rendered_control_current_main_sync_summary": "Doc 916 syncs PR #1530 to current main as the bounded source-directory material-preview and Gate B rendered control extension over existing source-directory scan/status, material-preview, and Gate B route/state authority. This sync introduces no runtime, rendered, backend, route/API/DTO/model/migration/service, executable test, production UI, full mockup activation, or frontend-only durable authority.",
+    "p19_mixed_source_external_export_download_readiness_current_main_sync": "PR #2220 merged at 9e4451cb710c0185a64f1788b9e0d848be7dbc8b; docs/control sync records current-main P19 readiness runtime authority and leaves delivery/download/signed-reference/provider/connector behavior blocked until a separate delivery freeze."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -47809,7 +47811,7 @@
   "p19_mixed_source_external_export_download_readiness_runtime_tracking": {
     "tracking_kind": "p19_mixed_source_external_export_download_readiness_runtime_tracking",
     "milestone": "p19_mixed_source_external_export_download_readiness_runtime",
-    "status": "branch_local_runtime_implementation_verified",
+    "status": "current_main_runtime_verified_after_pr_2220",
     "base_main_commit": "974f11e978207d954789f69c0747705429d916fa",
     "runtime_doc": "next_milestone_plans/multi-ingest/45-p19-runtime-closeout.md",
     "freeze_doc": "next_milestone_plans/multi-ingest/44-p19-mixed-export-download-readiness-freeze.md",
@@ -47892,7 +47894,58 @@
       "next_milestone_plans/layer3_progress_manifest.json",
       "next_milestone_plans/layer3_workbench_proof_manifest.json"
     ],
-    "next_posture": "after_runtime_merge_and_current_main_sync_freeze_mixed_source_external_export_download_delivery"
+    "next_posture": "freeze_mixed_source_external_export_download_delivery_after_p19_current_main_sync",
+    "runtime_pr": "#2220",
+    "runtime_merge_commit": "9e4451cb710c0185a64f1788b9e0d848be7dbc8b",
+    "current_main_sync_doc": "next_milestone_plans/multi-ingest/46-p19-current-main-sync.md",
+    "detached_post_merge_proof": [
+      "touched_file_py_compile -> PASS",
+      "focused P19/API contract and error-envelope slice -> 28 passed, 267 deselected, 3 warnings",
+      "full backend/tests/test_layer3_api.py -> 295 passed, 4 warnings",
+      "backend/tests/test_layer3_external_export_response.py -> 6 passed, 2 warnings",
+      "manifest JSON syntax -> PASS",
+      "authority-index validation -> PASS",
+      "target-selection frozen validation -> PASS",
+      "progress check -> PASS",
+      "git diff --check -> PASS"
+    ]
   },
-  "latest_p19_mixed_source_external_export_download_readiness_runtime_summary": "P19 runtime branch implements reference-only mixed-source external export/download readiness over P18 mixed-source APS handoff dispatch authority. It validates P14/P15/P16/P17/P18 material authority server-side, records one readiness state in existing session/reconciliation JSON, exposes it through the existing external_export_download session-summary surface, and keeps delivery, download URLs, signed references, public/provider URLs, connector/provider behavior, schema/parser/source-shape widening, payload rewrite, excluded-tool behavior, and production readiness blocked."
+  "latest_p19_mixed_source_external_export_download_readiness_runtime_summary": "P19 runtime branch implements reference-only mixed-source external export/download readiness over P18 mixed-source APS handoff dispatch authority. It validates P14/P15/P16/P17/P18 material authority server-side, records one readiness state in existing session/reconciliation JSON, exposes it through the existing external_export_download session-summary surface, and keeps delivery, download URLs, signed references, public/provider URLs, connector/provider behavior, schema/parser/source-shape widening, payload rewrite, excluded-tool behavior, and production readiness blocked.",
+  "p19_mixed_source_external_export_download_readiness_current_main_sync_tracking": {
+    "tracking_kind": "p19_mixed_source_external_export_download_readiness_current_main_sync_tracking",
+    "milestone": "p19_mixed_source_external_export_download_readiness_current_main_sync",
+    "status": "docs_control_current_main_sync_only",
+    "base_main_commit": "9e4451cb710c0185a64f1788b9e0d848be7dbc8b",
+    "sync_doc": "next_milestone_plans/multi-ingest/46-p19-current-main-sync.md",
+    "runtime_doc": "next_milestone_plans/multi-ingest/45-p19-runtime-closeout.md",
+    "runtime_pr": "#2220",
+    "runtime_merge_commit": "9e4451cb710c0185a64f1788b9e0d848be7dbc8b",
+    "runtime_behavior_changed_by_sync": false,
+    "rendered_ui_behavior_changed_by_sync": false,
+    "backend_route_changed_by_sync": false,
+    "schema_or_migration_changed_by_sync": false,
+    "parser_behavior_changed_by_sync": false,
+    "source_shape_expanded_by_sync": false,
+    "payload_rewrite_enabled_by_sync": false,
+    "external_export_download_readiness_enabled_by_sync": false,
+    "external_export_download_delivery_enabled_by_sync": false,
+    "download_url_enabled_by_sync": false,
+    "signed_reference_enabled_by_sync": false,
+    "public_or_provider_url_enabled_by_sync": false,
+    "connector_dispatch_enabled_by_sync": false,
+    "provider_behavior_enabled_by_sync": false,
+    "excluded_tool_behavior_enabled_by_sync": false,
+    "production_readiness_claimed_by_sync": false,
+    "synced_runtime_state": "mixed_source_external_export_download_ready",
+    "synced_schema_id": "layer3.mixed_source_external_export_download_readiness.v1",
+    "synced_state_schema_id": "layer3.mixed_source_external_export_download_readiness_state.v1",
+    "validation": [
+      "python -B -m json.tool authority/progress/proof manifests",
+      "python -B .\\tools\\l3-authority-index-validate.py",
+      "python -B .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "python -B .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ],
+    "next_posture": "freeze_mixed_source_external_export_download_delivery_over_recorded_p19_readiness"
+  }
 }
