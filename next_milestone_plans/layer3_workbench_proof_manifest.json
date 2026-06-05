@@ -984,7 +984,11 @@
     "latest_source_directory_activation_proof_doc": "next_milestone_plans/Layer3_planning_docs/887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md",
     "latest_source_directory_activation_proof_status": "branch_local_source_directory_ingestion_scan_status_mockup_screen_activation_proved",
     "latest_source_directory_activation_proof_next_posture": "current_main_sync_source_directory_activation_proof",
-    "latest_source_directory_activation_proof_summary": "Doc 887 proves the existing /review/layer3 source-directory scan/status control as the first bounded server-authoritative mockup-screen activation surface."
+    "latest_source_directory_activation_proof_summary": "Doc 887 proves the existing /review/layer3 source-directory scan/status control as the first bounded server-authoritative mockup-screen activation surface.",
+    "latest_p19_mixed_source_external_export_download_readiness_runtime_pr": "#2220",
+    "latest_p19_mixed_source_external_export_download_readiness_runtime_merge_commit": "9e4451cb710c0185a64f1788b9e0d848be7dbc8b",
+    "latest_p19_mixed_source_external_export_download_readiness_current_main_sync_doc": "next_milestone_plans/multi-ingest/46-p19-current-main-sync.md",
+    "latest_p19_mixed_source_external_export_download_readiness_current_main_sync_live_behavior_change": false
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -1092,7 +1096,8 @@
     "backend/tests/test_layer3_state_model_contract.py",
     "backend/tests/test_layer3_readiness_contract.py",
     "backend/tests/test_layer3_bootstrap_contract.py",
-    "tools/l3-progress-check.py"
+    "tools/l3-progress-check.py",
+    "next_milestone_plans/multi-ingest/46-p19-current-main-sync.md"
   ],
   "current_live_workbench_boundary": {
     "live_bounded": [
@@ -2243,7 +2248,8 @@
     "backend/tests/test_layer3_state_model_contract.py",
     "backend/tests/test_layer3_readiness_contract.py",
     "backend/tests/test_layer3_bootstrap_contract.py",
-    "tools/l3-progress-check.py"
+    "tools/l3-progress-check.py",
+    "next_milestone_plans/multi-ingest/46-p19-current-main-sync.md"
   ],
   "handoff_export_prepare_ui_implementation_proof": {
     "implementation_branch": "codex/l3-handoff-prepare-ui-impl",
@@ -45571,7 +45577,7 @@
   "latest_p19_mixed_source_external_export_download_readiness_freeze_proof_summary": "P19 is a docs/control freeze for future mixed-source external export/download readiness. It selects readiness as the next surface after the recorded P18 reference-only APS handoff dispatch state, admits no runtime behavior by itself, and keeps downstream delivery/download/signed-reference/public-URL/provider/connector/schema/parser/source-shape/payload/production scope closed.",
   "p19_mixed_source_external_export_download_readiness_runtime_proof": {
     "milestone": "p19_mixed_source_external_export_download_readiness_runtime",
-    "status": "branch_local_runtime_implementation_verified",
+    "status": "current_main_runtime_verified_after_pr_2220",
     "runtime_doc": "next_milestone_plans/multi-ingest/45-p19-runtime-closeout.md",
     "freeze_doc": "next_milestone_plans/multi-ingest/44-p19-mixed-export-download-readiness-freeze.md",
     "proof_terms": "P19 runtime admits exactly one mixed-source external export/download readiness state over recorded P18 mixed-source APS handoff dispatch authority. It records reference-only readiness state in existing session/reconciliation JSON and does not deliver, download, generate signed/public/provider URLs, dispatch connectors/providers, widen schema/parser/source-shape behavior, rewrite package payloads, include excluded-tool behavior, or claim production readiness.",
@@ -45640,7 +45646,58 @@
       "python -B .\\tools\\l3-progress-check.py -> PASS",
       "git diff --check -> PASS"
     ],
-    "next_posture": "after_runtime_merge_and_current_main_sync_freeze_mixed_source_external_export_download_delivery"
+    "next_posture": "freeze_mixed_source_external_export_download_delivery_after_p19_current_main_sync",
+    "runtime_pr": "#2220",
+    "runtime_merge_commit": "9e4451cb710c0185a64f1788b9e0d848be7dbc8b",
+    "current_main_sync_doc": "next_milestone_plans/multi-ingest/46-p19-current-main-sync.md",
+    "detached_post_merge_proof": [
+      "touched-file py_compile passed",
+      "focused P19/API contract and error-envelope slice passed with 28 passed, 267 deselected, 3 warnings",
+      "full backend/tests/test_layer3_api.py passed with 295 passed, 4 warnings",
+      "backend/tests/test_layer3_external_export_response.py passed with 6 passed, 2 warnings",
+      "manifest JSON syntax passed",
+      "authority-index validation passed",
+      "target-selection frozen validation passed",
+      "progress check passed",
+      "git diff --check passed"
+    ]
   },
-  "latest_p19_mixed_source_external_export_download_readiness_runtime_proof_summary": "P19 runtime branch implements reference-only mixed-source external export/download readiness over P18 dispatch authority. It records one session/reconciliation readiness state, proves stale/missing/cross-surface authority fails closed, keeps package rows and local files unchanged, and leaves delivery/download/signed-reference/public/provider/connector/schema/parser/source-shape/payload/production scope blocked."
+  "latest_p19_mixed_source_external_export_download_readiness_runtime_proof_summary": "P19 runtime branch implements reference-only mixed-source external export/download readiness over P18 dispatch authority. It records one session/reconciliation readiness state, proves stale/missing/cross-surface authority fails closed, keeps package rows and local files unchanged, and leaves delivery/download/signed-reference/public/provider/connector/schema/parser/source-shape/payload/production scope blocked.",
+  "p19_mixed_source_external_export_download_readiness_current_main_sync_proof": {
+    "milestone": "p19_mixed_source_external_export_download_readiness_current_main_sync",
+    "status": "docs_control_current_main_sync_only",
+    "sync_doc": "next_milestone_plans/multi-ingest/46-p19-current-main-sync.md",
+    "runtime_doc": "next_milestone_plans/multi-ingest/45-p19-runtime-closeout.md",
+    "runtime_pr": "#2220",
+    "runtime_merge_commit": "9e4451cb710c0185a64f1788b9e0d848be7dbc8b",
+    "proof_terms": "P19 readiness runtime is current-main behavior after PR #2220. This sync changes docs/control only and admits no new backend runtime, rendered UI/static behavior, schema/model/migration, parser behavior, source-shape expansion, package payload rewrite, delivery/download URL, signed reference, public/provider URL, connector/provider/destination behavior, excluded-tool behavior, or production readiness.",
+    "synced_runtime_state": "mixed_source_external_export_download_ready",
+    "synced_schema_id": "layer3.mixed_source_external_export_download_readiness.v1",
+    "synced_state_schema_id": "layer3.mixed_source_external_export_download_readiness_state.v1",
+    "positive_runtime_effects": [],
+    "negative_authority_flags": {
+      "runtime_behavior_changed_by_sync": false,
+      "rendered_ui_behavior_changed": false,
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "external_export_download_delivery_enabled": false,
+      "download_url_enabled": false,
+      "signed_reference_enabled": false,
+      "public_or_provider_url_enabled": false,
+      "connector_dispatch_enabled": false,
+      "provider_behavior_enabled": false,
+      "excluded_tool_included": false,
+      "production_readiness_claimed": false
+    },
+    "verification": [
+      "python -B -m json.tool authority/progress/proof manifests -> PASS",
+      "python -B .\\tools\\l3-authority-index-validate.py -> PASS",
+      "python -B .\\tools\\l3-target-selection-validate.py --expect frozen -> PASS",
+      "python -B .\\tools\\l3-progress-check.py -> PASS",
+      "git diff --check -> PASS"
+    ],
+    "next_posture": "freeze_mixed_source_external_export_download_delivery_over_recorded_p19_readiness"
+  }
 }

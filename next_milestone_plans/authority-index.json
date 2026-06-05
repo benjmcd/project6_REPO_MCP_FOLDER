@@ -6,17 +6,13 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "974f11e978207d954789f69c0747705429d916fa",
-    "verified_at_utc": "2026-06-05T01:54:45Z",
-    "verification_summary": "Live main includes PR #2219 P19 mixed-source external export/download readiness freeze at 974f11e9. This branch implements the P19 readiness runtime over the recorded P18 mixed-source APS handoff dispatch state and records reference-only readiness state in existing session/reconciliation JSON. The branch still admits no SEC XBRL surface, rendered UI/static behavior, schema/model/migration, parser behavior, source-shape expansion, package payload rewrite, external export/download delivery, download URL, signed reference, public/provider URL, connector/provider/destination behavior, excluded-tool behavior, or production readiness.",
+    "commit": "9e4451cb710c0185a64f1788b9e0d848be7dbc8b",
+    "verified_at_utc": "2026-06-05T02:19:04Z",
+    "verification_summary": "Live main includes PR #2220 P19 mixed-source external export/download readiness runtime at 9e4451c. This docs/control sync records current-main authority for the reference-only readiness state and admits no new runtime, SEC XBRL surface, rendered UI/static behavior, schema/model/migration, parser behavior, source-shape expansion, package payload rewrite, external export/download delivery, download URL, signed reference, public/provider URL, connector/provider/destination behavior, excluded-tool behavior, or production readiness.",
     "commands": [
       "git fetch project6-origin main --prune",
-      "gh pr list --state open --json number,title,headRefName,baseRefName,isDraft,updatedAt",
+      "gh pr list --state open --json number,title,headRefName,baseRefName,mergeStateStatus,url",
       "git rev-parse project6-origin/main",
-      "git cat-file -t 974f11e978207d954789f69c0747705429d916fa",
-      "python -B -m py_compile .\\backend\\app\\api\\layer3.py .\\backend\\app\\services\\layer3_workbench.py .\\backend\\app\\services\\layer3_handoff_contract.py .\\backend\\app\\services\\layer3_workbench_package_state.py .\\backend\\app\\services\\layer3_external_export_response.py .\\backend\\tests\\test_layer3_api.py",
-      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -k \"mixed_source_external_export_download_readiness or layer3_handoff_openapi_contracts or workbench_error_responses or json_or_error_call_sites_return_workbench_error_envelope\" -q",
-      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q",
       "python -B -m json.tool .\\next_milestone_plans\\authority-index.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
@@ -70,7 +66,7 @@
       "lane_id": "multi_ingest_mixed_package",
       "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
       "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
-      "current_state": "branch_local_p19_mixed_source_external_export_download_readiness_runtime",
+      "current_state": "current_main_p19_mixed_source_external_export_download_readiness_runtime_synced",
       "source_of_truth": [
         {
           "path": "next_milestone_plans/multi-ingest/README.md",
@@ -102,21 +98,38 @@
             "42-p18-runtime-closeout.md",
             "43-p18-current-main-sync.md",
             "bounded Phase P19 mixed-source external export/download readiness freeze",
-            "Phase P19 freezes and this branch implements mixed-source external export/download readiness",
             "44-p19-mixed-export-download-readiness-freeze.md",
-            "45-p19-runtime-closeout.md"
+            "45-p19-runtime-closeout.md",
+            "current-main Phase P19 mixed-source external export/download readiness runtime",
+            "current-main P19 sync",
+            "46-p19-current-main-sync.md",
+            "Freeze mixed-source external export/download delivery as the next exact downstream surface"
+          ]
+        },
+        {
+          "path": "next_milestone_plans/multi-ingest/46-p19-current-main-sync.md",
+          "kind": "sync",
+          "authority": "current-main sync for P19 mixed-source external export/download readiness runtime",
+          "freshness": "current_closeout",
+          "required_terms": [
+            "Status: docs/control current-main sync only.",
+            "PR #2220",
+            "9e4451cb710c0185a64f1788b9e0d848be7dbc8b",
+            "No runtime code changes in this sync.",
+            "delivery freeze over the recorded P19 readiness state"
           ]
         },
         {
           "path": "next_milestone_plans/multi-ingest/45-p19-runtime-closeout.md",
           "kind": "closeout",
-          "authority": "branch-local mixed-source external export/download readiness runtime boundary",
-          "freshness": "current_status_doc",
+          "authority": "current-main mixed-source external export/download readiness runtime boundary",
+          "freshness": "current_closeout",
           "required_terms": [
-            "Status: branch-local runtime implementation proof.",
+            "Status: current-main runtime implementation verified after PR #2220.",
             "layer3.mixed_source_external_export_download_readiness.v1",
             "mixed_source_external_export_download_ready",
             "records exactly one readiness state",
+            "Detached post-merge proof from current main",
             "No external export/download delivery."
           ]
         },
