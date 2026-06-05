@@ -6,19 +6,16 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "6ca7835c6d8724715c9ac2d7a92ca34de2898ef2",
-    "verified_at_utc": "2026-06-05T04:50:30Z",
-    "verification_summary": "Docs/control P20 current-main sync based on project6-origin/main after PR #2223. Current main implements only mixed-source same-origin external export/download delivery over recorded P19 readiness and current package rows; it admits no SEC XBRL surface, rendered UI/static behavior, schema/model/migration, parser behavior, source-shape expansion, package payload rewrite, download URL, signed reference, public/provider URL, connector/provider/destination behavior, excluded-tool behavior, or production readiness.",
+    "commit": "03422f97ac081ac69f11a4c435c10e641874f089",
+    "verified_at_utc": "2026-06-05T05:07:13Z",
+    "verification_summary": "Branch-local docs/control P21 freeze based on project6-origin/main after PR #2224. Current main implements P20 mixed-source same-origin external export/download delivery; this freeze selects only rendered mixed-source delivery controls over that existing stream as the next downstream surface and admits no runtime code, UI/static behavior, SEC XBRL surface, schema/model/migration, parser behavior, source-shape expansion, package payload rewrite, download URL, signed reference, public/provider URL, connector/provider/destination behavior, excluded-tool behavior, or production readiness.",
     "commands": [
       "git fetch project6-origin main --prune",
-      "gh pr list --state open --json number,title,headRefName,baseRefName,mergeStateStatus,url",
+      "gh pr list --state open --json number,title,headRefName,baseRefName,url",
       "git rev-parse project6-origin/main",
       "python -B -m json.tool .\\next_milestone_plans\\authority-index.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
       "python -B -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
-      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"mixed_source_external_export_download or external_export_download_deliver or external_export_download_contracts or openapi\"",
-      "python -B -m pytest .\\backend\\tests\\test_layer3_external_export_contract.py .\\backend\\tests\\test_layer3_external_export_response.py -q",
-      "python -B -m pytest .\\backend\\tests\\test_layer3_bounded_e2e.py -q -k \"download_delivery or external_export_download\"",
       "python -B .\\tools\\l3-authority-index-validate.py",
       "python -B .\\tools\\l3-target-selection-validate.py --expect frozen",
       "python -B .\\tools\\l3-progress-check.py",
@@ -69,7 +66,7 @@
       "lane_id": "multi_ingest_mixed_package",
       "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
       "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
-      "current_state": "current_main_p20_mixed_source_external_export_download_delivery_sync",
+      "current_state": "branch_local_p21_mixed_source_rendered_delivery_controls_freeze",
       "source_of_truth": [
         {
           "path": "next_milestone_plans/multi-ingest/README.md",
@@ -84,7 +81,21 @@
             "47-p20-mixed-export-download-delivery-freeze.md",
             "48-p20-runtime-closeout.md",
             "49-p20-current-main-sync.md",
-            "same-origin delivery runtime slice"
+            "50-p21-rendered-delivery-freeze.md",
+            "Phase P21 freezes rendered mixed-source delivery controls"
+          ]
+        },
+        {
+          "path": "next_milestone_plans/multi-ingest/50-p21-rendered-delivery-freeze.md",
+          "kind": "freeze",
+          "authority": "mixed-source rendered same-origin delivery controls selection and implementation non-admission boundary",
+          "freshness": "snapshot_guardrail",
+          "required_terms": [
+            "Status: branch-local planning/control freeze only.",
+            "rendered `/review/layer3` operator controls",
+            "layer3.mixed_source_external_export_download_delivery.v1",
+            "delivery_mode: same_origin_artifact_stream",
+            "No rendered UI behavior change in this freeze."
           ]
         },
         {
@@ -387,6 +398,7 @@
         }
       ],
       "current_truth_order": [
+        "P21 mixed-source rendered delivery controls freeze",
         "P20 mixed-source current-main sync",
         "P20 mixed-source external export/download delivery runtime closeout",
         "P20 mixed-source external export/download delivery freeze",
@@ -414,6 +426,7 @@
         "multi-ingest README front door"
       ],
       "known_limits": [
+        "P21 selects rendered mixed-source delivery controls over the existing P20 same-origin stream as branch-local planning/control only; no UI/static behavior is live until a later implementation merges and current main is synced.",
         "P20 current main implements only same-origin artifact-stream delivery over recorded P19 readiness and current package rows; rendered browser download controls, download URLs, signed references, public/provider URLs, connector/provider/destination behavior, schema, parser, source-shape expansion, package payload rewrite, excluded-tool behavior, and production readiness remain blocked until later freezes select and prove them.",
         "P19 records reference-only mixed-source external export/download readiness on current main; P20 uses that recorded readiness as the prerequisite authority for delivery runtime and revalidates it server-side.",
         "P18 records reference-only mixed-source APS handoff dispatch state on current main; P19 readiness is current-main behavior over that dispatch state and P20 delivery must continue to revalidate it server-side.",
@@ -424,7 +437,7 @@
         "Narrative-table linking is deterministic preview and package-manifest metadata only; no request-supplied package payload mutation is admitted.",
         "Legacy CSV bridge deprecation is separate from mixed-source package semantics."
       ],
-      "next_decision": "Freeze exactly one next mixed-source downstream surface: rendered delivery controls, signed-reference governance, provider/public URL governance, connector/destination dispatch, or a stop-for-product-authority checkpoint."
+      "next_decision": "After the P21 freeze merges and current-main syncs, implement only rendered mixed-source delivery controls over the existing P20 same-origin stream; if implementation requires signed-reference, provider/public URL, connector/destination, schema, parser, source-shape, package payload rewrite, local outbox, or download URL behavior, stop for a separate freeze."
     },
     {
       "lane_id": "analyst_insight",
