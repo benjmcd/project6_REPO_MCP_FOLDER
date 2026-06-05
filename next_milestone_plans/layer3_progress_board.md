@@ -12383,3 +12383,52 @@ boundary. Keep APS handoff, external export/download, connector dispatch,
 provider URLs, parser, schema, source-shape, payload rewrite, package mutation,
 legacy bridge, excluded-tool behavior, and production readiness blocked unless
 a later freeze admits exactly one of those surfaces.
+
+## SEC XBRL Proxy Identity Read-Only Projection
+
+Milestone: `sec_xbrl_proxy_identity_read_only_projection_freeze_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1351-sec-xbrl-proxy-identity-readonly-projection.md`.
+
+Status: branch-local activation freeze plus the one admitted runtime artifact —
+a read-only, server-derived identity projection for the SEC XBRL lane. This is
+the `next_follow_up` activation anticipated by doc
+`1350-sec-xbrl-activation-lane-selection.md` and by the auth entry layer
+(`199`/`200`), which both state that a later freeze must choose exactly one mode.
+
+Scope: selects exactly one doc-200 auth mode, `proxy_identity_read_only_projection`
+(the narrowest allowed mode). Adds `build_proxy_identity_readonly_projection` in
+`backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py` (reusing the existing
+`_server_derived_principal` derivation) and an additive read-only route
+`GET /api/v1/layer3/sec-xbrl/identity/projection`. The projection exposes only
+response-safe references (selected mode, auth-owner mode label, hashed actor/
+workspace refs or null when blocked, read-only protected-route-family metadata,
+negative boundaries, all `raw_*_exposed` false). It fails closed under untrusted
+proxy or missing identity header (status `blocked_*`, null hashes) and never
+echoes raw identity, proxy header values, raw values, residual magnitude, local
+paths, or URLs.
+
+Drift note: `authorize_sec_xbrl_route` is already invoked by the live SEC XBRL
+operator-review and value-reveal routes; under the default `AUTH_OWNER=none`
+profile that derivation is behavior-preserving. This freeze adds the missing
+identity *projection* surface and formally records the mode selection. It does
+not change any existing route admit/deny outcome.
+
+Non-goals: no route-level enforcement escalation, no operator-permission matrix
+change, no owner-binding persistence/schema/model/migration change, no value
+reveal, no controlled-submit activation, no default-on runtime change, no live
+SEC network access, no Arelle invocation, no source acquisition, no diagnostic
+report or proof JSON byte change, no UI/theme control. Docs `199`/`200` left
+byte-stable as the historical entry record.
+
+Verification: full `backend/tests/test_sec_xbrl*.py` (527 passed, was 521),
+full `backend/tests/test_layer3_api.py` (296 passed), `tools/l3-progress-check.py`
+(PASS), `tools/l3-target-selection-validate.py --expect frozen` (PASS), and
+`git diff --check` (clean).
+
+Next posture: a later escalation freeze may select
+`route_level_operator_identity_required` to enforce the already-derived identity
+at the route boundary, followed by a value-reveal activation freeze behind the
+enforced identity surface. Do not escalate enforcement or activate value reveal
+in this freeze.

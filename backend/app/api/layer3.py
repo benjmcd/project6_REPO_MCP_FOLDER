@@ -17646,6 +17646,21 @@ def get_sec_xbrl_controlled_value_reveal_submit_status(
         return _sec_xbrl_controlled_value_reveal_submit_error_response(exc)
 
 
+@router.get("/sec-xbrl/identity/projection")
+def get_sec_xbrl_proxy_identity_readonly_projection(request: Request) -> dict[str, Any]:
+    projection = layer3_sec_xbrl_in_app_auth_policy.build_proxy_identity_readonly_projection(
+        headers={str(key): str(value) for key, value in request.headers.items()},
+    )
+    return {
+        **base_response(
+            layer3_sec_xbrl_in_app_auth_policy.PROXY_IDENTITY_PROJECTION_SCHEMA_ID,
+            request_id="sec-xbrl-identity-projection",
+            status=projection["projection_status"],
+        ),
+        "sec_xbrl_identity_projection": projection,
+    }
+
+
 @router.post(
     "/source/sec-edgar/html-inline-xbrl/source-family/parser",
     response_model=Layer3SecEdgarHtmlInlineXbrlSourceFamilyParserResponse,
