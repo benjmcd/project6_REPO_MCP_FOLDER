@@ -12217,6 +12217,7 @@ test('Layer 3 workbench inspects SEC XBRL runtime posture through rendered read-
     posture_mode: 'sec_xbrl_runtime_posture_operator_status_v1',
     posture_state: 'sec_xbrl_controlled_value_reveal_available_with_runtime_gates',
     posture_basis_hash: 'f'.repeat(64),
+    activation_surface_hash: 'a'.repeat(64),
     runtime_flags: {
       live_sec_edgar_network_enabled: false,
       arelle_fact_authority_cutover_enabled: true,
@@ -12269,6 +12270,58 @@ test('Layer 3 workbench inspects SEC XBRL runtime posture through rendered read-
         capability: 'production_readiness_claim',
         runtime_state: 'blocked_until_live_sec_arelle_ui_export_and_auth_paths_are_all_verified',
         required_evidence: ['live_sec_source_acquisition_e2e', 'arelle_invocation_e2e'],
+      },
+    ],
+    activation_surfaces: [
+      {
+        surface_id: 'controlled_value_reveal_submit',
+        surface_state: 'active_explicit_operator_submit',
+        runtime_enabled: true,
+        operator_surface_rendered: true,
+        rendered_panel_id: 'sec-xbrl-controlled-value-reveal-panel',
+        route_families: ['sec_xbrl_controlled_value_reveal_submit_write'],
+        api_routes: [
+          'POST /api/v1/layer3/sec-xbrl/value-reveal/authority/prepare',
+          'POST /api/v1/layer3/sec-xbrl/controlled-value-reveal/submit',
+        ],
+        operator_confirmation_required: true,
+        current_posture_performs_side_effect: false,
+        source_acquisition_performed: false,
+        arelle_invoked: false,
+        value_reveal_performed: false,
+        delivery_export_performed: false,
+        runtime_db_write: false,
+        frontend_durable_authority: false,
+        raw_authority_exposed: false,
+        production_readiness_claimed: false,
+        next_operator_action: 'submit_controlled_value_reveal_from_authority_receipt',
+      },
+      {
+        surface_id: 'live_sec_edgar_network_source_acquisition',
+        surface_state: 'gated_by_live_network_feature_flag',
+        runtime_enabled: false,
+        operator_surface_rendered: true,
+        rendered_panel_id: 'sec-edgar-live-source-artifact-acquisition-panel',
+        route_families: ['sec_edgar_text_table_live_source_artifact_acquisition'],
+        api_routes: [
+          'POST /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire',
+          'GET /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/{receipt_id}',
+        ],
+        operator_confirmation_required: true,
+        server_derives_external_sec_url: true,
+        browser_supplied_url_allowed: false,
+        required_flags: ['LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED'],
+        required_evidence: ['live_sec_source_artifact_e2e'],
+        current_posture_performs_side_effect: false,
+        source_acquisition_performed: false,
+        arelle_invoked: false,
+        value_reveal_performed: false,
+        delivery_export_performed: false,
+        runtime_db_write: false,
+        frontend_durable_authority: false,
+        raw_authority_exposed: false,
+        production_readiness_claimed: false,
+        next_operator_action: 'authorize_live_sec_network_before_source_acquisition',
       },
     ],
     operator_next_actions: [
@@ -12330,6 +12383,11 @@ test('Layer 3 workbench inspects SEC XBRL runtime posture through rendered read-
   await expect(panel).toContainText('sec_xbrl_controlled_value_reveal_available_with_runtime_gates');
   await expect(panel).toContainText('controlled_value_reveal_submit');
   await expect(panel).toContainText('live_sec_edgar_network_source_acquisition');
+  await expect(panel).toContainText('Activation Surfaces');
+  await expect(panel).toContainText('sec-edgar-live-source-artifact-acquisition-panel');
+  await expect(panel).toContainText('POST /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire');
+  await expect(panel).toContainText('surface state gated_by_live_network_feature_flag');
+  await expect(panel).toContainText('side effects none');
   await expect(panel).toContainText('production readiness claimed: false');
   await expect(panel).toContainText('source acquisition performed: false');
   await expect(panel).toContainText('Arelle invoked: false');

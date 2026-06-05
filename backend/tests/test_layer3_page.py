@@ -2852,14 +2852,17 @@ def test_layer3_sec_xbrl_runtime_posture_rendered_control_is_read_only() -> None
     assert 'data-production-readiness-claimed="false"' in html.text
 
     rows_start = js.text.find("function secXbrlRuntimePostureRows")
+    surface_helper_start = js.text.find("function secXbrlRuntimePostureActivationSurfaceItems")
     render_start = js.text.find("function renderSecXbrlRuntimePosturePanel")
     async_start = js.text.find("async function inspectSecXbrlRuntimePosture")
     workflow_async_start = js.text.find("async function inspectSecXbrlOperatorReviewWorkflowStatus")
     assert rows_start != -1
+    assert surface_helper_start != -1
     assert render_start != -1
     assert async_start != -1
     assert workflow_async_start != -1
 
+    surface_helper_slice = js.text[surface_helper_start:rows_start]
     rows_slice = js.text[rows_start:render_start]
     render_slice = js.text[render_start:async_start]
     async_slice = js.text[async_start:workflow_async_start]
@@ -2876,6 +2879,12 @@ def test_layer3_sec_xbrl_runtime_posture_rendered_control_is_read_only() -> None
     assert "data-runtime-default-enabled=\"false\"" in render_slice
     assert "data-production-readiness-claimed=\"false\"" in render_slice
     assert "sec-xbrl-runtime-posture-output-grid" in rows_slice
+    assert "secXbrlRuntimePostureActivationSurfaceItems" in rows_slice
+    assert "Activation Surfaces" in rows_slice
+    assert "sec-xbrl-runtime-posture-activation-card" in rows_slice
+    assert "current_posture_performs_side_effect" in surface_helper_slice
+    assert "rendered_panel_id" in surface_helper_slice
+    assert "api_routes" in surface_helper_slice
     assert "production readiness claimed" in rows_slice
     assert "source acquisition performed" in rows_slice
     assert "Arelle invoked" in rows_slice

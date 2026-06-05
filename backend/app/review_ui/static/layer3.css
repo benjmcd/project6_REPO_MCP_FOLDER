@@ -3790,6 +3790,20 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     word-break: break-word;
 }
 
+.sec-xbrl-runtime-posture-activation-card {
+    grid-column: 1 / -1;
+}
+
+.sec-xbrl-runtime-posture-activation-card ul {
+    column-gap: 20px;
+    column-width: 280px;
+}
+
+.sec-xbrl-runtime-posture-activation-card li {
+    break-inside: avoid;
+    margin-bottom: 8px;
+}
+
 .mockup-activation-readiness-grid {
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }

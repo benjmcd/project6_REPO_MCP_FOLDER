@@ -12572,3 +12572,34 @@ proof in Chromium, and `git diff --check`.
 Next posture: use the rendered posture panel as the operator-facing readiness entry before choosing
 one next activation surface: live SEC source acquisition, Arelle invocation, export/package/status
 delivery, or nonlocal operator-auth hardening.
+
+## SEC XBRL Activation Surface Operator Map
+
+Milestone: `sec_xbrl_activation_surface_operator_map_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1356-sec-xbrl-activation-surface-map.md`.
+
+Status: branch-local extension of the read-only runtime posture projection. Adds
+`activation_surfaces` and `activation_surface_hash` to
+`GET /api/v1/layer3/sec-xbrl/runtime/posture`, then renders those surfaces in
+`#sec-xbrl-runtime-posture-panel`.
+
+Scope: operator navigation/readiness metadata only. The map identifies controlled value reveal,
+live SEC EDGAR source acquisition, Arelle invocation/governed sibling value reveal, multi-filing
+gate enforcement, delivery/export/package status, and nonlocal operator-auth hardening. Existing
+panel ids and API route strings are reported as metadata; no new activation route is admitted.
+
+Non-goals preserved: no live SEC network request, Arelle subprocess invocation, source acquisition,
+value reveal, export/delivery, runtime default change, DB/storage write, model/schema/migration
+change, raw identity/header/value/residual/path/URL exposure, frontend durable authority, or
+production-readiness claim.
+
+Verification: focused SEC XBRL posture tests pass (`5 passed`), focused static Layer3 page checks
+pass (`3 passed, 22 deselected`), focused Playwright SEC XBRL runtime posture proof passes in
+Chromium headless and headed modes, and `git diff --check` is clean except standard Windows
+LF-to-CRLF warnings.
+
+Next posture: use this map to select exactly one next activation implementation pass: live SEC
+source acquisition, Arelle invocation proof, delivery/export/status proof, multi-filing gate
+enforcement, or nonlocal operator-auth hardening.
