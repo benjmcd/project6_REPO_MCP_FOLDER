@@ -12509,3 +12509,38 @@ this change), `tools/l3-target-selection-validate.py --expect frozen`, and `git 
 
 Next posture: separate bounded activation freezes may follow for the Arelle governed-sibling reveal
 flag, default-on runtime posture, and live SEC/Arelle surfaces; each remains independently gated.
+
+## SEC XBRL Runtime Posture Projection
+
+Milestone: `sec_xbrl_runtime_posture_projection_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1354-sec-xbrl-runtime-posture.md`.
+
+Status: branch-local read-only runtime posture surface after the controlled value-reveal activation.
+Adds `backend/app/services/layer3_sec_xbrl_posture.py` and
+`GET /api/v1/layer3/sec-xbrl/runtime/posture` to report server-owned SEC XBRL runtime flags,
+identity-authority posture, protected route-family metadata, activated capabilities, gated
+capabilities, operator next actions, and negative boundaries.
+
+Scope: observability/readiness only. The route reads `app.core.config.settings` and
+`PROTECTED_ROUTE_FAMILIES`; it accepts no request body and has no DB/session/storage dependency.
+It reports controlled value reveal as available when the default-on flag is enabled, while live SEC
+network access, governed-sibling Arelle value reveal, internal value store, corpus validation,
+nonlocal Arelle cutover, and the full production-readiness claim remain independently gated unless
+their explicit flags/evidence are present.
+
+Non-goals preserved: no SEC EDGAR network request, no Arelle subprocess invocation, no source
+acquisition, no value reveal, no delivery/export, no DB/storage write, no schema/model/migration
+change, no route-family policy change, no raw operator identity/proxy header/workspace identity/raw
+value/residual magnitude/local path/URL exposure, and no production-readiness claim.
+
+Verification: focused runtime posture tests pass (`4 passed`); neighboring identity projection,
+controlled value-reveal submit, and legacy Arelle reveal API regression slices pass (`6 passed`,
+`13 passed`, and `10 passed` respectively); `git diff --check` is clean except the standard Windows
+LF-to-CRLF warning on `backend/app/api/layer3.py`.
+
+Next posture: render this posture in `/review/layer3` as an operator-facing readiness/status panel,
+or use it as the prerequisite audit surface for a live SEC source-acquisition/Arelle invocation
+activation freeze. Do not claim full production readiness until live source acquisition, Arelle
+invocation, multi-filing gate enforcement, export/package/status delivery, and nonlocal operator auth
+are all proven.
