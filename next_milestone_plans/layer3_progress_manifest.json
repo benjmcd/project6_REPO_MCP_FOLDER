@@ -48049,8 +48049,11 @@
   "p20_mixed_source_external_export_download_delivery_runtime_tracking": {
     "tracking_kind": "p20_mixed_source_external_export_download_delivery_runtime_tracking",
     "milestone": "p20_mixed_source_external_export_download_delivery_runtime",
-    "status": "branch_local_runtime_implementation_proof",
+    "status": "current_main_runtime_implementation_verified",
     "base_main_commit": "a507979bd6a29b88357e4091982195506437425c",
+    "runtime_pr": "#2223",
+    "runtime_merge_commit": "6ca7835c6d8724715c9ac2d7a92ca34de2898ef2",
+    "current_main_sync_doc": "next_milestone_plans/multi-ingest/49-p20-current-main-sync.md",
     "planning_doc": "next_milestone_plans/multi-ingest/47-p20-mixed-export-download-delivery-freeze.md",
     "runtime_closeout_doc": "next_milestone_plans/multi-ingest/48-p20-runtime-closeout.md",
     "readiness_predecessor_doc": "next_milestone_plans/multi-ingest/45-p19-runtime-closeout.md",
@@ -48116,7 +48119,6 @@
       "git diff --check -> PASS"
     ],
     "final_validation_required": [
-      "detached post-merge proof after merge"
     ],
     "files_in_scope": [
       "backend/app/api/layer3.py",
@@ -48134,5 +48136,54 @@
     ],
     "next_posture": "after_runtime_merge_and_current_main_sync_freeze_one_next_downstream_surface_or_stop_for_product_authority"
   },
-  "latest_p20_mixed_source_external_export_download_delivery_runtime_summary": "P20 branch-local runtime proof implements only same-origin artifact-stream delivery for one existing mixed-source package artifact over recorded P19 readiness and current package rows. Rendered controls, browser download controls, download URLs, signed references, public/provider URLs, connector/provider/destination behavior, schema/parser/source-shape changes, package payload rewrite, excluded-tool behavior, and production readiness remain blocked."
+  "latest_p20_mixed_source_external_export_download_delivery_runtime_summary": "P20 current main implements only same-origin artifact-stream delivery for one existing mixed-source package artifact over recorded P19 readiness and current package rows. Rendered controls, browser download controls, download URLs, signed references, public/provider URLs, connector/provider/destination behavior, schema/parser/source-shape changes, package payload rewrite, excluded-tool behavior, and production readiness remain blocked.",
+  "p20_mixed_source_external_export_download_delivery_current_main_sync_tracking": {
+    "tracking_kind": "p20_mixed_source_external_export_download_delivery_current_main_sync_tracking",
+    "milestone": "p20_mixed_source_external_export_download_delivery_current_main_sync",
+    "status": "docs_control_current_main_sync_only",
+    "sync_doc": "next_milestone_plans/multi-ingest/49-p20-current-main-sync.md",
+    "runtime_closeout_doc": "next_milestone_plans/multi-ingest/48-p20-runtime-closeout.md",
+    "runtime_pr": "#2223",
+    "runtime_merge_commit": "6ca7835c6d8724715c9ac2d7a92ca34de2898ef2",
+    "runtime_behavior_changed_by_sync": false,
+    "rendered_ui_behavior_changed_by_sync": false,
+    "backend_route_changed_by_sync": false,
+    "schema_or_migration_changed_by_sync": false,
+    "parser_behavior_changed_by_sync": false,
+    "source_shape_expanded_by_sync": false,
+    "payload_rewrite_enabled_by_sync": false,
+    "browser_download_control_enabled_by_sync": false,
+    "download_url_enabled_by_sync": false,
+    "signed_reference_enabled_by_sync": false,
+    "public_or_provider_url_enabled_by_sync": false,
+    "connector_dispatch_enabled_by_sync": false,
+    "provider_behavior_enabled_by_sync": false,
+    "destination_behavior_enabled_by_sync": false,
+    "excluded_tool_behavior_enabled_by_sync": false,
+    "production_readiness_claimed_by_sync": false,
+    "synced_runtime_state": "mixed_source_external_export_download_delivered",
+    "synced_schema_id": "layer3.mixed_source_external_export_download_delivery.v1",
+    "synced_state_schema_id": "layer3.mixed_source_external_export_download_delivery_state.v1",
+    "detached_post_merge_proof": [
+      "touched-file py_compile passed",
+      "focused P20/API delivery and OpenAPI slice passed with 23 passed, 273 deselected, 4 warnings",
+      "external export contract/response helper tests passed with 11 passed, 2 warnings",
+      "bounded E2E slice passed with 1 passed, 3 deselected, 4 warnings",
+      "full backend/tests/test_layer3_api.py passed with 296 passed, 4 warnings",
+      "manifest JSON syntax passed",
+      "authority-index validation passed",
+      "target-selection frozen validation passed",
+      "progress check passed",
+      "git diff --check passed"
+    ],
+    "validation": [
+      "python -B -m json.tool authority/progress/proof manifests",
+      "python -B .\\tools\\l3-authority-index-validate.py",
+      "python -B .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "python -B .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ],
+    "next_posture": "freeze_one_next_mixed_source_downstream_surface_or_stop_for_product_authority"
+  },
+  "latest_p20_mixed_source_external_export_download_delivery_current_main_sync_summary": "P20 current-main sync records PR #2223 at 6ca7835c6d8724715c9ac2d7a92ca34de2898ef2 as the live mixed-source same-origin external export/download delivery runtime. The sync changes docs/control only and keeps rendered controls, download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, payload rewrite, excluded-tool, and production-readiness scope blocked."
 }

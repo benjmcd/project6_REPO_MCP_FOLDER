@@ -6,9 +6,9 @@
   "onlook_policy": "excluded",
   "last_verified": {
     "remote": "project6-origin/main",
-    "commit": "a507979bd6a29b88357e4091982195506437425c",
-    "verified_at_utc": "2026-06-05T04:28:19Z",
-    "verification_summary": "Branch-local P20 runtime proof based on current project6-origin/main after the P20 delivery freeze. This branch implements only mixed-source same-origin external export/download delivery over recorded P19 readiness and current package rows; it admits no SEC XBRL surface, rendered UI/static behavior, schema/model/migration, parser behavior, source-shape expansion, package payload rewrite, download URL, signed reference, public/provider URL, connector/provider/destination behavior, excluded-tool behavior, or production readiness.",
+    "commit": "6ca7835c6d8724715c9ac2d7a92ca34de2898ef2",
+    "verified_at_utc": "2026-06-05T04:50:30Z",
+    "verification_summary": "Docs/control P20 current-main sync based on project6-origin/main after PR #2223. Current main implements only mixed-source same-origin external export/download delivery over recorded P19 readiness and current package rows; it admits no SEC XBRL surface, rendered UI/static behavior, schema/model/migration, parser behavior, source-shape expansion, package payload rewrite, download URL, signed reference, public/provider URL, connector/provider/destination behavior, excluded-tool behavior, or production readiness.",
     "commands": [
       "git fetch project6-origin main --prune",
       "gh pr list --state open --json number,title,headRefName,baseRefName,mergeStateStatus,url",
@@ -69,7 +69,7 @@
       "lane_id": "multi_ingest_mixed_package",
       "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
       "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
-      "current_state": "branch_local_p20_mixed_source_external_export_download_delivery_runtime",
+      "current_state": "current_main_p20_mixed_source_external_export_download_delivery_sync",
       "source_of_truth": [
         {
           "path": "next_milestone_plans/multi-ingest/README.md",
@@ -80,23 +80,37 @@
             "It still does not change schema",
             "The next implementation pass should not repeat",
             "P20 freezes mixed-source external export/download delivery as the next exact",
-            "branch-local P20 same-origin mixed-source",
+            "current-main Phase P20 mixed-source external",
             "47-p20-mixed-export-download-delivery-freeze.md",
             "48-p20-runtime-closeout.md",
+            "49-p20-current-main-sync.md",
             "same-origin delivery runtime slice"
+          ]
+        },
+        {
+          "path": "next_milestone_plans/multi-ingest/49-p20-current-main-sync.md",
+          "kind": "sync",
+          "authority": "current-main sync for P20 mixed-source same-origin external export/download delivery runtime",
+          "freshness": "current_closeout",
+          "required_terms": [
+            "Status: docs/control current-main sync only.",
+            "PR #2223",
+            "6ca7835c6d8724715c9ac2d7a92ca34de2898ef2",
+            "No runtime code changes in this sync.",
+            "same-origin artifact-stream delivery"
           ]
         },
         {
           "path": "next_milestone_plans/multi-ingest/48-p20-runtime-closeout.md",
           "kind": "closeout",
-          "authority": "branch-local mixed-source same-origin external export/download delivery runtime boundary",
-          "freshness": "snapshot_guardrail",
+          "authority": "current-main mixed-source same-origin external export/download delivery runtime boundary",
+          "freshness": "current_closeout",
           "required_terms": [
-            "Status: branch-local runtime implementation proof.",
+            "Status: current-main runtime implementation verified after PR #2223.",
             "layer3.mixed_source_external_export_download_delivery.v1",
             "same_origin_artifact_stream",
             "mixed_source_external_export_download_delivered",
-            "Detached post-merge proof is required after merge"
+            "Detached post-merge proof from current main"
           ]
         },
         {
@@ -373,6 +387,7 @@
         }
       ],
       "current_truth_order": [
+        "P20 mixed-source current-main sync",
         "P20 mixed-source external export/download delivery runtime closeout",
         "P20 mixed-source external export/download delivery freeze",
         "P19 mixed-source current-main sync",
@@ -399,7 +414,7 @@
         "multi-ingest README front door"
       ],
       "known_limits": [
-        "P20 branch-local runtime proof implements only same-origin artifact-stream delivery over recorded P19 readiness and current package rows; rendered browser download controls, download URLs, signed references, public/provider URLs, connector/provider/destination behavior, schema, parser, source-shape expansion, package payload rewrite, excluded-tool behavior, and production readiness remain blocked until later freezes select and prove them.",
+        "P20 current main implements only same-origin artifact-stream delivery over recorded P19 readiness and current package rows; rendered browser download controls, download URLs, signed references, public/provider URLs, connector/provider/destination behavior, schema, parser, source-shape expansion, package payload rewrite, excluded-tool behavior, and production readiness remain blocked until later freezes select and prove them.",
         "P19 records reference-only mixed-source external export/download readiness on current main; P20 uses that recorded readiness as the prerequisite authority for delivery runtime and revalidates it server-side.",
         "P18 records reference-only mixed-source APS handoff dispatch state on current main; P19 readiness is current-main behavior over that dispatch state and P20 delivery must continue to revalidate it server-side.",
         "P17A now admits only the rendered material-authority control for the existing P17 mixed-source handoff/export prepare API, including decision and notes controls under the same mixed-source authority predicate; it does not admit APS handoff, external export/download delivery, connector/provider behavior, parser, schema, source-shape, payload rewrite, legacy bridge, excluded-tool, or production-readiness behavior.",
@@ -409,7 +424,7 @@
         "Narrative-table linking is deterministic preview and package-manifest metadata only; no request-supplied package payload mutation is admitted.",
         "Legacy CSV bridge deprecation is separate from mixed-source package semantics."
       ],
-      "next_decision": "After this P20 runtime lands and current-main syncs, freeze exactly one next mixed-source downstream surface: rendered delivery controls, signed-reference governance, provider/public URL governance, connector/destination dispatch, or a stop-for-product-authority checkpoint."
+      "next_decision": "Freeze exactly one next mixed-source downstream surface: rendered delivery controls, signed-reference governance, provider/public URL governance, connector/destination dispatch, or a stop-for-product-authority checkpoint."
     },
     {
       "lane_id": "analyst_insight",

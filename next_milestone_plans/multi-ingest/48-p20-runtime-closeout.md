@@ -1,7 +1,8 @@
 # P20 Mixed-Source External Export/Download Delivery Runtime Closeout
 
-Status: branch-local runtime implementation proof. Current-main authority begins
-only after this branch merges and detached post-merge proof passes.
+Status: current-main runtime implementation verified after PR #2223. Current
+main sync is recorded by `49-p20-current-main-sync.md` at live
+`project6-origin/main` `6ca7835c6d8724715c9ac2d7a92ca34de2898ef2`.
 
 ## Scope
 
@@ -130,7 +131,7 @@ The runtime fails closed for:
 
 ## Verification
 
-Branch-local verification passed:
+Branch-local verification passed before PR #2223:
 
 - `python -B -m py_compile .\backend\app\api\layer3.py .\backend\app\services\layer3_workbench.py .\backend\app\services\layer3_external_export_contract.py .\backend\app\services\layer3_external_export_response.py .\backend\tests\test_layer3_api.py .\backend\tests\test_layer3_external_export_response.py`
 - `python -B -m pytest .\backend\tests\test_layer3_api.py -q -k "mixed_source_external_export_download or external_export_download_deliver or external_export_download_contracts or openapi"`
@@ -140,7 +141,8 @@ Branch-local verification passed:
 - `python -B -m pytest .\backend\tests\test_layer3_bounded_e2e.py -q -k "download_delivery or external_export_download"`
   (`1 passed, 3 deselected, 4 warnings`)
 
-Additional final validation passed:
+Detached post-merge proof from current main
+`6ca7835c6d8724715c9ac2d7a92ca34de2898ef2` passed:
 
 - `python -B -m pytest .\backend\tests\test_layer3_api.py -q`
   (`296 passed, 4 warnings`)
@@ -150,14 +152,11 @@ Additional final validation passed:
 - `python -B .\tools\l3-progress-check.py`
 - `git diff --check`
 
-Detached post-merge proof is required after merge before this branch-local
-closeout can be treated as current-main implementation authority.
-
 ## Next Posture
 
-After this runtime lands and current main is synced, the next safe mixed-source
-downstream decision is not another backend delivery implementation. The next
-surface should be selected by a separate freeze from one of:
+After current main is synced by `49-p20-current-main-sync.md`, the next safe
+mixed-source downstream decision is not another backend delivery implementation.
+The next surface should be selected by a separate freeze from one of:
 
 - rendered delivery controls over the existing same-origin stream
 - signed-reference governance for mixed-source packages
