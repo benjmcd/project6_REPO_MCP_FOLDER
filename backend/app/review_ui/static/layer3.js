@@ -369,6 +369,7 @@ const SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_OPERATOR_DECISION = 'render_sec_edgar_o
 const SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_ENDPOINT = '/source/sec-edgar/real-company-corpus/operator-product-surface';
 const SEC_EDGAR_ARELLE_VALUE_REVEAL_REQUEST_SCHEMA_ID = 'layer3.sec_edgar_arelle_value_reveal_request.v1';
 const SEC_EDGAR_ARELLE_VALUE_REVEAL_ENDPOINT = '/source/sec-edgar/real-company-corpus/operator-value-reveal';
+const SEC_EDGAR_ARELLE_VALUE_REVEAL_RENDERED_UI_ENABLED = false;
 const SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_RENDERED_MODE = 'rendered_sec_edgar_durable_delivery_archive_status_control';
 const SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_SURFACE_MODE = 'sec_edgar_durable_delivery_archive_status_surface_v1';
 const SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_ENDPOINT_PREFIX = '/source/sec-edgar/real-company-corpus/durable-delivery/archive/status';
@@ -11739,7 +11740,8 @@ function canRenderSecEdgarOperatorProductSurface() {
 function canRevealSecEdgarArelleValues() {
     const values = secEdgarOperatorProductSurfaceInputValues();
     return Boolean(
-        values.valueRevealActor
+        SEC_EDGAR_ARELLE_VALUE_REVEAL_RENDERED_UI_ENABLED
+        && values.valueRevealActor
         && values.valueRevealSidecarReceiptId
         && /^[0-9a-fA-F]{64}$/.test(values.valueRevealSidecarReceiptHash)
         && values.valueRevealDatasetVersionId
@@ -18661,7 +18663,8 @@ function renderSecEdgarOperatorProductSurfacePanel() {
             </section>
             <section class="result-review-card sec-edgar-operator-product-surface-card">
                 <strong>SEC EDGAR Governed Value Reveal</strong>
-                <form id="sec-edgar-arelle-value-reveal-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                <form id="sec-edgar-arelle-value-reveal-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_RENDERED_MODE)}" data-frontend-durable-authority="false" data-rendered-value-reveal-enabled="false" data-controlled-value-reveal-replacement="true">
+                    <fieldset disabled data-legacy-sibling-reveal-rendered-disabled="true">
                     <label>
                         <span>sidecar receipt id</span>
                         <input id="sec-edgar-arelle-value-reveal-sidecar-receipt-id" type="text" value="${escapeHtml(inputs.valueRevealSidecarReceiptId)}" autocomplete="off" spellcheck="false" placeholder="sec-edgar-arelle-sidecar-..." />
@@ -18686,11 +18689,12 @@ function renderSecEdgarOperatorProductSurfacePanel() {
                         <input id="sec-edgar-arelle-value-reveal-confirmation" type="checkbox" ${inputs.valueRevealConfirmation ? 'checked' : ''} />
                         <span>confirm audited value reveal</span>
                     </label>
-                    <button id="sec-edgar-arelle-value-reveal-submit" type="submit" ${canRevealSecEdgarArelleValues() ? '' : 'disabled'}>Reveal Values</button>
+                    <button id="sec-edgar-arelle-value-reveal-submit" type="submit" disabled>Use Controlled Reveal</button>
+                    </fieldset>
                 </form>
                 <div class="result-review-status">
-                    <span class="status-pill preview">explicit audited action</span>
-                    <span class="rail-label">Values are requested only through the sibling reveal endpoint. The default product surface remains redacted; successful reveals return effective values with a server audit receipt and do not persist raw values in the audit projection.</span>
+                    <span class="status-pill preview">controlled path required</span>
+                    <span class="rail-label">The legacy sibling reveal is disabled in this rendered surface. Production browser use goes through the SEC XBRL controlled value reveal authority, submit, and hash/count status path.</span>
                 </div>
                 ${secEdgarArelleValueRevealRows(State.secEdgarArelleValueReveal)}
                 ${secEdgarArelleValueRevealError()}
@@ -20664,6 +20668,14 @@ async function renderSecEdgarOperatorProductSurface(event) {
 
 async function revealSecEdgarArelleValues(event) {
     event.preventDefault();
+    if (!SEC_EDGAR_ARELLE_VALUE_REVEAL_RENDERED_UI_ENABLED) {
+        State.secEdgarArelleValueReveal = null;
+        State.secEdgarArelleValueRevealError = new Error(
+            'sec_edgar_arelle_value_reveal_rendered_ui_replaced_by_controlled_submit',
+        );
+        renderSecEdgarOperatorProductSurfacePanel();
+        return;
+    }
     if (!canRevealSecEdgarArelleValues()) {
         State.secEdgarArelleValueReveal = null;
         State.secEdgarArelleValueRevealError = new Error(
