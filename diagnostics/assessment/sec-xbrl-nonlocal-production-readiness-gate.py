@@ -29,6 +29,13 @@ IN_APP_AUTH_POLICY_SERVICE = "backend/app/services/layer3_sec_xbrl_in_app_auth_p
 AUTH_BINDING_SERVICE = "backend/app/services/layer3_sec_xbrl_auth_binding.py"
 AUTH_BINDING_TEST = "backend/tests/test_sec_xbrl_auth_binding_receipt.py"
 OPERATOR_WORKFLOW_TEST = "backend/tests/test_sec_xbrl_operator_review_workflow.py"
+PROXY_IDENTITY_PROJECTION_DOC = (
+    "next_milestone_plans/Layer3_planning_docs/1351-sec-xbrl-proxy-identity-readonly-projection.md"
+)
+ROUTE_LEVEL_IDENTITY_DOC = (
+    "next_milestone_plans/Layer3_planning_docs/1352-sec-xbrl-route-level-operator-identity-required.md"
+)
+ROUTE_LEVEL_ENFORCEMENT_TEST = "backend/tests/test_sec_xbrl_route_level_auth_enforcement.py"
 TARGET = "sec_xbrl_default_on_nonlocal_production_readiness_gate_v1"
 REDACTION_POLICY_ID = "sec_xbrl_nonlocal_production_readiness_gate_redaction_v1"
 
@@ -133,6 +140,9 @@ def build_report(
         "auth_binding_service": _read(root / AUTH_BINDING_SERVICE),
         "auth_binding_tests": _read(root / AUTH_BINDING_TEST),
         "operator_workflow_tests": _read(root / OPERATOR_WORKFLOW_TEST),
+        "proxy_identity_projection_doc": _read(root / PROXY_IDENTITY_PROJECTION_DOC),
+        "route_level_identity_doc": _read(root / ROUTE_LEVEL_IDENTITY_DOC),
+        "route_level_enforcement_test": _read(root / ROUTE_LEVEL_ENFORCEMENT_TEST),
     }
     authority = _authority_packet_summary(authority_packet_path)
     in_app_auth = _in_app_auth_evidence_summary(sources, root=root)
@@ -416,6 +426,32 @@ def _in_app_auth_evidence_summary(sources: dict[str, Any], *, root: Path) -> dic
             "test_controlled_value_reveal_submit_api_rolls_back_source_receipt_when_binding_fails",
         ),
     )
+    proxy_identity_projection_mode_selected = (
+        _all_tokens(
+            sources.get("proxy_identity_projection_doc", ""),
+            (
+                "proxy_identity_read_only_projection",
+                "sec_xbrl_proxy_identity_read_only_live_projection_contract",
+            ),
+        )
+        and "build_proxy_identity_readonly_projection" in sources.get("in_app_auth_policy_service", "")
+    )
+    route_level_identity_mode_selected = _all_tokens(
+        sources.get("route_level_identity_doc", ""),
+        (
+            "route_level_operator_identity_required",
+            "route_level_enforcement_already_wired",
+        ),
+    )
+    route_level_enforcement_proof_current = _all_tokens(
+        sources.get("route_level_enforcement_test", ""),
+        (
+            "test_route_workflow_status_proxy_fail_closed_missing_identity",
+            "test_route_value_reveal_submit_proxy_fail_closed_missing_identity",
+            "test_route_workflow_status_untrusted_proxy_returns_409",
+            "missing_identity_authority",
+        ),
+    )
     checks = {
         "policy_report_clean": policy_report_clean,
         "strategy_report_clean": strategy_report_clean,
@@ -424,6 +460,9 @@ def _in_app_auth_evidence_summary(sources: dict[str, Any], *, root: Path) -> dic
         "api_route_enforcement_current": api_route_enforcement_current,
         "route_enforcement_doc_current": route_doc_current,
         "route_and_binding_test_evidence_current": test_evidence_current,
+        "proxy_identity_projection_mode_selected": proxy_identity_projection_mode_selected,
+        "route_level_identity_mode_selected": route_level_identity_mode_selected,
+        "route_level_enforcement_proof_current": route_level_enforcement_proof_current,
     }
     blockers = [
         f"nonlocal_production_readiness_in_app_auth_{name}_missing"
@@ -456,7 +495,14 @@ def _in_app_auth_evidence_summary(sources: dict[str, Any], *, root: Path) -> dic
             "api": "backend/app/api/layer3.py",
             "auth_binding_tests": AUTH_BINDING_TEST,
             "operator_workflow_tests": OPERATOR_WORKFLOW_TEST,
+            "proxy_identity_projection_doc": PROXY_IDENTITY_PROJECTION_DOC,
+            "route_level_identity_doc": ROUTE_LEVEL_IDENTITY_DOC,
+            "route_level_enforcement_test": ROUTE_LEVEL_ENFORCEMENT_TEST,
         },
+        "formal_auth_modes_selected": [
+            "proxy_identity_read_only_projection",
+            "route_level_operator_identity_required",
+        ],
         "production_readiness_claimed": False,
         "value_reveal_default_enabled_by_evidence": False,
         "export_or_delivery_enabled_by_evidence": False,
