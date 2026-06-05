@@ -242,7 +242,7 @@ def build_report(
             non_admitted_surfaces,
             {
                 "value_reveal_default_enabled": False,
-                "controlled_value_reveal_submit_default_enabled": False,
+                "controlled_value_reveal_submit_default_enabled": True,
                 "raw_internal_value_store_default_enabled": False,
                 "corpus_validation_arelle_default_enabled": False,
                 "source_acquisition_performed_by_gate": False,
@@ -684,7 +684,6 @@ def _non_admitted_surfaces_hold(sources: dict[str, Any]) -> bool:
             'layer3_sec_edgar_arelle_internal_value_store_enabled: bool = Field(\n        default=False,',
             'layer3_sec_edgar_arelle_corpus_validation_enabled: bool = Field(\n        default=False,',
             'layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False,',
-            'layer3_sec_xbrl_controlled_value_reveal_submit_enabled: bool = Field(\n        default=False,',
         )
     ) and all(
         token in runtime_report_text

@@ -3,10 +3,10 @@
   "criteria": [
     {
       "blocked_reason": null,
-      "criterion": "value_reveal_defaults_remain_off",
+      "criterion": "arelle_value_reveal_default_off_controlled_submit_activated",
       "evidence": {
         "arelle_cutover_default_enabled": true,
-        "controlled_value_reveal_submit_default_off": true,
+        "controlled_value_reveal_submit_default_on": true,
         "value_reveal_default_off": true
       },
       "state": "passed"
@@ -108,7 +108,7 @@
   "next_slice": "sec_edgar_arelle_value_reveal_operator_exercise_v1",
   "non_goals_preserved": {
     "candidate_b_sec_routing_performed": false,
-    "controlled_value_reveal_submit_default_enabled": false,
+    "controlled_value_reveal_submit_default_enabled": true,
     "cross_company_comparability_claimed": false,
     "fact_authority_cutover_default_enabled": true,
     "final_financial_statement_semantics_claimed": false,
