@@ -46072,5 +46072,66 @@
     ],
     "next_posture": "freeze_one_next_mixed_source_downstream_surface_before_implementation"
   },
-  "latest_p21_mixed_source_rendered_delivery_controls_current_main_sync_proof_summary": "P21 current-main sync records PR #2226 at dcd0e159b5bb0ac7eb1c6af6b6609e4c9b31b48d as the live rendered mixed-source delivery controls runtime. The sync changes docs/control only and keeps download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, package payload rewrite, SEC XBRL, excluded-tool, value-reveal, default-on, and production-readiness scope blocked."
+  "latest_p21_mixed_source_rendered_delivery_controls_current_main_sync_proof_summary": "P21 current-main sync records PR #2226 at dcd0e159b5bb0ac7eb1c6af6b6609e4c9b31b48d as the live rendered mixed-source delivery controls runtime. The sync changes docs/control only and keeps download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, package payload rewrite, SEC XBRL, excluded-tool, value-reveal, default-on, and production-readiness scope blocked.",
+  "p22_mixed_source_signed_reference_governance_freeze_proof": {
+    "milestone": "p22_mixed_source_signed_reference_governance_freeze",
+    "status": "branch_local_docs_control_freeze_only",
+    "planning_doc": "next_milestone_plans/multi-ingest/53-p22-mixed-signed-reference-freeze.md",
+    "proof_terms": "P22 freezes only future mixed-source same-origin signed-reference governance over the existing P19/P20/P21 mixed-source delivery authority chain. No runtime code, rendered UI behavior, backend route, schema/model/migration, parser behavior, source-shape expansion, package payload rewrite, download URL, signed-reference generation/use/status/revocation, durable-state change, public/provider URL, connector/provider/destination, local outbox, SEC XBRL, excluded-tool behavior, value reveal, default-on behavior, or production readiness is admitted.",
+    "authority_basis": [
+      "P21 current-main rendered mixed-source delivery controls runtime and sync",
+      "P20 same-origin mixed-source external export/download delivery runtime",
+      "P19 recorded mixed-source external export/download readiness authority",
+      "existing same-origin signed-reference route/service patterns are precedent only, not mixed-source activation authority",
+      "provider/public URL and connector/destination governance docs require separate future activation evidence before implementation"
+    ],
+    "future_route_family": [
+      "POST /api/v1/layer3/handoff/export/download/signed-reference/generate",
+      "POST /api/v1/layer3/handoff/export/download/signed-reference/use"
+    ],
+    "future_delivery_mode": "same_origin_signed_delivery_reference",
+    "future_server_authority": "mixed_source_external_export_download_signed_reference_gate",
+    "future_generate_operator_decision": "generate_mixed_source_external_export_download_signed_reference",
+    "future_use_operator_decision": "use_mixed_source_external_export_download_signed_reference",
+    "positive_runtime_effects": [],
+    "negative_authority_flags": {
+      "runtime_behavior_changed": false,
+      "rendered_ui_behavior_changed": false,
+      "backend_route_changed": false,
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "browser_download_control_enabled": false,
+      "download_url_enabled": false,
+      "signed_reference_enabled": false,
+      "signed_reference_durable_state_changed": false,
+      "public_or_provider_url_enabled": false,
+      "connector_dispatch_enabled": false,
+      "provider_behavior_enabled": false,
+      "destination_behavior_enabled": false,
+      "local_outbox_enabled": false,
+      "excluded_tool_included": false,
+      "sec_xbrl_surface_changed": false,
+      "value_reveal_enabled": false,
+      "default_on_enabled": false,
+      "production_readiness_claimed": false
+    },
+    "required_future_proof": [
+      "backend/API proof that mixed-source generation/use revalidates the full P14/P15/P16/P17/P18/P19/P20/P21 material-authority chain",
+      "proof that associated-cohort and source-intake signed-reference gates remain separate and cannot accept mixed-source authority by fallback",
+      "proof that stale, missing, mismatched, wrong-session, wrong-artifact, expired, malformed, revoked, or replayed references fail closed",
+      "proof that download URLs, provider/public URLs, connector/destination refs, local paths, package bytes, credentials, local outbox targets, and package payload rewrite fields are rejected or absent",
+      "headed and headless browser proof only if a later freeze admits rendered signed-reference controls"
+    ],
+    "verification_required": [
+      "manifest JSON syntax",
+      "authority-index validation",
+      "frozen target-selection validation",
+      "progress check",
+      "git diff --check"
+    ],
+    "next_posture": "implement_mixed_source_same_origin_signed_reference_after_freeze_merge_and_current_main_sync"
+  },
+  "latest_p22_mixed_source_signed_reference_governance_freeze_proof_summary": "P22 is a docs/control freeze for future mixed-source same-origin signed-reference governance over the existing P19/P20/P21 delivery chain. It admits no runtime or UI behavior by itself and keeps durable-state changes, download URLs, provider/public URLs, connector/destination, schema/parser/source-shape expansion, package payload rewrite, SEC XBRL, excluded-tool, value-reveal, default-on, and production-readiness scope closed."
 }
