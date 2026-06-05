@@ -262,6 +262,39 @@ const EXPECTED_PACKAGE_SCHEMA_IDS = {
 };
 const LIVE_LAYER3_THEMES = ['system', 'light', 'dark', 'workbench'];
 
+const P21_MIXED_RENDERED_DELIVERY_READINESS = {
+  package_family: 'mixed_dataset_document',
+  material_preview_id: 'material-preview-p21-rendered',
+  material_preview_hash: 'a'.repeat(64),
+  package_review_preview_hash: 'b'.repeat(64),
+  contract_hash: 'c'.repeat(64),
+  construction_basis_hash: 'd'.repeat(64),
+  reconciliation_record_id: 'reconciliation-p21-rendered',
+  output_package_ids: ['pkg-p21-canonical', 'pkg-p21-user', 'pkg-p21-review'],
+  package_kinds: ['canonical_internal', 'user_facing', 'review_facing'],
+  payload_hashes: ['e'.repeat(64), 'f'.repeat(64), '1'.repeat(64)],
+  payload_refs: [
+    'layer3://mixed-source-package/pkg-p21-canonical',
+    'layer3://mixed-source-package/pkg-p21-user',
+    'layer3://mixed-source-package/pkg-p21-review',
+  ],
+  package_review_submit_record_ref: 'layer3://mixed-source-package-review-submit/p21-rendered',
+  package_review_state: 'package_review_approved',
+  prepare_record_ref: 'layer3://mixed-source-handoff-export/p21-rendered',
+  handoff_export_state: 'handoff_export_prepared',
+  handoff_export_envelope_ref: 'layer3://mixed-source-handoff-envelope/p21-rendered',
+  handoff_target: 'mixed_source_review_package',
+  export_mode: 'reference_envelope_only',
+  aps_handoff_target: 'mixed_source_aps_evidence_bundle',
+  dispatch_mode: 'server_side_mixed_source_aps_handoff',
+  aps_handoff_record_ref: 'layer3://mixed-source-aps-handoff/p21-rendered',
+  aps_handoff_state: 'aps_handoff_dispatched',
+  external_export_download_readiness_record_ref: 'layer3://mixed-source-external-export-record/p21-rendered',
+  external_export_download_readiness_ref: 'layer3://mixed-source-external-export/p21-rendered',
+  external_export_download_readiness_state: 'mixed_source_external_export_download_ready',
+  operator_decision: 'record_mixed_source_external_export_download_readiness',
+};
+
 function expectNoDeferredRawMixedPayloadFields(payload) {
   for (const field of DEFERRED_RAW_MIXED_PAYLOAD_FIELDS) {
     expect(payload).not.toHaveProperty(field);
@@ -8354,6 +8387,168 @@ test('Layer 3 workbench drives raw mixed rendered external export download prepa
     '/package/replacement',
     '/package/supersession',
   ]);
+});
+
+test('Layer 3 workbench renders P21 mixed-source external export download delivery control', async ({ page }) => {
+  const deliveryRequests = [];
+  const sourceDirectoryDeliveryRequests = [];
+  const sourceDirectoryDeliveryStatusRequests = [];
+  await page.route('**/api/v1/layer3/handoff/export/download/deliver', async (route, request) => {
+    deliveryRequests.push(formPostPayload(request));
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: '',
+    });
+  });
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver/status',
+    async (route, request) => {
+      sourceDirectoryDeliveryStatusRequests.push(formPostPayload(request));
+      await route.fulfill({ status: 418, contentType: 'application/json', body: '{}' });
+    },
+  );
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver',
+    async (route, request) => {
+      sourceDirectoryDeliveryRequests.push(formPostPayload(request));
+      await route.fulfill({ status: 418, contentType: 'text/html', body: '' });
+    },
+  );
+
+  await page.goto('/review/layer3');
+  await page.evaluate((readiness) => {
+    eval(`
+      State.sessionSummary = {
+        session_id: 'session-p21-rendered',
+        external_export_download_readiness: ${JSON.stringify(readiness)}
+      };
+      State.externalExportDownloadPrepare = {
+        schema_id: 'layer3.source_directory_qualitative_analysis_external_export_download_prepare.v1',
+        external_export_download_target: 'source_directory_qualitative_analysis_package_download_reference',
+        external_export_download_state: 'external_export_download_prepared',
+        external_export_download_record_ref: 'layer3://source-directory-external-export-download/stale',
+        export_download_descriptor_ref: 'layer3://source-directory-external-export-download-descriptor/stale',
+        package_kinds: ['user_facing'],
+        output_package_ids: ['source-dir-stale-package'],
+        payload_hashes: ['${'2'.repeat(64)}'],
+      };
+      State.externalExportDownloadDelivery = null;
+      State.externalExportDownloadSignedReference = null;
+      State.externalExportDownloadSignedReferenceUse = null;
+      renderAll();
+      setActiveOperation('external-export-download-band', { manual: true });
+    `);
+  }, P21_MIXED_RENDERED_DELIVERY_READINESS);
+
+  await expect(page.locator('#external-export-download-band')).toHaveAttribute('data-operation-active', 'true');
+  const panel = page.locator('#external-export-download-delivery-panel');
+  await expect(panel).toHaveAttribute('data-rendered-mode', 'rendered_mixed_source_external_export_download_delivery_control');
+  await expect(panel).toHaveAttribute('data-source-authority', 'State.sessionSummary.external_export_download_readiness');
+  await expect(panel).toContainText('mixed_source_external_export_download_delivery_ui_ready');
+  await expect(panel).toContainText('deliver_mixed_source_external_export_download');
+  await expect(panel).toContainText('same_origin_artifact_stream');
+  await expect(panel).toContainText('review_facing');
+  await expect(panel).toContainText('layer3://mixed-source-package/pkg-p21-review');
+  await expect(panel).toContainText('/handoff/export/download/deliver');
+  await expect(panel).not.toContainText('server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver');
+  await expect(page.locator('#external-export-download-delivery-submit')).toBeEnabled();
+  await expect(page.locator('#external-export-download-signed-reference-generate')).toBeDisabled();
+  await expect(page.locator('#external-export-download-signed-reference-panel')).toContainText(
+    'Mixed-source delivery does not admit signed-reference generation.',
+  );
+
+  await page.locator('#external-export-download-delivery-submit').click();
+  await expect.poll(() => deliveryRequests.length).toBe(1);
+  expect(sourceDirectoryDeliveryStatusRequests).toHaveLength(0);
+  expect(sourceDirectoryDeliveryRequests).toHaveLength(0);
+  const payload = deliveryRequests[0];
+  expectOnlyPayloadKeys(payload, [
+    'client_request_id',
+    'session_id',
+    'material_preview_id',
+    'material_preview_hash',
+    'package_review_preview_hash',
+    'contract_hash',
+    'construction_basis_hash',
+    'reconciliation_record_id',
+    'output_package_id',
+    'package_kind',
+    'package_payload_hash',
+    'package_review_submit_record_ref',
+    'package_review_state',
+    'prepare_record_ref',
+    'handoff_export_state',
+    'handoff_export_envelope_ref',
+    'handoff_target',
+    'export_mode',
+    'aps_handoff_target',
+    'dispatch_mode',
+    'aps_handoff_record_ref',
+    'aps_handoff_state',
+    'external_export_download_readiness_record_ref',
+    'external_export_download_readiness_ref',
+    'external_export_download_readiness_state',
+    'delivery_mode',
+    'operator_decision',
+    'expected_package_kinds',
+  ]);
+  expect(payload.session_id).toBe('session-p21-rendered');
+  expect(payload.material_preview_id).toBe(P21_MIXED_RENDERED_DELIVERY_READINESS.material_preview_id);
+  expect(payload.material_preview_hash).toBe(P21_MIXED_RENDERED_DELIVERY_READINESS.material_preview_hash);
+  expect(payload.package_review_preview_hash).toBe(P21_MIXED_RENDERED_DELIVERY_READINESS.package_review_preview_hash);
+  expect(payload.contract_hash).toBe(P21_MIXED_RENDERED_DELIVERY_READINESS.contract_hash);
+  expect(payload.construction_basis_hash).toBe(P21_MIXED_RENDERED_DELIVERY_READINESS.construction_basis_hash);
+  expect(payload.reconciliation_record_id).toBe(P21_MIXED_RENDERED_DELIVERY_READINESS.reconciliation_record_id);
+  expect(payload.output_package_id).toBe('pkg-p21-review');
+  expect(payload.package_kind).toBe('review_facing');
+  expect(payload.package_payload_hash).toBe('1'.repeat(64));
+  expect(payload.package_review_submit_record_ref).toBe(P21_MIXED_RENDERED_DELIVERY_READINESS.package_review_submit_record_ref);
+  expect(payload.package_review_state).toBe('package_review_approved');
+  expect(payload.prepare_record_ref).toBe(P21_MIXED_RENDERED_DELIVERY_READINESS.prepare_record_ref);
+  expect(payload.handoff_export_state).toBe('handoff_export_prepared');
+  expect(payload.handoff_export_envelope_ref).toBe(P21_MIXED_RENDERED_DELIVERY_READINESS.handoff_export_envelope_ref);
+  expect(payload.handoff_target).toBe('mixed_source_review_package');
+  expect(payload.export_mode).toBe('reference_envelope_only');
+  expect(payload.aps_handoff_target).toBe('mixed_source_aps_evidence_bundle');
+  expect(payload.dispatch_mode).toBe('server_side_mixed_source_aps_handoff');
+  expect(payload.aps_handoff_record_ref).toBe(P21_MIXED_RENDERED_DELIVERY_READINESS.aps_handoff_record_ref);
+  expect(payload.aps_handoff_state).toBe('aps_handoff_dispatched');
+  expect(payload.external_export_download_readiness_record_ref).toBe(
+    P21_MIXED_RENDERED_DELIVERY_READINESS.external_export_download_readiness_record_ref,
+  );
+  expect(payload.external_export_download_readiness_ref).toBe(
+    P21_MIXED_RENDERED_DELIVERY_READINESS.external_export_download_readiness_ref,
+  );
+  expect(payload.external_export_download_readiness_state).toBe('mixed_source_external_export_download_ready');
+  expect(payload.delivery_mode).toBe('same_origin_artifact_stream');
+  expect(payload.operator_decision).toBe('deliver_mixed_source_external_export_download');
+  expect(payload.expected_package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  for (const forbiddenKey of [
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'result_review_record_ref',
+    'output_package_ids',
+    'package_kinds',
+    'payload_refs',
+    'payload_hashes',
+    'external_export_download_record_ref',
+    'export_download_descriptor_ref',
+    'download_url',
+    'public_url',
+    'signed_url',
+    'connector_run_id',
+    'destination',
+    'local_file_path',
+    'package_payload',
+    'schema_migration',
+    'source_expansion',
+  ]) {
+    expect(payload).not.toHaveProperty(forbiddenKey);
+  }
+  await expect(panel).toContainText('mixed_source_external_export_download_delivery_submitted');
 });
 
 test('Layer 3 workbench drives raw mixed rendered external export download delivery', async ({ page, request }) => {

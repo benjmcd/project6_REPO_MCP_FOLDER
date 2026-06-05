@@ -1,5 +1,45 @@
 # Layer3 Progress Board
 
+## P21 Mixed-Source Rendered Delivery Controls Runtime
+
+Milestone:
+`p21_mixed_source_rendered_delivery_controls_runtime`.
+
+Closeout doc:
+`next_milestone_plans/multi-ingest/51-p21-rendered-runtime-closeout.md`.
+
+Status: branch-local runtime implementation proof. This is not current-main
+authority until the implementation PR merges and a current-main sync records
+the merge commit.
+
+Scope: implements the P21 freeze by making the existing rendered
+`/review/layer3` external export/download delivery form usable for the
+already-live P20 mixed-source same-origin delivery route. The rendered control
+uses server-owned `State.sessionSummary.external_export_download_readiness`,
+selects only the `review_facing` mixed package, submits
+`operator_decision: deliver_mixed_source_external_export_download`, and keeps
+selected-pass/source-directory authority separate.
+
+Non-goals: no backend route/runtime change, API schema/DTO/model/migration,
+parser/source-shape expansion, package payload rewrite, package mutation,
+download URL, signed reference, public/provider URL, connector/provider/
+destination/local-outbox behavior, source acquisition, Arelle, SEC XBRL,
+excluded-tool behavior, value reveal, default-on behavior, or production
+readiness.
+
+Proof: branch-local proof includes JS syntax, focused Layer 3 page tests,
+focused mixed-source external export/download API tests, the shared mixed
+delivery response helper test, focused headless and headed Playwright P21
+rendered-control proof, manifest JSON syntax, authority-index validation,
+frozen target-selection validation, progress check, and `git diff --check`.
+
+Next posture: after this runtime merges and current-main sync records the PR
+and merge commit, freeze exactly one next downstream surface before
+implementation. Candidate surfaces remain signed-reference governance,
+provider/public URL governance, connector/destination dispatch, durable audit
+or revocation behavior, product-flow usability proof, or a product-authority
+checkpoint.
+
 ## P21 Mixed-Source Rendered Delivery Controls Freeze
 
 Milestone:
