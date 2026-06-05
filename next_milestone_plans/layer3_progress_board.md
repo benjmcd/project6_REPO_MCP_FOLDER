@@ -1,24 +1,26 @@
 # Layer3 Progress Board
 
-## P21 Mixed-Source Rendered Delivery Controls Runtime
+## P21 Mixed-Source Rendered Delivery Controls Current-Main Sync
 
 Milestone:
-`p21_mixed_source_rendered_delivery_controls_runtime`.
+`p21_mixed_source_rendered_delivery_controls_current_main_sync`.
 
-Closeout doc:
-`next_milestone_plans/multi-ingest/51-p21-rendered-runtime-closeout.md`.
+Sync doc:
+`next_milestone_plans/multi-ingest/52-p21-current-main-sync.md`.
 
-Status: branch-local runtime implementation proof. This is not current-main
-authority until the implementation PR merges and a current-main sync records
-the merge commit.
+Status: docs/control current-main sync for PR #2226 at live
+`project6-origin/main` `dcd0e159b5bb0ac7eb1c6af6b6609e4c9b31b48d`.
 
-Scope: implements the P21 freeze by making the existing rendered
-`/review/layer3` external export/download delivery form usable for the
-already-live P20 mixed-source same-origin delivery route. The rendered control
-uses server-owned `State.sessionSummary.external_export_download_readiness`,
-selects only the `review_facing` mixed package, submits
-`operator_decision: deliver_mixed_source_external_export_download`, and keeps
-selected-pass/source-directory authority separate.
+Scope: records that P21 rendered mixed-source delivery controls are
+current-main behavior. PR #2226 makes the existing rendered `/review/layer3`
+external export/download delivery form usable for the already-live P20
+mixed-source same-origin delivery route. The rendered control uses server-owned
+`State.sessionSummary.external_export_download_readiness`, selects only the
+`review_facing` mixed package, submits `operator_decision:
+deliver_mixed_source_external_export_download`, prefers refreshed delivered
+state over optimistic local submitted state, and keeps stale source-directory
+authority from taking over mixed-source routes. This sync changes no runtime
+code.
 
 Non-goals: no backend route/runtime change, API schema/DTO/model/migration,
 parser/source-shape expansion, package payload rewrite, package mutation,
@@ -27,18 +29,39 @@ destination/local-outbox behavior, source acquisition, Arelle, SEC XBRL,
 excluded-tool behavior, value reveal, default-on behavior, or production
 readiness.
 
-Proof: branch-local proof includes JS syntax, focused Layer 3 page tests,
-focused mixed-source external export/download API tests, the shared mixed
-delivery response helper test, focused headless and headed Playwright P21
-rendered-control proof, manifest JSON syntax, authority-index validation,
-frozen target-selection validation, progress check, and `git diff --check`.
+Proof: PR #2226 CI passed all required backend Layer 3 API and test shards; two
+review threads were addressed and resolved before merge. Detached post-merge
+proof passed JS syntax, focused Layer 3 page tests, focused mixed-source
+external export/download API tests, the shared mixed delivery response helper
+test, focused headless and headed Playwright P21 rendered-control proof,
+manifest JSON syntax, authority-index validation, frozen target-selection
+validation, progress check, and `git diff --check`.
 
-Next posture: after this runtime merges and current-main sync records the PR
-and merge commit, freeze exactly one next downstream surface before
-implementation. Candidate surfaces remain signed-reference governance,
-provider/public URL governance, connector/destination dispatch, durable audit
-or revocation behavior, product-flow usability proof, or a product-authority
-checkpoint.
+Next posture: freeze exactly one next downstream surface before implementation.
+Candidate surfaces remain signed-reference governance, provider/public URL
+governance, connector/destination dispatch, durable audit or revocation
+behavior, product-flow usability proof, or a product-authority checkpoint.
+
+## P21 Mixed-Source Rendered Delivery Controls Runtime
+
+Milestone:
+`p21_mixed_source_rendered_delivery_controls_runtime`.
+
+Closeout doc:
+`next_milestone_plans/multi-ingest/51-p21-rendered-runtime-closeout.md`.
+
+Status: current-main runtime implementation verified after PR #2226.
+
+Scope: implements the P21 freeze by making the existing rendered
+`/review/layer3` external export/download delivery form usable for the
+already-live P20 mixed-source same-origin delivery route. The rendered control
+uses server-owned `State.sessionSummary.external_export_download_readiness`,
+selects only the `review_facing` mixed package, submits `operator_decision:
+deliver_mixed_source_external_export_download`, and keeps selected-pass/source-
+directory authority separate.
+
+Proof: current-main proof is recorded in
+`next_milestone_plans/multi-ingest/51-p21-rendered-runtime-closeout.md`.
 
 ## P21 Mixed-Source Rendered Delivery Controls Freeze
 

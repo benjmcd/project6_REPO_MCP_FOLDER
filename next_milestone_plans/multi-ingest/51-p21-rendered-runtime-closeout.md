@@ -1,9 +1,6 @@
 # P21 Mixed-Source Rendered Delivery Controls Runtime Closeout
 
-Status: branch-local runtime implementation proof for the rendered
-`/review/layer3` mixed-source delivery control. This is not current-main
-authority until the implementation PR merges and a current-main sync records the
-merge commit.
+Status: current-main runtime implementation verified after PR #2226.
 
 ## Scope
 
@@ -75,9 +72,15 @@ The rendered UI now:
 - No source acquisition, Arelle, SEC XBRL, excluded-tool behavior, value reveal,
   default-on behavior, or production-readiness claim.
 
-## Branch-Local Proof
+## Current-Main Proof
 
-The implementation proof for this branch includes:
+PR #2226 merged at
+`dcd0e159b5bb0ac7eb1c6af6b6609e4c9b31b48d`. The PR addressed two review
+threads before merge: refreshed session delivery state now takes precedence
+over optimistic local submitted state, and stale source-directory prepare state
+can no longer route mixed-source delivery payloads to source-directory endpoints.
+
+The implementation and detached post-merge proof include:
 
 - `node --check ./backend/app/review_ui/static/layer3.js`;
 - `python -B -m pytest ./backend/tests/test_layer3_page.py -q`;
@@ -87,8 +90,10 @@ The implementation proof for this branch includes:
 - `python -B -m pytest
   ./backend/tests/test_layer3_external_export_response.py::test_mixed_external_export_delivery_response_helper_is_shared_with_workbench
   -q`;
-- `npm run test:e2e -- --grep "P21 mixed-source"`;
-- `npm run test:e2e:headed -- --grep "P21 mixed-source"`;
+- `npm run test:e2e -- --grep "P21 mixed-source"` with stale
+  source-directory prepare state injected;
+- `npm run test:e2e:headed -- --grep "P21 mixed-source"` with stale
+  source-directory prepare state injected;
 - manifest JSON syntax;
 - Layer 3 authority-index validation;
 - frozen target-selection validation;
@@ -97,9 +102,8 @@ The implementation proof for this branch includes:
 
 ## Next Posture
 
-After this implementation merges and current-main sync records the actual PR
-and merge commit, the next downstream surface must again be frozen before
-implementation. Candidate surfaces remain signed-reference governance,
-provider/public URL governance, connector/destination dispatch, durable audit
-or revocation behavior, product-flow usability proof, or a stop-for-product
-authority checkpoint. None is admitted by this closeout.
+After `52-p21-current-main-sync.md`, the next downstream surface must again be
+frozen before implementation. Candidate surfaces remain signed-reference
+governance, provider/public URL governance, connector/destination dispatch,
+durable audit or revocation behavior, product-flow usability proof, or a
+stop-for-product authority checkpoint. None is admitted by this closeout.
