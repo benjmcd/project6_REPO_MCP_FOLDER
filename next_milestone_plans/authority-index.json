@@ -8,7 +8,7 @@
     "remote": "project6-origin/main",
     "commit": "8cfc0c7d6ce339adc52305b88aa9d0488eff6ab9",
     "verified_at_utc": "2026-06-05T06:53:09Z",
-    "verification_summary": "Branch-local P22 mixed-source signed-reference governance freeze over current-main P21 rendered delivery controls. This docs/control selection admits no runtime code, backend route/API change, UI/static behavior, schema/model/migration, parser behavior, source-shape expansion, package payload rewrite, download URL, provider/public URL, connector/provider/destination behavior, SEC XBRL surface, excluded-tool behavior, value reveal, default-on behavior, or production readiness.",
+    "verification_summary": "Branch-local P22 mixed-source signed-reference runtime over current-main P21 rendered delivery controls and P20 delivery authority. This branch-local implementation admits only same-origin signed-reference generation/use over existing durable signed-reference state and keeps UI/static behavior, schema/model/migration, parser behavior, source-shape expansion, package payload rewrite, download URL, provider/public URL, connector/provider/destination behavior, SEC XBRL surface, excluded-tool behavior, value reveal, default-on behavior, and production readiness blocked.",
     "commands": [
       "git fetch project6-origin main --prune",
       "gh pr list --state open --json number,title,headRefName,baseRefName,url",
@@ -66,7 +66,7 @@
       "lane_id": "multi_ingest_mixed_package",
       "lane_name": "Heterogeneous ingestion and mixed-source package readiness",
       "lane_scope": "Non-PDF and mixed APS source families through material preview and future package semantics.",
-      "current_state": "branch_local_p22_mixed_source_signed_reference_governance_freeze",
+      "current_state": "branch_local_p24_mixed_source_product_authority_checkpoint",
       "source_of_truth": [
         {
           "path": "next_milestone_plans/multi-ingest/README.md",
@@ -84,7 +84,28 @@
             "current-main P21 sync",
             "53-p22-mixed-signed-reference-freeze.md",
             "P22 freezes mixed-source same-origin signed-reference governance",
-            "Phase P22 is branch-local docs/control freeze only"
+            "54-p22-runtime-closeout.md",
+            "P22 runtime",
+            "rendered controls",
+            "55-p23-product-flow-usability-proof.md",
+            "P23 product-flow usability proof",
+            "56-p24-product-authority-checkpoint.md",
+            "P24 product-authority checkpoint",
+            "not current-main until merged"
+          ]
+        },
+        {
+          "path": "next_milestone_plans/multi-ingest/56-p24-product-authority-checkpoint.md",
+          "kind": "product_authority_checkpoint",
+          "authority": "branch-local read-only mixed-source product-authority checkpoint over P17/P18/P19/P21/P22 server-authoritative state",
+          "freshness": "current_closeout",
+          "required_terms": [
+            "Status: branch-local read-only product-authority checkpoint.",
+            "P21 same-origin external export/download delivery authority",
+            "P22 same-origin signed-reference authority",
+            "No backend route, service, schema, model, migration",
+            "signed-reference status/revocation",
+            "Not current-main until merged"
           ]
         },
         {
@@ -98,6 +119,34 @@
             "mixed_source_external_export_download_signed_reference_gate",
             "associated-cohort or source-intake signed-reference gates",
             "No signed-reference generation, use,"
+          ]
+        },
+        {
+          "path": "next_milestone_plans/multi-ingest/54-p22-runtime-closeout.md",
+          "kind": "runtime_closeout",
+          "authority": "branch-local mixed-source same-origin signed-reference generation/use runtime and rendered-control proof",
+          "freshness": "current_closeout",
+          "required_terms": [
+            "Status: branch-local runtime and rendered-control implementation.",
+            "mixed_source_external_export_download_signed_reference_gate",
+            "generate_mixed_source_external_export_download_signed_reference",
+            "use_mixed_source_external_export_download_signed_reference",
+            "State.sessionSummary.external_export_download_readiness",
+            "Not current-main until merged"
+          ]
+        },
+        {
+          "path": "next_milestone_plans/multi-ingest/55-p23-product-flow-usability-proof.md",
+          "kind": "product_flow_usability_proof",
+          "authority": "branch-local rendered mixed-source product-flow proof from P17 through P18/P19/P22 over existing server-authoritative routes",
+          "freshness": "current_closeout",
+          "required_terms": [
+            "Status: branch-local rendered product-flow usability proof.",
+            "P18 mixed-source APS handoff dispatch rendered control",
+            "P19 mixed-source external export/download readiness rendered control",
+            "/handoff/export/download/readiness",
+            "No backend route, service, schema, model, migration",
+            "Not current-main until merged"
           ]
         },
         {
@@ -437,6 +486,9 @@
         }
       ],
       "current_truth_order": [
+        "P24 mixed-source product-authority checkpoint",
+        "P23 mixed-source product-flow usability proof",
+        "P22 mixed-source signed-reference runtime closeout",
         "P22 mixed-source signed-reference governance freeze",
         "P21 mixed-source current-main sync",
         "P21 mixed-source rendered delivery controls runtime closeout",
@@ -465,6 +517,9 @@
         "package-family route gates"
       ],
       "known_limits": [
+        "P24 is branch-local read-only product-authority checkpoint proof only: it renders existing P17/P18/P19/P21/P22 authority status and admits no backend route/service, payload builder, submit handler, durable-state change, signed-reference status/revocation, provider/public URL, connector/destination/local-outbox behavior, schema/parser/source-shape expansion, package payload rewrite, real export/dispatch, value reveal, default-on behavior, or production readiness.",
+        "P23 is branch-local rendered product-flow usability proof only: it proves browser control flow from P17 through P18/P19/P22 over existing server-authoritative routes and admits no provider/public URL, connector/destination/local-outbox behavior, schema/parser/source-shape expansion, package payload rewrite, value reveal, default-on behavior, or production readiness.",
+        "P22 runtime is branch-local implementation only: it admits mixed-source same-origin signed-reference generation/use over existing P19/P20/P21 authority and durable signed-reference state, but does not admit provider/public URL behavior, connector/destination/local-outbox behavior, schema/parser/source-shape expansion, package payload rewrite, signed-reference status/revocation, value reveal, default-on behavior, or production readiness.",
         "P22 is branch-local docs/control only: it selects mixed-source same-origin signed-reference governance after P21, but admits no signed-reference runtime, durable-state change, rendered controls, provider/public URL behavior, connector/destination behavior, schema/parser/source-shape expansion, package payload rewrite, SEC XBRL, value reveal, default-on behavior, or production readiness.",
         "P21 current main admits only rendered browser controls for the existing P20 same-origin mixed-source delivery route; it does not admit download URLs, signed references, public/provider URLs, connector/provider/destination behavior, local outbox, schema/parser/source-shape expansion, package payload rewrite, excluded-tool behavior, value reveal, default-on behavior, or production readiness.",
         "P21 rendered controls use State.sessionSummary.external_export_download_readiness, select only the review_facing mixed package, prefer refreshed delivered state over optimistic local submitted state, and keep stale source-directory prepare state from taking over mixed-source routes.",
@@ -475,7 +530,7 @@
         "SEC HTML/iXBRL source-family admission remains separate from mixed-source package/runtime delivery authority.",
         "Legacy CSV bridge deprecation is separate from mixed-source package semantics."
       ],
-      "next_decision": "After the P22 freeze merges and current-main syncs, implement only mixed-source same-origin signed-reference generation/use over existing P19/P20/P21 delivery authority; provider/public URL governance, connector/destination dispatch, durable-state expansion, product-flow usability proof, and product-authority checkpoints remain separate later freezes."
+      "next_decision": "Merge-review and current-main sync the branch-local P22/P23/P24 work before selecting another downstream surface. Provider/public URL governance, connector/destination dispatch, durable revocation UI/API, schema/source-shape expansion, package rewrite, and production readiness remain separate later freezes."
     },
     {
       "lane_id": "analyst_insight",

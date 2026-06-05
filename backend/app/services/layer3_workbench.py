@@ -722,6 +722,18 @@ MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE = "mixed_source_external_e
 MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION = (
     "deliver_mixed_source_external_export_download"
 )
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_OPERATOR_DECISION = (
+    "generate_mixed_source_external_export_download_signed_reference"
+)
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_OPERATOR_DECISION = (
+    "use_mixed_source_external_export_download_signed_reference"
+)
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SERVER_AUTHORITY = (
+    "mixed_source_external_export_download_signed_reference_gate"
+)
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_ARTIFACT_REF = (
+    "artifact://mixed-source-external-export-download-package-bound-by-hash"
+)
 MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ADMITTED = True
 EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = "prepare_external_export_download"
 PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
@@ -14908,7 +14920,59 @@ def _signed_reference_required_source_intake_authority(authority: dict[str, Any]
     return blocked
 
 
+def _signed_reference_required_mixed_source_authority(authority: dict[str, Any]) -> list[str]:
+    blocked: list[str] = []
+    expected = {
+        "schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
+        "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+        "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+        "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+        "handoff_target": "mixed_source_review_package",
+        "export_mode": "reference_envelope_only",
+        "aps_handoff_target": MIXED_SOURCE_APS_HANDOFF_TARGET,
+        "dispatch_mode": MIXED_SOURCE_APS_HANDOFF_DISPATCH_MODE,
+        "aps_handoff_state": APS_HANDOFF_DISPATCHED_STATE,
+        "external_export_download_readiness_state": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READY_STATE,
+        "external_export_download_delivery_state": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE,
+        "delivery_mode": "same_origin_artifact_stream",
+        "operator_decision": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION,
+    }
+    for field, expected_value in expected.items():
+        if authority.get(field) != expected_value:
+            blocked.append(field)
+    for field in (
+        "session_id",
+        "material_preview_id",
+        "material_preview_hash",
+        "package_review_preview_hash",
+        "contract_hash",
+        "construction_basis_hash",
+        "reconciliation_record_id",
+        "output_package_id",
+        "package_kind",
+        "package_payload_hash",
+        "package_review_submit_record_ref",
+        "prepare_record_ref",
+        "handoff_export_envelope_ref",
+        "aps_handoff_record_ref",
+        "external_export_download_readiness_record_ref",
+        "external_export_download_readiness_ref",
+        "external_export_download_delivery_record_ref",
+        "external_export_download_delivery_ref",
+    ):
+        if not authority.get(field):
+            blocked.append(field)
+    if authority.get("package_kind") != "review_facing":
+        blocked.append("package_kind")
+    return sorted(set(blocked))
+
+
 def _signed_reference_required_delivery_authority(authority: dict[str, Any]) -> list[str]:
+    if (
+        authority.get("schema_id") == MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID
+        or authority.get("package_family") == PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT
+    ):
+        return _signed_reference_required_mixed_source_authority(authority)
     cohort_blocked = _signed_reference_required_cohort_authority(authority)
     if not cohort_blocked:
         return []
@@ -14929,6 +14993,53 @@ def _signed_reference_authority_basis(
     delivery: ExternalExportDownloadDelivery,
 ) -> dict[str, Any]:
     authority = delivery.authority
+    if (
+        authority.get("schema_id") == MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID
+        or authority.get("package_family") == PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT
+    ):
+        return {
+            "session_id": str(payload.get("session_id") or ""),
+            "material_preview_id": str(payload.get("material_preview_id") or ""),
+            "material_preview_hash": str(payload.get("material_preview_hash") or ""),
+            "package_review_preview_hash": str(payload.get("package_review_preview_hash") or ""),
+            "contract_hash": str(payload.get("contract_hash") or ""),
+            "construction_basis_hash": str(payload.get("construction_basis_hash") or ""),
+            "reconciliation_record_id": str(payload.get("reconciliation_record_id") or ""),
+            "output_package_id": str(payload.get("output_package_id") or ""),
+            "package_kind": str(payload.get("package_kind") or ""),
+            "package_payload_hash": str(payload.get("package_payload_hash") or ""),
+            "package_review_submit_record_ref": str(payload.get("package_review_submit_record_ref") or ""),
+            "package_review_state": str(payload.get("package_review_state") or ""),
+            "prepare_record_ref": str(payload.get("prepare_record_ref") or ""),
+            "handoff_export_state": str(payload.get("handoff_export_state") or ""),
+            "handoff_export_envelope_ref": str(payload.get("handoff_export_envelope_ref") or ""),
+            "handoff_target": str(payload.get("handoff_target") or ""),
+            "export_mode": str(payload.get("export_mode") or ""),
+            "aps_handoff_target": str(payload.get("aps_handoff_target") or ""),
+            "dispatch_mode": str(payload.get("dispatch_mode") or ""),
+            "aps_handoff_record_ref": str(payload.get("aps_handoff_record_ref") or ""),
+            "aps_handoff_state": str(payload.get("aps_handoff_state") or ""),
+            "external_export_download_readiness_record_ref": str(
+                payload.get("external_export_download_readiness_record_ref") or ""
+            ),
+            "external_export_download_readiness_ref": str(payload.get("external_export_download_readiness_ref") or ""),
+            "external_export_download_readiness_state": str(
+                payload.get("external_export_download_readiness_state") or ""
+            ),
+            "delivery_mode": str(payload.get("delivery_mode") or ""),
+            "operator_decision": str(payload.get("operator_decision") or ""),
+            "expected_package_kinds": _json_clone(payload.get("expected_package_kinds") or []),
+            "schema_id": authority.get("schema_id"),
+            "package_family": authority.get("package_family"),
+            "external_export_download_delivery_record_ref": authority.get(
+                "external_export_download_delivery_record_ref"
+            ),
+            "external_export_download_delivery_ref": authority.get("external_export_download_delivery_ref"),
+            "external_export_download_delivery_state": authority.get("external_export_download_delivery_state"),
+            "source_artifact_ref": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_ARTIFACT_REF,
+            "source_artifact_hash": delivery.headers.get("X-Layer3-Package-Payload-Hash"),
+            "source_artifact_size_bytes": int(delivery.artifact_path.stat().st_size),
+        }
     return {
         "session_id": str(payload.get("session_id") or ""),
         "analysis_plan_id": str(payload.get("analysis_plan_id") or ""),
@@ -15026,6 +15137,8 @@ def _decode_signed_reference_token(token: str) -> dict[str, Any]:
 
 
 def _signed_reference_server_authority(authority_basis: dict[str, Any]) -> str:
+    if authority_basis.get("package_family") == PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT:
+        return MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SERVER_AUTHORITY
     if authority_basis.get("schema_id") == SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID:
         return "source_intake_external_export_download_signed_reference_gate"
     return "associated_cohort_external_export_download_signed_reference_gate"
@@ -15043,6 +15156,89 @@ def _delivery_response_from_signed_reference(
 ) -> dict[str, Any]:
     authority_basis = token_body["delivery_authority"]
     expires_at_epoch = int(token_body["expires_at_epoch"])
+    if authority_basis.get("package_family") == PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT:
+        return {
+            **_base_response(
+                EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SCHEMA_ID,
+                request_id=request_id,
+                status="prepared",
+            ),
+            "session_id": payload["session_id"],
+            "material_preview_id": authority_basis["material_preview_id"],
+            "material_preview_hash": authority_basis["material_preview_hash"],
+            "package_review_preview_hash": authority_basis["package_review_preview_hash"],
+            "contract_hash": authority_basis["contract_hash"],
+            "construction_basis_hash": authority_basis["construction_basis_hash"],
+            "reconciliation_record_id": authority_basis["reconciliation_record_id"],
+            "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+            "output_package_id": authority_basis["output_package_id"],
+            "package_kind": authority_basis["package_kind"],
+            "package_payload_hash": authority_basis["package_payload_hash"],
+            "package_review_submit_record_ref": authority_basis["package_review_submit_record_ref"],
+            "package_review_state": authority_basis["package_review_state"],
+            "prepare_record_ref": authority_basis["prepare_record_ref"],
+            "handoff_export_state": authority_basis["handoff_export_state"],
+            "handoff_export_envelope_ref": authority_basis["handoff_export_envelope_ref"],
+            "handoff_target": authority_basis["handoff_target"],
+            "export_mode": authority_basis["export_mode"],
+            "aps_handoff_target": authority_basis["aps_handoff_target"],
+            "dispatch_mode": authority_basis["dispatch_mode"],
+            "aps_handoff_record_ref": authority_basis["aps_handoff_record_ref"],
+            "aps_handoff_state": authority_basis["aps_handoff_state"],
+            "external_export_download_readiness_record_ref": authority_basis[
+                "external_export_download_readiness_record_ref"
+            ],
+            "external_export_download_readiness_ref": authority_basis["external_export_download_readiness_ref"],
+            "external_export_download_readiness_state": authority_basis[
+                "external_export_download_readiness_state"
+            ],
+            "external_export_download_delivery_record_ref": authority_basis[
+                "external_export_download_delivery_record_ref"
+            ],
+            "external_export_download_delivery_ref": authority_basis["external_export_download_delivery_ref"],
+            "external_export_download_delivery_state": authority_basis[
+                "external_export_download_delivery_state"
+            ],
+            "signed_reference_state": EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_READY_STATE,
+            "signed_reference_token": token,
+            **durable_state.response_fields(),
+            "signed_reference_expires_at": _epoch_iso(expires_at_epoch),
+            "signed_reference_expires_in_seconds": max(0, expires_at_epoch - now_epoch),
+            "signed_reference_use_endpoint": f"{API_ROOT}/handoff/export/download/signed-reference/use",
+            "delivery_mode": "same_origin_signed_delivery_reference",
+            "signed_reference_delivery_mode": "same_origin_signed_delivery_reference",
+            "operator_decision": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_OPERATOR_DECISION,
+            "use_operator_decision": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_OPERATOR_DECISION,
+            "server_authority": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SERVER_AUTHORITY,
+            "source_artifact_ref": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_ARTIFACT_REF,
+            "source_artifact_hash": authority_basis["source_artifact_hash"],
+            "source_artifact_size_bytes": authority_basis["source_artifact_size_bytes"],
+            "schema_id_authority": authority_basis["schema_id"],
+            "download_url_enabled": False,
+            "public_url_enabled": False,
+            "provider_public_url_enabled": False,
+            "provider_private_signed_url_enabled": False,
+            "connector_dispatch_enabled": False,
+            "destination_selection_enabled": False,
+            "generic_downstream_dispatch_enabled": False,
+            "package_payload_rewrite_enabled": False,
+            "package_mutation_enabled": False,
+            "schema_runtime_source_widening_enabled": False,
+            "production_readiness_enabled": False,
+            "authority_rail": {
+                "token_authority": "server_hmac_with_durable_state",
+                "artifact_authority": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SERVER_AUTHORITY,
+                "delivery_authority": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
+                "expires_within_seconds": EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_TTL_SECONDS,
+                "revalidated_at_generation": True,
+                "revalidate_at_use_required": True,
+                "durable_state_required": True,
+                "replay_policy": durable_state.signed_reference_replay_policy,
+                "configured_secret_present": True,
+                "process_restart_invalidates_existing_tokens": False,
+            },
+            "next_state": EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_DELIVERED_STATE,
+        }
     return {
         **_base_response(
             EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SCHEMA_ID,
@@ -15100,6 +15296,35 @@ def _delivery_response_from_signed_reference(
     }
 
 
+def _signed_reference_delivery_payload_for_generation(payload: dict[str, Any]) -> dict[str, Any]:
+    mixed_source_request = (
+        payload.get("operator_decision") == MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_OPERATOR_DECISION
+        or any(
+            field in payload
+            for field in (
+                "material_preview_id",
+                "material_preview_hash",
+                "construction_basis_hash",
+                "external_export_download_readiness_record_ref",
+            )
+        )
+    )
+    if not mixed_source_request:
+        return payload
+    if payload.get("operator_decision") != MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_OPERATOR_DECISION:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_signed_reference_decision_required",
+            "Mixed-source signed-reference generation must use the mixed-source signed-reference operator decision.",
+            status="invalid",
+            blocked_fields=["operator_decision"],
+            next_allowed_actions=["generate_mixed_source_external_export_download_signed_reference"],
+        )
+    return {
+        **payload,
+        "operator_decision": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION,
+    }
+
+
 def external_export_download_generate_signed_reference(
     db: Session,
     payload: dict[str, Any],
@@ -15114,21 +15339,22 @@ def external_export_download_generate_signed_reference(
             status="invalid",
             blocked_fields=["client_request_id"],
             next_allowed_actions=["submit_idempotent_external_export_download_signed_reference_request"],
-    )
+        )
     _signed_reference_signing_key()
-    delivery = external_export_download_deliver(db, payload)
+    delivery_payload = _signed_reference_delivery_payload_for_generation(payload)
+    delivery = external_export_download_deliver(db, delivery_payload)
     blocked = _signed_reference_required_delivery_authority(delivery.authority)
     if blocked:
         raise Layer3WorkbenchError(
             "external_export_download_signed_reference_scope_not_admitted",
-            "Signed delivery references are limited to associated-cohort descriptive-summary or source-intake external export/download authority rails.",
+            "Signed delivery references are limited to admitted associated-cohort, source-intake, or mixed-source external export/download authority rails.",
             status="blocked",
             http_status=409,
             blocked_fields=blocked,
             next_allowed_actions=["use_same_origin_external_export_download_delivery"],
         )
     effective_now = int(time.time() if now_epoch is None else now_epoch)
-    token_body = _signed_reference_token_body(payload=payload, delivery=delivery, now_epoch=effective_now)
+    token_body = _signed_reference_token_body(payload=delivery_payload, delivery=delivery, now_epoch=effective_now)
     token = _encode_signed_reference_token(token_body)
     try:
         durable_state = record_generated_signed_reference(
@@ -15136,14 +15362,14 @@ def external_export_download_generate_signed_reference(
             raw_token=token,
             token_body=token_body,
             request_id=request_id,
-            payload=payload,
+            payload=delivery_payload,
             authority_basis=token_body["delivery_authority"],
         )
     except SignedReferenceStateError as exc:
         raise _signed_reference_state_workbench_error(exc) from exc
     return _delivery_response_from_signed_reference(
         request_id=request_id,
-        payload=payload,
+        payload=delivery_payload,
         delivery=delivery,
         token_body=token_body,
         token=token,
@@ -15217,7 +15443,7 @@ def external_export_download_use_signed_reference(
     if blocked:
         raise Layer3WorkbenchError(
             "external_export_download_signed_reference_scope_not_admitted",
-            "Signed delivery references are limited to associated-cohort descriptive-summary or source-intake external export/download authority rails.",
+            "Signed delivery references are limited to admitted associated-cohort, source-intake, or mixed-source external export/download authority rails.",
             status="blocked",
             http_status=409,
             blocked_fields=blocked,
