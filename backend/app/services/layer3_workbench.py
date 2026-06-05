@@ -283,6 +283,7 @@ from app.services.layer3_workbench_package_state import (
     COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE,
     EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
     HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID,
+    MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_STATE_SCHEMA_ID,
     PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS,
     PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE,
     PACKAGE_REVIEW_PREVIEW_READY_STATE,
@@ -298,6 +299,7 @@ from app.services.layer3_workbench_package_state import (
     cohort_package_construction_source as _is_cohort_package_construction_source,
     dispatched_package_id,
     external_export_download_prepare_from_reconciliation as _external_export_download_prepare_from_reconciliation,
+    mixed_source_external_export_download_readiness_from_reconciliation as _mixed_source_external_export_download_readiness_from_reconciliation,
     handoff_export_prepare_from_reconciliation as _handoff_export_prepare_from_reconciliation,
     legacy_package_review_submit_record_ref as _legacy_package_review_submit_record_ref,
     package_family_for_review_state as _package_family_for_review_state,
@@ -372,6 +374,7 @@ from app.services.layer3_handoff_contract import (
     aps_handoff_dispatch_blocked_fields,
     handoff_export_prepare_blocked_fields,
     mixed_source_aps_handoff_dispatch_blocked_fields,
+    mixed_source_external_export_download_readiness_blocked_fields,
     mixed_source_handoff_export_prepare_blocked_fields,
 )
 from app.services.layer3_package_review_contract import (
@@ -704,6 +707,9 @@ MIXED_SOURCE_APS_HANDOFF_TARGET = "mixed_source_aps_evidence_bundle"
 MIXED_SOURCE_APS_HANDOFF_DISPATCH_MODE = "server_side_mixed_source_aps_handoff"
 MIXED_SOURCE_APS_EVIDENCE_BUNDLE_SCHEMA_ID = "layer3.mixed_source_aps_evidence_bundle_reference.v1"
 MIXED_SOURCE_APS_EVIDENCE_BUNDLE_PACKAGE_KIND = "mixed_source_aps_evidence_bundle_reference"
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_SCHEMA_ID = "layer3.mixed_source_external_export_download_readiness.v1"
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READY_STATE = "mixed_source_external_export_download_ready"
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_OPERATOR_DECISION = "record_mixed_source_external_export_download_readiness"
 EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = "prepare_external_export_download"
 PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
     "package_review_submit",
@@ -10945,6 +10951,782 @@ def _mixed_source_aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> 
         packages=packages,
         dispatch_state=dispatch_state,
     )
+
+
+def _mixed_source_external_export_download_readiness(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or "").strip()
+    session_id = str(payload.get("session_id") or "").strip()
+    material_preview_id = str(payload.get("material_preview_id") or "").strip()
+    material_preview_hash = str(payload.get("material_preview_hash") or "").strip()
+    supplied_package_preview_hash = str(payload.get("package_review_preview_hash") or "").strip()
+    supplied_contract_hash = str(payload.get("contract_hash") or "").strip()
+    supplied_construction_basis_hash = str(payload.get("construction_basis_hash") or "").strip()
+    reconciliation_record_id = str(payload.get("reconciliation_record_id") or "").strip()
+    supplied_submit_ref = str(payload.get("package_review_submit_record_ref") or "").strip()
+    supplied_package_review_state = str(payload.get("package_review_state") or "").strip()
+    supplied_prepare_ref = str(payload.get("prepare_record_ref") or "").strip()
+    supplied_handoff_export_state = str(payload.get("handoff_export_state") or "").strip()
+    supplied_envelope_ref = str(payload.get("handoff_export_envelope_ref") or "").strip()
+    handoff_target = str(payload.get("handoff_target") or "").strip()
+    export_mode = str(payload.get("export_mode") or "").strip()
+    aps_handoff_target = str(payload.get("aps_handoff_target") or "").strip()
+    dispatch_mode = str(payload.get("dispatch_mode") or "").strip()
+    supplied_aps_handoff_record_ref = str(payload.get("aps_handoff_record_ref") or "").strip()
+    supplied_aps_handoff_state = str(payload.get("aps_handoff_state") or "").strip()
+    operator_decision = str(payload.get("operator_decision") or "").strip()
+    decision_notes = str(payload.get("decision_notes") or "").strip()
+    raw_output_package_ids = payload.get("output_package_ids")
+    raw_payload_hashes = payload.get("payload_hashes")
+
+    blocked_payload_fields = mixed_source_external_export_download_readiness_blocked_fields(payload)
+    if blocked_payload_fields:
+        blocked_text = ", ".join(blocked_payload_fields)
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_scope_not_admitted",
+            f"Mixed-source external export/download readiness request includes non-admitted fields: {blocked_text}.",
+            status="invalid",
+            blocked_fields=blocked_payload_fields,
+            next_allowed_actions=["submit_bounded_mixed_source_external_export_download_readiness_request"],
+        )
+
+    missing = [
+        field
+        for field, value in (
+            ("client_request_id", request_id),
+            ("session_id", session_id),
+            ("material_preview_id", material_preview_id),
+            ("material_preview_hash", material_preview_hash),
+            ("package_review_preview_hash", supplied_package_preview_hash),
+            ("contract_hash", supplied_contract_hash),
+            ("construction_basis_hash", supplied_construction_basis_hash),
+            ("reconciliation_record_id", reconciliation_record_id),
+            ("package_review_submit_record_ref", supplied_submit_ref),
+            ("package_review_state", supplied_package_review_state),
+            ("prepare_record_ref", supplied_prepare_ref),
+            ("handoff_export_state", supplied_handoff_export_state),
+            ("handoff_export_envelope_ref", supplied_envelope_ref),
+            ("handoff_target", handoff_target),
+            ("export_mode", export_mode),
+            ("aps_handoff_target", aps_handoff_target),
+            ("dispatch_mode", dispatch_mode),
+            ("aps_handoff_record_ref", supplied_aps_handoff_record_ref),
+            ("aps_handoff_state", supplied_aps_handoff_state),
+            ("operator_decision", operator_decision),
+        )
+        if not value
+    ]
+    if not raw_output_package_ids:
+        missing.append("output_package_ids")
+    if not raw_payload_hashes:
+        missing.append("payload_hashes")
+    if missing:
+        raise Layer3WorkbenchError(
+            "missing_mixed_source_external_export_download_readiness_fields",
+            f"Mixed-source external export/download readiness request is missing required fields: {', '.join(missing)}.",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_mixed_source_external_export_download_readiness_request"],
+        )
+    if supplied_package_review_state != PACKAGE_REVIEW_APPROVED_STATE:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_requires_approved_package_review",
+            "Mixed-source external export/download readiness requires package_review_state to be package_review_approved.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_review_state"],
+            next_allowed_actions=["inspect_package_review_submit_state"],
+        )
+    if supplied_handoff_export_state != HANDOFF_EXPORT_PREPARED_STATE:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_requires_prepared_handoff_export",
+            "Mixed-source external export/download readiness requires handoff_export_state to be handoff_export_prepared.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["handoff_export_state"],
+            next_allowed_actions=["inspect_handoff_export_prepare_state"],
+        )
+    if supplied_aps_handoff_state != APS_HANDOFF_DISPATCHED_STATE:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_requires_dispatched_aps_handoff",
+            "Mixed-source external export/download readiness requires aps_handoff_state to be aps_handoff_dispatched.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["aps_handoff_state"],
+            next_allowed_actions=["inspect_aps_handoff_dispatch_state"],
+        )
+    if handoff_target != "mixed_source_review_package":
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_target_not_admitted",
+            "handoff_target must be mixed_source_review_package for mixed-source external export/download readiness.",
+            status="invalid",
+            blocked_fields=["handoff_target"],
+        )
+    if export_mode != "reference_envelope_only":
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_export_mode_not_admitted",
+            "export_mode must be reference_envelope_only for mixed-source external export/download readiness.",
+            status="invalid",
+            blocked_fields=["export_mode"],
+        )
+    if aps_handoff_target != MIXED_SOURCE_APS_HANDOFF_TARGET:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_target_family_not_admitted",
+            "aps_handoff_target must be mixed_source_aps_evidence_bundle.",
+            status="invalid",
+            blocked_fields=["aps_handoff_target"],
+        )
+    if dispatch_mode != MIXED_SOURCE_APS_HANDOFF_DISPATCH_MODE:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_dispatch_mode_not_admitted",
+            "dispatch_mode must be server_side_mixed_source_aps_handoff.",
+            status="invalid",
+            blocked_fields=["dispatch_mode"],
+        )
+    if operator_decision != MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_OPERATOR_DECISION:
+        raise Layer3WorkbenchError(
+            "unsupported_mixed_source_external_export_download_readiness_decision",
+            "operator_decision must be record_mixed_source_external_export_download_readiness.",
+            status="invalid",
+            blocked_fields=["operator_decision"],
+        )
+
+    expected_package_kinds = (
+        payload["expected_package_kinds"]
+        if "expected_package_kinds" in payload
+        else list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    )
+    if expected_package_kinds != list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS):
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_kinds_mismatch",
+            "Mixed-source external export/download readiness admits exactly canonical_internal, user_facing, and review_facing package kinds.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["expected_package_kinds"],
+        )
+
+    preview_body = _mixed_source_package_review_preview(
+        db,
+        {
+            "client_request_id": request_id,
+            "session_id": session_id,
+            "material_preview_id": material_preview_id,
+            "material_preview_hash": material_preview_hash,
+        },
+    )
+    if preview_body.get("package_review_preview_hash") != supplied_package_preview_hash:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_preview_mismatch",
+            "Mixed-source external export/download readiness must reference the current server-recomputed package-review preview hash.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["package_review_preview_hash"],
+            next_allowed_actions=["refresh_package_review_preview"],
+        )
+    if preview_body.get("contract_hash") != supplied_contract_hash:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_contract_mismatch",
+            "Mixed-source external export/download readiness must reference the current server-recomputed contract hash.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["contract_hash"],
+            next_allowed_actions=["refresh_package_review_preview"],
+        )
+
+    session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().one_or_none()
+    if session is None:
+        raise Layer3WorkbenchError("session_not_found", f"Layer 3 session '{session_id}' was not found.", http_status=404)
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(
+            L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+            L3ReconciliationRecord.session_id == session_id,
+        )
+        .with_for_update()
+        .one_or_none()
+    )
+    if reconciliation is None:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_requires_package_construction",
+            "Mixed-source external export/download readiness requires a P15 mixed-source package construction reconciliation.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+            next_allowed_actions=["package_construction_commit"],
+        )
+    reconciliation_summary = _json_clone(reconciliation.summary_json or {})
+    if reconciliation_summary.get("source_gate") != SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_construction_source_gate_mismatch",
+            "Mixed-source external export/download readiness requires P15 mixed-source package construction authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
+    commit_summary = reconciliation_summary.get("workbench_package_commit")
+    if not isinstance(commit_summary, dict):
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_non_workbench_package_state",
+            "Mixed-source external export/download readiness requires workbench package-construction commit provenance.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    commit_mismatches = [
+        field
+        for field, expected in {
+            "material_preview_id": material_preview_id,
+            "material_preview_hash": material_preview_hash,
+            "package_review_preview_hash": supplied_package_preview_hash,
+            "contract_hash": supplied_contract_hash,
+            "package_construction_source_gate": SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
+        }.items()
+        if str(commit_summary.get(field) or "") != str(expected)
+    ]
+    if commit_mismatches:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_construction_mismatch",
+            "Stored mixed-source package construction provenance does not match the supplied external export/download readiness authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=commit_mismatches,
+        )
+    expected_construction_basis_hash = str(
+        commit_summary.get("construction_basis_hash") or commit_summary.get("authority_basis_hash") or ""
+    )
+    if supplied_construction_basis_hash != expected_construction_basis_hash:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_construction_basis_mismatch",
+            "Supplied construction_basis_hash does not match the persisted mixed-source package construction.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["construction_basis_hash"],
+        )
+
+    all_packages = (
+        db.query(L3OutputPackage)
+        .filter(
+            L3OutputPackage.session_id == session_id,
+            L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
+        )
+        .order_by(L3OutputPackage.package_kind.asc())
+        .with_for_update()
+        .all()
+    )
+    unexpected_package_kinds = _unexpected_package_kinds(all_packages)
+    if unexpected_package_kinds:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_unexpected_package_state",
+            "Mixed-source external export/download readiness cannot proceed with unexpected package kinds on the reconciliation.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_kinds"],
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    packages = _review_source_packages(all_packages)
+    if (
+        len(packages) != len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+        or {package.package_kind for package in packages} != set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    ):
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_requires_complete_package_set",
+            "Mixed-source external export/download readiness requires exactly canonical_internal, user_facing, and review_facing packages.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["output_package_ids"],
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    ordered_packages = _packages_in_review_order(packages)
+    if not isinstance(raw_output_package_ids, list):
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_package_ids_invalid",
+            "output_package_ids must be a list of the three constructed output package ids.",
+            status="invalid",
+            blocked_fields=["output_package_ids"],
+        )
+    expected_package_ids = [package.output_package_id for package in ordered_packages]
+    if [str(item or "").strip() for item in raw_output_package_ids] != expected_package_ids:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_package_ids_mismatch",
+            "Supplied output_package_ids do not match the constructed mixed-source package set.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["output_package_ids"],
+        )
+    if not isinstance(raw_payload_hashes, (list, dict)):
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_payload_hashes_invalid",
+            "payload_hashes must be either a list of package hashes or a mapping keyed by package kind or package id.",
+            status="invalid",
+            blocked_fields=["payload_hashes"],
+        )
+    canonical_payload_hashes = _canonical_payload_hashes(payload_hashes=raw_payload_hashes, packages=packages)
+    if canonical_payload_hashes is None:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_payload_hashes_mismatch",
+            "Supplied payload_hashes do not match the constructed mixed-source package payload hashes.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["payload_hashes"],
+        )
+
+    package_kinds = [package.package_kind for package in ordered_packages]
+    public_payload_refs = [_public_mixed_package_payload_ref(package) for package in ordered_packages]
+    package_review_submit = _package_review_submit_from_reconciliation(reconciliation)
+    if package_review_submit is None:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_requires_package_review_submit",
+            "Mixed-source external export/download readiness requires an existing P16 package-review submit state.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_review_submit_record_ref"],
+            next_allowed_actions=["submit_mixed_source_package_review"],
+        )
+    submit_mismatches = [
+        field
+        for field, expected in {
+            "package_review_submit_schema_id": MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+            "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+            "submit_record_ref": supplied_submit_ref,
+            "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+            "material_preview_id": material_preview_id,
+            "material_preview_hash": material_preview_hash,
+            "contract_hash": supplied_contract_hash,
+            "package_review_preview_hash": supplied_package_preview_hash,
+            "construction_basis_hash": expected_construction_basis_hash,
+            "reconciliation_record_id": reconciliation_record_id,
+            "package_construction_source_gate": SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
+        }.items()
+        if str(package_review_submit.get(field) or "") != str(expected)
+    ]
+    if list(package_review_submit.get("output_package_ids") or []) != expected_package_ids:
+        submit_mismatches.append("output_package_ids")
+    if list(package_review_submit.get("package_kinds") or []) != package_kinds:
+        submit_mismatches.append("package_kinds")
+    if list(package_review_submit.get("payload_hashes") or []) != canonical_payload_hashes:
+        submit_mismatches.append("payload_hashes")
+    if submit_mismatches:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_package_review_submit_mismatch",
+            "Stored mixed-source package-review submit authority does not match the external export/download readiness request.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=sorted(set(submit_mismatches)),
+        )
+
+    prepare_state = _handoff_export_prepare_from_reconciliation(reconciliation)
+    if prepare_state is None or prepare_state.get("handoff_export_state") != HANDOFF_EXPORT_PREPARED_STATE:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_requires_prepared_handoff_export",
+            "Mixed-source external export/download readiness requires recorded handoff_export_prepared state.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["handoff_export_state"],
+            next_allowed_actions=["record_mixed_source_handoff_export_prepare"],
+        )
+    envelope = prepare_state.get("handoff_export_envelope")
+    envelope_ref = str(envelope.get("envelope_ref") or "").strip() if isinstance(envelope, dict) else ""
+    prepare_mismatches = [
+        field
+        for field, expected in {
+            "handoff_export_prepare_schema_id": MIXED_SOURCE_HANDOFF_EXPORT_PREPARE_SCHEMA_ID,
+            "package_review_submit_record_ref": supplied_submit_ref,
+            "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+            "prepare_record_ref": supplied_prepare_ref,
+            "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+            "handoff_target": "mixed_source_review_package",
+            "export_mode": "reference_envelope_only",
+            "material_preview_id": material_preview_id,
+            "material_preview_hash": material_preview_hash,
+            "contract_hash": supplied_contract_hash,
+            "package_review_preview_hash": supplied_package_preview_hash,
+            "construction_basis_hash": expected_construction_basis_hash,
+            "reconciliation_record_id": reconciliation_record_id,
+            "package_review_submit_schema_id": MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+            "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+            "source_gate": SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
+            "package_construction_source_gate": SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
+        }.items()
+        if str(prepare_state.get(field) or "") != str(expected)
+    ]
+    if supplied_envelope_ref != envelope_ref:
+        prepare_mismatches.append("handoff_export_envelope_ref")
+    if list(prepare_state.get("output_package_ids") or []) != expected_package_ids:
+        prepare_mismatches.append("output_package_ids")
+    if list(prepare_state.get("package_kinds") or []) != package_kinds:
+        prepare_mismatches.append("package_kinds")
+    if list(prepare_state.get("payload_refs") or []) != public_payload_refs:
+        prepare_mismatches.append("payload_refs")
+    if list(prepare_state.get("payload_hashes") or []) != canonical_payload_hashes:
+        prepare_mismatches.append("payload_hashes")
+    if not isinstance(envelope, dict):
+        prepare_mismatches.append("handoff_export_envelope")
+    else:
+        if envelope.get("schema_id") != "layer3.mixed_source_handoff_export_envelope.v1":
+            prepare_mismatches.append("handoff_export_envelope.schema_id")
+        if list(envelope.get("payload_refs") or []) != public_payload_refs:
+            prepare_mismatches.append("handoff_export_envelope.payload_refs")
+        if list(envelope.get("payload_hashes") or []) != canonical_payload_hashes:
+            prepare_mismatches.append("handoff_export_envelope.payload_hashes")
+        if envelope.get("handoff_target") != "mixed_source_review_package":
+            prepare_mismatches.append("handoff_export_envelope.handoff_target")
+        if envelope.get("export_mode") != "reference_envelope_only":
+            prepare_mismatches.append("handoff_export_envelope.export_mode")
+    if prepare_mismatches:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_prepare_mismatch",
+            "Stored mixed-source handoff/export prepare authority does not match the external export/download readiness request.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=sorted(set(prepare_mismatches)),
+        )
+
+    # P18 dispatch precondition check
+    recorded_dispatch = _aps_handoff_dispatch_from_reconciliation(reconciliation)
+    if recorded_dispatch is None:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_requires_aps_handoff_dispatch",
+            "Mixed-source external export/download readiness requires a recorded P18 APS handoff dispatch state.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["aps_handoff_record_ref"],
+            next_allowed_actions=["record_mixed_source_aps_handoff_dispatch"],
+        )
+    if recorded_dispatch.get("aps_handoff_state") != APS_HANDOFF_DISPATCHED_STATE:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_requires_dispatched_aps_handoff",
+            "Mixed-source external export/download readiness requires aps_handoff_state to be aps_handoff_dispatched on the recorded dispatch.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["aps_handoff_state"],
+            next_allowed_actions=["inspect_aps_handoff_dispatch_state"],
+        )
+    if recorded_dispatch.get("aps_handoff_record_ref") != supplied_aps_handoff_record_ref:
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_aps_handoff_mismatch",
+            "Supplied aps_handoff_record_ref does not match the recorded P18 APS handoff dispatch.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_handoff_record_ref"],
+        )
+
+    negative_authority_flags = {
+        **_json_clone(prepare_state.get("negative_authority_flags") or preview_body.get("negative_authority_flags") or {}),
+        "external_export_enabled": False,
+        "download_enabled": False,
+        "download_url_enabled": False,
+        "signed_reference_enabled": False,
+        "provider_public_url_enabled": False,
+        "provider_private_signed_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "delivery_enabled": False,
+        "external_export_download_enabled": False,
+    }
+    readiness_downstream_unavailable = [
+        "external_export_download",
+        "external_export",
+        "download",
+        "download_url",
+        "connector_dispatch",
+        "provider_public_url",
+        "provider_private_signed_url",
+        "public_url",
+        "delivery",
+        "signed_reference",
+        "signed_url",
+    ]
+    readiness_basis = {
+        "schema_id": "layer3.mixed_source_external_export_download_readiness_authority.v1",
+        "external_export_download_readiness_schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_SCHEMA_ID,
+        "readiness_schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_SCHEMA_ID,
+        "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+        "client_request_id": request_id,
+        "session_id": session_id,
+        "material_preview_id": material_preview_id,
+        "material_preview_hash": material_preview_hash,
+        "contract_hash": supplied_contract_hash,
+        "package_review_preview_hash": supplied_package_preview_hash,
+        "construction_basis_hash": expected_construction_basis_hash,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": package_kinds,
+        "payload_hashes": canonical_payload_hashes,
+        "expected_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+        "package_review_submit_record_ref": supplied_submit_ref,
+        "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+        "prepare_record_ref": supplied_prepare_ref,
+        "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+        "handoff_export_envelope_ref": envelope_ref,
+        "handoff_target": "mixed_source_review_package",
+        "export_mode": "reference_envelope_only",
+        "aps_handoff_target": MIXED_SOURCE_APS_HANDOFF_TARGET,
+        "dispatch_mode": MIXED_SOURCE_APS_HANDOFF_DISPATCH_MODE,
+        "aps_handoff_record_ref": supplied_aps_handoff_record_ref,
+        "aps_handoff_state": APS_HANDOFF_DISPATCHED_STATE,
+        "operator_decision": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_OPERATOR_DECISION,
+        "decision_notes": decision_notes or None,
+    }
+    external_export_download_readiness_record_ref = _stable_id(
+        "l3-mixed-source-external-export-download-readiness", readiness_basis
+    )
+
+    existing_readiness = _mixed_source_external_export_download_readiness_from_reconciliation(reconciliation)
+    if existing_readiness is not None:
+        if (
+            existing_readiness.get("external_export_download_readiness_record_ref") == external_export_download_readiness_record_ref
+            and existing_readiness.get("client_request_id") == request_id
+        ):
+            readiness_id = str(existing_readiness.get("readiness_id") or "")
+            external_export_download_readiness_ref = f"layer3://mixed-source-external-export/{readiness_id}"
+            return {
+                **_base_response(
+                    MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_SCHEMA_ID,
+                    request_id=request_id,
+                    status="already_ready",
+                ),
+                "session_id": session_id,
+                "material_preview_id": material_preview_id,
+                "material_preview_hash": material_preview_hash,
+                "contract_hash": supplied_contract_hash,
+                "package_review_preview_hash": supplied_package_preview_hash,
+                "construction_basis_hash": expected_construction_basis_hash,
+                "reconciliation_record_id": reconciliation_record_id,
+                "output_package_ids": expected_package_ids,
+                "package_kinds": package_kinds,
+                "payload_refs": public_payload_refs,
+                "payload_hashes": canonical_payload_hashes,
+                "package_review_submit_record_ref": supplied_submit_ref,
+                "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+                "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+                "handoff_target": "mixed_source_review_package",
+                "export_mode": "reference_envelope_only",
+                "aps_handoff_target": MIXED_SOURCE_APS_HANDOFF_TARGET,
+                "dispatch_mode": MIXED_SOURCE_APS_HANDOFF_DISPATCH_MODE,
+                "operator_decision": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_OPERATOR_DECISION,
+                "decision_notes": decision_notes or None,
+                "readiness_schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_SCHEMA_ID,
+                "external_export_download_readiness_schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_SCHEMA_ID,
+                "external_export_download_readiness_state": existing_readiness.get("external_export_download_readiness_state"),
+                "external_export_download_readiness_record_ref": external_export_download_readiness_record_ref,
+                "external_export_download_readiness_ref": external_export_download_readiness_ref,
+                "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+                "aps_handoff_record_ref": supplied_aps_handoff_record_ref,
+                "aps_handoff_state": APS_HANDOFF_DISPATCHED_STATE,
+                "prepare_record_ref": supplied_prepare_ref,
+                "handoff_export_envelope_ref": envelope_ref,
+                "negative_authority_flags": negative_authority_flags,
+                "external_export_enabled": False,
+                "download_enabled": False,
+                "download_url_enabled": False,
+                "signed_reference_enabled": False,
+                "provider_public_url_enabled": False,
+                "provider_private_signed_url_enabled": False,
+                "connector_dispatch_enabled": False,
+                "delivery_enabled": False,
+                "external_export_download_enabled": False,
+                "downstream_unavailable": readiness_downstream_unavailable,
+                "next_allowed_actions": [],
+                "next_state": "mixed_source_external_export_download_ready",
+                "authority_rail": _authority_rail(
+                    session_id=session_id,
+                    current_gate="package",
+                    persistence_mode="durable_mixed_source_external_export_download_readiness",
+                    downstream_unavailable=readiness_downstream_unavailable,
+                    execution_enabled=False,
+                    package_review_enabled=False,
+                ),
+            }
+        raise Layer3WorkbenchError(
+            "mixed_source_external_export_download_readiness_already_recorded",
+            "This prepared mixed-source package set already has an external export/download readiness decision.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["client_request_id", "operator_decision"],
+        )
+
+    readiness_id = _stable_id(
+        "l3-mixed-source-external-export-download-readiness-ref",
+        {**readiness_basis, "external_export_download_readiness_record_ref": external_export_download_readiness_record_ref},
+    )
+    external_export_download_readiness_ref = f"layer3://mixed-source-external-export/{readiness_id}"
+    recorded_at = _utcnow_iso()
+    readiness_state = {
+        "schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_STATE_SCHEMA_ID,
+        "external_export_download_readiness_schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_SCHEMA_ID,
+        "readiness_schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_SCHEMA_ID,
+        "client_request_id": request_id,
+        "external_export_download_readiness_record_ref": external_export_download_readiness_record_ref,
+        "readiness_id": readiness_id,
+        "external_export_download_readiness_ref": external_export_download_readiness_ref,
+        "authority_basis": readiness_basis,
+        "package_review_submit_record_ref": supplied_submit_ref,
+        "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+        "prepare_record_ref": supplied_prepare_ref,
+        "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+        "handoff_export_envelope_ref": envelope_ref,
+        "handoff_target": "mixed_source_review_package",
+        "export_mode": "reference_envelope_only",
+        "aps_handoff_target": MIXED_SOURCE_APS_HANDOFF_TARGET,
+        "dispatch_mode": MIXED_SOURCE_APS_HANDOFF_DISPATCH_MODE,
+        "aps_handoff_record_ref": supplied_aps_handoff_record_ref,
+        "aps_handoff_state": APS_HANDOFF_DISPATCHED_STATE,
+        "operator_decision": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_OPERATOR_DECISION,
+        "decision_notes": decision_notes or None,
+        "external_export_download_readiness_state": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READY_STATE,
+        "material_preview_id": material_preview_id,
+        "material_preview_hash": material_preview_hash,
+        "contract_hash": supplied_contract_hash,
+        "package_review_preview_hash": supplied_package_preview_hash,
+        "construction_basis_hash": expected_construction_basis_hash,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": package_kinds,
+        "payload_refs": public_payload_refs,
+        "payload_hashes": canonical_payload_hashes,
+        "expected_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+        "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+        "method": "mixed_source_package_lifecycle",
+        "source_gate": SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
+        "package_construction_source_gate": SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
+        "source_shape": "dataset_version_plus_aps_content_document",
+        "package_review_submit_schema_id": MIXED_SOURCE_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+        "negative_authority_flags": negative_authority_flags,
+        "recorded_at": recorded_at,
+        "external_export_enabled": False,
+        "download_enabled": False,
+        "download_url_enabled": False,
+        "signed_reference_enabled": False,
+        "provider_public_url_enabled": False,
+        "provider_private_signed_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "delivery_enabled": False,
+        "external_export_download_enabled": False,
+        "downstream_unavailable": readiness_downstream_unavailable,
+    }
+    reconciliation.summary_json = {
+        **reconciliation_summary,
+        "external_export_download_readiness": readiness_state,
+    }
+    session.summary_json = {
+        **_json_clone(session.summary_json or {}),
+        "external_export_download_readiness": {
+            "schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_STATE_SCHEMA_ID,
+            "external_export_download_readiness_schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_SCHEMA_ID,
+            "readiness_schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_SCHEMA_ID,
+            "external_export_download_readiness_record_ref": external_export_download_readiness_record_ref,
+            "readiness_id": readiness_id,
+            "external_export_download_readiness_ref": external_export_download_readiness_ref,
+            "package_review_submit_record_ref": supplied_submit_ref,
+            "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+            "prepare_record_ref": supplied_prepare_ref,
+            "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+            "handoff_export_envelope_ref": envelope_ref,
+            "handoff_target": "mixed_source_review_package",
+            "export_mode": "reference_envelope_only",
+            "aps_handoff_record_ref": supplied_aps_handoff_record_ref,
+            "aps_handoff_state": APS_HANDOFF_DISPATCHED_STATE,
+            "external_export_download_readiness_state": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READY_STATE,
+            "operator_decision": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_OPERATOR_DECISION,
+            "decision_notes": decision_notes or None,
+            "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+            "material_preview_id": material_preview_id,
+            "material_preview_hash": material_preview_hash,
+            "contract_hash": supplied_contract_hash,
+            "package_review_preview_hash": supplied_package_preview_hash,
+            "construction_basis_hash": expected_construction_basis_hash,
+            "reconciliation_record_id": reconciliation_record_id,
+            "output_package_ids": expected_package_ids,
+            "package_kinds": package_kinds,
+            "payload_refs": public_payload_refs,
+            "payload_hashes": canonical_payload_hashes,
+            "aps_handoff_target": MIXED_SOURCE_APS_HANDOFF_TARGET,
+            "dispatch_mode": MIXED_SOURCE_APS_HANDOFF_DISPATCH_MODE,
+            "source_gate": SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
+            "package_construction_source_gate": SOURCE_WORKBENCH_MIXED_PACKAGE_CONSTRUCTION_FREEZE,
+            "source_shape": "dataset_version_plus_aps_content_document",
+            "external_export_enabled": False,
+            "download_enabled": False,
+            "download_url_enabled": False,
+            "signed_reference_enabled": False,
+            "provider_public_url_enabled": False,
+            "provider_private_signed_url_enabled": False,
+            "connector_dispatch_enabled": False,
+            "delivery_enabled": False,
+            "external_export_download_enabled": False,
+            "downstream_unavailable": readiness_downstream_unavailable,
+        },
+    }
+    db.commit()
+    return {
+        **_base_response(
+            MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_SCHEMA_ID,
+            request_id=request_id,
+            status="ready",
+        ),
+        "session_id": session_id,
+        "material_preview_id": material_preview_id,
+        "material_preview_hash": material_preview_hash,
+        "contract_hash": supplied_contract_hash,
+        "package_review_preview_hash": supplied_package_preview_hash,
+        "construction_basis_hash": expected_construction_basis_hash,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": package_kinds,
+        "payload_refs": public_payload_refs,
+        "payload_hashes": canonical_payload_hashes,
+        "package_review_submit_record_ref": supplied_submit_ref,
+        "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+        "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+        "handoff_target": "mixed_source_review_package",
+        "export_mode": "reference_envelope_only",
+        "aps_handoff_target": MIXED_SOURCE_APS_HANDOFF_TARGET,
+        "dispatch_mode": MIXED_SOURCE_APS_HANDOFF_DISPATCH_MODE,
+        "operator_decision": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_OPERATOR_DECISION,
+        "decision_notes": decision_notes or None,
+        "readiness_schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_SCHEMA_ID,
+        "external_export_download_readiness_schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_SCHEMA_ID,
+        "external_export_download_readiness_state": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READY_STATE,
+        "external_export_download_readiness_record_ref": external_export_download_readiness_record_ref,
+        "external_export_download_readiness_ref": external_export_download_readiness_ref,
+        "package_family": PACKAGE_FAMILY_MIXED_DATASET_DOCUMENT,
+        "aps_handoff_record_ref": supplied_aps_handoff_record_ref,
+        "aps_handoff_state": APS_HANDOFF_DISPATCHED_STATE,
+        "prepare_record_ref": supplied_prepare_ref,
+        "handoff_export_envelope_ref": envelope_ref,
+        "negative_authority_flags": negative_authority_flags,
+        "external_export_enabled": False,
+        "download_enabled": False,
+        "download_url_enabled": False,
+        "signed_reference_enabled": False,
+        "provider_public_url_enabled": False,
+        "provider_private_signed_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "delivery_enabled": False,
+        "external_export_download_enabled": False,
+        "downstream_unavailable": readiness_downstream_unavailable,
+        "next_allowed_actions": [],
+        "next_state": "mixed_source_external_export_download_ready",
+        "authority_rail": _authority_rail(
+            session_id=session_id,
+            current_gate="package",
+            persistence_mode="durable_mixed_source_external_export_download_readiness",
+            downstream_unavailable=readiness_downstream_unavailable,
+            execution_enabled=False,
+            package_review_enabled=False,
+        ),
+    }
+
+
+def mixed_source_external_export_download_readiness(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or "").strip()
+    if not request_id:
+        raise Layer3WorkbenchError(
+            "client_request_id_required",
+            "client_request_id is required for mixed-source external export/download readiness.",
+            status="invalid",
+            blocked_fields=["client_request_id"],
+            next_allowed_actions=["submit_idempotent_mixed_source_external_export_download_readiness_request"],
+        )
+    return _mixed_source_external_export_download_readiness(db, payload)
 
 
 def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]:

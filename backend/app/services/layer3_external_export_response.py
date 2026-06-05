@@ -36,9 +36,11 @@ from app.services.layer3_utils import json_clone
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 from app.services.layer3_workbench_package_state import (
     EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+    MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_STATE_SCHEMA_ID,
     PACKAGE_REVIEW_APPROVED_STATE,
     aps_handoff_dispatch_from_reconciliation,
     external_export_download_prepare_from_reconciliation,
+    mixed_source_external_export_download_readiness_from_reconciliation,
     packages_in_review_order,
 )
 
@@ -759,6 +761,65 @@ def external_export_download_prepare_summary(
             if delivery_ui["available"]:
                 summary["delivery_ui"] = delivery_ui
         return summary
+
+    recorded_mixed_readiness = mixed_source_external_export_download_readiness_from_reconciliation(reconciliation)
+    if recorded_mixed_readiness is not None:
+        downstream_unavailable = list(
+            recorded_mixed_readiness.get("downstream_unavailable") or EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE
+        )
+        return {
+            "schema_id": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_STATE_SCHEMA_ID,
+            "available": False,
+            "state": recorded_mixed_readiness.get("external_export_download_readiness_state"),
+            "blocked_reason": None,
+            "external_export_download_readiness_schema_id": recorded_mixed_readiness.get(
+                "external_export_download_readiness_schema_id"
+            ),
+            "external_export_download_readiness_record_ref": recorded_mixed_readiness.get(
+                "external_export_download_readiness_record_ref"
+            ),
+            "external_export_download_readiness_ref": recorded_mixed_readiness.get(
+                "external_export_download_readiness_ref"
+            ),
+            "operator_decision": recorded_mixed_readiness.get("operator_decision"),
+            "decision_notes": recorded_mixed_readiness.get("decision_notes"),
+            "package_family": recorded_mixed_readiness.get("package_family"),
+            "material_preview_id": recorded_mixed_readiness.get("material_preview_id"),
+            "material_preview_hash": recorded_mixed_readiness.get("material_preview_hash"),
+            "contract_hash": recorded_mixed_readiness.get("contract_hash"),
+            "package_review_preview_hash": recorded_mixed_readiness.get("package_review_preview_hash"),
+            "construction_basis_hash": recorded_mixed_readiness.get("construction_basis_hash"),
+            "reconciliation_record_id": reconciliation_record_id,
+            "output_package_ids": list(recorded_mixed_readiness.get("output_package_ids") or []),
+            "package_kinds": list(recorded_mixed_readiness.get("package_kinds") or []),
+            "payload_refs": list(recorded_mixed_readiness.get("payload_refs") or []),
+            "payload_hashes": list(recorded_mixed_readiness.get("payload_hashes") or []),
+            "package_review_submit_record_ref": recorded_mixed_readiness.get("package_review_submit_record_ref"),
+            "package_review_state": recorded_mixed_readiness.get("package_review_state"),
+            "prepare_record_ref": recorded_mixed_readiness.get("prepare_record_ref"),
+            "handoff_export_state": recorded_mixed_readiness.get("handoff_export_state"),
+            "handoff_export_envelope_ref": recorded_mixed_readiness.get("handoff_export_envelope_ref"),
+            "handoff_target": recorded_mixed_readiness.get("handoff_target"),
+            "export_mode": recorded_mixed_readiness.get("export_mode"),
+            "aps_handoff_record_ref": aps_handoff_record_ref,
+            "aps_handoff_state": recorded_mixed_readiness.get("aps_handoff_state"),
+            "aps_handoff_target": recorded_mixed_readiness.get("aps_handoff_target"),
+            "dispatch_mode": recorded_mixed_readiness.get("dispatch_mode"),
+            "external_export_enabled": False,
+            "download_enabled": False,
+            "download_url_enabled": False,
+            "signed_reference_enabled": False,
+            "provider_public_url_enabled": False,
+            "provider_private_signed_url_enabled": False,
+            "connector_dispatch_enabled": False,
+            "delivery_enabled": False,
+            "external_export_download_enabled": False,
+            "external_export_download_prepare_enabled": False,
+            "browser_download_enabled": False,
+            "destination_selection_enabled": False,
+            "generic_downstream_dispatch_enabled": False,
+            "downstream_unavailable": downstream_unavailable,
+        }
 
     if (
         qualitative_aps_external_export_download_deferred(recorded_dispatch)
