@@ -37,7 +37,7 @@
       "evidence": {
         "blocking_reasons_count": 0,
         "decision": "default_on_runtime_enabled",
-        "runtime_report_hash": "cfc14e78df265fac4ec3fca0728cd0acae35a84a736968ca26a23303f77e26b1",
+        "runtime_report_hash": "31a293cf2e3b7c070990d6f58c7610ec91c764dc672c8f0d9f614fe7c1c46545",
         "source_report": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
       },
       "state": "passed"
@@ -108,11 +108,18 @@
           "binding_service_current": true,
           "policy_report_clean": true,
           "policy_service_current": true,
+          "proxy_identity_projection_mode_selected": true,
           "route_and_binding_test_evidence_current": true,
           "route_enforcement_doc_current": true,
+          "route_level_enforcement_proof_current": true,
+          "route_level_identity_mode_selected": true,
           "strategy_report_clean": true
         },
         "export_or_delivery_enabled_by_evidence": false,
+        "formal_auth_modes_selected": [
+          "proxy_identity_read_only_projection",
+          "route_level_operator_identity_required"
+        ],
         "historical_unbound_receipt_backfill_admitted": false,
         "production_readiness_claimed": false,
         "route_family_count": 6,
@@ -123,7 +130,10 @@
           "auth_binding_service": "backend/app/services/layer3_sec_xbrl_auth_binding.py",
           "auth_binding_tests": "backend/tests/test_sec_xbrl_auth_binding_receipt.py",
           "operator_workflow_tests": "backend/tests/test_sec_xbrl_operator_review_workflow.py",
-          "policy_service": "backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py"
+          "policy_service": "backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py",
+          "proxy_identity_projection_doc": "next_milestone_plans/Layer3_planning_docs/1351-sec-xbrl-proxy-identity-readonly-projection.md",
+          "route_level_enforcement_test": "backend/tests/test_sec_xbrl_route_level_auth_enforcement.py",
+          "route_level_identity_doc": "next_milestone_plans/Layer3_planning_docs/1352-sec-xbrl-route-level-operator-identity-required.md"
         },
         "source_reports": {
           "auth_owner_binding_strategy": {
@@ -159,7 +169,7 @@
       "criterion": "standing_non_admissions_preserved",
       "evidence": {
         "arelle_subprocess_invoked_by_gate": false,
-        "controlled_value_reveal_submit_default_enabled": false,
+        "controlled_value_reveal_submit_default_enabled": true,
         "corpus_validation_arelle_default_enabled": false,
         "export_or_delivery_enabled_by_gate": false,
         "provider_or_connector_dispatch_enabled_by_gate": false,
@@ -192,11 +202,18 @@
       "binding_service_current": true,
       "policy_report_clean": true,
       "policy_service_current": true,
+      "proxy_identity_projection_mode_selected": true,
       "route_and_binding_test_evidence_current": true,
       "route_enforcement_doc_current": true,
+      "route_level_enforcement_proof_current": true,
+      "route_level_identity_mode_selected": true,
       "strategy_report_clean": true
     },
     "export_or_delivery_enabled_by_evidence": false,
+    "formal_auth_modes_selected": [
+      "proxy_identity_read_only_projection",
+      "route_level_operator_identity_required"
+    ],
     "historical_unbound_receipt_backfill_admitted": false,
     "production_readiness_claimed": false,
     "route_family_count": 6,
@@ -207,7 +224,10 @@
       "auth_binding_service": "backend/app/services/layer3_sec_xbrl_auth_binding.py",
       "auth_binding_tests": "backend/tests/test_sec_xbrl_auth_binding_receipt.py",
       "operator_workflow_tests": "backend/tests/test_sec_xbrl_operator_review_workflow.py",
-      "policy_service": "backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py"
+      "policy_service": "backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py",
+      "proxy_identity_projection_doc": "next_milestone_plans/Layer3_planning_docs/1351-sec-xbrl-proxy-identity-readonly-projection.md",
+      "route_level_enforcement_test": "backend/tests/test_sec_xbrl_route_level_auth_enforcement.py",
+      "route_level_identity_doc": "next_milestone_plans/Layer3_planning_docs/1352-sec-xbrl-route-level-operator-identity-required.md"
     },
     "source_reports": {
       "auth_owner_binding_strategy": {
@@ -229,7 +249,7 @@
     "blocking_reasons_count": 0,
     "decision": "default_on_runtime_enabled",
     "next_slice": "sec_xbrl_default_on_nonlocal_production_readiness_design_v1",
-    "runtime_report_hash": "cfc14e78df265fac4ec3fca0728cd0acae35a84a736968ca26a23303f77e26b1",
+    "runtime_report_hash": "31a293cf2e3b7c070990d6f58c7610ec91c764dc672c8f0d9f614fe7c1c46545",
     "source_report": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
   },
   "next_slice": "sec_xbrl_nonlocal_production_admission_or_historical_backfill_disposition_v1",

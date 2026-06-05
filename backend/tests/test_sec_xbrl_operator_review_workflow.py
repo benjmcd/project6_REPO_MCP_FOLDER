@@ -2179,7 +2179,8 @@ def test_controlled_value_reveal_submit_redacts_identity_like_transient_values(d
     assert "0000123456-26-000001" not in json.dumps(row.negative_invariants_json, sort_keys=True)
 
 
-def test_controlled_value_reveal_submit_default_off_blocks_without_receipt(db_session) -> None:
+def test_controlled_value_reveal_submit_explicit_off_blocks_without_receipt(db_session, monkeypatch) -> None:
+    monkeypatch.setattr(submit_service.settings, "layer3_sec_xbrl_controlled_value_reveal_submit_enabled", False)
     with pytest.raises(submit_service.SecXbrlControlledValueRevealSubmitError) as exc:
         submit_service.submit_controlled_value_reveal(
             db_session,
@@ -2296,6 +2297,48 @@ def test_controlled_value_reveal_submit_api_records_receipt_and_status_hash_coun
     assert "dataset_version_id" not in status
     assert "sidecar_receipt_hash" not in status
     assert "123.45" not in json.dumps(status, sort_keys=True)
+
+
+def test_controlled_value_reveal_submit_api_default_on_returns_values_without_flag_monkeypatch(
+    api_client,
+    monkeypatch,
+) -> None:
+    # Activation proof (doc 1353): NO _enable_controlled_submit here -- the default-on posture
+    # drives the full lineage to revealed financial values behind the enforced owner-bound identity.
+    # The sidecar/value-store monkeypatches only stand in for the on-disk Arelle value store; they do
+    # not bypass the feature flag, the owner binding, or the operator_reveal_confirmation gate.
+    monkeypatch.setattr(authority_service, "_resolve_sidecar_authority", lambda *_args: _sidecar_authority())
+    monkeypatch.setattr(submit_service, "_resolve_sidecar_and_value_store", lambda *_args: _submit_sidecar_and_value_store())
+    client, Session = api_client
+    with Session() as db:
+        decision = _record_decision(db, request_id="controlled-submit-default-on-decision-source")
+        _bind_decision(db, decision)
+
+    authority_response = client.post(
+        AUTHORITY_PREPARE_ROUTE,
+        json=_authority_payload(decision, client_request_id="controlled-submit-default-on-authority"),
+    )
+    assert authority_response.status_code == 200, authority_response.text
+    authority = authority_response.json()
+
+    submit_response = client.post(
+        CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE,
+        json=_controlled_submit_payload(authority, client_request_id="controlled-submit-default-on"),
+    )
+
+    assert submit_response.status_code == 200, submit_response.text
+    body = submit_response.json()
+    assert body["schema_id"] == submit_service.SUBMIT_SCHEMA_ID
+    assert body["revealed_fact_count"] == 1
+    assert body["revealed_facts"][0]["effective_value"] == "123.45"
+    assert body["auth_binding_required"] is True
+    assert body["status_surface_hash_count_only"] is True
+
+    # Revealed response carries financial figures only -- no authority artifacts leak.
+    serialized = json.dumps(body, sort_keys=True)
+    assert "123.45" in serialized
+    for forbidden in ("@", "http://", "https://", "file://", "0000123456"):
+        assert forbidden not in serialized
 
 
 def test_controlled_value_reveal_submit_api_rolls_back_source_receipt_when_binding_fails(

@@ -61,9 +61,9 @@ def build_report(*, source_root: Path) -> dict[str, Any]:
             sources["config"],
             'layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False,',
         ),
-        "controlled_value_reveal_submit_default_off": _contains(
+        "controlled_value_reveal_submit_default_on": _contains(
             sources["config"],
-            'layer3_sec_xbrl_controlled_value_reveal_submit_enabled: bool = Field(\n        default=False,',
+            'layer3_sec_xbrl_controlled_value_reveal_submit_enabled: bool = Field(\n        default=True,',
         ),
     }
     endpoint = {
@@ -134,7 +134,7 @@ def build_report(*, source_root: Path) -> dict[str, Any]:
     non_goals = {
         "fact_authority_cutover_default_enabled": defaults["arelle_cutover_default_enabled"],
         "value_reveal_default_enabled": False,
-        "controlled_value_reveal_submit_default_enabled": False,
+        "controlled_value_reveal_submit_default_enabled": defaults["controlled_value_reveal_submit_default_on"],
         "operator_exercise_performed_by_this_check": False,
         "sec_network_fetch_performed": False,
         "sidecar_receipt_created": False,
@@ -145,8 +145,8 @@ def build_report(*, source_root: Path) -> dict[str, Any]:
     }
     criteria = [
         _criterion(
-            "value_reveal_defaults_remain_off",
-            defaults["value_reveal_default_off"] and defaults["controlled_value_reveal_submit_default_off"],
+            "arelle_value_reveal_default_off_controlled_submit_activated",
+            defaults["value_reveal_default_off"],
             defaults,
             "value_reveal_operator_exercise_value_reveal_defaults_not_off",
         ),
