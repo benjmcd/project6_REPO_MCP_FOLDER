@@ -3673,6 +3673,7 @@ function mixedSourceApsHandoffDispatchAuthorityPacket() {
         handoff_export_envelope_ref: envelopeRef,
         aps_handoff_target: MIXED_SOURCE_APS_HANDOFF_TARGET,
         dispatch_mode: MIXED_SOURCE_APS_HANDOFF_MODE,
+        downstream_unavailable: handoff.downstream_unavailable,
     };
     const requiredStrings = [
         dispatchPacket.prepare_record_ref,
@@ -4639,7 +4640,7 @@ function apsHandoffDispatchState() {
     if (State.apsHandoffDispatch) {
         return State.apsHandoffDispatch;
     }
-    const handoff = State.handoffExportPrepare;
+    const handoff = handoffExportPrepareState();
     const handoffState = handoff?.handoff_export_state || handoff?.next_state || handoff?.state;
     const qualitativeAps = handoff?.schema_id === 'layer3.qual_aps_handoff_export_prepare.v1'
         || isQualitativeApsPackageSubmitState(packageReviewSubmitState() || {}, packageConstructionState() || {});
@@ -4680,7 +4681,7 @@ function apsHandoffDispatchState() {
             aps_handoff_target: MIXED_SOURCE_APS_HANDOFF_TARGET,
             dispatch_mode: MIXED_SOURCE_APS_HANDOFF_MODE,
             operator_decision: MIXED_SOURCE_APS_HANDOFF_OPERATOR_DECISION,
-            downstream_unavailable: handoff.downstream_unavailable || [
+            downstream_unavailable: mixedSourcePacket.downstream_unavailable || [
                 'external_export_download',
                 'download',
                 'connector_dispatch',
@@ -4925,6 +4926,7 @@ function canGenerateExternalExportDownloadSignedReference() {
         return Boolean(
             mixedSourceExternalExportDownloadSignedReferenceUiAdmitted()
             && !State.externalExportDownloadSignedReference?.signed_reference_token
+            && !recordedMixedSourceExternalExportDownloadDelivery()
             && !State.externalExportDownloadPreparePending
             && !State.externalExportDownloadDeliveryPending
             && !State.externalExportDownloadSignedReferencePending
@@ -4937,6 +4939,7 @@ function canGenerateExternalExportDownloadSignedReference() {
         && !isSourceDirectoryHybridExternalExportDownloadPrepareState(external)
         && externalExportDownloadDeliveryUiAdmitted(external)
         && !State.externalExportDownloadSignedReference?.signed_reference_token
+        && !recordedExternalExportDownloadDelivery()
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
         && !State.externalExportDownloadSignedReferencePending

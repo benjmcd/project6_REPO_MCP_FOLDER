@@ -8700,6 +8700,14 @@ test('Layer 3 workbench drives P18/P19 mixed-source readiness controls from mate
     };
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
+  const mixedDirectDelivery = {
+    schema_id: 'layer3.mixed_source_external_export_download_delivery.v1',
+    package_family: 'mixed_dataset_document',
+    session_id: sessionId,
+    external_export_download_delivery_state: 'mixed_source_external_export_download_delivered',
+    state: 'mixed_source_external_export_download_delivered',
+    external_export_download_readiness_record_ref: 'layer3://mixed-source-external-export-record/p18-p19-rendered',
+  };
   await page.route('**/api/v1/layer3/handoff/export/download/signed-reference/generate', async (route, request) => {
     const payload = request.postDataJSON();
     signedReferenceRequests.push(payload);
@@ -8743,7 +8751,7 @@ test('Layer 3 workbench drives P18/P19 mixed-source readiness controls from mate
       State.sessionSummary = ${JSON.stringify(seed.sessionSummary)};
       State.packageReviewSubmit = ${JSON.stringify(seed.packageSubmit)};
       State.packageConstruction = ${JSON.stringify(seed.packageSubmit)};
-      State.handoffExportPrepare = ${JSON.stringify(seed.handoffPrepare)};
+      State.handoffExportPrepare = null;
       State.apsHandoffDispatch = null;
       State.externalExportDownloadPrepare = null;
       State.externalExportDownloadSignedReference = null;
@@ -8846,8 +8854,26 @@ test('Layer 3 workbench drives P18/P19 mixed-source readiness controls from mate
   const signedReferencePanel = page.locator('#external-export-download-signed-reference-panel');
   await expect(signedReferencePanel).toHaveAttribute('data-rendered-mode', 'rendered_mixed_source_external_export_download_signed_reference_control');
   await expect(signedReferencePanel).toContainText('mixed_source_external_export_download_signed_reference_ui_ready');
-  await expect(page.locator('#external-export-download-signed-reference-generate')).toBeEnabled();
-  await page.locator('#external-export-download-signed-reference-generate').click();
+  const signedReferenceGenerate = page.locator('#external-export-download-signed-reference-generate');
+  await page.evaluate((delivery) => {
+    eval(`
+      State.sessionSummary.external_export_download_delivery = ${JSON.stringify(delivery)};
+      State.externalExportDownloadDelivery = null;
+      State.externalExportDownloadSignedReference = null;
+      renderAll();
+    `);
+  }, mixedDirectDelivery);
+  await expect(signedReferenceGenerate).toBeDisabled();
+  expect(signedReferenceRequests).toHaveLength(0);
+  await page.evaluate(() => {
+    eval(`
+      delete State.sessionSummary.external_export_download_delivery;
+      State.externalExportDownloadDelivery = null;
+      renderAll();
+    `);
+  });
+  await expect(signedReferenceGenerate).toBeEnabled();
+  await signedReferenceGenerate.click();
   await expect.poll(() => signedReferenceRequests.length).toBe(1);
   const signedPayload = signedReferenceRequests[0];
   expect(signedPayload.operator_decision).toBe('generate_mixed_source_external_export_download_signed_reference');
