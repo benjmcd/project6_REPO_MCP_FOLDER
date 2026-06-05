@@ -3777,6 +3777,19 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     margin-top: 10px;
 }
 
+.sec-xbrl-runtime-posture-output-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 10px;
+}
+
+.sec-xbrl-runtime-posture-output-grid .result-review-card,
+.sec-xbrl-runtime-posture-output-grid code,
+.sec-xbrl-runtime-posture-output-grid .rail-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
 .mockup-activation-readiness-grid {
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }

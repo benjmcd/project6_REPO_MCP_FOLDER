@@ -2835,6 +2835,68 @@ def test_layer3_source_directory_ingestion_rendered_control_is_bounded() -> None
         assert forbidden not in material_payload_slice
 
 
+def test_layer3_sec_xbrl_runtime_posture_rendered_control_is_read_only() -> None:
+    html = client.get("/review/layer3")
+    js = client.get("/review/layer3/static/layer3.js")
+
+    assert html.status_code == 200
+    assert js.status_code == 200
+    assert 'id="sec-xbrl-runtime-posture-panel"' in html.text
+    assert 'data-rendered-mode="rendered_sec_xbrl_runtime_posture_projection_control"' in html.text
+    assert 'data-read-only="true"' in html.text
+    assert 'data-value-reveal-enabled="false"' in html.text
+    assert 'data-delivery-export-enabled="false"' in html.text
+    assert 'data-source-acquisition-enabled="false"' in html.text
+    assert 'data-arelle-invocation-enabled="false"' in html.text
+    assert 'data-runtime-default-enabled="false"' in html.text
+    assert 'data-production-readiness-claimed="false"' in html.text
+
+    rows_start = js.text.find("function secXbrlRuntimePostureRows")
+    render_start = js.text.find("function renderSecXbrlRuntimePosturePanel")
+    async_start = js.text.find("async function inspectSecXbrlRuntimePosture")
+    workflow_async_start = js.text.find("async function inspectSecXbrlOperatorReviewWorkflowStatus")
+    assert rows_start != -1
+    assert render_start != -1
+    assert async_start != -1
+    assert workflow_async_start != -1
+
+    rows_slice = js.text[rows_start:render_start]
+    render_slice = js.text[render_start:async_start]
+    async_slice = js.text[async_start:workflow_async_start]
+    assert "const SEC_XBRL_RUNTIME_POSTURE_RENDERED_MODE = 'rendered_sec_xbrl_runtime_posture_projection_control'" in js.text
+    assert "const SEC_XBRL_RUNTIME_POSTURE_ENDPOINT = '/sec-xbrl/runtime/posture'" in js.text
+    assert "sec_xbrl_runtime_posture" in async_slice
+    assert "getJson(SEC_XBRL_RUNTIME_POSTURE_ENDPOINT)" in async_slice
+    assert "postJson" not in async_slice
+    assert "data-read-only=\"true\"" in render_slice
+    assert "data-value-reveal-enabled=\"false\"" in render_slice
+    assert "data-delivery-export-enabled=\"false\"" in render_slice
+    assert "data-source-acquisition-enabled=\"false\"" in render_slice
+    assert "data-arelle-invocation-enabled=\"false\"" in render_slice
+    assert "data-runtime-default-enabled=\"false\"" in render_slice
+    assert "data-production-readiness-claimed=\"false\"" in render_slice
+    assert "sec-xbrl-runtime-posture-output-grid" in rows_slice
+    assert "production readiness claimed" in rows_slice
+    assert "source acquisition performed" in rows_slice
+    assert "Arelle invoked" in rows_slice
+    assert "value reveal performed" in rows_slice
+    assert "raw operator identity exposed" in rows_slice
+    assert "raw value exposed" in rows_slice
+    for forbidden in (
+        "sidecar_receipt_id:",
+        "dataset_version_id:",
+        "value_store_hash:",
+        "source_acquisition_request:",
+        "operator_identity:",
+        "raw_value:",
+        "local_path:",
+        "sec_url:",
+        "runtime_default_override:",
+    ):
+        assert forbidden not in render_slice
+        assert forbidden not in async_slice
+
+
 def test_layer3_sec_xbrl_controlled_value_reveal_rendered_control_is_bounded() -> None:
     html = client.get("/review/layer3")
     js = client.get("/review/layer3/static/layer3.js")
