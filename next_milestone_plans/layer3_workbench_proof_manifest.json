@@ -46234,7 +46234,8 @@
       "rendered governance dashboard exposes a mixed-source product-authority checkpoint card",
       "checkpoint state is ready only when P17 handoff/export prepare, P18 APS handoff dispatch, P19 external export/download readiness, P21 delivery authority, and P22 signed-reference authority are all present",
       "checkpoint rows display per-step ready/blocked state and server-authority provenance",
-      "blocked-boundary rows explicitly keep real export/dispatch, provider URLs, connector dispatch, destination write, local outbox, package rewrite, schema widening, and production readiness false"
+      "blocked-boundary rows explicitly keep real export/dispatch, provider URLs, connector dispatch, destination write, local outbox, package rewrite, schema widening, and production readiness false",
+      "checkpoint card has scoped overflow containment so long authority labels do not widen mobile or mockup workbench layouts"
     ],
     "negative_authority_flags": {
       "current_main_behavior_changed": false,
@@ -46265,9 +46266,11 @@
       "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls\" --project=chromium -> 1 passed",
       "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls\" --project=chromium --headed -> 1 passed",
       "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls|P21 mixed-source external export download delivery control|P22 mixed-source signed-reference controls|raw mixed rendered external export download signed reference\" --project=chromium -> 4 passed",
-      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls|P21 mixed-source external export download delivery control|P22 mixed-source signed-reference controls|raw mixed rendered external export download signed reference\" --project=chromium --headed -> 4 passed"
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls|P21 mixed-source external export download delivery control|P22 mixed-source signed-reference controls|raw mixed rendered external export download signed reference\" --project=chromium --headed -> 4 passed",
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"responsive live-state sublayer|mockup workbench theme exposes|Sublayer 3C execution lanes projection\" --project=chromium -> 3 passed",
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"query/source setup projection|output review package handoff projection|Sublayers AB projection\" --project=chromium -> 3 passed"
     ],
     "next_posture": "merge_review_then_current_main_sync_before_selecting_durable_revocation_provider_connector_schema_or_production_readiness_surfaces"
   },
-  "latest_p24_mixed_source_product_authority_checkpoint_proof_summary": "Branch-local P24 proof verifies a read-only mixed-source product-authority checkpoint over existing P17/P18/P19/P21/P22 authority and keeps backend routes, payload builders, submit handlers, signed-reference status/revocation, provider/public URL, connector/destination/local-outbox, schema, parser/source-shape, package rewrite, real export/dispatch, and production-readiness behavior blocked."
+  "latest_p24_mixed_source_product_authority_checkpoint_proof_summary": "Branch-local P24 proof verifies a read-only mixed-source product-authority checkpoint over existing P17/P18/P19/P21/P22 authority with scoped overflow containment, and keeps backend routes, payload builders, submit handlers, signed-reference status/revocation, provider/public URL, connector/destination/local-outbox, schema, parser/source-shape, package rewrite, real export/dispatch, and production-readiness behavior blocked."
 }

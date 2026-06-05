@@ -16,8 +16,9 @@ P17 through P18/P19/P21/P22:
 
 The checkpoint is read-only. It derives from existing loaded `State` and
 `State.sessionSummary` authority helpers and renders status rows plus blocked
-boundary flags. It does not add a new backend route, payload builder, submit
-handler, persisted state, or transport path.
+boundary flags. The rendered card is scoped with overflow containment so long
+authority labels cannot widen the page on mobile. It does not add a new backend
+route, payload builder, submit handler, persisted state, or transport path.
 
 ## Runtime Boundary
 
@@ -72,6 +73,10 @@ Branch-local verification passed:
   (`4 passed`)
 - `npx playwright test ./e2e/layer3-workbench.spec.js -g "P18/P19 mixed-source readiness controls|P21 mixed-source external export download delivery control|P22 mixed-source signed-reference controls|raw mixed rendered external export download signed reference" --project=chromium --headed`
   (`4 passed`)
+- `npx playwright test ./e2e/layer3-workbench.spec.js -g "responsive live-state sublayer|mockup workbench theme exposes|Sublayer 3C execution lanes projection" --project=chromium`
+  (`3 passed`)
+- `npx playwright test ./e2e/layer3-workbench.spec.js -g "query/source setup projection|output review package handoff projection|Sublayers AB projection" --project=chromium`
+  (`3 passed`)
 
 ## Next Posture
 
