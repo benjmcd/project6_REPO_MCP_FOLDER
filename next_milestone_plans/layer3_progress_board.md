@@ -12432,3 +12432,40 @@ Next posture: a later escalation freeze may select
 at the route boundary, followed by a value-reveal activation freeze behind the
 enforced identity surface. Do not escalate enforcement or activate value reveal
 in this freeze.
+
+## SEC XBRL Route-Level Operator Identity Required
+
+Milestone: `sec_xbrl_route_level_operator_identity_required_freeze_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1352-sec-xbrl-route-level-operator-identity-required.md`.
+
+Status: mode-3 escalation freeze. Formally selects
+`route_level_operator_identity_required` (superseding 1351's read-only projection
+as the operative posture; the projection surface remains). Enforcement was already
+wired on the six protected SEC XBRL routes (authenticated `_sec_xbrl_policy_decision`
++ `_sec_xbrl_require_binding` path vs the anonymous redacted path); this freeze adds
+the previously-missing HTTP-layer fail-closed proof.
+
+Scope: test-only + docs. New
+`backend/tests/test_sec_xbrl_route_level_auth_enforcement.py` (12 tests) proves, via
+TestClient, that under `AUTH_OWNER=proxy` + `TRUSTED_PROXY_MODE=true` with the identity
+header absent, all six protected routes fail closed (401 `missing_identity_authority`);
+untrusted proxy → 409 `untrusted_proxy_identity`; the fail-closed body leaks no raw
+identity/header value; caller-supplied forbidden fields → 400; and the anonymous redacted
+operator-review path (no receipt referenced) is preserved under `AUTH_OWNER=none`.
+
+Non-goals: no route admit/deny behavior change; no value-reveal activation; no flip of the
+`layer3_sec_xbrl_controlled_value_reveal_submit_enabled` /
+`layer3_sec_edgar_arelle_value_reveal_enabled` defaults (both stay off); no
+owner-binding/schema/model/migration change; no production-readiness claim. Docs 199/200
+byte-stable.
+
+Verification: full `backend/tests/test_sec_xbrl*.py`, full `backend/tests/test_layer3_api.py`,
+`tools/l3-progress-check.py`, `tools/l3-target-selection-validate.py --expect frozen`, and
+`git diff --check` all pass.
+
+Next posture: a value-reveal activation freeze may make controlled value reveal a
+deployment-enabled production path behind this enforced identity surface, proving the full
+lineage end-to-end and failing closed when any gate is missing. Do not flip the value-reveal
+feature-flag defaults or claim production readiness without the deployment authority packet.
