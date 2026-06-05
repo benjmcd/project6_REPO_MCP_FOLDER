@@ -35,8 +35,8 @@ Phase P19 mixed-source external export/download readiness runtime,
 current-main P19 sync, bounded Phase P20 mixed-source external export/download
 delivery freeze, current-main Phase P20 mixed-source external
 export/download delivery runtime, current-main P20 sync, and bounded Phase P21
-mixed-source rendered delivery controls freeze, plus branch-local Phase P21
-mixed-source rendered delivery controls runtime proof.
+mixed-source rendered delivery controls freeze, current-main Phase P21
+mixed-source rendered delivery controls runtime, and current-main P21 sync.
 
 Last audited main authority before the Phase P9 branch: `project6-origin/main` at `61df2c0d77a398d4aa582bb864caf6a209679e47`.
 
@@ -87,9 +87,10 @@ state, current-main reference-only mixed-source external export/download
 readiness state over the P18 dispatch state, a P20 same-origin delivery freeze
 over that readiness state, current-main P20 same-origin mixed-source
 artifact-stream delivery over current package rows and recorded P19 readiness,
-current-main P20 sync, and a P21 rendered delivery controls freeze over the
-already-admitted P20 same-origin stream. Connector run/report refs expose the
-generic table dataset bridge only when explicitly enabled.
+current-main P20 sync, a P21 rendered delivery controls freeze over the
+already-admitted P20 same-origin stream, current-main P21 rendered controls
+runtime, and current-main P21 sync. Connector run/report refs expose the generic
+table dataset bridge only when explicitly enabled.
 
 P18 now has current-main runtime proof for mixed-source APS handoff dispatch as the prerequisite downstream surface before external export/download readiness can be pursued. The runtime records reference-only dispatch state and does not admit external export/download, delivery, provider, connector, destination, local outbox, schema, parser, source-shape, payload rewrite, or production-readiness behavior.
 
@@ -113,16 +114,17 @@ provider/public URL behavior, connector/destination behavior, schema/model/
 migration changes, parser/source-shape expansion, package payload rewrite,
 excluded-tool behavior, or production readiness.
 
-The branch-local Phase P21 mixed-source rendered delivery controls runtime proof
-implements only the rendered
-material-authority delivery controls selected by that freeze. It uses
-`State.sessionSummary.external_export_download_readiness` as the rendered
-source of truth, submits the existing P20 delivery route with
-`operator_decision: deliver_mixed_source_external_export_download`, selects only
-the `review_facing` mixed package, and keeps signed-reference, provider/public
-URL, connector/destination, schema/parser/source-shape, package payload rewrite,
-SEC XBRL, excluded-tool, and production-readiness behavior blocked until a
-separate freeze selects them.
+Current main now includes the Phase P21 mixed-source rendered delivery controls
+runtime and `52-p21-current-main-sync.md`. The rendered control uses
+`State.sessionSummary.external_export_download_readiness` as the rendered source
+of truth, submits the existing P20 delivery route with `operator_decision:
+deliver_mixed_source_external_export_download`, selects only the
+`review_facing` mixed package, prefers refreshed delivered state over optimistic
+local submitted state, keeps stale source-directory prepare state from taking
+over mixed-source routes, and keeps signed-reference, provider/public URL,
+connector/destination, schema/parser/source-shape, package payload rewrite, SEC
+XBRL, excluded-tool, and production-readiness behavior blocked until a separate
+freeze selects them.
 
 This folder is the front door for the new lane. Shared progress manifests and Layer 3 control packets are updated only when this heterogeneous-ingestion lane changes a tracked milestone claim. Lane-local docs remain planning authority until source, tests, and control-spine entries support a current implementation claim.
 
@@ -274,23 +276,23 @@ mixed-source external export/download readiness. P19 now has current-main
 runtime proof for mixed-source external export/download readiness as a
 reference-only readiness state over P18 dispatch authority. P20 now freezes and
 current main implements same-origin mixed-source external export/download
-delivery over that P19 readiness state. P21 now freezes rendered mixed-source
-delivery controls over the existing P20 same-origin stream. The repo still does
+delivery over that P19 readiness state. P21 now freezes and current main
+implements rendered mixed-source delivery controls over the existing P20
+same-origin stream. The repo still does
 not admit unsupported forms, ambiguous financial-statement semantics, archive-member
-orchestration, broad generic XML/HTML parsing, rendered browser download
-controls by runtime, download URLs, signed references, public/provider URL
+orchestration, broad generic XML/HTML parsing, download URLs, signed
+references, public/provider URL
 behavior, connector/provider/destination behavior for mixed sources, or
 request-supplied mixed-source payload rewrite semantics.
 
 ## Immediate Next Tranche
 
-Phase P21 freezes rendered mixed-source delivery controls as the next exact
-operator surface over the already-live P20 same-origin artifact-stream delivery
-runtime. This freeze is docs/control only and keeps runtime behavior, UI/static
-behavior, download URLs, signed references, public/provider URLs,
-connector/provider/destination behavior, schema, parser, source-shape, payload
-rewrite, excluded-tool behavior, and production readiness blocked until the
-separate implementation pass.
+Phase P21 is current-main synced. The next immediate tranche is to freeze
+exactly one downstream surface after rendered mixed-source delivery controls:
+signed-reference governance, provider/public URL governance,
+connector/destination dispatch, durable audit or revocation behavior,
+product-flow usability proof, or a product-authority checkpoint. Do not
+implement any of those until the freeze selects exactly one.
 
 The next implementation pass should not repeat the APS-derived dataset
 selection, source-family surfacing, selected-material trace-detail, SEC
@@ -305,15 +307,15 @@ this P18 mixed-source APS handoff dispatch freeze, the P18 mixed-source APS
 handoff dispatch runtime slice, this P19 mixed-source external export/download
 readiness freeze, this P19 readiness runtime slice, this P19 current-main sync,
 this P20 mixed-source external export/download delivery freeze, this P20
-same-origin delivery runtime slice, this P20 current-main sync, or this P21
-rendered delivery controls freeze. Remaining work is:
+same-origin delivery runtime slice, this P20 current-main sync, this P21
+rendered delivery controls freeze, this P21 rendered controls runtime slice, or
+this P21 current-main sync. Remaining work is:
 
-1. After this freeze merges and current-main syncs, implement only rendered
-   mixed-source delivery controls over the existing P20 same-origin stream.
-   If that implementation requires backend DTO/schema/migration/parser/source
-   expansion, package payload rewrite, signed-reference, provider, connector,
-   destination, local outbox, or download URL behavior, stop and write a new
-   freeze instead of widening the UI slice.
+1. Freeze exactly one next mixed-source downstream surface after rendered
+   delivery controls. Candidate surfaces are signed-reference governance,
+   provider/public URL governance, connector/destination dispatch, durable audit
+   or revocation behavior, product-flow usability proof, or a product-authority
+   checkpoint.
 2. Decide whether to deprecate the legacy
    `csv_dataset_bridge_enabled`/`aps.csv_dataset_bridge_run.v1` compatibility
    path after downstream consumers have adopted the generic table bridge
@@ -376,4 +378,5 @@ This section intentionally lists the supporting pack files. `README.md` is the f
 - `48-p20-runtime-closeout.md` records the current-main mixed-source same-origin external export/download delivery runtime proof over recorded P19 readiness.
 - `49-p20-current-main-sync.md` records the current-main sync after PR #2223.
 - `50-p21-rendered-delivery-freeze.md` freezes rendered mixed-source delivery controls over the existing P20 same-origin delivery runtime, without admitting UI/static or runtime behavior.
-- `51-p21-rendered-runtime-closeout.md` records the branch-local Phase P21 mixed-source rendered delivery controls runtime proof over current-main P20/P19 authority.
+- `51-p21-rendered-runtime-closeout.md` records the current-main Phase P21 mixed-source rendered delivery controls runtime proof over current-main P20/P19 authority.
+- `52-p21-current-main-sync.md` records the current-main sync after PR #2226.
