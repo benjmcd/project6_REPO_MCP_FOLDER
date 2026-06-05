@@ -46133,5 +46133,141 @@
     ],
     "next_posture": "implement_mixed_source_same_origin_signed_reference_after_freeze_merge_and_current_main_sync"
   },
-  "latest_p22_mixed_source_signed_reference_governance_freeze_proof_summary": "P22 is a docs/control freeze for future mixed-source same-origin signed-reference governance over the existing P19/P20/P21 delivery chain. It admits no runtime or UI behavior by itself and keeps durable-state changes, download URLs, provider/public URLs, connector/destination, schema/parser/source-shape expansion, package payload rewrite, SEC XBRL, excluded-tool, value-reveal, default-on, and production-readiness scope closed."
+  "latest_p22_mixed_source_signed_reference_governance_freeze_proof_summary": "P22 is a docs/control freeze for future mixed-source same-origin signed-reference governance over the existing P19/P20/P21 delivery chain. It admits no runtime or UI behavior by itself and keeps durable-state changes, download URLs, provider/public URLs, connector/destination, schema/parser/source-shape expansion, package payload rewrite, SEC XBRL, excluded-tool, value-reveal, default-on, and production-readiness scope closed.",
+  "p22_mixed_source_signed_reference_runtime_proof": {
+    "milestone": "p22_mixed_source_signed_reference_runtime",
+    "status": "branch_local_runtime_and_rendered_control_implementation_not_current_main",
+    "planning_doc": "next_milestone_plans/multi-ingest/53-p22-mixed-signed-reference-freeze.md",
+    "closeout_doc": "next_milestone_plans/multi-ingest/54-p22-runtime-closeout.md",
+    "proof_terms": "P22 runtime admits mixed-source same-origin signed-reference generation/use over the existing P20 mixed-source delivery validator and existing durable signed-reference token/receipt/audit state, and renders /review/layer3 generate/use controls from State.sessionSummary.external_export_download_readiness. It does not add provider/public URLs, connector/destination/local-outbox behavior, schema/model/migration changes, parser/source-shape expansion, package payload rewrite/mutation, SEC XBRL, excluded-tool behavior, value reveal, default-on behavior, or production readiness.",
+    "positive_runtime_effects": [
+      "mixed-source signed-reference generate accepts generate_mixed_source_external_export_download_signed_reference",
+      "generation revalidates the P20 mixed-source delivery authority before token creation",
+      "token use revalidates current delivery authority before consuming durable single-use state",
+      "response surfaces expose mixed-source authority metadata and response-safe artifact refs",
+      "rendered controls submit the mixed-source signed-reference operator decision from P19 readiness authority"
+    ],
+    "negative_authority_flags": {
+      "current_main_behavior_changed": false,
+      "rendered_ui_behavior_changed": true,
+      "schema_or_migration_changed": false,
+      "download_url_enabled": false,
+      "public_or_provider_url_enabled": false,
+      "connector_dispatch_enabled": false,
+      "destination_behavior_enabled": false,
+      "local_outbox_enabled": false,
+      "package_payload_rewrite_performed": false,
+      "package_mutation_enabled": false,
+      "parser_or_source_shape_expanded": false,
+      "production_readiness_claimed": false
+    },
+    "verification": [
+      "python -B -m py_compile ./backend/app/api/layer3.py ./backend/app/services/layer3_workbench.py ./backend/tests/test_layer3_api.py ./backend/tests/test_layer3_page.py -> PASS",
+      "node --check ./backend/app/review_ui/static/layer3.js -> PASS",
+      "Get-Content -Raw ./e2e/layer3-workbench.spec.js | node --input-type=module --check -> PASS",
+      "python -B -m pytest ./backend/tests/test_layer3_api.py -q -k \"mixed_source_external_export_download_signed_reference\" -> 1 passed, 296 deselected",
+      "python -B -m pytest ./backend/tests/test_layer3_api.py -q -k \"special_route_openapi_contracts or mixed_source_external_export_download_signed_reference\" -> 2 passed, 295 deselected",
+      "python -B -m pytest ./backend/tests/test_layer3_page.py -q -k \"mixed_source_rendered_delivery_uses_p19_material_authority\" -> 1 passed, 22 deselected",
+      "python -B -m pytest ./backend/tests/test_layer3_api.py -q -k \"signed_reference or mixed_source_external_export_download_deliver_streams_package_artifact\" -> 3 passed, 294 deselected",
+      "python -B -m pytest ./backend/tests/test_layer3_api.py -q -k \"mixed_source_external_export_download\" -> 5 passed, 292 deselected",
+      "python -B -m pytest ./backend/tests/test_layer3_api.py -q -k \"openapi or signed_reference or mixed_source_external_export_download\" -> 20 passed, 277 deselected",
+      "python -B -m pytest ./backend/tests/test_layer3_signed_reference_state.py -q -> 5 passed",
+      "python -B -m pytest ./backend/tests/test_layer3_api.py -q -> 297 passed",
+      "python -B -m pytest ./backend/tests/test_layer3_page.py -q -> 23 passed",
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P21 mixed-source external export download delivery control|P22 mixed-source signed-reference controls|raw mixed rendered external export download signed reference\" --project=chromium -> 3 passed",
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P21 mixed-source external export download delivery control|P22 mixed-source signed-reference controls|raw mixed rendered external export download signed reference\" --project=chromium --headed -> 3 passed",
+      "Layer 3 authority-index validation -> PASS",
+      "Layer 3 target-selection frozen validation -> PASS",
+      "Layer 3 progress check -> PASS",
+      "git diff --check -> PASS"
+    ],
+    "next_posture": "merge_review_then_current_main_sync_before_selecting_provider_connector_revocation_or_product_authority_surfaces"
+  },
+  "latest_p22_mixed_source_signed_reference_runtime_proof_summary": "Branch-local P22 runtime proof covers mixed-source same-origin signed-reference generation/use over the existing P20 mixed-source delivery validator and durable signed-reference state, plus rendered /review/layer3 controls over State.sessionSummary.external_export_download_readiness. It is not current-main proof until merged and synced, and it keeps download URLs, provider/public URLs, connector/destination/local-outbox behavior, schema/model/migration changes, parser/source-shape expansion, package rewrite/mutation, SEC XBRL, and production readiness blocked.",
+  "p23_mixed_source_product_flow_usability_proof": {
+    "milestone": "p23_mixed_source_product_flow_usability_proof",
+    "status": "branch_local_rendered_product_flow_usability_proof_not_current_main",
+    "closeout_doc": "next_milestone_plans/multi-ingest/55-p23-product-flow-usability-proof.md",
+    "proof_terms": "P23 proves rendered mixed-source product-flow usability across already-admitted P17/P18/P19/P22 surfaces. The browser derives P18 APS handoff dispatch authority from recorded P17 material authority, derives P19 external export/download readiness authority from recorded P18 state, and then enables P22 same-origin signed-reference generation from recorded P19 readiness. It adds no backend route/service, schema/model/migration, durable persistence, provider/public URL, connector/destination/local-outbox behavior, parser/source-shape expansion, package rewrite/mutation, or production-readiness claim.",
+    "positive_runtime_effects": [
+      "rendered APS handoff panel exposes mixed-source P18 authority only when P17 material authority is complete",
+      "rendered P18 submit payload uses dispatch_mixed_source_aps_handoff without legacy analysis/pass/result/payload-ref fields",
+      "rendered P19 readiness panel posts to /handoff/export/download/readiness instead of the legacy prepare endpoint",
+      "rendered P19 submit payload uses record_mixed_source_external_export_download_readiness without blocked URL/provider/connector fields",
+      "rendered P22 signed-reference generation can proceed from browser-recorded P19 readiness without synthetic readiness injection",
+      "existing provider-private/provider-public rendered canary remains green, proving no accidental provider route breakage from P23 authority branching"
+    ],
+    "negative_authority_flags": {
+      "current_main_behavior_changed": false,
+      "rendered_ui_behavior_changed": true,
+      "schema_or_migration_changed": false,
+      "download_url_enabled": false,
+      "public_or_provider_url_enabled": false,
+      "connector_dispatch_enabled": false,
+      "destination_behavior_enabled": false,
+      "local_outbox_enabled": false,
+      "package_payload_rewrite_performed": false,
+      "package_mutation_enabled": false,
+      "parser_or_source_shape_expanded": false,
+      "production_readiness_claimed": false
+    },
+    "verification": [
+      "node --check ./backend/app/review_ui/static/layer3.js -> PASS",
+      "Get-Content -Raw ./e2e/layer3-workbench.spec.js | node --input-type=module --check -> PASS",
+      "python -B -m py_compile ./backend/tests/test_layer3_page.py -> PASS",
+      "python -B -m pytest ./backend/tests/test_layer3_page.py -q -> 24 passed",
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls\" --project=chromium -> 1 passed",
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls|P21 mixed-source external export download delivery control|P22 mixed-source signed-reference controls|raw mixed rendered external export download signed reference\" --project=chromium -> 4 passed",
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls|P21 mixed-source external export download delivery control|P22 mixed-source signed-reference controls|raw mixed rendered external export download signed reference\" --project=chromium --headed -> 4 passed",
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"provider-private signed URL prepare status revoke\" --project=chromium -> 1 passed",
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"provider-private signed URL prepare status revoke\" --project=chromium --headed -> 1 passed"
+    ],
+    "next_posture": "merge_review_then_current_main_sync_before_selecting_durable_revocation_product_authority_provider_or_connector_surfaces"
+  },
+  "latest_p23_mixed_source_product_flow_usability_proof_summary": "Branch-local P23 product-flow proof verifies rendered P18/P19/P22 mixed-source controls over existing server-authoritative routes and keeps provider/public URL, connector/destination/local-outbox, schema, parser/source-shape, package rewrite, and production-readiness behavior blocked.",
+  "p24_mixed_source_product_authority_checkpoint_proof": {
+    "milestone": "p24_mixed_source_product_authority_checkpoint",
+    "status": "branch_local_read_only_product_authority_checkpoint_not_current_main",
+    "closeout_doc": "next_milestone_plans/multi-ingest/56-p24-product-authority-checkpoint.md",
+    "proof_terms": "P24 renders a read-only mixed-source product-authority checkpoint across already-loaded P17/P18/P19/P21/P22 server-authoritative state. It introduces no backend route/service, payload builder, submit handler, schema/model/migration, durable persistence, signed-reference status/revocation, provider/public URL, connector/destination/local-outbox behavior, parser/source-shape expansion, package rewrite/mutation, real export/dispatch, or production-readiness claim.",
+    "positive_runtime_effects": [
+      "rendered governance dashboard exposes a mixed-source product-authority checkpoint card",
+      "checkpoint state is ready only when P17 handoff/export prepare, P18 APS handoff dispatch, P19 external export/download readiness, P21 delivery authority, and P22 signed-reference authority are all present",
+      "checkpoint rows display per-step ready/blocked state and server-authority provenance",
+      "blocked-boundary rows explicitly keep real export/dispatch, provider URLs, connector dispatch, destination write, local outbox, package rewrite, schema widening, and production readiness false"
+    ],
+    "negative_authority_flags": {
+      "current_main_behavior_changed": false,
+      "rendered_ui_behavior_changed": true,
+      "backend_route_added": false,
+      "payload_builder_added": false,
+      "submit_handler_added": false,
+      "schema_or_migration_changed": false,
+      "download_url_enabled": false,
+      "signed_reference_status_or_revocation_enabled": false,
+      "public_or_provider_url_enabled": false,
+      "connector_dispatch_enabled": false,
+      "destination_behavior_enabled": false,
+      "local_outbox_enabled": false,
+      "package_payload_rewrite_performed": false,
+      "package_mutation_enabled": false,
+      "parser_or_source_shape_expanded": false,
+      "real_export_or_dispatch_admitted": false,
+      "production_readiness_claimed": false
+    },
+    "verification": [
+      "node --check ./backend/app/review_ui/static/layer3.js -> PASS",
+      "Get-Content -Raw ./e2e/layer3-workbench.spec.js | node --input-type=module --check -> PASS",
+      "python -B -m py_compile ./backend/tests/test_layer3_page.py -> PASS",
+      "python -B -m pytest ./backend/tests/test_layer3_page.py -q -k \"product_authority_checkpoint\" -> 1 passed, 24 deselected",
+      "python -B -m pytest ./backend/tests/test_layer3_page.py -q -> 25 passed",
+      "python -B -m pytest ./backend/tests/test_layer3_api.py -q -k \"mixed_source_external_export_download\" -> 5 passed, 292 deselected",
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls\" --project=chromium -> 1 passed",
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls\" --project=chromium --headed -> 1 passed",
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls|P21 mixed-source external export download delivery control|P22 mixed-source signed-reference controls|raw mixed rendered external export download signed reference\" --project=chromium -> 4 passed",
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls|P21 mixed-source external export download delivery control|P22 mixed-source signed-reference controls|raw mixed rendered external export download signed reference\" --project=chromium --headed -> 4 passed"
+    ],
+    "next_posture": "merge_review_then_current_main_sync_before_selecting_durable_revocation_provider_connector_schema_or_production_readiness_surfaces"
+  },
+  "latest_p24_mixed_source_product_authority_checkpoint_proof_summary": "Branch-local P24 proof verifies a read-only mixed-source product-authority checkpoint over existing P17/P18/P19/P21/P22 authority and keeps backend routes, payload builders, submit handlers, signed-reference status/revocation, provider/public URL, connector/destination/local-outbox, schema, parser/source-shape, package rewrite, real export/dispatch, and production-readiness behavior blocked."
 }
