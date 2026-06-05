@@ -1359,6 +1359,157 @@ def test_layer3_mixed_source_rendered_handoff_prepare_uses_material_authority() 
         assert f"\n        {forbidden}" not in payload_slice
 
 
+def test_layer3_mixed_source_rendered_delivery_uses_p19_material_authority() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+    assert js.status_code == 200
+    js_text = js.text.replace("\r\n", "\n")
+
+    authority_slice = _js_slice(
+        js_text,
+        "function mixedSourceExternalExportDownloadDeliveryAuthorityPacket",
+        "function mixedSourceExternalExportDownloadDeliveryUiState",
+    )
+    ui_slice = _js_slice(
+        js_text,
+        "function mixedSourceExternalExportDownloadDeliveryUiState",
+        "function mixedSourceExternalExportDownloadDeliveryUiAdmitted",
+    )
+    gate_slice = _js_slice(
+        js_text,
+        "function canSubmitExternalExportDownloadDelivery",
+        "function isPackageActive",
+    )
+    payload_slice = _js_slice(
+        js_text,
+        "function mixedSourceExternalExportDownloadDeliveryPayload",
+        "function externalExportDownloadDeliveryPayload",
+    )
+    panel_slice = _js_slice(
+        js_text,
+        "function externalExportDownloadDeliveryPanelState",
+        "function externalExportDownloadSignedReferencePanelState",
+    )
+    signed_slice = _js_slice(
+        js_text,
+        "function externalExportDownloadSignedReferencePanelState",
+        "function renderExternalExportDownloadSignedReferencePanel",
+    )
+    submit_slice = _js_slice(
+        js_text,
+        "async function submitExternalExportDownloadDelivery",
+        "async function prepareSourceDirectoryHybridAuthority",
+    )
+    controls_slice = _js_slice(
+        js_text,
+        "function setGateControls",
+        "function renderAll",
+    )
+    attachment_slice = _js_slice(
+        js_text,
+        "function submitAttachmentForm",
+        "function addEvent",
+    )
+
+    for required in (
+        "MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID",
+        "MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_MODE",
+        "MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION",
+        "MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PACKAGE_KIND = 'review_facing'",
+        "State.sessionSummary?.external_export_download_readiness",
+        "readiness.package_family !== 'mixed_dataset_document'",
+        "packet.handoff_target !== MIXED_SOURCE_HANDOFF_EXPORT_TARGET",
+        "packet.export_mode !== MIXED_SOURCE_HANDOFF_EXPORT_MODE",
+        "packet.aps_handoff_target !== MIXED_SOURCE_APS_HANDOFF_TARGET",
+        "packet.dispatch_mode !== MIXED_SOURCE_APS_HANDOFF_MODE",
+        "packet.external_export_download_readiness_state !== MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_STATE",
+        "packet.package_kind !== MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PACKAGE_KIND",
+        "exactPackageKinds(packageKinds)",
+    ):
+        assert required in authority_slice or required in js_text
+    assert "const mixedSourceReadiness = mixedSourceExternalExportDownloadReadinessState()" in gate_slice
+    assert gate_slice.find("const mixedSourceReadiness = mixedSourceExternalExportDownloadReadinessState()") < gate_slice.find("isSourceDirectoryQualitativeExternalExportDownloadPrepareState(external)")
+    assert "mixedSourceExternalExportDownloadDeliveryAuthorityPacket()" in gate_slice
+    assert "mixedSourceExternalExportDownloadDeliveryUiAdmitted()" in gate_slice
+    assert "mixed_source_external_export_download_delivery_ui_ready" in ui_slice
+    assert "package_payload_rewrite_enabled: false" in ui_slice
+    assert "schema_runtime_source_widening_enabled: false" in ui_slice
+    assert "server_authority: 'State.sessionSummary.external_export_download_readiness'" in ui_slice
+    assert "|| mixedSourceExternalExportDownloadDeliveryAuthorityPacket()" in controls_slice
+    assert "rendered_mixed_source_external_export_download_delivery_control" in panel_slice
+    assert "State.sessionSummary.external_export_download_readiness" in panel_slice
+    assert "mixed_source_external_export_download_delivery_submitted" in panel_slice
+    assert "mixed_source_external_export_download_delivered" in panel_slice
+    assert "Mixed-source delivery does not admit signed-reference generation." in signed_slice
+    assert "body.operator_decision === MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION" in attachment_slice
+    assert "MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID" in attachment_slice
+    assert "const mixedSourceMode = Boolean(mixedSourceExternalExportDownloadDeliveryAuthorityPacket())" in submit_slice
+    assert "mixedSourceExternalExportDownloadDeliveryPayload()" in submit_slice
+    assert "'/handoff/export/download/deliver'" in submit_slice
+    assert "Mixed-source external export/download package submitted as browser-managed same-origin attachment." in submit_slice
+    assert "&& !mixedSourceExternalExportDownloadReadinessState()" in controls_slice
+
+    for required in (
+        "material_preview_id: packet.material_preview_id",
+        "material_preview_hash: packet.material_preview_hash",
+        "package_review_preview_hash: packet.package_review_preview_hash",
+        "contract_hash: packet.contract_hash",
+        "construction_basis_hash: packet.construction_basis_hash",
+        "reconciliation_record_id: packet.reconciliation_record_id",
+        "output_package_id: packet.output_package_id",
+        "package_kind: packet.package_kind",
+        "package_payload_hash: packet.package_payload_hash",
+        "package_review_submit_record_ref: packet.package_review_submit_record_ref",
+        "package_review_state: packet.package_review_state",
+        "prepare_record_ref: packet.prepare_record_ref",
+        "handoff_export_state: packet.handoff_export_state",
+        "handoff_export_envelope_ref: packet.handoff_export_envelope_ref",
+        "handoff_target: MIXED_SOURCE_HANDOFF_EXPORT_TARGET",
+        "export_mode: MIXED_SOURCE_HANDOFF_EXPORT_MODE",
+        "aps_handoff_target: MIXED_SOURCE_APS_HANDOFF_TARGET",
+        "dispatch_mode: MIXED_SOURCE_APS_HANDOFF_MODE",
+        "aps_handoff_record_ref: packet.aps_handoff_record_ref",
+        "aps_handoff_state: packet.aps_handoff_state",
+        "external_export_download_readiness_record_ref: packet.external_export_download_readiness_record_ref",
+        "external_export_download_readiness_ref: packet.external_export_download_readiness_ref",
+        "external_export_download_readiness_state: MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_STATE",
+        "delivery_mode: MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_MODE",
+        "operator_decision: MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION",
+        "expected_package_kinds: packet.package_kinds",
+    ):
+        assert required in payload_slice
+    for forbidden in (
+        "analysis_plan_id:",
+        "pass_run_id:",
+        "preview_id:",
+        "preview_hash:",
+        "result_review_record_ref:",
+        "output_package_ids:",
+        "package_kinds:",
+        "payload_refs:",
+        "payload_hashes:",
+        "external_export_download_record_ref:",
+        "export_download_descriptor_ref:",
+        "external_export_download_state:",
+        "export_download_target:",
+        "download_mode:",
+        "aps_output_package_id:",
+        "aps_output_package_kind:",
+        "aps_bundle_ref:",
+        "aps_bundle_id:",
+        "aps_schema_id:",
+        "download_url:",
+        "public_url:",
+        "signed_url:",
+        "connector_run_id:",
+        "destination:",
+        "local_file_path:",
+        "package_payload:",
+        "schema_migration:",
+        "source_expansion:",
+    ):
+        assert f"\n        {forbidden}" not in payload_slice
+
+
 def test_layer3_provider_public_url_use_rendered_control_is_bounded() -> None:
     html = client.get("/review/layer3").text
     js = client.get("/review/layer3/static/layer3.js").text
