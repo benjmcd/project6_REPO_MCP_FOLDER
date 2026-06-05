@@ -1,5 +1,41 @@
 # Layer3 Progress Board
 
+## P19 Mixed-Source Current-Main Sync
+
+Milestone:
+`p19_mixed_source_external_export_download_readiness_current_main_sync`.
+
+Sync doc:
+`next_milestone_plans/multi-ingest/46-p19-current-main-sync.md`.
+
+Status: docs/control current-main sync for PR #2220 at live
+`project6-origin/main` `9e4451cb710c0185a64f1788b9e0d848be7dbc8b`.
+
+Scope: records that P19 mixed-source external export/download readiness is
+current-main runtime behavior. PR #2220 records reference-only readiness state
+over the existing P18 APS handoff dispatch state; this sync changes no runtime
+code.
+
+Non-goals: no runtime code, rendered UI/static behavior, schema/model/migration,
+parser, source-shape expansion, package payload rewrite, package reconstruction,
+external export/download delivery, browser download, download URL, signed
+reference, public/provider URL, connector/provider/local-outbox/destination
+behavior, excluded-tool behavior, or production-readiness change.
+
+Proof: detached post-merge proof after PR #2220 passed touched compile, focused
+P19/API contract and error-envelope slice with `28 passed, 267 deselected, 3
+warnings`, full Layer 3 API suite with `295 passed, 4 warnings`, affected
+external export response helper tests with `6 passed, 2 warnings`, manifest JSON
+syntax, authority-index validation, frozen target-selection validation, progress
+check, and `git diff --check`. PR #2220 had zero review threads.
+
+Next posture: freeze mixed-source external export/download delivery as the next
+exact downstream surface over recorded P19 readiness. Delivery, download URLs,
+signed references, public/provider URLs, connector/provider behavior,
+schema/parser/source-shape widening, payload rewrite, excluded-tool behavior,
+and production readiness remain blocked until a later freeze selects and proves
+them.
+
 ## P19 Mixed-Source External Export/Download Readiness Runtime
 
 Milestone:
@@ -8,8 +44,7 @@ Milestone:
 Closeout doc:
 `next_milestone_plans/multi-ingest/45-p19-runtime-closeout.md`.
 
-Status: branch-local runtime proof. Current-main authority requires PR merge and
-post-merge current-main sync.
+Status: current-main runtime implementation verified after PR #2220.
 
 Scope: implements only mixed-source external export/download readiness over the
 recorded P18 reference-only mixed-source APS handoff dispatch state. The runtime
@@ -31,14 +66,16 @@ deselected, 3 warnings`; full Layer 3 API suite passed with `295 passed, 4
 warnings`; affected external export response helper tests passed with `6 passed,
 2 warnings`. Manifest JSON syntax, authority-index validation, frozen
 target-selection validation, progress check, and `git diff --check` also passed
-branch-local.
+branch-local. Detached post-merge proof from live main
+`9e4451cb710c0185a64f1788b9e0d848be7dbc8b` repeated the same targeted API/helper
+and governance checks.
 
-Next posture: after this runtime merges and current main is synced, freeze
-mixed-source external export/download delivery as the next exact downstream
-surface. Delivery, download URLs, signed references, public/provider URLs,
-connector/provider behavior, schema/parser/source-shape widening, payload
-rewrite, excluded-tool behavior, and production readiness remain blocked until a
-later freeze selects and proves them.
+Next posture: after `46-p19-current-main-sync.md`, freeze mixed-source external
+export/download delivery as the next exact downstream surface. Delivery,
+download URLs, signed references, public/provider URLs, connector/provider
+behavior, schema/parser/source-shape widening, payload rewrite, excluded-tool
+behavior, and production readiness remain blocked until a later freeze selects
+and proves them.
 
 ## P19 Mixed-Source External Export/Download Readiness Freeze
 
