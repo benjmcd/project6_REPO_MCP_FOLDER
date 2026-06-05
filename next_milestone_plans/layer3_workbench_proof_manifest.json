@@ -45568,5 +45568,79 @@
     ],
     "next_posture": "implement_mixed_source_external_export_download_readiness_after_freeze_merge_and_current_main_sync_then_freeze_external_export_download_delivery"
   },
-  "latest_p19_mixed_source_external_export_download_readiness_freeze_proof_summary": "P19 is a docs/control freeze for future mixed-source external export/download readiness. It selects readiness as the next surface after the recorded P18 reference-only APS handoff dispatch state, admits no runtime behavior by itself, and keeps downstream delivery/download/signed-reference/public-URL/provider/connector/schema/parser/source-shape/payload/production scope closed."
+  "latest_p19_mixed_source_external_export_download_readiness_freeze_proof_summary": "P19 is a docs/control freeze for future mixed-source external export/download readiness. It selects readiness as the next surface after the recorded P18 reference-only APS handoff dispatch state, admits no runtime behavior by itself, and keeps downstream delivery/download/signed-reference/public-URL/provider/connector/schema/parser/source-shape/payload/production scope closed.",
+  "p19_mixed_source_external_export_download_readiness_runtime_proof": {
+    "milestone": "p19_mixed_source_external_export_download_readiness_runtime",
+    "status": "branch_local_runtime_implementation_verified",
+    "runtime_doc": "next_milestone_plans/multi-ingest/45-p19-runtime-closeout.md",
+    "freeze_doc": "next_milestone_plans/multi-ingest/44-p19-mixed-export-download-readiness-freeze.md",
+    "proof_terms": "P19 runtime admits exactly one mixed-source external export/download readiness state over recorded P18 mixed-source APS handoff dispatch authority. It records reference-only readiness state in existing session/reconciliation JSON and does not deliver, download, generate signed/public/provider URLs, dispatch connectors/providers, widen schema/parser/source-shape behavior, rewrite package payloads, include excluded-tool behavior, or claim production readiness.",
+    "authority_basis": [
+      "P19 mixed-source external export/download readiness freeze",
+      "P18 reference-only mixed-source APS handoff dispatch runtime",
+      "P17 mixed-source handoff/export prepare runtime",
+      "P16 mixed-source package-review submit runtime",
+      "P15 mixed-source package construction commit runtime",
+      "P14 mixed-source package review preview",
+      "committed Gate B material decision"
+    ],
+    "schema_id": "layer3.mixed_source_external_export_download_readiness.v1",
+    "state_schema_id": "layer3.mixed_source_external_export_download_readiness_state.v1",
+    "readiness_state": "mixed_source_external_export_download_ready",
+    "operator_decision": "record_mixed_source_external_export_download_readiness",
+    "positive_runtime_effects": [
+      "direct material-authority readiness route is admitted",
+      "P14 preview authority is recomputed server-side",
+      "P15 reconciliation and package rows are reloaded and verified",
+      "P16 package-review submit authority is verified",
+      "P17 handoff/export prepare authority and reference envelope are verified",
+      "P18 APS handoff dispatch authority is verified",
+      "one readiness state is stored on L3ReconciliationRecord.summary_json.external_export_download_readiness",
+      "one readiness projection is stored on L3Session.summary_json.external_export_download_readiness",
+      "session summary projects readiness through external_export_download"
+    ],
+    "negative_authority_flags": {
+      "rendered_ui_behavior_changed": false,
+      "schema_or_migration_changed": false,
+      "parser_behavior_changed": false,
+      "new_source_shape_admitted": false,
+      "package_payload_rewrite_performed": false,
+      "external_export_download_delivery_enabled": false,
+      "download_url_enabled": false,
+      "signed_reference_enabled": false,
+      "public_or_provider_url_enabled": false,
+      "connector_dispatch_enabled": false,
+      "provider_behavior_enabled": false,
+      "excluded_tool_included": false,
+      "production_readiness_claimed": false
+    },
+    "proof_coverage": [
+      "readiness records reference-only mixed-source external export/download state",
+      "same client_request_id with same authority replays recorded readiness result",
+      "different client_request_id after readiness fails closed",
+      "stale construction basis fails closed",
+      "missing P18 dispatch fails closed",
+      "stale APS handoff ref fails closed",
+      "non-dispatched APS handoff state fails closed",
+      "explicit empty expected_package_kinds fails closed",
+      "selected-pass fields on mixed request fail closed",
+      "download URL fields fail closed",
+      "package rows and local files are unchanged by readiness",
+      "session summary projects readiness through external_export_download with delivery/download flags false",
+      "OpenAPI request/response contract documents readiness fields and forbidden sentinels"
+    ],
+    "verification": [
+      "python -B -m py_compile .\\backend\\app\\api\\layer3.py .\\backend\\app\\services\\layer3_workbench.py .\\backend\\app\\services\\layer3_handoff_contract.py .\\backend\\app\\services\\layer3_workbench_package_state.py .\\backend\\app\\services\\layer3_external_export_response.py .\\backend\\tests\\test_layer3_api.py -> PASS",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -k \"mixed_source_external_export_download_readiness or layer3_handoff_openapi_contracts or workbench_error_responses or json_or_error_call_sites_return_workbench_error_envelope\" -q -> 28 passed, 267 deselected, 3 warnings",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_api.py -q -> 295 passed, 4 warnings",
+      "python -B -m pytest .\\backend\\tests\\test_layer3_external_export_response.py -q -> 6 passed, 2 warnings",
+      "python -B -m json.tool authority/progress/proof manifests -> PASS",
+      "python -B .\\tools\\l3-authority-index-validate.py -> PASS",
+      "python -B .\\tools\\l3-target-selection-validate.py --expect frozen -> PASS",
+      "python -B .\\tools\\l3-progress-check.py -> PASS",
+      "git diff --check -> PASS"
+    ],
+    "next_posture": "after_runtime_merge_and_current_main_sync_freeze_mixed_source_external_export_download_delivery"
+  },
+  "latest_p19_mixed_source_external_export_download_readiness_runtime_proof_summary": "P19 runtime branch implements reference-only mixed-source external export/download readiness over P18 dispatch authority. It records one session/reconciliation readiness state, proves stale/missing/cross-surface authority fails closed, keeps package rows and local files unchanged, and leaves delivery/download/signed-reference/public/provider/connector/schema/parser/source-shape/payload/production scope blocked."
 }

@@ -619,6 +619,43 @@ def _mixed_aps_handoff_dispatch_payload(
     }
 
 
+def _mixed_external_export_download_readiness_payload(
+    *,
+    request_id: str,
+    gate_b: dict,
+    material: dict,
+    commit_body: dict,
+    submit_body: dict,
+    prepare_body: dict,
+    dispatch_body: dict,
+) -> dict:
+    return {
+        "client_request_id": request_id,
+        "session_id": gate_b["session_id"],
+        "material_preview_id": material["material_preview_id"],
+        "material_preview_hash": material["material_preview_hash"],
+        "package_review_preview_hash": commit_body["package_review_preview_hash"],
+        "contract_hash": commit_body["contract_hash"],
+        "construction_basis_hash": commit_body["construction_basis_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_ids": commit_body["output_package_ids"],
+        "payload_hashes": commit_body["payload_hashes"],
+        "package_review_submit_record_ref": submit_body["submit_record_ref"],
+        "package_review_state": submit_body["package_review_state"],
+        "prepare_record_ref": prepare_body["prepare_record_ref"],
+        "handoff_export_state": prepare_body["handoff_export_state"],
+        "handoff_export_envelope_ref": prepare_body["handoff_export_envelope_ref"],
+        "handoff_target": "mixed_source_review_package",
+        "export_mode": "reference_envelope_only",
+        "aps_handoff_target": "mixed_source_aps_evidence_bundle",
+        "dispatch_mode": "server_side_mixed_source_aps_handoff",
+        "aps_handoff_record_ref": dispatch_body["aps_handoff_record_ref"],
+        "aps_handoff_state": dispatch_body["aps_handoff_state"],
+        "operator_decision": "record_mixed_source_external_export_download_readiness",
+        "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+    }
+
+
 def _assert_common_response_envelope(body: dict) -> None:
     assert body["schema_id"].startswith("layer3.")
     assert body["schema_version"] == 1
@@ -11047,6 +11084,112 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
         "authority_rail",
     } <= set(dispatch_schema["required"])
 
+    readiness_request_schema = spec["paths"]["/api/v1/layer3/handoff/export/download/readiness"]["post"][
+        "requestBody"
+    ]["content"]["application/json"]["schema"]
+    assert readiness_request_schema["additionalProperties"] is False
+    assert set(readiness_request_schema["required"]) == {
+        "client_request_id",
+        "session_id",
+        "material_preview_id",
+        "material_preview_hash",
+        "package_review_preview_hash",
+        "contract_hash",
+        "construction_basis_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "operator_decision",
+    }
+    assert readiness_request_schema["properties"]["handoff_target"]["enum"] == ["mixed_source_review_package"]
+    assert readiness_request_schema["properties"]["export_mode"]["enum"] == ["reference_envelope_only"]
+    assert readiness_request_schema["properties"]["aps_handoff_target"]["enum"] == [
+        "mixed_source_aps_evidence_bundle"
+    ]
+    assert readiness_request_schema["properties"]["dispatch_mode"]["enum"] == [
+        "server_side_mixed_source_aps_handoff"
+    ]
+    assert readiness_request_schema["properties"]["aps_handoff_state"]["enum"] == ["aps_handoff_dispatched"]
+    assert readiness_request_schema["properties"]["operator_decision"]["enum"] == [
+        "record_mixed_source_external_export_download_readiness"
+    ]
+    _assert_string_array_or_string_map_schema(readiness_request_schema["properties"]["payload_hashes"])
+    assert readiness_request_schema["properties"]["download_url"]["description"].startswith("Known but non-admitted")
+    assert readiness_request_schema["properties"]["connector_dispatch"]["description"].startswith(
+        "Known but non-admitted"
+    )
+    assert readiness_request_schema["properties"]["provider_public_url"]["description"].startswith(
+        "Known but non-admitted"
+    )
+    assert readiness_request_schema["properties"]["signed_url"]["description"].startswith("Known but non-admitted")
+
+    readiness_schema = _openapi_response_schema(
+        spec,
+        "/api/v1/layer3/handoff/export/download/readiness",
+        "post",
+    )
+    assert readiness_schema["title"] == "Layer3MixedSourceExternalExportDownloadReadinessResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "material_preview_id",
+        "material_preview_hash",
+        "contract_hash",
+        "package_review_preview_hash",
+        "construction_basis_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "operator_decision",
+        "package_family",
+        "external_export_download_readiness_schema_id",
+        "external_export_download_readiness_state",
+        "external_export_download_readiness_record_ref",
+        "external_export_download_readiness_ref",
+        "negative_authority_flags",
+        "external_export_enabled",
+        "download_enabled",
+        "download_url_enabled",
+        "signed_reference_enabled",
+        "provider_public_url_enabled",
+        "provider_private_signed_url_enabled",
+        "connector_dispatch_enabled",
+        "delivery_enabled",
+        "external_export_download_enabled",
+        "downstream_unavailable",
+        "next_allowed_actions",
+        "next_state",
+        "authority_rail",
+    } <= set(readiness_schema["required"])
+
 
 def test_layer3_external_export_download_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
@@ -12382,6 +12525,7 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         ("/api/v1/layer3/package/replacement-activation/commit", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/prepare", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/aps/dispatch", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/handoff/export/download/readiness", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/download/prepare", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/connector/record", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/connector/local-destination/receipt", "post"): ("400", "404", "409"),
@@ -12470,6 +12614,12 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         ("package_review_submit", "post", "/api/v1/layer3/package/review/submit", {}),
         ("handoff_export_prepare", "post", "/api/v1/layer3/handoff/export/prepare", {}),
         ("aps_handoff_dispatch", "post", "/api/v1/layer3/handoff/aps/dispatch", {}),
+        (
+            "mixed_source_external_export_download_readiness",
+            "post",
+            "/api/v1/layer3/handoff/export/download/readiness",
+            {},
+        ),
         ("external_export_download_prepare", "post", "/api/v1/layer3/handoff/export/download/prepare", {}),
         (
             "external_export_download_generate_signed_reference",
@@ -18913,6 +19063,404 @@ def test_layer3_api_mixed_source_aps_handoff_dispatch_records_reference_state(
     )
     assert explicit_empty_kinds.status_code == 409
     assert explicit_empty_kinds.json()["error_code"] == "mixed_source_aps_handoff_dispatch_kinds_mismatch"
+
+
+def test_layer3_api_mixed_source_external_export_download_readiness_records_reference_state(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    gate_b, material, _preview_body, commit_body, submit_body, _source = _submit_mixed_package_review(
+        client,
+        tmp_path,
+        request_id="api-mixed-download-readiness-success",
+    )
+    prepare = client.post(
+        "/api/v1/layer3/handoff/export/prepare",
+        json=_mixed_handoff_export_prepare_payload(
+            request_id="api-mixed-download-readiness-prepare",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+        ),
+    )
+    assert prepare.status_code == 200, prepare.text
+    prepare_body = prepare.json()
+    dispatch = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json=_mixed_aps_handoff_dispatch_payload(
+            request_id="api-mixed-download-readiness-dispatch",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body=prepare_body,
+        ),
+    )
+    assert dispatch.status_code == 200, dispatch.text
+    dispatch_body = dispatch.json()
+    payload = _mixed_external_export_download_readiness_payload(
+        request_id="api-mixed-download-readiness-record",
+        gate_b=gate_b,
+        material=material,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+    )
+
+    def files_under_tmp() -> list[str]:
+        return sorted(str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*") if path.is_file())
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+        packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+    finally:
+        db.close()
+    files_before = files_under_tmp()
+
+    readiness = client.post("/api/v1/layer3/handoff/export/download/readiness", json=payload)
+    assert readiness.status_code == 200, readiness.text
+    body = readiness.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.mixed_source_external_export_download_readiness.v1"
+    assert body["status"] == "ready"
+    assert body["session_id"] == gate_b["session_id"]
+    assert body["package_family"] == "mixed_dataset_document"
+    assert body["material_preview_id"] == material["material_preview_id"]
+    assert body["material_preview_hash"] == material["material_preview_hash"]
+    assert body["contract_hash"] == commit_body["contract_hash"]
+    assert body["package_review_preview_hash"] == commit_body["package_review_preview_hash"]
+    assert body["construction_basis_hash"] == commit_body["construction_basis_hash"]
+    assert body["reconciliation_record_id"] == commit_body["reconciliation_record_id"]
+    assert body["output_package_ids"] == commit_body["output_package_ids"]
+    assert body["package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+    assert body["payload_hashes"] == commit_body["payload_hashes"]
+    assert all(ref.startswith("layer3://mixed-source-package/") for ref in body["payload_refs"])
+    assert body["package_review_submit_record_ref"] == submit_body["submit_record_ref"]
+    assert body["package_review_state"] == "package_review_approved"
+    assert body["prepare_record_ref"] == prepare_body["prepare_record_ref"]
+    assert body["handoff_export_state"] == "handoff_export_prepared"
+    assert body["handoff_export_envelope_ref"] == prepare_body["handoff_export_envelope_ref"]
+    assert body["handoff_target"] == "mixed_source_review_package"
+    assert body["export_mode"] == "reference_envelope_only"
+    assert body["aps_handoff_target"] == "mixed_source_aps_evidence_bundle"
+    assert body["dispatch_mode"] == "server_side_mixed_source_aps_handoff"
+    assert body["aps_handoff_record_ref"] == dispatch_body["aps_handoff_record_ref"]
+    assert body["aps_handoff_state"] == "aps_handoff_dispatched"
+    assert body["operator_decision"] == "record_mixed_source_external_export_download_readiness"
+    assert body["readiness_schema_id"] == "layer3.mixed_source_external_export_download_readiness.v1"
+    assert body["external_export_download_readiness_schema_id"] == (
+        "layer3.mixed_source_external_export_download_readiness.v1"
+    )
+    assert body["external_export_download_readiness_state"] == "mixed_source_external_export_download_ready"
+    assert body["external_export_download_readiness_record_ref"].startswith(
+        "l3-mixed-source-external-export-download-readiness-"
+    )
+    assert body["external_export_download_readiness_ref"].startswith("layer3://mixed-source-external-export/")
+    assert body["next_allowed_actions"] == []
+    assert body["next_state"] == "mixed_source_external_export_download_ready"
+    assert body["authority_rail"]["persistence_mode"] == "durable_mixed_source_external_export_download_readiness"
+    for flag in (
+        "external_export_enabled",
+        "download_enabled",
+        "download_url_enabled",
+        "signed_reference_enabled",
+        "provider_public_url_enabled",
+        "provider_private_signed_url_enabled",
+        "connector_dispatch_enabled",
+        "delivery_enabled",
+        "external_export_download_enabled",
+    ):
+        assert body[flag] is False
+        assert body["negative_authority_flags"][flag] is False
+    assert {
+        "external_export_download",
+        "download",
+        "download_url",
+        "provider_public_url",
+        "provider_private_signed_url",
+        "public_url",
+        "signed_reference",
+        "signed_url",
+        "connector_dispatch",
+        "delivery",
+    } <= set(body["downstream_unavailable"])
+    assert str(tmp_path) not in readiness.text
+    for forbidden_key in (
+        "package_payload",
+        "download_url",
+        "provider_public_url",
+        "provider_private_signed_url",
+        "signed_url",
+        "connector_run_id",
+        "destination",
+        "raw_document_text",
+    ):
+        assert forbidden_key not in body
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == counts_before
+        packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after == packages_before
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+        )
+        readiness_state = reconciliation.summary_json["external_export_download_readiness"]
+        assert readiness_state["external_export_download_readiness_record_ref"] == body[
+            "external_export_download_readiness_record_ref"
+        ]
+        assert readiness_state["external_export_download_readiness_ref"] == body[
+            "external_export_download_readiness_ref"
+        ]
+        assert readiness_state["external_export_download_readiness_schema_id"] == (
+            "layer3.mixed_source_external_export_download_readiness.v1"
+        )
+        assert readiness_state["external_export_download_readiness_state"] == (
+            "mixed_source_external_export_download_ready"
+        )
+        assert readiness_state["package_review_submit_record_ref"] == submit_body["submit_record_ref"]
+        assert readiness_state["prepare_record_ref"] == prepare_body["prepare_record_ref"]
+        assert readiness_state["handoff_export_state"] == "handoff_export_prepared"
+        assert readiness_state["aps_handoff_record_ref"] == dispatch_body["aps_handoff_record_ref"]
+        assert readiness_state["aps_handoff_state"] == "aps_handoff_dispatched"
+        assert readiness_state["external_export_download_enabled"] is False
+        assert readiness_state["download_url_enabled"] is False
+        assert readiness_state["connector_dispatch_enabled"] is False
+        assert readiness_state["payload_refs"] == body["payload_refs"]
+        assert readiness_state["payload_hashes"] == body["payload_hashes"]
+    finally:
+        db.close()
+    assert files_under_tmp() == files_before
+
+    summary = client.get(f"/api/v1/layer3/session/{gate_b['session_id']}")
+    assert summary.status_code == 200, summary.text
+    summary_body = summary.json()
+    summary_state = summary_body["external_export_download"]
+    assert summary_state["schema_id"] == "layer3.mixed_source_external_export_download_readiness_state.v1"
+    assert summary_state["state"] == "mixed_source_external_export_download_ready"
+    assert summary_state["external_export_download_readiness_ref"] == body["external_export_download_readiness_ref"]
+    assert summary_state["package_review_submit_record_ref"] == submit_body["submit_record_ref"]
+    assert summary_state["handoff_export_state"] == "handoff_export_prepared"
+    assert summary_state["aps_handoff_state"] == "aps_handoff_dispatched"
+    assert summary_state["external_export_download_enabled"] is False
+    assert summary_state["delivery_enabled"] is False
+
+    replay = client.post("/api/v1/layer3/handoff/export/download/readiness", json=payload)
+    assert replay.status_code == 200, replay.text
+    assert replay.json()["status"] == "already_ready"
+    assert replay.json()["external_export_download_readiness_record_ref"] == body[
+        "external_export_download_readiness_record_ref"
+    ]
+
+    changed_request = client.post(
+        "/api/v1/layer3/handoff/export/download/readiness",
+        json={**payload, "client_request_id": "api-mixed-download-readiness-new-request"},
+    )
+    assert changed_request.status_code == 409
+    assert changed_request.json()["error_code"] == "mixed_source_external_export_download_readiness_already_recorded"
+
+
+def test_layer3_api_mixed_source_external_export_download_readiness_fails_closed(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    gate_b, material, _preview_body, commit_body, submit_body, _source = _submit_mixed_package_review(
+        client,
+        tmp_path,
+        request_id="api-mixed-download-readiness-closed",
+    )
+    prepare = client.post(
+        "/api/v1/layer3/handoff/export/prepare",
+        json=_mixed_handoff_export_prepare_payload(
+            request_id="api-mixed-download-readiness-closed-prepare",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+        ),
+    )
+    assert prepare.status_code == 200, prepare.text
+    prepare_body = prepare.json()
+    missing_dispatch = client.post(
+        "/api/v1/layer3/handoff/export/download/readiness",
+        json=_mixed_external_export_download_readiness_payload(
+            request_id="api-mixed-download-readiness-missing-dispatch",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body=prepare_body,
+            dispatch_body={
+                "aps_handoff_record_ref": "layer3://mixed-source-aps-handoff/not-recorded",
+                "aps_handoff_state": "aps_handoff_dispatched",
+            },
+        ),
+    )
+    assert missing_dispatch.status_code == 409
+    assert missing_dispatch.json()["error_code"] == (
+        "mixed_source_external_export_download_readiness_requires_aps_handoff_dispatch"
+    )
+
+    dispatch = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json=_mixed_aps_handoff_dispatch_payload(
+            request_id="api-mixed-download-readiness-closed-dispatch",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body=prepare_body,
+        ),
+    )
+    assert dispatch.status_code == 200, dispatch.text
+    dispatch_body = dispatch.json()
+
+    stale_basis = client.post(
+        "/api/v1/layer3/handoff/export/download/readiness",
+        json={
+            **_mixed_external_export_download_readiness_payload(
+                request_id="api-mixed-download-readiness-stale-basis",
+                gate_b=gate_b,
+                material=material,
+                commit_body=commit_body,
+                submit_body=submit_body,
+                prepare_body=prepare_body,
+                dispatch_body=dispatch_body,
+            ),
+            "construction_basis_hash": "0" * 64,
+        },
+    )
+    assert stale_basis.status_code == 409
+    assert stale_basis.json()["error_code"] == (
+        "mixed_source_external_export_download_readiness_construction_basis_mismatch"
+    )
+
+    aps_ref_mismatch = client.post(
+        "/api/v1/layer3/handoff/export/download/readiness",
+        json={
+            **_mixed_external_export_download_readiness_payload(
+                request_id="api-mixed-download-readiness-aps-ref",
+                gate_b=gate_b,
+                material=material,
+                commit_body=commit_body,
+                submit_body=submit_body,
+                prepare_body=prepare_body,
+                dispatch_body=dispatch_body,
+            ),
+            "aps_handoff_record_ref": "layer3://mixed-source-aps-handoff/wrong",
+        },
+    )
+    assert aps_ref_mismatch.status_code == 409
+    assert aps_ref_mismatch.json()["error_code"] == (
+        "mixed_source_external_export_download_readiness_aps_handoff_mismatch"
+    )
+
+    aps_state_mismatch = client.post(
+        "/api/v1/layer3/handoff/export/download/readiness",
+        json={
+            **_mixed_external_export_download_readiness_payload(
+                request_id="api-mixed-download-readiness-aps-state",
+                gate_b=gate_b,
+                material=material,
+                commit_body=commit_body,
+                submit_body=submit_body,
+                prepare_body=prepare_body,
+                dispatch_body=dispatch_body,
+            ),
+            "aps_handoff_state": "aps_handoff_prepared",
+        },
+    )
+    assert aps_state_mismatch.status_code == 409
+    assert aps_state_mismatch.json()["error_code"] == (
+        "mixed_source_external_export_download_readiness_requires_dispatched_aps_handoff"
+    )
+
+    empty_kinds = client.post(
+        "/api/v1/layer3/handoff/export/download/readiness",
+        json={
+            **_mixed_external_export_download_readiness_payload(
+                request_id="api-mixed-download-readiness-empty-kinds",
+                gate_b=gate_b,
+                material=material,
+                commit_body=commit_body,
+                submit_body=submit_body,
+                prepare_body=prepare_body,
+                dispatch_body=dispatch_body,
+            ),
+            "expected_package_kinds": [],
+        },
+    )
+    assert empty_kinds.status_code == 409
+    assert empty_kinds.json()["error_code"] == "mixed_source_external_export_download_readiness_kinds_mismatch"
+
+    legacy = client.post(
+        "/api/v1/layer3/handoff/export/download/readiness",
+        json={
+            **_mixed_external_export_download_readiness_payload(
+                request_id="api-mixed-download-readiness-legacy",
+                gate_b=gate_b,
+                material=material,
+                commit_body=commit_body,
+                submit_body=submit_body,
+                prepare_body=prepare_body,
+                dispatch_body=dispatch_body,
+            ),
+            "analysis_plan_id": "legacy-plan",
+        },
+    )
+    assert legacy.status_code == 400
+    assert legacy.json()["error_code"] == "mixed_source_external_export_download_readiness_scope_not_admitted"
+    assert legacy.json()["blocked_fields"] == ["analysis_plan_id"]
+
+    download_url = client.post(
+        "/api/v1/layer3/handoff/export/download/readiness",
+        json={
+            **_mixed_external_export_download_readiness_payload(
+                request_id="api-mixed-download-readiness-download-url",
+                gate_b=gate_b,
+                material=material,
+                commit_body=commit_body,
+                submit_body=submit_body,
+                prepare_body=prepare_body,
+                dispatch_body=dispatch_body,
+            ),
+            "download_url": "https://example.invalid/package",
+        },
+    )
+    assert download_url.status_code == 400
+    assert download_url.json()["error_code"] == "mixed_source_external_export_download_readiness_scope_not_admitted"
+    assert download_url.json()["blocked_fields"] == ["download_url"]
 
 
 @pytest.mark.parametrize(

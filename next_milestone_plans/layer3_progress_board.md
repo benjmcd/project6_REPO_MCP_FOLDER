@@ -1,5 +1,45 @@
 # Layer3 Progress Board
 
+## P19 Mixed-Source External Export/Download Readiness Runtime
+
+Milestone:
+`p19_mixed_source_external_export_download_readiness_runtime`.
+
+Closeout doc:
+`next_milestone_plans/multi-ingest/45-p19-runtime-closeout.md`.
+
+Status: branch-local runtime proof. Current-main authority requires PR merge and
+post-merge current-main sync.
+
+Scope: implements only mixed-source external export/download readiness over the
+recorded P18 reference-only mixed-source APS handoff dispatch state. The runtime
+recomputes P14/P15/P16/P17/P18 material/package/handoff authority server-side,
+records one readiness state in reconciliation/session JSON, projects it through
+the existing `external_export_download` session-summary surface, and emits only
+public `layer3://mixed-source-package/...` package refs plus a public
+`layer3://mixed-source-external-export/...` readiness ref.
+
+Non-goals: no rendered UI/static behavior, external export/download delivery,
+browser download, download URL, signed reference, public/provider URL,
+connector/provider/local-outbox/destination behavior, schema/model/migration,
+parser, source-shape expansion, package payload rewrite, package reconstruction,
+excluded-tool behavior, or production-readiness change.
+
+Proof: branch-local compile passed for touched API/service/test files; focused
+P19/API contract and error-envelope slice passed with `28 passed, 267
+deselected, 3 warnings`; full Layer 3 API suite passed with `295 passed, 4
+warnings`; affected external export response helper tests passed with `6 passed,
+2 warnings`. Manifest JSON syntax, authority-index validation, frozen
+target-selection validation, progress check, and `git diff --check` also passed
+branch-local.
+
+Next posture: after this runtime merges and current main is synced, freeze
+mixed-source external export/download delivery as the next exact downstream
+surface. Delivery, download URLs, signed references, public/provider URLs,
+connector/provider behavior, schema/parser/source-shape widening, payload
+rewrite, excluded-tool behavior, and production readiness remain blocked until a
+later freeze selects and proves them.
+
 ## P19 Mixed-Source External Export/Download Readiness Freeze
 
 Milestone:

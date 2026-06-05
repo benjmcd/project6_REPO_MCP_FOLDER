@@ -2957,6 +2957,83 @@ class Layer3ApsHandoffDispatchRequest(BaseModel):
     schema_migration: Any | None = None
 
 
+class Layer3MixedSourceExternalExportDownloadReadinessRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    material_preview_id: str | None = None
+    material_preview_hash: str | None = None
+    package_review_preview_hash: str | None = None
+    contract_hash: str | None = None
+    construction_basis_hash: str | None = None
+    reconciliation_record_id: str | None = None
+    output_package_ids: Any | None = None
+    payload_hashes: Any | None = None
+    package_review_submit_record_ref: str | None = None
+    package_review_state: str | None = None
+    prepare_record_ref: str | None = None
+    handoff_export_state: str | None = None
+    handoff_export_envelope_ref: str | None = None
+    handoff_target: str | None = None
+    export_mode: str | None = None
+    aps_handoff_target: str | None = None
+    dispatch_mode: str | None = None
+    aps_handoff_record_ref: str | None = None
+    aps_handoff_state: str | None = None
+    operator_decision: str | None = None
+    decision_notes: str | None = None
+    expected_package_kinds: Any | None = None
+    analysis_plan_id: Any | None = None
+    pass_run_id: Any | None = None
+    preview_id: Any | None = None
+    preview_hash: Any | None = None
+    result_review_record_ref: Any | None = None
+    analysis_run_id: Any | None = None
+    package_kinds: Any | None = None
+    payload_refs: Any | None = None
+    external_export: Any | None = None
+    external_target: Any | None = None
+    download: Any | None = None
+    download_url: Any | None = None
+    signed_url: Any | None = None
+    provider_public_url: Any | None = None
+    provider_private_signed_url: Any | None = None
+    provider_url: Any | None = None
+    public_url: Any | None = None
+    destination: Any | None = None
+    destination_selector: Any | None = None
+    connector_run_id: Any | None = None
+    connector_dispatch: Any | None = None
+    dispatch: Any | None = None
+    send: Any | None = None
+    local_outbox: Any | None = None
+    outbox: Any | None = None
+    runtime_db_write: Any | None = None
+    analysis_artifact: Any | None = None
+    artifact_manifest: Any | None = None
+    create_package: Any | None = None
+    rebuild_package: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    rewrite_output: Any | None = None
+    edited_findings: Any | None = None
+    result_review_amendment: Any | None = None
+    package_review_amendment: Any | None = None
+    rerun: Any | None = None
+    retry: Any | None = None
+    recover: Any | None = None
+    cancel: Any | None = None
+    selected_pass_ids: Any | None = None
+    pass_run_ids: Any | None = None
+    new_analysis_plan: Any | None = None
+    plan_revision: Any | None = None
+    source_expansion: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    schema_migration: Any | None = None
+
+
 class Layer3ExternalExportDownloadPrepareRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -10264,6 +10341,53 @@ class Layer3ApsHandoffDispatchResponse(Layer3BaseResponse):
     authority_rail: dict[str, Any]
 
 
+class Layer3MixedSourceExternalExportDownloadReadinessResponse(Layer3BaseResponse):
+    session_id: str
+    material_preview_id: str
+    material_preview_hash: str
+    contract_hash: str
+    package_review_preview_hash: str
+    construction_basis_hash: str
+    reconciliation_record_id: str
+    output_package_ids: list[str]
+    package_kinds: list[str]
+    payload_refs: list[str]
+    payload_hashes: list[str]
+    package_review_submit_record_ref: str
+    package_review_state: str
+    prepare_record_ref: str
+    handoff_export_state: str
+    handoff_export_envelope_ref: str
+    handoff_target: str
+    export_mode: str
+    aps_handoff_target: str
+    dispatch_mode: str
+    aps_handoff_record_ref: str
+    aps_handoff_state: str
+    operator_decision: str
+    decision_notes: str | None
+    package_family: str
+    readiness_schema_id: str | None = None
+    external_export_download_readiness_schema_id: str
+    external_export_download_readiness_state: str
+    external_export_download_readiness_record_ref: str
+    external_export_download_readiness_ref: str
+    negative_authority_flags: dict[str, Any]
+    external_export_enabled: bool
+    download_enabled: bool
+    download_url_enabled: bool
+    signed_reference_enabled: bool
+    provider_public_url_enabled: bool
+    provider_private_signed_url_enabled: bool
+    connector_dispatch_enabled: bool
+    delivery_enabled: bool
+    external_export_download_enabled: bool
+    downstream_unavailable: list[str]
+    next_allowed_actions: list[str]
+    next_state: str
+    authority_rail: dict[str, Any]
+
+
 class Layer3ExternalExportDownloadPrepareResponse(Layer3BaseResponse):
     session_id: str
     analysis_plan_id: str
@@ -13422,6 +13546,128 @@ APS_HANDOFF_DISPATCH_REQUEST_SCHEMA: dict[str, Any] = {
         "connector_dispatch": _forbidden_request_field_schema(),
         "dispatch": _forbidden_request_field_schema(),
         "send": _forbidden_request_field_schema(),
+        "runtime_db_write": _forbidden_request_field_schema(),
+        "analysis_artifact": _forbidden_request_field_schema(),
+        "artifact_manifest": _forbidden_request_field_schema(),
+        "create_package": _forbidden_request_field_schema(),
+        "rebuild_package": _forbidden_request_field_schema(),
+        "package_payload": _forbidden_request_field_schema(),
+        "package_variant_content": _forbidden_request_field_schema(),
+        "rewrite_output": _forbidden_request_field_schema(),
+        "edited_findings": _forbidden_request_field_schema(),
+        "result_review_amendment": _forbidden_request_field_schema(),
+        "package_review_amendment": _forbidden_request_field_schema(),
+        "rerun": _forbidden_request_field_schema(),
+        "retry": _forbidden_request_field_schema(),
+        "recover": _forbidden_request_field_schema(),
+        "cancel": _forbidden_request_field_schema(),
+        "selected_pass_ids": _forbidden_request_field_schema(),
+        "pass_run_ids": _forbidden_request_field_schema(),
+        "new_analysis_plan": _forbidden_request_field_schema(),
+        "plan_revision": _forbidden_request_field_schema(),
+        "source_expansion": _forbidden_request_field_schema(),
+        "local_upload": _forbidden_request_field_schema(),
+        "local_directory": _forbidden_request_field_schema(),
+        "schema_migration": _forbidden_request_field_schema(),
+    },
+}
+
+
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Mixed-source external export/download readiness accepts only material-authority lifecycle "
+        "fields over an already recorded P18 mixed-source APS handoff dispatch. It records readiness "
+        "only; delivery, download URLs, signed/public references, connector dispatch, and provider "
+        "behavior are known but non-admitted."
+    ),
+    "required": [
+        "client_request_id",
+        "session_id",
+        "material_preview_id",
+        "material_preview_hash",
+        "package_review_preview_hash",
+        "contract_hash",
+        "construction_basis_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "material_preview_id": {"type": "string"},
+        "material_preview_hash": {"type": "string"},
+        "package_review_preview_hash": {"type": "string"},
+        "contract_hash": {"type": "string"},
+        "construction_basis_hash": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "output_package_ids": {"type": "array", "items": {"type": "string"}},
+        "payload_hashes": _string_array_or_string_map_schema(
+            "List of payload hashes or a mapping keyed by package kind or package id."
+        ),
+        "package_review_submit_record_ref": {"type": "string"},
+        "package_review_state": {"type": "string", "enum": ["package_review_approved"]},
+        "prepare_record_ref": {"type": "string"},
+        "handoff_export_state": {"type": "string", "enum": ["handoff_export_prepared"]},
+        "handoff_export_envelope_ref": {"type": "string"},
+        "handoff_target": {"type": "string", "enum": ["mixed_source_review_package"]},
+        "export_mode": {"type": "string", "enum": ["reference_envelope_only"]},
+        "aps_handoff_target": {"type": "string", "enum": ["mixed_source_aps_evidence_bundle"]},
+        "dispatch_mode": {"type": "string", "enum": ["server_side_mixed_source_aps_handoff"]},
+        "aps_handoff_record_ref": {"type": "string"},
+        "aps_handoff_state": {"type": "string", "enum": ["aps_handoff_dispatched"]},
+        "operator_decision": {
+            "type": "string",
+            "enum": ["record_mixed_source_external_export_download_readiness"],
+        },
+        "decision_notes": {"type": "string"},
+        "expected_package_kinds": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": (
+                "Optional mixed-source material-authority package kind guard; when provided it must be "
+                "canonical_internal, user_facing, and review_facing in order."
+            ),
+        },
+        "analysis_plan_id": _forbidden_request_field_schema(),
+        "pass_run_id": _forbidden_request_field_schema(),
+        "preview_id": _forbidden_request_field_schema(),
+        "preview_hash": _forbidden_request_field_schema(),
+        "result_review_record_ref": _forbidden_request_field_schema(),
+        "analysis_run_id": _forbidden_request_field_schema(),
+        "package_kinds": _forbidden_request_field_schema(),
+        "payload_refs": _forbidden_request_field_schema(),
+        "external_export": _forbidden_request_field_schema(),
+        "external_target": _forbidden_request_field_schema(),
+        "download": _forbidden_request_field_schema(),
+        "download_url": _forbidden_request_field_schema(),
+        "signed_url": _forbidden_request_field_schema(),
+        "provider_public_url": _forbidden_request_field_schema(),
+        "provider_private_signed_url": _forbidden_request_field_schema(),
+        "provider_url": _forbidden_request_field_schema(),
+        "public_url": _forbidden_request_field_schema(),
+        "destination": _forbidden_request_field_schema(),
+        "destination_selector": _forbidden_request_field_schema(),
+        "connector_run_id": _forbidden_request_field_schema(),
+        "connector_dispatch": _forbidden_request_field_schema(),
+        "dispatch": _forbidden_request_field_schema(),
+        "send": _forbidden_request_field_schema(),
+        "local_outbox": _forbidden_request_field_schema(),
+        "outbox": _forbidden_request_field_schema(),
         "runtime_db_write": _forbidden_request_field_schema(),
         "analysis_artifact": _forbidden_request_field_schema(),
         "artifact_manifest": _forbidden_request_field_schema(),
@@ -18202,6 +18448,24 @@ def post_aps_handoff_dispatch(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.aps_handoff_dispatch(db, payload.model_dump(exclude_unset=True)))
+
+
+@router.post(
+    "/handoff/export/download/readiness",
+    response_model=Layer3MixedSourceExternalExportDownloadReadinessResponse,
+    openapi_extra={"requestBody": _json_request_body(MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_mixed_source_external_export_download_readiness(
+    payload: Layer3MixedSourceExternalExportDownloadReadinessRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_workbench.mixed_source_external_export_download_readiness(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
 
 
 @router.post(
