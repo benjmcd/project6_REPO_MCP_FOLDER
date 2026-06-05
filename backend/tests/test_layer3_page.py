@@ -1384,6 +1384,11 @@ def test_layer3_mixed_source_rendered_delivery_uses_p19_material_authority() -> 
         "function mixedSourceExternalExportDownloadDeliveryPayload",
         "function externalExportDownloadDeliveryPayload",
     )
+    delivery_state_slice = _js_slice(
+        js_text,
+        "function mixedSourceExternalExportDownloadDeliveryState",
+        "function mixedSourceExternalExportDownloadDeliveryStateName",
+    )
     panel_slice = _js_slice(
         js_text,
         "function externalExportDownloadDeliveryPanelState",
@@ -1434,6 +1439,10 @@ def test_layer3_mixed_source_rendered_delivery_uses_p19_material_authority() -> 
     assert "package_payload_rewrite_enabled: false" in ui_slice
     assert "schema_runtime_source_widening_enabled: false" in ui_slice
     assert "server_authority: 'State.sessionSummary.external_export_download_readiness'" in ui_slice
+    assert (
+        delivery_state_slice.find("State.sessionSummary?.external_export_download_delivery")
+        < delivery_state_slice.find("State.externalExportDownloadDelivery")
+    )
     assert "|| mixedSourceExternalExportDownloadDeliveryAuthorityPacket()" in controls_slice
     assert "rendered_mixed_source_external_export_download_delivery_control" in panel_slice
     assert "State.sessionSummary.external_export_download_readiness" in panel_slice
@@ -1444,6 +1453,8 @@ def test_layer3_mixed_source_rendered_delivery_uses_p19_material_authority() -> 
     assert "MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID" in attachment_slice
     assert "const mixedSourceMode = Boolean(mixedSourceExternalExportDownloadDeliveryAuthorityPacket())" in submit_slice
     assert "mixedSourceExternalExportDownloadDeliveryPayload()" in submit_slice
+    assert "!mixedSourceMode && sourceDirectoryMode" in panel_slice
+    assert "!mixedSourceMode && sourceDirectoryMode" in submit_slice
     assert "'/handoff/export/download/deliver'" in submit_slice
     assert "Mixed-source external export/download package submitted as browser-managed same-origin attachment." in submit_slice
     assert "&& !mixedSourceExternalExportDownloadReadinessState()" in controls_slice
