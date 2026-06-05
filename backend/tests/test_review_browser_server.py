@@ -44,6 +44,7 @@ def test_review_browser_server_restores_layer3_patch_state_after_app_creation() 
     original_sec_edgar_client = layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT
     original_sec_edgar_sleep = layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP
     original_sec_edgar_user_agent = settings.layer3_sec_edgar_user_agent
+    original_sec_edgar_live_network_enabled = settings.layer3_sec_edgar_live_network_enabled
     original_sec_edgar_rate_limit = settings.layer3_sec_edgar_rate_limit_per_second
     patch_state = capture_review_browser_patch_state()
     app = None
@@ -59,6 +60,7 @@ def test_review_browser_server_restores_layer3_patch_state_after_app_creation() 
         assert layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT is app.state.sec_edgar_live_source_artifact_client
         assert layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT is not original_sec_edgar_client
         assert layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP is not original_sec_edgar_sleep
+        assert settings.layer3_sec_edgar_live_network_enabled is True
 
         restore_review_browser_patches(patch_state)
 
@@ -70,6 +72,7 @@ def test_review_browser_server_restores_layer3_patch_state_after_app_creation() 
         assert layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT is original_sec_edgar_client
         assert layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP is original_sec_edgar_sleep
         assert settings.layer3_sec_edgar_user_agent == original_sec_edgar_user_agent
+        assert settings.layer3_sec_edgar_live_network_enabled == original_sec_edgar_live_network_enabled
         assert settings.layer3_sec_edgar_rate_limit_per_second == original_sec_edgar_rate_limit
         if module_was_present:
             assert sys.modules[module_key] is original_aps_bundle_module

@@ -164,6 +164,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "layer3_external_local_export_dir", str(tmp_path / "external-local-export"))
     monkeypatch.setattr(settings, "layer3_internal_webhook_url", "http://127.0.0.1/layer3-internal-webhook")
     monkeypatch.setattr(settings, "layer3_internal_webhook_display_name", "test-internal-webhook")
+    monkeypatch.setattr(settings, "layer3_sec_edgar_live_network_enabled", True)
     bootstrap_storage_tree(storage_dir)
     engine = create_engine(
         "sqlite:///:memory:",
@@ -1761,6 +1762,18 @@ def test_layer3_api_rejects_sec_edgar_text_table_live_source_artifact_unconfigur
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
     payload = _sec_edgar_live_source_artifact_payload(client_request_id="sec-edgar-live-acq-reject-001")
 
+    monkeypatch.setattr(settings, "layer3_sec_edgar_live_network_enabled", False)
+    disabled_network_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+        json=payload,
+    )
+    assert disabled_network_response.status_code == 409, disabled_network_response.text
+    assert disabled_network_response.json()["error_code"] == (
+        "sec_edgar_text_table_live_source_artifact_live_network_disabled"
+    )
+    assert fake_client.calls == []
+
+    monkeypatch.setattr(settings, "layer3_sec_edgar_live_network_enabled", True)
     missing_user_agent_response = client.post(
         "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
         json=payload,

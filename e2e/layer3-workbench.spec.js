@@ -12220,6 +12220,7 @@ test('Layer 3 workbench inspects SEC XBRL runtime posture through rendered read-
     activation_surface_hash: 'a'.repeat(64),
     runtime_flags: {
       live_sec_edgar_network_enabled: false,
+      sec_edgar_user_agent_configured: false,
       arelle_fact_authority_cutover_enabled: true,
       arelle_fact_authority_nonlocal_authorized: false,
       arelle_internal_value_store_enabled: false,
@@ -12310,7 +12311,9 @@ test('Layer 3 workbench inspects SEC XBRL runtime posture through rendered read-
         operator_confirmation_required: true,
         server_derives_external_sec_url: true,
         browser_supplied_url_allowed: false,
+        sec_edgar_user_agent_configured: false,
         required_flags: ['LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED'],
+        required_configuration: ['LAYER3_SEC_EDGAR_USER_AGENT'],
         required_evidence: ['live_sec_source_artifact_e2e'],
         current_posture_performs_side_effect: false,
         source_acquisition_performed: false,
@@ -12387,12 +12390,14 @@ test('Layer 3 workbench inspects SEC XBRL runtime posture through rendered read-
   await expect(panel).toContainText('sec-edgar-live-source-artifact-acquisition-panel');
   await expect(panel).toContainText('POST /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire');
   await expect(panel).toContainText('surface state gated_by_live_network_feature_flag');
+  await expect(panel).toContainText('required configuration LAYER3_SEC_EDGAR_USER_AGENT');
   await expect(panel).toContainText('side effects none');
   await expect(panel).toContainText('production readiness claimed: false');
   await expect(panel).toContainText('source acquisition performed: false');
   await expect(panel).toContainText('Arelle invoked: false');
   await expect(panel).toContainText('raw value exposed: false');
   await expect(panel).not.toContainText('raw-operator@example.invalid');
+  await expect(panel).not.toContainText('Layer3 Test contact@example.com');
   await expect(panel).not.toContainText('12345.67');
   await expect(panel).not.toContainText('C:\\');
   await expect(panel).not.toContainText('http://');

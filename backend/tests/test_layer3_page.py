@@ -2885,6 +2885,7 @@ def test_layer3_sec_xbrl_runtime_posture_rendered_control_is_read_only() -> None
     assert "current_posture_performs_side_effect" in surface_helper_slice
     assert "rendered_panel_id" in surface_helper_slice
     assert "api_routes" in surface_helper_slice
+    assert "required_configuration" in surface_helper_slice
     assert "production readiness claimed" in rows_slice
     assert "source acquisition performed" in rows_slice
     assert "Arelle invoked" in rows_slice

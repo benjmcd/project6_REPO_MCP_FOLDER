@@ -2711,6 +2711,7 @@ def create_app() -> FastAPI:
     app.state.layer3_engine = engine
     app.state.sec_edgar_live_source_artifact_client = _ReviewBrowserSeededSecEdgarClient()
     settings.layer3_sec_edgar_user_agent = "Layer3 Review Browser contact@example.com"
+    settings.layer3_sec_edgar_live_network_enabled = True
     settings.layer3_sec_edgar_rate_limit_per_second = 10
     layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT = app.state.sec_edgar_live_source_artifact_client
     layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP = lambda _seconds: None

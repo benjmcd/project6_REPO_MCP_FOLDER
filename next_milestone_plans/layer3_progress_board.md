@@ -12603,3 +12603,35 @@ LF-to-CRLF warnings.
 Next posture: use this map to select exactly one next activation implementation pass: live SEC
 source acquisition, Arelle invocation proof, delivery/export/status proof, multi-filing gate
 enforcement, or nonlocal operator-auth hardening.
+
+## SEC EDGAR Live Source Service Gate
+
+Milestone: `sec_edgar_live_source_artifact_service_level_feature_gate_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1357-sec-edgar-live-source-service-gate.md`.
+
+Status: branch-local hardening of the existing live source-artifact acquisition lane. The owner
+service now requires `LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED` before any acquisition client can run,
+including test-only fake clients. The SEC XBRL runtime posture now reports
+`sec_edgar_user_agent_configured` and a redacted `required_configuration` marker for
+`LAYER3_SEC_EDGAR_USER_AGENT` on the live source acquisition surface.
+
+Scope: service-level fail-closed behavior and redacted operator readiness only. The rendered
+runtime posture panel shows required configuration, while acquisition remains blocked unless live
+network authorization and server User-Agent configuration are both present.
+
+Non-goals preserved: no default-on change, live SEC EDGAR network request during validation, Arelle
+subprocess invocation, value reveal, delivery/export, runtime DB write, model/schema/migration
+change, raw SEC URL/local path/artifact byte/User-Agent exposure, browser-supplied acquisition
+authority, frontend durable authority, or production-readiness claim.
+
+Verification: focused posture tests pass (`6 passed`), focused live source-artifact API tests pass
+(`3 passed, 293 deselected`), focused review-browser server tests pass (`2 passed, 18 deselected`),
+focused static Layer3 page checks pass (`3 passed, 22 deselected`), and focused Playwright Chromium
+proof for live source artifact plus runtime posture passes in headless and headed modes (`2 passed`
+each).
+
+Next posture: use the hardened live acquisition gate as the prerequisite for one bounded
+live-source activation run, or proceed to Arelle invocation proof, delivery/export/package status,
+multi-filing gate enforcement, or nonlocal operator-auth hardening as separate passes.
