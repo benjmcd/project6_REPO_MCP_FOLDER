@@ -48185,5 +48185,61 @@
     ],
     "next_posture": "freeze_one_next_mixed_source_downstream_surface_or_stop_for_product_authority"
   },
-  "latest_p20_mixed_source_external_export_download_delivery_current_main_sync_summary": "P20 current-main sync records PR #2223 at 6ca7835c6d8724715c9ac2d7a92ca34de2898ef2 as the live mixed-source same-origin external export/download delivery runtime. The sync changes docs/control only and keeps rendered controls, download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, payload rewrite, excluded-tool, and production-readiness scope blocked."
+  "latest_p20_mixed_source_external_export_download_delivery_current_main_sync_summary": "P20 current-main sync records PR #2223 at 6ca7835c6d8724715c9ac2d7a92ca34de2898ef2 as the live mixed-source same-origin external export/download delivery runtime. The sync changes docs/control only and keeps rendered controls, download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, payload rewrite, excluded-tool, and production-readiness scope blocked.",
+  "p21_mixed_source_rendered_delivery_controls_freeze_tracking": {
+    "tracking_kind": "p21_mixed_source_rendered_delivery_controls_freeze_tracking",
+    "milestone": "p21_mixed_source_rendered_delivery_controls_freeze",
+    "status": "branch_local_planning_control_freeze_no_runtime_or_ui_behavior_admitted",
+    "base_main_commit": "03422f97ac081ac69f11a4c435c10e641874f089",
+    "planning_doc": "next_milestone_plans/multi-ingest/50-p21-rendered-delivery-freeze.md",
+    "runtime_predecessor_doc": "next_milestone_plans/multi-ingest/48-p20-runtime-closeout.md",
+    "current_main_sync_predecessor_doc": "next_milestone_plans/multi-ingest/49-p20-current-main-sync.md",
+    "selection": "mixed_source_rendered_delivery_controls",
+    "selection_reason": "P20 current main already admits same-origin mixed-source artifact-stream delivery over recorded P19 readiness; the highest-ROI next downstream surface is rendered operator controls over that existing stream, while signed-reference, provider/public URL, connector/destination, local outbox, schema, parser, source-shape, package payload rewrite, excluded-tool, and production-readiness behavior remain blocked.",
+    "future_route": "POST /api/v1/layer3/handoff/export/download/deliver",
+    "future_schema_id": "layer3.mixed_source_external_export_download_delivery.v1",
+    "future_delivery_mode": "same_origin_artifact_stream",
+    "future_operator_decision": "deliver_mixed_source_external_export_download",
+    "runtime_behavior_changed_by_tracking": false,
+    "rendered_ui_behavior_changed_by_tracking": false,
+    "backend_route_changed_by_tracking": false,
+    "schema_or_migration_changed_by_tracking": false,
+    "parser_behavior_changed_by_tracking": false,
+    "source_shape_expanded_by_tracking": false,
+    "payload_rewrite_enabled_by_tracking": false,
+    "browser_download_control_enabled_by_tracking": false,
+    "download_url_enabled_by_tracking": false,
+    "signed_reference_enabled_by_tracking": false,
+    "public_or_provider_url_enabled_by_tracking": false,
+    "connector_dispatch_enabled_by_tracking": false,
+    "provider_behavior_enabled_by_tracking": false,
+    "destination_behavior_enabled_by_tracking": false,
+    "local_outbox_enabled_by_tracking": false,
+    "sec_xbrl_surface_changed_by_tracking": false,
+    "excluded_tool_behavior_enabled_by_tracking": false,
+    "production_readiness_claimed_by_tracking": false,
+    "implementation_entry_gate": [
+      "freeze must merge and current-main sync before implementation",
+      "future implementation may change only rendered operator path and focused tests",
+      "future implementation must derive payload from server-owned P20/P19/session-summary material authority",
+      "stop for a separate freeze if backend DTO, schema, migration, parser, source-shape, signed-reference, provider, connector, destination, local outbox, download URL, or package payload rewrite behavior is required"
+    ],
+    "files_in_scope": [
+      "next_milestone_plans/multi-ingest/50-p21-rendered-delivery-freeze.md",
+      "next_milestone_plans/multi-ingest/README.md",
+      "next_milestone_plans/authority-index.json",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "validation_required": [
+      "python -B -m json.tool authority/progress/proof manifests",
+      "python -B .\\tools\\l3-authority-index-validate.py",
+      "python -B .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "python -B .\\tools\\l3-progress-check.py",
+      "git diff --check"
+    ],
+    "next_posture": "implement_rendered_mixed_source_delivery_controls_after_freeze_merge_and_current_main_sync"
+  },
+  "latest_p21_mixed_source_rendered_delivery_controls_freeze_summary": "P21 freezes rendered mixed-source delivery controls over the existing P20 same-origin external export/download delivery runtime. This branch-local docs/control freeze admits no runtime code, UI/static behavior, backend route, download URL, signed-reference, public/provider URL, connector/destination, schema/parser/source-shape, package payload rewrite, SEC XBRL, excluded-tool, or production-readiness behavior."
 }
