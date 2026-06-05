@@ -1,5 +1,51 @@
 # Layer3 Progress Board
 
+## P22 Mixed-Source Signed-Reference Governance Freeze
+
+Milestone:
+`p22_mixed_source_signed_reference_governance_freeze`.
+
+Planning doc:
+`next_milestone_plans/multi-ingest/53-p22-mixed-signed-reference-freeze.md`.
+
+Status: branch-local docs/control freeze only. No runtime behavior, backend
+route/API change, rendered UI/static change, durable-state change,
+schema/model/migration, parser/source-shape expansion, package payload rewrite,
+download URL, provider/public URL, connector/provider/destination/local-outbox
+behavior, SEC XBRL surface, excluded-tool behavior, value reveal, default-on
+behavior, or production readiness is admitted.
+
+Scope: selects mixed-source same-origin signed-reference governance as the next
+exact downstream surface after current-main P21 rendered delivery controls. The
+future implementation may admit signed-reference generation/use only after
+server-side revalidation of the full P14/P15/P16/P17/P18/P19/P20/P21 mixed
+material-authority chain and the current `review_facing` package row.
+
+Selection basis: P21 current main already renders same-origin delivery controls
+over the P20 mixed-source artifact-stream route and explicitly blocks
+mixed-source signed-reference controls. Provider/public URL and
+connector/destination governance docs still require separate activation
+evidence and exact mode selection before implementation, so they remain later
+surfaces.
+
+Non-goals: no runtime code, backend route/API change, rendered UI/static
+behavior, signed-reference generation/use/status/revocation, durable-state
+schema change, provider/public URL, connector/destination, package mutation,
+package payload rewrite, parser/source-shape expansion, download URL, SEC XBRL,
+source acquisition, Arelle, excluded-tool behavior, value reveal, default-on
+behavior, or production-readiness change.
+
+Proof: this branch-local freeze requires manifest JSON syntax,
+authority-index validation, frozen target-selection validation, progress check,
+and `git diff --check`.
+
+Next posture: after this freeze merges and current-main syncs, implement only
+mixed-source same-origin signed-reference generation/use over existing
+P19/P20/P21 delivery authority. Stop for a separate freeze if provider/public
+URL, connector/destination, durable-state schema expansion, rendered controls,
+package payload rewrite, parser/source-shape expansion, local outbox, or
+external download URL behavior is required.
+
 ## P21 Mixed-Source Rendered Delivery Controls Current-Main Sync
 
 Milestone:
