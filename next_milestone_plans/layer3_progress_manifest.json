@@ -48584,6 +48584,7 @@
     "runtime_boundary": "Adds only a read-only rendered product-authority checkpoint over already-loaded P17/P18/P19/P21/P22 mixed-source authority. It introduces no backend route/service, payload builder, submit handler, durable persistence, schema/model/migration, signed-reference status/revocation, provider/public URL, connector, destination, local outbox, package rewrite, parser/source-shape expansion, real export/dispatch, or production-readiness behavior.",
     "files_in_scope": [
       "backend/app/review_ui/static/layer3.js",
+      "backend/app/review_ui/static/layer3.css",
       "backend/tests/test_layer3_page.py",
       "e2e/layer3-workbench.spec.js",
       "next_milestone_plans/multi-ingest/55-p23-product-flow-usability-proof.md",
@@ -48604,9 +48605,11 @@
       "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls\" --project=chromium",
       "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls\" --project=chromium --headed",
       "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls|P21 mixed-source external export download delivery control|P22 mixed-source signed-reference controls|raw mixed rendered external export download signed reference\" --project=chromium",
-      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls|P21 mixed-source external export download delivery control|P22 mixed-source signed-reference controls|raw mixed rendered external export download signed reference\" --project=chromium --headed"
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"P18/P19 mixed-source readiness controls|P21 mixed-source external export download delivery control|P22 mixed-source signed-reference controls|raw mixed rendered external export download signed reference\" --project=chromium --headed",
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"responsive live-state sublayer|mockup workbench theme exposes|Sublayer 3C execution lanes projection\" --project=chromium",
+      "npx playwright test ./e2e/layer3-workbench.spec.js -g \"query/source setup projection|output review package handoff projection|Sublayers AB projection\" --project=chromium"
     ],
     "next_posture": "merge_review_then_current_main_sync_before_selecting_durable_revocation_provider_connector_schema_or_production_readiness_surfaces"
   },
-  "latest_p24_mixed_source_product_authority_checkpoint_summary": "Branch-local P24 renders a read-only mixed-source product-authority checkpoint over existing P17/P18/P19/P21/P22 authority and keeps backend routes, payload builders, submit handlers, signed-reference status/revocation, provider/public URL, connector/destination/local-outbox, schema, parser/source-shape, package rewrite, real export/dispatch, and production-readiness behavior blocked."
+  "latest_p24_mixed_source_product_authority_checkpoint_summary": "Branch-local P24 renders a read-only mixed-source product-authority checkpoint over existing P17/P18/P19/P21/P22 authority, includes scoped overflow containment for long authority labels, and keeps backend routes, payload builders, submit handlers, signed-reference status/revocation, provider/public URL, connector/destination/local-outbox, schema, parser/source-shape, package rewrite, real export/dispatch, and production-readiness behavior blocked."
 }
