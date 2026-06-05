@@ -1,5 +1,39 @@
 # Layer3 Progress Board
 
+## P19 Mixed-Source External Export/Download Readiness Freeze
+
+Milestone:
+`p19_mixed_source_external_export_download_readiness_freeze`.
+
+Planning doc:
+`next_milestone_plans/multi-ingest/44-p19-mixed-export-download-readiness-freeze.md`.
+
+Status: branch-local docs/control freeze only. No runtime behavior is admitted.
+
+Scope: selects mixed-source external export/download readiness as the next exact
+downstream surface after P18. This is the first external export/download surface
+for mixed sources and records a reference-only readiness state only. It does not
+deliver, download, or expose any external artifact, URL, or signed reference.
+The recorded P18 reference-only mixed-source APS handoff dispatch state is the
+prerequisite authority because external export/download readiness already
+requires a recorded APS handoff dispatch state.
+
+Non-goals: no backend route, runtime behavior, DTO, model, migration, UI/static
+behavior, parser, source-shape, package payload rewrite, external export/download
+readiness runtime, external export/download delivery, download URL, signed
+reference, public/provider URL, connector/provider/local-outbox/destination
+behavior, excluded-tool behavior, or production readiness change.
+
+Proof: docs/control validation only is required for this freeze: manifest JSON
+syntax, authority-index validation, frozen target-selection validation,
+progress check, and `git diff --check`.
+
+Next posture: after this freeze merges and current-main syncs, implement only
+mixed-source external export/download readiness. External export/download
+delivery, download, signed reference, public URL, connector, and provider
+behavior remain blocked until that readiness runtime lands and a later delivery
+freeze is selected.
+
 ## P18 Mixed-Source Current-Main Sync
 
 Milestone:
