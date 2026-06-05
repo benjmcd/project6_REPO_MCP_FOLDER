@@ -5,6 +5,8 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+
 os.environ["DB_INIT_MODE"] = "none"
 
 BACKEND = Path(__file__).resolve().parents[1]
@@ -27,6 +29,7 @@ from app.services.layer3_pass_entry import (
     PASS_TYPE_ASSOCIATED_COHORT,
     SOURCE_GATE_COHORT_DESC_FREEZE,
 )
+from app.services.layer3_workbench_error import Layer3WorkbenchError
 from app.services.layer3_workbench_package_state import APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID
 
 
@@ -258,6 +261,80 @@ def test_external_export_delivery_response_helper_is_shared_with_workbench(monke
     assert delivery.authority == validation_body
     assert delivery.authority is not validation_body
     assert delivery.authority["nested"] is not validation_body["nested"]
+
+
+def test_mixed_external_export_delivery_response_helper_is_shared_with_workbench(tmp_path) -> None:
+    assert (
+        layer3_workbench._mixed_source_external_export_download_delivery_response
+        is export_response.mixed_source_external_export_download_delivery_response
+    )
+
+    artifact_path = tmp_path / "mixed-package.json"
+    artifact_path.write_bytes(b'{"package_family":"mixed_dataset_document"}')
+    artifact_hash = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+    validation_body = {
+        "external_export_download_delivery_record_ref": "layer3://mixed-source-external-export-download-delivery/record",
+        "nested": {"kept": True},
+    }
+
+    delivery = export_response.mixed_source_external_export_download_delivery_response(
+        session_id="session:bad/name..",
+        output_package_id="pkg:review/facing",
+        package_kind="review_facing",
+        package_payload_hash=artifact_hash,
+        package_payload_ref=str(artifact_path),
+        readiness_record_ref="layer3://mixed-source-external-export-download-readiness/record",
+        validation_body=validation_body,
+    )
+
+    assert delivery.artifact_path == artifact_path
+    assert delivery.media_type == "application/json"
+    assert delivery.filename == "layer3-session-bad-name-pkg-review-facing-review_facing.json"
+    assert delivery.headers == {
+        "X-Layer3-Schema-Id": export_response.MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
+        "X-Layer3-Delivery-State": "mixed_source_external_export_download_delivered",
+        "X-Layer3-Package-Family": "mixed_dataset_document",
+        "X-Layer3-Output-Package-Id": "pkg:review/facing",
+        "X-Layer3-Package-Kind": "review_facing",
+        "X-Layer3-Package-Payload-Hash": artifact_hash,
+        "X-Layer3-External-Export-Download-Readiness-Record-Ref": (
+            "layer3://mixed-source-external-export-download-readiness/record"
+        ),
+        "X-Layer3-External-Export-Download-Delivery-Record-Ref": (
+            "layer3://mixed-source-external-export-download-delivery/record"
+        ),
+    }
+    assert str(tmp_path) not in repr(delivery.headers)
+    assert delivery.authority == validation_body
+    assert delivery.authority is not validation_body
+    assert delivery.authority["nested"] is not validation_body["nested"]
+
+    with pytest.raises(Layer3WorkbenchError) as missing_error:
+        export_response.mixed_source_external_export_download_delivery_response(
+            session_id="session-export-response",
+            output_package_id="pkg-review",
+            package_kind="review_facing",
+            package_payload_hash=artifact_hash,
+            package_payload_ref=str(tmp_path / "missing.json"),
+            readiness_record_ref="layer3://readiness/record",
+            validation_body=validation_body,
+        )
+    assert (
+        missing_error.value.error_code
+        == "mixed_source_external_export_download_delivery_package_artifact_unavailable"
+    )
+
+    with pytest.raises(Layer3WorkbenchError) as hash_error:
+        export_response.mixed_source_external_export_download_delivery_response(
+            session_id="session-export-response",
+            output_package_id="pkg-review",
+            package_kind="review_facing",
+            package_payload_hash="wrong-hash",
+            package_payload_ref=str(artifact_path),
+            readiness_record_ref="layer3://readiness/record",
+            validation_body=validation_body,
+        )
+    assert hash_error.value.error_code == "mixed_source_external_export_download_delivery_package_artifact_hash_mismatch"
 
 
 class _PackageQuery:

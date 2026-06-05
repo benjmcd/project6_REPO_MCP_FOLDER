@@ -656,6 +656,59 @@ def _mixed_external_export_download_readiness_payload(
     }
 
 
+def _mixed_external_export_download_delivery_payload(
+    *,
+    request_id: str,
+    gate_b: dict,
+    material: dict,
+    commit_body: dict,
+    submit_body: dict,
+    prepare_body: dict,
+    dispatch_body: dict,
+    readiness_body: dict,
+    package_kind: str = "review_facing",
+    decision_notes: str | None = None,
+) -> dict:
+    package_index = readiness_body["package_kinds"].index(package_kind)
+    payload = {
+        "client_request_id": request_id,
+        "session_id": gate_b["session_id"],
+        "material_preview_id": material["material_preview_id"],
+        "material_preview_hash": material["material_preview_hash"],
+        "package_review_preview_hash": commit_body["package_review_preview_hash"],
+        "contract_hash": commit_body["contract_hash"],
+        "construction_basis_hash": commit_body["construction_basis_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_id": readiness_body["output_package_ids"][package_index],
+        "package_kind": readiness_body["package_kinds"][package_index],
+        "package_payload_hash": readiness_body["payload_hashes"][package_index],
+        "package_review_submit_record_ref": submit_body["submit_record_ref"],
+        "package_review_state": submit_body["package_review_state"],
+        "prepare_record_ref": prepare_body["prepare_record_ref"],
+        "handoff_export_state": prepare_body["handoff_export_state"],
+        "handoff_export_envelope_ref": prepare_body["handoff_export_envelope_ref"],
+        "handoff_target": "mixed_source_review_package",
+        "export_mode": "reference_envelope_only",
+        "aps_handoff_target": "mixed_source_aps_evidence_bundle",
+        "dispatch_mode": "server_side_mixed_source_aps_handoff",
+        "aps_handoff_record_ref": dispatch_body["aps_handoff_record_ref"],
+        "aps_handoff_state": dispatch_body["aps_handoff_state"],
+        "external_export_download_readiness_record_ref": readiness_body[
+            "external_export_download_readiness_record_ref"
+        ],
+        "external_export_download_readiness_ref": readiness_body["external_export_download_readiness_ref"],
+        "external_export_download_readiness_state": readiness_body[
+            "external_export_download_readiness_state"
+        ],
+        "delivery_mode": "same_origin_artifact_stream",
+        "operator_decision": "deliver_mixed_source_external_export_download",
+        "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+    }
+    if decision_notes is not None:
+        payload["decision_notes"] = decision_notes
+    return payload
+
+
 def _assert_common_response_envelope(body: dict) -> None:
     assert body["schema_id"].startswith("layer3.")
     assert body["schema_version"] == 1
@@ -13249,8 +13302,14 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
     deliver_request_body = spec["paths"]["/api/v1/layer3/handoff/export/download/deliver"]["post"]["requestBody"]
     assert deliver_request_body["required"] is True
     assert {"application/json", "application/x-www-form-urlencoded"} <= set(deliver_request_body["content"])
-    deliver_request_schema = deliver_request_body["content"]["application/json"]["schema"]
-    deliver_form_schema = deliver_request_body["content"]["application/x-www-form-urlencoded"]["schema"]
+    deliver_route_schema = deliver_request_body["content"]["application/json"]["schema"]
+    deliver_form_route_schema = deliver_request_body["content"]["application/x-www-form-urlencoded"]["schema"]
+    assert len(deliver_route_schema["oneOf"]) == 2
+    assert len(deliver_form_route_schema["oneOf"]) == 2
+    deliver_request_schema = deliver_route_schema["oneOf"][0]
+    mixed_deliver_schema = deliver_route_schema["oneOf"][1]
+    deliver_form_schema = deliver_form_route_schema["oneOf"][0]
+    mixed_deliver_form_schema = deliver_form_route_schema["oneOf"][1]
     assert deliver_request_schema["additionalProperties"] is False
     assert {
         "client_request_id",
@@ -13296,18 +13355,70 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
     _assert_string_array_or_string_map_schema(deliver_request_schema["properties"]["payload_hashes"])
     assert "download_url" not in deliver_request_schema["properties"]
     assert "connector_run_id" not in deliver_request_schema["properties"]
+    assert mixed_deliver_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "material_preview_id",
+        "material_preview_hash",
+        "package_review_preview_hash",
+        "contract_hash",
+        "construction_basis_hash",
+        "reconciliation_record_id",
+        "output_package_id",
+        "package_kind",
+        "package_payload_hash",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "external_export_download_readiness_record_ref",
+        "external_export_download_readiness_ref",
+        "external_export_download_readiness_state",
+        "delivery_mode",
+        "operator_decision",
+    } <= set(mixed_deliver_schema["required"])
+    assert mixed_deliver_schema["properties"]["handoff_target"]["enum"] == ["mixed_source_review_package"]
+    assert mixed_deliver_schema["properties"]["export_mode"]["enum"] == ["reference_envelope_only"]
+    assert mixed_deliver_schema["properties"]["dispatch_mode"]["enum"] == [
+        "server_side_mixed_source_aps_handoff"
+    ]
+    assert mixed_deliver_schema["properties"]["external_export_download_readiness_state"]["enum"] == [
+        "mixed_source_external_export_download_ready"
+    ]
+    assert mixed_deliver_schema["properties"]["delivery_mode"]["enum"] == ["same_origin_artifact_stream"]
+    assert mixed_deliver_schema["properties"]["operator_decision"]["enum"] == [
+        "deliver_mixed_source_external_export_download"
+    ]
+    assert mixed_deliver_schema["properties"]["download_url"]["description"].startswith("Known but non-admitted")
+    assert mixed_deliver_schema["properties"]["payload_refs"]["description"].startswith("Known but non-admitted")
+    assert mixed_deliver_schema["properties"]["connector_dispatch"]["description"].startswith(
+        "Known but non-admitted"
+    )
     assert deliver_form_schema["additionalProperties"] is False
+    assert mixed_deliver_form_schema["additionalProperties"] is False
     assert "JSON-stringified" in deliver_form_schema["description"]
     assert "JSON array strings or JSON object strings" in deliver_form_schema["description"]
     assert "not as repeated form keys" in deliver_form_schema["description"]
     assert set(deliver_request_schema["required"]) == set(deliver_form_schema["required"])
     assert set(deliver_request_schema["properties"]) == set(deliver_form_schema["properties"])
+    assert set(mixed_deliver_schema["required"]) == set(mixed_deliver_form_schema["required"])
+    assert set(mixed_deliver_schema["properties"]) == set(mixed_deliver_form_schema["properties"])
     assert deliver_request_schema["properties"]["output_package_ids"]["type"] == "array"
     assert deliver_form_schema["properties"]["output_package_ids"]["type"] == "string"
     assert deliver_form_schema["properties"]["payload_refs"]["type"] == "string"
     assert deliver_form_schema["properties"]["payload_hashes"]["type"] == "string"
     assert "download_url" not in deliver_form_schema["properties"]
     assert "connector_run_id" not in deliver_form_schema["properties"]
+    assert mixed_deliver_form_schema["properties"]["output_package_id"]["type"] == "string"
+    assert mixed_deliver_form_schema["properties"]["expected_package_kinds"]["type"] == "string"
 
     deliver_success_schema = deliver_responses["200"]["content"]["application/json"]["schema"]
     assert deliver_success_schema == {"type": "string", "format": "binary"}
@@ -13316,6 +13427,12 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
         "X-Layer3-Schema-Id",
         "X-Layer3-Delivery-State",
         "X-Layer3-Source-Artifact-Hash",
+        "X-Layer3-Package-Family",
+        "X-Layer3-Output-Package-Id",
+        "X-Layer3-Package-Kind",
+        "X-Layer3-Package-Payload-Hash",
+        "X-Layer3-External-Export-Download-Readiness-Record-Ref",
+        "X-Layer3-External-Export-Download-Delivery-Record-Ref",
     } <= set(deliver_responses["200"]["headers"])
     for status in ("400", "404", "409"):
         error_schema = _openapi_response_schema_for_status(
@@ -19461,6 +19578,220 @@ def test_layer3_api_mixed_source_external_export_download_readiness_fails_closed
     assert download_url.status_code == 400
     assert download_url.json()["error_code"] == "mixed_source_external_export_download_readiness_scope_not_admitted"
     assert download_url.json()["blocked_fields"] == ["download_url"]
+
+
+def test_layer3_api_mixed_source_external_export_download_deliver_streams_package_artifact(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    gate_b, material, _preview_body, commit_body, submit_body, _source = _submit_mixed_package_review(
+        client,
+        tmp_path,
+        request_id="api-mixed-download-delivery-success",
+    )
+    prepare = client.post(
+        "/api/v1/layer3/handoff/export/prepare",
+        json=_mixed_handoff_export_prepare_payload(
+            request_id="api-mixed-download-delivery-prepare",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+        ),
+    )
+    assert prepare.status_code == 200, prepare.text
+    prepare_body = prepare.json()
+    dispatch = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json=_mixed_aps_handoff_dispatch_payload(
+            request_id="api-mixed-download-delivery-dispatch",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body=prepare_body,
+        ),
+    )
+    assert dispatch.status_code == 200, dispatch.text
+    dispatch_body = dispatch.json()
+    readiness_payload = _mixed_external_export_download_readiness_payload(
+        request_id="api-mixed-download-delivery-readiness",
+        gate_b=gate_b,
+        material=material,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+    )
+    readiness_payload["decision_notes"] = "Record P19 mixed-source external export/download readiness."
+    readiness = client.post(
+        "/api/v1/layer3/handoff/export/download/readiness",
+        json=readiness_payload,
+    )
+    assert readiness.status_code == 200, readiness.text
+    readiness_body = readiness.json()
+    assert readiness_body["decision_notes"] == "Record P19 mixed-source external export/download readiness."
+    deliver_payload = _mixed_external_export_download_delivery_payload(
+        request_id="api-mixed-download-delivery-deliver",
+        gate_b=gate_b,
+        material=material,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+        readiness_body=readiness_body,
+        package_kind="review_facing",
+        decision_notes="Deliver the review-facing mixed-source package artifact.",
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        selected_package = (
+            db.query(L3OutputPackage)
+            .filter(
+                L3OutputPackage.output_package_id == deliver_payload["output_package_id"],
+                L3OutputPackage.package_kind == "review_facing",
+            )
+            .one()
+        )
+        package_path = Path(selected_package.payload_ref)
+        expected_bytes = package_path.read_bytes()
+        counts_before = {
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+        packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        readiness_state_before = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json["external_export_download_readiness"]
+        )
+    finally:
+        db.close()
+
+    delivery = client.post("/api/v1/layer3/handoff/export/download/deliver", json=deliver_payload)
+    assert delivery.status_code == 200, delivery.text
+    assert delivery.content == expected_bytes
+    assert delivery.headers["content-type"].startswith("application/json")
+    assert "attachment" in delivery.headers["content-disposition"]
+    assert delivery.headers["x-layer3-schema-id"] == "layer3.mixed_source_external_export_download_delivery.v1"
+    assert delivery.headers["x-layer3-delivery-state"] == "mixed_source_external_export_download_delivered"
+    assert delivery.headers["x-layer3-package-family"] == "mixed_dataset_document"
+    assert delivery.headers["x-layer3-output-package-id"] == deliver_payload["output_package_id"]
+    assert delivery.headers["x-layer3-package-kind"] == "review_facing"
+    assert delivery.headers["x-layer3-package-payload-hash"] == deliver_payload["package_payload_hash"]
+    assert delivery.headers["x-layer3-external-export-download-readiness-record-ref"] == (
+        readiness_body["external_export_download_readiness_record_ref"]
+    )
+    assert delivery.headers["x-layer3-external-export-download-delivery-record-ref"].startswith(
+        "l3-mixed-source-external-export-download-delivery-"
+    )
+    for forbidden_header in ("download_url", "public_url", "signed_url", "connector_run_id"):
+        assert forbidden_header not in delivery.headers
+    assert str(package_path) not in delivery.text
+
+    replay = client.post("/api/v1/layer3/handoff/export/download/deliver", json=deliver_payload)
+    assert replay.status_code == 200, replay.text
+    assert replay.content == expected_bytes
+    assert replay.headers["x-layer3-external-export-download-delivery-record-ref"] == (
+        delivery.headers["x-layer3-external-export-download-delivery-record-ref"]
+    )
+
+    changed_request = client.post(
+        "/api/v1/layer3/handoff/export/download/deliver",
+        json={**deliver_payload, "client_request_id": "api-mixed-download-delivery-other-request"},
+    )
+    assert changed_request.status_code == 409
+    assert changed_request.json()["error_code"] == "mixed_source_external_export_download_delivery_already_recorded"
+
+    stale_readiness = client.post(
+        "/api/v1/layer3/handoff/export/download/deliver",
+        json={**deliver_payload, "external_export_download_readiness_ref": "layer3://mixed-source-external-export/stale"},
+    )
+    assert stale_readiness.status_code == 409
+    assert stale_readiness.json()["error_code"] == "mixed_source_external_export_download_delivery_readiness_mismatch"
+    assert "external_export_download_readiness_ref" in stale_readiness.json()["blocked_fields"]
+
+    empty_kinds = client.post(
+        "/api/v1/layer3/handoff/export/download/deliver",
+        json={**deliver_payload, "expected_package_kinds": []},
+    )
+    assert empty_kinds.status_code == 409
+    assert empty_kinds.json()["error_code"] == "mixed_source_external_export_download_delivery_kinds_mismatch"
+
+    blocked_scope = client.post(
+        "/api/v1/layer3/handoff/export/download/deliver",
+        json={
+            **deliver_payload,
+            "download_url": "https://example.invalid/package.json",
+            "analysis_plan_id": "legacy-plan",
+        },
+    )
+    assert blocked_scope.status_code == 400
+    assert blocked_scope.json()["error_code"] == "mixed_source_external_export_download_delivery_scope_not_admitted"
+    assert blocked_scope.json()["blocked_fields"] == ["analysis_plan_id", "download_url"]
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == counts_before
+        packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after == packages_before
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+        )
+        assert reconciliation.summary_json["external_export_download_readiness"] == readiness_state_before
+        delivery_state = reconciliation.summary_json["external_export_download_delivery"]
+        assert delivery_state["schema_id"] == "layer3.mixed_source_external_export_download_delivery_state.v1"
+        assert delivery_state["external_export_download_delivery_schema_id"] == (
+            "layer3.mixed_source_external_export_download_delivery.v1"
+        )
+        assert delivery_state["external_export_download_delivery_state"] == (
+            "mixed_source_external_export_download_delivered"
+        )
+        assert delivery_state["output_package_id"] == deliver_payload["output_package_id"]
+        assert delivery_state["package_kind"] == "review_facing"
+        assert delivery_state["package_payload_hash"] == deliver_payload["package_payload_hash"]
+        assert delivery_state["decision_notes"] == "Deliver the review-facing mixed-source package artifact."
+        assert "payload_ref" not in json.dumps(delivery_state)
+        session = db.get(L3Session, gate_b["session_id"])
+        assert session is not None
+        session_delivery = session.summary_json["external_export_download_delivery"]
+        assert session_delivery["external_export_download_delivery_record_ref"] == (
+            delivery_state["external_export_download_delivery_record_ref"]
+        )
+        assert "payload_ref" not in json.dumps(session_delivery)
+    finally:
+        db.close()
 
 
 @pytest.mark.parametrize(

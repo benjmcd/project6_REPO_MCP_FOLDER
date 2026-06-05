@@ -11093,11 +11093,192 @@ EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORM_REQUEST_SCHEMA: dict[str, Any] = {
 }
 
 
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Mixed-source external export/download delivery accepts only material-authority lifecycle "
+        "fields over recorded P19 readiness and streams one existing mixed-source package artifact "
+        "through the same-origin response. URLs, signed references, provider/connector dispatch, "
+        "destinations, package rewrites, and source-shape expansion remain non-admitted."
+    ),
+    "required": [
+        "client_request_id",
+        "session_id",
+        "material_preview_id",
+        "material_preview_hash",
+        "package_review_preview_hash",
+        "contract_hash",
+        "construction_basis_hash",
+        "reconciliation_record_id",
+        "output_package_id",
+        "package_kind",
+        "package_payload_hash",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "external_export_download_readiness_record_ref",
+        "external_export_download_readiness_ref",
+        "external_export_download_readiness_state",
+        "delivery_mode",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "material_preview_id": {"type": "string"},
+        "material_preview_hash": {"type": "string"},
+        "package_review_preview_hash": {"type": "string"},
+        "contract_hash": {"type": "string"},
+        "construction_basis_hash": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "output_package_id": {"type": "string"},
+        "package_kind": {
+            "type": "string",
+            "enum": ["canonical_internal", "user_facing", "review_facing"],
+        },
+        "package_payload_hash": {"type": "string"},
+        "package_review_submit_record_ref": {"type": "string"},
+        "package_review_state": {"type": "string", "enum": ["package_review_approved"]},
+        "prepare_record_ref": {"type": "string"},
+        "handoff_export_state": {"type": "string", "enum": ["handoff_export_prepared"]},
+        "handoff_export_envelope_ref": {"type": "string"},
+        "handoff_target": {"type": "string", "enum": ["mixed_source_review_package"]},
+        "export_mode": {"type": "string", "enum": ["reference_envelope_only"]},
+        "aps_handoff_target": {"type": "string", "enum": ["mixed_source_aps_evidence_bundle"]},
+        "dispatch_mode": {"type": "string", "enum": ["server_side_mixed_source_aps_handoff"]},
+        "aps_handoff_record_ref": {"type": "string"},
+        "aps_handoff_state": {"type": "string", "enum": ["aps_handoff_dispatched"]},
+        "external_export_download_readiness_record_ref": {"type": "string"},
+        "external_export_download_readiness_ref": {"type": "string"},
+        "external_export_download_readiness_state": {
+            "type": "string",
+            "enum": ["mixed_source_external_export_download_ready"],
+        },
+        "delivery_mode": {"type": "string", "enum": ["same_origin_artifact_stream"]},
+        "operator_decision": {"type": "string", "enum": ["deliver_mixed_source_external_export_download"]},
+        "decision_notes": {"type": "string"},
+        "expected_package_kinds": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": (
+                "Optional mixed-source package kind guard; when provided it must be "
+                "canonical_internal, user_facing, and review_facing in order."
+            ),
+        },
+        "analysis_plan_id": _forbidden_request_field_schema(),
+        "pass_run_id": _forbidden_request_field_schema(),
+        "preview_id": _forbidden_request_field_schema(),
+        "preview_hash": _forbidden_request_field_schema(),
+        "result_review_record_ref": _forbidden_request_field_schema(),
+        "analysis_run_id": _forbidden_request_field_schema(),
+        "package_kinds": _forbidden_request_field_schema(),
+        "payload_refs": _forbidden_request_field_schema(),
+        "payload_hashes": _forbidden_request_field_schema(),
+        "external_export_download_record_ref": _forbidden_request_field_schema(),
+        "export_download_descriptor_ref": _forbidden_request_field_schema(),
+        "external_export_download_state": _forbidden_request_field_schema(),
+        "export_download_target": _forbidden_request_field_schema(),
+        "download_mode": _forbidden_request_field_schema(),
+        "aps_output_package_id": _forbidden_request_field_schema(),
+        "aps_output_package_kind": _forbidden_request_field_schema(),
+        "aps_bundle_ref": _forbidden_request_field_schema(),
+        "aps_bundle_id": _forbidden_request_field_schema(),
+        "aps_schema_id": _forbidden_request_field_schema(),
+        "download": _forbidden_request_field_schema(),
+        "download_url": _forbidden_request_field_schema(),
+        "download_token": _forbidden_request_field_schema(),
+        "public_url": _forbidden_request_field_schema(),
+        "signed_url": _forbidden_request_field_schema(),
+        "provider_url": _forbidden_request_field_schema(),
+        "provider_public_url": _forbidden_request_field_schema(),
+        "provider_private_signed_url": _forbidden_request_field_schema(),
+        "destination": _forbidden_request_field_schema(),
+        "destination_selector": _forbidden_request_field_schema(),
+        "connector_run_id": _forbidden_request_field_schema(),
+        "connector_dispatch": _forbidden_request_field_schema(),
+        "dispatch": _forbidden_request_field_schema(),
+        "send": _forbidden_request_field_schema(),
+        "local_outbox": _forbidden_request_field_schema(),
+        "runtime_db_write": _forbidden_request_field_schema(),
+        "analysis_artifact": _forbidden_request_field_schema(),
+        "artifact_manifest": _forbidden_request_field_schema(),
+        "create_package": _forbidden_request_field_schema(),
+        "rebuild_package": _forbidden_request_field_schema(),
+        "package_payload": _forbidden_request_field_schema(),
+        "package_variant_content": _forbidden_request_field_schema(),
+        "rewrite_output": _forbidden_request_field_schema(),
+        "edited_findings": _forbidden_request_field_schema(),
+        "result_review_amendment": _forbidden_request_field_schema(),
+        "package_review_amendment": _forbidden_request_field_schema(),
+        "rerun": _forbidden_request_field_schema(),
+        "retry": _forbidden_request_field_schema(),
+        "recover": _forbidden_request_field_schema(),
+        "cancel": _forbidden_request_field_schema(),
+        "selected_pass_ids": _forbidden_request_field_schema(),
+        "pass_run_ids": _forbidden_request_field_schema(),
+        "new_analysis_plan": _forbidden_request_field_schema(),
+        "plan_revision": _forbidden_request_field_schema(),
+        "source_expansion": _forbidden_request_field_schema(),
+        "local_upload": _forbidden_request_field_schema(),
+        "local_directory": _forbidden_request_field_schema(),
+        "schema_migration": _forbidden_request_field_schema(),
+    },
+}
+
+
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORM_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Mixed-source form delivery uses one form field per JSON request key. "
+        "Each form field value is the JSON-stringified value for that key."
+    ),
+    "required": list(MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA["required"]),
+    "properties": {
+        key: {
+            "type": "string",
+            "description": "JSON-stringified value for the matching mixed-source JSON request field.",
+        }
+        for key in MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA["properties"]
+    },
+}
+
+
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_ROUTE_JSON_REQUEST_SCHEMA: dict[str, Any] = {
+    "oneOf": [
+        EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA,
+        MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA,
+    ],
+    "description": "Same-origin delivery accepts either legacy APS-bundle delivery or P20 mixed-source package delivery.",
+}
+
+
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_ROUTE_FORM_REQUEST_SCHEMA: dict[str, Any] = {
+    "oneOf": [
+        EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORM_REQUEST_SCHEMA,
+        MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORM_REQUEST_SCHEMA,
+    ],
+    "description": (
+        "Same-origin form delivery accepts either legacy APS-bundle delivery fields or P20 mixed-source "
+        "package delivery fields."
+    ),
+}
+
+
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_BODY: dict[str, Any] = {
     "required": True,
     "content": {
-        "application/json": {"schema": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA},
-        "application/x-www-form-urlencoded": {"schema": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORM_REQUEST_SCHEMA},
+        "application/json": {"schema": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_ROUTE_JSON_REQUEST_SCHEMA},
+        "application/x-www-form-urlencoded": {"schema": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_ROUTE_FORM_REQUEST_SCHEMA},
     },
 }
 
@@ -18814,6 +18995,16 @@ def post_provider_public_url_delivery_use(
                 "X-Layer3-Schema-Id": {"schema": {"type": "string"}},
                 "X-Layer3-Delivery-State": {"schema": {"type": "string"}},
                 "X-Layer3-Source-Artifact-Hash": {"schema": {"type": "string"}},
+                "X-Layer3-Package-Family": {"schema": {"type": "string"}},
+                "X-Layer3-Output-Package-Id": {"schema": {"type": "string"}},
+                "X-Layer3-Package-Kind": {"schema": {"type": "string"}},
+                "X-Layer3-Package-Payload-Hash": {"schema": {"type": "string"}},
+                "X-Layer3-External-Export-Download-Readiness-Record-Ref": {
+                    "schema": {"type": "string"}
+                },
+                "X-Layer3-External-Export-Download-Delivery-Record-Ref": {
+                    "schema": {"type": "string"}
+                },
             },
         },
         400: {"model": Layer3WorkbenchErrorResponse},
