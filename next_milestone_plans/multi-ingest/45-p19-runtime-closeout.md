@@ -1,8 +1,8 @@
 # P19 Mixed-Source External Export/Download Readiness Runtime Closeout
 
-Status: branch-local runtime implementation proof. This becomes current-main
-authority only after the runtime PR merges and a current-main sync verifies live
-`project6-origin/main`.
+Status: current-main runtime implementation verified after PR #2220. Current
+main sync is recorded by `46-p19-current-main-sync.md` at live
+`project6-origin/main` `9e4451cb710c0185a64f1788b9e0d848be7dbc8b`.
 
 ## Scope
 
@@ -134,7 +134,7 @@ The runtime fails closed for:
 
 ## Verification
 
-Branch-local verification passed:
+Branch-local verification passed before PR #2220:
 
 - `python -B -m py_compile .\backend\app\api\layer3.py .\backend\app\services\layer3_workbench.py .\backend\app\services\layer3_handoff_contract.py .\backend\app\services\layer3_workbench_package_state.py .\backend\app\services\layer3_external_export_response.py .\backend\tests\test_layer3_api.py`
 - `python -B -m pytest .\backend\tests\test_layer3_api.py -k "mixed_source_external_export_download_readiness or layer3_handoff_openapi_contracts or workbench_error_responses or json_or_error_call_sites_return_workbench_error_envelope" -q`
@@ -144,7 +144,7 @@ Branch-local verification passed:
 - `python -B -m pytest .\backend\tests\test_layer3_external_export_response.py -q`
   (`6 passed, 2 warnings`)
 
-Branch-local governance validation also passed:
+Branch-local governance validation also passed before PR #2220:
 
 - `python -B -m json.tool .\next_milestone_plans\authority-index.json`
 - `python -B -m json.tool .\next_milestone_plans\layer3_progress_manifest.json`
@@ -154,12 +154,28 @@ Branch-local governance validation also passed:
 - `python -B .\tools\l3-progress-check.py`
 - `git diff --check`
 
+Detached post-merge proof from current main
+`9e4451cb710c0185a64f1788b9e0d848be7dbc8b` passed:
+
+- touched-file `py_compile`
+- focused P19/API contract and error-envelope slice
+  (`28 passed, 267 deselected, 3 warnings`)
+- full `backend/tests/test_layer3_api.py`
+  (`295 passed, 4 warnings`)
+- affected external export response helper tests
+  (`6 passed, 2 warnings`)
+- manifest JSON syntax
+- authority-index validation
+- frozen target-selection validation
+- progress check
+- `git diff --check`
+
 ## Next Posture
 
-After this runtime lands and current main is synced, the next safe mixed-source
-downstream step is a separate external export/download delivery freeze. That
-later freeze must decide the exact delivery surface and must continue to keep
-download URLs, signed references, public/provider URLs, connector/provider
-dispatch, schema/model/migration changes, parser/source-shape expansion,
-package payload rewrite, excluded-tool behavior, and production readiness
-blocked unless explicitly selected and proved.
+After current main is synced by `46-p19-current-main-sync.md`, the next safe
+mixed-source downstream step is a separate external export/download delivery
+freeze. That later freeze must decide the exact delivery surface and must
+continue to keep download URLs, signed references, public/provider URLs,
+connector/provider dispatch, schema/model/migration changes, parser/source-shape
+expansion, package payload rewrite, excluded-tool behavior, and production
+readiness blocked unless explicitly selected and proved.
