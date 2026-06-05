@@ -1,5 +1,43 @@
 # Layer3 Progress Board
 
+## P18 Mixed-Source Current-Main Sync
+
+Milestone:
+`p18_mixed_source_aps_handoff_dispatch_current_main_sync`.
+
+Sync doc:
+`next_milestone_plans/multi-ingest/43-p18-current-main-sync.md`.
+
+Status: docs/control current-main sync for PR #2216 and review-debt follow-up
+PR #2217 at live `project6-origin/main`
+`a182a33e32eea7b235859fd23cbe40c06307ed09`.
+
+Scope: records that P18 mixed-source APS handoff dispatch is current-main
+runtime behavior. PR #2216 records reference-only mixed-source APS handoff
+dispatch state over the existing P17 handoff/export prepare state; PR #2217
+splits the OpenAPI request contract into selected-pass and mixed-source shapes
+and proves blank or null mixed material-authority markers fail closed instead
+of routing to selected-pass behavior.
+
+Non-goals: no runtime code, rendered UI/static behavior, backend route, DTO,
+schema/model/migration, parser, source-shape expansion, package payload
+rewrite, package reconstruction, APS evidence-bundle package row, local
+artifact/path/outbox, connector/provider/destination/network behavior,
+external export/download readiness, delivery, download URL, signed reference,
+public/provider URL, excluded-tool behavior, or production readiness change.
+
+Proof: detached post-merge proof after PR #2216 passed touched compile,
+focused P18 API/OpenAPI and mixed-source/package/APS dispatch slices, full
+Layer 3 API suite, manifest JSON syntax, authority-index validation, frozen
+target-selection validation, progress check, and `git diff --check`. PR #2217
+follow-up proof passed focused OpenAPI/cross-shape tests, full Layer 3 API
+suite, manifest JSON syntax, authority-index validation, frozen
+target-selection validation, progress check, and `git diff --check`. PR #2216
+has two resolved review threads; PR #2217 has zero review threads.
+
+Next posture: freeze mixed-source external export/download readiness as the
+next exact downstream surface before implementation.
+
 ## P18 Mixed-Source APS Handoff Dispatch Runtime
 
 Milestone:
@@ -8,10 +46,8 @@ Milestone:
 Closeout doc:
 `next_milestone_plans/multi-ingest/42-p18-runtime-closeout.md`.
 
-Status: branch-local runtime implementation proof over live
-`project6-origin/main` `f7b4d865586161277572a78fa5b1153e24535160`.
-Current-main merge and detached post-merge proof are still required before this
-entry can be cited as live authority.
+Status: current-main runtime implementation verified after PR #2216 and
+review-debt follow-up PR #2217.
 
 Scope: implements only mixed-source APS handoff dispatch over the already-live
 P17 reference-only handoff/export prepare state selected by the P18 freeze. The
@@ -27,17 +63,17 @@ source-shape expansion, package payload rewrite, package reconstruction,
 external export/download readiness, connector/provider/local-outbox behavior,
 excluded-tool behavior, or production readiness change.
 
-Proof: branch-local py_compile passed for the touched API/service/test files;
-the focused P18 API/OpenAPI slice passed with `2 passed, 290 deselected, 3
-warnings`; the affected mixed-source/package/APS dispatch API slice passed with
-`12 passed, 280 deselected, 3 warnings`; the full Layer 3 API suite passed with
-`292 passed, 4 warnings`; manifest JSON syntax, authority-index validation,
-frozen target-selection validation, progress check, and `git diff --check`
-passed.
+Proof: branch-local and detached post-merge py_compile passed for the touched
+API/service/test files; the focused P18 API/OpenAPI slice passed with `2
+passed, 290 deselected, 3 warnings`; the affected mixed-source/package/APS
+dispatch API slice passed with `12 passed, 280 deselected, 3 warnings`; the
+full Layer 3 API suite passed with `292 passed, 4 warnings`; PR #2217 focused
+OpenAPI/cross-shape tests passed with `3 passed, 289 deselected, 3 warnings`;
+manifest JSON syntax, authority-index validation, frozen target-selection
+validation, progress check, and `git diff --check` passed.
 
-Next posture: merge and current-main-sync this runtime first. Only after that,
-freeze mixed-source external export/download readiness as the next exact
-downstream surface before implementation.
+Next posture: freeze mixed-source external export/download readiness as the
+next exact downstream surface before implementation.
 
 ## P18 Mixed-Source APS Handoff Dispatch Freeze
 
