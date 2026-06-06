@@ -24977,3 +24977,120 @@ test('Layer 3 signed reference use rejects missing token field (server-backed)',
   const body = await result.json();
   expect(body.error_code).toBe('external_export_download_signed_reference_token_required');
 });
+
+test('Layer 3 SEC XBRL runtime posture shows controlled value reveal default-off (server-backed)', async ({ request }) => {
+  const result = await request.get('/api/v1/layer3/sec-xbrl/runtime/posture');
+  expect(result.status()).toBe(200);
+  const body = await result.json();
+  expect(body.sec_xbrl_runtime_posture.controlled_value_reveal_submit_enabled).toBe(false);
+});
+
+test('Layer 3 SEC XBRL operator review status without workflow id returns authority-missing (server-backed)', async ({ request }) => {
+  const result = await request.post(
+    '/api/v1/layer3/sec-xbrl/operator-review/workflow/status',
+    {
+      data: {
+        client_request_id: 'anon-probe-s3-1',
+        status_mode: 'sec_xbrl_operator_review_workflow_status_v1',
+        operator_decision: 'inspect_sec_xbrl_operator_review_workflow_status',
+      },
+    },
+  );
+  expect(result.status()).toBe(400);
+  const body = await result.json();
+  expect(body.error_code).toBe('sec_xbrl_operator_review_workflow_status_authority_missing');
+});
+
+test('Layer 3 SEC XBRL operator review status is fail-closed on missing binding (server-backed)', async ({ request }) => {
+  const result = await request.post(
+    '/api/v1/layer3/sec-xbrl/operator-review/workflow/status',
+    {
+      data: {
+        client_request_id: 'fail-closed-status-s3-1',
+        status_mode: 'sec_xbrl_operator_review_workflow_status_v1',
+        operator_decision: 'inspect_sec_xbrl_operator_review_workflow_status',
+        sec_xbrl_operator_review_workflow_id: 'nonexistent-workflow-id',
+      },
+    },
+  );
+  expect(result.status()).toBe(404);
+  const body = await result.json();
+  expect(body.error_code).toBe('sec_xbrl_auth_binding_missing');
+});
+
+test('Layer 3 SEC XBRL operator review decision submit is fail-closed on missing binding (server-backed)', async ({ request }) => {
+  const result = await request.post(
+    '/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit',
+    {
+      data: {
+        client_request_id: 'fail-closed-decision-s3-1',
+        submit_mode: 'sec_xbrl_operator_review_decision_submit_v1',
+        operator_decision: 'submit_sec_xbrl_operator_review_decision',
+        review_decision: 'approved',
+        decision_reason_code: 'ready_for_next_freeze',
+        sec_xbrl_operator_review_workflow_id: 'nonexistent-workflow-id',
+      },
+    },
+  );
+  expect(result.status()).toBe(404);
+  const body = await result.json();
+  expect(body.error_code).toBe('sec_xbrl_auth_binding_missing');
+});
+
+test('Layer 3 SEC XBRL operator review open→status→decision full chain (server-backed)', async ({ request }) => {
+  const seed = await request.post('/__test/layer3/seed-sec-xbrl-operator-review');
+  expect(seed.status()).toBe(200);
+  const seedBody = await seed.json();
+  const packetSetId = seedBody.sec_xbrl_statement_packet_set_id;
+  expect(typeof packetSetId).toBe('string');
+
+  const openResult = await request.post(
+    '/api/v1/layer3/sec-xbrl/operator-review/workflow/open',
+    {
+      data: {
+        client_request_id: 'chain-open-s3-1',
+        sec_xbrl_statement_packet_set_id: packetSetId,
+      },
+    },
+  );
+  expect(openResult.status()).toBe(200);
+  const openBody = await openResult.json();
+  const workflowId = openBody.sec_xbrl_operator_review_workflow_id;
+  expect(typeof workflowId).toBe('string');
+  expect(openBody.workflow_open_api_route_enabled).toBe(true);
+  expect(openBody.status_api_route_enabled).toBe(true);
+  expect(openBody.decision_submit_api_route_enabled).toBe(true);
+
+  const statusResult = await request.post(
+    '/api/v1/layer3/sec-xbrl/operator-review/workflow/status',
+    {
+      data: {
+        client_request_id: 'chain-status-s3-1',
+        status_mode: 'sec_xbrl_operator_review_workflow_status_v1',
+        operator_decision: 'inspect_sec_xbrl_operator_review_workflow_status',
+        sec_xbrl_operator_review_workflow_id: workflowId,
+      },
+    },
+  );
+  expect(statusResult.status()).toBe(200);
+  const statusBody = await statusResult.json();
+  expect(statusBody.sec_xbrl_operator_review_workflow_id).toBe(workflowId);
+
+  const decisionResult = await request.post(
+    '/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit',
+    {
+      data: {
+        client_request_id: 'chain-decision-s3-1',
+        submit_mode: 'sec_xbrl_operator_review_decision_submit_v1',
+        operator_decision: 'submit_sec_xbrl_operator_review_decision',
+        review_decision: 'approved',
+        decision_reason_code: 'ready_for_next_freeze',
+        sec_xbrl_operator_review_workflow_id: workflowId,
+      },
+    },
+  );
+  expect(decisionResult.status()).toBe(200);
+  const decisionBody = await decisionResult.json();
+  expect(typeof decisionBody.sec_xbrl_operator_review_decision_id).toBe('string');
+  expect(decisionBody.decision_submit_api_route_enabled).toBe(true);
+});
