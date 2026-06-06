@@ -2,8 +2,22 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
+import sys
 from pathlib import Path
 
+import pytest
+
+os.environ.setdefault("DB_INIT_MODE", "none")
+
+BACKEND = Path(__file__).resolve().parents[1]
+if str(BACKEND) not in sys.path:
+    sys.path.insert(0, str(BACKEND))
+
+from app.services.layer3_sec_xbrl_in_app_auth_policy import (  # noqa: E402
+    SecXbrlInAppAuthPolicyError,
+    authorize_sec_xbrl_route,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 DIAGNOSTIC_PATH = (
@@ -181,3 +195,18 @@ def test_sec_xbrl_in_app_auth_policy_report_is_redacted() -> None:
     assert "redacted-owner-actor-ref" not in text
     assert "redacted-owner-workspace-ref" not in text
     assert all(not criterion["blocked_reason"] for criterion in report["criteria"])
+
+
+@pytest.mark.parametrize("blank_role", ["", "   ", "\t"])
+def test_sec_xbrl_in_app_auth_policy_role_fails_closed_on_empty_or_blank(
+    blank_role: str,
+) -> None:
+    with pytest.raises(SecXbrlInAppAuthPolicyError) as exc_info:
+        authorize_sec_xbrl_route(
+            headers={},
+            route_family="sec_xbrl_operator_review_workflow_status_read",
+            requested_role=blank_role,
+        )
+
+    assert exc_info.value.http_status == 403
+    assert exc_info.value.code == "sec_xbrl_in_app_auth_policy_role_not_admitted"

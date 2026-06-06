@@ -199,7 +199,7 @@ def _route_family(value: str) -> str:
 
 def _role(value: str) -> str:
     role = str(value or "").strip().lower()
-    if role in {"", OWNER_ROLE}:
+    if role == OWNER_ROLE:
         return OWNER_ROLE
     if role == AUDITOR_ROLE:
         return AUDITOR_ROLE
