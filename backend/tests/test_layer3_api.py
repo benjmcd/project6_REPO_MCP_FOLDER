@@ -203,7 +203,7 @@ def test_layer3_deployment_profile_local_defaults_enable_arelle_cutover_without_
     assert profile.layer3_sec_edgar_arelle_corpus_validation_enabled is False
     assert profile.layer3_sec_edgar_arelle_fact_authority_nonlocal_authorized is False
     assert profile.layer3_sec_edgar_arelle_value_reveal_enabled is False
-    assert profile.layer3_sec_xbrl_controlled_value_reveal_submit_enabled is True
+    assert profile.layer3_sec_xbrl_controlled_value_reveal_submit_enabled is False
 
     cors_middleware = next(middleware for middleware in app.user_middleware if middleware.cls.__name__ == "CORSMiddleware")
     assert cors_middleware.kwargs["allow_origins"] == ["*"]

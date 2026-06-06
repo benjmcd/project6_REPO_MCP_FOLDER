@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from decimal import Decimal
 from itertools import count
 import json
 import os
@@ -78,6 +79,9 @@ from app.services import (
     layer3_workbench,
 )
 from app.services import layer3_pass_entry as layer3_pass_entry_module
+from app.services import layer3_sec_xbrl_projection_persistence as xbrl_proj_persistence
+from app.services import layer3_sec_xbrl_statement_assembly as xbrl_assembly
+from app.services import layer3_sec_xbrl_statement_packet_persistence as xbrl_packet_persistence
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_raw_mixed_bridge import (
     RAW_MIXED_CORPUS_SEED_MANIFEST_SCHEMA_ID,
@@ -2734,6 +2738,109 @@ def _build_browser_cohort_aps_handoff_ready_session(db, temp_path: Path) -> str:
     return session.session_id
 
 
+def _seed_sec_xbrl_operator_review_packet(db, *, seed_id: str) -> dict[str, Any]:
+    char_a = "a" * 64
+    char_b = "b" * 64
+    char_c = "c" * 64
+    projection_rows = [
+        {
+            "canonical_id": concept,
+            "basis": "total",
+            "requested_basis": "total",
+            "statement": stmt,
+            "family": "universal",
+            "status": "projected_oracle_confirmed",
+            "source_qname": f"us-gaap:{concept}",
+            "oracle_confirmed": True,
+            "mapping_method": "fixture",
+            "mapping_confidence": "fixture",
+            "unit_class": "monetary",
+            "provenance_complete": True,
+            "value_redacted": True,
+            "resolved_fact_provenance_present": True,
+            "sidecar_receipt_hash": char_b,
+            "value_store_hash": char_c,
+        }
+        for concept, stmt in [
+            ("Revenue", "income"),
+            ("TotalAssets", "balance"),
+            ("OperatingCashFlow", "cashflow"),
+        ]
+    ]
+    projection_response = xbrl_proj_persistence.materialize_redacted_projection_set(
+        db,
+        client_request_id=f"proj-{seed_id}",
+        projection={
+            "status": "canonical_multi_period_projection_ready",
+            "sector_family_presence": {"activation_rule": "concept_presence_not_sic_gated"},
+            "periods": [
+                {
+                    "period_ref": "fy-seed",
+                    "period_index": 1,
+                    "projection": {
+                        "status": "canonical_projection_ready",
+                        "sidecar_receipt_hash": char_b,
+                        "value_store_hash": char_c,
+                        "concepts": projection_rows,
+                    },
+                }
+            ],
+        },
+        source_report_schema_id="diagnostics.sec_xbrl_sector_family_real_filer_validation_report.v1",
+        source_report_hash=char_a,
+    )
+    assembly_rows = [
+        {
+            "canonical_id": concept,
+            "basis": "total",
+            "requested_basis": "total",
+            "statement": stmt,
+            "family": "universal",
+            "status": "projected_oracle_confirmed",
+            "source_qname": f"us-gaap:{concept}",
+            "oracle_confirmed": True,
+            "mapping_method": "fixture",
+            "mapping_confidence": "fixture",
+            "unit_class": "monetary",
+            "provenance_complete": True,
+            "_value": Decimal(str(idx)),
+        }
+        for idx, (concept, stmt) in enumerate(
+            [("Revenue", "income"), ("TotalAssets", "balance"), ("OperatingCashFlow", "cashflow")],
+            start=1,
+        )
+    ]
+    packet = xbrl_assembly.assemble_reviewable_statement_packet(
+        projection_items=assembly_rows,
+        organization_result={
+            "contract_passed": True,
+            "contract_b_authoritative_organization": True,
+            "contract_every_fact_id_bound": True,
+            "contract_derived_inputs_bound_and_corroborated": True,
+            "normalized_fact_count": 3,
+            "organized_count": 3,
+            "unjoined_count": 0,
+            "a_divergent_count": 0,
+            "a_role_unknown_count": 0,
+        },
+    )
+    packet["review_exception_count"] = 0
+    packet_response = xbrl_packet_persistence.materialize_redacted_statement_packet(
+        db,
+        client_request_id=f"packet-{seed_id}",
+        sec_xbrl_projection_set_id=projection_response["sec_xbrl_projection_set_id"],
+        packet=packet,
+    )
+    return {
+        "schema_id": "project6.review_browser_sec_xbrl_operator_review_seed.v1",
+        "schema_version": 1,
+        "test_only": True,
+        "seed_id": seed_id,
+        "sec_xbrl_projection_set_id": projection_response["sec_xbrl_projection_set_id"],
+        "sec_xbrl_statement_packet_set_id": packet_response["sec_xbrl_statement_packet_set_id"],
+    }
+
+
 def create_app() -> FastAPI:
     temp_dir = TemporaryDirectory(prefix="review-browser-", ignore_cleanup_errors=True)
     temp_path = Path(temp_dir.name)
@@ -2748,6 +2855,7 @@ def create_app() -> FastAPI:
     sec_edgar_html_inline_xbrl_fact_material_repeatability_counter = count(1)
     sec_edgar_live_repeatability_counter = count(1)
     sec_edgar_repeatability_counter = count(1)
+    sec_xbrl_operator_review_counter = count(1)
     fixture = build_review_browser_fixture(temp_path)
     install_review_browser_patches(fixture)
     _install_layer3_browser_patches(temp_path)
@@ -2876,6 +2984,7 @@ def create_app() -> FastAPI:
                 "/__test/layer3/candidate-b-realistic-readiness-audit",
                 "/__test/layer3/candidate-b-source-directory-authority",
                 "/__test/layer3/candidate-b-final-proof",
+                "/__test/layer3/seed-sec-xbrl-operator-review",
             ],
         }
 
@@ -3248,6 +3357,20 @@ def create_app() -> FastAPI:
             raise HTTPException(
                 status_code=409,
                 detail=f"SEC EDGAR repeatability trial setup failed: {exc}",
+            ) from exc
+        finally:
+            db.close()
+
+    @app.post("/__test/layer3/seed-sec-xbrl-operator-review")
+    def seed_sec_xbrl_operator_review() -> dict[str, Any]:
+        db = SessionLocal()
+        try:
+            seed_id = f"xbrl-op-rev-{next(sec_xbrl_operator_review_counter):03d}"
+            return _seed_sec_xbrl_operator_review_packet(db, seed_id=seed_id)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"SEC XBRL operator review seed failed: {exc}",
             ) from exc
         finally:
             db.close()

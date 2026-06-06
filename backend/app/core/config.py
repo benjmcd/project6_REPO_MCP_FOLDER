@@ -111,7 +111,7 @@ class Settings(BaseSettings):
         alias="LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
     )
     layer3_sec_xbrl_controlled_value_reveal_submit_enabled: bool = Field(
-        default=True,
+        default=False,
         alias="LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
     )
     allowed_origins: str = Field(default="*", alias="ALLOWED_ORIGINS")
