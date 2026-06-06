@@ -24982,7 +24982,7 @@ test('Layer 3 SEC XBRL runtime posture shows controlled value reveal default-off
   const result = await request.get('/api/v1/layer3/sec-xbrl/runtime/posture');
   expect(result.status()).toBe(200);
   const body = await result.json();
-  expect(body.sec_xbrl_runtime_posture.controlled_value_reveal_submit_enabled).toBe(false);
+  expect(body.sec_xbrl_runtime_posture.runtime_flags.controlled_value_reveal_submit_enabled).toBe(false);
 });
 
 test('Layer 3 SEC XBRL operator review status without workflow id returns authority-missing (server-backed)', async ({ request }) => {
