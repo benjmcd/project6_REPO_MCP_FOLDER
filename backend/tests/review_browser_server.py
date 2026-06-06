@@ -41,6 +41,7 @@ from app.models.models import (
     L3AnalysisSet,
     L3MaterialSnapshot,
     L3OutputPackage,
+    L3PassRun,
     L3ReconciliationRecord,
     VariableDefinition,
     VariableProfile,
@@ -2477,6 +2478,62 @@ def _build_browser_quant_ready_session(db, temp_path: Path) -> str:
     return session.session_id
 
 
+def _build_browser_failed_pass_session(db, temp_path: Path) -> str:
+    seed_id = uuid_str()
+    dataset_id = f"ds-{seed_id}"
+    dataset_version_id = f"dv-{seed_id}"
+    csv_path = _seed_browser_dataset_version(
+        db,
+        temp_path,
+        seed_id=seed_id,
+        dataset_id=dataset_id,
+        dataset_version_id=dataset_version_id,
+    )
+    request = SessionEntryRequest(
+        manifest_items=[
+            {
+                "source_plane": "plane_a",
+                "descriptor_type": "dataset_version",
+                "selector_payload": {"dataset_version_id": dataset_version_id},
+                "selection_basis": {"selection_id": f"sel-{seed_id}"},
+                "expansion_reason": "committed_selection",
+            }
+        ],
+        source_plane_hints={"plane_a": ["dataset_version"]},
+        commit_reason="layer3-browser-harness-failed",
+        entry_route_context={"entrypoint": "playwright"},
+        operator_context={"operator": "playwright"},
+        summary={"phase": "gate_c_pass"},
+    )
+    session, manifest = commit_selection(db, request)
+    descriptors = expand_descriptors(db, session=session, manifest=manifest)
+    record_retrieval_event(
+        db,
+        session=session,
+        descriptor=descriptors[0],
+        outcome="loaded",
+        reason_code="loaded",
+        loaded_materials=[
+            SnapshotMaterial(
+                source_shape="dataset_version",
+                source_identity={"dataset_version_id": dataset_version_id},
+                source_provenance={"dataset_id": dataset_id, "storage_ref": str(csv_path)},
+                payload={"dataset_version_id": dataset_version_id},
+                load_summary={"loaded_records": 24, "failed_records": 0},
+            )
+        ],
+        storage_root=temp_path,
+    )
+    finalize_session(db, session=session)
+    db.commit()
+    materialize_typing_entry(db, session_id=session.session_id)
+    db.commit()
+    # Corrupt the CSV so run_analysis raises during execution/start,
+    # causing execute_selected_pass_run to write status=PASS_STATUS_FAILED.
+    csv_path.write_bytes(b"")
+    return session.session_id
+
+
 def _build_browser_aps_handoff_ready_session(db, temp_path: Path) -> str:
     seed_id = uuid_str()
     dataset_id = f"ds-{seed_id}"
@@ -2937,6 +2994,36 @@ def create_app() -> FastAPI:
         try:
             session_id = _build_browser_quant_ready_session(db, temp_path)
             return {"session_id": session_id}
+        finally:
+            db.close()
+
+    @app.post("/__test/layer3/seed-failed-pass")
+    def seed_layer3_failed_pass() -> dict[str, str]:
+        db = SessionLocal()
+        try:
+            session_id = _build_browser_failed_pass_session(db, temp_path)
+            return {"session_id": session_id}
+        finally:
+            db.close()
+
+    @app.post("/__test/layer3/delete-pass-output-manifest")
+    def delete_pass_output_manifest(body: dict[str, object]) -> dict[str, object]:
+        pass_run_id = str(body.get("pass_run_id") or "").strip()
+        if not pass_run_id:
+            raise HTTPException(status_code=400, detail="pass_run_id is required")
+        db = SessionLocal()
+        try:
+            pass_run = db.get(L3PassRun, pass_run_id)
+            if pass_run is None:
+                raise HTTPException(status_code=404, detail=f"PassRun '{pass_run_id}' not found")
+            output_ref = str(pass_run.output_payload_ref or "").strip()
+            if not output_ref:
+                return {"deleted": False, "output_payload_ref": output_ref, "reason": "output_payload_ref_missing"}
+            output_path = Path(output_ref)
+            if output_path.exists():
+                output_path.unlink()
+                return {"deleted": True, "output_payload_ref": output_ref}
+            return {"deleted": False, "output_payload_ref": output_ref, "reason": "file_already_absent"}
         finally:
             db.close()
 

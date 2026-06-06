@@ -251,6 +251,59 @@ export async function prepareQualitativeApsResultReviewSession(request) {
   };
 }
 
+export async function prepareFailedLayer3Session(request) {
+  const result = await prepareExecutedLayer3Session(request, '/__test/layer3/seed-failed-pass');
+  expect(result.start.pass_run_status).toBe('failed');
+  return result;
+}
+
+export async function prepareMissingOutputLayer3Session(request) {
+  const result = await prepareExecutedLayer3Session(request, '/__test/layer3/seed-quant');
+  expect(['completed', 'completed_with_warnings']).toContain(result.start.pass_run_status);
+  const deleteResult = await expectJson(await request.post('/__test/layer3/delete-pass-output-manifest', {
+    data: { pass_run_id: result.passRunId },
+  }));
+  expect(deleteResult.deleted).toBe(true);
+  return result;
+}
+
+export async function prepareApprovedResultReviewQuantSession(request) {
+  const result = await prepareExecutedLayer3Session(request);
+  expect(['completed', 'completed_with_warnings']).toContain(result.start.pass_run_status);
+  const { seed, planPreview, approval, start, passRunId } = result;
+
+  const status = await expectJson(await request.post('/api/v1/layer3/execution/result/status', {
+    data: {
+      client_request_id: requestId('approved-review-result-status'),
+      session_id: seed.session_id,
+      analysis_plan_id: approval.analysis_plan_id,
+      pass_run_id: passRunId,
+      preview_id: planPreview.preview_id,
+      preview_hash: planPreview.preview_hash,
+      analysis_run_id: start.analysis_run_id ?? null,
+      operator_view_mode: 'status_only',
+    },
+  }));
+  expect(status.result_status_available).toBe(true);
+
+  const review = await expectJson(await request.post('/api/v1/layer3/execution/result/review', {
+    data: {
+      client_request_id: requestId('approved-review-result-review'),
+      session_id: seed.session_id,
+      analysis_plan_id: approval.analysis_plan_id,
+      pass_run_id: passRunId,
+      preview_id: planPreview.preview_id,
+      preview_hash: planPreview.preview_hash,
+      analysis_run_id: start.analysis_run_id ?? null,
+      operator_decision: 'approved',
+      review_notes: 'Approved for server-backed restore test.',
+    },
+  }));
+  expect(review.operator_decision).toBe('approved');
+
+  return { ...result, status, review };
+}
+
 export async function attachSessionToWorkbench(page, sessionId, sourceClasses = ['dataset_version']) {
   await page.evaluate(({ session_id, source_classes }) => {
     State.gateB = {
