@@ -4665,6 +4665,10 @@ function apsHandoffDispatchState() {
             downstream_unavailable: handoff.downstream_unavailable,
         };
     }
+    const recordedSummaryDispatch = State.sessionSummary && State.sessionSummary.aps_handoff_dispatch;
+    if (recordedSummaryDispatch && (recordedSummaryDispatch.aps_handoff_record_ref || recordedSummaryDispatch.state === 'aps_handoff_dispatched')) {
+        return recordedSummaryDispatch;
+    }
     const mixedSourcePacket = mixedSourceApsHandoffDispatchAuthorityPacket();
     if (mixedSourcePacket) {
         return {
