@@ -48,6 +48,7 @@ from main import app
 # ---------------------------------------------------------------------------
 
 WORKFLOW_STATUS_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/status"
+WORKFLOW_OPEN_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/open"
 DECISION_SUBMIT_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit"
 DECISION_STATUS_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/status"
 AUTHORITY_PREPARE_ROUTE = "/api/v1/layer3/sec-xbrl/value-reveal/authority/prepare"
@@ -92,6 +93,13 @@ def _decision_status_payload() -> dict:
         "status_mode": "sec_xbrl_operator_review_decision_status_v1",
         "operator_decision": "inspect_sec_xbrl_operator_review_decision_status",
         "sec_xbrl_operator_review_decision_id": _DUMMY_ID,
+    }
+
+
+def _workflow_open_payload() -> dict:
+    return {
+        "client_request_id": "route-auth-proof-workflow-open",
+        "sec_xbrl_statement_packet_set_id": "packet-set-auth-proof-open",
     }
 
 
@@ -324,10 +332,37 @@ def test_route_value_reveal_status_proxy_fail_closed_missing_identity(
     assert "missing_identity_authority" in body.get("error_code", ""), body
 
 
+def test_route_workflow_open_proxy_fail_closed_missing_identity(proxy_fail_closed_client) -> None:
+    """POST /sec-xbrl/operator-review/workflow/open returns 401 when proxy mode is active
+    but identity header is absent.  The open route always calls _sec_xbrl_policy_decision
+    (no anonymous path), so it must fail closed with the same shape as the sibling routes."""
+    response = proxy_fail_closed_client.post(
+        WORKFLOW_OPEN_ROUTE,
+        json=_workflow_open_payload(),
+    )
+    body = _assert_auth_fail_closed(response, expected_status=401)
+    assert "missing_identity_authority" in body.get("error_code", ""), body
+    # No workflow id or data must be revealed in the blocked response
+    assert "sec_xbrl_operator_review_workflow_id" not in response.text, response.text
+    assert "workflow_basis_hash" not in response.text, response.text
+
+
 # ---------------------------------------------------------------------------
 # 2. Untrusted proxy: one representative route returns 409 with the
 #    untrusted_proxy_identity error code.
 # ---------------------------------------------------------------------------
+
+def test_route_workflow_open_untrusted_proxy_returns_409(untrusted_proxy_client) -> None:
+    """POST /sec-xbrl/operator-review/workflow/open returns 409 when
+    trusted_proxy_mode=False, mirroring the behaviour of the sibling routes."""
+    response = untrusted_proxy_client.post(
+        WORKFLOW_OPEN_ROUTE,
+        json=_workflow_open_payload(),
+    )
+    body = _assert_auth_fail_closed(response, expected_status=409)
+    assert "untrusted_proxy_identity" in body.get("error_code", ""), body
+    assert "sec_xbrl_operator_review_workflow_id" not in response.text, response.text
+
 
 def test_route_workflow_status_untrusted_proxy_returns_409(untrusted_proxy_client) -> None:
     """POST /sec-xbrl/operator-review/workflow/status (authenticated branch) returns 409

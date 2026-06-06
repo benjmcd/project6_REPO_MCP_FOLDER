@@ -54,6 +54,7 @@ SOURCE_RECEIPTS = {
 
 SOURCE_ROUTE_FAMILIES = {
     "operator_review_workflow": {
+        "sec_xbrl_operator_review_workflow_open_write",
         "sec_xbrl_operator_review_workflow_status_read",
         "sec_xbrl_operator_review_decision_submit_write",
     },
@@ -73,6 +74,7 @@ SOURCE_ROUTE_FAMILIES = {
 }
 
 ROUTE_ALLOWED_ROLES = {
+    "sec_xbrl_operator_review_workflow_open_write": {OWNER_ROLE},
     "sec_xbrl_operator_review_workflow_status_read": {OWNER_ROLE, AUDITOR_ROLE},
     "sec_xbrl_operator_review_decision_submit_write": {OWNER_ROLE},
     "sec_xbrl_operator_review_decision_status_read": {OWNER_ROLE, AUDITOR_ROLE},
@@ -82,6 +84,14 @@ ROUTE_ALLOWED_ROLES = {
 }
 
 SOURCE_ROUTE_COMPATIBLE_PRIOR_BINDINGS = {
+    "operator_review_workflow": {
+        "sec_xbrl_operator_review_workflow_status_read": {
+            "sec_xbrl_operator_review_workflow_open_write",
+        },
+        "sec_xbrl_operator_review_decision_submit_write": {
+            "sec_xbrl_operator_review_workflow_open_write",
+        },
+    },
     "operator_review_decision": {
         "sec_xbrl_operator_review_decision_status_read": {
             "sec_xbrl_operator_review_decision_submit_write",

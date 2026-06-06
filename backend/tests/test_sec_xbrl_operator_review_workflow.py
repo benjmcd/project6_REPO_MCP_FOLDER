@@ -53,7 +53,10 @@ DECISION_SUBMIT_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/decisi
 DECISION_STATUS_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/status"
 AUTHORITY_PREPARE_ROUTE = "/api/v1/layer3/sec-xbrl/value-reveal/authority/prepare"
 CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE = "/api/v1/layer3/sec-xbrl/value-reveal/submit"
+WORKFLOW_OPEN_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/open"
+WORKFLOW_STATUS_ROUTE = "/api/v1/layer3/sec-xbrl/operator-review/workflow/status"
 WORKFLOW_STATUS_ROUTE_FAMILY = "sec_xbrl_operator_review_workflow_status_read"
+WORKFLOW_OPEN_ROUTE_FAMILY = "sec_xbrl_operator_review_workflow_open_write"
 DECISION_SUBMIT_ROUTE_FAMILY = "sec_xbrl_operator_review_decision_submit_write"
 DECISION_STATUS_ROUTE_FAMILY = "sec_xbrl_operator_review_decision_status_read"
 AUTHORITY_PREPARE_ROUTE_FAMILY = "sec_xbrl_value_reveal_authority_prepare_write"
@@ -691,7 +694,7 @@ def test_operator_review_workflow_status_projection_is_read_only(db_session) -> 
     assert status["read_only_status_surface"] is True
     assert status["durable_workflow_authority_used"] is True
     assert status["status_api_route_enabled"] is True
-    assert status["open_workflow_api_route_enabled"] is False
+    assert status["open_workflow_api_route_enabled"] is True
     assert status["runtime_default_enabled"] is False
     assert status["value_reveal_performed"] is False
     assert status["source_acquisition_performed"] is False
@@ -803,7 +806,7 @@ def test_operator_review_workflow_status_api_returns_read_only_projection(api_cl
     assert body["auth_binding_required"] is True
     assert body["auth_binding_ref"].startswith("sec-xbrl-auth-binding:")
     assert body["auth_binding_route_family"] == WORKFLOW_STATUS_ROUTE_FAMILY
-    assert body["open_workflow_api_route_enabled"] is False
+    assert body["open_workflow_api_route_enabled"] is True
     assert body["rendered_ui_enabled"] is False
     assert body["operator_review_decision_recorded"] is False
     assert body["negative_invariants"]["raw_values_exposed"] is False
@@ -886,7 +889,7 @@ def test_operator_review_decision_submit_api_records_redacted_receipt(api_client
     assert body["auth_binding_route_family"] == DECISION_SUBMIT_ROUTE_FAMILY
     assert body["source_auth_binding_ref"].startswith("sec-xbrl-auth-binding:")
     assert body["api_route_enabled"] is False
-    assert body["workflow_open_api_route_enabled"] is False
+    assert body["workflow_open_api_route_enabled"] is True
     assert body["rendered_ui_enabled"] is False
     assert body["runtime_default_enabled"] is False
     assert body["value_reveal_performed"] is False
@@ -1160,7 +1163,7 @@ def test_operator_review_decision_status_api_returns_read_only_projection(api_cl
     assert body["auth_binding_ref"].startswith("sec-xbrl-auth-binding:")
     assert body["auth_binding_route_family"] == DECISION_SUBMIT_ROUTE_FAMILY
     assert body["decision_submit_api_route_enabled"] is False
-    assert body["workflow_open_api_route_enabled"] is False
+    assert body["workflow_open_api_route_enabled"] is True
     assert body["rendered_ui_enabled"] is False
     assert body["runtime_default_enabled"] is False
     assert body["value_reveal_performed"] is False
@@ -2577,3 +2580,163 @@ def _direct_packet_set(
         packet_summary_json={"total_review_rows": total_review_rows},
         status="materialized",
     )
+
+
+def _open_payload(packet_set_id: str, **overrides: Any) -> dict[str, Any]:
+    payload = {
+        "client_request_id": "workflow-open-api",
+        "sec_xbrl_statement_packet_set_id": packet_set_id,
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_operator_review_workflow_open_api_opens_and_binds(api_client) -> None:
+    client, Session = api_client
+    with Session() as session:
+        packet = _materialized_packet(session, packet_request_id="open-api-packet")
+        packet_set_id = packet["sec_xbrl_statement_packet_set_id"]
+
+    response = client.post(
+        WORKFLOW_OPEN_ROUTE,
+        json=_open_payload(packet_set_id),
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["sec_xbrl_operator_review_workflow_id"]
+    assert body["workflow_basis_hash"]
+    assert len(body["workflow_basis_hash"]) == 64
+    assert body["auth_binding_ref"].startswith("sec-xbrl-auth-binding:")
+    assert body["auth_binding_route_family"] == WORKFLOW_OPEN_ROUTE_FAMILY
+    assert body["auth_binding_required"] is True
+    assert body["workflow_open_api_route_enabled"] is True
+    assert body["status_api_route_enabled"] is True
+    assert body["decision_submit_api_route_enabled"] is True
+    assert body["value_reveal_performed"] is False
+    assert body["idempotent_replay"] is False
+    assert body["request_id"] == "workflow-open-api"
+    assert "C:/" not in response.text
+    assert "https://www.sec.gov" not in response.text
+
+    with Session() as session:
+        assert session.query(L3SecXbrlOperatorReviewWorkflow).count() == 1
+        assert session.query(L3SecXbrlAuthBindingReceipt).count() == 1
+
+
+def test_operator_review_workflow_open_api_is_idempotent(api_client) -> None:
+    client, Session = api_client
+    with Session() as session:
+        packet = _materialized_packet(session, packet_request_id="open-api-idem-packet")
+        packet_set_id = packet["sec_xbrl_statement_packet_set_id"]
+
+    first = client.post(WORKFLOW_OPEN_ROUTE, json=_open_payload(packet_set_id, client_request_id="open-idem"))
+    second = client.post(WORKFLOW_OPEN_ROUTE, json=_open_payload(packet_set_id, client_request_id="open-idem"))
+
+    assert first.status_code == 200, first.text
+    assert second.status_code == 200, second.text
+    first_body = first.json()
+    second_body = second.json()
+    assert second_body["idempotent_replay"] is True
+    assert second_body["sec_xbrl_operator_review_workflow_id"] == first_body["sec_xbrl_operator_review_workflow_id"]
+    assert second_body["workflow_basis_hash"] == first_body["workflow_basis_hash"]
+
+    with Session() as session:
+        assert session.query(L3SecXbrlOperatorReviewWorkflow).count() == 1
+
+
+def test_operator_review_workflow_open_api_cold_start_enters_chain(api_client) -> None:
+    client, Session = api_client
+    with Session() as session:
+        packet = _materialized_packet(session, packet_request_id="cold-start-packet")
+        packet_set_id = packet["sec_xbrl_statement_packet_set_id"]
+
+    # Step 1: open the workflow via HTTP — no manual binding seed
+    open_resp = client.post(
+        WORKFLOW_OPEN_ROUTE,
+        json=_open_payload(packet_set_id, client_request_id="cold-open"),
+    )
+    assert open_resp.status_code == 200, open_resp.text
+    open_body = open_resp.json()
+    workflow_id = open_body["sec_xbrl_operator_review_workflow_id"]
+    workflow_hash = open_body["workflow_basis_hash"]
+
+    # Step 2: status read — the open_write binding must satisfy status_read
+    status_resp = client.post(
+        WORKFLOW_STATUS_ROUTE,
+        json={
+            "client_request_id": "cold-status",
+            "status_mode": workflow_service.WORKFLOW_STATUS_MODE,
+            "operator_decision": workflow_service.WORKFLOW_STATUS_OPERATOR_DECISION,
+            "sec_xbrl_operator_review_workflow_id": workflow_id,
+            "workflow_basis_hash": workflow_hash,
+        },
+    )
+    assert status_resp.status_code == 200, status_resp.text
+    status_body = status_resp.json()
+    assert status_body["sec_xbrl_operator_review_workflow_id"] == workflow_id
+
+    # Step 3: decision submit — the open_write binding must satisfy decision_submit
+    decision_resp = client.post(
+        DECISION_SUBMIT_ROUTE,
+        json={
+            "client_request_id": "cold-decision",
+            "submit_mode": "sec_xbrl_operator_review_decision_submit_v1",
+            "operator_decision": "submit_sec_xbrl_operator_review_decision",
+            "sec_xbrl_operator_review_workflow_id": workflow_id,
+            "workflow_basis_hash": workflow_hash,
+            "review_decision": "approved",
+            "decision_reason_code": "ready_for_next_freeze",
+        },
+    )
+    assert decision_resp.status_code == 200, decision_resp.text
+    decision_body = decision_resp.json()
+    assert decision_body["sec_xbrl_operator_review_workflow_id"] == workflow_id
+    assert decision_body["status"] == "decision_recorded"
+
+    with Session() as session:
+        assert session.query(L3SecXbrlOperatorReviewWorkflow).count() == 1
+        assert session.query(L3SecXbrlOperatorReviewDecision).count() == 1
+
+
+def test_operator_review_workflow_open_api_rejects_extra_fields(api_client) -> None:
+    client, Session = api_client
+    with Session() as session:
+        packet = _materialized_packet(session, packet_request_id="open-extra-packet")
+        packet_set_id = packet["sec_xbrl_statement_packet_set_id"]
+
+    response = client.post(
+        WORKFLOW_OPEN_ROUTE,
+        json=_open_payload(packet_set_id, raw_value="123.45"),
+    )
+
+    assert response.status_code == 400, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.workbench_error.v1"
+    assert body["error_code"] == "sec_xbrl_operator_review_workflow_open_request_fields_not_admitted"
+    assert body["status"] == "blocked"
+    assert body["blocked_fields"] == []
+    assert "123.45" not in response.text
+
+
+def test_operator_review_workflow_open_api_rolls_back_on_binding_failure(api_client, monkeypatch) -> None:
+    client, Session = api_client
+    with Session() as session:
+        packet = _materialized_packet(session, packet_request_id="open-rollback-packet")
+        packet_set_id = packet["sec_xbrl_statement_packet_set_id"]
+
+    _force_auth_binding_failure(monkeypatch, source_receipt_kind="operator_review_workflow")
+
+    response = client.post(
+        WORKFLOW_OPEN_ROUTE,
+        json=_open_payload(packet_set_id, client_request_id="open-rollback"),
+    )
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.workbench_error.v1"
+    assert body["error_code"] == "sec_xbrl_auth_binding_forced_failure"
+
+    with Session() as session:
+        assert session.query(L3SecXbrlOperatorReviewWorkflow).count() == 0
+        assert session.query(L3SecXbrlAuthBindingReceipt).count() == 0

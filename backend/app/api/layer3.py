@@ -1166,6 +1166,13 @@ class Layer3SecEdgarTextTableDownstreamOperatorRepeatabilityTrialRequest(BaseMod
     actor: str | None = None
 
 
+class Layer3SecXbrlOperatorReviewWorkflowOpenRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    client_request_id: str = Field(min_length=1)
+    sec_xbrl_statement_packet_set_id: str = Field(min_length=1)
+
+
 class Layer3SecXbrlOperatorReviewWorkflowStatusRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -9319,6 +9326,42 @@ class Layer3SecEdgarTextTableDownstreamOperatorRepeatabilityTrialResponse(Layer3
     next_allowed_actions: list[str]
 
 
+class Layer3SecXbrlOperatorReviewWorkflowOpenResponse(Layer3BaseResponse):
+    sec_xbrl_operator_review_workflow_id: str
+    sec_xbrl_statement_packet_set_id: str
+    client_request_id: str
+    workflow_basis_hash: str
+    statement_packet_basis_hash: str
+    source_projection_basis_hash: str
+    control_mode: str
+    redaction_policy: str
+    statement_count: int
+    row_count: int
+    review_exception_count: int
+    review_ready: bool
+    permitted_controls: list[str]
+    blocked_controls: list[dict[str, Any]]
+    authority_refs: dict[str, Any]
+    review_summary: dict[str, Any]
+    idempotent_replay: bool
+    auth_binding_ref: str
+    auth_binding_basis_hash: str
+    auth_binding_route_family: str
+    auth_binding_policy_hash: str
+    auth_binding_role: str
+    auth_binding_required: bool
+    workflow_open_api_route_enabled: bool
+    status_api_route_enabled: bool
+    decision_submit_api_route_enabled: bool
+    runtime_default_enabled: bool
+    value_reveal_performed: bool
+    source_acquisition_performed: bool
+    arelle_invoked: bool
+    delivery_export_enabled: bool
+    rendered_ui_enabled: bool
+    production_readiness_claimed: bool
+
+
 class Layer3SecXbrlOperatorReviewWorkflowStatusResponse(Layer3BaseResponse):
     mode: str
     operator_decision: str
@@ -17299,6 +17342,73 @@ def get_sec_edgar_durable_delivery_archive_status(
 
 
 @router.post(
+    "/sec-xbrl/operator-review/workflow/open",
+    response_model=Layer3SecXbrlOperatorReviewWorkflowOpenResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_xbrl_operator_review_workflow_open(
+    payload: Layer3SecXbrlOperatorReviewWorkflowOpenRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    extra_fields = sorted(str(field) for field in (payload.model_extra or {}))
+    if extra_fields:
+        return _sec_xbrl_operator_review_workflow_error_response(
+            layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError(
+                "sec_xbrl_operator_review_workflow_open_request_fields_not_admitted",
+                "SEC XBRL operator review workflow open only admits governed request fields.",
+                details={"fields": extra_fields},
+                http_status=400,
+            )
+        )
+    try:
+        route_family = "sec_xbrl_operator_review_workflow_open_write"
+        policy_decision = _sec_xbrl_policy_decision(
+            request,
+            payload,
+            route_family=route_family,
+        )
+        workflow = layer3_sec_xbrl_operator_review_workflow.open_redacted_operator_review_workflow(
+            db,
+            client_request_id=payload.client_request_id,
+            sec_xbrl_statement_packet_set_id=payload.sec_xbrl_statement_packet_set_id,
+            commit=False,
+        )
+        workflow_binding = _sec_xbrl_record_binding(
+            db,
+            client_request_id=payload.client_request_id,
+            source_receipt_kind="operator_review_workflow",
+            source_receipt_id=workflow["sec_xbrl_operator_review_workflow_id"],
+            source_receipt_basis_hash=workflow["workflow_basis_hash"],
+            route_family=route_family,
+            policy_decision=policy_decision,
+            commit=False,
+        )
+        _sec_xbrl_commit_bound_receipts(db)
+        return {
+            **base_response(
+                workflow["schema_id"],
+                request_id=payload.client_request_id,
+                status=workflow["status"],
+            ),
+            **workflow,
+            **_sec_xbrl_auth_binding_projection(workflow_binding),
+            "workflow_open_api_route_enabled": True,
+            "status_api_route_enabled": True,
+            "decision_submit_api_route_enabled": True,
+            "production_readiness_claimed": False,
+        }
+    except (
+        layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
+        layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,
+    ) as exc:
+        db.rollback()
+        return _sec_xbrl_auth_policy_error_response(exc)
+    except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
+        return _sec_xbrl_operator_review_workflow_error_response(exc)
+
+
+@router.post(
     "/sec-xbrl/operator-review/workflow/status",
     response_model=Layer3SecXbrlOperatorReviewWorkflowStatusResponse,
     responses=_workbench_error_responses(400, 404, 409),
@@ -17422,7 +17532,7 @@ def post_sec_xbrl_operator_review_workflow_decision_submit(
             "source_auth_binding_ref": workflow_binding["auth_binding_ref"],
             **_sec_xbrl_auth_binding_projection(decision_binding),
             "decision_submit_api_route_enabled": True,
-            "workflow_open_api_route_enabled": False,
+            "workflow_open_api_route_enabled": True,
             "rendered_ui_enabled": False,
             "runtime_default_enabled": False,
             "value_reveal_performed": False,
