@@ -12483,3 +12483,255 @@ boundary. Keep APS handoff, external export/download, connector dispatch,
 provider URLs, parser, schema, source-shape, payload rewrite, package mutation,
 legacy bridge, excluded-tool behavior, and production readiness blocked unless
 a later freeze admits exactly one of those surfaces.
+
+## SEC XBRL Proxy Identity Read-Only Projection
+
+Milestone: `sec_xbrl_proxy_identity_read_only_projection_freeze_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1351-sec-xbrl-proxy-identity-readonly-projection.md`.
+
+Status: branch-local activation freeze plus the one admitted runtime artifact —
+a read-only, server-derived identity projection for the SEC XBRL lane. This is
+the `next_follow_up` activation anticipated by doc
+`1350-sec-xbrl-activation-lane-selection.md` and by the auth entry layer
+(`199`/`200`), which both state that a later freeze must choose exactly one mode.
+
+Scope: selects exactly one doc-200 auth mode, `proxy_identity_read_only_projection`
+(the narrowest allowed mode). Adds `build_proxy_identity_readonly_projection` in
+`backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py` (reusing the existing
+`_server_derived_principal` derivation) and an additive read-only route
+`GET /api/v1/layer3/sec-xbrl/identity/projection`. The projection exposes only
+response-safe references (selected mode, auth-owner mode label, hashed actor/
+workspace refs or null when blocked, read-only protected-route-family metadata,
+negative boundaries, all `raw_*_exposed` false). It fails closed under untrusted
+proxy or missing identity header (status `blocked_*`, null hashes) and never
+echoes raw identity, proxy header values, raw values, residual magnitude, local
+paths, or URLs.
+
+Drift note: `authorize_sec_xbrl_route` is already invoked by the live SEC XBRL
+operator-review and value-reveal routes; under the default `AUTH_OWNER=none`
+profile that derivation is behavior-preserving. This freeze adds the missing
+identity *projection* surface and formally records the mode selection. It does
+not change any existing route admit/deny outcome.
+
+Non-goals: no route-level enforcement escalation, no operator-permission matrix
+change, no owner-binding persistence/schema/model/migration change, no value
+reveal, no controlled-submit activation, no default-on runtime change, no live
+SEC network access, no Arelle invocation, no source acquisition, no diagnostic
+report or proof JSON byte change, no UI/theme control. Docs `199`/`200` left
+byte-stable as the historical entry record.
+
+Verification: full `backend/tests/test_sec_xbrl*.py` (527 passed, was 521),
+full `backend/tests/test_layer3_api.py` (296 passed), `tools/l3-progress-check.py`
+(PASS), `tools/l3-target-selection-validate.py --expect frozen` (PASS), and
+`git diff --check` (clean).
+
+Next posture: a later escalation freeze may select
+`route_level_operator_identity_required` to enforce the already-derived identity
+at the route boundary, followed by a value-reveal activation freeze behind the
+enforced identity surface. Do not escalate enforcement or activate value reveal
+in this freeze.
+
+## SEC XBRL Route-Level Operator Identity Required
+
+Milestone: `sec_xbrl_route_level_operator_identity_required_freeze_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1352-sec-xbrl-route-level-operator-identity-required.md`.
+
+Status: mode-3 escalation freeze. Formally selects
+`route_level_operator_identity_required` (superseding 1351's read-only projection
+as the operative posture; the projection surface remains). Enforcement was already
+wired on the six protected SEC XBRL routes (authenticated `_sec_xbrl_policy_decision`
++ `_sec_xbrl_require_binding` path vs the anonymous redacted path); this freeze adds
+the previously-missing HTTP-layer fail-closed proof.
+
+Scope: test-only + docs. New
+`backend/tests/test_sec_xbrl_route_level_auth_enforcement.py` (12 tests) proves, via
+TestClient, that under `AUTH_OWNER=proxy` + `TRUSTED_PROXY_MODE=true` with the identity
+header absent, all six protected routes fail closed (401 `missing_identity_authority`);
+untrusted proxy → 409 `untrusted_proxy_identity`; the fail-closed body leaks no raw
+identity/header value; caller-supplied forbidden fields → 400; and the anonymous redacted
+operator-review path (no receipt referenced) is preserved under `AUTH_OWNER=none`.
+
+Non-goals: no route admit/deny behavior change; no value-reveal activation; no flip of the
+`layer3_sec_xbrl_controlled_value_reveal_submit_enabled` /
+`layer3_sec_edgar_arelle_value_reveal_enabled` defaults (both stay off); no
+owner-binding/schema/model/migration change; no production-readiness claim. Docs 199/200
+byte-stable.
+
+Verification: full `backend/tests/test_sec_xbrl*.py`, full `backend/tests/test_layer3_api.py`,
+`tools/l3-progress-check.py`, `tools/l3-target-selection-validate.py --expect frozen`, and
+`git diff --check` all pass.
+
+Next posture: a value-reveal activation freeze may make controlled value reveal a
+deployment-enabled production path behind this enforced identity surface, proving the full
+lineage end-to-end and failing closed when any gate is missing. Do not flip the value-reveal
+feature-flag defaults or claim production readiness without the deployment authority packet.
+
+## SEC XBRL Controlled Value-Reveal Activation
+
+Milestone: `sec_xbrl_controlled_value_reveal_activation_freeze_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1353-sec-xbrl-value-reveal-activation.md`.
+
+Decision: `activated` (controlled value-reveal submit surface; doc 1350 items 2-3).
+
+Status: the controlled value-reveal submit capability is now a deployment-enabled production
+path. `layer3_sec_xbrl_controlled_value_reveal_submit_enabled` now defaults on
+(`backend/app/core/config.py`), behind the enforced owner-bound operator identity selected by
+1352, the full authority lineage (operator review -> approved decision -> value-reveal authority
+receipt -> controlled submit), and an explicit per-request `operator_reveal_confirmation=True`.
+The auth-framework prerequisite that doc 1350 deferred against is satisfied by 1351/1352; the
+operator acceptance criteria are recorded in 1353. The submit reveals from a pre-stored,
+lineage-bound value store (no live SEC network or Arelle invocation at submit time) and returns
+transient financial figures only; the status surface stays hashes-only.
+
+Proof: `backend/tests/test_sec_xbrl_operator_review_workflow.py` adds
+`test_controlled_value_reveal_submit_api_default_on_returns_values_without_flag_monkeypatch`
+(default-on, no flag monkeypatch -> HTTP 200 with revealed `effective_value`, no authority-artifact
+leak), and retains explicit-off coverage via
+`test_controlled_value_reveal_submit_explicit_off_blocks_without_receipt`. Default-off-invariant
+tests and the affected validate-only diagnostics were reconciled to the activated posture; all
+other non-admissions are preserved.
+
+Non-goals preserved: `layer3_sec_edgar_arelle_value_reveal_enabled` (governed-sibling reveal) stays
+default-off; no live SEC network access; no Arelle subprocess invocation; no internal-value-store
+default change; no corpus-validation default change; no owner-binding/schema/model/migration change;
+authority-artifact and identity-value redaction unchanged. Rollback is a single config default
+(`layer3_sec_xbrl_controlled_value_reveal_submit_enabled=false`).
+
+Verification: full `backend/tests/test_sec_xbrl*.py` + `backend/tests/test_layer3_api.py`
+(834 passed; the single failure is a pre-existing Windows MAX_PATH path-length limit unrelated to
+this change), `tools/l3-target-selection-validate.py --expect frozen`, and `git diff --check` pass.
+`tools/l3-progress-check.py` has a pre-existing unrelated 561/562 sync finding not introduced here.
+
+Next posture: separate bounded activation freezes may follow for the Arelle governed-sibling reveal
+flag, default-on runtime posture, and live SEC/Arelle surfaces; each remains independently gated.
+
+## SEC XBRL Runtime Posture Projection
+
+Milestone: `sec_xbrl_runtime_posture_projection_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1354-sec-xbrl-runtime-posture.md`.
+
+Status: branch-local read-only runtime posture surface after the controlled value-reveal activation.
+Adds `backend/app/services/layer3_sec_xbrl_posture.py` and
+`GET /api/v1/layer3/sec-xbrl/runtime/posture` to report server-owned SEC XBRL runtime flags,
+identity-authority posture, protected route-family metadata, activated capabilities, gated
+capabilities, operator next actions, and negative boundaries.
+
+Scope: observability/readiness only. The route reads `app.core.config.settings` and
+`PROTECTED_ROUTE_FAMILIES`; it accepts no request body and has no DB/session/storage dependency.
+It reports controlled value reveal as available when the default-on flag is enabled, while live SEC
+network access, governed-sibling Arelle value reveal, internal value store, corpus validation,
+nonlocal Arelle cutover, and the full production-readiness claim remain independently gated unless
+their explicit flags/evidence are present.
+
+Non-goals preserved: no SEC EDGAR network request, no Arelle subprocess invocation, no source
+acquisition, no value reveal, no delivery/export, no DB/storage write, no schema/model/migration
+change, no route-family policy change, no raw operator identity/proxy header/workspace identity/raw
+value/residual magnitude/local path/URL exposure, and no production-readiness claim.
+
+Verification: focused runtime posture tests pass (`4 passed`); neighboring identity projection,
+controlled value-reveal submit, and legacy Arelle reveal API regression slices pass (`6 passed`,
+`13 passed`, and `10 passed` respectively); `git diff --check` is clean except the standard Windows
+LF-to-CRLF warning on `backend/app/api/layer3.py`.
+
+Next posture: render this posture in `/review/layer3` as an operator-facing readiness/status panel,
+or use it as the prerequisite audit surface for a live SEC source-acquisition/Arelle invocation
+activation freeze. Do not claim full production readiness until live source acquisition, Arelle
+invocation, multi-filing gate enforcement, export/package/status delivery, and nonlocal operator auth
+are all proven.
+
+## SEC XBRL Runtime Posture Rendered Status
+
+Milestone: `sec_xbrl_runtime_posture_rendered_status_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1355-sec-xbrl-runtime-posture-rendered.md`.
+
+Status: branch-local rendered read-only posture panel. Adds
+`#sec-xbrl-runtime-posture-panel` to `/review/layer3`, consumes
+`GET /api/v1/layer3/sec-xbrl/runtime/posture`, and renders the returned
+`sec_xbrl_runtime_posture` projection as runtime flags, identity-authority posture, protected route
+families, activated capabilities, gated capabilities, negative boundaries, and next actions.
+
+Scope: operator usability only. The rendered control has one `Inspect Runtime Posture` button, no
+request body, no operator-supplied authority fields, no local/browser durable authority, and
+`data-production-readiness-claimed=false`.
+
+Non-goals preserved: no POST route, SEC EDGAR network fetch, Arelle invocation, source acquisition,
+value reveal, export/delivery, runtime default change, DB/storage write, raw identity/header/value/
+residual/path/URL exposure, schema/model/migration change, or production-readiness claim.
+
+Verification target: focused static Layer3 page test, focused Playwright SEC XBRL runtime posture
+proof in Chromium, and `git diff --check`.
+
+Next posture: use the rendered posture panel as the operator-facing readiness entry before choosing
+one next activation surface: live SEC source acquisition, Arelle invocation, export/package/status
+delivery, or nonlocal operator-auth hardening.
+
+## SEC XBRL Activation Surface Operator Map
+
+Milestone: `sec_xbrl_activation_surface_operator_map_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1356-sec-xbrl-activation-surface-map.md`.
+
+Status: branch-local extension of the read-only runtime posture projection. Adds
+`activation_surfaces` and `activation_surface_hash` to
+`GET /api/v1/layer3/sec-xbrl/runtime/posture`, then renders those surfaces in
+`#sec-xbrl-runtime-posture-panel`.
+
+Scope: operator navigation/readiness metadata only. The map identifies controlled value reveal,
+live SEC EDGAR source acquisition, Arelle invocation/governed sibling value reveal, multi-filing
+gate enforcement, delivery/export/package status, and nonlocal operator-auth hardening. Existing
+panel ids and API route strings are reported as metadata; no new activation route is admitted.
+
+Non-goals preserved: no live SEC network request, Arelle subprocess invocation, source acquisition,
+value reveal, export/delivery, runtime default change, DB/storage write, model/schema/migration
+change, raw identity/header/value/residual/path/URL exposure, frontend durable authority, or
+production-readiness claim.
+
+Verification: focused SEC XBRL posture tests pass (`5 passed`), focused static Layer3 page checks
+pass (`3 passed, 22 deselected`), focused Playwright SEC XBRL runtime posture proof passes in
+Chromium headless and headed modes, and `git diff --check` is clean except standard Windows
+LF-to-CRLF warnings.
+
+Next posture: use this map to select exactly one next activation implementation pass: live SEC
+source acquisition, Arelle invocation proof, delivery/export/status proof, multi-filing gate
+enforcement, or nonlocal operator-auth hardening.
+
+## SEC EDGAR Live Source Service Gate
+
+Milestone: `sec_edgar_live_source_artifact_service_level_feature_gate_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1357-sec-edgar-live-source-service-gate.md`.
+
+Status: branch-local hardening of the existing live source-artifact acquisition lane. The owner
+service now requires `LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED` before any acquisition client can run,
+including test-only fake clients. The SEC XBRL runtime posture now reports
+`sec_edgar_user_agent_configured` and a redacted `required_configuration` marker for
+`LAYER3_SEC_EDGAR_USER_AGENT` on the live source acquisition surface.
+
+Scope: service-level fail-closed behavior and redacted operator readiness only. The rendered
+runtime posture panel shows required configuration, while acquisition remains blocked unless live
+network authorization and server User-Agent configuration are both present.
+
+Non-goals preserved: no default-on change, live SEC EDGAR network request during validation, Arelle
+subprocess invocation, value reveal, delivery/export, runtime DB write, model/schema/migration
+change, raw SEC URL/local path/artifact byte/User-Agent exposure, browser-supplied acquisition
+authority, frontend durable authority, or production-readiness claim.
+
+Verification: focused posture tests pass (`6 passed`), focused live source-artifact API tests pass
+(`3 passed, 293 deselected`), focused review-browser server tests pass (`2 passed, 18 deselected`),
+focused static Layer3 page checks pass (`3 passed, 22 deselected`), and focused Playwright Chromium
+proof for live source artifact plus runtime posture passes in headless and headed modes (`2 passed`
+each).
+
+Next posture: use the hardened live acquisition gate as the prerequisite for one bounded
+live-source activation run, or proceed to Arelle invocation proof, delivery/export/package status,
+multi-filing gate enforcement, or nonlocal operator-auth hardening as separate passes.

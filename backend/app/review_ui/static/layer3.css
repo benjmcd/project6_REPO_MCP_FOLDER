@@ -3746,6 +3746,15 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     margin: 8px 0 10px;
 }
 
+.candidate-b-final-proof-status-form fieldset {
+    border: 0;
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    min-width: 0;
+    padding: 0;
+}
+
 .candidate-b-final-proof-status-form label {
     display: grid;
     gap: 5px;
@@ -3768,6 +3777,33 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 8px;
     margin-top: 10px;
+}
+
+.sec-xbrl-runtime-posture-output-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 10px;
+}
+
+.sec-xbrl-runtime-posture-output-grid .result-review-card,
+.sec-xbrl-runtime-posture-output-grid code,
+.sec-xbrl-runtime-posture-output-grid .rail-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.sec-xbrl-runtime-posture-activation-card {
+    grid-column: 1 / -1;
+}
+
+.sec-xbrl-runtime-posture-activation-card ul {
+    column-gap: 20px;
+    column-width: 280px;
+}
+
+.sec-xbrl-runtime-posture-activation-card li {
+    break-inside: avoid;
+    margin-bottom: 8px;
 }
 
 .mockup-activation-readiness-grid {
