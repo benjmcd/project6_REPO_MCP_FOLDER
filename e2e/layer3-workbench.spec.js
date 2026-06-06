@@ -2649,6 +2649,8 @@ async function submitRenderedExternalExportDownloadPrepare(
   expect(downloadPrepare.delivery_ui.signed_url_enabled).toBe(false);
   expect(downloadPrepare.delivery_ui.connector_dispatch_enabled).toBe(false);
   expect(downloadPrepare.delivery_ui.destination_selection_enabled).toBe(false);
+  expect(downloadPrepare.delivery_ui.available).toBe(true);
+  expect(downloadPrepare.delivery_ui.delivery_mode).toBe('same_origin_artifact_stream');
   expect(downloadPrepare.next_state).toBe('external_export_download_prepared');
   expect(downloadPrepare.authority_rail).toBeTruthy();
 

@@ -64,6 +64,25 @@ def upgrade() -> None:
 def downgrade() -> None:
     if not table_exists(TABLE_NAME):
         return
+    # Fail early if any open_write rows exist — the old constraint forbids them.
+    # On PostgreSQL, creating a CHECK constraint against violating rows raises a
+    # constraint violation; on SQLite, batch_alter_table rebuilds the table but
+    # would silently leave the old rows against the narrower constraint.
+    conn = op.get_bind()
+    result = conn.execute(
+        sa.text(
+            f"SELECT COUNT(*) FROM {TABLE_NAME}"  # noqa: S608
+            " WHERE route_family = 'sec_xbrl_operator_review_workflow_open_write'"
+        )
+    )
+    count = result.scalar()
+    if count:
+        raise RuntimeError(
+            f"Cannot downgrade: {count} row(s) in {TABLE_NAME!r} use "
+            f"route_family='sec_xbrl_operator_review_workflow_open_write', "
+            f"which is not permitted by the old constraint. "
+            f"Reconcile or remove those rows before downgrading."
+        )
     if _constraint_exists(TABLE_NAME, OLD_CONSTRAINT):
         with op.batch_alter_table(TABLE_NAME) as batch_op:
             batch_op.drop_constraint(OLD_CONSTRAINT, type_="check")
