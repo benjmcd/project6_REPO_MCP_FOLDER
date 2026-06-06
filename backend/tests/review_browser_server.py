@@ -101,6 +101,7 @@ from app.services.layer3_source_directory_vector_index import (
     source_directory_material_embedding_vector_index,
 )
 from app.services.layer3_typing_entry import materialize_typing_entry
+from app.services.dataframe_io import load_version_dataframe
 from review_browser_fixture import ReviewBrowserFixture, build_review_browser_fixture, install_review_browser_patches
 from test_layer3_candidate_b_default_readiness import (
     READY_REGRESSION,
@@ -478,6 +479,13 @@ def _install_layer3_browser_patches(temp_path: Path) -> None:
         }
 
     def _run_analysis(db, *, dataset_version_id, method_name, goal_type=None, parameters=None, annotation_window_id=None):
+        # Faithfully mirror production run_analysis, which loads the dataset
+        # dataframe first and raises if the storage is unreadable. The harness
+        # output itself stays deterministic, but this preserves the real
+        # execution-failure semantics so a seed with unreadable dataset storage
+        # drives a genuine PASS_STATUS_FAILED instead of a stub that always
+        # completes.
+        load_version_dataframe(db, dataset_version_id)
         now = datetime.now(timezone.utc)
         run = AnalysisRun(
             analysis_run_id=uuid_str(),
@@ -2528,9 +2536,12 @@ def _build_browser_failed_pass_session(db, temp_path: Path) -> str:
     db.commit()
     materialize_typing_entry(db, session_id=session.session_id)
     db.commit()
-    # Delete the CSV so load_version_dataframe raises ValueError("dataset storage file
-    # does not exist"), causing execute_selected_pass_run to write PASS_STATUS_FAILED.
-    csv_path.unlink()
+    # Truncate the CSV to empty bytes. The file still exists, so Gate C pass
+    # admission (which only checks storage existence) admits the analysis set,
+    # but load_version_dataframe raises EmptyDataError ("No columns to parse from
+    # file") at execution, so execute_selected_pass_run writes PASS_STATUS_FAILED.
+    # This drives a genuine execution failure rather than a plan-time block.
+    csv_path.write_bytes(b"")
     return session.session_id
 
 

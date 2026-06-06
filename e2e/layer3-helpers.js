@@ -369,6 +369,13 @@ export async function prepareApprovedPackageReviewQuantSession(request) {
 }
 
 export async function attachSessionToWorkbench(page, sessionId, sourceClasses = ['dataset_version']) {
+  // init() loads /bootstrap asynchronously and page.goto resolves on `load`,
+  // before that fetch settles. The session-recovery anchor embeds the
+  // state-action contract signature derived from State.bootstrap; if we persist
+  // it while bootstrap is still null, the anchor gets a null signature and is
+  // rejected on reload (no session recovery fetch fires). Wait for bootstrap so
+  // the anchor carries the real contract signature, matching the reloaded page.
+  await page.waitForFunction(() => typeof State !== 'undefined' && !!State.bootstrap);
   await page.evaluate(({ session_id, source_classes }) => {
     State.gateB = {
       session_id,
