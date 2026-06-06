@@ -12,6 +12,10 @@ import {
   expectStepUnavailable,
   prepareExecutedLayer3Session,
   attachSessionToWorkbench,
+  prepareFailedLayer3Session,
+  prepareMissingOutputLayer3Session,
+  prepareApprovedResultReviewQuantSession,
+  prepareApprovedPackageReviewQuantSession,
 } from './layer3-helpers.js';
 
 const MOCKUP_FRAME_MANIFEST_PATH = path.resolve('next_milestone_plans/layer3-mockups/frames/manifest.json');
@@ -24735,4 +24739,149 @@ test('G6 text-only block: source-intake binary upload triggers source_intake_pre
 
   // Binary content is NOT admitted — no gate-b-admission element present.
   await expect(previewPanel.locator('.source-intake-gate-b-admission')).toHaveCount(0);
+});
+
+// ──────────────────────────────────────────────────────────────
+// G7 server-backed failure state tests
+// ──────────────────────────────────────────────────────────────
+
+test('Layer 3 workbench renders failed pass result status honestly (server-backed)', async ({ page, request }) => {
+  const { seed, approval, planPreview, passRunId } = await prepareFailedLayer3Session(request);
+  await page.goto('/review/layer3');
+  await attachSessionToWorkbench(page, seed.session_id);
+
+  await page.locator('#execution-step-chip').click();
+  await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
+
+  // Reload to restore execution state from server
+  const sessionSummaryPromise = page.waitForResponse((r) =>
+    r.url().includes(`/api/v1/layer3/session/${seed.session_id}`),
+  );
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const sessionSummary = await expectJson(await sessionSummaryPromise);
+  expect(sessionSummary.session_id).toBe(seed.session_id);
+
+  await page.locator('#execution-step-chip').click();
+  await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
+
+  // result-status-inspect must be enabled because execution was started
+  await expect(page.locator('#result-status-inspect')).toBeEnabled();
+
+  const statusResponsePromise = page.waitForResponse((r) =>
+    r.url().includes('/api/v1/layer3/execution/result/status'),
+  );
+  await page.locator('#result-status-inspect').click();
+  const status = await expectJson(await statusResponsePromise);
+
+  // Real server response must show failed state
+  expect(status.schema_id).toBe('layer3.execution_result_status.v1');
+  expect(status.session_id).toBe(seed.session_id);
+  expect(status.pass_run_id).toBe(passRunId);
+  expect(status.result_status_available).toBe(false);
+  expect(status.error_present).toBe(true);
+  expect(status.error_message).toBeTruthy();
+  expect(status.next_state).toBe('execution_result_status_blocked');
+  expect(status.result_review_enabled).toBe(false);
+  expect(status.package_review_enabled).toBe(false);
+
+  // DOM must render blocked state honestly — no state injection
+  await expect(page.locator('#result-review-panel')).toContainText('result_review_ui_blocked');
+  await expect(page.locator('#result-review-submit')).toBeDisabled();
+  await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
+});
+
+test('Layer 3 workbench renders missing-output pass status honestly (server-backed)', async ({ page, request }) => {
+  const { seed, approval, planPreview, passRunId } = await prepareMissingOutputLayer3Session(request);
+  await page.goto('/review/layer3');
+  await attachSessionToWorkbench(page, seed.session_id);
+
+  await page.locator('#execution-step-chip').click();
+  await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
+
+  const sessionSummaryPromise = page.waitForResponse((r) =>
+    r.url().includes(`/api/v1/layer3/session/${seed.session_id}`),
+  );
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expectJson(await sessionSummaryPromise);
+
+  await page.locator('#execution-step-chip').click();
+  await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
+  await expect(page.locator('#result-status-inspect')).toBeEnabled();
+
+  const statusResponsePromise = page.waitForResponse((r) =>
+    r.url().includes('/api/v1/layer3/execution/result/status'),
+  );
+  await page.locator('#result-status-inspect').click();
+  const status = await expectJson(await statusResponsePromise);
+
+  expect(status.result_status_available).toBe(false);
+  expect(status.next_state).toBe('execution_result_status_missing_output');
+  expect(status.output_metadata_error).toBe('output_metadata_file_missing');
+  expect(status.result_review_enabled).toBe(false);
+
+  await expect(page.locator('#result-review-panel')).toContainText('result_review_ui_blocked');
+  await expect(page.locator('#result-review-submit')).toBeDisabled();
+  await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
+});
+
+test('Layer 3 workbench result-review approval state survives reload (server-backed)', async ({ page, request }) => {
+  const { seed, approval, planPreview, passRunId, review } = await prepareApprovedResultReviewQuantSession(request);
+  await page.goto('/review/layer3');
+  await attachSessionToWorkbench(page, seed.session_id);
+
+  await page.locator('#execution-step-chip').click();
+  await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
+
+  const sessionSummaryPromise = page.waitForResponse((r) =>
+    r.url().includes(`/api/v1/layer3/session/${seed.session_id}`),
+  );
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const sessionSummary = await expectJson(await sessionSummaryPromise);
+  expect(sessionSummary.session_id).toBe(seed.session_id);
+
+  await page.locator('#execution-step-chip').click();
+  await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
+
+  // Re-inspect result status after reload
+  await expect(page.locator('#result-status-inspect')).toBeEnabled();
+  const statusResponsePromise = page.waitForResponse((r) =>
+    r.url().includes('/api/v1/layer3/execution/result/status'),
+  );
+  await page.locator('#result-status-inspect').click();
+  const status = await expectJson(await statusResponsePromise);
+  expect(status.result_status_available).toBe(true);
+
+  // The result-review was already recorded; after reload submit must be disabled
+  // (already approved — cannot re-submit)
+  await expect(page.locator('#result-review-panel')).toContainText('result_review_ui_recorded');
+  await expect(page.locator('#result-review-submit')).toBeDisabled();
+});
+
+test('Layer 3 workbench package-review approval state survives reload (server-backed)', async ({ page, request }) => {
+  const { seed } = await prepareApprovedPackageReviewQuantSession(request);
+  await page.goto('/review/layer3');
+  await attachSessionToWorkbench(page, seed.session_id);
+
+  await page.locator('#execution-step-chip').click();
+  await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
+
+  const sessionSummaryPromise = page.waitForResponse((r) =>
+    r.url().includes(`/api/v1/layer3/session/${seed.session_id}`),
+  );
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const sessionSummary = await expectJson(await sessionSummaryPromise);
+  expect(sessionSummary.session_id).toBe(seed.session_id);
+
+  await page.locator('#execution-step-chip').click();
+  await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
+
+  // Navigate to the package review band — state is already loaded from session summary
+  await page.locator('#package-step-chip').click();
+  await expect(page.locator('#package-review-band')).toBeVisible();
+
+  // Session summary drives package panel state without any additional API call or injection
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_approved');
+
+  // Package review submit must be disabled — already approved, cannot re-submit
+  await expect(page.locator('#package-review-submit')).toBeDisabled();
 });

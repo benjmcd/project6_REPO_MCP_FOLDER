@@ -251,7 +251,131 @@ export async function prepareQualitativeApsResultReviewSession(request) {
   };
 }
 
+export async function prepareFailedLayer3Session(request) {
+  const result = await prepareExecutedLayer3Session(request, '/__test/layer3/seed-failed-pass');
+  expect(result.start.pass_run_status).toBe('failed');
+  return result;
+}
+
+export async function prepareMissingOutputLayer3Session(request) {
+  const result = await prepareExecutedLayer3Session(request, '/__test/layer3/seed-quant');
+  expect(['completed', 'completed_with_warnings']).toContain(result.start.pass_run_status);
+  const deleteResult = await expectJson(await request.post('/__test/layer3/delete-pass-output-manifest', {
+    data: { pass_run_id: result.passRunId },
+  }));
+  expect(deleteResult.deleted).toBe(true);
+  return result;
+}
+
+export async function prepareApprovedResultReviewQuantSession(request) {
+  const result = await prepareExecutedLayer3Session(request);
+  expect(['completed', 'completed_with_warnings']).toContain(result.start.pass_run_status);
+  const { seed, planPreview, approval, start, passRunId } = result;
+
+  const status = await expectJson(await request.post('/api/v1/layer3/execution/result/status', {
+    data: {
+      client_request_id: requestId('approved-review-result-status'),
+      session_id: seed.session_id,
+      analysis_plan_id: approval.analysis_plan_id,
+      pass_run_id: passRunId,
+      preview_id: planPreview.preview_id,
+      preview_hash: planPreview.preview_hash,
+      analysis_run_id: start.analysis_run_id ?? null,
+      operator_view_mode: 'status_only',
+    },
+  }));
+  expect(status.result_status_available).toBe(true);
+
+  const review = await expectJson(await request.post('/api/v1/layer3/execution/result/review', {
+    data: {
+      client_request_id: requestId('approved-review-result-review'),
+      session_id: seed.session_id,
+      analysis_plan_id: approval.analysis_plan_id,
+      pass_run_id: passRunId,
+      preview_id: planPreview.preview_id,
+      preview_hash: planPreview.preview_hash,
+      analysis_run_id: start.analysis_run_id ?? null,
+      operator_decision: 'approved',
+      review_notes: 'Approved for server-backed restore test.',
+    },
+  }));
+  expect(review.operator_decision).toBe('approved');
+
+  return { ...result, status, review };
+}
+
+export async function prepareApprovedPackageReviewQuantSession(request) {
+  const base = await prepareApprovedResultReviewQuantSession(request);
+  const { seed, planPreview, approval, start, passRunId, review } = base;
+  const sessionId = seed.session_id;
+
+  const packagePreview = await expectJson(await request.post('/api/v1/layer3/package/review/preview', {
+    data: {
+      client_request_id: requestId('pkg-review-preview'),
+      session_id: sessionId,
+      analysis_plan_id: approval.analysis_plan_id,
+      pass_run_id: passRunId,
+      preview_id: planPreview.preview_id,
+      preview_hash: planPreview.preview_hash,
+      analysis_run_id: start.analysis_run_id ?? null,
+      result_review_record_ref: review.review_record_ref,
+    },
+  }));
+  expect(packagePreview.status).toBe('available');
+
+  const packageKinds = packagePreview.candidate_package_kinds.map((c) => c.package_kind);
+
+  const commit = await expectJson(await request.post('/api/v1/layer3/package/review/commit', {
+    data: {
+      client_request_id: requestId('pkg-review-commit'),
+      session_id: sessionId,
+      analysis_plan_id: approval.analysis_plan_id,
+      pass_run_id: passRunId,
+      preview_id: planPreview.preview_id,
+      preview_hash: planPreview.preview_hash,
+      analysis_run_id: start.analysis_run_id ?? null,
+      result_review_record_ref: review.review_record_ref,
+      package_review_preview_hash: packagePreview.package_review_preview_hash,
+      expected_package_kinds: packageKinds,
+    },
+  }));
+  expect(['committed', 'already_committed']).toContain(commit.status);
+
+  const packageSubmit = await expectJson(await request.post('/api/v1/layer3/package/review/submit', {
+    data: {
+      client_request_id: requestId('pkg-review-submit'),
+      session_id: sessionId,
+      analysis_plan_id: approval.analysis_plan_id,
+      pass_run_id: passRunId,
+      preview_id: planPreview.preview_id,
+      preview_hash: planPreview.preview_hash,
+      analysis_run_id: start.analysis_run_id ?? null,
+      result_review_record_ref: review.review_record_ref,
+      package_review_preview_hash: commit.package_review_preview_hash,
+      construction_basis_hash: commit.construction_basis_hash ?? null,
+      reconciliation_record_id: commit.reconciliation_record_id,
+      output_package_ids: commit.output_package_ids,
+      payload_refs: commit.payload_refs,
+      payload_hashes: commit.payload_hashes,
+      expected_package_kinds: packageKinds,
+      operator_decision: 'approved',
+      decision_notes: 'Approved for server-backed package-review restore test.',
+    },
+  }));
+  expect(packageSubmit.operator_decision).toBe('approved');
+  expect(packageSubmit.package_review_state).toBe('package_review_approved');
+
+  return { ...base, packagePreview, commit, packageSubmit };
+}
+
 export async function attachSessionToWorkbench(page, sessionId, sourceClasses = ['dataset_version']) {
+  // init() loads /bootstrap asynchronously and page.goto resolves on `load`,
+  // before that fetch settles. The session-recovery anchor embeds the
+  // state-action contract signature derived from State.bootstrap; if we persist
+  // it while bootstrap is still null, the anchor gets a null signature and is
+  // rejected on reload (no session recovery fetch fires). Wait for bootstrap so
+  // the anchor carries the real contract signature, matching the reloaded page.
+  await page.waitForFunction(() => typeof State !== 'undefined' && !!State.bootstrap);
   await page.evaluate(({ session_id, source_classes }) => {
     State.gateB = {
       session_id,
@@ -278,5 +402,6 @@ export async function attachSessionToWorkbench(page, sessionId, sourceClasses = 
     State.planRevision = null;
     clearResultReviewState();
     renderAll();
+    persistSessionRecoveryAnchor('test-harness');
   }, { session_id: sessionId, source_classes: sourceClasses });
 }
