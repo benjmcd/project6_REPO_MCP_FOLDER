@@ -8453,10 +8453,23 @@ test('Layer 3 workbench renders P21 mixed-source external export download delive
   await expect(panel).toContainText('/handoff/export/download/deliver');
   await expect(panel).not.toContainText('server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver');
   await expect(page.locator('#external-export-download-delivery-submit')).toBeEnabled();
-  await expect(page.locator('#external-export-download-signed-reference-generate')).toBeDisabled();
-  await expect(page.locator('#external-export-download-signed-reference-panel')).toContainText(
-    'Mixed-source delivery does not admit signed-reference generation.',
+  const signedReferencePanel = page.locator('#external-export-download-signed-reference-panel');
+  await expect(signedReferencePanel).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_mixed_source_external_export_download_signed_reference_control',
   );
+  await expect(signedReferencePanel).toHaveAttribute(
+    'data-source-authority',
+    'State.sessionSummary.external_export_download_readiness',
+  );
+  await expect(signedReferencePanel).toContainText(
+    'mixed_source_external_export_download_signed_reference_ui_ready',
+  );
+  await expect(signedReferencePanel).toContainText('generate_mixed_source_external_export_download_signed_reference');
+  await expect(signedReferencePanel).toContainText('use_mixed_source_external_export_download_signed_reference');
+  await expect(signedReferencePanel).toContainText('mixed_source_external_export_download_signed_reference_gate');
+  await expect(page.locator('#external-export-download-signed-reference-generate')).toBeEnabled();
+  await expect(page.locator('#external-export-download-signed-reference-use')).toBeDisabled();
 
   await page.locator('#external-export-download-delivery-submit').click();
   await expect.poll(() => deliveryRequests.length).toBe(1);
@@ -8549,6 +8562,588 @@ test('Layer 3 workbench renders P21 mixed-source external export download delive
     expect(payload).not.toHaveProperty(forbiddenKey);
   }
   await expect(panel).toContainText('mixed_source_external_export_download_delivery_submitted');
+});
+
+test('Layer 3 workbench drives P18/P19 mixed-source readiness controls from material authority', async ({ page }) => {
+  const sessionId = 'session-p18-p19-rendered';
+  const packagePayloadRefs = [
+    'layer3://mixed-source-package/pkg-p18-canonical',
+    'layer3://mixed-source-package/pkg-p18-user',
+    'layer3://mixed-source-package/pkg-p18-review',
+  ];
+  const handoffPrepare = {
+    schema_id: 'layer3.mixed_source_handoff_export_prepare.v1',
+    status: 'prepared',
+    session_id: sessionId,
+    package_family: 'mixed_dataset_document',
+    material_preview_id: 'material-preview-p18-p19-rendered',
+    material_preview_hash: 'a'.repeat(64),
+    package_review_preview_hash: 'b'.repeat(64),
+    contract_hash: 'c'.repeat(64),
+    construction_basis_hash: 'd'.repeat(64),
+    reconciliation_record_id: 'reconciliation-p18-p19-rendered',
+    output_package_ids: ['pkg-p18-canonical', 'pkg-p18-user', 'pkg-p18-review'],
+    package_kinds: EXPECTED_PACKAGE_REVIEW_KINDS,
+    payload_refs: packagePayloadRefs,
+    payload_hashes: ['e'.repeat(64), 'f'.repeat(64), '1'.repeat(64)],
+    package_review_submit_record_ref: 'layer3://mixed-source-package-review-submit/p18-p19-rendered',
+    package_review_state: 'package_review_approved',
+    prepare_record_ref: 'layer3://mixed-source-handoff-export/p18-p19-rendered',
+    handoff_export_state: 'handoff_export_prepared',
+    handoff_export_envelope_ref: 'layer3://mixed-source-handoff-envelope/p18-p19-rendered',
+    handoff_export_envelope: {
+      envelope_ref: 'layer3://mixed-source-handoff-envelope/p18-p19-rendered',
+      package_review_submit_record_ref: 'layer3://mixed-source-package-review-submit/p18-p19-rendered',
+      reconciliation_record_id: 'reconciliation-p18-p19-rendered',
+      output_package_ids: ['pkg-p18-canonical', 'pkg-p18-user', 'pkg-p18-review'],
+    },
+    handoff_target: 'mixed_source_review_package',
+    export_mode: 'reference_envelope_only',
+    operator_decision: 'authorize_prepare',
+    downstream_unavailable: ['external_export_download', 'download_url', 'connector_dispatch'],
+  };
+  const packageSubmit = {
+    schema_id: 'layer3.mixed_source_package_review_submit.v1',
+    package_review_submit_schema_id: 'layer3.mixed_source_package_review_submit.v1',
+    package_family: 'mixed_dataset_document',
+    session_id: sessionId,
+    material_preview_id: handoffPrepare.material_preview_id,
+    material_preview_hash: handoffPrepare.material_preview_hash,
+    package_review_preview_hash: handoffPrepare.package_review_preview_hash,
+    contract_hash: handoffPrepare.contract_hash,
+    construction_basis_hash: handoffPrepare.construction_basis_hash,
+    reconciliation_record_id: handoffPrepare.reconciliation_record_id,
+    output_package_ids: handoffPrepare.output_package_ids,
+    package_kinds: handoffPrepare.package_kinds,
+    payload_hashes: handoffPrepare.payload_hashes,
+    submit_record_ref: handoffPrepare.package_review_submit_record_ref,
+    package_review_state: 'package_review_approved',
+  };
+  let sessionSummary = {
+    session_id: sessionId,
+    package_review_submit: packageSubmit,
+    handoff_export_prepare: handoffPrepare,
+  };
+  const apsRequests = [];
+  const readinessRequests = [];
+  const legacyPrepareRequests = [];
+  const signedReferenceRequests = [];
+
+  await page.route(`**/api/v1/layer3/session/${sessionId}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(sessionSummary),
+    });
+  });
+  await page.route('**/api/v1/layer3/handoff/export/download/prepare', async (route, request) => {
+    legacyPrepareRequests.push(request.postDataJSON());
+    await route.fulfill({ status: 418, contentType: 'application/json', body: '{}' });
+  });
+  await page.route('**/api/v1/layer3/handoff/aps/dispatch', async (route, request) => {
+    const payload = request.postDataJSON();
+    apsRequests.push(payload);
+    const body = {
+      ...payload,
+      schema_id: 'layer3.mixed_source_aps_handoff_dispatch.v1',
+      status: 'dispatched',
+      package_family: 'mixed_dataset_document',
+      package_kinds: EXPECTED_PACKAGE_REVIEW_KINDS,
+      payload_refs: packagePayloadRefs,
+      aps_handoff_state: 'aps_handoff_dispatched',
+      aps_handoff_record_ref: 'layer3://mixed-source-aps-handoff/p18-p19-rendered',
+      aps_output_package_id: 'mixed-source-aps-p18-p19-rendered',
+      aps_output_package_kind: 'mixed_source_aps_evidence_bundle_reference',
+      aps_bundle_ref: 'layer3://mixed-source-aps-handoff/p18-p19-rendered/bundle',
+      aps_bundle_id: 'mixed-source-aps-bundle-p18-p19-rendered',
+      aps_schema_id: 'layer3.mixed_source_aps_evidence_bundle_reference.v1',
+      external_export_enabled: false,
+      download_enabled: false,
+      connector_dispatch_enabled: false,
+      provider_public_url_enabled: false,
+      next_state: 'aps_handoff_dispatched',
+      downstream_unavailable: ['external_export_download', 'download_url', 'connector_dispatch'],
+    };
+    sessionSummary = {
+      ...sessionSummary,
+      aps_handoff_dispatch: body,
+    };
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  await page.route('**/api/v1/layer3/handoff/export/download/readiness', async (route, request) => {
+    const payload = request.postDataJSON();
+    readinessRequests.push(payload);
+    const body = {
+      ...payload,
+      schema_id: 'layer3.mixed_source_external_export_download_readiness.v1',
+      status: 'ready',
+      package_family: 'mixed_dataset_document',
+      package_kinds: EXPECTED_PACKAGE_REVIEW_KINDS,
+      payload_refs: packagePayloadRefs,
+      external_export_download_readiness_schema_id: 'layer3.mixed_source_external_export_download_readiness.v1',
+      external_export_download_readiness_state: 'mixed_source_external_export_download_ready',
+      external_export_download_readiness_record_ref: 'layer3://mixed-source-external-export-record/p18-p19-rendered',
+      external_export_download_readiness_ref: 'layer3://mixed-source-external-export/p18-p19-rendered',
+      next_state: 'mixed_source_external_export_download_ready',
+      external_export_enabled: false,
+      download_enabled: false,
+      download_url_enabled: false,
+      signed_reference_enabled: false,
+      connector_dispatch_enabled: false,
+      destination_selection_enabled: false,
+      package_payload_rewrite_enabled: false,
+      schema_runtime_source_widening_enabled: false,
+    };
+    sessionSummary = {
+      ...sessionSummary,
+      external_export_download_readiness: body,
+    };
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  const mixedDirectDelivery = {
+    schema_id: 'layer3.mixed_source_external_export_download_delivery.v1',
+    package_family: 'mixed_dataset_document',
+    session_id: sessionId,
+    external_export_download_delivery_state: 'mixed_source_external_export_download_delivered',
+    state: 'mixed_source_external_export_download_delivered',
+    external_export_download_readiness_record_ref: 'layer3://mixed-source-external-export-record/p18-p19-rendered',
+  };
+  await page.route('**/api/v1/layer3/handoff/export/download/signed-reference/generate', async (route, request) => {
+    const payload = request.postDataJSON();
+    signedReferenceRequests.push(payload);
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...payload,
+        schema_id: 'layer3.external_export_download_signed_reference.v1',
+        status: 'prepared',
+        package_family: 'mixed_dataset_document',
+        package_payload_hash: '1'.repeat(64),
+        signed_reference_state: 'external_export_download_signed_reference_ready',
+        signed_reference_token: 'p18-p19-rendered-token',
+        signed_reference_receipt_id: 'p18-p19-rendered-receipt',
+        signed_reference_use_count: 0,
+        signed_reference_max_use_count: 1,
+        signed_reference_revoked: false,
+        signed_reference_expires_at: '2030-01-01T00:00:00Z',
+        signed_reference_expires_in_seconds: 300,
+        signed_reference_use_endpoint: '/api/v1/layer3/handoff/export/download/signed-reference/use',
+        delivery_mode: 'same_origin_signed_delivery_reference',
+        signed_reference_delivery_mode: 'same_origin_signed_delivery_reference',
+        use_operator_decision: 'use_mixed_source_external_export_download_signed_reference',
+        server_authority: 'mixed_source_external_export_download_signed_reference_gate',
+        download_url_enabled: false,
+        public_url_enabled: false,
+        provider_public_url_enabled: false,
+        provider_private_signed_url_enabled: false,
+        connector_dispatch_enabled: false,
+        destination_selection_enabled: false,
+        package_payload_rewrite_enabled: false,
+        schema_runtime_source_widening_enabled: false,
+      }),
+    });
+  });
+
+  await page.goto('/review/layer3');
+  await page.evaluate((seed) => {
+    eval(`
+      State.sessionSummary = ${JSON.stringify(seed.sessionSummary)};
+      State.packageReviewSubmit = ${JSON.stringify(seed.packageSubmit)};
+      State.packageConstruction = ${JSON.stringify(seed.packageSubmit)};
+      State.handoffExportPrepare = null;
+      State.apsHandoffDispatch = null;
+      State.externalExportDownloadPrepare = null;
+      State.externalExportDownloadSignedReference = null;
+      State.externalExportDownloadSignedReferenceUse = null;
+      renderAll();
+    `);
+  }, { sessionSummary, packageSubmit, handoffPrepare });
+
+  await page.evaluate(() => {
+    eval("setActiveOperation('aps-handoff-band', { manual: true }); renderAll();");
+  });
+  const apsPanel = page.locator('#aps-handoff-dispatch-panel');
+  await expect(apsPanel).toHaveAttribute('data-rendered-mode', 'rendered_mixed_source_aps_handoff_dispatch_control');
+  await expect(apsPanel).toHaveAttribute('data-source-authority', 'State.handoffExportPrepare mixed-source material authority');
+  await expect(apsPanel).toContainText('mixed_source_aps_handoff_ready');
+  await expect(apsPanel).toContainText('dispatch_mixed_source_aps_handoff');
+  await expect(page.locator('#aps-handoff-dispatch-submit')).toBeEnabled();
+  await page.locator('#aps-handoff-dispatch-submit').click();
+  await expect.poll(() => apsRequests.length).toBe(1);
+  const apsPayload = apsRequests[0];
+  expectOnlyPayloadKeys(apsPayload, [
+    'aps_handoff_target',
+    'client_request_id',
+    'construction_basis_hash',
+    'contract_hash',
+    'dispatch_mode',
+    'expected_package_kinds',
+    'export_mode',
+    'handoff_export_envelope_ref',
+    'handoff_export_state',
+    'handoff_target',
+    'material_preview_hash',
+    'material_preview_id',
+    'operator_decision',
+    'output_package_ids',
+    'package_review_preview_hash',
+    'package_review_state',
+    'package_review_submit_record_ref',
+    'payload_hashes',
+    'prepare_record_ref',
+    'reconciliation_record_id',
+    'session_id',
+  ]);
+  expect(apsPayload.session_id).toBe(sessionId);
+  expect(apsPayload.handoff_target).toBe('mixed_source_review_package');
+  expect(apsPayload.export_mode).toBe('reference_envelope_only');
+  expect(apsPayload.aps_handoff_target).toBe('mixed_source_aps_evidence_bundle');
+  expect(apsPayload.dispatch_mode).toBe('server_side_mixed_source_aps_handoff');
+  expect(apsPayload.operator_decision).toBe('dispatch_mixed_source_aps_handoff');
+  expect(apsPayload.expected_package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  expect(apsPayload).not.toHaveProperty('analysis_plan_id');
+  expect(apsPayload).not.toHaveProperty('payload_refs');
+
+  await page.evaluate(() => {
+    eval("setActiveOperation('external-export-download-band', { manual: true }); renderAll();");
+  });
+  const readinessPanel = page.locator('#external-export-download-prepare-panel');
+  await expect(readinessPanel).toHaveAttribute('data-rendered-mode', 'rendered_mixed_source_external_export_download_readiness_control');
+  await expect(readinessPanel).toHaveAttribute('data-source-authority', 'State.apsHandoffDispatch mixed-source material authority');
+  await expect(readinessPanel).toContainText('mixed_source_external_export_download_readiness_ready');
+  await expect(readinessPanel).toContainText('/handoff/export/download/readiness');
+  await expect(readinessPanel).toContainText('record_mixed_source_external_export_download_readiness');
+  await expect(page.locator('#external-export-download-prepare-submit')).toBeEnabled();
+  await page.locator('#external-export-download-prepare-submit').click();
+  await expect.poll(() => readinessRequests.length).toBe(1);
+  expect(legacyPrepareRequests).toHaveLength(0);
+  const readinessPayload = readinessRequests[0];
+  expectOnlyPayloadKeys(readinessPayload, [
+    'aps_handoff_record_ref',
+    'aps_handoff_state',
+    'aps_handoff_target',
+    'client_request_id',
+    'construction_basis_hash',
+    'contract_hash',
+    'dispatch_mode',
+    'expected_package_kinds',
+    'export_mode',
+    'handoff_export_envelope_ref',
+    'handoff_export_state',
+    'handoff_target',
+    'material_preview_hash',
+    'material_preview_id',
+    'operator_decision',
+    'output_package_ids',
+    'package_review_preview_hash',
+    'package_review_state',
+    'package_review_submit_record_ref',
+    'payload_hashes',
+    'prepare_record_ref',
+    'reconciliation_record_id',
+    'session_id',
+  ]);
+  expect(readinessPayload.session_id).toBe(sessionId);
+  expect(readinessPayload.aps_handoff_record_ref).toBe('layer3://mixed-source-aps-handoff/p18-p19-rendered');
+  expect(readinessPayload.aps_handoff_state).toBe('aps_handoff_dispatched');
+  expect(readinessPayload.operator_decision).toBe('record_mixed_source_external_export_download_readiness');
+  expect(readinessPayload).not.toHaveProperty('analysis_plan_id');
+  expect(readinessPayload).not.toHaveProperty('payload_refs');
+
+  const signedReferencePanel = page.locator('#external-export-download-signed-reference-panel');
+  await expect(signedReferencePanel).toHaveAttribute('data-rendered-mode', 'rendered_mixed_source_external_export_download_signed_reference_control');
+  await expect(signedReferencePanel).toContainText('mixed_source_external_export_download_signed_reference_ui_ready');
+  const signedReferenceGenerate = page.locator('#external-export-download-signed-reference-generate');
+  await page.evaluate((delivery) => {
+    eval(`
+      State.sessionSummary.external_export_download_delivery = ${JSON.stringify(delivery)};
+      State.externalExportDownloadDelivery = null;
+      State.externalExportDownloadSignedReference = null;
+      renderAll();
+    `);
+  }, mixedDirectDelivery);
+  await expect(signedReferenceGenerate).toBeDisabled();
+  expect(signedReferenceRequests).toHaveLength(0);
+  await page.evaluate(() => {
+    eval(`
+      delete State.sessionSummary.external_export_download_delivery;
+      State.externalExportDownloadDelivery = null;
+      renderAll();
+    `);
+  });
+  await expect(signedReferenceGenerate).toBeEnabled();
+  await signedReferenceGenerate.click();
+  await expect.poll(() => signedReferenceRequests.length).toBe(1);
+  const signedPayload = signedReferenceRequests[0];
+  expect(signedPayload.operator_decision).toBe('generate_mixed_source_external_export_download_signed_reference');
+  expect(signedPayload.dispatch_mode).toBe('server_side_mixed_source_aps_handoff');
+  expect(signedPayload.external_export_download_readiness_record_ref).toBe(
+    'layer3://mixed-source-external-export-record/p18-p19-rendered',
+  );
+
+  const checkpointCard = page.locator('.mixed-source-product-authority-checkpoint');
+  await expect(checkpointCard).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_mixed_source_product_authority_checkpoint',
+  );
+  await expect(checkpointCard).toHaveAttribute(
+    'data-product-authority-checkpoint-state',
+    'mixed_source_product_authority_checkpoint_ready',
+  );
+  await expect(checkpointCard).toHaveAttribute('data-production-readiness-claimed', 'false');
+  for (const step of [
+    'p17_handoff_export_prepare',
+    'p18_aps_handoff_dispatch',
+    'p19_external_export_download_readiness',
+    'p21_same_origin_delivery_authority',
+    'p22_signed_reference_authority',
+  ]) {
+    await expect(checkpointCard.locator(`[data-product-authority-checkpoint-step="${step}"]`)).toHaveAttribute(
+      'data-ready',
+      'true',
+    );
+  }
+  await expect(checkpointCard).toContainText('mixed_source_product_authority_checkpoint_ready');
+  await expect(checkpointCard).toContainText('real export dispatch admitted: false');
+  await expect(checkpointCard).toContainText('provider public url enabled: false');
+  await expect(checkpointCard).toContainText('connector dispatch enabled: false');
+  await expect(checkpointCard).toContainText('local outbox enabled: false');
+  await expect(checkpointCard).toContainText('production readiness claimed: false');
+  expect(legacyPrepareRequests).toHaveLength(0);
+});
+
+test('Layer 3 workbench renders P22 mixed-source signed-reference controls', async ({ page }) => {
+  const signedReferenceRequests = [];
+  const signedReferenceUseRequests = [];
+  const sourceDirectoryDeliveryRequests = [];
+  const sourceDirectoryDeliveryStatusRequests = [];
+  const packagePayloadHash = '1'.repeat(64);
+  await page.route(
+    '**/api/v1/layer3/handoff/export/download/signed-reference/generate',
+    async (route, request) => {
+      signedReferenceRequests.push(request.postDataJSON());
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_id: 'layer3.external_export_download_signed_reference.v1',
+          status: 'prepared',
+          session_id: 'session-p22-rendered',
+          material_preview_id: P21_MIXED_RENDERED_DELIVERY_READINESS.material_preview_id,
+          material_preview_hash: P21_MIXED_RENDERED_DELIVERY_READINESS.material_preview_hash,
+          package_review_preview_hash: P21_MIXED_RENDERED_DELIVERY_READINESS.package_review_preview_hash,
+          contract_hash: P21_MIXED_RENDERED_DELIVERY_READINESS.contract_hash,
+          construction_basis_hash: P21_MIXED_RENDERED_DELIVERY_READINESS.construction_basis_hash,
+          reconciliation_record_id: P21_MIXED_RENDERED_DELIVERY_READINESS.reconciliation_record_id,
+          package_family: 'mixed_dataset_document',
+          output_package_id: 'pkg-p21-review',
+          package_kind: 'review_facing',
+          package_payload_hash: packagePayloadHash,
+          package_review_submit_record_ref: P21_MIXED_RENDERED_DELIVERY_READINESS.package_review_submit_record_ref,
+          package_review_state: 'package_review_approved',
+          prepare_record_ref: P21_MIXED_RENDERED_DELIVERY_READINESS.prepare_record_ref,
+          handoff_export_state: 'handoff_export_prepared',
+          handoff_export_envelope_ref: P21_MIXED_RENDERED_DELIVERY_READINESS.handoff_export_envelope_ref,
+          handoff_target: 'mixed_source_review_package',
+          export_mode: 'reference_envelope_only',
+          aps_handoff_target: 'mixed_source_aps_evidence_bundle',
+          dispatch_mode: 'server_side_mixed_source_aps_handoff',
+          aps_handoff_record_ref: P21_MIXED_RENDERED_DELIVERY_READINESS.aps_handoff_record_ref,
+          aps_handoff_state: 'aps_handoff_dispatched',
+          external_export_download_readiness_record_ref: P21_MIXED_RENDERED_DELIVERY_READINESS.external_export_download_readiness_record_ref,
+          external_export_download_readiness_ref: P21_MIXED_RENDERED_DELIVERY_READINESS.external_export_download_readiness_ref,
+          external_export_download_readiness_state: 'mixed_source_external_export_download_ready',
+          external_export_download_delivery_record_ref: 'layer3://mixed-source-external-export-delivery/p22-rendered',
+          external_export_download_delivery_ref: 'layer3://mixed-source-external-export-delivery-ref/p22-rendered',
+          external_export_download_delivery_state: 'mixed_source_external_export_download_delivered',
+          signed_reference_state: 'external_export_download_signed_reference_ready',
+          signed_reference_token: 'p22-rendered-token',
+          signed_reference_token_id: 'p22-rendered-token-id',
+          signed_reference_receipt_id: 'p22-rendered-receipt-generated',
+          signed_reference_replay_policy: 'single_use',
+          signed_reference_use_count: 0,
+          signed_reference_max_use_count: 1,
+          signed_reference_revoked: false,
+          signed_reference_expires_at: '2030-01-01T00:00:00Z',
+          signed_reference_expires_in_seconds: 300,
+          signed_reference_use_endpoint: '/api/v1/layer3/handoff/export/download/signed-reference/use',
+          delivery_mode: 'same_origin_signed_delivery_reference',
+          signed_reference_delivery_mode: 'same_origin_signed_delivery_reference',
+          operator_decision: 'generate_mixed_source_external_export_download_signed_reference',
+          use_operator_decision: 'use_mixed_source_external_export_download_signed_reference',
+          server_authority: 'mixed_source_external_export_download_signed_reference_gate',
+          source_artifact_ref: 'artifact://mixed-source-external-export-download-package-bound-by-hash',
+          source_artifact_hash: packagePayloadHash,
+          source_artifact_size_bytes: 123,
+          download_url_enabled: false,
+          public_url_enabled: false,
+          provider_public_url_enabled: false,
+          provider_private_signed_url_enabled: false,
+          connector_dispatch_enabled: false,
+          destination_selection_enabled: false,
+          generic_downstream_dispatch_enabled: false,
+          package_payload_rewrite_enabled: false,
+          package_mutation_enabled: false,
+          schema_runtime_source_widening_enabled: false,
+          production_readiness_enabled: false,
+          authority_rail: {
+            token_authority: 'server_hmac_with_durable_state',
+            artifact_authority: 'mixed_source_external_export_download_signed_reference_gate',
+            delivery_authority: 'layer3.mixed_source_external_export_download_delivery.v1',
+            revalidate_at_use_required: true,
+            durable_state_required: true,
+            configured_secret_present: true,
+          },
+          next_state: 'external_export_download_signed_reference_delivered',
+        }),
+      });
+    },
+  );
+  await page.route('**/api/v1/layer3/handoff/export/download/signed-reference/use', async (route, request) => {
+    signedReferenceUseRequests.push(request.postDataJSON());
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: {
+        'X-Layer3-Schema-Id': 'layer3.external_export_download_signed_reference_use.v1',
+        'X-Layer3-Delivery-State': 'mixed_source_external_export_download_delivered',
+        'X-Layer3-Signed-Reference-State': 'external_export_download_signed_reference_delivered',
+        'X-Layer3-Signed-Reference-Receipt-Id': 'p22-rendered-receipt-used',
+        'X-Layer3-Source-Artifact-Hash': packagePayloadHash,
+      },
+      body: '{}',
+    });
+  });
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver/status',
+    async (route, request) => {
+      sourceDirectoryDeliveryStatusRequests.push(formPostPayload(request));
+      await route.fulfill({ status: 418, contentType: 'application/json', body: '{}' });
+    },
+  );
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver',
+    async (route, request) => {
+      sourceDirectoryDeliveryRequests.push(formPostPayload(request));
+      await route.fulfill({ status: 418, contentType: 'text/html', body: '' });
+    },
+  );
+
+  await page.goto('/review/layer3');
+  await page.evaluate((readiness) => {
+    eval(`
+      State.sessionSummary = {
+        session_id: 'session-p22-rendered',
+        external_export_download_readiness: ${JSON.stringify(readiness)}
+      };
+      State.externalExportDownloadPrepare = {
+        schema_id: 'layer3.source_directory_qualitative_analysis_external_export_download_prepare.v1',
+        external_export_download_state: 'external_export_download_prepared',
+        external_export_download_record_ref: 'layer3://source-directory-external-export-download/stale',
+        export_download_descriptor_ref: 'layer3://source-directory-external-export-download-descriptor/stale',
+        package_kinds: ['user_facing'],
+        output_package_ids: ['source-dir-stale-package'],
+        payload_hashes: ['${'2'.repeat(64)}'],
+      };
+      State.externalExportDownloadSignedReference = null;
+      State.externalExportDownloadSignedReferenceUse = null;
+      renderAll();
+      setActiveOperation('external-export-download-band', { manual: true });
+    `);
+  }, P21_MIXED_RENDERED_DELIVERY_READINESS);
+
+  const panel = page.locator('#external-export-download-signed-reference-panel');
+  await expect(panel).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_mixed_source_external_export_download_signed_reference_control',
+  );
+  await expect(panel).toHaveAttribute('data-source-authority', 'State.sessionSummary.external_export_download_readiness');
+  await expect(panel).toContainText('mixed_source_external_export_download_signed_reference_ui_ready');
+  await expect(panel).toContainText('mixed_source_external_export_download_signed_reference_gate');
+  await expect(page.locator('#external-export-download-signed-reference-generate')).toBeEnabled();
+  await expect(page.locator('#external-export-download-signed-reference-use')).toBeDisabled();
+
+  await page.locator('#external-export-download-signed-reference-generate').click();
+  await expect.poll(() => signedReferenceRequests.length).toBe(1);
+  const payload = signedReferenceRequests[0];
+  expectOnlyPayloadKeys(payload, [
+    'client_request_id',
+    'session_id',
+    'material_preview_id',
+    'material_preview_hash',
+    'package_review_preview_hash',
+    'contract_hash',
+    'construction_basis_hash',
+    'reconciliation_record_id',
+    'output_package_id',
+    'package_kind',
+    'package_payload_hash',
+    'package_review_submit_record_ref',
+    'package_review_state',
+    'prepare_record_ref',
+    'handoff_export_state',
+    'handoff_export_envelope_ref',
+    'handoff_target',
+    'export_mode',
+    'aps_handoff_target',
+    'dispatch_mode',
+    'aps_handoff_record_ref',
+    'aps_handoff_state',
+    'external_export_download_readiness_record_ref',
+    'external_export_download_readiness_ref',
+    'external_export_download_readiness_state',
+    'delivery_mode',
+    'operator_decision',
+    'expected_package_kinds',
+  ]);
+  expect(payload.session_id).toBe('session-p22-rendered');
+  expect(payload.output_package_id).toBe('pkg-p21-review');
+  expect(payload.package_kind).toBe('review_facing');
+  expect(payload.package_payload_hash).toBe(packagePayloadHash);
+  expect(payload.handoff_target).toBe('mixed_source_review_package');
+  expect(payload.export_mode).toBe('reference_envelope_only');
+  expect(payload.aps_handoff_target).toBe('mixed_source_aps_evidence_bundle');
+  expect(payload.dispatch_mode).toBe('server_side_mixed_source_aps_handoff');
+  expect(payload.external_export_download_readiness_state).toBe('mixed_source_external_export_download_ready');
+  expect(payload.delivery_mode).toBe('same_origin_artifact_stream');
+  expect(payload.operator_decision).toBe('generate_mixed_source_external_export_download_signed_reference');
+  expect(payload.expected_package_kinds).toEqual(EXPECTED_PACKAGE_REVIEW_KINDS);
+  for (const forbiddenKey of [
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'result_review_record_ref',
+    'external_export_download_record_ref',
+    'export_download_descriptor_ref',
+    'download_url',
+    'public_url',
+    'provider_public_url',
+    'provider_private_signed_url',
+    'signed_url',
+    'connector_run_id',
+    'destination',
+    'local_file_path',
+    'package_payload',
+    'schema_migration',
+    'source_expansion',
+  ]) {
+    expect(payload).not.toHaveProperty(forbiddenKey);
+  }
+
+  await expect(panel).toContainText('external_export_download_signed_reference_ready');
+  await expect(panel).toContainText('same_origin_signed_delivery_reference');
+  await expect(panel).toContainText('pkg-p21-review');
+  await expect(page.locator('#external-export-download-signed-reference-generate')).toBeDisabled();
+  await expect(page.locator('#external-export-download-signed-reference-use')).toBeEnabled();
+  await page.locator('#external-export-download-signed-reference-use').click();
+  await expect.poll(() => signedReferenceUseRequests.length).toBe(1);
+  expect(signedReferenceUseRequests[0]).toEqual({ signed_reference_token: 'p22-rendered-token' });
+  await expect(panel).toContainText('external_export_download_signed_reference_delivered');
+  await expect(page.locator('#external-export-download-signed-reference-use')).toBeDisabled();
+  expect(sourceDirectoryDeliveryStatusRequests).toHaveLength(0);
+  expect(sourceDirectoryDeliveryRequests).toHaveLength(0);
 });
 
 test('Layer 3 workbench drives raw mixed rendered external export download delivery', async ({ page, request }) => {

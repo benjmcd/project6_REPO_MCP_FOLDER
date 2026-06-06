@@ -37,7 +37,10 @@ delivery freeze, current-main Phase P20 mixed-source external
 export/download delivery runtime, current-main P20 sync, and bounded Phase P21
 mixed-source rendered delivery controls freeze, current-main Phase P21
 mixed-source rendered delivery controls runtime, current-main P21 sync, and
-bounded Phase P22 mixed-source same-origin signed-reference governance freeze.
+bounded Phase P22 mixed-source same-origin signed-reference governance freeze,
+plus branch-local Phase P22 mixed-source signed-reference runtime and rendered
+controls, branch-local Phase P23 mixed-source product-flow usability proof, and
+branch-local Phase P24 mixed-source product-authority checkpoint.
 
 Last audited main authority before the Phase P9 branch: `project6-origin/main` at `61df2c0d77a398d4aa582bb864caf6a209679e47`.
 
@@ -60,7 +63,7 @@ The user question is not just "can the pipeline download non-PDF files?" The act
 Confirmed live authority comes from tracked source files and tracked planning/status docs in this worktree. The repo-level instructions reference `.codesight/wiki/index.md` and `.codesight/CODESIGHT.md`, but both files are absent in this current worktree; this pack records that as an authority gap rather than treating the wiki as available.
 
 This lane began as a planning/spec/design pack and now also includes bounded
-runtime and docs/control slices through P22. It still does not change schema,
+runtime, rendered-control, and docs/control slices through branch-local P24. It still does not change schema,
 migrations, Layer 3 typing rules, parser behavior, Candidate B behavior,
 connector/provider/destination behavior, or mixed-source package payload
 rewrite semantics. The API changes are limited to material-preview accepting
@@ -138,6 +141,39 @@ connector/destination dispatch, durable-state schema changes, rendered controls,
 package payload rewrite, source-shape expansion, SEC XBRL, excluded-tool
 behavior, value reveal, default-on behavior, and production readiness remain
 blocked unless a later freeze selects them.
+
+P22 runtime and rendered controls are now also branch-local implementation, not
+current-main. They admit mixed-source same-origin signed-reference generation/use
+over the existing P20 delivery validator and existing durable signed-reference
+state, and render the corresponding `/review/layer3` controls from
+`State.sessionSummary.external_export_download_readiness`. It still does not
+admit download URLs, provider/public URLs, connector/provider/destination/local
+outbox behavior, schema/model/migration changes, parser/source-shape expansion,
+package payload rewrite/mutation, SEC XBRL, excluded-tool behavior, value
+reveal, default-on behavior, or production readiness.
+
+P23 product-flow usability proof is now branch-local implementation, not
+current-main. It proves the rendered mixed-source downstream flow can proceed
+from P17 handoff/export prepare material authority through P18 APS handoff
+dispatch, P19 external export/download readiness, and P22 same-origin
+signed-reference generation without synthetic P19 readiness. It adds rendered
+authority derivation and payload branching only, keeps P18 on the existing
+`/handoff/aps/dispatch` route, uses the existing
+`/handoff/export/download/readiness` route for P19, and still does not admit
+download URLs, provider/public URLs, connector/provider/destination/local
+outbox behavior, schema/model/migration changes, parser/source-shape expansion,
+package payload rewrite/mutation, SEC XBRL, excluded-tool behavior, value
+reveal, default-on behavior, or production readiness.
+
+P24 product-authority checkpoint is now branch-local implementation, not
+current-main. It renders a read-only `/review/layer3` checkpoint over the
+already-loaded P17 handoff/export prepare, P18 APS handoff dispatch, P19
+external export/download readiness, P21 same-origin delivery, and P22
+same-origin signed-reference authority chain. It adds no backend route, payload
+builder, submit handler, persisted state, transport path, signed-reference
+status/revocation behavior, provider/public URL behavior, connector/destination
+or local-outbox behavior, schema/source-shape expansion, package payload
+rewrite/mutation, or production-readiness claim.
 
 This folder is the front door for the new lane. Shared progress manifests and Layer 3 control packets are updated only when this heterogeneous-ingestion lane changes a tracked milestone claim. Lane-local docs remain planning authority until source, tests, and control-spine entries support a current implementation claim.
 
@@ -291,24 +327,23 @@ reference-only readiness state over P18 dispatch authority. P20 now freezes and
 current main implements same-origin mixed-source external export/download
 delivery over that P19 readiness state. P21 now freezes and current main
 implements rendered mixed-source delivery controls over the existing P20
-same-origin stream. The repo still does
+same-origin stream, and this branch adds P22/P23 signed-reference plus
+product-flow rendered proof that is not current-main until merged. Current main still does
 not admit unsupported forms, ambiguous financial-statement semantics, archive-member
-orchestration, broad generic XML/HTML parsing, download URLs, signed
-references at runtime for mixed-source packages, public/provider URL
+orchestration, broad generic XML/HTML parsing, download URLs, mixed-source
+signed references at runtime, public/provider URL
 behavior, connector/provider/destination behavior for mixed sources, or
 request-supplied mixed-source payload rewrite semantics.
 
 ## Immediate Next Tranche
 
-Phase P22 is branch-local docs/control freeze only. It selects mixed-source
-same-origin signed-reference governance as the next downstream surface after
-rendered mixed-source delivery controls. The next immediate implementation
-tranche, after this freeze merges and current-main syncs, is mixed-source
-same-origin signed-reference generation/use over the existing P19/P20/P21
-delivery authority only. Do not implement provider/public URL governance,
-connector/destination dispatch, durable audit or revocation expansion,
-product-flow usability proof, or a product-authority checkpoint until a later
-freeze selects exactly one of those surfaces.
+Phase P24 is branch-local read-only product-authority checkpoint proof over the
+already-admitted P17/P18/P19/P20/P21/P22/P23 chain. The next immediate tranche
+is merge review and current-main sync for the P22/P23/P24 branch-local work,
+not provider/public URL or connector/destination implementation. After sync,
+freeze exactly one next surface before implementation. Durable revocation UI/API
+is still separate from this checkpoint and remains safer than provider/public
+URL governance or connector/destination/local-outbox dispatch.
 
 The next implementation pass should not repeat the APS-derived dataset
 selection, source-family surfacing, selected-material trace-detail, SEC
@@ -325,13 +360,12 @@ readiness freeze, this P19 readiness runtime slice, this P19 current-main sync,
 this P20 mixed-source external export/download delivery freeze, this P20
 same-origin delivery runtime slice, this P20 current-main sync, this P21
 rendered delivery controls freeze, this P21 rendered controls runtime slice,
-this P21 current-main sync, or this P22 mixed-source signed-reference
-governance freeze. Remaining work is:
+this P21 current-main sync, this P22 mixed-source signed-reference governance
+freeze, this P22 signed-reference runtime/rendered-control slice, or this P23
+product-flow usability proof, or this P24 product-authority checkpoint. Remaining work is:
 
-1. Implement mixed-source same-origin signed-reference generation/use only after
-   the P22 freeze merges and current-main syncs. The implementation must bind to
-   mixed-source material authority and keep associated-cohort/source-intake
-   signed-reference authority separate.
+1. Merge-review and current-main sync the branch-local P22/P23/P24 work, then choose
+   one next downstream surface by separate freeze before implementation.
 2. Decide whether to deprecate the legacy
    `csv_dataset_bridge_enabled`/`aps.csv_dataset_bridge_run.v1` compatibility
    path after downstream consumers have adopted the generic table bridge
@@ -397,3 +431,6 @@ This section intentionally lists the supporting pack files. `README.md` is the f
 - `51-p21-rendered-runtime-closeout.md` records the current-main Phase P21 mixed-source rendered delivery controls runtime proof over current-main P20/P19 authority.
 - `52-p21-current-main-sync.md` records the current-main sync after PR #2226.
 - `53-p22-mixed-signed-reference-freeze.md` freezes mixed-source same-origin signed-reference governance over the current P19/P20/P21 delivery chain, without admitting runtime behavior.
+- `54-p22-runtime-closeout.md` records P22 branch-local mixed-source same-origin signed-reference generation/use plus rendered-control proof over the P20 delivery validator, P19 readiness authority, and existing durable signed-reference state. It is not current-main until merged and synced.
+- `55-p23-product-flow-usability-proof.md` records P23 branch-local rendered product-flow usability proof from P17 through P18/P19/P22 over existing server-authoritative routes, without admitting provider/public URL, connector/destination/local-outbox, schema, parser, package rewrite, or production-readiness behavior.
+- `56-p24-product-authority-checkpoint.md` records P24 branch-local read-only mixed-source product-authority checkpoint proof from P17 through P18/P19/P21/P22, without admitting provider/public URL, connector/destination/local-outbox, signed-reference status/revocation, schema, parser, package rewrite, real export/dispatch, or production-readiness behavior.

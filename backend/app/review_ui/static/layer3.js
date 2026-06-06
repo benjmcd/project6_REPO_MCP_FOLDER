@@ -41,11 +41,18 @@ const MIXED_SOURCE_HANDOFF_EXPORT_TARGET = 'mixed_source_review_package';
 const MIXED_SOURCE_HANDOFF_EXPORT_MODE = 'reference_envelope_only';
 const MIXED_SOURCE_APS_HANDOFF_TARGET = 'mixed_source_aps_evidence_bundle';
 const MIXED_SOURCE_APS_HANDOFF_MODE = 'server_side_mixed_source_aps_handoff';
+const MIXED_SOURCE_APS_HANDOFF_OPERATOR_DECISION = 'dispatch_mixed_source_aps_handoff';
+const MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_PATH = '/handoff/export/download/readiness';
 const MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_STATE = 'mixed_source_external_export_download_ready';
+const MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_OPERATOR_DECISION = 'record_mixed_source_external_export_download_readiness';
 const MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = 'layer3.mixed_source_external_export_download_delivery.v1';
 const MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_MODE = 'same_origin_artifact_stream';
 const MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION = 'deliver_mixed_source_external_export_download';
 const MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PACKAGE_KIND = 'review_facing';
+const MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_OPERATOR_DECISION = 'generate_mixed_source_external_export_download_signed_reference';
+const MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_OPERATOR_DECISION = 'use_mixed_source_external_export_download_signed_reference';
+const MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SERVER_AUTHORITY = 'mixed_source_external_export_download_signed_reference_gate';
+const MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_MODE = 'same_origin_signed_delivery_reference';
 const SOURCE_INTAKE_PASS_SCOPE = 'qualitative_single_item_operator_uploaded_source';
 const SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = 'layer3.source_intake_external_export_download_prepare.v1';
 const SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = 'layer3.source_intake_external_export_download_delivery.v1';
@@ -188,6 +195,9 @@ const RAW_MIXED_MATERIALIZE_ALLOWED_SOURCE_CLASSES = new Set(['dataset_version',
 const PACKAGE_LIFECYCLE_DASHBOARD_MODE = 'rendered_package_lifecycle_read_only_dashboard';
 const PACKAGE_LIFECYCLE_USE_CASE = 'operator_inspects_package_lifecycle_without_mutation';
 const PACKAGE_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_response_authority';
+const MIXED_SOURCE_PRODUCT_AUTHORITY_CHECKPOINT_MODE = 'rendered_mixed_source_product_authority_checkpoint';
+const MIXED_SOURCE_PRODUCT_AUTHORITY_CHECKPOINT_USE_CASE = 'operator_inspects_mixed_source_product_authority_chain_without_export_or_dispatch';
+const MIXED_SOURCE_PRODUCT_AUTHORITY_CHECKPOINT_RESPONSE_AUTHORITY = 'State.handoffExportPrepare + State.apsHandoffDispatch + State.sessionSummary.external_export_download_readiness + mixedSourceExternalExportDownloadDeliveryAuthorityPacket() + State.externalExportDownloadSignedReference';
 const PACKAGE_SUPERSESSION_PREVIEW_RENDERED_MODE = 'rendered_package_supersession_preview_control';
 const PACKAGE_SUPERSESSION_PREVIEW_USE_CASE = 'operator_previews_package_supersession_without_package_row_or_payload_mutation';
 const PACKAGE_SUPERSESSION_PREVIEW_RESPONSE_AUTHORITY = 'State.packageSupersessionPreview';
@@ -3657,12 +3667,74 @@ function isMixedSourceHandoffExportPrepareAuthority() {
     return Boolean(mixedSourceHandoffExportPrepareAuthorityPacket());
 }
 
+function mixedSourceApsHandoffDispatchAuthorityPacket() {
+    const handoff = handoffExportPrepareState() || {};
+    const packet = mixedSourceHandoffExportPrepareAuthorityPacket();
+    if (!packet) return null;
+    const prepareState = handoff.handoff_export_state || handoff.next_state || handoff.state;
+    const envelopeRef = handoff.handoff_export_envelope_ref || handoffExportEnvelopeRef(handoff);
+    const dispatchPacket = {
+        ...packet,
+        prepare_record_ref: handoff.prepare_record_ref,
+        handoff_export_state: prepareState,
+        handoff_export_envelope_ref: envelopeRef,
+        aps_handoff_target: MIXED_SOURCE_APS_HANDOFF_TARGET,
+        dispatch_mode: MIXED_SOURCE_APS_HANDOFF_MODE,
+        downstream_unavailable: handoff.downstream_unavailable,
+    };
+    const requiredStrings = [
+        dispatchPacket.prepare_record_ref,
+        dispatchPacket.handoff_export_envelope_ref,
+    ];
+    if (
+        dispatchPacket.handoff_export_state !== 'handoff_export_prepared'
+        || requiredStrings.some((value) => !(typeof value === 'string' && value.trim()))
+    ) {
+        return null;
+    }
+    return dispatchPacket;
+}
+
+function mixedSourceExternalExportDownloadReadinessAuthorityPacket() {
+    const packet = mixedSourceApsHandoffDispatchAuthorityPacket();
+    if (!packet) return null;
+    const aps = State.apsHandoffDispatch || State.sessionSummary?.aps_handoff_dispatch || {};
+    const apsState = apsHandoffStateName(aps);
+    const readinessPacket = {
+        ...packet,
+        aps_handoff_record_ref: aps.aps_handoff_record_ref,
+        aps_handoff_state: apsState,
+    };
+    const requiredStrings = [
+        readinessPacket.aps_handoff_record_ref,
+    ];
+    if (
+        readinessPacket.aps_handoff_state !== 'aps_handoff_dispatched'
+        || requiredStrings.some((value) => !(typeof value === 'string' && value.trim()))
+    ) {
+        return null;
+    }
+    return readinessPacket;
+}
+
 function mixedSourceExternalExportDownloadReadinessState() {
-    const readiness = State.sessionSummary?.external_export_download_readiness || null;
+    const candidates = [
+        State.externalExportDownloadPrepare,
+        State.sessionSummary?.external_export_download_readiness,
+    ];
+    const readiness = candidates.find((candidate) => (
+        candidate
+        && typeof candidate === 'object'
+        && (
+            candidate.package_family === 'mixed_dataset_document'
+            || candidate.external_export_download_readiness_state === MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_STATE
+            || candidate.operator_decision === MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_OPERATOR_DECISION
+        )
+    )) || null;
     if (!readiness || typeof readiness !== 'object') return null;
     return readiness.package_family === 'mixed_dataset_document'
         || readiness.external_export_download_readiness_state === MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_STATE
-        || readiness.operator_decision === 'record_mixed_source_external_export_download_readiness'
+        || readiness.operator_decision === MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_OPERATOR_DECISION
         ? readiness
         : null;
 }
@@ -3833,6 +3905,160 @@ function mixedSourceExternalExportDownloadDeliveryUiAdmitted(deliveryUi = mixedS
         && deliveryUi.package_mutation_enabled === false
         && deliveryUi.schema_runtime_source_widening_enabled === false
     );
+}
+
+function mixedSourceExternalExportDownloadSignedReferenceUiState() {
+    const readiness = mixedSourceExternalExportDownloadReadinessState();
+    if (!readiness) return null;
+    const packet = mixedSourceExternalExportDownloadDeliveryAuthorityPacket();
+    const available = Boolean(
+        packet
+        && !State.externalExportDownloadSignedReference?.signed_reference_token
+        && !State.externalExportDownloadSignedReferenceUse
+    );
+    return {
+        available,
+        state: available
+            ? 'mixed_source_external_export_download_signed_reference_ui_ready'
+            : 'mixed_source_external_export_download_signed_reference_ui_blocked',
+        operator_decision: MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_OPERATOR_DECISION,
+        use_operator_decision: MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_OPERATOR_DECISION,
+        delivery_mode: MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_MODE,
+        selected_package_kind: MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PACKAGE_KIND,
+        server_authority: MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SERVER_AUTHORITY,
+        public_url_enabled: false,
+        provider_public_url_enabled: false,
+        provider_private_signed_url_enabled: false,
+        download_url_enabled: false,
+        connector_dispatch_enabled: false,
+        destination_selection_enabled: false,
+        generic_downstream_dispatch_enabled: false,
+        package_payload_rewrite_enabled: false,
+        package_mutation_enabled: false,
+        schema_runtime_source_widening_enabled: false,
+    };
+}
+
+function mixedSourceExternalExportDownloadSignedReferenceUiAdmitted(signedUi = mixedSourceExternalExportDownloadSignedReferenceUiState()) {
+    return Boolean(
+        signedUi
+        && signedUi.available === true
+        && signedUi.state === 'mixed_source_external_export_download_signed_reference_ui_ready'
+        && signedUi.operator_decision === MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_OPERATOR_DECISION
+        && signedUi.use_operator_decision === MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_OPERATOR_DECISION
+        && signedUi.delivery_mode === MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_MODE
+        && signedUi.selected_package_kind === MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PACKAGE_KIND
+        && signedUi.server_authority === MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SERVER_AUTHORITY
+        && signedUi.public_url_enabled === false
+        && signedUi.provider_public_url_enabled === false
+        && signedUi.provider_private_signed_url_enabled === false
+        && signedUi.download_url_enabled === false
+        && signedUi.connector_dispatch_enabled === false
+        && signedUi.destination_selection_enabled === false
+        && signedUi.generic_downstream_dispatch_enabled === false
+        && signedUi.package_payload_rewrite_enabled === false
+        && signedUi.package_mutation_enabled === false
+        && signedUi.schema_runtime_source_widening_enabled === false
+    );
+}
+
+function mixedSourceExternalExportDownloadSignedReferenceAuthorityAdmitted(signedUi = mixedSourceExternalExportDownloadSignedReferenceUiState()) {
+    return Boolean(
+        mixedSourceExternalExportDownloadDeliveryAuthorityPacket()
+        && signedUi
+        && signedUi.operator_decision === MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_OPERATOR_DECISION
+        && signedUi.use_operator_decision === MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_OPERATOR_DECISION
+        && signedUi.delivery_mode === MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_MODE
+        && signedUi.selected_package_kind === MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PACKAGE_KIND
+        && signedUi.server_authority === MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SERVER_AUTHORITY
+        && signedUi.public_url_enabled === false
+        && signedUi.provider_public_url_enabled === false
+        && signedUi.provider_private_signed_url_enabled === false
+        && signedUi.download_url_enabled === false
+        && signedUi.connector_dispatch_enabled === false
+        && signedUi.destination_selection_enabled === false
+        && signedUi.generic_downstream_dispatch_enabled === false
+        && signedUi.package_payload_rewrite_enabled === false
+        && signedUi.package_mutation_enabled === false
+        && signedUi.schema_runtime_source_widening_enabled === false
+    );
+}
+
+function mixedSourceProductAuthorityCheckpoint() {
+    const p17 = mixedSourceApsHandoffDispatchAuthorityPacket();
+    const p18 = mixedSourceExternalExportDownloadReadinessAuthorityPacket();
+    const p19 = mixedSourceExternalExportDownloadReadinessState();
+    const p21 = mixedSourceExternalExportDownloadDeliveryAuthorityPacket();
+    const p22 = mixedSourceExternalExportDownloadSignedReferenceUiState();
+    const signedAuthorityAdmitted = mixedSourceExternalExportDownloadSignedReferenceAuthorityAdmitted(p22);
+    const steps = [
+        {
+            key: 'p17_handoff_export_prepare',
+            label: 'P17 handoff/export prepare',
+            ready: Boolean(p17),
+            state: p17?.handoff_export_state || 'authority_missing',
+            ref: p17?.prepare_record_ref,
+            authority: 'State.handoffExportPrepare mixed-source material authority',
+        },
+        {
+            key: 'p18_aps_handoff_dispatch',
+            label: 'P18 APS handoff dispatch',
+            ready: Boolean(p18),
+            state: p18?.aps_handoff_state || 'authority_missing',
+            ref: p18?.aps_handoff_record_ref,
+            authority: 'State.apsHandoffDispatch mixed-source material authority',
+        },
+        {
+            key: 'p19_external_export_download_readiness',
+            label: 'P19 external export/download readiness',
+            ready: Boolean(p19),
+            state: p19?.external_export_download_readiness_state || p19?.next_state || 'authority_missing',
+            ref: p19?.external_export_download_readiness_record_ref || p19?.external_export_download_readiness_ref,
+            authority: 'State.sessionSummary.external_export_download_readiness',
+        },
+        {
+            key: 'p21_same_origin_delivery_authority',
+            label: 'P21 same-origin delivery authority',
+            ready: Boolean(p21),
+            state: p21 ? 'mixed_source_external_export_download_delivery_authority_ready' : 'authority_missing',
+            ref: p21?.external_export_download_readiness_record_ref,
+            authority: 'mixedSourceExternalExportDownloadDeliveryAuthorityPacket()',
+        },
+        {
+            key: 'p22_signed_reference_authority',
+            label: 'P22 same-origin signed-reference authority',
+            ready: signedAuthorityAdmitted,
+            state: signedAuthorityAdmitted
+                ? 'mixed_source_external_export_download_signed_reference_authority_ready'
+                : 'authority_missing',
+            ref: State.externalExportDownloadSignedReference?.signed_reference_receipt_id
+                || State.externalExportDownloadSignedReference?.signed_reference_token_id
+                || p21?.external_export_download_readiness_ref,
+            authority: MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SERVER_AUTHORITY,
+        },
+    ];
+    const allReady = steps.every((step) => step.ready === true);
+    return {
+        mode: MIXED_SOURCE_PRODUCT_AUTHORITY_CHECKPOINT_MODE,
+        use_case: MIXED_SOURCE_PRODUCT_AUTHORITY_CHECKPOINT_USE_CASE,
+        response_authority: MIXED_SOURCE_PRODUCT_AUTHORITY_CHECKPOINT_RESPONSE_AUTHORITY,
+        state: allReady
+            ? 'mixed_source_product_authority_checkpoint_ready'
+            : 'mixed_source_product_authority_checkpoint_blocked',
+        ready: allReady,
+        steps,
+        blocked: {
+            real_export_dispatch_admitted: false,
+            provider_public_url_enabled: false,
+            provider_private_signed_url_enabled: false,
+            connector_dispatch_enabled: false,
+            destination_write_enabled: false,
+            local_outbox_enabled: false,
+            package_payload_rewrite_enabled: false,
+            schema_runtime_source_widening_enabled: false,
+            production_readiness_claimed: false,
+        },
+    };
 }
 
 function packageLifecycleOutputRows() {
@@ -4421,7 +4647,7 @@ function apsHandoffDispatchState() {
     if (State.apsHandoffDispatch) {
         return State.apsHandoffDispatch;
     }
-    const handoff = State.handoffExportPrepare;
+    const handoff = handoffExportPrepareState();
     const handoffState = handoff?.handoff_export_state || handoff?.next_state || handoff?.state;
     const qualitativeAps = handoff?.schema_id === 'layer3.qual_aps_handoff_export_prepare.v1'
         || isQualitativeApsPackageSubmitState(packageReviewSubmitState() || {}, packageConstructionState() || {});
@@ -4444,6 +4670,34 @@ function apsHandoffDispatchState() {
             dispatch_mode: 'server_side_aps_handoff',
             operator_decision: 'dispatch_aps_handoff',
             downstream_unavailable: handoff.downstream_unavailable,
+        };
+    }
+    const recordedSummaryDispatch = State.sessionSummary && State.sessionSummary.aps_handoff_dispatch;
+    if (recordedSummaryDispatch && (recordedSummaryDispatch.aps_handoff_record_ref || recordedSummaryDispatch.state === 'aps_handoff_dispatched')) {
+        return recordedSummaryDispatch;
+    }
+    const mixedSourcePacket = mixedSourceApsHandoffDispatchAuthorityPacket();
+    if (mixedSourcePacket) {
+        return {
+            schema_id: 'layer3.mixed_source_aps_handoff_dispatch_state.v1',
+            available: true,
+            state: 'aps_handoff_ready',
+            blocked_reason: null,
+            package_family: 'mixed_dataset_document',
+            reconciliation_record_id: mixedSourcePacket.reconciliation_record_id,
+            prepare_record_ref: mixedSourcePacket.prepare_record_ref,
+            handoff_export_envelope_ref: mixedSourcePacket.handoff_export_envelope_ref,
+            handoff_target: MIXED_SOURCE_HANDOFF_EXPORT_TARGET,
+            export_mode: MIXED_SOURCE_HANDOFF_EXPORT_MODE,
+            aps_handoff_target: MIXED_SOURCE_APS_HANDOFF_TARGET,
+            dispatch_mode: MIXED_SOURCE_APS_HANDOFF_MODE,
+            operator_decision: MIXED_SOURCE_APS_HANDOFF_OPERATOR_DECISION,
+            downstream_unavailable: mixedSourcePacket.downstream_unavailable || [
+                'external_export_download',
+                'download',
+                'connector_dispatch',
+                'non_aps_dispatch',
+            ],
         };
     }
     return State.sessionSummary?.aps_handoff_dispatch || null;
@@ -4679,13 +4933,24 @@ function recordedExternalExportDownloadDelivery() {
 
 function canGenerateExternalExportDownloadSignedReference() {
     const external = externalExportDownloadPrepareState() || {};
+    if (mixedSourceExternalExportDownloadReadinessState()) {
+        return Boolean(
+            mixedSourceExternalExportDownloadSignedReferenceUiAdmitted()
+            && !State.externalExportDownloadSignedReference?.signed_reference_token
+            && !recordedMixedSourceExternalExportDownloadDelivery()
+            && !State.externalExportDownloadPreparePending
+            && !State.externalExportDownloadDeliveryPending
+            && !State.externalExportDownloadSignedReferencePending
+            && !State.externalExportDownloadSignedReferenceUsePending
+        );
+    }
     return Boolean(
         recordedExternalExportDownloadPrepare()
-        && !mixedSourceExternalExportDownloadReadinessState()
         && !isSourceDirectoryQualitativeExternalExportDownloadPrepareState(external)
         && !isSourceDirectoryHybridExternalExportDownloadPrepareState(external)
         && externalExportDownloadDeliveryUiAdmitted(external)
         && !State.externalExportDownloadSignedReference?.signed_reference_token
+        && !recordedExternalExportDownloadDelivery()
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
         && !State.externalExportDownloadSignedReferencePending
@@ -5238,6 +5503,24 @@ function renderLayer3E2EGovernanceLifecycleRows(rows) {
         : '<li>No Layer 3 governance lifecycle rows are available.</li>';
 }
 
+function renderMixedSourceProductAuthorityCheckpointRows(checkpoint) {
+    return checkpoint.steps.map((step) => `
+        <li data-product-authority-checkpoint-step="${escapeHtml(step.key)}" data-ready="${escapeHtml(step.ready)}">
+            <code>${escapeHtml(step.label)}</code>
+            <span>${escapeHtml(step.ready ? 'ready' : 'blocked')}</span>
+            <span>${escapeHtml(step.state)}</span>
+            ${step.ref ? `<code>${escapeHtml(step.ref)}</code>` : ''}
+            <span>${escapeHtml(step.authority)}</span>
+        </li>
+    `).join('');
+}
+
+function renderMixedSourceProductAuthorityCheckpointBoundaries(checkpoint) {
+    return Object.entries(checkpoint.blocked)
+        .map(([key, value]) => fieldItem(key.replace(/_/g, ' '), value))
+        .join('');
+}
+
 function handoffExportEnvelopeRef(handoff = handoffExportPrepareState() || State.sessionSummary?.handoff_export_prepare || {}) {
     return handoff.handoff_export_envelope_ref || handoff.handoff_export_envelope?.envelope_ref || null;
 }
@@ -5627,6 +5910,25 @@ function canSubmitApsHandoffDispatch() {
     const submit = packageReviewSubmitState() || {};
     const packageReviewState = submit.package_review_state || submit.state || handoff.package_review_state;
     const prepareState = handoff.handoff_export_state || handoff.next_state || handoff.state;
+    const mixedSourcePacket = mixedSourceApsHandoffDispatchAuthorityPacket();
+    if (mixedSourcePacket) {
+        return Boolean(
+            aps.available === true
+            && aps.state === 'aps_handoff_ready'
+            && !recordedApsHandoffDispatch()
+            && !State.resultReviewPending
+            && !State.packageReviewPreviewPending
+            && !State.packageConstructionPending
+            && !State.packageReviewSubmitPending
+            && !replacementPackageSetAuthorityBusy()
+            && !packageSupersessionCommitBusy()
+            && !replacementPackageNamespaceBusy()
+            && !State.handoffExportPreparePending
+            && !State.apsHandoffDispatchPending
+            && !State.externalExportDownloadPreparePending
+            && !State.externalExportDownloadDeliveryPending
+        );
+    }
     return Boolean(
         hasResultAuthorityIdentity(authority)
         && authority.selected
@@ -5672,6 +5974,27 @@ function canSubmitExternalExportDownloadPrepare() {
     const packageReviewState = external.package_review_state || submit.package_review_state || submit.state || handoff.package_review_state;
     const prepareState = external.handoff_export_state || handoff.handoff_export_state || handoff.next_state || handoff.state;
     const apsState = external.aps_handoff_state || apsHandoffStateName(aps);
+    const mixedSourcePacket = mixedSourceExternalExportDownloadReadinessAuthorityPacket();
+    if (mixedSourceExternalExportDownloadReadinessState()) {
+        return false;
+    }
+    if (mixedSourcePacket) {
+        return Boolean(
+            !recordedExternalExportDownloadPrepare()
+            && !State.resultReviewPending
+            && !State.packageReviewPreviewPending
+            && !State.packageConstructionPending
+            && !State.packageReviewSubmitPending
+            && !packagePreviewSubmissionPending()
+            && !replacementPackageSetAuthorityBusy()
+            && !packageSupersessionCommitBusy()
+            && !replacementPackageNamespaceBusy()
+            && !State.handoffExportPreparePending
+            && !State.apsHandoffDispatchPending
+            && !State.externalExportDownloadPreparePending
+            && !State.externalExportDownloadDeliveryPending
+        );
+    }
     if (isSourceDirectoryQualitativeHandoffExportPrepareState(handoff)) {
         const sourcePayload = sourceDirectoryQualitativeExternalExportDownloadPreparePayloadOrNull();
         return Boolean(
@@ -22675,6 +22998,7 @@ function renderDownstreamAccessLifecycleDashboardPanel() {
 function renderLayer3E2EGovernanceLifecycleDashboardPanel() {
     const rows = layer3E2EGovernanceLifecycleRows();
     const dashboardState = layer3E2EGovernanceLifecycleDashboardState(rows);
+    const productAuthorityCheckpoint = mixedSourceProductAuthorityCheckpoint();
     const downstream = [
         'package_mutation_blocked',
         'external_connector_invocation_blocked',
@@ -22687,6 +23011,8 @@ function renderLayer3E2EGovernanceLifecycleDashboardPanel() {
         'frontend_durable_authority_blocked',
     ];
     elements.layer3E2EGovernanceLifecycleDashboardPanel.dataset.lifecycleState = dashboardState.label;
+    elements.layer3E2EGovernanceLifecycleDashboardPanel.dataset.productAuthorityCheckpointState = productAuthorityCheckpoint.state;
+    elements.layer3E2EGovernanceLifecycleDashboardPanel.dataset.productionReadinessClaimed = 'false';
     elements.layer3E2EGovernanceLifecycleDashboardPanel.innerHTML = `
         <div class="section-heading">
             <div>
@@ -22714,6 +23040,20 @@ function renderLayer3E2EGovernanceLifecycleDashboardPanel() {
                     ${fieldItem('raw public URL display/use', false)}
                     ${fieldItem('frontend durable authority', false)}
                 </ul>
+            </section>
+            <section class="result-review-card mixed-source-product-authority-checkpoint"
+                data-rendered-mode="${escapeHtml(productAuthorityCheckpoint.mode)}"
+                data-product-authority-checkpoint-state="${escapeHtml(productAuthorityCheckpoint.state)}"
+                data-production-readiness-claimed="false">
+                <strong>Mixed-Source Product Authority Checkpoint</strong>
+                <ul>
+                    ${fieldItem('use case', productAuthorityCheckpoint.use_case, { code: true })}
+                    ${fieldItem('response authority', productAuthorityCheckpoint.response_authority, { code: true })}
+                    ${fieldItem('state', productAuthorityCheckpoint.state)}
+                    ${fieldItem('ready', productAuthorityCheckpoint.ready)}
+                </ul>
+                <ul>${renderMixedSourceProductAuthorityCheckpointRows(productAuthorityCheckpoint)}</ul>
+                <ul>${renderMixedSourceProductAuthorityCheckpointBoundaries(productAuthorityCheckpoint)}</ul>
             </section>
             <section class="result-review-card layer3-e2e-governance-lifecycle-rows">
                 <strong>Lifecycle Rows</strong>
@@ -22908,6 +23248,9 @@ function apsHandoffPanelState() {
     if (stateName === 'aps_handoff_blocked') {
         return { label: stateName, pill: 'blocked', message: aps.blocked_reason || 'APS owner-service compatibility is blocked.' };
     }
+    if (mixedSourceApsHandoffDispatchAuthorityPacket() && aps.available === true && stateName === 'aps_handoff_ready') {
+        return { label: 'mixed_source_aps_handoff_ready', pill: 'ok', message: 'Prepared mixed-source reference envelope is ready for server-side APS handoff dispatch.' };
+    }
     if (aps.available === true && stateName === 'aps_handoff_ready') {
         return { label: stateName, pill: 'ok', message: 'Prepared envelope authority is ready for server-side APS handoff dispatch.' };
     }
@@ -22923,13 +23266,21 @@ function renderApsHandoffDispatchPanel() {
     const submit = packageReviewSubmitState() || {};
     const authority = selectedResultAuthority();
     const panelState = apsHandoffPanelState();
-    const packageReviewState = submit.package_review_state || submit.state || handoff.package_review_state;
-    const packageKinds = packageKindsFromState();
-    const packageIds = packageOutputPackageIds();
-    const payloadRefs = packagePayloadRefs();
-    const payloadHashes = packagePayloadHashes();
+    const mixedSourcePacket = mixedSourceApsHandoffDispatchAuthorityPacket();
+    const mixedSourceMode = Boolean(mixedSourcePacket || aps.package_family === 'mixed_dataset_document');
+    const packageReviewState = mixedSourcePacket?.package_review_state || submit.package_review_state || submit.state || handoff.package_review_state;
+    const packageKinds = mixedSourcePacket?.package_kinds || packageKindsFromState();
+    const packageIds = mixedSourcePacket?.output_package_ids || packageOutputPackageIds();
+    const payloadRefs = mixedSourceMode ? [] : packagePayloadRefs();
+    const payloadHashes = mixedSourcePacket?.payload_hashes || packagePayloadHashes();
     const downstream = aps.downstream_unavailable || ['external_export', 'download', 'connector_dispatch', 'non_aps_dispatch'];
 
+    elements.apsHandoffDispatchPanel.dataset.renderedMode = mixedSourceMode
+        ? 'rendered_mixed_source_aps_handoff_dispatch_control'
+        : 'rendered_aps_handoff_dispatch_control';
+    elements.apsHandoffDispatchPanel.dataset.sourceAuthority = mixedSourceMode
+        ? 'State.handoffExportPrepare mixed-source material authority'
+        : 'State.handoffExportPrepare + selectedResultAuthority';
     elements.apsHandoffDispatchPanel.innerHTML = `
         <div class="result-review-status">
             <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
@@ -22944,6 +23295,10 @@ function renderApsHandoffDispatchPanel() {
                     ${fieldItem('pass run', authority.passRunId, { code: true })}
                     ${fieldItem('preview', authority.previewId, { code: true })}
                     ${fieldItem('preview hash', authority.previewHash, { code: true })}
+                    ${mixedSourceMode ? fieldItem('material preview', mixedSourcePacket?.material_preview_id || handoff.material_preview_id, { code: true }) : ''}
+                    ${mixedSourceMode ? fieldItem('material hash', mixedSourcePacket?.material_preview_hash || handoff.material_preview_hash, { code: true }) : ''}
+                    ${mixedSourceMode ? fieldItem('contract hash', mixedSourcePacket?.contract_hash || handoff.contract_hash, { code: true }) : ''}
+                    ${mixedSourceMode ? fieldItem('construction basis', mixedSourcePacket?.construction_basis_hash || handoff.construction_basis_hash, { code: true }) : ''}
                     ${fieldItem('analysis run', handoff.analysis_run_id || authority.analysisRunId, { code: true })}
                 </ul>
             </section>
@@ -22960,9 +23315,9 @@ function renderApsHandoffDispatchPanel() {
             <section class="result-review-card">
                 <strong>APS Dispatch Contract</strong>
                 <ul>
-                    ${fieldItem('target', aps.aps_handoff_target || 'aps_evidence_bundle')}
-                    ${fieldItem('mode', aps.dispatch_mode || 'server_side_aps_handoff')}
-                    ${fieldItem('decision', aps.operator_decision || 'dispatch_aps_handoff')}
+                    ${fieldItem('target', mixedSourceMode ? MIXED_SOURCE_APS_HANDOFF_TARGET : (aps.aps_handoff_target || 'aps_evidence_bundle'))}
+                    ${fieldItem('mode', mixedSourceMode ? MIXED_SOURCE_APS_HANDOFF_MODE : (aps.dispatch_mode || 'server_side_aps_handoff'))}
+                    ${fieldItem('decision', mixedSourceMode ? MIXED_SOURCE_APS_HANDOFF_OPERATOR_DECISION : (aps.operator_decision || 'dispatch_aps_handoff'))}
                     ${fieldItem('state', apsHandoffStateName(aps))}
                     ${fieldItem('record ref', aps.aps_handoff_record_ref, { code: true })}
                 </ul>
@@ -23018,6 +23373,12 @@ function externalExportDownloadPanelState() {
     if (stateName === 'external_export_download_blocked') {
         return { label: stateName, pill: 'blocked', message: external.blocked_reason || 'External export/download readiness is blocked by server authority.' };
     }
+    if (mixedSourceExternalExportDownloadReadinessState()) {
+        return { label: MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_STATE, pill: 'ok', message: 'Server state already contains recorded mixed-source external export/download readiness.' };
+    }
+    if (mixedSourceExternalExportDownloadReadinessAuthorityPacket()) {
+        return { label: 'mixed_source_external_export_download_readiness_ready', pill: 'ok', message: 'Recorded mixed-source APS handoff dispatch is ready for reference-only external export/download readiness.' };
+    }
     if (isSourceDirectoryQualitativeHandoffExportPrepareState(handoffExportPrepareState() || {})) {
         return { label: 'source_directory_external_export_download_ready', pill: 'ok', message: 'Prepared source-directory handoff envelope is ready for reference-only external export/download readiness.' };
     }
@@ -23039,34 +23400,47 @@ function renderExternalExportDownloadPreparePanel() {
     const panelState = externalExportDownloadPanelState();
     const sourceDirectoryMode = isSourceDirectoryQualitativeHandoffExportPrepareState(handoff)
         || isSourceDirectoryQualitativeExternalExportDownloadPrepareState(external);
+    const mixedSourceReadiness = mixedSourceExternalExportDownloadReadinessState();
+    const mixedSourcePacket = sourceDirectoryMode ? null : mixedSourceExternalExportDownloadReadinessAuthorityPacket();
+    const mixedSourceMode = Boolean(mixedSourceReadiness || mixedSourcePacket);
     const sourceDirectoryPayload = sourceDirectoryMode
         ? sourceDirectoryQualitativePackageAuthorityPayloadOrNull() || {}
         : {};
-    const packageReviewState = external.package_review_state
+    const packageReviewState = mixedSourceReadiness?.package_review_state
+        || mixedSourcePacket?.package_review_state
+        || external.package_review_state
         || handoff.package_review_state
         || sourceDirectoryPayload.package_review_state
         || submit.package_review_state
         || submit.state;
-    const prepareState = external.handoff_export_state || handoff.handoff_export_state || handoff.next_state || handoff.state;
-    const apsState = external.aps_handoff_state || apsHandoffStateName(aps);
-    const packageKinds = Array.isArray(external.package_kinds) && external.package_kinds.length
+    const prepareState = mixedSourceReadiness?.handoff_export_state || mixedSourcePacket?.handoff_export_state || external.handoff_export_state || handoff.handoff_export_state || handoff.next_state || handoff.state;
+    const apsState = mixedSourceReadiness?.aps_handoff_state || mixedSourcePacket?.aps_handoff_state || external.aps_handoff_state || apsHandoffStateName(aps);
+    const packageKinds = Array.isArray(mixedSourceReadiness?.package_kinds) && mixedSourceReadiness.package_kinds.length
+        ? mixedSourceReadiness.package_kinds
+        : mixedSourcePacket?.package_kinds || (Array.isArray(external.package_kinds) && external.package_kinds.length
         ? external.package_kinds
         : (sourceDirectoryMode && Array.isArray(sourceDirectoryPayload.package_kinds)
             ? sourceDirectoryPayload.package_kinds
-            : packageKindsFromState());
-    const packageIds = Array.isArray(external.output_package_ids) && external.output_package_ids.length
+            : packageKindsFromState()));
+    const packageIds = Array.isArray(mixedSourceReadiness?.output_package_ids) && mixedSourceReadiness.output_package_ids.length
+        ? mixedSourceReadiness.output_package_ids
+        : mixedSourcePacket?.output_package_ids || (Array.isArray(external.output_package_ids) && external.output_package_ids.length
         ? external.output_package_ids
         : (sourceDirectoryMode && Array.isArray(sourceDirectoryPayload.output_package_ids)
             ? sourceDirectoryPayload.output_package_ids
-            : packageOutputPackageIds());
-    const payloadRefs = sourceDirectoryMode
+            : packageOutputPackageIds()));
+    const payloadRefs = sourceDirectoryMode || (mixedSourceMode && !mixedSourceReadiness)
         ? []
-        : (Array.isArray(external.payload_refs) && external.payload_refs.length ? external.payload_refs : packagePayloadRefs());
-    const payloadHashes = Array.isArray(external.payload_hashes) && external.payload_hashes.length
+        : (Array.isArray(mixedSourceReadiness?.payload_refs) && mixedSourceReadiness.payload_refs.length
+            ? mixedSourceReadiness.payload_refs
+            : (Array.isArray(external.payload_refs) && external.payload_refs.length ? external.payload_refs : packagePayloadRefs()));
+    const payloadHashes = Array.isArray(mixedSourceReadiness?.payload_hashes) && mixedSourceReadiness.payload_hashes.length
+        ? mixedSourceReadiness.payload_hashes
+        : mixedSourcePacket?.payload_hashes || (Array.isArray(external.payload_hashes) && external.payload_hashes.length
         ? external.payload_hashes
         : (sourceDirectoryMode && Array.isArray(sourceDirectoryPayload.payload_hashes)
             ? sourceDirectoryPayload.payload_hashes
-            : packagePayloadHashes());
+            : packagePayloadHashes()));
     const downstream = external.downstream_unavailable || [
         'browser_download',
         'download_url',
@@ -23088,10 +23462,14 @@ function renderExternalExportDownloadPreparePanel() {
 
     elements.externalExportDownloadPreparePanel.dataset.renderedMode = sourceDirectoryMode
         ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RENDERED_MODE
-        : 'rendered_external_export_download_prepare_control';
+        : (mixedSourceMode
+            ? 'rendered_mixed_source_external_export_download_readiness_control'
+            : 'rendered_external_export_download_prepare_control');
     elements.externalExportDownloadPreparePanel.dataset.sourceAuthority = sourceDirectoryMode
         ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SOURCE_AUTHORITY
-        : 'State.sessionSummary.external_export_download';
+        : (mixedSourceMode
+            ? 'State.apsHandoffDispatch mixed-source material authority'
+            : 'State.sessionSummary.external_export_download');
     elements.externalExportDownloadPreparePanel.innerHTML = `
         <div class="result-review-status">
             <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
@@ -23101,11 +23479,15 @@ function renderExternalExportDownloadPreparePanel() {
             <section class="result-review-card">
                 <strong>Readiness Authority</strong>
                 <ul>
-                    ${fieldItem('session', authority.sessionId, { code: true })}
+                    ${fieldItem('session', mixedSourceReadiness?.session_id || mixedSourcePacket?.session_id || authority.sessionId, { code: true })}
                     ${fieldItem('analysis plan', authority.analysisPlanId, { code: true })}
                     ${fieldItem('pass run', authority.passRunId, { code: true })}
                     ${fieldItem('preview', authority.previewId, { code: true })}
                     ${fieldItem('preview hash', authority.previewHash, { code: true })}
+                    ${mixedSourceMode ? fieldItem('material preview', mixedSourceReadiness?.material_preview_id || mixedSourcePacket?.material_preview_id, { code: true }) : ''}
+                    ${mixedSourceMode ? fieldItem('material hash', mixedSourceReadiness?.material_preview_hash || mixedSourcePacket?.material_preview_hash, { code: true }) : ''}
+                    ${mixedSourceMode ? fieldItem('contract hash', mixedSourceReadiness?.contract_hash || mixedSourcePacket?.contract_hash, { code: true }) : ''}
+                    ${mixedSourceMode ? fieldItem('construction basis', mixedSourceReadiness?.construction_basis_hash || mixedSourcePacket?.construction_basis_hash, { code: true }) : ''}
                     ${fieldItem('result review', external.result_review_record_ref || handoff.result_review_record_ref || submit.result_review_record_ref, { code: true })}
                     ${sourceDirectoryMode ? fieldItem('source batch', sourceDirectoryPayload.source_ingestion_batch_id, { code: true }) : ''}
                     ${sourceDirectoryMode ? fieldItem('source file', sourceDirectoryPayload.source_ingestion_file_id, { code: true }) : ''}
@@ -23115,25 +23497,25 @@ function renderExternalExportDownloadPreparePanel() {
                 <strong>Upstream State</strong>
                 <ul>
                     ${fieldItem('package review state', packageReviewState)}
-                    ${fieldItem('submit ref', external.package_review_submit_record_ref || handoff.package_review_submit_record_ref || sourceDirectoryPayload.package_review_submit_record_ref || submit.submit_record_ref, { code: true })}
+                    ${fieldItem('submit ref', mixedSourceReadiness?.package_review_submit_record_ref || mixedSourcePacket?.package_review_submit_record_ref || external.package_review_submit_record_ref || handoff.package_review_submit_record_ref || sourceDirectoryPayload.package_review_submit_record_ref || submit.submit_record_ref, { code: true })}
                     ${fieldItem('prepare state', prepareState)}
-                    ${fieldItem('prepare ref', external.prepare_record_ref || handoff.prepare_record_ref, { code: true })}
+                    ${fieldItem('prepare ref', mixedSourceReadiness?.prepare_record_ref || mixedSourcePacket?.prepare_record_ref || external.prepare_record_ref || handoff.prepare_record_ref, { code: true })}
                     ${fieldItem('APS state', apsState)}
-                    ${fieldItem('APS record ref', external.aps_handoff_record_ref || aps.aps_handoff_record_ref, { code: true })}
+                    ${fieldItem('APS record ref', mixedSourceReadiness?.aps_handoff_record_ref || mixedSourcePacket?.aps_handoff_record_ref || external.aps_handoff_record_ref || aps.aps_handoff_record_ref, { code: true })}
                 </ul>
             </section>
             <section class="result-review-card">
                 <strong>Readiness Contract</strong>
                 <ul>
-                    ${fieldItem('target', external.export_download_target || (sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_TARGET : 'aps_evidence_bundle_download_reference'))}
-                    ${fieldItem('mode', external.download_mode || 'reference_only_prepare')}
-                    ${fieldItem('route', sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH : '/handoff/export/download/prepare', { code: true })}
-                    ${fieldItem('source authority', sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SOURCE_AUTHORITY : 'State.sessionSummary.external_export_download', { code: true })}
-                    ${fieldItem('decision', external.operator_decision || (sourceDirectoryMode ? 'prepare_source_directory_external_export_download' : 'prepare_external_export_download'))}
-                    ${fieldItem('state', externalExportDownloadStateName(external))}
+                    ${fieldItem('target', mixedSourceMode ? MIXED_SOURCE_HANDOFF_EXPORT_TARGET : (external.export_download_target || (sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_TARGET : 'aps_evidence_bundle_download_reference')))}
+                    ${fieldItem('mode', mixedSourceMode ? 'reference_only_readiness' : (external.download_mode || 'reference_only_prepare'))}
+                    ${fieldItem('route', sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH : (mixedSourceMode ? MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_PATH : '/handoff/export/download/prepare'), { code: true })}
+                    ${fieldItem('source authority', sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SOURCE_AUTHORITY : (mixedSourceMode ? 'State.apsHandoffDispatch mixed-source material authority' : 'State.sessionSummary.external_export_download'), { code: true })}
+                    ${fieldItem('decision', mixedSourceMode ? MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_OPERATOR_DECISION : (external.operator_decision || (sourceDirectoryMode ? 'prepare_source_directory_external_export_download' : 'prepare_external_export_download')))}
+                    ${fieldItem('state', mixedSourceReadiness?.external_export_download_readiness_state || externalExportDownloadStateName(external))}
                     ${fieldItem('prepare enabled', external.external_export_download_prepare_enabled)}
-                    ${fieldItem('readiness ref', external.external_export_download_record_ref, { code: true })}
-                    ${fieldItem('descriptor ref', external.export_download_descriptor_ref, { code: true })}
+                    ${fieldItem('readiness ref', mixedSourceReadiness?.external_export_download_readiness_record_ref || external.external_export_download_record_ref, { code: true })}
+                    ${fieldItem('descriptor ref', mixedSourceReadiness?.external_export_download_readiness_ref || external.export_download_descriptor_ref, { code: true })}
                 </ul>
             </section>
             <section class="result-review-card">
@@ -23343,6 +23725,7 @@ function renderExternalExportDownloadDeliveryPanel() {
 
 function externalExportDownloadSignedReferencePanelState() {
     const external = externalExportDownloadPrepareState() || {};
+    const mixedSourceReadiness = mixedSourceExternalExportDownloadReadinessState();
     const stateName = externalExportDownloadStateName(external);
     if (State.externalExportDownloadSignedReferenceUsePending) {
         return { label: 'external_export_download_signed_reference_using', pill: 'preview', message: 'Using one server-generated same-origin signed reference.' };
@@ -23363,8 +23746,11 @@ function externalExportDownloadSignedReferencePanelState() {
     if (State.externalExportDownloadSignedReference?.signed_reference_state === 'external_export_download_signed_reference_ready') {
         return { label: 'external_export_download_signed_reference_ready', pill: 'ok', message: 'A short-lived same-origin signed reference is ready for use.' };
     }
-    if (mixedSourceExternalExportDownloadReadinessState()) {
-        return { label: 'external_export_download_signed_reference_ui_blocked', pill: 'blocked', message: 'Mixed-source delivery does not admit signed-reference generation.' };
+    if (mixedSourceReadiness && mixedSourceExternalExportDownloadSignedReferenceUiAdmitted()) {
+        return { label: 'mixed_source_external_export_download_signed_reference_ui_ready', pill: 'ok', message: 'Recorded P19 mixed-source readiness can generate one same-origin signed reference for the review-facing package.' };
+    }
+    if (mixedSourceReadiness) {
+        return { label: 'mixed_source_external_export_download_signed_reference_ui_blocked', pill: 'blocked', message: 'Mixed-source signed references require complete server readiness and current review-facing package authority.' };
     }
     if (stateName === 'external_export_download_prepared' && externalExportDownloadDeliveryUiAdmitted()) {
         return { label: 'external_export_download_signed_reference_ui_ready', pill: 'ok', message: 'Recorded readiness and explicit delivery UI authority can generate a same-origin signed reference.' };
@@ -23377,6 +23763,10 @@ function externalExportDownloadSignedReferencePanelState() {
 
 function renderExternalExportDownloadSignedReferencePanel() {
     const external = externalExportDownloadPrepareState() || {};
+    const mixedSourceReadiness = mixedSourceExternalExportDownloadReadinessState();
+    const mixedSourcePacket = mixedSourceExternalExportDownloadDeliveryAuthorityPacket();
+    const mixedSourceMode = Boolean(mixedSourceReadiness);
+    const mixedSourceUi = mixedSourceExternalExportDownloadSignedReferenceUiState() || {};
     const signed = State.externalExportDownloadSignedReference || {};
     const used = State.externalExportDownloadSignedReferenceUse || {};
     const panelState = externalExportDownloadSignedReferencePanelState();
@@ -23388,6 +23778,12 @@ function renderExternalExportDownloadSignedReferencePanel() {
         'durable_token_state',
         'receipt_audit_revocation_state',
     ];
+    elements.externalExportDownloadSignedReferencePanel.dataset.renderedMode = mixedSourceMode
+        ? 'rendered_mixed_source_external_export_download_signed_reference_control'
+        : 'rendered_external_export_download_signed_reference_control';
+    elements.externalExportDownloadSignedReferencePanel.dataset.sourceAuthority = mixedSourceMode
+        ? 'State.sessionSummary.external_export_download_readiness'
+        : 'State.externalExportDownloadPrepare + State.sessionSummary.external_export_download';
     elements.externalExportDownloadSignedReferencePanel.innerHTML = `
         <div class="result-review-status">
             <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
@@ -23397,12 +23793,14 @@ function renderExternalExportDownloadSignedReferencePanel() {
             <section class="result-review-card">
                 <strong>Signed Reference Gate</strong>
                 <ul>
-                    ${fieldItem('readiness state', externalExportDownloadStateName(external))}
-                    ${fieldItem('readiness ref', external.external_export_download_record_ref, { code: true })}
-                    ${fieldItem('descriptor ref', external.export_download_descriptor_ref, { code: true })}
-                    ${fieldItem('delivery UI admitted', externalExportDownloadDeliveryUiAdmitted(external))}
-                    ${fieldItem('delivery mode', 'same_origin_signed_delivery_reference')}
-                    ${fieldItem('server authority', signed.server_authority || 'associated_cohort_external_export_download_signed_reference_gate')}
+                    ${fieldItem('readiness state', mixedSourceReadiness?.external_export_download_readiness_state || externalExportDownloadStateName(external))}
+                    ${fieldItem('readiness ref', mixedSourceReadiness?.external_export_download_readiness_record_ref || external.external_export_download_record_ref, { code: true })}
+                    ${fieldItem('descriptor ref', mixedSourceReadiness?.external_export_download_readiness_ref || external.export_download_descriptor_ref, { code: true })}
+                    ${fieldItem('delivery UI admitted', mixedSourceMode ? mixedSourceExternalExportDownloadSignedReferenceAuthorityAdmitted(mixedSourceUi) : externalExportDownloadDeliveryUiAdmitted(external))}
+                    ${fieldItem('delivery mode', signed.signed_reference_delivery_mode || mixedSourceUi.delivery_mode || 'same_origin_signed_delivery_reference')}
+                    ${fieldItem('operator decision', mixedSourceUi.operator_decision || signed.operator_decision)}
+                    ${fieldItem('use decision', signed.use_operator_decision || mixedSourceUi.use_operator_decision)}
+                    ${fieldItem('server authority', signed.server_authority || mixedSourceUi.server_authority || 'associated_cohort_external_export_download_signed_reference_gate')}
                 </ul>
             </section>
             <section class="result-review-card">
@@ -23418,9 +23816,11 @@ function renderExternalExportDownloadSignedReferencePanel() {
             <section class="result-review-card">
                 <strong>Artifact Basis</strong>
                 <ul>
-                    ${fieldItem('artifact ref', signed.source_artifact_ref || external.source_artifact_ref || external.aps_bundle_ref, { code: true })}
-                    ${fieldItem('artifact hash', signed.source_artifact_hash || external.source_artifact_hash, { code: true })}
+                    ${fieldItem('artifact ref', signed.source_artifact_ref || mixedSourcePacket?.package_payload_ref || external.source_artifact_ref || external.aps_bundle_ref, { code: true })}
+                    ${fieldItem('artifact hash', signed.source_artifact_hash || mixedSourcePacket?.package_payload_hash || external.source_artifact_hash, { code: true })}
                     ${fieldItem('artifact size bytes', signed.source_artifact_size_bytes || external.source_artifact_size_bytes)}
+                    ${fieldItem('output package', signed.output_package_id || mixedSourcePacket?.output_package_id, { code: true })}
+                    ${fieldItem('package kind', signed.package_kind || mixedSourcePacket?.package_kind)}
                     ${fieldItem('pass type', signed.pass_type || external.pass_type)}
                     ${fieldItem('method', signed.method || external.method)}
                 </ul>
@@ -25163,9 +25563,13 @@ function setGateControls() {
         && !State.externalExportDownloadDeliveryPending
     );
     const externalExportDownloadControlsEnabled = Boolean(
-        (State.sessionSummary?.external_export_download?.available === true
-            || isSourceDirectoryQualitativeHandoffExportPrepareState(handoffExportPrepareState() || {}))
+        (
+            State.sessionSummary?.external_export_download?.available === true
+            || isSourceDirectoryQualitativeHandoffExportPrepareState(handoffExportPrepareState() || {})
+            || mixedSourceExternalExportDownloadReadinessAuthorityPacket()
+        )
         && !recordedExternalExportDownloadPrepare()
+        && !mixedSourceExternalExportDownloadReadinessState()
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
     );
@@ -25181,11 +25585,16 @@ function setGateControls() {
         && !State.externalExportDownloadDeliveryPending
     );
     const externalExportDownloadSignedReferenceControlsEnabled = Boolean(
-        recordedExternalExportDownloadPrepare()
-        && !mixedSourceExternalExportDownloadReadinessState()
-        && !isSourceDirectoryQualitativeExternalExportDownloadPrepareState(externalPrepare)
-        && !isSourceDirectoryHybridExternalExportDownloadPrepareState(externalPrepare)
-        && externalExportDownloadDeliveryUiAdmitted()
+        (
+            (
+                recordedExternalExportDownloadPrepare()
+                && !mixedSourceExternalExportDownloadReadinessState()
+                && !isSourceDirectoryQualitativeExternalExportDownloadPrepareState(externalPrepare)
+                && !isSourceDirectoryHybridExternalExportDownloadPrepareState(externalPrepare)
+                && externalExportDownloadDeliveryUiAdmitted()
+            )
+            || mixedSourceExternalExportDownloadSignedReferenceAuthorityAdmitted()
+        )
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
         && !State.externalExportDownloadSignedReferencePending
@@ -25953,6 +26362,10 @@ function mixedSourceHandoffExportPreparePayload() {
 }
 
 function apsHandoffDispatchPayload(authority = selectedResultAuthority()) {
+    const mixedSourcePayload = mixedSourceApsHandoffDispatchPayload();
+    if (mixedSourcePayload) {
+        return mixedSourcePayload;
+    }
     const handoff = handoffExportPrepareState() || {};
     const submit = packageReviewSubmitState() || {};
     const payload = {
@@ -25987,6 +26400,10 @@ function apsHandoffDispatchPayload(authority = selectedResultAuthority()) {
 }
 
 function externalExportDownloadPreparePayload(authority = selectedResultAuthority()) {
+    const mixedSourcePayload = mixedSourceExternalExportDownloadReadinessPayload();
+    if (mixedSourcePayload) {
+        return mixedSourcePayload;
+    }
     const external = State.sessionSummary?.external_export_download || {};
     const aps = apsHandoffDispatchState() || {};
     const handoff = handoffExportPrepareState() || {};
@@ -26127,7 +26544,76 @@ function externalExportDownloadDeliveryPayload(authority = selectedResultAuthori
     return payload;
 }
 
+function mixedSourceApsHandoffDispatchPayload() {
+    const packet = mixedSourceApsHandoffDispatchAuthorityPacket();
+    if (!packet) {
+        return null;
+    }
+    return {
+        client_request_id: requestId(),
+        session_id: packet.session_id,
+        material_preview_id: packet.material_preview_id,
+        material_preview_hash: packet.material_preview_hash,
+        package_review_preview_hash: packet.package_review_preview_hash,
+        contract_hash: packet.contract_hash,
+        construction_basis_hash: packet.construction_basis_hash,
+        reconciliation_record_id: packet.reconciliation_record_id,
+        output_package_ids: packet.output_package_ids,
+        payload_hashes: packet.payload_hashes,
+        package_review_submit_record_ref: packet.package_review_submit_record_ref,
+        package_review_state: packet.package_review_state,
+        prepare_record_ref: packet.prepare_record_ref,
+        handoff_export_state: packet.handoff_export_state,
+        handoff_export_envelope_ref: packet.handoff_export_envelope_ref,
+        handoff_target: MIXED_SOURCE_HANDOFF_EXPORT_TARGET,
+        export_mode: MIXED_SOURCE_HANDOFF_EXPORT_MODE,
+        aps_handoff_target: MIXED_SOURCE_APS_HANDOFF_TARGET,
+        dispatch_mode: MIXED_SOURCE_APS_HANDOFF_MODE,
+        operator_decision: MIXED_SOURCE_APS_HANDOFF_OPERATOR_DECISION,
+        expected_package_kinds: packet.package_kinds,
+    };
+}
+
+function mixedSourceExternalExportDownloadReadinessPayload() {
+    const packet = mixedSourceExternalExportDownloadReadinessAuthorityPacket();
+    if (!packet) {
+        return null;
+    }
+    return {
+        client_request_id: requestId(),
+        session_id: packet.session_id,
+        material_preview_id: packet.material_preview_id,
+        material_preview_hash: packet.material_preview_hash,
+        package_review_preview_hash: packet.package_review_preview_hash,
+        contract_hash: packet.contract_hash,
+        construction_basis_hash: packet.construction_basis_hash,
+        reconciliation_record_id: packet.reconciliation_record_id,
+        output_package_ids: packet.output_package_ids,
+        payload_hashes: packet.payload_hashes,
+        package_review_submit_record_ref: packet.package_review_submit_record_ref,
+        package_review_state: packet.package_review_state,
+        prepare_record_ref: packet.prepare_record_ref,
+        handoff_export_state: packet.handoff_export_state,
+        handoff_export_envelope_ref: packet.handoff_export_envelope_ref,
+        handoff_target: MIXED_SOURCE_HANDOFF_EXPORT_TARGET,
+        export_mode: MIXED_SOURCE_HANDOFF_EXPORT_MODE,
+        aps_handoff_target: MIXED_SOURCE_APS_HANDOFF_TARGET,
+        dispatch_mode: MIXED_SOURCE_APS_HANDOFF_MODE,
+        aps_handoff_record_ref: packet.aps_handoff_record_ref,
+        aps_handoff_state: packet.aps_handoff_state,
+        operator_decision: MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_OPERATOR_DECISION,
+        expected_package_kinds: packet.package_kinds,
+    };
+}
+
 function externalExportDownloadSignedReferencePayload(authority = selectedResultAuthority()) {
+    const mixedSourcePayload = mixedSourceExternalExportDownloadDeliveryPayload();
+    if (mixedSourcePayload) {
+        return {
+            ...mixedSourcePayload,
+            operator_decision: MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_OPERATOR_DECISION,
+        };
+    }
     return externalExportDownloadDeliveryPayload(authority);
 }
 
@@ -27790,6 +28276,7 @@ async function submitHandoffExportPrepare(event) {
 async function submitApsHandoffDispatch(event) {
     event.preventDefault();
     if (!canSubmitApsHandoffDispatch()) return;
+    const mixedSourceMode = Boolean(mixedSourceApsHandoffDispatchAuthorityPacket());
     State.apsHandoffDispatchPending = true;
     State.apsHandoffDispatchError = null;
     clearExternalExportDownloadPrepareState();
@@ -27799,7 +28286,9 @@ async function submitApsHandoffDispatch(event) {
         State.apsHandoffDispatch = await postJson('/handoff/aps/dispatch', apsHandoffDispatchPayload());
         State.apsHandoffDispatchError = null;
         State.externalExportDownloadPrepareError = null;
-        addEvent('APS handoff dispatch recorded.');
+        addEvent(mixedSourceMode
+            ? 'Mixed-source APS handoff dispatch recorded.'
+            : 'APS handoff dispatch recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.apsHandoffDispatch.session_id)}`);
             persistSessionRecoveryAnchor('aps_handoff_dispatch_refresh');
@@ -27828,6 +28317,7 @@ async function submitExternalExportDownloadPrepare(event) {
     const sourceDirectoryMode = isSourceDirectoryQualitativeHandoffExportPrepareState(
         handoffExportPrepareState() || {},
     );
+    const mixedSourceMode = !sourceDirectoryMode && Boolean(mixedSourceExternalExportDownloadReadinessAuthorityPacket());
     State.externalExportDownloadPreparePending = true;
     State.externalExportDownloadPrepareError = null;
     State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatus = null;
@@ -27838,15 +28328,21 @@ async function submitExternalExportDownloadPrepare(event) {
         State.externalExportDownloadPrepare = await postJson(
             sourceDirectoryMode
                 ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH
-                : '/handoff/export/download/prepare',
+                : (mixedSourceMode
+                    ? MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_PATH
+                    : '/handoff/export/download/prepare'),
             sourceDirectoryMode
                 ? sourceDirectoryQualitativeExternalExportDownloadPreparePayload()
-                : externalExportDownloadPreparePayload(),
+                : (mixedSourceMode
+                    ? mixedSourceExternalExportDownloadReadinessPayload()
+                    : externalExportDownloadPreparePayload()),
         );
         State.externalExportDownloadPrepareError = null;
         addEvent(sourceDirectoryMode
             ? 'Source-directory external export/download readiness recorded.'
-            : 'External export/download readiness recorded.');
+            : (mixedSourceMode
+                ? 'Mixed-source external export/download readiness recorded.'
+                : 'External export/download readiness recorded.'));
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.externalExportDownloadPrepare.session_id)}`);
             persistSessionRecoveryAnchor('external_export_download_prepare_refresh');

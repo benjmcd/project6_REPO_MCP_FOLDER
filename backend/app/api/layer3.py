@@ -10772,12 +10772,38 @@ class Layer3InternalWebhookDispatchResponse(Layer3BaseResponse):
 
 class Layer3ExternalExportDownloadSignedReferenceResponse(Layer3BaseResponse):
     session_id: str
-    analysis_plan_id: str
-    pass_run_id: str
-    preview_identity: dict[str, Any]
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    preview_identity: dict[str, Any] | None = None
     reconciliation_record_id: str
-    external_export_download_record_ref: str
-    export_download_descriptor_ref: str
+    external_export_download_record_ref: str | None = None
+    export_download_descriptor_ref: str | None = None
+    material_preview_id: str | None = None
+    material_preview_hash: str | None = None
+    package_review_preview_hash: str | None = None
+    contract_hash: str | None = None
+    construction_basis_hash: str | None = None
+    package_family: str | None = None
+    output_package_id: str | None = None
+    package_kind: str | None = None
+    package_payload_hash: str | None = None
+    package_review_submit_record_ref: str | None = None
+    package_review_state: str | None = None
+    prepare_record_ref: str | None = None
+    handoff_export_state: str | None = None
+    handoff_export_envelope_ref: str | None = None
+    handoff_target: str | None = None
+    export_mode: str | None = None
+    aps_handoff_target: str | None = None
+    dispatch_mode: str | None = None
+    aps_handoff_record_ref: str | None = None
+    aps_handoff_state: str | None = None
+    external_export_download_readiness_record_ref: str | None = None
+    external_export_download_readiness_ref: str | None = None
+    external_export_download_readiness_state: str | None = None
+    external_export_download_delivery_record_ref: str | None = None
+    external_export_download_delivery_ref: str | None = None
+    external_export_download_delivery_state: str | None = None
     signed_reference_state: str
     signed_reference_token: str
     signed_reference_token_id: str
@@ -10792,23 +10818,32 @@ class Layer3ExternalExportDownloadSignedReferenceResponse(Layer3BaseResponse):
     signed_reference_expires_in_seconds: int
     signed_reference_use_endpoint: str
     delivery_mode: str
+    signed_reference_delivery_mode: str | None = None
+    operator_decision: str | None = None
+    use_operator_decision: str | None = None
     server_authority: str
     source_artifact_ref: str
     source_artifact_hash: str
     source_artifact_size_bytes: int
-    pass_type: str
-    pass_scope: str
-    method: str
-    source_gate: str
-    source_shape: str
-    source_dataset_version_ids: list[str]
+    schema_id_authority: str | None = None
+    pass_type: str | None = None
+    pass_scope: str | None = None
+    method: str | None = None
+    source_gate: str | None = None
+    source_shape: str | None = None
+    source_dataset_version_ids: list[str] = Field(default_factory=list)
+    download_url_enabled: bool | None = None
     public_url_enabled: bool
-    external_object_store_url_enabled: bool
+    external_object_store_url_enabled: bool | None = None
+    provider_public_url_enabled: bool | None = None
+    provider_private_signed_url_enabled: bool | None = None
     connector_dispatch_enabled: bool
     destination_selection_enabled: bool
     generic_downstream_dispatch_enabled: bool
+    package_payload_rewrite_enabled: bool | None = None
     package_mutation_enabled: bool
     schema_runtime_source_widening_enabled: bool
+    production_readiness_enabled: bool | None = None
     authority_rail: dict[str, Any]
     next_state: str
 
@@ -11284,11 +11319,42 @@ EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_BODY: dict[str, Any] = {
 }
 
 
-EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_GENERATE_REQUEST_SCHEMA: dict[str, Any] = {
+ASSOCIATED_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_GENERATE_REQUEST_SCHEMA: dict[str, Any] = {
     **EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA,
     "description": (
-        "Server-owned same-origin signed delivery reference generation uses the existing validated "
-        "external export/download delivery authority payload."
+        "Server-owned same-origin signed delivery reference generation for legacy associated-cohort "
+        "external export/download uses the existing validated delivery authority payload."
+    ),
+}
+
+
+MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_GENERATE_REQUEST_SCHEMA: dict[str, Any] = {
+    **MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA,
+    "description": (
+        "Server-owned same-origin signed delivery reference generation for mixed-source package "
+        "artifacts accepts the same P19 delivery authority payload with the explicit signed-reference "
+        "operator decision."
+    ),
+    "properties": {
+        **MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA["properties"],
+        "operator_decision": {
+            "type": "string",
+            "enum": ["generate_mixed_source_external_export_download_signed_reference"],
+        },
+    },
+}
+
+
+EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_GENERATE_REQUEST_SCHEMA: dict[str, Any] = {
+    "oneOf": [
+        ASSOCIATED_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_GENERATE_REQUEST_SCHEMA,
+        MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_GENERATE_REQUEST_SCHEMA,
+    ],
+    "description": (
+        "Server-owned same-origin signed delivery reference generation accepts either legacy "
+        "associated-cohort delivery authority or P22 mixed-source package delivery authority. "
+        "Both variants stay same-origin and forbid URL, provider, connector, destination, and "
+        "package mutation fields."
     ),
 }
 
