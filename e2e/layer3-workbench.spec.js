@@ -24934,3 +24934,46 @@ test('Layer 3 workbench renders raw-mixed handoff delivery readiness honestly (s
     'external_export_download_signed_reference_ready',
   );
 });
+
+test('Layer 3 signed reference use fails closed on invalid token (server-backed)', async ({ request }) => {
+  // A garbage token string fails at the HMAC signature check — the endpoint never reaches DB or delivery.
+  const result = await request.post(
+    '/api/v1/layer3/handoff/export/download/signed-reference/use',
+    { data: { signed_reference_token: 'not.a.valid.token' } },
+  );
+  expect([400, 409]).toContain(result.status());
+  const body = await result.json();
+  expect(body.error_code).toMatch(/^external_export_download_signed_reference/);
+});
+
+test('Layer 3 signed reference replay is denied with 409 (server-backed)', async ({ request }) => {
+  const session = await prepareRawMixedHandoffDeliverySession(request);
+  const token = session.signedReference.signed_reference_token;
+  // First use must succeed and deliver the artifact
+  const first = await request.post(
+    '/api/v1/layer3/handoff/export/download/signed-reference/use',
+    { data: { signed_reference_token: token } },
+  );
+  expect(first.status()).toBe(200);
+  expect(first.headers()['x-layer3-signed-reference-state']).toBe(
+    'external_export_download_signed_reference_delivered',
+  );
+  // Immediate replay of the same token must be denied
+  const replay = await request.post(
+    '/api/v1/layer3/handoff/export/download/signed-reference/use',
+    { data: { signed_reference_token: token } },
+  );
+  expect(replay.status()).toBe(409);
+  const body = await replay.json();
+  expect(body.error_code).toBe('external_export_download_signed_reference_replay_denied');
+});
+
+test('Layer 3 signed reference use rejects missing token field (server-backed)', async ({ request }) => {
+  const result = await request.post(
+    '/api/v1/layer3/handoff/export/download/signed-reference/use',
+    { data: {} },
+  );
+  expect([400, 409]).toContain(result.status());
+  const body = await result.json();
+  expect(body.error_code).toBe('external_export_download_signed_reference_token_required');
+});
