@@ -36,17 +36,18 @@ The harness uses an in-memory SQLite database and isolated temporary storage. It
 
 ## Automated smoke (fastest)
 
-Run the four G7 server-backed tests. These prove the core execution/result/package path entirely through real server responses — no page.evaluate injection.
+Run the G7 server-backed tests. These prove the core execution/result/package and downstream handoff/delivery paths entirely through real server responses — no page.evaluate injection.
 
 ```powershell
 npx playwright test e2e/layer3-workbench.spec.js --grep "server-backed" --project=chromium
 ```
 
-Expected: 4 passed. Tests cover:
-- Real failed-pass state (corrupted CSV → `PASS_STATUS_FAILED`)
+Expected: 5 passed. Tests cover:
+- Real failed-pass state (empty CSV → `PASS_STATUS_FAILED`)
 - Real missing-output state (deleted manifest → `output_metadata_file_missing`)
 - Result-review approval survives reload (session summary drives `result_review_ui_recorded`)
 - Package-review approval survives reload (session summary drives `package_review_approved`, submit disabled)
+- Raw-mixed handoff delivery readiness (real `handoff/export/prepare` → `aps/dispatch` → `external/export/download/prepare` → `signed-reference/generate`, with safety flags confirmed closed, and reload restore)
 
 Run time: ~2 minutes.
 
@@ -135,12 +136,24 @@ The workbench renders these as downstream-unavailable and disables all related b
 
 ## Current known deferred gaps
 
-These tests currently use `page.evaluate` state injection (simulation, not real server-backed paths). They are not blocked — the paths are implemented and working — but the tests simulate rather than exercise them:
+The downstream handoff/delivery path now has real server-backed coverage: the
+`raw-mixed handoff delivery readiness` test drives `handoff/export/prepare` →
+`aps/dispatch` → `external/export/download/prepare` → `signed-reference/generate`
+through real APIs (harness fakes the external dispatch; safety flags stay closed)
+and proves reload restore. The `prepareRawMixedHandoffDeliverySession` helper in
+`e2e/layer3-helpers.js` is the reusable entry point.
+
+These tests still use `page.evaluate` state injection (UI-rendering-in-isolation
+simulation). They are not blocked — the paths are implemented, working, and now
+covered server-backed by the test above — but these specific render tests simulate
+rather than exercise the endpoints:
 
 - Handoff export prepare restore after reload (lines 8184+ in `e2e/layer3-workbench.spec.js`)
-- APS dispatch, external export download, signed-reference, and connector dispatch deliver tests (lines 8527+)
+- APS dispatch / external export download / signed-reference render tests (lines 8527+)
 
-These are deferred to the next slice. They do not affect the safety or correctness of the currently tested paths.
+Converting these in place is a low-priority follow-up; the real coverage already
+exists via the server-backed test. They do not affect the safety or correctness of
+the tested paths.
 
 ## Stop conditions
 
