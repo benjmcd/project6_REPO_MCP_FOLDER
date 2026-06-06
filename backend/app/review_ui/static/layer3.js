@@ -4923,6 +4923,13 @@ function externalExportDownloadDeliveryStateName(state = State.externalExportDow
 }
 
 function recordedExternalExportDownloadDelivery() {
+    // Generic same-origin delivery is stateless by design: external_export_download_deliver()'s generic
+    // branch validates readiness and rolls back without persisting a delivery record, and the server does
+    // not enforce delivery/signed-reference mutual exclusion for the generic rail (a generic signed
+    // reference grants nothing beyond the artifact the operator already streamed, and a genuinely generic
+    // prepare-state is rejected by _signed_reference_required_delivery_authority anyway). This in-memory
+    // gate is therefore best-effort in-session only and intentionally does not survive a reload; durable
+    // mutual exclusion exists only on the mixed-source rail (server-side block + session_summary surfacing).
     const state = State.externalExportDownloadDelivery;
     if (!state) return null;
     const recordedState = externalExportDownloadDeliveryStateName(state);
