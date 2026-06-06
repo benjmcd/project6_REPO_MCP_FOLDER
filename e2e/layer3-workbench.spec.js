@@ -2649,6 +2649,8 @@ async function submitRenderedExternalExportDownloadPrepare(
   expect(downloadPrepare.delivery_ui.signed_url_enabled).toBe(false);
   expect(downloadPrepare.delivery_ui.connector_dispatch_enabled).toBe(false);
   expect(downloadPrepare.delivery_ui.destination_selection_enabled).toBe(false);
+  expect(downloadPrepare.delivery_ui.available).toBe(true);
+  expect(downloadPrepare.delivery_ui.delivery_mode).toBe('same_origin_artifact_stream');
   expect(downloadPrepare.next_state).toBe('external_export_download_prepared');
   expect(downloadPrepare.authority_rail).toBeTruthy();
 
@@ -24921,4 +24923,14 @@ test('Layer 3 workbench renders raw-mixed handoff delivery readiness honestly (s
 
   // Prove the workbench restores this fully-downstream session honestly after reload
   expect(sessionSummary.session_id).toBe(session.seed.session_id);
+  // The session summary must carry all downstream sub-objects so the page can restore
+  // correct step controls — a session_id-only response would leave controls in an
+  // indeterminate state and silently break operator continuity after reload.
+  expect(sessionSummary.handoff_export_prepare).toBeTruthy();
+  expect(sessionSummary.aps_handoff_dispatch).toBeTruthy();
+  expect(sessionSummary.external_export_download).toBeTruthy();
+  // Signed-reference state must survive reload so the operator can still use the reference
+  expect(sessionSummary.external_export_download?.signed_reference_state).toBe(
+    'external_export_download_signed_reference_ready',
+  );
 });

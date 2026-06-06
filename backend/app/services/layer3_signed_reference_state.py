@@ -439,3 +439,34 @@ def record_used_signed_reference(
             blocked_fields=["signed_reference_token"],
             next_allowed_actions=["retry_external_export_download_signed_reference_use"],
         ) from exc
+
+
+def get_session_signed_reference_state(db: Session, session_id: str) -> str | None:
+    """Return the signed_reference_state string for the session's most recent token, or None."""
+    token = (
+        db.query(L3SignedReferenceToken)
+        .filter(L3SignedReferenceToken.session_id == session_id)
+        .order_by(L3SignedReferenceToken.created_at.desc())
+        .first()
+    )
+    if token is None:
+        return None
+    state = token.state
+    if state == SIGNED_REFERENCE_TOKEN_STATE_REVOKED:
+        return "external_export_download_signed_reference_revoked"
+    if state == SIGNED_REFERENCE_TOKEN_STATE_EXPIRED:
+        return "external_export_download_signed_reference_expired"
+    if state == SIGNED_REFERENCE_TOKEN_STATE_USED:
+        return "external_export_download_signed_reference_delivered"
+    if state == SIGNED_REFERENCE_TOKEN_STATE_READY:
+        expires_at = (
+            token.expires_at
+            if token.expires_at.tzinfo is not None
+            else token.expires_at.replace(tzinfo=timezone.utc)
+        )
+        if expires_at <= datetime.now(timezone.utc):
+            return "external_export_download_signed_reference_expired"
+        if token.use_count >= token.max_use_count:
+            return "external_export_download_signed_reference_delivered"
+        return "external_export_download_signed_reference_ready"
+    return None

@@ -211,6 +211,7 @@ from app.services.layer3_approved_plan_correction import (
 from app.services.layer3_signed_reference_state import (
     SignedReferenceDurableState,
     SignedReferenceStateError,
+    get_session_signed_reference_state,
     record_generated_signed_reference,
     record_used_signed_reference,
 )
@@ -19230,6 +19231,9 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         session,
         external_export_download_state,
     )
+    _signed_ref_state = get_session_signed_reference_state(db, session.session_id)
+    if _signed_ref_state is not None:
+        external_export_download_state = {**external_export_download_state, "signed_reference_state": _signed_ref_state}
     connector_local_destination_receipt_state = _connector_local_destination_receipt_summary(
         db,
         session_id=session_id,
