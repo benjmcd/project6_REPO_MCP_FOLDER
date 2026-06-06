@@ -20089,6 +20089,92 @@ def test_layer3_api_mixed_source_external_export_download_signed_reference_uses_
     assert sorted(str(path) for path in tmp_path.rglob("*") if path.is_file()) == files_before
 
 
+def test_layer3_api_mixed_source_signed_reference_rejected_after_direct_delivery(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    """FIX B regression: generating a signed reference after a plain direct delivery must raise 409."""
+    gate_b, material, _preview_body, commit_body, submit_body, _source = _submit_mixed_package_review(
+        client,
+        tmp_path,
+        request_id="api-mixed-sr-after-direct",
+    )
+    prepare = client.post(
+        "/api/v1/layer3/handoff/export/prepare",
+        json=_mixed_handoff_export_prepare_payload(
+            request_id="api-mixed-sr-after-direct-prepare",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+        ),
+    )
+    assert prepare.status_code == 200, prepare.text
+    prepare_body = prepare.json()
+    dispatch = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json=_mixed_aps_handoff_dispatch_payload(
+            request_id="api-mixed-sr-after-direct-dispatch",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body=prepare_body,
+        ),
+    )
+    assert dispatch.status_code == 200, dispatch.text
+    dispatch_body = dispatch.json()
+    readiness = client.post(
+        "/api/v1/layer3/handoff/export/download/readiness",
+        json=_mixed_external_export_download_readiness_payload(
+            request_id="api-mixed-sr-after-direct-readiness",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body=prepare_body,
+            dispatch_body=dispatch_body,
+        ),
+    )
+    assert readiness.status_code == 200, readiness.text
+    readiness_body = readiness.json()
+
+    # Build a direct delivery payload (operator_decision = deliver_mixed_source_external_export_download)
+    direct_deliver_payload = _mixed_external_export_download_delivery_payload(
+        request_id="api-mixed-sr-after-direct-deliver",
+        gate_b=gate_b,
+        material=material,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+        readiness_body=readiness_body,
+        package_kind="review_facing",
+    )
+    # Record a plain DIRECT delivery
+    direct_delivery = client.post("/api/v1/layer3/handoff/export/download/deliver", json=direct_deliver_payload)
+    assert direct_delivery.status_code == 200, direct_delivery.text
+
+    # Now attempt to generate a signed reference using the SAME client_request_id
+    signed_payload = {
+        **direct_deliver_payload,
+        "operator_decision": "generate_mixed_source_external_export_download_signed_reference",
+    }
+    monkeypatch.setenv("LAYER3_SIGNED_REFERENCE_SECRET", "test-layer3-sr-after-direct-secret")
+
+    db = client.layer3_session_factory()
+    try:
+        with pytest.raises(Layer3WorkbenchError) as exc_info:
+            layer3_workbench.external_export_download_generate_signed_reference(db, signed_payload)
+        assert exc_info.value.error_code == "external_export_download_signed_reference_after_direct_delivery"
+        assert exc_info.value.http_status == 409
+        assert exc_info.value.status == "conflict"
+        assert "client_request_id" in exc_info.value.blocked_fields
+    finally:
+        db.close()
+
+
 @pytest.mark.parametrize(
     ("material_field_value", "request_suffix"),
     [

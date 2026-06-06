@@ -11757,6 +11757,8 @@ def mixed_source_external_export_download_readiness(db: Session, payload: dict[s
 def _mixed_source_external_export_download_deliver(
     db: Session,
     payload: dict[str, Any],
+    *,
+    from_signed_reference: bool = False,
 ) -> ExternalExportDownloadDelivery:
     delivery_request = mixed_source_external_export_download_delivery_request_fields(payload)
     request_id = delivery_request.request_id
@@ -12173,6 +12175,10 @@ def _mixed_source_external_export_download_deliver(
         "package_mutation_enabled": False,
         "schema_runtime_source_widening_enabled": False,
     }
+    if status == "already_delivered":
+        validation_body["existing_delivery_signed_reference_origin"] = bool(
+            isinstance(existing_delivery, dict) and existing_delivery.get("signed_reference_origin")
+        )
     delivery = _mixed_source_external_export_download_delivery_response(
         session_id=delivery_request.session_id,
         output_package_id=selected_package.output_package_id,
@@ -12196,6 +12202,7 @@ def _mixed_source_external_export_download_deliver(
         "external_export_download_delivery_state": MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE,
         "authority_basis": delivery_basis,
         "recorded_at": recorded_at,
+        "signed_reference_origin": bool(from_signed_reference),
         **{
             key: validation_body[key]
             for key in (
@@ -12262,6 +12269,7 @@ def _mixed_source_external_export_download_deliver(
                 "external_export_download_readiness_record_ref",
                 "external_export_download_readiness_ref",
                 "delivery_mode",
+                "signed_reference_origin",
                 "download_url_enabled",
                 "signed_reference_enabled",
                 "provider_public_url_enabled",
@@ -14661,9 +14669,14 @@ def external_export_download_prepare(
     )
 
 
-def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> ExternalExportDownloadDelivery:
+def external_export_download_deliver(
+    db: Session,
+    payload: dict[str, Any],
+    *,
+    from_signed_reference: bool = False,
+) -> ExternalExportDownloadDelivery:
     if mixed_source_external_export_download_delivery_requested(payload):
-        return _mixed_source_external_export_download_deliver(db, payload)
+        return _mixed_source_external_export_download_deliver(db, payload, from_signed_reference=from_signed_reference)
 
     delivery_request = external_export_download_delivery_request_fields(payload)
     request_id = delivery_request.request_id
@@ -15342,7 +15355,18 @@ def external_export_download_generate_signed_reference(
         )
     _signed_reference_signing_key()
     delivery_payload = _signed_reference_delivery_payload_for_generation(payload)
-    delivery = external_export_download_deliver(db, delivery_payload)
+    delivery = external_export_download_deliver(db, delivery_payload, from_signed_reference=True)
+    if str(delivery.authority.get("status") or "") == "already_delivered" and not bool(
+        delivery.authority.get("existing_delivery_signed_reference_origin")
+    ):
+        raise Layer3WorkbenchError(
+            "external_export_download_signed_reference_after_direct_delivery",
+            "A signed delivery reference cannot be generated after a direct external export/download delivery has been recorded for this request.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["client_request_id"],
+            next_allowed_actions=["use_existing_external_export_download_delivery"],
+        )
     blocked = _signed_reference_required_delivery_authority(delivery.authority)
     if blocked:
         raise Layer3WorkbenchError(
@@ -19315,6 +19339,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "handoff_export_prepare": handoff_export_prepare_state,
         "aps_handoff_dispatch": aps_handoff_dispatch_state,
         "external_export_download": external_export_download_state,
+        "external_export_download_delivery": (session.summary_json or {}).get("external_export_download_delivery"),
         "connector_local_destination_receipt": connector_local_destination_receipt_state,
         "server_owned_local_outbox_target": server_owned_local_outbox_target_state,
         "server_owned_local_outbox_write": server_owned_local_outbox_write_state,
