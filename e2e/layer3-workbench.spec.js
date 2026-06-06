@@ -15,6 +15,7 @@ import {
   prepareFailedLayer3Session,
   prepareMissingOutputLayer3Session,
   prepareApprovedResultReviewQuantSession,
+  prepareApprovedPackageReviewQuantSession,
 } from './layer3-helpers.js';
 
 const MOCKUP_FRAME_MANIFEST_PATH = path.resolve('next_milestone_plans/layer3-mockups/frames/manifest.json');
@@ -24854,4 +24855,33 @@ test('Layer 3 workbench result-review approval state survives reload (server-bac
   // (already approved — cannot re-submit)
   await expect(page.locator('#result-review-panel')).toContainText('result_review_ui_recorded');
   await expect(page.locator('#result-review-submit')).toBeDisabled();
+});
+
+test('Layer 3 workbench package-review approval state survives reload (server-backed)', async ({ page, request }) => {
+  const { seed } = await prepareApprovedPackageReviewQuantSession(request);
+  await page.goto('/review/layer3');
+  await attachSessionToWorkbench(page, seed.session_id);
+
+  await page.locator('#execution-step-chip').click();
+  await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
+
+  const sessionSummaryPromise = page.waitForResponse((r) =>
+    r.url().includes(`/api/v1/layer3/session/${seed.session_id}`),
+  );
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const sessionSummary = await expectJson(await sessionSummaryPromise);
+  expect(sessionSummary.session_id).toBe(seed.session_id);
+
+  await page.locator('#execution-step-chip').click();
+  await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
+
+  // Navigate to the package review band — state is already loaded from session summary
+  await page.locator('#package-step-chip').click();
+  await expect(page.locator('#package-review-band')).toBeVisible();
+
+  // Session summary drives package panel state without any additional API call or injection
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_approved');
+
+  // Package review submit must be disabled — already approved, cannot re-submit
+  await expect(page.locator('#package-review-submit')).toBeDisabled();
 });

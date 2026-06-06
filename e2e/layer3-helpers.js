@@ -304,6 +304,70 @@ export async function prepareApprovedResultReviewQuantSession(request) {
   return { ...result, status, review };
 }
 
+export async function prepareApprovedPackageReviewQuantSession(request) {
+  const base = await prepareApprovedResultReviewQuantSession(request);
+  const { seed, planPreview, approval, start, passRunId, review } = base;
+  const sessionId = seed.session_id;
+
+  const packagePreview = await expectJson(await request.post('/api/v1/layer3/package/review/preview', {
+    data: {
+      client_request_id: requestId('pkg-review-preview'),
+      session_id: sessionId,
+      analysis_plan_id: approval.analysis_plan_id,
+      pass_run_id: passRunId,
+      preview_id: planPreview.preview_id,
+      preview_hash: planPreview.preview_hash,
+      analysis_run_id: start.analysis_run_id ?? null,
+      result_review_record_ref: review.review_record_ref,
+    },
+  }));
+  expect(packagePreview.status).toBe('available');
+
+  const packageKinds = packagePreview.candidate_package_kinds.map((c) => c.package_kind);
+
+  const commit = await expectJson(await request.post('/api/v1/layer3/package/review/commit', {
+    data: {
+      client_request_id: requestId('pkg-review-commit'),
+      session_id: sessionId,
+      analysis_plan_id: approval.analysis_plan_id,
+      pass_run_id: passRunId,
+      preview_id: planPreview.preview_id,
+      preview_hash: planPreview.preview_hash,
+      analysis_run_id: start.analysis_run_id ?? null,
+      result_review_record_ref: review.review_record_ref,
+      package_review_preview_hash: packagePreview.package_review_preview_hash,
+      expected_package_kinds: packageKinds,
+    },
+  }));
+  expect(['committed', 'already_committed']).toContain(commit.status);
+
+  const packageSubmit = await expectJson(await request.post('/api/v1/layer3/package/review/submit', {
+    data: {
+      client_request_id: requestId('pkg-review-submit'),
+      session_id: sessionId,
+      analysis_plan_id: approval.analysis_plan_id,
+      pass_run_id: passRunId,
+      preview_id: planPreview.preview_id,
+      preview_hash: planPreview.preview_hash,
+      analysis_run_id: start.analysis_run_id ?? null,
+      result_review_record_ref: review.review_record_ref,
+      package_review_preview_hash: commit.package_review_preview_hash,
+      construction_basis_hash: commit.construction_basis_hash ?? null,
+      reconciliation_record_id: commit.reconciliation_record_id,
+      output_package_ids: commit.output_package_ids,
+      payload_refs: commit.payload_refs,
+      payload_hashes: commit.payload_hashes,
+      expected_package_kinds: packageKinds,
+      operator_decision: 'approved',
+      decision_notes: 'Approved for server-backed package-review restore test.',
+    },
+  }));
+  expect(packageSubmit.operator_decision).toBe('approved');
+  expect(packageSubmit.package_review_state).toBe('package_review_approved');
+
+  return { ...base, packagePreview, commit, packageSubmit };
+}
+
 export async function attachSessionToWorkbench(page, sessionId, sourceClasses = ['dataset_version']) {
   await page.evaluate(({ session_id, source_classes }) => {
     State.gateB = {
