@@ -641,8 +641,12 @@ const State = {
     gateC: null,
     planPreview: null,
     planApproval: null,
+    planApprovalError: null,
     planRevision: null,
+    planRevisionError: null,
     planRevisionPending: false,
+    planRevisionRecoverError: null,
+    planRevisionRecoverPending: false,
     sessionSummary: null,
     executionSelection: null,
     executionSelectionError: null,
@@ -652,6 +656,7 @@ const State = {
     executionStartPending: false,
     resultStatus: null,
     resultStatusError: null,
+    resultStatusAutoAdvancePending: false,
     resultReview: null,
     resultReviewError: null,
     resultReviewPending: false,
@@ -1212,6 +1217,7 @@ const elements = {
     planPreview: document.getElementById('plan-preview'),
     planReject: document.getElementById('plan-reject'),
     planRequestRevision: document.getElementById('plan-request-revision'),
+    planRevisionRecover: document.getElementById('plan-revision-recover'),
     planApprove: document.getElementById('plan-approve'),
     planPanel: document.getElementById('plan-panel'),
     executionSelect: document.getElementById('execution-select'),
@@ -7621,6 +7627,49 @@ function canPlanRevise() {
     );
 }
 
+function canRecoverPlanRevision() {
+    const revisionState = State.planRevision?.next_state;
+    return Boolean(
+        currentSessionId()
+        && State.planRevision
+        && (revisionState === 'plan_rejected' || revisionState === 'plan_revision_requested')
+        && !State.planRevision.execution_started
+        && !State.planRevisionRecoverPending
+        && !State.planRevisionPending
+    );
+}
+
+async function recoverPlanRevision() {
+    if (!canRecoverPlanRevision()) return;
+    State.planRevisionRecoverPending = true;
+    State.planRevisionRecoverError = null;
+    setBusy(elements.planRevisionRecover, true, 'Recover Plan Revision');
+    setGateControls();
+    try {
+        await postJson('/plan/revision/recover', {
+            schema_id: 'layer3.plan_revision_recovery_request.v1',
+            client_request_id: requestId(),
+            session_id: currentSessionId(),
+            source_revision_state: State.planRevision.next_state,
+            source_preview_id: State.planRevision.source_preview_id,
+            source_preview_hash: State.planRevision.source_preview_hash,
+            operator_decision: 'recover_for_preview_refresh',
+        });
+        State.planRevision = null;
+        persistSessionRecoveryAnchor('plan_revision_recover');
+        addEvent('Plan revision recovered. Preview refresh is required before approval.');
+        renderAll();
+    } catch (error) {
+        State.planRevisionRecoverError = error.payload || null;
+        addEvent(`Plan revision recovery blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.planRevisionRecoverPending = false;
+        setBusy(elements.planRevisionRecover, false, 'Recover Plan Revision');
+        setGateControls();
+    }
+}
+
 function canSelectExecution() {
     const authority = executionPlanAuthority();
     const selection = executionSelectionState();
@@ -7664,6 +7713,7 @@ function canStartExecution() {
 function renderPlanPanel() {
     if (State.planRevision) {
         const label = State.planRevision.next_state === 'plan_rejected' ? 'rejected' : 'revision requested';
+        const canRecover = canRecoverPlanRevision();
         elements.planPanel.innerHTML = `
             <div class="plan-summary-grid">
                 <div class="plan-summary-card"><strong>Revision Control</strong>${escapeHtml(label)}</div>
@@ -7675,6 +7725,7 @@ function renderPlanPanel() {
                     <li>${escapeHtml(State.planRevision.operator_decision)}</li>
                     <li>Note recorded: ${escapeHtml(State.planRevision.operator_note_recorded ? 'yes' : 'no')}</li>
                     <li>Approval blocked for this preview.</li>
+                    <li>Recovery: ${escapeHtml(canRecover ? 'available — use Recover Plan Revision to refresh preview' : 'not available (execution started or pending)')}</li>
                 </ul></section>
                 <section class="plan-list"><h3>Boundary</h3><ul>
                     <li>No execution started.</li>
@@ -7682,6 +7733,7 @@ function renderPlanPanel() {
                     <li>Results, package review, and handoff remain unavailable.</li>
                 </ul></section>
             </div>
+            ${renderErrorCard(State.planRevisionRecoverError)}
         `;
         return;
     }
@@ -7777,6 +7829,7 @@ function renderPlanPanel() {
             <section class="plan-list"><h3>Exclusions</h3><ul>${excludedRows}</ul></section>
             <section class="plan-list"><h3>Warnings</h3><ul class="warning-list">${warningRows}</ul></section>
         </div>
+        ${renderErrorCard(State.planApprovalError || State.planRevisionError)}
     `;
 }
 
@@ -7807,6 +7860,13 @@ function resultReviewPanelState(authority) {
             label: cohort.isAssociated ? 'cohort_result_review_ui_recording' : 'result_review_ui_recording',
             pill: 'preview',
             message: 'Recording one bounded operator decision.',
+        };
+    }
+    if (State.resultStatusAutoAdvancePending) {
+        return {
+            label: 'result_status_auto_advance_pending',
+            pill: 'preview',
+            message: 'Auto-advancing to result status after synchronous execution start.',
         };
     }
     if (recordedResultReview()) {
@@ -7955,6 +8015,31 @@ function renderExecutionSelectionStartPanel() {
     `;
 }
 
+function resultStatusBlockReason() {
+    if (State.resultStatusError) return null;
+    const status = State.resultStatus?.status;
+    if (status === 'missing_output_metadata') {
+        return {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'execution_result_status_missing_output',
+            status: 'blocked',
+            message: 'Selected pass is terminal but its output metadata is not yet readable.',
+            next_allowed_actions: ['execution_result_status'],
+        };
+    }
+    if (status === 'failed') {
+        const serverMessage = State.resultStatus?.error_message || State.resultStatus?.pass_run_status || 'Pass run failed.';
+        return {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'execution_result_status_failed',
+            status: 'blocked',
+            message: `${serverMessage} This pass failed. There is no in-session recovery — start a new session.`,
+            next_allowed_actions: [],
+        };
+    }
+    return null;
+}
+
 function renderResultReviewPanel() {
     const authority = selectedResultAuthority();
     const statusBody = State.resultStatus || {};
@@ -7963,7 +8048,7 @@ function renderResultReviewPanel() {
     const metadata = statusBody.output_metadata_summary || {};
     const cohort = associatedCohortProjection(authority);
     const traceSummary = State.resultReview?.trace_summary || reviewState?.trace_summary;
-    const error = State.resultReviewError || State.resultStatusError;
+    const error = State.resultReviewError || State.resultStatusError || resultStatusBlockReason();
     const downstream = State.resultReview?.downstream_unavailable
         || statusBody.downstream_unavailable
         || reviewState?.downstream_unavailable
@@ -25622,6 +25707,7 @@ function setGateControls() {
     elements.planPreview.disabled = !canPlanPreview() || Boolean(State.planApproval) || Boolean(State.planRevision) || State.planRevisionPending;
     elements.planReject.disabled = !canPlanRevise();
     elements.planRequestRevision.disabled = !canPlanRevise();
+    elements.planRevisionRecover.disabled = !canRecoverPlanRevision();
     elements.planApprove.disabled = !canPlanApprove();
     elements.executionSelect.disabled = !canSelectExecution();
     elements.executionStart.disabled = !canStartExecution();
@@ -26918,7 +27004,19 @@ async function startExecution() {
         State.apsHandoffDispatchError = null;
         clearExternalExportDownloadPrepareState();
         addEvent('Execution started for selected pass.');
+        State.resultStatusAutoAdvancePending = true;
+        State.executionStartPending = false;
+        setBusy(elements.executionStart, false, 'Start Execution');
         renderAll();
+        try {
+            if (canInspectResultStatus()) {
+                await inspectResultStatus();
+            } else {
+                addEvent('Result status auto-advance skipped: inspect gate not met. Use Inspect Result Status to proceed.');
+            }
+        } finally {
+            State.resultStatusAutoAdvancePending = false;
+        }
     } catch (error) {
         State.executionStartError = error.payload || {
             schema_id: 'layer3.workbench_error.v1',
@@ -26950,6 +27048,8 @@ async function refreshSessionSummary() {
         State.executionStartError = null;
         State.resultStatusError = null;
         State.resultReviewError = null;
+        State.planApprovalError = null;
+        State.planRevisionError = null;
         State.packageReviewPreviewError = null;
         State.packageConstructionError = null;
         State.packageReviewSubmitError = null;
@@ -29178,6 +29278,7 @@ async function approvePlan() {
     if (!canPlanApprove()) return;
     setBusy(elements.planApprove, true, 'Approve Plan');
     try {
+        State.planApprovalError = null;
         State.planApproval = await postJson('/plan/approve', {
             schema_id: 'layer3.plan_approval_request.v1',
             client_request_id: requestId(),
@@ -29192,7 +29293,9 @@ async function approvePlan() {
         addEvent('Plan approved. Execution has not started.');
         renderAll();
     } catch (error) {
+        State.planApprovalError = error.payload || null;
         addEvent(`Plan approval blocked: ${error.message}`);
+        renderAll();
     } finally {
         setBusy(elements.planApprove, false, 'Approve Plan');
         setGateControls();
@@ -29207,6 +29310,7 @@ async function revisePlan(operatorDecision) {
     setBusy(button, true, label);
     setGateControls();
     try {
+        State.planRevisionError = null;
         State.planRevision = await postJson('/plan/revise', {
             schema_id: 'layer3.plan_revision_request.v1',
             client_request_id: requestId(),
@@ -29220,7 +29324,9 @@ async function revisePlan(operatorDecision) {
         addEvent(operatorDecision === 'reject_current_preview' ? 'Plan rejected. Execution has not started.' : 'Plan revision requested. Execution has not started.');
         renderAll();
     } catch (error) {
+        State.planRevisionError = error.payload || null;
         addEvent(`Plan revision blocked: ${error.message}`);
+        renderAll();
     } finally {
         State.planRevisionPending = false;
         setBusy(button, false, label);
@@ -29545,6 +29651,7 @@ elements.gateCCommit.addEventListener('click', commitGateC);
 elements.planPreview.addEventListener('click', previewPlan);
 elements.planReject.addEventListener('click', () => revisePlan('reject_current_preview'));
 elements.planRequestRevision.addEventListener('click', () => revisePlan('request_revision'));
+elements.planRevisionRecover.addEventListener('click', recoverPlanRevision);
 elements.planApprove.addEventListener('click', approvePlan);
 elements.executionSelect.addEventListener('click', selectExecution);
 elements.executionStart.addEventListener('click', startExecution);
@@ -30509,7 +30616,27 @@ init();
         const panel = byId('source-intake-preview-panel');
         if (!recordId || !panel) return;
         setSourceIntakeStatus('Requesting bounded server preview...', 'busy');
-        const payload = await sourceIntakeJson(await fetch(`${sourceIntakeApiRoot}/source/intake/${encodeURIComponent(recordId)}/preview?max_chars=1000`));
+        const response = await fetch(`${sourceIntakeApiRoot}/source/intake/${encodeURIComponent(recordId)}/preview?max_chars=1000`);
+        if (!response.ok) {
+            let body = null;
+            try { body = await response.json(); } catch (_) { /* ignore parse error */ }
+            const errorCode = body?.error?.code || body?.error_code || null;
+            const errorMessage = body?.error?.message || body?.message || body?.detail || `Source intake preview failed (${response.status}).`;
+            panel.innerHTML = `
+                <div class="result-review-card">
+                    <strong>Block Reason</strong>
+                    <ul>
+                        <li>code: ${escapeSourceIntakeText(errorCode || 'source_intake_preview_blocked')}</li>
+                        <li>message: ${escapeSourceIntakeText(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage))}</li>
+                        ${errorCode === 'source_intake_preview_media_type_not_admitted' ? '<li>Only bounded text-like source material is admitted for preview. Binary files cannot be previewed.</li>' : ''}
+                    </ul>
+                </div>
+            `;
+            setSourceIntakeStatus(`Preview blocked: ${errorCode || 'error'} — ${typeof errorMessage === 'string' ? errorMessage : 'see panel'}`, 'error');
+            renderMockupQuerySourceSetupProjection();
+            return;
+        }
+        const payload = await sourceIntakeJson(response);
         sourceIntakeState.latestPreview = payload;
         sourceIntakeState.gateBClientRequestId = null;
         const candidate = payload?.material_candidate || {};
