@@ -12469,3 +12469,43 @@ Next posture: a value-reveal activation freeze may make controlled value reveal 
 deployment-enabled production path behind this enforced identity surface, proving the full
 lineage end-to-end and failing closed when any gate is missing. Do not flip the value-reveal
 feature-flag defaults or claim production readiness without the deployment authority packet.
+
+## SEC XBRL Controlled Value-Reveal Activation
+
+Milestone: `sec_xbrl_controlled_value_reveal_activation_freeze_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1353-sec-xbrl-value-reveal-activation.md`.
+
+Decision: `activated` (controlled value-reveal submit surface; doc 1350 items 2-3).
+
+Status: the controlled value-reveal submit capability is now a deployment-enabled production
+path. `layer3_sec_xbrl_controlled_value_reveal_submit_enabled` now defaults on
+(`backend/app/core/config.py`), behind the enforced owner-bound operator identity selected by
+1352, the full authority lineage (operator review -> approved decision -> value-reveal authority
+receipt -> controlled submit), and an explicit per-request `operator_reveal_confirmation=True`.
+The auth-framework prerequisite that doc 1350 deferred against is satisfied by 1351/1352; the
+operator acceptance criteria are recorded in 1353. The submit reveals from a pre-stored,
+lineage-bound value store (no live SEC network or Arelle invocation at submit time) and returns
+transient financial figures only; the status surface stays hashes-only.
+
+Proof: `backend/tests/test_sec_xbrl_operator_review_workflow.py` adds
+`test_controlled_value_reveal_submit_api_default_on_returns_values_without_flag_monkeypatch`
+(default-on, no flag monkeypatch -> HTTP 200 with revealed `effective_value`, no authority-artifact
+leak), and retains explicit-off coverage via
+`test_controlled_value_reveal_submit_explicit_off_blocks_without_receipt`. Default-off-invariant
+tests and the affected validate-only diagnostics were reconciled to the activated posture; all
+other non-admissions are preserved.
+
+Non-goals preserved: `layer3_sec_edgar_arelle_value_reveal_enabled` (governed-sibling reveal) stays
+default-off; no live SEC network access; no Arelle subprocess invocation; no internal-value-store
+default change; no corpus-validation default change; no owner-binding/schema/model/migration change;
+authority-artifact and identity-value redaction unchanged. Rollback is a single config default
+(`layer3_sec_xbrl_controlled_value_reveal_submit_enabled=false`).
+
+Verification: full `backend/tests/test_sec_xbrl*.py` + `backend/tests/test_layer3_api.py`
+(834 passed; the single failure is a pre-existing Windows MAX_PATH path-length limit unrelated to
+this change), `tools/l3-target-selection-validate.py --expect frozen`, and `git diff --check` pass.
+`tools/l3-progress-check.py` has a pre-existing unrelated 561/562 sync finding not introduced here.
+
+Next posture: separate bounded activation freezes may follow for the Arelle governed-sibling reveal
+flag, default-on runtime posture, and live SEC/Arelle surfaces; each remains independently gated.
