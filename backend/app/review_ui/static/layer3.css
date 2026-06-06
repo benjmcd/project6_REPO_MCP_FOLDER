@@ -3696,6 +3696,8 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 
 .layer3-e2e-governance-lifecycle-panel {
     border: 1px solid var(--border-color);
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .package-lifecycle-grid {
@@ -3810,6 +3812,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 
 .layer3-e2e-governance-lifecycle-grid {
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    min-width: 0;
 }
 
 .package-lifecycle-rows {
@@ -3862,6 +3865,14 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 
 .layer3-e2e-governance-lifecycle-rows {
     grid-column: span 2;
+}
+
+.mixed-source-product-authority-checkpoint,
+.mixed-source-product-authority-checkpoint li,
+.mixed-source-product-authority-checkpoint span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 @media (max-width: 760px) {

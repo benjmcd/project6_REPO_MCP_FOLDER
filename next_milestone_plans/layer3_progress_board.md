@@ -1,5 +1,105 @@
 # Layer3 Progress Board
 
+## P24 Mixed-Source Product-Authority Checkpoint
+
+Milestone:
+`p24_mixed_source_product_authority_checkpoint`.
+
+Closeout doc:
+`next_milestone_plans/multi-ingest/56-p24-product-authority-checkpoint.md`.
+
+Status: branch-local read-only product-authority checkpoint. Not current-main
+until merged and post-merge proof is recorded.
+
+Scope: renders a read-only `/review/layer3` mixed-source checkpoint over the
+already-loaded P17 handoff/export prepare, P18 APS handoff dispatch, P19
+external export/download readiness, P21 same-origin delivery, and P22
+same-origin signed-reference authority chain. It adds no route, payload
+builder, submit handler, persisted state, or transport path.
+
+Boundary: no backend route/service, schema/model/migration, durable persistence,
+parser/source-shape expansion, provider/public URL, connector/destination/local
+outbox, package payload rewrite/mutation, download URL, signed-reference
+status/revocation, external dispatch, value reveal, default-on, or
+production-readiness behavior is admitted.
+
+Proof: branch-local JS/module syntax, static page contract proof, and focused
+headless plus headed Playwright rendered-flow proof passed.
+
+Next posture: merge-review and current-main sync the branch-local P22/P23/P24
+work before selecting another downstream surface. Provider/public URL
+governance, connector/destination/local-outbox dispatch, durable revocation
+UI/API, schema/source-shape expansion, and production readiness remain separate
+future freezes.
+
+## P23 Mixed-Source Product-Flow Usability Proof
+
+Milestone:
+`p23_mixed_source_product_flow_usability_proof`.
+
+Closeout doc:
+`next_milestone_plans/multi-ingest/55-p23-product-flow-usability-proof.md`.
+
+Status: branch-local rendered product-flow usability proof. Not current-main
+until merged and post-merge proof is recorded.
+
+Scope: proves the rendered `/review/layer3` mixed-source flow can proceed from
+server-owned P17 handoff/export prepare authority through P18 APS handoff
+dispatch, P19 external export/download readiness, and P22 same-origin
+signed-reference generation without synthetic P19 readiness. P18 still uses the
+existing `/handoff/aps/dispatch` backend route with mixed material fields; P19
+uses the existing `/handoff/export/download/readiness` route.
+
+Boundary: no backend route/service, schema/model/migration, durable persistence,
+parser/source-shape expansion, provider/public URL, connector/destination/local
+outbox, package payload rewrite/mutation, download URL, SEC XBRL, value reveal,
+default-on, or production-readiness behavior is admitted.
+
+Proof: branch-local JS/module syntax, static page contract proof, focused
+headless and headed Playwright rendered-flow proof, plus the existing P21/P22
+rendered-control regression group passed.
+
+Next posture: superseded by branch-local P24 product-authority checkpoint for
+read-only operator inspection. Merge-review and current-main sync the combined
+P22/P23/P24 branch-local work before selecting another downstream surface.
+
+## P22 Mixed-Source Signed-Reference Runtime And Rendered Controls
+
+Milestone:
+`p22_mixed_source_signed_reference_runtime`.
+
+Closeout doc:
+`next_milestone_plans/multi-ingest/54-p22-runtime-closeout.md`.
+
+Status: branch-local runtime and rendered-control implementation. Not
+current-main until merged and post-merge proof is recorded.
+
+Scope: admits mixed-source same-origin signed-reference generation/use over the
+existing P20 mixed-source delivery validator and existing durable
+signed-reference token/receipt/audit state, and renders `/review/layer3`
+generate/use controls from `State.sessionSummary.external_export_download_readiness`.
+The route family is
+`POST /api/v1/layer3/handoff/export/download/signed-reference/generate` and
+`POST /api/v1/layer3/handoff/export/download/signed-reference/use`.
+
+Boundary: no download URL, provider/public URL, connector/provider/destination/
+local-outbox behavior, schema/model/migration, parser/source-shape expansion,
+package payload rewrite/mutation, SEC XBRL, excluded-tool, value reveal,
+default-on, or production-readiness behavior is admitted.
+
+Proof: branch-local compile, focused P22 signed-reference API proof, OpenAPI
+contract proof, static page contract proof, existing signed-reference/delivery
+regression slices, durable signed-reference state tests, full
+`backend/tests/test_layer3_api.py`, full `backend/tests/test_layer3_page.py`,
+focused headless and headed Playwright rendered-control proof,
+authority-index validation, frozen target-selection validation, progress check,
+and `git diff --check` passed.
+
+Next posture: after merge and current-main sync, freeze exactly one next
+downstream surface before implementation: provider/public URL governance,
+connector/destination/local-outbox dispatch, durable revocation UI,
+product-flow usability proof, or a product-authority checkpoint.
+
 ## P22 Mixed-Source Signed-Reference Governance Freeze
 
 Milestone:

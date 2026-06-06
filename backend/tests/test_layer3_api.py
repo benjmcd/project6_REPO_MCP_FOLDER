@@ -718,6 +718,47 @@ def _assert_common_response_envelope(body: dict) -> None:
     assert body["status"]
 
 
+MIXED_SOURCE_LIFECYCLE_FORBIDDEN_KEYS = frozenset(
+    {
+        "connector_ref",
+        "connector_run_id",
+        "dataset_rows",
+        "destination",
+        "destination_path",
+        "destination_url",
+        "download_url",
+        "local_path",
+        "package_payload",
+        "package_variant_content",
+        "provider_public_url",
+        "provider_url",
+        "public_url",
+        "raw_document_text",
+        "signed_url",
+        "source_rows",
+    }
+)
+
+
+def _assert_mixed_source_lifecycle_response_redacted(body: object, tmp_path: Path) -> None:
+    local_path_markers = {str(tmp_path), tmp_path.as_posix()}
+
+    def walk(value: object, path: str) -> None:
+        if isinstance(value, dict):
+            blocked_keys = sorted(set(value) & MIXED_SOURCE_LIFECYCLE_FORBIDDEN_KEYS)
+            assert blocked_keys == [], f"forbidden mixed-source response keys at {path}: {blocked_keys}"
+            for key, item in value.items():
+                walk(item, f"{path}.{key}")
+        elif isinstance(value, list):
+            for index, item in enumerate(value):
+                walk(item, f"{path}[{index}]")
+        elif isinstance(value, str):
+            for marker in local_path_markers:
+                assert marker not in value
+
+    walk(body, "response")
+
+
 def _assert_workbench_error_response(response, *, status_code: int, error_code: str) -> dict:
     assert response.status_code == status_code
     body = response.json()
@@ -13470,13 +13511,42 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
 
     signed_generate = spec["paths"]["/api/v1/layer3/handoff/export/download/signed-reference/generate"]["post"]
     signed_generate_schema = signed_generate["requestBody"]["content"]["application/json"]["schema"]
-    assert signed_generate_schema["additionalProperties"] is False
-    assert set(signed_generate_schema["required"]) == set(deliver_request_schema["required"])
-    assert signed_generate_schema["properties"]["delivery_mode"]["enum"] == ["same_origin_artifact_stream"]
-    assert "download_url" not in signed_generate_schema["properties"]
-    assert "download_token" not in signed_generate_schema["properties"]
-    assert "public_url" not in signed_generate_schema["properties"]
-    assert "signed_url" not in signed_generate_schema["properties"]
+    assert len(signed_generate_schema["oneOf"]) == 2
+    signed_generate_legacy_schema, signed_generate_mixed_schema = signed_generate_schema["oneOf"]
+    assert signed_generate_legacy_schema["additionalProperties"] is False
+    assert set(signed_generate_legacy_schema["required"]) == set(deliver_request_schema["required"])
+    assert signed_generate_legacy_schema["properties"]["delivery_mode"]["enum"] == ["same_origin_artifact_stream"]
+    assert "download_url" not in signed_generate_legacy_schema["properties"]
+    assert "download_token" not in signed_generate_legacy_schema["properties"]
+    assert "public_url" not in signed_generate_legacy_schema["properties"]
+    assert "signed_url" not in signed_generate_legacy_schema["properties"]
+    assert signed_generate_mixed_schema["additionalProperties"] is False
+    assert set(signed_generate_mixed_schema["required"]) == set(mixed_deliver_schema["required"])
+    assert signed_generate_mixed_schema["properties"]["operator_decision"]["enum"] == [
+        "generate_mixed_source_external_export_download_signed_reference"
+    ]
+    assert signed_generate_mixed_schema["properties"]["delivery_mode"]["enum"] == ["same_origin_artifact_stream"]
+    assert signed_generate_mixed_schema["properties"]["output_package_id"]["type"] == "string"
+    assert signed_generate_mixed_schema["properties"]["package_kind"]["enum"] == [
+        "canonical_internal",
+        "user_facing",
+        "review_facing",
+    ]
+    assert signed_generate_mixed_schema["properties"]["download_url"]["description"].startswith(
+        "Known but non-admitted"
+    )
+    assert signed_generate_mixed_schema["properties"]["provider_public_url"]["description"].startswith(
+        "Known but non-admitted"
+    )
+    assert signed_generate_mixed_schema["properties"]["provider_private_signed_url"]["description"].startswith(
+        "Known but non-admitted"
+    )
+    assert signed_generate_mixed_schema["properties"]["connector_run_id"]["description"].startswith(
+        "Known but non-admitted"
+    )
+    assert signed_generate_mixed_schema["properties"]["package_payload"]["description"].startswith(
+        "Known but non-admitted"
+    )
     signed_generate_success = signed_generate["responses"]["200"]["content"]["application/json"]["schema"]
     assert signed_generate_success["$ref"].endswith("/Layer3ExternalExportDownloadSignedReferenceResponse")
     for status in ("400", "404", "409"):
@@ -18401,6 +18471,7 @@ def test_layer3_api_mixed_source_package_review_preview_admits_construction(
     assert preview.status_code == 200
     body = preview.json()
     _assert_common_response_envelope(body)
+    _assert_mixed_source_lifecycle_response_redacted(body, tmp_path)
     assert body["schema_id"] == "layer3.mixed_source_package_review_preview.v1"
     assert body["status"] == "available"
     assert body["package_family"] == "mixed_dataset_document"
@@ -18486,6 +18557,7 @@ def test_layer3_api_mixed_source_package_construction_commit_materializes_manife
     assert commit.status_code == 200, commit.text
     body = commit.json()
     _assert_common_response_envelope(body)
+    _assert_mixed_source_lifecycle_response_redacted(body, tmp_path)
     assert body["schema_id"] == "layer3.mixed_source_package_construction_commit.v1"
     assert body["status"] == "committed"
     assert body["analysis_plan_id"] == ""
@@ -18609,6 +18681,7 @@ def test_layer3_api_mixed_source_package_review_submit_records_decision(
     assert submit.status_code == 200, submit.text
     body = submit.json()
     _assert_common_response_envelope(body)
+    _assert_mixed_source_lifecycle_response_redacted(body, tmp_path)
     assert body["schema_id"] == "layer3.mixed_source_package_review_submit.v1"
     assert body["status"] == "submitted"
     assert body["analysis_plan_id"] == ""
@@ -18638,6 +18711,7 @@ def test_layer3_api_mixed_source_package_review_submit_records_decision(
     assert summary_response.status_code == 200, summary_response.text
     summary_body = summary_response.json()
     handoff_summary = summary_body["handoff_export_prepare"]
+    _assert_mixed_source_lifecycle_response_redacted(handoff_summary, tmp_path)
     assert handoff_summary["available"] is False
     assert handoff_summary["state"] == "handoff_export_unavailable"
     assert handoff_summary["blocked_reason"] == "mixed_source_handoff_export_prepare_rendered_control_not_admitted"
@@ -18765,6 +18839,7 @@ def test_layer3_api_mixed_source_handoff_export_prepare_records_reference_envelo
     assert prepare.status_code == 200, prepare.text
     body = prepare.json()
     _assert_common_response_envelope(body)
+    _assert_mixed_source_lifecycle_response_redacted(body, tmp_path)
     assert body["schema_id"] == "layer3.mixed_source_handoff_export_prepare.v1"
     assert body["status"] == "prepared"
     assert body["session_id"] == gate_b["session_id"]
@@ -18867,6 +18942,8 @@ def test_layer3_api_mixed_source_handoff_export_prepare_records_reference_envelo
     summary = client.get(f"/api/v1/layer3/session/{gate_b['session_id']}")
     assert summary.status_code == 200, summary.text
     summary_body = summary.json()
+    _assert_mixed_source_lifecycle_response_redacted(summary_body["handoff_export_prepare"], tmp_path)
+    _assert_mixed_source_lifecycle_response_redacted(summary_body["aps_handoff_dispatch"], tmp_path)
     assert summary_body["handoff_export_prepare"]["state"] == "handoff_export_prepared"
     assert summary_body["handoff_export_prepare"]["package_review_state"] == "package_review_approved"
     assert summary_body["handoff_export_prepare"]["handoff_export_envelope_ref"] == body["handoff_export_envelope_ref"]
@@ -19803,6 +19880,310 @@ def test_layer3_api_mixed_source_external_export_download_deliver_streams_packag
             delivery_state["external_export_download_delivery_record_ref"]
         )
         assert "payload_ref" not in json.dumps(session_delivery)
+    finally:
+        db.close()
+
+
+def test_layer3_api_mixed_source_external_export_download_signed_reference_uses_delivery_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    gate_b, material, _preview_body, commit_body, submit_body, _source = _submit_mixed_package_review(
+        client,
+        tmp_path,
+        request_id="api-mixed-signed-reference",
+    )
+    prepare = client.post(
+        "/api/v1/layer3/handoff/export/prepare",
+        json=_mixed_handoff_export_prepare_payload(
+            request_id="api-mixed-signed-reference-prepare",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+        ),
+    )
+    assert prepare.status_code == 200, prepare.text
+    prepare_body = prepare.json()
+    dispatch = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json=_mixed_aps_handoff_dispatch_payload(
+            request_id="api-mixed-signed-reference-dispatch",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body=prepare_body,
+        ),
+    )
+    assert dispatch.status_code == 200, dispatch.text
+    dispatch_body = dispatch.json()
+    readiness = client.post(
+        "/api/v1/layer3/handoff/export/download/readiness",
+        json=_mixed_external_export_download_readiness_payload(
+            request_id="api-mixed-signed-reference-readiness",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body=prepare_body,
+            dispatch_body=dispatch_body,
+        ),
+    )
+    assert readiness.status_code == 200, readiness.text
+    readiness_body = readiness.json()
+    delivery_payload = _mixed_external_export_download_delivery_payload(
+        request_id="api-mixed-signed-reference-generate",
+        gate_b=gate_b,
+        material=material,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+        readiness_body=readiness_body,
+        package_kind="review_facing",
+        decision_notes="Generate a same-origin signed reference for the review-facing package.",
+    )
+    signed_payload = {
+        **delivery_payload,
+        "operator_decision": "generate_mixed_source_external_export_download_signed_reference",
+    }
+
+    db = client.layer3_session_factory()
+    try:
+        selected_package = (
+            db.query(L3OutputPackage)
+            .filter(L3OutputPackage.output_package_id == delivery_payload["output_package_id"])
+            .one()
+        )
+        package_path = Path(selected_package.payload_ref)
+        expected_bytes = package_path.read_bytes()
+        files_before = sorted(str(path) for path in tmp_path.rglob("*") if path.is_file())
+    finally:
+        db.close()
+
+    monkeypatch.delenv("LAYER3_SIGNED_REFERENCE_SECRET", raising=False)
+    missing_secret = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/generate",
+        json=signed_payload,
+    )
+    assert missing_secret.status_code == 409
+    assert missing_secret.json()["error_code"] == "external_export_download_signed_reference_secret_required"
+
+    monkeypatch.setenv("LAYER3_SIGNED_REFERENCE_SECRET", "test-layer3-mixed-signed-reference-secret")
+    wrong_decision = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/generate",
+        json=delivery_payload,
+    )
+    assert wrong_decision.status_code == 400
+    assert wrong_decision.json()["error_code"] == (
+        "mixed_source_external_export_download_signed_reference_decision_required"
+    )
+
+    signed_reference = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/generate",
+        json=signed_payload,
+    )
+    assert signed_reference.status_code == 200, signed_reference.text
+    body = signed_reference.json()
+    assert body["schema_id"] == "layer3.external_export_download_signed_reference.v1"
+    assert body["signed_reference_state"] == "external_export_download_signed_reference_ready"
+    assert body["package_family"] == "mixed_dataset_document"
+    assert body["output_package_id"] == delivery_payload["output_package_id"]
+    assert body["package_kind"] == "review_facing"
+    assert body["package_payload_hash"] == delivery_payload["package_payload_hash"]
+    assert body["delivery_mode"] == "same_origin_signed_delivery_reference"
+    assert body["signed_reference_delivery_mode"] == "same_origin_signed_delivery_reference"
+    assert body["operator_decision"] == "generate_mixed_source_external_export_download_signed_reference"
+    assert body["use_operator_decision"] == "use_mixed_source_external_export_download_signed_reference"
+    assert body["server_authority"] == "mixed_source_external_export_download_signed_reference_gate"
+    assert body["external_export_download_delivery_state"] == "mixed_source_external_export_download_delivered"
+    assert body["source_artifact_ref"] == "artifact://mixed-source-external-export-download-package-bound-by-hash"
+    assert body["source_artifact_hash"] == delivery_payload["package_payload_hash"]
+    assert body["signed_reference_token"]
+    assert body["signed_reference_replay_policy"] == "single_use"
+    assert body["signed_reference_use_count"] == 0
+    assert body["signed_reference_max_use_count"] == 1
+    assert body["download_url_enabled"] is False
+    assert body["provider_public_url_enabled"] is False
+    assert body["provider_private_signed_url_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["destination_selection_enabled"] is False
+    assert body["package_payload_rewrite_enabled"] is False
+    assert body["package_mutation_enabled"] is False
+    assert body["production_readiness_enabled"] is False
+    assert body["authority_rail"]["delivery_authority"] == "layer3.mixed_source_external_export_download_delivery.v1"
+    assert body["authority_rail"]["revalidate_at_use_required"] is True
+    _assert_mixed_source_lifecycle_response_redacted(body, tmp_path)
+
+    stale_authority_token_body = copy.deepcopy(
+        layer3_workbench._decode_signed_reference_token(body["signed_reference_token"])
+    )
+    stale_authority_token_body["delivery_authority"]["package_payload_hash"] = "0" * 64
+    stale_authority_token = layer3_workbench._encode_signed_reference_token(stale_authority_token_body)
+    stale_authority_use = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/use",
+        json={"signed_reference_token": stale_authority_token},
+    )
+    assert stale_authority_use.status_code == 409
+    assert stale_authority_use.json()["error_code"] == "external_export_download_signed_reference_authority_mismatch"
+    db = client.layer3_session_factory()
+    try:
+        durable_token = (
+            db.query(L3SignedReferenceToken)
+            .filter(L3SignedReferenceToken.signed_reference_token_id == body["signed_reference_token_id"])
+            .one()
+        )
+        assert durable_token.state == "ready"
+        assert durable_token.use_count == 0
+    finally:
+        db.close()
+
+    signed_reference_use = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/use",
+        json={"signed_reference_token": body["signed_reference_token"]},
+    )
+    assert signed_reference_use.status_code == 200, signed_reference_use.text
+    assert signed_reference_use.content == expected_bytes
+    assert signed_reference_use.headers["x-layer3-schema-id"] == (
+        "layer3.external_export_download_signed_reference_use.v1"
+    )
+    assert signed_reference_use.headers["x-layer3-delivery-state"] == (
+        "mixed_source_external_export_download_delivered"
+    )
+    assert signed_reference_use.headers["x-layer3-signed-reference-state"] == (
+        "external_export_download_signed_reference_delivered"
+    )
+    assert signed_reference_use.headers["x-layer3-signed-reference-token-id"] == body["signed_reference_token_id"]
+    assert signed_reference_use.headers["x-layer3-signed-reference-replay-policy"] == "single_use"
+    assert signed_reference_use.headers["x-layer3-signed-reference-use-count"] == "1"
+    for forbidden_header in ("download_url", "public_url", "provider_public_url", "signed_url", "connector_run_id"):
+        assert forbidden_header not in signed_reference_use.headers
+
+    signed_reference_replay = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/use",
+        json={"signed_reference_token": body["signed_reference_token"]},
+    )
+    assert signed_reference_replay.status_code == 409
+    assert signed_reference_replay.json()["error_code"] == "external_export_download_signed_reference_replay_denied"
+
+    extra_field_use = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/use",
+        json={"signed_reference_token": body["signed_reference_token"], "download_url": "https://example.invalid"},
+    )
+    assert extra_field_use.status_code == 400
+    assert extra_field_use.json()["error_code"] == "external_export_download_signed_reference_use_scope_not_admitted"
+
+    db = client.layer3_session_factory()
+    try:
+        durable_token = (
+            db.query(L3SignedReferenceToken)
+            .filter(L3SignedReferenceToken.signed_reference_token_id == body["signed_reference_token_id"])
+            .one()
+        )
+        assert durable_token.state == "used"
+        assert durable_token.use_count == 1
+        durable_snapshot = json.dumps(durable_token.authority_snapshot_json, sort_keys=True)
+        assert body["signed_reference_token"] not in durable_snapshot
+        assert str(package_path) not in durable_snapshot
+        assert "internal_artifact_ref_bound_by_hash" in durable_snapshot
+        receipts = db.query(L3SignedReferenceReceipt).filter(
+            L3SignedReferenceReceipt.signed_reference_token_id == durable_token.signed_reference_token_id
+        ).all()
+        assert len(receipts) == 2
+        for receipt in receipts:
+            receipt_payload = json.dumps(receipt.receipt_payload_json, sort_keys=True)
+            assert body["signed_reference_token"] not in receipt_payload
+            assert str(package_path) not in receipt_payload
+            assert "internal_artifact_ref_bound_by_hash" in receipt_payload
+    finally:
+        db.close()
+    assert sorted(str(path) for path in tmp_path.rglob("*") if path.is_file()) == files_before
+
+
+def test_layer3_api_mixed_source_signed_reference_rejected_after_direct_delivery(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    """FIX B regression: generating a signed reference after a plain direct delivery must raise 409."""
+    gate_b, material, _preview_body, commit_body, submit_body, _source = _submit_mixed_package_review(
+        client,
+        tmp_path,
+        request_id="api-mixed-sr-after-direct",
+    )
+    prepare = client.post(
+        "/api/v1/layer3/handoff/export/prepare",
+        json=_mixed_handoff_export_prepare_payload(
+            request_id="api-mixed-sr-after-direct-prepare",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+        ),
+    )
+    assert prepare.status_code == 200, prepare.text
+    prepare_body = prepare.json()
+    dispatch = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json=_mixed_aps_handoff_dispatch_payload(
+            request_id="api-mixed-sr-after-direct-dispatch",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body=prepare_body,
+        ),
+    )
+    assert dispatch.status_code == 200, dispatch.text
+    dispatch_body = dispatch.json()
+    readiness = client.post(
+        "/api/v1/layer3/handoff/export/download/readiness",
+        json=_mixed_external_export_download_readiness_payload(
+            request_id="api-mixed-sr-after-direct-readiness",
+            gate_b=gate_b,
+            material=material,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body=prepare_body,
+            dispatch_body=dispatch_body,
+        ),
+    )
+    assert readiness.status_code == 200, readiness.text
+    readiness_body = readiness.json()
+
+    # Build a direct delivery payload (operator_decision = deliver_mixed_source_external_export_download)
+    direct_deliver_payload = _mixed_external_export_download_delivery_payload(
+        request_id="api-mixed-sr-after-direct-deliver",
+        gate_b=gate_b,
+        material=material,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+        readiness_body=readiness_body,
+        package_kind="review_facing",
+    )
+    # Record a plain DIRECT delivery
+    direct_delivery = client.post("/api/v1/layer3/handoff/export/download/deliver", json=direct_deliver_payload)
+    assert direct_delivery.status_code == 200, direct_delivery.text
+
+    # Now attempt to generate a signed reference using the SAME client_request_id
+    signed_payload = {
+        **direct_deliver_payload,
+        "operator_decision": "generate_mixed_source_external_export_download_signed_reference",
+    }
+    monkeypatch.setenv("LAYER3_SIGNED_REFERENCE_SECRET", "test-layer3-sr-after-direct-secret")
+
+    db = client.layer3_session_factory()
+    try:
+        with pytest.raises(Layer3WorkbenchError) as exc_info:
+            layer3_workbench.external_export_download_generate_signed_reference(db, signed_payload)
+        assert exc_info.value.error_code == "external_export_download_signed_reference_after_direct_delivery"
+        assert exc_info.value.http_status == 409
+        assert exc_info.value.status == "conflict"
+        assert "client_request_id" in exc_info.value.blocked_fields
     finally:
         db.close()
 
