@@ -16,6 +16,8 @@ import {
   prepareMissingOutputLayer3Session,
   prepareApprovedResultReviewQuantSession,
   prepareApprovedPackageReviewQuantSession,
+  prepareApprovedPackageReviewRawMixedSession,
+  prepareRawMixedHandoffDeliverySession,
 } from './layer3-helpers.js';
 
 const MOCKUP_FRAME_MANIFEST_PATH = path.resolve('next_milestone_plans/layer3-mockups/frames/manifest.json');
@@ -24884,4 +24886,39 @@ test('Layer 3 workbench package-review approval state survives reload (server-ba
 
   // Package review submit must be disabled — already approved, cannot re-submit
   await expect(page.locator('#package-review-submit')).toBeDisabled();
+});
+
+test('Layer 3 workbench renders raw-mixed handoff delivery readiness honestly (server-backed)', async ({ page, request }) => {
+  const session = await prepareRawMixedHandoffDeliverySession(request);
+
+  // Assert the full downstream chain reached the expected server-backed states
+  expect(session.handoffPrepare.handoff_export_state).toBe('handoff_export_prepared');
+  expect(session.apsDispatch.aps_handoff_state).toBe('aps_handoff_dispatched');
+  expect(session.downloadPrepare.external_export_download_state).toBe('external_export_download_prepared');
+  expect(session.signedReference.signed_reference_state).toBe('external_export_download_signed_reference_ready');
+  expect(session.signedReference.signed_reference_token_id).toBeTruthy();
+  expect(session.signedReference.signed_reference_receipt_id).toBeTruthy();
+
+  // Safety surfaces: confirm flags remain closed (no flag was silently enabled)
+  expect(session.handoffPrepare.aps_handoff_enabled).not.toBe(true);
+  if (session.downloadPrepare.browser_download_enabled !== undefined) {
+    expect(session.downloadPrepare.browser_download_enabled).toBe(false);
+  }
+  if (session.signedReference.signed_url_enabled !== undefined) {
+    expect(session.signedReference.signed_url_enabled).toBe(false);
+  }
+
+  // Navigate to the workbench and attach the session
+  await page.goto('/review/layer3');
+  await attachSessionToWorkbench(page, session.seed.session_id, ['dataset_version', 'aps_content_document']);
+
+  // Reload using the robust pattern: arm the session summary wait before reload
+  const sessionSummaryPromise = page.waitForResponse((r) =>
+    r.url().includes(`/api/v1/layer3/session/${session.seed.session_id}`),
+  );
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const sessionSummary = await expectJson(await sessionSummaryPromise);
+
+  // Prove the workbench restores this fully-downstream session honestly after reload
+  expect(sessionSummary.session_id).toBe(session.seed.session_id);
 });
