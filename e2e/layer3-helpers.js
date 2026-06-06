@@ -395,5 +395,6 @@ export async function attachSessionToWorkbench(page, sessionId, sourceClasses = 
     State.planRevision = null;
     clearResultReviewState();
     renderAll();
+    persistSessionRecoveryAnchor('test-harness');
   }, { session_id: sessionId, source_classes: sourceClasses });
 }

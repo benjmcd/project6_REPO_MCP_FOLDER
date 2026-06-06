@@ -2528,9 +2528,9 @@ def _build_browser_failed_pass_session(db, temp_path: Path) -> str:
     db.commit()
     materialize_typing_entry(db, session_id=session.session_id)
     db.commit()
-    # Corrupt the CSV so run_analysis raises during execution/start,
-    # causing execute_selected_pass_run to write status=PASS_STATUS_FAILED.
-    csv_path.write_bytes(b"")
+    # Delete the CSV so load_version_dataframe raises ValueError("dataset storage file
+    # does not exist"), causing execute_selected_pass_run to write PASS_STATUS_FAILED.
+    csv_path.unlink()
     return session.session_id
 
 
