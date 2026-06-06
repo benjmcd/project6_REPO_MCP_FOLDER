@@ -541,7 +541,7 @@ def test_value_reveal_authority_resolves_sidecar_and_internal_value_store(monkey
         return {
             "sidecar_receipt_id": receipt_id,
             "sidecar_receipt_hash": _hash("b"),
-            "sidecar_state": "ready",
+            "sidecar_state": authority_service.layer3_sec_xbrl_sidecar.READY_STATE,
             "internal_value_store": {"value_store_hash": _hash("c")},
             "resolved_fact_projection": [{"fact_ref_hash": _hash("e")}],
         }

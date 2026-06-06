@@ -7,6 +7,8 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.models import Dataset, DatasetVersion, VariableDefinition
+from app.services import layer3_sec_xbrl_sidecar
 from app.services.layer3_sec_xbrl_canonical_concepts import (
     project_issuer_canonical_facts_by_periods,
 )
@@ -28,6 +30,7 @@ from app.services.layer3_sec_xbrl_statement_packet_persistence import (
     materialize_redacted_statement_packet,
 )
 from app.services.layer3_utils import json_clone, stable_hash
+from app.services.layer3_workbench_error import Layer3WorkbenchError
 
 
 SCHEMA_ID = "layer3.sec_xbrl_e2e_offline_evidence_orchestrator.v1"
@@ -204,6 +207,11 @@ def open_redacted_operator_review_from_offline_evidence(
         )
 
     try:
+        dataset_authority = _materialize_offline_dataset_authority(
+            db,
+            dataset_version_id=dataset_version_id,
+            canonical_projection=canonical_projection,
+        )
         projection_response = materialize_redacted_projection_set(
             db,
             client_request_id=f"{request_id}:projection",
@@ -234,6 +242,13 @@ def open_redacted_operator_review_from_offline_evidence(
                 packet_response=packet_response,
                 workflow_response=workflow_response,
             )
+        sidecar_authority = _materialize_offline_sidecar_authority(
+            client_request_id=f"{request_id}:sidecar-authority",
+            sidecar_receipt=sidecar_receipt,
+            value_store=value_store,
+            source_report_hash=report_hash,
+        )
+        if atomic:
             if commit:
                 db.commit()
             else:
@@ -275,10 +290,16 @@ def open_redacted_operator_review_from_offline_evidence(
             "single_transaction_claimed": atomic,
             "transaction_boundary": "caller_owned_session" if atomic else "stage_owned_commits",
             "pre_persistence_projection_and_packet_preflight_passed": True,
+            "server_owned_dataset_version_authority_materialized": True,
+            "server_owned_dataset_version_authority_created": dataset_authority["created"],
+            "server_owned_sidecar_authority_materialized": True,
+            "server_owned_sidecar_authority_replayed": sidecar_authority["idempotent_replay"],
+            "file_backed_sidecar_authority_sql_rollback_claimed": False,
         },
         "controls": {
             "offline_evidence_input_only": True,
             "file_read_performed": False,
+            "file_write_performed": True,
             "source_acquisition_performed": False,
             "arelle_invoked": False,
             "value_reveal_performed": False,
@@ -288,6 +309,126 @@ def open_redacted_operator_review_from_offline_evidence(
     }
     _reject_public_raw_or_local_authority(response)
     return response
+
+
+def _materialize_offline_dataset_authority(
+    db: Session,
+    *,
+    dataset_version_id: str | None,
+    canonical_projection: Mapping[str, Any],
+) -> dict[str, Any]:
+    version_id = _required_public_text(dataset_version_id, "dataset_version_id")
+    existing = db.get(DatasetVersion, version_id)
+    if existing is not None:
+        return {"created": False, "dataset_version_id_hash": stable_hash(version_id)}
+
+    dataset_id = stable_hash(
+        {
+            "schema_id": "layer3.sec_xbrl_offline_dataset_authority.v1",
+            "dataset_version_id": version_id,
+        }
+    )[:36]
+    dataset = db.get(Dataset, dataset_id)
+    if dataset is None:
+        dataset = Dataset(
+            dataset_id=dataset_id,
+            name="SEC XBRL offline evidence authority",
+            description="Hash-only dataset authority for offline SEC XBRL activation evidence.",
+            domain_pack="sec-xbrl",
+        )
+        db.add(dataset)
+        db.flush()
+
+    variable_names = _dataset_variable_names(canonical_projection)
+    version = DatasetVersion(
+        dataset_version_id=version_id,
+        dataset_id=dataset_id,
+        version_label="offline-evidence-authority",
+        version_type="sec-xbrl-offline-authority",
+        status="ready",
+        storage_ref=None,
+        row_count=max(1, int(canonical_projection.get("ready_period_count") or 0)),
+        notes="Offline SEC XBRL authority; raw values remain sidecar-gated.",
+    )
+    db.add(version)
+    db.flush()
+    for ordinal, variable_name in enumerate(variable_names):
+        db.add(
+            VariableDefinition(
+                dataset_version_id=version_id,
+                variable_name=variable_name,
+                dtype="decimal" if variable_name != "document_period_marker" else "string",
+                role="measure",
+                is_numeric=variable_name != "document_period_marker",
+                is_time_index=False,
+                ordinal_position=ordinal,
+            )
+        )
+    db.flush()
+    return {"created": True, "dataset_version_id_hash": stable_hash(version_id)}
+
+
+def _dataset_variable_names(canonical_projection: Mapping[str, Any]) -> list[str]:
+    names: list[str] = []
+    seen: set[str] = set()
+    periods = canonical_projection.get("periods")
+    if isinstance(periods, Sequence) and not isinstance(periods, (str, bytes)):
+        for period in periods:
+            if not isinstance(period, Mapping):
+                continue
+            projection = period.get("projection")
+            if not isinstance(projection, Mapping):
+                continue
+            concepts = projection.get("concepts")
+            if not isinstance(concepts, Sequence) or isinstance(concepts, (str, bytes)):
+                continue
+            for concept in concepts:
+                if not isinstance(concept, Mapping):
+                    continue
+                raw_name = str(
+                    concept.get("canonical_id")
+                    or concept.get("concept_id")
+                    or concept.get("label")
+                    or concept.get("source_qname")
+                    or ""
+                ).strip()
+                if not raw_name:
+                    continue
+                name = re.sub(r"[^A-Za-z0-9_]+", "_", raw_name).strip("_").lower()
+                if not name or name in seen:
+                    continue
+                seen.add(name)
+                names.append(name[:255])
+    if not names:
+        names.append("sec_xbrl_fact_count")
+    if "document_period_marker" not in seen:
+        names.append("document_period_marker")
+    return names
+
+
+def _materialize_offline_sidecar_authority(
+    *,
+    client_request_id: str,
+    sidecar_receipt: Mapping[str, Any],
+    value_store: Mapping[str, Any],
+    source_report_hash: str,
+) -> dict[str, Any]:
+    try:
+        return layer3_sec_xbrl_sidecar.materialize_offline_resolved_fact_authority(
+            client_request_id=client_request_id,
+            sidecar_receipt=sidecar_receipt,
+            value_store=value_store,
+            source_report_hash=source_report_hash,
+        )
+    except Layer3WorkbenchError as exc:
+        raise SecXbrlE2EOfflineOrchestratorError(
+            "sec_xbrl_e2e_offline_orchestrator_sidecar_authority_materialization_failed",
+            "SEC XBRL offline orchestration could not establish server-owned sidecar value authority.",
+            details={
+                "sidecar_error_code": exc.error_code,
+                "blocked_fields": list(exc.blocked_fields),
+            },
+        ) from exc
 
 
 def _normalise_fault_injection_point(value: str | None) -> str | None:

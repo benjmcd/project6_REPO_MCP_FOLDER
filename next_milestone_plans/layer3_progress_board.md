@@ -12509,3 +12509,46 @@ this change), `tools/l3-target-selection-validate.py --expect frozen`, and `git 
 
 Next posture: separate bounded activation freezes may follow for the Arelle governed-sibling reveal
 flag, default-on runtime posture, and live SEC/Arelle surfaces; each remains independently gated.
+
+## SEC XBRL Activation Integration
+
+Milestone: `sec_xbrl_activation_integration_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1354-sec-xbrl-activation-integration-readiness.md`.
+
+Runbook: `docs/layer3/sec_xbrl_usable_in_full_runbook.md`.
+
+Decision: `branch_local_activation_integration_verified_known_max_path_residual`.
+
+Status: branch-local integration on `claude/sec-xbrl-activation-integration` wires the
+offline-safe activation surfaces that make the SEC XBRL lane usable through the API:
+multi-filing authority-gate inspection, e2e offline operator-review open, activation
+posture projection, and strict no-id in-app route policy. Existing default-on fact authority
+and controlled value reveal remain active from predecessor slices. The offline open route now
+materializes server-owned dataset-version and sidecar/value-store authority so the governed
+value-reveal authority and controlled submit chain can run from the opened workflow.
+
+Active surfaces: `GET /api/v1/layer3/sec-xbrl/activation-posture`, `POST
+/api/v1/layer3/sec-xbrl/multi-filing-authority-gate/inspect`, `POST
+/api/v1/layer3/sec-xbrl/e2e/offline-operator-review/open`, the operator-review workflow
+status/decision routes, and controlled value-reveal authority/submit/status.
+
+Hold-live boundaries: live SEC network acquisition remains gated off; live Arelle subprocess
+execution remains separately gated; the Arelle governed-sibling value-reveal flag remains
+default-off because it is coherent only with `layer3_sec_edgar_arelle_internal_value_store_enabled`
+also enabled during sidecar writes. The runbook records the two-flag operator-exercise recipe
+without making it default behavior.
+
+Containment: no model, Alembic migration, schema, external provider/export delivery, live SEC
+network run, live Arelle subprocess, raw-value persistence default, or production-readiness
+claim is introduced. New branch-local behavior is reversible by config flags, fails closed
+when disabled, and keeps authority-artifact redaction intact.
+
+Final verification: full SEC XBRL plus `test_layer3_api.py` regression returned `854 passed,
+1 failed`; the failure is the unchanged Windows MAX_PATH
+`test_layer3_api_rejects_sec_edgar_html_inline_xbrl_statement_candidate_handoff_export_stale_or_unsafe`
+case, not activation behavior. Live API smoke on an isolated SQLite/storage runtime completed
+health, activation posture, e2e offline open, decision submit, value-reveal authority prepare,
+controlled value-reveal submit, and submit status with `SMOKE_EXIT=0`, seven revealed facts,
+hash-only status, and no forbidden authority tokens. `git diff --check`, structural checks,
+focused route/service tests, and the diagnostic byte-stability rerun are clean.

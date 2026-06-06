@@ -404,6 +404,118 @@ def read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(
     return dict(value_store)
 
 
+def materialize_offline_resolved_fact_authority(
+    *,
+    client_request_id: str,
+    sidecar_receipt: Mapping[str, Any],
+    value_store: Mapping[str, Any],
+    source_report_hash: str,
+) -> dict[str, Any]:
+    """Persist offline evidence as server-owned sidecar/value-store authority."""
+    request_id = str(client_request_id or "").strip()
+    receipt_hash = _required_hash(sidecar_receipt, "sidecar_receipt_hash")
+    value_records = value_store.get("value_records")
+    if not isinstance(value_records, list) or not value_records:
+        _blocked(
+            "sec_edgar_arelle_sidecar_offline_value_store_missing",
+            "SEC EDGAR Arelle offline authority requires value records.",
+            http_status=409,
+            blocked_fields=["value_records"],
+        )
+    value_store_hash = _required_hash(value_store, "value_store_hash")
+    if stable_hash(value_records) != value_store_hash:
+        _blocked(
+            "sec_edgar_arelle_sidecar_offline_value_store_hash_mismatch",
+            "SEC EDGAR Arelle offline authority value store hash is stale.",
+            http_status=409,
+            blocked_fields=["value_store_hash"],
+        )
+    resolved_projection = sidecar_receipt.get("resolved_fact_projection")
+    if not isinstance(resolved_projection, list) or not resolved_projection:
+        _blocked(
+            "sec_edgar_arelle_sidecar_offline_projection_missing",
+            "SEC EDGAR Arelle offline authority requires redacted resolved fact projection.",
+            http_status=409,
+            blocked_fields=["resolved_fact_projection"],
+        )
+    receipt_id = f"{RECEIPT_PREFIX}-{receipt_hash[:24]}"
+    binding = _read_request_binding(request_id)
+    if binding and binding.get("sidecar_basis_hash") != receipt_hash:
+        _blocked(
+            "sec_edgar_arelle_sidecar_offline_client_request_id_conflict",
+            "client_request_id is already bound to a different offline SEC XBRL sidecar basis.",
+            http_status=409,
+            blocked_fields=["client_request_id"],
+        )
+    existing = _read_receipt_by_hash(receipt_hash)
+    metadata = _internal_value_store_metadata(
+        enabled=True,
+        value_store_hash=value_store_hash,
+        value_record_count=len(value_records),
+    )
+    receipt = existing or {
+        "schema_id": SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "request_schema_id": REQUEST_SCHEMA_ID,
+        "client_request_id_hash": _sha256_text(request_id),
+        "sidecar_state": READY_STATE,
+        "sidecar_receipt_id": receipt_id,
+        "sidecar_receipt_ref": f"{RECEIPT_PREFIX}:{receipt_hash[:24]}",
+        "sidecar_receipt_hash": receipt_hash,
+        "adapter_id": ADAPTER_ID,
+        "adapter_version": ADAPTER_VERSION,
+        "source_family": SOURCE_FAMILY,
+        "parser_family": "sec_xbrl_offline_evidence",
+        "parser_receipt_id": "offline-evidence-redacted-authority",
+        "parser_receipt_hash": stable_hash({"source": "offline_evidence", "source_report_hash": source_report_hash}),
+        "regex_fact_authority_receipt_hash": None,
+        "connector_receipt_hash": stable_hash({"source": "offline_evidence", "kind": "connector"}),
+        "live_source_artifact_receipt_hash": stable_hash({"source": "offline_evidence", "kind": "live_artifact"}),
+        "source_artifact_receipt_hash": stable_hash({"source": "offline_evidence", "kind": "source_artifact"}),
+        "content_sha256": stable_hash({"source": "offline_evidence", "kind": "content"}),
+        "primary_document_hash": stable_hash({"source": "offline_evidence", "kind": "primary_document"}),
+        "document_inventory_hash": stable_hash({"source": "offline_evidence", "kind": "document_inventory"}),
+        "content_order_hash": stable_hash({"source": "offline_evidence", "kind": "content_order"}),
+        "table_candidate_inventory_hash": stable_hash({"source": "offline_evidence", "kind": "table_candidates"}),
+        "inline_xbrl_marker_inventory_hash": stable_hash({"source": "offline_evidence", "kind": "inline_markers"}),
+        "resolved_fact_count": len(resolved_projection),
+        "resolved_fact_records": list(sidecar_receipt.get("resolved_fact_records") or []),
+        "resolved_fact_projection": list(resolved_projection),
+        "resolved_fact_inventory_hash": stable_hash(resolved_projection),
+        "local_value_inventory_hash": stable_hash([stable_hash(record) for record in value_records]),
+        "internal_value_store": metadata,
+        "coverage": {"offline_evidence_input_only": True, "resolved_fact_count": len(resolved_projection)},
+        "parity": {"offline_evidence_input_only": True, "arelle_invoked": False},
+        "diagnostics": {"offline_evidence_input_only": True, "arelle_invoked": False},
+        "diagnostics_hash": stable_hash({"offline_evidence_input_only": True, "arelle_invoked": False}),
+        "authority_hashes": {
+            "resolved_fact_inventory_hash": stable_hash(resolved_projection),
+            "local_value_inventory_hash": stable_hash([stable_hash(record) for record in value_records]),
+            "internal_value_store_hash": value_store_hash,
+            "sidecar_receipt_hash": receipt_hash,
+        },
+        "negative_invariants": _negative_invariants(),
+        "redaction_policy_id": REDACTION_POLICY_ID,
+        "created_at": _server_time(),
+        "updated_at": _server_time(),
+    }
+    _write_receipt(receipt)
+    _write_internal_value_store(receipt, value_records)
+    if not binding:
+        _write_request_binding(request_id, receipt_hash, receipt_id)
+    return {
+        "sidecar_receipt_hash": receipt_hash,
+        "value_store_hash": value_store_hash,
+        "sidecar_receipt_id_hash": stable_hash(
+            {
+                "hash_version": "sec_xbrl_value_reveal_authority_sidecar_receipt_id_hash_v1",
+                "sidecar_receipt_id": receipt_id,
+            }
+        ),
+        "idempotent_replay": existing is not None,
+    }
+
+
 def _run_arelle(*, primary_document: str, max_facts: int, submission_documents: list[dict[str, str]]) -> dict[str, Any]:
     helper = _repo_root() / "tools" / "sec-xbrl-arelle.py"
     if not helper.exists():

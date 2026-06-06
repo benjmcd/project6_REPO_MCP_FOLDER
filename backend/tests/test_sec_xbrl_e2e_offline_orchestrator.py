@@ -7,8 +7,10 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from app.core.config import settings
 from app.db.session import Base
 from app.models import (
+    DatasetVersion,
     L3SecXbrlOperatorReviewWorkflow,
     L3SecXbrlProjectionFact,
     L3SecXbrlProjectionSet,
@@ -20,7 +22,8 @@ from app.services.layer3_utils import json_clone, stable_hash
 
 
 @pytest.fixture()
-def db_session():
+def db_session(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path / "storage"))
     engine = create_engine("sqlite:///:memory:", future=True)
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
@@ -48,6 +51,7 @@ def test_offline_orchestrator_opens_redacted_review_workflow_from_governed_evide
     assert response["controls"] == {
         "offline_evidence_input_only": True,
         "file_read_performed": False,
+        "file_write_performed": True,
         "source_acquisition_performed": False,
         "arelle_invoked": False,
         "value_reveal_performed": False,
@@ -90,6 +94,7 @@ def test_offline_orchestrator_opens_redacted_review_workflow_from_governed_evide
     assert db_session.query(L3SecXbrlProjectionSet).count() == 1
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 1
     assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 1
+    assert db_session.query(DatasetVersion).count() == 1
 
 
 def test_offline_orchestrator_single_transaction_commits_complete_review_workflow(db_session) -> None:
@@ -115,6 +120,7 @@ def test_offline_orchestrator_single_transaction_commits_complete_review_workflo
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 1
     assert db_session.query(L3SecXbrlStatementPacketRow).count() == 6
     assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 1
+    assert db_session.query(DatasetVersion).count() == 1
 
 
 @pytest.mark.parametrize("fault", sorted(orchestrator.ATOMIC_FAULT_INJECTION_POINTS))
@@ -136,6 +142,7 @@ def test_offline_orchestrator_single_transaction_rolls_back_stage_faults(db_sess
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
     assert db_session.query(L3SecXbrlStatementPacketRow).count() == 0
     assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 0
+    assert db_session.query(DatasetVersion).count() == 0
 
 
 def test_offline_orchestrator_fault_injection_requires_single_transaction(db_session) -> None:
@@ -152,6 +159,7 @@ def test_offline_orchestrator_fault_injection_requires_single_transaction(db_ses
     assert db_session.query(L3SecXbrlProjectionSet).count() == 0
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
     assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 0
+    assert db_session.query(DatasetVersion).count() == 0
 
 
 def test_offline_orchestrator_commit_false_requires_single_transaction(db_session) -> None:
@@ -169,6 +177,7 @@ def test_offline_orchestrator_commit_false_requires_single_transaction(db_sessio
     assert db_session.query(L3SecXbrlProjectionSet).count() == 0
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 0
     assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 0
+    assert db_session.query(DatasetVersion).count() == 0
 
 
 def test_offline_orchestrator_atomic_mode_rejects_partial_idempotent_replay(

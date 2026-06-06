@@ -46771,6 +46771,83 @@
     "verification_status": "current-main planning-control validation passed",
     "scope_summary": "Registers doc 1350 and the progress-board activation entry in the manifests while preserving deferred activation posture and the PR #609 scoped snapshot boundary."
   },
+  "sec_xbrl_activation_integration_branch_tracking": {
+    "tracking_kind": "sec_xbrl_activation_integration_branch_tracking",
+    "milestone": "sec_xbrl_activation_integration_v1",
+    "status": "branch_local_activation_integration_verified_known_max_path_residual",
+    "branch": "claude/sec-xbrl-activation-integration",
+    "base_branch": "claude/sec-xbrl-value-reveal",
+    "base_commit": "311a305a3703aee886e98a770aebb73bac39587f",
+    "readiness_doc": "next_milestone_plans/Layer3_planning_docs/1354-sec-xbrl-activation-integration-readiness.md",
+    "runbook": "docs/layer3/sec_xbrl_usable_in_full_runbook.md",
+    "board_section": "SEC XBRL Activation Integration",
+    "active_routes": [
+      "GET /api/v1/layer3/sec-xbrl/activation-posture",
+      "POST /api/v1/layer3/sec-xbrl/multi-filing-authority-gate/inspect",
+      "POST /api/v1/layer3/sec-xbrl/e2e/offline-operator-review/open",
+      "POST /api/v1/layer3/sec-xbrl/operator-review/workflow/status",
+      "POST /api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit",
+      "POST /api/v1/layer3/sec-xbrl/operator-review/workflow/decision/status",
+      "POST /api/v1/layer3/sec-xbrl/value-reveal/authority/prepare",
+      "POST /api/v1/layer3/sec-xbrl/value-reveal/submit",
+      "GET /api/v1/layer3/sec-xbrl/value-reveal/submit/status/{sec_xbrl_controlled_value_reveal_submit_receipt_id}"
+    ],
+    "active_flags": [
+      "layer3_sec_xbrl_multi_filing_authority_gate_route_enabled",
+      "layer3_sec_xbrl_e2e_offline_orchestrator_route_enabled",
+      "layer3_sec_xbrl_auth_policy_route_enforcement_strict",
+      "layer3_sec_xbrl_controlled_value_reveal_submit_enabled",
+      "layer3_sec_edgar_arelle_fact_authority_cutover_enabled"
+    ],
+    "hold_live_flags": [
+      "layer3_sec_edgar_live_network_enabled",
+      "layer3_sec_edgar_arelle_value_reveal_enabled",
+      "layer3_sec_edgar_arelle_internal_value_store_enabled",
+      "layer3_sec_edgar_arelle_corpus_validation_enabled",
+      "layer3_sec_edgar_arelle_fact_authority_nonlocal_authorized"
+    ],
+    "runtime_behavior_changed_by_tracking": true,
+    "backend_api_contract_changed_by_tracking": true,
+    "rendered_ui_changed_by_tracking": true,
+    "schema_models_changed_by_tracking": false,
+    "migration_changed_by_tracking": false,
+    "durable_persistence_changed_by_tracking": true,
+    "diagnostic_report_changed_by_tracking": true,
+    "proof_json_changed_by_tracking": false,
+    "source_acquisition_performed_by_tracking": false,
+    "arelle_subprocess_invoked_by_tracking": false,
+    "live_sec_network_run_performed_by_tracking": false,
+    "multi_filing_gate_live_by_tracking": true,
+    "e2e_integration_live_by_tracking": true,
+    "in_app_auth_policy_live_by_tracking": true,
+    "controlled_submit_enabled_by_tracking": true,
+    "arelle_governed_sibling_value_reveal_default_enabled_by_tracking": false,
+    "production_readiness_claimed": false,
+    "containment": "Adds offline-safe API/readiness/posture surfaces and strict no-id route policy only; no live SEC network egress, live Arelle subprocess, schema/model/migration, provider/export delivery, raw default value persistence, or unrestricted production-readiness claim.",
+    "rollback": [
+      "LAYER3_SEC_XBRL_MULTI_FILING_AUTHORITY_GATE_ROUTE_ENABLED=false",
+      "LAYER3_SEC_XBRL_E2E_OFFLINE_ORCHESTRATOR_ROUTE_ENABLED=false",
+      "LAYER3_SEC_XBRL_AUTH_POLICY_ROUTE_ENFORCEMENT_STRICT=false",
+      "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED=false",
+      "LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED=false"
+    ],
+    "arelle_governed_sibling_recipe": [
+      "LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED=true while writing sidecars",
+      "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED=true while exercising governed-sibling reveal"
+    ],
+    "verification_before_final_gate": "Final post-runbook SEC XBRL plus test_layer3_api.py regression returned 854 passed, 1 failed; the single failure is the unchanged Windows MAX_PATH html-inline-xbrl handoff path-length case. Live API smoke completed health, activation posture, e2e offline open, decision submit, value-reveal authority prepare, controlled value-reveal submit, and submit status with seven revealed facts and hash-only status.",
+    "final_gate_evidence": [
+      "structural checks passed: py_compile, manifest json.tool, node --check",
+      "focused route/service tests passed: 39 passed, 1 warning",
+      "API smoke passed with SMOKE_EXIT=0 on isolated SQLite/storage runtime",
+      "full SEC XBRL plus test_layer3_api.py regression returned 854 passed, 1 known MAX_PATH failure, 2 warnings",
+      "diagnostic byte-stability rerun passed after regenerating the route-evidence hash snapshot",
+      "git diff --check passed",
+      "self-contained Tier-1/Tier-2 coherence review completed because Spark subagents were unavailable"
+    ],
+    "next_posture": "publish_branch_for_review_with_known_max_path_residual_then_land_after_review_gate"
+  },
+  "latest_sec_xbrl_activation_integration_branch_summary": "Branch-local SEC XBRL activation integration makes the offline-safe lane usable through API workflow surfaces: activation posture, multi-filing gate route, e2e offline operator-review open with server-owned dataset/sidecar authority materialization, strict no-id route-policy enforcement, and existing controlled value reveal. Live SEC acquisition, live Arelle subprocess, and the Arelle governed-sibling reveal remain gated and documented as hold-live boundaries.",
   "p14_mixed_source_package_review_preview_tracking": {
     "tracking_kind": "p14_mixed_source_package_review_preview_tracking",
     "milestone": "p14_mixed_source_package_review_preview",

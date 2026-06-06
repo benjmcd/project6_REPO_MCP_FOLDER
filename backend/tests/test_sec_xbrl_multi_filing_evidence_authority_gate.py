@@ -1,9 +1,23 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 from decimal import Decimal
+from pathlib import Path
 
+import pytest
+from fastapi.testclient import TestClient
+
+os.environ.setdefault("DB_INIT_MODE", "none")
+BACKEND = Path(__file__).resolve().parents[1]
+if str(BACKEND) not in sys.path:
+    sys.path.insert(0, str(BACKEND))
+
+from app.core.config import settings
 from app.services import layer3_sec_xbrl_multi_filing_evidence_authority_gate as gate
+
+INSPECT_ROUTE = "/api/v1/layer3/sec-xbrl/multi-filing-authority-gate/inspect"
 
 
 def test_multi_filing_evidence_authority_gate_blocks_without_filings() -> None:
@@ -252,3 +266,118 @@ def _blocked_filing(handle: str) -> dict[str, object]:
 
 def _hash(char: str) -> str:
     return char * 64
+
+
+# ---------------------------------------------------------------------------
+# Route-level tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def api_client():
+    from main import app
+
+    client = TestClient(app)
+    try:
+        yield client
+    finally:
+        pass
+
+
+def _three_ready_filings_body() -> dict:
+    return {
+        "filings": [
+            _ready_filing("fizz-10k-proof"),
+            _ready_filing("fizz-10q-proof", char="2"),
+            _ready_filing("ccj-10k-proof", char="3"),
+        ]
+    }
+
+
+def _one_ready_filing_body() -> dict:
+    return {
+        "filings": [
+            _ready_filing("fizz-10k-proof"),
+        ]
+    }
+
+
+def test_multi_filing_authority_gate_route_returns_ready_for_three_proof_filings(api_client) -> None:
+    response = api_client.post(INSPECT_ROUTE, json=_three_ready_filings_body())
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["ready"] is True
+    assert body["status"] == gate.STATUS_READY
+    assert body["blocked_reasons"] == []
+    assert body["ready_filing_count"] == 3
+    assert body["raw_evidence_committed"] is False
+    assert body["public_surface"]["hash_count_state_only"] is True
+    assert body["controls"]["production_readiness_claimed"] is False
+
+
+def test_multi_filing_authority_gate_route_returns_blocked_for_insufficient_ready_filings(api_client) -> None:
+    response = api_client.post(INSPECT_ROUTE, json=_one_ready_filing_body())
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["ready"] is False
+    assert body["status"] == gate.STATUS_BLOCKED
+    assert any(
+        item["reason"] == "sec_xbrl_multi_filing_evidence_authority_ready_count_insufficient"
+        for item in body["blocked_reasons"]
+    )
+    assert body["controls"]["production_readiness_claimed"] is False
+
+
+def test_multi_filing_authority_gate_route_explicit_flag_off_returns_disabled_response(
+    api_client, monkeypatch
+) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_xbrl_multi_filing_authority_gate_route_enabled", False)
+
+    response = api_client.post(INSPECT_ROUTE, json=_three_ready_filings_body())
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["ready"] is False
+    assert body["status"] == gate.STATUS_BLOCKED
+    assert body["raw_evidence_committed"] is False
+    assert any(
+        item["reason"] == "sec_xbrl_multi_filing_authority_gate_route_feature_flag_disabled"
+        for item in body["blocked_reasons"]
+    )
+    # Confirm no filing data was written or echoed back
+    response_text = json.dumps(body, sort_keys=True)
+    assert "fizz-10k-proof" not in response_text
+
+
+def test_multi_filing_authority_gate_route_response_contains_no_raw_values_or_authority_refs(
+    api_client,
+) -> None:
+    body_with_raw = {
+        "filings": [
+            {
+                **_ready_filing("fizz-10k-proof"),
+                "accession": "0000123456-26-000099",
+                "local_path": r"C:\raw\sec",
+                "cik": "0001234567",
+            },
+            _ready_filing("fizz-10q-proof", char="2"),
+            _ready_filing("ccj-10k-proof", char="3"),
+        ]
+    }
+    response = api_client.post(INSPECT_ROUTE, json=body_with_raw)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    response_text = json.dumps(body, sort_keys=True)
+    # Raw authority refs must not appear in the response
+    assert "0000123456-26-000099" not in response_text
+    assert r"C:\raw\sec" not in response_text
+    assert "0001234567" not in response_text
+    # Response must be blocked because raw inputs were submitted
+    assert body["ready"] is False
+    assert any(
+        item["reason"] == "sec_xbrl_multi_filing_evidence_authority_raw_input_not_admitted"
+        for item in body["blocked_reasons"]
+    )

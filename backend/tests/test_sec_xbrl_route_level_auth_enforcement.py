@@ -444,7 +444,11 @@ def test_route_value_reveal_submit_rejects_forbidden_field_auth_policy_override(
 
 def test_route_workflow_status_no_id_returns_domain_400_not_auth_error(client) -> None:
     """Without a workflow_id or basis_hash the route bypasses auth entirely.
-    The response is a domain 400, not an auth-policy 401/409."""
+    The response is a domain 400, not an auth-policy 401/409.
+
+    This fixture uses auth_owner=none (default).  Under strict enforcement the
+    policy check is non-blocking for local operator principal, so the service
+    domain error is still what the caller observes -- the invariant holds."""
     response = client.post(
         WORKFLOW_STATUS_ROUTE,
         json={
@@ -464,3 +468,220 @@ def test_route_workflow_status_no_id_returns_domain_400_not_auth_error(client) -
     )
     # The domain service rejects the call for missing authority
     assert "authority_missing" in error_code or "workflow" in error_code, body
+
+
+# ---------------------------------------------------------------------------
+# 6. No-identity bypass hardening: strict enforcement gates the no-id branches.
+#
+# 6a. Strict-on / proxy / no identity header / no workflow_id -> fail closed
+#     (identity check runs, proxy fails closed with 401).
+# 6b. Strict-off / proxy / no identity header / no workflow_id -> old bypass
+#     (service domain result returned, not an auth error; reversibility proof).
+# 6c. Strict-on / auth_owner=none / no workflow_id -> domain result returned
+#     (policy non-blocking for local operator; explicit documentation test).
+# 6d. Same as 6a but for the decision-status route.
+# ---------------------------------------------------------------------------
+
+def test_route_workflow_status_no_id_strict_on_proxy_fail_closed(
+    tmp_path, monkeypatch
+) -> None:
+    """Strict enforcement ON + proxy mode + no identity header + no workflow_id:
+    the no-id branch now runs _sec_xbrl_policy_decision, which fails closed (401)
+    when the proxy identity header is absent."""
+    storage_dir = tmp_path / "storage"
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    monkeypatch.setattr(
+        settings,
+        "layer3_external_local_export_dir",
+        str(tmp_path / "external-local-export"),
+    )
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+    monkeypatch.setattr(settings, "proxy_identity_header", "x-forwarded-user")
+    monkeypatch.setattr(settings, "proxy_groups_header", "x-forwarded-groups")
+    monkeypatch.setattr(settings, "layer3_sec_xbrl_auth_policy_route_enforcement_strict", True)
+    bootstrap_storage_tree(storage_dir)
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+    engine = create_engine(
+        "sqlite:///:memory:",
+        future=True,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+
+    def override_get_db():
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        from fastapi.testclient import TestClient
+        strict_proxy_client = TestClient(app)
+        response = strict_proxy_client.post(
+            WORKFLOW_STATUS_ROUTE,
+            json={
+                "client_request_id": "route-auth-proof-strict-proxy-no-id",
+                "status_mode": "sec_xbrl_operator_review_workflow_status_v1",
+                "operator_decision": "inspect_sec_xbrl_operator_review_workflow_status",
+                # no workflow_id or basis_hash
+            },
+            # no X-Forwarded-User header -> policy fails closed
+        )
+        body = _assert_auth_fail_closed(response, expected_status=401)
+        assert "missing_identity_authority" in body.get("error_code", ""), body
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def test_route_workflow_status_no_id_strict_off_proxy_returns_domain_result(
+    tmp_path, monkeypatch
+) -> None:
+    """Strict enforcement OFF + proxy mode + no identity header + no workflow_id:
+    the old bypass behavior is preserved -- the route calls the service directly
+    without auth and returns a domain result (not an auth error).
+    This is the reversibility proof: setting the flag False restores prior behavior."""
+    storage_dir = tmp_path / "storage"
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    monkeypatch.setattr(
+        settings,
+        "layer3_external_local_export_dir",
+        str(tmp_path / "external-local-export"),
+    )
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+    monkeypatch.setattr(settings, "proxy_identity_header", "x-forwarded-user")
+    monkeypatch.setattr(settings, "proxy_groups_header", "x-forwarded-groups")
+    monkeypatch.setattr(settings, "layer3_sec_xbrl_auth_policy_route_enforcement_strict", False)
+    bootstrap_storage_tree(storage_dir)
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+    engine = create_engine(
+        "sqlite:///:memory:",
+        future=True,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+
+    def override_get_db():
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        from fastapi.testclient import TestClient
+        strict_off_client = TestClient(app)
+        response = strict_off_client.post(
+            WORKFLOW_STATUS_ROUTE,
+            json={
+                "client_request_id": "route-auth-proof-strict-off-no-id",
+                "status_mode": "sec_xbrl_operator_review_workflow_status_v1",
+                "operator_decision": "inspect_sec_xbrl_operator_review_workflow_status",
+                # no workflow_id or basis_hash
+            },
+            # no identity header -- but strict is off so no auth check fires
+        )
+        # Must return a domain error (400), NOT an auth error (401/409)
+        assert response.status_code == 400, response.text
+        body = response.json()
+        assert body.get("schema_id") == "layer3.workbench_error.v1", body
+        error_code = body.get("error_code", "")
+        assert "auth_policy" not in error_code, (
+            f"Strict-off should not return auth-policy error: {error_code}"
+        )
+        assert "authority_missing" in error_code or "workflow" in error_code, body
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def test_route_workflow_status_no_id_none_mode_strict_on_non_blocking(client) -> None:
+    """Strict enforcement ON + auth_owner=none + no workflow_id: the policy check
+    is non-blocking (local operator principal), so the route returns the service
+    domain result (400), not an auth error.  Explicit documentation test."""
+    response = client.post(
+        WORKFLOW_STATUS_ROUTE,
+        json={
+            "client_request_id": "route-auth-proof-none-strict-no-id",
+            "status_mode": "sec_xbrl_operator_review_workflow_status_v1",
+            "operator_decision": "inspect_sec_xbrl_operator_review_workflow_status",
+            # no workflow_id or basis_hash
+        },
+    )
+    assert response.status_code == 400, response.text
+    body = response.json()
+    assert body.get("schema_id") == "layer3.workbench_error.v1", body
+    error_code = body.get("error_code", "")
+    assert "auth_policy" not in error_code, (
+        f"auth_owner=none should be non-blocking: {error_code}"
+    )
+    assert "authority_missing" in error_code or "workflow" in error_code, body
+
+
+def test_route_decision_status_no_id_strict_on_proxy_fail_closed(
+    tmp_path, monkeypatch
+) -> None:
+    """Strict enforcement ON + proxy mode + no identity header + no decision_id:
+    the decision-status no-id branch now runs _sec_xbrl_policy_decision and
+    fails closed (401) when the proxy identity header is absent."""
+    storage_dir = tmp_path / "storage"
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    monkeypatch.setattr(
+        settings,
+        "layer3_external_local_export_dir",
+        str(tmp_path / "external-local-export"),
+    )
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+    monkeypatch.setattr(settings, "proxy_identity_header", "x-forwarded-user")
+    monkeypatch.setattr(settings, "proxy_groups_header", "x-forwarded-groups")
+    monkeypatch.setattr(settings, "layer3_sec_xbrl_auth_policy_route_enforcement_strict", True)
+    bootstrap_storage_tree(storage_dir)
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+    engine = create_engine(
+        "sqlite:///:memory:",
+        future=True,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+
+    def override_get_db():
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        from fastapi.testclient import TestClient
+        strict_proxy_client = TestClient(app)
+        response = strict_proxy_client.post(
+            DECISION_STATUS_ROUTE,
+            json={
+                "client_request_id": "route-auth-proof-decision-status-strict-no-id",
+                "status_mode": "sec_xbrl_operator_review_decision_status_v1",
+                "operator_decision": "inspect_sec_xbrl_operator_review_decision_status",
+                # no decision_id or decision_basis_hash
+            },
+            # no X-Forwarded-User header -> policy fails closed
+        )
+        body = _assert_auth_fail_closed(response, expected_status=401)
+        assert "missing_identity_authority" in body.get("error_code", ""), body
+    finally:
+        app.dependency_overrides.pop(get_db, None)

@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
+from app.core.config import settings
 from app.services import (
     layer3_connector_dispatch_entry,
     layer3_connector_local_destination_receipt,
@@ -62,7 +63,9 @@ from app.services import (
     layer3_sec_edgar_source_acquisition,
     layer3_sec_xbrl_auth_binding,
     layer3_sec_xbrl_controlled_value_reveal_submit,
+    layer3_sec_xbrl_e2e_offline_orchestrator,
     layer3_sec_xbrl_in_app_auth_policy,
+    layer3_sec_xbrl_multi_filing_evidence_authority_gate,
     layer3_sec_xbrl_operator_review_workflow,
     layer3_sec_xbrl_value_reveal_authority,
     layer3_provider_private_signed_url,
@@ -1226,6 +1229,24 @@ class Layer3SecXbrlControlledValueRevealSubmitRequest(BaseModel):
     operator_reveal_confirmation: Literal[True]
     max_records: int | None = Field(default=None, ge=1)
     page_cursor: str | None = None
+
+
+class Layer3SecXbrlMultiFilingAuthorityGateInspectRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    filings: list[Any] | None = None
+
+
+class Layer3SecXbrlE2EOfflineOrchestratorOpenRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    open_mode: Literal["sec_xbrl_e2e_offline_operator_review_open_v1"]
+    operator_action: Literal["open_redacted_operator_review_from_offline_evidence"]
+    evidence: dict[str, Any]
+    period_limit: int = Field(default=3, ge=1)
+    include_sector_families: bool = False
+    single_transaction: bool = False
 
 
 class Layer3RawMixedCorpusSeedRequest(BaseModel):
@@ -17243,6 +17264,12 @@ def post_sec_xbrl_operator_review_workflow_status(
 ) -> dict[str, Any] | JSONResponse:
     try:
         if payload.sec_xbrl_operator_review_workflow_id is None and payload.workflow_basis_hash is None:
+            if settings.layer3_sec_xbrl_auth_policy_route_enforcement_strict:
+                _sec_xbrl_policy_decision(
+                    request,
+                    payload,
+                    route_family="sec_xbrl_operator_review_workflow_status_read",
+                )
             return layer3_sec_xbrl_operator_review_workflow.inspect_redacted_operator_review_workflow_status(
                 db,
                 **payload.model_dump(exclude={"status_mode", "operator_decision"}, exclude_none=True),
@@ -17303,6 +17330,12 @@ def post_sec_xbrl_operator_review_workflow_decision_submit(
     }
     try:
         if payload.sec_xbrl_operator_review_workflow_id is None and payload.workflow_basis_hash is None:
+            if settings.layer3_sec_xbrl_auth_policy_route_enforcement_strict:
+                _sec_xbrl_policy_decision(
+                    request,
+                    payload,
+                    route_family="sec_xbrl_operator_review_decision_submit_write",
+                )
             return layer3_sec_xbrl_operator_review_workflow.record_redacted_operator_review_decision(
                 db,
                 **{
@@ -17386,6 +17419,12 @@ def post_sec_xbrl_operator_review_workflow_decision_status(
 ) -> dict[str, Any] | JSONResponse:
     try:
         if payload.sec_xbrl_operator_review_decision_id is None and payload.decision_basis_hash is None:
+            if settings.layer3_sec_xbrl_auth_policy_route_enforcement_strict:
+                _sec_xbrl_policy_decision(
+                    request,
+                    payload,
+                    route_family="sec_xbrl_operator_review_decision_status_read",
+                )
             return layer3_sec_xbrl_operator_review_workflow.inspect_redacted_operator_review_decision_status(
                 db,
                 **payload.model_dump(exclude={"status_mode", "operator_decision"}, exclude_none=True),
@@ -17646,6 +17685,144 @@ def get_sec_xbrl_controlled_value_reveal_submit_status(
         return _sec_xbrl_controlled_value_reveal_submit_error_response(exc)
 
 
+@router.post(
+    "/sec-xbrl/multi-filing-authority-gate/inspect",
+    response_model=None,
+    responses=_workbench_error_responses(400),
+)
+def post_sec_xbrl_multi_filing_authority_gate_inspect(
+    payload: Layer3SecXbrlMultiFilingAuthorityGateInspectRequest,
+) -> dict[str, Any] | JSONResponse:
+    # Route returns hash/count state only; no raw values are returned regardless of flag state.
+    if not settings.layer3_sec_xbrl_multi_filing_authority_gate_route_enabled:
+        return {
+            "schema_id": layer3_sec_xbrl_multi_filing_evidence_authority_gate.SCHEMA_ID,
+            "schema_version": 1,
+            "status": layer3_sec_xbrl_multi_filing_evidence_authority_gate.STATUS_BLOCKED,
+            "ready": False,
+            "blocked_reasons": [
+                {
+                    "reason": "sec_xbrl_multi_filing_authority_gate_route_feature_flag_disabled",
+                    "message": "SEC XBRL multi-filing authority gate route is feature-flagged off.",
+                }
+            ],
+            "raw_evidence_committed": False,
+            "controls": {
+                "validate_only": True,
+                "source_acquisition_performed": False,
+                "arelle_invoked": False,
+                "network_performed": False,
+                "value_reveal_performed": False,
+                "production_database_touched": False,
+                "production_readiness_claimed": False,
+            },
+            "public_surface": {
+                "hash_count_state_only": True,
+                "raw_values_returned": False,
+                "raw_authority_refs_returned": False,
+                "local_paths_returned": False,
+            },
+        }
+    return _json_or_error(
+        lambda: layer3_sec_xbrl_multi_filing_evidence_authority_gate.inspect_sec_xbrl_multi_filing_evidence_authority_gate(
+            filing_evidence=payload.model_dump(exclude_none=True),
+        )
+    )
+
+
+def _sec_xbrl_e2e_offline_orchestrator_error_response(
+    exc: layer3_sec_xbrl_e2e_offline_orchestrator.SecXbrlE2EOfflineOrchestratorError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=400,
+        content=workbench_error_response(
+            Layer3WorkbenchError(
+                error_code=exc.code,
+                message=exc.message,
+                status="blocked",
+                http_status=400,
+                blocked_fields=list(exc.details.get("blocked_fields", [])),
+                next_allowed_actions=["inspect_existing_sec_xbrl_offline_orchestrator_controls"],
+            )
+        ),
+    )
+
+
+@router.post(
+    "/sec-xbrl/e2e/offline-operator-review/open",
+    response_model=None,
+    responses=_workbench_error_responses(400, 409),
+)
+def post_sec_xbrl_e2e_offline_operator_review_open(
+    payload: Layer3SecXbrlE2EOfflineOrchestratorOpenRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    if not settings.layer3_sec_xbrl_e2e_offline_orchestrator_route_enabled:
+        return {
+            "schema_id": layer3_sec_xbrl_e2e_offline_orchestrator.SCHEMA_ID,
+            "status": "blocked",
+            "ready": False,
+            "blocked_reasons": [
+                {
+                    "reason": "sec_xbrl_e2e_offline_orchestrator_route_feature_flag_disabled",
+                    "message": "SEC XBRL e2e offline orchestrator route is feature-flagged off.",
+                }
+            ],
+            "controls": {
+                "offline_evidence_input_only": True,
+                "file_read_performed": False,
+                "source_acquisition_performed": False,
+                "arelle_invoked": False,
+                "value_reveal_performed": False,
+                "api_route_enabled": False,
+                "production_readiness_claimed": False,
+            },
+        }
+    try:
+        route_family = "sec_xbrl_operator_review_decision_submit_write"
+        policy_decision = _sec_xbrl_policy_decision(
+            request,
+            payload,
+            route_family=route_family,
+        )
+        result = layer3_sec_xbrl_e2e_offline_orchestrator.open_redacted_operator_review_from_offline_evidence(
+            db,
+            client_request_id=payload.client_request_id,
+            evidence=payload.evidence,
+            period_limit=payload.period_limit,
+            include_sector_families=payload.include_sector_families,
+            single_transaction=True,
+            commit=False,
+        )
+        workflow_binding = _sec_xbrl_record_binding(
+            db,
+            client_request_id=payload.client_request_id,
+            source_receipt_kind="operator_review_workflow",
+            source_receipt_id=result["sec_xbrl_operator_review_workflow_id"],
+            source_receipt_basis_hash=result["workflow_basis_hash"],
+            route_family=route_family,
+            policy_decision=policy_decision,
+            commit=False,
+        )
+        _sec_xbrl_commit_bound_receipts(db)
+        return {
+            **result,
+            "auth_route_family": route_family,
+            "auth_owner_mode": policy_decision.get("auth_owner_mode"),
+            "auth_policy_status": policy_decision.get("policy_status"),
+            **_sec_xbrl_auth_binding_projection(workflow_binding),
+        }
+    except (
+        layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
+        layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,
+    ) as exc:
+        db.rollback()
+        return _sec_xbrl_auth_policy_error_response(exc)
+    except layer3_sec_xbrl_e2e_offline_orchestrator.SecXbrlE2EOfflineOrchestratorError as exc:
+        return _sec_xbrl_e2e_offline_orchestrator_error_response(exc)
+
+
 @router.get("/sec-xbrl/identity/projection")
 def get_sec_xbrl_proxy_identity_readonly_projection(request: Request) -> dict[str, Any]:
     projection = layer3_sec_xbrl_in_app_auth_policy.build_proxy_identity_readonly_projection(
@@ -17658,6 +17835,74 @@ def get_sec_xbrl_proxy_identity_readonly_projection(request: Request) -> dict[st
             status=projection["projection_status"],
         ),
         "sec_xbrl_identity_projection": projection,
+    }
+
+
+_SEC_XBRL_ACTIVATION_POSTURE_SCHEMA_ID = "layer3.sec_xbrl_activation_posture.v1"
+
+_SEC_XBRL_ACTIVATION_SURFACES: list[dict[str, Any]] = [
+    {
+        "key": "value_reveal_submit",
+        "label": "Controlled value-reveal submit",
+        "flag": "layer3_sec_xbrl_controlled_value_reveal_submit_enabled",
+        "class": "active",
+    },
+    {
+        "key": "arelle_fact_authority_cutover",
+        "label": "Arelle fact authority cutover (default-on runtime)",
+        "flag": "layer3_sec_edgar_arelle_fact_authority_cutover_enabled",
+        "class": "active",
+    },
+    {
+        "key": "multi_filing_gate_route",
+        "label": "Multi-filing authority gate route",
+        "flag": "layer3_sec_xbrl_multi_filing_authority_gate_route_enabled",
+        "class": "active",
+    },
+    {
+        "key": "e2e_offline_orchestrator_route",
+        "label": "E2E offline orchestrator route",
+        "flag": "layer3_sec_xbrl_e2e_offline_orchestrator_route_enabled",
+        "class": "active",
+    },
+    {
+        "key": "arelle_value_reveal",
+        "label": "Arelle governed-sibling value reveal",
+        "flag": "layer3_sec_edgar_arelle_value_reveal_enabled",
+        "class": "active",
+    },
+    {
+        "key": "live_sec_acquisition",
+        "label": "Live SEC network acquisition",
+        "flag": "layer3_sec_edgar_live_network_enabled",
+        "class": "hold_live",
+    },
+]
+
+
+@router.get("/sec-xbrl/activation-posture")
+def get_sec_xbrl_activation_posture() -> dict[str, Any]:
+    surfaces = []
+    for surface in _SEC_XBRL_ACTIVATION_SURFACES:
+        flag_value = getattr(settings, surface["flag"])
+        surfaces.append({
+            "key": surface["key"],
+            "label": surface["label"],
+            "active": bool(flag_value),
+            "class": surface["class"],
+        })
+    return {
+        **base_response(
+            _SEC_XBRL_ACTIVATION_POSTURE_SCHEMA_ID,
+            request_id="sec-xbrl-activation-posture",
+            status="ok",
+        ),
+        "auth_owner_mode": settings.auth_owner,
+        "surfaces": surfaces,
+        "controls": {
+            "public_surface": True,
+            "raw_values_returned": False,
+        },
     }
 
 

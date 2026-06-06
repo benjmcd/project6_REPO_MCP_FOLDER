@@ -29537,6 +29537,50 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
 
 init();
 
+(function secXbrlActivationPosturePanel() {
+    const ACTIVATION_POSTURE_ENDPOINT = '/api/v1/layer3/sec-xbrl/activation-posture';
+    const panel = document.getElementById('sec-xbrl-activation-posture-panel');
+    if (!panel) { return; }
+
+    function fieldItem(label, value) {
+        return `<li><span class="field-label">${label}</span><span class="field-value">${value}</span></li>`;
+    }
+
+    function surfaceItem(surface) {
+        const stateLabel = surface.active ? 'active' : 'hold';
+        const stateClass = surface.active ? 'status-ok' : 'status-hold';
+        return `<li class="activation-surface-item" data-surface-key="${surface.key}" data-surface-class="${surface.class}">
+            <span class="field-label">${surface.label}</span>
+            <span class="field-value ${stateClass}" data-surface-active="${surface.active}">${stateLabel} [${surface.class}]</span>
+        </li>`;
+    }
+
+    function renderPosturePanel(data) {
+        const surfaces = Array.isArray(data.surfaces) ? data.surfaces : [];
+        const controls = data.controls || {};
+        panel.innerHTML = `<section class="result-review-card sec-xbrl-activation-posture-card">
+            <h3>SEC XBRL Activation Posture</h3>
+            <ul class="field-list">
+                ${fieldItem('schema', data.schema_id || '')}
+                ${fieldItem('auth owner mode', data.auth_owner_mode || '')}
+                ${fieldItem('raw values returned', String(controls.raw_values_returned))}
+            </ul>
+            <ul class="field-list activation-surfaces-list" aria-label="Activation surfaces">
+                ${surfaces.map(surfaceItem).join('')}
+            </ul>
+        </section>`;
+    }
+
+    function renderPostureError(message) {
+        panel.innerHTML = `<div class="empty-panel">SEC XBRL activation posture unavailable: ${message}</div>`;
+    }
+
+    fetch(ACTIVATION_POSTURE_ENDPOINT)
+        .then(function(response) { return response.json(); })
+        .then(function(data) { renderPosturePanel(data); })
+        .catch(function(err) { renderPostureError(err.message || 'fetch error'); });
+}());
+
 (function sourceIntakeRenderedControls() {
     const sourceIntakeApiRoot = '/api/v1/layer3';
     const sourceIntakeState = {
