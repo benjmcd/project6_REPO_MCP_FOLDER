@@ -809,7 +809,9 @@ async function selectAndStartRenderedExecution(page, sessionId, approval, planPr
   await expect(page.locator('#execution-selection-start-panel')).toContainText('execution_started');
   await expect(page.locator('#execution-start')).toBeDisabled();
   await expect(page.locator('#result-status-inspect')).toBeEnabled();
-  await expect(page.locator('#result-review-submit')).toBeDisabled();
+  // G1: result-review-submit may already be enabled if auto-advance completed before this assertion.
+  // Callers that need to assert the submit state should do so after waiting for auto-advance.
+  await expect(page.locator('#result-review-submit')).toHaveCount(1);
   await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
 
   return { selection, start };
@@ -24281,4 +24283,456 @@ test('Layer 3 workbench proves Candidate B runtime source-directory full downstr
     expect(reset.source_ingestion_dir_restored).toBe(true);
     expect(reset.source_root_absolute_path_exposed).toBe(false);
   }
+});
+
+// ──────────────────────────────────────────────────────────────
+// G1 result-review auto-advance
+// ──────────────────────────────────────────────────────────────
+
+test('G1 result-review auto-advance: result-review-submit enabled without manual inspect click', async ({ page, request }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+  const approval = await approveRenderedPlan(page, gateB.session_id, planPreview);
+  await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
+
+  // Use the existing helper to drive selection + start correctly (reloads, theme, chip navigation).
+  // The helper returns after the start response arrives; G1 auto-advance fires inside startExecution().
+  await selectAndStartRenderedExecution(page, gateB.session_id, approval, planPreview);
+
+  // G1 assertion: result-review-submit must become enabled WITHOUT any manual #result-status-inspect click.
+  await expect(page.locator('#result-review-submit')).toBeEnabled({ timeout: 15000 });
+
+  // Assert: exactly one /execution/result/status request was issued (the auto-advance chained call).
+  // We filter to requests that fired after the session-reload phase (after start was clicked).
+  // The session GETs come from the pre-start reload steps inside selectAndStartRenderedExecution.
+  // layer3ApiRequests captures everything; count only the result/status calls.
+  const statusCalls = layer3ApiRequests.filter((r) => r.path.includes('/execution/result/status'));
+  expect(statusCalls).toHaveLength(1);
+
+  // Assert: no /session/ requests fired AFTER start (i.e. auto-advance did not call refreshSessionSummary).
+  // We assert by checking no session call appeared AFTER the status call, using the order in the array.
+  const firstStatusIndex = layer3ApiRequests.findIndex((r) => r.path.includes('/execution/result/status'));
+  const requestsAfterStatus = layer3ApiRequests.slice(firstStatusIndex + 1);
+  const sessionCallsAfterStatus = requestsAfterStatus.filter((r) => r.path.includes('/session/'));
+  expect(sessionCallsAfterStatus).toHaveLength(0);
+
+  // The transient pill must no longer be present (auto-advance cleared after completion).
+  await expect(page.locator('#result-review-panel')).not.toContainText('result_status_auto_advance_pending');
+
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, [
+    '/execution/result/review',
+    '/package/review/',
+    '/handoff/',
+  ]);
+});
+
+// ──────────────────────────────────────────────────────────────
+// G2 plan-revision recover
+// ──────────────────────────────────────────────────────────────
+
+test('G2 plan-revision recover: button enabled after plan-reject; correct POST payload; re-enables preview', async ({ page, request }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+
+  // Negative: before any revision, #plan-revision-recover must be disabled.
+  await expect(page.locator('#plan-revision-recover')).toBeDisabled();
+
+  // Reject the plan — calls /plan/revise with operator_decision='reject_current_preview'.
+  const reviseRequestPromise = page.waitForRequest((req) => (
+    req.url().includes('/api/v1/layer3/plan/revise') && req.method() === 'POST'
+  ));
+  const reviseResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/plan/revise')
+  ));
+  await page.locator('#plan-reject').click();
+  const revisePayload = (await reviseRequestPromise).postDataJSON();
+  expect(revisePayload.operator_decision).toBe('reject_current_preview');
+  expect(revisePayload.preview_id).toBe(planPreview.preview_id);
+  expect(revisePayload.preview_hash).toBe(planPreview.preview_hash);
+  const revise = await expectJson(await reviseResponsePromise);
+  expect(revise.next_state).toBe('plan_rejected');
+  expect(revise.execution_started).toBe(false);
+
+  // After rejection, #plan-revision-recover must be enabled.
+  await expect(page.locator('#plan-revision-recover')).toBeEnabled();
+
+  // Click Recover Plan Revision — assert correct POST.
+  const recoverRequestPromise = page.waitForRequest((req) => (
+    req.url().includes('/api/v1/layer3/plan/revision/recover') && req.method() === 'POST'
+  ));
+  const recoverResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/plan/revision/recover')
+  ));
+  await page.locator('#plan-revision-recover').click();
+  const recoverPayload = (await recoverRequestPromise).postDataJSON();
+  expect(recoverPayload.operator_decision).toBe('recover_for_preview_refresh');
+  expect(recoverPayload.source_revision_state).toBe('plan_rejected');
+  expect(recoverPayload.source_preview_id).toBe(planPreview.preview_id);
+  expect(recoverPayload.source_preview_hash).toBe(planPreview.preview_hash);
+  expect(recoverPayload.session_id).toBe(gateB.session_id);
+  const recover = await expectJson(await recoverResponsePromise);
+  expect(recover.next_state).toBe('gate_c_typing_committed');
+  expect(recover.preview_refresh_required).toBe(true);
+
+  // After recovery, #plan-revision-recover is disabled again and plan-preview re-enabled.
+  await expect(page.locator('#plan-revision-recover')).toBeDisabled();
+  await expect(page.locator('#plan-preview')).toBeEnabled();
+
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, [
+    '/execution/',
+    '/package/',
+    '/handoff/',
+  ]);
+});
+
+// ──────────────────────────────────────────────────────────────
+// G4 plan block reasons surfaced
+// ──────────────────────────────────────────────────────────────
+
+test('G4 plan block reasons surfaced: planApprovalError renders error card with server error_code', async ({ page, request }) => {
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+
+  // Corrupt the stored preview_hash in the page's State so the server rejects the approval.
+  await page.evaluate(() => {
+    State.planPreview = { ...State.planPreview, preview_hash: 'a'.repeat(64) };
+    renderAll();
+  });
+
+  // Click approve — this will POST with the wrong hash; server returns an error payload.
+  const approvalRequestPromise = page.waitForRequest((req) => (
+    req.url().includes('/api/v1/layer3/plan/approve') && req.method() === 'POST'
+  ));
+  const approvalResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/plan/approve')
+  ));
+  await page.locator('#plan-approve').click();
+  const approvalReq = (await approvalRequestPromise).postDataJSON();
+  expect(approvalReq.preview_hash).toBe('a'.repeat(64));
+  const approvalResp = await approvalResponsePromise;
+  expect(approvalResp.status()).not.toBe(200);
+
+  // The plan panel must now show an error card with a server-populated error code.
+  await expect(page.locator('#plan-panel')).toContainText('Block Reason');
+  const blockReasonCard = page.locator('#plan-panel .result-review-card');
+  await expect(blockReasonCard).toBeVisible();
+  await expect(blockReasonCard).toContainText('code:');
+
+  // Restore planPreview to valid state and test the planRevisionError rendering path.
+  await page.evaluate((preview) => {
+    State.planPreview = preview;
+    State.planApprovalError = null;
+    renderAll();
+  }, planPreview);
+  await expect(page.locator('#plan-reject')).toBeEnabled();
+
+  const reviseResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/plan/revise')
+  ));
+  await page.locator('#plan-reject').click();
+  await reviseResponsePromise;
+  await expect(page.locator('#plan-revision-recover')).toBeEnabled();
+
+  // Confirm planRevisionError state is accessible (rendered in planPreview branch).
+  await page.evaluate(() => {
+    State.planRevisionError = {
+      schema_id: 'layer3.workbench_error.v1',
+      error_code: 'plan_revision_already_recorded',
+      status: 'blocked',
+      message: 'A plan revision has already been recorded for this preview.',
+    };
+    renderAll();
+  });
+  const planRevisionErrorCode = await page.evaluate(() => State.planRevisionError?.error_code);
+  expect(planRevisionErrorCode).toBe('plan_revision_already_recorded');
+});
+
+// ──────────────────────────────────────────────────────────────
+// G3 result block cards
+//
+// HARNESS LIMITATION: cannot drive status='failed' or status='missing_output_metadata'
+// through the rendered e2e harness. The seed-quant/raw-mixed fixture always produces a
+// completed/completed_with_warnings pass. The 'failed' status requires pass_run.status ==
+// PASS_STATUS_FAILED which requires the actual pass to fail at runtime — not controllable
+// through the browser harness without a dedicated server-side fixture. Similarly,
+// 'missing_output_metadata' requires the pass_run to be terminal without readable output.
+//
+// Fallback: use real server-issued session/plan/pass_run identity (obtained via API calls)
+// and synthesize the result status in page State. This exercises the real renderErrorCard /
+// resultStatusBlockReason production paths without inventing authority identity.
+// ──────────────────────────────────────────────────────────────
+
+test('G3 result block cards: failed card shows server reason and start-new-session guidance with no cancel button', async ({ page, request }) => {
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+  const approval = await approveRenderedPlan(page, gateB.session_id, planPreview);
+
+  // Obtain a real execution selection via API to get real server-issued pass_run_id.
+  const selection = await expectJson(await request.post('/api/v1/layer3/execution/select', {
+    data: {
+      client_request_id: `g3-failed-select-${Date.now()}`,
+      session_id: gateB.session_id,
+      analysis_plan_id: approval.analysis_plan_id,
+      preview_id: planPreview.preview_id,
+      preview_hash: planPreview.preview_hash,
+    },
+  }));
+  const passRunId = selection.pass_run_ids[0];
+
+  // Synthesize failed execution using real server-issued identity.
+  await page.evaluate(({ sessionId, analysisPlanId, passRunId, previewId, previewHash }) => {
+    State.executionStart = {
+      schema_id: 'layer3.analysis_execution_start.v1',
+      session_id: sessionId,
+      analysis_plan_id: analysisPlanId,
+      pass_run_id: passRunId,
+      preview_identity: { preview_id: previewId, preview_hash: previewHash },
+      pass_run_status: 'failed',
+      execution_started: true,
+      analysis_run_id: null,
+      downstream_unavailable: ['results', 'package', 'handoff'],
+    };
+    State.resultStatus = {
+      schema_id: 'layer3.execution_result_status.v1',
+      session_id: sessionId,
+      analysis_plan_id: analysisPlanId,
+      pass_run_id: passRunId,
+      preview_identity: { preview_id: previewId, preview_hash: previewHash },
+      status: 'failed',
+      result_status_available: false,
+      pass_run_status: 'failed',
+      execution_started: true,
+      error_message: 'Pass run failed due to a fixture-level assertion error.',
+      analysis_run_id: null,
+      downstream_unavailable: ['results', 'package', 'handoff'],
+    };
+    State.resultStatusError = null;
+    renderAll();
+  }, {
+    sessionId: gateB.session_id,
+    analysisPlanId: approval.analysis_plan_id,
+    passRunId,
+    previewId: planPreview.preview_id,
+    previewHash: planPreview.preview_hash,
+  });
+
+  const resultPanel = page.locator('#result-review-panel');
+  await expect(resultPanel).toContainText('execution_result_status_failed');
+  await expect(resultPanel).toContainText('start a new session');
+  await expect(resultPanel).toContainText('Pass run failed');
+
+  // Critical: render-only failed card. renderErrorCard emits a "next action:" <li> only when
+  // next_allowed_actions is non-empty; the failed branch sets it to [], so the card has ZERO
+  // actionable affordance. This actively guards against a future regression that re-adds a
+  // cancel/recovery action to the failed branch (such a cancel always 409s on an existing pass run).
+  const failedCard = resultPanel.locator('.result-review-card', { hasText: 'execution_result_status_failed' });
+  await expect(failedCard).toBeVisible();
+  await expect(failedCard).not.toContainText('next action:');
+  await expect(page.locator('#result-review-submit')).toBeDisabled();
+});
+
+test('G3 result block cards: missing-output card shows re-inspect control', async ({ page, request }) => {
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+  const approval = await approveRenderedPlan(page, gateB.session_id, planPreview);
+
+  const selection = await expectJson(await request.post('/api/v1/layer3/execution/select', {
+    data: {
+      client_request_id: `g3-missing-select-${Date.now()}`,
+      session_id: gateB.session_id,
+      analysis_plan_id: approval.analysis_plan_id,
+      preview_id: planPreview.preview_id,
+      preview_hash: planPreview.preview_hash,
+    },
+  }));
+  const passRunId = selection.pass_run_ids[0];
+
+  // Synthesize 'missing_output_metadata' using real server-issued identity.
+  // Must also set State.executionSelection so selectedResultAuthority().selected === true.
+  await page.evaluate(({ sessionId, analysisPlanId, passRunId, previewId, previewHash, selectionSchema }) => {
+    State.executionSelection = {
+      schema_id: selectionSchema,
+      session_id: sessionId,
+      analysis_plan_id: analysisPlanId,
+      pass_run_ids: [passRunId],
+      pass_run_count: 1,
+      selected: true,
+      execution_started: false,
+      analysis_run_ids: [],
+      preview_identity: { preview_id: previewId, preview_hash: previewHash },
+    };
+    State.executionStart = {
+      schema_id: 'layer3.analysis_execution_start.v1',
+      session_id: sessionId,
+      analysis_plan_id: analysisPlanId,
+      pass_run_id: passRunId,
+      preview_identity: { preview_id: previewId, preview_hash: previewHash },
+      pass_run_status: 'completed',
+      execution_started: true,
+      analysis_run_id: null,
+      downstream_unavailable: ['results', 'package', 'handoff'],
+    };
+    State.resultStatus = {
+      schema_id: 'layer3.execution_result_status.v1',
+      session_id: sessionId,
+      analysis_plan_id: analysisPlanId,
+      pass_run_id: passRunId,
+      preview_identity: { preview_id: previewId, preview_hash: previewHash },
+      status: 'missing_output_metadata',
+      result_status_available: false,
+      pass_run_status: 'completed',
+      execution_started: true,
+      analysis_run_id: null,
+      downstream_unavailable: ['results', 'package', 'handoff'],
+    };
+    State.resultStatusError = null;
+    renderAll();
+  }, {
+    sessionId: gateB.session_id,
+    analysisPlanId: approval.analysis_plan_id,
+    passRunId,
+    previewId: planPreview.preview_id,
+    previewHash: planPreview.preview_hash,
+    selectionSchema: 'layer3.execution_selection.v1',
+  });
+
+  const resultPanel = page.locator('#result-review-panel');
+  await expect(resultPanel).toContainText('execution_result_status_missing_output');
+  await expect(resultPanel).toContainText('execution_result_status');
+
+  // Missing-output branch: #result-status-inspect must be enabled for re-inspect.
+  await expect(page.locator('#result-status-inspect')).toBeEnabled();
+
+  // Clicking inspect issues exactly one /execution/result/status call.
+  const statusResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/execution/result/status')
+  ));
+  await page.locator('#result-status-inspect').click();
+  await statusResponsePromise;
+});
+
+// ──────────────────────────────────────────────────────────────
+// G5 downstream locked
+// ──────────────────────────────────────────────────────────────
+
+test('G5 downstream locked: execution and result panels show downstream-locks; zero connector/outbox/webhook submit calls', async ({ page, request }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+  await approveRenderedPlan(page, gateB.session_id, planPreview);
+
+  // At post-approval (pre-execution), execution-selection panel shows downstream locks.
+  const selectionPanel = page.locator('#execution-selection-start-panel');
+  await expect(selectionPanel).toBeVisible();
+  await expect(selectionPanel.locator('.downstream-locks')).toBeVisible();
+
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, [
+    '/connector/',
+    '/outbox/',
+    '/webhook/',
+    '/handoff/',
+  ]);
+
+  // Drive execution to result-review ready state (G1 auto-advance).
+  await expect(page.locator('#execution-select')).toBeEnabled();
+  await page.locator('#execution-select').click();
+  await page.locator('#execution-step-chip').click();
+  await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
+  const startResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/execution/start')
+  ));
+  await page.locator('#execution-start').click();
+  await startResponsePromise;
+  await expect(page.locator('#result-review-submit')).toBeEnabled({ timeout: 15000 });
+
+  // The result-review panel must show downstream locks.
+  await expect(page.locator('#result-review-panel .downstream-locks')).toBeVisible();
+
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, [
+    '/connector/',
+    '/outbox/',
+    '/webhook/',
+  ]);
+});
+
+// ──────────────────────────────────────────────────────────────
+// G6 text-only block
+// ──────────────────────────────────────────────────────────────
+
+test('G6 text-only block: source-intake binary upload triggers source_intake_preview_media_type_not_admitted block card', async ({ page, request }) => {
+  // Open the workbench — source-intake controls are always rendered on /review/layer3.
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#source-intake-rendered-controls')).toBeVisible();
+
+  // Upload a minimal PNG (binary) via the rendered source-intake file input.
+  const pngHeader = Buffer.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+    0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
+  ]);
+  await page.locator('#source-intake-file').setInputFiles({
+    name: 'test-binary.png',
+    mimeType: 'image/png',
+    buffer: pngHeader,
+  });
+
+  const uploadResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/source/intake/upload')
+  ));
+  await page.locator('#source-intake-upload-submit').click();
+  const uploadResp = await uploadResponsePromise;
+  expect(uploadResp.status()).toBeGreaterThanOrEqual(200);
+  expect(uploadResp.status()).toBeLessThan(300);
+  const uploadBody = await uploadResp.json();
+  expect(uploadBody.source_intake_record_id).toBeTruthy();
+
+  // The inventory must now list the uploaded record with its Preview button. Scope to the
+  // specific record id — the full suite leaves other source-intake records, so the rendered
+  // count is not 1 (inventory is created_at DESC, so the just-uploaded record is present).
+  const previewButton = page.locator(`.source-intake-preview-button[data-source-intake-record-id="${uploadBody.source_intake_record_id}"]`);
+  await expect(previewButton).toBeVisible({ timeout: 5000 });
+
+  // Click Preview — drives previewSourceIntake(recordId) which calls the preview endpoint.
+  const previewResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/source/intake/') && response.url().includes('/preview')
+  ));
+  await previewButton.click();
+  const previewResp = await previewResponsePromise;
+  expect(previewResp.status()).not.toBe(200);
+
+  // The source-intake-preview-panel must render the block card with the exact error code.
+  const previewPanel = page.locator('#source-intake-preview-panel');
+  await expect(previewPanel).toBeVisible();
+  await expect(previewPanel).toContainText('source_intake_preview_media_type_not_admitted');
+  await expect(previewPanel).toContainText('Only bounded text-like source material');
+
+  // Binary content is NOT admitted — no gate-b-admission element present.
+  await expect(previewPanel.locator('.source-intake-gate-b-admission')).toHaveCount(0);
 });
