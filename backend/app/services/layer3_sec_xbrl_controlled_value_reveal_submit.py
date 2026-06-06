@@ -101,7 +101,7 @@ def submit_controlled_value_reveal(
     if not settings.layer3_sec_xbrl_controlled_value_reveal_submit_enabled:
         raise SecXbrlControlledValueRevealSubmitError(
             "sec_xbrl_controlled_value_reveal_submit_feature_flag_disabled",
-            "SEC XBRL controlled value-reveal submit is feature-flagged and default-off.",
+            "SEC XBRL controlled value-reveal submit is feature-flagged and currently disabled.",
         )
     if operator_reveal_confirmation is not True:
         raise SecXbrlControlledValueRevealSubmitError(
@@ -210,7 +210,7 @@ def inspect_controlled_value_reveal_submit_status(
     if not settings.layer3_sec_xbrl_controlled_value_reveal_submit_enabled:
         raise SecXbrlControlledValueRevealSubmitError(
             "sec_xbrl_controlled_value_reveal_submit_feature_flag_disabled",
-            "SEC XBRL controlled value-reveal submit status is feature-flagged and default-off.",
+            "SEC XBRL controlled value-reveal submit status is feature-flagged and currently disabled.",
         )
     receipt_id = _required_text(
         sec_xbrl_controlled_value_reveal_submit_receipt_id,
@@ -723,7 +723,6 @@ def _negative_invariants() -> dict[str, bool]:
         "local_paths_persisted": False,
         "operator_contact_persisted": False,
         "status_surface_replays_raw_values": False,
-        "feature_flag_default_enabled": False,
         "runtime_default_changed": False,
         "source_acquisition_performed": False,
         "arelle_invoked": False,
