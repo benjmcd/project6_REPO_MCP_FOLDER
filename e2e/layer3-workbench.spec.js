@@ -12804,6 +12804,204 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
   expect(defaultPromotionPayloads).toHaveLength(2);
 });
 
+test('Layer 3 workbench inspects SEC XBRL runtime posture through rendered read-only control', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  let postureRequestMethod = null;
+  const posture = {
+    schema_id: 'layer3.sec_xbrl_runtime_posture.v1',
+    posture_mode: 'sec_xbrl_runtime_posture_operator_status_v1',
+    posture_state: 'sec_xbrl_controlled_value_reveal_available_with_runtime_gates',
+    posture_basis_hash: 'f'.repeat(64),
+    activation_surface_hash: 'a'.repeat(64),
+    runtime_flags: {
+      live_sec_edgar_network_enabled: false,
+      sec_edgar_user_agent_configured: false,
+      arelle_fact_authority_cutover_enabled: true,
+      arelle_fact_authority_nonlocal_authorized: false,
+      arelle_internal_value_store_enabled: false,
+      arelle_corpus_validation_enabled: false,
+      arelle_governed_sibling_value_reveal_enabled: false,
+      controlled_value_reveal_submit_enabled: true,
+    },
+    identity_authority: {
+      auth_owner: 'none',
+      trusted_proxy_mode_enabled: false,
+      identity_authority_state: 'local_single_operator_identity_authority',
+      requires_server_derived_identity: true,
+      raw_operator_identity_exposed: false,
+      raw_proxy_header_exposed: false,
+      raw_workspace_identity_exposed: false,
+    },
+    protected_route_families: [
+      {
+        route_family: 'sec_xbrl_controlled_value_reveal_submit_write',
+        allowed_roles: ['owner'],
+        mutating: true,
+        may_expose_revealed_values: true,
+      },
+      {
+        route_family: 'sec_xbrl_operator_review_workflow_status_read',
+        allowed_roles: ['auditor', 'owner'],
+        mutating: false,
+        may_expose_revealed_values: false,
+      },
+    ],
+    activated_capabilities: [
+      {
+        capability: 'controlled_value_reveal_submit',
+        runtime_state: 'server_authority_receipt_submit_available',
+        route_families: [
+          'sec_xbrl_value_reveal_authority_prepare_write',
+          'sec_xbrl_controlled_value_reveal_submit_write',
+        ],
+      },
+    ],
+    gated_capabilities: [
+      {
+        capability: 'live_sec_edgar_network_source_acquisition',
+        runtime_state: 'blocked_by_live_network_feature_flag',
+        required_flag: 'LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED',
+      },
+      {
+        capability: 'production_readiness_claim',
+        runtime_state: 'blocked_until_live_sec_arelle_ui_export_and_auth_paths_are_all_verified',
+        required_evidence: ['live_sec_source_acquisition_e2e', 'arelle_invocation_e2e'],
+      },
+    ],
+    activation_surfaces: [
+      {
+        surface_id: 'controlled_value_reveal_submit',
+        surface_state: 'active_explicit_operator_submit',
+        runtime_enabled: true,
+        operator_surface_rendered: true,
+        rendered_panel_id: 'sec-xbrl-controlled-value-reveal-panel',
+        route_families: ['sec_xbrl_controlled_value_reveal_submit_write'],
+        api_routes: [
+          'POST /api/v1/layer3/sec-xbrl/value-reveal/authority/prepare',
+          'POST /api/v1/layer3/sec-xbrl/controlled-value-reveal/submit',
+        ],
+        operator_confirmation_required: true,
+        current_posture_performs_side_effect: false,
+        source_acquisition_performed: false,
+        arelle_invoked: false,
+        value_reveal_performed: false,
+        delivery_export_performed: false,
+        runtime_db_write: false,
+        frontend_durable_authority: false,
+        raw_authority_exposed: false,
+        production_readiness_claimed: false,
+        next_operator_action: 'submit_controlled_value_reveal_from_authority_receipt',
+      },
+      {
+        surface_id: 'live_sec_edgar_network_source_acquisition',
+        surface_state: 'gated_by_live_network_feature_flag',
+        runtime_enabled: false,
+        operator_surface_rendered: true,
+        rendered_panel_id: 'sec-edgar-live-source-artifact-acquisition-panel',
+        route_families: ['sec_edgar_text_table_live_source_artifact_acquisition'],
+        api_routes: [
+          'POST /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire',
+          'GET /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/{receipt_id}',
+        ],
+        operator_confirmation_required: true,
+        server_derives_external_sec_url: true,
+        browser_supplied_url_allowed: false,
+        sec_edgar_user_agent_configured: false,
+        required_flags: ['LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED'],
+        required_configuration: ['LAYER3_SEC_EDGAR_USER_AGENT'],
+        required_evidence: ['live_sec_source_artifact_e2e'],
+        current_posture_performs_side_effect: false,
+        source_acquisition_performed: false,
+        arelle_invoked: false,
+        value_reveal_performed: false,
+        delivery_export_performed: false,
+        runtime_db_write: false,
+        frontend_durable_authority: false,
+        raw_authority_exposed: false,
+        production_readiness_claimed: false,
+        next_operator_action: 'authorize_live_sec_network_before_source_acquisition',
+      },
+    ],
+    operator_next_actions: [
+      'inspect_sec_xbrl_identity_projection',
+      'submit_controlled_value_reveal_from_authority_receipt',
+    ],
+    negative_boundaries: [
+      'no_sec_edgar_live_network_request_performed',
+      'no_arelle_invocation_performed',
+      'no_raw_value_or_residual_magnitude_exposed',
+    ],
+    source_acquisition_performed: false,
+    arelle_invoked: false,
+    value_reveal_performed: false,
+    delivery_export_enabled: false,
+    runtime_db_write: false,
+    rendered_ui_legacy_value_reveal_enabled: false,
+    production_readiness_claimed: false,
+    raw_operator_identity_exposed: false,
+    raw_proxy_header_exposed: false,
+    raw_workspace_identity_exposed: false,
+    raw_value_exposed: false,
+    residual_magnitude_exposed: false,
+    local_path_or_url_exposed: false,
+    frontend_must_ignore_raw_decoys: {
+      operator_identity: 'raw-operator@example.invalid',
+      raw_value: '12345.67',
+      local_path: 'C:\\raw\\sec-xbrl\\source.json',
+      sec_url: 'http://example.invalid/sec/xbrl',
+    },
+  };
+
+  await page.route('**/api/v1/layer3/sec-xbrl/runtime/posture', async (route) => {
+    postureRequestMethod = route.request().method();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.sec_xbrl_runtime_posture.v1',
+        schema_version: 1,
+        request_id: 'sec-xbrl-runtime-posture',
+        status: posture.posture_state,
+        sec_xbrl_runtime_posture: posture,
+      }),
+    });
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#sec-xbrl-runtime-posture-panel');
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-read-only', 'true');
+  await expect(panel).toHaveAttribute('data-value-reveal-enabled', 'false');
+  await expect(panel).toHaveAttribute('data-source-acquisition-enabled', 'false');
+  await expect(panel).toHaveAttribute('data-arelle-invocation-enabled', 'false');
+  await expect(panel).toHaveAttribute('data-production-readiness-claimed', 'false');
+  await expect(page.locator('#sec-xbrl-runtime-posture-submit')).toBeEnabled();
+
+  await page.locator('#sec-xbrl-runtime-posture-submit').click();
+  await expect(panel).toContainText('sec_xbrl_controlled_value_reveal_available_with_runtime_gates');
+  await expect(panel).toContainText('controlled_value_reveal_submit');
+  await expect(panel).toContainText('live_sec_edgar_network_source_acquisition');
+  await expect(panel).toContainText('Activation Surfaces');
+  await expect(panel).toContainText('sec-edgar-live-source-artifact-acquisition-panel');
+  await expect(panel).toContainText('POST /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire');
+  await expect(panel).toContainText('surface state gated_by_live_network_feature_flag');
+  await expect(panel).toContainText('required configuration LAYER3_SEC_EDGAR_USER_AGENT');
+  await expect(panel).toContainText('side effects none');
+  await expect(panel).toContainText('production readiness claimed: false');
+  await expect(panel).toContainText('source acquisition performed: false');
+  await expect(panel).toContainText('Arelle invoked: false');
+  await expect(panel).toContainText('raw value exposed: false');
+  await expect(panel).not.toContainText('raw-operator@example.invalid');
+  await expect(panel).not.toContainText('Layer3 Test contact@example.com');
+  await expect(panel).not.toContainText('12345.67');
+  await expect(panel).not.toContainText('C:\\');
+  await expect(panel).not.toContainText('http://');
+  expect(postureRequestMethod).toBe('GET');
+  expect(apiRequests.filter((request) => request.path.includes('/sec-xbrl/runtime/posture'))).toEqual([
+    { method: 'GET', path: '/api/v1/layer3/sec-xbrl/runtime/posture' },
+  ]);
+});
+
 test('Layer 3 workbench inspects SEC XBRL operator-review workflow status through rendered read-only control', async ({ page }) => {
   const apiRequests = trackLayer3ApiRequests(page);
   let workflowStatusPayload = null;
@@ -13553,6 +13751,9 @@ test('Layer 3 workbench prepares and submits SEC XBRL controlled value reveal th
   const prepareButton = page.locator('#sec-xbrl-value-reveal-authority-prepare-submit');
   const revealButton = page.locator('#sec-xbrl-controlled-value-reveal-submit');
   const statusButton = page.locator('#sec-xbrl-controlled-value-reveal-status-submit');
+  const legacyRevealForm = page.locator('#sec-edgar-arelle-value-reveal-form');
+  const legacyRevealFieldset = legacyRevealForm.locator('fieldset');
+  const legacyRevealButton = page.locator('#sec-edgar-arelle-value-reveal-submit');
   await expect(panel).toBeVisible();
   await expect(panel).toHaveAttribute('data-rendered-mode', 'rendered_sec_xbrl_controlled_value_reveal_ui_control');
   await expect(panel).toHaveAttribute('data-frontend-durable-authority', 'false');
@@ -13566,6 +13767,12 @@ test('Layer 3 workbench prepares and submits SEC XBRL controlled value reveal th
   await expect(prepareButton).toBeDisabled();
   await expect(revealButton).toBeDisabled();
   await expect(statusButton).toBeDisabled();
+  await expect(legacyRevealForm).toHaveAttribute('data-rendered-value-reveal-enabled', 'false');
+  await expect(legacyRevealForm).toHaveAttribute('data-controlled-value-reveal-replacement', 'true');
+  await expect(legacyRevealFieldset).toHaveAttribute('data-legacy-sibling-reveal-rendered-disabled', 'true');
+  await expect(legacyRevealFieldset).toHaveAttribute('disabled', '');
+  await expect(legacyRevealButton).toBeDisabled();
+  await expect(legacyRevealButton).toHaveText('Use Controlled Reveal');
 
   await page.locator('#sec-xbrl-value-reveal-authority-decision-id').fill(decisionId);
   await page.locator('#sec-xbrl-value-reveal-authority-decision-basis-hash').fill(decisionBasisHash.toUpperCase());

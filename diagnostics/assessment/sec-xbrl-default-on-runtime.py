@@ -73,15 +73,13 @@ def build_report() -> dict[str, Any]:
         sources["config"],
         'layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=True,',
     )
-    value_reveal_defaults_off = (
-        _contains(
-            sources["config"],
-            'layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False,',
-        )
-        and _contains(
-            sources["config"],
-            'layer3_sec_xbrl_controlled_value_reveal_submit_enabled: bool = Field(\n        default=False,',
-        )
+    value_reveal_defaults_off = _contains(
+        sources["config"],
+        'layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(\n        default=False,',
+    )
+    controlled_value_reveal_submit_default_on = _contains(
+        sources["config"],
+        'layer3_sec_xbrl_controlled_value_reveal_submit_enabled: bool = Field(\n        default=True,',
     )
     no_runtime_toggle_fields = _request_classes_exclude_default_on_toggles(sources["api"])
     criteria = [
@@ -149,13 +147,13 @@ def build_report() -> dict[str, Any]:
             "default_on_runtime_request_toggle_admitted",
         ),
         _criterion(
-            "value_reveal_and_controlled_submit_defaults_remain_off",
+            "arelle_value_reveal_default_off_controlled_submit_activated",
             value_reveal_defaults_off
             and "profile.layer3_sec_edgar_arelle_value_reveal_enabled is False" in sources["api_tests"]
-            and "profile.layer3_sec_xbrl_controlled_value_reveal_submit_enabled is False" in sources["api_tests"],
+            and "profile.layer3_sec_xbrl_controlled_value_reveal_submit_enabled is True" in sources["api_tests"],
             {
                 "value_reveal_default_enabled": False,
-                "controlled_value_reveal_submit_default_enabled": False,
+                "controlled_value_reveal_submit_default_enabled": controlled_value_reveal_submit_default_on,
                 "value_reveal_default_on_claimed": False,
             },
             "default_on_runtime_value_reveal_default_regressed",
@@ -310,7 +308,7 @@ def build_report() -> dict[str, Any]:
             "redacted_hash_length_sidecar_authority_used": True,
             "regex_rollback_env_supported": True,
             "operator_value_reveal_default_enabled": False,
-            "controlled_value_reveal_submit_default_enabled": False,
+            "controlled_value_reveal_submit_default_enabled": controlled_value_reveal_submit_default_on,
             "server_deployment_policy_owned": True,
             "nonlocal_default_on_requires_explicit_authorization": True,
             "api_or_operator_request_toggle_admitted": False,

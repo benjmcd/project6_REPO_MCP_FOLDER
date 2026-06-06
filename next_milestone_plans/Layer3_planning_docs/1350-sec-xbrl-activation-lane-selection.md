@@ -84,6 +84,27 @@ next_follow_up: |
       review of the activation scope before selecting a freeze.
 ```
 
+## Activation Update (post-1352 — value-reveal activated via 1353)
+
+The `deferred_pending_auth_framework` decision above is the historical record of this
+planning pass. It is now PARTIALLY LIFTED:
+
+- The auth-framework prerequisite is satisfied: doc 1351 shipped
+  `proxy_identity_read_only_projection` and doc 1352 selected and proved
+  `route_level_operator_identity_required`.
+- The product authority has directed production activation; the operator acceptance
+  criteria are recorded in `1353-sec-xbrl-value-reveal-activation.md`.
+- Activation-lane items 2-3 (value-reveal authority + controlled value-reveal submit) are
+  ACTIVATED by doc 1353: `layer3_sec_xbrl_controlled_value_reveal_submit_enabled` defaults
+  on, behind the enforced owner-bound identity lineage + explicit operator confirmation.
+  Authority-artifact and identity-value redaction stay fully enforced.
+
+Still deferred (each pending its own bounded activation freeze): item 1 (default-on
+runtime posture), item 4 (E2E integration live), item 5 (multi-filing gate enforcement),
+item 6 (in-app auth policy beyond the selected mode), and the arelle governed-sibling
+reveal flag `layer3_sec_edgar_arelle_value_reveal_enabled`. Live SEC network access and
+live arelle invocation remain separately gated.
+
 ## Evidence Ledger
 
 ```yaml
@@ -123,17 +144,18 @@ evidence_ledger:
     evidence:
       - backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py (exists)
   auth_framework:
-    status: open
-    evidence: []
-    blocker: "No auth/security implementation exists; AUTH_OWNER=none default; doc 200 deferred"
+    status: verified
+    evidence:
+      - next_milestone_plans/Layer3_planning_docs/1351-sec-xbrl-proxy-identity-readonly-projection.md
+      - next_milestone_plans/Layer3_planning_docs/1352-sec-xbrl-route-level-operator-identity-required.md
   operator_acceptance_criteria:
-    status: open
-    evidence: []
-    blocker: "No product-authority acceptance criteria for value-reveal activation"
+    status: verified
+    evidence:
+      - next_milestone_plans/Layer3_planning_docs/1353-sec-xbrl-value-reveal-activation.md  # product-authority directive + recorded criteria (value-reveal surface)
   activation_lane_isolation_plan:
-    status: open
-    evidence: []
-    blocker: "Items 1-6 must each have a separate freeze before any can activate"
+    status: verified
+    evidence:
+      - "1353 is the first bounded per-surface activation freeze (value-reveal); items 1,4,5,6 + arelle sibling each still require their own bounded freeze"
 ```
 
 ## Capability Isolation Matrix (this pass — docs only)

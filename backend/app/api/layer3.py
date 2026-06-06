@@ -64,6 +64,7 @@ from app.services import (
     layer3_sec_xbrl_controlled_value_reveal_submit,
     layer3_sec_xbrl_in_app_auth_policy,
     layer3_sec_xbrl_operator_review_workflow,
+    layer3_sec_xbrl_posture,
     layer3_sec_xbrl_value_reveal_authority,
     layer3_provider_private_signed_url,
     layer3_provider_public_url,
@@ -17710,6 +17711,34 @@ def get_sec_xbrl_controlled_value_reveal_submit_status(
         return _sec_xbrl_auth_policy_error_response(exc)
     except layer3_sec_xbrl_controlled_value_reveal_submit.SecXbrlControlledValueRevealSubmitError as exc:
         return _sec_xbrl_controlled_value_reveal_submit_error_response(exc)
+
+
+@router.get("/sec-xbrl/identity/projection")
+def get_sec_xbrl_proxy_identity_readonly_projection(request: Request) -> dict[str, Any]:
+    projection = layer3_sec_xbrl_in_app_auth_policy.build_proxy_identity_readonly_projection(
+        headers={str(key): str(value) for key, value in request.headers.items()},
+    )
+    return {
+        **base_response(
+            layer3_sec_xbrl_in_app_auth_policy.PROXY_IDENTITY_PROJECTION_SCHEMA_ID,
+            request_id="sec-xbrl-identity-projection",
+            status=projection["projection_status"],
+        ),
+        "sec_xbrl_identity_projection": projection,
+    }
+
+
+@router.get("/sec-xbrl/runtime/posture")
+def get_sec_xbrl_runtime_posture() -> dict[str, Any]:
+    posture = layer3_sec_xbrl_posture.build_sec_xbrl_runtime_posture()
+    return {
+        **base_response(
+            layer3_sec_xbrl_posture.POSTURE_SCHEMA_ID,
+            request_id="sec-xbrl-runtime-posture",
+            status=posture["posture_state"],
+        ),
+        "sec_xbrl_runtime_posture": posture,
+    }
 
 
 @router.post(

@@ -200,6 +200,7 @@ def acquire_sec_edgar_text_table_live_source_artifact(fields: Mapping[str, Any])
     request_id = _required(request, "client_request_id")
     _require_exact(request, "acquisition_mode", ACQUISITION_MODE)
     _require_exact(request, "operator_decision", OPERATOR_DECISION)
+    _require_live_network_enabled()
     if request.get("operator_confirmation") is not True:
         _blocked(
             "sec_edgar_text_table_live_source_artifact_operator_confirmation_missing",
@@ -912,6 +913,16 @@ def _server_configured_user_agent() -> str:
             blocked_fields=["layer3_sec_edgar_user_agent"],
         )
     return value
+
+
+def _require_live_network_enabled() -> None:
+    if not bool(getattr(settings, "layer3_sec_edgar_live_network_enabled", False)):
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_live_network_disabled",
+            "Live SEC EDGAR network acquisition requires server configuration before any acquisition client may run.",
+            http_status=409,
+            blocked_fields=["layer3_sec_edgar_live_network_enabled"],
+        )
 
 
 def _configured_rate_per_second() -> int:

@@ -47,6 +47,10 @@ PROTECTED_ROUTE_FAMILIES: dict[str, dict[str, Any]] = {
     },
 }
 
+PROXY_IDENTITY_READONLY_PROJECTION_MODE = "proxy_identity_read_only_projection"
+PROXY_IDENTITY_PROJECTION_CONTRACT_ID = "sec_xbrl_proxy_identity_read_only_live_projection_contract"
+PROXY_IDENTITY_PROJECTION_SCHEMA_ID = "layer3.sec_xbrl_proxy_identity_projection.v1"
+
 FORBIDDEN_REQUEST_FIELDS = {
     "accession",
     "amount",
@@ -307,3 +311,71 @@ def _compatible_policy_hashes(
             ]
         )
     )
+
+
+def build_proxy_identity_readonly_projection(*, headers: Mapping[str, str]) -> dict[str, Any]:
+    base: dict[str, Any] = {
+        "contract_id": PROXY_IDENTITY_PROJECTION_CONTRACT_ID,
+        "schema_id": PROXY_IDENTITY_PROJECTION_SCHEMA_ID,
+        "selected_auth_mode": PROXY_IDENTITY_READONLY_PROJECTION_MODE,
+        "policy_schema_id": POLICY_SCHEMA_ID,
+        "default_role": OWNER_ROLE,
+        "server_authority_contract": "server_derived_proxy_or_local_identity_hash_read_only_projection",
+        "status_projection": ["State.sessionSummary.sec_xbrl_identity_projection"],
+        "protected_route_families": [
+            {
+                "route_family": name,
+                "allowed_roles": sorted(list(meta["allowed_roles"])),
+                "mutating": bool(meta["mutating"]),
+                "may_expose_revealed_values": bool(meta["may_expose_revealed_values"]),
+            }
+            for name, meta in sorted(PROTECTED_ROUTE_FAMILIES.items())
+        ],
+        "negative_boundaries": [
+            "route_level_enforcement_escalation",
+            "operator_permission_matrix_change",
+            "owner_binding_persistence_change",
+            "value_reveal_activation",
+            "controlled_submit_activation",
+            "default_on_runtime_change",
+            "raw_operator_identity_exposure",
+            "raw_proxy_header_exposure",
+            "raw_workspace_identity_exposure",
+            "raw_value_or_residual_magnitude_exposure",
+            "local_path_or_url_exposure",
+        ],
+        "raw_operator_identity_exposed": False,
+        "raw_proxy_header_exposed": False,
+        "raw_workspace_identity_exposed": False,
+        "raw_value_exposed": False,
+        "residual_magnitude_exposed": False,
+    }
+    try:
+        actor_ref_hash, workspace_ref_hash, auth_owner_mode = _server_derived_principal(headers)
+        return {
+            **base,
+            "projection_status": "admitted",
+            "auth_owner_mode": auth_owner_mode,
+            "actor_ref_hash": actor_ref_hash,
+            "workspace_ref_hash": workspace_ref_hash,
+        }
+    except SecXbrlInAppAuthPolicyError as exc:
+        _status_map: dict[str, str] = {
+            "sec_xbrl_in_app_auth_policy_untrusted_proxy_identity": "blocked_untrusted_proxy_identity",
+            "sec_xbrl_in_app_auth_policy_missing_identity_authority": "blocked_missing_identity_authority",
+            "sec_xbrl_in_app_auth_policy_missing_workspace_authority": "blocked_missing_identity_authority",
+            "sec_xbrl_in_app_auth_policy_auth_owner_not_admitted": "blocked_auth_owner_not_admitted",
+        }
+        projection_status = _status_map.get(exc.code, "blocked_no_runtime_identity_authority")
+        auth_owner_mode = (
+            "AUTH_OWNER_proxy_pending_trusted_or_identity_authority"
+            if settings.auth_owner == "proxy"
+            else "AUTH_OWNER_none_single_operator_dev_profile"
+        )
+        return {
+            **base,
+            "projection_status": projection_status,
+            "auth_owner_mode": auth_owner_mode,
+            "actor_ref_hash": None,
+            "workspace_ref_hash": None,
+        }
