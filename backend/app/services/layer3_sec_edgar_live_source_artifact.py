@@ -1380,6 +1380,9 @@ def _find_existing_companyfacts_receipt(source_identity_hash: str) -> dict[str, 
             receipt = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
+        # Skip non-fetch receipts (e.g. stage receipts share the same filename prefix).
+        if receipt.get("schema_id") != COMPANYFACTS_SCHEMA_ID:
+            continue
         if receipt.get("source_identity_hash") == source_identity_hash:
             return receipt
     return None

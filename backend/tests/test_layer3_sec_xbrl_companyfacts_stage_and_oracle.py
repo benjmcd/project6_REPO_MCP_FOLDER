@@ -764,3 +764,143 @@ class TestSecurityFixes:
         assert on_disk["companyfacts_observation_count"] == 6
         assert on_disk["taxonomy_count"] == 1
         assert on_disk["concept_count"] == 3
+
+
+# ---------------------------------------------------------------------------
+# FIX B regression — fetch idempotency scan must not return a stage receipt
+# ---------------------------------------------------------------------------
+
+class TestFetchScanIgnoresStageReceipt:
+    """Regression for FIX B: _find_existing_companyfacts_receipt must not return a stage receipt.
+
+    Both fetch and stage receipts share the same filename prefix
+    (sec-edgar-companyfacts-live-artifact-*).  Before FIX B, the fetch scan matched any
+    receipt with the right source_identity_hash, which could be a stage receipt (it has
+    the same cik_hash-derived source_identity_hash but a different schema_id and lacks
+    the fields the fetch response builder expects).  FIX B adds a schema_id guard so only
+    fetch receipts (schema_id == COMPANYFACTS_SCHEMA_ID) are returned.
+    """
+
+    def _make_source_identity_hash(self, cik: str) -> str:
+        from app.services.layer3_utils import stable_hash as _sh
+        raw_cik = cik.lstrip("0") or "0"
+        cik_hash = _sha256(raw_cik)
+        return _sh({"hash_version": "sec_edgar_companyfacts_source_identity_hash_v1", "cik_hash": cik_hash})
+
+    def test_fetch_scan_returns_none_when_only_stage_receipt_present(self, tmp_path, monkeypatch):
+        """_find_existing_companyfacts_receipt → None when the receipts/ dir contains only a
+        stage receipt (no fetch receipt).  Without FIX B it would return the stage receipt."""
+        import hashlib as _hl
+        from app.services import layer3_sec_edgar_live_source_artifact as _la
+
+        cik = "320193"
+        raw_cik = cik.lstrip("0") or "0"
+        cik_hash = _sha256(raw_cik)
+        source_identity_hash = self._make_source_identity_hash(cik)
+
+        # Build a stage receipt (schema_id == stage SCHEMA_ID) with the matching
+        # source_identity_hash so that a naive scan would match it.
+        stage_receipt_id = f"sec-edgar-companyfacts-live-artifact-{source_identity_hash[:24]}-{'s' * 24}"
+        stage_receipt = {
+            "schema_id": stage_svc.SCHEMA_ID,  # stage schema — NOT the fetch schema
+            "companyfacts_receipt_id": stage_receipt_id,
+            "companyfacts_receipt_hash": "s" * 64,
+            "companyfacts_payload_hash": "p" * 64,
+            "source_identity_hash": source_identity_hash,  # same value — naive scan would match
+            "cik_hash": cik_hash,
+            "connector_receipt_hash": "c" * 64,
+            "content_sha256": _hl.sha256(b"fake").hexdigest(),
+            "companyfacts_observation_count": 6,
+            "taxonomy_count": 1,
+            "concept_count": 3,
+            "recorded_at": "2026-01-01T00:00:00+00:00",
+            "gitignored_local_storage": True,
+            "operator_surface_exposure": False,
+        }
+
+        # Write the stage receipt into the shared receipts/ dir
+        receipts_dir = tmp_path / _la.COMPANYFACTS_RECEIPT_DIR / "receipts"
+        receipts_dir.mkdir(parents=True, exist_ok=True)
+        (receipts_dir / f"{stage_receipt_id}.json").write_text(
+            json.dumps(stage_receipt, sort_keys=True, indent=2), encoding="utf-8"
+        )
+
+        # Point the live service at our tmp storage
+        monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+
+        # FIX B: the fetch scan must skip the stage receipt and return None
+        result = _la._find_existing_companyfacts_receipt(source_identity_hash)
+        assert result is None, (
+            f"Expected None (fetch scan must ignore stage receipts), got: {result}"
+        )
+
+    def test_fetch_scan_returns_fetch_receipt_when_both_present(self, tmp_path, monkeypatch):
+        """When both a stage receipt and a fetch receipt exist for the same cik, the fetch
+        scan must return the fetch receipt (schema_id == COMPANYFACTS_SCHEMA_ID)."""
+        import hashlib as _hl
+        from app.services import layer3_sec_edgar_live_source_artifact as _la
+        from app.services.layer3_utils import stable_hash as _sh
+
+        cik = "320193"
+        raw_cik = cik.lstrip("0") or "0"
+        cik_hash = _sha256(raw_cik)
+        source_identity_hash = self._make_source_identity_hash(cik)
+        content_sha256 = _hl.sha256(b"real-content").hexdigest()
+
+        # Build a valid fetch receipt
+        receipt_hash_basis = {
+            "hash_version": "sec_edgar_companyfacts_live_artifact_receipt_hash_v1",
+            "schema_id": _la.COMPANYFACTS_SCHEMA_ID,
+            "source_identity_hash": source_identity_hash,
+            "cik_hash": cik_hash,
+            "content_sha256": content_sha256,
+        }
+        receipt_hash = _sh(receipt_hash_basis)
+        fetch_receipt_id = f"sec-edgar-companyfacts-live-artifact-{source_identity_hash[:24]}-{receipt_hash[:24]}"
+        fetch_receipt = {
+            "schema_id": _la.COMPANYFACTS_SCHEMA_ID,
+            "companyfacts_receipt_id": fetch_receipt_id,
+            "companyfacts_receipt_hash": receipt_hash,
+            "source_identity_hash": source_identity_hash,
+            "cik_hash": cik_hash,
+            "content_sha256": content_sha256,
+            "companyfacts_observation_count": 6,
+            "taxonomy_count": 1,
+            "concept_count": 3,
+            "recorded_at": "2026-01-01T00:00:00+00:00",
+        }
+
+        # Build a stage receipt with the same source_identity_hash
+        stage_receipt_id = f"sec-edgar-companyfacts-live-artifact-{source_identity_hash[:24]}-{'s' * 24}"
+        stage_receipt = {
+            "schema_id": stage_svc.SCHEMA_ID,
+            "companyfacts_receipt_id": stage_receipt_id,
+            "companyfacts_receipt_hash": "s" * 64,
+            "companyfacts_payload_hash": "p" * 64,
+            "source_identity_hash": source_identity_hash,
+            "cik_hash": cik_hash,
+            "connector_receipt_hash": "c" * 64,
+            "content_sha256": content_sha256,
+            "companyfacts_observation_count": 6,
+            "taxonomy_count": 1,
+            "concept_count": 3,
+            "recorded_at": "2026-01-01T00:00:00+00:00",
+            "gitignored_local_storage": True,
+            "operator_surface_exposure": False,
+        }
+
+        receipts_dir = tmp_path / _la.COMPANYFACTS_RECEIPT_DIR / "receipts"
+        receipts_dir.mkdir(parents=True, exist_ok=True)
+        (receipts_dir / f"{stage_receipt_id}.json").write_text(
+            json.dumps(stage_receipt, sort_keys=True, indent=2), encoding="utf-8"
+        )
+        (receipts_dir / f"{fetch_receipt_id}.json").write_text(
+            json.dumps(fetch_receipt, sort_keys=True, indent=2), encoding="utf-8"
+        )
+
+        monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+
+        result = _la._find_existing_companyfacts_receipt(source_identity_hash)
+        assert result is not None, "Expected the fetch receipt to be returned"
+        assert result["schema_id"] == _la.COMPANYFACTS_SCHEMA_ID
+        assert result["companyfacts_receipt_id"] == fetch_receipt_id

@@ -127,6 +127,12 @@ def stage_sec_xbrl_companyfacts(
                 existing_receipt = _read_json_object(existing_path)
             except (OSError, SecXbrlCompanyfactsStageError):
                 continue
+            # Skip receipts that are not stage receipts (e.g. fetch receipts share the same prefix).
+            if existing_receipt.get("schema_id") != SCHEMA_ID:
+                continue
+            # Connector-scope: a different connector staging the same issuer creates a NEW receipt.
+            if existing_receipt.get("connector_receipt_hash") != connector_receipt_hash:
+                continue
             if existing_receipt.get("cik_hash") != cik_hash:
                 continue
             if existing_receipt.get("content_sha256") != content_sha256:
@@ -135,7 +141,7 @@ def stage_sec_xbrl_companyfacts(
                     "A different companyfacts payload already exists for this cik_hash; content_sha256 mismatch.",
                     details={"cik_hash": cik_hash},
                 )
-            # Same cik_hash + same content_sha256 → idempotent replay
+            # Same cik_hash + same connector_receipt_hash + same content_sha256 → idempotent replay
             return _build_stage_response(existing_receipt, idempotent_replay=True)
 
     # --- Write raw store (gitignored) ---
