@@ -35,8 +35,6 @@ def acquire_and_stage_companyfacts(
     connector_receipt_hash: str,
     operator_confirmation: bool,
     storage_dir: str | None = None,
-    evidence_owner_ref_hash: str | None = None,
-    evidence_workspace_ref_hash: str | None = None,
     **_ignored: Any,
 ) -> dict[str, Any]:
     """Acquire a live SEC CompanyFacts JSON and stage it for offline evidence use.
@@ -87,8 +85,6 @@ def acquire_and_stage_companyfacts(
         connector_receipt_hash=connector_receipt_hash,
         content_sha256=_content_sha,
         storage_dir=storage,
-        evidence_owner_ref_hash=evidence_owner_ref_hash,
-        evidence_workspace_ref_hash=evidence_workspace_ref_hash,
     )
 
     # Step 4: return only redacted envelope via base_response (sets schema_version/request_id/server_time)

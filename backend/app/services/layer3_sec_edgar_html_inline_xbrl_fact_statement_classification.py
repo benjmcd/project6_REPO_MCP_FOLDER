@@ -117,9 +117,6 @@ _FORBIDDEN_INPUT_KEYS = {
 }
 def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
     fields: Mapping[str, Any],
-    *,
-    evidence_owner_ref_hash: str | None = None,
-    evidence_workspace_ref_hash: str | None = None,
 ) -> dict[str, Any]:
     request = _normalise_request(fields)
     request_id = _required(request, "client_request_id")
@@ -468,7 +465,6 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         "recorded_at": _server_time(),
         "updated_at": _server_time(),
     }
-    _maybe_stamp_evidence_owner(receipt, evidence_owner_ref_hash=evidence_owner_ref_hash, evidence_workspace_ref_hash=evidence_workspace_ref_hash)
     _write_receipt(receipt)
     _write_request_binding(request_id, receipt_hash, receipt_id)
     return _response_from_receipt(receipt, request_id=request_id, schema_id=SCHEMA_ID, idempotent_replay=False)
@@ -1683,31 +1679,6 @@ def _is_hex(value: str) -> bool:
 
 def _sha256_text(value: str) -> str:
     return hashlib.sha256(str(value or "").encode("utf-8")).hexdigest()
-
-
-def _maybe_stamp_evidence_owner(
-    receipt: dict[str, Any],
-    *,
-    evidence_owner_ref_hash: str | None = None,
-    evidence_workspace_ref_hash: str | None = None,
-) -> None:
-    """Conditionally add evidence_owner sub-dict to receipt.
-
-    Only added when BOTH owner_ref_hash AND workspace_ref_hash are supplied via
-    explicit keyword params (server-derived only — never from caller request body).
-    Appended AFTER receipt_hash is computed so the
-    statement_classification_receipt_hash is identical with or without the stamp.
-    """
-    from app.services.layer3_sec_xbrl_in_app_auth_policy import EVIDENCE_OWNER_SCHEMA_ID  # local import avoids cycle
-    owner_ref_hash = str(evidence_owner_ref_hash or "").strip()
-    workspace_ref_hash = str(evidence_workspace_ref_hash or "").strip()
-    if not owner_ref_hash or not workspace_ref_hash:
-        return
-    receipt["evidence_owner"] = {
-        "schema_id": EVIDENCE_OWNER_SCHEMA_ID,
-        "owner_ref_hash": owner_ref_hash,
-        "workspace_ref_hash": workspace_ref_hash,
-    }
 
 
 def _server_time() -> str:

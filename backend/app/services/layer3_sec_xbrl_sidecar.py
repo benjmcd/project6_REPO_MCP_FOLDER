@@ -76,8 +76,6 @@ _ALLOWED_FIELDS = {
     "max_facts",
     "operator_confirmation",
     "actor",
-    "evidence_owner_ref_hash",
-    "evidence_workspace_ref_hash",
 }
 _FORBIDDEN_INPUT_KEYS = {
     "args",
@@ -311,7 +309,6 @@ def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str,
         "recorded_at": _server_time(),
         "updated_at": _server_time(),
     }
-    _maybe_stamp_evidence_owner(receipt, request)
     if internal_value_store_enabled:
         _write_internal_value_store(receipt, value_records)
     _write_receipt(receipt)
@@ -1450,26 +1447,6 @@ def _expected_or_authority(request: Mapping[str, Any], request_key: str, authori
 def _optional_str(value: Any) -> str | None:
     text = str(value or "").strip()
     return text or None
-
-
-def _maybe_stamp_evidence_owner(receipt: dict[str, Any], request: Mapping[str, Any]) -> None:
-    """Conditionally add evidence_owner sub-dict to receipt.
-
-    Only added when BOTH owner_ref_hash AND workspace_ref_hash are present in the
-    normalised request.  The stamp is NON-hashed metadata appended AFTER the receipt
-    hash basis is computed, so receipt_id and sidecar_receipt_hash are identical
-    whether or not the stamp is present.
-    """
-    from app.services.layer3_sec_xbrl_in_app_auth_policy import EVIDENCE_OWNER_SCHEMA_ID  # local import avoids cycle
-    owner_ref_hash = str(request.get("evidence_owner_ref_hash") or "").strip()
-    workspace_ref_hash = str(request.get("evidence_workspace_ref_hash") or "").strip()
-    if not owner_ref_hash or not workspace_ref_hash:
-        return
-    receipt["evidence_owner"] = {
-        "schema_id": EVIDENCE_OWNER_SCHEMA_ID,
-        "owner_ref_hash": owner_ref_hash,
-        "workspace_ref_hash": workspace_ref_hash,
-    }
 
 
 def _is_hash(value: str) -> bool:
