@@ -1395,3 +1395,148 @@ def test_full_pipeline_records_ownership_marker_for_caller(tmp_path, monkeypatch
         / f"sidecar-{arelle_hash}.json"
     )
     assert marker_path.exists(), f"ownership marker not recorded at {marker_path}"
+
+
+# ---------------------------------------------------------------------------
+# Regression — error body redaction and raw-reference backstop
+# ---------------------------------------------------------------------------
+
+def test_full_pipeline_cik_hash_mismatch_error_body_is_redacted(tmp_path, monkeypatch) -> None:
+    """A cik_hash_mismatch 409 must not leak the raw CIK in the response body.
+
+    The _sec_xbrl_full_pipeline_orchestrator_error_response helper passes the error through
+    workbench_error_response, which only emits error_code/message/recoverable/blocked_fields/
+    next_allowed_actions — no exc.details key.  Assert the body shape and the absence of raw CIK.
+    """
+    client, _ = _make_test_client(tmp_path, monkeypatch)
+
+    cik = "320193"
+    connector_hash = _hash("a")
+    sidecar_hash = _hash("b")
+    cls_hash = _hash("c")
+
+    # Corpus record with wrong cik_hash so the orchestrator raises cik_hash_mismatch.
+    wrong_cik_hash = _sha256("999999")
+    corpus_with_wrong_cik = {
+        "connector_receipt_hash": connector_hash,
+        "validation_receipt_id": "vr-redact-001",
+        "validation_receipt_hash": _sha256("redact"),
+        "filing_validation_records": [
+            {
+                "cik_hash": wrong_cik_hash,
+                "form_type": "10-K",
+                "supported_degraded_blocked": "supported",
+                "authority_hashes": {
+                    "fact_authority_receipt_hash": sidecar_hash,
+                    "statement_classification_receipt_hash": cls_hash,
+                    "arelle_sidecar_receipt_hash": sidecar_hash,
+                },
+            }
+        ],
+    }
+
+    monkeypatch.setattr(
+        orchestrator,
+        "layer3_sec_edgar_real_company_corpus_validation",
+        MagicMock(
+            validate_sec_edgar_real_company_corpus_product_path=lambda fields, db, evidence_owner=None: corpus_with_wrong_cik,
+            VALIDATION_MODE=corpus_svc.VALIDATION_MODE,
+            OPERATOR_DECISION=corpus_svc.OPERATOR_DECISION,
+        ),
+    )
+    from app.services import layer3_sec_xbrl_in_app_auth_policy as auth_policy_svc
+    monkeypatch.setattr(
+        auth_policy_svc,
+        "derive_sec_xbrl_evidence_owner",
+        lambda headers: {"owner_hash": _hash("f"), "auth_owner_mode": "test"},
+    )
+
+    r = client.post(
+        FULL_PIPELINE_URL,
+        json={
+            "client_request_id": "fp-redact-001",
+            "cik": cik,
+            "company_matrix": ["AAPL"],
+            "operator_confirmation": True,
+        },
+    )
+    assert r.status_code == 409, r.text
+    body = r.json()
+
+    # Correct error code
+    assert body.get("error_code") == "full_pipeline_cik_hash_mismatch"
+
+    # Required workbench error fields are present
+    assert "message" in body
+
+    # workbench_error_response does NOT include exc.details — assert absence
+    assert "details" not in body
+
+    # Raw CIK must not appear anywhere in the serialized response
+    raw_text = r.text
+    assert cik not in raw_text, f"Raw CIK '{cik}' leaked into error response body"
+
+
+def test_full_pipeline_backstop_blocks_raw_reference_marker(tmp_path, monkeypatch) -> None:
+    """The raw-reference backstop must fire when the orchestrator's own corpus_validation
+    summary carries a value that matches a forbidden marker (SEC URL / archive path).
+
+    Achieved by injecting a raw SEC URL into validation_receipt_id, which surfaces in the
+    corpus_validation summary.  The backstop runs BEFORE the open handler so the open handler
+    must never be reached.
+    """
+    client, _ = _make_test_client(tmp_path, monkeypatch)
+
+    # Inject a raw SEC URL into the corpus summary via validation_receipt_id.
+    _stub_valid_corpus_and_auth(
+        monkeypatch,
+        validation_receipt_id="https://www.sec.gov/Archives/edgar/data/320193/x.htm",
+    )
+
+    # The open handler must NOT be reached — the backstop fires first.
+    monkeypatch.setattr(
+        "app.api.layer3.post_sec_xbrl_operator_review_workflow_open_from_staged_evidence",
+        lambda req, request, db: (_ for _ in ()).throw(
+            AssertionError("open must not run after backstop trips")
+        ),
+    )
+
+    r = client.post(
+        FULL_PIPELINE_URL,
+        json={
+            "client_request_id": f"fp-rawref-{uuid.uuid4().hex[:12]}",
+            "cik": "320193",
+            "company_matrix": ["AAPL"],
+            "operator_confirmation": True,
+        },
+    )
+    assert r.status_code == 409, r.text
+    assert r.json().get("error_code") == "full_pipeline_raw_reference_in_response"
+
+
+def test_full_pipeline_backstop_allows_clean_summary(tmp_path, monkeypatch) -> None:
+    """A corpus_validation summary with a normal hash-only validation_receipt_id must NOT
+    trip the raw-reference backstop — the pipeline proceeds to the open handler (200)."""
+    client, _ = _make_test_client(tmp_path, monkeypatch)
+
+    _stub_valid_corpus_and_auth(monkeypatch, validation_receipt_id="vr-clean")
+
+    # Stub open handler to return a minimal success dict.
+    monkeypatch.setattr(
+        "app.api.layer3.post_sec_xbrl_operator_review_workflow_open_from_staged_evidence",
+        lambda req, request, db: {"status": "review_ready"},
+    )
+
+    r = client.post(
+        FULL_PIPELINE_URL,
+        json={
+            "client_request_id": f"fp-clean-{uuid.uuid4().hex[:12]}",
+            "cik": "320193",
+            "company_matrix": ["AAPL"],
+            "operator_confirmation": True,
+        },
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body.get("status") == "full_pipeline_open_ready"
+    assert body.get("operator_review", {}).get("status") == "review_ready"

@@ -17763,6 +17763,20 @@ def _full_pipeline_leaf_equals_raw_cik(node: Any, raw_ciks: set[str]) -> bool:
     return False
 
 
+# Forbidden raw-reference substrings for the full-pipeline honesty backstop. These are
+# distinctive enough (unlike a numeric CIK) that a substring scan over the orchestrator's
+# own hash-only summaries cannot false-fire: a raw SEC URL or filing-archive path would only
+# appear if a raw reference leaked. Defense-in-depth beyond the raw-CIK leaf check.
+_FULL_PIPELINE_FORBIDDEN_MARKERS = ("/archives/", "sec.gov", "https://", "http://")
+
+
+def _full_pipeline_contains_forbidden_marker(obj: Any) -> bool:
+    """True if the JSON-serialized object contains any forbidden raw-reference marker
+    (SEC URL host, scheme, or filing-archive path). Case-insensitive substring scan."""
+    serialized = json.dumps(obj, default=str).lower()
+    return any(marker in serialized for marker in _FULL_PIPELINE_FORBIDDEN_MARKERS)
+
+
 @router.post(
     "/sec-xbrl/operator-review/workflow/open-full-pipeline",
     response_model=None,
@@ -17805,6 +17819,15 @@ def post_sec_xbrl_operator_review_workflow_open_full_pipeline(
             raise layer3_sec_xbrl_full_pipeline_orchestrator.SecXbrlFullPipelineOrchestratorError(
                 "full_pipeline_raw_cik_in_response",
                 "Full-pipeline response failed the raw-CIK honesty backstop.",
+                http_status=409,
+            )
+        # Defense-in-depth: also reject raw SEC URLs / filing-archive paths in the
+        # orchestrator's own summaries (they are hash-only by construction, so any such
+        # marker would indicate a raw-reference leak).
+        if _full_pipeline_contains_forbidden_marker(_orchestrator_additions):
+            raise layer3_sec_xbrl_full_pipeline_orchestrator.SecXbrlFullPipelineOrchestratorError(
+                "full_pipeline_raw_reference_in_response",
+                "Full-pipeline response failed the raw-reference honesty backstop.",
                 http_status=409,
             )
 
