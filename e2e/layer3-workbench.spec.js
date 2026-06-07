@@ -25222,8 +25222,10 @@ test('Layer 3 SEC XBRL value reveal authority prepare provenance chain walks to 
   expect(typeof decisionId).toBe('string');
   expect(typeof decisionBasisHash).toBe('string');
 
-  // Authority prepare: decision found and validated approved, lineage intact;
-  // blocked only at dataset_version anchor (seed creates projection without DatasetVersion).
+  // Authority prepare: decision found and validated approved, packet/projection lineage intact,
+  // blocked only at dataset_version anchor (seed projection has no dataset_version_id).
+  // 400 sec_xbrl_value_reveal_authority_required_field_missing proves the chain traversed
+  // auth-binding → decision-found → approved → lineage-valid before stopping.
   const authResult = await request.post(
     '/api/v1/layer3/sec-xbrl/value-reveal/authority/prepare',
     {
@@ -25236,9 +25238,9 @@ test('Layer 3 SEC XBRL value reveal authority prepare provenance chain walks to 
       },
     },
   );
-  expect(authResult.status()).toBe(404);
+  expect(authResult.status()).toBe(400);
   const authBody = await authResult.json();
-  expect(authBody.error_code).toBe('sec_xbrl_value_reveal_authority_dataset_version_missing');
+  expect(authBody.error_code).toBe('sec_xbrl_value_reveal_authority_required_field_missing');
 });
 
 test('Layer 3 SEC XBRL value reveal authority prepare is fail-closed on basis hash mismatch (server-backed)', async ({ request }) => {
