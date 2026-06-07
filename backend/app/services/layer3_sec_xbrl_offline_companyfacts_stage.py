@@ -96,6 +96,7 @@ def stage_sec_xbrl_companyfacts(
         )
 
     # --- Count observations for the receipt ---
+    # _count_companyfacts unwraps the SEC envelope automatically when present (FIX 1).
     taxonomy_count, concept_count, observation_count = _count_companyfacts(companyfacts)
 
     # --- Compute receipt id ---
@@ -103,15 +104,14 @@ def stage_sec_xbrl_companyfacts(
         {"hash_version": "sec_edgar_companyfacts_source_identity_hash_v1", "cik_hash": cik_hash}
     )
     companyfacts_payload_hash = stable_hash(dict(companyfacts))
-    receipt_hash_basis = {
-        "hash_version": "sec_xbrl_offline_companyfacts_stage_receipt_hash_v1",
-        "schema_id": SCHEMA_ID,
-        "source_identity_hash": source_identity_hash,
-        "cik_hash": cik_hash,
-        "connector_receipt_hash": connector_receipt_hash,
-        "companyfacts_payload_hash": companyfacts_payload_hash,
-        "content_sha256": content_sha256,
-    }
+    receipt_hash_basis = companyfacts_receipt_hash_basis(
+        schema_id=SCHEMA_ID,
+        source_identity_hash=source_identity_hash,
+        cik_hash=cik_hash,
+        connector_receipt_hash=connector_receipt_hash,
+        companyfacts_payload_hash=companyfacts_payload_hash,
+        content_sha256=content_sha256,
+    )
     receipt_hash = stable_hash(receipt_hash_basis)
     companyfacts_receipt_id = f"{COMPANYFACTS_RECEIPT_PREFIX}-{source_identity_hash[:24]}-{receipt_hash[:24]}"
 
@@ -189,6 +189,33 @@ def stage_sec_xbrl_companyfacts(
         return _build_stage_response(existing_receipt, idempotent_replay=True)
 
     return _build_stage_response(receipt, idempotent_replay=False)
+
+
+def companyfacts_receipt_hash_basis(
+    *,
+    schema_id: str,
+    source_identity_hash: str,
+    cik_hash: str,
+    connector_receipt_hash: str,
+    companyfacts_payload_hash: str,
+    content_sha256: str,
+) -> dict[str, Any]:
+    """Return the canonical basis dict used to compute companyfacts_receipt_hash.
+
+    Single source of truth shared by the stage writer and the evidence loader's
+    receipt-hash validation (mirrors classification_receipt_hash_basis in the
+    classification contract).  The loader recomputes this dict from stored receipt
+    fields and verifies it equals staged_receipt["companyfacts_receipt_hash"].
+    """
+    return {
+        "hash_version": "sec_xbrl_offline_companyfacts_stage_receipt_hash_v1",
+        "schema_id": schema_id,
+        "source_identity_hash": source_identity_hash,
+        "cik_hash": cik_hash,
+        "connector_receipt_hash": connector_receipt_hash,
+        "companyfacts_payload_hash": companyfacts_payload_hash,
+        "content_sha256": content_sha256,
+    }
 
 
 def find_staged_companyfacts_receipt(
@@ -274,8 +301,21 @@ def _extract_connector_cik_hashes(connector_receipt: Mapping[str, Any]) -> set[s
     return hashes
 
 
-def _count_companyfacts(facts: Mapping[str, Any]) -> tuple[int, int, int]:
-    """Return (taxonomy_count, concept_count, observation_count)."""
+def _count_companyfacts(payload: Mapping[str, Any]) -> tuple[int, int, int]:
+    """Return (taxonomy_count, concept_count, observation_count).
+
+    Unwraps the SEC CompanyFacts envelope when present: if the mapping has a ``"facts"``
+    key whose value is itself a mapping, count that inner dict (the taxonomy map).
+    This handles both the full SEC envelope ({cik, entityName, facts:{...}}) passed
+    from the acquire-and-stage path AND bare facts maps supplied offline.
+    The raw payload stored on disk and the payload_hash are NOT affected; only the
+    receipt metadata counts are corrected by this unwrap.
+    """
+    facts: Mapping[str, Any] = payload
+    inner = payload.get("facts")
+    if isinstance(inner, Mapping):
+        facts = inner
+
     taxonomy_count = concept_count = observation_count = 0
     for concepts in facts.values():
         if not isinstance(concepts, Mapping):

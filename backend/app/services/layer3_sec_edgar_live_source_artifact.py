@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 import re
 import time
-from typing import Any, Mapping, Protocol
+from typing import Any, Mapping, NoReturn, Protocol
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -1103,7 +1103,7 @@ def _blocked(
     *,
     http_status: int = 400,
     blocked_fields: list[str] | None = None,
-) -> None:
+) -> NoReturn:
     raise Layer3WorkbenchError(
         code,
         message,
@@ -1158,6 +1158,13 @@ def acquire_sec_edgar_companyfacts_live_artifact(fields: Mapping[str, Any]) -> d
     )
     existing = _find_existing_companyfacts_receipt(source_identity_hash)
     if existing is not None:
+        # Verify the retained artifact bytes before reporting 'available' on the replay path.
+        # A replay over a missing or corrupt artifact must fail closed (409) rather than
+        # returning 'available' with a receipt that cannot be fulfilled.
+        _verify_companyfacts_artifact_bytes(
+            existing["companyfacts_receipt_id"],
+            existing["content_sha256"],
+        )
         return _response_from_companyfacts_receipt(existing, idempotent_replay=True, network_request_made=False)
 
     url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{padded_cik}.json"
@@ -1407,45 +1414,49 @@ def _write_companyfacts_receipt(receipt: Mapping[str, Any]) -> None:
         )
 
 
+def _verify_companyfacts_artifact_bytes(receipt_id: str, content_sha256: str) -> None:
+    """Verify the retained artifact file exists and its sha256 matches content_sha256.
+
+    Raises _blocked (409 sec_edgar_companyfacts_live_artifact_retained_artifact_mismatch)
+    when the file is missing OR its hash does not match.  Called in both the write path
+    (file-already-exists branch) and the idempotent-replay path so a replay over a
+    missing/corrupt retained artifact fails closed instead of reporting 'available'.
+    """
+    target = _companyfacts_artifact_path(receipt_id)
+    if not target.exists():
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_retained_artifact_mismatch",
+            "Retained CompanyFacts artifact is missing; cannot verify integrity on replay.",
+            http_status=409,
+        )
+    try:
+        existing = target.read_bytes()
+    except OSError as exc:
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_retained_artifact_unreadable",
+            "SEC EDGAR retained CompanyFacts artifact could not be read for hash verification.",
+            http_status=409,
+            blocked_fields=[exc.__class__.__name__],
+        )
+    if hashlib.sha256(existing).hexdigest() != content_sha256:
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_retained_artifact_mismatch",
+            "Retained CompanyFacts artifact bytes do not match the expected content hash.",
+            http_status=409,
+        )
+
+
 def _write_companyfacts_artifact(receipt_id: str, content: bytes, content_sha256: str) -> None:
     target = _companyfacts_artifact_path(receipt_id)
     if target.exists():
-        try:
-            existing = target.read_bytes()
-        except OSError as exc:
-            _blocked(
-                "sec_edgar_companyfacts_live_artifact_retained_artifact_unreadable",
-                "SEC EDGAR retained CompanyFacts artifact could not be read for hash verification.",
-                http_status=409,
-                blocked_fields=[exc.__class__.__name__],
-            )
-        if hashlib.sha256(existing).hexdigest() != content_sha256:
-            _blocked(
-                "sec_edgar_companyfacts_live_artifact_retained_artifact_mismatch",
-                "Retained CompanyFacts artifact bytes do not match the expected content hash.",
-                http_status=409,
-            )
+        _verify_companyfacts_artifact_bytes(receipt_id, content_sha256)
         return
     target.parent.mkdir(parents=True, exist_ok=True)
     try:
         with target.open("xb") as handle:
             handle.write(content)
     except FileExistsError:
-        try:
-            existing = target.read_bytes()
-        except OSError as exc:
-            _blocked(
-                "sec_edgar_companyfacts_live_artifact_retained_artifact_unreadable",
-                "SEC EDGAR retained CompanyFacts artifact could not be read for hash verification.",
-                http_status=409,
-                blocked_fields=[exc.__class__.__name__],
-            )
-        if hashlib.sha256(existing).hexdigest() != content_sha256:
-            _blocked(
-                "sec_edgar_companyfacts_live_artifact_retained_artifact_mismatch",
-                "Retained CompanyFacts artifact bytes do not match the expected content hash.",
-                http_status=409,
-            )
+        _verify_companyfacts_artifact_bytes(receipt_id, content_sha256)
     except OSError as exc:
         _blocked(
             "sec_edgar_companyfacts_live_artifact_write_failed",

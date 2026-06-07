@@ -946,7 +946,9 @@ class TestLoaderTamperedStagedCompanyfacts:
         raw_data["__tampered__"] = "injected-by-test"
         raw_path.write_text(json.dumps(raw_data, sort_keys=True, indent=2), encoding="utf-8")
 
-        # Loader must detect the hash mismatch and fail closed
+        # Loader must detect the hash mismatch and fail closed.
+        # With FIX 3, mutating only the raw store leaves the receipt intact, so the
+        # receipt-hash check passes and the payload-hash check catches the mutation.
         with pytest.raises(loader.SecXbrlOfflineEvidenceLoaderError) as exc_info:
             loader.load_sec_xbrl_offline_evidence_bundle(
                 storage,
@@ -961,10 +963,13 @@ class TestLoaderTamperedStagedCompanyfacts:
         ), f"Unexpected error code: {exc_info.value.code}"
 
     def test_loader_rejects_staged_companyfacts_missing_payload_hash(self, tmp_path):
-        """Staged receipt with absent/blank companyfacts_payload_hash must fail closed (FIX 1 hardening).
+        """Staged receipt with absent companyfacts_payload_hash must fail closed.
 
-        The staged-discovery branch must raise ..._payload_hash_missing rather than
-        silently skipping integrity verification when the receipt field is absent.
+        With FIX 3, the receipt-hash check fires first (before the payload-hash check)
+        because removing companyfacts_payload_hash makes the receipt-hash basis
+        unverifiable → companyfacts_receipt_hash_mismatch.  This is the correct
+        fail-closed behavior: any receipt-field mutation that invalidates the basis
+        is caught at the receipt-hash level.
         """
         cik = "320193"
         connector_hash = _hash("T")
@@ -992,7 +997,7 @@ class TestLoaderTamperedStagedCompanyfacts:
         receipt_data.pop("companyfacts_payload_hash", None)
         receipt_path.write_text(json.dumps(receipt_data, sort_keys=True, indent=2), encoding="utf-8")
 
-        # Loader must fail closed — missing hash is not admitted
+        # Loader must fail closed — FIX 3 receipt-hash check fires first.
         with pytest.raises(loader.SecXbrlOfflineEvidenceLoaderError) as exc_info:
             loader.load_sec_xbrl_offline_evidence_bundle(
                 storage,
@@ -1002,8 +1007,9 @@ class TestLoaderTamperedStagedCompanyfacts:
                 expected_statement_classification_receipt_hash=refs["cls_hash"],
             )
 
+        # FIX 3 fires first: missing basis field → receipt_hash_mismatch
         assert exc_info.value.code == (
-            "sec_xbrl_offline_evidence_loader_companyfacts_payload_hash_missing"
+            "sec_xbrl_offline_evidence_loader_companyfacts_receipt_hash_mismatch"
         ), f"Unexpected error code: {exc_info.value.code}"
 
 
@@ -1057,3 +1063,174 @@ class TestCompanyfactsArtifactReplayVerifiesBytes:
         _la._write_companyfacts_artifact(receipt_id, content, content_sha256)
         # Second call with same content and hash — must not raise
         _la._write_companyfacts_artifact(receipt_id, content, content_sha256)
+
+
+# ---------------------------------------------------------------------------
+# FIX 2 regression — idempotent replay path verifies retained artifact bytes
+# ---------------------------------------------------------------------------
+
+def test_idempotent_replay_path_verifies_retained_artifact_bytes(tmp_path, monkeypatch) -> None:
+    """Stage an artifact, delete/corrupt the retained file, then call acquire again on the
+    replay path → must return 409 retained_artifact_mismatch instead of 'available'.
+
+    Before FIX 2, _find_existing_companyfacts_receipt() returning a receipt caused an
+    immediate return of _response_from_companyfacts_receipt(..., idempotent_replay=True)
+    WITHOUT verifying the retained artifact bytes.  After FIX 2, _verify_companyfacts_artifact_bytes
+    is called before returning and fails closed on missing/corrupt files.
+    """
+    from app.services import layer3_sec_edgar_live_source_artifact as _la
+    from app.services.layer3_utils import stable_hash as _stable_hash
+
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+
+    cik = "320193"
+    raw_cik = cik.lstrip("0") or "0"
+    cik_hash = _sha256(raw_cik)
+
+    content = json.dumps({"cik": cik, "facts": {"us-gaap": {}}}, sort_keys=True, indent=2).encode("utf-8")
+    content_sha256 = hashlib.sha256(content).hexdigest()
+
+    source_identity_hash = _stable_hash(
+        {"hash_version": "sec_edgar_companyfacts_source_identity_hash_v1", "cik_hash": cik_hash}
+    )
+    receipt_hash_basis = {
+        "hash_version": "sec_edgar_companyfacts_live_artifact_receipt_hash_v1",
+        "schema_id": "layer3.sec_edgar_companyfacts_live_artifact_acquisition.v1",
+        "source_identity_hash": source_identity_hash,
+        "cik_hash": cik_hash,
+        "content_sha256": content_sha256,
+    }
+    receipt_hash = _stable_hash(receipt_hash_basis)
+    receipt_id = f"sec-edgar-companyfacts-live-artifact-{source_identity_hash[:24]}-{receipt_hash[:24]}"
+
+    # Write the fetch receipt and the raw artifact (simulating a successful first fetch)
+    receipts_dir = tmp_path / "layer3-sec-xbrl-companyfacts" / "receipts"
+    receipts_dir.mkdir(parents=True, exist_ok=True)
+    receipt_payload = {
+        "schema_id": "layer3.sec_edgar_companyfacts_live_artifact_acquisition.v1",
+        "companyfacts_receipt_id": receipt_id,
+        "companyfacts_receipt_hash": receipt_hash,
+        "source_identity_hash": source_identity_hash,
+        "cik_hash": cik_hash,
+        "content_sha256": content_sha256,
+        "companyfacts_observation_count": 0,
+        "taxonomy_count": 0,
+        "concept_count": 0,
+        "recorded_at": "2026-01-01T00:00:00+00:00",
+        "receipt_hash_basis": receipt_hash_basis,
+    }
+    (receipts_dir / f"{receipt_id}.json").write_text(
+        json.dumps(receipt_payload, sort_keys=True, indent=2), encoding="utf-8"
+    )
+
+    store_dir = tmp_path / "layer3-sec-xbrl-companyfacts" / "companyfacts-store"
+    store_dir.mkdir(parents=True, exist_ok=True)
+    artifact_path = store_dir / f"{receipt_id}.json"
+    artifact_path.write_bytes(content)
+
+    # Verify the replay path works correctly when artifact is intact
+    existing = _la._find_existing_companyfacts_receipt(source_identity_hash)
+    assert existing is not None, "Receipt must be findable for replay path test"
+
+    # Now DELETE the retained artifact to simulate corruption/loss
+    artifact_path.unlink()
+
+    # The replay path must now fail closed (409) instead of reporting 'available'
+    from app.services.layer3_sec_edgar_live_source_artifact import _verify_companyfacts_artifact_bytes
+    from app.services.layer3_workbench_error import Layer3WorkbenchError
+
+    with pytest.raises(Layer3WorkbenchError) as exc_info:
+        _verify_companyfacts_artifact_bytes(receipt_id, content_sha256)
+
+    assert exc_info.value.error_code == "sec_edgar_companyfacts_live_artifact_retained_artifact_mismatch"
+    assert exc_info.value.http_status == 409
+
+    # Also verify corrupt content (wrong bytes) triggers the same 409
+    artifact_path.write_bytes(b'{"corrupt": true}')
+    with pytest.raises(Layer3WorkbenchError) as exc_info2:
+        _verify_companyfacts_artifact_bytes(receipt_id, content_sha256)
+    assert exc_info2.value.error_code == "sec_edgar_companyfacts_live_artifact_retained_artifact_mismatch"
+    assert exc_info2.value.http_status == 409
+
+
+def test_acquire_replay_fails_closed_on_corrupt_retained_artifact(tmp_path, monkeypatch) -> None:
+    """Drive the FULL acquire→replay path to prove replay fails closed on corrupt/missing artifact.
+
+    Step 1: Call acquire_sec_edgar_companyfacts_live_artifact with a monkeypatched fetch.
+            It performs the real fetch path, writes the receipt and raw artifact, returns available.
+    Step 2: CORRUPT the retained artifact file on disk.
+    Step 3: Call acquire again with the same CIK.  _find_existing_companyfacts_receipt returns
+            the receipt → idempotent-replay branch → _verify_companyfacts_artifact_bytes detects
+            hash mismatch → Layer3WorkbenchError 409
+            sec_edgar_companyfacts_live_artifact_retained_artifact_mismatch.
+    This proves the fix at acquire line ~1164 is exercised end-to-end, not just the helper directly.
+    """
+    import json as _json
+
+    from app.services import layer3_sec_edgar_live_source_artifact as _la
+    from app.services.layer3_workbench_error import Layer3WorkbenchError as _L3Error
+
+    # ---------------------------------------------------------------------------
+    # Environment setup — mirrors the existing gate-bypass pattern in TestFetchGates
+    # ---------------------------------------------------------------------------
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+    monkeypatch.setattr(settings, "layer3_sec_edgar_live_network_enabled", True)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "TestAgent/1.0 test@example.com")
+
+    # No-op rate limiter so we don't sleep or hit the clock
+    monkeypatch.setattr(_la, "_enforce_rate_limit", lambda: None)
+
+    # Build minimal valid companyfacts JSON bytes the fake fetch will return
+    cik = "320193"
+    companyfacts_payload = {"facts": {"us-gaap": {"Assets": {"units": {"USD": [
+        {"val": 100, "end": "2023-12-31", "fp": "FY", "fy": 2023}
+    ]}}}}}
+    content = _json.dumps(companyfacts_payload, sort_keys=True, indent=2).encode("utf-8")
+
+    # Fake fetch result: status 200, complete, correct bytes
+    fake_result = _la.SecEdgarFetchResult(
+        status_code=200,
+        content=content,
+        complete=True,
+        final_url="https://data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json",
+    )
+    monkeypatch.setattr(_la, "_fetch_companyfacts_with_retry", lambda **_kw: fake_result)
+
+    fields = {"cik": cik, "operator_confirmation": True}
+
+    # ---------------------------------------------------------------------------
+    # Step 1: First acquire — fetch path runs, writes receipt + artifact, returns available
+    # ---------------------------------------------------------------------------
+    result1 = _la.acquire_sec_edgar_companyfacts_live_artifact(fields)
+    assert result1["status"] == "available"
+    assert result1["idempotent_replay"] is False
+
+    receipt_id = result1["companyfacts_receipt_id"]
+    content_sha256 = result1["content_sha256"]
+
+    # Confirm the artifact was written
+    artifact_path = tmp_path / "layer3-sec-xbrl-companyfacts" / "companyfacts-store" / f"{receipt_id}.json"
+    assert artifact_path.exists(), "Artifact must be present after first acquire"
+
+    # ---------------------------------------------------------------------------
+    # Step 2: CORRUPT the retained artifact (wrong bytes, hash will not match)
+    # ---------------------------------------------------------------------------
+    artifact_path.write_bytes(b'{"corrupt": "tampered"}')
+
+    # ---------------------------------------------------------------------------
+    # Step 3: Second acquire — same CIK → hits idempotent-replay branch → must fail closed
+    # ---------------------------------------------------------------------------
+    with pytest.raises(_L3Error) as exc_info:
+        _la.acquire_sec_edgar_companyfacts_live_artifact(fields)
+
+    assert exc_info.value.error_code == "sec_edgar_companyfacts_live_artifact_retained_artifact_mismatch"
+    assert exc_info.value.http_status == 409
+
+    # Also confirm DELETE (missing file) triggers the same failure
+    artifact_path.unlink()
+    with pytest.raises(_L3Error) as exc_info2:
+        _la.acquire_sec_edgar_companyfacts_live_artifact(fields)
+
+    assert exc_info2.value.error_code == "sec_edgar_companyfacts_live_artifact_retained_artifact_mismatch"
+    assert exc_info2.value.http_status == 409
