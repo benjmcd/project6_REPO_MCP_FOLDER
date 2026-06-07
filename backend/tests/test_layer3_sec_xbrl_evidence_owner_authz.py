@@ -1,6 +1,6 @@
 """Tests for per-principal evidence-ownership markers on staged SEC-XBRL evidence.
 
-Covers codex P1 #2250: per-principal OWNERSHIP MARKERS replace the single-owner receipt
+Covers P1 #2250: per-principal OWNERSHIP MARKERS replace the single-owner receipt
 STAMP model.  Two workspaces staging the SAME filing each get their own marker file, so
 dedup collision is impossible.
 
@@ -512,7 +512,7 @@ def test_p1_same_content_two_workspaces_both_open(tmp_path, monkeypatch) -> None
 # ---------------------------------------------------------------------------
 
 def test_proxy_same_workspace_different_actor_both_open(tmp_path, monkeypatch) -> None:
-    """P2 (codex #2252): two actors in the SAME workspace staging the same filing must not conflict.
+    """P2 (#2252): two actors in the SAME workspace staging the same filing must not conflict.
 
     Actor A1 (workspace W, owner_A1) stages content X → marker W/X written.
     Actor A2 (workspace W, owner_A2, same workspace headers / different identity header)
@@ -1252,7 +1252,7 @@ def test_m2_marker_written_by_corpus_validation_enables_open_from_staged(tmp_pat
 
 
 # ---------------------------------------------------------------------------
-# P2 codex #2253: marker read+parse+validate (fail-closed on garbage/directory/mismatch)
+# P2 #2253: marker read+parse+validate (fail-closed on garbage/directory/mismatch)
 # ---------------------------------------------------------------------------
 
 def test_require_marker_malformed_file_fails_closed_under_proxy(tmp_path) -> None:
@@ -1386,3 +1386,168 @@ def test_require_marker_malformed_under_none_allows(tmp_path) -> None:
         auth_owner_mode=ab.AUTH_OWNER_MODE_NONE,
         sidecar_receipt_hash=sidecar,
     )
+
+
+# ---------------------------------------------------------------------------
+# FP-1: full-pipeline route records the CURRENT caller's marker (proxy W2)
+# ---------------------------------------------------------------------------
+
+def test_full_pipeline_proxy_second_workspace_records_marker_and_opens(
+    tmp_path, monkeypatch
+) -> None:
+    """Full-pipeline route writes W2's ownership marker via the orchestrator so W2 can open.
+
+    Scenario:
+    - W1 has already staged the evidence on disk (sidecar + classification written by
+      _stage_storage). No W2 marker exists yet.
+    - The corpus-validation step is stubbed so no live network is needed.
+    - W2 calls the full-pipeline route. The orchestrator records W2's marker during Step 4.
+    - The subsequent open-from-staged-evidence call (made internally by the same route)
+      finds W2's marker and returns 200.
+
+    Contrast assertion (to confirm the fix actually matters): before the full-pipeline call
+    is made, W2 is barred from the granular open-from-staged-evidence route (403
+    marker_missing, because no W2 marker exists yet). After the full-pipeline call the
+    marker exists and the granular route also returns 200.
+
+    Because the 403 contrast check POSTs to the DB, a fresh _make_client is used for
+    each phase so the in-memory SQLite DB is isolated and the contrast POST leaves no
+    row that would conflict with the full-pipeline POST.
+    """
+    import hashlib
+    from unittest.mock import MagicMock
+
+    from app.services import (
+        layer3_sec_xbrl_full_pipeline_orchestrator as fp_orchestrator,
+    )
+
+    FULL_PIPELINE_URL = (
+        "/api/v1/layer3/sec-xbrl/operator-review/workflow/open-full-pipeline"
+    )
+    # AAPL → "320193" per REAL_COMPANY_CIK_REFS; the orchestrator strips leading zeros
+    # and then sha256-hashes the stripped CIK to build expected_cik_hash.
+    AAPL_CIK_STRIPPED = "320193"
+    expected_cik_hash = hashlib.sha256(AAPL_CIK_STRIPPED.encode("utf-8")).hexdigest()
+    # Use a dummy connector_receipt_hash — the loader accepts None/empty when oracle is off.
+    dummy_connector_receipt_hash = "c" * 64
+
+    # ------------------------------------------------------------------
+    # Phase 0: pre-stage the sidecar + classification as if W1 staged them.
+    # Use a dedicated storage dir; _stage_storage always uses sidecar_hash="b"*64.
+    # ------------------------------------------------------------------
+    storage_dir = tmp_path / "storage-fp-proxy-w2"
+
+    # Phase A: contrast — W2 cannot open via the granular route before the marker exists.
+    # Use its own client + storage (same storage_dir, fresh DB) so the 403 POST leaves no
+    # committed workflow row that could collide with the full-pipeline POST.
+    client_a, _ = _make_client(tmp_path, monkeypatch, storage_dir, auth_owner="proxy")
+    try:
+        refs = _stage_storage(storage_dir)
+
+        contrast_resp = client_a.post(
+            OPEN_FROM_STAGED,
+            headers=_w2_headers(),
+            json={
+                "client_request_id": f"fp-w2-contrast-{uuid.uuid4().hex[:12]}",
+                "expected_sidecar_receipt_hash": refs["sidecar_receipt_hash"],
+                "expected_statement_classification_receipt_hash": refs["classification_hash"],
+                "period_limit": 3,
+            },
+        )
+        assert contrast_resp.status_code == 403, (
+            f"W2 should be blocked (no marker) before full-pipeline call: {contrast_resp.text}"
+        )
+        assert "marker_missing" in contrast_resp.json().get("error_code", ""), contrast_resp.json()
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+    # Phase B: full-pipeline call as W2 — orchestrator writes W2's marker, open succeeds.
+    # Fresh client so the in-memory DB has no leftover rows from Phase A.
+    client_b, _ = _make_client(tmp_path, monkeypatch, storage_dir, auth_owner="proxy")
+    try:
+        # Build the fake corpus response that the stubbed corpus-validation returns.
+        # field names match what the orchestrator reads from corpus_response:
+        #   corpus_response["connector_receipt_hash"]
+        #   corpus_response["validation_receipt_id"]
+        #   corpus_response["validation_receipt_hash"]
+        #   corpus_response["filing_validation_records"][n]["cik_hash"]
+        #   corpus_response["filing_validation_records"][n]["form_type"]
+        #   corpus_response["filing_validation_records"][n]["supported_degraded_blocked"]
+        #   corpus_response["filing_validation_records"][n]["authority_hashes"][...]
+        #
+        # The orchestrator uses fact_authority_receipt_hash for the sidecar open param and
+        # arelle_sidecar_receipt_hash for writing the ownership marker. Both must equal
+        # refs["sidecar_receipt_hash"] so the loader resolves the already-staged file and
+        # the marker path matches what the open-from-staged-evidence check inspects.
+        fake_corpus_response = {
+            "connector_receipt_hash": dummy_connector_receipt_hash,
+            "validation_receipt_id": "vr-fp-proxy-w2",
+            "validation_receipt_hash": "a" * 64,
+            "filing_validation_records": [
+                {
+                    "cik_hash": expected_cik_hash,
+                    "form_type": "10-K",
+                    "supported_degraded_blocked": "supported",
+                    "authority_hashes": {
+                        "fact_authority_receipt_hash": refs["sidecar_receipt_hash"],
+                        "statement_classification_receipt_hash": refs["classification_hash"],
+                        "arelle_sidecar_receipt_hash": refs["sidecar_receipt_hash"],
+                    },
+                }
+            ],
+        }
+
+        # Stub corpus-validation inside the orchestrator module so no live network is hit.
+        # The orchestrator imports layer3_sec_edgar_real_company_corpus_validation as a
+        # module attribute and calls .validate_sec_edgar_real_company_corpus_product_path().
+        fake_corpus_validator = MagicMock()
+        fake_corpus_validator.validate_sec_edgar_real_company_corpus_product_path = (
+            MagicMock(return_value=fake_corpus_response)
+        )
+        fake_corpus_validator.VALIDATION_MODE = (
+            fp_orchestrator.layer3_sec_edgar_real_company_corpus_validation.VALIDATION_MODE
+        )
+        fake_corpus_validator.OPERATOR_DECISION = (
+            fp_orchestrator.layer3_sec_edgar_real_company_corpus_validation.OPERATOR_DECISION
+        )
+        monkeypatch.setattr(
+            fp_orchestrator,
+            "layer3_sec_edgar_real_company_corpus_validation",
+            fake_corpus_validator,
+        )
+
+        # POST full-pipeline as W2.
+        fp_resp = client_b.post(
+            FULL_PIPELINE_URL,
+            headers=_w2_headers(),
+            json={
+                "client_request_id": f"fp-w2-open-{uuid.uuid4().hex[:12]}",
+                "cik": AAPL_CIK_STRIPPED,
+                "company_matrix": ["AAPL"],
+                "operator_confirmation": True,
+                # require_companyfacts_oracle omitted (defaults False) — oracle not needed
+            },
+        )
+        assert fp_resp.status_code == 200, (
+            f"Full-pipeline route should succeed for W2 after orchestrator writes marker: "
+            f"{fp_resp.status_code} {fp_resp.text}"
+        )
+        fp_body = fp_resp.json()
+        assert fp_body.get("operator_review", {}).get("status") == "review_ready", (
+            f"operator_review.status expected 'review_ready', got: {fp_body}"
+        )
+        assert fp_body.get("production_readiness_claimed") is False, fp_body
+
+        # Confirm the marker file now exists on disk for W2.
+        w2_owner = _derive_owner(_w2_headers())
+        marker_path = (
+            Path(settings.storage_dir).resolve()
+            / auth_binding.OWNERSHIP_MARKER_DIR
+            / w2_owner["workspace_ref_hash"]
+            / f"sidecar-{refs['sidecar_receipt_hash']}.json"
+        )
+        assert marker_path.exists(), (
+            f"W2 ownership marker not written by orchestrator at: {marker_path}"
+        )
+    finally:
+        app.dependency_overrides.pop(get_db, None)
