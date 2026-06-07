@@ -133,6 +133,7 @@ from app.services import (
     layer3_sec_xbrl_e2e_integration,
 )
 from app.services import layer3_sec_xbrl_companyfacts_acquire_stage
+from app.services import layer3_sec_xbrl_full_pipeline_orchestrator
 from app.services.layer3_sec_xbrl_offline_companyfacts_stage import SecXbrlCompanyfactsStageError
 from app.core.config import settings
 from app.services.layer3_preflight_request_contract import PREFLIGHT_MANUAL_CONSTRAINT_FORBIDDEN_FIELDS
@@ -1209,6 +1210,17 @@ class Layer3SecXbrlOperatorReviewWorkflowOpenFromStagedEvidenceRequest(BaseModel
     connector_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
     cik_hash: str | None = Field(default=None, min_length=64, max_length=64)
     require_companyfacts_oracle: bool = False
+
+
+class Layer3SecXbrlOperatorReviewWorkflowOpenFullPipelineRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    company_matrix: list[str]
+    cik: str = Field(min_length=1)
+    period_limit: int = Field(default=3, ge=1, le=10)
+    require_companyfacts_oracle: bool = False
+    operator_confirmation: bool = False
 
 
 class Layer3SecXbrlOperatorReviewWorkflowStatusRequest(BaseModel):
@@ -14812,6 +14824,24 @@ def _sec_xbrl_staged_evidence_persistence_error_response(
     )
 
 
+def _sec_xbrl_full_pipeline_orchestrator_error_response(
+    exc: layer3_sec_xbrl_full_pipeline_orchestrator.SecXbrlFullPipelineOrchestratorError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.http_status,
+        content=workbench_error_response(
+            Layer3WorkbenchError(
+                error_code=exc.error_code,
+                message=exc.message,
+                status="blocked",
+                http_status=exc.http_status,
+                blocked_fields=[],
+                next_allowed_actions=["inspect_sec_xbrl_full_pipeline_orchestrator_error"],
+            )
+        ),
+    )
+
+
 def _sec_xbrl_value_reveal_authority_error_response(
     exc: layer3_sec_xbrl_value_reveal_authority.SecXbrlValueRevealAuthorityError,
 ) -> JSONResponse:
@@ -17706,6 +17736,115 @@ def post_sec_xbrl_operator_review_workflow_open_from_staged_evidence(
     except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
         db.rollback()
         return _sec_xbrl_operator_review_workflow_error_response(exc)
+    except Exception:
+        db.rollback()
+        raise
+
+
+def _full_pipeline_leaf_equals_raw_cik(node: Any, raw_ciks: set[str]) -> bool:
+    """Recursively report whether any LEAF value equals a raw CIK form.
+
+    Honesty-backstop primitive for the full-pipeline route. Uses VALUE EQUALITY, not a
+    substring scan: a genuine leak is a field whose value IS the raw CIK, whereas a numeric
+    CIK can appear incidentally inside a 64-char hex hash (a substring scan would false-fire).
+    Numeric leaves are normalized to str before comparing so a raw CIK carried as a JSON
+    number (e.g. ``"cik": 320193``) is still caught; bool is excluded (it subclasses int).
+    """
+    if isinstance(node, bool):
+        return False
+    if isinstance(node, str):
+        return node in raw_ciks
+    if isinstance(node, int):
+        return str(node) in raw_ciks
+    if isinstance(node, dict):
+        return any(_full_pipeline_leaf_equals_raw_cik(v, raw_ciks) for v in node.values())
+    if isinstance(node, (list, tuple)):
+        return any(_full_pipeline_leaf_equals_raw_cik(v, raw_ciks) for v in node)
+    return False
+
+
+@router.post(
+    "/sec-xbrl/operator-review/workflow/open-full-pipeline",
+    response_model=None,
+    responses=_workbench_error_responses(400, 403, 404, 409),
+)
+def post_sec_xbrl_operator_review_workflow_open_full_pipeline(
+    payload: Layer3SecXbrlOperatorReviewWorkflowOpenFullPipelineRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    # 1) Auth policy: derive evidence owner stamp (same as corpus-validation route)
+    try:
+        owner_stamp = layer3_sec_xbrl_in_app_auth_policy.derive_sec_xbrl_evidence_owner(
+            dict(request.headers)
+        )
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
+
+    try:
+        # 2) Run steps 1-2 and build the open payload
+        plan = layer3_sec_xbrl_full_pipeline_orchestrator.prepare_full_pipeline_open_plan(
+            db,
+            fields=payload.model_dump(exclude_none=True),
+            evidence_owner=owner_stamp,
+        )
+
+        # 3) Honesty backstop on the orchestrator's OWN additions (corpus_validation,
+        # companyfacts_stage), run BEFORE the open step's commit boundary so a tripped check
+        # never leaves a committed workflow behind. These sections are hash-only by
+        # construction; assert no leaf VALUE equals the raw CIK (verbatim or zero-stripped).
+        # operator_review is NOT scanned here — it is produced by the staged-evidence open
+        # handler, which guards its OWN output with redaction checks before ITS commit. The
+        # operator-echoed envelope (request_id) is also intentionally out of scope.
+        _raw_ciks = {c for c in (payload.cik, str(payload.cik).strip().lstrip("0")) if c}
+        _orchestrator_additions = {
+            "corpus_validation": plan["corpus_validation"],
+            "companyfacts_stage": plan["companyfacts_stage"],
+        }
+        if _full_pipeline_leaf_equals_raw_cik(_orchestrator_additions, _raw_ciks):
+            raise layer3_sec_xbrl_full_pipeline_orchestrator.SecXbrlFullPipelineOrchestratorError(
+                "full_pipeline_raw_cik_in_response",
+                "Full-pipeline response failed the raw-CIK honesty backstop.",
+                http_status=409,
+            )
+
+        # 4) Construct the staged-evidence open request model and call the existing handler
+        open_req = Layer3SecXbrlOperatorReviewWorkflowOpenFromStagedEvidenceRequest(
+            **plan["open_payload"]
+        )
+        open_result = post_sec_xbrl_operator_review_workflow_open_from_staged_evidence(
+            open_req, request, db
+        )
+
+        # If the open step returned a JSONResponse (error), pass it through as-is.
+        if isinstance(open_result, JSONResponse):
+            return open_result
+
+        # 5) Compose combined response — no raw CIK, no raw values, hashes only.
+        return {
+            **base_response(
+                layer3_sec_xbrl_full_pipeline_orchestrator.SCHEMA_ID,
+                request_id=payload.client_request_id,
+                status="full_pipeline_open_ready",
+            ),
+            "corpus_validation": plan["corpus_validation"],
+            "companyfacts_stage": plan["companyfacts_stage"],
+            "operator_review": open_result,
+            "production_readiness_claimed": False,
+        }
+
+    except layer3_sec_xbrl_full_pipeline_orchestrator.SecXbrlFullPipelineOrchestratorError as exc:
+        db.rollback()
+        return _sec_xbrl_full_pipeline_orchestrator_error_response(exc)
+    except SecXbrlCompanyfactsStageError as exc:
+        db.rollback()
+        return _companyfacts_stage_error_response(exc)
+    except Layer3WorkbenchError as exc:
+        db.rollback()
+        return JSONResponse(
+            status_code=exc.http_status,
+            content=workbench_error_response(exc),
+        )
     except Exception:
         db.rollback()
         raise

@@ -150,6 +150,10 @@ class SecEdgarHttpClient:
                 http_status=409,
                 blocked_fields=["layer3_sec_edgar_live_network_enabled"],
             )
+        # User-Agent goes in regular headers (NOT add_unredirected_header): urllib's
+        # HTTPRedirectHandler.redirect_request rebuilds the follow-up request from
+        # req.headers, so headers set here ARE carried across the allowlisted redirect
+        # hops the SEC fair-access policy requires; unredirected_hdrs would be dropped.
         request = urllib.request.Request(
             url,
             headers={
@@ -159,7 +163,7 @@ class SecEdgarHttpClient:
             },
         )
         try:
-            with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            with _SEC_OPENER.open(request, timeout=timeout_seconds) as response:
                 final_url = str(response.geturl() or "")
                 if not _is_allowed_sec_url(final_url):
                     _blocked(
@@ -1003,6 +1007,39 @@ def _is_allowed_sec_url(value: str) -> bool:
     return parsed.scheme == "https" and (host == "sec.gov" or host.endswith(".sec.gov"))
 
 
+class _SecEdgarRedirectGuard(urllib.request.HTTPRedirectHandler):
+    """Validate every redirect target host against the SEC allowlist BEFORE following it,
+    preventing blind-SSRF to an off-domain/internal host during the redirect chain."""
+
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: Any,
+        code: int,
+        msg: str,
+        headers: Any,
+        newurl: str,
+    ) -> urllib.request.Request:
+        if not _is_allowed_sec_url(newurl):
+            blocked = urllib.parse.urlsplit(newurl)
+            raise urllib.error.HTTPError(
+                newurl,
+                code,
+                f"SEC EDGAR redirect to non-allowlisted target blocked "
+                f"({blocked.scheme}://{blocked.hostname} not in https://*.sec.gov)",
+                headers,
+                fp,
+            )
+        return super().redirect_request(req, fp, code, msg, headers, newurl)  # type: ignore[return-value]
+
+
+def _build_sec_opener() -> urllib.request.OpenerDirector:
+    return urllib.request.build_opener(_SecEdgarRedirectGuard())
+
+
+_SEC_OPENER: urllib.request.OpenerDirector = _build_sec_opener()
+
+
 def _retry_after_seconds(headers: Mapping[str, str]) -> float:
     value = str(headers.get("Retry-After") or headers.get("retry-after") or "").strip()
     try:
@@ -1334,6 +1371,10 @@ def _fetch_companyfacts_once(
             http_status=409,
             blocked_fields=["layer3_sec_edgar_live_network_enabled"],
         )
+    # User-Agent goes in regular headers (NOT add_unredirected_header): urllib's
+    # HTTPRedirectHandler.redirect_request rebuilds the follow-up request from
+    # req.headers, so headers set here ARE carried across the allowlisted redirect
+    # hops the SEC fair-access policy requires; unredirected_hdrs would be dropped.
     request = urllib.request.Request(
         url,
         headers={
@@ -1343,7 +1384,7 @@ def _fetch_companyfacts_once(
         },
     )
     try:
-        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+        with _SEC_OPENER.open(request, timeout=timeout_seconds) as response:
             final_url = str(response.geturl() or "")
             if not _is_allowed_sec_url(final_url):
                 _blocked(
