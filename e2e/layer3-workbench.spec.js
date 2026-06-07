@@ -25094,3 +25094,204 @@ test('Layer 3 SEC XBRL operator review open→status→decision full chain (serv
   expect(typeof decisionBody.sec_xbrl_operator_review_decision_id).toBe('string');
   expect(decisionBody.decision_submit_api_route_enabled).toBe(true);
 });
+
+test('Layer 3 SEC XBRL value reveal authority prepare is fail-closed on missing decision (server-backed)', async ({ request }) => {
+  const result = await request.post(
+    '/api/v1/layer3/sec-xbrl/value-reveal/authority/prepare',
+    {
+      data: {
+        client_request_id: 'vra-missing-s4-1',
+        authority_mode: 'sec_xbrl_value_reveal_authority_receipt_v1',
+        operator_decision: 'prepare_sec_xbrl_value_reveal_authority',
+        sec_xbrl_operator_review_decision_id: 'nonexistent-decision-id',
+        decision_basis_hash: 'a'.repeat(64),
+      },
+    },
+  );
+  expect(result.status()).toBe(404);
+  const body = await result.json();
+  expect(body.error_code).toBe('sec_xbrl_auth_binding_missing');
+});
+
+test('Layer 3 SEC XBRL value reveal authority prepare is fail-closed on rejected decision (server-backed)', async ({ request }) => {
+  const seed = await request.post('/__test/layer3/seed-sec-xbrl-operator-review');
+  expect(seed.status()).toBe(200);
+  const seedBody = await seed.json();
+  const packetSetId = seedBody.sec_xbrl_statement_packet_set_id;
+
+  const openResult = await request.post(
+    '/api/v1/layer3/sec-xbrl/operator-review/workflow/open',
+    {
+      data: {
+        client_request_id: 'vra-rej-open-s4-1',
+        sec_xbrl_statement_packet_set_id: packetSetId,
+      },
+    },
+  );
+  expect(openResult.status()).toBe(200);
+  const openBody = await openResult.json();
+  const workflowId = openBody.sec_xbrl_operator_review_workflow_id;
+
+  const decisionResult = await request.post(
+    '/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit',
+    {
+      data: {
+        client_request_id: 'vra-rej-dec-s4-1',
+        submit_mode: 'sec_xbrl_operator_review_decision_submit_v1',
+        operator_decision: 'submit_sec_xbrl_operator_review_decision',
+        review_decision: 'rejected',
+        decision_reason_code: 'authority_gap',
+        decision_notes: 'gate test rejection',
+        sec_xbrl_operator_review_workflow_id: workflowId,
+      },
+    },
+  );
+  expect(decisionResult.status()).toBe(200);
+  const decisionBody = await decisionResult.json();
+  const decisionId = decisionBody.sec_xbrl_operator_review_decision_id;
+  const decisionBasisHash = decisionBody.decision_basis_hash;
+  expect(typeof decisionId).toBe('string');
+  expect(typeof decisionBasisHash).toBe('string');
+
+  const authResult = await request.post(
+    '/api/v1/layer3/sec-xbrl/value-reveal/authority/prepare',
+    {
+      data: {
+        client_request_id: 'vra-rej-auth-s4-1',
+        authority_mode: 'sec_xbrl_value_reveal_authority_receipt_v1',
+        operator_decision: 'prepare_sec_xbrl_value_reveal_authority',
+        sec_xbrl_operator_review_decision_id: decisionId,
+        decision_basis_hash: decisionBasisHash,
+      },
+    },
+  );
+  expect(authResult.status()).toBe(400);
+  const authBody = await authResult.json();
+  expect(authBody.error_code).toBe('sec_xbrl_value_reveal_authority_decision_not_approved');
+});
+
+test('Layer 3 SEC XBRL value reveal authority prepare provenance chain walks to dataset anchor (server-backed)', async ({ request }) => {
+  const seed = await request.post('/__test/layer3/seed-sec-xbrl-operator-review');
+  expect(seed.status()).toBe(200);
+  const seedBody = await seed.json();
+  const packetSetId = seedBody.sec_xbrl_statement_packet_set_id;
+
+  const openResult = await request.post(
+    '/api/v1/layer3/sec-xbrl/operator-review/workflow/open',
+    {
+      data: {
+        client_request_id: 'vra-prov-open-s4-1',
+        sec_xbrl_statement_packet_set_id: packetSetId,
+      },
+    },
+  );
+  expect(openResult.status()).toBe(200);
+  const openBody = await openResult.json();
+  const workflowId = openBody.sec_xbrl_operator_review_workflow_id;
+
+  const statusResult = await request.post(
+    '/api/v1/layer3/sec-xbrl/operator-review/workflow/status',
+    {
+      data: {
+        client_request_id: 'vra-prov-status-s4-1',
+        status_mode: 'sec_xbrl_operator_review_workflow_status_v1',
+        operator_decision: 'inspect_sec_xbrl_operator_review_workflow_status',
+        sec_xbrl_operator_review_workflow_id: workflowId,
+      },
+    },
+  );
+  expect(statusResult.status()).toBe(200);
+
+  const decisionResult = await request.post(
+    '/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit',
+    {
+      data: {
+        client_request_id: 'vra-prov-dec-s4-1',
+        submit_mode: 'sec_xbrl_operator_review_decision_submit_v1',
+        operator_decision: 'submit_sec_xbrl_operator_review_decision',
+        review_decision: 'approved',
+        decision_reason_code: 'ready_for_next_freeze',
+        sec_xbrl_operator_review_workflow_id: workflowId,
+      },
+    },
+  );
+  expect(decisionResult.status()).toBe(200);
+  const decisionBody = await decisionResult.json();
+  const decisionId = decisionBody.sec_xbrl_operator_review_decision_id;
+  const decisionBasisHash = decisionBody.decision_basis_hash;
+  expect(typeof decisionId).toBe('string');
+  expect(typeof decisionBasisHash).toBe('string');
+
+  // Authority prepare: decision found and validated approved, packet/projection lineage intact,
+  // blocked only at dataset_version anchor (seed projection has no dataset_version_id).
+  // 400 sec_xbrl_value_reveal_authority_required_field_missing proves the chain traversed
+  // auth-binding → decision-found → approved → lineage-valid before stopping.
+  const authResult = await request.post(
+    '/api/v1/layer3/sec-xbrl/value-reveal/authority/prepare',
+    {
+      data: {
+        client_request_id: 'vra-prov-auth-s4-1',
+        authority_mode: 'sec_xbrl_value_reveal_authority_receipt_v1',
+        operator_decision: 'prepare_sec_xbrl_value_reveal_authority',
+        sec_xbrl_operator_review_decision_id: decisionId,
+        decision_basis_hash: decisionBasisHash,
+      },
+    },
+  );
+  expect(authResult.status()).toBe(400);
+  const authBody = await authResult.json();
+  expect(authBody.error_code).toBe('sec_xbrl_value_reveal_authority_required_field_missing');
+});
+
+test('Layer 3 SEC XBRL value reveal authority prepare is fail-closed on basis hash mismatch (server-backed)', async ({ request }) => {
+  const seed = await request.post('/__test/layer3/seed-sec-xbrl-operator-review');
+  expect(seed.status()).toBe(200);
+  const seedBody = await seed.json();
+  const packetSetId = seedBody.sec_xbrl_statement_packet_set_id;
+
+  const openResult = await request.post(
+    '/api/v1/layer3/sec-xbrl/operator-review/workflow/open',
+    {
+      data: {
+        client_request_id: 'vra-hash-open-s4-1',
+        sec_xbrl_statement_packet_set_id: packetSetId,
+      },
+    },
+  );
+  expect(openResult.status()).toBe(200);
+  const openBody = await openResult.json();
+  const workflowId = openBody.sec_xbrl_operator_review_workflow_id;
+
+  const decisionResult = await request.post(
+    '/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit',
+    {
+      data: {
+        client_request_id: 'vra-hash-dec-s4-1',
+        submit_mode: 'sec_xbrl_operator_review_decision_submit_v1',
+        operator_decision: 'submit_sec_xbrl_operator_review_decision',
+        review_decision: 'approved',
+        decision_reason_code: 'ready_for_next_freeze',
+        sec_xbrl_operator_review_workflow_id: workflowId,
+      },
+    },
+  );
+  expect(decisionResult.status()).toBe(200);
+  const decisionBody = await decisionResult.json();
+  const decisionId = decisionBody.sec_xbrl_operator_review_decision_id;
+
+  const authResult = await request.post(
+    '/api/v1/layer3/sec-xbrl/value-reveal/authority/prepare',
+    {
+      data: {
+        client_request_id: 'vra-hash-auth-s4-1',
+        authority_mode: 'sec_xbrl_value_reveal_authority_receipt_v1',
+        operator_decision: 'prepare_sec_xbrl_value_reveal_authority',
+        sec_xbrl_operator_review_decision_id: decisionId,
+        decision_basis_hash: 'f'.repeat(64),
+      },
+    },
+  );
+  expect(authResult.status()).toBe(404);
+  const authBody = await authResult.json();
+  expect(authBody.error_code).toBe('sec_xbrl_auth_binding_missing');
+});
