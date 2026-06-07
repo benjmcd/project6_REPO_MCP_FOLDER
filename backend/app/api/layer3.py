@@ -132,6 +132,8 @@ from app.services import (
     layer3_sec_xbrl_statement_packet_persistence,
     layer3_sec_xbrl_e2e_integration,
 )
+from app.services import layer3_sec_xbrl_companyfacts_acquire_stage
+from app.services.layer3_sec_xbrl_offline_companyfacts_stage import SecXbrlCompanyfactsStageError
 from app.core.config import settings
 from app.services.layer3_preflight_request_contract import PREFLIGHT_MANUAL_CONSTRAINT_FORBIDDEN_FIELDS
 from app.services.layer3_response_contract import base_response
@@ -504,6 +506,24 @@ class Layer3SecEdgarTextTableLiveSourceArtifactAcquireRequest(BaseModel):
     expected_content_sha256: str | None = Field(default=None, min_length=64, max_length=64)
     operator_confirmation: bool
     actor: str | None = None
+
+
+class Layer3SecEdgarCompanyfactsAcquireStageRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    cik: str = Field(min_length=1)
+    connector_receipt_hash: str = Field(min_length=64, max_length=64)
+    operator_confirmation: bool
+    actor: str | None = None
+
+
+class Layer3SecEdgarCompanyfactsAcquireStageResponse(Layer3BaseResponse):
+    status: str
+    acquire: dict[str, Any]
+    stage: dict[str, Any]
 
 
 class Layer3SecEdgarRealFilingAcquisitionConnectorRequest(BaseModel):
@@ -1186,6 +1206,8 @@ class Layer3SecXbrlOperatorReviewWorkflowOpenFromStagedEvidenceRequest(BaseModel
     expected_sidecar_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
     expected_statement_classification_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
     period_limit: int = Field(default=3, ge=1, le=10)
+    connector_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    cik_hash: str | None = Field(default=None, min_length=64, max_length=64)
 
 
 class Layer3SecXbrlOperatorReviewWorkflowStatusRequest(BaseModel):
@@ -14679,6 +14701,38 @@ def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JS
         )
 
 
+def _companyfacts_stage_error_response(exc: SecXbrlCompanyfactsStageError) -> JSONResponse:
+    """Map SecXbrlCompanyfactsStageError to a governed 409 envelope (never a raw 500)."""
+    return JSONResponse(
+        status_code=409,
+        content=workbench_error_response(
+            Layer3WorkbenchError(
+                error_code=exc.code,
+                message=exc.message,
+                status="blocked",
+                http_status=409,
+                blocked_fields=[],
+                next_allowed_actions=["inspect_sec_xbrl_offline_evidence_storage"],
+            )
+        ),
+    )
+
+
+def _json_or_error_with_companyfacts_stage(
+    handler: Callable[[], dict[str, Any]],
+) -> dict[str, Any] | JSONResponse:
+    """Like _json_or_error but also maps SecXbrlCompanyfactsStageError to a governed 4xx."""
+    try:
+        return handler()
+    except Layer3WorkbenchError as exc:
+        return JSONResponse(
+            status_code=exc.http_status,
+            content=workbench_error_response(exc),
+        )
+    except SecXbrlCompanyfactsStageError as exc:
+        return _companyfacts_stage_error_response(exc)
+
+
 def _sec_xbrl_operator_review_workflow_error_response(
     exc: layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError,
 ) -> JSONResponse:
@@ -17174,6 +17228,24 @@ def post_sec_edgar_text_table_live_source_artifact_acquire(
     )
 
 
+@router.post(
+    "/source/sec-edgar/companyfacts/acquire-and-stage",
+    response_model=Layer3SecEdgarCompanyfactsAcquireStageResponse,
+    responses=_workbench_error_responses(400, 409),
+)
+def post_sec_edgar_companyfacts_acquire_and_stage(
+    payload: Layer3SecEdgarCompanyfactsAcquireStageRequest,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error_with_companyfacts_stage(
+        lambda: layer3_sec_xbrl_companyfacts_acquire_stage.acquire_and_stage_companyfacts(
+            client_request_id=payload.client_request_id,
+            cik=payload.cik,
+            connector_receipt_hash=payload.connector_receipt_hash,
+            operator_confirmation=payload.operator_confirmation,
+        )
+    )
+
+
 @router.get(
     "/source/sec-edgar/text-table/live-source-artifact/status/{live_source_artifact_receipt_id}",
     response_model=Layer3SecEdgarTextTableLiveSourceArtifactResponse,
@@ -17538,6 +17610,8 @@ def post_sec_xbrl_operator_review_workflow_open_from_staged_evidence(
             settings.storage_dir,
             expected_sidecar_receipt_hash=payload.expected_sidecar_receipt_hash,
             expected_statement_classification_receipt_hash=payload.expected_statement_classification_receipt_hash,
+            connector_receipt_hash=payload.connector_receipt_hash,
+            cik_hash=payload.cik_hash,
         )
         # 2) Compose into open workflow against the REQUEST db, atomic (flush, not commit)
         result = layer3_sec_xbrl_e2e_offline_orchestrator.open_redacted_operator_review_from_offline_evidence(
