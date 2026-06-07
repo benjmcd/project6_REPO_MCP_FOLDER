@@ -17791,17 +17791,36 @@ def post_sec_xbrl_operator_review_workflow_open_full_pipeline(
             "operator_review": open_result,
             "production_readiness_claimed": False,
         }
-        # Honesty backstop: the combined response is hash-only by construction, but assert it
-        # never echoes the raw CIK (verbatim or zero-stripped) before returning. Fail closed
-        # (governed error, suppress the body) rather than risk leaking a raw identifier.
-        _serialized = json.dumps(response_body, default=str)
-        for _raw in {payload.cik, str(payload.cik).strip().lstrip("0")}:
-            if _raw and _raw in _serialized:
-                raise layer3_sec_xbrl_full_pipeline_orchestrator.SecXbrlFullPipelineOrchestratorError(
-                    "full_pipeline_raw_cik_in_response",
-                    "Full-pipeline response failed the raw-CIK honesty backstop.",
-                    http_status=409,
-                )
+        # Honesty backstop: the internal-derived sections are hash-only by construction, but
+        # assert they never echo the raw CIK before returning. Scope: ONLY the sections
+        # derived from internal processing (corpus_validation, companyfacts_stage,
+        # operator_review) — NOT the response envelope, whose request_id is the operator's own
+        # client_request_id echoed back (the operator may legitimately embed their CIK there;
+        # scanning it would false-fire post-commit). Use LEAF-VALUE EQUALITY (not a substring
+        # scan): a genuine leak is a field whose value IS the raw CIK, whereas a numeric CIK
+        # can appear as an incidental substring of a 64-char hex hash. Fail closed on a match.
+        _raw_ciks = {c for c in (payload.cik, str(payload.cik).strip().lstrip("0")) if c}
+
+        def _leaf_equals_raw_cik(node: Any) -> bool:
+            if isinstance(node, str):
+                return node in _raw_ciks
+            if isinstance(node, dict):
+                return any(_leaf_equals_raw_cik(v) for v in node.values())
+            if isinstance(node, (list, tuple)):
+                return any(_leaf_equals_raw_cik(v) for v in node)
+            return False
+
+        _internal_derived = {
+            "corpus_validation": response_body["corpus_validation"],
+            "companyfacts_stage": response_body["companyfacts_stage"],
+            "operator_review": response_body["operator_review"],
+        }
+        if _leaf_equals_raw_cik(_internal_derived):
+            raise layer3_sec_xbrl_full_pipeline_orchestrator.SecXbrlFullPipelineOrchestratorError(
+                "full_pipeline_raw_cik_in_response",
+                "Full-pipeline response failed the raw-CIK honesty backstop.",
+                http_status=409,
+            )
         return response_body
 
     except layer3_sec_xbrl_full_pipeline_orchestrator.SecXbrlFullPipelineOrchestratorError as exc:

@@ -1127,3 +1127,189 @@ def test_full_pipeline_companyfacts_failure_propagates(tmp_path, monkeypatch) ->
     assert r.status_code == 409, r.text
     body = r.json()
     assert body.get("error_code") == "companyfacts_stage_test_error"
+
+
+# ---------------------------------------------------------------------------
+# Round-3: strict bool, period_limit fail-fast, lowercase ticker, honesty backstop
+# ---------------------------------------------------------------------------
+
+def test_as_bool_strict_parse() -> None:
+    """require_companyfacts_oracle string forms must parse strictly (codex P3): a bare
+    bool passes through; "false"/"0"/""/"no" must NOT read as truthy (plain bool(str) would)."""
+    assert orchestrator._as_bool(True) is True
+    assert orchestrator._as_bool(False) is False
+    for truthy in ("true", "True", "1", "yes", "on", "  TRUE  "):
+        assert orchestrator._as_bool(truthy) is True, truthy
+    for falsy in ("false", "False", "0", "no", "off", "", "   "):
+        assert orchestrator._as_bool(falsy) is False, falsy
+
+
+def test_full_pipeline_invalid_period_limit_before_side_effects() -> None:
+    """period_limit out of 1-10, or non-numeric, raises a governed 400 BEFORE corpus
+    validation runs (real module not reached) — fail-fast, no live side effects (codex P3)."""
+    for bad in (0, 11, "abc"):
+        with pytest.raises(orchestrator.SecXbrlFullPipelineOrchestratorError) as exc_info:
+            orchestrator.prepare_full_pipeline_open_plan(
+                db=None,
+                fields={
+                    "client_request_id": "x",
+                    "cik": "320193",
+                    "company_matrix": ["AAPL"],
+                    "operator_confirmation": True,
+                    "period_limit": bad,
+                },
+                evidence_owner={},
+            )
+        assert exc_info.value.error_code == "full_pipeline_invalid_period_limit"
+        assert exc_info.value.http_status == 400
+
+
+def test_full_pipeline_lowercase_ticker_accepted(tmp_path, monkeypatch) -> None:
+    """A lowercase ticker like 'aapl' must be normalized (strip().upper()) by the pairing
+    pre-check — matching the connector — not falsely rejected (codex P2)."""
+    client, storage_dir = _make_test_client(tmp_path, monkeypatch)
+    cik = "320193"
+    connector_hash = _hash("a")
+    hashes = _stage_full_evidence_storage(storage_dir, connector_receipt_hash=connector_hash)
+    fake_corpus = _make_corpus_response(
+        cik=cik,
+        connector_receipt_hash=connector_hash,
+        sidecar_hash=hashes["sidecar_hash"],
+        classification_hash=hashes["classification_hash"],
+    )
+    monkeypatch.setattr(
+        orchestrator,
+        "layer3_sec_edgar_real_company_corpus_validation",
+        MagicMock(
+            validate_sec_edgar_real_company_corpus_product_path=lambda fields, db, evidence_owner=None: fake_corpus,
+            VALIDATION_MODE=corpus_svc.VALIDATION_MODE,
+            OPERATOR_DECISION=corpus_svc.OPERATOR_DECISION,
+        ),
+    )
+    from app.services import layer3_sec_xbrl_in_app_auth_policy as auth_policy_svc
+    monkeypatch.setattr(
+        auth_policy_svc,
+        "derive_sec_xbrl_evidence_owner",
+        lambda headers: {"owner_hash": _hash("f"), "auth_owner_mode": "test"},
+    )
+    from app.services import layer3_sec_xbrl_auth_binding as auth_binding_svc
+    monkeypatch.setattr(
+        auth_binding_svc,
+        "require_sec_xbrl_evidence_ownership_marker",
+        lambda *args, **kwargs: None,
+    )
+    r = client.post(
+        FULL_PIPELINE_URL,
+        json={
+            "client_request_id": f"fp-lc-{uuid.uuid4().hex[:12]}",
+            "cik": cik,
+            "company_matrix": ["aapl"],  # lowercase
+            "operator_confirmation": True,
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["corpus_validation"]["selected_cik_hash"] == _sha256(cik)
+
+
+def _stub_valid_corpus_and_auth(monkeypatch: Any, *, cik: str = "320193") -> None:
+    """Stub corpus-validation to one valid supported AAPL record + permissive auth, for the
+    honesty-backstop tests (the open handler is stubbed separately by each test)."""
+    connector_hash = _hash("a")
+    record = {
+        "cik_hash": _sha256(cik),
+        "form_type": "10-K",
+        "supported_degraded_blocked": "supported",
+        "authority_hashes": {
+            "fact_authority_receipt_hash": _hash("b"),
+            "statement_classification_receipt_hash": _hash("c"),
+            "arelle_sidecar_receipt_hash": _hash("b"),
+        },
+    }
+    corpus = {
+        "connector_receipt_hash": connector_hash,
+        "validation_receipt_id": "vr-backstop",
+        "validation_receipt_hash": _sha256("backstop"),
+        "filing_validation_records": [record],
+    }
+    monkeypatch.setattr(
+        orchestrator,
+        "layer3_sec_edgar_real_company_corpus_validation",
+        MagicMock(
+            validate_sec_edgar_real_company_corpus_product_path=lambda fields, db, evidence_owner=None: corpus,
+            VALIDATION_MODE=corpus_svc.VALIDATION_MODE,
+            OPERATOR_DECISION=corpus_svc.OPERATOR_DECISION,
+        ),
+    )
+    from app.services import layer3_sec_xbrl_in_app_auth_policy as auth_policy_svc
+    monkeypatch.setattr(
+        auth_policy_svc,
+        "derive_sec_xbrl_evidence_owner",
+        lambda headers: {"owner_hash": _hash("f"), "auth_owner_mode": "test"},
+    )
+
+
+def test_full_pipeline_backstop_blocks_raw_cik_leak(tmp_path, monkeypatch) -> None:
+    """If the open step's result contains the raw CIK as a leaf VALUE, the honesty backstop
+    fails closed with a governed 409 (the leaky body is never returned)."""
+    client, _ = _make_test_client(tmp_path, monkeypatch)
+    _stub_valid_corpus_and_auth(monkeypatch)
+    monkeypatch.setattr(
+        "app.api.layer3.post_sec_xbrl_operator_review_workflow_open_from_staged_evidence",
+        lambda req, request, db: {"status": "review_ready", "leaked": "320193"},
+    )
+    r = client.post(
+        FULL_PIPELINE_URL,
+        json={
+            "client_request_id": f"fp-leak-{uuid.uuid4().hex[:12]}",
+            "cik": "320193",
+            "company_matrix": ["AAPL"],
+            "operator_confirmation": True,
+        },
+    )
+    assert r.status_code == 409, r.text
+    assert r.json()["error_code"] == "full_pipeline_raw_cik_in_response"
+
+
+def test_full_pipeline_backstop_allows_hash_substring(tmp_path, monkeypatch) -> None:
+    """A CIK appearing only as an incidental SUBSTRING of a hash (not a leaf == cik) must NOT
+    trip the backstop — regression against the earlier substring-scan false positive."""
+    client, _ = _make_test_client(tmp_path, monkeypatch)
+    _stub_valid_corpus_and_auth(monkeypatch)
+    monkeypatch.setattr(
+        "app.api.layer3.post_sec_xbrl_operator_review_workflow_open_from_staged_evidence",
+        lambda req, request, db: {"status": "review_ready", "some_hash": "abc320193def" + "0" * 52},
+    )
+    r = client.post(
+        FULL_PIPELINE_URL,
+        json={
+            "client_request_id": f"fp-sub-{uuid.uuid4().hex[:12]}",
+            "cik": "320193",
+            "company_matrix": ["AAPL"],
+            "operator_confirmation": True,
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["operator_review"]["status"] == "review_ready"
+
+
+def test_full_pipeline_backstop_ignores_cik_in_operator_request_id(tmp_path, monkeypatch) -> None:
+    """An operator-supplied client_request_id that embeds the CIK (echoed in the envelope
+    request_id) must NOT trip the backstop — it scans only internal-derived sections, and the
+    operator's own id is not an honesty leak (codex P2: avoid post-commit false 409)."""
+    client, _ = _make_test_client(tmp_path, monkeypatch)
+    _stub_valid_corpus_and_auth(monkeypatch)
+    monkeypatch.setattr(
+        "app.api.layer3.post_sec_xbrl_operator_review_workflow_open_from_staged_evidence",
+        lambda req, request, db: {"status": "review_ready"},
+    )
+    r = client.post(
+        FULL_PIPELINE_URL,
+        json={
+            "client_request_id": "320193",  # operator id IS the cik
+            "cik": "320193",
+            "company_matrix": ["AAPL"],
+            "operator_confirmation": True,
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["operator_review"]["status"] == "review_ready"

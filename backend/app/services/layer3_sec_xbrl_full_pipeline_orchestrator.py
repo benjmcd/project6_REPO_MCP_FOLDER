@@ -54,6 +54,18 @@ def _sha256_hex(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def _as_bool(value: Any) -> bool:
+    """Strictly coerce a flag for direct service callers (the FastAPI route already
+    delivers a real bool). A bare bool passes through; common string forms are parsed so
+    that "false"/"0"/"no"/"" do NOT read as truthy (a plain bool(str) would). Anything
+    else falls back to bool()."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "1", "yes", "on")
+    return bool(value)
+
+
 def prepare_full_pipeline_open_plan(
     db: Any,
     *,
@@ -134,13 +146,41 @@ def prepare_full_pipeline_open_plan(
             http_status=400,
         )
 
+    # Validate period_limit HERE (not at return time) so an invalid value fails fast BEFORE
+    # any live corpus-validation / CompanyFacts side effects. Enforce the route's 1-10 bound
+    # (ge=1, le=10) and convert a non-numeric value into a governed 400 (not a ValueError).
+    period_limit_raw = fields.get("period_limit")
+    if period_limit_raw is None:
+        period_limit = DEFAULT_PERIOD_LIMIT
+    else:
+        try:
+            period_limit = int(period_limit_raw)
+        except (TypeError, ValueError):
+            raise SecXbrlFullPipelineOrchestratorError(
+                "full_pipeline_invalid_period_limit",
+                "period_limit must be an integer between 1 and 10.",
+                http_status=400,
+            )
+    if period_limit < 1 or period_limit > 10:
+        raise SecXbrlFullPipelineOrchestratorError(
+            "full_pipeline_invalid_period_limit",
+            "period_limit must be between 1 and 10.",
+            http_status=400,
+        )
+
+    # Strictly parse the oracle flag up front (direct callers may pass strings; the route
+    # delivers a real bool). "false"/"0" must NOT read as truthy and trigger a live fetch.
+    require_oracle = _as_bool(fields.get("require_companyfacts_oracle", False))
+
     # Reject ticker/CIK pairing mismatches BEFORE corpus-validation so an invalid pair
     # (e.g. company_matrix=["MSFT"] with Apple's CIK) cannot trigger live SEC acquisition /
     # staging or leave orphan receipts for a workflow that can never open. The connector
-    # matrix is a fixed ticker->CIK map (zero-stripped values); the supplied (normalized)
-    # CIK must belong to at least one requested ticker. (Hashes only in error details.)
+    # matrix is a fixed ticker->CIK map (zero-stripped values); normalize tickers the SAME
+    # way the connector does (str().strip().upper()) so a valid lowercase ticker like "aapl"
+    # is not falsely rejected. The supplied (normalized) CIK must belong to a requested
+    # ticker. (Hashes only in error details.)
     cik_refs = layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_CIK_REFS
-    matrix_ciks = {cik_refs.get(str(ticker)) for ticker in company_matrix}
+    matrix_ciks = {cik_refs.get(str(ticker or "").strip().upper()) for ticker in company_matrix}
     matrix_ciks.discard(None)
     if cik not in matrix_ciks:
         raise SecXbrlFullPipelineOrchestratorError(
@@ -253,9 +293,9 @@ def prepare_full_pipeline_open_plan(
 
     # ------------------------------------------------------------------
     # Step 5: optional CompanyFacts oracle acquire-and-stage
+    # (require_oracle was strictly parsed during Step 0 input validation.)
     # ------------------------------------------------------------------
     companyfacts_summary: dict[str, Any] | None = None
-    require_oracle = bool(fields.get("require_companyfacts_oracle"))
     if require_oracle:
         cf_result = layer3_sec_xbrl_companyfacts_acquire_stage.acquire_and_stage_companyfacts(
             client_request_id=f"{client_request_id}-cf",
@@ -283,30 +323,8 @@ def prepare_full_pipeline_open_plan(
     }
 
     # ------------------------------------------------------------------
-    # Step 7: return plan
+    # Step 7: return plan (period_limit + require_oracle validated during Step 0)
     # ------------------------------------------------------------------
-    # Validate explicitly (rather than `or`-coercing falsy to default) so direct service
-    # callers get the SAME 1-10 bound the route's Pydantic model applies (ge=1, le=10), and
-    # a non-numeric value yields a governed 400 instead of an uncaught ValueError.
-    period_limit_raw = fields.get("period_limit")
-    if period_limit_raw is None:
-        period_limit = DEFAULT_PERIOD_LIMIT
-    else:
-        try:
-            period_limit = int(period_limit_raw)
-        except (TypeError, ValueError):
-            raise SecXbrlFullPipelineOrchestratorError(
-                "full_pipeline_invalid_period_limit",
-                "period_limit must be an integer between 1 and 10.",
-                http_status=400,
-            )
-    if period_limit < 1 or period_limit > 10:
-        raise SecXbrlFullPipelineOrchestratorError(
-            "full_pipeline_invalid_period_limit",
-            "period_limit must be between 1 and 10.",
-            http_status=400,
-        )
-
     return {
         "corpus_validation": corpus_summary,
         "companyfacts_stage": companyfacts_summary,
