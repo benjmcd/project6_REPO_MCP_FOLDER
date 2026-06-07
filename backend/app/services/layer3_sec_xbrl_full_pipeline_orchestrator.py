@@ -15,6 +15,7 @@ from typing import Any
 
 from app.services import (
     layer3_sec_edgar_real_company_corpus_validation,
+    layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_xbrl_companyfacts_acquire_stage,
 )
 
@@ -103,15 +104,22 @@ def prepare_full_pipeline_open_plan(
             http_status=400,
         )
 
-    # Normalize to SEC canonical (zero-stripped) form. The connector derives each record's
-    # cik_hash from the zero-stripped CIK, and CompanyFacts fetch also zero-strips; hashing /
-    # fetching the verbatim operator string (e.g. "0000320193") would otherwise produce a
-    # spurious cik_hash mismatch and an inconsistent fetch key.
-    cik = str(fields.get("cik") or "").strip().lstrip("0")
-    # SEC CIKs are 1-10 digits (canonical form is zero-padded to 10). Enforce the bound
-    # HERE, before corpus-validation, so an obviously-invalid CIK cannot trigger the live
-    # acquisition/staging side effects only to be rejected later by the hash guard.
-    if not cik or not cik.isdigit() or len(cik) > 10:
+    # SEC CIKs are at most 10 digits (canonical form is zero-padded to 10). Validate the RAW
+    # stripped input BEFORE canonicalizing — checking length after lstrip("0") would let an
+    # absurdly zero-padded value such as "00000000000320193" normalize to a valid CIK and
+    # slip past the bound into live acquisition/staging side effects.
+    raw_cik = str(fields.get("cik") or "").strip()
+    if not raw_cik or not raw_cik.isdigit() or len(raw_cik) > 10:
+        raise SecXbrlFullPipelineOrchestratorError(
+            "full_pipeline_invalid_cik",
+            "Full-pipeline orchestration requires a 1-10 digit cik.",
+            http_status=400,
+        )
+    # Canonicalize to the connector's zero-stripped form: each record's cik_hash is derived
+    # from the zero-stripped CIK and CompanyFacts fetch also zero-strips, so hashing/fetching
+    # the verbatim padded string would produce a spurious mismatch and inconsistent fetch key.
+    cik = raw_cik.lstrip("0")
+    if not cik:  # all-zeros input
         raise SecXbrlFullPipelineOrchestratorError(
             "full_pipeline_invalid_cik",
             "Full-pipeline orchestration requires a 1-10 digit cik.",
@@ -124,6 +132,25 @@ def prepare_full_pipeline_open_plan(
             "full_pipeline_missing_company_matrix",
             "Full-pipeline orchestration requires a non-empty company_matrix.",
             http_status=400,
+        )
+
+    # Reject ticker/CIK pairing mismatches BEFORE corpus-validation so an invalid pair
+    # (e.g. company_matrix=["MSFT"] with Apple's CIK) cannot trigger live SEC acquisition /
+    # staging or leave orphan receipts for a workflow that can never open. The connector
+    # matrix is a fixed ticker->CIK map (zero-stripped values); the supplied (normalized)
+    # CIK must belong to at least one requested ticker. (Hashes only in error details.)
+    cik_refs = layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_CIK_REFS
+    matrix_ciks = {cik_refs.get(str(ticker)) for ticker in company_matrix}
+    matrix_ciks.discard(None)
+    if cik not in matrix_ciks:
+        raise SecXbrlFullPipelineOrchestratorError(
+            "full_pipeline_cik_not_in_company_matrix",
+            "The supplied CIK is not represented by any ticker in the requested company_matrix.",
+            details={
+                "expected_cik_hash": _sha256_hex(cik),
+                "matrix_cik_hashes": sorted(_sha256_hex(c) for c in matrix_ciks),
+            },
+            http_status=409,
         )
 
     # ------------------------------------------------------------------
@@ -185,10 +212,12 @@ def prepare_full_pipeline_open_plan(
             http_status=409,
         )
 
-    # Prefer 10-K among the CIK-matched candidates; fall back to the first match.
-    selected = next(
-        (r for r in cik_matched if "10-K" in str(r.get("form_type") or "")),
-        cik_matched[0],
+    # Prefer an exact "10-K" over a "10-K/A" amendment (substring match alone would pick an
+    # amendment listed first); then any 10-K family; then the first CIK-matched record.
+    selected = (
+        next((r for r in cik_matched if str(r.get("form_type") or "").strip() == "10-K"), None)
+        or next((r for r in cik_matched if "10-K" in str(r.get("form_type") or "")), None)
+        or cik_matched[0]
     )
     discovered_cik_hash = expected_cik_hash
 
@@ -257,13 +286,24 @@ def prepare_full_pipeline_open_plan(
     # Step 7: return plan
     # ------------------------------------------------------------------
     # Validate explicitly (rather than `or`-coercing falsy to default) so direct service
-    # callers get the same lower-bound enforcement the route's Pydantic model applies.
+    # callers get the SAME 1-10 bound the route's Pydantic model applies (ge=1, le=10), and
+    # a non-numeric value yields a governed 400 instead of an uncaught ValueError.
     period_limit_raw = fields.get("period_limit")
-    period_limit = DEFAULT_PERIOD_LIMIT if period_limit_raw is None else int(period_limit_raw)
-    if period_limit < 1:
+    if period_limit_raw is None:
+        period_limit = DEFAULT_PERIOD_LIMIT
+    else:
+        try:
+            period_limit = int(period_limit_raw)
+        except (TypeError, ValueError):
+            raise SecXbrlFullPipelineOrchestratorError(
+                "full_pipeline_invalid_period_limit",
+                "period_limit must be an integer between 1 and 10.",
+                http_status=400,
+            )
+    if period_limit < 1 or period_limit > 10:
         raise SecXbrlFullPipelineOrchestratorError(
             "full_pipeline_invalid_period_limit",
-            "period_limit must be >= 1.",
+            "period_limit must be between 1 and 10.",
             http_status=400,
         )
 

@@ -17780,7 +17780,7 @@ def post_sec_xbrl_operator_review_workflow_open_full_pipeline(
             return open_result
 
         # 4) Compose combined response — no raw CIK, no raw values, hashes only.
-        return {
+        response_body = {
             **base_response(
                 layer3_sec_xbrl_full_pipeline_orchestrator.SCHEMA_ID,
                 request_id=payload.client_request_id,
@@ -17791,6 +17791,18 @@ def post_sec_xbrl_operator_review_workflow_open_full_pipeline(
             "operator_review": open_result,
             "production_readiness_claimed": False,
         }
+        # Honesty backstop: the combined response is hash-only by construction, but assert it
+        # never echoes the raw CIK (verbatim or zero-stripped) before returning. Fail closed
+        # (governed error, suppress the body) rather than risk leaking a raw identifier.
+        _serialized = json.dumps(response_body, default=str)
+        for _raw in {payload.cik, str(payload.cik).strip().lstrip("0")}:
+            if _raw and _raw in _serialized:
+                raise layer3_sec_xbrl_full_pipeline_orchestrator.SecXbrlFullPipelineOrchestratorError(
+                    "full_pipeline_raw_cik_in_response",
+                    "Full-pipeline response failed the raw-CIK honesty backstop.",
+                    http_status=409,
+                )
+        return response_body
 
     except layer3_sec_xbrl_full_pipeline_orchestrator.SecXbrlFullPipelineOrchestratorError as exc:
         db.rollback()

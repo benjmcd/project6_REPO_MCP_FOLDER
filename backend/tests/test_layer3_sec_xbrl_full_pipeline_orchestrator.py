@@ -320,7 +320,7 @@ def test_full_pipeline_happy_path(tmp_path, monkeypatch) -> None:
         json={
             "client_request_id": f"fp-happy-{uuid.uuid4().hex[:12]}",
             "cik": cik,
-            "company_matrix": ["Apple Inc"],
+            "company_matrix": ["AAPL"],
             "period_limit": 3,
             "operator_confirmation": True,
         },
@@ -396,7 +396,7 @@ def test_full_pipeline_zero_padded_cik_normalizes(tmp_path, monkeypatch) -> None
         json={
             "client_request_id": f"fp-padded-{uuid.uuid4().hex[:12]}",
             "cik": padded_cik,
-            "company_matrix": ["Apple Inc"],
+            "company_matrix": ["AAPL"],
             "operator_confirmation": True,
         },
     )
@@ -466,7 +466,7 @@ def test_full_pipeline_cik_hash_mismatch(tmp_path, monkeypatch) -> None:
         json={
             "client_request_id": "fp-mismatch-001",
             "cik": cik,
-            "company_matrix": ["Apple Inc"],
+            "company_matrix": ["AAPL"],
             "operator_confirmation": True,
         },
     )
@@ -522,7 +522,7 @@ def test_full_pipeline_no_supported_filing(tmp_path, monkeypatch) -> None:
         json={
             "client_request_id": "fp-no-supported-001",
             "cik": cik,
-            "company_matrix": ["Apple Inc"],
+            "company_matrix": ["AAPL"],
             "operator_confirmation": True,
         },
     )
@@ -564,7 +564,7 @@ def test_full_pipeline_missing_operator_confirmation(tmp_path, monkeypatch) -> N
         json={
             "client_request_id": "fp-no-confirm-001",
             "cik": "320193",
-            "company_matrix": ["Apple Inc"],
+            "company_matrix": ["AAPL"],
             "operator_confirmation": False,
         },
     )
@@ -710,7 +710,7 @@ def test_full_pipeline_companyfacts_oracle_called_when_required(tmp_path, monkey
         json={
             "client_request_id": f"fp-oracle-{uuid.uuid4().hex[:8]}",
             "cik": cik,
-            "company_matrix": ["Apple Inc"],
+            "company_matrix": ["AAPL"],
             "operator_confirmation": True,
             "require_companyfacts_oracle": True,
         },
@@ -732,7 +732,7 @@ def test_full_pipeline_companyfacts_oracle_skipped_when_not_required(tmp_path, m
         json={
             "client_request_id": f"fp-no-oracle-{uuid.uuid4().hex[:8]}",
             "cik": cik,
-            "company_matrix": ["Apple Inc"],
+            "company_matrix": ["AAPL"],
             "operator_confirmation": True,
             "require_companyfacts_oracle": False,
         },
@@ -867,3 +867,263 @@ def test_full_pipeline_multi_ticker_selects_matching_cik(tmp_path, monkeypatch) 
     assert body["status"] == "full_pipeline_open_ready"
     # The Apple record (not the first-listed MSFT 10-K) was selected.
     assert body["corpus_validation"]["selected_cik_hash"] == _sha256(apple_cik)
+
+
+# ---------------------------------------------------------------------------
+# Task B — 5 new tests
+# ---------------------------------------------------------------------------
+
+# B1: ticker/CIK pairing pre-check fires before corpus-validation
+# ---------------------------------------------------------------------------
+
+def test_full_pipeline_cik_not_in_matrix() -> None:
+    """Service raises 409 full_pipeline_cik_not_in_company_matrix when CIK doesn't belong to any
+    ticker in company_matrix — BEFORE corpus-validation is reached."""
+    # Apple's CIK 320193 is not MSFT's CIK (789019).
+    # corpus-validation is the real module; if it were reached it would do live network work
+    # or fail differently — reaching it means the pre-check did NOT fire.
+    with pytest.raises(orchestrator.SecXbrlFullPipelineOrchestratorError) as exc_info:
+        orchestrator.prepare_full_pipeline_open_plan(
+            db=None,
+            fields={
+                "client_request_id": "x",
+                "cik": "320193",
+                "company_matrix": ["MSFT"],
+                "operator_confirmation": True,
+            },
+            evidence_owner={},
+        )
+    assert exc_info.value.error_code == "full_pipeline_cik_not_in_company_matrix"
+    assert exc_info.value.http_status == 409
+
+
+# B2: zero-padded overlong CIK rejected on RAW length before lstrip("0")
+# ---------------------------------------------------------------------------
+
+def test_full_pipeline_zero_padded_overlong_cik() -> None:
+    """A digit-only but 17-char zero-padded CIK is rejected (400 invalid_cik) on RAW length
+    check BEFORE lstrip('0') would canonicalize it to a valid-looking value."""
+    with pytest.raises(orchestrator.SecXbrlFullPipelineOrchestratorError) as exc_info:
+        orchestrator.prepare_full_pipeline_open_plan(
+            db=None,
+            fields={
+                "client_request_id": "x",
+                "cik": "00000000000320193",  # 17 chars — exceeds 10-digit bound
+                "company_matrix": ["AAPL"],
+                "operator_confirmation": True,
+            },
+            evidence_owner={},
+        )
+    assert exc_info.value.error_code == "full_pipeline_invalid_cik"
+    assert exc_info.value.http_status == 400
+
+
+# B3: incomplete authority hashes -> 409 governed error
+# ---------------------------------------------------------------------------
+
+def test_full_pipeline_incomplete_authority_hashes(tmp_path, monkeypatch) -> None:
+    """When the selected supported record has arelle_sidecar_receipt_hash but empty
+    fact_authority_receipt_hash / statement_classification_receipt_hash, the route returns
+    409 full_pipeline_incomplete_authority_hashes instead of an ungoverned 500."""
+    client, storage_dir = _make_test_client(tmp_path, monkeypatch)
+
+    cik = "320193"
+    connector_hash = _hash("a")
+    sidecar_hash = _hash("b")
+
+    # Supported record: arelle_sidecar_receipt_hash is truthy so the supported filter passes,
+    # but both consumable hashes are empty — the orchestrator's defense-in-depth guard fires.
+    incomplete_record = {
+        "cik_hash": _sha256(cik),
+        "form_type": "10-K",
+        "supported_degraded_blocked": "supported",
+        "authority_hashes": {
+            "arelle_sidecar_receipt_hash": sidecar_hash,
+            "fact_authority_receipt_hash": "",
+            "statement_classification_receipt_hash": "",
+        },
+    }
+    fake_corpus = {
+        "connector_receipt_hash": connector_hash,
+        "validation_receipt_id": "vr-incomplete-001",
+        "validation_receipt_hash": _sha256("incomplete"),
+        "filing_validation_records": [incomplete_record],
+    }
+
+    monkeypatch.setattr(
+        orchestrator,
+        "layer3_sec_edgar_real_company_corpus_validation",
+        MagicMock(
+            validate_sec_edgar_real_company_corpus_product_path=lambda fields, db, evidence_owner=None: fake_corpus,
+            VALIDATION_MODE=corpus_svc.VALIDATION_MODE,
+            OPERATOR_DECISION=corpus_svc.OPERATOR_DECISION,
+        ),
+    )
+    from app.services import layer3_sec_xbrl_in_app_auth_policy as auth_policy_svc
+    monkeypatch.setattr(
+        auth_policy_svc,
+        "derive_sec_xbrl_evidence_owner",
+        lambda headers: {"owner_hash": _hash("f"), "auth_owner_mode": "test"},
+    )
+
+    r = client.post(
+        FULL_PIPELINE_URL,
+        json={
+            "client_request_id": "fp-incomplete-hashes-001",
+            "cik": cik,
+            "company_matrix": ["AAPL"],
+            "operator_confirmation": True,
+        },
+    )
+    assert r.status_code == 409, r.text
+    body = r.json()
+    assert body.get("error_code") == "full_pipeline_incomplete_authority_hashes"
+
+
+# B4: open handler returning a JSONResponse error is passed through unchanged
+# ---------------------------------------------------------------------------
+
+def test_full_pipeline_open_step_error_passthrough(tmp_path, monkeypatch) -> None:
+    """When the staged-evidence open handler returns a JSONResponse error, the full-pipeline
+    route passes it through unchanged (status code and body preserved)."""
+    from fastapi.responses import JSONResponse as _JSONResponse
+
+    client, storage_dir = _make_test_client(tmp_path, monkeypatch)
+
+    cik = "320193"
+    connector_hash = _hash("a")
+    sidecar_hash = _hash("b")
+    cls_hash = _hash("c")
+
+    # Valid corpus record — all three hashes truthy so we reach the open step.
+    valid_record = {
+        "cik_hash": _sha256(cik),
+        "form_type": "10-K",
+        "supported_degraded_blocked": "supported",
+        "authority_hashes": {
+            "arelle_sidecar_receipt_hash": sidecar_hash,
+            "fact_authority_receipt_hash": sidecar_hash,
+            "statement_classification_receipt_hash": cls_hash,
+        },
+    }
+    fake_corpus = {
+        "connector_receipt_hash": connector_hash,
+        "validation_receipt_id": "vr-open-passthrough-001",
+        "validation_receipt_hash": _sha256("passthrough"),
+        "filing_validation_records": [valid_record],
+    }
+
+    monkeypatch.setattr(
+        orchestrator,
+        "layer3_sec_edgar_real_company_corpus_validation",
+        MagicMock(
+            validate_sec_edgar_real_company_corpus_product_path=lambda fields, db, evidence_owner=None: fake_corpus,
+            VALIDATION_MODE=corpus_svc.VALIDATION_MODE,
+            OPERATOR_DECISION=corpus_svc.OPERATOR_DECISION,
+        ),
+    )
+    from app.services import layer3_sec_xbrl_in_app_auth_policy as auth_policy_svc
+    monkeypatch.setattr(
+        auth_policy_svc,
+        "derive_sec_xbrl_evidence_owner",
+        lambda headers: {"owner_hash": _hash("f"), "auth_owner_mode": "test"},
+    )
+
+    # Stub the open handler to return a JSONResponse error.
+    import app.api.layer3 as _layer3_api
+    monkeypatch.setattr(
+        _layer3_api,
+        "post_sec_xbrl_operator_review_workflow_open_from_staged_evidence",
+        lambda req, request, db: _JSONResponse(
+            status_code=409,
+            content={"error_code": "some_open_error"},
+        ),
+    )
+
+    r = client.post(
+        FULL_PIPELINE_URL,
+        json={
+            "client_request_id": "fp-open-passthrough-001",
+            "cik": cik,
+            "company_matrix": ["AAPL"],
+            "operator_confirmation": True,
+            "require_companyfacts_oracle": False,
+        },
+    )
+    assert r.status_code == 409, r.text
+    body = r.json()
+    assert body.get("error_code") == "some_open_error"
+
+
+# B5: SecXbrlCompanyfactsStageError from acquire_and_stage propagates as governed response
+# ---------------------------------------------------------------------------
+
+def test_full_pipeline_companyfacts_failure_propagates(tmp_path, monkeypatch) -> None:
+    """When require_companyfacts_oracle=True and acquire_and_stage_companyfacts raises
+    SecXbrlCompanyfactsStageError, the route returns a governed 409 via
+    _companyfacts_stage_error_response."""
+    from app.services.layer3_sec_xbrl_offline_companyfacts_stage import SecXbrlCompanyfactsStageError
+
+    client, storage_dir = _make_test_client(tmp_path, monkeypatch)
+
+    cik = "320193"
+    connector_hash = _hash("a")
+    sidecar_hash = _hash("b")
+    cls_hash = _hash("c")
+
+    # Valid corpus record — all hashes truthy so we pass steps 1-4 and reach step 5.
+    valid_record = {
+        "cik_hash": _sha256(cik),
+        "form_type": "10-K",
+        "supported_degraded_blocked": "supported",
+        "authority_hashes": {
+            "arelle_sidecar_receipt_hash": sidecar_hash,
+            "fact_authority_receipt_hash": sidecar_hash,
+            "statement_classification_receipt_hash": cls_hash,
+        },
+    }
+    fake_corpus = {
+        "connector_receipt_hash": connector_hash,
+        "validation_receipt_id": "vr-cf-fail-001",
+        "validation_receipt_hash": _sha256("cf-fail"),
+        "filing_validation_records": [valid_record],
+    }
+
+    monkeypatch.setattr(
+        orchestrator,
+        "layer3_sec_edgar_real_company_corpus_validation",
+        MagicMock(
+            validate_sec_edgar_real_company_corpus_product_path=lambda fields, db, evidence_owner=None: fake_corpus,
+            VALIDATION_MODE=corpus_svc.VALIDATION_MODE,
+            OPERATOR_DECISION=corpus_svc.OPERATOR_DECISION,
+        ),
+    )
+    from app.services import layer3_sec_xbrl_in_app_auth_policy as auth_policy_svc
+    monkeypatch.setattr(
+        auth_policy_svc,
+        "derive_sec_xbrl_evidence_owner",
+        lambda headers: {"owner_hash": _hash("f"), "auth_owner_mode": "test"},
+    )
+
+    # Stub the companyfacts acquire-and-stage to raise SecXbrlCompanyfactsStageError.
+    cf_mock = MagicMock()
+    cf_mock.acquire_and_stage_companyfacts.side_effect = SecXbrlCompanyfactsStageError(
+        "companyfacts_stage_test_error",
+        "Stubbed companyfacts stage failure for test.",
+    )
+    monkeypatch.setattr(orchestrator, "layer3_sec_xbrl_companyfacts_acquire_stage", cf_mock)
+
+    r = client.post(
+        FULL_PIPELINE_URL,
+        json={
+            "client_request_id": "fp-cf-fail-001",
+            "cik": cik,
+            "company_matrix": ["AAPL"],
+            "operator_confirmation": True,
+            "require_companyfacts_oracle": True,
+        },
+    )
+    # _companyfacts_stage_error_response always returns 409 with the exc.code as error_code.
+    assert r.status_code == 409, r.text
+    body = r.json()
+    assert body.get("error_code") == "companyfacts_stage_test_error"

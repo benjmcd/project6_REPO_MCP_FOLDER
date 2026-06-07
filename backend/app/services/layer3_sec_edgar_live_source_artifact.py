@@ -1021,10 +1021,12 @@ class _SecEdgarRedirectGuard(urllib.request.HTTPRedirectHandler):
         newurl: str,
     ) -> urllib.request.Request:
         if not _is_allowed_sec_url(newurl):
+            blocked = urllib.parse.urlsplit(newurl)
             raise urllib.error.HTTPError(
                 newurl,
                 code,
-                f"SEC EDGAR redirect to non-allowlisted target blocked: scheme/host not permitted",
+                f"SEC EDGAR redirect to non-allowlisted target blocked "
+                f"({blocked.scheme}://{blocked.hostname} not in https://*.sec.gov)",
                 headers,
                 fp,
             )
