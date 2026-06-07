@@ -422,7 +422,9 @@ def _read_companyfacts(
         from app.services.layer3_sec_xbrl_offline_companyfacts_stage import (
             find_staged_companyfacts_receipt,
             load_staged_companyfacts_raw,
+            companyfacts_receipt_hash_basis,
             SecXbrlCompanyfactsStageError,
+            SCHEMA_ID as COMPANYFACTS_STAGE_SCHEMA_ID,
         )
         try:
             staged_receipt = find_staged_companyfacts_receipt(
@@ -435,6 +437,15 @@ def _read_companyfacts(
 
         if staged_receipt is None:
             return {}, "not_supplied", None
+
+        # Receipt-hash integrity check (FIX 3): recompute companyfacts_receipt_hash from the
+        # basis fields stored in the receipt and require it equals the declared hash.
+        # This catches inconsistent/partial tampering (e.g. editing payload_hash without
+        # recomputing receipt_hash).  A storage-write attacker who recomputes ALL hashes is
+        # out of scope — same threat boundary as editing the evidence itself.
+        # Do this BEFORE the payload_hash check so editing raw+receipt together does not
+        # silently bypass integrity.
+        _validate_companyfacts_receipt_hash(staged_receipt, companyfacts_receipt_hash_basis, COMPANYFACTS_STAGE_SCHEMA_ID)
 
         # Cross-issuer mismatch guard: the sidecar carries connector_receipt_hash; it must
         # match the staged receipt's connector_receipt_hash.
@@ -510,6 +521,69 @@ def _total_observations(facts: Mapping[str, Any]) -> int:
                 if isinstance(observations, list):
                     count += len(observations)
     return count
+
+
+def _validate_companyfacts_receipt_hash(
+    staged_receipt: Mapping[str, Any],
+    receipt_hash_basis_fn: Any,
+    schema_id: str,
+) -> None:
+    """Recompute and verify companyfacts_receipt_hash from the stored receipt fields.
+
+    Mirrors _validate_statement_classification_receipt_hash for the companyfacts receipt.
+    Raises SecXbrlOfflineEvidenceLoaderError with code
+    sec_xbrl_offline_evidence_loader_companyfacts_receipt_hash_mismatch if any required
+    basis field is missing/unparseable, or if the recomputed hash does not match the
+    declared companyfacts_receipt_hash.  Any inner validation error is wrapped into this
+    single code so callers see a consistent failure signal regardless of which field was
+    corrupt.
+
+    source_identity_hash is not stored in the stage receipt; it is deterministically
+    derived from cik_hash using the same formula as the stage writer.
+    """
+    try:
+        declared = _required_hash(
+            staged_receipt.get("companyfacts_receipt_hash"),
+            "companyfacts_receipt_hash",
+        )
+        cik_hash = _required_hash(staged_receipt.get("cik_hash"), "cik_hash")
+        # Derive source_identity_hash from cik_hash — the stage writer does the same.
+        source_identity_hash = stable_hash(
+            {"hash_version": "sec_edgar_companyfacts_source_identity_hash_v1", "cik_hash": cik_hash}
+        )
+        # connector_receipt_hash may not be valid hex in all environments (e.g. test fixtures);
+        # use _required_text so the value is passed through to the basis dict as-is, and a
+        # mismatch surfaces as receipt_hash_mismatch rather than an unrelated hash_invalid error.
+        connector_receipt_hash = _required_text(
+            staged_receipt.get("connector_receipt_hash"),
+            "connector_receipt_hash",
+        )
+        companyfacts_payload_hash = _required_hash(
+            staged_receipt.get("companyfacts_payload_hash"),
+            "companyfacts_payload_hash",
+        )
+        content_sha256 = _required_hash(staged_receipt.get("content_sha256"), "content_sha256")
+    except SecXbrlOfflineEvidenceLoaderError:
+        # Any missing or malformed basis field means the receipt cannot be verified → mismatch.
+        raise SecXbrlOfflineEvidenceLoaderError(
+            "sec_xbrl_offline_evidence_loader_companyfacts_receipt_hash_mismatch",
+            "Staged CompanyFacts receipt is missing or has malformed basis fields; "
+            "the receipt cannot be verified and is not admitted.",
+        )
+    basis = receipt_hash_basis_fn(
+        schema_id=schema_id,
+        source_identity_hash=source_identity_hash,
+        cik_hash=cik_hash,
+        connector_receipt_hash=connector_receipt_hash,
+        companyfacts_payload_hash=companyfacts_payload_hash,
+        content_sha256=content_sha256,
+    )
+    if stable_hash(basis) != declared:
+        raise SecXbrlOfflineEvidenceLoaderError(
+            "sec_xbrl_offline_evidence_loader_companyfacts_receipt_hash_mismatch",
+            "Staged CompanyFacts receipt hash does not match its basis fields; "
+            "the receipt may be inconsistently tampered.",
+        )
 
 
 def _validate_statement_classification_receipt_hash(classification: Mapping[str, Any]) -> None:

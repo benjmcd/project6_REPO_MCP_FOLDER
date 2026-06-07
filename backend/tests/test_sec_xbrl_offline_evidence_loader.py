@@ -833,3 +833,100 @@ def _hash(char: str) -> str:
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# FIX 3 regression — loader validates companyfacts receipt hash before trusting it
+# ---------------------------------------------------------------------------
+
+def test_loader_staged_discovery_rejects_tampered_receipt_payload_hash(tmp_path) -> None:
+    """Stage a companyfacts, then edit the staged receipt's companyfacts_payload_hash to match
+    a tampered raw (without recomputing companyfacts_receipt_hash) → loader staged-discovery
+    raises SecXbrlOfflineEvidenceLoaderError with code
+    sec_xbrl_offline_evidence_loader_companyfacts_receipt_hash_mismatch.
+
+    Before FIX 3 the loader trusted staged_receipt["companyfacts_payload_hash"] directly,
+    so editing payload_hash + raw together bypassed integrity.  After FIX 3 the loader
+    recomputes companyfacts_receipt_hash from the basis fields and requires it matches the
+    declared hash — catching inconsistent/partial tampering.
+    """
+    import hashlib as _hashlib
+    import json as _json
+    from app.services.layer3_sec_xbrl_offline_companyfacts_stage import (
+        stage_sec_xbrl_companyfacts,
+        COMPANYFACTS_RECEIPT_DIR,
+        COMPANYFACTS_RECEIPT_PREFIX,
+        SecXbrlCompanyfactsStageError,
+    )
+    from app.services.layer3_sec_xbrl_offline_evidence_loader import (
+        SecXbrlOfflineEvidenceLoaderError,
+        _read_companyfacts,
+    )
+    from app.services.layer3_utils import stable_hash
+
+    storage = tmp_path / "storage"
+
+    # Write a connector receipt so stage can bind cik_hash
+    cik = "320193"
+    raw_cik = cik.lstrip("0") or "0"
+    cik_hash_val = _hashlib.sha256(raw_cik.encode("utf-8")).hexdigest()
+    connector_receipt_hash = "a" * 64
+    connector_receipt = {
+        "schema_id": "layer3.sec_edgar_real_filing_acquisition_connector.v1",
+        "connector_receipt_id": f"sec-edgar-real-filing-connector-{'a' * 24}-{'a' * 24}",
+        "connector_receipt_hash": connector_receipt_hash,
+        "corpus_manifest": {
+            "example_records": [{"example_id": "ex-1", "cik_hash": cik_hash_val, "form_type": "10-K"}]
+        },
+    }
+    conn_dir = storage / "layer3-sec-edgar-real-filing-acquisition-connector" / "receipts"
+    conn_dir.mkdir(parents=True, exist_ok=True)
+    (conn_dir / f"{connector_receipt['connector_receipt_id']}.json").write_text(
+        _json.dumps(connector_receipt, sort_keys=True, indent=2), encoding="utf-8"
+    )
+
+    # Stage a valid companyfacts
+    facts = {"us-gaap": {"Assets": {"units": {"USD": [{"val": 200, "end": "2023-12-31", "fp": "FY", "fy": 2023}]}}}}
+    content = _json.dumps(facts, sort_keys=True, indent=2).encode("utf-8")
+    content_sha256 = _hashlib.sha256(content).hexdigest()
+
+    result = stage_sec_xbrl_companyfacts(
+        companyfacts=facts,
+        cik=cik,
+        connector_receipt_hash=connector_receipt_hash,
+        content_sha256=content_sha256,
+        storage_dir=storage,
+    )
+    receipt_id = result["companyfacts_receipt_id"]
+
+    # Locate the staged receipt file on disk
+    receipts_dir = storage / COMPANYFACTS_RECEIPT_DIR / "receipts"
+    receipt_path = receipts_dir / f"{receipt_id}.json"
+    assert receipt_path.exists(), "Staged receipt must have been written"
+
+    staged = _json.loads(receipt_path.read_text(encoding="utf-8"))
+
+    # Tamper: replace companyfacts_payload_hash with hash of a different payload
+    #         WITHOUT recomputing companyfacts_receipt_hash.
+    tampered_facts = {"us-gaap": {"Revenues": {"units": {"USD": [{"val": 999, "end": "2023-12-31", "fp": "FY", "fy": 2023}]}}}}
+    tampered_payload_hash = stable_hash(tampered_facts)
+    staged["companyfacts_payload_hash"] = tampered_payload_hash
+    receipt_path.write_text(_json.dumps(staged, sort_keys=True, indent=2), encoding="utf-8")
+
+    # Also write the tampered raw so payload_hash check would pass (if receipt_hash check were absent)
+    raw_path = storage / COMPANYFACTS_RECEIPT_DIR / "companyfacts-store" / f"{receipt_id}.json"
+    raw_path.write_text(_json.dumps(tampered_facts, sort_keys=True, indent=2), encoding="utf-8")
+
+    # Loader staged-discovery must now raise receipt_hash_mismatch (not payload_hash_mismatch)
+    # because the receipt_hash check fires first (FIX 3 runs before payload check).
+    with pytest.raises(SecXbrlOfflineEvidenceLoaderError) as exc_info:
+        _read_companyfacts(
+            None,
+            storage=storage,
+            connector_receipt_hash=connector_receipt_hash,
+            cik_hash=cik_hash_val,
+        )
+
+    assert exc_info.value.code == "sec_xbrl_offline_evidence_loader_companyfacts_receipt_hash_mismatch", (
+        f"Expected receipt_hash_mismatch (FIX 3), got: {exc_info.value.code}"
+    )

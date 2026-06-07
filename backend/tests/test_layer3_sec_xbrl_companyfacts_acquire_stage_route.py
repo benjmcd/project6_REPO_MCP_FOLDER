@@ -1031,3 +1031,86 @@ def test_stage_same_cik_connector_different_content_conflicts(tmp_path) -> None:
             storage_dir=storage_dir,
         )
     assert exc_info.value.code == "sec_xbrl_companyfacts_stage_conflict"
+
+
+# ---------------------------------------------------------------------------
+# FIX 1 regression — stage counts unwrap the SEC envelope correctly
+# ---------------------------------------------------------------------------
+
+def test_stage_counts_unwrap_sec_envelope(tmp_path, monkeypatch) -> None:
+    """Stage via acquire-and-stage with a full SEC envelope → receipt counts reflect INNER facts.
+
+    Before FIX 1, _count_companyfacts counted the envelope's top-level keys (3: cik,
+    entityName, facts) as taxonomies with 0 observations.  After FIX 1 it unwraps
+    payload["facts"] and counts the inner taxonomy map.
+    """
+    storage_dir = tmp_path / "storage"
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    storage_dir.mkdir(parents=True, exist_ok=True)
+
+    cik = "320193"
+    connector_hash = _hash("z")
+
+    # Build a full SEC CompanyFacts envelope (NOT a bare facts map)
+    # 1 taxonomy (us-gaap), 1 concept (Assets), 1 USD observation = counts should be 1/1/1
+    inner_facts = {
+        "us-gaap": {
+            "Assets": {
+                "units": {
+                    "USD": [{"val": 200, "end": "2023-12-31", "fp": "FY", "fy": 2023}]
+                }
+            }
+        }
+    }
+    sec_envelope = {
+        "cik": "320193",
+        "entityName": "Apple Inc.",
+        "facts": inner_facts,
+    }
+
+    _write_connector_receipt(storage_dir, cik=cik, connector_receipt_hash=connector_hash)
+
+    content = json.dumps(sec_envelope, sort_keys=True, indent=2).encode("utf-8")
+    content_sha256 = hashlib.sha256(content).hexdigest()
+
+    # Write raw artifact (as the live fetch path would) so the orchestrator can load it
+    artifact_path = (
+        storage_dir
+        / stage_svc.COMPANYFACTS_RECEIPT_DIR
+        / "companyfacts-store"
+        / f"sec-edgar-companyfacts-live-artifact-{'z' * 24}-{'y' * 24}.json"
+    )
+    artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    artifact_path.write_bytes(content)
+
+    # Stage the full envelope directly (mirrors what acquire_and_stage_companyfacts does)
+    result = stage_svc.stage_sec_xbrl_companyfacts(
+        companyfacts=sec_envelope,
+        cik=cik,
+        connector_receipt_hash=connector_hash,
+        content_sha256=content_sha256,
+        storage_dir=storage_dir,
+    )
+
+    # Before FIX 1: taxonomy_count=3 (envelope keys), concept_count=0, observation_count=0
+    # After FIX 1: taxonomy_count=1 (us-gaap), concept_count=1 (Assets), observation_count=1
+    assert result["taxonomy_count"] == 1, (
+        f"Expected taxonomy_count=1 (inner facts unwrapped), got {result['taxonomy_count']}. "
+        "FIX 1 may be missing: _count_companyfacts must unwrap the SEC envelope."
+    )
+    assert result["concept_count"] == 1, (
+        f"Expected concept_count=1, got {result['concept_count']}"
+    )
+    assert result["companyfacts_observation_count"] == 1, (
+        f"Expected observation_count=1, got {result['companyfacts_observation_count']}"
+    )
+
+    # The full envelope must still be stored (FIX 1 must NOT change what is stored)
+    from app.services.layer3_sec_xbrl_offline_companyfacts_stage import load_staged_companyfacts_raw
+    raw = load_staged_companyfacts_raw(
+        storage_dir,
+        companyfacts_receipt_id=result["companyfacts_receipt_id"],
+    )
+    assert "cik" in raw or "entityName" in raw or "facts" in raw, (
+        "Raw store must contain the full envelope, not just inner facts."
+    )
