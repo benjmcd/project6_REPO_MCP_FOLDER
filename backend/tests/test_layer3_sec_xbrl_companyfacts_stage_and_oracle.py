@@ -1234,3 +1234,74 @@ def test_acquire_replay_fails_closed_on_corrupt_retained_artifact(tmp_path, monk
 
     assert exc_info2.value.error_code == "sec_edgar_companyfacts_live_artifact_retained_artifact_mismatch"
     assert exc_info2.value.http_status == 409
+
+
+# ---------------------------------------------------------------------------
+# Regression — loader fails closed when companyfacts_payload_hash is MISSING
+# ---------------------------------------------------------------------------
+
+class TestLoaderCompanyfactsPayloadHashMissing:
+    """Verify that removing companyfacts_payload_hash from the staged receipt causes the loader
+    to fail closed.
+
+    The receipt-hash validation (_validate_companyfacts_receipt_hash) reads
+    companyfacts_payload_hash via _required_hash, which calls _required_text on the value.
+    When the field is absent/blank, _required_text raises field_missing, which is wrapped by
+    the try/except inside _validate_companyfacts_receipt_hash into
+    sec_xbrl_offline_evidence_loader_companyfacts_receipt_hash_mismatch.  That check fires
+    BEFORE the explicit payload_hash_missing branch at loader lines 486-491, so the test
+    asserts the receipt_hash_mismatch code.  Both codes are fail-closed outcomes; accepting
+    either is correct, but receipt_hash_mismatch is what actually fires given the current
+    validation order (FIX 3 design).
+    """
+
+    def test_companyfacts_loader_fails_closed_when_payload_hash_missing(self, tmp_path):
+        cik = "320193"
+        connector_hash = _hash("T")
+        refs = _write_full_evidence_storage(tmp_path, cik=cik, connector_receipt_hash=connector_hash)
+        storage = refs["storage"]
+
+        facts = _sample_companyfacts()
+        content_sha = hashlib.sha256(json.dumps({"facts": facts}).encode()).hexdigest()
+        result = stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=facts,
+            cik=cik,
+            connector_receipt_hash=connector_hash,
+            content_sha256=content_sha,
+            storage_dir=storage,
+        )
+
+        # Locate the staged receipt file and delete the companyfacts_payload_hash key.
+        # The raw payload file is left intact so the tamper is isolated to the receipt.
+        receipt_path = (
+            storage
+            / stage_svc.COMPANYFACTS_RECEIPT_DIR
+            / "receipts"
+            / f"{result['companyfacts_receipt_id']}.json"
+        )
+        receipt_data = json.loads(receipt_path.read_text(encoding="utf-8"))
+        receipt_data.pop("companyfacts_payload_hash", None)
+        receipt_path.write_text(json.dumps(receipt_data, sort_keys=True, indent=2), encoding="utf-8")
+
+        # The loader must fail closed.  Removing companyfacts_payload_hash invalidates the
+        # receipt-hash basis, so _validate_companyfacts_receipt_hash fires with
+        # companyfacts_receipt_hash_mismatch before the explicit payload_hash_missing branch
+        # is reached (see loader lines ~447-491 and FIX 3 design).  Both codes are
+        # fail-closed; receipt_hash_mismatch is the one actually raised in this path.
+        with pytest.raises(loader.SecXbrlOfflineEvidenceLoaderError) as exc_info:
+            loader.load_sec_xbrl_offline_evidence_bundle(
+                storage,
+                connector_receipt_hash=connector_hash,
+                cik_hash=_sha256(cik.lstrip("0") or "0"),
+                expected_sidecar_receipt_hash=refs["sidecar_hash"],
+                expected_statement_classification_receipt_hash=refs["cls_hash"],
+            )
+
+        # Both codes are fail-closed; receipt_hash_mismatch fires first due to FIX 3 ordering.
+        fail_closed_codes = {
+            "sec_xbrl_offline_evidence_loader_companyfacts_payload_hash_missing",
+            "sec_xbrl_offline_evidence_loader_companyfacts_receipt_hash_mismatch",
+        }
+        assert exc_info.value.code in fail_closed_codes, (
+            f"Expected a fail-closed payload-hash code, got: {exc_info.value.code}"
+        )
