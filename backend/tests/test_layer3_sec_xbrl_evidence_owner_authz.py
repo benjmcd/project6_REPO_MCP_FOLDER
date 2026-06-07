@@ -1249,3 +1249,140 @@ def test_m2_marker_written_by_corpus_validation_enables_open_from_staged(tmp_pat
         assert body["production_readiness_claimed"] is False
     finally:
         app.dependency_overrides.pop(get_db, None)
+
+
+# ---------------------------------------------------------------------------
+# P2 codex #2253: marker read+parse+validate (fail-closed on garbage/directory/mismatch)
+# ---------------------------------------------------------------------------
+
+def test_require_marker_malformed_file_fails_closed_under_proxy(tmp_path) -> None:
+    """P2 #2253: garbage/truncated (non-JSON) marker file under proxy → 403 invalid."""
+    from app.services import layer3_sec_xbrl_auth_binding as ab
+
+    storage = tmp_path / "storage-malformed-proxy"
+    storage.mkdir(parents=True, exist_ok=True)
+    workspace = _hash("b")
+    sidecar = _hash("c")
+
+    # Write a garbage (non-JSON) file at the expected marker path
+    marker_dir = storage / ab.OWNERSHIP_MARKER_DIR / workspace
+    marker_dir.mkdir(parents=True, exist_ok=True)
+    (marker_dir / f"sidecar-{sidecar}.json").write_text("not-json{{garbage", encoding="utf-8")
+
+    policy = {
+        "actor_ref_hash": _hash("a"),
+        "workspace_ref_hash": workspace,
+        "auth_owner_mode": "AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
+    }
+    with pytest.raises(ab.SecXbrlAuthBindingError) as exc_info:
+        ab.require_sec_xbrl_evidence_ownership_marker(
+            str(storage),
+            policy_decision=policy,
+            auth_owner_mode="AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
+            sidecar_receipt_hash=sidecar,
+        )
+    assert exc_info.value.http_status == 403
+    assert "marker_invalid" in exc_info.value.code
+
+
+def test_require_marker_directory_at_path_fails_closed_under_proxy(tmp_path) -> None:
+    """P2 #2253: a DIRECTORY at the marker path under proxy → 403 invalid."""
+    from app.services import layer3_sec_xbrl_auth_binding as ab
+
+    storage = tmp_path / "storage-dir-proxy"
+    storage.mkdir(parents=True, exist_ok=True)
+    workspace = _hash("b")
+    sidecar = _hash("c")
+
+    # Create a DIRECTORY at the expected marker path (not a regular file)
+    marker_dir = storage / ab.OWNERSHIP_MARKER_DIR / workspace
+    marker_dir.mkdir(parents=True, exist_ok=True)
+    dir_at_marker_path = marker_dir / f"sidecar-{sidecar}.json"
+    dir_at_marker_path.mkdir(parents=True, exist_ok=True)
+
+    policy = {
+        "actor_ref_hash": _hash("a"),
+        "workspace_ref_hash": workspace,
+        "auth_owner_mode": "AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
+    }
+    with pytest.raises(ab.SecXbrlAuthBindingError) as exc_info:
+        ab.require_sec_xbrl_evidence_ownership_marker(
+            str(storage),
+            policy_decision=policy,
+            auth_owner_mode="AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
+            sidecar_receipt_hash=sidecar,
+        )
+    assert exc_info.value.http_status == 403
+    assert "marker_invalid" in exc_info.value.code
+
+
+def test_require_marker_wrong_fields_fails_closed_under_proxy(tmp_path) -> None:
+    """P2 #2253: parseable marker whose sidecar_receipt_hash doesn't match → proxy → 403 invalid."""
+    from app.services import layer3_sec_xbrl_auth_binding as ab
+
+    storage = tmp_path / "storage-wrongfields-proxy"
+    storage.mkdir(parents=True, exist_ok=True)
+    workspace = _hash("b")
+    sidecar = _hash("c")
+    wrong_sidecar = _hash("d")  # different sidecar hash in the file content
+
+    # Write a valid-looking marker but with mismatched sidecar_receipt_hash
+    marker_dir = storage / ab.OWNERSHIP_MARKER_DIR / workspace
+    marker_dir.mkdir(parents=True, exist_ok=True)
+    bad_marker = {
+        "schema_id": ab.OWNERSHIP_MARKER_SCHEMA_ID,
+        "owner_ref_hash": _hash("a"),
+        "workspace_ref_hash": workspace,
+        "evidence_kind": "sidecar",
+        "sidecar_receipt_hash": wrong_sidecar,  # wrong — does not match what we request
+    }
+    (marker_dir / f"sidecar-{sidecar}.json").write_text(
+        json.dumps(bad_marker), encoding="utf-8"
+    )
+
+    policy = {
+        "actor_ref_hash": _hash("a"),
+        "workspace_ref_hash": workspace,
+        "auth_owner_mode": "AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
+    }
+    with pytest.raises(ab.SecXbrlAuthBindingError) as exc_info:
+        ab.require_sec_xbrl_evidence_ownership_marker(
+            str(storage),
+            policy_decision=policy,
+            auth_owner_mode="AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
+            sidecar_receipt_hash=sidecar,
+        )
+    assert exc_info.value.http_status == 403
+    assert "marker_invalid" in exc_info.value.code
+
+
+def test_require_marker_malformed_under_none_allows(tmp_path) -> None:
+    """P2 #2253: malformed marker + none-mode → allowed (legacy/backward-compat).
+
+    Under none-mode, an invalid marker (non-JSON, directory, field-mismatch) is treated
+    the same as an absent marker: the default flow/legacy path is not broken.
+    """
+    from app.services import layer3_sec_xbrl_auth_binding as ab
+
+    storage = tmp_path / "storage-malformed-none"
+    storage.mkdir(parents=True, exist_ok=True)
+    workspace = _hash("b")
+    sidecar = _hash("c")
+
+    # Write garbage at the marker path
+    marker_dir = storage / ab.OWNERSHIP_MARKER_DIR / workspace
+    marker_dir.mkdir(parents=True, exist_ok=True)
+    (marker_dir / f"sidecar-{sidecar}.json").write_text("{{not-json-garbage", encoding="utf-8")
+
+    policy = {
+        "actor_ref_hash": _hash("a"),
+        "workspace_ref_hash": workspace,
+        "auth_owner_mode": ab.AUTH_OWNER_MODE_NONE,
+    }
+    # Must NOT raise — none-mode treats malformed-as-absent → allow
+    ab.require_sec_xbrl_evidence_ownership_marker(
+        str(storage),
+        policy_decision=policy,
+        auth_owner_mode=ab.AUTH_OWNER_MODE_NONE,
+        sidecar_receipt_hash=sidecar,
+    )

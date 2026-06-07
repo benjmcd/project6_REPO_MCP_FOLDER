@@ -567,8 +567,42 @@ def require_sec_xbrl_evidence_ownership_marker(
             "SEC XBRL evidence ownership marker is missing; the caller did not stage this evidence.",
             http_status=403,
         )
-    # Marker exists for this workspace/sidecar pair → authorized.
-    # owner_ref_hash in the marker is audit metadata (first-staging-actor); not compared.
+
+    # Marker file is present — validate it is a regular file, readable, and has correct fields.
+    # Fail-closed under proxy; allow (legacy / no-valid-marker == no marker) under none.
+    def _marker_invalid() -> None:
+        """Raise 403 under proxy; return silently under none (treat as absent)."""
+        if not is_none_mode:
+            raise SecXbrlAuthBindingError(
+                "sec_xbrl_auth_binding_evidence_ownership_marker_invalid",
+                "SEC XBRL evidence ownership marker is present but invalid (not a regular file, "
+                "unreadable, or field mismatch); cannot authorize.",
+                http_status=403,
+            )
+
+    if not marker_path.is_file():
+        # e.g. a directory named sidecar-<hash>.json
+        _marker_invalid()
+        return  # none-mode: treat malformed-as-absent → allow
+
+    try:
+        raw = marker_path.read_text(encoding="utf-8")
+        parsed: dict[str, Any] = json.loads(raw)
+    except (OSError, json.JSONDecodeError):
+        _marker_invalid()
+        return  # none-mode: treat unreadable/non-JSON as absent → allow
+
+    # Field validation: schema_id, workspace_ref_hash, sidecar_receipt_hash must all match.
+    # owner_ref_hash is NOT compared (workspace-level sharing: teammates share marker).
+    if (
+        parsed.get("schema_id") != OWNERSHIP_MARKER_SCHEMA_ID
+        or parsed.get("workspace_ref_hash") != caller_workspace
+        or parsed.get("sidecar_receipt_hash") != sidecar_hash
+    ):
+        _marker_invalid()
+        return  # none-mode: treat field-mismatch as absent → allow
+
+    # All checks passed — authorized.
 
 
 def _source_kind(value: str) -> str:
