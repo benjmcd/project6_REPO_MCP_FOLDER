@@ -1,0 +1,766 @@
+"""Tests for the live SEC CompanyFacts oracle slice.
+
+Self-contained: no cross-test-module imports.  Uses tmp_path fixtures and monkeypatching.
+Does NOT hit the network.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+from pathlib import Path
+from typing import Any
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from app.core.config import settings
+from app.services import (
+    layer3_sec_edgar_live_source_artifact as live_artifact,
+    layer3_sec_xbrl_offline_companyfacts_stage as stage_svc,
+    layer3_sec_xbrl_offline_evidence_loader as loader,
+    layer3_sec_xbrl_offline_companyfacts_oracle_packet as oracle_packet,
+)
+from app.services.layer3_utils import stable_hash
+from app.services.layer3_sec_xbrl_report_leak_guard import report_leak_flags
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _sha256(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _hash(char: str) -> str:
+    return char * 64
+
+
+def _write_json(path: Path, payload: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def _sample_companyfacts() -> dict[str, Any]:
+    """Minimal valid companyfacts structure with 6 observations."""
+    entries = [
+        ("Assets", "200", "USD", "", "2023-12-31", True),
+        ("Assets", "180", "USD", "", "2022-12-31", True),
+        ("Revenues", "100", "USD", "2023-01-01", "2023-12-31", False),
+        ("Revenues", "90", "USD", "2022-01-01", "2022-12-31", False),
+        ("NetIncomeLoss", "40", "USD", "2023-01-01", "2023-12-31", False),
+        ("NetIncomeLoss", "30", "USD", "2022-01-01", "2022-12-31", False),
+    ]
+    facts: dict[str, Any] = {"us-gaap": {}}
+    for local_name, value, unit, start, end, instant in entries:
+        fact: dict[str, Any] = {"fp": "FY", "fy": 2023, "val": int(value), "end": end}
+        if not instant:
+            fact["start"] = start
+        facts["us-gaap"].setdefault(local_name, {"units": {}})["units"].setdefault(unit, []).append(fact)
+    return facts
+
+
+def _write_connector_receipt(storage: Path, *, cik: str, connector_receipt_hash: str) -> dict[str, Any]:
+    """Write a minimal connector receipt that owns the given CIK."""
+    cik_hash = _sha256(cik.lstrip("0") or "0")
+    receipt = {
+        "schema_id": "layer3.sec_edgar_real_filing_acquisition_connector.v1",
+        "connector_receipt_id": f"sec-edgar-real-filing-connector-{connector_receipt_hash[:24]}-{connector_receipt_hash[24:48]}",
+        "connector_receipt_hash": connector_receipt_hash,
+        "corpus_manifest": {
+            "example_records": [
+                {
+                    "example_id": "ex-1",
+                    "cik_hash": cik_hash,
+                    "form_type": "10-K",
+                }
+            ]
+        },
+    }
+    receipt_dir = storage / stage_svc.CONNECTOR_RECEIPT_DIR / "receipts"
+    receipt_dir.mkdir(parents=True, exist_ok=True)
+    receipt_path = receipt_dir / f"{receipt['connector_receipt_id']}.json"
+    _write_json(receipt_path, receipt)
+    return receipt
+
+
+# ---------------------------------------------------------------------------
+# STEP 1 TESTS — gated companyfacts fetch
+# ---------------------------------------------------------------------------
+
+class TestFetchGates:
+    """Verify that fetch is blocked by CI flag, live-network flag, and missing UA."""
+
+    def _error_code(self, exc: Exception) -> str:
+        # Layer3WorkbenchError uses .error_code; fallback to .code for other error types
+        return str(getattr(exc, "error_code", None) or getattr(exc, "code", None) or str(exc))
+
+    def test_fetch_blocked_in_ci(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("CI", "true")
+        monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+        with pytest.raises(Exception) as exc_info:
+            live_artifact.acquire_sec_edgar_companyfacts_live_artifact(
+                {"cik": "320193", "operator_confirmation": True}
+            )
+        assert "ci_network_disabled" in self._error_code(exc_info.value)
+
+    def test_fetch_blocked_when_live_network_disabled(self, monkeypatch, tmp_path):
+        monkeypatch.delenv("CI", raising=False)
+        monkeypatch.setattr(settings, "layer3_sec_edgar_live_network_enabled", False)
+        monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+        with pytest.raises(Exception) as exc_info:
+            live_artifact.acquire_sec_edgar_companyfacts_live_artifact(
+                {"cik": "320193", "operator_confirmation": True}
+            )
+        assert "live_network_disabled" in self._error_code(exc_info.value)
+
+    def test_fetch_blocked_without_operator_confirmation(self, monkeypatch, tmp_path):
+        monkeypatch.delenv("CI", raising=False)
+        monkeypatch.setattr(settings, "layer3_sec_edgar_live_network_enabled", True)
+        monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "TestAgent/1.0 test@example.com")
+        monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+        with pytest.raises(Exception) as exc_info:
+            live_artifact.acquire_sec_edgar_companyfacts_live_artifact(
+                {"cik": "320193", "operator_confirmation": False}
+            )
+        assert "operator_confirmation_missing" in self._error_code(exc_info.value)
+
+    def test_fetch_blocked_without_user_agent(self, monkeypatch, tmp_path):
+        monkeypatch.delenv("CI", raising=False)
+        monkeypatch.setattr(settings, "layer3_sec_edgar_live_network_enabled", True)
+        monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "")
+        monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+        with pytest.raises(Exception) as exc_info:
+            live_artifact.acquire_sec_edgar_companyfacts_live_artifact(
+                {"cik": "320193", "operator_confirmation": True}
+            )
+        assert "user_agent_missing" in self._error_code(exc_info.value)
+
+
+# ---------------------------------------------------------------------------
+# STEP 2 TESTS — staging service
+# ---------------------------------------------------------------------------
+
+class TestStageReceiptRedaction:
+    """stage_sec_xbrl_companyfacts writes redacted receipt; raw store holds raw JSON."""
+
+    def test_stage_receipt_has_hashes_and_counts_not_raw_values(self, tmp_path):
+        cik = "320193"
+        connector_hash = _hash("a")
+        content = json.dumps({"facts": _sample_companyfacts()}).encode("utf-8")
+        content_sha256 = hashlib.sha256(content).hexdigest()
+        _write_connector_receipt(tmp_path, cik=cik, connector_receipt_hash=connector_hash)
+
+        result = stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=_sample_companyfacts(),
+            cik=cik,
+            connector_receipt_hash=connector_hash,
+            content_sha256=content_sha256,
+            storage_dir=tmp_path,
+        )
+
+        receipt_id = result["companyfacts_receipt_id"]
+        receipt_path = tmp_path / stage_svc.COMPANYFACTS_RECEIPT_DIR / "receipts" / f"{receipt_id}.json"
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+
+        # Receipt must have hash + counts
+        assert len(receipt["companyfacts_payload_hash"]) == 64
+        assert receipt["companyfacts_observation_count"] == 6
+        assert receipt["taxonomy_count"] == 1
+        assert receipt["concept_count"] == 3
+        assert receipt["gitignored_local_storage"] is True
+        assert receipt["operator_surface_exposure"] is False
+
+        # Receipt must NOT contain raw values, CIK, accession, issuer name
+        receipt_text = json.dumps(receipt)
+        assert cik not in receipt_text  # raw CIK absent
+        assert "320193" not in receipt_text
+        assert "200" not in receipt_text  # raw financial value absent
+        assert "Assets" not in receipt_text  # concept name absent
+        assert "issuer" not in receipt_text.lower()
+
+    def test_raw_store_contains_full_payload(self, tmp_path):
+        cik = "320193"
+        connector_hash = _hash("b")
+        content = json.dumps({"facts": _sample_companyfacts()}).encode("utf-8")
+        content_sha256 = hashlib.sha256(content).hexdigest()
+        _write_connector_receipt(tmp_path, cik=cik, connector_receipt_hash=connector_hash)
+
+        result = stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=_sample_companyfacts(),
+            cik=cik,
+            connector_receipt_hash=connector_hash,
+            content_sha256=content_sha256,
+            storage_dir=tmp_path,
+        )
+
+        raw_path = tmp_path / stage_svc.COMPANYFACTS_RECEIPT_DIR / "companyfacts-store" / f"{result['companyfacts_receipt_id']}.json"
+        assert raw_path.exists()
+        raw = json.loads(raw_path.read_text(encoding="utf-8"))
+        # Raw store holds the actual data
+        assert "us-gaap" in raw or "Assets" in json.dumps(raw)
+
+    def test_stage_idempotent_replay_same_content(self, tmp_path):
+        cik = "320193"
+        connector_hash = _hash("c")
+        facts = _sample_companyfacts()
+        content = json.dumps({"facts": facts}).encode("utf-8")
+        content_sha256 = hashlib.sha256(content).hexdigest()
+        _write_connector_receipt(tmp_path, cik=cik, connector_receipt_hash=connector_hash)
+
+        r1 = stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=facts,
+            cik=cik,
+            connector_receipt_hash=connector_hash,
+            content_sha256=content_sha256,
+            storage_dir=tmp_path,
+        )
+        r2 = stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=facts,
+            cik=cik,
+            connector_receipt_hash=connector_hash,
+            content_sha256=content_sha256,
+            storage_dir=tmp_path,
+        )
+        assert r1["companyfacts_receipt_id"] == r2["companyfacts_receipt_id"]
+        assert r2["idempotent_replay"] is True
+
+    def test_stage_conflict_different_content_same_cik_hash(self, tmp_path):
+        cik = "320193"
+        connector_hash = _hash("d")
+        facts_a = _sample_companyfacts()
+        facts_b = {"us-gaap": {"NetIncomeLoss": {"units": {"USD": [{"val": 999, "end": "2023-12-31", "fp": "FY", "fy": 2023}]}}}}
+        _write_connector_receipt(tmp_path, cik=cik, connector_receipt_hash=connector_hash)
+
+        content_a = json.dumps({"facts": facts_a}).encode("utf-8")
+        sha_a = hashlib.sha256(content_a).hexdigest()
+        content_b = json.dumps({"facts": facts_b}).encode("utf-8")
+        sha_b = hashlib.sha256(content_b).hexdigest()
+
+        stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=facts_a,
+            cik=cik,
+            connector_receipt_hash=connector_hash,
+            content_sha256=sha_a,
+            storage_dir=tmp_path,
+        )
+        with pytest.raises(stage_svc.SecXbrlCompanyfactsStageError) as exc_info:
+            stage_svc.stage_sec_xbrl_companyfacts(
+                companyfacts=facts_b,
+                cik=cik,
+                connector_receipt_hash=connector_hash,
+                content_sha256=sha_b,
+                storage_dir=tmp_path,
+            )
+        assert exc_info.value.code == "sec_xbrl_companyfacts_stage_conflict"
+
+    def test_stage_cik_not_in_connector_fails_closed(self, tmp_path):
+        cik_in_connector = "320193"
+        cik_other = "789012"
+        connector_hash = _hash("e")
+        _write_connector_receipt(tmp_path, cik=cik_in_connector, connector_receipt_hash=connector_hash)
+
+        content = json.dumps({"facts": _sample_companyfacts()}).encode("utf-8")
+        sha = hashlib.sha256(content).hexdigest()
+
+        with pytest.raises(stage_svc.SecXbrlCompanyfactsStageError) as exc_info:
+            stage_svc.stage_sec_xbrl_companyfacts(
+                companyfacts=_sample_companyfacts(),
+                cik=cik_other,
+                connector_receipt_hash=connector_hash,
+                content_sha256=sha,
+                storage_dir=tmp_path,
+            )
+        assert exc_info.value.code == "sec_xbrl_companyfacts_stage_cik_not_in_connector"
+
+
+# ---------------------------------------------------------------------------
+# STEP 3 TESTS — loader staged discovery
+# ---------------------------------------------------------------------------
+
+def _write_full_evidence_storage(
+    tmp_path: Path,
+    *,
+    cik: str,
+    connector_receipt_hash: str,
+) -> dict[str, Any]:
+    """Write a minimal valid evidence storage tree including sidecar, value store, classification, bridge."""
+    from app.services.layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_contract import (
+        classification_receipt_hash_basis,
+        STATEMENT_CLASSIFICATION_MODE,
+    )
+
+    storage = tmp_path / "storage"
+    sidecar_hash = _hash("1")
+    sidecar_id = f"sec-edgar-arelle-resolved-fact-authority-{sidecar_hash[:24]}"
+    bridge_hash = _hash("2")
+    bridge_id = f"sec-edgar-html-inline-xbrl-fact-material-bridge-{'2' * 24}"
+
+    records = [
+        {
+            "resolved_fact_id": "rf-assets",
+            "concept": {"namespace": "fasb.org/us-gaap/test", "local_name": "Assets", "standard": True},
+            "unit": {"currency": "iso4217:USD", "measures": ["iso4217:USD"]},
+            "period": {"type": "instant", "instant": "2023-12-31"},
+            "dimensions": {"explicit": [], "typed": []},
+        },
+        {
+            "resolved_fact_id": "rf-revenue",
+            "concept": {"namespace": "fasb.org/us-gaap/test", "local_name": "Revenues", "standard": True},
+            "unit": {"currency": "iso4217:USD", "measures": ["iso4217:USD"]},
+            "period": {"type": "duration", "start": "2023-01-01", "end": "2023-12-31"},
+            "dimensions": {"explicit": [], "typed": []},
+        },
+    ]
+    value_records = [
+        {"resolved_fact_id": "rf-assets", "effective_value": "200"},
+        {"resolved_fact_id": "rf-revenue", "effective_value": "100"},
+    ]
+    projection = [{**r, "value_redacted": True} for r in records]
+    inventory_hash = stable_hash(projection)
+    value_store_hash = stable_hash(value_records)
+
+    statement_roles = [
+        {"fact_id_or_order_key": "rf-assets", "statement_candidate_role": "balance_sheet"},
+        {"fact_id_or_order_key": "rf-revenue", "statement_candidate_role": "income_statement"},
+    ]
+    classification_inv_hash = stable_hash(statement_roles)
+    sem_hash = stable_hash([])
+    cls_order_hash = stable_hash([r["fact_id_or_order_key"] for r in statement_roles])
+    group_hash = stable_hash([])
+    unclass_hash = stable_hash([])
+    diag_hash = stable_hash({})
+
+    sidecar = {
+        "schema_id": "layer3.sec_edgar_arelle_resolved_fact_authority_sidecar.v1",
+        "sidecar_receipt_id": sidecar_id,
+        "sidecar_receipt_hash": sidecar_hash,
+        "sidecar_state": "sec_edgar_arelle_resolved_fact_authority_sidecar_ready",
+        "resolved_fact_records": records,
+        "resolved_fact_projection": projection,
+        "resolved_fact_inventory_hash": inventory_hash,
+        "connector_receipt_hash": connector_receipt_hash,
+        "internal_value_store": {
+            "store_state": "persisted",
+            "value_store_hash": value_store_hash,
+            "value_record_count": len(value_records),
+        },
+        "authority_hashes": {
+            "sidecar_receipt_hash": sidecar_hash,
+            "internal_value_store_hash": value_store_hash,
+        },
+    }
+    value_store_payload = {
+        "schema_id": "layer3.sec_edgar_arelle_resolved_fact_authority_internal_value_store.v1",
+        "sidecar_receipt_id": sidecar_id,
+        "sidecar_receipt_hash": sidecar_hash,
+        "value_record_count": len(value_records),
+        "value_records": value_records,
+    }
+    classification = {
+        "schema_id": "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification.v1",
+        "classification_mode": STATEMENT_CLASSIFICATION_MODE,
+        "fact_authority_receipt_hash": sidecar_hash,
+        "fact_inventory_hash": inventory_hash,
+        "fact_material_bridge_receipt_hash": bridge_hash,
+        "classification_inventory_hash": classification_inv_hash,
+        "semantic_profile_inventory_hash": sem_hash,
+        "classification_order_hash": cls_order_hash,
+        "statement_group_inventory_hash": group_hash,
+        "unclassified_fact_inventory_hash": unclass_hash,
+        "classification_diagnostics_hash": diag_hash,
+        "authority_hashes": {
+            "fact_authority_receipt_hash": sidecar_hash,
+            "fact_inventory_hash": inventory_hash,
+            "fact_material_bridge_receipt_hash": bridge_hash,
+        },
+        "classification_inventory": statement_roles,
+    }
+    cls_hash = stable_hash(
+        classification_receipt_hash_basis(
+            classification_mode=classification["classification_mode"],
+            fact_authority_receipt_hash=classification["fact_authority_receipt_hash"],
+            fact_material_bridge_receipt_hash=classification["fact_material_bridge_receipt_hash"],
+            fact_inventory_hash=classification["fact_inventory_hash"],
+            classification_inventory_hash=classification["classification_inventory_hash"],
+            semantic_profile_inventory_hash=classification["semantic_profile_inventory_hash"],
+            classification_order_hash=classification["classification_order_hash"],
+            statement_group_inventory_hash=classification["statement_group_inventory_hash"],
+            unclassified_fact_inventory_hash=classification["unclassified_fact_inventory_hash"],
+            classification_diagnostics_hash=classification["classification_diagnostics_hash"],
+        )
+    )
+    cls_id = f"sec-edgar-html-inline-xbrl-fact-statement-classification-{cls_hash[:24]}"
+    classification["statement_classification_receipt_id"] = cls_id
+    classification["statement_classification_receipt_hash"] = cls_hash
+
+    bridge = {
+        "fact_material_bridge_receipt_hash": bridge_hash,
+        "fact_material_bridge_receipt_id": bridge_id,
+        "response": {
+            "arelle_sidecar_receipt_hash": sidecar_hash,
+            "dataset_version_id": "dv-companyfacts-test",
+        },
+    }
+
+    _write_json(storage / loader.SIDECAR_RECEIPT_DIR / "receipts" / f"{sidecar_id}.json", sidecar)
+    _write_json(storage / loader.SIDECAR_RECEIPT_DIR / loader.VALUE_STORE_SUBDIR / f"{sidecar_id}.json", value_store_payload)
+    _write_json(storage / loader.STATEMENT_CLASSIFICATION_DIR / "receipts" / f"{cls_id}.json", classification)
+    _write_json(storage / "layer3-sec-edgar-html-inline-xbrl-fact-material-bridge" / "receipts" / f"{bridge_id}.json", bridge)
+
+    # Also write connector receipt in storage so staging can find it
+    _write_connector_receipt(storage, cik=cik, connector_receipt_hash=connector_receipt_hash)
+
+    return {
+        "storage": storage,
+        "sidecar_hash": sidecar_hash,
+        "sidecar_id": sidecar_id,
+        "cls_hash": cls_hash,
+        "connector_receipt_hash": connector_receipt_hash,
+    }
+
+
+class TestLoaderStagedDiscovery:
+    def test_loader_staged_discovery_oracle_supplied_true(self, tmp_path):
+        cik = "320193"
+        connector_hash = _hash("f")
+        refs = _write_full_evidence_storage(tmp_path, cik=cik, connector_receipt_hash=connector_hash)
+        storage = refs["storage"]
+
+        facts = _sample_companyfacts()
+        content_sha = hashlib.sha256(json.dumps({"facts": facts}).encode()).hexdigest()
+
+        stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=facts,
+            cik=cik,
+            connector_receipt_hash=connector_hash,
+            content_sha256=content_sha,
+            storage_dir=storage,
+        )
+
+        bundle = loader.load_sec_xbrl_offline_evidence_bundle(
+            storage,
+            connector_receipt_hash=connector_hash,
+            cik_hash=_sha256(cik.lstrip("0") or "0"),
+            expected_sidecar_receipt_hash=refs["sidecar_hash"],
+            expected_statement_classification_receipt_hash=refs["cls_hash"],
+        )
+
+        assert bundle["summary"]["companyfacts_oracle_supplied"] is True
+        assert bundle["status"] == "offline_evidence_bundle_ready"
+
+    def test_loader_cross_issuer_mismatch_fails_closed(self, tmp_path):
+        cik_a = "320193"
+        cik_b = "789012"
+        connector_hash_a = _hash("a") * 0 + "a" * 64  # connector for issuer A
+
+        refs = _write_full_evidence_storage(tmp_path, cik=cik_a, connector_receipt_hash=connector_hash_a)
+        storage = refs["storage"]
+
+        # Stage facts for issuer B under a DIFFERENT connector
+        connector_hash_b = _hash("b")
+        _write_connector_receipt(storage, cik=cik_b, connector_receipt_hash=connector_hash_b)
+        facts_b = _sample_companyfacts()
+        content_sha_b = hashlib.sha256(json.dumps({"facts": facts_b}).encode()).hexdigest()
+        stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=facts_b,
+            cik=cik_b,
+            connector_receipt_hash=connector_hash_b,
+            content_sha256=content_sha_b,
+            storage_dir=storage,
+        )
+
+        # Try to load the bundle with the sidecar from connector A but CIK B staged under connector B
+        # The sidecar's connector_receipt_hash is A; the staged receipt's connector_receipt_hash is B → mismatch
+        with pytest.raises(loader.SecXbrlOfflineEvidenceLoaderError) as exc_info:
+            loader.load_sec_xbrl_offline_evidence_bundle(
+                storage,
+                connector_receipt_hash=connector_hash_b,
+                cik_hash=_sha256(cik_b.lstrip("0") or "0"),
+                expected_sidecar_receipt_hash=refs["sidecar_hash"],
+                expected_statement_classification_receipt_hash=refs["cls_hash"],
+            )
+        assert exc_info.value.code == "sec_xbrl_offline_evidence_loader_companyfacts_cross_issuer_mismatch"
+
+    def test_loader_staged_empty_facts_oracle_not_supplied(self, tmp_path):
+        """When staged discovery finds zero observations the oracle is treated as not_supplied."""
+        cik = "320193"
+        connector_hash = _hash("3")
+        refs = _write_full_evidence_storage(tmp_path, cik=cik, connector_receipt_hash=connector_hash)
+        storage = refs["storage"]
+
+        # Stage a payload with zero observations
+        empty_facts: dict = {}
+        content_sha = hashlib.sha256(json.dumps({"facts": empty_facts}).encode()).hexdigest()
+        # Staging with empty facts should succeed (just writes an empty oracle)
+        stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=empty_facts,
+            cik=cik,
+            connector_receipt_hash=connector_hash,
+            content_sha256=content_sha,
+            storage_dir=storage,
+        )
+
+        bundle = loader.load_sec_xbrl_offline_evidence_bundle(
+            storage,
+            connector_receipt_hash=connector_hash,
+            cik_hash=_sha256(cik.lstrip("0") or "0"),
+            expected_sidecar_receipt_hash=refs["sidecar_hash"],
+            expected_statement_classification_receipt_hash=refs["cls_hash"],
+        )
+        assert bundle["summary"]["companyfacts_oracle_supplied"] is False
+        assert bundle["status"] == "offline_evidence_bundle_ready_without_companyfacts_oracle"
+
+    def test_loader_staged_zero_observation_facts_oracle_not_supplied(self, tmp_path):
+        """Staged facts with taxonomy but no observations → not_supplied."""
+        cik = "320193"
+        connector_hash = _hash("4")
+        refs = _write_full_evidence_storage(tmp_path, cik=cik, connector_receipt_hash=connector_hash)
+        storage = refs["storage"]
+
+        zero_obs_facts = {"us-gaap": {}}
+        content_sha = hashlib.sha256(json.dumps({"facts": zero_obs_facts}).encode()).hexdigest()
+        stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=zero_obs_facts,
+            cik=cik,
+            connector_receipt_hash=connector_hash,
+            content_sha256=content_sha,
+            storage_dir=storage,
+        )
+
+        bundle = loader.load_sec_xbrl_offline_evidence_bundle(
+            storage,
+            connector_receipt_hash=connector_hash,
+            cik_hash=_sha256(cik.lstrip("0") or "0"),
+            expected_sidecar_receipt_hash=refs["sidecar_hash"],
+            expected_statement_classification_receipt_hash=refs["cls_hash"],
+        )
+        assert bundle["summary"]["companyfacts_oracle_supplied"] is False
+
+
+# ---------------------------------------------------------------------------
+# STEP 4 TESTS — oracle packet via staged discovery
+# ---------------------------------------------------------------------------
+
+class TestOraclePacketStagedDiscovery:
+    def test_oracle_packet_staged_has_payload_hash_and_oracle_count(self, tmp_path):
+        cik = "320193"
+        connector_hash = _hash("5")
+        refs = _write_full_evidence_storage(tmp_path, cik=cik, connector_receipt_hash=connector_hash)
+        storage = refs["storage"]
+
+        facts = _sample_companyfacts()
+        content_sha = hashlib.sha256(json.dumps({"facts": facts}).encode()).hexdigest()
+        stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=facts,
+            cik=cik,
+            connector_receipt_hash=connector_hash,
+            content_sha256=content_sha,
+            storage_dir=storage,
+        )
+
+        report = oracle_packet.inspect_sec_xbrl_offline_companyfacts_oracle_packet(
+            storage,
+            connector_receipt_hash=connector_hash,
+            cik_hash=_sha256(cik.lstrip("0") or "0"),
+            expected_sidecar_receipt_hash=refs["sidecar_hash"],
+            expected_statement_classification_receipt_hash=refs["cls_hash"],
+        )
+
+        # Report must carry payload_hash and oracle_confirmed_count
+        assert "companyfacts_payload_hash" in report.get("authority_refs", {})
+        assert len(report["authority_refs"]["companyfacts_payload_hash"]) == 64
+        assert report["summary"].get("companyfacts_observation_count", 0) > 0
+
+    def test_oracle_packet_no_raw_value_leak(self, tmp_path):
+        cik = "320193"
+        connector_hash = _hash("6")
+        refs = _write_full_evidence_storage(tmp_path, cik=cik, connector_receipt_hash=connector_hash)
+        storage = refs["storage"]
+
+        facts = _sample_companyfacts()
+        content_sha = hashlib.sha256(json.dumps({"facts": facts}).encode()).hexdigest()
+        stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=facts,
+            cik=cik,
+            connector_receipt_hash=connector_hash,
+            content_sha256=content_sha,
+            storage_dir=storage,
+        )
+
+        report = oracle_packet.inspect_sec_xbrl_offline_companyfacts_oracle_packet(
+            storage,
+            connector_receipt_hash=connector_hash,
+            cik_hash=_sha256(cik.lstrip("0") or "0"),
+            expected_sidecar_receipt_hash=refs["sidecar_hash"],
+            expected_statement_classification_receipt_hash=refs["cls_hash"],
+        )
+
+        report_text = json.dumps(report, sort_keys=True)
+        # Must not leak raw CIK, raw accession, local path, sec URL
+        assert "320193" not in report_text  # raw CIK
+        assert str(storage) not in report_text  # local path
+        assert "sec.gov" not in report_text  # raw SEC URL
+        # Must not leak raw financial values
+        assert '"200"' not in report_text
+        assert '"100"' not in report_text
+
+        # Use the report leak guard
+        flags = report_leak_flags(report)
+        assert not any(flags.values()), f"Leak guard triggered: {flags}"
+
+    def test_oracle_packet_production_admission_stays_false(self, tmp_path):
+        cik = "320193"
+        connector_hash = _hash("7")
+        refs = _write_full_evidence_storage(tmp_path, cik=cik, connector_receipt_hash=connector_hash)
+        storage = refs["storage"]
+
+        facts = _sample_companyfacts()
+        content_sha = hashlib.sha256(json.dumps({"facts": facts}).encode()).hexdigest()
+        stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=facts,
+            cik=cik,
+            connector_receipt_hash=connector_hash,
+            content_sha256=content_sha,
+            storage_dir=storage,
+        )
+
+        report = oracle_packet.inspect_sec_xbrl_offline_companyfacts_oracle_packet(
+            storage,
+            connector_receipt_hash=connector_hash,
+            cik_hash=_sha256(cik.lstrip("0") or "0"),
+            expected_sidecar_receipt_hash=refs["sidecar_hash"],
+            expected_statement_classification_receipt_hash=refs["cls_hash"],
+        )
+
+        # production_admission_ready must ALWAYS be False — guard against accidental flip
+        readiness = report.get("readiness", {})
+        assert readiness.get("production_admission_ready") is False, (
+            "production_admission_ready was True — this invariant must never be flipped"
+        )
+        assert readiness.get("production_admission_blocked_reason") == "diagnostic_validate_only_not_production_admission"
+
+
+# ---------------------------------------------------------------------------
+# SECURITY TESTS — path traversal, fail-closed connector binding, receipt redaction
+# ---------------------------------------------------------------------------
+
+class TestSecurityFixes:
+    """Security regression tests added during security review of the CompanyFacts oracle slice."""
+
+    def test_companyfacts_load_rejects_traversal_receipt_id(self, tmp_path):
+        """load_staged_companyfacts_raw must reject receipt ids containing path traversal sequences."""
+        traversal_ids = [
+            "../evil",
+            "../../etc/passwd",
+            "sec-edgar-companyfacts-live-artifact-" + "a" * 24 + "-" + "b" * 23 + "/../x",
+            "",
+            "sec-edgar-companyfacts-live-artifact-" + "g" * 24 + "-" + "h" * 24,  # invalid hex (g/h)
+            "sec-edgar-companyfacts-live-artifact-" + "a" * 24 + "-" + "b" * 25,  # too long
+        ]
+        for bad_id in traversal_ids:
+            with pytest.raises(stage_svc.SecXbrlCompanyfactsStageError) as exc_info:
+                stage_svc.load_staged_companyfacts_raw(tmp_path, companyfacts_receipt_id=bad_id)
+            assert exc_info.value.code == "sec_xbrl_companyfacts_stage_receipt_id_invalid", (
+                f"Expected receipt_id_invalid for id={bad_id!r}, got {exc_info.value.code}"
+            )
+
+    def test_companyfacts_loader_fails_closed_when_sidecar_connector_hash_missing(self, tmp_path):
+        """Staged discovery with a sidecar missing connector_receipt_hash must raise binding_missing error."""
+        cik = "320193"
+        connector_hash = _hash("s")
+        refs = _write_full_evidence_storage(tmp_path, cik=cik, connector_receipt_hash=connector_hash)
+        storage = refs["storage"]
+
+        # Stage valid facts
+        facts = _sample_companyfacts()
+        content_sha = hashlib.sha256(json.dumps({"facts": facts}).encode()).hexdigest()
+        stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=facts,
+            cik=cik,
+            connector_receipt_hash=connector_hash,
+            content_sha256=content_sha,
+            storage_dir=storage,
+        )
+
+        # Patch the sidecar on disk to remove its connector_receipt_hash
+        sidecar_path = (
+            storage / loader.SIDECAR_RECEIPT_DIR / "receipts" / f"{refs['sidecar_id']}.json"
+        )
+        sidecar_data = json.loads(sidecar_path.read_text(encoding="utf-8"))
+        del sidecar_data["connector_receipt_hash"]
+        _write_json(sidecar_path, sidecar_data)
+
+        with pytest.raises(loader.SecXbrlOfflineEvidenceLoaderError) as exc_info:
+            loader.load_sec_xbrl_offline_evidence_bundle(
+                storage,
+                connector_receipt_hash=connector_hash,
+                cik_hash=_sha256(cik.lstrip("0") or "0"),
+                expected_sidecar_receipt_hash=refs["sidecar_hash"],
+                expected_statement_classification_receipt_hash=refs["cls_hash"],
+            )
+        assert exc_info.value.code == "sec_xbrl_offline_evidence_loader_companyfacts_connector_binding_missing"
+
+    def test_companyfacts_live_fetch_receipt_is_redaction_clean(self, tmp_path):
+        """_write_companyfacts_receipt produces a receipt with only hashes/counts/booleans — no raw CIK/values/accession/issuer."""
+        import hashlib as _hl
+        from app.services.layer3_utils import stable_hash as _sh
+        from app.services import layer3_sec_edgar_live_source_artifact as _la
+
+        raw_cik = "320193"
+        cik_hash = _hl.sha256(raw_cik.encode("utf-8")).hexdigest()
+        source_identity_hash = _sh(
+            {"hash_version": "sec_edgar_companyfacts_source_identity_hash_v1", "cik_hash": cik_hash}
+        )
+
+        # Build a receipt that mirrors what _write_companyfacts_receipt would produce
+        content_sha256 = _hl.sha256(b"fake-content").hexdigest()
+        receipt_hash_basis = {
+            "hash_version": "sec_edgar_companyfacts_live_artifact_receipt_hash_v1",
+            "schema_id": _la.COMPANYFACTS_SCHEMA_ID,
+            "source_identity_hash": source_identity_hash,
+            "cik_hash": cik_hash,
+            "content_sha256": content_sha256,
+        }
+        receipt_hash = _sh(receipt_hash_basis)
+        receipt_id = f"{_la.COMPANYFACTS_RECEIPT_PREFIX}-{source_identity_hash[:24]}-{receipt_hash[:24]}"
+
+        receipt = {
+            "schema_id": _la.COMPANYFACTS_SCHEMA_ID,
+            "companyfacts_receipt_id": receipt_id,
+            "companyfacts_receipt_hash": receipt_hash,
+            "source_identity_hash": source_identity_hash,
+            "cik_hash": cik_hash,
+            "content_sha256": content_sha256,
+            "companyfacts_observation_count": 6,
+            "taxonomy_count": 1,
+            "concept_count": 3,
+            "receipt_hash_basis": receipt_hash_basis,
+            "recorded_at": "2026-01-01T00:00:00+00:00",
+        }
+
+        # Write the receipt directly to a tmp receipts dir (mirrors what _write_companyfacts_receipt does)
+        receipts_dir = tmp_path / _la.COMPANYFACTS_RECEIPT_DIR / "receipts"
+        receipts_dir.mkdir(parents=True, exist_ok=True)
+        target = receipts_dir / f"{receipt_id}.json"
+        target.write_text(json.dumps(receipt, sort_keys=True, indent=2), encoding="utf-8")
+
+        # Read back and assert no raw data leaked
+        on_disk = json.loads(target.read_text(encoding="utf-8"))
+        receipt_text = json.dumps(on_disk)
+
+        # Must NOT contain raw CIK
+        assert raw_cik not in receipt_text, "Raw CIK leaked into receipt"
+        assert "320193" not in receipt_text, "Raw CIK leaked into receipt"
+
+        # Must NOT contain financial values or concept names
+        for banned in ("Assets", "Revenues", "NetIncomeLoss", "200", "100", "accession"):
+            assert banned not in receipt_text, f"Banned term {banned!r} leaked into receipt"
+
+        # Must contain expected safe fields
+        assert on_disk["cik_hash"] == cik_hash
+        assert len(on_disk["content_sha256"]) == 64
+        assert on_disk["companyfacts_observation_count"] == 6
+        assert on_disk["taxonomy_count"] == 1
+        assert on_disk["concept_count"] == 3

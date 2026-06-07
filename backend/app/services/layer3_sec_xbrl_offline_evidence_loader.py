@@ -59,6 +59,8 @@ def load_sec_xbrl_offline_evidence_bundle(
     storage_dir: str | Path,
     *,
     companyfacts_path: str | Path | None = None,
+    connector_receipt_hash: str | None = None,
+    cik_hash: str | None = None,
     expected_sidecar_receipt_hash: str | None = None,
     expected_statement_classification_receipt_hash: str | None = None,
 ) -> dict[str, Any]:
@@ -88,7 +90,13 @@ def load_sec_xbrl_offline_evidence_bundle(
     )
     _validate_statement_classification_receipt_hash(classification)
     statement_roles = _statement_roles_from_classification(classification, sidecar=sidecar)
-    companyfacts, companyfacts_state = _read_companyfacts(companyfacts_path)
+    companyfacts, companyfacts_state = _read_companyfacts(
+        companyfacts_path,
+        storage=storage,
+        connector_receipt_hash=connector_receipt_hash,
+        cik_hash=cik_hash,
+        sidecar=sidecar,
+    )
     dataset_version_id = _dataset_version_id(
         storage,
         sidecar_receipt_hash=sidecar_receipt_hash,
@@ -149,6 +157,8 @@ def inspect_sec_xbrl_offline_evidence_storage(
     storage_dir: str | Path,
     *,
     companyfacts_path: str | Path | None = None,
+    connector_receipt_hash: str | None = None,
+    cik_hash: str | None = None,
     expected_sidecar_receipt_hash: str | None = None,
     expected_statement_classification_receipt_hash: str | None = None,
 ) -> dict[str, Any]:
@@ -158,6 +168,8 @@ def inspect_sec_xbrl_offline_evidence_storage(
         bundle = load_sec_xbrl_offline_evidence_bundle(
             storage_dir,
             companyfacts_path=companyfacts_path,
+            connector_receipt_hash=connector_receipt_hash,
+            cik_hash=cik_hash,
             expected_sidecar_receipt_hash=expected_sidecar_receipt_hash,
             expected_statement_classification_receipt_hash=expected_statement_classification_receipt_hash,
         )
@@ -365,17 +377,112 @@ def _statement_roles_from_classification(
     return roles
 
 
-def _read_companyfacts(companyfacts_path: str | Path | None) -> tuple[dict[str, Any], str]:
-    if companyfacts_path is None:
-        return {}, "not_supplied"
-    payload = _read_json_object(Path(companyfacts_path))
-    facts = payload.get("facts") if isinstance(payload.get("facts"), Mapping) else payload
-    if not isinstance(facts, Mapping):
-        raise SecXbrlOfflineEvidenceLoaderError(
-            "sec_xbrl_offline_evidence_loader_companyfacts_invalid",
-            "SEC XBRL offline CompanyFacts payload must be an object.",
+def _read_companyfacts(
+    companyfacts_path: str | Path | None,
+    *,
+    storage: Path | None = None,
+    connector_receipt_hash: str | None = None,
+    cik_hash: str | None = None,
+    sidecar: Mapping[str, Any] | None = None,
+) -> tuple[dict[str, Any], str]:
+    """Return (facts_dict, state) where state is 'supplied' or 'not_supplied'.
+
+    Branch 1 — explicit path: existing behaviour, unchanged.
+    Branch 2 — staged discovery: when companyfacts_path is None and connector_receipt_hash +
+        cik_hash are supplied, locate the staged receipt, load the raw JSON, and validate
+        that the receipt's connector_receipt_hash matches the sidecar's connector_receipt_hash.
+        Fail closed on mismatch (cross-issuer guard).
+
+    Empty-oracle hardening: an empty facts map OR zero total observations is treated as
+    'not_supplied' so oracle_confirmed_count cannot be gamed with a vacuous payload.
+    """
+    # --- Branch 1: explicit path (existing behaviour, unchanged) ---
+    if companyfacts_path is not None:
+        payload = _read_json_object(Path(companyfacts_path))
+        facts = payload.get("facts") if isinstance(payload.get("facts"), Mapping) else payload
+        if not isinstance(facts, Mapping):
+            raise SecXbrlOfflineEvidenceLoaderError(
+                "sec_xbrl_offline_evidence_loader_companyfacts_invalid",
+                "SEC XBRL offline CompanyFacts payload must be an object.",
+            )
+        return dict(facts), "supplied"
+
+    # --- Branch 2: staged discovery ---
+    if connector_receipt_hash and cik_hash and storage is not None:
+        from app.services.layer3_sec_xbrl_offline_companyfacts_stage import (
+            find_staged_companyfacts_receipt,
+            load_staged_companyfacts_raw,
+            SecXbrlCompanyfactsStageError,
         )
-    return dict(facts), "supplied"
+        try:
+            staged_receipt = find_staged_companyfacts_receipt(
+                storage,
+                connector_receipt_hash=connector_receipt_hash,
+                cik_hash=cik_hash,
+            )
+        except SecXbrlCompanyfactsStageError as exc:
+            raise SecXbrlOfflineEvidenceLoaderError(exc.code, exc.message) from exc
+
+        if staged_receipt is None:
+            return {}, "not_supplied"
+
+        # Cross-issuer mismatch guard: the sidecar carries connector_receipt_hash; it must
+        # match the staged receipt's connector_receipt_hash.
+        # FAIL-CLOSED: if either hash is empty/missing, binding cannot be verified → reject.
+        if sidecar is not None:
+            sidecar_connector_hash = str(sidecar.get("connector_receipt_hash") or "").strip()
+            staged_connector_hash = str(staged_receipt.get("connector_receipt_hash") or "").strip()
+            if not sidecar_connector_hash or not staged_connector_hash:
+                raise SecXbrlOfflineEvidenceLoaderError(
+                    "sec_xbrl_offline_evidence_loader_companyfacts_connector_binding_missing",
+                    "Staged CompanyFacts or sidecar is missing connector_receipt_hash; "
+                    "cross-issuer binding cannot be verified and is not admitted.",
+                )
+            if sidecar_connector_hash != staged_connector_hash:
+                raise SecXbrlOfflineEvidenceLoaderError(
+                    "sec_xbrl_offline_evidence_loader_companyfacts_cross_issuer_mismatch",
+                    "Staged CompanyFacts connector_receipt_hash does not match the selected sidecar's "
+                    "connector_receipt_hash; cross-issuer oracle binding is not admitted.",
+                )
+
+        try:
+            raw_payload = load_staged_companyfacts_raw(
+                storage,
+                companyfacts_receipt_id=staged_receipt["companyfacts_receipt_id"],
+            )
+        except SecXbrlCompanyfactsStageError as exc:
+            raise SecXbrlOfflineEvidenceLoaderError(exc.code, exc.message) from exc
+
+        facts = raw_payload.get("facts") if isinstance(raw_payload.get("facts"), Mapping) else raw_payload
+        if not isinstance(facts, Mapping):
+            raise SecXbrlOfflineEvidenceLoaderError(
+                "sec_xbrl_offline_evidence_loader_companyfacts_invalid",
+                "Staged CompanyFacts payload must be an object.",
+            )
+        facts_dict = dict(facts)
+        # Empty-oracle hardening
+        if not facts_dict or _total_observations(facts_dict) == 0:
+            return {}, "not_supplied"
+        return facts_dict, "supplied"
+
+    # --- No oracle supplied ---
+    return {}, "not_supplied"
+
+
+def _total_observations(facts: Mapping[str, Any]) -> int:
+    """Count total observations across all taxonomies/concepts/units."""
+    count = 0
+    for concepts in facts.values():
+        if not isinstance(concepts, Mapping):
+            continue
+        for concept in concepts.values():
+            if not isinstance(concept, Mapping):
+                continue
+            units = concept.get("units") if isinstance(concept.get("units"), Mapping) else {}
+            for observations in units.values():
+                if isinstance(observations, list):
+                    count += len(observations)
+    return count
 
 
 def _validate_statement_classification_receipt_hash(classification: Mapping[str, Any]) -> None:
