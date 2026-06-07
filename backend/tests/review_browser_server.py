@@ -2739,7 +2739,7 @@ def _build_browser_cohort_aps_handoff_ready_session(db, temp_path: Path) -> str:
 
 
 def _seed_sec_xbrl_operator_review_packet(db, *, seed_id: str) -> dict[str, Any]:
-    char_a = "a" * 64
+    char_a = hashlib.sha256(seed_id.encode()).hexdigest()
     char_b = "b" * 64
     char_c = "c" * 64
     projection_rows = [
