@@ -150,17 +150,18 @@ class SecEdgarHttpClient:
                 http_status=409,
                 blocked_fields=["layer3_sec_edgar_live_network_enabled"],
             )
+        # User-Agent goes in regular headers (NOT add_unredirected_header): urllib's
+        # HTTPRedirectHandler.redirect_request rebuilds the follow-up request from
+        # req.headers, so headers set here ARE carried across the allowlisted redirect
+        # hops the SEC fair-access policy requires; unredirected_hdrs would be dropped.
         request = urllib.request.Request(
             url,
             headers={
+                "User-Agent": user_agent,
                 "Accept": "text/plain,*/*;q=0.1",
                 "Accept-Encoding": "identity",
             },
         )
-        # Use add_unredirected_header so urllib copies the User-Agent into every
-        # redirected request via Request.unredirected_hdrs — regular headers= are
-        # NOT propagated to redirect hops by HTTPRedirectHandler.redirect_request.
-        request.add_unredirected_header("User-Agent", user_agent)
         try:
             with _SEC_OPENER.open(request, timeout=timeout_seconds) as response:
                 final_url = str(response.geturl() or "")
@@ -1368,17 +1369,18 @@ def _fetch_companyfacts_once(
             http_status=409,
             blocked_fields=["layer3_sec_edgar_live_network_enabled"],
         )
+    # User-Agent goes in regular headers (NOT add_unredirected_header): urllib's
+    # HTTPRedirectHandler.redirect_request rebuilds the follow-up request from
+    # req.headers, so headers set here ARE carried across the allowlisted redirect
+    # hops the SEC fair-access policy requires; unredirected_hdrs would be dropped.
     request = urllib.request.Request(
         url,
         headers={
+            "User-Agent": user_agent,
             "Accept": "application/json,*/*;q=0.1",
             "Accept-Encoding": "identity",
         },
     )
-    # Use add_unredirected_header so urllib copies the User-Agent into every
-    # redirected request via Request.unredirected_hdrs — regular headers= are
-    # NOT propagated to redirect hops by HTTPRedirectHandler.redirect_request.
-    request.add_unredirected_header("User-Agent", user_agent)
     try:
         with _SEC_OPENER.open(request, timeout=timeout_seconds) as response:
             final_url = str(response.geturl() or "")

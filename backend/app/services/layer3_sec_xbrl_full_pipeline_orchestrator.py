@@ -108,10 +108,13 @@ def prepare_full_pipeline_open_plan(
     # fetching the verbatim operator string (e.g. "0000320193") would otherwise produce a
     # spurious cik_hash mismatch and an inconsistent fetch key.
     cik = str(fields.get("cik") or "").strip().lstrip("0")
-    if not cik or not cik.isdigit():
+    # SEC CIKs are 1-10 digits (canonical form is zero-padded to 10). Enforce the bound
+    # HERE, before corpus-validation, so an obviously-invalid CIK cannot trigger the live
+    # acquisition/staging side effects only to be rejected later by the hash guard.
+    if not cik or not cik.isdigit() or len(cik) > 10:
         raise SecXbrlFullPipelineOrchestratorError(
             "full_pipeline_invalid_cik",
-            "Full-pipeline orchestration requires a non-empty digit-string cik.",
+            "Full-pipeline orchestration requires a 1-10 digit cik.",
             http_status=400,
         )
 
@@ -159,27 +162,35 @@ def prepare_full_pipeline_open_plan(
             http_status=409,
         )
 
-    # Prefer 10-K; fall back to first supported.
-    selected = next(
-        (r for r in supported if "10-K" in str(r.get("form_type") or "")),
-        supported[0],
-    )
-
     # ------------------------------------------------------------------
-    # Step 3: correctness guard — bind oracle CIK to the validated filing
+    # Step 3: select the filing matching the supplied CIK, THEN prefer 10-K.
+    # A multi-ticker company_matrix yields a record per company; filtering by the
+    # caller's CIK first prevents another company's 10-K (appearing earlier in the
+    # matrix) from triggering a spurious cik_hash mismatch. This also IS the
+    # correctness guard that binds the oracle CIK to the validated filing.
     # ------------------------------------------------------------------
     expected_cik_hash = _sha256_hex(cik)
-    discovered_cik_hash = str(selected.get("cik_hash") or "")
-    if expected_cik_hash != discovered_cik_hash:
+    cik_matched = [r for r in supported if str(r.get("cik_hash") or "") == expected_cik_hash]
+    if not cik_matched:
         raise SecXbrlFullPipelineOrchestratorError(
             "full_pipeline_cik_hash_mismatch",
-            "The supplied CIK does not match the discovered filing's CIK hash.",
+            "No supported filing matches the supplied CIK.",
             details={
                 "expected_from_cik": expected_cik_hash,
-                "discovered_cik_hash": discovered_cik_hash,
+                "supported_count": supported_count,
+                "discovered_cik_hashes": sorted(
+                    {str(r.get("cik_hash") or "") for r in supported}
+                ),
             },
             http_status=409,
         )
+
+    # Prefer 10-K among the CIK-matched candidates; fall back to the first match.
+    selected = next(
+        (r for r in cik_matched if "10-K" in str(r.get("form_type") or "")),
+        cik_matched[0],
+    )
+    discovered_cik_hash = expected_cik_hash
 
     # ------------------------------------------------------------------
     # Step 4: extract hashes

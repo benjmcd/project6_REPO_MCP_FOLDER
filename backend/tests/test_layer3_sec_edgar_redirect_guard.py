@@ -105,6 +105,42 @@ class TestSecEdgarRedirectGuard:
                 )
 
 
+    # ------------------------------------------------------------------
+    # User-Agent must SURVIVE an allowed redirect (codex P2 regression guard)
+    # ------------------------------------------------------------------
+
+    def test_user_agent_survives_allowed_redirect(self) -> None:
+        """SEC fair-access User-Agent set in Request.headers must be carried onto the
+        follow-up request after an allowed redirect. urllib's redirect_request rebuilds
+        from req.headers (NOT unredirected_hdrs), so the UA MUST live in headers.
+        Regression guard: an earlier impl used add_unredirected_header, which urllib
+        drops on redirect — leaving SEC requests without the required identifying UA."""
+        ua = "NexonPVP-Research contact@nexonpvp.net"
+        req = urllib.request.Request(
+            "https://www.sec.gov/start",
+            headers={"User-Agent": ua, "Accept": "text/plain"},
+        )
+        newurl = "https://www.sec.gov/Archives/edgar/data/320193/x.htm"
+        result = self.guard.redirect_request(
+            req, None, 301, "Moved", _make_headers(), newurl
+        )
+        assert result.get_header("User-agent") == ua, (
+            "User-Agent was lost across the redirect; it must be set in Request.headers "
+            "(not add_unredirected_header) to survive HTTPRedirectHandler.redirect_request."
+        )
+
+    def test_user_agent_in_unredirected_header_does_not_survive(self) -> None:
+        """Documents WHY the UA must be in headers: add_unredirected_header is dropped on
+        redirect. This pins the urllib contract the fix depends on."""
+        req = urllib.request.Request("https://www.sec.gov/start")
+        req.add_unredirected_header("User-Agent", "DROPPED-ON-REDIRECT")
+        newurl = "https://data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json"
+        result = self.guard.redirect_request(
+            req, None, 302, "Found", _make_headers(), newurl
+        )
+        assert result.get_header("User-agent") is None
+
+
 class TestSecOpenerIsWiredWithGuard:
     """Confirm the module-level _SEC_OPENER has _SecEdgarRedirectGuard installed."""
 

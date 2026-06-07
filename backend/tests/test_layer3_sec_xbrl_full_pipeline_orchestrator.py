@@ -769,3 +769,101 @@ def test_prepare_plan_raises_on_invalid_cik() -> None:
         )
     assert exc_info.value.error_code == "full_pipeline_invalid_cik"
     assert exc_info.value.http_status == 400
+
+
+def test_prepare_plan_raises_on_overlong_cik_before_corpus_validation() -> None:
+    """A digit-only but >10-digit CIK is rejected (400) BEFORE corpus-validation runs,
+    so no live acquisition/staging side effects are triggered (codex P2)."""
+    # corpus-validation is the real module here; it must NOT be reached. The 1-10 digit
+    # bound check precedes it in the function body, so reaching it would mean the bound
+    # check failed to fire.
+    with pytest.raises(orchestrator.SecXbrlFullPipelineOrchestratorError) as exc_info:
+        orchestrator.prepare_full_pipeline_open_plan(
+            db=None,
+            fields={
+                "client_request_id": "x",
+                "cik": "12345678901",  # 11 digits, no leading zeros to strip
+                "company_matrix": ["AAPL"],
+                "operator_confirmation": True,
+            },
+            evidence_owner={},
+        )
+    assert exc_info.value.error_code == "full_pipeline_invalid_cik"
+    assert exc_info.value.http_status == 400
+
+
+def test_full_pipeline_multi_ticker_selects_matching_cik(tmp_path, monkeypatch) -> None:
+    """A multi-ticker matrix returns a record per company; selection must filter by the
+    supplied CIK BEFORE the 10-K preference, so another company's 10-K appearing first
+    does not cause a spurious cik_hash mismatch (codex P2)."""
+    client, storage_dir = _make_test_client(tmp_path, monkeypatch)
+
+    apple_cik = "320193"
+    connector_hash = _hash("a")
+    # Real staged storage is keyed to the connector hash; the matching record points at it.
+    hashes = _stage_full_evidence_storage(storage_dir, connector_receipt_hash=connector_hash)
+
+    # Record 1: a DIFFERENT company (e.g. MSFT), a 10-K, appears FIRST, dummy hashes.
+    other_record = {
+        "cik_hash": _sha256("789019"),
+        "form_type": "10-K",
+        "supported_degraded_blocked": "supported",
+        "authority_hashes": {
+            "fact_authority_receipt_hash": _hash("9"),
+            "statement_classification_receipt_hash": _hash("8"),
+            "arelle_sidecar_receipt_hash": _hash("9"),
+        },
+    }
+    # Record 2: Apple, a 10-K, real staged hashes — the one the supplied CIK matches.
+    apple_record = {
+        "cik_hash": _sha256(apple_cik),
+        "form_type": "10-K",
+        "supported_degraded_blocked": "supported",
+        "authority_hashes": {
+            "fact_authority_receipt_hash": hashes["sidecar_hash"],
+            "statement_classification_receipt_hash": hashes["classification_hash"],
+            "arelle_sidecar_receipt_hash": hashes["sidecar_hash"],
+        },
+    }
+    multi_corpus = {
+        "connector_receipt_hash": connector_hash,
+        "validation_receipt_id": "vr-multi-001",
+        "validation_receipt_hash": _sha256("multi"),
+        "filing_validation_records": [other_record, apple_record],  # other FIRST
+    }
+    monkeypatch.setattr(
+        orchestrator,
+        "layer3_sec_edgar_real_company_corpus_validation",
+        MagicMock(
+            validate_sec_edgar_real_company_corpus_product_path=lambda fields, db, evidence_owner=None: multi_corpus,
+            VALIDATION_MODE=corpus_svc.VALIDATION_MODE,
+            OPERATOR_DECISION=corpus_svc.OPERATOR_DECISION,
+        ),
+    )
+    from app.services import layer3_sec_xbrl_in_app_auth_policy as auth_policy_svc
+    monkeypatch.setattr(
+        auth_policy_svc,
+        "derive_sec_xbrl_evidence_owner",
+        lambda headers: {"owner_hash": _hash("f"), "auth_owner_mode": "test"},
+    )
+    from app.services import layer3_sec_xbrl_auth_binding as auth_binding_svc
+    monkeypatch.setattr(
+        auth_binding_svc,
+        "require_sec_xbrl_evidence_ownership_marker",
+        lambda *args, **kwargs: None,
+    )
+
+    r = client.post(
+        FULL_PIPELINE_URL,
+        json={
+            "client_request_id": f"fp-multi-{uuid.uuid4().hex[:12]}",
+            "cik": apple_cik,
+            "company_matrix": ["MSFT", "AAPL"],
+            "operator_confirmation": True,
+        },
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["status"] == "full_pipeline_open_ready"
+    # The Apple record (not the first-listed MSFT 10-K) was selected.
+    assert body["corpus_validation"]["selected_cik_hash"] == _sha256(apple_cik)
