@@ -432,6 +432,18 @@ def _read_companyfacts(
         if staged_receipt is None:
             return {}, "not_supplied", None
 
+        # Schema-id guard (defense-in-depth): the receipt MUST declare the companyfacts-stage
+        # schema_id.  find_staged_companyfacts_receipt matches only on connector_receipt_hash +
+        # cik_hash, so a receipt of a different type that shares those hashes (or one whose
+        # schema_id was later removed/changed) would still be found.  Check FIRST so a
+        # wrong-schema receipt is rejected before any field-level validation runs.
+        if staged_receipt.get("schema_id") != COMPANYFACTS_STAGE_SCHEMA_ID:
+            raise SecXbrlOfflineEvidenceLoaderError(
+                "sec_xbrl_offline_evidence_loader_companyfacts_receipt_schema_mismatch",
+                "Staged CompanyFacts receipt schema_id does not match the expected companyfacts "
+                "stage schema; the receipt is not admitted.",
+            )
+
         # Receipt-hash integrity check (FIX 3): recompute companyfacts_receipt_hash from the
         # basis fields stored in the receipt and require it equals the declared hash.
         # This catches inconsistent/partial tampering (e.g. editing payload_hash without
