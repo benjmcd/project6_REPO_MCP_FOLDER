@@ -90,7 +90,7 @@ def load_sec_xbrl_offline_evidence_bundle(
     )
     _validate_statement_classification_receipt_hash(classification)
     statement_roles = _statement_roles_from_classification(classification, sidecar=sidecar)
-    companyfacts, companyfacts_state = _read_companyfacts(
+    companyfacts, companyfacts_state, companyfacts_receipt = _read_companyfacts(
         companyfacts_path,
         storage=storage,
         connector_receipt_hash=connector_receipt_hash,
@@ -130,6 +130,11 @@ def load_sec_xbrl_offline_evidence_bundle(
     if dataset_version_id:
         authority_refs["dataset_version_id_hash"] = stable_hash({"dataset_version_id": dataset_version_id})[:24]
 
+    evidence_owner_bundle = {
+        "sidecar": sidecar.get("evidence_owner") if isinstance(sidecar.get("evidence_owner"), Mapping) else None,
+        "statement_classification": classification.get("evidence_owner") if isinstance(classification.get("evidence_owner"), Mapping) else None,
+        "companyfacts": companyfacts_receipt.get("evidence_owner") if isinstance(companyfacts_receipt, Mapping) and isinstance(companyfacts_receipt.get("evidence_owner"), Mapping) else None,
+    }
     return {
         "schema_id": SCHEMA_ID,
         "status": (
@@ -139,6 +144,7 @@ def load_sec_xbrl_offline_evidence_bundle(
         ),
         "evidence": evidence,
         "authority_refs": authority_refs,
+        "evidence_owner": evidence_owner_bundle,
         "summary": {
             "resolved_fact_count": len(_required_sequence(sidecar.get("resolved_fact_records"), "resolved_fact_records")),
             "resolved_fact_projection_count": len(
@@ -384,8 +390,12 @@ def _read_companyfacts(
     connector_receipt_hash: str | None = None,
     cik_hash: str | None = None,
     sidecar: Mapping[str, Any] | None = None,
-) -> tuple[dict[str, Any], str]:
-    """Return (facts_dict, state) where state is 'supplied' or 'not_supplied'.
+) -> tuple[dict[str, Any], str, dict[str, Any] | None]:
+    """Return (facts_dict, state, staged_receipt_or_none).
+
+    state is 'supplied' or 'not_supplied'.
+    staged_receipt_or_none carries the staged receipt dict (with possible evidence_owner stamp)
+    when discovered via Branch 2; None for Branch 1 (explicit path) and no-oracle cases.
 
     Branch 1 — explicit path: existing behaviour, unchanged.
     Branch 2 — staged discovery: when companyfacts_path is None and connector_receipt_hash +
@@ -405,7 +415,7 @@ def _read_companyfacts(
                 "sec_xbrl_offline_evidence_loader_companyfacts_invalid",
                 "SEC XBRL offline CompanyFacts payload must be an object.",
             )
-        return dict(facts), "supplied"
+        return dict(facts), "supplied", None
 
     # --- Branch 2: staged discovery ---
     if connector_receipt_hash and cik_hash and storage is not None:
@@ -424,7 +434,7 @@ def _read_companyfacts(
             raise SecXbrlOfflineEvidenceLoaderError(exc.code, exc.message) from exc
 
         if staged_receipt is None:
-            return {}, "not_supplied"
+            return {}, "not_supplied", None
 
         # Cross-issuer mismatch guard: the sidecar carries connector_receipt_hash; it must
         # match the staged receipt's connector_receipt_hash.
@@ -479,11 +489,11 @@ def _read_companyfacts(
         facts_dict = dict(facts)
         # Empty-oracle hardening
         if not facts_dict or _total_observations(facts_dict) == 0:
-            return {}, "not_supplied"
-        return facts_dict, "supplied"
+            return {}, "not_supplied", staged_receipt
+        return facts_dict, "supplied", staged_receipt
 
     # --- No oracle supplied ---
-    return {}, "not_supplied"
+    return {}, "not_supplied", None
 
 
 def _total_observations(facts: Mapping[str, Any]) -> int:

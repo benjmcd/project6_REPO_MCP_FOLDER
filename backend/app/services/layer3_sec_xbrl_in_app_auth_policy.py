@@ -8,6 +8,7 @@ from app.services.layer3_utils import stable_hash
 
 
 POLICY_SCHEMA_ID = "layer3.sec_xbrl.repo_owned_in_app_operator_auth_policy.v1"
+EVIDENCE_OWNER_SCHEMA_ID = "layer3.sec_xbrl_evidence_owner_stamp.v1"
 SELECTED_AUTH_MODE = "sec_xbrl_repo_owned_in_app_operator_auth_boundary_v1"
 LOCAL_ACTOR_REF = "sec-xbrl-local-single-operator-dev-profile"
 LOCAL_WORKSPACE_REF = "sec-xbrl-local-single-workspace-dev-profile"
@@ -174,6 +175,26 @@ def authorize_sec_xbrl_route(
         "raw_workspace_identity_exposed": False,
         "raw_value_exposed": False,
         "residual_magnitude_exposed": False,
+    }
+
+
+def derive_sec_xbrl_evidence_owner(headers: Mapping[str, str]) -> dict[str, Any]:
+    """Derive owner+workspace stamps for staging evidence receipts.
+
+    Calls the same _server_derived_principal logic as authorize_sec_xbrl_route so
+    a stamp made at staging time equals what the open route derives for the same caller.
+    Does NOT require PROTECTED_ROUTE_FAMILIES membership.
+
+    Returns dict with owner_ref_hash, workspace_ref_hash, auth_owner_mode,
+    evidence_owner_schema_id. Raises SecXbrlInAppAuthPolicyError on misconfigured
+    auth_owner / missing proxy headers.
+    """
+    actor_ref_hash, workspace_ref_hash, auth_owner_mode = _server_derived_principal(headers)
+    return {
+        "owner_ref_hash": actor_ref_hash,
+        "workspace_ref_hash": workspace_ref_hash,
+        "auth_owner_mode": auth_owner_mode,
+        "evidence_owner_schema_id": EVIDENCE_OWNER_SCHEMA_ID,
     }
 
 

@@ -48,6 +48,9 @@ ALLOWED_FIELDS = {
     "company_matrix",
     "operator_confirmation",
     "actor",
+    "evidence_owner_ref_hash",
+    "evidence_workspace_ref_hash",
+    "auth_owner_mode",
 }
 FORBIDDEN_REQUEST_FIELDS = {
     "args",
@@ -104,6 +107,7 @@ def validate_sec_edgar_real_company_corpus_product_path(
         return _blocked_response(request_id, reasons=[_reason("missing_operator_confirmation")])
 
     company_matrix = _company_matrix(request.get("company_matrix"))
+    evidence_owner = _extract_evidence_owner(request)
     connector = layer3_sec_edgar_real_filing_acquisition_connector.acquire_sec_edgar_real_filing_validation_corpus(
         {
             "client_request_id": f"{request_id}-connector",
@@ -117,7 +121,7 @@ def validate_sec_edgar_real_company_corpus_product_path(
             "operator_confirmation": True,
         }
     )
-    records = _filing_validation_records(connector, request_id=request_id, db=db)
+    records = _filing_validation_records(connector, request_id=request_id, db=db, evidence_owner=evidence_owner)
     matrix = _product_utility_matrix(records)
     quality_matrix = _product_quality_matrix(records)
     diagnostics = _diagnostics(connector, records)
@@ -185,7 +189,13 @@ def inspect_sec_edgar_real_company_corpus_validation_status(validation_receipt_i
     )
 
 
-def _filing_validation_records(connector: Mapping[str, Any], *, request_id: str, db: Session) -> list[dict[str, Any]]:
+def _filing_validation_records(
+    connector: Mapping[str, Any],
+    *,
+    request_id: str,
+    db: Session,
+    evidence_owner: dict[str, str] | None = None,
+) -> list[dict[str, Any]]:
     examples = {
         str(item.get("example_id")): item
         for item in ((connector.get("corpus_manifest") or {}).get("example_records") or [])
@@ -199,7 +209,7 @@ def _filing_validation_records(connector: Mapping[str, Any], *, request_id: str,
         example = examples.get(example_id, {})
         record = _base_record(index=index, example=example, acquisition=acquisition)
         if "html_inline_xbrl_classified_not_parsed" in list(example.get("source_family_roles") or []):
-            record.update(_run_html_inline_xbrl_path(connector, example, acquisition, request_id=request_id, db=db))
+            record.update(_run_html_inline_xbrl_path(connector, example, acquisition, request_id=request_id, db=db, evidence_owner=evidence_owner))
         else:
             record["supported_degraded_blocked"] = "degraded_or_blocked"
             record["failure_classification"] = "parser_family"
@@ -220,6 +230,7 @@ def _run_html_inline_xbrl_path(
     *,
     request_id: str,
     db: Session,
+    evidence_owner: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     outputs: dict[str, Any] = {"outputs_produced": [], "authority_hashes": {}}
     try:
@@ -242,7 +253,7 @@ def _run_html_inline_xbrl_path(
         fact = layer3_sec_edgar_html_inline_xbrl_fact_authority.derive_sec_edgar_html_inline_xbrl_fact_authority(
             _fact_authority_payload(request_id, example, parser)
         )
-        sidecar = _derive_arelle_sidecar_authority(request_id, example, parser, fact)
+        sidecar = _derive_arelle_sidecar_authority(request_id, example, parser, fact, evidence_owner=evidence_owner)
         selected_fact = (
             layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.sidecar_fact_authority_view_for_downstream(
                 sidecar
@@ -266,7 +277,9 @@ def _run_html_inline_xbrl_path(
                     selected_fact,
                     bridge,
                     sidecar=sidecar,
-                )
+                ),
+                evidence_owner_ref_hash=evidence_owner.get("owner_ref_hash") if evidence_owner else None,
+                evidence_workspace_ref_hash=evidence_owner.get("workspace_ref_hash") if evidence_owner else None,
             )
         )
         product = (
@@ -424,29 +437,35 @@ def _derive_arelle_sidecar_authority(
     example: Mapping[str, Any],
     parser: Mapping[str, Any],
     fact: Mapping[str, Any],
+    *,
+    evidence_owner: dict[str, str] | None = None,
 ) -> dict[str, Any] | None:
     if not _arelle_fact_authority_cutover_enabled():
         return None
+    sidecar_payload: dict[str, Any] = {
+        "client_request_id": f"{request_id}-{example['example_id']}-arelle-sidecar",
+        "sidecar_mode": layer3_sec_xbrl_sidecar.SIDECAR_MODE,
+        "operator_decision": layer3_sec_xbrl_sidecar.OPERATOR_DECISION,
+        "parser_receipt_id": parser["parser_receipt_id"],
+        "parser_receipt_hash": parser["parser_receipt_hash"],
+        "regex_fact_authority_receipt_id": fact["fact_authority_receipt_id"],
+        "regex_fact_authority_receipt_hash": fact["fact_authority_receipt_hash"],
+        "expected_connector_receipt_hash": parser["connector_receipt_hash"],
+        "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
+        "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+        "expected_content_sha256": parser["identity_binding"]["content_sha256"],
+        "expected_primary_document_hash": parser["identity_binding"]["primary_document_hash"],
+        "expected_document_inventory_hash": parser["document_inventory_hash"],
+        "expected_content_order_hash": parser["content_order_hash"],
+        "expected_table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
+        "expected_inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
+        "operator_confirmation": True,
+    }
+    if evidence_owner:
+        sidecar_payload["evidence_owner_ref_hash"] = evidence_owner.get("owner_ref_hash", "")
+        sidecar_payload["evidence_workspace_ref_hash"] = evidence_owner.get("workspace_ref_hash", "")
     sidecar = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
-        {
-            "client_request_id": f"{request_id}-{example['example_id']}-arelle-sidecar",
-            "sidecar_mode": layer3_sec_xbrl_sidecar.SIDECAR_MODE,
-            "operator_decision": layer3_sec_xbrl_sidecar.OPERATOR_DECISION,
-            "parser_receipt_id": parser["parser_receipt_id"],
-            "parser_receipt_hash": parser["parser_receipt_hash"],
-            "regex_fact_authority_receipt_id": fact["fact_authority_receipt_id"],
-            "regex_fact_authority_receipt_hash": fact["fact_authority_receipt_hash"],
-            "expected_connector_receipt_hash": parser["connector_receipt_hash"],
-            "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
-            "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
-            "expected_content_sha256": parser["identity_binding"]["content_sha256"],
-            "expected_primary_document_hash": parser["identity_binding"]["primary_document_hash"],
-            "expected_document_inventory_hash": parser["document_inventory_hash"],
-            "expected_content_order_hash": parser["content_order_hash"],
-            "expected_table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
-            "expected_inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
-            "operator_confirmation": True,
-        }
+        sidecar_payload
     )
     if sidecar.get("sidecar_state") != layer3_sec_xbrl_sidecar.READY_STATE:
         reasons = [
@@ -1416,6 +1435,19 @@ def _sha256_text(value: str) -> str:
 
 def _server_time() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _extract_evidence_owner(request: Mapping[str, Any]) -> dict[str, str] | None:
+    """Extract owner stamp fields from the normalised request, or return None if absent."""
+    owner = str(request.get("evidence_owner_ref_hash") or "").strip()
+    workspace = str(request.get("evidence_workspace_ref_hash") or "").strip()
+    if not owner or not workspace:
+        return None
+    return {
+        "owner_ref_hash": owner,
+        "workspace_ref_hash": workspace,
+        "auth_owner_mode": str(request.get("auth_owner_mode") or ""),
+    }
 
 
 def _arelle_fact_authority_cutover_enabled() -> bool:

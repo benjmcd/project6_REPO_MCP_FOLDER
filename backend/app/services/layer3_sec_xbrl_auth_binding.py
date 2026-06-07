@@ -435,6 +435,72 @@ def require_sec_xbrl_owner_binding(
     return _response(row, idempotent_replay=False)
 
 
+def require_sec_xbrl_evidence_ownership(
+    *,
+    policy_decision: Mapping[str, Any],
+    evidence_owner: Mapping[str, Any] | None,
+    auth_owner_mode: str,
+) -> None:
+    """Enforce cross-workspace ownership on staged evidence receipts.
+
+    For each PRESENT stamp (sidecar / statement_classification / companyfacts):
+      - require stamp.owner_ref_hash == policy_decision actor_ref_hash
+      - require stamp.workspace_ref_hash == policy_decision workspace_ref_hash
+      - mismatch → SecXbrlAuthBindingError 403 evidence_owner_mismatch
+
+    For each ABSENT stamp:
+      - AUTH_OWNER=none → allow (none-mode has no cross-workspace isolation)
+      - AUTH_OWNER=proxy:
+          - absent SIDECAR stamp → fail closed (unstamped_under_proxy)
+          - absent companyfacts alone → skip (companyfacts may be unstaged)
+          - absent classification → fail closed (unstamped_under_proxy)
+
+    policy_decision: dict from authorize_sec_xbrl_route (carries actor_ref_hash,
+        workspace_ref_hash, auth_owner_mode).
+    evidence_owner: bundle dict from load_sec_xbrl_offline_evidence_bundle:
+        {"sidecar": ...|None, "statement_classification": ...|None, "companyfacts": ...|None}
+    auth_owner_mode: string from policy_decision["auth_owner_mode"].
+    """
+    expected_owner = str(policy_decision.get("actor_ref_hash") or "").strip()
+    expected_workspace = str(policy_decision.get("workspace_ref_hash") or "").strip()
+    is_proxy = "proxy" in auth_owner_mode.lower()
+
+    def _check_stamp(kind: str, stamp: Any, *, skip_if_absent: bool = False) -> None:
+        if not isinstance(stamp, Mapping):
+            # Absent stamp
+            if skip_if_absent:
+                return
+            if is_proxy:
+                raise SecXbrlAuthBindingError(
+                    "sec_xbrl_auth_binding_evidence_owner_unstamped_under_proxy",
+                    f"SEC XBRL evidence receipt ({kind}) has no owner stamp but AUTH_OWNER=proxy requires it.",
+                    details={"receipt_kind": kind},
+                    http_status=403,
+                )
+            return  # none-mode: allow unstamped
+        # Present stamp: enforce owner and workspace match
+        stamp_owner = str(stamp.get("owner_ref_hash") or "").strip()
+        stamp_workspace = str(stamp.get("workspace_ref_hash") or "").strip()
+        if stamp_owner != expected_owner or stamp_workspace != expected_workspace:
+            raise SecXbrlAuthBindingError(
+                "sec_xbrl_auth_binding_evidence_owner_mismatch",
+                "SEC XBRL evidence receipt owner or workspace does not match the caller's principal.",
+                details={"receipt_kind": kind},
+                http_status=403,
+            )
+
+    sidecar_stamp = evidence_owner.get("sidecar") if isinstance(evidence_owner, Mapping) else None
+    classification_stamp = evidence_owner.get("statement_classification") if isinstance(evidence_owner, Mapping) else None
+    companyfacts_stamp = evidence_owner.get("companyfacts") if isinstance(evidence_owner, Mapping) else None
+
+    # Sidecar is the primary anchor — never skip if absent under proxy
+    _check_stamp("sidecar", sidecar_stamp, skip_if_absent=False)
+    # Classification: required stamp under proxy
+    _check_stamp("statement_classification", classification_stamp, skip_if_absent=False)
+    # Companyfacts: skip if absent (may not be staged), but enforce if present
+    _check_stamp("companyfacts", companyfacts_stamp, skip_if_absent=True)
+
+
 def _source_kind(value: str) -> str:
     source_kind = _required_text(value, "source_receipt_kind")
     if source_kind not in SOURCE_RECEIPTS:
