@@ -930,3 +930,80 @@ def test_loader_staged_discovery_rejects_tampered_receipt_payload_hash(tmp_path)
     assert exc_info.value.code == "sec_xbrl_offline_evidence_loader_companyfacts_receipt_hash_mismatch", (
         f"Expected receipt_hash_mismatch (FIX 3), got: {exc_info.value.code}"
     )
+
+
+def test_loader_rejects_staged_companyfacts_wrong_schema_id(tmp_path) -> None:
+    """Stage a valid companyfacts receipt, then corrupt its schema_id on disk to a wrong value.
+
+    Loader staged-discovery must raise SecXbrlOfflineEvidenceLoaderError with code
+    sec_xbrl_offline_evidence_loader_companyfacts_receipt_schema_mismatch (fail-closed),
+    and must NOT admit the receipt.  The schema_id guard runs BEFORE receipt-hash and
+    payload-hash checks so a wrong-schema receipt is rejected immediately.
+    """
+    import hashlib as _hashlib
+    import json as _json
+    from app.services.layer3_sec_xbrl_offline_companyfacts_stage import (
+        stage_sec_xbrl_companyfacts,
+        COMPANYFACTS_RECEIPT_DIR,
+    )
+    from app.services.layer3_sec_xbrl_offline_evidence_loader import (
+        SecXbrlOfflineEvidenceLoaderError,
+        _read_companyfacts,
+    )
+
+    storage = tmp_path / "storage"
+
+    # Write a connector receipt so stage can bind cik_hash.
+    cik = "320193"
+    raw_cik = cik.lstrip("0") or "0"
+    cik_hash_val = _hashlib.sha256(raw_cik.encode("utf-8")).hexdigest()
+    connector_receipt_hash = "b" * 64
+    connector_receipt = {
+        "schema_id": "layer3.sec_edgar_real_filing_acquisition_connector.v1",
+        "connector_receipt_id": f"sec-edgar-real-filing-connector-{'b' * 24}-{'b' * 24}",
+        "connector_receipt_hash": connector_receipt_hash,
+        "corpus_manifest": {
+            "example_records": [{"example_id": "ex-1", "cik_hash": cik_hash_val, "form_type": "10-K"}]
+        },
+    }
+    conn_dir = storage / "layer3-sec-edgar-real-filing-acquisition-connector" / "receipts"
+    conn_dir.mkdir(parents=True, exist_ok=True)
+    (conn_dir / f"{connector_receipt['connector_receipt_id']}.json").write_text(
+        _json.dumps(connector_receipt, sort_keys=True, indent=2), encoding="utf-8"
+    )
+
+    # Stage a valid companyfacts.
+    facts = {"us-gaap": {"Assets": {"units": {"USD": [{"val": 500, "end": "2023-12-31", "fp": "FY", "fy": 2023}]}}}}
+    content = _json.dumps(facts, sort_keys=True, indent=2).encode("utf-8")
+    content_sha256 = _hashlib.sha256(content).hexdigest()
+
+    result = stage_sec_xbrl_companyfacts(
+        companyfacts=facts,
+        cik=cik,
+        connector_receipt_hash=connector_receipt_hash,
+        content_sha256=content_sha256,
+        storage_dir=storage,
+    )
+    receipt_id = result["companyfacts_receipt_id"]
+
+    # Locate the staged receipt file on disk and corrupt its schema_id.
+    receipts_dir = storage / COMPANYFACTS_RECEIPT_DIR / "receipts"
+    receipt_path = receipts_dir / f"{receipt_id}.json"
+    assert receipt_path.exists(), "Staged receipt must have been written"
+
+    staged = _json.loads(receipt_path.read_text(encoding="utf-8"))
+    staged["schema_id"] = "layer3.some_other.v1"
+    receipt_path.write_text(_json.dumps(staged, sort_keys=True, indent=2), encoding="utf-8")
+
+    # Loader staged-discovery must reject immediately with schema_mismatch, not admit it.
+    with pytest.raises(SecXbrlOfflineEvidenceLoaderError) as exc_info:
+        _read_companyfacts(
+            None,
+            storage=storage,
+            connector_receipt_hash=connector_receipt_hash,
+            cik_hash=cik_hash_val,
+        )
+
+    assert exc_info.value.code == "sec_xbrl_offline_evidence_loader_companyfacts_receipt_schema_mismatch", (
+        f"Expected schema_mismatch, got: {exc_info.value.code}"
+    )

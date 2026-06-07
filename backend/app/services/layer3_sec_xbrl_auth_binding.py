@@ -490,19 +490,11 @@ def record_sec_xbrl_evidence_ownership_marker(
     marker_dir = Path(storage_dir).resolve() / OWNERSHIP_MARKER_DIR / workspace
     marker_path = marker_dir / f"sidecar-{sidecar_hash}.json"
     if marker_path.exists():
-        # Idempotent: check existing marker has same owner
-        try:
-            existing = json.loads(marker_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return  # cannot read → skip (marker may be partially written)
-        if isinstance(existing, dict) and existing.get("owner_ref_hash") == owner:
-            return  # same owner → idempotent no-op
-        # Different owner for same workspace/sidecar → conflict (should not happen in practice)
-        raise SecXbrlAuthBindingError(
-            "sec_xbrl_auth_binding_evidence_ownership_marker_owner_conflict",
-            "SEC XBRL evidence ownership marker already exists with a different owner_ref_hash.",
-            http_status=409,
-        )
+        # Workspace-level idempotency: any existing marker for this (workspace, sidecar) pair
+        # is a no-op success regardless of the stored owner_ref_hash.  The first staging actor's
+        # owner is kept as audit metadata; a second teammate re-staging the same content in the
+        # same workspace must NOT produce a conflict.
+        return
     marker = {
         "schema_id": OWNERSHIP_MARKER_SCHEMA_ID,
         "owner_ref_hash": owner,
@@ -526,19 +518,20 @@ def require_sec_xbrl_evidence_ownership_marker(
     auth_owner_mode: str,
     sidecar_receipt_hash: str,
 ) -> None:
-    """Enforce per-principal ownership marker check at the open route.
+    """Enforce workspace-level ownership marker check at the open route.
 
     Looks for {storage_dir}/layer3-sec-xbrl-evidence-ownership/
                {caller_workspace_ref_hash}/sidecar-{sidecar_receipt_hash}.json
 
-    Decision matrix:
-      - Marker exists and owner_ref_hash matches caller → OK
+    Decision matrix (WORKSPACE-LEVEL — owner_ref_hash is audit metadata only):
+      - Marker exists for caller's workspace + sidecar → OK (intra-workspace sharing allowed)
       - No marker present:
-          auth_owner_mode contains "none" → OK (legacy / constant-workspace path)
+          auth_owner_mode == AUTH_OWNER_MODE_NONE → OK (legacy / constant-workspace path)
           else (proxy) → raise 403 marker_missing
-      - Marker exists but owner_ref_hash mismatches → raise 403 owner_mismatch
+      - owner_ref_hash stored in marker is NOT compared to caller (teammates share workspace)
 
-    Path-traversal guard: sidecar_receipt_hash validated as 64-hex before path construction.
+    Path-traversal guard: sidecar_receipt_hash and workspace_ref_hash validated as 64-hex
+    before path construction.
     """
     sidecar_hash = str(sidecar_receipt_hash or "").strip()
     if not HASH_RE.fullmatch(sidecar_hash):
@@ -547,7 +540,6 @@ def require_sec_xbrl_evidence_ownership_marker(
             "SEC XBRL evidence ownership marker check requires sidecar_receipt_hash as a 64-character hex hash.",
             http_status=400,
         )
-    caller_owner = str(policy_decision.get("actor_ref_hash") or "").strip()
     caller_workspace = str(policy_decision.get("workspace_ref_hash") or "").strip()
     # L2: Exact token match — prevents a proxy-mode token containing the substring "none"
     # from wrongly enabling the allow-without-marker path.
@@ -575,21 +567,42 @@ def require_sec_xbrl_evidence_ownership_marker(
             "SEC XBRL evidence ownership marker is missing; the caller did not stage this evidence.",
             http_status=403,
         )
+
+    # Marker file is present — validate it is a regular file, readable, and has correct fields.
+    # Fail-closed under proxy; allow (legacy / no-valid-marker == no marker) under none.
+    def _marker_invalid() -> None:
+        """Raise 403 under proxy; return silently under none (treat as absent)."""
+        if not is_none_mode:
+            raise SecXbrlAuthBindingError(
+                "sec_xbrl_auth_binding_evidence_ownership_marker_invalid",
+                "SEC XBRL evidence ownership marker is present but invalid (not a regular file, "
+                "unreadable, or field mismatch); cannot authorize.",
+                http_status=403,
+            )
+
+    if not marker_path.is_file():
+        # e.g. a directory named sidecar-<hash>.json
+        _marker_invalid()
+        return  # none-mode: treat malformed-as-absent → allow
+
     try:
-        marker = json.loads(marker_path.read_text(encoding="utf-8"))
+        raw = marker_path.read_text(encoding="utf-8")
+        parsed: dict[str, Any] = json.loads(raw)
     except (OSError, json.JSONDecodeError):
-        raise SecXbrlAuthBindingError(
-            "sec_xbrl_auth_binding_evidence_ownership_marker_unreadable",
-            "SEC XBRL evidence ownership marker could not be read.",
-            http_status=409,
-        )
-    marker_owner = str(marker.get("owner_ref_hash") or "").strip() if isinstance(marker, dict) else ""
-    if marker_owner != caller_owner:
-        raise SecXbrlAuthBindingError(
-            "sec_xbrl_auth_binding_evidence_owner_mismatch",
-            "SEC XBRL evidence ownership marker owner does not match the caller's principal.",
-            http_status=403,
-        )
+        _marker_invalid()
+        return  # none-mode: treat unreadable/non-JSON as absent → allow
+
+    # Field validation: schema_id, workspace_ref_hash, sidecar_receipt_hash must all match.
+    # owner_ref_hash is NOT compared (workspace-level sharing: teammates share marker).
+    if (
+        parsed.get("schema_id") != OWNERSHIP_MARKER_SCHEMA_ID
+        or parsed.get("workspace_ref_hash") != caller_workspace
+        or parsed.get("sidecar_receipt_hash") != sidecar_hash
+    ):
+        _marker_invalid()
+        return  # none-mode: treat field-mismatch as absent → allow
+
+    # All checks passed — authorized.
 
 
 def _source_kind(value: str) -> str:

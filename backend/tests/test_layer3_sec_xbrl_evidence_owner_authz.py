@@ -508,6 +508,129 @@ def test_p1_same_content_two_workspaces_both_open(tmp_path, monkeypatch) -> None
 
 
 # ---------------------------------------------------------------------------
+# Test P2: proxy same-workspace different actor — both open + re-stage is no-op
+# ---------------------------------------------------------------------------
+
+def test_proxy_same_workspace_different_actor_both_open(tmp_path, monkeypatch) -> None:
+    """P2 (codex #2252): two actors in the SAME workspace staging the same filing must not conflict.
+
+    Actor A1 (workspace W, owner_A1) stages content X → marker W/X written.
+    Actor A2 (workspace W, owner_A2, same workspace headers / different identity header)
+      - opens X → 200 (workspace match; intra-workspace sharing)
+      - re-stages X (record_ call) → no-op success (no 409 owner_conflict)
+
+    Cross-workspace isolation (W1 vs W2) remains enforced by Test 3.
+    """
+    storage_dir = tmp_path / "storage-p2-intra-ws"
+
+    # Both actors share the same workspace group header but differ in identity header.
+    # Use W1_GROUP for both so the server derives the same workspace_ref_hash.
+    _A1_USER = "operator-alice@workspace-one.example"
+    _A2_USER = "operator-carol@workspace-one.example"  # same org, different person
+    _SHARED_GROUP = _W1_GROUP
+
+    def _a1_headers() -> dict[str, str]:
+        return {_PROXY_IDENTITY_HEADER: _A1_USER, _PROXY_GROUPS_HEADER: _SHARED_GROUP}
+
+    def _a2_headers() -> dict[str, str]:
+        return {_PROXY_IDENTITY_HEADER: _A2_USER, _PROXY_GROUPS_HEADER: _SHARED_GROUP}
+
+    # Patch proxy settings
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    monkeypatch.setattr(settings, "layer3_external_local_export_dir", str(tmp_path / "ext"))
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+    monkeypatch.setattr(settings, "proxy_identity_header", _PROXY_IDENTITY_HEADER)
+    monkeypatch.setattr(settings, "proxy_groups_header", _PROXY_GROUPS_HEADER)
+    bootstrap_storage_tree(storage_dir)
+
+    refs = _stage_storage(storage_dir)
+    sidecar_hash = refs["sidecar_receipt_hash"]
+
+    # Derive owner hashes for both actors — workspace_ref_hash must be the same
+    a1_owner = _derive_owner(_a1_headers())
+    a2_owner = _derive_owner(_a2_headers())
+    assert a1_owner["workspace_ref_hash"] == a2_owner["workspace_ref_hash"], (
+        "Both actors must share the same workspace_ref_hash for this test to be valid"
+    )
+    assert a1_owner["owner_ref_hash"] != a2_owner["owner_ref_hash"], (
+        "Actors must have distinct owner_ref_hash values for this test to be meaningful"
+    )
+
+    # A1 stages content → writes marker W/X
+    _write_marker(storage_dir, sidecar_receipt_hash=sidecar_hash, **a1_owner)
+
+    # A2 re-stages same content in same workspace → must be a no-op (no 409)
+    auth_binding.record_sec_xbrl_evidence_ownership_marker(
+        str(storage_dir),
+        owner_ref_hash=a2_owner["owner_ref_hash"],
+        workspace_ref_hash=a2_owner["workspace_ref_hash"],
+        sidecar_receipt_hash=sidecar_hash,
+    )
+
+    from sqlalchemy import create_engine as _ce
+    from sqlalchemy.orm import sessionmaker as _sm
+
+    def _fresh_client_for(actor_headers: dict[str, str]):
+        engine = _ce(
+            "sqlite:///:memory:",
+            future=True,
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+        Base.metadata.create_all(engine)
+        Session = _sm(bind=engine, autocommit=False, autoflush=False, future=True)
+
+        def _override():
+            db = Session()
+            try:
+                yield db
+            finally:
+                db.close()
+
+        app.dependency_overrides[get_db] = _override
+        return TestClient(app, raise_server_exceptions=True)
+
+    try:
+        # A2 opens X → must return 200 (workspace match, owner not compared)
+        client_a2 = _fresh_client_for(_a2_headers())
+        resp_a2 = client_a2.post(
+            OPEN_FROM_STAGED,
+            headers=_a2_headers(),
+            json={
+                "client_request_id": f"test-p2-a2-open-{uuid.uuid4().hex[:12]}",
+                "expected_sidecar_receipt_hash": refs["sidecar_receipt_hash"],
+                "expected_statement_classification_receipt_hash": refs["classification_hash"],
+                "period_limit": 3,
+            },
+        )
+        assert resp_a2.status_code == 200, (
+            f"A2 (same workspace, different actor) should open successfully: {resp_a2.text}"
+        )
+        assert resp_a2.json()["status"] == "review_ready"
+        assert resp_a2.json()["production_readiness_claimed"] is False
+
+        # A1 can also open (baseline: original staging actor still works)
+        client_a1 = _fresh_client_for(_a1_headers())
+        resp_a1 = client_a1.post(
+            OPEN_FROM_STAGED,
+            headers=_a1_headers(),
+            json={
+                "client_request_id": f"test-p2-a1-open-{uuid.uuid4().hex[:12]}",
+                "expected_sidecar_receipt_hash": refs["sidecar_receipt_hash"],
+                "expected_statement_classification_receipt_hash": refs["classification_hash"],
+                "period_limit": 3,
+            },
+        )
+        assert resp_a1.status_code == 200, (
+            f"A1 (original staging actor) should still open successfully: {resp_a1.text}"
+        )
+        assert resp_a1.json()["status"] == "review_ready"
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+# ---------------------------------------------------------------------------
 # Test 5: legacy no marker under none → 200
 # ---------------------------------------------------------------------------
 
@@ -622,26 +745,38 @@ def test_ownership_marker_idempotent(tmp_path) -> None:
     )
 
 
-def test_ownership_marker_conflict_different_owner(tmp_path) -> None:
-    """Same workspace/sidecar but different owner_ref_hash → conflict error."""
-    storage = tmp_path / "storage-conflict"
+def test_ownership_marker_idempotent_different_actor_same_workspace(tmp_path) -> None:
+    """Workspace-level idempotency: second write with DIFFERENT owner is a no-op (no conflict).
+
+    Intra-workspace teammates (actor A1 then actor A2 re-staging the same content) must
+    not produce a 409.  The first-staging actor's owner_ref_hash is preserved as audit
+    metadata; subsequent calls for the same (workspace, sidecar) are silent no-ops.
+    """
+    storage = tmp_path / "storage-idem-diff-actor"
     storage.mkdir(parents=True, exist_ok=True)
     workspace = _hash("b")
     sidecar = _hash("c")
-    owner_a = _hash("a")
-    owner_d = _hash("d")
+    owner_a1 = _hash("a")
+    owner_a2 = _hash("d")
 
     auth_binding.record_sec_xbrl_evidence_ownership_marker(
-        str(storage), owner_ref_hash=owner_a, workspace_ref_hash=workspace,
+        str(storage), owner_ref_hash=owner_a1, workspace_ref_hash=workspace,
         sidecar_receipt_hash=sidecar,
     )
-    with pytest.raises(auth_binding.SecXbrlAuthBindingError) as exc_info:
-        auth_binding.record_sec_xbrl_evidence_ownership_marker(
-            str(storage), owner_ref_hash=owner_d, workspace_ref_hash=workspace,
-            sidecar_receipt_hash=sidecar,
-        )
-    assert exc_info.value.http_status == 409
-    assert "owner_conflict" in exc_info.value.code
+    # A2 re-stages same content in same workspace — must be a no-op, not a 409
+    auth_binding.record_sec_xbrl_evidence_ownership_marker(
+        str(storage), owner_ref_hash=owner_a2, workspace_ref_hash=workspace,
+        sidecar_receipt_hash=sidecar,
+    )
+    # First-actor's owner_ref_hash is preserved as audit metadata
+    marker_path = (
+        storage
+        / auth_binding.OWNERSHIP_MARKER_DIR
+        / workspace
+        / f"sidecar-{sidecar}.json"
+    )
+    marker = json.loads(marker_path.read_text(encoding="utf-8"))
+    assert marker["owner_ref_hash"] == owner_a1, "First-actor owner must be preserved as audit metadata"
 
 
 def test_ownership_marker_skipped_when_hashes_empty(tmp_path) -> None:
@@ -776,8 +911,8 @@ def test_require_marker_proxy_no_marker_raises(tmp_path) -> None:
     assert "marker_missing" in exc_info.value.code
 
 
-def test_require_marker_matching_owner_passes(tmp_path) -> None:
-    """Marker exists and owner_ref_hash matches → no error."""
+def test_require_marker_workspace_match_passes(tmp_path) -> None:
+    """Marker exists for caller's workspace+sidecar → no error (workspace-level check)."""
     storage = tmp_path / "storage-req-match"
     storage.mkdir(parents=True, exist_ok=True)
     owner = _hash("a")
@@ -788,6 +923,7 @@ def test_require_marker_matching_owner_passes(tmp_path) -> None:
         str(storage), owner_ref_hash=owner, workspace_ref_hash=workspace,
         sidecar_receipt_hash=sidecar,
     )
+    # Same workspace, same sidecar — authorized regardless of actor_ref_hash
     policy = {
         "actor_ref_hash": owner,
         "workspace_ref_hash": workspace,
@@ -801,35 +937,36 @@ def test_require_marker_matching_owner_passes(tmp_path) -> None:
     )
 
 
-def test_require_marker_mismatched_owner_raises(tmp_path) -> None:
-    """Marker exists but owner_ref_hash != caller → 403 owner_mismatch."""
-    storage = tmp_path / "storage-req-mismatch"
+def test_require_marker_same_workspace_different_actor_passes(tmp_path) -> None:
+    """Workspace-level open: marker written by actor A1, opened by actor A2 (same workspace) → no error.
+
+    This is the intra-workspace sharing case: the tenant boundary is the workspace, not the actor.
+    Cross-workspace isolation is still enforced (different workspace_ref_hash → no marker found).
+    """
+    storage = tmp_path / "storage-req-intra-ws"
     storage.mkdir(parents=True, exist_ok=True)
-    owner_a = _hash("a")
-    owner_d = _hash("d")
+    owner_a1 = _hash("a")
+    owner_a2 = _hash("d")
     workspace = _hash("b")
     sidecar = _hash("c")
 
-    # Write marker for owner_a
+    # A1 stages content → writes marker under workspace/sidecar
     auth_binding.record_sec_xbrl_evidence_ownership_marker(
-        str(storage), owner_ref_hash=owner_a, workspace_ref_hash=workspace,
+        str(storage), owner_ref_hash=owner_a1, workspace_ref_hash=workspace,
         sidecar_receipt_hash=sidecar,
     )
-    # Require as owner_d (same workspace, same sidecar, different owner)
-    policy = {
-        "actor_ref_hash": owner_d,
+    # A2 (different actor, SAME workspace) opens → must succeed (no owner comparison)
+    policy_a2 = {
+        "actor_ref_hash": owner_a2,
         "workspace_ref_hash": workspace,
         "auth_owner_mode": "AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
     }
-    with pytest.raises(auth_binding.SecXbrlAuthBindingError) as exc_info:
-        auth_binding.require_sec_xbrl_evidence_ownership_marker(
-            str(storage),
-            policy_decision=policy,
-            auth_owner_mode="AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
-            sidecar_receipt_hash=sidecar,
-        )
-    assert exc_info.value.http_status == 403
-    assert "evidence_owner_mismatch" in exc_info.value.code
+    auth_binding.require_sec_xbrl_evidence_ownership_marker(
+        str(storage),
+        policy_decision=policy_a2,
+        auth_owner_mode="AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
+        sidecar_receipt_hash=sidecar,
+    )
 
 
 def test_require_marker_invalid_sidecar_hash_raises(tmp_path) -> None:
@@ -1112,3 +1249,140 @@ def test_m2_marker_written_by_corpus_validation_enables_open_from_staged(tmp_pat
         assert body["production_readiness_claimed"] is False
     finally:
         app.dependency_overrides.pop(get_db, None)
+
+
+# ---------------------------------------------------------------------------
+# P2 codex #2253: marker read+parse+validate (fail-closed on garbage/directory/mismatch)
+# ---------------------------------------------------------------------------
+
+def test_require_marker_malformed_file_fails_closed_under_proxy(tmp_path) -> None:
+    """P2 #2253: garbage/truncated (non-JSON) marker file under proxy → 403 invalid."""
+    from app.services import layer3_sec_xbrl_auth_binding as ab
+
+    storage = tmp_path / "storage-malformed-proxy"
+    storage.mkdir(parents=True, exist_ok=True)
+    workspace = _hash("b")
+    sidecar = _hash("c")
+
+    # Write a garbage (non-JSON) file at the expected marker path
+    marker_dir = storage / ab.OWNERSHIP_MARKER_DIR / workspace
+    marker_dir.mkdir(parents=True, exist_ok=True)
+    (marker_dir / f"sidecar-{sidecar}.json").write_text("not-json{{garbage", encoding="utf-8")
+
+    policy = {
+        "actor_ref_hash": _hash("a"),
+        "workspace_ref_hash": workspace,
+        "auth_owner_mode": "AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
+    }
+    with pytest.raises(ab.SecXbrlAuthBindingError) as exc_info:
+        ab.require_sec_xbrl_evidence_ownership_marker(
+            str(storage),
+            policy_decision=policy,
+            auth_owner_mode="AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
+            sidecar_receipt_hash=sidecar,
+        )
+    assert exc_info.value.http_status == 403
+    assert "marker_invalid" in exc_info.value.code
+
+
+def test_require_marker_directory_at_path_fails_closed_under_proxy(tmp_path) -> None:
+    """P2 #2253: a DIRECTORY at the marker path under proxy → 403 invalid."""
+    from app.services import layer3_sec_xbrl_auth_binding as ab
+
+    storage = tmp_path / "storage-dir-proxy"
+    storage.mkdir(parents=True, exist_ok=True)
+    workspace = _hash("b")
+    sidecar = _hash("c")
+
+    # Create a DIRECTORY at the expected marker path (not a regular file)
+    marker_dir = storage / ab.OWNERSHIP_MARKER_DIR / workspace
+    marker_dir.mkdir(parents=True, exist_ok=True)
+    dir_at_marker_path = marker_dir / f"sidecar-{sidecar}.json"
+    dir_at_marker_path.mkdir(parents=True, exist_ok=True)
+
+    policy = {
+        "actor_ref_hash": _hash("a"),
+        "workspace_ref_hash": workspace,
+        "auth_owner_mode": "AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
+    }
+    with pytest.raises(ab.SecXbrlAuthBindingError) as exc_info:
+        ab.require_sec_xbrl_evidence_ownership_marker(
+            str(storage),
+            policy_decision=policy,
+            auth_owner_mode="AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
+            sidecar_receipt_hash=sidecar,
+        )
+    assert exc_info.value.http_status == 403
+    assert "marker_invalid" in exc_info.value.code
+
+
+def test_require_marker_wrong_fields_fails_closed_under_proxy(tmp_path) -> None:
+    """P2 #2253: parseable marker whose sidecar_receipt_hash doesn't match → proxy → 403 invalid."""
+    from app.services import layer3_sec_xbrl_auth_binding as ab
+
+    storage = tmp_path / "storage-wrongfields-proxy"
+    storage.mkdir(parents=True, exist_ok=True)
+    workspace = _hash("b")
+    sidecar = _hash("c")
+    wrong_sidecar = _hash("d")  # different sidecar hash in the file content
+
+    # Write a valid-looking marker but with mismatched sidecar_receipt_hash
+    marker_dir = storage / ab.OWNERSHIP_MARKER_DIR / workspace
+    marker_dir.mkdir(parents=True, exist_ok=True)
+    bad_marker = {
+        "schema_id": ab.OWNERSHIP_MARKER_SCHEMA_ID,
+        "owner_ref_hash": _hash("a"),
+        "workspace_ref_hash": workspace,
+        "evidence_kind": "sidecar",
+        "sidecar_receipt_hash": wrong_sidecar,  # wrong — does not match what we request
+    }
+    (marker_dir / f"sidecar-{sidecar}.json").write_text(
+        json.dumps(bad_marker), encoding="utf-8"
+    )
+
+    policy = {
+        "actor_ref_hash": _hash("a"),
+        "workspace_ref_hash": workspace,
+        "auth_owner_mode": "AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
+    }
+    with pytest.raises(ab.SecXbrlAuthBindingError) as exc_info:
+        ab.require_sec_xbrl_evidence_ownership_marker(
+            str(storage),
+            policy_decision=policy,
+            auth_owner_mode="AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
+            sidecar_receipt_hash=sidecar,
+        )
+    assert exc_info.value.http_status == 403
+    assert "marker_invalid" in exc_info.value.code
+
+
+def test_require_marker_malformed_under_none_allows(tmp_path) -> None:
+    """P2 #2253: malformed marker + none-mode → allowed (legacy/backward-compat).
+
+    Under none-mode, an invalid marker (non-JSON, directory, field-mismatch) is treated
+    the same as an absent marker: the default flow/legacy path is not broken.
+    """
+    from app.services import layer3_sec_xbrl_auth_binding as ab
+
+    storage = tmp_path / "storage-malformed-none"
+    storage.mkdir(parents=True, exist_ok=True)
+    workspace = _hash("b")
+    sidecar = _hash("c")
+
+    # Write garbage at the marker path
+    marker_dir = storage / ab.OWNERSHIP_MARKER_DIR / workspace
+    marker_dir.mkdir(parents=True, exist_ok=True)
+    (marker_dir / f"sidecar-{sidecar}.json").write_text("{{not-json-garbage", encoding="utf-8")
+
+    policy = {
+        "actor_ref_hash": _hash("a"),
+        "workspace_ref_hash": workspace,
+        "auth_owner_mode": ab.AUTH_OWNER_MODE_NONE,
+    }
+    # Must NOT raise — none-mode treats malformed-as-absent → allow
+    ab.require_sec_xbrl_evidence_ownership_marker(
+        str(storage),
+        policy_decision=policy,
+        auth_owner_mode=ab.AUTH_OWNER_MODE_NONE,
+        sidecar_receipt_hash=sidecar,
+    )
