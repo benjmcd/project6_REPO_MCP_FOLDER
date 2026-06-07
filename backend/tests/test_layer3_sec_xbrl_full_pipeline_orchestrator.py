@@ -773,7 +773,7 @@ def test_prepare_plan_raises_on_invalid_cik() -> None:
 
 def test_prepare_plan_raises_on_overlong_cik_before_corpus_validation() -> None:
     """A digit-only but >10-digit CIK is rejected (400) BEFORE corpus-validation runs,
-    so no live acquisition/staging side effects are triggered (codex P2)."""
+    so no live acquisition/staging side effects are triggered (review-hardening)."""
     # corpus-validation is the real module here; it must NOT be reached. The 1-10 digit
     # bound check precedes it in the function body, so reaching it would mean the bound
     # check failed to fire.
@@ -795,7 +795,7 @@ def test_prepare_plan_raises_on_overlong_cik_before_corpus_validation() -> None:
 def test_full_pipeline_multi_ticker_selects_matching_cik(tmp_path, monkeypatch) -> None:
     """A multi-ticker matrix returns a record per company; selection must filter by the
     supplied CIK BEFORE the 10-K preference, so another company's 10-K appearing first
-    does not cause a spurious cik_hash mismatch (codex P2)."""
+    does not cause a spurious cik_hash mismatch (review-hardening)."""
     client, storage_dir = _make_test_client(tmp_path, monkeypatch)
 
     apple_cik = "320193"
@@ -1134,7 +1134,7 @@ def test_full_pipeline_companyfacts_failure_propagates(tmp_path, monkeypatch) ->
 # ---------------------------------------------------------------------------
 
 def test_as_bool_strict_parse() -> None:
-    """require_companyfacts_oracle string forms must parse strictly (codex P3): a bare
+    """require_companyfacts_oracle string forms must parse strictly (review-hardening): a bare
     bool passes through; "false"/"0"/""/"no" must NOT read as truthy (plain bool(str) would)."""
     assert orchestrator._as_bool(True) is True
     assert orchestrator._as_bool(False) is False
@@ -1146,7 +1146,7 @@ def test_as_bool_strict_parse() -> None:
 
 def test_full_pipeline_invalid_period_limit_before_side_effects() -> None:
     """period_limit out of 1-10, or non-numeric, raises a governed 400 BEFORE corpus
-    validation runs (real module not reached) — fail-fast, no live side effects (codex P3)."""
+    validation runs (real module not reached) — fail-fast, no live side effects (review-hardening)."""
     for bad in (0, 11, "abc"):
         with pytest.raises(orchestrator.SecXbrlFullPipelineOrchestratorError) as exc_info:
             orchestrator.prepare_full_pipeline_open_plan(
@@ -1166,7 +1166,7 @@ def test_full_pipeline_invalid_period_limit_before_side_effects() -> None:
 
 def test_full_pipeline_lowercase_ticker_accepted(tmp_path, monkeypatch) -> None:
     """A lowercase ticker like 'aapl' must be normalized (strip().upper()) by the pairing
-    pre-check — matching the connector — not falsely rejected (codex P2)."""
+    pre-check — matching the connector — not falsely rejected (review-hardening)."""
     client, storage_dir = _make_test_client(tmp_path, monkeypatch)
     cik = "320193"
     connector_hash = _hash("a")
@@ -1300,7 +1300,7 @@ def test_full_pipeline_backstop_allows_hash_substring(tmp_path, monkeypatch) -> 
 def test_full_pipeline_backstop_ignores_cik_in_operator_request_id(tmp_path, monkeypatch) -> None:
     """An operator-supplied client_request_id that equals the CIK (echoed in the envelope
     request_id) must NOT trip the backstop — it scans only the orchestrator's own additions,
-    not the operator-echoed envelope (codex P2: avoid post-commit false 409)."""
+    not the operator-echoed envelope (review-hardening: avoid post-commit false 409)."""
     client, _ = _make_test_client(tmp_path, monkeypatch)
     _stub_valid_corpus_and_auth(monkeypatch)
     monkeypatch.setattr(
@@ -1322,7 +1322,7 @@ def test_full_pipeline_backstop_ignores_cik_in_operator_request_id(tmp_path, mon
 
 def test_full_pipeline_leaf_equals_raw_cik_helper() -> None:
     """The backstop primitive matches leaf VALUES (string and numeric), excludes bool, and
-    does NOT match an incidental substring (codex P2: numeric-leaf leak)."""
+    does NOT match an incidental substring (review-hardening: numeric-leaf leak)."""
     from app.api.layer3 import _full_pipeline_leaf_equals_raw_cik as leaf_eq
 
     raw = {"320193"}
@@ -1339,7 +1339,7 @@ def test_full_pipeline_records_ownership_marker_for_caller(tmp_path, monkeypatch
     """The single-call route records the CURRENT caller's workspace ownership marker for the
     selected sidecar — even though corpus-validation here is stubbed (modeling the cached
     replay path that skips the marker write). Guarantees a second workspace can open an
-    already-validated ticker/CIK under AUTH_OWNER=proxy (codex P2)."""
+    already-validated ticker/CIK under AUTH_OWNER=proxy (review-hardening)."""
     from app.core.config import settings
     from app.services import layer3_sec_xbrl_auth_binding as auth_binding_svc
 

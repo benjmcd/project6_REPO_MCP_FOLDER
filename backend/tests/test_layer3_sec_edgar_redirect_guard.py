@@ -106,7 +106,7 @@ class TestSecEdgarRedirectGuard:
 
 
     # ------------------------------------------------------------------
-    # User-Agent must SURVIVE an allowed redirect (codex P2 regression guard)
+    # User-Agent must SURVIVE an allowed redirect (regression guard)
     # ------------------------------------------------------------------
 
     def test_user_agent_survives_allowed_redirect(self) -> None:

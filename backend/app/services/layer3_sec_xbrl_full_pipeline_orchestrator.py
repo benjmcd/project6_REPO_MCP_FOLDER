@@ -212,6 +212,11 @@ def prepare_full_pipeline_open_plan(
         db,
         evidence_owner=evidence_owner,
     )
+    # NOTE on the cached-replay path: this call returns an existing receipt early WITHOUT
+    # re-running sidecar derivation, so it does NOT write the current caller's ownership
+    # marker on a replay. The replayed receipt still carries filing_validation_records with
+    # authority_hashes, so Step 4 below ALWAYS records this caller's marker for the selected
+    # sidecar (idempotent) — covering both the fresh and the cached-replay paths.
 
     # ------------------------------------------------------------------
     # Step 2: select the primary supported filing record
