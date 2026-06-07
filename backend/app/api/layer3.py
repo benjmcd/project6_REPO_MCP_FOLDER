@@ -126,7 +126,13 @@ from app.services import (
     layer3_source_directory_vector_retrieval,
     layer3_source_intake,
     layer3_workbench,
+    layer3_sec_xbrl_offline_evidence_loader,
+    layer3_sec_xbrl_e2e_offline_orchestrator,
+    layer3_sec_xbrl_projection_persistence,
+    layer3_sec_xbrl_statement_packet_persistence,
+    layer3_sec_xbrl_e2e_integration,
 )
+from app.core.config import settings
 from app.services.layer3_preflight_request_contract import PREFLIGHT_MANUAL_CONSTRAINT_FORBIDDEN_FIELDS
 from app.services.layer3_response_contract import base_response
 from app.services.layer3_workbench_error import Layer3WorkbenchError, workbench_error_response
@@ -1171,6 +1177,15 @@ class Layer3SecXbrlOperatorReviewWorkflowOpenRequest(BaseModel):
 
     client_request_id: str = Field(min_length=1)
     sec_xbrl_statement_packet_set_id: str = Field(min_length=1)
+
+
+class Layer3SecXbrlOperatorReviewWorkflowOpenFromStagedEvidenceRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    client_request_id: str = Field(min_length=1)
+    expected_sidecar_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_statement_classification_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    period_limit: int = Field(default=3, ge=1, le=10)
 
 
 class Layer3SecXbrlOperatorReviewWorkflowStatusRequest(BaseModel):
@@ -9362,6 +9377,33 @@ class Layer3SecXbrlOperatorReviewWorkflowOpenResponse(Layer3BaseResponse):
     production_readiness_claimed: bool
 
 
+class Layer3SecXbrlOperatorReviewWorkflowOpenFromStagedEvidenceResponse(Layer3BaseResponse):
+    client_request_id: str
+    sec_xbrl_projection_set_id: str
+    sec_xbrl_statement_packet_set_id: str
+    sec_xbrl_operator_review_workflow_id: str
+    workflow_basis_hash: str | None
+    statement_packet_basis_hash: str | None
+    source_projection_basis_hash: str | None
+    source_report_schema_id: str
+    source_report_hash: str | None
+    authority_refs: dict[str, Any]
+    summary: dict[str, Any]
+    containment: dict[str, Any]
+    controls: dict[str, Any]
+    evidence_bundle_status: str
+    auth_binding_ref: str
+    auth_binding_basis_hash: str
+    auth_binding_route_family: str
+    auth_binding_policy_hash: str
+    auth_binding_role: str
+    auth_binding_required: bool
+    workflow_open_api_route_enabled: bool
+    status_api_route_enabled: bool
+    decision_submit_api_route_enabled: bool
+    production_readiness_claimed: bool
+
+
 class Layer3SecXbrlOperatorReviewWorkflowStatusResponse(Layer3BaseResponse):
     mode: str
     operator_decision: str
@@ -14655,6 +14697,66 @@ def _sec_xbrl_operator_review_workflow_error_response(
     )
 
 
+def _sec_xbrl_staged_evidence_loader_error_response(
+    exc: layer3_sec_xbrl_offline_evidence_loader.SecXbrlOfflineEvidenceLoaderError,
+) -> JSONResponse:
+    http_status = 404 if exc.code.endswith("_missing") else 409
+    return JSONResponse(
+        status_code=http_status,
+        content=workbench_error_response(
+            Layer3WorkbenchError(
+                error_code=exc.code,
+                message=exc.message,
+                status="blocked",
+                http_status=http_status,
+                blocked_fields=[],
+                next_allowed_actions=["inspect_sec_xbrl_offline_evidence_storage"],
+            )
+        ),
+    )
+
+
+def _sec_xbrl_staged_evidence_orchestrator_error_response(
+    exc: layer3_sec_xbrl_e2e_offline_orchestrator.SecXbrlE2EOfflineOrchestratorError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=409,
+        content=workbench_error_response(
+            Layer3WorkbenchError(
+                error_code=exc.code,
+                message=exc.message,
+                status="blocked",
+                http_status=409,
+                blocked_fields=[],
+                next_allowed_actions=["inspect_sec_xbrl_offline_evidence_storage"],
+            )
+        ),
+    )
+
+
+def _sec_xbrl_staged_evidence_persistence_error_response(
+    exc: (
+        layer3_sec_xbrl_projection_persistence.SecXbrlProjectionPersistenceError
+        | layer3_sec_xbrl_statement_packet_persistence.SecXbrlStatementPacketPersistenceError
+        | layer3_sec_xbrl_e2e_integration.SecXbrlE2EIntegrationError
+    ),
+) -> JSONResponse:
+    http_status = getattr(exc, "http_status", 409)
+    return JSONResponse(
+        status_code=http_status,
+        content=workbench_error_response(
+            Layer3WorkbenchError(
+                error_code=exc.code,
+                message=exc.message,
+                status="blocked",
+                http_status=http_status,
+                blocked_fields=[],
+                next_allowed_actions=["inspect_sec_xbrl_offline_evidence_storage"],
+            )
+        ),
+    )
+
+
 def _sec_xbrl_value_reveal_authority_error_response(
     exc: layer3_sec_xbrl_value_reveal_authority.SecXbrlValueRevealAuthorityError,
 ) -> JSONResponse:
@@ -17406,6 +17508,109 @@ def post_sec_xbrl_operator_review_workflow_open(
         return _sec_xbrl_auth_policy_error_response(exc)
     except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
         return _sec_xbrl_operator_review_workflow_error_response(exc)
+
+
+@router.post(
+    "/sec-xbrl/operator-review/workflow/open-from-staged-evidence",
+    response_model=Layer3SecXbrlOperatorReviewWorkflowOpenFromStagedEvidenceResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_xbrl_operator_review_workflow_open_from_staged_evidence(
+    payload: Layer3SecXbrlOperatorReviewWorkflowOpenFromStagedEvidenceRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    extra_fields = sorted(str(field) for field in (payload.model_extra or {}))
+    if extra_fields:
+        return _sec_xbrl_operator_review_workflow_error_response(
+            layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError(
+                "sec_xbrl_operator_review_workflow_open_from_staged_evidence_request_fields_not_admitted",
+                "SEC XBRL operator review staged-evidence open only admits governed request fields.",
+                details={"fields": extra_fields},
+                http_status=400,
+            )
+        )
+    try:
+        route_family = "sec_xbrl_operator_review_workflow_open_write"
+        policy_decision = _sec_xbrl_policy_decision(request, payload, route_family=route_family)
+        # 1) Resolve staged evidence from SERVER storage (never caller path)
+        bundle = layer3_sec_xbrl_offline_evidence_loader.load_sec_xbrl_offline_evidence_bundle(
+            settings.storage_dir,
+            expected_sidecar_receipt_hash=payload.expected_sidecar_receipt_hash,
+            expected_statement_classification_receipt_hash=payload.expected_statement_classification_receipt_hash,
+        )
+        # 2) Compose into open workflow against the REQUEST db, atomic (flush, not commit)
+        result = layer3_sec_xbrl_e2e_offline_orchestrator.open_redacted_operator_review_from_offline_evidence(
+            db,
+            client_request_id=payload.client_request_id,
+            evidence=bundle["evidence"],
+            period_limit=payload.period_limit,
+            single_transaction=True,
+            commit=False,
+        )
+        # 3) Record auth binding on the opened workflow (same kind/family as sibling open route)
+        workflow_binding = _sec_xbrl_record_binding(
+            db,
+            client_request_id=payload.client_request_id,
+            source_receipt_kind="operator_review_workflow",
+            source_receipt_id=result["sec_xbrl_operator_review_workflow_id"],
+            source_receipt_basis_hash=result["workflow_basis_hash"],
+            route_family=route_family,
+            policy_decision=policy_decision,
+            commit=False,
+        )
+        _sec_xbrl_commit_bound_receipts(db)
+        return {
+            **base_response(
+                result["schema_id"],
+                request_id=payload.client_request_id,
+                status=result["status"],
+            ),
+            "client_request_id": result["client_request_id"],
+            "sec_xbrl_projection_set_id": result["sec_xbrl_projection_set_id"],
+            "sec_xbrl_statement_packet_set_id": result["sec_xbrl_statement_packet_set_id"],
+            "sec_xbrl_operator_review_workflow_id": result["sec_xbrl_operator_review_workflow_id"],
+            "workflow_basis_hash": result.get("workflow_basis_hash"),
+            "statement_packet_basis_hash": result.get("statement_packet_basis_hash"),
+            "source_projection_basis_hash": result.get("source_projection_basis_hash"),
+            "source_report_schema_id": result["source_report_schema_id"],
+            "source_report_hash": result.get("source_report_hash"),
+            "authority_refs": result["authority_refs"],
+            "summary": result["summary"],
+            "containment": result["containment"],
+            "controls": result["controls"],
+            "evidence_bundle_status": bundle["status"],
+            **_sec_xbrl_auth_binding_projection(workflow_binding),
+            "workflow_open_api_route_enabled": True,
+            "status_api_route_enabled": True,
+            "decision_submit_api_route_enabled": True,
+            "production_readiness_claimed": False,
+        }
+    except (
+        layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
+        layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,
+    ) as exc:
+        db.rollback()
+        return _sec_xbrl_auth_policy_error_response(exc)
+    except layer3_sec_xbrl_offline_evidence_loader.SecXbrlOfflineEvidenceLoaderError as exc:
+        db.rollback()
+        return _sec_xbrl_staged_evidence_loader_error_response(exc)
+    except layer3_sec_xbrl_e2e_offline_orchestrator.SecXbrlE2EOfflineOrchestratorError as exc:
+        db.rollback()
+        return _sec_xbrl_staged_evidence_orchestrator_error_response(exc)
+    except (
+        layer3_sec_xbrl_projection_persistence.SecXbrlProjectionPersistenceError,
+        layer3_sec_xbrl_statement_packet_persistence.SecXbrlStatementPacketPersistenceError,
+        layer3_sec_xbrl_e2e_integration.SecXbrlE2EIntegrationError,
+    ) as exc:
+        db.rollback()
+        return _sec_xbrl_staged_evidence_persistence_error_response(exc)
+    except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
+        db.rollback()
+        return _sec_xbrl_operator_review_workflow_error_response(exc)
+    except Exception:
+        db.rollback()
+        raise
 
 
 @router.post(
