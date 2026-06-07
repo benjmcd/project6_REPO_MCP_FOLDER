@@ -453,6 +453,23 @@ def _read_companyfacts(
         except SecXbrlCompanyfactsStageError as exc:
             raise SecXbrlOfflineEvidenceLoaderError(exc.code, exc.message) from exc
 
+        # Integrity check: verify raw payload hash against the staged receipt.
+        # The stage writes companyfacts_payload_hash = stable_hash(dict(companyfacts)),
+        # so re-reading the raw store must produce the same hash.
+        recorded = str(staged_receipt.get("companyfacts_payload_hash") or "").strip()
+        if not recorded:
+            raise SecXbrlOfflineEvidenceLoaderError(
+                "sec_xbrl_offline_evidence_loader_companyfacts_payload_hash_missing",
+                "Staged CompanyFacts receipt is missing companyfacts_payload_hash; integrity cannot be verified and is not admitted.",
+            )
+        actual = stable_hash(dict(raw_payload))
+        if actual != recorded:
+            raise SecXbrlOfflineEvidenceLoaderError(
+                "sec_xbrl_offline_evidence_loader_companyfacts_payload_hash_mismatch",
+                "Staged CompanyFacts raw payload does not match its receipt "
+                "companyfacts_payload_hash; the retained store may be corrupted or tampered.",
+            )
+
         facts = raw_payload.get("facts") if isinstance(raw_payload.get("facts"), Mapping) else raw_payload
         if not isinstance(facts, Mapping):
             raise SecXbrlOfflineEvidenceLoaderError(

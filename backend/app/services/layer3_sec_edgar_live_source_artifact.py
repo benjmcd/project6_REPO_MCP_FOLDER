@@ -1410,13 +1410,42 @@ def _write_companyfacts_receipt(receipt: Mapping[str, Any]) -> None:
 def _write_companyfacts_artifact(receipt_id: str, content: bytes, content_sha256: str) -> None:
     target = _companyfacts_artifact_path(receipt_id)
     if target.exists():
+        try:
+            existing = target.read_bytes()
+        except OSError as exc:
+            _blocked(
+                "sec_edgar_companyfacts_live_artifact_retained_artifact_unreadable",
+                "SEC EDGAR retained CompanyFacts artifact could not be read for hash verification.",
+                http_status=409,
+                blocked_fields=[exc.__class__.__name__],
+            )
+        if hashlib.sha256(existing).hexdigest() != content_sha256:
+            _blocked(
+                "sec_edgar_companyfacts_live_artifact_retained_artifact_mismatch",
+                "Retained CompanyFacts artifact bytes do not match the expected content hash.",
+                http_status=409,
+            )
         return
     target.parent.mkdir(parents=True, exist_ok=True)
     try:
         with target.open("xb") as handle:
             handle.write(content)
     except FileExistsError:
-        return
+        try:
+            existing = target.read_bytes()
+        except OSError as exc:
+            _blocked(
+                "sec_edgar_companyfacts_live_artifact_retained_artifact_unreadable",
+                "SEC EDGAR retained CompanyFacts artifact could not be read for hash verification.",
+                http_status=409,
+                blocked_fields=[exc.__class__.__name__],
+            )
+        if hashlib.sha256(existing).hexdigest() != content_sha256:
+            _blocked(
+                "sec_edgar_companyfacts_live_artifact_retained_artifact_mismatch",
+                "Retained CompanyFacts artifact bytes do not match the expected content hash.",
+                http_status=409,
+            )
     except OSError as exc:
         _blocked(
             "sec_edgar_companyfacts_live_artifact_write_failed",

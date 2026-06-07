@@ -1208,6 +1208,7 @@ class Layer3SecXbrlOperatorReviewWorkflowOpenFromStagedEvidenceRequest(BaseModel
     period_limit: int = Field(default=3, ge=1, le=10)
     connector_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
     cik_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    require_companyfacts_oracle: bool = False
 
 
 class Layer3SecXbrlOperatorReviewWorkflowStatusRequest(BaseModel):
@@ -17613,6 +17614,14 @@ def post_sec_xbrl_operator_review_workflow_open_from_staged_evidence(
             connector_receipt_hash=payload.connector_receipt_hash,
             cik_hash=payload.cik_hash,
         )
+        # Oracle-required gate: if the operator opted-in, fail closed when no oracle was supplied.
+        if payload.require_companyfacts_oracle and bundle["status"] != "offline_evidence_bundle_ready":
+            return _sec_xbrl_staged_evidence_loader_error_response(
+                layer3_sec_xbrl_offline_evidence_loader.SecXbrlOfflineEvidenceLoaderError(
+                    "sec_xbrl_operator_review_companyfacts_oracle_required",
+                    "CompanyFacts oracle is required by this request but was not supplied in the staged evidence bundle.",
+                )
+            )
         # 2) Compose into open workflow against the REQUEST db, atomic (flush, not commit)
         result = layer3_sec_xbrl_e2e_offline_orchestrator.open_redacted_operator_review_from_offline_evidence(
             db,

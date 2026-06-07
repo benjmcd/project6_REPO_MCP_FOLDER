@@ -904,3 +904,156 @@ class TestFetchScanIgnoresStageReceipt:
         assert result is not None, "Expected the fetch receipt to be returned"
         assert result["schema_id"] == _la.COMPANYFACTS_SCHEMA_ID
         assert result["companyfacts_receipt_id"] == fetch_receipt_id
+
+
+# ---------------------------------------------------------------------------
+# FIX 1 regression — loader rejects tampered staged companyfacts raw store
+# ---------------------------------------------------------------------------
+
+class TestLoaderTamperedStagedCompanyfacts:
+    """Verify that staged-discovery branch fails closed on raw-store tampering (FIX 1).
+
+    Mirrors test_loader_rejects_stale_value_store_before_bundle_admission in the
+    base loader test file: stage facts, mutate the raw store on disk, then assert
+    the loader raises companyfacts_payload_hash_mismatch.
+    """
+
+    def test_loader_rejects_tampered_staged_companyfacts(self, tmp_path):
+        cik = "320193"
+        connector_hash = _hash("T")
+        refs = _write_full_evidence_storage(tmp_path, cik=cik, connector_receipt_hash=connector_hash)
+        storage = refs["storage"]
+
+        facts = _sample_companyfacts()
+        content_sha = hashlib.sha256(json.dumps({"facts": facts}).encode()).hexdigest()
+        result = stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=facts,
+            cik=cik,
+            connector_receipt_hash=connector_hash,
+            content_sha256=content_sha,
+            storage_dir=storage,
+        )
+
+        # Mutate the raw store file (change a financial value)
+        raw_path = (
+            storage
+            / stage_svc.COMPANYFACTS_RECEIPT_DIR
+            / "companyfacts-store"
+            / f"{result['companyfacts_receipt_id']}.json"
+        )
+        raw_data = json.loads(raw_path.read_text(encoding="utf-8"))
+        # Inject a tamper marker into the raw payload
+        raw_data["__tampered__"] = "injected-by-test"
+        raw_path.write_text(json.dumps(raw_data, sort_keys=True, indent=2), encoding="utf-8")
+
+        # Loader must detect the hash mismatch and fail closed
+        with pytest.raises(loader.SecXbrlOfflineEvidenceLoaderError) as exc_info:
+            loader.load_sec_xbrl_offline_evidence_bundle(
+                storage,
+                connector_receipt_hash=connector_hash,
+                cik_hash=_sha256(cik.lstrip("0") or "0"),
+                expected_sidecar_receipt_hash=refs["sidecar_hash"],
+                expected_statement_classification_receipt_hash=refs["cls_hash"],
+            )
+
+        assert exc_info.value.code == (
+            "sec_xbrl_offline_evidence_loader_companyfacts_payload_hash_mismatch"
+        ), f"Unexpected error code: {exc_info.value.code}"
+
+    def test_loader_rejects_staged_companyfacts_missing_payload_hash(self, tmp_path):
+        """Staged receipt with absent/blank companyfacts_payload_hash must fail closed (FIX 1 hardening).
+
+        The staged-discovery branch must raise ..._payload_hash_missing rather than
+        silently skipping integrity verification when the receipt field is absent.
+        """
+        cik = "320193"
+        connector_hash = _hash("T")
+        refs = _write_full_evidence_storage(tmp_path, cik=cik, connector_receipt_hash=connector_hash)
+        storage = refs["storage"]
+
+        facts = _sample_companyfacts()
+        content_sha = hashlib.sha256(json.dumps({"facts": facts}).encode()).hexdigest()
+        result = stage_svc.stage_sec_xbrl_companyfacts(
+            companyfacts=facts,
+            cik=cik,
+            connector_receipt_hash=connector_hash,
+            content_sha256=content_sha,
+            storage_dir=storage,
+        )
+
+        # Locate and mutate the RECEIPT file — remove companyfacts_payload_hash
+        receipt_path = (
+            storage
+            / stage_svc.COMPANYFACTS_RECEIPT_DIR
+            / "receipts"
+            / f"{result['companyfacts_receipt_id']}.json"
+        )
+        receipt_data = json.loads(receipt_path.read_text(encoding="utf-8"))
+        receipt_data.pop("companyfacts_payload_hash", None)
+        receipt_path.write_text(json.dumps(receipt_data, sort_keys=True, indent=2), encoding="utf-8")
+
+        # Loader must fail closed — missing hash is not admitted
+        with pytest.raises(loader.SecXbrlOfflineEvidenceLoaderError) as exc_info:
+            loader.load_sec_xbrl_offline_evidence_bundle(
+                storage,
+                connector_receipt_hash=connector_hash,
+                cik_hash=_sha256(cik.lstrip("0") or "0"),
+                expected_sidecar_receipt_hash=refs["sidecar_hash"],
+                expected_statement_classification_receipt_hash=refs["cls_hash"],
+            )
+
+        assert exc_info.value.code == (
+            "sec_xbrl_offline_evidence_loader_companyfacts_payload_hash_missing"
+        ), f"Unexpected error code: {exc_info.value.code}"
+
+
+# ---------------------------------------------------------------------------
+# FIX 2 regression — CompanyFacts artifact writer verifies existing bytes on replay
+# ---------------------------------------------------------------------------
+
+class TestCompanyfactsArtifactReplayVerifiesBytes:
+    """Verify that _write_companyfacts_artifact fails closed when existing bytes mismatch (FIX 2)."""
+
+    def test_companyfacts_artifact_replay_verifies_bytes(self, tmp_path, monkeypatch):
+        from app.services import layer3_sec_edgar_live_source_artifact as _la
+        from app.services.layer3_workbench_error import Layer3WorkbenchError
+
+        monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+
+        # Write an artifact with known content
+        content = b'{"facts": {"us-gaap": {}}}'
+        content_sha256 = hashlib.sha256(content).hexdigest()
+        receipt_id = f"sec-edgar-companyfacts-live-artifact-{'a' * 24}-{'b' * 24}"
+
+        # First write — must succeed
+        _la._write_companyfacts_artifact(receipt_id, content, content_sha256)
+
+        # Confirm the file exists
+        artifact_path = _la._companyfacts_artifact_path(receipt_id)
+        assert artifact_path.exists()
+
+        # Corrupt the on-disk file
+        artifact_path.write_bytes(b'{"facts": {"corrupted": true}}')
+
+        # Second call with original content_sha256 — must fail closed on mismatch
+        with pytest.raises(Layer3WorkbenchError) as exc_info:
+            _la._write_companyfacts_artifact(receipt_id, content, content_sha256)
+
+        assert exc_info.value.error_code == (
+            "sec_edgar_companyfacts_live_artifact_retained_artifact_mismatch"
+        ), f"Unexpected error code: {exc_info.value.error_code}"
+        assert exc_info.value.http_status == 409
+
+    def test_companyfacts_artifact_replay_matches_bytes_is_idempotent(self, tmp_path, monkeypatch):
+        """When existing bytes match the expected hash, the write is idempotent (no error)."""
+        from app.services import layer3_sec_edgar_live_source_artifact as _la
+
+        monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+
+        content = b'{"facts": {"us-gaap": {}}}'
+        content_sha256 = hashlib.sha256(content).hexdigest()
+        receipt_id = f"sec-edgar-companyfacts-live-artifact-{'c' * 24}-{'d' * 24}"
+
+        _la._write_companyfacts_artifact(receipt_id, content, content_sha256)
+        # Second call with same content and hash — must not raise
+        _la._write_companyfacts_artifact(receipt_id, content, content_sha256)
