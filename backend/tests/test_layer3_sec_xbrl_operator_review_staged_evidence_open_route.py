@@ -507,3 +507,181 @@ def test_open_from_staged_evidence_wrong_expected_hash_is_fail_closed(staged_cli
     assert body.get("error_code", "").endswith("_missing"), (
         f"Expected error_code ending in _missing, got: {body.get('error_code')}"
     )
+
+
+# ---------------------------------------------------------------------------
+# FIX 3 tests — require_companyfacts_oracle opt-in gate
+# ---------------------------------------------------------------------------
+
+import hashlib as _hashlib
+
+from app.services import layer3_sec_xbrl_offline_companyfacts_stage as _stage_svc
+
+
+def _write_connector_receipt_for_oracle(storage: Path, *, cik: str, connector_receipt_hash: str) -> None:
+    """Write a minimal connector receipt so staging can bind the CIK."""
+    raw_cik = cik.lstrip("0") or "0"
+    cik_hash = _hashlib.sha256(raw_cik.encode("utf-8")).hexdigest()
+    receipt = {
+        "schema_id": "layer3.sec_edgar_real_filing_acquisition_connector.v1",
+        "connector_receipt_id": f"sec-edgar-real-filing-connector-{connector_receipt_hash[:24]}-{connector_receipt_hash[24:48]}",
+        "connector_receipt_hash": connector_receipt_hash,
+        "corpus_manifest": {
+            "example_records": [
+                {"example_id": "ex-1", "cik_hash": cik_hash, "form_type": "10-K"}
+            ]
+        },
+    }
+    receipt_dir = storage / _stage_svc.CONNECTOR_RECEIPT_DIR / "receipts"
+    receipt_dir.mkdir(parents=True, exist_ok=True)
+    (receipt_dir / f"{receipt['connector_receipt_id']}.json").write_text(
+        json.dumps(receipt, sort_keys=True, indent=2), encoding="utf-8"
+    )
+
+
+def _sample_companyfacts_for_oracle() -> dict[str, Any]:
+    """Minimal valid companyfacts with observations (mirrored from stage-and-oracle tests)."""
+    facts: dict[str, Any] = {"us-gaap": {}}
+    for local_name, val, unit, start, end, instant in [
+        ("Assets", 200, "USD", "", "end-2", True),
+        ("Assets", 180, "USD", "", "end-1", True),
+        ("RevenueFromContractWithCustomerExcludingAssessedTax", 100, "USD", "start-2", "end-2", False),
+        ("RevenueFromContractWithCustomerExcludingAssessedTax", 90, "USD", "start-1", "end-1", False),
+        ("NetCashProvidedByUsedInOperatingActivities", 40, "USD", "start-2", "end-2", False),
+        ("NetCashProvidedByUsedInOperatingActivities", 30, "USD", "start-1", "end-1", False),
+    ]:
+        fact: dict[str, Any] = {"fp": "FY", "fy": 2023, "val": val, "end": end}
+        if not instant:
+            fact["start"] = start
+        facts["us-gaap"].setdefault(local_name, {"units": {}})["units"].setdefault(unit, []).append(fact)
+    return facts
+
+
+@pytest.fixture()
+def staged_client_with_oracle(tmp_path, monkeypatch):
+    """TestClient with staged evidence AND a staged companyfacts oracle."""
+    storage_dir = tmp_path / "storage"
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    monkeypatch.setattr(
+        settings,
+        "layer3_external_local_export_dir",
+        str(tmp_path / "external-local-export"),
+    )
+    bootstrap_storage_tree(storage_dir)
+    refs = _stage_storage(storage_dir)
+
+    # Also write a connector receipt and stage companyfacts
+    connector_hash = "f" * 64
+    cik = "320193"
+    _write_connector_receipt_for_oracle(storage_dir, cik=cik, connector_receipt_hash=connector_hash)
+    # Add connector_receipt_hash to the sidecar so cross-issuer binding works
+    sidecar_path = (
+        storage_dir
+        / loader.SIDECAR_RECEIPT_DIR
+        / "receipts"
+        / f"{refs['sidecar_receipt_id']}.json"
+    )
+    sidecar_data = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    sidecar_data["connector_receipt_hash"] = connector_hash
+    sidecar_path.write_text(json.dumps(sidecar_data, sort_keys=True, indent=2), encoding="utf-8")
+
+    facts = _sample_companyfacts_for_oracle()
+    content = json.dumps({"facts": facts}).encode("utf-8")
+    content_sha = _hashlib.sha256(content).hexdigest()
+    raw_cik = cik.lstrip("0") or "0"
+    cik_hash = _hashlib.sha256(raw_cik.encode("utf-8")).hexdigest()
+
+    _stage_svc.stage_sec_xbrl_companyfacts(
+        companyfacts=facts,
+        cik=cik,
+        connector_receipt_hash=connector_hash,
+        content_sha256=content_sha,
+        storage_dir=storage_dir,
+    )
+
+    engine = create_engine(
+        "sqlite:///:memory:",
+        future=True,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+
+    def override_get_db():
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    test_client = TestClient(app)
+    try:
+        yield test_client, refs, {"connector_receipt_hash": connector_hash, "cik_hash": cik_hash}
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def test_open_route_require_oracle_fails_closed_without_oracle(staged_client) -> None:
+    """require_companyfacts_oracle=true with NO oracle staged → governed 4xx with oracle_required code."""
+    client, refs = staged_client
+
+    resp = client.post(
+        OPEN_FROM_STAGED,
+        json={
+            "client_request_id": f"test-require-oracle-fail-{uuid.uuid4().hex[:12]}",
+            "expected_sidecar_receipt_hash": refs["sidecar_receipt_hash"],
+            "expected_statement_classification_receipt_hash": refs["classification_hash"],
+            "require_companyfacts_oracle": True,
+        },
+    )
+    # Must fail closed — not 200
+    assert resp.status_code in (400, 409), (
+        f"Expected 4xx when oracle required but missing, got {resp.status_code}: {resp.text}"
+    )
+    body = resp.json()
+    assert body.get("error_code") == "sec_xbrl_operator_review_companyfacts_oracle_required", (
+        f"Expected oracle_required error code, got: {body.get('error_code')}"
+    )
+
+
+def test_open_route_require_oracle_succeeds_with_oracle(staged_client_with_oracle) -> None:
+    """require_companyfacts_oracle=true WITH oracle staged → 200."""
+    client, refs, oracle_refs = staged_client_with_oracle
+
+    resp = client.post(
+        OPEN_FROM_STAGED,
+        json={
+            "client_request_id": f"test-require-oracle-ok-{uuid.uuid4().hex[:12]}",
+            "expected_sidecar_receipt_hash": refs["sidecar_receipt_hash"],
+            "expected_statement_classification_receipt_hash": refs["classification_hash"],
+            "connector_receipt_hash": oracle_refs["connector_receipt_hash"],
+            "cik_hash": oracle_refs["cik_hash"],
+            "require_companyfacts_oracle": True,
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["status"] == "review_ready"
+    assert body["evidence_bundle_status"] == "offline_evidence_bundle_ready"
+
+
+def test_open_route_default_allows_degraded(staged_client) -> None:
+    """Without require_companyfacts_oracle (default False), no oracle → still 200 (backward-compat)."""
+    client, refs = staged_client
+
+    resp = client.post(
+        OPEN_FROM_STAGED,
+        json={
+            "client_request_id": f"test-default-degraded-{uuid.uuid4().hex[:12]}",
+            "expected_sidecar_receipt_hash": refs["sidecar_receipt_hash"],
+            "expected_statement_classification_receipt_hash": refs["classification_hash"],
+            # No require_companyfacts_oracle → defaults to False
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["status"] == "review_ready"
+    # The bundle status reflects that the oracle was not supplied — but the route still opens
+    assert body["evidence_bundle_status"] == "offline_evidence_bundle_ready_without_companyfacts_oracle"
