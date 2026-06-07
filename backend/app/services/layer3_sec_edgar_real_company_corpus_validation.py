@@ -23,6 +23,7 @@ from app.services import (
     layer3_sec_xbrl_sidecar,
 )
 from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
+from app.services.layer3_sec_xbrl_auth_binding import record_sec_xbrl_evidence_ownership_marker
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -48,9 +49,6 @@ ALLOWED_FIELDS = {
     "company_matrix",
     "operator_confirmation",
     "actor",
-    "evidence_owner_ref_hash",
-    "evidence_workspace_ref_hash",
-    "auth_owner_mode",
 }
 FORBIDDEN_REQUEST_FIELDS = {
     "args",
@@ -98,7 +96,15 @@ FORBIDDEN_REQUEST_FIELDS = {
 def validate_sec_edgar_real_company_corpus_product_path(
     fields: Mapping[str, Any],
     db: Session,
+    *,
+    evidence_owner: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    """Validate a SEC EDGAR real-company corpus product path.
+
+    evidence_owner must be passed as an explicit server-derived kwarg from the route handler.
+    The request body (fields) is NOT allowed to carry owner/workspace hashes — those keys
+    are excluded from ALLOWED_FIELDS so any body supplying them receives a governed 400.
+    """
     request = _normalise_request(fields)
     request_id = _required(request, "client_request_id")
     _require_exact(request, "validation_mode", VALIDATION_MODE)
@@ -107,7 +113,6 @@ def validate_sec_edgar_real_company_corpus_product_path(
         return _blocked_response(request_id, reasons=[_reason("missing_operator_confirmation")])
 
     company_matrix = _company_matrix(request.get("company_matrix"))
-    evidence_owner = _extract_evidence_owner(request)
     connector = layer3_sec_edgar_real_filing_acquisition_connector.acquire_sec_edgar_real_filing_validation_corpus(
         {
             "client_request_id": f"{request_id}-connector",
@@ -278,8 +283,6 @@ def _run_html_inline_xbrl_path(
                     bridge,
                     sidecar=sidecar,
                 ),
-                evidence_owner_ref_hash=evidence_owner.get("owner_ref_hash") if evidence_owner else None,
-                evidence_workspace_ref_hash=evidence_owner.get("workspace_ref_hash") if evidence_owner else None,
             )
         )
         product = (
@@ -461,12 +464,16 @@ def _derive_arelle_sidecar_authority(
         "expected_inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
         "operator_confirmation": True,
     }
-    if evidence_owner:
-        sidecar_payload["evidence_owner_ref_hash"] = evidence_owner.get("owner_ref_hash", "")
-        sidecar_payload["evidence_workspace_ref_hash"] = evidence_owner.get("workspace_ref_hash", "")
     sidecar = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
         sidecar_payload
     )
+    if sidecar.get("sidecar_state") == layer3_sec_xbrl_sidecar.READY_STATE and evidence_owner:
+        record_sec_xbrl_evidence_ownership_marker(
+            settings.storage_dir,
+            owner_ref_hash=evidence_owner.get("owner_ref_hash", ""),
+            workspace_ref_hash=evidence_owner.get("workspace_ref_hash", ""),
+            sidecar_receipt_hash=sidecar["sidecar_receipt_hash"],
+        )
     if sidecar.get("sidecar_state") != layer3_sec_xbrl_sidecar.READY_STATE:
         reasons = [
             str(reason.get("reason") or "sec_edgar_arelle_resolved_fact_authority_sidecar_blocked")
@@ -1435,19 +1442,6 @@ def _sha256_text(value: str) -> str:
 
 def _server_time() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-
-def _extract_evidence_owner(request: Mapping[str, Any]) -> dict[str, str] | None:
-    """Extract owner stamp fields from the normalised request, or return None if absent."""
-    owner = str(request.get("evidence_owner_ref_hash") or "").strip()
-    workspace = str(request.get("evidence_workspace_ref_hash") or "").strip()
-    if not owner or not workspace:
-        return None
-    return {
-        "owner_ref_hash": owner,
-        "workspace_ref_hash": workspace,
-        "auth_owner_mode": str(request.get("auth_owner_mode") or ""),
-    }
 
 
 def _arelle_fact_authority_cutover_enabled() -> bool:

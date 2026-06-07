@@ -38,8 +38,6 @@ def stage_sec_xbrl_companyfacts(
     connector_receipt_hash: str,
     content_sha256: str,
     storage_dir: Any,
-    evidence_owner_ref_hash: str | None = None,
-    evidence_workspace_ref_hash: str | None = None,
 ) -> dict[str, Any]:
     """Write a CompanyFacts artifact to the gitignored raw store and a redacted receipt.
 
@@ -171,9 +169,6 @@ def stage_sec_xbrl_companyfacts(
         "gitignored_local_storage": True,
         "operator_surface_exposure": False,
     }
-    # Additive non-hashed owner stamp: receipt_hash is computed above and is NOT affected.
-    _maybe_stamp_evidence_owner(receipt, evidence_owner_ref_hash, evidence_workspace_ref_hash)
-
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         with receipt_path.open("x", encoding="utf-8") as handle:
@@ -374,28 +369,6 @@ def _read_json_object(path: Path) -> dict[str, Any]:
             "Required JSON file must contain an object.",
         )
     return payload
-
-
-def _maybe_stamp_evidence_owner(
-    receipt: dict[str, Any],
-    evidence_owner_ref_hash: str | None,
-    evidence_workspace_ref_hash: str | None,
-) -> None:
-    """Conditionally add evidence_owner sub-dict to a companyfacts receipt.
-
-    Only added when BOTH hashes are present.  The receipt_hash is computed from
-    receipt_hash_basis (above) and is NOT affected by this stamp.
-    """
-    from app.services.layer3_sec_xbrl_in_app_auth_policy import EVIDENCE_OWNER_SCHEMA_ID  # local import avoids cycle
-    owner = str(evidence_owner_ref_hash or "").strip()
-    workspace = str(evidence_workspace_ref_hash or "").strip()
-    if not owner or not workspace:
-        return
-    receipt["evidence_owner"] = {
-        "schema_id": EVIDENCE_OWNER_SCHEMA_ID,
-        "owner_ref_hash": owner,
-        "workspace_ref_hash": workspace,
-    }
 
 
 def _server_time() -> str:

@@ -130,11 +130,6 @@ def load_sec_xbrl_offline_evidence_bundle(
     if dataset_version_id:
         authority_refs["dataset_version_id_hash"] = stable_hash({"dataset_version_id": dataset_version_id})[:24]
 
-    evidence_owner_bundle = {
-        "sidecar": sidecar.get("evidence_owner") if isinstance(sidecar.get("evidence_owner"), Mapping) else None,
-        "statement_classification": classification.get("evidence_owner") if isinstance(classification.get("evidence_owner"), Mapping) else None,
-        "companyfacts": companyfacts_receipt.get("evidence_owner") if isinstance(companyfacts_receipt, Mapping) and isinstance(companyfacts_receipt.get("evidence_owner"), Mapping) else None,
-    }
     return {
         "schema_id": SCHEMA_ID,
         "status": (
@@ -144,7 +139,6 @@ def load_sec_xbrl_offline_evidence_bundle(
         ),
         "evidence": evidence,
         "authority_refs": authority_refs,
-        "evidence_owner": evidence_owner_bundle,
         "summary": {
             "resolved_fact_count": len(_required_sequence(sidecar.get("resolved_fact_records"), "resolved_fact_records")),
             "resolved_fact_projection_count": len(
@@ -394,8 +388,8 @@ def _read_companyfacts(
     """Return (facts_dict, state, staged_receipt_or_none).
 
     state is 'supplied' or 'not_supplied'.
-    staged_receipt_or_none carries the staged receipt dict (with possible evidence_owner stamp)
-    when discovered via Branch 2; None for Branch 1 (explicit path) and no-oracle cases.
+    staged_receipt_or_none carries the staged receipt dict when discovered via Branch 2;
+    None for Branch 1 (explicit path) and no-oracle cases.
 
     Branch 1 — explicit path: existing behaviour, unchanged.
     Branch 2 — staged discovery: when companyfacts_path is None and connector_receipt_hash +

@@ -14952,18 +14952,6 @@ def _sec_xbrl_record_binding(
     )
 
 
-def _sec_xbrl_require_evidence_ownership(
-    *,
-    policy_decision: dict[str, Any],
-    evidence_owner: Any,
-) -> None:
-    layer3_sec_xbrl_auth_binding.require_sec_xbrl_evidence_ownership(
-        policy_decision=policy_decision,
-        evidence_owner=evidence_owner,
-        auth_owner_mode=str(policy_decision.get("auth_owner_mode") or ""),
-    )
-
-
 def _sec_xbrl_commit_bound_receipts(db: Session) -> None:
     try:
         db.commit()
@@ -17248,22 +17236,13 @@ def post_sec_edgar_text_table_live_source_artifact_acquire(
 )
 def post_sec_edgar_companyfacts_acquire_and_stage(
     payload: Layer3SecEdgarCompanyfactsAcquireStageRequest,
-    request: Request,
 ) -> dict[str, Any] | JSONResponse:
-    try:
-        owner_stamp = layer3_sec_xbrl_in_app_auth_policy.derive_sec_xbrl_evidence_owner(
-            dict(request.headers)
-        )
-    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
-        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error_with_companyfacts_stage(
         lambda: layer3_sec_xbrl_companyfacts_acquire_stage.acquire_and_stage_companyfacts(
             client_request_id=payload.client_request_id,
             cik=payload.cik,
             connector_receipt_hash=payload.connector_receipt_hash,
             operator_confirmation=payload.operator_confirmation,
-            evidence_owner_ref_hash=owner_stamp["owner_ref_hash"],
-            evidence_workspace_ref_hash=owner_stamp["workspace_ref_hash"],
         )
     )
 
@@ -17361,16 +17340,11 @@ def post_sec_edgar_real_company_corpus_validation(
         )
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
-    fields = {
-        **payload.model_dump(exclude_none=True),
-        "evidence_owner_ref_hash": owner_stamp["owner_ref_hash"],
-        "evidence_workspace_ref_hash": owner_stamp["workspace_ref_hash"],
-        "auth_owner_mode": owner_stamp["auth_owner_mode"],
-    }
     return _json_or_error(
         lambda: layer3_sec_edgar_real_company_corpus_validation.validate_sec_edgar_real_company_corpus_product_path(
-            fields,
+            payload.model_dump(exclude_none=True),
             db,
+            evidence_owner=owner_stamp,
         )
     )
 
@@ -17656,10 +17630,12 @@ def post_sec_xbrl_operator_review_workflow_open_from_staged_evidence(
                     "CompanyFacts oracle is required by this request but was not supplied in the staged evidence bundle.",
                 )
             )
-        # 1b) Enforce cross-workspace ownership: stamp on each receipt must match caller's principal
-        _sec_xbrl_require_evidence_ownership(
+        # 1b) Enforce per-principal ownership: caller must have a marker for this sidecar
+        layer3_sec_xbrl_auth_binding.require_sec_xbrl_evidence_ownership_marker(
+            settings.storage_dir,
             policy_decision=policy_decision,
-            evidence_owner=bundle.get("evidence_owner"),
+            auth_owner_mode=str(policy_decision.get("auth_owner_mode") or ""),
+            sidecar_receipt_hash=str(bundle["authority_refs"]["sidecar_receipt_hash"]),
         )
         # 2) Compose into open workflow against the REQUEST db, atomic (flush, not commit)
         result = layer3_sec_xbrl_e2e_offline_orchestrator.open_redacted_operator_review_from_offline_evidence(
