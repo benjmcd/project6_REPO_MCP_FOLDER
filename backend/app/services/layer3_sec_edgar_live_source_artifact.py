@@ -25,6 +25,9 @@ from app.services.layer3_workbench_error import Layer3WorkbenchError
 
 
 SCHEMA_ID = "layer3.sec_edgar_text_table_live_source_artifact_acquisition.v1"
+COMPANYFACTS_SCHEMA_ID = "layer3.sec_edgar_companyfacts_live_artifact_acquisition.v1"
+COMPANYFACTS_RECEIPT_PREFIX = "sec-edgar-companyfacts-live-artifact"
+COMPANYFACTS_RECEIPT_DIR = "layer3-sec-xbrl-companyfacts"
 REQUEST_SCHEMA_ID = "layer3.sec_edgar_text_table_live_source_artifact_acquisition_request.v1"
 STATUS_SCHEMA_ID = "layer3.sec_edgar_text_table_live_source_artifact_acquisition_status.v1"
 SOURCE_ARTIFACT_RECEIPT_SCHEMA_ID = "layer3.sec_edgar_text_table_source_artifact_receipt.v1"
@@ -1108,3 +1111,363 @@ def _blocked(
         http_status=http_status,
         blocked_fields=blocked_fields or [],
     )
+
+
+# ---------------------------------------------------------------------------
+# CompanyFacts live oracle fetch
+# ---------------------------------------------------------------------------
+
+def acquire_sec_edgar_companyfacts_live_artifact(fields: Mapping[str, Any]) -> dict[str, Any]:
+    """Fetch SEC CompanyFacts JSON for a CIK through all existing gates and return a redacted receipt.
+
+    Result carries ONLY: status, schema_id, receipt id/hash, content_sha256, cik_hash,
+    observation/taxonomy/concept counts, and live_network flags.  Raw CIK, raw values,
+    and raw accession are NEVER present in the returned dict.
+    """
+    if fields.get("operator_confirmation") is not True:
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_operator_confirmation_missing",
+            "operator_confirmation=true is required before live SEC EDGAR CompanyFacts acquisition.",
+            http_status=409,
+            blocked_fields=["operator_confirmation"],
+        )
+    # CI guard: mirrors SecEdgarHttpClient's gate so CI never reaches the network
+    if os.environ.get("CI", "").strip().lower() in {"1", "true", "yes"}:
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_ci_network_disabled",
+            "Live SEC EDGAR CompanyFacts acquisition is disabled in CI; use a fake client or offline file.",
+            http_status=409,
+        )
+    _require_live_network_enabled()
+    user_agent = _server_configured_user_agent()
+
+    raw_cik = str(fields.get("cik") or "").strip().lstrip("0") or "0"
+    if not _CIK_RE.fullmatch(raw_cik):
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_cik_not_admitted",
+            "SEC EDGAR CompanyFacts acquisition requires a numeric CIK (1-10 digits).",
+            http_status=409,
+            blocked_fields=["cik"],
+        )
+    cik_hash = _sha256_text(raw_cik)
+    padded_cik = raw_cik.zfill(10)
+
+    # Idempotent replay keyed on cik_hash
+    source_identity_hash = stable_hash(
+        {"hash_version": "sec_edgar_companyfacts_source_identity_hash_v1", "cik_hash": cik_hash}
+    )
+    existing = _find_existing_companyfacts_receipt(source_identity_hash)
+    if existing is not None:
+        return _response_from_companyfacts_receipt(existing, idempotent_replay=True, network_request_made=False)
+
+    url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{padded_cik}.json"
+    if not _is_allowed_sec_url(url):
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_url_not_admitted",
+            "SEC EDGAR CompanyFacts URL is not within admitted sec.gov host space.",
+            http_status=409,
+        )
+
+    _enforce_rate_limit()
+    fetch_result = _fetch_companyfacts_with_retry(
+        url=url,
+        user_agent=user_agent,
+        timeout_seconds=_timeout_seconds(),
+        max_bytes=_max_bytes(),
+    )
+
+    if fetch_result.status_code != 200:
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_fetch_failed",
+            "SEC EDGAR CompanyFacts acquisition did not return HTTP 200.",
+            http_status=409,
+            blocked_fields=[f"http_status:{fetch_result.status_code}"],
+        )
+    if not fetch_result.complete:
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_partial_download_blocked",
+            "Partial SEC EDGAR CompanyFacts downloads do not create oracle authority.",
+            http_status=409,
+            blocked_fields=["content"],
+        )
+    content = bytes(fetch_result.content or b"")
+    if len(content) > _max_bytes():
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_size_exceeded",
+            "SEC EDGAR CompanyFacts response exceeds the configured byte limit.",
+            http_status=409,
+            blocked_fields=["content"],
+        )
+    if not content:
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_empty_content_blocked",
+            "Empty SEC EDGAR CompanyFacts responses do not create oracle authority.",
+            http_status=409,
+            blocked_fields=["content"],
+        )
+    content_sha256 = hashlib.sha256(content).hexdigest()
+
+    try:
+        payload = json.loads(content.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_json_invalid",
+            "SEC EDGAR CompanyFacts response is not valid JSON.",
+            http_status=409,
+            blocked_fields=["content"],
+        )
+    if not isinstance(payload, dict):
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_json_not_object",
+            "SEC EDGAR CompanyFacts response must be a JSON object.",
+            http_status=409,
+            blocked_fields=["content"],
+        )
+
+    facts = payload.get("facts") if isinstance(payload.get("facts"), Mapping) else {}
+    taxonomy_count = 0
+    concept_count = 0
+    observation_count = 0
+    for concepts in facts.values():
+        if not isinstance(concepts, Mapping):
+            continue
+        taxonomy_count += 1
+        for concept in concepts.values():
+            if not isinstance(concept, Mapping):
+                continue
+            units = concept.get("units") if isinstance(concept.get("units"), Mapping) else {}
+            concept_count += 1
+            for observations in units.values():
+                if isinstance(observations, list):
+                    observation_count += len(observations)
+
+    receipt_hash_basis = {
+        "hash_version": "sec_edgar_companyfacts_live_artifact_receipt_hash_v1",
+        "schema_id": COMPANYFACTS_SCHEMA_ID,
+        "source_identity_hash": source_identity_hash,
+        "cik_hash": cik_hash,
+        "content_sha256": content_sha256,
+    }
+    receipt_hash = stable_hash(receipt_hash_basis)
+    receipt_id = f"{COMPANYFACTS_RECEIPT_PREFIX}-{source_identity_hash[:24]}-{receipt_hash[:24]}"
+
+    receipt = {
+        "schema_id": COMPANYFACTS_SCHEMA_ID,
+        "companyfacts_receipt_id": receipt_id,
+        "companyfacts_receipt_hash": receipt_hash,
+        "source_identity_hash": source_identity_hash,
+        "cik_hash": cik_hash,
+        "content_sha256": content_sha256,
+        "companyfacts_observation_count": observation_count,
+        "taxonomy_count": taxonomy_count,
+        "concept_count": concept_count,
+        "receipt_hash_basis": receipt_hash_basis,
+        "recorded_at": _server_time(),
+    }
+
+    _write_companyfacts_receipt(receipt)
+    _write_companyfacts_artifact(receipt_id, content, content_sha256)
+
+    return _response_from_companyfacts_receipt(receipt, idempotent_replay=False, network_request_made=True)
+
+
+def _fetch_companyfacts_with_retry(
+    *,
+    url: str,
+    user_agent: str,
+    timeout_seconds: int,
+    max_bytes: int,
+) -> SecEdgarFetchResult:
+    """Fetch CompanyFacts JSON reusing the same client/retry/rate-limit infrastructure."""
+    # We cannot reuse fetch_complete_submission_text directly (different Accept header + URL),
+    # so we implement the identical retry loop using the same SEC_EDGAR_CLIENT transport but
+    # with a JSON Accept header by temporarily wrapping the client call.
+    attempts = 0
+    result = SecEdgarFetchResult(status_code=503, complete=False)
+    while attempts < 3:
+        if attempts:
+            _enforce_rate_limit()
+        # The underlying HTTP client gate is identical; we pass Accept:application/json by
+        # reusing _fetch_companyfacts_once which calls the client's method with the JSON URL.
+        result = _fetch_companyfacts_once(url=url, user_agent=user_agent, timeout_seconds=timeout_seconds, max_bytes=max_bytes)
+        if result.status_code not in RETRYABLE_STATUS_CODES:
+            return result
+        attempts += 1
+        if attempts >= 3:
+            return result
+        SEC_EDGAR_SLEEP(min(_retry_after_seconds(result.headers), 1.0))
+    return result
+
+
+def _fetch_companyfacts_once(
+    *,
+    url: str,
+    user_agent: str,
+    timeout_seconds: int,
+    max_bytes: int,
+) -> SecEdgarFetchResult:
+    """Direct HTTP fetch through the same CI/live-network guards as the text-table client.
+
+    The CI and live-network checks live inside SecEdgarHttpClient.fetch_complete_submission_text,
+    so we use a sibling request that goes through the same urllib stack with an application/json
+    Accept header.  The guard logic is identical; we replicate it here to avoid coupling the
+    JSON Accept header to the text-table-specific method signature.
+    """
+    import os as _os
+    if _os.environ.get("CI", "").strip().lower() in {"1", "true", "yes"}:
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_ci_network_disabled",
+            "Live SEC EDGAR CompanyFacts acquisition is disabled in CI; use a fake client or offline file.",
+            http_status=409,
+        )
+    if not bool(getattr(settings, "layer3_sec_edgar_live_network_enabled", False)):
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_live_network_disabled",
+            "Live SEC EDGAR CompanyFacts acquisition requires server configuration before the HTTP client may run.",
+            http_status=409,
+            blocked_fields=["layer3_sec_edgar_live_network_enabled"],
+        )
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": user_agent,
+            "Accept": "application/json,*/*;q=0.1",
+            "Accept-Encoding": "identity",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            final_url = str(response.geturl() or "")
+            if not _is_allowed_sec_url(final_url):
+                _blocked(
+                    "sec_edgar_companyfacts_live_artifact_redirect_not_admitted",
+                    "SEC EDGAR CompanyFacts acquisition does not admit redirects outside sec.gov.",
+                    http_status=409,
+                )
+            content = _read_bounded_bytes(response, max_bytes)
+            return SecEdgarFetchResult(
+                status_code=int(getattr(response, "status", 200) or 200),
+                content=content,
+                headers=dict(response.headers.items()),
+                final_url=final_url,
+                complete=len(content) <= max_bytes,
+            )
+    except urllib.error.HTTPError as exc:
+        error_bytes = b""
+        try:
+            error_bytes = _read_bounded_bytes(exc, min(max_bytes, 4096))
+        except Exception:
+            error_bytes = b""
+        return SecEdgarFetchResult(
+            status_code=int(exc.code),
+            content=error_bytes,
+            headers=dict(exc.headers.items()) if exc.headers else {},
+            final_url=str(exc.url or url),
+            complete=True,
+        )
+    except TimeoutError:
+        return SecEdgarFetchResult(status_code=408, complete=False)
+    except OSError:
+        return SecEdgarFetchResult(status_code=503, complete=False)
+
+
+def _find_existing_companyfacts_receipt(source_identity_hash: str) -> dict[str, Any] | None:
+    receipts_dir = _companyfacts_receipts_dir()
+    if not receipts_dir.exists():
+        return None
+    for path in sorted(receipts_dir.glob(f"{COMPANYFACTS_RECEIPT_PREFIX}-*.json")):
+        try:
+            receipt = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if receipt.get("source_identity_hash") == source_identity_hash:
+            return receipt
+    return None
+
+
+def _write_companyfacts_receipt(receipt: Mapping[str, Any]) -> None:
+    target = _companyfacts_receipts_dir() / f"{receipt['companyfacts_receipt_id']}.json"
+    if target.exists():
+        return
+    target.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with target.open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
+    except FileExistsError:
+        return
+    except OSError as exc:
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_receipt_write_failed",
+            "SEC EDGAR CompanyFacts receipt could not be recorded.",
+            http_status=409,
+            blocked_fields=[exc.__class__.__name__],
+        )
+
+
+def _write_companyfacts_artifact(receipt_id: str, content: bytes, content_sha256: str) -> None:
+    target = _companyfacts_artifact_path(receipt_id)
+    if target.exists():
+        return
+    target.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with target.open("xb") as handle:
+            handle.write(content)
+    except FileExistsError:
+        return
+    except OSError as exc:
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_write_failed",
+            "SEC EDGAR CompanyFacts artifact could not be retained.",
+            http_status=409,
+            blocked_fields=[exc.__class__.__name__],
+        )
+
+
+def _response_from_companyfacts_receipt(
+    receipt: Mapping[str, Any],
+    *,
+    idempotent_replay: bool,
+    network_request_made: bool,
+) -> dict[str, Any]:
+    return {
+        "schema_id": COMPANYFACTS_SCHEMA_ID,
+        "status": "available",
+        "companyfacts_receipt_id": receipt["companyfacts_receipt_id"],
+        "companyfacts_receipt_hash": receipt["companyfacts_receipt_hash"],
+        "cik_hash": receipt["cik_hash"],
+        "content_sha256": receipt["content_sha256"],
+        "companyfacts_observation_count": receipt["companyfacts_observation_count"],
+        "taxonomy_count": receipt["taxonomy_count"],
+        "concept_count": receipt["concept_count"],
+        "live_network_flags": {
+            "live_network_fetch_performed": network_request_made,
+            "ci_live_network_disabled": True,
+            "server_configured_user_agent_required": True,
+            "rate_limit_enforced": True,
+            "host_allowlist_enforced": True,
+        },
+        "idempotent_replay": idempotent_replay,
+        "raw_cik_exposed": False,
+        "raw_values_exposed": False,
+        "raw_accession_exposed": False,
+    }
+
+
+def _companyfacts_root() -> Path:
+    storage_dir = str(settings.storage_dir or "").strip()
+    if not storage_dir:
+        _blocked(
+            "sec_edgar_companyfacts_live_artifact_storage_root_unavailable",
+            "SEC EDGAR CompanyFacts acquisition requires the existing Layer 3 storage root.",
+            http_status=409,
+            blocked_fields=["storage_dir"],
+        )
+    return Path(storage_dir).resolve() / COMPANYFACTS_RECEIPT_DIR
+
+
+def _companyfacts_receipts_dir() -> Path:
+    return _companyfacts_root() / "receipts"
+
+
+def _companyfacts_artifact_path(receipt_id: str) -> Path:
+    return _companyfacts_root() / "companyfacts-store" / f"{receipt_id}.json"

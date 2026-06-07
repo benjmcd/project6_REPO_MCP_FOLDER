@@ -22,14 +22,24 @@ def inspect_sec_xbrl_offline_companyfacts_oracle_packet(
     storage_dir: str | Path,
     *,
     companyfacts_path: str | Path | None = None,
+    connector_receipt_hash: str | None = None,
+    cik_hash: str | None = None,
     expected_sidecar_receipt_hash: str | None = None,
     expected_statement_classification_receipt_hash: str | None = None,
     period_limit: int = 2,
 ) -> dict[str, Any]:
-    """Validate an operator-acquired CompanyFacts oracle packet without acquiring sources."""
+    """Validate an operator-acquired CompanyFacts oracle packet without acquiring sources.
+
+    Accepts either:
+    - companyfacts_path: an offline-supplied JSON file (existing behaviour), or
+    - connector_receipt_hash + cik_hash: discover staged companyfacts from the local store.
+    """
 
     base_report = inspect_sec_xbrl_offline_evidence_storage(
         storage_dir,
+        companyfacts_path=companyfacts_path,
+        connector_receipt_hash=connector_receipt_hash,
+        cik_hash=cik_hash,
         expected_sidecar_receipt_hash=expected_sidecar_receipt_hash,
         expected_statement_classification_receipt_hash=expected_statement_classification_receipt_hash,
     )
@@ -41,23 +51,63 @@ def inspect_sec_xbrl_offline_companyfacts_oracle_packet(
             message=blocked_reason["message"],
             details=blocked_reason.get("details"),
         )
-    if not companyfacts_path:
+
+    # Determine whether we have an oracle source at all
+    has_oracle_source = bool(companyfacts_path) or bool(connector_receipt_hash and cik_hash)
+    if not has_oracle_source:
         return _blocked_report(
             base_report=base_report,
             reason="companyfacts_oracle_packet_missing",
             message="Offline CompanyFacts oracle JSON was not supplied.",
         )
 
+    # Also block when the loader found no oracle (empty/zero-observation)
+    if not base_report.get("summary", {}).get("companyfacts_oracle_supplied", False):
+        return _blocked_report(
+            base_report=base_report,
+            reason="companyfacts_oracle_packet_missing",
+            message="Offline CompanyFacts oracle JSON was not supplied or produced no observations.",
+        )
+
     try:
-        payload = _read_json_object(Path(companyfacts_path))
-        companyfacts = _companyfacts_map(payload)
+        if companyfacts_path:
+            payload = _read_json_object(Path(companyfacts_path))
+            companyfacts = _companyfacts_map(payload)
+        else:
+            # Staged discovery: retrieve facts from the bundle that was already loaded
+            from app.services.layer3_sec_xbrl_offline_companyfacts_stage import (
+                find_staged_companyfacts_receipt,
+                load_staged_companyfacts_raw,
+                SecXbrlCompanyfactsStageError,
+            )
+            from pathlib import Path as _Path
+            _storage = _Path(storage_dir)
+            staged_receipt = find_staged_companyfacts_receipt(
+                _storage,
+                connector_receipt_hash=connector_receipt_hash,
+                cik_hash=cik_hash,
+            )
+            if staged_receipt is None:
+                return _blocked_report(
+                    base_report=base_report,
+                    reason="companyfacts_oracle_packet_missing",
+                    message="No staged CompanyFacts oracle found for the supplied connector_receipt_hash and cik_hash.",
+                )
+            raw_payload = load_staged_companyfacts_raw(
+                _storage,
+                companyfacts_receipt_id=staged_receipt["companyfacts_receipt_id"],
+            )
+            companyfacts = _companyfacts_map(raw_payload)
+
         bundle = load_sec_xbrl_offline_evidence_bundle(
             storage_dir,
             companyfacts_path=companyfacts_path,
+            connector_receipt_hash=connector_receipt_hash,
+            cik_hash=cik_hash,
             expected_sidecar_receipt_hash=expected_sidecar_receipt_hash,
             expected_statement_classification_receipt_hash=expected_statement_classification_receipt_hash,
         )
-    except (SecXbrlOfflineEvidenceLoaderError, CompanyFactsOraclePacketError) as exc:
+    except (SecXbrlOfflineEvidenceLoaderError, CompanyFactsOraclePacketError, ValueError) as exc:
         return _blocked_report(
             base_report=base_report,
             reason=getattr(exc, "code", "companyfacts_oracle_packet_invalid"),
