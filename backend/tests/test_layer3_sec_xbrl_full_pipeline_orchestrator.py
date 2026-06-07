@@ -1211,9 +1211,12 @@ def test_full_pipeline_lowercase_ticker_accepted(tmp_path, monkeypatch) -> None:
     assert r.json()["corpus_validation"]["selected_cik_hash"] == _sha256(cik)
 
 
-def _stub_valid_corpus_and_auth(monkeypatch: Any, *, cik: str = "320193") -> None:
+def _stub_valid_corpus_and_auth(
+    monkeypatch: Any, *, cik: str = "320193", validation_receipt_id: str = "vr-backstop"
+) -> None:
     """Stub corpus-validation to one valid supported AAPL record + permissive auth, for the
-    honesty-backstop tests (the open handler is stubbed separately by each test)."""
+    honesty-backstop tests. validation_receipt_id flows into the orchestrator's own
+    corpus_validation summary, so tests can inject a (contrived) leak there."""
     connector_hash = _hash("a")
     record = {
         "cik_hash": _sha256(cik),
@@ -1227,7 +1230,7 @@ def _stub_valid_corpus_and_auth(monkeypatch: Any, *, cik: str = "320193") -> Non
     }
     corpus = {
         "connector_receipt_hash": connector_hash,
-        "validation_receipt_id": "vr-backstop",
+        "validation_receipt_id": validation_receipt_id,
         "validation_receipt_hash": _sha256("backstop"),
         "filing_validation_records": [record],
     }
@@ -1249,13 +1252,15 @@ def _stub_valid_corpus_and_auth(monkeypatch: Any, *, cik: str = "320193") -> Non
 
 
 def test_full_pipeline_backstop_blocks_raw_cik_leak(tmp_path, monkeypatch) -> None:
-    """If the open step's result contains the raw CIK as a leaf VALUE, the honesty backstop
-    fails closed with a governed 409 (the leaky body is never returned)."""
+    """If the orchestrator's OWN summary carries the raw CIK as a leaf VALUE, the honesty
+    backstop fails closed with a governed 409 BEFORE the open commit (no workflow created)."""
     client, _ = _make_test_client(tmp_path, monkeypatch)
-    _stub_valid_corpus_and_auth(monkeypatch)
+    # Contrived leak: validation_receipt_id == the raw cik -> surfaces in corpus_validation.
+    _stub_valid_corpus_and_auth(monkeypatch, validation_receipt_id="320193")
+    # The open handler must NOT be reached (backstop fires first); fail loudly if it is.
     monkeypatch.setattr(
         "app.api.layer3.post_sec_xbrl_operator_review_workflow_open_from_staged_evidence",
-        lambda req, request, db: {"status": "review_ready", "leaked": "320193"},
+        lambda req, request, db: (_ for _ in ()).throw(AssertionError("open must not run after backstop trips")),
     )
     r = client.post(
         FULL_PIPELINE_URL,
@@ -1271,13 +1276,13 @@ def test_full_pipeline_backstop_blocks_raw_cik_leak(tmp_path, monkeypatch) -> No
 
 
 def test_full_pipeline_backstop_allows_hash_substring(tmp_path, monkeypatch) -> None:
-    """A CIK appearing only as an incidental SUBSTRING of a hash (not a leaf == cik) must NOT
+    """A CIK appearing only as an incidental SUBSTRING of a value (not a leaf == cik) must NOT
     trip the backstop — regression against the earlier substring-scan false positive."""
     client, _ = _make_test_client(tmp_path, monkeypatch)
-    _stub_valid_corpus_and_auth(monkeypatch)
+    _stub_valid_corpus_and_auth(monkeypatch, validation_receipt_id="vr-abc320193def")
     monkeypatch.setattr(
         "app.api.layer3.post_sec_xbrl_operator_review_workflow_open_from_staged_evidence",
-        lambda req, request, db: {"status": "review_ready", "some_hash": "abc320193def" + "0" * 52},
+        lambda req, request, db: {"status": "review_ready"},
     )
     r = client.post(
         FULL_PIPELINE_URL,
@@ -1293,9 +1298,9 @@ def test_full_pipeline_backstop_allows_hash_substring(tmp_path, monkeypatch) -> 
 
 
 def test_full_pipeline_backstop_ignores_cik_in_operator_request_id(tmp_path, monkeypatch) -> None:
-    """An operator-supplied client_request_id that embeds the CIK (echoed in the envelope
-    request_id) must NOT trip the backstop — it scans only internal-derived sections, and the
-    operator's own id is not an honesty leak (codex P2: avoid post-commit false 409)."""
+    """An operator-supplied client_request_id that equals the CIK (echoed in the envelope
+    request_id) must NOT trip the backstop — it scans only the orchestrator's own additions,
+    not the operator-echoed envelope (codex P2: avoid post-commit false 409)."""
     client, _ = _make_test_client(tmp_path, monkeypatch)
     _stub_valid_corpus_and_auth(monkeypatch)
     monkeypatch.setattr(
@@ -1313,3 +1318,80 @@ def test_full_pipeline_backstop_ignores_cik_in_operator_request_id(tmp_path, mon
     )
     assert r.status_code == 200, r.text
     assert r.json()["operator_review"]["status"] == "review_ready"
+
+
+def test_full_pipeline_leaf_equals_raw_cik_helper() -> None:
+    """The backstop primitive matches leaf VALUES (string and numeric), excludes bool, and
+    does NOT match an incidental substring (codex P2: numeric-leaf leak)."""
+    from app.api.layer3 import _full_pipeline_leaf_equals_raw_cik as leaf_eq
+
+    raw = {"320193"}
+    assert leaf_eq("320193", raw) is True
+    assert leaf_eq(320193, raw) is True  # numeric leaf normalized to str
+    assert leaf_eq({"a": {"b": [1, 2, "320193"]}}, raw) is True  # nested
+    assert leaf_eq("abc320193def", raw) is False  # substring, not equal
+    assert leaf_eq(999999, raw) is False
+    assert leaf_eq(True, raw) is False  # bool excluded (subclasses int)
+    assert leaf_eq({"count": 3, "hash": "deadbeef" * 8}, raw) is False
+
+
+def test_full_pipeline_records_ownership_marker_for_caller(tmp_path, monkeypatch) -> None:
+    """The single-call route records the CURRENT caller's workspace ownership marker for the
+    selected sidecar — even though corpus-validation here is stubbed (modeling the cached
+    replay path that skips the marker write). Guarantees a second workspace can open an
+    already-validated ticker/CIK under AUTH_OWNER=proxy (codex P2)."""
+    from app.core.config import settings
+    from app.services import layer3_sec_xbrl_auth_binding as auth_binding_svc
+
+    storage_dir = tmp_path / "storage"
+    storage_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+
+    cik = "320193"
+    arelle_hash = _hash("b")
+    workspace_hash = _hash("d")
+    owner_hash = _hash("e")
+    record = {
+        "cik_hash": _sha256(cik),
+        "form_type": "10-K",
+        "supported_degraded_blocked": "supported",
+        "authority_hashes": {
+            "fact_authority_receipt_hash": arelle_hash,
+            "statement_classification_receipt_hash": _hash("c"),
+            "arelle_sidecar_receipt_hash": arelle_hash,
+        },
+    }
+    corpus = {
+        "connector_receipt_hash": _hash("a"),
+        "validation_receipt_id": "vr-marker",
+        "validation_receipt_hash": _sha256("marker"),
+        "filing_validation_records": [record],
+    }
+    monkeypatch.setattr(
+        orchestrator,
+        "layer3_sec_edgar_real_company_corpus_validation",
+        MagicMock(
+            validate_sec_edgar_real_company_corpus_product_path=lambda fields, db, evidence_owner=None: corpus,
+            VALIDATION_MODE=corpus_svc.VALIDATION_MODE,
+            OPERATOR_DECISION=corpus_svc.OPERATOR_DECISION,
+        ),
+    )
+
+    plan = orchestrator.prepare_full_pipeline_open_plan(
+        db=None,
+        fields={
+            "client_request_id": "fp-marker-1",
+            "cik": cik,
+            "company_matrix": ["AAPL"],
+            "operator_confirmation": True,
+        },
+        evidence_owner={"owner_ref_hash": owner_hash, "workspace_ref_hash": workspace_hash},
+    )
+    assert plan["open_payload"]["expected_sidecar_receipt_hash"] == arelle_hash
+    marker_path = (
+        Path(settings.storage_dir).resolve()  # record_ resolves storage_dir before writing
+        / auth_binding_svc.OWNERSHIP_MARKER_DIR
+        / workspace_hash
+        / f"sidecar-{arelle_hash}.json"
+    )
+    assert marker_path.exists(), f"ownership marker not recorded at {marker_path}"

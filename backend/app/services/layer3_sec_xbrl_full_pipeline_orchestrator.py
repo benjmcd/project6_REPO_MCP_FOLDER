@@ -13,10 +13,14 @@ import hashlib
 from collections.abc import Mapping
 from typing import Any
 
+from app.core.config import settings
 from app.services import (
     layer3_sec_edgar_real_company_corpus_validation,
     layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_xbrl_companyfacts_acquire_stage,
+)
+from app.services.layer3_sec_xbrl_auth_binding import (
+    record_sec_xbrl_evidence_ownership_marker,
 )
 
 SCHEMA_ID = "layer3.sec_xbrl_full_pipeline_orchestrator.v1"
@@ -274,6 +278,24 @@ def prepare_full_pipeline_open_plan(
     sidecar_param_hash = str(authority_hashes.get("fact_authority_receipt_hash") or "")
     classification_hash = str(authority_hashes.get("statement_classification_receipt_hash") or "")
     cik_hash = discovered_cik_hash
+
+    # Ensure the CURRENT caller's workspace ownership marker exists for the selected sidecar.
+    # corpus-validation writes it only on a FRESH (non-replay) sidecar derivation; on an
+    # idempotent cached replay — e.g. a second workspace opening an already-validated
+    # ticker/CIK — it returns the cached receipt WITHOUT writing the new caller's marker,
+    # which would then fail the staged-evidence open under AUTH_OWNER=proxy. This single-call
+    # route IS the staging authority, so record the marker here from the server-derived
+    # principal (idempotent no-op if present; skipped when owner/workspace are empty, e.g.
+    # none-mode). Use arelle_sidecar_receipt_hash — byte-identical to the sidecar_receipt_hash
+    # corpus-validation itself records and the open route checks.
+    arelle_sidecar_receipt_hash = str(authority_hashes.get("arelle_sidecar_receipt_hash") or "")
+    if arelle_sidecar_receipt_hash:
+        record_sec_xbrl_evidence_ownership_marker(
+            settings.storage_dir,
+            owner_ref_hash=str((evidence_owner or {}).get("owner_ref_hash", "")),
+            workspace_ref_hash=str((evidence_owner or {}).get("workspace_ref_hash", "")),
+            sidecar_receipt_hash=arelle_sidecar_receipt_hash,
+        )
 
     # Defense-in-depth: the supported filter gates on arelle_sidecar_receipt_hash, but the open
     # step consumes these two hashes. If either is empty, building the open request model would

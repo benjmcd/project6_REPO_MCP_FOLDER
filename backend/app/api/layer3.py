@@ -17741,6 +17741,28 @@ def post_sec_xbrl_operator_review_workflow_open_from_staged_evidence(
         raise
 
 
+def _full_pipeline_leaf_equals_raw_cik(node: Any, raw_ciks: set[str]) -> bool:
+    """Recursively report whether any LEAF value equals a raw CIK form.
+
+    Honesty-backstop primitive for the full-pipeline route. Uses VALUE EQUALITY, not a
+    substring scan: a genuine leak is a field whose value IS the raw CIK, whereas a numeric
+    CIK can appear incidentally inside a 64-char hex hash (a substring scan would false-fire).
+    Numeric leaves are normalized to str before comparing so a raw CIK carried as a JSON
+    number (e.g. ``"cik": 320193``) is still caught; bool is excluded (it subclasses int).
+    """
+    if isinstance(node, bool):
+        return False
+    if isinstance(node, str):
+        return node in raw_ciks
+    if isinstance(node, int):
+        return str(node) in raw_ciks
+    if isinstance(node, dict):
+        return any(_full_pipeline_leaf_equals_raw_cik(v, raw_ciks) for v in node.values())
+    if isinstance(node, (list, tuple)):
+        return any(_full_pipeline_leaf_equals_raw_cik(v, raw_ciks) for v in node)
+    return False
+
+
 @router.post(
     "/sec-xbrl/operator-review/workflow/open-full-pipeline",
     response_model=None,
@@ -17767,7 +17789,26 @@ def post_sec_xbrl_operator_review_workflow_open_full_pipeline(
             evidence_owner=owner_stamp,
         )
 
-        # 3) Construct the staged-evidence open request model and call the existing handler
+        # 3) Honesty backstop on the orchestrator's OWN additions (corpus_validation,
+        # companyfacts_stage), run BEFORE the open step's commit boundary so a tripped check
+        # never leaves a committed workflow behind. These sections are hash-only by
+        # construction; assert no leaf VALUE equals the raw CIK (verbatim or zero-stripped).
+        # operator_review is NOT scanned here — it is produced by the staged-evidence open
+        # handler, which guards its OWN output with redaction checks before ITS commit. The
+        # operator-echoed envelope (request_id) is also intentionally out of scope.
+        _raw_ciks = {c for c in (payload.cik, str(payload.cik).strip().lstrip("0")) if c}
+        _orchestrator_additions = {
+            "corpus_validation": plan["corpus_validation"],
+            "companyfacts_stage": plan["companyfacts_stage"],
+        }
+        if _full_pipeline_leaf_equals_raw_cik(_orchestrator_additions, _raw_ciks):
+            raise layer3_sec_xbrl_full_pipeline_orchestrator.SecXbrlFullPipelineOrchestratorError(
+                "full_pipeline_raw_cik_in_response",
+                "Full-pipeline response failed the raw-CIK honesty backstop.",
+                http_status=409,
+            )
+
+        # 4) Construct the staged-evidence open request model and call the existing handler
         open_req = Layer3SecXbrlOperatorReviewWorkflowOpenFromStagedEvidenceRequest(
             **plan["open_payload"]
         )
@@ -17779,8 +17820,8 @@ def post_sec_xbrl_operator_review_workflow_open_full_pipeline(
         if isinstance(open_result, JSONResponse):
             return open_result
 
-        # 4) Compose combined response — no raw CIK, no raw values, hashes only.
-        response_body = {
+        # 5) Compose combined response — no raw CIK, no raw values, hashes only.
+        return {
             **base_response(
                 layer3_sec_xbrl_full_pipeline_orchestrator.SCHEMA_ID,
                 request_id=payload.client_request_id,
@@ -17791,37 +17832,6 @@ def post_sec_xbrl_operator_review_workflow_open_full_pipeline(
             "operator_review": open_result,
             "production_readiness_claimed": False,
         }
-        # Honesty backstop: the internal-derived sections are hash-only by construction, but
-        # assert they never echo the raw CIK before returning. Scope: ONLY the sections
-        # derived from internal processing (corpus_validation, companyfacts_stage,
-        # operator_review) — NOT the response envelope, whose request_id is the operator's own
-        # client_request_id echoed back (the operator may legitimately embed their CIK there;
-        # scanning it would false-fire post-commit). Use LEAF-VALUE EQUALITY (not a substring
-        # scan): a genuine leak is a field whose value IS the raw CIK, whereas a numeric CIK
-        # can appear as an incidental substring of a 64-char hex hash. Fail closed on a match.
-        _raw_ciks = {c for c in (payload.cik, str(payload.cik).strip().lstrip("0")) if c}
-
-        def _leaf_equals_raw_cik(node: Any) -> bool:
-            if isinstance(node, str):
-                return node in _raw_ciks
-            if isinstance(node, dict):
-                return any(_leaf_equals_raw_cik(v) for v in node.values())
-            if isinstance(node, (list, tuple)):
-                return any(_leaf_equals_raw_cik(v) for v in node)
-            return False
-
-        _internal_derived = {
-            "corpus_validation": response_body["corpus_validation"],
-            "companyfacts_stage": response_body["companyfacts_stage"],
-            "operator_review": response_body["operator_review"],
-        }
-        if _leaf_equals_raw_cik(_internal_derived):
-            raise layer3_sec_xbrl_full_pipeline_orchestrator.SecXbrlFullPipelineOrchestratorError(
-                "full_pipeline_raw_cik_in_response",
-                "Full-pipeline response failed the raw-CIK honesty backstop.",
-                http_status=409,
-            )
-        return response_body
 
     except layer3_sec_xbrl_full_pipeline_orchestrator.SecXbrlFullPipelineOrchestratorError as exc:
         db.rollback()
