@@ -1423,6 +1423,7 @@ const OPERATION_DOCK_STEPS = [
     { id: 'gate-c-band', key: 'gate_c', label: 'Gate C Typing Review', shortLabel: 'Gate C', canvasLink: '3B modality grouping', canvasTarget: '3b', canvasRole: 'Sublayer 3B modality object banks' },
     { id: 'plan-band', key: 'plan', label: 'Plan Preview And Approval', shortLabel: 'Plan', canvasLink: '3C process planning', canvasTarget: '3c-process', canvasRole: 'Sublayer 3C process/status planes' },
     { id: 'result-review-band', key: 'results', label: 'Result Review', shortLabel: 'Results', canvasLink: '3C output authority', canvasTarget: '3c-output', canvasRole: 'Sublayer 3C output/result fields' },
+    { id: 'analysis-product-workspace-band', key: 'analysis_products', label: 'Analysis Products', shortLabel: 'Products', canvasLink: '3C product workspace', canvasTarget: '3c-output', canvasRole: 'Sublayer 3C analysis product authoring and promotion plane' },
     { id: 'package-review-band', key: 'package', label: 'Package Review', shortLabel: 'Package', canvasLink: 'post-3C package controls', canvasTarget: 'post-3c', canvasRole: 'Post-3C package review control plane' },
     { id: 'handoff-export-band', key: 'handoff', label: 'Handoff / Export Preparation', shortLabel: 'Handoff', canvasLink: 'post-3C handoff controls', canvasTarget: 'post-3c', canvasRole: 'Post-3C handoff/export control plane' },
     { id: 'aps-handoff-band', key: 'aps', label: 'APS Handoff Dispatch', shortLabel: 'APS', canvasLink: 'post-3C APS bridge', canvasTarget: 'post-3c', canvasRole: 'Post-3C APS dispatch bridge' },
@@ -8408,6 +8409,69 @@ function renderResultReviewPanel() {
             ${renderErrorCard(error)}
         </div>
     `;
+}
+
+function renderAnalysisProductWorkspacePanel() {
+    const inventoryView = document.getElementById('apw-inventory-view');
+    const genWsSelect = document.getElementById('apw-gen-ws');
+    const trProductSelect = document.getElementById('apw-tr-product');
+
+    const blankOption = '<option value=""></option>';
+
+    if (!State.sessionSummary) {
+        if (inventoryView) inventoryView.innerHTML = '<p class="empty-panel-message">Load a session summary to view analysis products.</p>';
+        if (genWsSelect) genWsSelect.innerHTML = blankOption;
+        if (trProductSelect) trProductSelect.innerHTML = blankOption;
+        return;
+    }
+
+    const projection = currentAnalysisProductInventoryProjection();
+    if (!projection) {
+        if (inventoryView) inventoryView.innerHTML = '<p class="empty-panel-message">No analysis product inventory projection available.</p>';
+        if (genWsSelect) genWsSelect.innerHTML = blankOption;
+        if (trProductSelect) trProductSelect.innerHTML = blankOption;
+        return;
+    }
+
+    const st = analysisProductInventoryProjectionStatus(projection);
+    const analystProducts = st.analystProducts;
+    const workingSets = st.workingSets;
+
+    if (inventoryView) {
+        if (analystProducts.length === 0) {
+            inventoryView.innerHTML = '<p class="empty-panel-message">No analyst products in this session.</p>';
+        } else {
+            const rows = analystProducts.map((product) => analystProductRow(product)).join('');
+            inventoryView.innerHTML = `<ul class="mockup-analyst-product-list">${rows}</ul>`;
+        }
+    }
+
+    if (genWsSelect) {
+        const prevGenWs = genWsSelect.value;
+        genWsSelect.innerHTML = blankOption + workingSets.map((ws) => {
+            const val = escapeHtml(String(ws.working_set_id || ''));
+            const name = escapeHtml(String(ws.name || ''));
+            const count = escapeHtml(String(ws.member_count || 0));
+            return `<option value="${val}">${name} (${count})</option>`;
+        }).join('');
+        if (prevGenWs && Array.from(genWsSelect.options).some((o) => o.value === prevGenWs)) {
+            genWsSelect.value = prevGenWs;
+        }
+    }
+
+    if (trProductSelect) {
+        const prevProduct = trProductSelect.value;
+        trProductSelect.innerHTML = blankOption + analystProducts.map((product) => {
+            const pid = escapeHtml(String(product.product_id || ''));
+            const kind = escapeHtml(String(product.product_kind || ''));
+            const status = escapeHtml(String(product.lifecycle_status || ''));
+            const shortId = escapeHtml(String(product.product_id || '').slice(0, 8));
+            return `<option value="${pid}">${kind} / ${status} / ${shortId}</option>`;
+        }).join('');
+        if (prevProduct && Array.from(trProductSelect.options).some((o) => o.value === prevProduct)) {
+            trProductSelect.value = prevProduct;
+        }
+    }
 }
 
 function packageReviewPanelState() {
@@ -25779,6 +25843,17 @@ function operationDockStatus(step) {
         if (canSubmitExternalExportDownloadPrepare()) return { state: 'ready', label: 'prepare ready', detail: 'Prepared source-directory handoff can prepare external export/download readiness.' };
         if (State.sessionSummary?.external_export_download?.available === true) return { state: 'ready', label: 'prepare ready', detail: 'APS dispatch can prepare external export/download readiness.' };
         return { state: 'blocked', label: 'blocked', detail: 'Dispatch APS handoff before external export/download readiness.' };
+    case 'analysis_products': {
+        const inv = currentAnalysisProductInventoryProjection();
+        const st = analysisProductInventoryProjectionStatus(inv);
+        if (inv && Array.isArray(st.analystProducts) && st.analystProducts.length > 0) {
+            return { state: 'live', label: 'products present', detail: 'Session has 3C analysis products to author, promote, or generate.' };
+        }
+        if (inv) {
+            return { state: 'ready', label: 'workspace ready', detail: 'Author drafts, build working sets, run deterministic generation.' };
+        }
+        return { state: 'blocked', label: 'awaiting session', detail: 'Load a session summary to use the 3C product workspace.' };
+    }
     default:
         return { state: 'blocked', label: 'unknown', detail: 'Operation state is not reported.' };
     }
@@ -26317,6 +26392,7 @@ function renderAll() {
     renderPlanPanel();
     renderExecutionSelectionStartPanel();
     renderResultReviewPanel();
+    renderAnalysisProductWorkspacePanel();
     renderPackageReviewPreviewPanel();
     renderPackageLifecycleDashboardPanel();
     renderPackageSupersessionPreviewPanel();
@@ -30968,6 +31044,203 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
         renderSublayerMap();
     }
 });
+
+(function apwReasonCodes() {
+    const REASON_CODES_BY_INTENT = {
+        promote: ['proposed_ready', 'validation_passed'],
+        accept: ['grounded_accept'],
+        mark_package_eligible: ['package_ready'],
+        reject: ['insufficient_grounding', 'evidence_gap', 'operator_rejected'],
+        revise: ['revision_requested'],
+    };
+
+    function populateApwTrReason(intent) {
+        const reasonSelect = document.getElementById('apw-tr-reason');
+        if (!reasonSelect) return;
+        const codes = REASON_CODES_BY_INTENT[intent] || [];
+        reasonSelect.innerHTML = '<option value=""></option>' + codes.map((c) => {
+            const v = escapeHtml(c);
+            return `<option value="${v}">${v}</option>`;
+        }).join('');
+    }
+
+    function bindApwTrIntent() {
+        const intentSelect = document.getElementById('apw-tr-intent');
+        if (!intentSelect) return;
+        intentSelect.addEventListener('change', () => populateApwTrReason(intentSelect.value));
+        populateApwTrReason(intentSelect.value);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindApwTrIntent);
+    } else {
+        bindApwTrIntent();
+    }
+}());
+
+(function apwFormHandlers() {
+    async function refreshSession(sessionId) {
+        State.sessionSummary = await getJson(`/session/${encodeURIComponent(sessionId)}`);
+        renderAll();
+    }
+
+    function setApwStatus(statusEl, message) {
+        if (!statusEl) return;
+        statusEl.textContent = message;
+    }
+
+    function bindApwDraftForm() {
+        const form = document.getElementById('apw-draft-form');
+        if (!form) return;
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const statusEl = document.getElementById('apw-draft-status');
+            if (!currentSessionId()) {
+                setApwStatus(statusEl, 'Load a session first.');
+                return;
+            }
+            const evId = (document.getElementById('apw-draft-ev-id')?.value || '').trim();
+            const evidence = evId ? [{
+                ref_kind: document.getElementById('apw-draft-ev-kind')?.value || '',
+                ref_id: evId,
+                evidence_role: document.getElementById('apw-draft-ev-role')?.value || '',
+            }] : [];
+            const body = {
+                client_request_id: requestId(),
+                session_id: currentSessionId(),
+                product_kind: document.getElementById('apw-draft-kind')?.value || '',
+                title: document.getElementById('apw-draft-title')?.value || '',
+                body: document.getElementById('apw-draft-body')?.value || '',
+                is_non_evidentiary: document.getElementById('apw-draft-non-evidentiary')?.checked === true,
+                evidence,
+            };
+            try {
+                const res = await postJson('/analysis-product/draft', body);
+                await refreshSession(res.session_id || currentSessionId());
+                setApwStatus(statusEl, `Draft created: ${escapeHtml(String(res.product_id || res.status || 'ok'))}`);
+            } catch (err) {
+                setApwStatus(statusEl, `Draft failed: ${escapeHtml(err.message || 'request blocked')}`);
+            }
+        });
+    }
+
+    function bindApwWsForm() {
+        const form = document.getElementById('apw-ws-form');
+        if (!form) return;
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const statusEl = document.getElementById('apw-ws-status');
+            if (!currentSessionId()) {
+                setApwStatus(statusEl, 'Load a session first.');
+                return;
+            }
+            const memberId = (document.getElementById('apw-ws-member-id')?.value || '').trim();
+            const members = memberId ? [{
+                ref_kind: document.getElementById('apw-ws-member-kind')?.value || '',
+                ref_id: memberId,
+            }] : [];
+            const body = {
+                client_request_id: requestId(),
+                session_id: currentSessionId(),
+                name: document.getElementById('apw-ws-name')?.value || '',
+                members,
+            };
+            try {
+                const res = await postJson('/working-set', body);
+                await refreshSession(res.session_id || currentSessionId());
+                setApwStatus(statusEl, `Working set created: ${escapeHtml(String(res.working_set_id || res.status || 'ok'))}`);
+            } catch (err) {
+                setApwStatus(statusEl, `Working set failed: ${escapeHtml(err.message || 'request blocked')}`);
+            }
+        });
+    }
+
+    function bindApwGenForm() {
+        const form = document.getElementById('apw-gen-form');
+        if (!form) return;
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const statusEl = document.getElementById('apw-gen-status');
+            if (!currentSessionId()) {
+                setApwStatus(statusEl, 'Load a session first.');
+                return;
+            }
+            const workingSetId = document.getElementById('apw-gen-ws')?.value || '';
+            if (!workingSetId) {
+                setApwStatus(statusEl, 'Select a working set before generating.');
+                return;
+            }
+            const body = {
+                client_request_id: requestId(),
+                session_id: currentSessionId(),
+                working_set_id: workingSetId,
+                method_id: 'working_set_composition_summary',
+            };
+            try {
+                const res = await postJson('/analysis-product/generate', body);
+                await refreshSession(res.session_id || currentSessionId());
+                setApwStatus(statusEl, `Generated: ${escapeHtml(String(res.product_id || res.status || 'ok'))}`);
+            } catch (err) {
+                setApwStatus(statusEl, `Generate failed: ${escapeHtml(err.message || 'request blocked')}`);
+            }
+        });
+    }
+
+    function bindApwTransitionForm() {
+        const form = document.getElementById('apw-transition-form');
+        if (!form) return;
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const statusEl = document.getElementById('apw-tr-status');
+            const rawProductId = document.getElementById('apw-tr-product')?.value || '';
+            // Inventory projection emits product_id prefixed (layer3_analyst_product:<uuid>);
+            // the transition endpoint looks up the bare analysis_product_id. Strip before path.
+            const productId = rawProductId.replace(/^layer3_analyst_product:/, '');
+            const intent = document.getElementById('apw-tr-intent')?.value || '';
+            const notes = (document.getElementById('apw-tr-notes')?.value || '').trim();
+            if (!currentSessionId()) {
+                setApwStatus(statusEl, 'Load a session first.');
+                return;
+            }
+            if (!productId) {
+                setApwStatus(statusEl, 'Select a product.');
+                return;
+            }
+            if ((intent === 'reject' || intent === 'revise') && !notes) {
+                setApwStatus(statusEl, 'Notes required for reject/revise.');
+                return;
+            }
+            const body = {
+                client_request_id: requestId(),
+                session_id: currentSessionId(),
+                decision_intent: intent,
+                decision_reason_code: document.getElementById('apw-tr-reason')?.value || '',
+                ...(notes ? { decision_notes: notes } : {}),
+            };
+            try {
+                const res = await postJson(`/analysis-product/${encodeURIComponent(productId)}/transition`, body);
+                await refreshSession(res.session_id || currentSessionId());
+                setApwStatus(statusEl, `Transition recorded: ${escapeHtml(String(res.lifecycle_status || res.status || 'ok'))}`);
+            } catch (err) {
+                setApwStatus(statusEl, `Transition failed: ${escapeHtml(err.message || 'request blocked')}`);
+            }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            bindApwDraftForm();
+            bindApwWsForm();
+            bindApwGenForm();
+            bindApwTransitionForm();
+        });
+    } else {
+        bindApwDraftForm();
+        bindApwWsForm();
+        bindApwGenForm();
+        bindApwTransitionForm();
+    }
+}());
 
 init();
 

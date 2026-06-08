@@ -10157,9 +10157,14 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   await page.locator('#theme-selector').selectOption('workbench');
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(page.locator('.operation-dock-tab')).toHaveCount(10);
+  await expect(page.locator('.operation-dock-tab')).toHaveCount(11);
   await expect(page.locator('.operations-dock > .operation-panel-active')).toHaveCount(1);
   await expect(page.locator('.operations-dock > .operation-panel-inactive').first()).toBeAttached();
+  // Regression guard: registered 3C-products panel must be hidden + inactive while another tab is active
+  // (the reverted bug left an unregistered band display:grid, overlapping #result-review-submit).
+  await expect(page.locator('#analysis-product-workspace-band')).toHaveAttribute('data-operation-active', 'false');
+  await expect(page.locator('#analysis-product-workspace-band')).toBeHidden();
+  await expect(page.locator('.operation-dock-tab', { hasText: 'Products' })).toHaveCount(1);
   await expect(page.locator('#operations-dock-summary')).toContainText('Intent');
   await expect(page.locator('#operations-dock-summary')).toContainText('3A intake setup');
   await expect(page.locator('#operations-dock-summary')).toContainText('Sublayer 3A intake/specification field');
@@ -10238,7 +10243,7 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   expect(workbenchStyles.workspaceShare).toBeGreaterThan(0.92);
   expect(workbenchStyles.railBackground).not.toBe('rgba(0, 0, 0, 0)');
   expect(workbenchStyles.chipBackground).not.toBe('rgba(0, 0, 0, 0)');
-  await expect(page.locator('.operation-dock-tab')).toHaveCount(10);
+  await expect(page.locator('.operation-dock-tab')).toHaveCount(11);
   await expect(page.locator('.operation-dock-tab').first()).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#intent-band')).toHaveAttribute('data-operation-active', 'true');
   await expect(page.locator('#gate-b-band')).toHaveAttribute('data-operation-active', 'false');

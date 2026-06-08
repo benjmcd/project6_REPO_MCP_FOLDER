@@ -737,6 +737,128 @@
                 </form>
             </section>
 
+            <section id="analysis-product-workspace-band" class="workband" aria-labelledby="analysis-product-workspace-heading" tabindex="-1">
+                <div class="section-heading">
+                    <div>
+                        <h2 id="analysis-product-workspace-heading">Analysis Products</h2>
+                        <span class="status-pill preview">3C workspace</span>
+                    </div>
+                </div>
+                <div id="apw-inventory-view" class="result-review-panel" aria-live="polite">
+                    <div class="empty-panel">Load a session summary to view 3C analysis products.</div>
+                </div>
+                <form id="apw-draft-form">
+                    <fieldset>
+                        <legend>Draft Analysis Product</legend>
+                        <div class="result-review-controls">
+                            <label for="apw-draft-kind">Product kind</label>
+                            <select id="apw-draft-kind">
+                                <option value="analyst_note">analyst_note</option>
+                                <option value="fact">fact</option>
+                                <option value="metric">metric</option>
+                                <option value="finding">finding</option>
+                                <option value="insight">insight</option>
+                                <option value="diagnostic">diagnostic</option>
+                                <option value="summary">summary</option>
+                                <option value="hypothesis">hypothesis</option>
+                                <option value="recommendation">recommendation</option>
+                            </select>
+                            <label for="apw-draft-title">Title</label>
+                            <input type="text" id="apw-draft-title">
+                            <label for="apw-draft-body">Body</label>
+                            <textarea id="apw-draft-body" rows="3"></textarea>
+                            <label>
+                                <input type="checkbox" id="apw-draft-non-evidentiary">
+                                Non-evidentiary (analyst note / hypothesis only)
+                            </label>
+                            <label for="apw-draft-ev-kind">Evidence kind</label>
+                            <select id="apw-draft-ev-kind">
+                                <option value="">(none)</option>
+                                <option value="material_snapshot">material_snapshot</option>
+                                <option value="pass_run">pass_run</option>
+                                <option value="output_package">output_package</option>
+                                <option value="analysis_set">analysis_set</option>
+                                <option value="prior_product">prior_product</option>
+                                <option value="working_set">working_set</option>
+                            </select>
+                            <label for="apw-draft-ev-id">Evidence ref id</label>
+                            <input type="text" id="apw-draft-ev-id">
+                            <label for="apw-draft-ev-role">Evidence role</label>
+                            <select id="apw-draft-ev-role">
+                                <option value="observation">observation</option>
+                                <option value="measurement">measurement</option>
+                                <option value="claim">claim</option>
+                                <option value="interpretation">interpretation</option>
+                                <option value="context">context</option>
+                                <option value="counterpoint">counterpoint</option>
+                            </select>
+                            <button id="apw-draft-submit" type="submit" class="primary-btn">Save Draft</button>
+                        </div>
+                    </fieldset>
+                    <div id="apw-draft-status" class="result-review-panel" aria-live="polite"></div>
+                </form>
+                <form id="apw-ws-form">
+                    <fieldset>
+                        <legend>Working Set</legend>
+                        <div class="result-review-controls">
+                            <label for="apw-ws-name">Working set name</label>
+                            <input type="text" id="apw-ws-name">
+                            <label for="apw-ws-member-kind">Member kind</label>
+                            <select id="apw-ws-member-kind">
+                                <option value="material_snapshot">material_snapshot</option>
+                                <option value="pass_run">pass_run</option>
+                                <option value="output_package">output_package</option>
+                                <option value="analysis_set">analysis_set</option>
+                                <option value="prior_product">prior_product</option>
+                            </select>
+                            <label for="apw-ws-member-id">Member ref id</label>
+                            <input type="text" id="apw-ws-member-id">
+                            <button id="apw-ws-submit" type="submit" class="primary-btn">Create Working Set</button>
+                        </div>
+                    </fieldset>
+                    <div id="apw-ws-status" class="result-review-panel" aria-live="polite"></div>
+                </form>
+                <form id="apw-gen-form">
+                    <fieldset>
+                        <legend>Generate Product</legend>
+                        <div class="result-review-controls">
+                            <label for="apw-gen-ws">Working set</label>
+                            <select id="apw-gen-ws">
+                                <option value="">(select working set)</option>
+                            </select>
+                            <p class="rail-label">Method: working_set_composition_summary</p>
+                            <button id="apw-gen-submit" type="submit" class="primary-btn">Generate Product</button>
+                        </div>
+                    </fieldset>
+                    <div id="apw-gen-status" class="result-review-panel" aria-live="polite"></div>
+                </form>
+                <form id="apw-transition-form">
+                    <fieldset>
+                        <legend>Product Decision</legend>
+                        <div class="result-review-controls">
+                            <label for="apw-tr-product">Product</label>
+                            <select id="apw-tr-product">
+                                <option value="">(select product)</option>
+                            </select>
+                            <label for="apw-tr-intent">Decision</label>
+                            <select id="apw-tr-intent">
+                                <option value="promote">promote</option>
+                                <option value="accept">accept</option>
+                                <option value="mark_package_eligible">mark_package_eligible</option>
+                                <option value="reject">reject</option>
+                                <option value="revise">revise</option>
+                            </select>
+                            <label for="apw-tr-reason">Reason code</label>
+                            <select id="apw-tr-reason"></select>
+                            <label for="apw-tr-notes">Notes</label>
+                            <textarea id="apw-tr-notes" rows="2"></textarea>
+                            <button id="apw-tr-submit" type="submit" class="primary-btn">Submit Decision</button>
+                        </div>
+                    </fieldset>
+                    <div id="apw-tr-status" class="result-review-panel" aria-live="polite"></div>
+                </form>
+            </section>
+
             <section id="package-review-band" class="workband package-review-band" aria-labelledby="package-review-heading" tabindex="-1">
                 <div class="section-heading">
                     <div>
