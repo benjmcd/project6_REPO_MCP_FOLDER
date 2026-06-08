@@ -4866,6 +4866,49 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
     overflow-wrap: anywhere;
 }
 
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-detail {
+    display: grid;
+    gap: 3px;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-detail > summary {
+    display: grid;
+    gap: 3px;
+    cursor: pointer;
+    list-style: none;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-detail-grid {
+    display: grid;
+    gap: 2px;
+    margin: 4px 0 0;
+    padding: 6px;
+    border: 1px dashed rgba(248, 248, 248, 0.18);
+    background: rgba(248, 248, 248, 0.04);
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-detail-grid > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-detail-grid dt {
+    color: rgba(248, 248, 248, 0.62);
+    font-size: 0.58rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-detail-grid dd {
+    margin: 0;
+    color: rgba(248, 248, 248, 0.82);
+    font-size: 0.58rem;
+    overflow-wrap: anywhere;
+    text-align: right;
+}
+
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-execution-lanes-projection-head,
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-execution-lanes-source-list {
     display: flex;

@@ -2043,6 +2043,35 @@ function analysisProductContentLine(product) {
     return parts.length ? `<small>${escapeHtml(parts.join(' / '))}</small>` : '';
 }
 
+function analysisProductDetailMarkup(product, productClass) {
+    const isObj = (value) => value && typeof value === 'object' && !Array.isArray(value);
+    const refs = isObj(product?.source_refs) ? product.source_refs : {};
+    const rows = [];
+    const add = (label, value) => {
+        if (value === undefined || value === null || value === '') return;
+        rows.push([label, shortText(String(value), 48)]);
+    };
+    if (productClass === 'output_package') {
+        add('Output package', refs.output_package_id);
+        add('Reconciliation', refs.reconciliation_record_id);
+        add('Reconciliation status', product?.reconciliation_status);
+        add('Basis hash', product?.payload_hash);
+    } else {
+        add('Pass run', refs.pass_run_id);
+        add('Analysis run', refs.analysis_run_id);
+        add('Analysis plan', refs.analysis_plan_id);
+        add('Analysis set', refs.analysis_set_id);
+        const prov = isObj(product?.provenance) ? product.provenance : {};
+        const snapshots = Array.isArray(prov.material_snapshot_ids) ? prov.material_snapshot_ids : [];
+        const hashes = Array.isArray(prov.source_basis_hashes) ? prov.source_basis_hashes : [];
+        if (snapshots.length) add('Source objects', snapshots.length);
+        if (hashes.length) add('Basis hashes', hashes.slice(0, 3).map((hash) => shortText(String(hash), 16)).join(', '));
+    }
+    if (!rows.length) return '';
+    const grid = rows.map(([key, value]) => `<div><dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('');
+    return `<dl class="mockup-analysis-product-detail-grid">${grid}</dl>`;
+}
+
 function analysisProductInventoryProductRow(product, productClass) {
     const blocked = Array.isArray(product?.blocked_reasons) ? product.blocked_reasons : [];
     const status = product?.lifecycle_status || 'not reported';
@@ -2053,13 +2082,19 @@ function analysisProductInventoryProductRow(product, productClass) {
     const blockedLine = blocked.length
         ? `<small>${escapeHtml(shortText(blocked.map(humanizeToken).join(', '), 72))}</small>`
         : '';
+    const detailMarkup = analysisProductDetailMarkup(product, productClass);
     return `
         <li data-product-class="${escapeHtml(productClass)}" data-lifecycle-status="${escapeHtml(status)}">
-            <span>${escapeHtml(shortText(product?.product_id || 'unidentified product', 48))}</span>
-            <strong>${escapeHtml(descriptor)}</strong>
-            <em>${escapeHtml(analysisProductEligibilityLabel(product))}</em>
-            ${contentLine}
-            ${blockedLine}
+            <details class="mockup-analysis-product-detail">
+                <summary>
+                    <span>${escapeHtml(shortText(product?.product_id || 'unidentified product', 48))}</span>
+                    <strong>${escapeHtml(descriptor)}</strong>
+                    <em>${escapeHtml(analysisProductEligibilityLabel(product))}</em>
+                </summary>
+                ${detailMarkup}
+                ${contentLine}
+                ${blockedLine}
+            </details>
         </li>
     `;
 }
