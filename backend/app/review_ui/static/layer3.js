@@ -26368,8 +26368,11 @@ function renderAll() {
     renderProviderPublicUrlPanel();
     setGateControls();
     renderOperationsDock();
-    renderAnalysisProductBandPanel();
-    renderWorkingSetBandPanel();
+    // The 3C product/working-set band panels are isolated: a render error in them
+    // must never break the rest of the workbench render (existing controls stay live).
+    // Swallow silently (no addEvent) to avoid any re-render recursion from within renderAll.
+    try { renderAnalysisProductBandPanel(); } catch (err) { /* isolated: band render must not break the page */ }
+    try { renderWorkingSetBandPanel(); } catch (err) { /* isolated: band render must not break the page */ }
 }
 
 function executionSelectionPayload() {
