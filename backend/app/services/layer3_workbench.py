@@ -266,6 +266,7 @@ from app.services.layer3_sublayer_state import (
     serialize_analysis_set as _serialize_analysis_set,
     serialize_analysis_unit as _serialize_analysis_unit,
     serialize_typing_record as _serialize_typing_record,
+    session_analyst_products as _session_analyst_products,
     session_output_package_products as _session_output_package_products,
     session_reconciliation_record as _session_reconciliation_record,
     session_sublayer_visualization_state as _session_sublayer_visualization_state,
@@ -19326,6 +19327,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         execution_result_review=execution_result_review_state,
         output_package_products=_session_output_package_products(db, session_id=session_id),
         reconciliation=_session_reconciliation_record(db, session_id=session_id),
+        analyst_products=_session_analyst_products(db, session_id=session_id),
         current_gate=current_gate,
     )
 

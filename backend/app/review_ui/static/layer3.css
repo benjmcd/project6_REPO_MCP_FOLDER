@@ -4909,6 +4909,30 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
     text-align: right;
 }
 
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analyst-product-list {
+    border-top: 1px solid rgba(248, 248, 248, 0.12);
+    margin-top: 4px;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analyst-product-item {
+    list-style: none;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analyst-product-lifecycle-badge {
+    font-style: normal;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    opacity: 0.75;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analyst-product-evidence-refs {
+    list-style: none;
+    padding: 0;
+    margin: 2px 0 0 8px;
+    font-size: 0.58rem;
+    opacity: 0.8;
+}
+
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-execution-lanes-projection-head,
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-execution-lanes-source-list {
     display: flex;

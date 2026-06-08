@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from app.models.models import (
     L3AnalysisGroup,
     L3AnalysisPlan,
+    L3AnalysisProduct,
+    L3AnalysisProductEvidenceLink,
     L3AnalysisSet,
     L3AnalysisUnit,
     L3MaterialSnapshot,
@@ -325,3 +327,62 @@ def session_reconciliation_record(db: Session, *, session_id: str) -> dict[str, 
         .first()
     )
     return serialize_reconciliation_record(record) if record is not None else None
+
+
+def serialize_analysis_product(
+    product: L3AnalysisProduct,
+    evidence_links: list[L3AnalysisProductEvidenceLink],
+) -> dict[str, Any]:
+    """Read-only bounded serialization of an analysis product.
+
+    The full body text is intentionally excluded from the inventory shape
+    to keep the response bounded.  Only safe identity/basis fields and
+    evidence refs (ids only) are exposed.
+    """
+    by_role: dict[str, int] = {}
+    for link in evidence_links:
+        by_role[link.evidence_role] = by_role.get(link.evidence_role, 0) + 1
+    return {
+        "analysis_product_id": product.analysis_product_id,
+        "product_kind": product.product_kind,
+        "executor_type": product.executor_type,
+        "lifecycle_status": product.lifecycle_status,
+        "title": product.title,
+        "grounded": not bool(product.is_non_evidentiary),
+        "is_non_evidentiary": bool(product.is_non_evidentiary),
+        "evidence_count": len(evidence_links),
+        "by_evidence_role": by_role,
+        "evidence_refs": [
+            {
+                "ref_kind": link.ref_kind,
+                "ref_id": link.ref_id,
+                "evidence_role": link.evidence_role,
+            }
+            for link in evidence_links
+        ],
+        "basis_hash": product.basis_hash,
+        "spec_hash": product.spec_hash,
+        "created_at": product.created_at.isoformat() if product.created_at is not None else None,
+    }
+
+
+def session_analyst_products(db: Session, *, session_id: str) -> list[dict[str, Any]]:
+    """Return bounded read-only inventory of all analysis products in the session."""
+    products = (
+        db.query(L3AnalysisProduct)
+        .filter(L3AnalysisProduct.session_id == session_id)
+        .order_by(L3AnalysisProduct.analysis_product_id.asc())
+        .all()
+    )
+    result: list[dict[str, Any]] = []
+    for product in products:
+        links = (
+            db.query(L3AnalysisProductEvidenceLink)
+            .filter(
+                L3AnalysisProductEvidenceLink.analysis_product_id == product.analysis_product_id
+            )
+            .order_by(L3AnalysisProductEvidenceLink.evidence_link_id.asc())
+            .all()
+        )
+        result.append(serialize_analysis_product(product, links))
+    return result

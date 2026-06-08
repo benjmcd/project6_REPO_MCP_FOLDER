@@ -276,6 +276,68 @@ def _package_rollup(products: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _enumerate_analyst_products(analyst_products: list[Any]) -> list[dict[str, Any]]:
+    products: list[dict[str, Any]] = []
+    for entry in _as_list(analyst_products):
+        record = _as_dict(entry)
+        analysis_product_id = record.get("analysis_product_id")
+        if analysis_product_id is None:
+            continue
+        evidence_refs_raw = _as_list(record.get("evidence_refs"))
+        bounded_refs = [
+            {
+                "ref_kind": ref.get("ref_kind"),
+                "ref_id": ref.get("ref_id"),
+                "evidence_role": ref.get("evidence_role"),
+            }
+            for ref in (_as_dict(r) for r in evidence_refs_raw)
+        ]
+        products.append(
+            {
+                "product_id": f"layer3_analyst_product:{analysis_product_id}",
+                "product_kind": record.get("product_kind"),
+                "executor_type": record.get("executor_type"),
+                "lifecycle_status": record.get("lifecycle_status"),
+                "grounded": record.get("grounded"),
+                "is_non_evidentiary": record.get("is_non_evidentiary"),
+                "evidence_count": record.get("evidence_count"),
+                "by_evidence_role": _as_dict(record.get("by_evidence_role")),
+                "evidence_refs": bounded_refs,
+                "basis_hash": record.get("basis_hash"),
+                "blocked_reasons": ["draft_not_promotable"],
+            }
+        )
+    return products
+
+
+def _analyst_rollup(analyst_products: list[dict[str, Any]]) -> dict[str, Any]:
+    by_kind: dict[str, int] = {}
+    by_lifecycle_status: dict[str, int] = {}
+    by_executor_type: dict[str, int] = {}
+    grounded_count = 0
+    non_evidentiary_count = 0
+    for product in analyst_products:
+        kind = str(product.get("product_kind") or "unknown")
+        by_kind[kind] = by_kind.get(kind, 0) + 1
+        raw_status = product.get("lifecycle_status")
+        status = str(raw_status) if raw_status is not None else "unknown"
+        by_lifecycle_status[status] = by_lifecycle_status.get(status, 0) + 1
+        raw_exec = product.get("executor_type")
+        exec_type = str(raw_exec) if raw_exec is not None else "unknown"
+        by_executor_type[exec_type] = by_executor_type.get(exec_type, 0) + 1
+        if product.get("grounded"):
+            grounded_count += 1
+        if product.get("is_non_evidentiary"):
+            non_evidentiary_count += 1
+    return {
+        "by_kind": by_kind,
+        "by_lifecycle_status": by_lifecycle_status,
+        "by_executor_type": by_executor_type,
+        "grounded_count": grounded_count,
+        "non_evidentiary_count": non_evidentiary_count,
+    }
+
+
 def analysis_product_inventory_projection(
     *,
     sublayer_visualization: dict[str, Any],
@@ -283,6 +345,7 @@ def analysis_product_inventory_projection(
     execution_result_review: dict[str, Any],
     output_package_products: list[Any] | None = None,
     reconciliation: dict[str, Any] | None = None,
+    analyst_products: list[Any] | None = None,
     current_gate: str,
 ) -> dict[str, Any]:
     """Read-only unified inventory of derived Sublayer 3C analysis products for a session.
@@ -301,6 +364,7 @@ def analysis_product_inventory_projection(
     environment = _as_dict(analysis_environment_projection)
     review = _as_dict(execution_result_review)
     package_product_inputs = output_package_products if isinstance(output_package_products, list) else []
+    analyst_product_inputs = _as_list(analyst_products)
 
     blocked_reasons: list[str] = []
     if sublayer.get("schema_id") != SUBLAYER_VISUALIZATION_STATE_SCHEMA_ID:
@@ -323,6 +387,7 @@ def analysis_product_inventory_projection(
     if blocked_reasons:
         products: list[dict[str, Any]] = []
         package_products: list[dict[str, Any]] = []
+        enumerated_analyst_products: list[dict[str, Any]] = []
     else:
         products = _enumerate_products(
             pass_runs=pass_runs,
@@ -335,10 +400,11 @@ def analysis_product_inventory_projection(
             session_eligibility=session_eligibility,
             reconciliation=reconciliation_input,
         )
+        enumerated_analyst_products = _enumerate_analyst_products(analyst_product_inputs)
 
     if blocked_reasons:
         inventory_state = "blocked"
-    elif products or package_products:
+    elif products or package_products or enumerated_analyst_products:
         inventory_state = "products_present"
     else:
         inventory_state = "empty"
@@ -355,6 +421,9 @@ def analysis_product_inventory_projection(
         "package_product_count": len(package_products),
         "package_products": package_products,
         "package_rollup": _package_rollup(package_products),
+        "analyst_product_count": len(enumerated_analyst_products),
+        "analyst_products": enumerated_analyst_products,
+        "analyst_rollup": _analyst_rollup(enumerated_analyst_products),
         "reconciliation": {
             "present": bool(reconciliation_input),
             "reconciliation_record_id": reconciliation_input.get("reconciliation_record_id"),
@@ -372,6 +441,10 @@ def analysis_product_inventory_projection(
             "session_review_state": session_review_state,
         },
         "blocked_reasons": blocked_reasons,
+        # Scope: these flags describe the runtime authority of THIS read-only inventory
+        # projection (it performs no writes and grants no package/promotion/dispatch
+        # authority). They are NOT a global assertion that the system has no write routes
+        # — analyst-draft authoring is a separate, inert, draft-only route.
         "forbidden_runtime_authority": {
             "write_route_enabled": False,
             "package_mutation_enabled": False,

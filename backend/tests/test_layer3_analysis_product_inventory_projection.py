@@ -58,6 +58,7 @@ def _projection(
     execution_result_review: dict[str, Any] | None = None,
     output_package_products: list[dict[str, Any]] | None = None,
     reconciliation: dict[str, Any] | None = None,
+    analyst_products: list[dict[str, Any]] | None = None,
     current_gate: str = "gate_c",
 ) -> dict[str, Any]:
     return analysis_product_inventory_projection(
@@ -66,8 +67,95 @@ def _projection(
         execution_result_review=execution_result_review if execution_result_review is not None else {},
         output_package_products=output_package_products,
         reconciliation=reconciliation,
+        analyst_products=analyst_products,
         current_gate=current_gate,
     )
+
+
+def _analyst_input(
+    analysis_product_id: str,
+    *,
+    product_kind: str = "finding",
+    executor_type: str = "human",
+    lifecycle_status: str = "draft",
+    grounded: bool = True,
+    is_non_evidentiary: bool = False,
+    evidence_count: int = 1,
+    by_evidence_role: dict[str, int] | None = None,
+    evidence_refs: list[dict[str, Any]] | None = None,
+    basis_hash: str = "bhash",
+) -> dict[str, Any]:
+    return {
+        "analysis_product_id": analysis_product_id,
+        "product_kind": product_kind,
+        "executor_type": executor_type,
+        "lifecycle_status": lifecycle_status,
+        "grounded": grounded,
+        "is_non_evidentiary": is_non_evidentiary,
+        "evidence_count": evidence_count,
+        "by_evidence_role": by_evidence_role if by_evidence_role is not None else {"observation": 1},
+        "evidence_refs": evidence_refs
+        if evidence_refs is not None
+        else [{"ref_kind": "material_snapshot", "ref_id": "snap-1", "evidence_role": "observation"}],
+        "basis_hash": basis_hash,
+    }
+
+
+def test_inventory_enumerates_analyst_products_never_promotable() -> None:
+    analyst = [
+        _analyst_input("ap-1", product_kind="finding", grounded=True),
+        _analyst_input("ap-2", product_kind="analyst_note", grounded=False, is_non_evidentiary=True, evidence_count=0, evidence_refs=[]),
+    ]
+
+    projection = _projection(analyst_products=analyst)
+
+    assert projection["inventory_state"] == "products_present"
+    assert projection["analyst_product_count"] == 2
+    by_id = {product["product_id"]: product for product in projection["analyst_products"]}
+
+    finding = by_id["layer3_analyst_product:ap-1"]
+    assert finding["product_kind"] == "finding"
+    assert finding["grounded"] is True
+    assert finding["blocked_reasons"] == ["draft_not_promotable"]
+    # analyst drafts are NEVER downstream-eligible — these keys must not be present/true
+    assert "package_eligible" not in finding
+    assert "handoff_eligible" not in finding
+    assert "delivery_eligible" not in finding
+    assert finding["evidence_refs"] == [
+        {"ref_kind": "material_snapshot", "ref_id": "snap-1", "evidence_role": "observation"}
+    ]
+
+    rollup = projection["analyst_rollup"]
+    assert rollup["by_kind"] == {"finding": 1, "analyst_note": 1}
+    assert rollup["by_executor_type"] == {"human": 2}
+    assert rollup["grounded_count"] == 1
+    assert rollup["non_evidentiary_count"] == 1
+
+    # Read-only safety invariants unchanged by the third class.
+    assert projection["no_side_effects"] is True
+    assert projection["forbidden_runtime_authority"] == {
+        "write_route_enabled": False,
+        "package_mutation_enabled": False,
+        "source_promotion_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_url_enabled": False,
+        "frontend_durable_authority_enabled": False,
+    }
+
+
+def test_inventory_analyst_products_only_marks_products_present() -> None:
+    projection = _projection(analyst_products=[_analyst_input("ap-1")])
+    assert projection["inventory_state"] == "products_present"
+    assert projection["product_count"] == 0
+    assert projection["package_product_count"] == 0
+    assert projection["analyst_product_count"] == 1
+
+
+def test_inventory_blocked_sublayer_suppresses_analyst_products() -> None:
+    projection = _projection(sublayer={}, analyst_products=[_analyst_input("ap-1")])
+    assert projection["inventory_state"] == "blocked"
+    assert projection["analyst_products"] == []
+    assert projection["analyst_product_count"] == 0
 
 
 def test_inventory_fails_closed_for_missing_sublayer() -> None:
