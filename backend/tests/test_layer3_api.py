@@ -14203,6 +14203,49 @@ def _construct_quant_package_set(
     )
 
 
+def test_layer3_api_session_summary_exposes_analysis_product_inventory_projection(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    session_id = _construct_quant_package_set(
+        client, tmp_path, request_id="api-3c-inventory"
+    )[0]
+
+    summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary.status_code == 200
+    inventory = summary.json()["analysis_product_inventory_projection"]
+
+    assert inventory["schema_id"] == "layer3.analysis_product_inventory_projection.v1"
+    assert inventory["no_side_effects"] is True
+    assert inventory["inventory_state"] == "products_present"
+
+    # Pass-run products are enumerated with source/provenance.
+    assert inventory["product_count"] >= 1
+    pass_product = inventory["products"][0]
+    assert pass_product["product_kind"] == "analysis_pass_output"
+    assert pass_product["source_refs"]["pass_run_id"]
+    assert isinstance(pass_product["provenance"]["material_snapshot_ids"], list)
+
+    # Materialized package products are enumerated for all three kinds.
+    assert inventory["package_product_count"] >= 3
+    kinds = {product["package_kind"] for product in inventory["package_products"]}
+    assert {"canonical_internal", "user_facing", "review_facing"} <= kinds
+
+    # Reconciliation status is surfaced and every package links to the session record.
+    reconciliation = inventory["reconciliation"]
+    assert reconciliation["present"] is True
+    assert reconciliation["status"]
+    for product in inventory["package_products"]:
+        assert product["reconciliation_status"] == reconciliation["status"]
+        assert (
+            product["source_refs"]["reconciliation_record_id"]
+            == reconciliation["reconciliation_record_id"]
+        )
+
+    # Leak guard: the projection exposes no raw payload_ref/path.
+    assert "payload_ref" not in repr(inventory)
+
+
 def _submit_quant_package_review(
     client: TestClient,
     tmp_path,
