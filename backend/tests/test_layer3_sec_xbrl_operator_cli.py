@@ -730,6 +730,289 @@ def test_open_decide_chain_and_reveal_assembly(tmp_path, monkeypatch) -> None:
         "value-reveal/submit must NOT be called when --confirm is absent"
 
 
+# ---------------------------------------------------------------------------
+# Test: run-pipeline request assembly (all 4 steps, SpyTransport)
+# ---------------------------------------------------------------------------
+
+def test_run_pipeline_request_assembly() -> None:
+    """run-pipeline --confirm orchestrates all 4 route calls in sequence,
+    threading IDs and hashes from each response into the next request."""
+    _OPEN_HASH = "a" * 64
+    _DECIDE_HASH = "b" * 64
+    _AUTH_HASH = "c" * 64
+
+    spy = SpyTransport(responses={
+        "open-full-pipeline": (200, {
+            "status": "ready",
+            "operator_review": {
+                "sec_xbrl_operator_review_workflow_id": "wf-pipeline-001",
+                "workflow_basis_hash": _OPEN_HASH,
+                "status": "open",
+            },
+            "corpus_validation": {},
+            "companyfacts_stage": {},
+            "production_readiness_claimed": False,
+        }),
+        "decision/submit": (200, {
+            "sec_xbrl_operator_review_decision_id": "dec-pipeline-001",
+            "decision_basis_hash": _DECIDE_HASH,
+            "review_decision": "approved",
+            "decision_reason_code": "ready_for_next_freeze",
+            "status": "approved",
+        }),
+        "value-reveal/authority/prepare": (200, {
+            "sec_xbrl_value_reveal_authority_receipt_id": "auth-pipeline-001",
+            "authority_basis_hash": _AUTH_HASH,
+            "status": "ready",
+            "value_reveal_performed": False,
+            "production_readiness_claimed": False,
+        }),
+        "value-reveal/submit": (200, {
+            "sec_xbrl_controlled_value_reveal_submit_receipt_id": "reveal-pipeline-001",
+            "status": "ready",
+            "production_readiness_claimed": False,
+            "revealed_facts": [],
+        }),
+    })
+
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "run-pipeline",
+            "--ticker", "AAPL",
+            "--decision", "approved",
+            "--reason-code", "ready_for_next_freeze",
+            "--confirm",
+        ],
+        spy,
+    )
+
+    assert exit_code == 0, f"Expected exit 0; stderr={stderr!r}; stdout={stdout!r}"
+
+    # Step 1: open-full-pipeline called once with operator_confirmation=True
+    open_calls = [c for c in spy.post_calls if "open-full-pipeline" in c["path"]]
+    assert len(open_calls) == 1, "Expected exactly one POST to open-full-pipeline"
+    assert open_calls[0]["body"]["operator_confirmation"] is True
+
+    # Step 2: decision/submit called once with correct decision fields and hash from open response
+    decide_calls = [c for c in spy.post_calls if "decision/submit" in c["path"]]
+    assert len(decide_calls) == 1, "Expected exactly one POST to decision/submit"
+    decide_body = decide_calls[0]["body"]
+    assert decide_body["review_decision"] == "approved"
+    assert decide_body["decision_reason_code"] == "ready_for_next_freeze"
+    assert decide_body["workflow_basis_hash"] == _OPEN_HASH
+
+    # Step 3: value-reveal/authority/prepare called once with hash from decide response
+    prep_calls = [c for c in spy.post_calls if "value-reveal/authority/prepare" in c["path"]]
+    assert len(prep_calls) == 1, "Expected exactly one POST to value-reveal/authority/prepare"
+    prep_body = prep_calls[0]["body"]
+    assert prep_body["decision_basis_hash"] == _DECIDE_HASH
+
+    # Step 4: value-reveal/submit called once with operator_reveal_confirmation=True and hash from prep response
+    reveal_calls = [c for c in spy.post_calls if "value-reveal/submit" in c["path"]]
+    assert len(reveal_calls) == 1, "Expected exactly one POST to value-reveal/submit"
+    reveal_body = reveal_calls[0]["body"]
+    assert reveal_body["operator_reveal_confirmation"] is True
+    assert reveal_body["authority_basis_hash"] == _AUTH_HASH
+
+    # Output must include pipeline completion marker
+    assert "run-pipeline" in stdout or "COMPLETE" in stdout, \
+        f"Expected 'run-pipeline' or 'COMPLETE' in stdout:\n{stdout}"
+
+
+# ---------------------------------------------------------------------------
+# Test: run-pipeline refuses without --confirm
+# ---------------------------------------------------------------------------
+
+def test_run_pipeline_refuses_without_confirm() -> None:
+    """run-pipeline without --confirm must exit nonzero and make no route calls."""
+    spy = SpyTransport()
+
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "run-pipeline",
+            "--ticker", "AAPL",
+            "--decision", "approved",
+            "--reason-code", "ready_for_next_freeze",
+            # --confirm deliberately omitted
+        ],
+        spy,
+    )
+
+    assert exit_code != 0, "Expected nonzero exit when --confirm is absent from run-pipeline"
+    assert len(spy.post_calls) == 0, "No route must be called when --confirm is absent"
+
+    combined = stdout + stderr
+    assert "confirm" in combined.lower(), "Error message should mention --confirm"
+
+
+def test_run_pipeline_refuses_non_approval_decision() -> None:
+    """run-pipeline with a non-approved decision must exit nonzero before any route call."""
+    spy = SpyTransport()
+
+    # argparse 'choices' restricts to _PIPELINE_VALID_DECISIONS, so non-approved
+    # triggers argparse error (exit 2) without reaching cmd_run_pipeline at all.
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "run-pipeline",
+            "--ticker", "AAPL",
+            "--decision", "changes_requested",
+            "--reason-code", "needs_packet_revision",
+            "--confirm",
+        ],
+        spy,
+    )
+
+    assert exit_code != 0, "Expected nonzero exit for non-approved decision"
+    assert len(spy.post_calls) == 0, "No route must be called for non-approved decision"
+
+
+def test_run_pipeline_refuses_invalid_max_records() -> None:
+    """run-pipeline with --max-records 0 must fail before any network call."""
+    spy = SpyTransport()
+
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "run-pipeline",
+            "--ticker", "AAPL",
+            "--decision", "approved",
+            "--reason-code", "ready_for_next_freeze",
+            "--max-records", "0",
+            "--confirm",
+        ],
+        spy,
+    )
+
+    assert exit_code != 0, "Expected nonzero exit when --max-records < 1"
+    assert len(spy.post_calls) == 0, "No route must be called when max_records is invalid"
+    combined = stdout + stderr
+    assert "max-records" in combined.lower() or "max_records" in combined.lower(), \
+        "Error message should mention max-records"
+
+
+def test_run_pipeline_stable_open_request_id() -> None:
+    """Caller-supplied --open-request-id must be used verbatim in the open step."""
+    _OPEN_HASH = "a" * 64
+    _DECIDE_HASH = "b" * 64
+    _AUTH_HASH = "c" * 64
+    STABLE_ID = "stable-retry-id-001"
+
+    spy = SpyTransport(responses={
+        "open-full-pipeline": (200, {
+            "status": "ready",
+            "operator_review": {
+                "sec_xbrl_operator_review_workflow_id": "wf-stable-001",
+                "workflow_basis_hash": _OPEN_HASH,
+                "status": "open",
+            },
+            "corpus_validation": {},
+            "companyfacts_stage": {},
+            "production_readiness_claimed": False,
+        }),
+        "decision/submit": (200, {
+            "sec_xbrl_operator_review_decision_id": "dec-stable-001",
+            "decision_basis_hash": _DECIDE_HASH,
+            "review_decision": "approved",
+            "decision_reason_code": "ready_for_next_freeze",
+            "status": "approved",
+        }),
+        "value-reveal/authority/prepare": (200, {
+            "sec_xbrl_value_reveal_authority_receipt_id": "auth-stable-001",
+            "authority_basis_hash": _AUTH_HASH,
+            "status": "ready",
+            "value_reveal_performed": False,
+            "production_readiness_claimed": False,
+        }),
+        "value-reveal/submit": (200, {
+            "sec_xbrl_controlled_value_reveal_submit_receipt_id": "reveal-stable-001",
+            "status": "ready",
+            "production_readiness_claimed": False,
+            "revealed_facts": [],
+        }),
+    })
+
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "run-pipeline",
+            "--ticker", "AAPL",
+            "--decision", "approved",
+            "--reason-code", "ready_for_next_freeze",
+            "--open-request-id", STABLE_ID,
+            "--confirm",
+        ],
+        spy,
+    )
+
+    assert exit_code == 0, f"Expected exit 0; stderr={stderr!r}"
+
+    open_calls = [c for c in spy.post_calls if "open-full-pipeline" in c["path"]]
+    assert len(open_calls) == 1
+    assert open_calls[0]["body"]["client_request_id"] == STABLE_ID, \
+        "Caller-supplied --open-request-id must be used verbatim"
+
+    # ID must also appear in stdout (printed before step 1)
+    assert STABLE_ID in stdout, "open_request_id must be printed for operator to record"
+
+
+def test_check_posture_reveal_enabled_exit_0() -> None:
+    """check-posture exits 0 when controlled_value_reveal_submit_enabled is True."""
+    from app.cli.sec_xbrl_operator_cli import ROUTE_POSTURE
+
+    spy = SpyTransport(responses={
+        "sec-xbrl/runtime/posture": (200, {
+            "sec_xbrl_runtime_posture": {
+                "posture_state": "sec_xbrl_controlled_value_reveal_available_with_runtime_gates",
+                "runtime_flags": {
+                    "live_sec_edgar_network_enabled": True,
+                    "arelle_internal_value_store_enabled": True,
+                    "arelle_corpus_validation_enabled": True,
+                    "arelle_governed_sibling_value_reveal_enabled": True,
+                    "controlled_value_reveal_submit_enabled": True,
+                },
+                "operator_next_actions": [],
+                "activation_surfaces": [],
+            },
+        }),
+    })
+
+    exit_code, stdout, stderr = _run_cli(["check-posture"], spy)
+
+    assert exit_code == 0, f"Expected exit 0 when reveal is enabled; stderr={stderr!r}"
+    assert "controlled_value_reveal_available" in stdout or "posture_state" in stdout
+    get_calls = [c for c in spy.get_calls if "runtime/posture" in c["path"]]
+    assert len(get_calls) == 1, "Expected exactly one GET to runtime/posture"
+
+
+def test_check_posture_reveal_disabled_exit_1() -> None:
+    """check-posture exits 1 and warns when controlled_value_reveal_submit_enabled is False."""
+    spy = SpyTransport(responses={
+        "sec-xbrl/runtime/posture": (200, {
+            "sec_xbrl_runtime_posture": {
+                "posture_state": "sec_xbrl_controlled_value_reveal_submit_blocked_by_feature_flag",
+                "runtime_flags": {
+                    "live_sec_edgar_network_enabled": False,
+                    "arelle_internal_value_store_enabled": False,
+                    "arelle_corpus_validation_enabled": False,
+                    "arelle_governed_sibling_value_reveal_enabled": False,
+                    "controlled_value_reveal_submit_enabled": False,
+                },
+                "operator_next_actions": [
+                    "Set LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED=true to enable value-reveal."
+                ],
+                "activation_surfaces": [],
+            },
+        }),
+    })
+
+    exit_code, stdout, stderr = _run_cli(["check-posture"], spy)
+
+    assert exit_code != 0, "Expected nonzero exit when reveal is disabled"
+    combined = stdout + stderr
+    assert "OFF" in combined or "blocked" in combined or "disabled" in combined.lower(), \
+        "Output should indicate flags are off or path is blocked"
+    assert "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED" in combined, \
+        "Output should name the blocking flag"
+
+
 def test_cli_cik_map_matches_connector() -> None:
     """Drift guard: the CLI's embedded ticker->CIK map must stay identical to the
     connector's authoritative map. Fails loudly if the connector adds/changes a ticker."""
