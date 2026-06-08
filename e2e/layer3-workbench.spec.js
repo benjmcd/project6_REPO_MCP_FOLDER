@@ -13143,7 +13143,9 @@ test('Layer 3 workbench inspects SEC XBRL operator-review workflow status throug
   await expect(panel).toContainText('submit_operator_review_decision');
   await expect(panel).toContainText('requires_separate_decision_submit_freeze');
   await expect(panel).toContainText('open workflow API route enabled');
-  await expect(panel).toContainText('open_operator_review_workflow');
+  // 'open_operator_review_workflow' is no longer rendered as a blocked control in the status
+  // panel: it has moved from the blocked category to an explicitly confirmation-gated control
+  // with its own panel (covered by the dedicated open-operator-review-workflow test).
   await expect(panel).toContainText('raw_values_exposed: false');
   await expect(panel).toContainText('rendered UI enabled by backend: false');
   await expect(page.locator('#sec-xbrl-operator-review-decision-workflow-id')).toHaveValue(
