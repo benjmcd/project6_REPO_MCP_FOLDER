@@ -30218,7 +30218,7 @@ async function submitAnalysisProductDraft(event) {
     State.analysisProductDraftPending = true;
     State.analysisProductDraftError = null;
     renderAll();
-    setBusy(elements.apAuthorSubmit, true, 'Author Product');
+    setBusy(elements.apAuthorSubmit, true, 'Save Draft Product');
     try {
         State.analysisProductDraft = await postJson('/analysis-product/draft', analysisProductDraftPayload());
         State.analysisProductDraftError = null;
@@ -30235,7 +30235,7 @@ async function submitAnalysisProductDraft(event) {
         renderAll();
     } finally {
         State.analysisProductDraftPending = false;
-        setBusy(elements.apAuthorSubmit, false, 'Author Product');
+        setBusy(elements.apAuthorSubmit, false, 'Save Draft Product');
         renderAll();
     }
 }
