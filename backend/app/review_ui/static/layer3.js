@@ -1353,6 +1353,7 @@ const elements = {
     mockupQuerySourceSetupProjection: document.getElementById('mockup-query-source-setup-projection'),
     mockupExecutionLanes: document.getElementById('mockup-execution-lanes'),
     mockupExecutionLanesProjection: document.getElementById('mockup-execution-lanes-projection'),
+    mockupAnalysisProductInventoryProjection: document.getElementById('mockup-analysis-product-inventory-projection'),
     mockupOutputReviewPackageHandoffProjection: document.getElementById('mockup-output-review-package-handoff-projection'),
     mockupSublayersAbBoard: document.getElementById('mockup-sublayers-ab-board'),
     mockupSublayersAbProjection: document.getElementById('mockup-sublayers-ab-projection'),
@@ -1522,6 +1523,7 @@ function renderMockupThemeShell() {
     renderMockupQuerySourceSetupProjection(active);
     renderMockupSublayersAbLiveProjection(active);
     renderMockupExecutionLanesLiveProjection(active);
+    renderMockupAnalysisProductInventoryProjection(active);
     renderMockupOutputReviewPackageHandoffProjection(active);
 }
 
@@ -1978,6 +1980,135 @@ function renderMockupExecutionLanesLiveProjection(active = State.themePreference
             ${sourceList}
         </div>
         ${available ? '' : '<span class="mockup-disabled-control" aria-disabled="true">Read-only 3C server state projection pending</span>'}
+    `;
+}
+
+function currentAnalysisProductInventoryProjection() {
+    const projection = State.sessionSummary?.analysis_product_inventory_projection;
+    return projection && typeof projection === 'object' && !Array.isArray(projection) ? projection : null;
+}
+
+function analysisProductInventoryProjectionStatus(projection = currentAnalysisProductInventoryProjection()) {
+    const schemaValid = projection?.schema_id === 'layer3.analysis_product_inventory_projection.v1';
+    const readOnly = projection?.no_side_effects === true;
+    const state = schemaValid && readOnly ? (projection.inventory_state || 'blocked') : 'blocked';
+    const missingReasons = [];
+    if (!projection) missingReasons.push('analysis_product_inventory_projection_missing');
+    if (projection && !schemaValid) missingReasons.push('analysis_product_inventory_projection_schema_invalid');
+    if (projection && !readOnly) missingReasons.push('analysis_product_inventory_projection_not_read_only');
+    const blockedReasons = Array.isArray(projection?.blocked_reasons) ? projection.blocked_reasons : [];
+    const isPlainObject = (value) => value && typeof value === 'object' && !Array.isArray(value);
+    const rollup = isPlainObject(projection?.rollup) ? projection.rollup : {};
+    const packageRollup = isPlainObject(projection?.package_rollup) ? projection.package_rollup : {};
+    const downstream = isPlainObject(projection?.downstream_eligibility) ? projection.downstream_eligibility : {};
+    return {
+        schemaValid,
+        readOnly,
+        state,
+        productCount: Number(projection?.product_count) || 0,
+        packageProductCount: Number(projection?.package_product_count) || 0,
+        outputReadyCount: Number(rollup.output_ready_count) || 0,
+        packageEligibleCount: Number(rollup.package_eligible_count) || 0,
+        terminallyCompleteCount: Number(packageRollup.terminally_complete_count) || 0,
+        blockedReasons: missingReasons.length ? missingReasons : blockedReasons,
+        sessionReviewState: typeof downstream.session_review_state === 'string' ? downstream.session_review_state : 'not reported',
+        environmentProjectionState: typeof downstream.environment_projection_state === 'string' ? downstream.environment_projection_state : 'not reported',
+        products: Array.isArray(projection?.products) ? projection.products : [],
+        packageProducts: Array.isArray(projection?.package_products) ? projection.package_products : [],
+    };
+}
+
+function analysisProductEligibilityLabel(product) {
+    const flags = [];
+    if (product?.package_eligible === true) flags.push('package');
+    if (product?.handoff_eligible === true) flags.push('handoff');
+    if (product?.delivery_eligible === true) flags.push('delivery');
+    return flags.length ? `eligible: ${flags.join(', ')}` : 'not downstream-eligible';
+}
+
+function analysisProductInventoryProductRow(product, productClass) {
+    const blocked = Array.isArray(product?.blocked_reasons) ? product.blocked_reasons : [];
+    const status = product?.lifecycle_status || 'not reported';
+    const descriptor = productClass === 'output_package'
+        ? `${product?.package_kind || 'package'} / ${status}`
+        : `${product?.product_kind || 'analysis output'} / ${product?.product_scope || 'unknown'} / ${status}`;
+    const blockedLine = blocked.length
+        ? `<small>${escapeHtml(shortText(blocked.map(humanizeToken).join(', '), 72))}</small>`
+        : '';
+    return `
+        <li data-product-class="${escapeHtml(productClass)}" data-lifecycle-status="${escapeHtml(status)}">
+            <span>${escapeHtml(shortText(product?.product_id || 'unidentified product', 48))}</span>
+            <strong>${escapeHtml(descriptor)}</strong>
+            <em>${escapeHtml(analysisProductEligibilityLabel(product))}</em>
+            ${blockedLine}
+        </li>
+    `;
+}
+
+function renderMockupAnalysisProductInventoryProjection(active = State.themePreference === LAYER3_MOCKUP_WORKBENCH_THEME) {
+    const panel = elements.mockupAnalysisProductInventoryProjection;
+    if (!panel) return;
+    if (!active) {
+        panel.dataset.projectionState = 'inactive';
+        panel.innerHTML = '';
+        return;
+    }
+    const status = analysisProductInventoryProjectionStatus();
+    const available = status.schemaValid && status.readOnly
+        && (status.productCount > 0 || status.packageProductCount > 0);
+    const PRODUCT_RENDER_LIMIT = 12;
+    const passRows = status.products.slice(0, PRODUCT_RENDER_LIMIT)
+        .map((product) => analysisProductInventoryProductRow(product, 'analysis_pass_output')).join('');
+    const packageRows = status.packageProducts.slice(0, PRODUCT_RENDER_LIMIT)
+        .map((product) => analysisProductInventoryProductRow(product, 'output_package')).join('');
+    const passOverflow = status.products.length > PRODUCT_RENDER_LIMIT
+        ? `<li data-product-class="overflow"><span>${escapeHtml(`+ ${status.products.length - PRODUCT_RENDER_LIMIT} more pass-run products`)}</span></li>`
+        : '';
+    const packageOverflow = status.packageProducts.length > PRODUCT_RENDER_LIMIT
+        ? `<li data-product-class="overflow"><span>${escapeHtml(`+ ${status.packageProducts.length - PRODUCT_RENDER_LIMIT} more package products`)}</span></li>`
+        : '';
+    const blockedReasons = status.blockedReasons.length ? status.blockedReasons : ['no inventory blockers reported'];
+
+    panel.dataset.projectionState = available ? 'available' : 'unavailable';
+    panel.dataset.readOnly = 'true';
+    panel.dataset.inventoryState = status.state;
+    panel.innerHTML = `
+        <div class="mockup-analysis-product-inventory-projection-head">
+            <span class="mockup-frame-label">Server-owned Sublayer 3C analysis product inventory</span>
+            <strong>${escapeHtml(available ? 'Live read-only' : 'Read-only unavailable')}</strong>
+            <p>${escapeHtml(`Inventory ${humanizeToken(status.state)} / review ${humanizeToken(status.sessionReviewState)} / ${shortText(blockedReasons.join(', '), 64)}`)}</p>
+        </div>
+        <div class="mockup-analysis-product-inventory-rollup" aria-label="Read-only Sublayer 3C analysis product inventory counts">
+            <article>
+                <span>Pass-run products</span>
+                <strong>${escapeHtml(status.productCount)}</strong>
+                <p>${escapeHtml(`output ready ${status.outputReadyCount} / package-eligible outputs ${status.packageEligibleCount}`)}</p>
+            </article>
+            <article>
+                <span>Package products</span>
+                <strong>${escapeHtml(status.packageProductCount)}</strong>
+                <p>${escapeHtml(`terminally complete ${status.terminallyCompleteCount}`)}</p>
+            </article>
+            <article>
+                <span>Environment state</span>
+                <strong>${escapeHtml(humanizeToken(status.environmentProjectionState))}</strong>
+                <p>${escapeHtml(`review ${humanizeToken(status.sessionReviewState)}`)}</p>
+            </article>
+            <article>
+                <span>Inventory state</span>
+                <strong>${escapeHtml(humanizeToken(status.state))}</strong>
+                <p>${escapeHtml(shortText(blockedReasons.join(', '), 48))}</p>
+            </article>
+        </div>
+        <ul class="mockup-analysis-product-list" data-product-class="analysis_pass_output" aria-label="Read-only pass-run analysis products">
+            ${passRows || '<li data-product-class="empty"><span>No pass-run analysis products loaded</span></li>'}
+            ${passOverflow}
+        </ul>
+        <ul class="mockup-analysis-product-list" data-product-class="output_package" aria-label="Read-only materialized package products">
+            ${packageRows || '<li data-product-class="empty"><span>No materialized package products loaded</span></li>'}
+            ${packageOverflow}
+        </ul>
+        ${available ? '' : '<span class="mockup-disabled-control" aria-disabled="true">Read-only 3C product inventory pending</span>'}
     `;
 }
 
