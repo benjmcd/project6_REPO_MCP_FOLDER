@@ -796,6 +796,81 @@
                 </form>
             </section>
 
+            <section id="analysis-product-band" class="workband" data-rendered-mode="rendered_3c_analysis_product_control" aria-label="3C analysis product operator controls">
+                <div class="section-heading">
+                    <div>
+                        <h2>3C Analysis Products</h2>
+                        <span class="status-pill preview">Author / Generate / Promote</span>
+                    </div>
+                </div>
+                <div id="analysis-product-band-list" aria-live="polite"></div>
+                <form id="ap-author-form" class="result-review-form">
+                    <div class="result-review-controls" aria-label="Author analysis product">
+                        <label for="ap-author-kind">Product kind</label>
+                        <select id="ap-author-kind" disabled>
+                            <option value="analyst_note">analyst_note</option>
+                            <option value="finding">finding</option>
+                            <option value="insight">insight</option>
+                            <option value="hypothesis">hypothesis</option>
+                            <option value="recommendation">recommendation</option>
+                            <option value="summary">summary</option>
+                            <option value="diagnostic">diagnostic</option>
+                            <option value="fact">fact</option>
+                            <option value="metric">metric</option>
+                        </select>
+                        <label for="ap-author-title">Title</label>
+                        <input id="ap-author-title" type="text" autocomplete="off" placeholder="Product title" disabled>
+                        <label for="ap-author-body">Body</label>
+                        <textarea id="ap-author-body" rows="4" placeholder="Product body text." disabled></textarea>
+                        <label>
+                            <input id="ap-author-non-evidentiary" type="checkbox" disabled>
+                            Non-evidentiary (analyst_note or hypothesis only; no working set required)
+                        </label>
+                        <label for="ap-author-working-set">Working set (evidence context)</label>
+                        <select id="ap-author-working-set" disabled>
+                            <option value="">— select working set —</option>
+                        </select>
+                        <button id="ap-author-submit" class="primary-btn" type="submit" disabled>Author Product</button>
+                    </div>
+                </form>
+                <form id="ap-generate-form" class="result-review-form">
+                    <div class="result-review-controls" aria-label="Generate analysis product">
+                        <label for="ap-generate-working-set">Working set</label>
+                        <select id="ap-generate-working-set" disabled>
+                            <option value="">— select working set —</option>
+                        </select>
+                        <label for="ap-generate-method">Method</label>
+                        <select id="ap-generate-method" disabled>
+                            <option value="working_set_composition_summary">working_set_composition_summary</option>
+                        </select>
+                        <button id="ap-generate-submit" class="primary-btn" type="submit" disabled>Generate Product</button>
+                    </div>
+                </form>
+                <form id="ap-promote-form" class="result-review-form">
+                    <div class="result-review-controls" aria-label="Promote / transition analysis product">
+                        <label for="ap-promote-product">Product</label>
+                        <select id="ap-promote-product" disabled>
+                            <option value="">— select product —</option>
+                        </select>
+                        <label for="ap-promote-intent">Decision intent</label>
+                        <select id="ap-promote-intent" disabled>
+                            <option value="promote">promote</option>
+                            <option value="accept">accept</option>
+                            <option value="mark_package_eligible">mark_package_eligible</option>
+                            <option value="reject">reject</option>
+                            <option value="revise">revise</option>
+                        </select>
+                        <label for="ap-promote-reason">Reason code</label>
+                        <select id="ap-promote-reason" disabled>
+                            <option value="proposed_ready">proposed_ready</option>
+                        </select>
+                        <label for="ap-promote-notes">Notes (required for reject / revise)</label>
+                        <textarea id="ap-promote-notes" rows="3" placeholder="Required for reject or revise." disabled></textarea>
+                        <button id="ap-promote-submit" class="primary-btn" type="submit" disabled>Submit Transition</button>
+                    </div>
+                </form>
+            </section>
+
             <section id="handoff-export-band" class="workband handoff-export-band" aria-labelledby="handoff-export-heading" tabindex="-1">
                 <div class="section-heading">
                     <div>

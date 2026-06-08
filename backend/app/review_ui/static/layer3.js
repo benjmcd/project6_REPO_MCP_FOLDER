@@ -1358,6 +1358,24 @@ const elements = {
     mockupSublayersAbBoard: document.getElementById('mockup-sublayers-ab-board'),
     mockupSublayersAbProjection: document.getElementById('mockup-sublayers-ab-projection'),
     mockupPdfLocationProjection: document.getElementById('mockup-pdf-location-projection'),
+    analysisProductBandList: document.getElementById('analysis-product-band-list'),
+    apAuthorForm: document.getElementById('ap-author-form'),
+    apAuthorKind: document.getElementById('ap-author-kind'),
+    apAuthorTitle: document.getElementById('ap-author-title'),
+    apAuthorBody: document.getElementById('ap-author-body'),
+    apAuthorNonEvidentiary: document.getElementById('ap-author-non-evidentiary'),
+    apAuthorWorkingSet: document.getElementById('ap-author-working-set'),
+    apAuthorSubmit: document.getElementById('ap-author-submit'),
+    apGenerateForm: document.getElementById('ap-generate-form'),
+    apGenerateWorkingSet: document.getElementById('ap-generate-working-set'),
+    apGenerateMethod: document.getElementById('ap-generate-method'),
+    apGenerateSubmit: document.getElementById('ap-generate-submit'),
+    apPromoteForm: document.getElementById('ap-promote-form'),
+    apPromoteProduct: document.getElementById('ap-promote-product'),
+    apPromoteIntent: document.getElementById('ap-promote-intent'),
+    apPromoteReason: document.getElementById('ap-promote-reason'),
+    apPromoteNotes: document.getElementById('ap-promote-notes'),
+    apPromoteSubmit: document.getElementById('ap-promote-submit'),
 };
 
 const systemThemeQuery = typeof window.matchMedia === 'function'
@@ -26345,6 +26363,7 @@ function renderAll() {
     renderProviderPublicUrlPanel();
     setGateControls();
     renderOperationsDock();
+    renderAnalysisProductBandPanel();
 }
 
 function executionSelectionPayload() {
@@ -30134,6 +30153,247 @@ async function init() {
     renderAll();
 }
 
+const ANALYSIS_PRODUCT_REASON_CODES_BY_DECISION = Object.freeze({
+    promote: ['proposed_ready', 'validation_passed'],
+    accept: ['grounded_accept'],
+    mark_package_eligible: ['package_ready'],
+    reject: ['insufficient_grounding', 'evidence_gap', 'operator_rejected'],
+    revise: ['revision_requested'],
+});
+
+function analysisProductDraftPayload() {
+    const nonEvidentiary = elements.apAuthorNonEvidentiary.checked;
+    const kind = elements.apAuthorKind.value;
+    const payload = {
+        client_request_id: requestId(),
+        session_id: currentSessionId(),
+        product_kind: kind,
+        title: elements.apAuthorTitle.value.trim(),
+        body: elements.apAuthorBody.value.trim(),
+        is_non_evidentiary: nonEvidentiary,
+    };
+    if (nonEvidentiary) {
+        payload.evidence = [];
+    } else {
+        const workingSetId = elements.apAuthorWorkingSet.value;
+        payload.evidence = workingSetId
+            ? [{ ref_kind: 'working_set', ref_id: workingSetId, evidence_role: 'context' }]
+            : [];
+    }
+    return payload;
+}
+
+function analysisProductGeneratePayload() {
+    return {
+        client_request_id: requestId(),
+        session_id: currentSessionId(),
+        working_set_id: elements.apGenerateWorkingSet.value,
+        method_id: elements.apGenerateMethod.value,
+    };
+}
+
+function analysisProductTransitionPayload() {
+    const notes = elements.apPromoteNotes.value.trim();
+    const payload = {
+        client_request_id: requestId(),
+        session_id: currentSessionId(),
+        decision_intent: elements.apPromoteIntent.value,
+        decision_reason_code: elements.apPromoteReason.value,
+    };
+    if (notes) {
+        payload.decision_notes = notes;
+    }
+    return payload;
+}
+
+async function submitAnalysisProductDraft(event) {
+    event.preventDefault();
+    if (!currentSessionId()) return;
+    State.analysisProductDraftPending = true;
+    State.analysisProductDraftError = null;
+    renderAll();
+    setBusy(elements.apAuthorSubmit, true, 'Author Product');
+    try {
+        State.analysisProductDraft = await postJson('/analysis-product/draft', analysisProductDraftPayload());
+        State.analysisProductDraftError = null;
+        addEvent('Analysis product drafted.');
+        State.sessionSummary = await getJson('/session/' + encodeURIComponent(currentSessionId()));
+        renderAll();
+    } catch (error) {
+        State.analysisProductDraftError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'analysis_product_draft_request_failed',
+            message: error.message,
+        };
+        addEvent(`Analysis product draft blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.analysisProductDraftPending = false;
+        setBusy(elements.apAuthorSubmit, false, 'Author Product');
+        renderAll();
+    }
+}
+
+async function generateAnalysisProduct(event) {
+    event.preventDefault();
+    if (!currentSessionId()) return;
+    State.analysisProductGeneratePending = true;
+    State.analysisProductGenerateError = null;
+    renderAll();
+    setBusy(elements.apGenerateSubmit, true, 'Generate Product');
+    try {
+        State.analysisProductGenerate = await postJson('/analysis-product/generate', analysisProductGeneratePayload());
+        State.analysisProductGenerateError = null;
+        addEvent('Analysis product generated.');
+        State.sessionSummary = await getJson('/session/' + encodeURIComponent(currentSessionId()));
+        renderAll();
+    } catch (error) {
+        State.analysisProductGenerateError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'analysis_product_generate_request_failed',
+            message: error.message,
+        };
+        addEvent(`Analysis product generate blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.analysisProductGeneratePending = false;
+        setBusy(elements.apGenerateSubmit, false, 'Generate Product');
+        renderAll();
+    }
+}
+
+async function submitAnalysisProductTransition(event) {
+    event.preventDefault();
+    if (!currentSessionId()) return;
+    const rawProductId = elements.apPromoteProduct.value.replace(/^layer3_analyst_product:/, '');
+    if (!rawProductId) return;
+    const transitionIntent = elements.apPromoteIntent?.value || '';
+    if ((transitionIntent === 'reject' || transitionIntent === 'revise') && !elements.apPromoteNotes?.value.trim()) {
+        addEvent('Decision notes are required for reject/revise transitions.');
+        return;
+    }
+    State.analysisProductTransitionPending = true;
+    State.analysisProductTransitionError = null;
+    renderAll();
+    setBusy(elements.apPromoteSubmit, true, 'Submit Transition');
+    try {
+        State.analysisProductTransition = await postJson(
+            '/analysis-product/' + encodeURIComponent(rawProductId) + '/transition',
+            analysisProductTransitionPayload(),
+        );
+        State.analysisProductTransitionError = null;
+        addEvent('Analysis product transition submitted.');
+        State.sessionSummary = await getJson('/session/' + encodeURIComponent(currentSessionId()));
+        renderAll();
+    } catch (error) {
+        State.analysisProductTransitionError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'analysis_product_transition_request_failed',
+            message: error.message,
+        };
+        addEvent(`Analysis product transition blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.analysisProductTransitionPending = false;
+        setBusy(elements.apPromoteSubmit, false, 'Submit Transition');
+        renderAll();
+    }
+}
+
+function renderAnalysisProductBandPanel() {
+    const sessionId = currentSessionId();
+    const allControls = [
+        elements.apAuthorKind,
+        elements.apAuthorTitle,
+        elements.apAuthorBody,
+        elements.apAuthorNonEvidentiary,
+        elements.apAuthorWorkingSet,
+        elements.apAuthorSubmit,
+        elements.apGenerateWorkingSet,
+        elements.apGenerateMethod,
+        elements.apGenerateSubmit,
+        elements.apPromoteProduct,
+        elements.apPromoteIntent,
+        elements.apPromoteReason,
+        elements.apPromoteNotes,
+        elements.apPromoteSubmit,
+    ];
+    if (!sessionId) {
+        allControls.forEach((el) => { if (el) el.disabled = true; });
+        if (elements.analysisProductBandList) {
+            elements.analysisProductBandList.innerHTML = '<div class="empty-panel">No session loaded. Load a session to manage analysis products.</div>';
+        }
+        return;
+    }
+    allControls.forEach((el) => { if (el) el.disabled = false; });
+    if (elements.apAuthorSubmit) elements.apAuthorSubmit.disabled = !!State.analysisProductDraftPending;
+    if (elements.apGenerateSubmit) elements.apGenerateSubmit.disabled = !!State.analysisProductGeneratePending;
+    if (elements.apPromoteSubmit) elements.apPromoteSubmit.disabled = !!State.analysisProductTransitionPending;
+
+    const projection = State.sessionSummary?.analysis_product_inventory_projection;
+    const workingSets = projection?.working_sets || [];
+    const analystProducts = projection?.analyst_products || [];
+
+    function populateSelect(selectEl, options, emptyLabel) {
+        if (!selectEl) return;
+        const currentVal = selectEl.value;
+        selectEl.innerHTML = `<option value="">${escapeHtml(emptyLabel)}</option>`;
+        options.forEach((opt) => {
+            const option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.label;
+            selectEl.appendChild(option);
+        });
+        if (options.some((o) => o.value === currentVal)) {
+            selectEl.value = currentVal;
+        }
+    }
+
+    const workingSetOptions = workingSets.map((ws) => ({
+        value: ws.working_set_id,
+        label: `${ws.name} (${ws.member_count})`,
+    }));
+    populateSelect(elements.apAuthorWorkingSet, workingSetOptions, '— select working set —');
+    populateSelect(elements.apGenerateWorkingSet, workingSetOptions, '— select working set —');
+
+    const productOptions = analystProducts.map((p) => ({
+        value: p.product_id,
+        label: `${p.product_id.replace('layer3_analyst_product:', '')} [${p.lifecycle_status}]`,
+    }));
+    populateSelect(elements.apPromoteProduct, productOptions, '— select product —');
+
+    const intent = elements.apPromoteIntent?.value || 'promote';
+    const reasonCodes = ANALYSIS_PRODUCT_REASON_CODES_BY_DECISION[intent] || [];
+    if (elements.apPromoteReason) {
+        const currentReason = elements.apPromoteReason.value;
+        elements.apPromoteReason.innerHTML = '';
+        reasonCodes.forEach((code) => {
+            const option = document.createElement('option');
+            option.value = code;
+            option.textContent = code;
+            elements.apPromoteReason.appendChild(option);
+        });
+        if (reasonCodes.includes(currentReason)) {
+            elements.apPromoteReason.value = currentReason;
+        }
+    }
+
+    if (elements.analysisProductBandList) {
+        if (!analystProducts.length) {
+            elements.analysisProductBandList.innerHTML = '<div class="empty-panel">No analysis products in this session yet.</div>';
+        } else {
+            const rows = analystProducts.map((p) => {
+                const shortId = escapeHtml(p.product_id.replace('layer3_analyst_product:', ''));
+                const status = escapeHtml(p.lifecycle_status || '—');
+                const kind = escapeHtml(p.product_kind || '—');
+                const executor = escapeHtml(p.executor_type || '—');
+                return `<div class="analysis-product-row"><span class="ap-id">${shortId}</span><span class="ap-status">${status}</span><span class="ap-kind">${kind}</span><span class="ap-executor">${executor}</span></div>`;
+            }).join('');
+            elements.analysisProductBandList.innerHTML = `<div class="analysis-product-list">${rows}</div>`;
+        }
+    }
+}
+
 if (elements.themeSelector) {
     applyThemePreference(State.themePreference, { persist: false });
     elements.themeSelector.addEventListener('change', (event) => applyThemePreference(event.target.value));
@@ -30968,6 +31228,11 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
         renderSublayerMap();
     }
 });
+
+if (elements.apAuthorForm) { elements.apAuthorForm.addEventListener('submit', submitAnalysisProductDraft); }
+if (elements.apGenerateForm) { elements.apGenerateForm.addEventListener('submit', generateAnalysisProduct); }
+if (elements.apPromoteForm) { elements.apPromoteForm.addEventListener('submit', submitAnalysisProductTransition); }
+if (elements.apPromoteIntent) { elements.apPromoteIntent.addEventListener('change', () => renderAnalysisProductBandPanel()); }
 
 init();
 
