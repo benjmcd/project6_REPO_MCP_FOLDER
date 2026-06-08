@@ -845,6 +845,114 @@ def test_run_pipeline_refuses_without_confirm() -> None:
     assert "confirm" in combined.lower(), "Error message should mention --confirm"
 
 
+def test_run_pipeline_refuses_non_approval_decision() -> None:
+    """run-pipeline with a non-approved decision must exit nonzero before any route call."""
+    spy = SpyTransport()
+
+    # argparse 'choices' restricts to _PIPELINE_VALID_DECISIONS, so non-approved
+    # triggers argparse error (exit 2) without reaching cmd_run_pipeline at all.
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "run-pipeline",
+            "--ticker", "AAPL",
+            "--decision", "changes_requested",
+            "--reason-code", "needs_packet_revision",
+            "--confirm",
+        ],
+        spy,
+    )
+
+    assert exit_code != 0, "Expected nonzero exit for non-approved decision"
+    assert len(spy.post_calls) == 0, "No route must be called for non-approved decision"
+
+
+def test_run_pipeline_refuses_invalid_max_records() -> None:
+    """run-pipeline with --max-records 0 must fail before any network call."""
+    spy = SpyTransport()
+
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "run-pipeline",
+            "--ticker", "AAPL",
+            "--decision", "approved",
+            "--reason-code", "ready_for_next_freeze",
+            "--max-records", "0",
+            "--confirm",
+        ],
+        spy,
+    )
+
+    assert exit_code != 0, "Expected nonzero exit when --max-records < 1"
+    assert len(spy.post_calls) == 0, "No route must be called when max_records is invalid"
+    combined = stdout + stderr
+    assert "max-records" in combined.lower() or "max_records" in combined.lower(), \
+        "Error message should mention max-records"
+
+
+def test_run_pipeline_stable_open_request_id() -> None:
+    """Caller-supplied --open-request-id must be used verbatim in the open step."""
+    _OPEN_HASH = "a" * 64
+    _DECIDE_HASH = "b" * 64
+    _AUTH_HASH = "c" * 64
+    STABLE_ID = "stable-retry-id-001"
+
+    spy = SpyTransport(responses={
+        "open-full-pipeline": (200, {
+            "status": "ready",
+            "operator_review": {
+                "sec_xbrl_operator_review_workflow_id": "wf-stable-001",
+                "workflow_basis_hash": _OPEN_HASH,
+                "status": "open",
+            },
+            "corpus_validation": {},
+            "companyfacts_stage": {},
+            "production_readiness_claimed": False,
+        }),
+        "decision/submit": (200, {
+            "sec_xbrl_operator_review_decision_id": "dec-stable-001",
+            "decision_basis_hash": _DECIDE_HASH,
+            "review_decision": "approved",
+            "decision_reason_code": "ready_for_next_freeze",
+            "status": "approved",
+        }),
+        "value-reveal/authority/prepare": (200, {
+            "sec_xbrl_value_reveal_authority_receipt_id": "auth-stable-001",
+            "authority_basis_hash": _AUTH_HASH,
+            "status": "ready",
+            "value_reveal_performed": False,
+            "production_readiness_claimed": False,
+        }),
+        "value-reveal/submit": (200, {
+            "sec_xbrl_controlled_value_reveal_submit_receipt_id": "reveal-stable-001",
+            "status": "ready",
+            "production_readiness_claimed": False,
+            "revealed_facts": [],
+        }),
+    })
+
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "run-pipeline",
+            "--ticker", "AAPL",
+            "--decision", "approved",
+            "--reason-code", "ready_for_next_freeze",
+            "--open-request-id", STABLE_ID,
+            "--confirm",
+        ],
+        spy,
+    )
+
+    assert exit_code == 0, f"Expected exit 0; stderr={stderr!r}"
+
+    open_calls = [c for c in spy.post_calls if "open-full-pipeline" in c["path"]]
+    assert len(open_calls) == 1
+    assert open_calls[0]["body"]["client_request_id"] == STABLE_ID, \
+        "Caller-supplied --open-request-id must be used verbatim"
+
+    # ID must also appear in stdout (printed before step 1)
+    assert STABLE_ID in stdout, "open_request_id must be printed for operator to record"
+
+
 def test_cli_cik_map_matches_connector() -> None:
     """Drift guard: the CLI's embedded ticker->CIK map must stay identical to the
     connector's authoritative map. Fails loudly if the connector adds/changes a ticker."""

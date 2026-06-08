@@ -81,6 +81,8 @@ REVEAL_SUBMIT_MODE = "sec_xbrl_controlled_value_reveal_submit_v1"
 REVEAL_OPERATOR_DECISION = "submit_explicit_sec_xbrl_value_reveal_from_authority_receipt"
 
 VALID_REVIEW_DECISIONS = ("approved", "changes_requested", "rejected", "blocked")
+# run-pipeline only supports decisions that can reach the reveal step
+_PIPELINE_VALID_DECISIONS = ("approved",)
 VALID_REASON_CODES = (
     "ready_for_next_freeze",
     "needs_packet_revision",
@@ -504,6 +506,27 @@ def cmd_run_pipeline(args: argparse.Namespace, transport: Transport) -> None:
         print("ERROR: --reason-code is required for 'run-pipeline'.", file=sys.stderr)
         sys.exit(1)
 
+    # Only decisions that can reach value-reveal are valid for run-pipeline.
+    # Non-approved decisions (changes_requested, rejected, blocked) would create
+    # irreversible open/decide receipts and then fail at prepare-authority.
+    if args.decision not in _PIPELINE_VALID_DECISIONS:
+        print(
+            f"ERROR: --decision '{args.decision}' cannot reach the value-reveal step. "
+            f"run-pipeline requires one of: {', '.join(_PIPELINE_VALID_DECISIONS)}. "
+            "Use the 'decide' subcommand directly for non-approval decisions.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    # Validate max-records before any network call — the API rejects < 1 at the
+    # reveal step, which would leave open/decide/authority receipts already committed.
+    if args.max_records is not None and args.max_records < 1:
+        print(
+            f"ERROR: --max-records must be >= 1 (got {args.max_records}).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     ticker = args.ticker.upper()
 
     # Resolve CIK — same logic as cmd_open
@@ -537,12 +560,17 @@ def cmd_run_pipeline(args: argparse.Namespace, transport: Transport) -> None:
 
     headers = _build_auth_headers(args)
 
+    # Stable open request-id: use caller-supplied value if present so the
+    # operator can retry after a crash before receiving the open response.
+    open_request_id = args.open_request_id or _new_client_request_id("run-open")
+    print(f"  open_request_id       : {open_request_id}  (use --open-request-id to retry)")
+
     # ------------------------------------------------------------------
     # Step 1/4: open-full-pipeline
     # ------------------------------------------------------------------
     print("=== run-pipeline [step 1/4]: open-full-pipeline ===")
     open_body: dict = {
-        "client_request_id": _new_client_request_id("run-open"),
+        "client_request_id": open_request_id,
         "company_matrix": [ticker],
         "cik": resolved_cik,
         "period_limit": period_limit,
@@ -830,9 +858,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_pipe.add_argument(
         "--decision",
         required=True,
-        choices=VALID_REVIEW_DECISIONS,
+        choices=_PIPELINE_VALID_DECISIONS,
         metavar="DECISION",
-        help=f"Review decision. One of: {', '.join(VALID_REVIEW_DECISIONS)}",
+        help=f"Review decision. Must be: {', '.join(_PIPELINE_VALID_DECISIONS)} (only decisions that can reach value-reveal)",
     )
     p_pipe.add_argument(
         "--reason-code",
@@ -866,7 +894,16 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         metavar="N",
-        help="Max records to reveal in the final step (optional)",
+        help="Max records to reveal in the final step (optional, must be >= 1)",
+    )
+    p_pipe.add_argument(
+        "--open-request-id",
+        default="",
+        metavar="ID",
+        help=(
+            "Idempotency key for the open step (auto-generated if omitted). "
+            "Supply the printed value to retry after a crash before the open response was received."
+        ),
     )
 
     return parser
