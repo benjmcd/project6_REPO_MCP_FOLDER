@@ -100,9 +100,11 @@ SOURCE_ROUTE_COMPATIBLE_PRIOR_BINDINGS = {
     "operator_review_workflow": {
         "sec_xbrl_operator_review_workflow_status_read": {
             "sec_xbrl_operator_review_workflow_open_write",
+            "sec_xbrl_operator_review_workflow_status_read",
         },
         "sec_xbrl_operator_review_workflow_admission_status_read": {
             "sec_xbrl_operator_review_workflow_open_write",
+            "sec_xbrl_operator_review_workflow_status_read",
         },
         "sec_xbrl_operator_review_decision_submit_write": {
             "sec_xbrl_operator_review_workflow_open_write",

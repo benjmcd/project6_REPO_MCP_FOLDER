@@ -60,6 +60,7 @@ _API_PREFIX = "/api/v1/layer3"
 ROUTE_OPEN = f"{_API_PREFIX}/sec-xbrl/operator-review/workflow/open-full-pipeline"
 ROUTE_STATUS = f"{_API_PREFIX}/sec-xbrl/operator-review/workflow/status"
 ROUTE_ADMISSION_STATUS = f"{_API_PREFIX}/sec-xbrl/operator-review/workflow/admission-status"
+ROUTE_AUDITOR_ATTACH = f"{_API_PREFIX}/sec-xbrl/operator-review/workflow/auditor-attach"
 ROUTE_DECIDE = f"{_API_PREFIX}/sec-xbrl/operator-review/workflow/decision/submit"
 ROUTE_PREPARE_AUTHORITY = f"{_API_PREFIX}/sec-xbrl/value-reveal/authority/prepare"
 ROUTE_REVEAL_SUBMIT = f"{_API_PREFIX}/sec-xbrl/value-reveal/submit"
@@ -75,6 +76,9 @@ STATUS_OPERATOR_DECISION = "inspect_sec_xbrl_operator_review_workflow_status"
 
 ADMISSION_STATUS_MODE = "sec_xbrl_production_admission_status_v1"
 ADMISSION_STATUS_OPERATOR_DECISION = "inspect_sec_xbrl_production_admission_status"
+
+AUDITOR_ATTACH_MODE = "sec_xbrl_operator_review_workflow_auditor_attach_v1"
+AUDITOR_ATTACH_OPERATOR_DECISION = "attach_sec_xbrl_operator_review_auditor_read"
 
 DECISION_SUBMIT_MODE = "sec_xbrl_operator_review_decision_submit_v1"
 DECISION_OPERATOR_DECISION = "submit_sec_xbrl_operator_review_decision"
@@ -340,6 +344,9 @@ def cmd_admission_status(args: argparse.Namespace, transport: Transport) -> None
         body["sec_xbrl_operator_review_workflow_id"] = args.workflow_id
     if args.workflow_basis_hash:
         body["workflow_basis_hash"] = args.workflow_basis_hash
+    role = getattr(args, "role", None)
+    if role:
+        body["operator_role"] = role
 
     headers = _build_auth_headers(args)
     status_code, resp = transport.post(ROUTE_ADMISSION_STATUS, body, headers)
@@ -363,6 +370,35 @@ def cmd_admission_status(args: argparse.Namespace, transport: Transport) -> None
                 print(f"    {criterion}: passed={passed}" + (f", reason={reason}" if reason else ""))
             else:
                 print(f"    {criterion}: {detail}")
+
+
+# ---------------------------------------------------------------------------
+# Subcommand: auditor-attach
+# ---------------------------------------------------------------------------
+
+
+def cmd_auditor_attach(args: argparse.Namespace, transport: Transport) -> None:
+    body: dict = {
+        "client_request_id": _new_client_request_id("auditor-attach"),
+        "auditor_attach_mode": AUDITOR_ATTACH_MODE,
+        "operator_decision": AUDITOR_ATTACH_OPERATOR_DECISION,
+        "operator_role": "auditor",
+    }
+    if args.workflow_id:
+        body["sec_xbrl_operator_review_workflow_id"] = args.workflow_id
+    if args.workflow_basis_hash:
+        body["workflow_basis_hash"] = args.workflow_basis_hash
+
+    headers = _build_auth_headers(args)
+    status_code, resp = transport.post(ROUTE_AUDITOR_ATTACH, body, headers)
+
+    if status_code != 200:
+        _print_error_and_exit(status_code, resp)
+
+    print("=== workflow/auditor-attach: OK ===")
+    print(f"  auth_binding_ref       : {resp.get('auth_binding_ref')}")
+    print(f"  auth_binding_role      : {resp.get('auth_binding_role')}")
+    print(f"  auth_binding_basis_hash: {resp.get('auth_binding_basis_hash')}")
 
 
 # ---------------------------------------------------------------------------
@@ -817,6 +853,21 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_admission_status.add_argument("--workflow-id", default=None, metavar="ID")
     p_admission_status.add_argument("--workflow-basis-hash", default=None, metavar="HASH")
+    p_admission_status.add_argument(
+        "--role",
+        default=None,
+        choices=("owner", "auditor"),
+        metavar="ROLE",
+        help="Operator role binding selector: owner or auditor (default: owner)",
+    )
+
+    # -- auditor-attach --
+    p_auditor_attach = sub.add_parser(
+        "auditor-attach",
+        help="Attach an auditor-role read binding to an existing workflow (workspace-scoped).",
+    )
+    p_auditor_attach.add_argument("--workflow-id", default=None, metavar="ID")
+    p_auditor_attach.add_argument("--workflow-basis-hash", default=None, metavar="HASH")
 
     # -- decide --
     p_decide = sub.add_parser(
@@ -1043,6 +1094,7 @@ _SUBCOMMAND_MAP = {
     "open": cmd_open,
     "status": cmd_status,
     "admission-status": cmd_admission_status,
+    "auditor-attach": cmd_auditor_attach,
     "decide": cmd_decide,
     "prepare-authority": cmd_prepare_authority,
     "reveal": cmd_reveal,

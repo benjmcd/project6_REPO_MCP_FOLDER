@@ -1087,3 +1087,136 @@ def test_admission_status_happy_path() -> None:
     assert "production_admission_ready" in combined, (
         f"Expected 'production_admission_ready' verdict token in output; stdout={stdout!r}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Test: --role auditor forwarded in POST body
+# ---------------------------------------------------------------------------
+
+def test_admission_status_role_auditor_forwarded() -> None:
+    """CLI admission-status with --role auditor includes operator_role='auditor' in the POST body."""
+    from app.cli.sec_xbrl_operator_cli import ROUTE_ADMISSION_STATUS
+
+    workflow_id = "wf-cli-role-auditor-test"
+    canned = {
+        "production_admission_ready": False,
+        "admission_flag_enabled": False,
+        "production_admission_blocked_reason": "production_admission_flag_disabled",
+    }
+    spy = SpyTransport(responses={"workflow/admission-status": (200, canned)})
+
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "admission-status",
+            "--workflow-id", workflow_id,
+            "--role", "auditor",
+        ],
+        spy,
+    )
+
+    assert exit_code == 0, f"Expected exit 0; stderr={stderr!r}"
+
+    admission_calls = [c for c in spy.post_calls if "workflow/admission-status" in c["path"]]
+    assert len(admission_calls) == 1, f"Expected 1 POST to admission-status, got: {spy.post_calls}"
+
+    body = admission_calls[0]["body"]
+    assert body.get("operator_role") == "auditor", (
+        f"Expected operator_role='auditor' in body when --role auditor given; body={body}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Test: --role omitted → operator_role NOT in POST body (default-owner unchanged)
+# ---------------------------------------------------------------------------
+
+def test_admission_status_role_default_owner_omitted() -> None:
+    """CLI admission-status without --role does NOT include operator_role in the POST body."""
+    from app.cli.sec_xbrl_operator_cli import ROUTE_ADMISSION_STATUS
+
+    workflow_id = "wf-cli-role-default-test"
+    canned = {
+        "production_admission_ready": False,
+        "admission_flag_enabled": False,
+    }
+    spy = SpyTransport(responses={"workflow/admission-status": (200, canned)})
+
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "admission-status",
+            "--workflow-id", workflow_id,
+            # --role deliberately omitted
+        ],
+        spy,
+    )
+
+    assert exit_code == 0, f"Expected exit 0; stderr={stderr!r}"
+
+    admission_calls = [c for c in spy.post_calls if "workflow/admission-status" in c["path"]]
+    assert len(admission_calls) == 1, f"Expected 1 POST to admission-status, got: {spy.post_calls}"
+
+    body = admission_calls[0]["body"]
+    assert "operator_role" not in body, (
+        f"operator_role must NOT be in body when --role is omitted; body={body}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Test: auditor-attach CLI forwards to ROUTE_AUDITOR_ATTACH with operator_role='auditor'
+# ---------------------------------------------------------------------------
+
+def test_auditor_attach_forwarded() -> None:
+    """CLI auditor-attach posts to ROUTE_AUDITOR_ATTACH with operator_role='auditor'
+    and the correct mode/decision literals.  SpyTransport canned-200.
+    """
+    from app.cli.sec_xbrl_operator_cli import (
+        ROUTE_AUDITOR_ATTACH,
+        AUDITOR_ATTACH_MODE,
+        AUDITOR_ATTACH_OPERATOR_DECISION,
+    )
+
+    workflow_id = "wf-cli-auditor-attach-test"
+    basis_hash = "f" * 64
+    canned = {
+        "sec_xbrl_operator_review_workflow_id": workflow_id,
+        "workflow_basis_hash": basis_hash,
+        "auth_binding_ref": "sec-xbrl-auth-binding:cli-test-ref",
+        "auth_binding_role": "auditor",
+        "auth_binding_basis_hash": "a" * 64,
+        "auth_binding_route_family": "sec_xbrl_operator_review_workflow_status_read",
+        "auth_binding_policy_hash": "b" * 64,
+        "auth_binding_required": True,
+    }
+    spy = SpyTransport(responses={"auditor-attach": (200, canned)})
+
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "auditor-attach",
+            "--workflow-id", workflow_id,
+            "--workflow-basis-hash", basis_hash,
+        ],
+        spy,
+    )
+
+    assert exit_code == 0, f"Expected exit 0; stderr={stderr!r}"
+
+    attach_calls = [c for c in spy.post_calls if "auditor-attach" in c["path"]]
+    assert len(attach_calls) == 1, f"Expected 1 POST to auditor-attach, got: {spy.post_calls}"
+
+    # Verify route constant
+    assert attach_calls[0]["path"] == ROUTE_AUDITOR_ATTACH
+
+    # Verify body literals
+    body = attach_calls[0]["body"]
+    assert body["auditor_attach_mode"] == AUDITOR_ATTACH_MODE
+    assert body["operator_decision"] == AUDITOR_ATTACH_OPERATOR_DECISION
+    assert body["operator_role"] == "auditor", (
+        f"operator_role must always be 'auditor' for auditor-attach; body={body}"
+    )
+    assert body["sec_xbrl_operator_review_workflow_id"] == workflow_id
+    assert body["workflow_basis_hash"] == basis_hash
+
+    # Verify output contains binding ref/role
+    combined = stdout + stderr
+    assert "auditor-attach" in combined.lower() or "binding" in combined.lower(), (
+        f"Expected audit/binding output; stdout={stdout!r}"
+    )
