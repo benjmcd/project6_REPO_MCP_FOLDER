@@ -194,6 +194,90 @@ def inspect_sec_edgar_real_company_corpus_validation_status(validation_receipt_i
     )
 
 
+def find_corpus_validation_verdict_by_sidecar_hash(
+    sidecar_receipt_hash: str,
+) -> "dict[str, Any] | None":
+    """Scan the receipts directory for a corpus validation receipt that contains
+    a filing_validation_record whose arelle_sidecar_receipt_hash matches the
+    given hash.
+
+    Returns a small read-only verdict dict on the first match:
+      {
+        "corpus_validation_passed": bool,
+        "validation_receipt_id": str,
+        "validation_state": str,
+        "filing_status": str | None,
+      }
+
+    ``corpus_validation_passed`` is True ONLY when the receipt's
+    ``validation_state`` equals ``READY_STATE`` AND the matching filing record
+    indicates a successful/ready validation (no blocked_reasons on that record
+    and supported_degraded_blocked == "supported").
+
+    Returns None when:
+    - The receipts directory is missing or empty.
+    - No receipt contains a matching arelle_sidecar_receipt_hash.
+    - settings.storage_dir is unset.
+
+    This function is read-only: it never writes any file.
+    """
+    sidecar_hash = str(sidecar_receipt_hash or "").strip()
+    if not sidecar_hash:
+        return None
+
+    # Locate the receipts directory without raising (unlike _root() which raises).
+    storage_dir = str(settings.storage_dir or "").strip()
+    if not storage_dir:
+        return None
+    receipts_dir = Path(storage_dir).resolve() / RECEIPT_DIR / "receipts"
+    if not receipts_dir.is_dir():
+        return None
+
+    for receipt_path in receipts_dir.glob("*.json"):
+        try:
+            raw = receipt_path.read_text(encoding="utf-8")
+            receipt = json.loads(raw)
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(receipt, dict):
+            continue
+
+        records = receipt.get("filing_validation_records")
+        if not isinstance(records, list):
+            continue
+
+        for record in records:
+            if not isinstance(record, Mapping):
+                continue
+            authority_hashes = record.get("authority_hashes") or {}
+            if not isinstance(authority_hashes, Mapping):
+                continue
+            if authority_hashes.get("arelle_sidecar_receipt_hash") != sidecar_hash:
+                continue
+
+            # Found a matching record — determine corpus_validation_passed.
+            validation_state = receipt.get("validation_state", "")
+            state_ready = (validation_state == READY_STATE)
+            # Per-filing check: require supported_degraded_blocked == "supported"
+            # and no blocked_reasons on this record.
+            filing_supported = record.get("supported_degraded_blocked") == "supported"
+            blocked_reasons = record.get("blocked_reasons")
+            filing_clean = (
+                not isinstance(blocked_reasons, list)
+                or len(blocked_reasons) == 0
+            )
+            corpus_validation_passed = state_ready and filing_supported and filing_clean
+            filing_status = record.get("supported_degraded_blocked")
+            return {
+                "corpus_validation_passed": corpus_validation_passed,
+                "validation_receipt_id": receipt.get("validation_receipt_id"),
+                "validation_state": validation_state,
+                "filing_status": filing_status,
+            }
+
+    return None
+
+
 def _filing_validation_records(
     connector: Mapping[str, Any],
     *,

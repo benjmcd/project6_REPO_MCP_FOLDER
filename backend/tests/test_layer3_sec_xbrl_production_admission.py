@@ -19,15 +19,15 @@ from app.services.layer3_sec_xbrl_production_admission import (
 # ---------------------------------------------------------------------------
 
 def _full_evidence() -> dict:
-    """Return a dict that satisfies ALL six admission criteria."""
+    """Return a dict that satisfies ALL seven admission criteria."""
     return {
         # corpus_validation_passed_with_ownership
         "corpus_validation_passed": True,
         "ownership_marker_present": True,
-        # companyfacts_oracle_reconciled_within_tolerance
+        # companyfacts_oracle_full_coverage
         "companyfacts_oracle_supplied": True,
+        "oracle_eligible_count": 42,
         "oracle_confirmed_count": 42,
-        "oracle_within_tolerance": True,
         # operator_decision_approved_ready_for_next_freeze
         "review_decision": "approved",
         "decision_reason_code": "ready_for_next_freeze",
@@ -37,10 +37,13 @@ def _full_evidence() -> dict:
         # no_honesty_invariant_violation
         "honesty_invariant_violation": False,
         "raw_leak_detected": False,
-        # required_provisioning_present
+        # containment_invariants_held
         "production_database_touched": False,
-        "isolated_in_memory_db_used": True,
-        "required_provisioning_present": True,
+        "runtime_default_changed": False,
+        "value_reveal_performed": False,
+        "delivery_export_enabled": False,
+        # review_exceptions_zero
+        "review_exception_count": 0,
     }
 
 
@@ -80,7 +83,7 @@ def test_full_criteria_with_flag_on_returns_true():
     assert result["production_admission_ready"] is True
     assert result["production_admission_blocked_reason"] == ""
     assert result["admission_flag_enabled"] is True
-    assert len(result["criteria"]) == 6
+    assert len(result["criteria"]) == 7
     for key, val in result["criteria"].items():
         assert val["passed"] is True, f"criterion {key!r} unexpectedly failed"
 
@@ -96,9 +99,9 @@ _CRITERION_BREAK_CASES = [
         "corpus_validation_or_ownership_missing",
     ),
     (
-        "companyfacts_oracle_reconciled_within_tolerance",
+        "companyfacts_oracle_full_coverage",
         {"companyfacts_oracle_supplied": False},
-        "companyfacts_oracle_not_reconciled",
+        "companyfacts_oracle_not_full_coverage",
     ),
     (
         "operator_decision_approved_ready_for_next_freeze",
@@ -116,9 +119,14 @@ _CRITERION_BREAK_CASES = [
         "honesty_invariant_unverified_or_violated",
     ),
     (
-        "required_provisioning_present",
-        {"required_provisioning_present": False},
-        "required_provisioning_absent",
+        "containment_invariants_held",
+        {"production_database_touched": True},
+        "containment_invariants_not_held",
+    ),
+    (
+        "review_exceptions_zero",
+        {"review_exception_count": 1},
+        "review_exceptions_present",
     ),
 ]
 
@@ -130,14 +138,84 @@ def test_each_single_unmet_criterion_blocks(criterion_key, overrides, expected_r
     assert result["production_admission_ready"] is False, (
         f"Expected False when breaking criterion {criterion_key!r}"
     )
-    # The blocked_reason must be the specific reason for the broken criterion.
-    # Since exactly one criterion is broken and it appears first in evaluation
-    # order among the failing ones, blocked_reason == that criterion's reason.
     assert result["production_admission_blocked_reason"] == expected_reason, (
         f"criterion={criterion_key!r}: got {result['production_admission_blocked_reason']!r}, "
         f"expected {expected_reason!r}"
     )
     assert result["criteria"][criterion_key]["passed"] is False
+
+
+# ---------------------------------------------------------------------------
+# Oracle full-coverage edge cases
+# ---------------------------------------------------------------------------
+
+def test_oracle_partial_coverage_fails():
+    """confirmed < eligible must fail (partial oracle coverage is not enough)."""
+    evidence = {**_full_evidence(), "oracle_confirmed_count": 10, "oracle_eligible_count": 42}
+    result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
+    assert result["production_admission_ready"] is False
+    assert result["production_admission_blocked_reason"] == "companyfacts_oracle_not_full_coverage"
+
+
+def test_oracle_zero_eligible_fails():
+    """eligible_count == 0 must fail (no eligible facts means no real coverage)."""
+    evidence = {**_full_evidence(), "oracle_eligible_count": 0, "oracle_confirmed_count": 0}
+    result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
+    assert result["production_admission_ready"] is False
+    assert result["production_admission_blocked_reason"] == "companyfacts_oracle_not_full_coverage"
+
+
+def test_oracle_bool_eligible_count_fails_closed():
+    """bool for oracle_eligible_count must be rejected (bool is subclass of int)."""
+    evidence = {**_full_evidence(), "oracle_eligible_count": True}
+    result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
+    assert result["production_admission_ready"] is False
+    assert result["production_admission_blocked_reason"] == "companyfacts_oracle_not_full_coverage"
+
+
+# ---------------------------------------------------------------------------
+# Containment any-true fails
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("key", [
+    "production_database_touched",
+    "runtime_default_changed",
+    "value_reveal_performed",
+    "delivery_export_enabled",
+])
+def test_containment_any_true_fails(key):
+    evidence = {**_full_evidence(), key: True}
+    result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
+    assert result["production_admission_ready"] is False
+    assert result["production_admission_blocked_reason"] == "containment_invariants_not_held"
+
+
+def test_containment_missing_key_fails_closed():
+    """A missing containment key must fail closed."""
+    evidence = {**_full_evidence()}
+    del evidence["runtime_default_changed"]
+    result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
+    assert result["production_admission_ready"] is False
+    assert result["production_admission_blocked_reason"] == "containment_invariants_not_held"
+
+
+# ---------------------------------------------------------------------------
+# review_exceptions_zero edge cases
+# ---------------------------------------------------------------------------
+
+def test_review_exceptions_nonzero_fails():
+    evidence = {**_full_evidence(), "review_exception_count": 5}
+    result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
+    assert result["production_admission_ready"] is False
+    assert result["production_admission_blocked_reason"] == "review_exceptions_present"
+
+
+def test_review_exceptions_bool_fails_closed():
+    """bool for review_exception_count (e.g. False) must be rejected."""
+    evidence = {**_full_evidence(), "review_exception_count": False}
+    result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
+    assert result["production_admission_ready"] is False
+    assert result["production_admission_blocked_reason"] == "review_exceptions_present"
 
 
 # ---------------------------------------------------------------------------
@@ -158,6 +236,7 @@ def test_missing_evidence_fails_closed():
 def test_schema_id_present():
     result = evaluate_production_admission(evidence=_full_evidence(), admission_flag_enabled=True)
     assert result["schema_id"] == PRODUCTION_ADMISSION_SCHEMA_ID
+    assert result["schema_id"] == "layer3.sec_xbrl_production_admission.v2"
 
     result_off = evaluate_production_admission(evidence={}, admission_flag_enabled=False)
     assert result_off["schema_id"] == PRODUCTION_ADMISSION_SCHEMA_ID
@@ -172,7 +251,7 @@ def test_non_numeric_oracle_confirmed_count_fails_closed():
     evidence = {**_full_evidence(), "oracle_confirmed_count": "not-a-number"}
     result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
     assert result["production_admission_ready"] is False
-    assert result["production_admission_blocked_reason"] == "companyfacts_oracle_not_reconciled"
+    assert result["production_admission_blocked_reason"] == "companyfacts_oracle_not_full_coverage"
 
 
 def test_non_string_receipt_id_fails_closed():
