@@ -744,3 +744,89 @@ def test_prior_product_evidence(seeded_db) -> None:
     assert result_b.evidence_links[0].ref_id == result_a.product.analysis_product_id
     # Two products total
     assert db.query(L3AnalysisProduct).count() == 2
+
+
+# ---------------------------------------------------------------------------
+# executor_type gate: relaxed to allow "deterministic"; still blocks others
+# ---------------------------------------------------------------------------
+
+
+def test_executor_type_agent_still_rejected(seeded_db) -> None:
+    """executor_type='agent' must still be rejected after the gate relaxation."""
+    draft = AnalysisProductDraft(
+        product_kind="finding",
+        title="Agent attempt",
+        body="This should be rejected by the executor_type gate.",
+        evidence=(
+            AnalysisProductEvidenceDraft(
+                ref_kind="material_snapshot",
+                ref_id="snapshot-aprod-test",
+                evidence_role="observation",
+            ),
+        ),
+        executor_type="agent",
+    )
+    with pytest.raises(Layer3AnalysisProductError) as exc_info:
+        create_analysis_product_draft(
+            seeded_db,
+            session_id="session-aprod-test",
+            client_request_id="req-agent-gate",
+            draft=draft,
+        )
+    assert exc_info.value.error_code == "unsupported_executor_type"
+    assert exc_info.value.http_status == 400
+
+
+def test_executor_type_external_api_still_rejected(seeded_db) -> None:
+    """executor_type='external_api' must still be rejected."""
+    draft = AnalysisProductDraft(
+        product_kind="finding",
+        title="External API attempt",
+        body="This should be rejected by the executor_type gate.",
+        evidence=(
+            AnalysisProductEvidenceDraft(
+                ref_kind="material_snapshot",
+                ref_id="snapshot-aprod-test",
+                evidence_role="observation",
+            ),
+        ),
+        executor_type="external_api",
+    )
+    with pytest.raises(Layer3AnalysisProductError) as exc_info:
+        create_analysis_product_draft(
+            seeded_db,
+            session_id="session-aprod-test",
+            client_request_id="req-extapi-gate",
+            draft=draft,
+        )
+    assert exc_info.value.error_code == "unsupported_executor_type"
+    assert exc_info.value.http_status == 400
+
+
+def test_executor_type_deterministic_now_allowed(seeded_db) -> None:
+    """executor_type='deterministic' is now admitted by the relaxed gate."""
+    db = seeded_db
+    # Need a working_set to use as evidence for ref_kind="working_set"
+    # Use material_snapshot instead since it's available in the seeded fixture
+    draft = AnalysisProductDraft(
+        product_kind="summary",
+        title="Deterministic product from authoring",
+        body="A summary product authored with executor_type=deterministic.",
+        evidence=(
+            AnalysisProductEvidenceDraft(
+                ref_kind="material_snapshot",
+                ref_id="snapshot-aprod-test",
+                evidence_role="observation",
+            ),
+        ),
+        executor_type="deterministic",
+    )
+    result = create_analysis_product_draft(
+        db,
+        session_id="session-aprod-test",
+        client_request_id="req-det-gate-ok",
+        draft=draft,
+    )
+    db.commit()
+    assert result.product.executor_type == "deterministic"
+    assert result.replayed is False

@@ -36976,3 +36976,103 @@ def test_layer3_api_working_set_openapi_schema_forbids_extra(
     # Server-owned fields must NOT be client-settable.
     for forbidden in ("basis_hash", "member_count", "working_set_id"):
         assert forbidden not in props
+
+
+# ---------------------------------------------------------------------------
+# Deterministic 3C Product Generation v0 — API tests
+# ---------------------------------------------------------------------------
+
+
+def test_layer3_api_analysis_product_generate_happy_201(
+    client: TestClient, tmp_path
+) -> None:
+    """POST /analysis-product/generate happy path -> 201 with deterministic product;
+    the generated product appears in GET session summary inventory with executor_type='deterministic'."""
+    session_id = _construct_quant_package_set(client, tmp_path, request_id="api-gen-happy")[0]
+    summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    snap_id = summary["sublayer_visualization"]["material_objects"][0]["material_snapshot_id"]
+
+    # Create a working set to run the method over.
+    ws_resp = client.post(
+        "/api/v1/layer3/working-set",
+        json={
+            "session_id": session_id,
+            "client_request_id": "ws-gen-happy-1",
+            "name": "Generation test scope",
+            "members": [{"ref_kind": "material_snapshot", "ref_id": snap_id}],
+        },
+    )
+    assert ws_resp.status_code == 201, ws_resp.text
+    ws_id = ws_resp.json()["working_set_id"]
+
+    # Generate the deterministic product.
+    gen_resp = client.post(
+        "/api/v1/layer3/analysis-product/generate",
+        json={
+            "session_id": session_id,
+            "client_request_id": "gen-happy-1",
+            "working_set_id": ws_id,
+            "method_id": "working_set_composition_summary",
+        },
+    )
+    assert gen_resp.status_code == 201, gen_resp.text
+    body = gen_resp.json()
+    assert body["executor_type"] == "deterministic"
+    assert body["lifecycle_status"] == "draft"
+    assert body["method_id"] == "working_set_composition_summary"
+    assert isinstance(body["method_version"], int)
+    assert body["evidence_count"] == 1
+    assert body["working_set_id"] == ws_id
+    assert body["session_id"] == session_id
+    assert body["title"]
+    assert body["replayed"] is False
+    product_id = body["analysis_product_id"]
+
+    # Session summary inventory must surface the generated product.
+    inv_summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    inv = inv_summary["analysis_product_inventory_projection"]
+    # inventory stores products with "product_id" key = "layer3_analyst_product:<uuid>"
+    canonical_product_id = f"layer3_analyst_product:{product_id}"
+    product_ids_in_inv = [p["product_id"] for p in inv.get("analyst_products", [])]
+    assert canonical_product_id in product_ids_in_inv
+
+    # Find the product entry in the inventory and verify executor_type.
+    matching = [p for p in inv["analyst_products"] if p["product_id"] == canonical_product_id]
+    assert len(matching) == 1
+    assert matching[0]["executor_type"] == "deterministic"
+
+
+def test_layer3_api_analysis_product_generate_extra_forbid_server_fields(
+    client: TestClient,
+) -> None:
+    """extra='forbid': server-owned fields (executor_type, product_kind, title, body) must be rejected 422."""
+    for forbidden_field in ("executor_type", "product_kind", "title", "body"):
+        resp = client.post(
+            "/api/v1/layer3/analysis-product/generate",
+            json={
+                "session_id": "s1",
+                "client_request_id": "cr1",
+                "working_set_id": "ws1",
+                "method_id": "working_set_composition_summary",
+                forbidden_field: "injected",
+            },
+        )
+        assert resp.status_code == 422, (
+            f"expected 422 for {forbidden_field}, got {resp.status_code}: {resp.text}"
+        )
+
+
+def test_layer3_api_analysis_product_generate_openapi_additional_properties_false(
+    client: TestClient,
+) -> None:
+    """OpenAPI: Layer3AnalysisProductGenerateRequest schema has additionalProperties=False."""
+    spec = client.get("/openapi.json").json()
+    schema = spec["components"]["schemas"]["Layer3AnalysisProductGenerateRequest"]
+    assert schema.get("additionalProperties") is False
+    props = schema.get("properties", {})
+    # Server-owned fields must not appear in the client schema.
+    for forbidden in ("executor_type", "product_kind", "title", "body", "lifecycle_status"):
+        assert forbidden not in props
+    # Required client fields must be present.
+    for required in ("session_id", "client_request_id", "working_set_id", "method_id"):
+        assert required in props

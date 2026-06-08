@@ -147,6 +147,17 @@ def test_inventory_enumerates_analyst_products_never_promotable() -> None:
     }
 
 
+def test_inventory_analyst_rollup_counts_deterministic_executor_type() -> None:
+    analyst = [
+        _analyst_input("ap-human", executor_type="human"),
+        _analyst_input("ap-det", executor_type="deterministic"),
+    ]
+    projection = _projection(analyst_products=analyst)
+    assert projection["analyst_rollup"]["by_executor_type"] == {"human": 1, "deterministic": 1}
+    by_id = {p["product_id"]: p for p in projection["analyst_products"]}
+    assert by_id["layer3_analyst_product:ap-det"]["executor_type"] == "deterministic"
+
+
 def test_inventory_analyst_products_only_marks_products_present() -> None:
     projection = _projection(analyst_products=[_analyst_input("ap-1")])
     assert projection["inventory_state"] == "products_present"
