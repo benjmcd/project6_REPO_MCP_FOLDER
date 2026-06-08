@@ -4773,7 +4773,8 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
 
 
 
-html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-execution-lanes-projection {
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-execution-lanes-projection,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-inventory-projection {
     display: grid;
     gap: 10px;
     min-width: 0;
@@ -4782,8 +4783,87 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
     background: rgba(12, 12, 12, 0.76);
 }
 
-html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-execution-lanes-projection[data-projection-state="available"] {
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-execution-lanes-projection[data-projection-state="available"],
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-inventory-projection[data-projection-state="available"] {
     border-color: rgba(159, 223, 109, 0.72);
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-inventory-projection-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-inventory-projection-head strong {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-inventory-projection-head p {
+    flex-basis: 100%;
+    margin: 0;
+    color: rgba(248, 248, 248, 0.78);
+    font-size: 0.72rem;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-inventory-rollup {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-inventory-rollup article {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+    padding: 9px;
+    border: 1px solid rgba(248, 248, 248, 0.18);
+    background: rgba(248, 248, 248, 0.08);
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-inventory-rollup span,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-inventory-rollup p,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-list em,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-list small {
+    color: rgba(248, 248, 248, 0.72);
+    font-size: 0.62rem;
+    font-weight: 900;
+    overflow-wrap: anywhere;
+    text-transform: uppercase;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-inventory-rollup strong {
+    color: #f8f8f8;
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-list {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-list li {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+    padding: 8px;
+    border: 1px solid rgba(248, 248, 248, 0.16);
+    background: rgba(248, 248, 248, 0.06);
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-analysis-product-list strong {
+    color: #f8f8f8;
+    font-size: 0.74rem;
+    overflow-wrap: anywhere;
 }
 
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-execution-lanes-projection-head,

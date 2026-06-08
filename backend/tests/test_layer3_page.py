@@ -2773,6 +2773,71 @@ def test_layer3_analysis_environment_projection_rendered_reader_is_bounded() -> 
     assert 'data-projection-available="true"' in css.text
 
 
+def test_layer3_analysis_product_inventory_projection_rendered_reader_is_bounded() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+    css = client.get("/review/layer3/static/layer3.css")
+
+    assert js.status_code == 200
+    assert css.status_code == 200
+    helper_start = js.text.find("function currentAnalysisProductInventoryProjection")
+    status_start = js.text.find("function analysisProductInventoryProjectionStatus")
+    render_start = js.text.find("function renderMockupAnalysisProductInventoryProjection")
+    end_bound = js.text.find("function mockupOutputReviewPackageHandoffServerSources")
+    assert helper_start != -1
+    assert status_start != -1
+    assert render_start != -1
+    assert end_bound != -1
+    assert helper_start < status_start < render_start < end_bound
+
+    helper_slice = js.text[helper_start:status_start]
+    status_slice = js.text[status_start:render_start]
+    render_slice = js.text[render_start:end_bound]
+    reader_block = js.text[helper_start:end_bound]
+
+    assert "State.sessionSummary?.analysis_product_inventory_projection" in helper_slice
+    assert "layer3.analysis_product_inventory_projection.v1" in status_slice
+    assert "analysis_product_inventory_projection_missing" in status_slice
+    assert "analysis_product_inventory_projection_schema_invalid" in status_slice
+    assert "analysis_product_inventory_projection_not_read_only" in status_slice
+    assert "inventory_state" in status_slice
+    assert "product_count" in status_slice
+    assert "package_product_count" in status_slice
+    assert "downstream_eligibility" in status_slice
+    assert 'class="mockup-analysis-product-inventory-projection-head"' in render_slice
+    assert 'class="mockup-analysis-product-inventory-rollup"' in render_slice
+    assert 'class="mockup-analysis-product-list"' in render_slice
+    assert "data-product-class=" in render_slice
+    assert "renderMockupAnalysisProductInventoryProjection(active)" in js.text
+    assert "dataset.readOnly = 'true'" in render_slice
+    for forbidden in (
+        "postJson(",
+        "getJson(",
+        "submitAttachmentForm(",
+        "localStorage",
+        "download_url",
+        "public_url",
+        "signed_url",
+        "payload_ref",
+        "payload_hash",
+        "source_refs",
+        "provenance",
+        "output_payload_available",
+        "connector_run_id",
+        "destination_id",
+        "provider_credentials",
+        "network_egress:",
+        "package_mutation:",
+        "source_promotion:",
+        "vector_store:",
+        "optional_tool:",
+    ):
+        assert forbidden not in reader_block
+
+    assert ".mockup-analysis-product-inventory-projection" in css.text
+    assert ".mockup-analysis-product-inventory-projection-head" in css.text
+    assert ".mockup-analysis-product-list" in css.text
+
+
 def test_layer3_mockup_execution_lanes_projection_reader_is_bounded() -> None:
     js = client.get("/review/layer3/static/layer3.js")
     css = client.get("/review/layer3/static/layer3.css")
