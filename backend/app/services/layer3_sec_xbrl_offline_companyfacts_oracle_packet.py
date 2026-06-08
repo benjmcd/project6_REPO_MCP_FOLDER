@@ -13,6 +13,10 @@ from app.services.layer3_sec_xbrl_offline_evidence_loader import (
 )
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_leaks_with_error
+from app.services.layer3_sec_xbrl_production_admission import (
+    evaluate_production_admission,
+    production_admission_flag_enabled,
+)
 
 
 REPORT_SCHEMA_ID = "diagnostics.sec_xbrl_offline_companyfacts_oracle_packet.v1"
@@ -163,12 +167,7 @@ def inspect_sec_xbrl_offline_companyfacts_oracle_packet(
             **companyfacts_summary,
             **projection_summary,
         },
-        "readiness": {
-            "companyfacts_oracle_packet_supplied": True,
-            "operator_review_creation_ready": True,
-            "production_admission_ready": False,
-            "production_admission_blocked_reason": "diagnostic_validate_only_not_production_admission",
-        },
+        "readiness": _companyfacts_packet_ready_readiness(projection_summary),
         "controls": _controls(),
     }
     _reject_report_leaks(report)
@@ -188,6 +187,49 @@ def _reject_report_leaks(value: Any) -> None:
         error_code="companyfacts_oracle_packet_report_redaction_failed",
         message="SEC XBRL CompanyFacts oracle packet report leaked raw authority references.",
     )
+
+
+def _companyfacts_packet_ready_readiness(projection_summary: Mapping[str, Any]) -> dict[str, Any]:
+    base: dict[str, Any] = {
+        "companyfacts_oracle_packet_supplied": True,
+        "operator_review_creation_ready": True,
+    }
+    if production_admission_flag_enabled():
+        _adm = evaluate_production_admission(
+            evidence={
+                "companyfacts_oracle_supplied": True,
+                "oracle_confirmed_count": int(projection_summary.get("oracle_confirmed_count") or 0),
+                "oracle_within_tolerance": projection_summary.get("oracle_within_tolerance"),
+            },
+            admission_flag_enabled=True,
+        )
+        base["production_admission_ready"] = _adm["production_admission_ready"]
+        base["production_admission_blocked_reason"] = _adm["production_admission_blocked_reason"]
+        base["production_admission_criteria"] = _adm["criteria"]
+    else:
+        base["production_admission_ready"] = False
+        base["production_admission_blocked_reason"] = "diagnostic_validate_only_not_production_admission"
+    return base
+
+
+def _companyfacts_packet_blocked_readiness(reason: str) -> dict[str, Any]:
+    base: dict[str, Any] = {
+        "companyfacts_oracle_packet_supplied": False,
+        "operator_review_creation_ready": False,
+        "operator_review_creation_blocked_reason": reason,
+    }
+    if production_admission_flag_enabled():
+        _adm = evaluate_production_admission(
+            evidence={},
+            admission_flag_enabled=True,
+        )
+        base["production_admission_ready"] = _adm["production_admission_ready"]
+        base["production_admission_blocked_reason"] = _adm["production_admission_blocked_reason"]
+        base["production_admission_criteria"] = _adm["criteria"]
+    else:
+        base["production_admission_ready"] = False
+        base["production_admission_blocked_reason"] = reason
+    return base
 
 
 def _first_blocked_reason(base_report: Mapping[str, Any]) -> dict[str, Any]:
@@ -231,13 +273,7 @@ def _blocked_report(
         "base_evidence_status": base_report.get("status", ""),
         "authority_refs": dict(authority_refs or base_report.get("authority_refs") or {}),
         "summary": dict(summary or base_report.get("summary") or {}),
-        "readiness": {
-            "companyfacts_oracle_packet_supplied": False,
-            "operator_review_creation_ready": False,
-            "operator_review_creation_blocked_reason": reason,
-            "production_admission_ready": False,
-            "production_admission_blocked_reason": reason,
-        },
+        "readiness": _companyfacts_packet_blocked_readiness(reason),
         "controls": _controls(),
     }
     _reject_report_leaks(report)
