@@ -23,9 +23,11 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.models import (
+    L3SecXbrlControlledValueRevealSubmitReceipt,
     L3SecXbrlOperatorReviewDecision,
     L3SecXbrlOperatorReviewWorkflow,
     L3SecXbrlValueRevealAuthorityReceipt,
+    L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_STATE_READY,
     L3_SEC_XBRL_VALUE_REVEAL_AUTHORITY_STATE_READY,
 )
 from app.services.layer3_sec_edgar_real_company_corpus_validation import (
@@ -67,6 +69,41 @@ _ORACLE_ATTEMPTED_VALUES = frozenset({
 })
 
 _BLOCKED_RESPONSE_SCHEMA_ID = ADMISSION_STATUS_SCHEMA_ID
+
+
+def _authority_matches_current_evidence(
+    authority: L3SecXbrlValueRevealAuthorityReceipt | None,
+    *,
+    workflow: L3SecXbrlOperatorReviewWorkflow,
+    decision: L3SecXbrlOperatorReviewDecision | None,
+    packet_set: Any,
+    projection_set: Any,
+    sidecar_hash: str,
+) -> bool:
+    if authority is None:
+        return False
+    if decision is None:
+        return False
+    if authority.authority_state != L3_SEC_XBRL_VALUE_REVEAL_AUTHORITY_STATE_READY:
+        return False
+    expected_pairs = (
+        (authority.sec_xbrl_operator_review_decision_id, decision.sec_xbrl_operator_review_decision_id),
+        (authority.decision_basis_hash, decision.decision_basis_hash),
+        (authority.sec_xbrl_operator_review_workflow_id, workflow.sec_xbrl_operator_review_workflow_id),
+        (authority.workflow_basis_hash, workflow.workflow_basis_hash),
+        (authority.sec_xbrl_statement_packet_set_id, packet_set.sec_xbrl_statement_packet_set_id),
+        (authority.statement_packet_basis_hash, packet_set.packet_basis_hash),
+        (authority.sec_xbrl_projection_set_id, projection_set.sec_xbrl_projection_set_id),
+        (authority.projection_basis_hash, projection_set.projection_basis_hash),
+        (authority.sidecar_receipt_hash, sidecar_hash),
+        (authority.value_store_hash, projection_set.value_store_hash),
+    )
+    if any(actual != expected for actual, expected in expected_pairs):
+        return False
+    dataset_version_id = getattr(projection_set, "dataset_version_id", None)
+    if dataset_version_id and authority.dataset_version_id != dataset_version_id:
+        return False
+    return True
 
 
 def _blocked(reason: str, *, detail: str = "") -> dict[str, Any]:
@@ -206,10 +243,13 @@ def inspect_redacted_production_admission_status(
             )
             .one_or_none()
         )
-        if (
-            authority is not None
-            and authority.authority_state == L3_SEC_XBRL_VALUE_REVEAL_AUTHORITY_STATE_READY
-            and authority.workflow_basis_hash == workflow.workflow_basis_hash
+        if _authority_matches_current_evidence(
+            authority,
+            workflow=workflow,
+            decision=decision,
+            packet_set=packet_set,
+            projection_set=projection_set,
+            sidecar_hash=sidecar_hash,
         ):
             evidence["value_reveal_authority_eligible"] = True
             evidence["value_reveal_authority_receipt_id"] = str(
@@ -281,19 +321,25 @@ def inspect_redacted_production_admission_status(
             pass  # omit corpus evidence on error (fail closed)
 
     # ------------------------------------------------------------------
-    # Step 8: Containment invariants from the workflow's governed state.
-    # The workflow status service guarantees these are all False at open time;
-    # we read the authoritative values from the status response structure.
+    # Step 8: Containment invariants from governed persisted state.
     # ------------------------------------------------------------------
-    # The workflow's negative_invariants are embedded in the status response
-    # dict; rather than re-running _status_response (which calls base_response),
-    # we read the invariant fields directly from the model's governed columns.
-    # All four are always False at workflow-open time (enforced by the open
-    # route and validated by _validate_workflow_row_for_status).
-    evidence["production_database_touched"] = False
-    evidence["runtime_default_changed"] = False
-    evidence["value_reveal_performed"] = False
-    evidence["delivery_export_enabled"] = False
+    try:
+        submit_receipt = (
+            db.query(L3SecXbrlControlledValueRevealSubmitReceipt)
+            .filter(
+                L3SecXbrlControlledValueRevealSubmitReceipt.sec_xbrl_operator_review_workflow_id
+                == workflow.sec_xbrl_operator_review_workflow_id,
+                L3SecXbrlControlledValueRevealSubmitReceipt.submit_state
+                == L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_STATE_READY,
+            )
+            .first()
+        )
+        evidence["production_database_touched"] = False
+        evidence["runtime_default_changed"] = False
+        evidence["value_reveal_performed"] = submit_receipt is not None
+        evidence["delivery_export_enabled"] = False
+    except Exception:
+        pass  # omit containment keys on error; evaluator fails closed
 
     # ------------------------------------------------------------------
     # Step 9: Review exception count from workflow row.

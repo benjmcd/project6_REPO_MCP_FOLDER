@@ -29,12 +29,16 @@ if str(BACKEND) not in sys.path:
 from app.core.config import settings
 from app.db.session import Base
 from app.models.models import (
+    L3SecXbrlControlledValueRevealSubmitReceipt,
     L3SecXbrlOperatorReviewDecision,
     L3SecXbrlOperatorReviewWorkflow,
     L3SecXbrlProjectionFact,
     L3SecXbrlProjectionSet,
     L3SecXbrlStatementPacketSet,
     L3SecXbrlValueRevealAuthorityReceipt,
+    L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_POLICY_ID,
+    L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_REDACTION_POLICY,
+    L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_STATE_READY,
     L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_MODE,
     L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REDACTION_POLICY,
     L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_STATUS_RECORDED,
@@ -57,6 +61,10 @@ from app.services.layer3_sec_edgar_real_company_corpus_validation import (
     READY_STATE as CORPUS_READY_STATE,
     RECEIPT_DIR,
     RECEIPT_PREFIX,
+    SCHEMA_ID as CORPUS_SCHEMA_ID,
+    SCHEMA_VERSION as CORPUS_SCHEMA_VERSION,
+    VALIDATION_MODE as CORPUS_VALIDATION_MODE,
+    _validation_receipt_hash,
 )
 from app.services.layer3_sec_xbrl_auth_binding import AUTH_OWNER_MODE_NONE
 from app.services.layer3_utils import stable_hash
@@ -326,23 +334,74 @@ def _write_corpus_receipt(tmp_path: Path, *, sidecar_hash: str = _SIDECAR_HASH) 
     """Write a minimal READY corpus receipt containing the sidecar hash."""
     receipts_dir = tmp_path / RECEIPT_DIR / "receipts"
     receipts_dir.mkdir(parents=True, exist_ok=True)
-    receipt_id = f"{RECEIPT_PREFIX}-{'c' * 24}"
     receipt = {
-        "schema_id": "layer3.sec_edgar_real_company_corpus_validation.v1",
+        "schema_id": CORPUS_SCHEMA_ID,
+        "schema_version": CORPUS_SCHEMA_VERSION,
+        "validation_mode": CORPUS_VALIDATION_MODE,
         "validation_state": CORPUS_READY_STATE,
-        "validation_receipt_id": receipt_id,
-        "validation_receipt_hash": "d" * 64,
+        "validation_receipt_id": "",
+        "validation_receipt_hash": "",
+        "connector_receipt_hash": "d" * 64,
+        "company_matrix": ["sony"],
         "filing_validation_records": [
             {
                 "record_index": 1,
+                "record_hash": "e" * 64,
                 "authority_hashes": {"arelle_sidecar_receipt_hash": sidecar_hash},
                 "supported_degraded_blocked": "supported",
             }
         ],
+        "product_utility_matrix": [],
+        "product_quality_matrix": [],
+        "diagnostics": {},
     }
-    (receipts_dir / f"{receipt_id}.json").write_text(
+    receipt_hash = _validation_receipt_hash(receipt)
+    receipt["validation_receipt_hash"] = receipt_hash
+    receipt["validation_receipt_id"] = f"{RECEIPT_PREFIX}-{receipt_hash[:24]}"
+    (receipts_dir / f"{receipt['validation_receipt_id']}.json").write_text(
         json.dumps(receipt, indent=2, sort_keys=True), encoding="utf-8"
     )
+
+
+def _build_submit_receipt(
+    db,
+    auth: L3SecXbrlValueRevealAuthorityReceipt,
+) -> L3SecXbrlControlledValueRevealSubmitReceipt:
+    submit_basis = stable_hash({"submit": "test", "authority": auth.authority_basis_hash})
+    row = L3SecXbrlControlledValueRevealSubmitReceipt(
+        sec_xbrl_controlled_value_reveal_submit_receipt_id=_uid(),
+        client_request_id="test-submit-client",
+        submit_basis_hash=submit_basis,
+        submit_schema_id="layer3.sec_xbrl_controlled_value_reveal_submit.v1",
+        sec_xbrl_value_reveal_authority_receipt_id=auth.sec_xbrl_value_reveal_authority_receipt_id,
+        authority_basis_hash=auth.authority_basis_hash,
+        sec_xbrl_operator_review_decision_id=auth.sec_xbrl_operator_review_decision_id,
+        decision_basis_hash=auth.decision_basis_hash,
+        sec_xbrl_operator_review_workflow_id=auth.sec_xbrl_operator_review_workflow_id,
+        workflow_basis_hash=auth.workflow_basis_hash,
+        sec_xbrl_statement_packet_set_id=auth.sec_xbrl_statement_packet_set_id,
+        statement_packet_basis_hash=auth.statement_packet_basis_hash,
+        sec_xbrl_projection_set_id=auth.sec_xbrl_projection_set_id,
+        projection_basis_hash=auth.projection_basis_hash,
+        dataset_version_id=auth.dataset_version_id,
+        dataset_version_hash=auth.dataset_version_hash,
+        sidecar_receipt_id_hash=auth.sidecar_receipt_id_hash,
+        sidecar_receipt_hash=auth.sidecar_receipt_hash,
+        value_store_hash=auth.value_store_hash,
+        submit_state=L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_STATE_READY,
+        submit_policy_id=L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_POLICY_ID,
+        redaction_policy=L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_REDACTION_POLICY,
+        revealed_fact_count=1,
+        value_redacted_fact_count=1,
+        fact_inventory_hash="6" * 64,
+        value_inventory_hash="7" * 64,
+        response_inventory_hash="8" * 64,
+        submit_summary_json={},
+        negative_invariants_json={},
+    )
+    db.add(row)
+    db.flush()
+    return row
 
 
 def _write_ownership_marker(tmp_path: Path, *, sidecar_hash: str = _SIDECAR_HASH) -> None:
@@ -531,6 +590,78 @@ def test_no_authority_blocks_on_value_reveal(db, tmp_path, monkeypatch):
 
     assert result["production_admission_ready"] is False
     assert result["criteria"]["value_reveal_authority_receipt_valid"]["passed"] is False
+
+
+def test_stale_authority_sidecar_blocks_on_value_reveal(db, tmp_path, monkeypatch):
+    """Authority evidence must bind to the current projection sidecar."""
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+    proj = _build_projection_set(db)
+    _add_oracle_facts(db, proj, total=3, confirmed=3)
+    packet = _build_packet_set(db, proj)
+    wf = _build_workflow(db, packet)
+    dec = _build_decision(db, wf)
+    auth = _build_authority(db, wf, dec, proj, packet)
+    auth.sidecar_receipt_hash = "9" * 64
+    db.commit()
+
+    _write_corpus_receipt(tmp_path)
+    _write_ownership_marker(tmp_path)
+
+    result = _call(db, wf, flag_on=True)
+
+    assert result["production_admission_ready"] is False
+    assert result["criteria"]["value_reveal_authority_receipt_valid"]["passed"] is False
+
+
+def test_prior_value_reveal_submit_blocks_containment(db, tmp_path, monkeypatch):
+    """A durable controlled value-reveal submit means containment is not held."""
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+    proj = _build_projection_set(db)
+    _add_oracle_facts(db, proj, total=3, confirmed=3)
+    packet = _build_packet_set(db, proj)
+    wf = _build_workflow(db, packet)
+    dec = _build_decision(db, wf)
+    auth = _build_authority(db, wf, dec, proj, packet)
+    _build_submit_receipt(db, auth)
+    db.commit()
+
+    _write_corpus_receipt(tmp_path)
+    _write_ownership_marker(tmp_path)
+
+    result = _call(db, wf, flag_on=True)
+
+    assert result["production_admission_ready"] is False
+    assert result["criteria"]["containment_invariants_held"]["passed"] is False
+    assert (
+        result["criteria"]["containment_invariants_held"]["reason"]
+        == "containment_invariants_not_held"
+    )
+
+
+def test_malformed_value_reveal_submit_still_blocks_containment(db, tmp_path, monkeypatch):
+    """A same-workflow READY submit with stale copied lineage still proves reveal occurred."""
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+    proj = _build_projection_set(db)
+    _add_oracle_facts(db, proj, total=3, confirmed=3)
+    packet = _build_packet_set(db, proj)
+    wf = _build_workflow(db, packet)
+    dec = _build_decision(db, wf)
+    auth = _build_authority(db, wf, dec, proj, packet)
+    submit = _build_submit_receipt(db, auth)
+    submit.sidecar_receipt_hash = "9" * 64
+    db.commit()
+
+    _write_corpus_receipt(tmp_path)
+    _write_ownership_marker(tmp_path)
+
+    result = _call(db, wf, flag_on=True)
+
+    assert result["production_admission_ready"] is False
+    assert result["criteria"]["containment_invariants_held"]["passed"] is False
+    assert (
+        result["criteria"]["containment_invariants_held"]["reason"]
+        == "containment_invariants_not_held"
+    )
 
 
 def test_partial_oracle_blocks(db, tmp_path, monkeypatch):

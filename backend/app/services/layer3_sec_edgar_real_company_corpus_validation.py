@@ -246,9 +246,8 @@ def find_corpus_validation_verdict_by_sidecar_hash(
 
     for receipt_path in receipts_dir.glob("*.json"):
         try:
-            raw = receipt_path.read_text(encoding="utf-8")
-            receipt = json.loads(raw)
-        except (OSError, json.JSONDecodeError):
+            receipt = _read_verified_receipt(receipt_path.stem)
+        except Exception:
             continue
         if not isinstance(receipt, dict):
             continue
