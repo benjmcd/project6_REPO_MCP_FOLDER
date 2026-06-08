@@ -638,6 +638,32 @@ def test_prior_value_reveal_submit_blocks_containment(db, tmp_path, monkeypatch)
     )
 
 
+def test_malformed_value_reveal_submit_still_blocks_containment(db, tmp_path, monkeypatch):
+    """A same-workflow READY submit with stale copied lineage still proves reveal occurred."""
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+    proj = _build_projection_set(db)
+    _add_oracle_facts(db, proj, total=3, confirmed=3)
+    packet = _build_packet_set(db, proj)
+    wf = _build_workflow(db, packet)
+    dec = _build_decision(db, wf)
+    auth = _build_authority(db, wf, dec, proj, packet)
+    submit = _build_submit_receipt(db, auth)
+    submit.sidecar_receipt_hash = "9" * 64
+    db.commit()
+
+    _write_corpus_receipt(tmp_path)
+    _write_ownership_marker(tmp_path)
+
+    result = _call(db, wf, flag_on=True)
+
+    assert result["production_admission_ready"] is False
+    assert result["criteria"]["containment_invariants_held"]["passed"] is False
+    assert (
+        result["criteria"]["containment_invariants_held"]["reason"]
+        == "containment_invariants_not_held"
+    )
+
+
 def test_partial_oracle_blocks(db, tmp_path, monkeypatch):
     """Partial oracle coverage (confirmed < eligible) must block."""
     monkeypatch.setattr(settings, "storage_dir", str(tmp_path))

@@ -329,18 +329,6 @@ def inspect_redacted_production_admission_status(
             .filter(
                 L3SecXbrlControlledValueRevealSubmitReceipt.sec_xbrl_operator_review_workflow_id
                 == workflow.sec_xbrl_operator_review_workflow_id,
-                L3SecXbrlControlledValueRevealSubmitReceipt.workflow_basis_hash
-                == workflow.workflow_basis_hash,
-                L3SecXbrlControlledValueRevealSubmitReceipt.sec_xbrl_statement_packet_set_id
-                == packet_set.sec_xbrl_statement_packet_set_id,
-                L3SecXbrlControlledValueRevealSubmitReceipt.statement_packet_basis_hash
-                == packet_set.packet_basis_hash,
-                L3SecXbrlControlledValueRevealSubmitReceipt.sec_xbrl_projection_set_id
-                == projection_set.sec_xbrl_projection_set_id,
-                L3SecXbrlControlledValueRevealSubmitReceipt.projection_basis_hash
-                == projection_set.projection_basis_hash,
-                L3SecXbrlControlledValueRevealSubmitReceipt.sidecar_receipt_hash
-                == sidecar_hash,
                 L3SecXbrlControlledValueRevealSubmitReceipt.submit_state
                 == L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_STATE_READY,
             )
