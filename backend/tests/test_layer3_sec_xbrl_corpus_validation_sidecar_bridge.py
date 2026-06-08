@@ -29,6 +29,7 @@ from app.services.layer3_sec_edgar_real_company_corpus_validation import (
     find_corpus_validation_verdict_by_sidecar_hash,
     _validation_receipt_hash,
 )
+from app.services.layer3_utils import stable_hash
 
 
 # ---------------------------------------------------------------------------
@@ -58,7 +59,6 @@ def _make_receipt(
     """Minimal corpus receipt with one filing record containing the sidecar hash."""
     record: dict[str, Any] = {
         "record_index": 1,
-        "record_hash": "1" * 64,
         "authority_hashes": {
             "arelle_sidecar_receipt_hash": sidecar_hash,
         },
@@ -66,6 +66,7 @@ def _make_receipt(
     }
     if blocked_reasons is not None:
         record["blocked_reasons"] = blocked_reasons
+    record["record_hash"] = stable_hash(record)
     receipt = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
@@ -214,4 +215,23 @@ def test_forged_receipt_hash_mismatch_is_ignored(tmp_path, monkeypatch):
     _write_receipt(receipts, forged)
 
     verdict = find_corpus_validation_verdict_by_sidecar_hash(sidecar_hash)
+    assert verdict is None
+
+
+def test_tampered_record_sidecar_hash_is_ignored(tmp_path, monkeypatch):
+    """Envelope-valid receipt cannot admit a tampered record sidecar hash."""
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+    receipts = _receipts_dir(tmp_path)
+    original_sidecar_hash = "p" * 64
+    target_sidecar_hash = "q" * 64
+    receipt = _make_receipt(
+        receipt_id="",
+        sidecar_hash=original_sidecar_hash,
+    )
+    receipt["filing_validation_records"][0]["authority_hashes"][
+        "arelle_sidecar_receipt_hash"
+    ] = target_sidecar_hash
+    _write_receipt(receipts, receipt)
+
+    verdict = find_corpus_validation_verdict_by_sidecar_hash(target_sidecar_hash)
     assert verdict is None

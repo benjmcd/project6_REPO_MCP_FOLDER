@@ -41,6 +41,7 @@ from app.services.layer3_sec_xbrl_operator_review_workflow import (
     SecXbrlOperatorReviewWorkflowError,
     _validate_workflow_row_for_status,
 )
+from app.services import layer3_sec_xbrl_value_reveal_authority
 from app.services.layer3_sec_xbrl_production_admission import (
     PRODUCTION_ADMISSION_SCHEMA_ID,
     evaluate_production_admission,
@@ -79,6 +80,7 @@ def _authority_matches_current_evidence(
     packet_set: Any,
     projection_set: Any,
     sidecar_hash: str,
+    dataset_version_hash: str | None,
 ) -> bool:
     if authority is None:
         return False
@@ -102,6 +104,8 @@ def _authority_matches_current_evidence(
         return False
     dataset_version_id = getattr(projection_set, "dataset_version_id", None)
     if dataset_version_id and authority.dataset_version_id != dataset_version_id:
+        return False
+    if dataset_version_hash is None or authority.dataset_version_hash != dataset_version_hash:
         return False
     return True
 
@@ -235,6 +239,13 @@ def inspect_redacted_production_admission_status(
     # Step 4: Value-reveal authority receipt.
     # ------------------------------------------------------------------
     try:
+        try:
+            current_dataset_version_hash = layer3_sec_xbrl_value_reveal_authority._dataset_version_hash(
+                db,
+                projection_set.dataset_version_id,
+            )
+        except Exception:
+            current_dataset_version_hash = None
         authority = (
             db.query(L3SecXbrlValueRevealAuthorityReceipt)
             .filter(
@@ -250,6 +261,7 @@ def inspect_redacted_production_admission_status(
             packet_set=packet_set,
             projection_set=projection_set,
             sidecar_hash=sidecar_hash,
+            dataset_version_hash=current_dataset_version_hash,
         ):
             evidence["value_reveal_authority_eligible"] = True
             evidence["value_reveal_authority_receipt_id"] = str(
