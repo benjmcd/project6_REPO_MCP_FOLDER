@@ -48,8 +48,18 @@ posture decision and updating those e2e invariants visibly.
   `SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY=online`, the Arelle corpus-validation flags). Without
   the live flag the `open` route returns a governed "live network disabled" error — the CLI
   prints it and exits nonzero.
-- For `reveal`: the controlled-value-reveal feature flag must be enabled server-side
-  (`layer3_sec_xbrl_controlled_value_reveal_submit_enabled`).
+- For `reveal`: two things are required.
+  1. The Arelle **internal value store** must have been persisted **at `open` time** — set
+     `LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED=true` *before* running `open`, so the
+     sidecar derivation writes the value store (`store_state="persisted"`) that
+     `value-reveal/authority/prepare` requires. If `open` ran with this flag off, the sidecar
+     has no persisted value store and `prepare-authority` returns a governed
+     `sec_xbrl_value_reveal_authority_sidecar_not_ready` / `..._value_store_missing` (409); re-run
+     `open` with the flag on (a new basis hash, so the idempotent cache does not short-circuit).
+  2. The controlled-value-reveal feature flag must be enabled server-side
+     (`LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED=true`). This is a deliberate,
+     gated server posture; the `reveal` step still also requires the operator's explicit
+     `--confirm` regardless.
 - For `AUTH_OWNER=proxy` deployments: pass `--identity <user>` and `--groups <csv>` so the CLI
   sends the proxy identity headers (`X-Forwarded-User` / `X-Forwarded-Groups` by default;
   override the header NAMES via `PROXY_IDENTITY_HEADER_NAME` / `PROXY_GROUPS_HEADER_NAME`). In
