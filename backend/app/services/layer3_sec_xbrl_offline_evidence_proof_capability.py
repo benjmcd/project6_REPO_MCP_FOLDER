@@ -25,6 +25,10 @@ from app.services.layer3_sec_xbrl_e2e_offline_orchestrator import (
 from app.services.layer3_sec_xbrl_offline_companyfacts_oracle_packet import (
     inspect_sec_xbrl_offline_companyfacts_oracle_packet,
 )
+from app.services.layer3_sec_xbrl_production_admission import (
+    evaluate_production_admission,
+    production_admission_flag_enabled,
+)
 from app.services.layer3_sec_xbrl_offline_evidence_loader import (
     SecXbrlOfflineEvidenceLoaderError,
     inspect_sec_xbrl_offline_evidence_storage,
@@ -261,11 +265,7 @@ def inspect_sec_xbrl_offline_evidence_proof_capability(
             **_prefixed_counts("orchestrator", _mapping_or_empty(isolated_response.get("summary"))),
             **_prefixed_counts("isolated_persistence", _mapping_or_empty(isolated.get("persisted_counts"))),
         },
-        "readiness": {
-            "operator_review_creation_ready": isolated_response.get("status") == "review_ready",
-            "production_admission_ready": False,
-            "production_admission_blocked_reason": "diagnostic_validate_only_not_production_admission",
-        },
+        "readiness": _proof_capability_ready_readiness(isolated_response),
         "containment": {
             **_mapping_or_empty(isolated_response.get("containment")),
             "isolated_in_memory_db_used": True,
@@ -297,6 +297,46 @@ def blocked_sec_xbrl_offline_evidence_proof_capability_report(
         oracle_status="not_run",
         operator_evidence_files_read=operator_evidence_files_read,
     )
+
+
+def _proof_capability_ready_readiness(isolated_response: Mapping[str, Any]) -> dict[str, Any]:
+    base: dict[str, Any] = {
+        "operator_review_creation_ready": isolated_response.get("status") == "review_ready",
+    }
+    if production_admission_flag_enabled():
+        _adm = evaluate_production_admission(
+            evidence={
+                "isolated_in_memory_db_used": True,
+                "production_database_touched": False,
+            },
+            admission_flag_enabled=True,
+        )
+        base["production_admission_ready"] = _adm["production_admission_ready"]
+        base["production_admission_blocked_reason"] = _adm["production_admission_blocked_reason"]
+        base["production_admission_criteria"] = _adm["criteria"]
+    else:
+        base["production_admission_ready"] = False
+        base["production_admission_blocked_reason"] = "diagnostic_validate_only_not_production_admission"
+    return base
+
+
+def _proof_capability_blocked_readiness(reason: str) -> dict[str, Any]:
+    base: dict[str, Any] = {
+        "operator_review_creation_ready": False,
+        "operator_review_creation_blocked_reason": reason,
+    }
+    if production_admission_flag_enabled():
+        _adm = evaluate_production_admission(
+            evidence={},
+            admission_flag_enabled=True,
+        )
+        base["production_admission_ready"] = _adm["production_admission_ready"]
+        base["production_admission_blocked_reason"] = _adm["production_admission_blocked_reason"]
+        base["production_admission_criteria"] = _adm["criteria"]
+    else:
+        base["production_admission_ready"] = False
+        base["production_admission_blocked_reason"] = reason
+    return base
 
 
 def _run_isolated_orchestrator(
@@ -379,12 +419,7 @@ def _blocked_report(
             **_prefixed_counts("oracle", _mapping_or_empty(oracle_summary)),
             **_prefixed_counts("isolated_persistence", _mapping_or_empty(isolated_persistence_counts)),
         },
-        "readiness": {
-            "operator_review_creation_ready": False,
-            "operator_review_creation_blocked_reason": reason,
-            "production_admission_ready": False,
-            "production_admission_blocked_reason": reason,
-        },
+        "readiness": _proof_capability_blocked_readiness(reason),
         "containment": {
             "isolated_in_memory_db_used": isolated_db_persistence_performed,
             "production_database_touched": False,
@@ -510,7 +545,17 @@ def _proof_result_hash(
                 isolated_persistence_counts,
             ),
             "redaction_scan": dict(redaction_scan),
-            "production_admission_ready": False,
+            "production_admission_ready": (
+                evaluate_production_admission(
+                    evidence={
+                        "isolated_in_memory_db_used": True,
+                        "production_database_touched": False,
+                    },
+                    admission_flag_enabled=True,
+                )["production_admission_ready"]
+                if production_admission_flag_enabled()
+                else False
+            ),
         }
     )
 

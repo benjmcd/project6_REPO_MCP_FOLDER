@@ -14,6 +14,10 @@ from app.services.layer3_sec_edgar_html_inline_xbrl_fact_statement_classificatio
 )
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_leaks_with_error, report_text_leak_flags
+from app.services.layer3_sec_xbrl_production_admission import (
+    evaluate_production_admission,
+    production_admission_flag_enabled,
+)
 
 
 SCHEMA_ID = "layer3.sec_xbrl_offline_evidence_loader.v1"
@@ -203,11 +207,26 @@ def inspect_sec_xbrl_offline_evidence_storage(
                 else "companyfacts_oracle_not_supplied"
             ),
             "companyfacts_oracle_supplied": companyfacts_supplied,
-            "production_admission_ready": False,
-            "production_admission_blocked_reason": (
-                "diagnostic_validate_only_not_production_admission"
-                if companyfacts_supplied
-                else "companyfacts_oracle_not_supplied"
+            **(
+                (lambda _adm: {
+                    "production_admission_ready": _adm["production_admission_ready"],
+                    "production_admission_blocked_reason": _adm["production_admission_blocked_reason"],
+                    "production_admission_criteria": _adm["criteria"],
+                })(evaluate_production_admission(
+                    evidence={
+                        "companyfacts_oracle_supplied": companyfacts_supplied,
+                    },
+                    admission_flag_enabled=True,
+                ))
+                if production_admission_flag_enabled()
+                else {
+                    "production_admission_ready": False,
+                    "production_admission_blocked_reason": (
+                        "diagnostic_validate_only_not_production_admission"
+                        if companyfacts_supplied
+                        else "companyfacts_oracle_not_supplied"
+                    ),
+                }
             ),
         },
         "controls": _controls(db_persistence_performed=False),
