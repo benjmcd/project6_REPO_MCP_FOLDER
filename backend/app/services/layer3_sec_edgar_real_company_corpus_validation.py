@@ -259,6 +259,8 @@ def find_corpus_validation_verdict_by_sidecar_hash(
         for record in records:
             if not isinstance(record, Mapping):
                 continue
+            if not _record_hash_verified(record):
+                continue
             authority_hashes = record.get("authority_hashes") or {}
             if not isinstance(authority_hashes, Mapping):
                 continue
@@ -286,6 +288,14 @@ def find_corpus_validation_verdict_by_sidecar_hash(
             }
 
     return None
+
+
+def _record_hash_verified(record: Mapping[str, Any]) -> bool:
+    expected = str(record.get("record_hash") or "")
+    if not expected:
+        return False
+    payload = {str(k): v for k, v in record.items() if k != "record_hash"}
+    return stable_hash(payload) == expected
 
 
 def _filing_validation_records(

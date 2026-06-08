@@ -29,6 +29,8 @@ if str(BACKEND) not in sys.path:
 from app.core.config import settings
 from app.db.session import Base
 from app.models.models import (
+    Dataset,
+    DatasetVersion,
     L3SecXbrlControlledValueRevealSubmitReceipt,
     L3SecXbrlOperatorReviewDecision,
     L3SecXbrlOperatorReviewWorkflow,
@@ -57,6 +59,7 @@ from app.services.layer3_sec_xbrl_admission_status import (
     ADMISSION_STATUS_SCHEMA_ID,
     inspect_redacted_production_admission_status,
 )
+from app.services import layer3_sec_xbrl_value_reveal_authority
 from app.services.layer3_sec_edgar_real_company_corpus_validation import (
     READY_STATE as CORPUS_READY_STATE,
     RECEIPT_DIR,
@@ -300,6 +303,26 @@ def _build_authority(
     authority_state: str = L3_SEC_XBRL_VALUE_REVEAL_AUTHORITY_STATE_READY,
     sidecar_hash: str = _SIDECAR_HASH,
 ) -> L3SecXbrlValueRevealAuthorityReceipt:
+    dataset_id = _uid()
+    dataset_version_id = _uid()
+    db.add(Dataset(dataset_id=dataset_id, name="test dataset"))
+    db.add(
+        DatasetVersion(
+            dataset_version_id=dataset_version_id,
+            dataset_id=dataset_id,
+            version_label="test-v1",
+            version_type="snapshot",
+            status="ready",
+            row_count=1,
+        )
+    )
+    db.flush()
+    dataset_version_hash = layer3_sec_xbrl_value_reveal_authority._dataset_version_hash(
+        db,
+        dataset_version_id,
+    )
+    proj.dataset_version_id = dataset_version_id
+    db.flush()
     authority_basis = stable_hash({"authority": "test", "wf": wf.sec_xbrl_operator_review_workflow_id})
     auth = L3SecXbrlValueRevealAuthorityReceipt(
         sec_xbrl_value_reveal_authority_receipt_id=_uid(),
@@ -314,8 +337,8 @@ def _build_authority(
         statement_packet_basis_hash=_PACKET_BASIS_HASH,
         sec_xbrl_projection_set_id=proj.sec_xbrl_projection_set_id,
         projection_basis_hash=_PROJECTION_BASIS_HASH,
-        dataset_version_id=_uid(),
-        dataset_version_hash=stable_hash({"dataset": "test"}),
+        dataset_version_id=dataset_version_id,
+        dataset_version_hash=dataset_version_hash,
         sidecar_receipt_id_hash=stable_hash({"sidecar_id": "test"}),
         sidecar_receipt_hash=sidecar_hash,
         value_store_hash=_VALUE_STORE_HASH,
@@ -346,7 +369,6 @@ def _write_corpus_receipt(tmp_path: Path, *, sidecar_hash: str = _SIDECAR_HASH) 
         "filing_validation_records": [
             {
                 "record_index": 1,
-                "record_hash": "e" * 64,
                 "authority_hashes": {"arelle_sidecar_receipt_hash": sidecar_hash},
                 "supported_degraded_blocked": "supported",
             }
@@ -355,6 +377,9 @@ def _write_corpus_receipt(tmp_path: Path, *, sidecar_hash: str = _SIDECAR_HASH) 
         "product_quality_matrix": [],
         "diagnostics": {},
     }
+    receipt["filing_validation_records"][0]["record_hash"] = stable_hash(
+        receipt["filing_validation_records"][0]
+    )
     receipt_hash = _validation_receipt_hash(receipt)
     receipt["validation_receipt_hash"] = receipt_hash
     receipt["validation_receipt_id"] = f"{RECEIPT_PREFIX}-{receipt_hash[:24]}"
@@ -602,6 +627,28 @@ def test_stale_authority_sidecar_blocks_on_value_reveal(db, tmp_path, monkeypatc
     dec = _build_decision(db, wf)
     auth = _build_authority(db, wf, dec, proj, packet)
     auth.sidecar_receipt_hash = "9" * 64
+    db.commit()
+
+    _write_corpus_receipt(tmp_path)
+    _write_ownership_marker(tmp_path)
+
+    result = _call(db, wf, flag_on=True)
+
+    assert result["production_admission_ready"] is False
+    assert result["criteria"]["value_reveal_authority_receipt_valid"]["passed"] is False
+
+
+def test_stale_authority_dataset_hash_blocks_on_value_reveal(db, tmp_path, monkeypatch):
+    """Authority evidence must match the current dataset-version contents."""
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+    proj = _build_projection_set(db)
+    _add_oracle_facts(db, proj, total=3, confirmed=3)
+    packet = _build_packet_set(db, proj)
+    wf = _build_workflow(db, packet)
+    dec = _build_decision(db, wf)
+    auth = _build_authority(db, wf, dec, proj, packet)
+    version = db.get(DatasetVersion, auth.dataset_version_id)
+    version.row_count = 99
     db.commit()
 
     _write_corpus_receipt(tmp_path)
