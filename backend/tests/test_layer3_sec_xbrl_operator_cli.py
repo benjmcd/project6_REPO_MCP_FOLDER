@@ -730,6 +730,121 @@ def test_open_decide_chain_and_reveal_assembly(tmp_path, monkeypatch) -> None:
         "value-reveal/submit must NOT be called when --confirm is absent"
 
 
+# ---------------------------------------------------------------------------
+# Test: run-pipeline request assembly (all 4 steps, SpyTransport)
+# ---------------------------------------------------------------------------
+
+def test_run_pipeline_request_assembly() -> None:
+    """run-pipeline --confirm orchestrates all 4 route calls in sequence,
+    threading IDs and hashes from each response into the next request."""
+    _OPEN_HASH = "a" * 64
+    _DECIDE_HASH = "b" * 64
+    _AUTH_HASH = "c" * 64
+
+    spy = SpyTransport(responses={
+        "open-full-pipeline": (200, {
+            "status": "ready",
+            "operator_review": {
+                "sec_xbrl_operator_review_workflow_id": "wf-pipeline-001",
+                "workflow_basis_hash": _OPEN_HASH,
+                "status": "open",
+            },
+            "corpus_validation": {},
+            "companyfacts_stage": {},
+            "production_readiness_claimed": False,
+        }),
+        "decision/submit": (200, {
+            "sec_xbrl_operator_review_decision_id": "dec-pipeline-001",
+            "decision_basis_hash": _DECIDE_HASH,
+            "review_decision": "approved",
+            "decision_reason_code": "ready_for_next_freeze",
+            "status": "approved",
+        }),
+        "value-reveal/authority/prepare": (200, {
+            "sec_xbrl_value_reveal_authority_receipt_id": "auth-pipeline-001",
+            "authority_basis_hash": _AUTH_HASH,
+            "status": "ready",
+            "value_reveal_performed": False,
+            "production_readiness_claimed": False,
+        }),
+        "value-reveal/submit": (200, {
+            "sec_xbrl_controlled_value_reveal_submit_receipt_id": "reveal-pipeline-001",
+            "status": "ready",
+            "production_readiness_claimed": False,
+            "revealed_facts": [],
+        }),
+    })
+
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "run-pipeline",
+            "--ticker", "AAPL",
+            "--decision", "approved",
+            "--reason-code", "ready_for_next_freeze",
+            "--confirm",
+        ],
+        spy,
+    )
+
+    assert exit_code == 0, f"Expected exit 0; stderr={stderr!r}; stdout={stdout!r}"
+
+    # Step 1: open-full-pipeline called once with operator_confirmation=True
+    open_calls = [c for c in spy.post_calls if "open-full-pipeline" in c["path"]]
+    assert len(open_calls) == 1, "Expected exactly one POST to open-full-pipeline"
+    assert open_calls[0]["body"]["operator_confirmation"] is True
+
+    # Step 2: decision/submit called once with correct decision fields and hash from open response
+    decide_calls = [c for c in spy.post_calls if "decision/submit" in c["path"]]
+    assert len(decide_calls) == 1, "Expected exactly one POST to decision/submit"
+    decide_body = decide_calls[0]["body"]
+    assert decide_body["review_decision"] == "approved"
+    assert decide_body["decision_reason_code"] == "ready_for_next_freeze"
+    assert decide_body["workflow_basis_hash"] == _OPEN_HASH
+
+    # Step 3: value-reveal/authority/prepare called once with hash from decide response
+    prep_calls = [c for c in spy.post_calls if "value-reveal/authority/prepare" in c["path"]]
+    assert len(prep_calls) == 1, "Expected exactly one POST to value-reveal/authority/prepare"
+    prep_body = prep_calls[0]["body"]
+    assert prep_body["decision_basis_hash"] == _DECIDE_HASH
+
+    # Step 4: value-reveal/submit called once with operator_reveal_confirmation=True and hash from prep response
+    reveal_calls = [c for c in spy.post_calls if "value-reveal/submit" in c["path"]]
+    assert len(reveal_calls) == 1, "Expected exactly one POST to value-reveal/submit"
+    reveal_body = reveal_calls[0]["body"]
+    assert reveal_body["operator_reveal_confirmation"] is True
+    assert reveal_body["authority_basis_hash"] == _AUTH_HASH
+
+    # Output must include pipeline completion marker
+    assert "run-pipeline" in stdout or "COMPLETE" in stdout, \
+        f"Expected 'run-pipeline' or 'COMPLETE' in stdout:\n{stdout}"
+
+
+# ---------------------------------------------------------------------------
+# Test: run-pipeline refuses without --confirm
+# ---------------------------------------------------------------------------
+
+def test_run_pipeline_refuses_without_confirm() -> None:
+    """run-pipeline without --confirm must exit nonzero and make no route calls."""
+    spy = SpyTransport()
+
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "run-pipeline",
+            "--ticker", "AAPL",
+            "--decision", "approved",
+            "--reason-code", "ready_for_next_freeze",
+            # --confirm deliberately omitted
+        ],
+        spy,
+    )
+
+    assert exit_code != 0, "Expected nonzero exit when --confirm is absent from run-pipeline"
+    assert len(spy.post_calls) == 0, "No route must be called when --confirm is absent"
+
+    combined = stdout + stderr
+    assert "confirm" in combined.lower(), "Error message should mention --confirm"
+
+
 def test_cli_cik_map_matches_connector() -> None:
     """Drift guard: the CLI's embedded ticker->CIK map must stay identical to the
     connector's authoritative map. Fails loudly if the connector adds/changes a ticker."""

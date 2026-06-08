@@ -16,6 +16,8 @@ Usage:
     python -m app.cli.sec_xbrl_operator_cli reveal \\
         --authority-receipt-id <id> --authority-basis-hash <hash> --confirm
     python -m app.cli.sec_xbrl_operator_cli reveal-status --receipt-id <id>
+    python -m app.cli.sec_xbrl_operator_cli run-pipeline --ticker AAPL \\
+        --decision approved --reason-code ready_for_next_freeze --confirm
 """
 from __future__ import annotations
 
@@ -480,6 +482,167 @@ def cmd_reveal(args: argparse.Namespace, transport: Transport) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Subcommand: run-pipeline
+# ---------------------------------------------------------------------------
+
+
+def cmd_run_pipeline(args: argparse.Namespace, transport: Transport) -> None:
+    # --confirm gate: REQUIRED — covers both the live SEC acquisition AND value-reveal
+    if not args.confirm:
+        print(
+            "ERROR: --confirm is required for 'run-pipeline'. This subcommand triggers a live "
+            "SEC acquisition and discloses raw financial values. Re-run with --confirm to proceed.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    # Decision and reason-code are NEVER defaulted
+    if not args.decision:
+        print("ERROR: --decision is required for 'run-pipeline'.", file=sys.stderr)
+        sys.exit(1)
+    if not args.reason_code:
+        print("ERROR: --reason-code is required for 'run-pipeline'.", file=sys.stderr)
+        sys.exit(1)
+
+    ticker = args.ticker.upper()
+
+    # Resolve CIK — same logic as cmd_open
+    if args.cik:
+        resolved_cik = args.cik.strip().lstrip("0") or args.cik.strip()
+        if ticker in REAL_COMPANY_CIK_REFS and REAL_COMPANY_CIK_REFS[ticker] != resolved_cik:
+            print(
+                f"WARNING: --cik {args.cik!r} does not match the known CIK for {ticker} "
+                f"({REAL_COMPANY_CIK_REFS[ticker]}). Proceeding with supplied --cik; "
+                "the server will cross-check.",
+                file=sys.stderr,
+            )
+    else:
+        if ticker not in REAL_COMPANY_CIK_REFS:
+            known = ", ".join(sorted(REAL_COMPANY_CIK_REFS))
+            print(
+                f"ERROR: Ticker {ticker!r} is not in the known-company reference list. "
+                f"Use --cik to supply a CIK directly, or choose a known ticker: {known}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        resolved_cik = REAL_COMPANY_CIK_REFS[ticker]
+
+    period_limit = args.period_limit
+    if not (1 <= period_limit <= 10):
+        print(
+            f"ERROR: --period-limit must be between 1 and 10 (got {period_limit}).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    headers = _build_auth_headers(args)
+
+    # ------------------------------------------------------------------
+    # Step 1/4: open-full-pipeline
+    # ------------------------------------------------------------------
+    print("=== run-pipeline [step 1/4]: open-full-pipeline ===")
+    open_body: dict = {
+        "client_request_id": _new_client_request_id("run-open"),
+        "company_matrix": [ticker],
+        "cik": resolved_cik,
+        "period_limit": period_limit,
+        "require_companyfacts_oracle": args.require_oracle,
+        "operator_confirmation": True,
+    }
+    status_code, open_resp = transport.post(ROUTE_OPEN, open_body, headers)
+    if status_code != 200:
+        _print_error_and_exit(status_code, open_resp)
+
+    op = open_resp.get("operator_review") or {}
+    workflow_id = op.get("sec_xbrl_operator_review_workflow_id")
+    workflow_basis_hash = op.get("workflow_basis_hash")
+    print(f"  workflow_id           : {workflow_id}")
+    print(f"  workflow_basis_hash   : {workflow_basis_hash}")
+    print(f"  workflow_status       : {op.get('status')}")
+
+    # ------------------------------------------------------------------
+    # Step 2/4: decision/submit
+    # ------------------------------------------------------------------
+    print("=== run-pipeline [step 2/4]: decision/submit ===")
+    decide_body: dict = {
+        "client_request_id": _new_client_request_id("run-decide"),
+        "submit_mode": DECISION_SUBMIT_MODE,
+        "operator_decision": DECISION_OPERATOR_DECISION,
+        "review_decision": args.decision,
+        "decision_reason_code": args.reason_code,
+        "sec_xbrl_operator_review_workflow_id": workflow_id,
+        "workflow_basis_hash": workflow_basis_hash,
+    }
+    if args.notes:
+        decide_body["decision_notes"] = args.notes
+    status_code, decide_resp = transport.post(ROUTE_DECIDE, decide_body, headers)
+    if status_code != 200:
+        _print_error_and_exit(status_code, decide_resp)
+
+    decision_id = decide_resp.get("sec_xbrl_operator_review_decision_id")
+    decision_basis_hash = decide_resp.get("decision_basis_hash")
+    print(f"  decision_id           : {decision_id}")
+    print(f"  decision_basis_hash   : {decision_basis_hash}")
+    print(f"  review_decision       : {decide_resp.get('review_decision')}")
+
+    # ------------------------------------------------------------------
+    # Step 3/4: value-reveal/authority/prepare
+    # ------------------------------------------------------------------
+    print("=== run-pipeline [step 3/4]: value-reveal/authority/prepare ===")
+    prep_body: dict = {
+        "client_request_id": _new_client_request_id("run-prep"),
+        "authority_mode": AUTHORITY_MODE,
+        "operator_decision": AUTHORITY_OPERATOR_DECISION,
+        "sec_xbrl_operator_review_decision_id": decision_id,
+        "decision_basis_hash": decision_basis_hash,
+    }
+    if args.attestation:
+        prep_body["operator_attestation"] = args.attestation
+    status_code, prep_resp = transport.post(ROUTE_PREPARE_AUTHORITY, prep_body, headers)
+    if status_code != 200:
+        _print_error_and_exit(status_code, prep_resp)
+
+    authority_receipt_id = prep_resp.get("sec_xbrl_value_reveal_authority_receipt_id")
+    authority_basis_hash = prep_resp.get("authority_basis_hash")
+    print(f"  authority_receipt_id  : {authority_receipt_id}")
+    print(f"  authority_basis_hash  : {authority_basis_hash}")
+    print(f"  status                : {prep_resp.get('status')}")
+
+    # ------------------------------------------------------------------
+    # Step 4/4: value-reveal/submit
+    # ------------------------------------------------------------------
+    print("=== run-pipeline [step 4/4]: value-reveal/submit ===")
+    reveal_body: dict = {
+        "client_request_id": _new_client_request_id("run-reveal"),
+        "submit_mode": REVEAL_SUBMIT_MODE,
+        "operator_decision": REVEAL_OPERATOR_DECISION,
+        "sec_xbrl_value_reveal_authority_receipt_id": authority_receipt_id,
+        "authority_basis_hash": authority_basis_hash,
+        "operator_reveal_confirmation": True,
+    }
+    if args.max_records is not None:
+        reveal_body["max_records"] = args.max_records
+    status_code, reveal_resp = transport.post(ROUTE_REVEAL_SUBMIT, reveal_body, headers)
+    if status_code != 200:
+        _print_error_and_exit(status_code, reveal_resp)
+
+    print(
+        "WARNING: The following values are raw financial data. They are transient and "
+        "sensitive — not persisted by this CLI.",
+        file=sys.stderr,
+    )
+    revealed_facts = reveal_resp.get("revealed_facts") or reveal_resp.get("value_records") or []
+    if revealed_facts:
+        print(f"\n  revealed_facts ({len(revealed_facts)} records):")
+        for fact in revealed_facts:
+            print(f"    {json.dumps(fact)}")
+    else:
+        print("\n  (no revealed_facts in response — check feature flag or receipt state)")
+
+    print("=== run-pipeline: COMPLETE ===")
+
+
+# ---------------------------------------------------------------------------
 # Subcommand: reveal-status
 # ---------------------------------------------------------------------------
 
@@ -638,6 +801,74 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_revst.add_argument("--receipt-id", required=True, metavar="ID")
 
+    # -- run-pipeline --
+    p_pipe = sub.add_parser(
+        "run-pipeline",
+        help=(
+            "Run the full 4-step operator pipeline in one command: "
+            "open → decide → prepare-authority → reveal."
+        ),
+    )
+    p_pipe.add_argument("--ticker", required=True, help="Company ticker (e.g. AAPL)")
+    p_pipe.add_argument(
+        "--cik",
+        default="",
+        help="Override CIK (zero-stripped). Required if ticker is not in the known list.",
+    )
+    p_pipe.add_argument(
+        "--period-limit",
+        type=int,
+        default=3,
+        metavar="N",
+        help="Max filings per company (1-10, default 3)",
+    )
+    p_pipe.add_argument(
+        "--require-oracle",
+        action="store_true",
+        help="Require CompanyFacts oracle acquisition",
+    )
+    p_pipe.add_argument(
+        "--decision",
+        required=True,
+        choices=VALID_REVIEW_DECISIONS,
+        metavar="DECISION",
+        help=f"Review decision. One of: {', '.join(VALID_REVIEW_DECISIONS)}",
+    )
+    p_pipe.add_argument(
+        "--reason-code",
+        required=True,
+        choices=VALID_REASON_CODES,
+        metavar="CODE",
+        help=f"Reason code. One of: {', '.join(VALID_REASON_CODES)}",
+    )
+    p_pipe.add_argument(
+        "--notes",
+        default="",
+        metavar="TEXT",
+        help="Decision notes (optional for approved; may be required for other decisions)",
+    )
+    p_pipe.add_argument(
+        "--attestation",
+        default="",
+        metavar="TEXT",
+        help="Operator attestation for prepare-authority step (optional)",
+    )
+    p_pipe.add_argument(
+        "--confirm",
+        action="store_true",
+        help=(
+            "REQUIRED: confirms both the live SEC acquisition gate "
+            "and the value-reveal gate"
+        ),
+    )
+    p_pipe.add_argument(
+        "--max-records",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Max records to reveal in the final step (optional)",
+    )
+
     return parser
 
 
@@ -652,6 +883,7 @@ _SUBCOMMAND_MAP = {
     "prepare-authority": cmd_prepare_authority,
     "reveal": cmd_reveal,
     "reveal-status": cmd_reveal_status,
+    "run-pipeline": cmd_run_pipeline,
 }
 
 
