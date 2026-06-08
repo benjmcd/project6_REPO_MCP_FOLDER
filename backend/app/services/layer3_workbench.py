@@ -270,6 +270,7 @@ from app.services.layer3_sublayer_state import (
     session_output_package_products as _session_output_package_products,
     session_reconciliation_record as _session_reconciliation_record,
     session_sublayer_visualization_state as _session_sublayer_visualization_state,
+    session_working_sets as _session_working_sets,
     snapshot_projection as _snapshot_projection,
 )
 from app.services.layer3_analysis_environment_projection import (
@@ -19328,6 +19329,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         output_package_products=_session_output_package_products(db, session_id=session_id),
         reconciliation=_session_reconciliation_record(db, session_id=session_id),
         analyst_products=_session_analyst_products(db, session_id=session_id),
+        working_sets=_session_working_sets(db, session_id=session_id),
         current_gate=current_gate,
     )
 

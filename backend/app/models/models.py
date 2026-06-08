@@ -157,12 +157,20 @@ L3_ANALYSIS_PRODUCT_EVIDENCE_ROLE_VALUES = (
     "context",
     "counterpoint",
 )
+L3_WORKING_SET_MEMBER_REF_KIND_VALUES = (
+    "material_snapshot",
+    "pass_run",
+    "output_package",
+    "analysis_set",
+    "prior_product",
+)
 L3_ANALYSIS_PRODUCT_EVIDENCE_REF_KIND_VALUES = (
     "material_snapshot",
     "pass_run",
     "output_package",
     "analysis_set",
     "prior_product",
+    "working_set",
 )
 
 
@@ -3271,4 +3279,24 @@ class L3AnalysisProductReviewDecision(Base, TimestampMixin):
     decision_summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
 
     analysis_product: Mapped["L3AnalysisProduct"] = relationship(back_populates="review_decisions")
+    session: Mapped["L3Session"] = relationship()
+
+
+class L3WorkingSet(Base, TimestampMixin):
+    __tablename__ = "l3_working_set"
+    __table_args__ = (
+        UniqueConstraint("session_id", "client_request_id", name="uq_l3_working_set_session_request"),
+        Index("ix_l3_working_set_session", "session_id"),
+    )
+
+    working_set_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    member_refs_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    member_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    provenance_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+
     session: Mapped["L3Session"] = relationship()

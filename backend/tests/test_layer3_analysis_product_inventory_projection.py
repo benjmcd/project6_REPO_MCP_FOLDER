@@ -61,6 +61,7 @@ def _projection(
     output_package_products: list[dict[str, Any]] | None = None,
     reconciliation: dict[str, Any] | None = None,
     analyst_products: list[dict[str, Any]] | None = None,
+    working_sets: list[dict[str, Any]] | None = None,
     current_gate: str = "gate_c",
 ) -> dict[str, Any]:
     return analysis_product_inventory_projection(
@@ -70,6 +71,7 @@ def _projection(
         output_package_products=output_package_products,
         reconciliation=reconciliation,
         analyst_products=analyst_products,
+        working_sets=working_sets,
         current_gate=current_gate,
     )
 
@@ -678,3 +680,127 @@ def test_analyst_draft_still_yields_draft_not_promotable() -> None:
     assert "package_eligible" not in ap
     assert "handoff_eligible" not in ap
     assert "delivery_eligible" not in ap
+
+
+# ---------------------------------------------------------------------------
+# Working-set surface tests
+# ---------------------------------------------------------------------------
+
+
+def _ws_input(
+    working_set_id: str,
+    *,
+    name: str = "Test WS",
+    member_count: int = 1,
+    basis_hash: str = "bh-test",
+) -> dict[str, Any]:
+    return {
+        "working_set_id": working_set_id,
+        "name": name,
+        "member_count": member_count,
+        "basis_hash": basis_hash,
+    }
+
+
+def test_inventory_working_sets_surfaces_when_passed() -> None:
+    ws = [_ws_input("ws-1", name="Alpha set", member_count=2)]
+    projection = _projection(working_sets=ws)
+    assert projection["working_set_count"] == 1
+    assert projection["working_sets"] == [
+        {"working_set_id": "ws-1", "name": "Alpha set", "member_count": 2, "basis_hash": "bh-test"}
+    ]
+
+
+def test_inventory_state_empty_with_only_working_sets_no_products() -> None:
+    # Working sets are SCOPES, not products: a session with working sets but no
+    # pass-run/package/analyst products is still products-wise 'empty' by design.
+    projection = _projection(working_sets=[_ws_input("ws-1", name="Scope", member_count=1)])
+    assert projection["working_set_count"] == 1
+    assert projection["inventory_state"] == "empty"
+
+
+def test_inventory_working_sets_pass_through_is_bounded() -> None:
+    # Extra / unsafe fields on a serialized working set are stripped to the bounded shape.
+    raw = {
+        "working_set_id": "ws-1",
+        "name": "Alpha",
+        "member_count": 2,
+        "basis_hash": "bh",
+        "member_refs": [{"ref_kind": "material_snapshot", "ref_id": "snap-1"}],
+        "provenance_json": {"secret": "x"},
+        "created_at": "2026-06-08T00:00:00Z",
+    }
+    projection = _projection(working_sets=[raw])
+    out = projection["working_sets"][0]
+    assert out == {"working_set_id": "ws-1", "name": "Alpha", "member_count": 2, "basis_hash": "bh"}
+    assert "member_refs" not in out
+    assert "provenance_json" not in out
+
+
+def test_inventory_working_sets_empty_when_not_passed() -> None:
+    projection = _projection()
+    assert projection["working_set_count"] == 0
+    assert projection["working_sets"] == []
+
+
+def test_inventory_working_sets_empty_when_empty_list() -> None:
+    projection = _projection(working_sets=[])
+    assert projection["working_set_count"] == 0
+    assert projection["working_sets"] == []
+
+
+def test_inventory_blocked_sublayer_working_sets_empty() -> None:
+    ws = [_ws_input("ws-1")]
+    projection = _projection(sublayer={}, working_sets=ws)
+    assert projection["inventory_state"] == "blocked"
+    assert projection["working_sets"] == []
+    assert projection["working_set_count"] == 0
+
+
+def test_inventory_analyst_by_working_set_groups_products() -> None:
+    analyst = [
+        _analyst_input(
+            "ap-1",
+            evidence_refs=[{"ref_kind": "working_set", "ref_id": "ws-1", "evidence_role": "context"}],
+        ),
+        _analyst_input(
+            "ap-2",
+            evidence_refs=[{"ref_kind": "working_set", "ref_id": "ws-1", "evidence_role": "context"}],
+        ),
+        _analyst_input(
+            "ap-3",
+            evidence_refs=[{"ref_kind": "material_snapshot", "ref_id": "snap-1", "evidence_role": "observation"}],
+        ),
+    ]
+    projection = _projection(analyst_products=analyst)
+    abws = projection["analyst_by_working_set"]
+    assert set(abws["ws-1"]) == {"layer3_analyst_product:ap-1", "layer3_analyst_product:ap-2"}
+    assert abws["unscoped"] == ["layer3_analyst_product:ap-3"]
+
+
+def test_inventory_analyst_by_working_set_unscoped_when_no_refs() -> None:
+    analyst = [_analyst_input("ap-only", evidence_refs=[])]
+    projection = _projection(analyst_products=analyst)
+    abws = projection["analyst_by_working_set"]
+    assert "unscoped" in abws
+    assert "layer3_analyst_product:ap-only" in abws["unscoped"]
+
+
+def test_inventory_analyst_by_working_set_empty_when_no_products() -> None:
+    projection = _projection()
+    assert projection["analyst_by_working_set"] == {}
+
+
+def test_inventory_no_side_effects_and_forbidden_runtime_authority_unchanged_with_working_sets() -> None:
+    ws = [_ws_input("ws-1"), _ws_input("ws-2")]
+    analyst = [_analyst_input("ap-1", evidence_refs=[{"ref_kind": "working_set", "ref_id": "ws-1", "evidence_role": "context"}])]
+    projection = _projection(working_sets=ws, analyst_products=analyst)
+    assert projection["no_side_effects"] is True
+    assert projection["forbidden_runtime_authority"] == {
+        "write_route_enabled": False,
+        "package_mutation_enabled": False,
+        "source_promotion_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_url_enabled": False,
+        "frontend_durable_authority_enabled": False,
+    }

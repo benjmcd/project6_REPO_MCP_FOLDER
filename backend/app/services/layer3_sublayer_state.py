@@ -17,6 +17,7 @@ from app.models.models import (
     L3PassRun,
     L3ReconciliationRecord,
     L3TypingRecord,
+    L3WorkingSet,
 )
 from app.services.layer3_plan_flow_state import latest_analysis_plan
 from app.services.layer3_typing_entry import SUPPORTED_TYPING_RULES
@@ -407,3 +408,33 @@ def session_analyst_products(db: Session, *, session_id: str) -> list[dict[str, 
         )
         result.append(serialize_analysis_product(product, links, latest_decision))
     return result
+
+
+def serialize_working_set(ws: L3WorkingSet) -> dict[str, Any]:
+    """Bounded read-only serialization of a working set.
+
+    JSON-native only. No raw payloads. member_refs exposes ref_kind and ref_id only.
+    """
+    member_refs = [
+        {"ref_kind": m["ref_kind"], "ref_id": m["ref_id"]}
+        for m in (ws.member_refs_json or [])
+    ]
+    return {
+        "working_set_id": ws.working_set_id,
+        "name": ws.name,
+        "basis_hash": ws.basis_hash,
+        "member_count": ws.member_count,
+        "member_refs": member_refs,
+        "created_at": ws.created_at.isoformat() if ws.created_at is not None else None,
+    }
+
+
+def session_working_sets(db: Session, *, session_id: str) -> list[dict[str, Any]]:
+    """Return bounded read-only inventory of all working sets in the session."""
+    working_sets = (
+        db.query(L3WorkingSet)
+        .filter(L3WorkingSet.session_id == session_id)
+        .order_by(L3WorkingSet.working_set_id.asc())
+        .all()
+    )
+    return [serialize_working_set(ws) for ws in working_sets]
