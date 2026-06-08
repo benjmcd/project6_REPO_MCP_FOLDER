@@ -1182,6 +1182,23 @@ const State = {
     operationDockManual: false,
 };
 
+// Restore reveal auth params from a previous session so the operator
+// can re-reveal without re-entering IDs after a page refresh.
+(function () {
+    try {
+        const raw = sessionStorage.getItem('secXbrlRevealParams');
+        if (raw) {
+            const params = JSON.parse(raw);
+            if (params.authorityReceiptId) {
+                State.secXbrlControlledValueRevealSubmitInput.authorityReceiptId = params.authorityReceiptId;
+            }
+            if (params.authorityBasisHash) {
+                State.secXbrlControlledValueRevealSubmitInput.authorityBasisHash = params.authorityBasisHash;
+            }
+        }
+    } catch (_) {}
+}());
+
 const elements = {
     themeSelector: document.getElementById('theme-selector'),
     authorityRail: document.getElementById('authority-rail'),
@@ -15556,17 +15573,44 @@ function secXbrlValueRevealAuthorityRows(authority) {
     `;
 }
 
+function secXbrlFormatNumber(raw, transform) {
+    if (!raw || typeof raw !== 'string') return raw;
+    const num = parseFloat(raw.replace(/,/g, '').trim());
+    if (isNaN(num)) return raw;
+    const decimalsRaw = (transform?.decimals || '').toString().trim();
+    const dec = (decimalsRaw === 'INF' || decimalsRaw === '-INF')
+        ? 0
+        : Math.max(0, Math.min(parseInt(decimalsRaw, 10) || 0, 4));
+    return num.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+
 function secXbrlControlledValueRevealFactRows(facts) {
     const items = Array.isArray(facts) ? facts : [];
     if (!items.length) return '<li>none</li>';
-    return items.map((fact) => `
-        <li>
+    const sorted = [...items].sort((a, b) => ((a.source_order || 0) - (b.source_order || 0)));
+    const standard = sorted.filter((f) => f?.concept?.standard && !f?.hidden);
+    const extension = sorted.filter((f) => !f?.concept?.standard && !f?.hidden);
+    const hidden = sorted.filter((f) => f?.hidden);
+    function renderFact(fact) {
+        const raw = fact?.effective_value || fact?.lexical_value || '';
+        const display = fact?.value_redacted ? '' : escapeHtml(secXbrlFormatNumber(raw, fact?.transform_inputs));
+        return `<li>
             <code>${escapeHtml(fact?.concept?.qname || fact?.concept?.local_name || 'controlled_fact')}</code>:
-            ${escapeHtml(fact?.effective_value || fact?.lexical_value || '')}
-            ${fact?.value_redacted ? '<span class="status-pill blocked">value redacted</span>' : ''}
+            ${fact?.value_redacted ? '<span class="status-pill blocked">value redacted</span>' : display}
             <span class="rail-label">value hash ${escapeHtml(fact?.value_hash || 'not-returned')}</span>
-        </li>
-    `).join('');
+        </li>`;
+    }
+    const parts = [];
+    if (standard.length) {
+        parts.push(`<li class="rail-label">— Standard GAAP (${standard.length})</li>` + standard.map(renderFact).join(''));
+    }
+    if (extension.length) {
+        parts.push(`<li class="rail-label">— Extension (${extension.length})</li>` + extension.map(renderFact).join(''));
+    }
+    if (hidden.length) {
+        parts.push(`<li class="rail-label">— Hidden / Continued (${hidden.length})</li>` + hidden.map(renderFact).join(''));
+    }
+    return parts.join('') || '<li>none</li>';
 }
 
 function secXbrlControlledValueRevealSubmitRows(submit) {
@@ -21833,6 +21877,12 @@ async function submitSecXbrlControlledValueReveal(event) {
         State.secXbrlControlledValueRevealStatusInput = {
             submitReceiptId: submit.sec_xbrl_controlled_value_reveal_submit_receipt_id || '',
         };
+        try {
+            sessionStorage.setItem('secXbrlRevealParams', JSON.stringify({
+                authorityReceiptId: payload.sec_xbrl_value_reveal_authority_receipt_id || '',
+                authorityBasisHash: payload.authority_basis_hash || '',
+            }));
+        } catch (_) {}
         addEvent('SEC XBRL controlled values revealed through explicit server authority.');
     } catch (error) {
         State.secXbrlControlledValueRevealSubmit = null;
