@@ -387,8 +387,9 @@ const SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_RENDERED_MODE = 'rendered_sec_xbr
 const SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_MODE = 'sec_xbrl_operator_review_workflow_status_v1';
 const SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_OPERATOR_DECISION = 'inspect_sec_xbrl_operator_review_workflow_status';
 const SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_ENDPOINT = '/sec-xbrl/operator-review/workflow/status';
+const SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_OPEN_FULL_PIPELINE_ENDPOINT = '/sec-xbrl/operator-review/workflow/open-full-pipeline';
+const SEC_XBRL_OPEN_OPERATOR_REVIEW_CONFIRMATION_REQUIRED_CONTROLS = ['open_operator_review_workflow'];
 const SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_BLOCKED_RENDERED_CONTROLS = [
-    'open_operator_review_workflow',
     'reveal_values',
     'export_statement_packet',
     'deliver_statement_packet',
@@ -407,7 +408,6 @@ const SEC_XBRL_OPERATOR_REVIEW_DECISION_STATUS_ENDPOINT = '/sec-xbrl/operator-re
 const SEC_XBRL_RUNTIME_POSTURE_RENDERED_MODE = 'rendered_sec_xbrl_runtime_posture_projection_control';
 const SEC_XBRL_RUNTIME_POSTURE_ENDPOINT = '/sec-xbrl/runtime/posture';
 const SEC_XBRL_OPERATOR_REVIEW_DECISION_BLOCKED_RENDERED_CONTROLS = [
-    'open_operator_review_workflow',
     'reveal_values',
     'export_statement_packet',
     'deliver_statement_packet',
@@ -438,6 +438,14 @@ const SEC_XBRL_CONTROLLED_VALUE_REVEAL_BLOCKED_RENDERED_CONTROLS = [
     'change_runtime_default',
     'claim_production_readiness',
 ];
+// CIK allow-list mirrored from the operator CLI — used ONLY to resolve ticker->cik for the
+// request body; the raw cik is sent to the server and never echoed into the rendered DOM.
+const SEC_XBRL_REAL_COMPANY_CIK_REFS = {
+    MSFT: '789019', STLD: '1022671', SONY: '313838', CCJ: '1009001', JPM: '19617',
+    MET: '1099219', PLD: '1045609', FIZZ: '69891', XOM: '34088', PFE: '78003',
+    UAL: '100517', T: '732717', AAPL: '320193', NVDA: '1045810', AMZN: '1018724',
+    TSLA: '1318605',
+};
 const CANDIDATE_B_CLOSURE_EVIDENCE_RENDERED_MODE = 'rendered_candidate_b_default_promotion_closure_evidence_control';
 const CANDIDATE_B_CLOSURE_EVIDENCE_MODE = 'candidate_b_default_promotion_closure_evidence_v1';
 const CANDIDATE_B_CLOSURE_EVIDENCE_OPERATOR_DECISION = 'record_candidate_b_default_promotion_closure_evidence';
@@ -921,6 +929,15 @@ const State = {
     secXbrlControlledValueRevealStatusInput: {
         submitReceiptId: '',
     },
+    secXbrlOpenOperatorReviewWorkflow: null,
+    secXbrlOpenOperatorReviewWorkflowError: null,
+    secXbrlOpenOperatorReviewWorkflowPending: false,
+    secXbrlOpenOperatorReviewWorkflowInput: {
+        ticker: '',
+        periodLimit: '3',
+        requireCompanyfactsOracle: false,
+        operatorConfirm: false,
+    },
     secXbrlRuntimePosture: null,
     secXbrlRuntimePostureError: null,
     secXbrlRuntimePosturePending: false,
@@ -1185,6 +1202,7 @@ const elements = {
     secXbrlOperatorReviewWorkflowStatusPanel: document.getElementById('sec-xbrl-operator-review-workflow-status-panel'),
     secXbrlOperatorReviewDecisionSubmitPanel: document.getElementById('sec-xbrl-operator-review-decision-submit-panel'),
     secXbrlControlledValueRevealPanel: document.getElementById('sec-xbrl-controlled-value-reveal-panel'),
+    secXbrlOpenOperatorReviewWorkflowPanel: document.getElementById('sec-xbrl-open-operator-review-workflow-panel'),
     mockupActivationReadinessPanel: document.getElementById('mockup-activation-readiness-panel'),
     layer3E2EGovernanceLifecycleDashboardPanel: document.getElementById('layer3-e2e-governance-lifecycle-dashboard-panel'),
     sublayerMapPanel: document.getElementById('sublayer-map-panel'),
@@ -10148,6 +10166,20 @@ function secXbrlControlledValueRevealStatusInputValues() {
     };
 }
 
+function secXbrlOpenOperatorReviewWorkflowInputValues() {
+    const stored = State.secXbrlOpenOperatorReviewWorkflowInput;
+    const tickerInput = document.getElementById('sec-xbrl-open-operator-review-ticker');
+    const periodLimitInput = document.getElementById('sec-xbrl-open-operator-review-period-limit');
+    const oracleInput = document.getElementById('sec-xbrl-open-operator-review-require-oracle');
+    const confirmInput = document.getElementById('sec-xbrl-open-operator-review-confirm');
+    return {
+        ticker: tickerInput ? tickerInput.value.trim().toUpperCase() : stored.ticker,
+        periodLimit: periodLimitInput ? periodLimitInput.value : stored.periodLimit,
+        requireCompanyfactsOracle: oracleInput ? Boolean(oracleInput.checked) : stored.requireCompanyfactsOracle,
+        operatorConfirm: confirmInput ? Boolean(confirmInput.checked) : stored.operatorConfirm,
+    };
+}
+
 function candidateBFullCorpusOperatorWorkflowRunInputValues() {
     const lifecycleInput = document.getElementById('candidate-b-full-corpus-workflow-run-lifecycle-receipt-id');
     const baselineInput = document.getElementById('candidate-b-full-corpus-workflow-run-baseline-run-id');
@@ -12265,6 +12297,22 @@ function canInspectSecXbrlControlledValueRevealStatus() {
     );
 }
 
+function canOpenSecXbrlOperatorReviewWorkflow() {
+    const values = secXbrlOpenOperatorReviewWorkflowInputValues();
+    const ticker = values.ticker;
+    const periodLimit = parseInt(values.periodLimit, 10);
+    return Boolean(
+        ticker
+        && /^[A-Z]{1,5}$/.test(ticker)
+        && SEC_XBRL_REAL_COMPANY_CIK_REFS[ticker]
+        && !isNaN(periodLimit)
+        && periodLimit >= 1
+        && periodLimit <= 10
+        && values.operatorConfirm
+        && !State.secXbrlOpenOperatorReviewWorkflowPending
+    );
+}
+
 function clearSecXbrlOperatorReviewDecisionNotesInput() {
     const notesInput = document.getElementById('sec-xbrl-operator-review-decision-notes');
     if (notesInput) {
@@ -13316,6 +13364,23 @@ function secXbrlControlledValueRevealStatusPanelState() {
         return { label: 'sec_xbrl_controlled_value_reveal_status_available', pill: 'ok' };
     }
     return { label: 'sec_xbrl_controlled_value_reveal_status_not_inspected', pill: 'preview' };
+}
+
+function secXbrlOpenOperatorReviewWorkflowPanelState() {
+    if (State.secXbrlOpenOperatorReviewWorkflowPending) {
+        return { label: 'sec_xbrl_open_operator_review_workflow_pending', pill: 'preview' };
+    }
+    if (State.secXbrlOpenOperatorReviewWorkflowError) {
+        const detail = State.secXbrlOpenOperatorReviewWorkflowError?.payload?.error || {};
+        return {
+            label: detail.code || 'sec_xbrl_open_operator_review_workflow_blocked',
+            pill: 'blocked',
+        };
+    }
+    if (State.secXbrlOpenOperatorReviewWorkflow?.status === 'full_pipeline_open_ready') {
+        return { label: 'sec_xbrl_open_operator_review_workflow_ready', pill: 'ok' };
+    }
+    return { label: 'sec_xbrl_open_operator_review_workflow_not_submitted', pill: 'preview' };
 }
 
 function candidateBFullCorpusOperatorWorkflowRunPanelState() {
@@ -15382,6 +15447,59 @@ function secXbrlOperatorReviewDecisionRows(decision, outputId) {
                 <ul>
                     ${secXbrlCodeListItems(nextActions)}
                 </ul>
+            </section>
+        </div>
+    `;
+}
+
+function secXbrlOpenOperatorReviewWorkflowRows(result) {
+    if (!result) return '';
+    const cv = result.corpus_validation || {};
+    const cf = result.companyfacts_stage || {};
+    const op = result.operator_review || {};
+    const opSummary = op.summary || {};
+    return `
+        <div id="sec-xbrl-open-operator-review-workflow-output" class="candidate-b-final-proof-status-grid" data-read-only="true">
+            <section class="result-review-card">
+                <strong>Full-Pipeline Open: Redacted Projection</strong>
+                <ul>
+                    ${fieldItem('status', result.status, { code: true })}
+                    ${fieldItem('production readiness claimed', result.production_readiness_claimed)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Corpus Validation (Hashes Only)</strong>
+                <ul>
+                    ${fieldItem('validation receipt id', cv.validation_receipt_id, { code: true })}
+                    ${fieldItem('connector receipt hash', cv.connector_receipt_hash, { code: true })}
+                    ${fieldItem('selected form type', cv.selected_form_type, { code: true })}
+                    ${fieldItem('selected cik hash', cv.selected_cik_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>CompanyFacts Stage</strong>
+                <ul>
+                    ${fieldItem('stage status', cf.stage_status || cf.status, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Operator Review Workflow (Hashes Only)</strong>
+                <ul>
+                    ${fieldItem('workflow id', op.sec_xbrl_operator_review_workflow_id, { code: true })}
+                    ${fieldItem('workflow basis hash', op.workflow_basis_hash, { code: true })}
+                    ${fieldItem('workflow status', op.status, { code: true })}
+                    ${fieldItem('statement count', opSummary.statement_count)}
+                    ${fieldItem('row count', opSummary.row_count)}
+                    ${fieldItem('review exception count', opSummary.review_exception_count)}
+                    ${fieldItem('review ready', opSummary.review_ready)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Confirmation-Required Controls (Posture)</strong>
+                <ul>
+                    ${secXbrlCodeListItems(SEC_XBRL_OPEN_OPERATOR_REVIEW_CONFIRMATION_REQUIRED_CONTROLS)}
+                </ul>
+                <p class="rail-label">These controls are present in the UI but require explicit operator confirmation before the browser sends a request. The server independently rejects any open lacking operator_confirmation.</p>
             </section>
         </div>
     `;
@@ -19501,7 +19619,7 @@ function renderSecXbrlOperatorReviewDecisionSubmitPanel() {
                 </form>
                 <div class="result-review-status">
                     <span class="status-pill ${escapeHtml(submitState.pill)}">${escapeHtml(submitState.label)}</span>
-                    <span class="rail-label">The browser sends only the admitted decision-submit fields to the existing server API. Raw notes are never rendered after submit; value reveal, delivery/export, source acquisition, Arelle invocation, workflow-open, packet mutation, default-on behavior, and frontend durable authority stay closed.</span>
+                    <span class="rail-label">The browser sends only the admitted decision-submit fields to the existing server API. Raw notes are never rendered after submit; value reveal, delivery/export, source acquisition, Arelle invocation, packet mutation, default-on behavior, and frontend durable authority stay closed.</span>
                 </div>
                 ${secXbrlOperatorReviewDecisionRows(State.secXbrlOperatorReviewDecisionSubmit, 'sec-xbrl-operator-review-decision-submit-output')}
                 ${secXbrlOperatorReviewDecisionSubmitError()}
@@ -19538,6 +19656,66 @@ function updateSecXbrlOperatorReviewDecisionSubmitControls() {
     const status = document.getElementById('sec-xbrl-operator-review-decision-status-submit');
     if (status) {
         status.disabled = !canInspectSecXbrlOperatorReviewDecisionStatus();
+    }
+}
+
+function renderSecXbrlOpenOperatorReviewWorkflowPanel() {
+    if (!elements.secXbrlOpenOperatorReviewWorkflowPanel) return;
+    const panelState = secXbrlOpenOperatorReviewWorkflowPanelState();
+    const inputs = secXbrlOpenOperatorReviewWorkflowInputValues();
+    elements.secXbrlOpenOperatorReviewWorkflowPanel.dataset.frontendDurableAuthority = 'false';
+    elements.secXbrlOpenOperatorReviewWorkflowPanel.dataset.confirmationRequired = 'true';
+    elements.secXbrlOpenOperatorReviewWorkflowPanel.dataset.sourceAcquisitionEnabled = 'true';
+    elements.secXbrlOpenOperatorReviewWorkflowPanel.dataset.valueRevealEnabled = 'false';
+    elements.secXbrlOpenOperatorReviewWorkflowPanel.dataset.deliveryExportEnabled = 'false';
+    elements.secXbrlOpenOperatorReviewWorkflowPanel.dataset.arelleInvocationEnabled = 'false';
+    elements.secXbrlOpenOperatorReviewWorkflowPanel.dataset.runtimeDefaultEnabled = 'false';
+    elements.secXbrlOpenOperatorReviewWorkflowPanel.dataset.productionReadinessClaimed = 'false';
+    const knownTickers = Object.keys(SEC_XBRL_REAL_COMPANY_CIK_REFS).sort().join(', ');
+    elements.secXbrlOpenOperatorReviewWorkflowPanel.innerHTML = `
+        <div class="workband-heading">
+            <div>
+                <span class="section-kicker">SEC XBRL operator-review</span>
+                <h2>Open Operator-Review Workflow (Full Pipeline)</h2>
+            </div>
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+        </div>
+        <div class="candidate-b-default-promotion-status-grid">
+            <section class="result-review-card sec-xbrl-open-operator-review-workflow-card">
+                <strong>Open Full-Pipeline Workflow</strong>
+                <form id="sec-xbrl-open-operator-review-workflow-form" class="candidate-b-final-proof-status-form" data-rendered-mode="rendered_sec_xbrl_open_operator_review_workflow_control" data-frontend-durable-authority="false" data-confirmation-required="true" data-source-acquisition-enabled="true" data-value-reveal-enabled="false" data-delivery-export-enabled="false" data-arelle-invocation-enabled="false" data-runtime-default-enabled="false">
+                    <label>
+                        <span>ticker (known: ${escapeHtml(knownTickers)})</span>
+                        <input id="sec-xbrl-open-operator-review-ticker" type="text" value="${escapeHtml(inputs.ticker)}" autocomplete="off" spellcheck="false" placeholder="e.g. AAPL" maxlength="5" />
+                    </label>
+                    <label>
+                        <span>period limit (1–10)</span>
+                        <input id="sec-xbrl-open-operator-review-period-limit" type="number" value="${escapeHtml(inputs.periodLimit)}" min="1" max="10" step="1" autocomplete="off" />
+                    </label>
+                    <label class="checkbox-label">
+                        <input id="sec-xbrl-open-operator-review-require-oracle" type="checkbox" ${inputs.requireCompanyfactsOracle ? 'checked' : ''} />
+                        <span>require companyfacts oracle</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input id="sec-xbrl-open-operator-review-confirm" type="checkbox" ${inputs.operatorConfirm ? 'checked' : ''} />
+                        <span>I confirm: submitting this form triggers a live SEC acquisition and opens an operator-review workflow. This action is irreversible until the review lifecycle completes.</span>
+                    </label>
+                    <button id="sec-xbrl-open-operator-review-workflow-submit" type="submit" ${canOpenSecXbrlOperatorReviewWorkflow() ? '' : 'disabled'}>Open Operator-Review Workflow</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+                    <span class="rail-label">Opening triggers a live SEC acquisition. The control requires explicit operator confirmation before the browser sends the request; the server independently rejects any open lacking operator_confirmation. Only the redacted projection is rendered (never raw CIK, raw values, or source URLs). Value reveal, delivery/export, Arelle invocation, packet mutation, and default-on behavior remain closed.</span>
+                </div>
+                ${secXbrlOpenOperatorReviewWorkflowRows(State.secXbrlOpenOperatorReviewWorkflow)}
+            </section>
+        </div>
+    `;
+}
+
+function updateSecXbrlOpenOperatorReviewWorkflowControls() {
+    const submit = document.getElementById('sec-xbrl-open-operator-review-workflow-submit');
+    if (submit) {
+        submit.disabled = !canOpenSecXbrlOperatorReviewWorkflow();
     }
 }
 
@@ -21535,6 +21713,47 @@ async function inspectSecXbrlOperatorReviewDecisionStatus(event) {
         addEvent(`SEC XBRL operator-review decision status blocked: ${error.message}`);
     } finally {
         State.secXbrlOperatorReviewDecisionStatusPending = false;
+        renderAll();
+    }
+}
+
+async function openSecXbrlOperatorReviewWorkflow(event) {
+    event.preventDefault();
+    if (!canOpenSecXbrlOperatorReviewWorkflow()) {
+        State.secXbrlOpenOperatorReviewWorkflow = null;
+        State.secXbrlOpenOperatorReviewWorkflowError = new Error(
+            'SEC XBRL workflow open requires a known ticker, a period limit between 1 and 10, and an explicit confirmation that a live SEC acquisition will be performed.',
+        );
+        renderSecXbrlOpenOperatorReviewWorkflowPanel();
+        return;
+    }
+    const values = secXbrlOpenOperatorReviewWorkflowInputValues();
+    const ticker = values.ticker;
+    // Resolve cik from allow-list. The raw cik is sent to the server ONLY in the request body
+    // and is NEVER echoed into the rendered DOM — all result rendering uses hashes exclusively.
+    const resolvedCik = SEC_XBRL_REAL_COMPANY_CIK_REFS[ticker];
+    const payload = {
+        client_request_id: `open-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+        company_matrix: [ticker],
+        cik: resolvedCik,
+        period_limit: parseInt(values.periodLimit, 10),
+        require_companyfacts_oracle: values.requireCompanyfactsOracle,
+        operator_confirmation: Boolean(values.operatorConfirm),
+    };
+    State.secXbrlOpenOperatorReviewWorkflowPending = true;
+    State.secXbrlOpenOperatorReviewWorkflowError = null;
+    renderSecXbrlOpenOperatorReviewWorkflowPanel();
+    try {
+        const result = await postJson(SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_OPEN_FULL_PIPELINE_ENDPOINT, payload);
+        State.secXbrlOpenOperatorReviewWorkflow = result;
+        State.secXbrlOpenOperatorReviewWorkflowError = null;
+        addEvent('SEC XBRL operator-review workflow opened through full-pipeline route (redacted projection).');
+    } catch (error) {
+        State.secXbrlOpenOperatorReviewWorkflow = null;
+        State.secXbrlOpenOperatorReviewWorkflowError = error;
+        addEvent(`SEC XBRL operator-review workflow open blocked: ${error.message}`);
+    } finally {
+        State.secXbrlOpenOperatorReviewWorkflowPending = false;
         renderAll();
     }
 }
@@ -25783,6 +26002,7 @@ function renderAll() {
     renderSecXbrlOperatorReviewWorkflowStatusPanel();
     renderSecXbrlOperatorReviewDecisionSubmitPanel();
     renderSecXbrlControlledValueRevealPanel();
+    renderSecXbrlOpenOperatorReviewWorkflowPanel();
     renderMockupActivationReadinessPanel();
     renderLayer3E2EGovernanceLifecycleDashboardPanel();
     renderGateCPanel();
@@ -30096,6 +30316,35 @@ elements.secXbrlControlledValueRevealPanel.addEventListener('change', (event) =>
             renderSecXbrlControlledValueRevealPanel();
         } else {
             updateSecXbrlControlledValueRevealControls();
+        }
+    }
+});
+elements.secXbrlOpenOperatorReviewWorkflowPanel.addEventListener('submit', (event) => {
+    if (event.target?.id === 'sec-xbrl-open-operator-review-workflow-form') {
+        openSecXbrlOperatorReviewWorkflow(event);
+    }
+});
+elements.secXbrlOpenOperatorReviewWorkflowPanel.addEventListener('input', (event) => {
+    if (event.target?.id?.startsWith('sec-xbrl-open-operator-review-')) {
+        const hadError = Boolean(State.secXbrlOpenOperatorReviewWorkflowError);
+        State.secXbrlOpenOperatorReviewWorkflowInput = secXbrlOpenOperatorReviewWorkflowInputValues();
+        State.secXbrlOpenOperatorReviewWorkflowError = null;
+        if (hadError) {
+            renderSecXbrlOpenOperatorReviewWorkflowPanel();
+        } else {
+            updateSecXbrlOpenOperatorReviewWorkflowControls();
+        }
+    }
+});
+elements.secXbrlOpenOperatorReviewWorkflowPanel.addEventListener('change', (event) => {
+    if (event.target?.id?.startsWith('sec-xbrl-open-operator-review-')) {
+        const hadError = Boolean(State.secXbrlOpenOperatorReviewWorkflowError);
+        State.secXbrlOpenOperatorReviewWorkflowInput = secXbrlOpenOperatorReviewWorkflowInputValues();
+        State.secXbrlOpenOperatorReviewWorkflowError = null;
+        if (hadError) {
+            renderSecXbrlOpenOperatorReviewWorkflowPanel();
+        } else {
+            updateSecXbrlOpenOperatorReviewWorkflowControls();
         }
     }
 });
