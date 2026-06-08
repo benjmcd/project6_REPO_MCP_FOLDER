@@ -131,6 +131,24 @@ L3_ANALYSIS_PRODUCT_LIFECYCLE_VALUES = (
     "package_eligible",
     "packaged",
 )
+L3_ANALYSIS_PRODUCT_REVIEW_DECISION_VALUES = (
+    "promote",
+    "accept",
+    "mark_package_eligible",
+    "reject",
+    "revise",
+)
+L3_ANALYSIS_PRODUCT_REVIEW_REASON_CODES = (
+    "proposed_ready",
+    "validation_passed",
+    "grounded_accept",
+    "package_ready",
+    "insufficient_grounding",
+    "evidence_gap",
+    "operator_rejected",
+    "revision_requested",
+)
+L3_ANALYSIS_PRODUCT_REVIEW_DECISION_STATUS_RECORDED = "decision_recorded"
 L3_ANALYSIS_PRODUCT_EVIDENCE_ROLE_VALUES = (
     "observation",
     "measurement",
@@ -3158,6 +3176,9 @@ class L3AnalysisProduct(Base, TimestampMixin):
     evidence_links: Mapped[list["L3AnalysisProductEvidenceLink"]] = relationship(
         back_populates="analysis_product", cascade="all, delete-orphan"
     )
+    review_decisions: Mapped[list["L3AnalysisProductReviewDecision"]] = relationship(
+        back_populates="analysis_product"
+    )
 
 
 class L3AnalysisProductEvidenceLink(Base, TimestampMixin):
@@ -3185,4 +3206,69 @@ class L3AnalysisProductEvidenceLink(Base, TimestampMixin):
     locator_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
 
     analysis_product: Mapped["L3AnalysisProduct"] = relationship(back_populates="evidence_links")
+    session: Mapped["L3Session"] = relationship()
+
+
+class L3AnalysisProductReviewDecision(Base, TimestampMixin):
+    __tablename__ = "l3_analysis_product_review_decision"
+    __table_args__ = (
+        # Idempotency is keyed on client_request_id only. decision_basis_hash is NOT
+        # unique: an append-only trail legitimately repeats identical transitions (e.g.
+        # the revise->re-promote loop draft->proposed->draft->proposed produces a
+        # byte-identical basis tuple), so a global UNIQUE would 500 a valid DAG path.
+        UniqueConstraint("client_request_id", name="uq_l3_aprod_review_decision_client_request"),
+        CheckConstraint(
+            f"from_status IN ({', '.join(repr(v) for v in L3_ANALYSIS_PRODUCT_LIFECYCLE_VALUES)})",
+            name="ck_l3_aprod_review_decision_from_status",
+        ),
+        CheckConstraint(
+            f"to_status IN ({', '.join(repr(v) for v in L3_ANALYSIS_PRODUCT_LIFECYCLE_VALUES)})",
+            name="ck_l3_aprod_review_decision_to_status",
+        ),
+        CheckConstraint(
+            f"review_decision IN ({', '.join(repr(v) for v in L3_ANALYSIS_PRODUCT_REVIEW_DECISION_VALUES)})",
+            name="ck_l3_aprod_review_decision_value",
+        ),
+        CheckConstraint(
+            f"decision_reason_code IN ({', '.join(repr(v) for v in L3_ANALYSIS_PRODUCT_REVIEW_REASON_CODES)})",
+            name="ck_l3_aprod_review_decision_reason",
+        ),
+        CheckConstraint(
+            f"decision_status = '{L3_ANALYSIS_PRODUCT_REVIEW_DECISION_STATUS_RECORDED}'",
+            name="ck_l3_aprod_review_decision_status",
+        ),
+        Index("ix_l3_aprod_review_decision_product", "analysis_product_id"),
+        Index("ix_l3_aprod_review_decision_session", "session_id"),
+    )
+
+    analysis_product_review_decision_id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=uuid_str
+    )
+    analysis_product_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_analysis_product.analysis_product_id"), nullable=False
+    )
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_session.session_id"), nullable=False
+    )
+    from_status: Mapped[str] = mapped_column(String(64), nullable=False)
+    to_status: Mapped[str] = mapped_column(String(64), nullable=False)
+    review_decision: Mapped[str] = mapped_column(String(64), nullable=False)
+    decision_reason_code: Mapped[str] = mapped_column(String(64), nullable=False)
+    decision_status: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default=L3_ANALYSIS_PRODUCT_REVIEW_DECISION_STATUS_RECORDED,
+    )
+    decision_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    decision_schema_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    product_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    grounding_asserted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    operator_identity: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    decision_notes_present: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    decision_notes_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    decision_provenance_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    decision_summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+
+    analysis_product: Mapped["L3AnalysisProduct"] = relationship(back_populates="review_decisions")
     session: Mapped["L3Session"] = relationship()

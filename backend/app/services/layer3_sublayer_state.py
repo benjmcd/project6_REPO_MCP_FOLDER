@@ -9,6 +9,7 @@ from app.models.models import (
     L3AnalysisPlan,
     L3AnalysisProduct,
     L3AnalysisProductEvidenceLink,
+    L3AnalysisProductReviewDecision,
     L3AnalysisSet,
     L3AnalysisUnit,
     L3MaterialSnapshot,
@@ -332,6 +333,7 @@ def session_reconciliation_record(db: Session, *, session_id: str) -> dict[str, 
 def serialize_analysis_product(
     product: L3AnalysisProduct,
     evidence_links: list[L3AnalysisProductEvidenceLink],
+    latest_decision: L3AnalysisProductReviewDecision | None = None,
 ) -> dict[str, Any]:
     """Read-only bounded serialization of an analysis product.
 
@@ -342,6 +344,16 @@ def serialize_analysis_product(
     by_role: dict[str, int] = {}
     for link in evidence_links:
         by_role[link.evidence_role] = by_role.get(link.evidence_role, 0) + 1
+    if latest_decision is not None:
+        latest_review_decision: dict[str, Any] | None = {
+            "review_decision": latest_decision.review_decision,
+            "decision_reason_code": latest_decision.decision_reason_code,
+            "from_status": latest_decision.from_status,
+            "to_status": latest_decision.to_status,
+            "created_at": latest_decision.created_at.isoformat() if latest_decision.created_at is not None else None,
+        }
+    else:
+        latest_review_decision = None
     return {
         "analysis_product_id": product.analysis_product_id,
         "product_kind": product.product_kind,
@@ -363,6 +375,7 @@ def serialize_analysis_product(
         "basis_hash": product.basis_hash,
         "spec_hash": product.spec_hash,
         "created_at": product.created_at.isoformat() if product.created_at is not None else None,
+        "latest_review_decision": latest_review_decision,
     }
 
 
@@ -384,5 +397,13 @@ def session_analyst_products(db: Session, *, session_id: str) -> list[dict[str, 
             .order_by(L3AnalysisProductEvidenceLink.evidence_link_id.asc())
             .all()
         )
-        result.append(serialize_analysis_product(product, links))
+        latest_decision = (
+            db.query(L3AnalysisProductReviewDecision)
+            .filter(
+                L3AnalysisProductReviewDecision.analysis_product_id == product.analysis_product_id
+            )
+            .order_by(L3AnalysisProductReviewDecision.created_at.desc())
+            .first()
+        )
+        result.append(serialize_analysis_product(product, links, latest_decision))
     return result

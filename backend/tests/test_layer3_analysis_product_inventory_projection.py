@@ -3,6 +3,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
+import pytest
+
 from app.services.layer3_analysis_product_inventory_projection import (
     ANALYSIS_PRODUCT_INVENTORY_PROJECTION_AUTHORITY_SOURCE,
     ANALYSIS_PRODUCT_INVENTORY_PROJECTION_SCHEMA_ID,
@@ -590,3 +592,89 @@ def test_inventory_surfaces_review_state_at_session_level_not_per_product() -> N
 
     assert projection["downstream_eligibility"]["session_review_state"] == "execution_result_review_approved"
     assert all("review_state" not in product for product in projection["products"])
+
+
+# ---------------------------------------------------------------------------
+# Analyst product lifecycle_status blocked_reasons + promotable + latest_review_decision
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("lifecycle_status,expected_blocked,expected_promotable", [
+    ("draft", ["draft_not_promotable"], True),
+    ("proposed", [], True),
+    ("validated", [], True),
+    ("accepted", [], True),
+    ("rejected", ["rejected"], False),
+    ("package_eligible", ["package_lane_not_wired"], False),
+])
+def test_analyst_product_blocked_reasons_by_status(lifecycle_status, expected_blocked, expected_promotable) -> None:
+    analyst = [_analyst_input("ap-1", lifecycle_status=lifecycle_status)]
+    projection = _projection(analyst_products=analyst)
+    ap = projection["analyst_products"][0]
+    assert ap["blocked_reasons"] == expected_blocked
+    assert ap["promotable"] is expected_promotable
+
+
+def test_analyst_product_package_eligible_has_no_truthy_eligible_keys() -> None:
+    """package_eligible status must NOT surface any *_eligible=True key on analyst products."""
+    analyst = [_analyst_input("ap-pe", lifecycle_status="package_eligible")]
+    projection = _projection(analyst_products=analyst)
+    ap = projection["analyst_products"][0]
+    assert ap.get("package_eligible") is None or ap.get("package_eligible") is False
+    assert ap.get("handoff_eligible") is None or ap.get("handoff_eligible") is False
+    assert ap.get("delivery_eligible") is None or ap.get("delivery_eligible") is False
+    assert ap["blocked_reasons"] == ["package_lane_not_wired"]
+
+
+def test_analyst_product_latest_review_decision_surfaced() -> None:
+    """latest_review_decision passes through from the serialized record."""
+    lrd = {
+        "review_decision": "promote",
+        "decision_reason_code": "proposed_ready",
+        "from_status": "draft",
+        "to_status": "proposed",
+        "created_at": "2026-06-08T00:00:00+00:00",
+    }
+    analyst = [{**_analyst_input("ap-lrd", lifecycle_status="proposed"), "latest_review_decision": lrd}]
+    projection = _projection(analyst_products=analyst)
+    ap = projection["analyst_products"][0]
+    assert ap["latest_review_decision"] == lrd
+
+
+def test_analyst_product_latest_review_decision_none_when_absent() -> None:
+    """latest_review_decision is None when not present in the input record."""
+    analyst = [_analyst_input("ap-no-lrd", lifecycle_status="draft")]
+    projection = _projection(analyst_products=analyst)
+    ap = projection["analyst_products"][0]
+    assert ap["latest_review_decision"] is None
+
+
+def test_analyst_rollup_package_eligible_count() -> None:
+    """analyst_rollup includes package_eligible_count."""
+    analyst = [
+        _analyst_input("ap-1", lifecycle_status="proposed"),
+        _analyst_input("ap-2", lifecycle_status="package_eligible"),
+        _analyst_input("ap-3", lifecycle_status="package_eligible"),
+    ]
+    projection = _projection(analyst_products=analyst)
+    rollup = projection["analyst_rollup"]
+    assert rollup["package_eligible_count"] == 2
+
+
+def test_analyst_rollup_package_eligible_count_zero_when_none() -> None:
+    """package_eligible_count is 0 when no products are package_eligible."""
+    analyst = [_analyst_input("ap-1", lifecycle_status="draft")]
+    projection = _projection(analyst_products=analyst)
+    assert projection["analyst_rollup"]["package_eligible_count"] == 0
+
+
+def test_analyst_draft_still_yields_draft_not_promotable() -> None:
+    """Backward-compat: draft status still yields blocked_reasons == ['draft_not_promotable']."""
+    analyst = [_analyst_input("ap-draft", lifecycle_status="draft")]
+    projection = _projection(analyst_products=analyst)
+    ap = projection["analyst_products"][0]
+    assert ap["blocked_reasons"] == ["draft_not_promotable"]
+    # also check the never-promotable safety invariants remain intact
+    assert "package_eligible" not in ap
+    assert "handoff_eligible" not in ap
+    assert "delivery_eligible" not in ap

@@ -247,6 +247,8 @@ def test_serialize_analysis_product_shape(seeded_db) -> None:
     assert serialized["basis_hash"]
     assert serialized["spec_hash"]
     assert serialized["created_at"] is not None
+    # freshly-authored product has no review decisions yet
+    assert serialized["latest_review_decision"] is None
 
 
 def test_session_analyst_products_returns_list(seeded_db) -> None:
