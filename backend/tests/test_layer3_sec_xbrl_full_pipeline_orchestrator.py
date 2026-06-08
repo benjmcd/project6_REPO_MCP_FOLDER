@@ -1540,3 +1540,141 @@ def test_full_pipeline_backstop_allows_clean_summary(tmp_path, monkeypatch) -> N
     body = r.json()
     assert body.get("status") == "full_pipeline_open_ready"
     assert body.get("operator_review", {}).get("status") == "review_ready"
+
+
+# ---------------------------------------------------------------------------
+# CONTRACT TEST — pins the exact response shape of open-full-pipeline
+# ---------------------------------------------------------------------------
+
+def test_full_pipeline_response_contract_shape(tmp_path, monkeypatch) -> None:
+    """Contract: POST open-full-pipeline returns a stable response shape that consumers depend on.
+
+    Key contract point: the opened workflow is nested under the top-level "operator_review" key
+    and consumers MUST read result["operator_review"]["sec_xbrl_operator_review_workflow_id"].
+    The workflow id is NOT present at the top level of the response.
+
+    This test drives the full happy path (same harness as test_full_pipeline_happy_path) and
+    asserts every field that external consumers rely on, including the hex-hash invariants and
+    CIK redaction guarantee.
+    """
+    client, storage_dir = _make_test_client(tmp_path, monkeypatch)
+
+    cik = "320193"
+    connector_hash = _hash("a")
+    hashes = _stage_full_evidence_storage(storage_dir, connector_receipt_hash=connector_hash)
+    sidecar_hash = hashes["sidecar_hash"]
+    cls_hash = hashes["classification_hash"]
+
+    fake_corpus = _make_corpus_response(
+        cik=cik,
+        connector_receipt_hash=connector_hash,
+        sidecar_hash=sidecar_hash,
+        classification_hash=cls_hash,
+    )
+    monkeypatch.setattr(
+        orchestrator,
+        "layer3_sec_edgar_real_company_corpus_validation",
+        MagicMock(
+            validate_sec_edgar_real_company_corpus_product_path=lambda fields, db, evidence_owner=None: fake_corpus,
+            VALIDATION_MODE=corpus_svc.VALIDATION_MODE,
+            OPERATOR_DECISION=corpus_svc.OPERATOR_DECISION,
+        ),
+    )
+
+    from app.services import layer3_sec_xbrl_in_app_auth_policy as auth_policy_svc
+    monkeypatch.setattr(
+        auth_policy_svc,
+        "derive_sec_xbrl_evidence_owner",
+        lambda headers: {"owner_hash": _hash("f"), "auth_owner_mode": "test"},
+    )
+    from app.services import layer3_sec_xbrl_auth_binding as auth_binding_svc
+    monkeypatch.setattr(
+        auth_binding_svc,
+        "require_sec_xbrl_evidence_ownership_marker",
+        lambda *args, **kwargs: None,
+    )
+
+    r = client.post(
+        FULL_PIPELINE_URL,
+        json={
+            "client_request_id": f"fp-contract-{uuid.uuid4().hex[:12]}",
+            "cik": cik,
+            "company_matrix": ["AAPL"],
+            "period_limit": 3,
+            "operator_confirmation": True,
+        },
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+
+    # --- base_response keys (schema_id, request_id) ---
+    assert isinstance(body.get("schema_id"), str) and body["schema_id"], \
+        "schema_id must be a non-empty string"
+    assert isinstance(body.get("request_id"), str) and body["request_id"], \
+        "request_id must be a non-empty string"
+
+    # --- top-level status ---
+    assert body["status"] == "full_pipeline_open_ready", \
+        "status must be 'full_pipeline_open_ready'"
+
+    # --- production_readiness_claimed is always False at open time ---
+    assert body["production_readiness_claimed"] is False, \
+        "production_readiness_claimed must be False at open time"
+
+    # --- top-level section keys are present ---
+    assert "corpus_validation" in body, "corpus_validation section must be present"
+    assert "companyfacts_stage" in body, "companyfacts_stage section must be present"
+    assert "operator_review" in body, "operator_review section must be present"
+
+    # --- companyfacts_stage is None when require_companyfacts_oracle is not supplied ---
+    assert body["companyfacts_stage"] is None, \
+        "companyfacts_stage must be None when oracle not requested"
+
+    # --- corpus_validation contract ---
+    cv = body["corpus_validation"]
+    assert isinstance(cv, dict), "corpus_validation must be a dict"
+    assert isinstance(cv.get("validation_receipt_id"), str) and cv["validation_receipt_id"], \
+        "corpus_validation.validation_receipt_id must be a non-empty string"
+    assert isinstance(cv.get("validation_receipt_hash"), str) and cv["validation_receipt_hash"], \
+        "corpus_validation.validation_receipt_hash must be a non-empty string"
+    assert isinstance(cv.get("supported_count"), int), \
+        "corpus_validation.supported_count must be an int"
+    assert isinstance(cv.get("selected_form_type"), str) and cv["selected_form_type"], \
+        "corpus_validation.selected_form_type must be a non-empty string"
+    selected_cik_hash = cv.get("selected_cik_hash", "")
+    assert len(selected_cik_hash) == 64 and all(c in "0123456789abcdef" for c in selected_cik_hash), \
+        f"corpus_validation.selected_cik_hash must be a 64-char lowercase hex string, got: {selected_cik_hash!r}"
+    assert isinstance(cv.get("connector_receipt_hash"), str) and cv["connector_receipt_hash"], \
+        "corpus_validation.connector_receipt_hash must be a non-empty string"
+
+    # --- operator_review contract ---
+    # CONTRACT: the opened workflow is nested under "operator_review", NOT at the top level.
+    # Consumers must read result["operator_review"]["sec_xbrl_operator_review_workflow_id"].
+    or_ = body["operator_review"]
+    assert isinstance(or_, dict), "operator_review must be a dict"
+
+    workflow_id = or_.get("sec_xbrl_operator_review_workflow_id", "")
+    assert isinstance(workflow_id, str) and workflow_id, \
+        "operator_review.sec_xbrl_operator_review_workflow_id must be a non-empty string"
+
+    # workflow_id must NOT be present at the top level — consumers who read it from
+    # the top level will silently miss it; they must read it from operator_review.
+    assert "sec_xbrl_operator_review_workflow_id" not in body, \
+        "sec_xbrl_operator_review_workflow_id must be nested under operator_review, not at top level"
+
+    workflow_basis_hash = or_.get("workflow_basis_hash", "")
+    assert len(workflow_basis_hash) == 64 and all(c in "0123456789abcdef" for c in workflow_basis_hash), \
+        f"operator_review.workflow_basis_hash must be a 64-char lowercase hex string, got: {workflow_basis_hash!r}"
+
+    assert isinstance(or_.get("summary"), dict), \
+        "operator_review.summary must be a dict"
+
+    assert isinstance(or_.get("status"), str) and or_["status"], \
+        "operator_review.status must be a non-empty string"
+
+    # --- CIK redaction: raw CIK must not appear anywhere in the serialized response ---
+    raw_json = json.dumps(body)
+    assert cik not in raw_json, \
+        f"Raw CIK '{cik}' leaked into the open-full-pipeline response"
+    assert "320193" not in raw_json, \
+        "Literal '320193' must not appear anywhere in the serialized response"
