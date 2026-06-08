@@ -59,6 +59,7 @@ _API_PREFIX = "/api/v1/layer3"
 
 ROUTE_OPEN = f"{_API_PREFIX}/sec-xbrl/operator-review/workflow/open-full-pipeline"
 ROUTE_STATUS = f"{_API_PREFIX}/sec-xbrl/operator-review/workflow/status"
+ROUTE_ADMISSION_STATUS = f"{_API_PREFIX}/sec-xbrl/operator-review/workflow/admission-status"
 ROUTE_DECIDE = f"{_API_PREFIX}/sec-xbrl/operator-review/workflow/decision/submit"
 ROUTE_PREPARE_AUTHORITY = f"{_API_PREFIX}/sec-xbrl/value-reveal/authority/prepare"
 ROUTE_REVEAL_SUBMIT = f"{_API_PREFIX}/sec-xbrl/value-reveal/submit"
@@ -71,6 +72,9 @@ ROUTE_POSTURE = f"{_API_PREFIX}/sec-xbrl/runtime/posture"
 
 STATUS_MODE = "sec_xbrl_operator_review_workflow_status_v1"
 STATUS_OPERATOR_DECISION = "inspect_sec_xbrl_operator_review_workflow_status"
+
+ADMISSION_STATUS_MODE = "sec_xbrl_production_admission_status_v1"
+ADMISSION_STATUS_OPERATOR_DECISION = "inspect_sec_xbrl_production_admission_status"
 
 DECISION_SUBMIT_MODE = "sec_xbrl_operator_review_decision_submit_v1"
 DECISION_OPERATOR_DECISION = "submit_sec_xbrl_operator_review_decision"
@@ -319,6 +323,46 @@ def cmd_status(args: argparse.Namespace, transport: Transport) -> None:
     decision_status = resp.get("decision_status") or resp.get("review_decision")
     if decision_status:
         print(f"  review_decision       : {decision_status}")
+
+
+# ---------------------------------------------------------------------------
+# Subcommand: admission-status
+# ---------------------------------------------------------------------------
+
+
+def cmd_admission_status(args: argparse.Namespace, transport: Transport) -> None:
+    body: dict = {
+        "client_request_id": _new_client_request_id("admission-status"),
+        "admission_status_mode": ADMISSION_STATUS_MODE,
+        "operator_decision": ADMISSION_STATUS_OPERATOR_DECISION,
+    }
+    if args.workflow_id:
+        body["sec_xbrl_operator_review_workflow_id"] = args.workflow_id
+    if args.workflow_basis_hash:
+        body["workflow_basis_hash"] = args.workflow_basis_hash
+
+    headers = _build_auth_headers(args)
+    status_code, resp = transport.post(ROUTE_ADMISSION_STATUS, body, headers)
+
+    if status_code != 200:
+        _print_error_and_exit(status_code, resp)
+
+    print("=== workflow/admission-status: OK ===")
+    print(f"  production_admission_ready : {resp.get('production_admission_ready')}")
+    print(f"  admission_flag_enabled     : {resp.get('admission_flag_enabled')}")
+    blocked_reason = resp.get("production_admission_blocked_reason")
+    if blocked_reason:
+        print(f"  blocked_reason             : {blocked_reason}")
+    criteria = resp.get("criteria") or {}
+    if criteria:
+        print("  criteria:")
+        for criterion, detail in criteria.items():
+            if isinstance(detail, dict):
+                passed = detail.get("passed")
+                reason = detail.get("reason") or detail.get("blocked_reason") or ""
+                print(f"    {criterion}: passed={passed}" + (f", reason={reason}" if reason else ""))
+            else:
+                print(f"    {criterion}: {detail}")
 
 
 # ---------------------------------------------------------------------------
@@ -766,6 +810,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_status.add_argument("--workflow-id", default=None, metavar="ID")
     p_status.add_argument("--workflow-basis-hash", default=None, metavar="HASH")
 
+    # -- admission-status --
+    p_admission_status = sub.add_parser(
+        "admission-status",
+        help="Inspect production-admission status for an operator-review workflow.",
+    )
+    p_admission_status.add_argument("--workflow-id", default=None, metavar="ID")
+    p_admission_status.add_argument("--workflow-basis-hash", default=None, metavar="HASH")
+
     # -- decide --
     p_decide = sub.add_parser(
         "decide",
@@ -990,6 +1042,7 @@ def cmd_check_posture(args: argparse.Namespace, transport: Transport) -> None:
 _SUBCOMMAND_MAP = {
     "open": cmd_open,
     "status": cmd_status,
+    "admission-status": cmd_admission_status,
     "decide": cmd_decide,
     "prepare-authority": cmd_prepare_authority,
     "reveal": cmd_reveal,

@@ -1023,3 +1023,67 @@ def test_cli_cik_map_matches_connector() -> None:
         "CLI ticker->CIK map drifted from the connector's map; update "
         "app/cli/sec_xbrl_operator_cli.py REAL_COMPANY_CIK_REFS to match."
     )
+
+
+# ---------------------------------------------------------------------------
+# Test 8: admission-status happy path via SpyTransport with canned response
+# ---------------------------------------------------------------------------
+
+def test_admission_status_happy_path() -> None:
+    """CLI posts to ROUTE_ADMISSION_STATUS with the correct body and prints
+    the verdict fields (production_admission_ready, admission_flag_enabled,
+    blocked_reason, criteria breakdown).
+    """
+    from app.cli.sec_xbrl_operator_cli import (
+        ROUTE_ADMISSION_STATUS,
+        ADMISSION_STATUS_MODE,
+        ADMISSION_STATUS_OPERATOR_DECISION,
+    )
+
+    workflow_id = "wf-admission-cli-test-001"
+    basis_hash = "d" * 64
+    canned = {
+        "production_admission_ready": False,
+        "admission_flag_enabled": False,
+        "production_admission_blocked_reason": "production_admission_flag_disabled",
+        "production_readiness_claimed": False,
+        "criteria": {
+            "workflow_approved": {"passed": False, "reason": "flag_disabled"},
+        },
+        "schema_id": "layer3.sec_xbrl_admission_status.v1",
+    }
+    spy = SpyTransport(
+        responses={"workflow/admission-status": (200, canned)}
+    )
+
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "admission-status",
+            "--workflow-id", workflow_id,
+            "--workflow-basis-hash", basis_hash,
+        ],
+        spy,
+    )
+
+    assert exit_code == 0, f"Expected exit 0; stderr={stderr!r}"
+
+    # Exactly one POST to the admission-status route
+    admission_calls = [c for c in spy.post_calls if "workflow/admission-status" in c["path"]]
+    assert len(admission_calls) == 1, f"Expected 1 POST to admission-status, got: {spy.post_calls}"
+
+    # Verify posted to the right route constant
+    assert admission_calls[0]["path"] == ROUTE_ADMISSION_STATUS
+
+    # Verify request body contains the correct literals
+    body = admission_calls[0]["body"]
+    assert body["admission_status_mode"] == ADMISSION_STATUS_MODE
+    assert body["operator_decision"] == ADMISSION_STATUS_OPERATOR_DECISION
+    assert body["sec_xbrl_operator_review_workflow_id"] == workflow_id
+    assert body["workflow_basis_hash"] == basis_hash
+
+    # Verify output contains the real verdict token printed by cmd_admission_status.
+    # The handler prints "  production_admission_ready : ..." as the first verdict line.
+    combined = stdout + stderr
+    assert "production_admission_ready" in combined, (
+        f"Expected 'production_admission_ready' verdict token in output; stdout={stdout!r}"
+    )

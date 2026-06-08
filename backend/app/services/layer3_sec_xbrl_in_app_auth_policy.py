@@ -26,6 +26,11 @@ PROTECTED_ROUTE_FAMILIES: dict[str, dict[str, Any]] = {
         "mutating": False,
         "may_expose_revealed_values": False,
     },
+    "sec_xbrl_operator_review_workflow_admission_status_read": {
+        "allowed_roles": {OWNER_ROLE, AUDITOR_ROLE},
+        "mutating": False,
+        "may_expose_revealed_values": False,
+    },
     "sec_xbrl_operator_review_decision_submit_write": {
         "allowed_roles": {OWNER_ROLE},
         "mutating": True,

@@ -60,6 +60,7 @@ from app.services import (
     layer3_sec_edgar_real_filing_downstream_validation,
     layer3_sec_edgar_repeatability_trial,
     layer3_sec_edgar_source_acquisition,
+    layer3_sec_xbrl_admission_status,
     layer3_sec_xbrl_auth_binding,
     layer3_sec_xbrl_controlled_value_reveal_submit,
     layer3_sec_xbrl_in_app_auth_policy,
@@ -1229,6 +1230,16 @@ class Layer3SecXbrlOperatorReviewWorkflowStatusRequest(BaseModel):
     client_request_id: str = Field(min_length=1)
     status_mode: Literal["sec_xbrl_operator_review_workflow_status_v1"]
     operator_decision: Literal["inspect_sec_xbrl_operator_review_workflow_status"]
+    sec_xbrl_operator_review_workflow_id: str | None = Field(default=None, min_length=1)
+    workflow_basis_hash: str | None = Field(default=None, min_length=64, max_length=64)
+
+
+class Layer3SecXbrlProductionAdmissionStatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    admission_status_mode: Literal["sec_xbrl_production_admission_status_v1"]
+    operator_decision: Literal["inspect_sec_xbrl_production_admission_status"]
     sec_xbrl_operator_review_workflow_id: str | None = Field(default=None, min_length=1)
     workflow_basis_hash: str | None = Field(default=None, min_length=64, max_length=64)
 
@@ -17906,6 +17917,49 @@ def post_sec_xbrl_operator_review_workflow_status(
         response = layer3_sec_xbrl_operator_review_workflow.inspect_redacted_operator_review_workflow_status(
             db,
             **payload.model_dump(exclude={"status_mode", "operator_decision"}, exclude_none=True),
+        )
+        return {**response, **_sec_xbrl_auth_binding_projection(binding)}
+    except (
+        layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
+        layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,
+    ) as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
+    except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
+        return _sec_xbrl_operator_review_workflow_error_response(exc)
+
+
+@router.post(
+    "/sec-xbrl/operator-review/workflow/admission-status",
+    response_model=None,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_xbrl_operator_review_workflow_admission_status(
+    payload: Layer3SecXbrlProductionAdmissionStatusRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    route_family = "sec_xbrl_operator_review_workflow_admission_status_read"
+    try:
+        policy_decision = _sec_xbrl_policy_decision(
+            request,
+            payload,
+            route_family=route_family,
+        )
+        binding = _sec_xbrl_require_binding(
+            db,
+            source_receipt_kind="operator_review_workflow",
+            source_receipt_id=payload.sec_xbrl_operator_review_workflow_id,
+            source_receipt_basis_hash=payload.workflow_basis_hash,
+            route_family=route_family,
+            policy_decision=policy_decision,
+        )
+        response = layer3_sec_xbrl_admission_status.inspect_redacted_production_admission_status(
+            db,
+            client_request_id=payload.client_request_id,
+            sec_xbrl_operator_review_workflow_id=payload.sec_xbrl_operator_review_workflow_id,
+            workflow_basis_hash=payload.workflow_basis_hash,
+            policy_decision=policy_decision,
+            auth_owner_mode=str(policy_decision.get("auth_owner_mode") or ""),
         )
         return {**response, **_sec_xbrl_auth_binding_projection(binding)}
     except (
