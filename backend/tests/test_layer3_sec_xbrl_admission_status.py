@@ -137,11 +137,24 @@ def _add_oracle_facts(
     confirmed: int = 3,
     sidecar_hash: str = _SIDECAR_HASH,
 ) -> None:
-    """Add projection facts to the set with a given confirmed/eligible split."""
+    """Add projection facts to the set with a given confirmed/total split.
+
+    oracle_confirmed uses PRODUCTION-REAL values written by the persistence
+    writers (_oracle_value() in projection_persistence /
+    statement_packet_persistence):
+      "true"          — oracle confirmed this fact (counted in confirmed_count)
+      "false"         — oracle contradicted this fact (counted in mismatch_count)
+      "oracle_absent" — oracle ran but had no value for this fact
+
+    Facts with index < confirmed get oracle_confirmed="true".
+    Remaining facts get oracle_confirmed="oracle_absent" (oracle ran, no value).
+    The status column uses the separate status-vocabulary; it is NOT the
+    oracle_confirmed column.
+    """
     for i in range(total):
-        oracle_val = (
-            "projected_oracle_confirmed" if i < confirmed else "projected_unconfirmed"
-        )
+        # Production-real oracle_confirmed values: "true" for confirmed facts,
+        # "oracle_absent" for the rest (oracle ran but had no value).
+        oracle_val = "true" if i < confirmed else "oracle_absent"
         fact = L3SecXbrlProjectionFact(
             sec_xbrl_projection_fact_id=_uid(),
             sec_xbrl_projection_set_id=proj.sec_xbrl_projection_set_id,
@@ -474,7 +487,7 @@ def test_no_decision_blocks_on_operator_decision(db, tmp_path, monkeypatch):
     assert result["production_admission_blocked_reason"] in {
         "operator_decision_not_approved_ready",
         "corpus_validation_or_ownership_missing",
-        "companyfacts_oracle_not_full_coverage",
+        "companyfacts_oracle_coverage_or_mismatch_failed",
         "value_reveal_authority_not_valid",
     }
 
@@ -537,7 +550,7 @@ def test_partial_oracle_blocks(db, tmp_path, monkeypatch):
     result = _call(db, wf, flag_on=True)
 
     assert result["production_admission_ready"] is False
-    assert result["criteria"]["companyfacts_oracle_full_coverage"]["passed"] is False
+    assert result["criteria"]["companyfacts_oracle_coverage_quorum"]["passed"] is False
 
 
 def test_no_corpus_receipt_blocks(db, tmp_path, monkeypatch):
@@ -642,6 +655,68 @@ def test_no_workflow_id_returns_blocked(db, tmp_path, monkeypatch):
             auth_owner_mode=_NONE_AUTH_MODE,
         )
     assert result["status"] == "blocked"
+    assert result["production_readiness_claimed"] is False
+
+
+# ---------------------------------------------------------------------------
+# FIX 6: Non-mocked integration test — basis-hash tamper => blocked (not partial True)
+# ---------------------------------------------------------------------------
+
+def test_tampered_statement_packet_basis_hash_returns_blocked(db, tmp_path, monkeypatch):
+    """Integration test: does NOT mock _validate_workflow_row_for_status.
+
+    A workflow whose statement_packet_basis_hash is tampered (mismatched from the
+    actual packet's packet_basis_hash) must cause _validate_workflow_row_for_status
+    to raise, which the assembler must catch and return a governed blocked response
+    (not a partial True or an unhandled exception).
+    """
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+    proj = _build_projection_set(db)
+    packet = _build_packet_set(db, proj)
+    # Build a workflow with a tampered statement_packet_basis_hash that does NOT
+    # match packet.packet_basis_hash — this will cause the real validation to fail.
+    tampered_hash = stable_hash({"tampered": "wrong-packet-basis"})
+    wf = L3SecXbrlOperatorReviewWorkflow(
+        sec_xbrl_operator_review_workflow_id=_uid(),
+        sec_xbrl_statement_packet_set_id=packet.sec_xbrl_statement_packet_set_id,
+        client_request_id="test-tampered-client",
+        workflow_basis_hash=_WORKFLOW_BASIS_HASH,
+        workflow_schema_id="layer3.sec_xbrl_operator_review_workflow.v1",
+        # Tampered: intentionally wrong to fail basis-hash validation.
+        statement_packet_basis_hash=tampered_hash,
+        source_projection_basis_hash=_PROJECTION_BASIS_HASH,
+        control_mode=L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_CONTROL_MODE,
+        review_status=L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_STATUS_READY,
+        redaction_policy=L3_SEC_XBRL_OPERATOR_REVIEW_WORKFLOW_REDACTION_POLICY,
+        statement_count=1,
+        row_count=3,
+        review_exception_count=0,
+        review_ready=True,
+        permitted_controls_json=[],
+        blocked_controls_json=[],
+        authority_refs_json={},
+        review_summary_json={},
+    )
+    db.add(wf)
+    db.commit()
+
+    with patch(
+        "app.services.layer3_sec_xbrl_admission_status.production_admission_flag_enabled",
+        return_value=True,
+    ):
+        result = inspect_redacted_production_admission_status(
+            db,
+            client_request_id="test-tamper-request",
+            sec_xbrl_operator_review_workflow_id=wf.sec_xbrl_operator_review_workflow_id,
+            policy_decision=_NONE_POLICY,
+            auth_owner_mode=_NONE_AUTH_MODE,
+        )
+
+    # The tampered basis-hash must block — never a partial True.
+    assert result["status"] == "blocked", (
+        f"Expected blocked response for tampered basis-hash, got status={result.get('status')!r}"
+    )
+    assert result["production_admission_ready"] is False
     assert result["production_readiness_claimed"] is False
 
 

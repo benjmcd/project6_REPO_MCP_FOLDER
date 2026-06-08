@@ -9,6 +9,7 @@ from __future__ import annotations
 import pytest
 
 from app.services.layer3_sec_xbrl_production_admission import (
+    ORACLE_COVERAGE_QUORUM,
     PRODUCTION_ADMISSION_SCHEMA_ID,
     evaluate_production_admission,
 )
@@ -19,15 +20,23 @@ from app.services.layer3_sec_xbrl_production_admission import (
 # ---------------------------------------------------------------------------
 
 def _full_evidence() -> dict:
-    """Return a dict that satisfies ALL seven admission criteria."""
+    """Return a dict that satisfies ALL seven admission criteria.
+
+    Oracle keys use the v2 coverage-quorum vocabulary:
+      oracle_confirmed_count  — facts where oracle_confirmed == "true"
+      oracle_mismatch_count   — facts where oracle_confirmed == "false" (must be 0)
+      oracle_total_count      — total facts in the projection_set
+    The confirmed/total ratio must be >= ORACLE_COVERAGE_QUORUM (0.5).
+    """
     return {
         # corpus_validation_passed_with_ownership
         "corpus_validation_passed": True,
         "ownership_marker_present": True,
-        # companyfacts_oracle_full_coverage
+        # companyfacts_oracle_coverage_quorum
         "companyfacts_oracle_supplied": True,
-        "oracle_eligible_count": 42,
         "oracle_confirmed_count": 42,
+        "oracle_mismatch_count": 0,
+        "oracle_total_count": 42,
         # operator_decision_approved_ready_for_next_freeze
         "review_decision": "approved",
         "decision_reason_code": "ready_for_next_freeze",
@@ -99,9 +108,9 @@ _CRITERION_BREAK_CASES = [
         "corpus_validation_or_ownership_missing",
     ),
     (
-        "companyfacts_oracle_full_coverage",
+        "companyfacts_oracle_coverage_quorum",
         {"companyfacts_oracle_supplied": False},
-        "companyfacts_oracle_not_full_coverage",
+        "companyfacts_oracle_coverage_or_mismatch_failed",
     ),
     (
         "operator_decision_approved_ready_for_next_freeze",
@@ -146,31 +155,65 @@ def test_each_single_unmet_criterion_blocks(criterion_key, overrides, expected_r
 
 
 # ---------------------------------------------------------------------------
-# Oracle full-coverage edge cases
+# Oracle coverage-quorum edge cases
 # ---------------------------------------------------------------------------
 
-def test_oracle_partial_coverage_fails():
-    """confirmed < eligible must fail (partial oracle coverage is not enough)."""
-    evidence = {**_full_evidence(), "oracle_confirmed_count": 10, "oracle_eligible_count": 42}
+_ORACLE_FAIL = "companyfacts_oracle_coverage_or_mismatch_failed"
+
+
+def test_oracle_mismatch_nonzero_fails():
+    """Any oracle mismatch (oracle_confirmed == 'false') must block — honesty floor."""
+    evidence = {**_full_evidence(), "oracle_mismatch_count": 1}
     result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
     assert result["production_admission_ready"] is False
-    assert result["production_admission_blocked_reason"] == "companyfacts_oracle_not_full_coverage"
+    assert result["production_admission_blocked_reason"] == _ORACLE_FAIL
+    assert result["criteria"]["companyfacts_oracle_coverage_quorum"]["passed"] is False
 
 
-def test_oracle_zero_eligible_fails():
-    """eligible_count == 0 must fail (no eligible facts means no real coverage)."""
-    evidence = {**_full_evidence(), "oracle_eligible_count": 0, "oracle_confirmed_count": 0}
+def test_oracle_confirmed_below_quorum_fails():
+    """confirmed/total < ORACLE_COVERAGE_QUORUM must block."""
+    # 1 confirmed out of 10 total = 0.1, below 0.5 quorum
+    evidence = {**_full_evidence(), "oracle_confirmed_count": 1, "oracle_total_count": 10, "oracle_mismatch_count": 0}
     result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
     assert result["production_admission_ready"] is False
-    assert result["production_admission_blocked_reason"] == "companyfacts_oracle_not_full_coverage"
+    assert result["production_admission_blocked_reason"] == _ORACLE_FAIL
 
 
-def test_oracle_bool_eligible_count_fails_closed():
-    """bool for oracle_eligible_count must be rejected (bool is subclass of int)."""
-    evidence = {**_full_evidence(), "oracle_eligible_count": True}
+def test_oracle_zero_total_fails():
+    """oracle_total_count == 0 must fail closed (avoids zero-division)."""
+    evidence = {**_full_evidence(), "oracle_confirmed_count": 0, "oracle_total_count": 0, "oracle_mismatch_count": 0}
     result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
     assert result["production_admission_ready"] is False
-    assert result["production_admission_blocked_reason"] == "companyfacts_oracle_not_full_coverage"
+    assert result["production_admission_blocked_reason"] == _ORACLE_FAIL
+
+
+def test_oracle_bool_counts_rejected():
+    """bool values for oracle counts must be rejected (bool is subclass of int)."""
+    for key in ("oracle_confirmed_count", "oracle_mismatch_count", "oracle_total_count"):
+        evidence = {**_full_evidence(), key: True}
+        result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
+        assert result["production_admission_ready"] is False, f"bool accepted for {key}"
+        assert result["production_admission_blocked_reason"] == _ORACLE_FAIL
+
+
+def test_oracle_exactly_at_quorum_passes():
+    """confirmed/total == ORACLE_COVERAGE_QUORUM exactly must pass."""
+    # At quorum: 5 of 10 = 0.5 exactly
+    total = 10
+    confirmed = int(total * ORACLE_COVERAGE_QUORUM)  # 5
+    evidence = {**_full_evidence(), "oracle_confirmed_count": confirmed, "oracle_total_count": total, "oracle_mismatch_count": 0}
+    result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
+    assert result["criteria"]["companyfacts_oracle_coverage_quorum"]["passed"] is True, (
+        f"Expected quorum pass at {confirmed}/{total}, got: {result['production_admission_blocked_reason']!r}"
+    )
+
+
+def test_oracle_zero_confirmed_fails():
+    """oracle_confirmed_count == 0 must fail (at least one corroboration required)."""
+    evidence = {**_full_evidence(), "oracle_confirmed_count": 0, "oracle_total_count": 10, "oracle_mismatch_count": 0}
+    result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
+    assert result["production_admission_ready"] is False
+    assert result["production_admission_blocked_reason"] == _ORACLE_FAIL
 
 
 # ---------------------------------------------------------------------------
@@ -251,7 +294,7 @@ def test_non_numeric_oracle_confirmed_count_fails_closed():
     evidence = {**_full_evidence(), "oracle_confirmed_count": "not-a-number"}
     result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
     assert result["production_admission_ready"] is False
-    assert result["production_admission_blocked_reason"] == "companyfacts_oracle_not_full_coverage"
+    assert result["production_admission_blocked_reason"] == "companyfacts_oracle_coverage_or_mismatch_failed"
 
 
 def test_non_string_receipt_id_fails_closed():

@@ -220,6 +220,17 @@ def find_corpus_validation_verdict_by_sidecar_hash(
     - settings.storage_dir is unset.
 
     This function is read-only: it never writes any file.
+
+    CONTENT-LEVEL TRUST BOUNDARY (accepted design):
+    This function matches on the CONTENT-DERIVED sidecar receipt hash
+    (arelle_sidecar_receipt_hash), not on a workflow id or operator session
+    scope.  It is therefore the one admission evidence source that operates at
+    content level rather than being scoped to a specific workflow id.  This is
+    an intentional and accepted trust boundary: the sidecar hash is a
+    cryptographic digest of the filing artifact content, so a match proves that
+    the exact same filing content was validated by the corpus process — it does
+    not require (or allow) per-workflow identity binding for this evidence.
+    All other admission evidence sources are workflow-id-scoped.
     """
     sidecar_hash = str(sidecar_receipt_hash or "").strip()
     if not sidecar_hash:

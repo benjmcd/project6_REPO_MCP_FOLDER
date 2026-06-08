@@ -305,10 +305,7 @@ def _proof_capability_ready_readiness(isolated_response: Mapping[str, Any]) -> d
     }
     if production_admission_flag_enabled():
         _adm = evaluate_production_admission(
-            evidence={
-                "isolated_in_memory_db_used": True,
-                "production_database_touched": False,
-            },
+            evidence={},
             admission_flag_enabled=True,
         )
         base["production_admission_ready"] = _adm["production_admission_ready"]
@@ -547,10 +544,7 @@ def _proof_result_hash(
             "redaction_scan": dict(redaction_scan),
             "production_admission_ready": (
                 evaluate_production_admission(
-                    evidence={
-                        "isolated_in_memory_db_used": True,
-                        "production_database_touched": False,
-                    },
+                    evidence={},
                     admission_flag_enabled=True,
                 )["production_admission_ready"]
                 if production_admission_flag_enabled()

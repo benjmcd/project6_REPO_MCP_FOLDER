@@ -48,16 +48,22 @@ from app.services.layer3_sec_xbrl_report_leak_guard import report_leak_flags
 
 ADMISSION_STATUS_SCHEMA_ID = "layer3.sec_xbrl_admission_status.v1"
 
-# String value written to L3SecXbrlProjectionFact.oracle_confirmed when a fact
-# was confirmed by the CompanyFacts oracle.
-_ORACLE_CONFIRMED_VALUE = "projected_oracle_confirmed"
+# Production-real values written to L3SecXbrlProjectionFact.oracle_confirmed by
+# the persistence writers (_oracle_value() in projection_persistence and
+# statement_packet_persistence).  The only admitted values are:
+#   "true"          — oracle had a value AND it matched the projected fact
+#   "false"         — oracle had a value AND it did NOT match (contradiction)
+#   "oracle_absent" — oracle pass ran but had no value for this fact
+# Any other string (including the status-column vocabulary) is never written.
+_ORACLE_TRUE_VALUE = "true"
+_ORACLE_FALSE_VALUE = "false"
+_ORACLE_ABSENT_VALUE = "oracle_absent"
 
-# String values for oracle_confirmed that indicate the oracle was attempted
-# (either confirmed or explicitly absent -- not "oracle not run").
+# The set of values that indicate the oracle pass ran for a fact.
 _ORACLE_ATTEMPTED_VALUES = frozenset({
-    "projected_oracle_confirmed",
-    "projected_oracle_absent",
-    "projected_unconfirmed",
+    _ORACLE_TRUE_VALUE,
+    _ORACLE_FALSE_VALUE,
+    _ORACLE_ABSENT_VALUE,
 })
 
 _BLOCKED_RESPONSE_SCHEMA_ID = ADMISSION_STATUS_SCHEMA_ID
@@ -214,25 +220,33 @@ def inspect_redacted_production_admission_status(
 
     # ------------------------------------------------------------------
     # Step 5: Oracle coverage from projection facts.
+    #
+    # oracle_confirmed column vocabulary (written by persistence writers):
+    #   "true"          — oracle matched this fact (confirmed)
+    #   "false"         — oracle had a value and it DID NOT match (contradiction)
+    #   "oracle_absent" — oracle ran but had no value for this fact
+    # oracle_supplied is True if ANY fact has oracle_confirmed in that set
+    # (i.e. the oracle pass ran).  Evidence keys passed to the evaluator:
+    #   companyfacts_oracle_supplied  — bool
+    #   oracle_confirmed_count        — facts where oracle_confirmed == "true"
+    #   oracle_mismatch_count         — facts where oracle_confirmed == "false"
+    #   oracle_total_count            — total facts in the projection_set
     # ------------------------------------------------------------------
     try:
         facts = list(projection_set.facts or [])
-        if facts:
-            # "eligible" = facts where an oracle attempt occurred (any of the
-            # oracle-attempted status values stored in oracle_confirmed).
-            eligible = [
-                f for f in facts
-                if str(getattr(f, "oracle_confirmed", "") or "") in _ORACLE_ATTEMPTED_VALUES
+        total_count = len(facts)
+        if total_count > 0:
+            oracle_vals = [
+                str(getattr(f, "oracle_confirmed", "") or "") for f in facts
             ]
-            confirmed = [
-                f for f in facts
-                if str(getattr(f, "oracle_confirmed", "") or "") == _ORACLE_CONFIRMED_VALUE
-            ]
-            oracle_attempted = len(eligible) > 0 or len(confirmed) > 0
-            if oracle_attempted:
+            oracle_supplied = any(v in _ORACLE_ATTEMPTED_VALUES for v in oracle_vals)
+            if oracle_supplied:
+                confirmed_count = sum(1 for v in oracle_vals if v == _ORACLE_TRUE_VALUE)
+                mismatch_count = sum(1 for v in oracle_vals if v == _ORACLE_FALSE_VALUE)
                 evidence["companyfacts_oracle_supplied"] = True
-                evidence["oracle_eligible_count"] = len(eligible)
-                evidence["oracle_confirmed_count"] = len(confirmed)
+                evidence["oracle_confirmed_count"] = confirmed_count
+                evidence["oracle_mismatch_count"] = mismatch_count
+                evidence["oracle_total_count"] = total_count
     except Exception:
         pass  # omit oracle evidence on error (fail closed)
 
@@ -319,7 +333,7 @@ def inspect_redacted_production_admission_status(
         admission_flag_enabled=flag_enabled,
     )
 
-    return {
+    response = {
         "status": "ok",
         "schema_id": ADMISSION_STATUS_SCHEMA_ID,
         "sec_xbrl_operator_review_workflow_id": workflow.sec_xbrl_operator_review_workflow_id,
@@ -340,3 +354,21 @@ def inspect_redacted_production_admission_status(
             "production_readiness_claimed remains False and is set independently by humans."
         ),
     }
+
+    # Defense-in-depth: run leak guard on the FINAL response dict before
+    # returning.  If any flag trips, return a governed blocked response
+    # (fail-closed) instead of leaking raw data.
+    try:
+        final_flags = report_leak_flags(response)
+        if any(final_flags.values()):
+            return _blocked(
+                "admission_status_final_response_leak_detected",
+                detail="Final response failed leak-guard scan; blocked for safety.",
+            )
+    except Exception:
+        return _blocked(
+            "admission_status_final_response_leak_guard_error",
+            detail="Final response leak-guard raised an unexpected error.",
+        )
+
+    return response

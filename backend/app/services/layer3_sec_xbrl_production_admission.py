@@ -24,6 +24,10 @@ from typing import Any
 
 PRODUCTION_ADMISSION_SCHEMA_ID = "layer3.sec_xbrl_production_admission.v2"
 
+# DOMAIN-JUDGMENT THRESHOLD — fraction of projected facts that must be
+# oracle-corroborated for production admission; tune per operator policy.
+ORACLE_COVERAGE_QUORUM = 0.5
+
 # ---------------------------------------------------------------------------
 # Feature-flag accessor
 # ---------------------------------------------------------------------------
@@ -52,26 +56,41 @@ def _check_corpus_validation_passed_with_ownership(
     return False, "corpus_validation_or_ownership_missing"
 
 
-def _check_companyfacts_oracle_full_coverage(
+def _check_companyfacts_oracle_coverage_quorum(
     evidence: Mapping[str, Any],
 ) -> tuple[bool, str]:
-    # Strictest honest threshold: oracle must have been supplied, eligible count
-    # must be a positive int, and confirmed count must equal eligible count (full
-    # coverage).  This deliberate default ensures no partial oracle pass silently
-    # clears the gate; operators who disagree must explicitly relax it downstream.
+    # Honest coverage-quorum gate: oracle must have been supplied, there must be
+    # zero oracle contradictions (mismatch_count == 0 is a mandatory honesty
+    # floor), at least one genuine corroboration, and the confirmed fraction must
+    # meet ORACLE_COVERAGE_QUORUM.  Fail-closed on missing/non-int/zero-division.
     # bool is a subclass of int; reject it to prevent accidental truthy passage.
+    _FAIL = "companyfacts_oracle_coverage_or_mismatch_failed"
     if evidence.get("companyfacts_oracle_supplied") is not True:
-        return False, "companyfacts_oracle_not_full_coverage"
-    eligible = evidence.get("oracle_eligible_count")
+        return False, _FAIL
+    mismatch = evidence.get("oracle_mismatch_count")
     confirmed = evidence.get("oracle_confirmed_count")
-    if isinstance(eligible, bool) or isinstance(confirmed, bool):
-        return False, "companyfacts_oracle_not_full_coverage"
-    if not isinstance(eligible, int) or eligible <= 0:
-        return False, "companyfacts_oracle_not_full_coverage"
+    total = evidence.get("oracle_total_count")
+    # Reject bools (subclass of int) for all three counts.
+    if isinstance(mismatch, bool) or isinstance(confirmed, bool) or isinstance(total, bool):
+        return False, _FAIL
+    if not isinstance(mismatch, int):
+        return False, _FAIL
     if not isinstance(confirmed, int):
-        return False, "companyfacts_oracle_not_full_coverage"
-    if confirmed < eligible:
-        return False, "companyfacts_oracle_not_full_coverage"
+        return False, _FAIL
+    if not isinstance(total, int):
+        return False, _FAIL
+    # NO oracle contradictions — mandatory honesty floor.
+    if mismatch != 0:
+        return False, _FAIL
+    # At least one genuine corroboration.
+    if confirmed < 1:
+        return False, _FAIL
+    # Denominator must be positive to avoid zero-division.
+    if total <= 0:
+        return False, _FAIL
+    # Coverage fraction must meet the quorum threshold.
+    if (confirmed / total) < ORACLE_COVERAGE_QUORUM:
+        return False, _FAIL
     return True, ""
 
 
@@ -150,7 +169,7 @@ def _check_review_exceptions_zero(
 
 _ADMISSION_CRITERIA: tuple[tuple[str, Any], ...] = (
     ("corpus_validation_passed_with_ownership", _check_corpus_validation_passed_with_ownership),
-    ("companyfacts_oracle_full_coverage", _check_companyfacts_oracle_full_coverage),
+    ("companyfacts_oracle_coverage_quorum", _check_companyfacts_oracle_coverage_quorum),
     ("operator_decision_approved_ready_for_next_freeze", _check_operator_decision_approved_ready_for_next_freeze),
     ("value_reveal_authority_receipt_valid", _check_value_reveal_authority_receipt_valid),
     ("no_honesty_invariant_violation", _check_no_honesty_invariant_violation),
