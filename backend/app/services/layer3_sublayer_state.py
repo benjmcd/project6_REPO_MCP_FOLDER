@@ -12,6 +12,7 @@ from app.models.models import (
     L3MaterialSnapshot,
     L3OutputPackage,
     L3PassRun,
+    L3ReconciliationRecord,
     L3TypingRecord,
 )
 from app.services.layer3_plan_flow_state import latest_analysis_plan
@@ -286,3 +287,30 @@ def session_output_package_products(db: Session, *, session_id: str) -> list[dic
         .all()
     )
     return [serialize_output_package_product(package) for package in packages]
+
+
+def serialize_reconciliation_record(record: L3ReconciliationRecord) -> dict[str, Any]:
+    """Read-only serialization of the session reconciliation record.
+
+    Surfaces the authoritative reconciled-truth lifecycle (the status column) plus the
+    reconciled package_status. The reconciliation summary_json nests raw refs
+    (result_review_record_ref, output_payload_ref) under path-specific keys; those are
+    intentionally not read here.
+    """
+    summary = record.summary_json if isinstance(record.summary_json, dict) else {}
+    package_status = summary.get("package_status")
+    return {
+        "reconciliation_record_id": record.reconciliation_record_id,
+        "status": record.status,
+        "package_status": package_status if isinstance(package_status, str) else None,
+    }
+
+
+def session_reconciliation_record(db: Session, *, session_id: str) -> dict[str, Any] | None:
+    record = (
+        db.query(L3ReconciliationRecord)
+        .filter(L3ReconciliationRecord.session_id == session_id)
+        .order_by(L3ReconciliationRecord.reconciliation_record_id.asc())
+        .first()
+    )
+    return serialize_reconciliation_record(record) if record is not None else None

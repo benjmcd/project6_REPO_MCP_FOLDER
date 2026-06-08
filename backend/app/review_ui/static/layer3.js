@@ -2001,6 +2001,7 @@ function analysisProductInventoryProjectionStatus(projection = currentAnalysisPr
     const rollup = isPlainObject(projection?.rollup) ? projection.rollup : {};
     const packageRollup = isPlainObject(projection?.package_rollup) ? projection.package_rollup : {};
     const downstream = isPlainObject(projection?.downstream_eligibility) ? projection.downstream_eligibility : {};
+    const reconciliation = isPlainObject(projection?.reconciliation) ? projection.reconciliation : {};
     return {
         schemaValid,
         readOnly,
@@ -2013,6 +2014,7 @@ function analysisProductInventoryProjectionStatus(projection = currentAnalysisPr
         blockedReasons: missingReasons.length ? missingReasons : blockedReasons,
         sessionReviewState: typeof downstream.session_review_state === 'string' ? downstream.session_review_state : 'not reported',
         environmentProjectionState: typeof downstream.environment_projection_state === 'string' ? downstream.environment_projection_state : 'not reported',
+        reconciliationStatus: typeof reconciliation.status === 'string' ? reconciliation.status : 'not reported',
         products: Array.isArray(projection?.products) ? projection.products : [],
         packageProducts: Array.isArray(projection?.package_products) ? projection.package_products : [],
     };
@@ -2030,7 +2032,7 @@ function analysisProductInventoryProductRow(product, productClass) {
     const blocked = Array.isArray(product?.blocked_reasons) ? product.blocked_reasons : [];
     const status = product?.lifecycle_status || 'not reported';
     const descriptor = productClass === 'output_package'
-        ? `${product?.package_kind || 'package'} / ${status}`
+        ? `${product?.package_kind || 'package'} / ${status} / recon ${humanizeToken(product?.reconciliation_status || 'unlinked')}`
         : `${product?.product_kind || 'analysis output'} / ${product?.product_scope || 'unknown'} / ${status}`;
     const blockedLine = blocked.length
         ? `<small>${escapeHtml(shortText(blocked.map(humanizeToken).join(', '), 72))}</small>`
@@ -2076,7 +2078,7 @@ function renderMockupAnalysisProductInventoryProjection(active = State.themePref
         <div class="mockup-analysis-product-inventory-projection-head">
             <span class="mockup-frame-label">Server-owned Sublayer 3C analysis product inventory</span>
             <strong>${escapeHtml(available ? 'Live read-only' : 'Read-only unavailable')}</strong>
-            <p>${escapeHtml(`Inventory ${humanizeToken(status.state)} / review ${humanizeToken(status.sessionReviewState)} / ${shortText(blockedReasons.join(', '), 64)}`)}</p>
+            <p>${escapeHtml(`Inventory ${humanizeToken(status.state)} / reconciled ${humanizeToken(status.reconciliationStatus)} / review ${humanizeToken(status.sessionReviewState)} / ${shortText(blockedReasons.join(', '), 48)}`)}</p>
         </div>
         <div class="mockup-analysis-product-inventory-rollup" aria-label="Read-only Sublayer 3C analysis product inventory counts">
             <article>
