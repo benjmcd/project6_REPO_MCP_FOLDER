@@ -55,9 +55,17 @@ def _check_corpus_validation_passed_with_ownership(
 def _check_companyfacts_oracle_reconciled_within_tolerance(
     evidence: Mapping[str, Any],
 ) -> tuple[bool, str]:
+    raw = evidence.get("oracle_confirmed_count")
+    # bool is a subclass of int; treat it as invalid to prevent accidental truthy passage.
+    if isinstance(raw, bool):
+        return False, "companyfacts_oracle_not_reconciled"
+    try:
+        count = int(raw or 0)
+    except (TypeError, ValueError):
+        return False, "companyfacts_oracle_not_reconciled"
     if (
         evidence.get("companyfacts_oracle_supplied") is True
-        and int(evidence.get("oracle_confirmed_count") or 0) > 0
+        and count > 0
         and evidence.get("oracle_within_tolerance") is True
     ):
         return True, ""
@@ -78,9 +86,10 @@ def _check_operator_decision_approved_ready_for_next_freeze(
 def _check_value_reveal_authority_receipt_valid(
     evidence: Mapping[str, Any],
 ) -> tuple[bool, str]:
+    _rid = evidence.get("value_reveal_authority_receipt_id")
     if (
         evidence.get("value_reveal_authority_eligible") is True
-        and bool(evidence.get("value_reveal_authority_receipt_id"))
+        and isinstance(_rid, str) and bool(_rid)
     ):
         return True, ""
     return False, "value_reveal_authority_not_valid"
@@ -142,6 +151,12 @@ def evaluate_production_admission(
     ``admission_flag_enabled`` is True AND every one of the six criteria
     checkers returns ``passed=True``.  There is no other code path that
     produces ``True``.
+
+    Caller contract: callers MUST gate this call via
+    :func:`production_admission_flag_enabled` and provide their own legacy
+    else-branch for flag-OFF byte-identity.  The evaluator's internal flag
+    guard (``admission_flag_enabled is not True``) is a defense-in-depth
+    backstop, not the primary gate.
 
     Parameters
     ----------

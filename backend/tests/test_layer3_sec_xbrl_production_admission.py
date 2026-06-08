@@ -164,6 +164,32 @@ def test_schema_id_present():
 
 
 # ---------------------------------------------------------------------------
+# Fail-closed hardening: invalid input types must not raise or pass
+# ---------------------------------------------------------------------------
+
+def test_non_numeric_oracle_confirmed_count_fails_closed():
+    """Non-numeric string for oracle_confirmed_count must fail closed, not raise."""
+    evidence = {**_full_evidence(), "oracle_confirmed_count": "not-a-number"}
+    result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
+    assert result["production_admission_ready"] is False
+    assert result["production_admission_blocked_reason"] == "companyfacts_oracle_not_reconciled"
+
+
+def test_non_string_receipt_id_fails_closed():
+    """Non-string receipt_id (e.g. a list) must fail closed, not pass truthy check."""
+    evidence = {**_full_evidence(), "value_reveal_authority_receipt_id": [1]}
+    result = evaluate_production_admission(evidence=evidence, admission_flag_enabled=True)
+    assert result["production_admission_ready"] is False
+    assert result["production_admission_blocked_reason"] == "value_reveal_authority_not_valid"
+
+
+def test_truthy_nonbool_flag_does_not_enable():
+    """admission_flag_enabled=1 (int) must not enable evaluation; only True does."""
+    result = evaluate_production_admission(evidence=_full_evidence(), admission_flag_enabled=1)
+    assert result["production_admission_ready"] is False
+
+
+# ---------------------------------------------------------------------------
 # Decoupling: production_readiness_claimed must NOT appear in evaluator output
 # ---------------------------------------------------------------------------
 
