@@ -23,7 +23,11 @@ from app.services.layer3_sec_edgar_real_company_corpus_validation import (
     READY_STATE,
     RECEIPT_DIR,
     RECEIPT_PREFIX,
+    SCHEMA_ID,
+    SCHEMA_VERSION,
+    VALIDATION_MODE,
     find_corpus_validation_verdict_by_sidecar_hash,
+    _validation_receipt_hash,
 )
 
 
@@ -54,6 +58,7 @@ def _make_receipt(
     """Minimal corpus receipt with one filing record containing the sidecar hash."""
     record: dict[str, Any] = {
         "record_index": 1,
+        "record_hash": "1" * 64,
         "authority_hashes": {
             "arelle_sidecar_receipt_hash": sidecar_hash,
         },
@@ -61,13 +66,24 @@ def _make_receipt(
     }
     if blocked_reasons is not None:
         record["blocked_reasons"] = blocked_reasons
-    return {
-        "schema_id": "layer3.sec_edgar_real_company_corpus_validation.v1",
+    receipt = {
+        "schema_id": SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "validation_mode": VALIDATION_MODE,
         "validation_state": validation_state,
-        "validation_receipt_id": receipt_id,
-        "validation_receipt_hash": "a" * 64,
+        "validation_receipt_id": "",
+        "validation_receipt_hash": "",
+        "connector_receipt_hash": "2" * 64,
+        "company_matrix": ["sony"],
         "filing_validation_records": [record],
+        "product_utility_matrix": [],
+        "product_quality_matrix": [],
+        "diagnostics": {},
     }
+    receipt_hash = _validation_receipt_hash(receipt)
+    receipt["validation_receipt_hash"] = receipt_hash
+    receipt["validation_receipt_id"] = receipt_id or f"{RECEIPT_PREFIX}-{receipt_hash[:24]}"
+    return receipt
 
 
 # ---------------------------------------------------------------------------
@@ -80,11 +96,12 @@ def test_finds_match_and_returns_corpus_validation_passed_true(tmp_path, monkeyp
     monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
     receipts = _receipts_dir(tmp_path)
     sidecar_hash = "b" * 64
-    receipt_id = f"{RECEIPT_PREFIX}-{'c' * 24}"
-    _write_receipt(receipts, _make_receipt(
-        receipt_id=receipt_id,
+    receipt = _make_receipt(
+        receipt_id="",
         sidecar_hash=sidecar_hash,
-    ))
+    )
+    receipt_id = receipt["validation_receipt_id"]
+    _write_receipt(receipts, receipt)
 
     verdict = find_corpus_validation_verdict_by_sidecar_hash(sidecar_hash)
 
@@ -100,7 +117,7 @@ def test_no_match_returns_none(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
     receipts = _receipts_dir(tmp_path)
     _write_receipt(receipts, _make_receipt(
-        receipt_id=f"{RECEIPT_PREFIX}-{'d' * 24}",
+        receipt_id="",
         sidecar_hash="e" * 64,
     ))
 
@@ -115,7 +132,7 @@ def test_non_ready_receipt_returns_corpus_validation_passed_false(tmp_path, monk
     receipts = _receipts_dir(tmp_path)
     sidecar_hash = "g" * 64
     _write_receipt(receipts, _make_receipt(
-        receipt_id=f"{RECEIPT_PREFIX}-{'h' * 24}",
+        receipt_id="",
         sidecar_hash=sidecar_hash,
         validation_state="sec_edgar_real_company_corpus_validation_blocked",
     ))
@@ -133,7 +150,7 @@ def test_filing_with_blocked_reasons_returns_false(tmp_path, monkeypatch):
     receipts = _receipts_dir(tmp_path)
     sidecar_hash = "i" * 64
     _write_receipt(receipts, _make_receipt(
-        receipt_id=f"{RECEIPT_PREFIX}-{'j' * 24}",
+        receipt_id="",
         sidecar_hash=sidecar_hash,
         blocked_reasons=[{"reason": "arelle_parse_error"}],
     ))
@@ -173,7 +190,7 @@ def test_filing_not_supported_returns_false(tmp_path, monkeypatch):
     receipts = _receipts_dir(tmp_path)
     sidecar_hash = "m" * 64
     _write_receipt(receipts, _make_receipt(
-        receipt_id=f"{RECEIPT_PREFIX}-{'n' * 24}",
+        receipt_id="",
         sidecar_hash=sidecar_hash,
         supported_degraded_blocked="degraded",
     ))
@@ -182,3 +199,19 @@ def test_filing_not_supported_returns_false(tmp_path, monkeypatch):
     assert verdict is not None
     assert verdict["corpus_validation_passed"] is False
     assert verdict["filing_status"] == "degraded"
+
+
+def test_forged_receipt_hash_mismatch_is_ignored(tmp_path, monkeypatch):
+    """Matching sidecar evidence is ignored unless the receipt verifies."""
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+    receipts = _receipts_dir(tmp_path)
+    sidecar_hash = "o" * 64
+    forged = _make_receipt(
+        receipt_id="",
+        sidecar_hash=sidecar_hash,
+    )
+    forged["validation_receipt_hash"] = "f" * 64
+    _write_receipt(receipts, forged)
+
+    verdict = find_corpus_validation_verdict_by_sidecar_hash(sidecar_hash)
+    assert verdict is None
