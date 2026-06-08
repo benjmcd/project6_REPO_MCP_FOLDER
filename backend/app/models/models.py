@@ -105,6 +105,48 @@ L3_SEC_XBRL_AUTH_BINDING_POLICY_ID = "sec_xbrl_repo_owned_in_app_auth_owner_bind
 L3_SEC_XBRL_AUTH_BINDING_STATE_OWNER_BOUND = "owner_bound"
 L3_SEC_XBRL_AUTH_BINDING_REDACTION_POLICY = "hash_only_actor_workspace_policy_refs_v1"
 
+L3_ANALYSIS_PRODUCT_KIND_VALUES = (
+    "analyst_note",
+    "fact",
+    "metric",
+    "finding",
+    "insight",
+    "diagnostic",
+    "summary",
+    "hypothesis",
+    "recommendation",
+)
+L3_ANALYSIS_PRODUCT_EXECUTOR_TYPE_VALUES = (
+    "human",
+    "deterministic",
+    "agent",
+    "external_api",
+)
+L3_ANALYSIS_PRODUCT_LIFECYCLE_VALUES = (
+    "draft",
+    "proposed",
+    "validated",
+    "accepted",
+    "rejected",
+    "package_eligible",
+    "packaged",
+)
+L3_ANALYSIS_PRODUCT_EVIDENCE_ROLE_VALUES = (
+    "observation",
+    "measurement",
+    "claim",
+    "interpretation",
+    "context",
+    "counterpoint",
+)
+L3_ANALYSIS_PRODUCT_EVIDENCE_REF_KIND_VALUES = (
+    "material_snapshot",
+    "pass_run",
+    "output_package",
+    "analysis_set",
+    "prior_product",
+)
+
 
 class TimestampMixin:
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -3075,3 +3117,72 @@ class L3ProviderPublicUrlAuditEvent(Base):
     reason_code: Mapped[str] = mapped_column(String(128), nullable=False)
     event_payload_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class L3AnalysisProduct(Base, TimestampMixin):
+    __tablename__ = "l3_analysis_product"
+    __table_args__ = (
+        UniqueConstraint("session_id", "client_request_id", name="uq_l3_analysis_product_session_request"),
+        CheckConstraint(
+            f"product_kind IN ({', '.join(repr(v) for v in L3_ANALYSIS_PRODUCT_KIND_VALUES)})",
+            name="ck_l3_analysis_product_kind",
+        ),
+        CheckConstraint(
+            f"executor_type IN ({', '.join(repr(v) for v in L3_ANALYSIS_PRODUCT_EXECUTOR_TYPE_VALUES)})",
+            name="ck_l3_analysis_product_executor_type",
+        ),
+        CheckConstraint(
+            f"lifecycle_status IN ({', '.join(repr(v) for v in L3_ANALYSIS_PRODUCT_LIFECYCLE_VALUES)})",
+            name="ck_l3_analysis_product_lifecycle",
+        ),
+        Index("ix_l3_analysis_product_session", "session_id"),
+    )
+
+    analysis_product_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    product_kind: Mapped[str] = mapped_column(String(64), nullable=False)
+    executor_type: Mapped[str] = mapped_column(String(64), nullable=False, default="human")
+    lifecycle_status: Mapped[str] = mapped_column(String(64), nullable=False, default="draft")
+    title: Mapped[str] = mapped_column(String(512), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    is_non_evidentiary: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    executor_identity: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    output_schema_validation_status: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    spec_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    authoring_provenance_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+
+    session: Mapped["L3Session"] = relationship()
+    evidence_links: Mapped[list["L3AnalysisProductEvidenceLink"]] = relationship(
+        back_populates="analysis_product", cascade="all, delete-orphan"
+    )
+
+
+class L3AnalysisProductEvidenceLink(Base, TimestampMixin):
+    __tablename__ = "l3_analysis_product_evidence_link"
+    __table_args__ = (
+        CheckConstraint(
+            f"ref_kind IN ({', '.join(repr(v) for v in L3_ANALYSIS_PRODUCT_EVIDENCE_REF_KIND_VALUES)})",
+            name="ck_l3_aprod_evlink_ref_kind",
+        ),
+        CheckConstraint(
+            f"evidence_role IN ({', '.join(repr(v) for v in L3_ANALYSIS_PRODUCT_EVIDENCE_ROLE_VALUES)})",
+            name="ck_l3_aprod_evlink_role",
+        ),
+        Index("ix_l3_aprod_evlink_product", "analysis_product_id"),
+    )
+
+    evidence_link_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    analysis_product_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_analysis_product.analysis_product_id"), nullable=False
+    )
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    ref_kind: Mapped[str] = mapped_column(String(64), nullable=False)
+    ref_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    evidence_role: Mapped[str] = mapped_column(String(64), nullable=False)
+    locator_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+
+    analysis_product: Mapped["L3AnalysisProduct"] = relationship(back_populates="evidence_links")
+    session: Mapped["L3Session"] = relationship()

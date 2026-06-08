@@ -2000,6 +2000,7 @@ function analysisProductInventoryProjectionStatus(projection = currentAnalysisPr
     const isPlainObject = (value) => value && typeof value === 'object' && !Array.isArray(value);
     const rollup = isPlainObject(projection?.rollup) ? projection.rollup : {};
     const packageRollup = isPlainObject(projection?.package_rollup) ? projection.package_rollup : {};
+    const analystRollup = isPlainObject(projection?.analyst_rollup) ? projection.analyst_rollup : {};
     const downstream = isPlainObject(projection?.downstream_eligibility) ? projection.downstream_eligibility : {};
     const reconciliation = isPlainObject(projection?.reconciliation) ? projection.reconciliation : {};
     return {
@@ -2008,16 +2009,51 @@ function analysisProductInventoryProjectionStatus(projection = currentAnalysisPr
         state,
         productCount: Number(projection?.product_count) || 0,
         packageProductCount: Number(projection?.package_product_count) || 0,
+        analystProductCount: Number(projection?.analyst_product_count) || 0,
         outputReadyCount: Number(rollup.output_ready_count) || 0,
         packageEligibleCount: Number(rollup.package_eligible_count) || 0,
         terminallyCompleteCount: Number(packageRollup.terminally_complete_count) || 0,
+        analystGroundedCount: Number(analystRollup.grounded_count) || 0,
         blockedReasons: missingReasons.length ? missingReasons : blockedReasons,
         sessionReviewState: typeof downstream.session_review_state === 'string' ? downstream.session_review_state : 'not reported',
         environmentProjectionState: typeof downstream.environment_projection_state === 'string' ? downstream.environment_projection_state : 'not reported',
         reconciliationStatus: typeof reconciliation.status === 'string' ? reconciliation.status : 'not reported',
         products: Array.isArray(projection?.products) ? projection.products : [],
         packageProducts: Array.isArray(projection?.package_products) ? projection.package_products : [],
+        analystProducts: Array.isArray(projection?.analyst_products) ? projection.analyst_products : [],
     };
+}
+
+function analystProductRow(product) {
+    const title = typeof product?.title === 'string' ? product.title : '';
+    const kind = product?.product_kind || 'unknown';
+    const status = product?.lifecycle_status || 'draft';
+    const grounded = product?.grounded === true;
+    const nonEvidentiary = product?.is_non_evidentiary === true;
+    const evidenceCount = Number(product?.evidence_count) || 0;
+    const groundingLabel = nonEvidentiary ? 'non-evidentiary' : (grounded ? 'grounded' : 'ungrounded');
+    const evidenceRefs = Array.isArray(product?.evidence_refs) ? product.evidence_refs : [];
+    const refRows = evidenceRefs.map((ref) => {
+        const rk = escapeHtml(String(ref?.ref_kind || ''));
+        const ri = escapeHtml(shortText(String(ref?.ref_id || ''), 36));
+        const role = escapeHtml(String(ref?.evidence_role || ''));
+        return `<li><span>${rk}</span> <span>${ri}</span> <span>${role}</span></li>`;
+    }).join('');
+    const refsMarkup = refRows
+        ? `<ul class="mockup-analyst-product-evidence-refs">${refRows}</ul>`
+        : '';
+    return `
+        <li class="mockup-analyst-product-item" data-lifecycle-status="${escapeHtml(status)}">
+            <details class="mockup-analysis-product-detail">
+                <summary>
+                    <span>${escapeHtml(shortText(title, 64))}</span>
+                    <strong>${escapeHtml(kind)} / <span class="mockup-analyst-product-lifecycle-badge">${escapeHtml(status)}</span></strong>
+                    <em>${escapeHtml(groundingLabel)} / evidence ${escapeHtml(String(evidenceCount))}</em>
+                </summary>
+                ${refsMarkup}
+            </details>
+        </li>
+    `;
 }
 
 function analysisProductEligibilityLabel(product) {
@@ -2109,17 +2145,22 @@ function renderMockupAnalysisProductInventoryProjection(active = State.themePref
     }
     const status = analysisProductInventoryProjectionStatus();
     const available = status.schemaValid && status.readOnly
-        && (status.productCount > 0 || status.packageProductCount > 0);
+        && (status.productCount > 0 || status.packageProductCount > 0 || status.analystProductCount > 0);
     const PRODUCT_RENDER_LIMIT = 12;
     const passRows = status.products.slice(0, PRODUCT_RENDER_LIMIT)
         .map((product) => analysisProductInventoryProductRow(product, 'analysis_pass_output')).join('');
     const packageRows = status.packageProducts.slice(0, PRODUCT_RENDER_LIMIT)
         .map((product) => analysisProductInventoryProductRow(product, 'output_package')).join('');
+    const analystRows = status.analystProducts.slice(0, PRODUCT_RENDER_LIMIT)
+        .map((product) => analystProductRow(product)).join('');
     const passOverflow = status.products.length > PRODUCT_RENDER_LIMIT
         ? `<li data-product-class="overflow"><span>${escapeHtml(`+ ${status.products.length - PRODUCT_RENDER_LIMIT} more pass-run products`)}</span></li>`
         : '';
     const packageOverflow = status.packageProducts.length > PRODUCT_RENDER_LIMIT
         ? `<li data-product-class="overflow"><span>${escapeHtml(`+ ${status.packageProducts.length - PRODUCT_RENDER_LIMIT} more package products`)}</span></li>`
+        : '';
+    const analystOverflow = status.analystProducts.length > PRODUCT_RENDER_LIMIT
+        ? `<li data-product-class="overflow"><span>${escapeHtml(`+ ${status.analystProducts.length - PRODUCT_RENDER_LIMIT} more analyst products`)}</span></li>`
         : '';
     const blockedReasons = status.blockedReasons.length ? status.blockedReasons : ['no inventory blockers reported'];
 
@@ -2144,6 +2185,11 @@ function renderMockupAnalysisProductInventoryProjection(active = State.themePref
                 <p>${escapeHtml(`terminally complete ${status.terminallyCompleteCount}`)}</p>
             </article>
             <article>
+                <span>Analyst products</span>
+                <strong>${escapeHtml(status.analystProductCount)}</strong>
+                <p>${escapeHtml(`grounded ${status.analystGroundedCount}`)}</p>
+            </article>
+            <article>
                 <span>Environment state</span>
                 <strong>${escapeHtml(humanizeToken(status.environmentProjectionState))}</strong>
                 <p>${escapeHtml(`review ${humanizeToken(status.sessionReviewState)}`)}</p>
@@ -2161,6 +2207,10 @@ function renderMockupAnalysisProductInventoryProjection(active = State.themePref
         <ul class="mockup-analysis-product-list" data-product-class="output_package" aria-label="Read-only materialized package products">
             ${packageRows || '<li data-product-class="empty"><span>No materialized package products loaded</span></li>'}
             ${packageOverflow}
+        </ul>
+        <ul class="mockup-analysis-product-list mockup-analyst-product-list" data-product-class="analyst_product" aria-label="Read-only analyst draft products">
+            ${analystRows || '<li data-product-class="empty"><span>No analyst draft products authored</span></li>'}
+            ${analystOverflow}
         </ul>
         ${available ? '' : '<span class="mockup-disabled-control" aria-disabled="true">Read-only 3C product inventory pending</span>'}
     `;

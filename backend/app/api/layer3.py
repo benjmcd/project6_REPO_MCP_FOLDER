@@ -140,6 +140,13 @@ from app.core.config import settings
 from app.services.layer3_preflight_request_contract import PREFLIGHT_MANUAL_CONSTRAINT_FORBIDDEN_FIELDS
 from app.services.layer3_response_contract import base_response
 from app.services.layer3_workbench_error import Layer3WorkbenchError, workbench_error_response
+from app.services.layer3_analysis_product_authoring import (
+    AnalysisProductDraft,
+    AnalysisProductEvidenceDraft,
+    Layer3AnalysisProductError,
+    create_analysis_product_draft,
+)
+from app.services.layer3_sublayer_state import serialize_analysis_product as _serialize_analysis_product
 
 router = APIRouter()
 
@@ -19971,3 +19978,104 @@ def post_external_export_download_signed_reference_use(
 )
 def get_session_summary(session_id: str, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.session_summary(db, session_id))
+
+
+# ---------------------------------------------------------------------------
+# Analysis-product authoring — Manual Draft 3C
+# ---------------------------------------------------------------------------
+
+ANALYSIS_PRODUCT_DRAFT_SCHEMA_ID = "layer3.analysis_product.v1"
+
+
+class Layer3AnalysisProductEvidenceLinkRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    ref_kind: str = Field(min_length=1)
+    ref_id: str = Field(min_length=1)
+    evidence_role: str = Field(min_length=1)
+    locator: dict[str, Any] | None = None
+
+
+class Layer3AnalysisProductDraftRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    session_id: str = Field(min_length=1)
+    client_request_id: str = Field(min_length=1)
+    product_kind: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    body: str = Field(min_length=1)
+    evidence: list[Layer3AnalysisProductEvidenceLinkRequest] = Field(default_factory=list)
+    is_non_evidentiary: bool = False
+    authoring_provenance: dict[str, Any] | None = None
+
+
+class Layer3AnalysisProductDraftResponse(Layer3BaseResponse):
+    analysis_product_id: str
+    session_id: str
+    product_kind: str
+    executor_type: str
+    lifecycle_status: str
+    title: str
+    evidence_count: int
+    grounded: bool
+    basis_hash: str
+    spec_hash: str
+    created_at: str
+    replayed: bool
+
+
+@router.post(
+    "/analysis-product/draft",
+    response_model=Layer3AnalysisProductDraftResponse,
+    status_code=201,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_analysis_product_draft(
+    payload: Layer3AnalysisProductDraftRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    draft = AnalysisProductDraft(
+        product_kind=payload.product_kind,
+        title=payload.title,
+        body=payload.body,
+        evidence=tuple(
+            AnalysisProductEvidenceDraft(
+                ref_kind=ev.ref_kind,
+                ref_id=ev.ref_id,
+                evidence_role=ev.evidence_role,
+                locator=ev.locator,
+            )
+            for ev in payload.evidence
+        ),
+        is_non_evidentiary=payload.is_non_evidentiary,
+        authoring_provenance=payload.authoring_provenance,
+        executor_type="human",
+    )
+    try:
+        result = create_analysis_product_draft(
+            db,
+            session_id=payload.session_id,
+            client_request_id=payload.client_request_id,
+            draft=draft,
+        )
+        db.commit()
+        product = result.product
+        serialized = _serialize_analysis_product(product, list(result.evidence_links))
+        return {
+            **base_response(ANALYSIS_PRODUCT_DRAFT_SCHEMA_ID),
+            "analysis_product_id": product.analysis_product_id,
+            "session_id": product.session_id,
+            "product_kind": product.product_kind,
+            "executor_type": product.executor_type,
+            "lifecycle_status": product.lifecycle_status,
+            "title": product.title,
+            "evidence_count": serialized["evidence_count"],
+            "grounded": serialized["grounded"],
+            "basis_hash": product.basis_hash,
+            "spec_hash": product.spec_hash,
+            "created_at": serialized["created_at"] or "",
+            "replayed": result.replayed,
+        }
+    except Layer3AnalysisProductError as exc:
+        db.rollback()
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())

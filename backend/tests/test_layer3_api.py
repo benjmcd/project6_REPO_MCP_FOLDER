@@ -14246,6 +14246,64 @@ def test_layer3_api_session_summary_exposes_analysis_product_inventory_projectio
     assert "payload_ref" not in repr(inventory)
 
 
+def test_layer3_api_analysis_product_draft_request_schema_forbids_extra(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+    schema = spec["components"]["schemas"]["Layer3AnalysisProductDraftRequest"]
+    assert schema.get("additionalProperties") is False
+    props = schema.get("properties", {})
+    # server-owned fields must NOT be client-settable
+    for forbidden in ("lifecycle_status", "executor_type", "analysis_product_id", "basis_hash", "spec_hash"):
+        assert forbidden not in props
+
+
+def test_layer3_api_analysis_product_draft_authoring_and_inventory(client: TestClient, tmp_path) -> None:
+    session_id = _construct_quant_package_set(client, tmp_path, request_id="api-3c-author")[0]
+    summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    materials = summary["sublayer_visualization"]["material_objects"]
+    assert materials, "seeded session should expose material snapshots"
+    snap_id = materials[0]["material_snapshot_id"]
+
+    draft_body = {
+        "session_id": session_id,
+        "client_request_id": "author-1",
+        "product_kind": "finding",
+        "title": "Margin compression in Q3",
+        "body": "Operating margin fell 220bps QoQ driven by input costs.",
+        "evidence": [{"ref_kind": "material_snapshot", "ref_id": snap_id, "evidence_role": "observation"}],
+    }
+    resp = client.post("/api/v1/layer3/analysis-product/draft", json=draft_body)
+    assert resp.status_code == 201, resp.text
+    body = resp.json()
+    assert body["lifecycle_status"] == "draft"
+    assert body["executor_type"] == "human"
+    assert body["grounded"] is True
+    assert body["evidence_count"] == 1
+    assert body["replayed"] is False
+    product_id = body["analysis_product_id"]
+
+    # The draft appears in the session-summary inventory as an inert analyst product.
+    inv = client.get(f"/api/v1/layer3/session/{session_id}").json()["analysis_product_inventory_projection"]
+    assert inv["analyst_product_count"] >= 1
+    ap = next(p for p in inv["analyst_products"] if p["product_id"] == f"layer3_analyst_product:{product_id}")
+    assert ap["blocked_reasons"] == ["draft_not_promotable"]
+    assert "package_eligible" not in ap
+    assert "handoff_eligible" not in ap
+    assert "delivery_eligible" not in ap
+
+    # Idempotent replay: identical request id + body -> 201 replayed, same id, no duplicate.
+    replay = client.post("/api/v1/layer3/analysis-product/draft", json=draft_body)
+    assert replay.status_code == 201
+    assert replay.json()["replayed"] is True
+    assert replay.json()["analysis_product_id"] == product_id
+
+    # extra=forbid: client may not supply server-owned lifecycle.
+    forbidden = client.post(
+        "/api/v1/layer3/analysis-product/draft",
+        json={**draft_body, "client_request_id": "author-x", "lifecycle_status": "packaged"},
+    )
+    assert forbidden.status_code == 422
+
+
 def _submit_quant_package_review(
     client: TestClient,
     tmp_path,
