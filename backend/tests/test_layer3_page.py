@@ -2803,6 +2803,7 @@ def test_layer3_analysis_product_inventory_projection_rendered_reader_is_bounded
     assert "product_count" in status_slice
     assert "package_product_count" in status_slice
     assert "downstream_eligibility" in status_slice
+    assert "reconciliation" in status_slice
     assert 'class="mockup-analysis-product-inventory-projection-head"' in render_slice
     assert 'class="mockup-analysis-product-inventory-rollup"' in render_slice
     assert 'class="mockup-analysis-product-list"' in render_slice

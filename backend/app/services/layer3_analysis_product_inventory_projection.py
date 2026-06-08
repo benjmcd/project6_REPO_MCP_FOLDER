@@ -203,7 +203,10 @@ def _enumerate_package_products(
     *,
     output_package_products: list[Any],
     session_eligibility: dict[str, bool],
+    reconciliation: dict[str, Any],
 ) -> list[dict[str, Any]]:
+    reconciliation_record_id = reconciliation.get("reconciliation_record_id")
+    reconciliation_status = reconciliation.get("status")
     products: list[dict[str, Any]] = []
     for entry in output_package_products:
         record = _as_dict(entry)
@@ -218,16 +221,27 @@ def _enumerate_package_products(
             blocked_reasons.append(status_reason)
         elif not deliverable:
             blocked_reasons.append("package_not_deliverable")
+        package_reconciliation_id = record.get("reconciliation_record_id")
+        # The session reconciliation record (unique per session) anchors every output
+        # package; surface its authoritative status only when the package actually
+        # references it, otherwise report None rather than implying a link.
+        linked_reconciliation_status = (
+            reconciliation_status
+            if reconciliation_record_id is not None
+            and package_reconciliation_id == reconciliation_record_id
+            else None
+        )
         products.append(
             {
                 "product_id": f"layer3_output_package:{output_package_id}",
                 "product_kind": _OUTPUT_PACKAGE_KIND,
                 "package_kind": record.get("package_kind"),
                 "lifecycle_status": status,
+                "reconciliation_status": linked_reconciliation_status,
                 "payload_hash": record.get("payload_hash"),
                 "source_refs": {
                     "output_package_id": output_package_id,
-                    "reconciliation_record_id": record.get("reconciliation_record_id"),
+                    "reconciliation_record_id": package_reconciliation_id,
                 },
                 # package_eligible is intentionally elided: a materialized output package
                 # IS the package, so only downstream handoff/delivery eligibility applies.
@@ -267,6 +281,7 @@ def analysis_product_inventory_projection(
     analysis_environment_projection: dict[str, Any],
     execution_result_review: dict[str, Any],
     output_package_products: list[Any] | None = None,
+    reconciliation: dict[str, Any] | None = None,
     current_gate: str,
 ) -> dict[str, Any]:
     """Read-only unified inventory of derived Sublayer 3C analysis products for a session.
@@ -298,6 +313,7 @@ def analysis_product_inventory_projection(
 
     package_authority = _as_dict(environment.get("package_authority"))
     session_eligibility = _session_eligibility(package_authority)
+    reconciliation_input = _as_dict(reconciliation)
     # execution_result_review is persisted per-session (session.summary_json), not per
     # pass-run, so it is surfaced as a session-level signal rather than misattributed
     # onto each individual product.
@@ -316,6 +332,7 @@ def analysis_product_inventory_projection(
         package_products = _enumerate_package_products(
             output_package_products=package_product_inputs,
             session_eligibility=session_eligibility,
+            reconciliation=reconciliation_input,
         )
 
     if blocked_reasons:
@@ -337,6 +354,12 @@ def analysis_product_inventory_projection(
         "package_product_count": len(package_products),
         "package_products": package_products,
         "package_rollup": _package_rollup(package_products),
+        "reconciliation": {
+            "present": bool(reconciliation_input),
+            "reconciliation_record_id": reconciliation_input.get("reconciliation_record_id"),
+            "status": reconciliation_input.get("status"),
+            "package_status": reconciliation_input.get("package_status"),
+        },
         "downstream_eligibility": {
             "package_eligible": session_eligibility["package_eligible"],
             "handoff_eligible": session_eligibility["handoff_eligible"],

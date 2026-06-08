@@ -57,6 +57,7 @@ def _projection(
     environment: dict[str, Any] | None = None,
     execution_result_review: dict[str, Any] | None = None,
     output_package_products: list[dict[str, Any]] | None = None,
+    reconciliation: dict[str, Any] | None = None,
     current_gate: str = "gate_c",
 ) -> dict[str, Any]:
     return analysis_product_inventory_projection(
@@ -64,6 +65,7 @@ def _projection(
         analysis_environment_projection=environment if environment is not None else _env(),
         execution_result_review=execution_result_review if execution_result_review is not None else {},
         output_package_products=output_package_products,
+        reconciliation=reconciliation,
         current_gate=current_gate,
     )
 
@@ -431,6 +433,41 @@ def test_inventory_blocked_sublayer_suppresses_package_products() -> None:
     assert projection["inventory_state"] == "blocked"
     assert projection["package_products"] == []
     assert projection["package_product_count"] == 0
+
+
+def test_inventory_reconciliation_block_absent_by_default() -> None:
+    projection = _projection()
+
+    assert projection["reconciliation"] == {
+        "present": False,
+        "reconciliation_record_id": None,
+        "status": None,
+        "package_status": None,
+    }
+
+
+def test_inventory_surfaces_reconciliation_status_for_linked_packages() -> None:
+    reconciliation = {
+        "reconciliation_record_id": "recon-1",
+        "status": "reconciled_with_warnings",
+        "package_status": "package_complete_with_warnings",
+    }
+    packages = [
+        _package_input("pkg-1", package_kind="canonical_internal", status="package_complete", reconciliation_record_id="recon-1"),
+        _package_input("pkg-2", package_kind="user_facing", status="package_complete", reconciliation_record_id="recon-other"),
+    ]
+
+    projection = _projection(output_package_products=packages, reconciliation=reconciliation)
+
+    assert projection["reconciliation"] == {
+        "present": True,
+        "reconciliation_record_id": "recon-1",
+        "status": "reconciled_with_warnings",
+        "package_status": "package_complete_with_warnings",
+    }
+    by_id = {product["product_id"]: product for product in projection["package_products"]}
+    assert by_id["layer3_output_package:pkg-1"]["reconciliation_status"] == "reconciled_with_warnings"
+    assert by_id["layer3_output_package:pkg-2"]["reconciliation_status"] is None
 
 
 def test_inventory_surfaces_review_state_at_session_level_not_per_product() -> None:
