@@ -2810,6 +2810,9 @@ def test_layer3_analysis_product_inventory_projection_rendered_reader_is_bounded
     assert "data-product-class=" in render_slice
     assert "renderMockupAnalysisProductInventoryProjection(active)" in js.text
     assert "dataset.readOnly = 'true'" in render_slice
+    # Safe ids and content/basis hashes (source_refs, provenance, payload_hash) are
+    # intentionally surfaced in the per-product drill-down. Raw server-local refs/paths,
+    # URLs, credentials, and any write/dispatch path remain forbidden.
     for forbidden in (
         "postJson(",
         "getJson(",
@@ -2819,9 +2822,6 @@ def test_layer3_analysis_product_inventory_projection_rendered_reader_is_bounded
         "public_url",
         "signed_url",
         "payload_ref",
-        "payload_hash",
-        "source_refs",
-        "provenance",
         "output_payload_available",
         "connector_run_id",
         "destination_id",
@@ -2834,9 +2834,21 @@ def test_layer3_analysis_product_inventory_projection_rendered_reader_is_bounded
     ):
         assert forbidden not in reader_block
 
+    # Per-product drill-down: native <details> disclosure (no JS handlers) exposing
+    # safe source refs / basis hashes. Assert both product-class branches render so a
+    # dropped branch is caught: pass-run provenance + package basis hash.
+    assert "<details" in reader_block
+    assert "<summary>" in reader_block
+    assert "mockup-analysis-product-detail-grid" in reader_block
+    assert "source_refs" in reader_block
+    assert "material_snapshot_ids" in reader_block
+    assert "source_basis_hashes" in reader_block
+    assert "payload_hash" in reader_block
+
     assert ".mockup-analysis-product-inventory-projection" in css.text
     assert ".mockup-analysis-product-inventory-projection-head" in css.text
     assert ".mockup-analysis-product-list" in css.text
+    assert ".mockup-analysis-product-detail-grid" in css.text
 
 
 def test_layer3_mockup_execution_lanes_projection_reader_is_bounded() -> None:
