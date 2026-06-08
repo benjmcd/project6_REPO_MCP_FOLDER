@@ -1376,6 +1376,11 @@ const elements = {
     apPromoteReason: document.getElementById('ap-promote-reason'),
     apPromoteNotes: document.getElementById('ap-promote-notes'),
     apPromoteSubmit: document.getElementById('ap-promote-submit'),
+    workingSetBandList: document.getElementById('working-set-band-list'),
+    wsCreateForm: document.getElementById('ws-create-form'),
+    wsCreateName: document.getElementById('ws-create-name'),
+    wsCreateMembers: document.getElementById('ws-create-members'),
+    wsCreateSubmit: document.getElementById('ws-create-submit'),
 };
 
 const systemThemeQuery = typeof window.matchMedia === 'function'
@@ -26364,6 +26369,7 @@ function renderAll() {
     setGateControls();
     renderOperationsDock();
     renderAnalysisProductBandPanel();
+    renderWorkingSetBandPanel();
 }
 
 function executionSelectionPayload() {
@@ -30394,6 +30400,165 @@ function renderAnalysisProductBandPanel() {
     }
 }
 
+function workingSetCreatePayload() {
+    const checkedBoxes = elements.wsCreateMembers
+        ? Array.from(elements.wsCreateMembers.querySelectorAll('input[type="checkbox"]:checked'))
+        : [];
+    const members = checkedBoxes.map((cb) => ({
+        ref_kind: cb.dataset.refKind,
+        ref_id: cb.dataset.refId,
+    }));
+    return {
+        session_id: currentSessionId(),
+        client_request_id: requestId(),
+        name: elements.wsCreateName ? elements.wsCreateName.value.trim() : '',
+        members,
+    };
+}
+
+async function submitWorkingSet(event) {
+    event.preventDefault();
+    if (!currentSessionId()) return;
+    const payload = workingSetCreatePayload();
+    if (!payload.name) {
+        addEvent('Working set name is required.');
+        return;
+    }
+    if (!payload.members.length) {
+        addEvent('At least one member must be selected.');
+        return;
+    }
+    State.workingSetCreatePending = true;
+    setBusy(elements.wsCreateSubmit, true, 'Create Working Set');
+    renderAll();
+    try {
+        State.workingSetCreate = await postJson('/working-set', payload);
+        State.sessionSummary = await getJson('/session/' + encodeURIComponent(currentSessionId()));
+        addEvent('Working set created.');
+        renderAll();
+    } catch (error) {
+        State.workingSetCreateError = error.payload || { message: error.message };
+        addEvent('Working set blocked: ' + error.message);
+        renderAll();
+    } finally {
+        State.workingSetCreatePending = false;
+        setBusy(elements.wsCreateSubmit, false, 'Create Working Set');
+        renderAll();
+    }
+}
+
+function renderWorkingSetBandPanel() {
+    const sessionId = currentSessionId();
+    const allControls = [
+        elements.wsCreateName,
+        elements.wsCreateSubmit,
+    ];
+    if (!sessionId) {
+        allControls.forEach((el) => { if (el) el.disabled = true; });
+        if (elements.workingSetBandList) {
+            elements.workingSetBandList.innerHTML = '<div class="empty-panel">No session loaded. Load a session to manage working sets.</div>';
+        }
+        if (elements.wsCreateMembers) {
+            elements.wsCreateMembers.innerHTML = '';
+        }
+        return;
+    }
+    allControls.forEach((el) => { if (el) el.disabled = false; });
+    if (elements.wsCreateSubmit) elements.wsCreateSubmit.disabled = !!State.workingSetCreatePending;
+
+    const sublayerViz = State.sessionSummary?.sublayer_visualization || {};
+    const projection = State.sessionSummary?.analysis_product_inventory_projection || {};
+
+    const candidateGroups = [
+        {
+            label: 'Material snapshots',
+            items: (sublayerViz.material_objects || []).map((m) => ({
+                refKind: 'material_snapshot',
+                refId: m.material_snapshot_id,
+                label: m.material_snapshot_id,
+            })),
+        },
+        {
+            label: 'Pass runs',
+            items: (sublayerViz.pass_runs || []).map((r) => ({
+                refKind: 'pass_run',
+                refId: r.pass_run_id,
+                label: r.pass_run_id,
+            })),
+        },
+        {
+            label: 'Analysis sets',
+            items: (sublayerViz.analysis_sets || []).map((s) => ({
+                refKind: 'analysis_set',
+                refId: s.analysis_set_id,
+                label: s.analysis_set_id,
+            })),
+        },
+        {
+            label: 'Output packages',
+            items: (projection.package_products || []).map((p) => ({
+                refKind: 'output_package',
+                refId: p.product_id.replace(/^layer3_output_package:/, ''),
+                label: p.product_id.replace(/^layer3_output_package:/, ''),
+            })),
+        },
+        {
+            label: 'Prior analyst products',
+            items: (projection.analyst_products || []).map((p) => ({
+                refKind: 'prior_product',
+                refId: p.product_id.replace(/^layer3_analyst_product:/, ''),
+                label: p.product_id.replace(/^layer3_analyst_product:/, ''),
+            })),
+        },
+    ];
+
+    if (elements.wsCreateMembers) {
+        elements.wsCreateMembers.innerHTML = '';
+        let anyItems = false;
+        candidateGroups.forEach((group) => {
+            if (!group.items.length) return;
+            anyItems = true;
+            const groupLabel = document.createElement('div');
+            groupLabel.className = 'ws-member-group-label';
+            groupLabel.textContent = group.label;
+            elements.wsCreateMembers.appendChild(groupLabel);
+            group.items.forEach((item) => {
+                const wrapper = document.createElement('label');
+                wrapper.className = 'ws-member-item';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.dataset.refKind = item.refKind;
+                cb.dataset.refId = item.refId;
+                const span = document.createElement('span');
+                span.textContent = item.label;
+                wrapper.appendChild(cb);
+                wrapper.appendChild(span);
+                elements.wsCreateMembers.appendChild(wrapper);
+            });
+        });
+        if (!anyItems) {
+            const empty = document.createElement('div');
+            empty.className = 'empty-panel';
+            empty.textContent = 'No candidate members available in this session.';
+            elements.wsCreateMembers.appendChild(empty);
+        }
+    }
+
+    const workingSets = projection.working_sets || [];
+    if (elements.workingSetBandList) {
+        if (!workingSets.length) {
+            elements.workingSetBandList.innerHTML = '<div class="empty-panel">No working sets in this session yet.</div>';
+        } else {
+            const rows = workingSets.map((ws) => {
+                const name = escapeHtml(ws.name || '—');
+                const count = escapeHtml(String(ws.member_count ?? '?'));
+                return `<div class="ws-row"><span class="ws-name">${name}</span><span class="ws-count">${count} member(s)</span></div>`;
+            }).join('');
+            elements.workingSetBandList.innerHTML = `<div class="ws-list">${rows}</div>`;
+        }
+    }
+}
+
 if (elements.themeSelector) {
     applyThemePreference(State.themePreference, { persist: false });
     elements.themeSelector.addEventListener('change', (event) => applyThemePreference(event.target.value));
@@ -31233,6 +31398,7 @@ if (elements.apAuthorForm) { elements.apAuthorForm.addEventListener('submit', su
 if (elements.apGenerateForm) { elements.apGenerateForm.addEventListener('submit', generateAnalysisProduct); }
 if (elements.apPromoteForm) { elements.apPromoteForm.addEventListener('submit', submitAnalysisProductTransition); }
 if (elements.apPromoteIntent) { elements.apPromoteIntent.addEventListener('change', () => renderAnalysisProductBandPanel()); }
+if (elements.wsCreateForm) { elements.wsCreateForm.addEventListener('submit', submitWorkingSet); }
 
 init();
 

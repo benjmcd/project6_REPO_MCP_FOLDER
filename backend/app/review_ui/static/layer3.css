@@ -5909,3 +5909,65 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
     color: var(--muted);
     white-space: nowrap;
 }
+
+#working-set-band-list {
+    min-height: 2rem;
+}
+
+.ws-list {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.ws-row {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) auto;
+    gap: 0.5rem;
+    align-items: baseline;
+    font-size: 0.88rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.25rem;
+    background: var(--pane-bg, rgba(0,0,0,0.04));
+}
+
+.ws-name {
+    font-family: monospace;
+    word-break: break-all;
+}
+
+.ws-count {
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.ws-member-picker {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    background: var(--pane-bg, rgba(0,0,0,0.04));
+    max-height: 16rem;
+    overflow-y: auto;
+}
+
+.ws-member-group-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 0.4rem;
+}
+
+.ws-member-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    font-size: 0.88rem;
+    cursor: pointer;
+}
+
+.ws-member-item span {
+    font-family: monospace;
+    word-break: break-all;
+}

@@ -3424,6 +3424,73 @@ def test_layer3_3c_analysis_product_controls_are_bounded() -> None:
     assert "postJson(" not in mockup_reader_block
 
 
+def test_layer3_3c_working_set_create_control_is_bounded() -> None:
+    html = client.get("/review/layer3")
+    js = client.get("/review/layer3/static/layer3.js")
+    js_text = js.text.replace("\r\n", "\n")
+
+    assert html.status_code == 200
+    assert js.status_code == 200
+
+    # HTML structural assertions
+    assert 'id="ws-create-form"' in html.text
+    assert 'id="ws-create-members"' in html.text
+    assert 'id="ws-create-submit"' in html.text
+
+    # Handler route path assertion
+    assert "'/working-set'" in js_text
+
+    # Locate the payload function and handler by function markers
+    payload_start = js_text.find("function workingSetCreatePayload()")
+    handler_start = js_text.find("async function submitWorkingSet(")
+    render_start = js_text.find("function renderWorkingSetBandPanel()")
+
+    assert payload_start != -1
+    assert handler_start != -1
+    assert render_start != -1
+
+    payload_slice = js_text[payload_start:handler_start]
+
+    # Required envelope fields must be present in the payload function
+    assert "client_request_id: requestId()" in payload_slice
+    assert "session_id: currentSessionId()" in payload_slice
+    assert "name" in payload_slice
+    assert "members" in payload_slice
+
+    # Forbidden terms must not appear in the payload function
+    forbidden_terms = (
+        "working_set_id",
+        "basis_hash",
+        "member_count",
+        "payload_refs",
+        "raw_payload_path",
+        "local_file_path",
+        "download_url",
+        "public_url",
+        "signed_url",
+        "connector_run_id",
+        "destination_id",
+        "provider_credentials",
+        "localStorage",
+        "sessionStorage",
+        "executor_type",
+        "lifecycle_status",
+        "analysis_product_id",
+        "to_status",
+        "from_status",
+    )
+    for forbidden in forbidden_terms:
+        assert forbidden not in payload_slice, f"Forbidden term '{forbidden}' found in workingSetCreatePayload slice"
+
+    # The mockup read-only projection block must not contain write calls
+    mockup_render_start = js_text.find("function renderMockupAnalysisProductInventoryProjection")
+    mockup_render_end = js_text.find("function mockupOutputReviewPackageHandoffServerSources")
+    assert mockup_render_start != -1
+    assert mockup_render_end != -1
+    mockup_reader_block = js_text[mockup_render_start:mockup_render_end]
+    assert "postJson(" not in mockup_reader_block
+
+
 def test_layer3_shell_does_not_remove_adjacent_review_pages() -> None:
     assert client.get("/review/nrc-aps").status_code == 200
     assert client.get("/review/nrc-aps/workbench-compare").status_code == 200

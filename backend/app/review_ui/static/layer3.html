@@ -871,6 +871,24 @@
                 </form>
             </section>
 
+            <section id="working-set-band" class="workband" data-rendered-mode="rendered_3c_working_set_control" aria-label="3C working set operator controls">
+                <div class="section-heading">
+                    <div>
+                        <h2>3C Working Sets</h2>
+                        <span class="status-pill preview">Create / Manage</span>
+                    </div>
+                </div>
+                <div id="working-set-band-list" aria-live="polite"></div>
+                <form id="ws-create-form" class="result-review-form">
+                    <div class="result-review-controls" aria-label="Create working set">
+                        <label for="ws-create-name">Name</label>
+                        <input id="ws-create-name" type="text" autocomplete="off" placeholder="Working set name" disabled>
+                        <div id="ws-create-members" class="ws-member-picker" aria-label="Working set member candidates"></div>
+                        <button id="ws-create-submit" class="primary-btn" type="submit" disabled>Create Working Set</button>
+                    </div>
+                </form>
+            </section>
+
             <section id="handoff-export-band" class="workband handoff-export-band" aria-labelledby="handoff-export-heading" tabindex="-1">
                 <div class="section-heading">
                     <div>
