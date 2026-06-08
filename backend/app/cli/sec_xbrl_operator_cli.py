@@ -186,14 +186,6 @@ def _print_error_and_exit(status_code: int, body: dict) -> None:
     sys.exit(1)
 
 
-def _safe_get(obj: object, *keys: str) -> object:
-    for k in keys:
-        if not isinstance(obj, dict):
-            return None
-        obj = obj.get(k)  # type: ignore[assignment]
-    return obj
-
-
 # ---------------------------------------------------------------------------
 # Subcommand: open
 # ---------------------------------------------------------------------------
