@@ -3347,6 +3347,83 @@ def test_layer3_legacy_arelle_value_reveal_rendered_ui_is_disabled() -> None:
     )
 
 
+def test_layer3_3c_analysis_product_controls_are_bounded() -> None:
+    html = client.get("/review/layer3")
+    js = client.get("/review/layer3/static/layer3.js")
+    js_text = js.text.replace("\r\n", "\n")
+
+    assert html.status_code == 200
+    assert js.status_code == 200
+
+    # HTML structural assertions
+    assert 'id="analysis-product-band"' in html.text
+    assert 'data-rendered-mode="rendered_3c_analysis_product_control"' in html.text
+    assert 'id="ap-author-form"' in html.text
+    assert 'id="ap-generate-form"' in html.text
+    assert 'id="ap-promote-form"' in html.text
+
+    # Handler route path assertions
+    assert "'/analysis-product/draft'" in js_text
+    assert "'/analysis-product/generate'" in js_text
+    assert "'/transition'" in js_text
+
+    # Slice and assert the three payload functions
+    draft_start = js_text.find("function analysisProductDraftPayload()")
+    generate_start = js_text.find("function analysisProductGeneratePayload()")
+    transition_start = js_text.find("function analysisProductTransitionPayload()")
+    draft_handler_start = js_text.find("async function submitAnalysisProductDraft(")
+    generate_handler_start = js_text.find("async function generateAnalysisProduct(")
+    transition_handler_start = js_text.find("async function submitAnalysisProductTransition(")
+
+    assert draft_start != -1
+    assert generate_start != -1
+    assert transition_start != -1
+    assert draft_handler_start != -1
+    assert generate_handler_start != -1
+    assert transition_handler_start != -1
+
+    draft_payload_slice = js_text[draft_start:generate_start]
+    generate_payload_slice = js_text[generate_start:transition_start]
+    transition_payload_slice = js_text[transition_start:draft_handler_start]
+
+    # Each payload function must include the required envelope fields
+    for payload_slice in (draft_payload_slice, generate_payload_slice, transition_payload_slice):
+        assert "client_request_id: requestId()" in payload_slice
+        assert "session_id: currentSessionId()" in payload_slice
+
+    # Forbidden terms must not appear in any payload function
+    forbidden_terms = (
+        "payload_refs",
+        "raw_payload_path",
+        "local_file_path",
+        "download_url",
+        "public_url",
+        "signed_url",
+        "connector_run_id",
+        "destination_id",
+        "provider_credentials",
+        "localStorage",
+        "sessionStorage",
+        "executor_type",
+        "lifecycle_status",
+        "analysis_product_id",
+        "basis_hash",
+        "to_status",
+        "from_status",
+    )
+    for payload_slice in (draft_payload_slice, generate_payload_slice, transition_payload_slice):
+        for forbidden in forbidden_terms:
+            assert forbidden not in payload_slice, f"Forbidden term '{forbidden}' found in payload slice"
+
+    # The mockup read-only projection block must not contain write calls
+    mockup_render_start = js_text.find("function renderMockupAnalysisProductInventoryProjection")
+    mockup_render_end = js_text.find("function mockupOutputReviewPackageHandoffServerSources")
+    assert mockup_render_start != -1
+    assert mockup_render_end != -1
+    mockup_reader_block = js_text[mockup_render_start:mockup_render_end]
+    assert "postJson(" not in mockup_reader_block
+
+
 def test_layer3_shell_does_not_remove_adjacent_review_pages() -> None:
     assert client.get("/review/nrc-aps").status_code == 200
     assert client.get("/review/nrc-aps/workbench-compare").status_code == 200

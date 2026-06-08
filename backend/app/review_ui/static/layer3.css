@@ -5872,3 +5872,40 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
         grid-template-columns: 1fr;
     }
 }
+
+#analysis-product-band {
+    display: grid;
+    gap: 1rem;
+}
+
+#analysis-product-band-list {
+    min-height: 2rem;
+}
+
+.analysis-product-list {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.analysis-product-row {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) auto auto auto;
+    gap: 0.5rem;
+    align-items: baseline;
+    font-size: 0.88rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.25rem;
+    background: var(--pane-bg, rgba(0,0,0,0.04));
+}
+
+.ap-id {
+    font-family: monospace;
+    word-break: break-all;
+}
+
+.ap-status,
+.ap-kind,
+.ap-executor {
+    color: var(--muted);
+    white-space: nowrap;
+}
