@@ -2042,6 +2042,11 @@ function analystProductRow(product) {
     const refsMarkup = refRows
         ? `<ul class="mockup-analyst-product-evidence-refs">${refRows}</ul>`
         : '';
+    const lrd = product?.latest_review_decision && typeof product.latest_review_decision === 'object'
+        ? product.latest_review_decision : null;
+    const decisionMarkup = lrd
+        ? `<p class="mockup-analyst-product-latest-decision">${escapeHtml(String(lrd.review_decision || ''))} / ${escapeHtml(String(lrd.decision_reason_code || ''))}</p>`
+        : '';
     return `
         <li class="mockup-analyst-product-item" data-lifecycle-status="${escapeHtml(status)}">
             <details class="mockup-analysis-product-detail">
@@ -2050,6 +2055,7 @@ function analystProductRow(product) {
                     <strong>${escapeHtml(kind)} / <span class="mockup-analyst-product-lifecycle-badge">${escapeHtml(status)}</span></strong>
                     <em>${escapeHtml(groundingLabel)} / evidence ${escapeHtml(String(evidenceCount))}</em>
                 </summary>
+                ${decisionMarkup}
                 ${refsMarkup}
             </details>
         </li>

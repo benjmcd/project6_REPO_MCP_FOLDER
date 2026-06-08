@@ -276,6 +276,27 @@ def _package_rollup(products: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+_ANALYST_PROMOTABLE_STATUSES: frozenset[str] = frozenset({"draft", "proposed", "validated", "accepted"})
+
+
+def _analyst_blocked_reasons(lifecycle_status: str) -> list[str]:
+    """Return the blocked_reasons list for an analyst product based on lifecycle_status.
+
+    Grounding is enforced authoritatively in the write-path promotion service (a draft
+    cannot be accepted while ungrounded), so this read-only projection blocks purely on
+    lifecycle state.
+    """
+    if lifecycle_status == "draft":
+        return ["draft_not_promotable"]
+    if lifecycle_status in ("proposed", "validated", "accepted"):
+        return []
+    if lifecycle_status == "rejected":
+        return ["rejected"]
+    if lifecycle_status == "package_eligible":
+        return ["package_lane_not_wired"]
+    return []
+
+
 def _enumerate_analyst_products(analyst_products: list[Any]) -> list[dict[str, Any]]:
     products: list[dict[str, Any]] = []
     for entry in _as_list(analyst_products):
@@ -292,19 +313,27 @@ def _enumerate_analyst_products(analyst_products: list[Any]) -> list[dict[str, A
             }
             for ref in (_as_dict(r) for r in evidence_refs_raw)
         ]
+        raw_status = record.get("lifecycle_status")
+        lifecycle_status = str(raw_status) if raw_status is not None else "draft"
+        promotable = lifecycle_status in _ANALYST_PROMOTABLE_STATUSES
+        blocked_reasons = _analyst_blocked_reasons(lifecycle_status)
+        # Pass through latest_review_decision from the serialized record (None if absent)
+        latest_review_decision = record.get("latest_review_decision")
         products.append(
             {
                 "product_id": f"layer3_analyst_product:{analysis_product_id}",
                 "product_kind": record.get("product_kind"),
                 "executor_type": record.get("executor_type"),
-                "lifecycle_status": record.get("lifecycle_status"),
+                "lifecycle_status": lifecycle_status,
                 "grounded": record.get("grounded"),
-                "is_non_evidentiary": record.get("is_non_evidentiary"),
-                "evidence_count": record.get("evidence_count"),
+                "is_non_evidentiary": bool(record.get("is_non_evidentiary")),
+                "evidence_count": int(record.get("evidence_count") or 0),
                 "by_evidence_role": _as_dict(record.get("by_evidence_role")),
                 "evidence_refs": bounded_refs,
                 "basis_hash": record.get("basis_hash"),
-                "blocked_reasons": ["draft_not_promotable"],
+                "promotable": promotable,
+                "blocked_reasons": blocked_reasons,
+                "latest_review_decision": latest_review_decision,
             }
         )
     return products
@@ -316,6 +345,7 @@ def _analyst_rollup(analyst_products: list[dict[str, Any]]) -> dict[str, Any]:
     by_executor_type: dict[str, int] = {}
     grounded_count = 0
     non_evidentiary_count = 0
+    package_eligible_count = 0
     for product in analyst_products:
         kind = str(product.get("product_kind") or "unknown")
         by_kind[kind] = by_kind.get(kind, 0) + 1
@@ -329,12 +359,15 @@ def _analyst_rollup(analyst_products: list[dict[str, Any]]) -> dict[str, Any]:
             grounded_count += 1
         if product.get("is_non_evidentiary"):
             non_evidentiary_count += 1
+        if status == "package_eligible":
+            package_eligible_count += 1
     return {
         "by_kind": by_kind,
         "by_lifecycle_status": by_lifecycle_status,
         "by_executor_type": by_executor_type,
         "grounded_count": grounded_count,
         "non_evidentiary_count": non_evidentiary_count,
+        "package_eligible_count": package_eligible_count,
     }
 
 

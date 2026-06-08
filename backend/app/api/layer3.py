@@ -146,6 +146,10 @@ from app.services.layer3_analysis_product_authoring import (
     Layer3AnalysisProductError,
     create_analysis_product_draft,
 )
+from app.services.layer3_analysis_product_promotion import (
+    AnalysisProductTransitionRequest,
+    transition_analysis_product,
+)
 from app.services.layer3_sublayer_state import serialize_analysis_product as _serialize_analysis_product
 
 router = APIRouter()
@@ -20074,6 +20078,87 @@ def post_analysis_product_draft(
             "basis_hash": product.basis_hash,
             "spec_hash": product.spec_hash,
             "created_at": serialized["created_at"] or "",
+            "replayed": result.replayed,
+        }
+    except Layer3AnalysisProductError as exc:
+        db.rollback()
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+# ---------------------------------------------------------------------------
+# Analysis-product promotion — 3C Review/Promotion
+# ---------------------------------------------------------------------------
+
+ANALYSIS_PRODUCT_TRANSITION_SCHEMA_ID = "layer3.analysis_product_promotion.v1"
+
+
+class Layer3AnalysisProductTransitionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    session_id: str = Field(min_length=1)
+    client_request_id: str = Field(min_length=1)
+    decision_intent: str = Field(min_length=1)
+    decision_reason_code: str = Field(min_length=1)
+    operator_identity: str | None = None
+    decision_notes: str | None = None
+    decision_provenance: dict[str, Any] | None = None
+
+
+class Layer3AnalysisProductTransitionResponse(Layer3BaseResponse):
+    analysis_product_id: str
+    session_id: str
+    from_status: str
+    lifecycle_status: str
+    review_decision: str
+    decision_reason_code: str
+    grounding_asserted: bool
+    decision_basis_hash: str
+    analysis_product_review_decision_id: str
+    created_at: str
+    replayed: bool
+
+
+@router.post(
+    "/analysis-product/{analysis_product_id}/transition",
+    response_model=Layer3AnalysisProductTransitionResponse,
+    status_code=201,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_analysis_product_transition(
+    analysis_product_id: str,
+    payload: Layer3AnalysisProductTransitionRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    request = AnalysisProductTransitionRequest(
+        decision_intent=payload.decision_intent,
+        decision_reason_code=payload.decision_reason_code,
+        operator_identity=payload.operator_identity,
+        decision_notes=payload.decision_notes,
+        decision_provenance=payload.decision_provenance,
+    )
+    try:
+        result = transition_analysis_product(
+            db,
+            session_id=payload.session_id,
+            analysis_product_id=analysis_product_id,
+            client_request_id=payload.client_request_id,
+            request=request,
+        )
+        db.commit()
+        decision = result.decision
+        product = result.product
+        return {
+            **base_response(ANALYSIS_PRODUCT_TRANSITION_SCHEMA_ID),
+            "analysis_product_id": product.analysis_product_id,
+            "session_id": product.session_id,
+            "from_status": decision.from_status,
+            "lifecycle_status": product.lifecycle_status,
+            "review_decision": decision.review_decision,
+            "decision_reason_code": decision.decision_reason_code,
+            "grounding_asserted": bool(decision.grounding_asserted),
+            "decision_basis_hash": decision.decision_basis_hash,
+            "analysis_product_review_decision_id": decision.analysis_product_review_decision_id,
+            "created_at": decision.created_at.isoformat() if decision.created_at is not None else "",
             "replayed": result.replayed,
         }
     except Layer3AnalysisProductError as exc:

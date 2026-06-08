@@ -36679,3 +36679,177 @@ def test_layer3_api_gate_c_override_rejects_unknown_fields_before_unavailable_re
 
     assert response.status_code == 422
     assert response.json()["detail"]
+
+
+# ---------------------------------------------------------------------------
+# Analysis-product transition route — 3C Review/Promotion
+# ---------------------------------------------------------------------------
+
+
+def test_layer3_api_analysis_product_transition_extra_forbid_rejects_server_fields(
+    client: TestClient,
+) -> None:
+    """extra='forbid': client may not supply to_status or lifecycle_status."""
+    for forbidden_field in ("to_status", "lifecycle_status"):
+        resp = client.post(
+            "/api/v1/layer3/analysis-product/nonexistent-id/transition",
+            json={
+                "session_id": "s1",
+                "client_request_id": "cr1",
+                "decision_intent": "promote",
+                "decision_reason_code": "proposed_ready",
+                forbidden_field: "proposed",
+            },
+        )
+        assert resp.status_code == 422, f"expected 422 for {forbidden_field}, got {resp.status_code}"
+
+
+def test_layer3_api_analysis_product_transition_happy_201(
+    client: TestClient, tmp_path
+) -> None:
+    """Author a draft via the draft route then POST transition promote -> 201 proposed."""
+    session_id = _construct_quant_package_set(client, tmp_path, request_id="api-3c-transition-happy")[0]
+    summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    snap_id = summary["sublayer_visualization"]["material_objects"][0]["material_snapshot_id"]
+
+    # Author a grounded draft
+    draft_resp = client.post(
+        "/api/v1/layer3/analysis-product/draft",
+        json={
+            "session_id": session_id,
+            "client_request_id": "transition-draft-1",
+            "product_kind": "finding",
+            "title": "Transition test finding",
+            "body": "Finding body for transition test.",
+            "evidence": [{"ref_kind": "material_snapshot", "ref_id": snap_id, "evidence_role": "observation"}],
+        },
+    )
+    assert draft_resp.status_code == 201, draft_resp.text
+    product_id = draft_resp.json()["analysis_product_id"]
+
+    # Promote draft -> proposed
+    trans_resp = client.post(
+        f"/api/v1/layer3/analysis-product/{product_id}/transition",
+        json={
+            "session_id": session_id,
+            "client_request_id": "transition-promote-1",
+            "decision_intent": "promote",
+            "decision_reason_code": "proposed_ready",
+        },
+    )
+    assert trans_resp.status_code == 201, trans_resp.text
+    body = trans_resp.json()
+    assert body["lifecycle_status"] == "proposed"
+    assert body["from_status"] == "draft"
+    assert body["review_decision"] == "promote"
+    assert body["decision_reason_code"] == "proposed_ready"
+    assert body["grounding_asserted"] is False
+    assert body["replayed"] is False
+    assert body["analysis_product_id"] == product_id
+    assert body["decision_basis_hash"]
+    assert body["analysis_product_review_decision_id"]
+    assert body["created_at"]
+
+
+def test_layer3_api_analysis_product_transition_invalid_intent_returns_400(
+    client: TestClient, tmp_path
+) -> None:
+    """Invalid decision_intent -> 400 error envelope."""
+    session_id = _construct_quant_package_set(client, tmp_path, request_id="api-3c-transition-bad-intent")[0]
+    summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    snap_id = summary["sublayer_visualization"]["material_objects"][0]["material_snapshot_id"]
+
+    draft_resp = client.post(
+        "/api/v1/layer3/analysis-product/draft",
+        json={
+            "session_id": session_id,
+            "client_request_id": "transition-bad-intent-draft",
+            "product_kind": "finding",
+            "title": "Bad intent test finding",
+            "body": "Finding body.",
+            "evidence": [{"ref_kind": "material_snapshot", "ref_id": snap_id, "evidence_role": "observation"}],
+        },
+    )
+    assert draft_resp.status_code == 201
+    product_id = draft_resp.json()["analysis_product_id"]
+
+    resp = client.post(
+        f"/api/v1/layer3/analysis-product/{product_id}/transition",
+        json={
+            "session_id": session_id,
+            "client_request_id": "transition-bad-intent-req",
+            "decision_intent": "fly_away",
+            "decision_reason_code": "proposed_ready",
+        },
+    )
+    assert resp.status_code == 400
+    err = resp.json()
+    assert err["error_code"] == "invalid_decision_intent"
+
+
+def test_layer3_api_analysis_product_transition_nonexistent_product_returns_404(
+    client: TestClient, tmp_path
+) -> None:
+    """Nonexistent analysis_product_id -> 404 error envelope."""
+    session_id = _construct_quant_package_set(client, tmp_path, request_id="api-3c-transition-404")[0]
+
+    resp = client.post(
+        "/api/v1/layer3/analysis-product/nonexistent-product-xyz/transition",
+        json={
+            "session_id": session_id,
+            "client_request_id": "transition-404-req",
+            "decision_intent": "promote",
+            "decision_reason_code": "proposed_ready",
+        },
+    )
+    assert resp.status_code == 404
+    err = resp.json()
+    assert err["error_code"] == "product_not_found"
+
+
+def test_layer3_api_analysis_product_transition_and_session_summary(
+    client: TestClient, tmp_path
+) -> None:
+    """Author draft -> POST transition promote -> GET session summary shows proposed + updated blocked_reasons."""
+    session_id = _construct_quant_package_set(client, tmp_path, request_id="api-3c-transition-summary")[0]
+    summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    snap_id = summary["sublayer_visualization"]["material_objects"][0]["material_snapshot_id"]
+
+    draft_resp = client.post(
+        "/api/v1/layer3/analysis-product/draft",
+        json={
+            "session_id": session_id,
+            "client_request_id": "transition-summary-draft",
+            "product_kind": "finding",
+            "title": "Summary transition test finding",
+            "body": "Finding body for summary test.",
+            "evidence": [{"ref_kind": "material_snapshot", "ref_id": snap_id, "evidence_role": "observation"}],
+        },
+    )
+    assert draft_resp.status_code == 201
+    product_id = draft_resp.json()["analysis_product_id"]
+
+    trans_resp = client.post(
+        f"/api/v1/layer3/analysis-product/{product_id}/transition",
+        json={
+            "session_id": session_id,
+            "client_request_id": "transition-summary-promote",
+            "decision_intent": "promote",
+            "decision_reason_code": "proposed_ready",
+        },
+    )
+    assert trans_resp.status_code == 201
+
+    updated_summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    inv = updated_summary["analysis_product_inventory_projection"]
+    ap = next(
+        p for p in inv["analyst_products"]
+        if p["product_id"] == f"layer3_analyst_product:{product_id}"
+    )
+    assert ap["lifecycle_status"] == "proposed"
+    assert ap["blocked_reasons"] == []
+    assert ap["promotable"] is True
+    assert ap["latest_review_decision"] is not None
+    assert ap["latest_review_decision"]["review_decision"] == "promote"
+    assert ap["latest_review_decision"]["from_status"] == "draft"
+    assert ap["latest_review_decision"]["to_status"] == "proposed"
