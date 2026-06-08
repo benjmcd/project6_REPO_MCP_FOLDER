@@ -60,6 +60,7 @@ from app.services import (
     layer3_sec_edgar_real_filing_downstream_validation,
     layer3_sec_edgar_repeatability_trial,
     layer3_sec_edgar_source_acquisition,
+    layer3_sec_xbrl_admission_status,
     layer3_sec_xbrl_auth_binding,
     layer3_sec_xbrl_controlled_value_reveal_submit,
     layer3_sec_xbrl_in_app_auth_policy,
@@ -1231,6 +1232,28 @@ class Layer3SecXbrlOperatorReviewWorkflowStatusRequest(BaseModel):
     operator_decision: Literal["inspect_sec_xbrl_operator_review_workflow_status"]
     sec_xbrl_operator_review_workflow_id: str | None = Field(default=None, min_length=1)
     workflow_basis_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    operator_role: Literal["owner", "auditor"] | None = Field(default=None)
+
+
+class Layer3SecXbrlProductionAdmissionStatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    admission_status_mode: Literal["sec_xbrl_production_admission_status_v1"]
+    operator_decision: Literal["inspect_sec_xbrl_production_admission_status"]
+    sec_xbrl_operator_review_workflow_id: str | None = Field(default=None, min_length=1)
+    workflow_basis_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    operator_role: Literal["owner", "auditor"] | None = Field(default=None)
+
+
+class Layer3SecXbrlOperatorReviewWorkflowAuditorAttachRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    client_request_id: str = Field(min_length=1)
+    auditor_attach_mode: Literal["sec_xbrl_operator_review_workflow_auditor_attach_v1"]
+    operator_decision: Literal["attach_sec_xbrl_operator_review_auditor_read"]
+    sec_xbrl_operator_review_workflow_id: str | None = Field(default=None, min_length=1)
+    workflow_basis_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    operator_role: Literal["auditor"]  # attach is auditor-only; selector, gated server-side
 
 
 class Layer3SecXbrlOperatorReviewDecisionSubmitRequest(BaseModel):
@@ -17894,6 +17917,7 @@ def post_sec_xbrl_operator_review_workflow_status(
             request,
             payload,
             route_family=route_family,
+            requested_role=payload.operator_role or layer3_sec_xbrl_in_app_auth_policy.OWNER_ROLE,
         )
         binding = _sec_xbrl_require_binding(
             db,
@@ -17905,9 +17929,192 @@ def post_sec_xbrl_operator_review_workflow_status(
         )
         response = layer3_sec_xbrl_operator_review_workflow.inspect_redacted_operator_review_workflow_status(
             db,
-            **payload.model_dump(exclude={"status_mode", "operator_decision"}, exclude_none=True),
+            **payload.model_dump(exclude={"status_mode", "operator_decision", "operator_role"}, exclude_none=True),
         )
         return {**response, **_sec_xbrl_auth_binding_projection(binding)}
+    except (
+        layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
+        layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,
+    ) as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
+    except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
+        return _sec_xbrl_operator_review_workflow_error_response(exc)
+
+
+@router.post(
+    "/sec-xbrl/operator-review/workflow/admission-status",
+    response_model=None,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_xbrl_operator_review_workflow_admission_status(
+    payload: Layer3SecXbrlProductionAdmissionStatusRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    route_family = "sec_xbrl_operator_review_workflow_admission_status_read"
+    try:
+        policy_decision = _sec_xbrl_policy_decision(
+            request,
+            payload,
+            route_family=route_family,
+            requested_role=payload.operator_role or layer3_sec_xbrl_in_app_auth_policy.OWNER_ROLE,
+        )
+        binding = _sec_xbrl_require_binding(
+            db,
+            source_receipt_kind="operator_review_workflow",
+            source_receipt_id=payload.sec_xbrl_operator_review_workflow_id,
+            source_receipt_basis_hash=payload.workflow_basis_hash,
+            route_family=route_family,
+            policy_decision=policy_decision,
+        )
+        response = layer3_sec_xbrl_admission_status.inspect_redacted_production_admission_status(
+            db,
+            client_request_id=payload.client_request_id,
+            sec_xbrl_operator_review_workflow_id=payload.sec_xbrl_operator_review_workflow_id,
+            workflow_basis_hash=payload.workflow_basis_hash,
+            policy_decision=policy_decision,
+            auth_owner_mode=str(policy_decision.get("auth_owner_mode") or ""),
+        )
+        return {**response, **_sec_xbrl_auth_binding_projection(binding)}
+    except (
+        layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
+        layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,
+    ) as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
+    except layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError as exc:
+        return _sec_xbrl_operator_review_workflow_error_response(exc)
+
+
+@router.post(
+    "/sec-xbrl/operator-review/workflow/auditor-attach",
+    response_model=None,
+    responses=_workbench_error_responses(400, 403, 404, 409),
+)
+def post_sec_xbrl_operator_review_workflow_auditor_attach(
+    payload: Layer3SecXbrlOperatorReviewWorkflowAuditorAttachRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    """Grant a workspace-scoped, read-only auditor binding for an existing workflow.
+
+    This route mints a ``sec_xbrl_operator_review_workflow_status_read`` auth binding
+    with role ``auditor`` for the caller.  It confers NO open/write/decide/value-reveal/
+    activation power.  The caller must already have an ownership marker for the sidecar
+    hash associated with this workflow's evidence (proving workspace membership).
+
+    Honesty contract:
+    - route_family and source_kind are SERVER CONSTANTS — never taken from the payload.
+    - The sidecar_receipt_hash is resolved SERVER-SIDE by walking
+      workflow → statement_packet_set → projection_set; a caller-supplied hash is
+      NEVER accepted.
+    - Under AUTH_OWNER=none the owner/auditor distinction is a no-op (constant
+      principal) and the grant is only meaningful under AUTH_OWNER=proxy +
+      TRUSTED_PROXY_MODE=true.
+    - This route does NOT verify a distinct externally-provisioned auditor identity;
+      workspace membership (via the ownership marker) is the sole gate.
+    """
+    # SERVER CONSTANTS — never derived from payload.
+    route_family = "sec_xbrl_operator_review_workflow_status_read"
+    source_kind = "operator_review_workflow"
+    try:
+        policy_decision = _sec_xbrl_policy_decision(
+            request,
+            payload,
+            route_family=route_family,
+            requested_role="auditor",
+        )
+        # Resolve workflow SERVER-SIDE; never accept a caller-supplied sidecar hash.
+        workflow_id = str(payload.sec_xbrl_operator_review_workflow_id or "").strip() or None
+        basis_hash = str(payload.workflow_basis_hash or "").strip() or None
+        if workflow_id is None and basis_hash is None:
+            return _sec_xbrl_auth_policy_error_response(
+                layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError(
+                    "sec_xbrl_auditor_attach_workflow_anchor_missing",
+                    "SEC XBRL auditor attach requires sec_xbrl_operator_review_workflow_id or workflow_basis_hash.",
+                    http_status=400,
+                )
+            )
+        try:
+            query = db.query(layer3_sec_xbrl_operator_review_workflow.L3SecXbrlOperatorReviewWorkflow)
+            if workflow_id is not None:
+                query = query.filter(
+                    layer3_sec_xbrl_operator_review_workflow.L3SecXbrlOperatorReviewWorkflow.sec_xbrl_operator_review_workflow_id == workflow_id
+                )
+            if basis_hash is not None:
+                query = query.filter(
+                    layer3_sec_xbrl_operator_review_workflow.L3SecXbrlOperatorReviewWorkflow.workflow_basis_hash == basis_hash
+                )
+            workflow = query.one_or_none()
+        except Exception as exc:
+            return _sec_xbrl_operator_review_workflow_error_response(
+                layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError(
+                    "sec_xbrl_auditor_attach_workflow_query_failed",
+                    "SEC XBRL auditor attach: workflow query failed.",
+                    details={"detail": type(exc).__name__},
+                    http_status=404,
+                )
+            )
+        if workflow is None:
+            return _sec_xbrl_operator_review_workflow_error_response(
+                layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError(
+                    "sec_xbrl_auditor_attach_workflow_not_found",
+                    "SEC XBRL auditor attach: no workflow found for the provided identifier(s).",
+                    http_status=404,
+                )
+            )
+        packet_set = workflow.statement_packet_set
+        if packet_set is None:
+            return _sec_xbrl_operator_review_workflow_error_response(
+                layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError(
+                    "sec_xbrl_auditor_attach_packet_set_missing",
+                    "SEC XBRL auditor attach: workflow has no associated statement packet set.",
+                    http_status=404,
+                )
+            )
+        projection_set = packet_set.projection_set
+        if projection_set is None:
+            return _sec_xbrl_operator_review_workflow_error_response(
+                layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError(
+                    "sec_xbrl_auditor_attach_projection_set_missing",
+                    "SEC XBRL auditor attach: statement packet set has no associated projection set.",
+                    http_status=404,
+                )
+            )
+        resolved_sidecar_hash = str(projection_set.sidecar_receipt_hash or "").strip()
+        if not resolved_sidecar_hash:
+            return _sec_xbrl_operator_review_workflow_error_response(
+                layer3_sec_xbrl_operator_review_workflow.SecXbrlOperatorReviewWorkflowError(
+                    "sec_xbrl_auditor_attach_sidecar_hash_missing",
+                    "SEC XBRL auditor attach: projection set has no sidecar receipt hash.",
+                    http_status=404,
+                )
+            )
+        # ATTACH GATE: workspace ownership marker must exist for this sidecar.
+        # Proves the caller's workspace matches the workflow's evidence workspace.
+        layer3_sec_xbrl_auth_binding.require_sec_xbrl_evidence_ownership_marker(
+            settings.storage_dir,
+            policy_decision=policy_decision,
+            auth_owner_mode=str(policy_decision.get("auth_owner_mode") or ""),
+            sidecar_receipt_hash=resolved_sidecar_hash,
+        )
+        # RECORD: write one auditor-role status_read binding receipt.
+        # Requires only that the source receipt exists (no prior binding needed).
+        binding = _sec_xbrl_record_binding(
+            db,
+            client_request_id=payload.client_request_id,
+            source_receipt_kind=source_kind,
+            source_receipt_id=workflow.sec_xbrl_operator_review_workflow_id,
+            source_receipt_basis_hash=workflow.workflow_basis_hash,
+            route_family=route_family,
+            policy_decision=policy_decision,
+            commit=True,
+        )
+        return {
+            "sec_xbrl_operator_review_workflow_id": workflow.sec_xbrl_operator_review_workflow_id,
+            "workflow_basis_hash": workflow.workflow_basis_hash,
+            "status": workflow.review_status,
+            **_sec_xbrl_auth_binding_projection(binding),
+        }
     except (
         layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
         layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,

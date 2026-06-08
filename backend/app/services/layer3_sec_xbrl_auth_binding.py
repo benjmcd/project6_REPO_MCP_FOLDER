@@ -67,6 +67,7 @@ SOURCE_ROUTE_FAMILIES = {
     "operator_review_workflow": {
         "sec_xbrl_operator_review_workflow_open_write",
         "sec_xbrl_operator_review_workflow_status_read",
+        "sec_xbrl_operator_review_workflow_admission_status_read",
         "sec_xbrl_operator_review_decision_submit_write",
     },
     "operator_review_decision": {
@@ -87,6 +88,7 @@ SOURCE_ROUTE_FAMILIES = {
 ROUTE_ALLOWED_ROLES = {
     "sec_xbrl_operator_review_workflow_open_write": {OWNER_ROLE},
     "sec_xbrl_operator_review_workflow_status_read": {OWNER_ROLE, AUDITOR_ROLE},
+    "sec_xbrl_operator_review_workflow_admission_status_read": {OWNER_ROLE, AUDITOR_ROLE},
     "sec_xbrl_operator_review_decision_submit_write": {OWNER_ROLE},
     "sec_xbrl_operator_review_decision_status_read": {OWNER_ROLE, AUDITOR_ROLE},
     "sec_xbrl_value_reveal_authority_prepare_write": {OWNER_ROLE},
@@ -98,6 +100,11 @@ SOURCE_ROUTE_COMPATIBLE_PRIOR_BINDINGS = {
     "operator_review_workflow": {
         "sec_xbrl_operator_review_workflow_status_read": {
             "sec_xbrl_operator_review_workflow_open_write",
+            "sec_xbrl_operator_review_workflow_status_read",
+        },
+        "sec_xbrl_operator_review_workflow_admission_status_read": {
+            "sec_xbrl_operator_review_workflow_open_write",
+            "sec_xbrl_operator_review_workflow_status_read",
         },
         "sec_xbrl_operator_review_decision_submit_write": {
             "sec_xbrl_operator_review_workflow_open_write",
