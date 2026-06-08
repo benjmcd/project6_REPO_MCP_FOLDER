@@ -1678,3 +1678,177 @@ def test_full_pipeline_response_contract_shape(tmp_path, monkeypatch) -> None:
         f"Raw CIK '{cik}' leaked into the open-full-pipeline response"
     assert "320193" not in raw_json, \
         "Literal '320193' must not appear anywhere in the serialized response"
+
+
+# ---------------------------------------------------------------------------
+# Official ticker resolution flag — matrix_ciks gate tests
+# ---------------------------------------------------------------------------
+# These exercise the flag-aware matrix_ciks construction at lines 186-198 of
+# layer3_sec_xbrl_full_pipeline_orchestrator.py via prepare_full_pipeline_open_plan
+# (the function that contains the gate), mocking downstream corpus-validation so
+# each test stops precisely at or just after the matrix_ciks guard.
+
+# KO (Coca-Cola) is used as the canonical off-allow-list ticker.  Its CIK in the
+# fake company_tickers.json payload is 21344 (zero-stripped), matching _KO_CIK.
+_GATE_KO_CIK = "21344"
+_GATE_TICKERS_PAYLOAD = {
+    "0": {"cik_str": 21344, "ticker": "KO", "title": "Coca Cola Co"},
+    "1": {"cik_str": 320193, "ticker": "AAPL", "title": "Apple Inc."},
+}
+_GATE_TICKERS_RAW: bytes = json.dumps(_GATE_TICKERS_PAYLOAD).encode("utf-8")
+
+
+def _install_fake_resolution_client(monkeypatch: Any) -> None:
+    """Install a fake SEC client that returns _GATE_TICKERS_RAW + enable live-network flags."""
+    from app.services import layer3_sec_edgar_live_source_artifact as _lsa
+    from app.services.layer3_sec_edgar_live_source_artifact import (
+        SecEdgarFetchResult,
+        _reset_company_tickers_cache,
+    )
+
+    # Reset any cached state from previous tests.
+    _reset_company_tickers_cache()
+
+    class _FakeClient:
+        def fetch_complete_submission_text(self, *, url, user_agent, timeout_seconds, max_bytes):
+            return SecEdgarFetchResult(
+                status_code=200,
+                content=_GATE_TICKERS_RAW,
+                final_url="https://www.sec.gov/files/company_tickers.json",
+                complete=True,
+            )
+
+    monkeypatch.setattr(_lsa, "SEC_EDGAR_CLIENT", _FakeClient())
+    monkeypatch.setattr(settings, "layer3_sec_edgar_live_network_enabled", True)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "TestAgent contact@example.com")
+    monkeypatch.setattr(settings, "layer3_sec_edgar_max_bytes", 25_000_000)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_timeout_seconds", 20)
+    monkeypatch.setattr(_lsa, "_enforce_rate_limit", lambda: None)
+
+
+def _stub_corpus_for_gate(monkeypatch: Any, *, cik: str) -> None:
+    """Stub corpus-validation in the orchestrator namespace so the gate test
+    can pass the matrix_ciks check and then stop without side effects."""
+    connector_hash = _hash("a")
+    record = {
+        "cik_hash": _sha256(cik),
+        "form_type": "10-K",
+        "supported_degraded_blocked": "supported",
+        "authority_hashes": {
+            "fact_authority_receipt_hash": _hash("b"),
+            "statement_classification_receipt_hash": _hash("c"),
+            "arelle_sidecar_receipt_hash": _hash("b"),
+        },
+    }
+    corpus = {
+        "connector_receipt_hash": connector_hash,
+        "validation_receipt_id": "vr-gate-test",
+        "validation_receipt_hash": _sha256("gate"),
+        "filing_validation_records": [record],
+    }
+    monkeypatch.setattr(
+        orchestrator,
+        "layer3_sec_edgar_real_company_corpus_validation",
+        MagicMock(
+            validate_sec_edgar_real_company_corpus_product_path=lambda fields, db, evidence_owner=None: corpus,
+            VALIDATION_MODE=corpus_svc.VALIDATION_MODE,
+            OPERATOR_DECISION=corpus_svc.OPERATOR_DECISION,
+        ),
+    )
+
+
+# T1: flag-OFF regression — off-list ticker + that company's CIK -> 409
+def test_matrix_gate_flag_off_off_list_ticker_blocked(monkeypatch) -> None:
+    """Flag OFF: off-list ticker (KO) + KO's CIK -> 409 full_pipeline_cik_not_in_company_matrix.
+
+    Regression guard: with the flag disabled the behavior must be byte-identical to before
+    this change — KO is not in REAL_COMPANY_CIK_REFS, so its CIK is never added to
+    matrix_ciks, and the gate raises exactly as it did before.
+    """
+    monkeypatch.setattr(settings, "layer3_sec_edgar_official_ticker_resolution_enabled", False)
+    with pytest.raises(orchestrator.SecXbrlFullPipelineOrchestratorError) as exc_info:
+        orchestrator.prepare_full_pipeline_open_plan(
+            db=None,
+            fields={
+                "client_request_id": "gate-t1",
+                "cik": _GATE_KO_CIK,
+                "company_matrix": ["KO"],
+                "operator_confirmation": True,
+            },
+            evidence_owner={},
+        )
+    assert exc_info.value.error_code == "full_pipeline_cik_not_in_company_matrix"
+    assert exc_info.value.http_status == 409
+
+
+# T2: flag-OFF allow-list ticker + matching CIK -> passes gate
+def test_matrix_gate_flag_off_allow_list_ticker_passes(monkeypatch) -> None:
+    """Flag OFF: allow-list ticker (AAPL) + Apple's CIK passes the matrix_ciks gate.
+
+    Confirms the flag-OFF allow-list path is unchanged.  Corpus-validation is stubbed
+    so the test stops after the gate without live side effects.
+    """
+    monkeypatch.setattr(settings, "layer3_sec_edgar_official_ticker_resolution_enabled", False)
+    _stub_corpus_for_gate(monkeypatch, cik="320193")
+
+    # Raises only if the gate itself errors; downstream steps are stubbed.
+    plan = orchestrator.prepare_full_pipeline_open_plan(
+        db=None,
+        fields={
+            "client_request_id": "gate-t2",
+            "cik": "320193",
+            "company_matrix": ["AAPL"],
+            "operator_confirmation": True,
+        },
+        evidence_owner={},
+    )
+    assert "open_payload" in plan
+
+
+# T3: flag-ON + off-list ticker + its officially-resolved CIK -> passes gate
+def test_matrix_gate_flag_on_off_list_ticker_resolved_cik_passes(monkeypatch) -> None:
+    """Flag ON: off-list ticker KO + KO's officially-resolved CIK passes the matrix_ciks gate.
+
+    The fake SEC client returns a company_tickers.json with KO->21344.  The orchestrator
+    resolves KO to 21344 and adds it to matrix_ciks, so supplying cik='21344' passes.
+    """
+    monkeypatch.setattr(settings, "layer3_sec_edgar_official_ticker_resolution_enabled", True)
+    _install_fake_resolution_client(monkeypatch)
+    _stub_corpus_for_gate(monkeypatch, cik=_GATE_KO_CIK)
+
+    plan = orchestrator.prepare_full_pipeline_open_plan(
+        db=None,
+        fields={
+            "client_request_id": "gate-t3",
+            "cik": _GATE_KO_CIK,
+            "company_matrix": ["KO"],
+            "operator_confirmation": True,
+        },
+        evidence_owner={},
+    )
+    assert "open_payload" in plan
+
+
+# T4: flag-ON + off-list ticker + WRONG CIK -> 409 (honesty guard preserved)
+def test_matrix_gate_flag_on_off_list_ticker_wrong_cik_blocked(monkeypatch) -> None:
+    """Flag ON: off-list ticker KO + a WRONG CIK -> 409 full_pipeline_cik_not_in_company_matrix.
+
+    Proves the resolver does not weaken the pairing check: even when KO resolves to 21344,
+    supplying a different CIK (e.g. Apple's 320193) still raises the honesty guard.
+    """
+    monkeypatch.setattr(settings, "layer3_sec_edgar_official_ticker_resolution_enabled", True)
+    _install_fake_resolution_client(monkeypatch)
+
+    with pytest.raises(orchestrator.SecXbrlFullPipelineOrchestratorError) as exc_info:
+        orchestrator.prepare_full_pipeline_open_plan(
+            db=None,
+            fields={
+                "client_request_id": "gate-t4",
+                "cik": "320193",   # Apple's CIK, NOT KO's
+                "company_matrix": ["KO"],
+                "operator_confirmation": True,
+            },
+            evidence_owner={},
+        )
+    assert exc_info.value.error_code == "full_pipeline_cik_not_in_company_matrix"
+    assert exc_info.value.http_status == 409

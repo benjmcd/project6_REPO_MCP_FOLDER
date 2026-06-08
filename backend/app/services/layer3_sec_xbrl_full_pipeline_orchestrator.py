@@ -19,6 +19,7 @@ from app.services import (
     layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_xbrl_companyfacts_acquire_stage,
 )
+from app.services.layer3_sec_edgar_live_source_artifact import resolve_sec_ticker_to_cik
 from app.services.layer3_sec_xbrl_auth_binding import (
     record_sec_xbrl_evidence_ownership_marker,
 )
@@ -184,8 +185,21 @@ def prepare_full_pipeline_open_plan(
     # is not falsely rejected. The supplied (normalized) CIK must belong to a requested
     # ticker. (Hashes only in error details.)
     cik_refs = layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_CIK_REFS
-    matrix_ciks = {cik_refs.get(str(ticker or "").strip().upper()) for ticker in company_matrix}
-    matrix_ciks.discard(None)
+    official_resolution_enabled = bool(
+        getattr(settings, "layer3_sec_edgar_official_ticker_resolution_enabled", False)
+    )
+    matrix_ciks: set[str] = set()
+    for ticker in company_matrix:
+        normalized = str(ticker or "").strip().upper()
+        resolved = cik_refs.get(normalized)
+        if resolved is None and official_resolution_enabled:
+            resolution = resolve_sec_ticker_to_cik(normalized)
+            if resolution is not None:
+                # .get (not []) so a contract drift fails closed (cik stays None
+                # -> ticker not added -> pairing guard 409s) rather than 500-ing.
+                resolved = resolution.get("cik")
+        if resolved is not None:
+            matrix_ciks.add(resolved)
     if cik not in matrix_ciks:
         raise SecXbrlFullPipelineOrchestratorError(
             "full_pipeline_cik_not_in_company_matrix",
