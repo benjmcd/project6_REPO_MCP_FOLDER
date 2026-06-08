@@ -63,6 +63,7 @@ ROUTE_DECIDE = f"{_API_PREFIX}/sec-xbrl/operator-review/workflow/decision/submit
 ROUTE_PREPARE_AUTHORITY = f"{_API_PREFIX}/sec-xbrl/value-reveal/authority/prepare"
 ROUTE_REVEAL_SUBMIT = f"{_API_PREFIX}/sec-xbrl/value-reveal/submit"
 ROUTE_REVEAL_STATUS_TEMPLATE = f"{_API_PREFIX}/sec-xbrl/value-reveal/submit/status/{{receipt_id}}"
+ROUTE_POSTURE = f"{_API_PREFIX}/sec-xbrl/runtime/posture"
 
 # ---------------------------------------------------------------------------
 # Exact literal/mode values read from the request models
@@ -829,6 +830,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_revst.add_argument("--receipt-id", required=True, metavar="ID")
 
+    # -- check-posture --
+    sub.add_parser(
+        "check-posture",
+        help=(
+            "Print runtime activation state: feature flags, gated capabilities, "
+            "and operator next actions. Exit 1 if value-reveal is not enabled."
+        ),
+    )
+
     # -- run-pipeline --
     p_pipe = sub.add_parser(
         "run-pipeline",
@@ -913,6 +923,70 @@ def build_parser() -> argparse.ArgumentParser:
 # run() — entry point for tests and main()
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Subcommand: check-posture
+# ---------------------------------------------------------------------------
+
+
+def cmd_check_posture(args: argparse.Namespace, transport: Transport) -> None:
+    """Print runtime activation state; exit 1 if value-reveal is not enabled."""
+    headers = _build_auth_headers(args)
+    status_code, resp = transport.get(ROUTE_POSTURE, headers)
+    if status_code != 200:
+        _print_error_and_exit(status_code, resp)
+
+    posture = resp.get("sec_xbrl_runtime_posture") or resp
+    posture_state = posture.get("posture_state", "unknown")
+    flags = posture.get("runtime_flags") or {}
+    next_actions = posture.get("operator_next_actions") or []
+    activation_surfaces = posture.get("activation_surfaces") or []
+
+    print(f"=== sec-xbrl runtime posture ===")
+    print(f"  posture_state         : {posture_state}")
+
+    print("\n  runtime_flags:")
+    _FLAG_LABELS = {
+        "live_sec_edgar_network_enabled": "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
+        "arelle_internal_value_store_enabled": "LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED",
+        "arelle_corpus_validation_enabled": "LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED",
+        "arelle_governed_sibling_value_reveal_enabled": "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
+        "controlled_value_reveal_submit_enabled": "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
+    }
+    for key, env_var in _FLAG_LABELS.items():
+        value = flags.get(key)
+        mark = "ON " if value else "OFF"
+        print(f"    [{mark}]  {env_var}")
+
+    if activation_surfaces:
+        print("\n  activation_surfaces:")
+        for surf in activation_surfaces:
+            name = surf.get("surface") or surf.get("capability") or str(surf)
+            gated = surf.get("gated", False)
+            required = surf.get("required_flags") or []
+            status_str = "gated" if gated else "available"
+            print(f"    {name}: {status_str}")
+            for req in required:
+                print(f"      requires: {req}")
+
+    if next_actions:
+        print("\n  operator_next_actions:")
+        for action in next_actions:
+            print(f"    - {action}")
+    else:
+        print("\n  operator_next_actions: (none — path is clear)")
+
+    reveal_enabled = bool(flags.get("controlled_value_reveal_submit_enabled"))
+    if not reveal_enabled:
+        print(
+            "\nWARNING: LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED is OFF. "
+            "run-pipeline will be blocked at the reveal step.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+
+# ---------------------------------------------------------------------------
+
 _SUBCOMMAND_MAP = {
     "open": cmd_open,
     "status": cmd_status,
@@ -921,6 +995,7 @@ _SUBCOMMAND_MAP = {
     "reveal": cmd_reveal,
     "reveal-status": cmd_reveal_status,
     "run-pipeline": cmd_run_pipeline,
+    "check-posture": cmd_check_posture,
 }
 
 

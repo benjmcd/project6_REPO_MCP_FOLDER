@@ -953,6 +953,66 @@ def test_run_pipeline_stable_open_request_id() -> None:
     assert STABLE_ID in stdout, "open_request_id must be printed for operator to record"
 
 
+def test_check_posture_reveal_enabled_exit_0() -> None:
+    """check-posture exits 0 when controlled_value_reveal_submit_enabled is True."""
+    from app.cli.sec_xbrl_operator_cli import ROUTE_POSTURE
+
+    spy = SpyTransport(responses={
+        "sec-xbrl/runtime/posture": (200, {
+            "sec_xbrl_runtime_posture": {
+                "posture_state": "sec_xbrl_controlled_value_reveal_available_with_runtime_gates",
+                "runtime_flags": {
+                    "live_sec_edgar_network_enabled": True,
+                    "arelle_internal_value_store_enabled": True,
+                    "arelle_corpus_validation_enabled": True,
+                    "arelle_governed_sibling_value_reveal_enabled": True,
+                    "controlled_value_reveal_submit_enabled": True,
+                },
+                "operator_next_actions": [],
+                "activation_surfaces": [],
+            },
+        }),
+    })
+
+    exit_code, stdout, stderr = _run_cli(["check-posture"], spy)
+
+    assert exit_code == 0, f"Expected exit 0 when reveal is enabled; stderr={stderr!r}"
+    assert "controlled_value_reveal_available" in stdout or "posture_state" in stdout
+    get_calls = [c for c in spy.get_calls if "runtime/posture" in c["path"]]
+    assert len(get_calls) == 1, "Expected exactly one GET to runtime/posture"
+
+
+def test_check_posture_reveal_disabled_exit_1() -> None:
+    """check-posture exits 1 and warns when controlled_value_reveal_submit_enabled is False."""
+    spy = SpyTransport(responses={
+        "sec-xbrl/runtime/posture": (200, {
+            "sec_xbrl_runtime_posture": {
+                "posture_state": "sec_xbrl_controlled_value_reveal_submit_blocked_by_feature_flag",
+                "runtime_flags": {
+                    "live_sec_edgar_network_enabled": False,
+                    "arelle_internal_value_store_enabled": False,
+                    "arelle_corpus_validation_enabled": False,
+                    "arelle_governed_sibling_value_reveal_enabled": False,
+                    "controlled_value_reveal_submit_enabled": False,
+                },
+                "operator_next_actions": [
+                    "Set LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED=true to enable value-reveal."
+                ],
+                "activation_surfaces": [],
+            },
+        }),
+    })
+
+    exit_code, stdout, stderr = _run_cli(["check-posture"], spy)
+
+    assert exit_code != 0, "Expected nonzero exit when reveal is disabled"
+    combined = stdout + stderr
+    assert "OFF" in combined or "blocked" in combined or "disabled" in combined.lower(), \
+        "Output should indicate flags are off or path is blocked"
+    assert "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED" in combined, \
+        "Output should name the blocking flag"
+
+
 def test_cli_cik_map_matches_connector() -> None:
     """Drift guard: the CLI's embedded ticker->CIK map must stay identical to the
     connector's authoritative map. Fails loudly if the connector adds/changes a ticker."""
