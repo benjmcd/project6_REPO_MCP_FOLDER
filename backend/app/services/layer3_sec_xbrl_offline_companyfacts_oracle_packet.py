@@ -199,7 +199,6 @@ def _companyfacts_packet_ready_readiness(projection_summary: Mapping[str, Any]) 
             evidence={
                 "companyfacts_oracle_supplied": True,
                 "oracle_confirmed_count": int(projection_summary.get("oracle_confirmed_count") or 0),
-                "oracle_within_tolerance": projection_summary.get("oracle_within_tolerance"),
             },
             admission_flag_enabled=True,
         )
