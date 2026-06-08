@@ -1,0 +1,742 @@
+"""Tests for the SEC/XBRL Layer 3 operator lifecycle CLI.
+
+Uses a TestClient-backed transport adapter so the CLI exercises the real
+FastAPI routes against an in-memory SQLite database (StaticPool).
+Live network calls are monkeypatched.
+
+Test matrix:
+1. open --ticker AAPL --confirm  -> exit 0, prints workflow_id, no raw CIK (320193)
+2. open WITHOUT --confirm        -> refuses, exit nonzero, route NOT called
+3. open --ticker ZZZZ --confirm  -> unknown ticker error, exit nonzero, route not called
+4. reveal without --confirm      -> refuses, exit nonzero, value-reveal/submit NOT called
+5. decide without required flags -> argparse error, exit nonzero
+6. status happy path             -> prints status (workflow stubbed via transport spy)
+7. open->decide->prepare-authority chain (happy path with stubbed corpus)
+   + reveal request-assembly assertion (operator_reveal_confirmation=True only with --confirm)
+"""
+from __future__ import annotations
+
+import hashlib
+import io
+import json
+import os
+import sys
+import uuid
+from pathlib import Path
+from typing import Any
+from unittest.mock import MagicMock
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+os.environ.setdefault("DB_INIT_MODE", "none")
+
+BACKEND = Path(__file__).resolve().parents[1]
+if str(BACKEND) not in sys.path:
+    sys.path.insert(0, str(BACKEND))
+
+from app.core.config import bootstrap_storage_tree, settings
+from app.api.deps import get_db
+from app.db.session import Base
+from main import app
+
+from app.services import (
+    layer3_sec_xbrl_full_pipeline_orchestrator as orchestrator,
+    layer3_sec_edgar_real_company_corpus_validation as corpus_svc,
+)
+from app.services.layer3_utils import stable_hash
+from app.services.layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_contract import (
+    classification_receipt_hash_basis,
+    STATEMENT_CLASSIFICATION_MODE,
+)
+from app.services import layer3_sec_xbrl_offline_evidence_loader as loader
+
+from app.cli.sec_xbrl_operator_cli import (
+    ROUTE_OPEN,
+    ROUTE_REVEAL_SUBMIT,
+    ROUTE_STATUS,
+    run,
+)
+
+
+# ---------------------------------------------------------------------------
+# Shared hash helpers (same patterns as orchestrator test)
+# ---------------------------------------------------------------------------
+
+def _sha256(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _hash(char: str) -> str:
+    return char * 64
+
+
+def _write_json(path: Path, payload: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Evidence storage writer (replicated from orchestrator test)
+# ---------------------------------------------------------------------------
+
+def _stage_full_evidence_storage(storage: Path, *, connector_receipt_hash: str) -> dict[str, str]:
+    sidecar_hash = _hash("b")
+    sidecar_id = f"sec-edgar-arelle-resolved-fact-authority-{sidecar_hash[:24]}"
+    bridge_hash = _hash("e")
+    bridge_id = "sec-edgar-html-inline-xbrl-fact-material-bridge-" + "e" * 24
+
+    records = [
+        {
+            "resolved_fact_id": "rf-assets",
+            "concept": {"namespace": "fasb.org/us-gaap/test", "local_name": "Assets", "standard": True},
+            "unit": {"currency": "iso4217:USD", "measures": ["iso4217:USD"]},
+            "period": {"type": "instant", "instant": "2023-12-31"},
+            "dimensions": {"explicit": [], "typed": []},
+        },
+        {
+            "resolved_fact_id": "rf-revenue",
+            "concept": {"namespace": "fasb.org/us-gaap/test", "local_name": "Revenues", "standard": True},
+            "unit": {"currency": "iso4217:USD", "measures": ["iso4217:USD"]},
+            "period": {"type": "duration", "start": "2023-01-01", "end": "2023-12-31"},
+            "dimensions": {"explicit": [], "typed": []},
+        },
+    ]
+    value_records = [
+        {"resolved_fact_id": "rf-assets", "effective_value": "200"},
+        {"resolved_fact_id": "rf-revenue", "effective_value": "100"},
+    ]
+    projection = [{**r, "value_redacted": True} for r in records]
+    inventory_hash = stable_hash(projection)
+    value_store_hash = stable_hash(value_records)
+    statement_roles = [
+        {"fact_id_or_order_key": "rf-assets", "statement_candidate_role": "balance_sheet"},
+        {"fact_id_or_order_key": "rf-revenue", "statement_candidate_role": "income_statement"},
+    ]
+    cls_inv_hash = stable_hash(statement_roles)
+    sem_hash = stable_hash([])
+    cls_order_hash = stable_hash([r["fact_id_or_order_key"] for r in statement_roles])
+    group_hash = stable_hash([])
+    unclass_hash = stable_hash([])
+    diag_hash = stable_hash({})
+
+    sidecar = {
+        "schema_id": "layer3.sec_edgar_arelle_resolved_fact_authority_sidecar.v1",
+        "sidecar_receipt_id": sidecar_id,
+        "sidecar_receipt_hash": sidecar_hash,
+        "sidecar_state": "sec_edgar_arelle_resolved_fact_authority_sidecar_ready",
+        "resolved_fact_records": records,
+        "resolved_fact_projection": projection,
+        "resolved_fact_inventory_hash": inventory_hash,
+        "connector_receipt_hash": connector_receipt_hash,
+        "internal_value_store": {
+            "store_state": "persisted",
+            "value_store_hash": value_store_hash,
+            "value_record_count": len(value_records),
+        },
+        "authority_hashes": {
+            "sidecar_receipt_hash": sidecar_hash,
+            "internal_value_store_hash": value_store_hash,
+        },
+    }
+    value_store_payload = {
+        "schema_id": "layer3.sec_edgar_arelle_resolved_fact_authority_internal_value_store.v1",
+        "sidecar_receipt_id": sidecar_id,
+        "sidecar_receipt_hash": sidecar_hash,
+        "value_record_count": len(value_records),
+        "value_records": value_records,
+    }
+    classification = {
+        "schema_id": "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification.v1",
+        "classification_mode": STATEMENT_CLASSIFICATION_MODE,
+        "fact_authority_receipt_hash": sidecar_hash,
+        "fact_inventory_hash": inventory_hash,
+        "fact_material_bridge_receipt_hash": bridge_hash,
+        "classification_inventory_hash": cls_inv_hash,
+        "semantic_profile_inventory_hash": sem_hash,
+        "classification_order_hash": cls_order_hash,
+        "statement_group_inventory_hash": group_hash,
+        "unclassified_fact_inventory_hash": unclass_hash,
+        "classification_diagnostics_hash": diag_hash,
+        "authority_hashes": {
+            "fact_authority_receipt_hash": sidecar_hash,
+            "fact_inventory_hash": inventory_hash,
+            "fact_material_bridge_receipt_hash": bridge_hash,
+        },
+        "classification_inventory": statement_roles,
+    }
+    cls_hash = stable_hash(
+        classification_receipt_hash_basis(
+            classification_mode=classification["classification_mode"],
+            fact_authority_receipt_hash=classification["fact_authority_receipt_hash"],
+            fact_material_bridge_receipt_hash=classification["fact_material_bridge_receipt_hash"],
+            fact_inventory_hash=classification["fact_inventory_hash"],
+            classification_inventory_hash=classification["classification_inventory_hash"],
+            semantic_profile_inventory_hash=classification["semantic_profile_inventory_hash"],
+            classification_order_hash=classification["classification_order_hash"],
+            statement_group_inventory_hash=classification["statement_group_inventory_hash"],
+            unclassified_fact_inventory_hash=classification["unclassified_fact_inventory_hash"],
+            classification_diagnostics_hash=classification["classification_diagnostics_hash"],
+        )
+    )
+    cls_id = f"sec-edgar-html-inline-xbrl-fact-statement-classification-{cls_hash[:24]}"
+    classification["statement_classification_receipt_id"] = cls_id
+    classification["statement_classification_receipt_hash"] = cls_hash
+
+    bridge = {
+        "fact_material_bridge_receipt_hash": bridge_hash,
+        "fact_material_bridge_receipt_id": bridge_id,
+        "response": {
+            "arelle_sidecar_receipt_hash": sidecar_hash,
+            "dataset_version_id": "dv-cli-test",
+        },
+    }
+
+    _write_json(storage / loader.SIDECAR_RECEIPT_DIR / "receipts" / f"{sidecar_id}.json", sidecar)
+    _write_json(storage / loader.SIDECAR_RECEIPT_DIR / loader.VALUE_STORE_SUBDIR / f"{sidecar_id}.json", value_store_payload)
+    _write_json(storage / loader.STATEMENT_CLASSIFICATION_DIR / "receipts" / f"{cls_id}.json", classification)
+    _write_json(storage / "layer3-sec-edgar-html-inline-xbrl-fact-material-bridge" / "receipts" / f"{bridge_id}.json", bridge)
+
+    return {
+        "sidecar_hash": sidecar_hash,
+        "classification_hash": cls_hash,
+        "connector_receipt_hash": connector_receipt_hash,
+    }
+
+
+def _make_corpus_response(
+    *,
+    cik: str,
+    connector_receipt_hash: str,
+    sidecar_hash: str,
+    classification_hash: str,
+    form_type: str = "10-K",
+    supported: bool = True,
+) -> dict[str, Any]:
+    cik_hash = _sha256(cik)
+    record: dict[str, Any] = {
+        "cik_hash": cik_hash,
+        "form_type": form_type,
+        "supported_degraded_blocked": "supported" if supported else "blocked",
+        "authority_hashes": {
+            "fact_authority_receipt_hash": sidecar_hash,
+            "statement_classification_receipt_hash": classification_hash,
+            "arelle_sidecar_receipt_hash": sidecar_hash,
+        },
+    }
+    return {
+        "connector_receipt_hash": connector_receipt_hash,
+        "validation_receipt_id": f"sec-edgar-real-company-corpus-validation-{connector_receipt_hash[:24]}",
+        "validation_receipt_hash": _sha256(connector_receipt_hash + sidecar_hash),
+        "filing_validation_records": [record],
+        "status": "sec_edgar_real_company_corpus_validation_ready",
+    }
+
+
+# ---------------------------------------------------------------------------
+# TestClient factory (identical pattern to orchestrator test)
+# ---------------------------------------------------------------------------
+
+def _make_test_client(tmp_path: Path, monkeypatch: Any) -> tuple[TestClient, Path]:
+    storage_dir = tmp_path / "storage"
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    monkeypatch.setattr(settings, "layer3_external_local_export_dir", str(tmp_path / "ext"))
+    bootstrap_storage_tree(storage_dir)
+
+    engine = create_engine(
+        "sqlite:///:memory:",
+        future=True,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+
+    def override_get_db():
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    client = TestClient(app)
+    return client, storage_dir
+
+
+# ---------------------------------------------------------------------------
+# TestClient-backed transport adapter
+# ---------------------------------------------------------------------------
+
+class ClientTransport:
+    """Transport adapter that delegates to a FastAPI TestClient.
+
+    Records every call so tests can assert what was (or was not) called.
+    """
+
+    def __init__(self, client: TestClient) -> None:
+        self._client = client
+        self.post_calls: list[dict] = []
+        self.get_calls: list[dict] = []
+
+    def post(self, path: str, json_body: dict, headers: dict) -> tuple[int, dict]:
+        self.post_calls.append({"path": path, "body": json_body, "headers": headers})
+        resp = self._client.post(path, json=json_body, headers=headers)
+        try:
+            body = resp.json()
+        except Exception:
+            body = {"_raw": resp.text}
+        return resp.status_code, body
+
+    def get(self, path: str, headers: dict) -> tuple[int, dict]:
+        self.get_calls.append({"path": path, "headers": headers})
+        resp = self._client.get(path, headers=headers)
+        try:
+            body = resp.json()
+        except Exception:
+            body = {"_raw": resp.text}
+        return resp.status_code, body
+
+
+# ---------------------------------------------------------------------------
+# Spy-only transport (no real HTTP; returns canned responses)
+# ---------------------------------------------------------------------------
+
+class SpyTransport:
+    """Transport that records calls and returns canned responses without hitting any server."""
+
+    def __init__(self, responses: dict[str, tuple[int, dict]] | None = None) -> None:
+        self._responses = responses or {}
+        self.post_calls: list[dict] = []
+        self.get_calls: list[dict] = []
+
+    def _response_for(self, path: str) -> tuple[int, dict]:
+        for key, val in self._responses.items():
+            if key in path:
+                return val
+        return 200, {}
+
+    def post(self, path: str, json_body: dict, headers: dict) -> tuple[int, dict]:
+        self.post_calls.append({"path": path, "body": json_body, "headers": headers})
+        return self._response_for(path)
+
+    def get(self, path: str, headers: dict) -> tuple[int, dict]:
+        self.get_calls.append({"path": path, "headers": headers})
+        return self._response_for(path)
+
+
+# ---------------------------------------------------------------------------
+# Helpers for capturing CLI stdout/stderr and exit code
+# ---------------------------------------------------------------------------
+
+def _run_cli(argv: list[str], transport) -> tuple[int, str, str]:
+    """Run the CLI, capturing stdout, stderr, and exit code."""
+    stdout_buf = io.StringIO()
+    stderr_buf = io.StringIO()
+    exit_code = 0
+    old_stdout, old_stderr = sys.stdout, sys.stderr
+    sys.stdout = stdout_buf
+    sys.stderr = stderr_buf
+    try:
+        run(argv, transport)
+    except SystemExit as exc:
+        exit_code = exc.code if isinstance(exc.code, int) else 1
+    finally:
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+    return exit_code, stdout_buf.getvalue(), stderr_buf.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# Auth + corpus monkeypatching helpers
+# ---------------------------------------------------------------------------
+
+def _stub_auth(monkeypatch: Any) -> None:
+    from app.services import layer3_sec_xbrl_in_app_auth_policy as auth_policy_svc
+    from app.services import layer3_sec_xbrl_auth_binding as auth_binding_svc
+
+    monkeypatch.setattr(
+        auth_policy_svc,
+        "derive_sec_xbrl_evidence_owner",
+        lambda headers: {"owner_hash": _hash("f"), "auth_owner_mode": "test"},
+    )
+    monkeypatch.setattr(
+        auth_binding_svc,
+        "require_sec_xbrl_evidence_ownership_marker",
+        lambda *args, **kwargs: None,
+    )
+
+
+def _stub_corpus(monkeypatch: Any, fake_corpus: dict[str, Any]) -> None:
+    monkeypatch.setattr(
+        orchestrator,
+        "layer3_sec_edgar_real_company_corpus_validation",
+        MagicMock(
+            validate_sec_edgar_real_company_corpus_product_path=lambda fields, db, evidence_owner=None: fake_corpus,
+            VALIDATION_MODE=corpus_svc.VALIDATION_MODE,
+            OPERATOR_DECISION=corpus_svc.OPERATOR_DECISION,
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Test 1: open --ticker AAPL --confirm -> exit 0, prints workflow_id, no raw CIK
+# ---------------------------------------------------------------------------
+
+def test_open_aapl_confirm_exit_0_no_cik_leak(tmp_path, monkeypatch) -> None:
+    client, storage_dir = _make_test_client(tmp_path, monkeypatch)
+
+    cik = "320193"
+    connector_hash = _hash("a")
+    hashes = _stage_full_evidence_storage(storage_dir, connector_receipt_hash=connector_hash)
+
+    fake_corpus = _make_corpus_response(
+        cik=cik,
+        connector_receipt_hash=connector_hash,
+        sidecar_hash=hashes["sidecar_hash"],
+        classification_hash=hashes["classification_hash"],
+    )
+    _stub_corpus(monkeypatch, fake_corpus)
+    _stub_auth(monkeypatch)
+
+    transport = ClientTransport(client)
+    exit_code, stdout, stderr = _run_cli(
+        ["open", "--ticker", "AAPL", "--confirm"],
+        transport,
+    )
+
+    assert exit_code == 0, f"Expected exit 0; stderr={stderr!r}"
+
+    # Route was called exactly once
+    open_calls = [c for c in transport.post_calls if "open-full-pipeline" in c["path"]]
+    assert len(open_calls) == 1, "Expected exactly one POST to open-full-pipeline"
+
+    # Workflow id appears in output
+    assert "workflow_id" in stdout.lower() or "sec_xbrl_operator_review_workflow" in stdout
+
+    # Raw CIK must NOT appear in stdout (it's hash-only by design)
+    assert "320193" not in stdout, f"Raw CIK '320193' leaked into stdout: {stdout!r}"
+
+
+# ---------------------------------------------------------------------------
+# Test 2: open WITHOUT --confirm -> refuses, exit nonzero, route NOT called
+# ---------------------------------------------------------------------------
+
+def test_open_without_confirm_refuses(tmp_path, monkeypatch) -> None:
+    client, _ = _make_test_client(tmp_path, monkeypatch)
+    transport = ClientTransport(client)
+
+    exit_code, stdout, stderr = _run_cli(
+        ["open", "--ticker", "AAPL"],
+        transport,
+    )
+
+    assert exit_code != 0, "Expected nonzero exit when --confirm is absent"
+
+    # Route must NOT have been called
+    open_calls = [c for c in transport.post_calls if "open-full-pipeline" in c["path"]]
+    assert len(open_calls) == 0, "Route must not be called without --confirm"
+
+    combined = stdout + stderr
+    assert "confirm" in combined.lower(), "Error message should mention --confirm"
+
+
+# ---------------------------------------------------------------------------
+# Test 3: open --ticker ZZZZ --confirm -> unknown ticker, exit nonzero, route not called
+# ---------------------------------------------------------------------------
+
+def test_open_unknown_ticker_exit_nonzero(tmp_path, monkeypatch) -> None:
+    client, _ = _make_test_client(tmp_path, monkeypatch)
+    transport = ClientTransport(client)
+
+    exit_code, stdout, stderr = _run_cli(
+        ["open", "--ticker", "ZZZZ", "--confirm"],
+        transport,
+    )
+
+    assert exit_code != 0, "Expected nonzero exit for unknown ticker"
+
+    open_calls = [c for c in transport.post_calls if "open-full-pipeline" in c["path"]]
+    assert len(open_calls) == 0, "Route must not be called for unknown ticker"
+
+    combined = stdout + stderr
+    assert "ZZZZ" in combined or "known" in combined.lower(), \
+        "Error should mention the unknown ticker"
+
+
+# ---------------------------------------------------------------------------
+# Test 4: reveal without --confirm -> refuses, exit nonzero, submit NOT called
+# ---------------------------------------------------------------------------
+
+def test_reveal_without_confirm_refuses() -> None:
+    spy = SpyTransport()
+
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "reveal",
+            "--authority-receipt-id", "some-receipt-id",
+            "--authority-basis-hash", "a" * 64,
+            # NOTE: --confirm deliberately omitted
+        ],
+        spy,
+    )
+
+    assert exit_code != 0, "Expected nonzero exit when --confirm is absent from reveal"
+
+    reveal_calls = [c for c in spy.post_calls if "value-reveal/submit" in c["path"]]
+    assert len(reveal_calls) == 0, "value-reveal/submit must not be called without --confirm"
+
+    combined = stdout + stderr
+    assert "confirm" in combined.lower(), "Error message should mention --confirm"
+
+
+# ---------------------------------------------------------------------------
+# Test 5: decide without required flags -> argparse error, exit nonzero
+# ---------------------------------------------------------------------------
+
+def test_decide_missing_required_flags() -> None:
+    spy = SpyTransport()
+
+    # Missing both --review-decision and --reason-code (but also missing --workflow-id)
+    exit_code, stdout, stderr = _run_cli(
+        ["decide"],
+        spy,
+    )
+    assert exit_code != 0, "Expected nonzero exit when required flags are absent"
+
+
+def test_decide_missing_reason_code() -> None:
+    spy = SpyTransport()
+
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "decide",
+            "--workflow-id", "wf-001",
+            "--workflow-basis-hash", "a" * 64,
+            "--review-decision", "approved",
+            # --reason-code deliberately omitted
+        ],
+        spy,
+    )
+    assert exit_code != 0, "Expected nonzero exit when --reason-code is absent"
+
+
+# ---------------------------------------------------------------------------
+# Test 6: status happy path via SpyTransport with canned response
+# ---------------------------------------------------------------------------
+
+def test_status_happy_path() -> None:
+    workflow_id = "wf-status-test-001"
+    canned = {
+        "status": "sec_xbrl_operator_review_workflow_open",
+        "sec_xbrl_operator_review_workflow_id": workflow_id,
+        "workflow_basis_hash": "b" * 64,
+    }
+    spy = SpyTransport(responses={"operator-review/workflow/status": (200, canned)})
+
+    exit_code, stdout, stderr = _run_cli(
+        [
+            "status",
+            "--workflow-id", workflow_id,
+            "--workflow-basis-hash", "b" * 64,
+        ],
+        spy,
+    )
+
+    assert exit_code == 0, f"Expected exit 0; stderr={stderr!r}"
+    assert workflow_id in stdout or "workflow" in stdout.lower()
+
+    # Exactly one POST was made
+    status_calls = [c for c in spy.post_calls if "workflow/status" in c["path"]]
+    assert len(status_calls) == 1
+
+    # Verify the literal/mode values are sent verbatim
+    body = status_calls[0]["body"]
+    assert body["status_mode"] == "sec_xbrl_operator_review_workflow_status_v1"
+    assert body["operator_decision"] == "inspect_sec_xbrl_operator_review_workflow_status"
+    assert body["sec_xbrl_operator_review_workflow_id"] == workflow_id
+
+
+# ---------------------------------------------------------------------------
+# Test 7: open -> decide -> prepare-authority chain (happy path) +
+#          reveal request-assembly assertion (operator_reveal_confirmation=True only with --confirm)
+# ---------------------------------------------------------------------------
+
+def test_open_decide_chain_and_reveal_assembly(tmp_path, monkeypatch) -> None:
+    """Happy path through open -> decide (approved) via real TestClient.
+
+    prepare-authority and reveal are exercised via SpyTransport for request-assembly
+    assertions only. The prepare-authority real route requires materialized packets and
+    zero review exceptions (full packet staging beyond what the open route provides),
+    so that step is covered at the transport/request-assembly level here.
+
+    Key safety assertion: operator_reveal_confirmation=True is ONLY sent when --confirm
+    is explicitly given; the CLI refuses and exits nonzero without it.
+    """
+    client, storage_dir = _make_test_client(tmp_path, monkeypatch)
+
+    cik = "320193"
+    connector_hash = _hash("a")
+    hashes = _stage_full_evidence_storage(storage_dir, connector_receipt_hash=connector_hash)
+
+    fake_corpus = _make_corpus_response(
+        cik=cik,
+        connector_receipt_hash=connector_hash,
+        sidecar_hash=hashes["sidecar_hash"],
+        classification_hash=hashes["classification_hash"],
+    )
+    _stub_corpus(monkeypatch, fake_corpus)
+    _stub_auth(monkeypatch)
+
+    transport = ClientTransport(client)
+
+    # Step 1: open (real route via TestClient)
+    exit_code, stdout, _ = _run_cli(
+        ["open", "--ticker", "AAPL", "--confirm"],
+        transport,
+    )
+    assert exit_code == 0, f"open step failed; stdout={stdout}"
+
+    # Extract workflow_id from the CLI output
+    workflow_id = None
+    workflow_basis_hash = None
+    for line in stdout.splitlines():
+        if "workflow_id" in line and ":" in line:
+            val = line.split(":", 1)[1].strip()
+            if val and val != "None":
+                workflow_id = val
+        if "workflow_basis_hash" in line and ":" in line:
+            val = line.split(":", 1)[1].strip()
+            if val and val != "None":
+                workflow_basis_hash = val
+
+    assert workflow_id is not None, f"Could not extract workflow_id from output:\n{stdout}"
+    if not workflow_basis_hash:
+        workflow_basis_hash = "0" * 64  # decide route accepts None hash; use placeholder
+
+    # Step 2: decide (approved) — real route via TestClient
+    decide_argv = [
+        "decide",
+        "--workflow-id", workflow_id,
+        "--workflow-basis-hash", workflow_basis_hash,
+        "--review-decision", "approved",
+        "--reason-code", "ready_for_next_freeze",
+    ]
+    exit_code, stdout_decide, stderr_decide = _run_cli(decide_argv, transport)
+    assert exit_code == 0, f"decide step failed; stderr={stderr_decide!r}; stdout={stdout_decide!r}"
+
+    # Extract decision_id and decision_basis_hash from output
+    decision_id = None
+    decision_basis_hash = None
+    for line in stdout_decide.splitlines():
+        if "decision_id" in line and ":" in line:
+            val = line.split(":", 1)[1].strip()
+            if val and val != "None":
+                decision_id = val
+        if "decision_basis_hash" in line and ":" in line:
+            val = line.split(":", 1)[1].strip()
+            if val and val != "None":
+                decision_basis_hash = val
+
+    assert decision_id is not None, f"Could not extract decision_id from output:\n{stdout_decide}"
+    assert decision_basis_hash is not None, f"Could not extract decision_basis_hash:\n{stdout_decide}"
+
+    # Verify exact literal values sent to the decide route
+    decide_calls = [c for c in transport.post_calls if "decision/submit" in c["path"]]
+    assert len(decide_calls) == 1
+    decide_body = decide_calls[0]["body"]
+    assert decide_body["submit_mode"] == "sec_xbrl_operator_review_decision_submit_v1"
+    assert decide_body["operator_decision"] == "submit_sec_xbrl_operator_review_decision"
+    assert decide_body["review_decision"] == "approved"
+    assert decide_body["decision_reason_code"] == "ready_for_next_freeze"
+
+    # Step 3: prepare-authority (SpyTransport — request-assembly check only).
+    # The real route requires materialized packets + zero review exceptions which needs
+    # additional staging (statement packet materialization) beyond what open provides.
+    # That gap is documented: the CLI sends the correct literals; server-side preconditions
+    # are verified in the operator-review workflow service tests.
+    fake_authority_receipt_id = "vr-authority-spy-001"
+    fake_authority_basis_hash = "d" * 64
+    prep_spy = SpyTransport(responses={"value-reveal/authority/prepare": (200, {
+        "sec_xbrl_value_reveal_authority_receipt_id": fake_authority_receipt_id,
+        "authority_basis_hash": fake_authority_basis_hash,
+        "status": "sec_xbrl_value_reveal_authority_ready",
+        "value_reveal_performed": False,
+        "production_readiness_claimed": False,
+    })})
+
+    exit_code, stdout_prep, stderr_prep = _run_cli(
+        [
+            "prepare-authority",
+            "--decision-id", decision_id,
+            "--decision-basis-hash", decision_basis_hash,
+        ],
+        prep_spy,
+    )
+    assert exit_code == 0, f"prepare-authority failed; stderr={stderr_prep!r}; stdout={stdout_prep!r}"
+
+    prep_calls = [c for c in prep_spy.post_calls if "value-reveal/authority/prepare" in c["path"]]
+    assert len(prep_calls) == 1
+    prep_body = prep_calls[0]["body"]
+    assert prep_body["authority_mode"] == "sec_xbrl_value_reveal_authority_receipt_v1"
+    assert prep_body["operator_decision"] == "prepare_sec_xbrl_value_reveal_authority"
+    assert prep_body["sec_xbrl_operator_review_decision_id"] == decision_id
+    assert prep_body["decision_basis_hash"] == decision_basis_hash
+
+    # Step 4: reveal request-assembly — SpyTransport.
+    # With --confirm: operator_reveal_confirmation=True must be in the body.
+    reveal_spy = SpyTransport(responses={"value-reveal/submit": (200, {
+        "sec_xbrl_controlled_value_reveal_submit_receipt_id": "reveal-spy-001",
+        "status": "sec_xbrl_controlled_value_reveal_submit_ready",
+        "production_readiness_claimed": False,
+    })})
+
+    exit_code, _, _ = _run_cli(
+        [
+            "reveal",
+            "--authority-receipt-id", fake_authority_receipt_id,
+            "--authority-basis-hash", fake_authority_basis_hash,
+            "--confirm",
+        ],
+        reveal_spy,
+    )
+    assert exit_code == 0, "reveal --confirm should exit 0 with canned spy response"
+
+    reveal_calls = [c for c in reveal_spy.post_calls if "value-reveal/submit" in c["path"]]
+    assert len(reveal_calls) == 1, "reveal --confirm should POST to value-reveal/submit"
+    reveal_body = reveal_calls[0]["body"]
+    assert reveal_body.get("operator_reveal_confirmation") is True, \
+        "operator_reveal_confirmation must be True when --confirm is given"
+    assert reveal_body["submit_mode"] == "sec_xbrl_controlled_value_reveal_submit_v1"
+    assert reveal_body["operator_decision"] == "submit_explicit_sec_xbrl_value_reveal_from_authority_receipt"
+
+    # Without --confirm: route must NOT be called (safety invariant)
+    reveal_spy2 = SpyTransport()
+    exit_code2, _, _ = _run_cli(
+        [
+            "reveal",
+            "--authority-receipt-id", fake_authority_receipt_id,
+            "--authority-basis-hash", fake_authority_basis_hash,
+            # --confirm deliberately omitted
+        ],
+        reveal_spy2,
+    )
+    assert exit_code2 != 0, "reveal without --confirm must exit nonzero"
+    reveal_calls2 = [c for c in reveal_spy2.post_calls if "value-reveal/submit" in c["path"]]
+    assert len(reveal_calls2) == 0, \
+        "value-reveal/submit must NOT be called when --confirm is absent"
+
+
+def test_cli_cik_map_matches_connector() -> None:
+    """Drift guard: the CLI's embedded ticker->CIK map must stay identical to the
+    connector's authoritative map. Fails loudly if the connector adds/changes a ticker."""
+    from app.cli import sec_xbrl_operator_cli as cli
+    from app.services import layer3_sec_edgar_real_filing_acquisition_connector as connector
+
+    assert cli.REAL_COMPANY_CIK_REFS == connector.REAL_COMPANY_CIK_REFS, (
+        "CLI ticker->CIK map drifted from the connector's map; update "
+        "app/cli/sec_xbrl_operator_cli.py REAL_COMPANY_CIK_REFS to match."
+    )
