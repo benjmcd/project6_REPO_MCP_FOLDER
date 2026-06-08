@@ -371,6 +371,27 @@ def _analyst_rollup(analyst_products: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _analyst_by_working_set(analyst_products: list[dict[str, Any]]) -> dict[str, list[str]]:
+    """Group analyst product_ids by working_set evidence ref, or under 'unscoped'."""
+    result: dict[str, list[str]] = {}
+    for product in analyst_products:
+        product_id = product.get("product_id")
+        if product_id is None:
+            continue
+        ws_ids: list[str] = [
+            str(ref["ref_id"])
+            for ref in _as_list(product.get("evidence_refs"))
+            if _as_dict(ref).get("ref_kind") == "working_set"
+            and _as_dict(ref).get("ref_id")
+        ]
+        if not ws_ids:
+            result.setdefault("unscoped", []).append(str(product_id))
+        else:
+            for ws_id in ws_ids:
+                result.setdefault(ws_id, []).append(str(product_id))
+    return result
+
+
 def analysis_product_inventory_projection(
     *,
     sublayer_visualization: dict[str, Any],
@@ -379,6 +400,7 @@ def analysis_product_inventory_projection(
     output_package_products: list[Any] | None = None,
     reconciliation: dict[str, Any] | None = None,
     analyst_products: list[Any] | None = None,
+    working_sets: list[Any] | None = None,
     current_gate: str,
 ) -> dict[str, Any]:
     """Read-only unified inventory of derived Sublayer 3C analysis products for a session.
@@ -398,6 +420,7 @@ def analysis_product_inventory_projection(
     review = _as_dict(execution_result_review)
     package_product_inputs = output_package_products if isinstance(output_package_products, list) else []
     analyst_product_inputs = _as_list(analyst_products)
+    working_set_inputs = working_sets if isinstance(working_sets, list) else None
 
     blocked_reasons: list[str] = []
     if sublayer.get("schema_id") != SUBLAYER_VISUALIZATION_STATE_SCHEMA_ID:
@@ -421,6 +444,7 @@ def analysis_product_inventory_projection(
         products: list[dict[str, Any]] = []
         package_products: list[dict[str, Any]] = []
         enumerated_analyst_products: list[dict[str, Any]] = []
+        working_sets_out: list[dict[str, Any]] = []
     else:
         products = _enumerate_products(
             pass_runs=pass_runs,
@@ -434,6 +458,19 @@ def analysis_product_inventory_projection(
             reconciliation=reconciliation_input,
         )
         enumerated_analyst_products = _enumerate_analyst_products(analyst_product_inputs)
+        # Bounded pass-through of serialized working sets (ids/name/member_count/basis_hash only)
+        if working_set_inputs is not None:
+            working_sets_out = [
+                {
+                    "working_set_id": _as_dict(ws).get("working_set_id"),
+                    "name": _as_dict(ws).get("name"),
+                    "member_count": _as_dict(ws).get("member_count"),
+                    "basis_hash": _as_dict(ws).get("basis_hash"),
+                }
+                for ws in working_set_inputs
+            ]
+        else:
+            working_sets_out = []
 
     if blocked_reasons:
         inventory_state = "blocked"
@@ -441,6 +478,8 @@ def analysis_product_inventory_projection(
         inventory_state = "products_present"
     else:
         inventory_state = "empty"
+
+    analyst_by_working_set = _analyst_by_working_set(enumerated_analyst_products)
 
     return {
         "schema_id": ANALYSIS_PRODUCT_INVENTORY_PROJECTION_SCHEMA_ID,
@@ -457,6 +496,9 @@ def analysis_product_inventory_projection(
         "analyst_product_count": len(enumerated_analyst_products),
         "analyst_products": enumerated_analyst_products,
         "analyst_rollup": _analyst_rollup(enumerated_analyst_products),
+        "working_set_count": len(working_sets_out),
+        "working_sets": working_sets_out,
+        "analyst_by_working_set": analyst_by_working_set,
         "reconciliation": {
             "present": bool(reconciliation_input),
             "reconciliation_record_id": reconciliation_input.get("reconciliation_record_id"),

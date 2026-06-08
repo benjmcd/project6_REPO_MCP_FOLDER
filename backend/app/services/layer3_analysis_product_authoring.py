@@ -28,6 +28,7 @@ from app.models.models import (
     L3OutputPackage,
     L3PassRun,
     L3Session,
+    L3WorkingSet,
     L3_ANALYSIS_PRODUCT_EVIDENCE_REF_KIND_VALUES,
     L3_ANALYSIS_PRODUCT_EVIDENCE_ROLE_VALUES,
     L3_ANALYSIS_PRODUCT_KIND_VALUES,
@@ -63,6 +64,7 @@ _EVIDENCE_REF_KIND_TABLE: dict[str, tuple[Any, str]] = {
     "output_package": (L3OutputPackage, "output_package_id"),
     "analysis_set": (L3AnalysisSet, "analysis_set_id"),
     "prior_product": (L3AnalysisProduct, "analysis_product_id"),
+    "working_set": (L3WorkingSet, "working_set_id"),
 }
 
 

@@ -36853,3 +36853,126 @@ def test_layer3_api_analysis_product_transition_and_session_summary(
     assert ap["latest_review_decision"]["review_decision"] == "promote"
     assert ap["latest_review_decision"]["from_status"] == "draft"
     assert ap["latest_review_decision"]["to_status"] == "proposed"
+
+
+# ---------------------------------------------------------------------------
+# Working-set authoring — 3C Working Set Formalization v0
+# ---------------------------------------------------------------------------
+
+
+def test_layer3_api_working_set_create_201_and_inventory(
+    client: TestClient, tmp_path
+) -> None:
+    """POST /working-set -> 201 with working_set_id + member_count + basis_hash;
+    then the session summary inventory surfaces the working set + working_set_count."""
+    session_id = _construct_quant_package_set(client, tmp_path, request_id="api-ws-create-happy")[0]
+    summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    snap_id = summary["sublayer_visualization"]["material_objects"][0]["material_snapshot_id"]
+
+    payload = {
+        "session_id": session_id,
+        "client_request_id": "ws-create-1",
+        "name": "Q3 margin analysis scope",
+        "members": [{"ref_kind": "material_snapshot", "ref_id": snap_id}],
+    }
+    resp = client.post("/api/v1/layer3/working-set", json=payload)
+    assert resp.status_code == 201, resp.text
+    body = resp.json()
+    assert body["working_set_id"]
+    assert body["session_id"] == session_id
+    assert body["name"] == "Q3 margin analysis scope"
+    assert body["member_count"] == 1
+    assert body["basis_hash"]
+    assert body["created_at"]
+    assert body["replayed"] is False
+    ws_id = body["working_set_id"]
+
+    # Idempotent replay: same client_request_id + same body -> replayed=True, same id.
+    replay = client.post("/api/v1/layer3/working-set", json=payload)
+    assert replay.status_code == 201, replay.text
+    assert replay.json()["replayed"] is True
+    assert replay.json()["working_set_id"] == ws_id
+
+    # Session summary inventory surfaces the working set.
+    inv_summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    inv = inv_summary["analysis_product_inventory_projection"]
+    assert inv["working_set_count"] >= 1
+    ws_ids = [ws["working_set_id"] for ws in inv["working_sets"]]
+    assert ws_id in ws_ids
+
+
+def test_layer3_api_working_set_extra_forbid_rejects_server_fields(
+    client: TestClient,
+) -> None:
+    """extra='forbid': server-owned fields (basis_hash, member_count, working_set_id) must be rejected 422."""
+    for forbidden_field in ("basis_hash", "member_count", "working_set_id"):
+        resp = client.post(
+            "/api/v1/layer3/working-set",
+            json={
+                "session_id": "s1",
+                "client_request_id": "cr1",
+                "name": "test",
+                "members": [],
+                forbidden_field: "injected",
+            },
+        )
+        assert resp.status_code == 422, f"expected 422 for {forbidden_field}, got {resp.status_code}: {resp.text}"
+
+
+def test_layer3_api_working_set_with_product_evidence_link_grouped_in_inventory(
+    client: TestClient, tmp_path
+) -> None:
+    """Create a working set, then author a product citing it; inventory groups the product under analyst_by_working_set."""
+    session_id = _construct_quant_package_set(client, tmp_path, request_id="api-ws-grouping")[0]
+    summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    snap_id = summary["sublayer_visualization"]["material_objects"][0]["material_snapshot_id"]
+
+    # Create the working set.
+    ws_resp = client.post(
+        "/api/v1/layer3/working-set",
+        json={
+            "session_id": session_id,
+            "client_request_id": "ws-grouping-1",
+            "name": "Grouping scope",
+            "members": [{"ref_kind": "material_snapshot", "ref_id": snap_id}],
+        },
+    )
+    assert ws_resp.status_code == 201, ws_resp.text
+    ws_id = ws_resp.json()["working_set_id"]
+
+    # Author a product citing the working set as evidence.
+    draft_resp = client.post(
+        "/api/v1/layer3/analysis-product/draft",
+        json={
+            "session_id": session_id,
+            "client_request_id": "ws-grouping-draft-1",
+            "product_kind": "finding",
+            "title": "Grouped finding",
+            "body": "This finding is scoped to the working set.",
+            "evidence": [{"ref_kind": "working_set", "ref_id": ws_id, "evidence_role": "context"}],
+            "is_non_evidentiary": False,
+        },
+    )
+    assert draft_resp.status_code == 201, draft_resp.text
+    product_id = draft_resp.json()["analysis_product_id"]
+
+    # GET session summary -> inventory shows product grouped under working set.
+    inv_summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    inv = inv_summary["analysis_product_inventory_projection"]
+    assert inv["working_set_count"] >= 1
+    abws = inv["analyst_by_working_set"]
+    assert ws_id in abws
+    assert f"layer3_analyst_product:{product_id}" in abws[ws_id]
+
+
+def test_layer3_api_working_set_openapi_schema_forbids_extra(
+    client: TestClient,
+) -> None:
+    """OpenAPI: Layer3WorkingSetCreateRequest schema additionalProperties is False."""
+    spec = client.get("/openapi.json").json()
+    schema = spec["components"]["schemas"]["Layer3WorkingSetCreateRequest"]
+    assert schema.get("additionalProperties") is False
+    props = schema.get("properties", {})
+    # Server-owned fields must NOT be client-settable.
+    for forbidden in ("basis_hash", "member_count", "working_set_id"):
+        assert forbidden not in props

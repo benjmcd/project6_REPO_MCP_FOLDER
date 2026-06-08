@@ -2010,6 +2010,7 @@ function analysisProductInventoryProjectionStatus(projection = currentAnalysisPr
         productCount: Number(projection?.product_count) || 0,
         packageProductCount: Number(projection?.package_product_count) || 0,
         analystProductCount: Number(projection?.analyst_product_count) || 0,
+        workingSetCount: Number(projection?.working_set_count) || 0,
         outputReadyCount: Number(rollup.output_ready_count) || 0,
         packageEligibleCount: Number(rollup.package_eligible_count) || 0,
         terminallyCompleteCount: Number(packageRollup.terminally_complete_count) || 0,
@@ -2021,6 +2022,7 @@ function analysisProductInventoryProjectionStatus(projection = currentAnalysisPr
         products: Array.isArray(projection?.products) ? projection.products : [],
         packageProducts: Array.isArray(projection?.package_products) ? projection.package_products : [],
         analystProducts: Array.isArray(projection?.analyst_products) ? projection.analyst_products : [],
+        workingSets: Array.isArray(projection?.working_sets) ? projection.working_sets : [],
     };
 }
 
@@ -2159,6 +2161,13 @@ function renderMockupAnalysisProductInventoryProjection(active = State.themePref
         .map((product) => analysisProductInventoryProductRow(product, 'output_package')).join('');
     const analystRows = status.analystProducts.slice(0, PRODUCT_RENDER_LIMIT)
         .map((product) => analystProductRow(product)).join('');
+    const workingSetRows = status.workingSets.slice(0, PRODUCT_RENDER_LIMIT)
+        .map((ws) => {
+            const wsId = escapeHtml(String(ws?.working_set_id || ''));
+            const wsName = escapeHtml(String(ws?.name || ''));
+            const wsMemberCount = escapeHtml(String(ws?.member_count ?? ''));
+            return `<li class="mockup-working-set-item" data-working-set-id="${wsId}"><span>${wsName}</span> <em>${wsMemberCount} members</em></li>`;
+        }).join('');
     const passOverflow = status.products.length > PRODUCT_RENDER_LIMIT
         ? `<li data-product-class="overflow"><span>${escapeHtml(`+ ${status.products.length - PRODUCT_RENDER_LIMIT} more pass-run products`)}</span></li>`
         : '';
@@ -2196,6 +2205,11 @@ function renderMockupAnalysisProductInventoryProjection(active = State.themePref
                 <p>${escapeHtml(`grounded ${status.analystGroundedCount}`)}</p>
             </article>
             <article>
+                <span>Working sets</span>
+                <strong>${escapeHtml(status.workingSetCount)}</strong>
+                <p>${escapeHtml(`${status.workingSetCount} working set${status.workingSetCount === 1 ? '' : 's'}`)}</p>
+            </article>
+            <article>
                 <span>Environment state</span>
                 <strong>${escapeHtml(humanizeToken(status.environmentProjectionState))}</strong>
                 <p>${escapeHtml(`review ${humanizeToken(status.sessionReviewState)}`)}</p>
@@ -2217,6 +2231,9 @@ function renderMockupAnalysisProductInventoryProjection(active = State.themePref
         <ul class="mockup-analysis-product-list mockup-analyst-product-list" data-product-class="analyst_product" aria-label="Read-only analyst draft products">
             ${analystRows || '<li data-product-class="empty"><span>No analyst draft products authored</span></li>'}
             ${analystOverflow}
+        </ul>
+        <ul class="mockup-working-set-list" aria-label="Read-only working sets summary">
+            ${workingSetRows || '<li class="mockup-working-set-item mockup-working-set-empty"><span>No working sets in session</span></li>'}
         </ul>
         ${available ? '' : '<span class="mockup-disabled-control" aria-disabled="true">Read-only 3C product inventory pending</span>'}
     `;

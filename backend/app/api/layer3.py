@@ -151,6 +151,12 @@ from app.services.layer3_analysis_product_promotion import (
     transition_analysis_product,
 )
 from app.services.layer3_sublayer_state import serialize_analysis_product as _serialize_analysis_product
+from app.services.layer3_working_set import (
+    Layer3WorkingSetError,
+    WorkingSetDraft,
+    WorkingSetMemberDraft,
+    create_working_set,
+)
 
 router = APIRouter()
 
@@ -19989,6 +19995,7 @@ def get_session_summary(session_id: str, db: Session = Depends(get_db)) -> dict[
 # ---------------------------------------------------------------------------
 
 ANALYSIS_PRODUCT_DRAFT_SCHEMA_ID = "layer3.analysis_product.v1"
+WORKING_SET_SCHEMA_ID = "layer3.working_set.v1"
 
 
 class Layer3AnalysisProductEvidenceLinkRequest(BaseModel):
@@ -20081,6 +20088,80 @@ def post_analysis_product_draft(
             "replayed": result.replayed,
         }
     except Layer3AnalysisProductError as exc:
+        db.rollback()
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+# ---------------------------------------------------------------------------
+# Working-set authoring — 3C Working Set Formalization v0
+# ---------------------------------------------------------------------------
+
+
+class Layer3WorkingSetMemberRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    ref_kind: str = Field(min_length=1)
+    ref_id: str = Field(min_length=1)
+
+
+class Layer3WorkingSetCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    session_id: str = Field(min_length=1)
+    client_request_id: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+    members: list[Layer3WorkingSetMemberRequest] = Field(default_factory=list)
+    provenance: dict[str, Any] | None = None
+
+
+class Layer3WorkingSetCreateResponse(Layer3BaseResponse):
+    working_set_id: str
+    session_id: str
+    name: str
+    member_count: int
+    basis_hash: str
+    created_at: str
+    replayed: bool
+
+
+@router.post(
+    "/working-set",
+    response_model=Layer3WorkingSetCreateResponse,
+    status_code=201,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_working_set(
+    payload: Layer3WorkingSetCreateRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    draft = WorkingSetDraft(
+        name=payload.name,
+        members=tuple(
+            WorkingSetMemberDraft(ref_kind=m.ref_kind, ref_id=m.ref_id)
+            for m in payload.members
+        ),
+        provenance=payload.provenance,
+    )
+    try:
+        result = create_working_set(
+            db,
+            session_id=payload.session_id,
+            client_request_id=payload.client_request_id,
+            draft=draft,
+        )
+        db.commit()
+        ws = result.working_set
+        return {
+            **base_response(WORKING_SET_SCHEMA_ID),
+            "working_set_id": ws.working_set_id,
+            "session_id": ws.session_id,
+            "name": ws.name,
+            "member_count": ws.member_count,
+            "basis_hash": ws.basis_hash,
+            "created_at": ws.created_at.isoformat() if ws.created_at is not None else "",
+            "replayed": result.replayed,
+        }
+    except Layer3WorkingSetError as exc:
         db.rollback()
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
