@@ -239,6 +239,7 @@ def _enumerate_package_products(
                 "lifecycle_status": status,
                 "reconciliation_status": linked_reconciliation_status,
                 "payload_hash": record.get("payload_hash"),
+                "content": _as_dict(record.get("content")),
                 "source_refs": {
                     "output_package_id": output_package_id,
                     "reconciliation_record_id": package_reconciliation_id,

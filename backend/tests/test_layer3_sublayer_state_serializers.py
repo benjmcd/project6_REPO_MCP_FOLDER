@@ -65,7 +65,12 @@ def test_serialize_output_package_product_never_exposes_payload_ref() -> None:
         status="package_complete",
         payload_hash="hash-1",
         payload_ref="/secret/package/path",
-        summary_json={"finding_count": 3},
+        summary_json={
+            "finding_count": 3,
+            "contradiction_count": 1,
+            "caveat_count": 0,
+            "output_payload_ref": "/secret/payload/path",
+        },
     )
 
     serialized = serialize_output_package_product(package)
@@ -76,6 +81,33 @@ def test_serialize_output_package_product_never_exposes_payload_ref() -> None:
         "package_kind": "canonical_internal",
         "status": "package_complete",
         "payload_hash": "hash-1",
+        "content": {
+            "finding_count": 3,
+            "contradiction_count": 1,
+            "caveat_count": 0,
+        },
     }
     assert "payload_ref" not in serialized
     assert "/secret/package/path" not in repr(serialized)
+    assert "/secret/payload/path" not in repr(serialized)
+
+
+def test_serialize_output_package_product_content_guards_non_int_counts() -> None:
+    package = SimpleNamespace(
+        output_package_id="pkg-2",
+        reconciliation_record_id="recon-1",
+        package_kind="user_facing",
+        status="package_complete",
+        payload_hash="hash-2",
+        payload_ref="/secret/path",
+        summary_json={"finding_count": "lots", "contradiction_count": -1, "caveat_count": True},
+    )
+
+    content = serialize_output_package_product(package)["content"]
+
+    # non-int, negative, and bool counts all degrade to None rather than rendering junk
+    assert content == {
+        "finding_count": None,
+        "contradiction_count": None,
+        "caveat_count": None,
+    }
