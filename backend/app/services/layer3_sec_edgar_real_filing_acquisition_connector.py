@@ -9,6 +9,7 @@ from typing import Any, Mapping
 
 from app.core.config import settings
 from app.services import layer3_sec_edgar_live_source_artifact
+from app.services.layer3_sec_edgar_live_source_artifact import resolve_sec_ticker_to_cik
 from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
@@ -435,6 +436,11 @@ def _build_receipt(
             "form_types": list(example_set["form_types"]),
             "company_matrix": list(example_set.get("company_matrix") or []),
             "filing_selection_policy": example_set["filing_selection_policy"],
+            **(
+                {"official_resolution_provenance": example_set["official_resolution_provenance"]}
+                if example_set.get("official_resolution_provenance") is not None
+                else {}
+            ),
         },
         "corpus_manifest": {
             "schema_id": CORPUS_MANIFEST_SCHEMA_ID,
@@ -580,27 +586,53 @@ def _example_set(request: Mapping[str, Any]) -> dict[str, Any]:
             "SEC EDGAR real-filing acquisition connector requires an admitted filing selection policy.",
             blocked_fields=["filing_selection_policy"],
         )
-    company_matrix = _normalise_company_matrix(request.get("company_matrix") or ())
+    company_matrix, resolved_cik_map, official_resolution_provenance = _normalise_company_matrix(
+        request.get("company_matrix") or ()
+    )
     if filing_selection_policy == REAL_COMPANY_DISCOVERY_POLICY:
         if not company_matrix:
             company_matrix = DEFAULT_REAL_COMPANY_MATRIX
-        cik_refs = tuple(REAL_COMPANY_CIK_REFS[ticker] for ticker in company_matrix)
+            resolved_cik_map = {}
+            official_resolution_provenance = None
+        cik_refs = tuple(
+            resolved_cik_map.get(ticker) or REAL_COMPANY_CIK_REFS[ticker]
+            for ticker in company_matrix
+        )
         form_types = ()
     else:
         cik_refs = _normalise_cik_refs(request.get("cik_refs") or DEFAULT_CIK_REFS)
         form_types = _normalise_form_types(request.get("form_types") or DEFAULT_FORM_TYPES)
-    return {
+    result: dict[str, Any] = {
         "example_set_mode": example_set_mode,
         "cik_refs": cik_refs,
         "form_types": form_types,
         "company_matrix": company_matrix,
         "filing_selection_policy": filing_selection_policy,
     }
+    if official_resolution_provenance is not None:
+        result["official_resolution_provenance"] = official_resolution_provenance
+    return result
 
 
-def _normalise_company_matrix(value: Any) -> tuple[str, ...]:
+def _normalise_company_matrix(
+    value: Any,
+) -> tuple[tuple[str, ...], dict[str, str], dict[str, str] | None]:
+    """Validate and normalise the company_matrix field.
+
+    Returns a three-tuple:
+    - tickers: de-duplicated upper-case ticker tuple
+    - resolved_cik_map: ticker -> CIK for tickers resolved via the official source
+      (empty dict when all tickers are on the static allow-list)
+    - official_resolution_provenance: dict with source-hash/cik-hash entries for the
+      resolved tickers, or None when no official resolution was performed
+
+    Flag-OFF (default): behaves byte-identically to the original implementation —
+    any ticker not in REAL_COMPANY_CIK_REFS raises a governed blocked error.
+    Flag-ON: off-list tickers are resolved via resolve_sec_ticker_to_cik(); unknown
+    tickers (resolver returns None) still raise a governed blocked error.
+    """
     if value in (None, "", ()):
-        return ()
+        return (), {}, None
     values = tuple(dict.fromkeys(str(item or "").strip().upper() for item in _as_list(value)))
     if not values or len(values) > len(DEFAULT_REAL_COMPANY_MATRIX):
         _blocked(
@@ -609,13 +641,41 @@ def _normalise_company_matrix(value: Any) -> tuple[str, ...]:
             blocked_fields=["company_matrix"],
         )
     unknown = [item for item in values if item not in REAL_COMPANY_CIK_REFS]
-    if unknown:
+    if not unknown:
+        # Fast path: all tickers are on the static allow-list — flag-off behavior unchanged.
+        return values, {}, None
+
+    # There are off-list tickers. Without the flag, block immediately (flag-OFF behavior).
+    if not bool(getattr(settings, "layer3_sec_edgar_official_ticker_resolution_enabled", False)):
         _blocked(
             "sec_edgar_real_filing_acquisition_connector_company_matrix_unknown",
             "SEC EDGAR real-company validation company matrix contains an unadmitted ticker.",
             blocked_fields=["company_matrix"],
         )
-    return values
+
+    # Flag is ON: attempt resolution for each off-list ticker via the official source.
+    resolved_cik_map: dict[str, str] = {}
+    resolution_provenance: dict[str, str] = {}
+    company_tickers_source_hash = ""
+    for ticker in unknown:
+        resolution = resolve_sec_ticker_to_cik(ticker)
+        if resolution is None:
+            _blocked(
+                "sec_edgar_real_filing_acquisition_connector_company_matrix_unknown",
+                "SEC EDGAR real-company validation company matrix contains an unadmitted ticker.",
+                blocked_fields=["company_matrix"],
+            )
+        resolved_cik_map[ticker] = resolution["cik"]
+        resolution_provenance[f"{ticker}_cik_hash"] = hashlib.sha256(
+            resolution["cik"].encode()
+        ).hexdigest()
+        # All off-list tickers in a batch resolve against the same cached
+        # company_tickers.json snapshot, so the source hash is batch-level:
+        # record it once after the loop rather than per-iteration.
+        company_tickers_source_hash = resolution["company_tickers_source_hash"]
+    resolution_provenance["company_tickers_source_hash"] = company_tickers_source_hash
+
+    return values, resolved_cik_map, resolution_provenance
 
 
 def _issuer_profile_tags(ticker: str, form_type: str) -> list[str]:

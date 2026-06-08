@@ -1537,6 +1537,131 @@ def _response_from_companyfacts_receipt(
     }
 
 
+# ---------------------------------------------------------------------------
+# Official SEC ticker -> CIK resolver (corpus-validation broadening)
+# ---------------------------------------------------------------------------
+
+# Module-level cache for the parsed company_tickers.json map and its source hash.
+# _COMPANY_TICKERS_CACHE shape: { "AAPL": {"cik": "320193", "title": "Apple Inc."}, ... }
+# _COMPANY_TICKERS_SOURCE_HASH: sha256 hex of the raw bytes fetched.
+# GIL-protected single assignment is acceptable for this use (no TTL needed; one fetch
+# per server process is correct for the corpus-validation path).
+_COMPANY_TICKERS_CACHE: dict[str, dict[str, str]] | None = None
+_COMPANY_TICKERS_SOURCE_HASH: str = ""
+
+_COMPANY_TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
+# ~10 MB ceiling for the tickers file; ensures the resolver works even if the
+# operator sets a low layer3_sec_edgar_max_bytes for filing artifacts.
+_COMPANY_TICKERS_MAX_BYTES = 10_000_000
+
+
+def _reset_company_tickers_cache() -> None:
+    """Reset the module-level cache. Exposed for test isolation only."""
+    global _COMPANY_TICKERS_CACHE, _COMPANY_TICKERS_SOURCE_HASH
+    _COMPANY_TICKERS_CACHE = None
+    _COMPANY_TICKERS_SOURCE_HASH = ""
+
+
+def _parse_company_tickers_payload(raw: bytes) -> dict[str, dict[str, str]]:
+    """Parse company_tickers.json bytes into a normalised ticker->cik/title map.
+
+    Raises Layer3WorkbenchError (blocked) on malformed JSON or invalid structure.
+    Silently skips individual entries whose cik_str fails _CIK_RE validation.
+    """
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        _blocked(
+            "sec_edgar_official_ticker_resolution_json_invalid",
+            "SEC official company_tickers.json response is not valid JSON.",
+            http_status=409,
+            blocked_fields=["company_tickers_content"],
+        )
+    if not isinstance(payload, dict):
+        _blocked(
+            "sec_edgar_official_ticker_resolution_json_not_object",
+            "SEC official company_tickers.json must be a JSON object.",
+            http_status=409,
+            blocked_fields=["company_tickers_content"],
+        )
+    result: dict[str, dict[str, str]] = {}
+    for entry in payload.values():
+        if not isinstance(entry, dict):
+            continue
+        raw_cik = str(entry.get("cik_str") or "").strip().lstrip("0") or "0"
+        if not _CIK_RE.fullmatch(raw_cik):
+            continue
+        ticker = str(entry.get("ticker") or "").strip().upper()
+        if not ticker:
+            continue
+        title = str(entry.get("title") or "").strip()
+        result[ticker] = {"cik": raw_cik, "title": title}
+    return result
+
+
+def resolve_sec_ticker_to_cik(ticker: str) -> dict[str, str] | None:
+    """Resolve a ticker symbol to a CIK via SEC's official company_tickers.json.
+
+    Returns a dict with keys ``cik``, ``company_tickers_source_hash``, and
+    ``resolved_title`` for a known ticker, or ``None`` for an unknown ticker.
+
+    Fail-closed: any fetch or parse error raises a governed blocked error rather
+    than silently returning ``None``.  Must only be called when the live-network
+    flag is enabled; calls ``_require_live_network_enabled()`` up front.
+
+    Thread-safety: uses a module-level dict cache; GIL-protected single assignment
+    is acceptable for this use (single server process, infrequent refresh).
+    """
+    global _COMPANY_TICKERS_CACHE, _COMPANY_TICKERS_SOURCE_HASH
+
+    _require_live_network_enabled()
+
+    if _COMPANY_TICKERS_CACHE is None:
+        _enforce_rate_limit()
+        fetch_result = SEC_EDGAR_CLIENT.fetch_complete_submission_text(
+            url=_COMPANY_TICKERS_URL,
+            user_agent=_server_configured_user_agent(),
+            timeout_seconds=_timeout_seconds(),
+            max_bytes=max(_max_bytes(), _COMPANY_TICKERS_MAX_BYTES),
+        )
+        if fetch_result.status_code != 200:
+            _blocked(
+                "sec_edgar_official_ticker_resolution_fetch_failed",
+                "SEC official company_tickers.json acquisition did not return HTTP 200.",
+                http_status=409,
+                blocked_fields=[f"http_status:{fetch_result.status_code}"],
+            )
+        if not fetch_result.complete:
+            _blocked(
+                "sec_edgar_official_ticker_resolution_partial_download_blocked",
+                "Partial SEC official company_tickers.json downloads are not admitted.",
+                http_status=409,
+                blocked_fields=["content"],
+            )
+        raw = bytes(fetch_result.content or b"")
+        if not raw:
+            _blocked(
+                "sec_edgar_official_ticker_resolution_empty_content_blocked",
+                "Empty SEC official company_tickers.json response is not admitted.",
+                http_status=409,
+                blocked_fields=["content"],
+            )
+        # GIL-safe: assign cache and source hash atomically (two separate assignments;
+        # acceptable since Python dict assignment is atomic under the GIL).
+        _COMPANY_TICKERS_SOURCE_HASH = hashlib.sha256(raw).hexdigest()
+        _COMPANY_TICKERS_CACHE = _parse_company_tickers_payload(raw)
+
+    normalised = str(ticker or "").strip().upper()
+    entry = _COMPANY_TICKERS_CACHE.get(normalised)
+    if entry is None:
+        return None
+    return {
+        "cik": entry["cik"],
+        "company_tickers_source_hash": _COMPANY_TICKERS_SOURCE_HASH,
+        "resolved_title": entry["title"],
+    }
+
+
 def _companyfacts_root() -> Path:
     storage_dir = str(settings.storage_dir or "").strip()
     if not storage_dir:

@@ -1341,9 +1341,12 @@ def _normalise_request(fields: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _company_matrix(value: Any) -> tuple[str, ...]:
-    return layer3_sec_edgar_real_filing_acquisition_connector._normalise_company_matrix(
-        value or layer3_sec_edgar_real_filing_acquisition_connector.DEFAULT_REAL_COMPANY_MATRIX
+    tickers, _resolved_cik_map, _provenance = (
+        layer3_sec_edgar_real_filing_acquisition_connector._normalise_company_matrix(
+            value or layer3_sec_edgar_real_filing_acquisition_connector.DEFAULT_REAL_COMPANY_MATRIX
+        )
     )
+    return tickers
 
 
 def _read_receipt_by_hash(receipt_hash: str) -> dict[str, Any] | None:
