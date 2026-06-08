@@ -261,21 +261,32 @@ def session_sublayer_visualization_state(db: Session, *, session_id: str) -> dic
     }
 
 
+def _nonneg_int(value: Any) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
+
+
 def serialize_output_package_product(package: L3OutputPackage) -> dict[str, Any]:
     """Read-only serialization of a materialized output package as a derived product.
 
-    Exposes the package's identity/basis hash, lifecycle status, and session-anchor
-    provenance (reconciliation_record_id). The raw payload_ref (server-local path/ref)
-    is intentionally not exposed; only its content/basis hash is, matching the
-    bounded-reader convention. Review linkage is anchored on the reconciliation record,
-    not the package row, so it is not asserted here.
+    Exposes the package's identity/basis hash, lifecycle status, session-anchor
+    provenance (reconciliation_record_id), and safe content descriptors (finding /
+    contradiction / caveat counts from the package summary_json). The raw payload_ref
+    (server-local path/ref) is intentionally not exposed; only its content/basis hash
+    is, matching the bounded-reader convention. Review linkage is anchored on the
+    reconciliation record, not the package row, so it is not asserted here.
     """
+    summary = package.summary_json if isinstance(package.summary_json, dict) else {}
     return {
         "output_package_id": package.output_package_id,
         "reconciliation_record_id": package.reconciliation_record_id,
         "package_kind": package.package_kind,
         "status": package.status,
         "payload_hash": package.payload_hash,
+        "content": {
+            "finding_count": _nonneg_int(summary.get("finding_count")),
+            "contradiction_count": _nonneg_int(summary.get("contradiction_count")),
+            "caveat_count": _nonneg_int(summary.get("caveat_count")),
+        },
     }
 
 

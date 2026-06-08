@@ -324,6 +324,7 @@ def _package_input(
     status: str,
     payload_hash: str = "phash",
     reconciliation_record_id: str = "recon-1",
+    content: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "output_package_id": output_package_id,
@@ -331,7 +332,24 @@ def _package_input(
         "package_kind": package_kind,
         "status": status,
         "payload_hash": payload_hash,
+        "content": content if content is not None else {},
     }
+
+
+def test_inventory_package_products_carry_content_descriptors() -> None:
+    packages = [
+        _package_input(
+            "pkg-1",
+            package_kind="canonical_internal",
+            status="package_complete",
+            content={"finding_count": 4, "contradiction_count": 1, "caveat_count": 2},
+        ),
+    ]
+
+    projection = _projection(output_package_products=packages)
+    product = projection["package_products"][0]
+
+    assert product["content"] == {"finding_count": 4, "contradiction_count": 1, "caveat_count": 2}
 
 
 def test_inventory_enumerates_output_package_products_with_eligibility() -> None:

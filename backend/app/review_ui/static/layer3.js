@@ -2028,12 +2028,28 @@ function analysisProductEligibilityLabel(product) {
     return flags.length ? `eligible: ${flags.join(', ')}` : 'not downstream-eligible';
 }
 
+function analysisProductContentLine(product) {
+    const content = product?.content && typeof product.content === 'object' && !Array.isArray(product.content)
+        ? product.content
+        : null;
+    if (!content) return '';
+    const parts = [
+        ['findings', content.finding_count],
+        ['contradictions', content.contradiction_count],
+        ['caveats', content.caveat_count],
+    ]
+        .filter(([, value]) => typeof value === 'number' && Number.isFinite(value))
+        .map(([label, value]) => `${label} ${value}`);
+    return parts.length ? `<small>${escapeHtml(parts.join(' / '))}</small>` : '';
+}
+
 function analysisProductInventoryProductRow(product, productClass) {
     const blocked = Array.isArray(product?.blocked_reasons) ? product.blocked_reasons : [];
     const status = product?.lifecycle_status || 'not reported';
     const descriptor = productClass === 'output_package'
         ? `${product?.package_kind || 'package'} / ${status} / recon ${humanizeToken(product?.reconciliation_status || 'unlinked')}`
         : `${product?.product_kind || 'analysis output'} / ${product?.product_scope || 'unknown'} / ${status}`;
+    const contentLine = productClass === 'output_package' ? analysisProductContentLine(product) : '';
     const blockedLine = blocked.length
         ? `<small>${escapeHtml(shortText(blocked.map(humanizeToken).join(', '), 72))}</small>`
         : '';
@@ -2042,6 +2058,7 @@ function analysisProductInventoryProductRow(product, productClass) {
             <span>${escapeHtml(shortText(product?.product_id || 'unidentified product', 48))}</span>
             <strong>${escapeHtml(descriptor)}</strong>
             <em>${escapeHtml(analysisProductEligibilityLabel(product))}</em>
+            ${contentLine}
             ${blockedLine}
         </li>
     `;
