@@ -10,6 +10,7 @@ from app.models.models import (
     L3AnalysisSet,
     L3AnalysisUnit,
     L3MaterialSnapshot,
+    L3OutputPackage,
     L3PassRun,
     L3TypingRecord,
 )
@@ -257,3 +258,31 @@ def session_sublayer_visualization_state(db: Session, *, session_id: str) -> dic
         "latest_plan": serialize_sublayer_latest_plan(latest_analysis_plan(db, session_id=session_id)),
         "no_side_effects": True,
     }
+
+
+def serialize_output_package_product(package: L3OutputPackage) -> dict[str, Any]:
+    """Read-only serialization of a materialized output package as a derived product.
+
+    Exposes the package's identity/basis hash, lifecycle status, and session-anchor
+    provenance (reconciliation_record_id). The raw payload_ref (server-local path/ref)
+    is intentionally not exposed; only its content/basis hash is, matching the
+    bounded-reader convention. Review linkage is anchored on the reconciliation record,
+    not the package row, so it is not asserted here.
+    """
+    return {
+        "output_package_id": package.output_package_id,
+        "reconciliation_record_id": package.reconciliation_record_id,
+        "package_kind": package.package_kind,
+        "status": package.status,
+        "payload_hash": package.payload_hash,
+    }
+
+
+def session_output_package_products(db: Session, *, session_id: str) -> list[dict[str, Any]]:
+    packages = (
+        db.query(L3OutputPackage)
+        .filter(L3OutputPackage.session_id == session_id)
+        .order_by(L3OutputPackage.output_package_id.asc())
+        .all()
+    )
+    return [serialize_output_package_product(package) for package in packages]

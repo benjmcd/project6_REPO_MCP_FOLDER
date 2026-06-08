@@ -266,11 +266,15 @@ from app.services.layer3_sublayer_state import (
     serialize_analysis_set as _serialize_analysis_set,
     serialize_analysis_unit as _serialize_analysis_unit,
     serialize_typing_record as _serialize_typing_record,
+    session_output_package_products as _session_output_package_products,
     session_sublayer_visualization_state as _session_sublayer_visualization_state,
     snapshot_projection as _snapshot_projection,
 )
 from app.services.layer3_analysis_environment_projection import (
     analysis_environment_projection as _analysis_environment_projection,
+)
+from app.services.layer3_analysis_product_inventory_projection import (
+    analysis_product_inventory_projection as _analysis_product_inventory_projection,
 )
 from app.services.layer3_utils import (
     epoch_seconds_iso_z as _epoch_iso,
@@ -19315,6 +19319,13 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         downstream_unavailable=downstream_unavailable_values,
         authority_rail=authority_rail_state,
     )
+    analysis_product_inventory_projection_state = _analysis_product_inventory_projection(
+        sublayer_visualization=sublayer_visualization_state,
+        analysis_environment_projection=analysis_environment_projection_state,
+        execution_result_review=execution_result_review_state,
+        output_package_products=_session_output_package_products(db, session_id=session_id),
+        current_gate=current_gate,
+    )
 
     return {
         **_base_response("layer3.workbench_session_summary.v1"),
@@ -19353,6 +19364,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "pdf_location_projection": _pdf_location_projection_for_session(db, session_id=session_id),
         "sublayer_visualization": sublayer_visualization_state,
         "analysis_environment_projection": analysis_environment_projection_state,
+        "analysis_product_inventory_projection": analysis_product_inventory_projection_state,
         "state_action_contract": _workbench_state_action_contract(),
         "downstream_unavailable": downstream_unavailable_values,
         "authority_rail": authority_rail_state,
