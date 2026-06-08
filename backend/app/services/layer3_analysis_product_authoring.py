@@ -5,8 +5,10 @@ validation is fail-closed: every unknown/bad input raises
 Layer3AnalysisProductError with a distinct error_code.  The service
 does NOT call db.commit(); the caller (route) owns the transaction.
 
-Supported executor_type: "human" only (this version).  Future executor
-types are structurally reserved in the model but blocked here.
+executor_type gate: ALLOWED_EXECUTOR_TYPES controls which executor types
+are admitted.  executor_type is ALWAYS server-set per route — the public
+draft route forces "human"; the generation route forces "deterministic".
+A client never supplies executor_type directly.
 """
 
 from __future__ import annotations
@@ -42,6 +44,10 @@ from app.services.layer3_utils import stable_hash, stable_json_text
 # ---------------------------------------------------------------------------
 
 ANALYSIS_PRODUCT_SCHEMA_ID = "layer3.analysis_product.v1"
+
+# executor_type is ALWAYS server-set per route (never supplied by the client).
+# The public draft route forces "human"; the generation route forces "deterministic".
+ALLOWED_EXECUTOR_TYPES: frozenset[str] = frozenset({"human", "deterministic"})
 
 NON_EVIDENTIARY_ALLOWED_KINDS: frozenset[str] = frozenset({"analyst_note", "hypothesis"})
 
@@ -149,9 +155,10 @@ def create_analysis_product_draft(
     """
 
     # --- Step 1: executor_type gate ----------------------------------------
-    if draft.executor_type != "human":
+    if draft.executor_type not in ALLOWED_EXECUTOR_TYPES:
         raise Layer3AnalysisProductError(
-            f"executor_type '{draft.executor_type}' is not supported; only 'human' is admitted.",
+            f"executor_type '{draft.executor_type}' is not supported; "
+            f"admitted types: {sorted(ALLOWED_EXECUTOR_TYPES)}.",
             error_code="unsupported_executor_type",
         )
 

@@ -20167,6 +20167,81 @@ def post_working_set(
 
 
 # ---------------------------------------------------------------------------
+# Analysis-product generation — Deterministic 3C Product Generation v0
+# ---------------------------------------------------------------------------
+
+ANALYSIS_PRODUCT_GENERATE_SCHEMA_ID = "layer3.analysis_product_generation.v1"
+
+
+class Layer3AnalysisProductGenerateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    session_id: str = Field(min_length=1)
+    client_request_id: str = Field(min_length=1)
+    working_set_id: str = Field(min_length=1)
+    method_id: str = Field(min_length=1)
+
+
+class Layer3AnalysisProductGenerateResponse(Layer3BaseResponse):
+    analysis_product_id: str
+    session_id: str
+    working_set_id: str
+    method_id: str
+    method_version: int
+    executor_type: str
+    lifecycle_status: str
+    title: str
+    evidence_count: int
+    created_at: str
+    replayed: bool
+
+
+@router.post(
+    "/analysis-product/generate",
+    response_model=Layer3AnalysisProductGenerateResponse,
+    status_code=201,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_analysis_product_generate(
+    payload: Layer3AnalysisProductGenerateRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    from app.services.layer3_analysis_product_generation import (
+        Layer3GenerationResult,
+        generate_analysis_product,
+    )
+
+    try:
+        gen_result = generate_analysis_product(
+            db,
+            session_id=payload.session_id,
+            client_request_id=payload.client_request_id,
+            working_set_id=payload.working_set_id,
+            method_id=payload.method_id,
+        )
+        db.commit()
+        product = gen_result.product
+        serialized = _serialize_analysis_product(product, list(gen_result.evidence_links))
+        return {
+            **base_response(ANALYSIS_PRODUCT_GENERATE_SCHEMA_ID),
+            "analysis_product_id": product.analysis_product_id,
+            "session_id": product.session_id,
+            "working_set_id": payload.working_set_id,
+            "method_id": gen_result.method_id,
+            "method_version": gen_result.method_version,
+            "executor_type": product.executor_type,
+            "lifecycle_status": product.lifecycle_status,
+            "title": product.title,
+            "evidence_count": serialized["evidence_count"],
+            "created_at": serialized["created_at"] or "",
+            "replayed": gen_result.replayed,
+        }
+    except Layer3AnalysisProductError as exc:
+        db.rollback()
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+# ---------------------------------------------------------------------------
 # Analysis-product promotion — 3C Review/Promotion
 # ---------------------------------------------------------------------------
 
