@@ -13143,7 +13143,9 @@ test('Layer 3 workbench inspects SEC XBRL operator-review workflow status throug
   await expect(panel).toContainText('submit_operator_review_decision');
   await expect(panel).toContainText('requires_separate_decision_submit_freeze');
   await expect(panel).toContainText('open workflow API route enabled');
-  await expect(panel).toContainText('open_operator_review_workflow');
+  // 'open_operator_review_workflow' is no longer rendered as a blocked control in the status
+  // panel: it has moved from the blocked category to an explicitly confirmation-gated control
+  // with its own panel (covered by the dedicated open-operator-review-workflow test).
   await expect(panel).toContainText('raw_values_exposed: false');
   await expect(panel).toContainText('rendered UI enabled by backend: false');
   await expect(page.locator('#sec-xbrl-operator-review-decision-workflow-id')).toHaveValue(
@@ -13200,7 +13202,6 @@ test('Layer 3 workbench inspects SEC XBRL operator-review workflow status throug
   expect(panelText).not.toMatch(/https?:\/\/(?:www\.)?sec\.gov/i);
   expect(panelText).not.toMatch(/\b[A-Za-z]:\\/);
   for (const blockedControlId of [
-    '#sec-xbrl-open-operator-review-workflow-submit',
     '#sec-xbrl-value-reveal-submit',
     '#sec-xbrl-export-statement-packet-submit',
     '#sec-xbrl-source-acquisition-submit',
@@ -13208,6 +13209,8 @@ test('Layer 3 workbench inspects SEC XBRL operator-review workflow status throug
   ]) {
     await expect(page.locator(blockedControlId)).toHaveCount(0);
   }
+  // open-operator-review-workflow control is now PRESENT (confirmation-gated, not absent)
+  await expect(page.locator('#sec-xbrl-open-operator-review-workflow-submit')).toHaveCount(1);
 });
 
 test('Layer 3 workbench submits and inspects SEC XBRL operator-review decision through rendered control', async ({ page }) => {
@@ -13452,7 +13455,6 @@ test('Layer 3 workbench submits and inspects SEC XBRL operator-review decision t
   expect(panelText).not.toMatch(/https?:\/\/(?:www\.)?sec\.gov/i);
   expect(panelText).not.toMatch(/\b[A-Za-z]:\\/);
   for (const blockedControlId of [
-    '#sec-xbrl-open-operator-review-workflow-submit',
     '#sec-xbrl-value-reveal-submit',
     '#sec-xbrl-export-statement-packet-submit',
     '#sec-xbrl-source-acquisition-submit',
@@ -13460,6 +13462,8 @@ test('Layer 3 workbench submits and inspects SEC XBRL operator-review decision t
   ]) {
     await expect(page.locator(blockedControlId)).toHaveCount(0);
   }
+  // open-operator-review-workflow control is now PRESENT (confirmation-gated, not absent)
+  await expect(page.locator('#sec-xbrl-open-operator-review-workflow-submit')).toHaveCount(1);
 });
 
 test('Layer 3 workbench renders SEC XBRL decision submit blockers without frontend authority', async ({ page }) => {
@@ -13946,6 +13950,112 @@ test('Layer 3 workbench prepares and submits SEC XBRL controlled value reveal th
   ]) {
     await expect(page.locator(blockedControlId)).toHaveCount(0);
   }
+});
+
+test('Layer 3 workbench SEC XBRL open operator-review workflow control present, confirmation-gated, and redacted-only', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  const workflowId = 'sec-xbrl-operator-review-workflow-open-pipeline-proof';
+  const workflowBasisHash = 'a'.repeat(64);
+  const connectorReceiptHash = 'b'.repeat(64);
+  const selectedCikHash = 'c'.repeat(64);
+  const statementPacketBasisHash = 'd'.repeat(64);
+
+  let capturedOpenPayload = null;
+
+  await page.route('**/api/v1/layer3/sec-xbrl/operator-review/workflow/open-full-pipeline', async (route) => {
+    capturedOpenPayload = JSON.parse(route.request().postData() || '{}');
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.sec_xbrl_full_pipeline_open.v1',
+        request_id: 'open-pipeline-proof',
+        status: 'full_pipeline_open_ready',
+        production_readiness_claimed: false,
+        corpus_validation: {
+          validation_receipt_id: 'sec-xbrl-corpus-validation-open-proof',
+          connector_receipt_hash: connectorReceiptHash,
+          selected_form_type: '10-K',
+          selected_cik_hash: selectedCikHash,
+        },
+        companyfacts_stage: {
+          stage_status: 'staged',
+        },
+        operator_review: {
+          sec_xbrl_operator_review_workflow_id: workflowId,
+          workflow_basis_hash: workflowBasisHash,
+          status: 'open',
+          summary: {
+            statement_count: 3,
+            row_count: 17,
+            review_exception_count: 1,
+            review_ready: true,
+            statement_packet_basis_hash: statementPacketBasisHash,
+          },
+        },
+      }),
+    });
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#sec-xbrl-open-operator-review-workflow-panel');
+  const submit = page.locator('#sec-xbrl-open-operator-review-workflow-submit');
+
+  // Control is present
+  await expect(submit).toHaveCount(1);
+
+  // Confirmation-required: with confirm checkbox unchecked, submit is disabled
+  await expect(submit).toBeDisabled();
+
+  // Filling ticker + period limit alone is not enough
+  await panel.locator('#sec-xbrl-open-operator-review-ticker').fill('AAPL');
+  await panel.locator('#sec-xbrl-open-operator-review-period-limit').fill('3');
+  await expect(submit).toBeDisabled();
+
+  // Checking the confirm checkbox enables the submit
+  await panel.locator('#sec-xbrl-open-operator-review-confirm').check();
+  await expect(submit).toBeEnabled();
+
+  // Submit and verify exactly one POST to the open-full-pipeline path with operator_confirmation: true
+  await submit.click();
+  await page.waitForFunction(() => {
+    const el = document.getElementById('sec-xbrl-open-operator-review-workflow-output');
+    return el && el.textContent.includes('full_pipeline_open_ready');
+  });
+
+  const openRequests = apiRequests.filter((r) => r.path.includes('/sec-xbrl/operator-review/workflow/open-full-pipeline'));
+  expect(openRequests).toHaveLength(1);
+  expect(openRequests[0].method).toBe('POST');
+  expect(capturedOpenPayload).toMatchObject({
+    company_matrix: ['AAPL'],
+    period_limit: 3,
+    operator_confirmation: true,
+  });
+  // raw cik must not be in the payload company_matrix (ticker only)
+  expect(capturedOpenPayload.company_matrix).not.toContain('320193');
+
+  // No raw leaks in the panel DOM after response
+  const panelText = await panel.textContent();
+  expect(panelText).not.toMatch(/\b\d{10}\b/); // no raw 10-digit CIK
+  expect(panelText).not.toMatch(/\b\d{10}-\d{2}-\d{6}\b/); // no accession
+  expect(panelText).not.toMatch(/https?:\/\/(?:www\.)?sec\.gov/i); // no SEC URL
+  expect(panelText).not.toMatch(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/); // no email
+  expect(panelText).not.toMatch(/\b[A-Za-z]:\\/); // no file path
+  expect(panelText).not.toContain('file://');
+  expect(panelText).not.toContain('320193'); // raw CIK for AAPL must not appear
+
+  // Posture documented: confirmation-required attribute present on the panel
+  await expect(panel).toHaveAttribute('data-confirmation-required', 'true');
+
+  // Confirmation-required marker rendered in the posture card
+  await expect(panel).toContainText('open_operator_review_workflow');
+
+  // Result shows only redacted/hashed fields
+  await expect(panel).toContainText(workflowId);
+  await expect(panel).toContainText(workflowBasisHash);
+  await expect(panel).toContainText(connectorReceiptHash);
+  await expect(panel).toContainText(selectedCikHash);
+  await expect(panel).toContainText('full_pipeline_open_ready');
 });
 
 test('Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control', async ({ page }) => {
