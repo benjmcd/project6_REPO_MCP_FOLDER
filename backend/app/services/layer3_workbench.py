@@ -3660,6 +3660,7 @@ def _build_analysis_product_admission_preview(
                 else len(p.get("evidence_refs") or [])
             ),
             "basis_hash": p.get("basis_hash"),
+            "executor_type": p.get("executor_type"),
         }
         for p in roster
     ]
@@ -3710,6 +3711,8 @@ def _analysis_product_package_payload_extras(
                 "evidence_refs_truncated": len(refs) > _EVIDENCE_REFS_PER_PRODUCT_MAX,
                 "by_evidence_role": _json_clone(p.get("by_evidence_role") or {}),
                 "latest_review_decision": _json_clone(p.get("latest_review_decision")),
+                "executor_type": p.get("executor_type"),
+                "generation_method": _json_clone(p.get("generation_method")),
             }
         )
 

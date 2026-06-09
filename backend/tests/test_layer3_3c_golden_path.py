@@ -629,6 +629,12 @@ def test_3c_golden_path_flag_on_inventory_present(client, tmp_path, monkeypatch)
     assert "body" not in user_product, (
         "user_facing product must NOT expose body"
     )
+    assert "executor_type" not in user_product, (
+        "user_facing product must NOT expose executor_type"
+    )
+    assert "generation_method" not in user_product, (
+        "user_facing product must NOT expose generation_method"
+    )
     # by_evidence_role must be present (the only allowed summary field)
     assert "by_evidence_role" in user_product, (
         "user_facing product must carry by_evidence_role summary"
@@ -638,6 +644,26 @@ def test_3c_golden_path_flag_on_inventory_present(client, tmp_path, monkeypatch)
     # basis_hash/body, NOT the id. Document that boundary explicitly.
     assert "analysis_product_id" in user_product, (
         "user_facing product should carry the bounded analysis_product_id"
+    )
+
+    # ------------------------------------------------------------------
+    # PROVENANCE: executor_type + generation_method (human-authored product).
+    # ------------------------------------------------------------------
+    # The golden-path product is human-authored: executor_type must be "human"
+    # and generation_method must be None (deterministic-only field).
+    assert canonical_product.get("executor_type") == "human", (
+        f"canonical_internal product executor_type must be 'human', got {canonical_product.get('executor_type')!r}"
+    )
+    assert canonical_product.get("generation_method") is None, (
+        f"canonical_internal product generation_method must be None for human product, "
+        f"got {canonical_product.get('generation_method')!r}"
+    )
+    assert review_product.get("executor_type") == "human", (
+        f"review_facing product executor_type must be 'human', got {review_product.get('executor_type')!r}"
+    )
+    assert review_product.get("generation_method") is None, (
+        f"review_facing product generation_method must be None for human product, "
+        f"got {review_product.get('generation_method')!r}"
     )
 
     # ------------------------------------------------------------------
