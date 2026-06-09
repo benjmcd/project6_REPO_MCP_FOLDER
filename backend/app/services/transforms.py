@@ -37,9 +37,7 @@ def recommend_transformations(db: Session, dataset_version_id: str) -> list[dict
             else:
                 method = 'winsor_zscore'
                 rationale = f'absolute skewness {abs(profile.skewness):.3f} exceeds {HIGH_SKEW_THRESHOLD:.1f} without zero/negative constraints'
-        elif profile.bounded_flag:
-            method = 'min_max'
-            rationale = 'series is explicitly modeled as bounded in metadata'
+        # boundedness is not derived by any profiler (bounded_flag is always False at every producer), so no automatic min_max recommendation is emitted.
         warnings: list[str] = []
         if token_summary.get('proxy_count', 0) > 0:
             warnings.append('series contains threshold or inequality tokens that were coerced to numeric proxies')
