@@ -45,6 +45,7 @@ from app.services.layer3_analysis_product_promotion import (
 from app.services import layer3_workbench
 from app.services.layer3_workbench import (
     _analysis_product_package_payload_extras,
+    _build_analysis_product_admission_preview,
     _load_package_eligible_analysis_products,
     _merge_analysis_product_inventory_extras,
     _ANALYSIS_PRODUCT_INVENTORY_MAX,
@@ -532,3 +533,120 @@ def test_unknown_ref_kind_fails_closed(seeded_db) -> None:
     with patch("app.services.layer3_workbench._session_analyst_products", return_value=fake_products):
         with pytest.raises(ValueError, match="unknown ref_kind"):
             _load_package_eligible_analysis_products(db, SESSION_ID)
+
+
+# ---------------------------------------------------------------------------
+# TEXT ANCHOR: admission_preview_tests
+# _build_analysis_product_admission_preview — flag OFF / flag ON / error path
+# ---------------------------------------------------------------------------
+
+
+def test_admission_preview_flag_off_one_product(seeded_db) -> None:
+    """Flag OFF: embedding_enabled is False, roster is still visible, product
+    is bounded (no title/evidence_refs/body in admission products)."""
+    db = seeded_db
+    product = _make_grounded_product(db, client_request_id="adm-off-001")
+    _promote_to_package_eligible(
+        db, session_id=SESSION_ID, product_id=product.analysis_product_id, prefix="adm-off"
+    )
+
+    with patch.object(layer3_workbench.settings, "layer3_analysis_product_package_inventory_enabled", False):
+        result = _build_analysis_product_admission_preview(db, SESSION_ID)
+
+    assert result["schema_id"] == "layer3.analysis_product_admission_preview.v1"
+    assert result["embedding_enabled"] is False
+    assert result["available"] is True
+    assert result["package_eligible_product_count"] == 1
+    assert result["total_package_eligible"] == 1
+    assert result["truncated"] is False
+    assert len(result["products"]) == 1
+
+    p = result["products"][0]
+    assert p["product_kind"] == "finding"
+    assert p["lifecycle_status"] == "package_eligible"
+    assert isinstance(p["evidence_count"], int)
+    assert p["evidence_count"] == 1
+    # Bounded: no title, no evidence_refs, no body
+    assert "title" not in p
+    assert "evidence_refs" not in p
+    assert "body" not in p
+
+
+def test_admission_preview_flag_on_one_product(seeded_db) -> None:
+    """Flag ON: embedding_enabled is True, same roster shape."""
+    db = seeded_db
+    product = _make_grounded_product(db, client_request_id="adm-on-001")
+    _promote_to_package_eligible(
+        db, session_id=SESSION_ID, product_id=product.analysis_product_id, prefix="adm-on"
+    )
+
+    with patch.object(layer3_workbench.settings, "layer3_analysis_product_package_inventory_enabled", True):
+        result = _build_analysis_product_admission_preview(db, SESSION_ID)
+
+    assert result["schema_id"] == "layer3.analysis_product_admission_preview.v1"
+    assert result["embedding_enabled"] is True
+    assert result["available"] is True
+    assert result["package_eligible_product_count"] == 1
+    assert result["total_package_eligible"] == 1
+    assert result["truncated"] is False
+    assert len(result["products"]) == 1
+
+    p = result["products"][0]
+    assert p["product_kind"] == "finding"
+    assert p["lifecycle_status"] == "package_eligible"
+    assert "basis_hash" in p
+    # Bounded: no title, no evidence_refs, no body
+    assert "title" not in p
+    assert "evidence_refs" not in p
+    assert "body" not in p
+
+
+def test_admission_preview_no_products(seeded_db) -> None:
+    """Session with no package_eligible products: count 0, products == []."""
+    db = seeded_db
+
+    with patch.object(layer3_workbench.settings, "layer3_analysis_product_package_inventory_enabled", False):
+        result = _build_analysis_product_admission_preview(db, SESSION_ID)
+
+    assert result["available"] is True
+    assert result["package_eligible_product_count"] == 0
+    assert result["products"] == []
+    assert result["truncated"] is False
+
+
+def test_admission_preview_error_path(seeded_db) -> None:
+    """When _load_package_eligible_analysis_products raises, available=False and no
+    exception propagates (informational-only safety contract)."""
+    db = seeded_db
+
+    def _raise(*args, **kwargs):
+        raise RuntimeError("simulated roster load failure")
+
+    with patch("app.services.layer3_workbench._load_package_eligible_analysis_products", side_effect=_raise):
+        result = _build_analysis_product_admission_preview(db, SESSION_ID)
+
+    assert result["schema_id"] == "layer3.analysis_product_admission_preview.v1"
+    assert result["available"] is False
+    assert result["package_eligible_product_count"] is None
+    assert result["products"] == []
+    assert result["note"] == "admission_preview_unavailable"
+
+
+def test_admission_preview_bounded_keys_only(seeded_db) -> None:
+    """Assert that the per-product dict in admission preview contains exactly
+    the four bounded keys and nothing else."""
+    db = seeded_db
+    product = _make_grounded_product(db, client_request_id="adm-keys-001")
+    _promote_to_package_eligible(
+        db, session_id=SESSION_ID, product_id=product.analysis_product_id, prefix="adm-keys"
+    )
+
+    with patch.object(layer3_workbench.settings, "layer3_analysis_product_package_inventory_enabled", False):
+        result = _build_analysis_product_admission_preview(db, SESSION_ID)
+
+    assert len(result["products"]) == 1
+    p = result["products"][0]
+    allowed_keys = {"product_kind", "lifecycle_status", "evidence_count", "basis_hash"}
+    assert set(p.keys()) == allowed_keys, (
+        f"Admission product must have exactly {allowed_keys}, got {set(p.keys())}"
+    )
