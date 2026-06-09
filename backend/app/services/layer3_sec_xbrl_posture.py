@@ -222,8 +222,8 @@ def _controlled_value_reveal_surface(flags: dict[str, bool]) -> dict[str, Any]:
         ],
         "api_routes": [
             "POST /api/v1/layer3/sec-xbrl/value-reveal/authority/prepare",
-            "POST /api/v1/layer3/sec-xbrl/controlled-value-reveal/submit",
-            "POST /api/v1/layer3/sec-xbrl/controlled-value-reveal/status",
+            "POST /api/v1/layer3/sec-xbrl/value-reveal/submit",
+            "GET /api/v1/layer3/sec-xbrl/value-reveal/submit/status/{sec_xbrl_controlled_value_reveal_submit_receipt_id}",
         ],
         "operator_confirmation_required": True,
         "required_flags": (
