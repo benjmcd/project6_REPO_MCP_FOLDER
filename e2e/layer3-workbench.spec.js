@@ -25560,3 +25560,48 @@ test('Analysis Products dock panel collects multiple evidence rows into draft PO
   expect(draftBody.evidence[0]).toMatchObject({ ref_kind: 'material_snapshot', ref_id: 'snap-1', evidence_role: 'observation' });
   expect(draftBody.evidence[1]).toMatchObject({ ref_kind: 'pass_run', ref_id: 'run-1', evidence_role: 'measurement' });
 });
+
+test('Analysis Products dock panel populates ref-id datalist pickers from sessionSummary and wires ev-kind to list attribute', async ({ page }) => {
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+
+  // Seed State and call renderAll so datalists are populated.
+  await page.evaluate(() => {
+    State.activeOperationId = 'analysis-product-workspace-band';
+    State.operationDockManual = true;
+    State.sessionSummary = {
+      session_id: 'e2e-picker-sess',
+      schema_id: 'layer3.session_summary.v1',
+      sublayer_visualization: {
+        material_objects: [{ material_snapshot_id: 'snap-A', source_shape: 'raw', source_plane: 'L1' }],
+        pass_runs: [{ pass_run_id: 'run-A', pass_type: 'x', status: 'completed' }],
+        analysis_sets: [{ analysis_set_id: 'set-A' }],
+      },
+      analysis_product_inventory_projection: {
+        schema_id: 'layer3.analysis_product_inventory_projection.v1',
+        working_sets: [{ working_set_id: 'ws-A', name: 'WS A', member_count: 1, basis_hash: 'h' }],
+        analyst_products: [{ product_id: 'layer3_analyst_product:prod-A', product_kind: 'finding', lifecycle_status: 'package_eligible' }],
+        package_products: [{ source_refs: { output_package_id: 'pkg-A' } }],
+      },
+    };
+    renderAll();
+  });
+
+  // (a) material_snapshot datalist has option value 'snap-A'
+  await expect(page.locator('#apw-ref-ids-material_snapshot option[value="snap-A"]')).toHaveCount(1);
+
+  // (b) working_set datalist has option value 'ws-A'
+  await expect(page.locator('#apw-ref-ids-working_set option[value="ws-A"]')).toHaveCount(1);
+
+  // (c) prior_product datalist has option value 'prod-A' (prefix stripped — NOT 'layer3_analyst_product:prod-A')
+  await expect(page.locator('#apw-ref-ids-prior_product option[value="prod-A"]')).toHaveCount(1);
+  await expect(page.locator('#apw-ref-ids-prior_product option[value="layer3_analyst_product:prod-A"]')).toHaveCount(0);
+
+  // (d) output_package datalist has option value 'pkg-A'
+  await expect(page.locator('#apw-ref-ids-output_package option[value="pkg-A"]')).toHaveCount(1);
+
+  // Set the first evidence row's .apw-ev-kind to 'material_snapshot' and assert list attribute wired.
+  const evKindSelect = page.locator('#apw-draft-ev-rows .apw-ev-row .apw-ev-kind').nth(0);
+  await evKindSelect.selectOption('material_snapshot');
+  const evIdInput = page.locator('#apw-draft-ev-rows .apw-ev-row .apw-ev-id').nth(0);
+  await expect(evIdInput).toHaveAttribute('list', 'apw-ref-ids-material_snapshot');
+});

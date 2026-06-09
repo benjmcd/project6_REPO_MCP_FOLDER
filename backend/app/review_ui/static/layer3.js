@@ -8411,6 +8411,90 @@ function renderResultReviewPanel() {
     `;
 }
 
+function buildApwRefDatalistsHtml() {
+    // Returns the innerHTML string for #apw-ref-datalists.
+    // All values are bare uuids; labels are short bounded descriptors only.
+    const ss = State.sessionSummary;
+    const sv = ss?.sublayer_visualization || {};
+    const inv = ss?.analysis_product_inventory_projection || {};
+
+    const materialSnapshots = Array.isArray(sv.material_objects) ? sv.material_objects : [];
+    const passRuns = Array.isArray(sv.pass_runs) ? sv.pass_runs : [];
+    const analysisSets = Array.isArray(sv.analysis_sets) ? sv.analysis_sets : [];
+    const workingSets = Array.isArray(inv.working_sets) ? inv.working_sets : [];
+    const analystProducts = Array.isArray(inv.analyst_products) ? inv.analyst_products : [];
+    const packageProducts = Array.isArray(inv.package_products) ? inv.package_products : [];
+
+    function opts(items) { return items.join(''); }
+
+    const msOpts = opts(materialSnapshots.map((m) => {
+        const id = escapeHtml(String(m.material_snapshot_id || ''));
+        const label = [m.source_shape, m.source_plane].filter(Boolean).map((v) => escapeHtml(String(v))).join('/') || id;
+        return `<option value="${id}">${label}</option>`;
+    }));
+
+    const prOpts = opts(passRuns.map((p) => {
+        const id = escapeHtml(String(p.pass_run_id || ''));
+        const label = [p.pass_type, p.status].filter(Boolean).map((v) => escapeHtml(String(v))).join('/') || id;
+        return `<option value="${id}">${label}</option>`;
+    }));
+
+    const pkgOpts = opts(packageProducts.map((pkg) => {
+        const id = escapeHtml(String(pkg.source_refs?.output_package_id || ''));
+        if (!id) return '';
+        return `<option value="${id}">${id}</option>`;
+    }).filter(Boolean));
+
+    const asOpts = opts(analysisSets.map((a) => {
+        const id = escapeHtml(String(a.analysis_set_id || ''));
+        return `<option value="${id}">${id}</option>`;
+    }));
+
+    const ppOpts = opts(analystProducts.map((ap) => {
+        // product_id is prefixed 'layer3_analyst_product:<uuid>'; strip prefix for bare value
+        const raw = String(ap.product_id || '');
+        const bare = raw.replace(/^layer3_analyst_product:/, '');
+        const id = escapeHtml(bare);
+        const label = [ap.product_kind, ap.lifecycle_status].filter(Boolean).map((v) => escapeHtml(String(v))).join('/') || id;
+        return id ? `<option value="${id}">${label}</option>` : '';
+    }).filter(Boolean));
+
+    const wsOpts = opts(workingSets.map((ws) => {
+        const id = escapeHtml(String(ws.working_set_id || ''));
+        const label = escapeHtml(String(ws.name || '')) || id;
+        return id ? `<option value="${id}">${label}</option>` : '';
+    }).filter(Boolean));
+
+    return [
+        `<datalist id="apw-ref-ids-material_snapshot">${msOpts}</datalist>`,
+        `<datalist id="apw-ref-ids-pass_run">${prOpts}</datalist>`,
+        `<datalist id="apw-ref-ids-output_package">${pkgOpts}</datalist>`,
+        `<datalist id="apw-ref-ids-analysis_set">${asOpts}</datalist>`,
+        `<datalist id="apw-ref-ids-prior_product">${ppOpts}</datalist>`,
+        `<datalist id="apw-ref-ids-working_set">${wsOpts}</datalist>`,
+    ].join('');
+}
+
+function apwSetEvRowList(row, kind) {
+    const input = row.querySelector('.apw-ev-id');
+    if (!input) return;
+    if (kind) {
+        input.setAttribute('list', `apw-ref-ids-${kind}`);
+    } else {
+        input.removeAttribute('list');
+    }
+}
+
+function apwSetMemberRowList(row, kind) {
+    const input = row.querySelector('.apw-member-id');
+    if (!input) return;
+    if (kind) {
+        input.setAttribute('list', `apw-ref-ids-${kind}`);
+    } else {
+        input.removeAttribute('list');
+    }
+}
+
 function renderAnalysisProductWorkspacePanel() {
     const inventoryView = document.getElementById('apw-inventory-view');
     const genWsSelect = document.getElementById('apw-gen-ws');
@@ -8422,6 +8506,8 @@ function renderAnalysisProductWorkspacePanel() {
         if (inventoryView) inventoryView.innerHTML = '<p class="empty-panel-message">Load a session summary to view analysis products.</p>';
         if (genWsSelect) genWsSelect.innerHTML = blankOption;
         if (trProductSelect) trProductSelect.innerHTML = blankOption;
+        const datalistsHostEarly = document.getElementById('apw-ref-datalists');
+        if (datalistsHostEarly) datalistsHostEarly.innerHTML = buildApwRefDatalistsHtml();
         return;
     }
 
@@ -8430,6 +8516,8 @@ function renderAnalysisProductWorkspacePanel() {
         if (inventoryView) inventoryView.innerHTML = '<p class="empty-panel-message">No analysis product inventory projection available.</p>';
         if (genWsSelect) genWsSelect.innerHTML = blankOption;
         if (trProductSelect) trProductSelect.innerHTML = blankOption;
+        const datalistsHostEarly = document.getElementById('apw-ref-datalists');
+        if (datalistsHostEarly) datalistsHostEarly.innerHTML = buildApwRefDatalistsHtml();
         return;
     }
 
@@ -8471,6 +8559,12 @@ function renderAnalysisProductWorkspacePanel() {
         if (prevProduct && Array.from(trProductSelect.options).some((o) => o.value === prevProduct)) {
             trProductSelect.value = prevProduct;
         }
+    }
+
+    // Populate ref-id datalists for picker suggestions on evidence/member id inputs.
+    const datalistsHost = document.getElementById('apw-ref-datalists');
+    if (datalistsHost) {
+        datalistsHost.innerHTML = buildApwRefDatalistsHtml();
     }
 }
 
@@ -31113,6 +31207,8 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
             '</select>',
             '<button type="button" class="apw-ev-remove secondary-btn">Remove</button>',
         ].join('');
+        // Set list attribute based on initial kind (default '' = none, so no list).
+        apwSetEvRowList(row, row.querySelector('.apw-ev-kind')?.value || '');
         return row;
     }
 
@@ -31130,6 +31226,8 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
             '<input type="text" class="apw-member-id" placeholder="Member ref id" aria-label="Member ref id">',
             '<button type="button" class="apw-member-remove secondary-btn">Remove</button>',
         ].join('');
+        // Set list attribute based on initial kind (first option = material_snapshot).
+        apwSetMemberRowList(row, row.querySelector('.apw-member-kind')?.value || '');
         return row;
     }
 
@@ -31138,6 +31236,18 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
         const evAdd = document.getElementById('apw-draft-ev-add');
         const memberRows = document.getElementById('apw-ws-member-rows');
         const memberAdd = document.getElementById('apw-ws-member-add');
+
+        // Wire list attribute on any static (HTML-seeded) rows.
+        if (evRows) {
+            evRows.querySelectorAll('.apw-ev-row').forEach((row) => {
+                apwSetEvRowList(row, row.querySelector('.apw-ev-kind')?.value || '');
+            });
+        }
+        if (memberRows) {
+            memberRows.querySelectorAll('.apw-member-row').forEach((row) => {
+                apwSetMemberRowList(row, row.querySelector('.apw-member-kind')?.value || '');
+            });
+        }
 
         if (evAdd && evRows) {
             evAdd.addEventListener('click', () => {
@@ -31151,6 +31261,12 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
                     if (row) row.remove();
                 }
             });
+            evRows.addEventListener('change', (e) => {
+                if (e.target.classList.contains('apw-ev-kind')) {
+                    const row = e.target.closest('.apw-ev-row');
+                    if (row) apwSetEvRowList(row, e.target.value);
+                }
+            });
         }
         if (memberAdd && memberRows) {
             memberAdd.addEventListener('click', () => {
@@ -31162,6 +31278,12 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
                 if (e.target.closest('.apw-member-remove')) {
                     const row = e.target.closest('.apw-member-row');
                     if (row) row.remove();
+                }
+            });
+            memberRows.addEventListener('change', (e) => {
+                if (e.target.classList.contains('apw-member-kind')) {
+                    const row = e.target.closest('.apw-member-row');
+                    if (row) apwSetMemberRowList(row, e.target.value);
                 }
             });
         }
