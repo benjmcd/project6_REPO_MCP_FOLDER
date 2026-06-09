@@ -25488,3 +25488,75 @@ test('Layer 3 SEC XBRL value reveal authority prepare is fail-closed on basis ha
   const authBody = await authResult.json();
   expect(authBody.error_code).toBe('sec_xbrl_auth_binding_missing');
 });
+
+test('Analysis Products dock panel collects multiple evidence rows into draft POST body', async ({ page }) => {
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+
+  // Give the page a session id so currentSessionId() returns non-null and the null-session guard passes.
+  // currentSessionId() reads State.sessionSummary?.session_id first.
+  await page.evaluate(() => {
+    State.sessionSummary = { session_id: 'e2e-multirow-sess' };
+  });
+
+  // Activate the analysis-product-workspace-band panel.
+  // Set operationDockManual so renderOperationsDock does not auto-suggest another step.
+  await page.evaluate(() => {
+    State.activeOperationId = 'analysis-product-workspace-band';
+    State.operationDockManual = true;
+    renderAll();
+  });
+  await expect(page.locator('#analysis-product-workspace-band')).toHaveAttribute('data-operation-active', 'true');
+
+  // Intercept the draft POST so we can capture the request body without a real backend.
+  let draftBody = null;
+  await page.route('**/api/v1/layer3/analysis-product/draft', async (route) => {
+    draftBody = route.request().postDataJSON();
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.analysis_product.v1',
+        analysis_product_id: 'x',
+        product_id: 'x',
+        session_id: 'e2e-multirow-sess',
+        lifecycle_status: 'draft',
+        replayed: false,
+      }),
+    });
+  });
+
+  // Also intercept the session refresh that fires after a successful draft creation.
+  await page.route('**/session/e2e-multirow-sess', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ session_id: 'e2e-multirow-sess', schema_id: 'layer3.session_summary.v1' }),
+    });
+  });
+
+  // Fill evidence row 1 (the seeded row already in the DOM).
+  await page.locator('#apw-draft-ev-rows .apw-ev-row .apw-ev-kind').nth(0).selectOption('material_snapshot');
+  await page.locator('#apw-draft-ev-rows .apw-ev-row .apw-ev-id').nth(0).fill('snap-1');
+  await page.locator('#apw-draft-ev-rows .apw-ev-row .apw-ev-role').nth(0).selectOption('observation');
+
+  // Add a second evidence row and fill it.
+  await page.locator('#apw-draft-ev-add').click();
+  await page.locator('#apw-draft-ev-rows .apw-ev-row .apw-ev-kind').nth(1).selectOption('pass_run');
+  await page.locator('#apw-draft-ev-rows .apw-ev-row .apw-ev-id').nth(1).fill('run-1');
+  await page.locator('#apw-draft-ev-rows .apw-ev-row .apw-ev-role').nth(1).selectOption('measurement');
+
+  // Set required product fields.
+  await page.locator('#apw-draft-kind').selectOption('finding');
+  await page.locator('#apw-draft-title').fill('multi');
+
+  // Submit the form.
+  await page.locator('#apw-draft-submit').click();
+
+  // Wait for the route to be fulfilled (draftBody captured).
+  await expect.poll(() => draftBody, { timeout: 5000 }).not.toBeNull();
+
+  // Assert evidence array has both rows with correct fields.
+  expect(draftBody.evidence).toHaveLength(2);
+  expect(draftBody.evidence[0]).toMatchObject({ ref_kind: 'material_snapshot', ref_id: 'snap-1', evidence_role: 'observation' });
+  expect(draftBody.evidence[1]).toMatchObject({ ref_kind: 'pass_run', ref_id: 'run-1', evidence_role: 'measurement' });
+});

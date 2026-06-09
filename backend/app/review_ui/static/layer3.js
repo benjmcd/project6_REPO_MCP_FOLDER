@@ -31089,6 +31089,84 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
         statusEl.textContent = message;
     }
 
+    function buildEvRow() {
+        const row = document.createElement('div');
+        row.className = 'apw-ev-row';
+        row.innerHTML = [
+            '<select class="apw-ev-kind" aria-label="Evidence kind">',
+            '<option value="">(none)</option>',
+            '<option value="material_snapshot">material_snapshot</option>',
+            '<option value="pass_run">pass_run</option>',
+            '<option value="output_package">output_package</option>',
+            '<option value="analysis_set">analysis_set</option>',
+            '<option value="prior_product">prior_product</option>',
+            '<option value="working_set">working_set</option>',
+            '</select>',
+            '<input type="text" class="apw-ev-id" placeholder="Evidence ref id" aria-label="Evidence ref id">',
+            '<select class="apw-ev-role" aria-label="Evidence role">',
+            '<option value="observation">observation</option>',
+            '<option value="measurement">measurement</option>',
+            '<option value="claim">claim</option>',
+            '<option value="interpretation">interpretation</option>',
+            '<option value="context">context</option>',
+            '<option value="counterpoint">counterpoint</option>',
+            '</select>',
+            '<button type="button" class="apw-ev-remove secondary-btn">Remove</button>',
+        ].join('');
+        return row;
+    }
+
+    function buildMemberRow() {
+        const row = document.createElement('div');
+        row.className = 'apw-member-row';
+        row.innerHTML = [
+            '<select class="apw-member-kind" aria-label="Member kind">',
+            '<option value="material_snapshot">material_snapshot</option>',
+            '<option value="pass_run">pass_run</option>',
+            '<option value="output_package">output_package</option>',
+            '<option value="analysis_set">analysis_set</option>',
+            '<option value="prior_product">prior_product</option>',
+            '</select>',
+            '<input type="text" class="apw-member-id" placeholder="Member ref id" aria-label="Member ref id">',
+            '<button type="button" class="apw-member-remove secondary-btn">Remove</button>',
+        ].join('');
+        return row;
+    }
+
+    function bindApwRowControls() {
+        const evRows = document.getElementById('apw-draft-ev-rows');
+        const evAdd = document.getElementById('apw-draft-ev-add');
+        const memberRows = document.getElementById('apw-ws-member-rows');
+        const memberAdd = document.getElementById('apw-ws-member-add');
+
+        if (evAdd && evRows) {
+            evAdd.addEventListener('click', () => {
+                evRows.appendChild(buildEvRow());
+            });
+        }
+        if (evRows) {
+            evRows.addEventListener('click', (e) => {
+                if (e.target.closest('.apw-ev-remove')) {
+                    const row = e.target.closest('.apw-ev-row');
+                    if (row) row.remove();
+                }
+            });
+        }
+        if (memberAdd && memberRows) {
+            memberAdd.addEventListener('click', () => {
+                memberRows.appendChild(buildMemberRow());
+            });
+        }
+        if (memberRows) {
+            memberRows.addEventListener('click', (e) => {
+                if (e.target.closest('.apw-member-remove')) {
+                    const row = e.target.closest('.apw-member-row');
+                    if (row) row.remove();
+                }
+            });
+        }
+    }
+
     function bindApwDraftForm() {
         const form = document.getElementById('apw-draft-form');
         if (!form) return;
@@ -31099,12 +31177,18 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
                 setApwStatus(statusEl, 'Load a session first.');
                 return;
             }
-            const evId = (document.getElementById('apw-draft-ev-id')?.value || '').trim();
-            const evidence = evId ? [{
-                ref_kind: document.getElementById('apw-draft-ev-kind')?.value || '',
-                ref_id: evId,
-                evidence_role: document.getElementById('apw-draft-ev-role')?.value || '',
-            }] : [];
+            const evidence = [];
+            document.querySelectorAll('#apw-draft-ev-rows .apw-ev-row').forEach((row) => {
+                const refId = (row.querySelector('.apw-ev-id')?.value || '').trim();
+                const refKind = row.querySelector('.apw-ev-kind')?.value || '';
+                if (refId && refKind) {
+                    evidence.push({
+                        ref_kind: refKind,
+                        ref_id: refId,
+                        evidence_role: row.querySelector('.apw-ev-role')?.value || '',
+                    });
+                }
+            });
             const body = {
                 client_request_id: requestId(),
                 session_id: currentSessionId(),
@@ -31134,11 +31218,17 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
                 setApwStatus(statusEl, 'Load a session first.');
                 return;
             }
-            const memberId = (document.getElementById('apw-ws-member-id')?.value || '').trim();
-            const members = memberId ? [{
-                ref_kind: document.getElementById('apw-ws-member-kind')?.value || '',
-                ref_id: memberId,
-            }] : [];
+            const members = [];
+            document.querySelectorAll('#apw-ws-member-rows .apw-member-row').forEach((row) => {
+                const refId = (row.querySelector('.apw-member-id')?.value || '').trim();
+                const refKind = row.querySelector('.apw-member-kind')?.value || '';
+                if (refId) {
+                    members.push({
+                        ref_kind: refKind,
+                        ref_id: refId,
+                    });
+                }
+            });
             const body = {
                 client_request_id: requestId(),
                 session_id: currentSessionId(),
@@ -31229,12 +31319,14 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
+            bindApwRowControls();
             bindApwDraftForm();
             bindApwWsForm();
             bindApwGenForm();
             bindApwTransitionForm();
         });
     } else {
+        bindApwRowControls();
         bindApwDraftForm();
         bindApwWsForm();
         bindApwGenForm();
