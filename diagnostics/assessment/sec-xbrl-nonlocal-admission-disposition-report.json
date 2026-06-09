@@ -52,7 +52,7 @@
           "api_route_evidence": "required API route/binding evidence lines and enclosing scopes, not full backend/app/api/layer3.py"
         },
         "source_hashes": {
-          "api_route_evidence": "272070d0fd1e3ed1a6ee51a0017edefc26df3586a66062321222b64c721d54b4",
+          "api_route_evidence": "95a8e8281cd48c31c88ef63ce65527218fd71231556dc2ed42af68c35f422c8f",
           "auth_binding_service": "12e506ce86994cfc3e89b00ebad5f50c5eecf09130196f2aa039b12d35e3677e",
           "readiness_reconciliation_doc": "f1a4fa9613d581b53fd3fdea439abbf5f68b55852e65e54d118801d7b2d8a53f",
           "route_enforcement_doc": "cb07c179520e1d4f141afe3474eb07bd202cdfdccd97de7e1b6e4a99c9cfcb51"
@@ -446,7 +446,7 @@
       "api_route_evidence": "required API route/binding evidence lines and enclosing scopes, not full backend/app/api/layer3.py"
     },
     "source_hashes": {
-      "api_route_evidence": "272070d0fd1e3ed1a6ee51a0017edefc26df3586a66062321222b64c721d54b4",
+      "api_route_evidence": "95a8e8281cd48c31c88ef63ce65527218fd71231556dc2ed42af68c35f422c8f",
       "auth_binding_service": "12e506ce86994cfc3e89b00ebad5f50c5eecf09130196f2aa039b12d35e3677e",
       "readiness_reconciliation_doc": "f1a4fa9613d581b53fd3fdea439abbf5f68b55852e65e54d118801d7b2d8a53f",
       "route_enforcement_doc": "cb07c179520e1d4f141afe3474eb07bd202cdfdccd97de7e1b6e4a99c9cfcb51"
