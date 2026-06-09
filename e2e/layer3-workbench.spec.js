@@ -7044,6 +7044,84 @@ test('Layer 3 workbench drives raw mixed rendered result-review submit', async (
   ]);
 });
 
+test('Layer 3 workbench drives analysis product promotion draft to proposed via dock panel', async ({ page, request }) => {
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+  const approval = await approveRenderedPlan(page, gateB.session_id, planPreview);
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
+  const execution = await selectAndStartRenderedExecution(page, gateB.session_id, approval, planPreview);
+  await inspectRenderedResultStatus(page, gateB.session_id, approval, planPreview, execution);
+
+  const sessionId = gateB.session_id;
+
+  // Step 1: API-create a promotable non-evidentiary draft.
+  const draft = await expectJsonStatus(await request.post('/api/v1/layer3/analysis-product/draft', {
+    data: {
+      client_request_id: 'e2e-apw-draft-1',
+      session_id: sessionId,
+      product_kind: 'analyst_note',
+      title: 'E2E promote target',
+      body: 'Body',
+      is_non_evidentiary: true,
+      evidence: [],
+    },
+  }), 201);
+  expect(draft.lifecycle_status).toBe('draft');
+  expect(draft.analysis_product_id).toBeTruthy();
+  expect(draft.analysis_product_id).not.toContain('layer3_analyst_product:');
+
+  // Step 2: Refresh session summary so the inventory projection and dropdowns update.
+  await page.evaluate(async (sid) => {
+    State.sessionSummary = await getJson('/session/' + encodeURIComponent(sid));
+    renderAll();
+  }, sessionId);
+
+  // Step 3: Activate the analysis-product-workspace-band panel in the operations dock.
+  await page.evaluate(() => {
+    State.activeOperationId = 'analysis-product-workspace-band';
+    renderAll();
+  });
+  await expect(page.locator('#analysis-product-workspace-band')).toHaveAttribute('data-operation-active', 'true');
+
+  // Step 4: Select the product option whose value carries the prefixed id, then set intent and reason.
+  const prefixedProductId = await page.evaluate((bareId) => {
+    const select = document.getElementById('apw-tr-product');
+    const option = Array.from(select.options).find((o) => o.value.startsWith('layer3_analyst_product:'));
+    return option ? option.value : null;
+  }, draft.analysis_product_id);
+  expect(prefixedProductId).toBe(`layer3_analyst_product:${draft.analysis_product_id}`);
+
+  await page.locator('#apw-tr-product').selectOption(prefixedProductId);
+  await page.locator('#apw-tr-intent').selectOption('promote');
+  // Selecting intent triggers the change listener which repopulates #apw-tr-reason.
+  await page.locator('#apw-tr-reason').selectOption('proposed_ready');
+
+  // Step 5: Submit and capture the transition response.
+  const txnRespPromise = page.waitForResponse(
+    (r) => /\/api\/v1\/layer3\/analysis-product\/[^/]+\/transition/.test(r.url()),
+  );
+  await page.locator('#apw-tr-submit').click();
+  const txnResp = await txnRespPromise;
+
+  // Prefix-strip proof: 2xx instead of 404, and URL uses the bare id.
+  expect([200, 201]).toContain(txnResp.status());
+  const txn = await txnResp.json();
+  expect(txn.from_status).toBe('draft');
+  expect(txn.lifecycle_status).toBe('proposed');
+
+  // Step 6: UI status text updated.
+  await expect(page.locator('#apw-tr-status')).toContainText('proposed');
+
+  // Step 7: Confirm the POSTed URL used the bare id, not the prefixed form.
+  expect(txnResp.url()).toContain('/analysis-product/' + draft.analysis_product_id + '/transition');
+  expect(txnResp.url()).not.toContain('layer3_analyst_product:');
+});
+
 test('Layer 3 workbench drives raw mixed rendered package-review preview commit and submit', async ({ page, request }) => {
   const layer3ApiRequests = trackLayer3ApiRequests(page);
   const materialization = await openRawMixedMaterializedWorkbench(page, request);
