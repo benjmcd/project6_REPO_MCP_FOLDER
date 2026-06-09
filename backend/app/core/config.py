@@ -142,7 +142,7 @@ class Settings(BaseSettings):
     connector_lease_ttl_seconds: int = Field(default=120, alias="CONNECTOR_LEASE_TTL_SECONDS")
     connector_submission_ttl_hours: int = Field(default=24, alias="CONNECTOR_SUBMISSION_TTL_HOURS")
     connector_max_redirects: int = Field(default=3, alias="CONNECTOR_MAX_REDIRECTS")
-    connector_max_concurrent_runs: int = Field(default=2, alias="CONNECTOR_MAX_CONCURRENT_RUNS")
+    connector_max_concurrent_runs: int = Field(default=1, alias="CONNECTOR_MAX_CONCURRENT_RUNS")
     connector_max_downloads_per_run: int = Field(default=1, alias="CONNECTOR_MAX_DOWNLOADS_PER_RUN")
     connector_per_host_fetch_limit: int = Field(default=2, alias="CONNECTOR_PER_HOST_FETCH_LIMIT")
 
