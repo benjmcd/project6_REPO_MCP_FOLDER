@@ -190,10 +190,10 @@ def test_manifest_no_misleading_future_endpoints(db_session, review_root):
 def test_manifest_diagnostics_unit_count(db_session, review_root):
     """ordered_unit_count must be derived from diagnostics ordered_units, not aps_content_units_v2."""
     manifest = compose_trace_manifest(db_session, RUN_ID, TARGET_ID, review_root)
-    # The pinned target has diagnostics — ordered_unit_count should be > 0 if diagnostics has units
+    ordered_units = _load_ordered_units(db_session)
+    # The key constraint: the count is derived from diagnostics ordered_units, not units_v2.
     if manifest.trace_completeness.has_diagnostics:
-        # We accept >= 0; the key constraint is it came from diagnostics, not units_v2
-        assert manifest.summary.ordered_unit_count >= 0
+        assert manifest.summary.ordered_unit_count == len(ordered_units)
 
 
 def test_manifest_exposes_visual_derivative_counts(db_session, review_root):
