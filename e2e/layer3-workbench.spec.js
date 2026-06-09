@@ -25029,11 +25029,19 @@ test('Layer 3 workbench result-review approval state survives reload (server-bac
   await page.locator('#execution-step-chip').click();
   await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
 
-  const sessionSummaryPromise = page.waitForResponse((r) =>
-    r.url().includes(`/api/v1/layer3/session/${seed.session_id}`),
-  );
+  // After reload, recoverSessionFromStorage() fetches /session/{id} and sets
+  // State.sessionSummary before renderAll(). Waiting on page.waitForResponse
+  // and then calling response.json() races with Chromium freeing the body on
+  // domcontentloaded ("No resource with given identifier"). Instead, reload
+  // and then poll State.sessionSummary directly — it is set by the recovery
+  // handler and is the definitive signal that recovery+render is complete.
+  // (State is a top-level const in a classic script, not window.State.)
   await page.reload({ waitUntil: 'domcontentloaded' });
-  const sessionSummary = await expectJson(await sessionSummaryPromise);
+  await page.waitForFunction(
+    (id) => typeof State !== 'undefined' && State.sessionSummary?.session_id === id,
+    seed.session_id,
+  );
+  const sessionSummary = await page.evaluate(() => State.sessionSummary);
   expect(sessionSummary.session_id).toBe(seed.session_id);
 
   await page.locator('#execution-step-chip').click();
@@ -25062,11 +25070,16 @@ test('Layer 3 workbench package-review approval state survives reload (server-ba
   await page.locator('#execution-step-chip').click();
   await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
 
-  const sessionSummaryPromise = page.waitForResponse((r) =>
-    r.url().includes(`/api/v1/layer3/session/${seed.session_id}`),
-  );
+  // Same robust reload pattern: poll State.sessionSummary after reload rather
+  // than using waitForResponse+response.json(), which races with Chromium
+  // freeing the body on domcontentloaded (see result-review sibling for
+  // rationale). State is a top-level const — not window.State.
   await page.reload({ waitUntil: 'domcontentloaded' });
-  const sessionSummary = await expectJson(await sessionSummaryPromise);
+  await page.waitForFunction(
+    (id) => typeof State !== 'undefined' && State.sessionSummary?.session_id === id,
+    seed.session_id,
+  );
+  const sessionSummary = await page.evaluate(() => State.sessionSummary);
   expect(sessionSummary.session_id).toBe(seed.session_id);
 
   await page.locator('#execution-step-chip').click();
