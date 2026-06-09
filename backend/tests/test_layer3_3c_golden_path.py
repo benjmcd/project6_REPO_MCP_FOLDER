@@ -57,6 +57,11 @@ from app.services.layer3_analysis_product_authoring import (
     AnalysisProductEvidenceDraft,
     create_analysis_product_draft,
 )
+from app.services.layer3_working_set import (
+    WorkingSetDraft,
+    WorkingSetMemberDraft,
+    create_working_set,
+)
 from app.services.layer3_analysis_product_promotion import (
     AnalysisProductTransitionRequest,
     transition_analysis_product,
@@ -649,3 +654,302 @@ def test_3c_golden_path_flag_on_inventory_present(client, tmp_path, monkeypatch)
     assert product_title not in json.dumps(user_payload), (
         "Product title must NOT appear in user_facing payload (title leak)"
     )
+
+
+# ---------------------------------------------------------------------------
+# TEST C — working_set evidence ref survives into committed package payload
+# ---------------------------------------------------------------------------
+
+
+def _build_session_with_working_set_eligible_product(
+    client: TestClient,
+    tmp_path: Path,
+    *,
+    request_prefix: str,
+) -> tuple[str, str, dict, dict, dict, dict, dict, dict]:
+    """Build a quant session, create a working set, author a product whose
+    evidence ref is the working_set, promote to package_eligible, and run the
+    full plan/approve + exec/select + exec/start + result/review chain.
+
+    Returns:
+        (session_id, working_set_id, preview_body, approval_body,
+         selection_body, start_body, status_body, review_body)
+    """
+    # 1. Build the quant-ready session via direct DB call.
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    # 2. Create a working set + author a product with working_set evidence.
+    db = client.layer3_session_factory()
+    try:
+        # Query the real material_snapshot id so we can add it as a working set member.
+        snapshot = (
+            db.query(L3MaterialSnapshot)
+            .filter(L3MaterialSnapshot.session_id == session_id)
+            .first()
+        )
+        assert snapshot is not None, f"No material snapshot for session {session_id}"
+
+        ws_draft = WorkingSetDraft(
+            name="WS-lineage test set",
+            members=(
+                WorkingSetMemberDraft(
+                    ref_kind="material_snapshot",
+                    ref_id=snapshot.material_snapshot_id,
+                ),
+            ),
+        )
+        ws_result = create_working_set(
+            db,
+            session_id=session_id,
+            client_request_id=f"{request_prefix}-ws-create",
+            draft=ws_draft,
+        )
+        db.commit()
+        working_set_id = ws_result.working_set.working_set_id
+
+        # Author a grounded product with a working_set evidence ref.
+        product_draft = AnalysisProductDraft(
+            product_kind="finding",
+            title="WS-lineage finding",
+            body="Body text — should never appear in package payload.",
+            evidence=(
+                AnalysisProductEvidenceDraft(
+                    ref_kind="working_set",
+                    ref_id=working_set_id,
+                    evidence_role="context",
+                ),
+            ),
+        )
+        product_result = create_analysis_product_draft(
+            db,
+            session_id=session_id,
+            client_request_id=f"{request_prefix}-product",
+            draft=product_draft,
+        )
+        db.commit()
+        product_id = product_result.product.analysis_product_id
+
+        _promote_to_package_eligible(
+            db,
+            session_id=session_id,
+            product_id=product_id,
+            prefix=f"{request_prefix}-promote",
+        )
+    finally:
+        db.close()
+
+    # 3. Plan preview + approve (API).
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": f"{request_prefix}-plan-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    )
+    assert preview.status_code == 200, preview.text
+    preview_body = preview.json()
+
+    approval = client.post(
+        "/api/v1/layer3/plan/approve",
+        json={
+            "client_request_id": f"{request_prefix}-plan-approve",
+            "session_id": session_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "operator_confirmation": True,
+            "approval_scope": "owner_service_default",
+        },
+    )
+    assert approval.status_code == 200, approval.text
+    approval_body = approval.json()
+
+    # 4. Execution select.
+    selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": f"{request_prefix}-exec-select",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert selection.status_code == 200, selection.text
+    selection_body = selection.json()
+    pass_run_id = selection_body["pass_run_ids"][0]
+
+    # 5. Execution start.
+    start = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": f"{request_prefix}-exec-start",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert start.status_code == 200, start.text
+    start_body = start.json()
+
+    # 6. Result status check.
+    status = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert status.status_code == 200, status.text
+    status_body = status.json()
+    assert status_body["status"] == "available"
+
+    # 7. Result review (approve).
+    review = client.post(
+        "/api/v1/layer3/execution/result/review",
+        json={
+            "client_request_id": f"{request_prefix}-result-review",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "operator_decision": "approved",
+            "review_notes": "WS-lineage golden path — working_set evidence ref traceable.",
+            "reviewed_output_items": [
+                {
+                    "item_ref": "primary-output",
+                    "item_type": "finding",
+                    "trace": {
+                        "session_id": session_id,
+                        "analysis_plan_id": approval_body["analysis_plan_id"],
+                        "pass_run_id": pass_run_id,
+                        "analysis_run_id": start_body["analysis_run_id"],
+                        "output_payload_ref": status_body["output_payload_ref"],
+                    },
+                }
+            ],
+        },
+    )
+    assert review.status_code == 200, review.text
+    review_body = review.json()
+    assert review_body["review_state"] == "execution_result_review_approved"
+
+    return (
+        session_id,
+        working_set_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        status_body,
+        review_body,
+    )
+
+
+def test_3c_working_set_lineage_survives_package_commit(client, tmp_path, monkeypatch):
+    """CORE PROOF: a product whose evidence ref is a working_set ref survives
+    END-TO-END into the committed canonical_internal and review_facing package
+    payloads with the exact ref_kind=='working_set' and ref_id preserved.
+
+    Invariants asserted for canonical_internal and review_facing:
+      - analysis_product_inventory.products contains the finding.
+      - that product's evidence_refs has an entry with ref_kind=='working_set'
+        AND ref_id==<working_set_id>.
+      - No-body invariant: raw body text does not appear in the payload JSON.
+    """
+    request_prefix = "3c-ws-lineage"
+
+    monkeypatch.setattr(
+        layer3_workbench.settings,
+        "layer3_analysis_product_package_inventory_enabled",
+        True,
+    )
+
+    (
+        session_id,
+        working_set_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        status_body,
+        review_body,
+    ) = _build_session_with_working_set_eligible_product(
+        client, tmp_path, request_prefix=request_prefix
+    )
+
+    _commit_package(
+        client,
+        request_prefix=request_prefix,
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        preview_body=preview_body,
+        start_body=start_body,
+        review_body=review_body,
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        rows = _packages_by_kind(db, session_id)
+    finally:
+        db.close()
+
+    assert set(rows) >= {PACKAGE_KIND_CANONICAL_INTERNAL, PACKAGE_KIND_REVIEW_FACING}, (
+        f"Expected at least canonical_internal and review_facing; got {set(rows)}"
+    )
+
+    for kind in (PACKAGE_KIND_CANONICAL_INTERNAL, PACKAGE_KIND_REVIEW_FACING):
+        row = rows[kind]
+        assert row.payload_ref and Path(row.payload_ref).exists(), (
+            f"Payload file missing for kind {kind}"
+        )
+        payload = _load_payload(row.payload_ref)
+
+        # analysis_product_inventory must be present (flag is ON).
+        assert "analysis_product_inventory" in payload, (
+            f"analysis_product_inventory missing from {kind} payload"
+        )
+
+        products = payload["analysis_product_inventory"]["products"]
+        findings = [p for p in products if p.get("product_kind") == "finding"]
+        assert len(findings) >= 1, (
+            f"No finding product found in {kind} analysis_product_inventory"
+        )
+
+        # CORE PROOF: the finding carries a working_set evidence ref with the
+        # exact working_set_id created in this test.
+        finding = findings[0]
+        assert "evidence_refs" in finding, (
+            f"{kind} finding must carry evidence_refs"
+        )
+        ws_refs = [
+            ref for ref in finding["evidence_refs"]
+            if ref.get("ref_kind") == "working_set"
+        ]
+        assert len(ws_refs) >= 1, (
+            f"{kind} finding has no evidence_ref with ref_kind=='working_set'; "
+            f"got evidence_refs={finding['evidence_refs']}"
+        )
+        assert ws_refs[0]["ref_id"] == working_set_id, (
+            f"{kind} working_set ref_id mismatch: expected {working_set_id!r}, "
+            f"got {ws_refs[0]['ref_id']!r}"
+        )
+
+        # No-body invariant: body text must not leak into the committed payload.
+        payload_text = json.dumps(payload)
+        assert "Body text — should never appear in package payload." not in payload_text, (
+            f"Raw body text leaked into {kind} payload"
+        )
