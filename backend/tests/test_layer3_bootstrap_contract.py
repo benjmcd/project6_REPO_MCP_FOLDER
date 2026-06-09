@@ -1,3 +1,5 @@
+import pytest
+from app.core.config import settings
 from app.services import layer3_workbench
 from app.services.layer3_bootstrap_contract import (
     BOOTSTRAP_FEATURE_FLAGS,
@@ -579,3 +581,29 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
         == "server_configured_operator_directory_text_table_source_family"
     )
     assert direct_body["execution_readiness"]["readiness_state"] == "execution_readiness_blocked"
+
+
+def test_bootstrap_analysis_product_package_inventory_enabled_default_false() -> None:
+    # TEXT ANCHOR: bootstrap_analysis_product_package_inventory_enabled_default
+    body = layer3_workbench.bootstrap()
+    assert "analysis_product_package_inventory_enabled" in body
+    assert body["analysis_product_package_inventory_enabled"] is False
+
+
+def test_bootstrap_analysis_product_package_inventory_enabled_monkeypatch_true(monkeypatch: pytest.MonkeyPatch) -> None:
+    # TEXT ANCHOR: bootstrap_analysis_product_package_inventory_enabled_monkeypatch
+    monkeypatch.setattr(settings, "layer3_analysis_product_package_inventory_enabled", True)
+    body = build_bootstrap_contract(
+        route=layer3_workbench.ROUTE,
+        api_root=layer3_workbench.API_ROOT,
+        supported_source_classes=layer3_workbench.SUPPORTED_SOURCE_CLASSES,
+        unsupported_source_classes=layer3_workbench.UNSUPPORTED_SOURCE_CLASSES,
+        gate_labels=layer3_workbench.GATE_LABELS,
+        active_gate_labels=layer3_workbench.ACTIVE_GATES,
+        unavailable_gate_labels=layer3_workbench.DOWNSTREAM_UNAVAILABLE,
+        state_action_contract=layer3_workbench.bootstrap()["state_action_contract"],
+        authority_matrix_contract=layer3_workbench.bootstrap()["authority_matrix_contract"],
+        mockup_activation_readiness=layer3_workbench.bootstrap()["mockup_activation_readiness"],
+        authority_rail=layer3_workbench.bootstrap()["authority_rail"],
+    )
+    assert body["analysis_product_package_inventory_enabled"] is True

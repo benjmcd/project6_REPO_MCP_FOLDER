@@ -184,6 +184,7 @@ class Layer3WorkbenchBootstrapResponse(Layer3BaseResponse):
     authority_matrix_contract: dict[str, Any]
     mockup_activation_readiness: dict[str, Any]
     features: dict[str, bool]
+    analysis_product_package_inventory_enabled: bool = False
     execution_readiness: dict[str, Any]
     authority_rail: dict[str, Any]
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
+from app.core.config import settings
 from app.services.layer3_candidate_b_default_readiness import ELIGIBLE_CORPUS_SCOPE
 from app.services.layer3_readiness_contract import EXECUTION_READINESS_SCHEMA_ID
 from app.services.layer3_response_contract import base_response
@@ -145,6 +146,10 @@ def build_bootstrap_contract(
         "authority_matrix_contract": dict(authority_matrix_contract),
         "mockup_activation_readiness": dict(mockup_activation_readiness),
         "features": dict(BOOTSTRAP_FEATURE_FLAGS),
+        # Top-level (not inside the static `features` constant) because this is a
+        # runtime settings-derived flag read from `settings`; BOOTSTRAP_FEATURE_FLAGS
+        # is a module-level constant of static compile-time flags and cannot read settings.
+        "analysis_product_package_inventory_enabled": bool(settings.layer3_analysis_product_package_inventory_enabled),
         "execution_readiness": {
             "schema_id": EXECUTION_READINESS_SCHEMA_ID,
             "execution_admitted": False,
