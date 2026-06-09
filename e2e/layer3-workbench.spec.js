@@ -24950,13 +24950,18 @@ test('Layer 3 workbench renders failed pass result status honestly (server-backe
   await page.locator('#execution-step-chip').click();
   await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
 
-  // Reload to restore execution state from server
-  const sessionSummaryPromise = page.waitForResponse((r) =>
-    r.url().includes(`/api/v1/layer3/session/${seed.session_id}`),
-  );
+  // After reload, recoverSessionFromStorage() fetches /session/{id} and sets
+  // State.sessionSummary before renderAll(). Waiting on page.waitForResponse
+  // and then calling response.json() races with Chromium freeing the body on
+  // domcontentloaded ("No resource with given identifier"). Instead, reload
+  // and then poll State.sessionSummary directly — it is set by the recovery
+  // handler and is the definitive signal that recovery+render is complete.
+  // (State is a top-level const in a classic script, not window.State.)
   await page.reload({ waitUntil: 'domcontentloaded' });
-  const sessionSummary = await expectJson(await sessionSummaryPromise);
-  expect(sessionSummary.session_id).toBe(seed.session_id);
+  await page.waitForFunction(
+    (id) => typeof State !== 'undefined' && State.sessionSummary?.session_id === id,
+    seed.session_id,
+  );
 
   await page.locator('#execution-step-chip').click();
   await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
@@ -24995,11 +25000,18 @@ test('Layer 3 workbench renders missing-output pass status honestly (server-back
   await page.locator('#execution-step-chip').click();
   await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
 
-  const sessionSummaryPromise = page.waitForResponse((r) =>
-    r.url().includes(`/api/v1/layer3/session/${seed.session_id}`),
-  );
+  // After reload, recoverSessionFromStorage() fetches /session/{id} and sets
+  // State.sessionSummary before renderAll(). Waiting on page.waitForResponse
+  // and then calling response.json() races with Chromium freeing the body on
+  // domcontentloaded ("No resource with given identifier"). Instead, reload
+  // and then poll State.sessionSummary directly — it is set by the recovery
+  // handler and is the definitive signal that recovery+render is complete.
+  // (State is a top-level const in a classic script, not window.State.)
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await expectJson(await sessionSummaryPromise);
+  await page.waitForFunction(
+    (id) => typeof State !== 'undefined' && State.sessionSummary?.session_id === id,
+    seed.session_id,
+  );
 
   await page.locator('#execution-step-chip').click();
   await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
