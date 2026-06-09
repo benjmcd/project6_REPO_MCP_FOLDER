@@ -23594,6 +23594,18 @@ def test_layer3_api_package_review_preview_requires_approved_result_review_and_i
     assert body["output_metadata_summary"]["output_payload_ref"] == status_body["output_payload_ref"]
     assert body["unresolved_trace_count"] == 0
 
+    # TEXT ANCHOR: analysis_product_admission_api_test_assertions
+    admission = body["analysis_product_admission"]
+    assert admission is not None, "analysis_product_admission must be present in package_review_preview response"
+    assert admission["schema_id"] == "layer3.analysis_product_admission_preview.v1"
+    assert admission["embedding_enabled"] is False, "flag default is False"
+    assert "package_eligible_product_count" in admission
+    assert isinstance(admission["products"], list)
+    # Session built by _select_quant_pass has no package_eligible products authored.
+    assert admission["package_eligible_product_count"] == 0
+    assert admission["products"] == []
+    assert admission["available"] is True
+
     db = client.layer3_session_factory()
     try:
         assert {

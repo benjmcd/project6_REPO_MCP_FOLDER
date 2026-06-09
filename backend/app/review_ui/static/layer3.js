@@ -8749,6 +8749,44 @@ function renderPackageReviewPreviewPanel() {
                 <strong>Disabled Downstream</strong>
                 <div class="downstream-locks">${renderDownstreamLocks(submit.downstream_unavailable || construction.downstream_unavailable || preview.downstream_unavailable || ['package_commit', 'package_review_submit', 'handoff', 'export'])}</div>
             </section>
+            ${(function() {
+                // TEXT ANCHOR: analysis_product_admission_card
+                const admission = preview.analysis_product_admission;
+                if (!admission) return '';
+                const products = Array.isArray(admission.products) ? admission.products : [];
+                // Coerce any count to a safe integer string (defense-in-depth; values are also escaped on render).
+                const toCount = (v) => (Number.isFinite(Number(v)) ? String(Number(v)) : '?');
+                const eligibleCount = toCount(admission.package_eligible_product_count);
+                const embeddingLabel = admission.embedding_enabled
+                    ? 'Embedding ACTIVE — these products will be carried into the package'
+                    : 'Embedding inactive — ' + eligibleCount + ' product(s) are package-eligible but will NOT be carried';
+                const availableContent = admission.available === false
+                    ? '<li><em>Admission preview unavailable</em></li>'
+                    : (() => {
+                        const truncNote = admission.truncated ? ' (truncated)' : '';
+                        const totalNote = (admission.total_package_eligible != null && Number(admission.total_package_eligible) !== Number(admission.package_eligible_product_count))
+                            ? ' / ' + toCount(admission.total_package_eligible) + ' total'
+                            : '';
+                        const productRows = products.length
+                            ? products.map(p => `<li>
+                                <code>${escapeHtml(p.product_kind || '')}</code>
+                                ${fieldItem('lifecycle', p.lifecycle_status)}
+                                ${fieldItem('evidence N', toCount(p.evidence_count))}
+                                ${fieldItem('basis', p.basis_hash ? escapeHtml(String(p.basis_hash).slice(0, 16)) + '…' : null, { code: true })}
+                            </li>`).join('')
+                            : '<li>No package-eligible products.</li>';
+                        return `
+                            ${fieldItem('package-eligible count', eligibleCount + totalNote + truncNote)}
+                            <li><ul>${productRows}</ul></li>`;
+                    })();
+                return `<section class="result-review-card">
+                    <strong>Analysis Product Admission</strong>
+                    <ul>
+                        <li>${escapeHtml(embeddingLabel)}</li>
+                        ${availableContent}
+                    </ul>
+                </section>`;
+            })()}
             ${renderErrorCard(error)}
         </div>
     `;

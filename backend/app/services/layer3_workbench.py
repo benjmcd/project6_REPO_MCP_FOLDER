@@ -3627,6 +3627,53 @@ def _load_package_eligible_analysis_products(
     return roster, meta
 
 
+# TEXT ANCHOR: _build_analysis_product_admission_preview
+def _build_analysis_product_admission_preview(
+    db: Session,
+    session_id: str,
+) -> dict[str, Any]:
+    """Read-only, bounded pre-commit view of what the package bridge WOULD embed.
+
+    Never raises into the package preview (informational only).
+    """
+    enabled = bool(settings.layer3_analysis_product_package_inventory_enabled)
+    try:
+        roster, meta = _load_package_eligible_analysis_products(db, session_id)
+    except Exception:
+        return {
+            "schema_id": "layer3.analysis_product_admission_preview.v1",
+            "embedding_enabled": enabled,
+            "available": False,
+            "package_eligible_product_count": None,
+            "total_package_eligible": None,
+            "truncated": None,
+            "products": [],
+            "note": "admission_preview_unavailable",
+        }
+    products = [
+        {
+            "product_kind": p.get("product_kind"),
+            "lifecycle_status": p.get("lifecycle_status"),
+            "evidence_count": (
+                p.get("evidence_count")
+                if p.get("evidence_count") is not None
+                else len(p.get("evidence_refs") or [])
+            ),
+            "basis_hash": p.get("basis_hash"),
+        }
+        for p in roster
+    ]
+    return {
+        "schema_id": "layer3.analysis_product_admission_preview.v1",
+        "embedding_enabled": enabled,
+        "available": True,
+        "package_eligible_product_count": int(meta.get("included", len(products))),
+        "total_package_eligible": int(meta.get("total", len(products))),
+        "truncated": bool(meta.get("truncated", False)),
+        "products": products,
+    }
+
+
 def _analysis_product_package_payload_extras(
     db: Session,
     session_id: str,
@@ -6639,6 +6686,10 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             next_allowed_actions=["inspect_existing_package_state"],
         )
 
+    # TEXT ANCHOR: analysis_product_admission_preview_compute
+    # Computed once, after session validation, OUTSIDE all hash computations.
+    analysis_product_admission = _build_analysis_product_admission_preview(db, session_id)
+
     if source_intake_preview:
         downstream_unavailable = SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
         package_review_preview_hash = _source_intake_package_review_preview_hash(
@@ -6730,6 +6781,8 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
                 execution_enabled=False,
                 package_review_enabled=False,
             ),
+            # TEXT ANCHOR: analysis_product_admission_source_intake_return
+            "analysis_product_admission": analysis_product_admission,
         }
 
     if status_body.get("engine_family") == ENGINE_FAMILY_QUAL_APS_DOCUMENT:
@@ -6840,6 +6893,8 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
                 execution_enabled=False,
                 package_review_enabled=False,
             ),
+            # TEXT ANCHOR: analysis_product_admission_qual_aps_return
+            "analysis_product_admission": analysis_product_admission,
         }
 
     compatibility = _package_owner_compatibility(
@@ -6915,6 +6970,8 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             execution_enabled=False,
             package_review_enabled=False,
         ),
+        # TEXT ANCHOR: analysis_product_admission_default_return
+        "analysis_product_admission": analysis_product_admission,
     }
 
 
