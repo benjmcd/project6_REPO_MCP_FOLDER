@@ -6,6 +6,8 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
+import pytest
+
 from sqlalchemy import create_engine, func
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -200,7 +202,12 @@ def discover_baseline_visible_passed_runtimes() -> list[AuditedReviewRuntime]:
 
 def latest_baseline_visible_passed_runtime() -> AuditedReviewRuntime:
     runtimes = discover_baseline_visible_passed_runtimes()
-    assert runtimes, f"No baseline-visible passed local-corpus runtime found under {RUNTIME_PARENT}"
+    if not runtimes:
+        pytest.skip(
+            f"No baseline-visible passed local-corpus runtime found under {RUNTIME_PARENT};"
+            " generate the NRC APS local-corpus runtime to enable these tests",
+            allow_module_level=True,
+        )
     selected_runtime = runtimes[0]
     if not INITIAL_STORAGE_DIR:
         selected_storage_root = selected_runtime.runtime_dir.parent.resolve()
@@ -211,7 +218,12 @@ def latest_baseline_visible_passed_runtime() -> AuditedReviewRuntime:
 
 def latest_passed_runtime() -> AuditedReviewRuntime:
     runtimes = discover_passed_runtimes()
-    assert runtimes, f"No passed local-corpus runtime found under {RUNTIME_PARENT}"
+    if not runtimes:
+        pytest.skip(
+            f"No passed local-corpus runtime found under {RUNTIME_PARENT};"
+            " generate the NRC APS local-corpus runtime to enable these tests",
+            allow_module_level=True,
+        )
     selected_runtime = runtimes[0]
     if not INITIAL_STORAGE_DIR:
         selected_storage_root = selected_runtime.runtime_dir.parent.resolve()
@@ -247,7 +259,12 @@ def discover_document_trace_ready_runtimes() -> list[AuditedReviewRuntime]:
 
 def latest_document_trace_ready_runtime() -> AuditedReviewRuntime:
     runtimes = discover_document_trace_ready_runtimes()
-    assert runtimes, f"No document-trace-ready local-corpus runtime found under {RUNTIME_PARENT}"
+    if not runtimes:
+        pytest.skip(
+            f"No document-trace-ready local-corpus runtime found under {RUNTIME_PARENT};"
+            " generate the NRC APS local-corpus runtime to enable these tests",
+            allow_module_level=True,
+        )
     selected_runtime = runtimes[0]
     if not INITIAL_STORAGE_DIR:
         selected_storage_root = selected_runtime.runtime_dir.parent.resolve()
