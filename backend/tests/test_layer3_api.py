@@ -6017,8 +6017,8 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["classification_diagnostics"]["cross_company_comparability_readiness_blockers_hash"]
     assert body["classification_diagnostics"]["fact_identity_group_count"] > 0
     assert body["classification_diagnostics"]["fact_conflict_basis_group_count"] > 0
-    assert body["classification_diagnostics"]["exact_duplicate_fact_group_count"] >= 0
-    assert body["classification_diagnostics"]["conflicting_fact_group_count"] >= 0
+    assert body["classification_diagnostics"]["exact_duplicate_fact_group_count"] == 0
+    assert body["classification_diagnostics"]["conflicting_fact_group_count"] == 0
     assert (
         body["classification_diagnostics"]["medium_statement_role_confidence_count"]
         + body["classification_diagnostics"]["low_statement_role_confidence_count"]

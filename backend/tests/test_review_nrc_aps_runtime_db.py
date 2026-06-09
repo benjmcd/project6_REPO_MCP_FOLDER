@@ -65,7 +65,7 @@ def test_runtime_db_session_for_run_session_closed_after_exit():
     """Session must be closed after context manager exit."""
     with runtime_db_session_for_run(RUN_ID) as (binding, session):
         pass
-    assert not session.is_active or session.get_bind() is not None
+    assert not session.in_transaction()
 
 
 def test_runtime_db_session_for_run_binding_matches_fixture():

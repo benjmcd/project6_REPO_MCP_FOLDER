@@ -150,7 +150,7 @@ def build_report() -> dict[str, Any]:
             "arelle_value_reveal_default_off_controlled_submit_activated",
             value_reveal_defaults_off
             and "profile.layer3_sec_edgar_arelle_value_reveal_enabled is False" in sources["api_tests"]
-            and "profile.layer3_sec_xbrl_controlled_value_reveal_submit_enabled is True" in sources["api_tests"],
+            and "profile.layer3_sec_xbrl_controlled_value_reveal_submit_enabled is False" in sources["api_tests"],
             {
                 "value_reveal_default_enabled": False,
                 "controlled_value_reveal_submit_default_enabled": controlled_value_reveal_submit_default_on,

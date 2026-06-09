@@ -242,7 +242,10 @@ def build_report(
             non_admitted_surfaces,
             {
                 "value_reveal_default_enabled": False,
-                "controlled_value_reveal_submit_default_enabled": True,
+                "controlled_value_reveal_submit_default_enabled": (
+                    "layer3_sec_xbrl_controlled_value_reveal_submit_enabled: bool = Field(\n        default=True,"
+                    in sources["config"]
+                ),
                 "raw_internal_value_store_default_enabled": False,
                 "corpus_validation_arelle_default_enabled": False,
                 "source_acquisition_performed_by_gate": False,

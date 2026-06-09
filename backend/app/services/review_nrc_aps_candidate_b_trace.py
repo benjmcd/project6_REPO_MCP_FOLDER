@@ -395,7 +395,10 @@ def load_candidate_b_trace_raw_json(
         context,
         candidate_b.get("raw_json_ref"),
         error_code="candidate_b_raw_json_invalid",
+        allow_missing=True,
     )
+    if raw_json_path is None:
+        raise FileNotFoundError("candidate_b_raw_json_unavailable")
     return _read_json(raw_json_path)
 
 
@@ -415,5 +418,8 @@ def load_candidate_b_trace_raw_markdown(
         context,
         candidate_b.get("raw_markdown_ref"),
         error_code="candidate_b_raw_markdown_invalid",
+        allow_missing=True,
     )
+    if raw_markdown_path is None:
+        raise FileNotFoundError("candidate_b_raw_markdown_unavailable")
     return raw_markdown_path.read_text(encoding="utf-8")

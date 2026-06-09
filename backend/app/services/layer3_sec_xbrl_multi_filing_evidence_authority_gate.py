@@ -4,6 +4,8 @@ import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from app.services.layer3_sec_xbrl_public_authority_guard import RAW_AUTHORITY_KEYS as GUARD_RAW_AUTHORITY_KEYS
+from app.services.layer3_sec_xbrl_public_authority_guard import RAW_VALUE_KEYS as GUARD_RAW_VALUE_KEYS
 from app.services.layer3_sec_xbrl_public_authority_guard import public_text_reference_detected
 from app.services.layer3_sec_xbrl_report_leak_guard import reject_report_public_text_references
 from app.services.layer3_sec_xbrl_report_leak_guard import report_scan_text
@@ -47,26 +49,11 @@ NEGATIVE_READY_FLAGS = (
     "production_readiness_claimed",
 )
 
-RAW_VALUE_KEYS = {"_value", "value", "effective_value", "amount", "lexical_value"}
-RAW_AUTHORITY_KEYS = {
-    "accession",
-    "accession_number",
-    "cik",
-    "company_name",
-    "issuer_name",
-    "local_path",
-    "raw_path",
-    "registrant",
-    "registrant_name",
-    "resolved_fact_id",
-    "resolved_fact_ids",
-    "sec_url",
-    "sidecar",
-    "storage_dir",
-    "storage_root",
-    "ticker",
-    "value_store",
-}
+# Derive from the canonical public-authority guard sets so this gate's input/output
+# redaction scan stays in lockstep with the guard. The two intentional extras
+# ("sidecar"/"value_store") are local handle names this gate additionally rejects.
+RAW_VALUE_KEYS = set(GUARD_RAW_VALUE_KEYS)
+RAW_AUTHORITY_KEYS = set(GUARD_RAW_AUTHORITY_KEYS) | {"sidecar", "value_store"}
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 
 

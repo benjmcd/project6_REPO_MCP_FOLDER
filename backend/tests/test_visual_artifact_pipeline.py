@@ -290,17 +290,19 @@ def _content_index_roundtrip(processing_results: list[dict], storage_dir: Path) 
                     roundtrip_success = False
                     break
                 
-                # Check each artifact field
-                for field in ["visual_artifact_ref", "visual_artifact_sha256", 
-                              "visual_artifact_dpi", "visual_artifact_format", 
-                              "visual_artifact_semantics"]:
-                    if retrieved.get(field) != original.get(field.replace("visual_artifact_", "visual_artifact_" if field.startswith("visual_artifact_") else field)):
-                        # Check with correct field name mapping
-                        orig_field = field
-                        if field in original:
-                            if retrieved.get(field) != original[field]:
-                                roundtrip_success = False
-                                break
+                # Check each artifact field. `retrieved` (deserialized vpr) uses long
+                # visual_artifact_* keys; `original` uses the short keys -- compare via map.
+                key_map = {
+                    "visual_artifact_ref": "artifact_ref",
+                    "visual_artifact_sha256": "sha256",
+                    "visual_artifact_dpi": "dpi",
+                    "visual_artifact_format": "format",
+                    "visual_artifact_semantics": "semantics",
+                }
+                for rk, ok in key_map.items():
+                    if retrieved.get(rk) != original.get(ok):
+                        roundtrip_success = False
+                        break
             
             roundtrip_results.append({
                 "content_id": content_id,
