@@ -79,7 +79,7 @@
       "blocked_reason": null,
       "criterion": "arelle_value_reveal_default_off_controlled_submit_activated",
       "evidence": {
-        "controlled_value_reveal_submit_default_enabled": true,
+        "controlled_value_reveal_submit_default_enabled": false,
         "value_reveal_default_enabled": false,
         "value_reveal_default_on_claimed": false
       },
@@ -338,7 +338,7 @@
   },
   "runtime_posture": {
     "api_or_operator_request_toggle_admitted": false,
-    "controlled_value_reveal_submit_default_enabled": true,
+    "controlled_value_reveal_submit_default_enabled": false,
     "default_cutover_enabled": true,
     "internal_value_store_default_enabled": false,
     "nonlocal_default_on_requires_explicit_authorization": true,

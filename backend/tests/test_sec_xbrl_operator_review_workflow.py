@@ -2302,14 +2302,15 @@ def test_controlled_value_reveal_submit_api_records_receipt_and_status_hash_coun
     assert "123.45" not in json.dumps(status, sort_keys=True)
 
 
-def test_controlled_value_reveal_submit_api_default_on_returns_values_without_flag_monkeypatch(
+def test_controlled_value_reveal_submit_api_with_flag_enabled_returns_values_behind_owner_binding(
     api_client,
     monkeypatch,
 ) -> None:
-    # Activation proof (doc 1353): NO _enable_controlled_submit here -- the default-on posture
-    # drives the full lineage to revealed financial values behind the enforced owner-bound identity.
+    # Activation proof (doc 1353): flag is default-off; enable via monkeypatch to prove the full
+    # lineage to revealed financial values behind the enforced owner-bound identity.
     # The sidecar/value-store monkeypatches only stand in for the on-disk Arelle value store; they do
-    # not bypass the feature flag, the owner binding, or the operator_reveal_confirmation gate.
+    # not bypass the owner binding or the operator_reveal_confirmation gate.
+    _enable_controlled_submit(monkeypatch)
     monkeypatch.setattr(authority_service, "_resolve_sidecar_authority", lambda *_args: _sidecar_authority())
     monkeypatch.setattr(submit_service, "_resolve_sidecar_and_value_store", lambda *_args: _submit_sidecar_and_value_store())
     client, Session = api_client

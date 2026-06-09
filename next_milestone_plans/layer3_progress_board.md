@@ -12588,13 +12588,17 @@ operator acceptance criteria are recorded in 1353. The submit reveals from a pre
 lineage-bound value store (no live SEC network or Arelle invocation at submit time) and returns
 transient financial figures only; the status surface stays hashes-only.
 
-Proof: `backend/tests/test_sec_xbrl_operator_review_workflow.py` adds
-`test_controlled_value_reveal_submit_api_default_on_returns_values_without_flag_monkeypatch`
-(default-on, no flag monkeypatch -> HTTP 200 with revealed `effective_value`, no authority-artifact
-leak), and retains explicit-off coverage via
-`test_controlled_value_reveal_submit_explicit_off_blocks_without_receipt`. Default-off-invariant
-tests and the affected validate-only diagnostics were reconciled to the activated posture; all
-other non-admissions are preserved.
+Proof: `backend/tests/test_sec_xbrl_operator_review_workflow.py` carries
+`test_controlled_value_reveal_submit_api_with_flag_enabled_returns_values_behind_owner_binding`
+(flag enabled via monkeypatch -> HTTP 200 with revealed `effective_value` behind the enforced
+owner binding, no authority-artifact leak), and retains explicit-off coverage via
+`test_controlled_value_reveal_submit_explicit_off_blocks_without_receipt`.
+
+CORRECTION (default-off restored): the default-on activation described above was later reverted to
+default-off (config `layer3_sec_xbrl_controlled_value_reveal_submit_enabled` default=False;
+value reveal is an explicit operator action). The diagnostics and tests were reconciled back to the
+default-off posture, and the activation test now serves as a flag-enabled lineage proof rather than
+a default-on proof. All non-admissions remain preserved.
 
 Non-goals preserved: `layer3_sec_edgar_arelle_value_reveal_enabled` (governed-sibling reveal) stays
 default-off; no live SEC network access; no Arelle subprocess invocation; no internal-value-store

@@ -22,7 +22,7 @@
         ],
         "readiness_decision": "nonlocal_production_readiness_blocked",
         "source_report": "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json",
-        "source_report_hash": "39a791b251068d1aabf6029f59d6533ad49d3978b68851df5d3c1dc828114e6a"
+        "source_report_hash": "9d3d4bbedfc1e893525c2a824282b48a5ffc8d4338fba58b0c5a48f1e4c0f67d"
       },
       "state": "passed"
     },
@@ -52,8 +52,8 @@
           "api_route_evidence": "required API route/binding evidence lines and enclosing scopes, not full backend/app/api/layer3.py"
         },
         "source_hashes": {
-          "api_route_evidence": "61d35878cff47afef91f7c2dd8af669eb483f0c9d82269bdc4edaf8cb91be5b1",
-          "auth_binding_service": "60bd7263e2820c81d32f0a44ced5bfcad2d0b038663bad50cb5e7039459075ee",
+          "api_route_evidence": "272070d0fd1e3ed1a6ee51a0017edefc26df3586a66062321222b64c721d54b4",
+          "auth_binding_service": "12e506ce86994cfc3e89b00ebad5f50c5eecf09130196f2aa039b12d35e3677e",
           "readiness_reconciliation_doc": "f1a4fa9613d581b53fd3fdea439abbf5f68b55852e65e54d118801d7b2d8a53f",
           "route_enforcement_doc": "cb07c179520e1d4f141afe3474eb07bd202cdfdccd97de7e1b6e4a99c9cfcb51"
         }
@@ -421,7 +421,7 @@
     ],
     "readiness_decision": "nonlocal_production_readiness_blocked",
     "source_report": "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json",
-    "source_report_hash": "39a791b251068d1aabf6029f59d6533ad49d3978b68851df5d3c1dc828114e6a"
+    "source_report_hash": "9d3d4bbedfc1e893525c2a824282b48a5ffc8d4338fba58b0c5a48f1e4c0f67d"
   },
   "route_and_backfill_evidence_summary": {
     "admissible": true,
@@ -446,8 +446,8 @@
       "api_route_evidence": "required API route/binding evidence lines and enclosing scopes, not full backend/app/api/layer3.py"
     },
     "source_hashes": {
-      "api_route_evidence": "61d35878cff47afef91f7c2dd8af669eb483f0c9d82269bdc4edaf8cb91be5b1",
-      "auth_binding_service": "60bd7263e2820c81d32f0a44ced5bfcad2d0b038663bad50cb5e7039459075ee",
+      "api_route_evidence": "272070d0fd1e3ed1a6ee51a0017edefc26df3586a66062321222b64c721d54b4",
+      "auth_binding_service": "12e506ce86994cfc3e89b00ebad5f50c5eecf09130196f2aa039b12d35e3677e",
       "readiness_reconciliation_doc": "f1a4fa9613d581b53fd3fdea439abbf5f68b55852e65e54d118801d7b2d8a53f",
       "route_enforcement_doc": "cb07c179520e1d4f141afe3474eb07bd202cdfdccd97de7e1b6e4a99c9cfcb51"
     }

@@ -37,7 +37,7 @@
       "evidence": {
         "blocking_reasons_count": 0,
         "decision": "default_on_runtime_enabled",
-        "runtime_report_hash": "31a293cf2e3b7c070990d6f58c7610ec91c764dc672c8f0d9f614fe7c1c46545",
+        "runtime_report_hash": "2d26c7e8d578487a903fa5407852f6bf8fd059f5112fb9daba6f364a4b9f344a",
         "source_report": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
       },
       "state": "passed"
@@ -169,7 +169,7 @@
       "criterion": "standing_non_admissions_preserved",
       "evidence": {
         "arelle_subprocess_invoked_by_gate": false,
-        "controlled_value_reveal_submit_default_enabled": true,
+        "controlled_value_reveal_submit_default_enabled": false,
         "corpus_validation_arelle_default_enabled": false,
         "export_or_delivery_enabled_by_gate": false,
         "provider_or_connector_dispatch_enabled_by_gate": false,
@@ -249,7 +249,7 @@
     "blocking_reasons_count": 0,
     "decision": "default_on_runtime_enabled",
     "next_slice": "sec_xbrl_default_on_nonlocal_production_readiness_design_v1",
-    "runtime_report_hash": "31a293cf2e3b7c070990d6f58c7610ec91c764dc672c8f0d9f614fe7c1c46545",
+    "runtime_report_hash": "2d26c7e8d578487a903fa5407852f6bf8fd059f5112fb9daba6f364a4b9f344a",
     "source_report": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
   },
   "next_slice": "sec_xbrl_nonlocal_production_admission_or_historical_backfill_disposition_v1",
