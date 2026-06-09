@@ -17,6 +17,7 @@ if str(ASSESSMENT) not in sys.path:
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
 from sec_xbrl_diagnostic_framework import redaction_hit_classes as _framework_redaction_hit_classes  # noqa: E402
 from sec_xbrl_diagnostic_framework import redacted_ref as _framework_redacted_ref  # noqa: E402
+from sec_xbrl_runtime_posture import resolve_layer3_api_source  # noqa: E402
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json")
 RUNTIME_REPORT = "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
@@ -128,7 +129,7 @@ def build_report(
     auth_owner_binding_strategy_report = _load_json(root / AUTH_OWNER_BINDING_STRATEGY_REPORT)
     sources = {
         "config": _read(root / "backend/app/core/config.py"),
-        "api": _read(root / "backend/app/api/layer3.py"),
+        "api": resolve_layer3_api_source(root),
         "api_tests": _read(root / "backend/tests/test_layer3_api.py"),
         "runtime_report": runtime_report,
         "in_app_auth_policy_report": in_app_auth_policy_report,

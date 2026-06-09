@@ -17,6 +17,7 @@ if str(ASSESSMENT) not in sys.path:
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
 from sec_xbrl_diagnostic_framework import redaction_hit_classes as _framework_redaction_hit_classes  # noqa: E402
 from sec_xbrl_diagnostic_framework import redacted_ref as _framework_redacted_ref  # noqa: E402
+from sec_xbrl_runtime_posture import resolve_layer3_api_source  # noqa: E402
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-nonlocal-admission-disposition-report.json")
 READINESS_REPORT = "diagnostics/assessment/sec-xbrl-nonlocal-production-readiness-gate-report.json"
@@ -180,7 +181,7 @@ def build_report(
         "route_doc": _read(root / ROUTE_ENFORCEMENT_DOC),
         "reconciliation_doc": _read(root / RECONCILIATION_DOC),
         "auth_binding_service": _read(root / AUTH_BINDING_SERVICE),
-        "api": _read(root / API_FILE),
+        "api": resolve_layer3_api_source(root),
         "auth_binding_tests": _read(root / AUTH_BINDING_TEST),
         "operator_workflow_tests": _read(root / OPERATOR_WORKFLOW_TEST),
     }
