@@ -24,6 +24,7 @@ from app.models.models import (
     Dataset,
     DatasetSourceProvenance,
     DatasetVersion,
+    L3_ANALYSIS_PRODUCT_EVIDENCE_REF_KIND_VALUES,
     L3AnalysisGroup,
     L3AnalysisPlan,
     L3AnalysisSet,
@@ -3584,6 +3585,125 @@ def _qualitative_aps_package_payload_extras(
             "negative_capability_flags": _json_clone(negative_capabilities),
         },
     }
+
+
+_ANALYSIS_PRODUCT_INVENTORY_MAX = 100
+_EVIDENCE_REFS_PER_PRODUCT_MAX = 200
+
+
+def _load_package_eligible_analysis_products(
+    db: Session,
+    session_id: str,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Load package_eligible analysis products for a session, capped at MAX.
+
+    Returns (roster, meta) where meta contains truncation info.
+    The roster entries are the bounded serialized dicts from session_analyst_products,
+    already scoped to session_id and ordered by analysis_product_id asc.
+    Evidence ref kinds are validated defensively against the allowed set.
+    """
+    all_products = _session_analyst_products(db, session_id=session_id)
+    eligible = [p for p in all_products if p.get("lifecycle_status") == "package_eligible"]
+    total = len(eligible)
+
+    for product in eligible:
+        for ref in product.get("evidence_refs") or []:
+            ref_kind = ref.get("ref_kind")
+            if ref_kind not in L3_ANALYSIS_PRODUCT_EVIDENCE_REF_KIND_VALUES:
+                raise ValueError(
+                    f"analysis_product {product.get('analysis_product_id')!r} has evidence ref "
+                    f"with unknown ref_kind {ref_kind!r}; valid kinds: "
+                    f"{sorted(L3_ANALYSIS_PRODUCT_EVIDENCE_REF_KIND_VALUES)}"
+                )
+
+    truncated = total > _ANALYSIS_PRODUCT_INVENTORY_MAX
+    roster = eligible[:_ANALYSIS_PRODUCT_INVENTORY_MAX]
+    included = len(roster)
+    meta: dict[str, Any] = {
+        "truncated": truncated,
+        "total": total,
+        "included": included,
+    }
+    return roster, meta
+
+
+def _analysis_product_package_payload_extras(
+    db: Session,
+    session_id: str,
+) -> dict[str, dict[str, Any]]:
+    """Build per-kind package payload extras carrying the bounded analysis product inventory.
+
+    CANONICAL_INTERNAL and REVIEW_FACING: full bounded inventory per product.
+    USER_FACING: summary only — product_kind and evidence counts by role; no title, no ref ids.
+    No body field is emitted in any kind.
+    """
+    roster, meta = _load_package_eligible_analysis_products(db, session_id)
+
+    section_meta: dict[str, Any] = {
+        "schema_id": "layer3.analysis_product_package_inventory.v1",
+        "analysis_product_inventory_enabled": True,
+        "package_eligible_product_count": meta["included"],
+        "total_package_eligible": meta["total"],
+        "truncated": meta["truncated"],
+        "max_products": _ANALYSIS_PRODUCT_INVENTORY_MAX,
+    }
+
+    # Full inventory: selected bounded fields from serialize_analysis_product, no body.
+    full_products: list[dict[str, Any]] = []
+    for p in roster:
+        refs = p.get("evidence_refs") or []
+        full_products.append(
+            {
+                "analysis_product_id": p["analysis_product_id"],
+                "product_kind": p["product_kind"],
+                "title": p["title"],
+                "lifecycle_status": p["lifecycle_status"],
+                "basis_hash": p["basis_hash"],
+                "evidence_refs": _json_clone(refs[:_EVIDENCE_REFS_PER_PRODUCT_MAX]),
+                "evidence_refs_truncated": len(refs) > _EVIDENCE_REFS_PER_PRODUCT_MAX,
+                "by_evidence_role": _json_clone(p.get("by_evidence_role") or {}),
+                "latest_review_decision": _json_clone(p.get("latest_review_decision")),
+            }
+        )
+
+    # Summary inventory: only product_kind + by_evidence_role counts; no title, no ref ids.
+    summary_products: list[dict[str, Any]] = []
+    for p in roster:
+        summary_products.append(
+            {
+                "analysis_product_id": p["analysis_product_id"],
+                "product_kind": p["product_kind"],
+                "by_evidence_role": _json_clone(p.get("by_evidence_role") or {}),
+            }
+        )
+
+    summary_section: dict[str, Any] = {**section_meta, "products": summary_products}
+
+    return {
+        PACKAGE_KIND_CANONICAL_INTERNAL: {"analysis_product_inventory": {**section_meta, "products": full_products}},
+        PACKAGE_KIND_USER_FACING: {"analysis_product_inventory": summary_section},
+        PACKAGE_KIND_REVIEW_FACING: {"analysis_product_inventory": {**section_meta, "products": full_products}},
+    }
+
+
+def _merge_analysis_product_inventory_extras(
+    db: Session,
+    session_id: str,
+    package_payload_extras_by_kind: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    """Default-OFF: when the flag is disabled, return the input unchanged (byte-identical packages).
+    When enabled, additively merge the bounded analysis_product_inventory section per kind."""
+    if not settings.layer3_analysis_product_package_inventory_enabled:
+        return package_payload_extras_by_kind
+    inventory_extras = _analysis_product_package_payload_extras(db, session_id)
+    if package_payload_extras_by_kind is None:
+        package_payload_extras_by_kind = {}
+    for kind, kind_extras in inventory_extras.items():
+        if kind in package_payload_extras_by_kind:
+            package_payload_extras_by_kind[kind].update(kind_extras)
+        else:
+            package_payload_extras_by_kind[kind] = kind_extras
+    return package_payload_extras_by_kind
 
 
 def _require_qualitative_aps_package_review_authority(
@@ -7763,6 +7883,9 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             package_review_preview_hash=supplied_package_preview_hash,
             result_review_state=review_state,
         )
+    package_payload_extras_by_kind = _merge_analysis_product_inventory_extras(
+        db, session.session_id, package_payload_extras_by_kind
+    )
     try:
         result = materialize_workbench_package_commit(
             db,
