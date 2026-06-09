@@ -704,11 +704,19 @@ async function assertRenderedPlanApprovalStopsBeforeExecution(page, sessionId, l
 }
 
 async function reloadRecoveredExecutionSession(page, sessionId) {
-  const sessionSummaryResponsePromise = page.waitForResponse((response) => (
-    response.url().includes(`/api/v1/layer3/session/${sessionId}`)
-  ));
+  // After reload, recoverSessionFromStorage() fetches /session/{id} and sets
+  // State.sessionSummary before renderAll(). Waiting on page.waitForResponse
+  // and then calling response.json() races with Chromium freeing the body on
+  // domcontentloaded ("No resource with given identifier"). Instead, reload
+  // and then poll State.sessionSummary directly — it is set by the recovery
+  // handler and is the definitive signal that recovery+render is complete.
+  // (State is a top-level const in a classic script, not window.State.)
   await page.reload({ waitUntil: 'domcontentloaded' });
-  const sessionSummary = await expectJson(await sessionSummaryResponsePromise);
+  await page.waitForFunction(
+    (id) => typeof State !== 'undefined' && State.sessionSummary?.session_id === id,
+    sessionId,
+  );
+  const sessionSummary = await page.evaluate(() => State.sessionSummary);
   expect(sessionSummary.session_id).toBe(sessionId);
   await page.locator('#execution-step-chip').click();
   await expect(page.locator('#execution-selection-start-panel')).toBeVisible();
@@ -4504,11 +4512,19 @@ test('Layer 3 workbench restores Gate B drafts and server session anchors across
   expect(storageAfterCommit.recovery.state_action_contract_schema_id).toBe('layer3.state_action_contract.v1');
   expect(storageAfterCommit.recovery.state_action_contract_signature).toContain('"schema_id":"layer3.state_action_contract.v1"');
 
-  const sessionResponsePromise = page.waitForResponse((response) => (
-    response.url().includes(`/api/v1/layer3/session/${gateB.session_id}`)
-  ));
+  // After reload, recoverSessionFromStorage() fetches /session/{id} and sets
+  // State.sessionSummary before renderAll(). Waiting on page.waitForResponse
+  // and then calling response.json() races with Chromium freeing the body on
+  // domcontentloaded ("No resource with given identifier"). Instead, reload
+  // and then poll State.sessionSummary directly — it is set by the recovery
+  // handler and is the definitive signal that recovery+render is complete.
+  // (State is a top-level const in a classic script, not window.State.)
   await page.reload({ waitUntil: 'domcontentloaded' });
-  const session = await expectJson(await sessionResponsePromise);
+  await page.waitForFunction(
+    (id) => typeof State !== 'undefined' && State.sessionSummary?.session_id === id,
+    gateB.session_id,
+  );
+  const session = await page.evaluate(() => State.sessionSummary);
   expect(session.session_id).toBe(gateB.session_id);
   await expect(page.locator('#authority-rail')).toContainText(gateB.session_id);
   await expect(page.locator('#gate-c-preview')).toBeEnabled();
@@ -25132,12 +25148,19 @@ test('Layer 3 workbench renders raw-mixed handoff delivery readiness honestly (s
   await page.goto('/review/layer3');
   await attachSessionToWorkbench(page, session.seed.session_id, ['dataset_version', 'aps_content_document']);
 
-  // Reload using the robust pattern: arm the session summary wait before reload
-  const sessionSummaryPromise = page.waitForResponse((r) =>
-    r.url().includes(`/api/v1/layer3/session/${session.seed.session_id}`),
-  );
+  // After reload, recoverSessionFromStorage() fetches /session/{id} and sets
+  // State.sessionSummary before renderAll(). Waiting on page.waitForResponse
+  // and then calling response.json() races with Chromium freeing the body on
+  // domcontentloaded ("No resource with given identifier"). Instead, reload
+  // and then poll State.sessionSummary directly — it is set by the recovery
+  // handler and is the definitive signal that recovery+render is complete.
+  // (State is a top-level const in a classic script, not window.State.)
   await page.reload({ waitUntil: 'domcontentloaded' });
-  const sessionSummary = await expectJson(await sessionSummaryPromise);
+  await page.waitForFunction(
+    (id) => typeof State !== 'undefined' && State.sessionSummary?.session_id === id,
+    session.seed.session_id,
+  );
+  const sessionSummary = await page.evaluate(() => State.sessionSummary);
 
   // Prove the workbench restores this fully-downstream session honestly after reload
   expect(sessionSummary.session_id).toBe(session.seed.session_id);
