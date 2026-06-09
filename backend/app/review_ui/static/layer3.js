@@ -8495,6 +8495,39 @@ function apwSetMemberRowList(row, kind) {
     }
 }
 
+function buildApwPackagingReadinessHtml() {
+    // Read-only surface: the embed-flag state (from bootstrap) + the package-eligible roster.
+    // Bounded only; no body/raw values. Never throws (runs inside renderAll).
+    const enabled = State.bootstrap?.analysis_product_package_inventory_enabled === true;
+    const badge = enabled
+        ? '<p class="apw-packaging-flag" data-embed-state="active"><strong>Package roster embedding: ACTIVE</strong> &mdash; constructed packages carry the package-eligible roster.</p>'
+        : '<p class="apw-packaging-flag" data-embed-state="inactive"><strong>Package roster embedding: inactive</strong><br>Enable by setting LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED=true and restarting; constructed packages will then carry the package-eligible roster.</p>';
+    const projection = currentAnalysisProductInventoryProjection();
+    let rosterHtml;
+    if (!projection) {
+        rosterHtml = '<p class="empty-panel-message">Load a session to see package-eligible products.</p>';
+    } else {
+        const products = (Array.isArray(projection.analyst_products) ? projection.analyst_products : [])
+            .filter((p) => p && p.lifecycle_status === 'package_eligible');
+        const rollupCount = Number(projection.analyst_rollup?.package_eligible_count);
+        const count = Number.isFinite(rollupCount) ? rollupCount : products.length;
+        if (products.length === 0) {
+            rosterHtml = `<p class="empty-panel-message">No products are package-eligible yet (count: ${escapeHtml(String(count))}).</p>`;
+        } else {
+            const rows = products.map((p) => {
+                const kind = escapeHtml(String(p.product_kind || ''));
+                const status = escapeHtml(String(p.lifecycle_status || ''));
+                const grounded = escapeHtml(p.grounded ? 'grounded' : 'ungrounded');
+                const evc = escapeHtml(String(p.evidence_count != null ? p.evidence_count : 0));
+                const bareId = escapeHtml(String(p.product_id || '').replace(/^layer3_analyst_product:/, '').slice(0, 8));
+                return `<li class="apw-packaging-product"><strong>${kind}</strong> / ${status} / ${grounded} / evidence ${evc} / ${bareId}</li>`;
+            }).join('');
+            rosterHtml = `<p class="apw-packaging-count">Ready for packaging: ${escapeHtml(String(count))}</p><ul class="apw-packaging-list">${rows}</ul>`;
+        }
+    }
+    return `<div class="apw-packaging-readiness-head"><h3>Ready for packaging</h3></div>${badge}${rosterHtml}`;
+}
+
 function renderAnalysisProductWorkspacePanel() {
     const inventoryView = document.getElementById('apw-inventory-view');
     const genWsSelect = document.getElementById('apw-gen-ws');
@@ -8508,6 +8541,8 @@ function renderAnalysisProductWorkspacePanel() {
         if (trProductSelect) trProductSelect.innerHTML = blankOption;
         const datalistsHostEarly = document.getElementById('apw-ref-datalists');
         if (datalistsHostEarly) datalistsHostEarly.innerHTML = buildApwRefDatalistsHtml();
+        const prHostEarly = document.getElementById('apw-packaging-readiness');
+        if (prHostEarly) prHostEarly.innerHTML = buildApwPackagingReadinessHtml();
         return;
     }
 
@@ -8518,6 +8553,8 @@ function renderAnalysisProductWorkspacePanel() {
         if (trProductSelect) trProductSelect.innerHTML = blankOption;
         const datalistsHostEarly = document.getElementById('apw-ref-datalists');
         if (datalistsHostEarly) datalistsHostEarly.innerHTML = buildApwRefDatalistsHtml();
+        const prHostEarly = document.getElementById('apw-packaging-readiness');
+        if (prHostEarly) prHostEarly.innerHTML = buildApwPackagingReadinessHtml();
         return;
     }
 
@@ -8565,6 +8602,11 @@ function renderAnalysisProductWorkspacePanel() {
     const datalistsHost = document.getElementById('apw-ref-datalists');
     if (datalistsHost) {
         datalistsHost.innerHTML = buildApwRefDatalistsHtml();
+    }
+
+    const prHost = document.getElementById('apw-packaging-readiness');
+    if (prHost) {
+        prHost.innerHTML = buildApwPackagingReadinessHtml();
     }
 }
 

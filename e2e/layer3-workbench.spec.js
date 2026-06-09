@@ -25618,3 +25618,48 @@ test('Analysis Products dock panel populates ref-id datalist pickers from sessio
   const evIdInput = page.locator('#apw-draft-ev-rows .apw-ev-row .apw-ev-id').nth(0);
   await expect(evIdInput).toHaveAttribute('list', 'apw-ref-ids-material_snapshot');
 });
+
+test('Analysis Products dock panel surfaces package-roster embed flag state and ready-for-packaging roster', async ({ page }) => {
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+
+  await page.evaluate(() => {
+    State.activeOperationId = 'analysis-product-workspace-band';
+    State.operationDockManual = true;
+    State.bootstrap = { ...(State.bootstrap || {}), analysis_product_package_inventory_enabled: false };
+    State.sessionSummary = {
+      session_id: 'e2e-readiness-sess',
+      schema_id: 'layer3.session_summary.v1',
+      analysis_product_inventory_projection: {
+        schema_id: 'layer3.analysis_product_inventory_projection.v1',
+        analyst_products: [
+          { product_id: 'layer3_analyst_product:pe-1', product_kind: 'finding', lifecycle_status: 'package_eligible', grounded: true, evidence_count: 2 },
+          { product_id: 'layer3_analyst_product:dr-1', product_kind: 'analyst_note', lifecycle_status: 'draft', grounded: false, evidence_count: 0 },
+        ],
+        analyst_rollup: { package_eligible_count: 1 },
+        working_sets: [],
+      },
+    };
+    renderAll();
+  });
+
+  const band = page.locator('#apw-packaging-readiness');
+  // Default: embed flag inactive, with the enablement hint.
+  await expect(band.locator('.apw-packaging-flag')).toHaveAttribute('data-embed-state', 'inactive');
+  await expect(band).toContainText('inactive');
+  await expect(band).toContainText('LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED');
+  // Roster shows only the package_eligible product (draft excluded), count from analyst_rollup.
+  await expect(band).toContainText('Ready for packaging: 1');
+  await expect(band.locator('.apw-packaging-product')).toHaveCount(1);
+  await expect(band.locator('.apw-packaging-product')).toContainText('finding');
+  // The package_eligible id is prefix-stripped + truncated; the draft product is excluded.
+  await expect(band.locator('.apw-packaging-product')).toContainText('pe-1');
+  await expect(band).not.toContainText('analyst_note');
+
+  // Flip the flag ON -> badge reflects ACTIVE.
+  await page.evaluate(() => {
+    State.bootstrap.analysis_product_package_inventory_enabled = true;
+    renderAll();
+  });
+  await expect(page.locator('#apw-packaging-readiness .apw-packaging-flag')).toHaveAttribute('data-embed-state', 'active');
+  await expect(page.locator('#apw-packaging-readiness')).toContainText('ACTIVE');
+});
