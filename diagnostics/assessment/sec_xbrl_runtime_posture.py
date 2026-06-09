@@ -14,6 +14,31 @@ if str(BACKEND) not in sys.path:
 
 os.environ.setdefault("DB_INIT_MODE", "none")
 
+LAYER3_API_RELATIVE = "backend/app/api/layer3.py"
+LAYER3_API_PACKAGE_RELATIVE = "backend/app/api/layer3"
+
+
+def resolve_layer3_api_source(source_root=None) -> str:
+    """Return the layer3 API source, package-aware.
+
+    While backend/app/api/layer3.py is a single file, returns that file's text
+    verbatim (byte-identical to Path.read_text(encoding='utf-8')). After it is
+    decomposed into the backend/app/api/layer3/ package, returns the
+    deterministic concatenation (sorted by POSIX relative path) of every *.py
+    file under the package, so all substring/token checks still match. Returns
+    "" if neither exists (fail-closed: substring checks then evaluate False).
+    """
+    root = Path(source_root) if source_root is not None else ROOT
+    file_path = root / LAYER3_API_RELATIVE
+    if file_path.is_file():
+        return file_path.read_text(encoding="utf-8")
+    pkg = root / LAYER3_API_PACKAGE_RELATIVE
+    if pkg.is_dir():
+        parts = sorted(pkg.rglob("*.py"), key=lambda p: p.relative_to(pkg).as_posix())
+        return "\n".join(p.read_text(encoding="utf-8") for p in parts)
+    return ""
+
+
 LIVE_NETWORK_FIELD = "layer3_sec_edgar_live_network_enabled"
 ARELLE_CUTOVER_FIELD = "layer3_sec_edgar_arelle_fact_authority_cutover_enabled"
 VALUE_REVEAL_FIELD = "layer3_sec_edgar_arelle_value_reveal_enabled"

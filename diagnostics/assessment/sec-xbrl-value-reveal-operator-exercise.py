@@ -14,6 +14,7 @@ if str(ASSESSMENT) not in sys.path:
 
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
 from sec_xbrl_diagnostic_framework import report_header as _report_header  # noqa: E402
+from sec_xbrl_runtime_posture import resolve_layer3_api_source  # noqa: E402
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-report.json")
 
@@ -200,7 +201,6 @@ def build_report(*, source_root: Path) -> dict[str, Any]:
 def _source_text(source_root: Path) -> dict[str, str]:
     files = {
         "config": source_root / "backend" / "app" / "core" / "config.py",
-        "api": source_root / "backend" / "app" / "api" / "layer3.py",
         "service": source_root / "backend" / "app" / "services" / "layer3_sec_edgar_arelle_value_reveal.py",
         "operator_surface": source_root / "backend" / "app" / "services" / "layer3_sec_edgar_operator_product_surface.py",
         "tests": source_root / "backend" / "tests" / "test_layer3_api.py",
@@ -209,7 +209,9 @@ def _source_text(source_root: Path) -> dict[str, str]:
         / "Layer3_planning_docs"
         / "1260-sec-xbrl-operator-value-reveal.md",
     }
-    return {name: path.read_text(encoding="utf-8") for name, path in files.items()}
+    result = {name: path.read_text(encoding="utf-8") for name, path in files.items()}
+    result["api"] = resolve_layer3_api_source(source_root)
+    return result
 
 
 def _contains(source: str, text: str) -> bool:

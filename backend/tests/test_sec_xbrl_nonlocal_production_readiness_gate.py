@@ -3,9 +3,16 @@ from __future__ import annotations
 import importlib.util
 import json
 from pathlib import Path
+import sys
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ASSESSMENT = ROOT / "diagnostics" / "assessment"
+if str(ASSESSMENT) not in sys.path:
+    sys.path.insert(0, str(ASSESSMENT))
+
+from sec_xbrl_runtime_posture import resolve_layer3_api_source  # noqa: E402
+
 GATE_PATH = ROOT / "diagnostics" / "assessment" / "sec-xbrl-nonlocal-production-readiness-gate.py"
 
 
@@ -194,7 +201,7 @@ def test_sec_xbrl_nonlocal_readiness_gate_requires_decision_status_route_token()
         ),
         "in_app_auth_policy_service": module._read(ROOT / module.IN_APP_AUTH_POLICY_SERVICE),
         "auth_binding_service": module._read(ROOT / module.AUTH_BINDING_SERVICE),
-        "api": module._read(ROOT / "backend/app/api/layer3.py").replace(
+        "api": resolve_layer3_api_source(ROOT).replace(
             "sec_xbrl_operator_review_decision_status_read",
             "sec_xbrl_operator_review_decision_status_missing",
         ),

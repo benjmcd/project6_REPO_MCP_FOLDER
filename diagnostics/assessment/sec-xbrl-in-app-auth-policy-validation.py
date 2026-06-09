@@ -14,6 +14,7 @@ if str(ASSESSMENT) not in sys.path:
     sys.path.insert(0, str(ASSESSMENT))
 
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_runtime_posture import resolve_layer3_api_source  # noqa: E402
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-in-app-auth-policy-validation-report.json")
 TARGET = "sec_xbrl_nonlocal_in_app_auth_policy_validation_v1"
@@ -161,7 +162,7 @@ def build_report(
 ) -> dict[str, Any]:
     families = list(PROTECTED_ROUTE_FAMILIES if route_families is None else route_families)
     design_doc = _read(root / DESIGN_DOC)
-    api_source = _read(root / API_FILE)
+    api_source = resolve_layer3_api_source(root)
     config_source = _read(root / CONFIG_FILE)
     candidate_b_policy = _read(root / CANDIDATE_B_POLICY_FILE)
     simulations = _simulation_matrix(families)

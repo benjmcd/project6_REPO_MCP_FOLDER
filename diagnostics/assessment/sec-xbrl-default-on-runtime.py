@@ -11,6 +11,7 @@ ASSESSMENT = Path(__file__).resolve().parent
 if str(ASSESSMENT) not in sys.path:
     sys.path.insert(0, str(ASSESSMENT))
 from sec_xbrl_diagnostic_framework import criterion as _criterion  # noqa: E402
+from sec_xbrl_runtime_posture import resolve_layer3_api_source  # noqa: E402
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-default-on-runtime-report.json")
 NEXT_AFTER_DEFAULT_ON_RUNTIME = "sec_xbrl_default_on_nonlocal_production_readiness_design_v1"
@@ -61,7 +62,7 @@ def build_report() -> dict[str, Any]:
         "classification": _read(
             "backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.py"
         ),
-        "api": _read("backend/app/api/layer3.py"),
+        "api": resolve_layer3_api_source(ROOT),
         "api_tests": _read("backend/tests/test_layer3_api.py"),
         "sidecar_tests": _read("backend/tests/test_sec_xbrl_sidecar.py"),
         "admission": _load_json("diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json"),

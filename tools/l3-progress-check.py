@@ -4178,6 +4178,7 @@ SOURCE_INTAKE_MIGRATION = (
     / "0024_layer3_source_intake_record.py"
 )
 LAYER3_API = ROOT / "backend" / "app" / "api" / "layer3.py"
+LAYER3_API_PACKAGE = ROOT / "backend" / "app" / "api" / "layer3"
 MODELS = ROOT / "backend" / "app" / "models" / "models.py"
 SOURCE_BOUNDARY_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_boundary.py"
@@ -4433,6 +4434,20 @@ def _read_required_text(path: Path, errors: list[str]) -> str:
         errors.append(f"empty required text file: {_rel(path)}")
         return ""
     return path.read_text(encoding="utf-8")
+
+
+def _resolve_layer3_api_source(errors: list[str]) -> str:
+    """Read the layer3 API source, package-aware (file now, package after decomposition)."""
+    if LAYER3_API.is_file():
+        return LAYER3_API.read_text(encoding="utf-8")
+    if LAYER3_API_PACKAGE.is_dir():
+        parts = sorted(
+            LAYER3_API_PACKAGE.rglob("*.py"),
+            key=lambda p: p.relative_to(LAYER3_API_PACKAGE).as_posix(),
+        )
+        return "\n".join(p.read_text(encoding="utf-8") for p in parts)
+    errors.append(f"missing required source: {LAYER3_API} (file or package)")
+    return ""
 
 
 def _extract_fenced_block_after_heading(
@@ -5343,7 +5358,7 @@ def _check_plan_revision_recovery_entry_freeze(
                     if blocked not in explicit_non_goals:
                         errors.append(f"revision recovery runtime explicit_non_goals missing {blocked}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     recovery_service_text = _read_required_text(
         ROOT / "backend" / "app" / "services" / "layer3_plan_revision_recovery.py",
         errors,
@@ -5792,7 +5807,7 @@ def _check_approved_plan_cancel_runtime(
                 errors.append(f"approved_plan_cancel_runtime.blocked_scope missing {blocked}")
 
     service_text = _read_required_text(APPROVED_PLAN_CORRECTION_SERVICE, errors)
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     plan_flow_text = _read_required_text(PLAN_FLOW_CONTRACT_SERVICE, errors)
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     state_action_text = _read_required_text(STATE_ACTION_CONTRACT, errors)
@@ -6198,7 +6213,7 @@ def _check_connector_dispatch_entry_freeze(errors: list[str]) -> None:
         if term in service_text:
             errors.append(f"{_rel(CONNECTOR_DISPATCH_SERVICE)} contains forbidden creation term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "Layer3ConnectorDispatchRecordRequest",
         "Layer3ConnectorDispatchRecordResponse",
@@ -6382,7 +6397,7 @@ def _check_package_mutation_freeze(errors: list[str]) -> None:
         if term in package_mutation_text:
             errors.append(f"{_rel(PACKAGE_MUTATION_SERVICE)} contains forbidden mutation/creation term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "Layer3PackageSupersessionPreviewRequest",
         "Layer3PackageSupersessionPreviewResponse",
@@ -6620,7 +6635,7 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
         if forbidden in service_text:
             errors.append(f"{_rel(PACKAGE_SUPERSESSION_COMMIT_SERVICE)} contains forbidden creation/write term: {forbidden}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "Layer3PackageSupersessionCommitRequest",
         "Layer3PackageSupersessionCommitResponse",
@@ -6818,7 +6833,7 @@ def _check_package_replacement_set_freeze(errors: list[str]) -> None:
                 continue
             errors.append(f"{_rel(REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE)} contains forbidden creation/write term: {forbidden}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "Layer3ReplacementPackageSetAuthorityRequest",
         "Layer3ReplacementPackageSetAuthorityResponse",
@@ -8955,7 +8970,7 @@ def _check_raw_mixed_bridge_freeze(errors: list[str]) -> None:
                 f"{_rel(RAW_MIXED_BRIDGE_SERVICE)} contains forbidden seed-only service term: {forbidden_service_term}"
             )
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "layer3_raw_mixed_bridge",
         "class Layer3RawMixedCorpusSeedRequest",
@@ -9235,7 +9250,7 @@ def _check_raw_ingestion_materialization_freeze(errors: list[str]) -> None:
                 f"{_rel(RAW_MIXED_MATERIALIZATION_SERVICE)} contains forbidden materialization service term: {forbidden_service_term}"
             )
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "layer3_raw_mixed_materialization",
         "class Layer3RawMixedCorpusMaterializeRequest",
@@ -16440,7 +16455,7 @@ def _check_provider_private_signed_url_fake_provider_contract(errors: list[str])
             if term not in body:
                 errors.append(f"{_rel(path)} missing provider private signed URL fake-provider contract term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     _check_provider_private_signed_url_no_deferred_routes(
         api_text,
         errors,
@@ -16601,7 +16616,7 @@ def _check_provider_private_signed_url_storage_receipt_authority_freeze(errors: 
             if term not in body:
                 errors.append(f"{_rel(path)} missing provider private signed URL storage/receipt authority term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     _check_provider_private_signed_url_no_deferred_routes(
         api_text,
         errors,
@@ -16780,7 +16795,7 @@ def _check_provider_private_signed_url_storage_receipt_durable_state_freeze(erro
             if term not in body:
                 errors.append(f"{_rel(path)} missing provider private signed URL storage/receipt durable-state freeze term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     _check_provider_private_signed_url_no_deferred_routes(
         api_text,
         errors,
@@ -16921,7 +16936,7 @@ def _check_provider_private_signed_url_storage_receipt_durable_state_contract(er
             if term not in body:
                 errors.append(f"{_rel(path)} missing provider private signed URL storage/receipt durable-state contract term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     _check_provider_private_signed_url_no_deferred_routes(
         api_text,
         errors,
@@ -17134,7 +17149,7 @@ def _check_provider_private_signed_url_durable_state_substrate(errors: list[str]
             if term not in body:
                 errors.append(f"{_rel(path)} missing provider private signed URL durable-state substrate term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     _check_provider_private_signed_url_no_deferred_routes(
         api_text,
         errors,
@@ -17291,7 +17306,7 @@ def _check_provider_private_signed_url_route_entry_contract(errors: list[str]) -
             if term not in body:
                 errors.append(f"{_rel(path)} missing provider private signed URL route-entry/contract term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     _check_provider_private_signed_url_no_deferred_routes(
         api_text,
         errors,
@@ -17615,7 +17630,7 @@ def _check_provider_private_signed_url_revoke_only_freeze(errors: list[str]) -> 
             if term not in body:
                 errors.append(f"{_rel(path)} missing provider private signed URL revoke-only freeze term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     if _has_exact_provider_private_signed_url_use_route(api_text):
         errors.append(f"{_rel(LAYER3_API)} must not expose provider-private signed URL use before token/delivery freeze")
     if "/handoff/export/download/provider-private-signed-url/revoke" not in api_text:
@@ -17843,7 +17858,7 @@ def _check_provider_private_signed_url_use_authority_freeze(errors: list[str]) -
             if term not in body:
                 errors.append(f"{_rel(path)} missing provider private signed URL use-authority freeze term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     if _has_exact_provider_private_signed_url_use_route(api_text):
         errors.append(f"{_rel(LAYER3_API)} must not expose provider-private signed URL use while no token/delivery model is selected")
     if "/handoff/export/download/provider-private-signed-url/revoke" not in api_text:
@@ -18123,7 +18138,7 @@ def _check_provider_private_signed_url_use_model_closeout(errors: list[str]) -> 
             if term not in body:
                 errors.append(f"{_rel(path)} missing provider private signed URL use-model closeout term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     if _has_exact_provider_private_signed_url_use_route(api_text):
         errors.append(f"{_rel(LAYER3_API)} must not expose provider-private signed URL use after use-model closeout")
     if "/handoff/export/download/provider-private-signed-url/revoke" not in api_text:
@@ -18268,7 +18283,7 @@ def _check_provider_private_signed_url_rendered_ui_freeze(errors: list[str]) -> 
             if term not in body:
                 errors.append(f"{_rel(path)} missing provider private signed URL rendered UI freeze term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for route in (
         "/handoff/export/download/provider-private-signed-url/prepare",
         "/handoff/export/download/provider-private-signed-url/status",
@@ -20761,7 +20776,7 @@ def _check_pdf_location_projection(errors: list[str]) -> None:
         if term not in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} missing PDF-location session-summary wiring term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     if "pdf_location_projection: dict[str, Any]" not in api_text:
         errors.append(f"{_rel(LAYER3_API)} missing PDF-location response field")
 
@@ -22363,7 +22378,7 @@ def _check_source_breadth_runtime_entry(errors: list[str]) -> None:
         if term not in migration_text:
             errors.append(f"{_rel(SOURCE_INTAKE_MIGRATION)} missing source-intake migration term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "layer3_source_intake",
         "class Layer3SourceIntakeRecordResponse",
@@ -22458,7 +22473,7 @@ def _check_source_intake_inventory_read_only(errors: list[str]) -> None:
         if term not in service_text:
             errors.append(f"{_rel(SOURCE_INTAKE_SERVICE)} missing source-intake inventory service term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "Layer3SourceIntakeInventoryResponse",
         "@router.get(",
@@ -22613,7 +22628,7 @@ def _check_source_intake_material_preview_read_only(errors: list[str]) -> None:
         if term not in boundary_text:
             errors.append(f"{_rel(SOURCE_BOUNDARY_SERVICE)} missing source-intake preview boundary term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "Layer3SourceIntakeMaterialPreviewResponse",
         "\"/source/intake/{source_intake_record_id}/preview\"",
@@ -22745,7 +22760,7 @@ def _check_source_intake_upload_contract_guard(errors: list[str]) -> None:
         if term not in service_text:
             errors.append(f"{_rel(SOURCE_INTAKE_SERVICE)} missing source-intake upload guard service term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "normalise_source_intake_form_items(form.multi_items())",
         "record_operator_upload_source_intake",
@@ -22855,7 +22870,7 @@ def _check_source_intake_file_part_guard(errors: list[str]) -> None:
             errors.append(f"{_rel(SOURCE_INTAKE_SERVICE)} missing source-intake file guard service term: {term}")
 
     api_path = ROOT / "backend" / "app" / "api" / "layer3.py"
-    api_text = _read_required_text(api_path, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "file: UploadFile = File(...)",
         "form = await request.form()",
@@ -22990,7 +23005,7 @@ def _check_source_intake_review_debt_closeout(errors: list[str]) -> None:
             errors.append(f"{_rel(SOURCE_INTAKE_SERVICE)} missing source-intake review-debt service term: {term}")
 
     api_path = ROOT / "backend" / "app" / "api" / "layer3.py"
-    api_text = _read_required_text(api_path, errors)
+    api_text = _resolve_layer3_api_source(errors)
     if (
         "def get_source_intake_inventory(" not in api_text
         or 'limit: str = "50",' not in api_text
@@ -27351,7 +27366,7 @@ def _check_preflight_request_guard(errors: list[str]) -> None:
         if term not in contract_text:
             errors.append(f"{_rel(PREFLIGHT_REQUEST_CONTRACT_SERVICE)} missing preflight contract term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "class Layer3PreflightRequest(BaseModel):",
         "model_config = ConfigDict(extra=\"forbid\")",
@@ -27468,7 +27483,7 @@ def _check_preflight_request_guard(errors: list[str]) -> None:
 
 
 def _check_plan_preview_request_guard(errors: list[str]) -> None:
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "class Layer3PlanPreviewRequest(BaseModel):",
         "model_config = ConfigDict(extra=\"forbid\")",
@@ -27516,7 +27531,7 @@ def _check_plan_preview_request_guard(errors: list[str]) -> None:
 
 
 def _check_source_preview_request_guard(errors: list[str]) -> None:
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "class Layer3SourcePreviewRequest(BaseModel):",
         "model_config = ConfigDict(extra=\"forbid\")",
@@ -27567,7 +27582,7 @@ def _check_source_preview_request_guard(errors: list[str]) -> None:
 
 
 def _check_material_preview_request_guard(errors: list[str]) -> None:
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "class Layer3MaterialPreviewRequest(BaseModel):",
         "model_config = ConfigDict(extra=\"forbid\")",
@@ -27618,7 +27633,7 @@ def _check_material_preview_request_guard(errors: list[str]) -> None:
 
 
 def _check_gate_c_override_request_guard(errors: list[str]) -> None:
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "class Layer3GateCOverrideUnavailableRequest(BaseModel):",
         "model_config = ConfigDict(extra=\"forbid\")",
@@ -28197,7 +28212,7 @@ def _check_workbench_error_extraction(errors: list[str]) -> None:
         if stale_term in workbench_text:
             errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns workbench error term: {stale_term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "from app.services.layer3_workbench_error import Layer3WorkbenchError, workbench_error_response",
         "content=workbench_error_response(exc)",
@@ -31485,7 +31500,7 @@ def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
 
 
 def _check_gate_b_decision_basis_openapi_guard(errors: list[str]) -> None:
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "GATE_B_DECISION_ITEM_SCHEMA",
         '"source_identity": {"type": "object", "additionalProperties": True}',
@@ -31968,7 +31983,7 @@ def _check_source_intake_provider_private_signed_url_boundary(errors: list[str])
         if term not in page_test_text:
             errors.append(f"{_rel(LAYER3_PAGE_TEST)} missing source-intake provider-private page test term: {term}")
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     if '"signed_reference_receipt_id"' not in api_text:
         errors.append(f"{_rel(LAYER3_API)} missing signed_reference_receipt_id prepare schema field")
 
@@ -72224,7 +72239,7 @@ def _check_source_directory_qualitative_analysis_package_construction_runtime_en
                 f"missing source-directory package construction helper term: {term}"
             )
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "Layer3SourceDirectoryQualitativeAnalysisPackageCommitRequest",
         "Layer3SourceDirectoryQualitativeAnalysisPackageCommitResponse",
@@ -72480,7 +72495,7 @@ def _check_source_directory_qualitative_analysis_package_review_submit_runtime_e
                 f"missing source-directory package-review submit service term: {term}"
             )
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "Layer3SourceDirectoryQualitativeAnalysisPackageReviewSubmitRequest",
         "Layer3SourceDirectoryQualitativeAnalysisPackageReviewSubmitResponse",
@@ -72729,7 +72744,7 @@ def _check_source_directory_qualitative_analysis_handoff_export_prepare_runtime_
                 f"missing source-directory handoff/export prepare service term: {term}"
             )
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     for term in (
         "Layer3SourceDirectoryQualitativeAnalysisHandoffExportPrepareRequest",
         "Layer3SourceDirectoryQualitativeAnalysisHandoffExportPrepareResponse",
@@ -86424,7 +86439,7 @@ def _check_source_directory_hybrid_context_packet_to_output_handoff_rendered_sta
         LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION_FREEZE,
         errors,
     )
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     html_text = _read_required_text(LAYER3_HTML, errors)
     js_text = _read_required_text(LAYER3_JS, errors)
     page_test_text = _read_required_text(LAYER3_PAGE_TEST, errors)
@@ -86946,7 +86961,7 @@ def _check_provider_public_url_delivery_use_rendered_control_extension_freeze(
         LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE,
         errors,
     )
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     service_text = _read_required_text(
         LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_SERVICE,
         errors,
@@ -94186,7 +94201,7 @@ def _check_candidate_b_async_cancel_retry_queue_selection(
                     f"{_rel(path)} missing Candidate B async cancel/retry/queue selection term: {term}"
                 )
 
-    api_text = _read_required_text(LAYER3_API, errors)
+    api_text = _resolve_layer3_api_source(errors)
     forbidden_routes = (
         '"/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/cancel"',
         '"/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/retry"',
@@ -108368,7 +108383,7 @@ def _check_sec_edgar_text_table_source_acquisition_authority_runtime(
     errors: list[str],
 ) -> None:
     service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_source_acquisition.py"
-    api = ROOT / "backend" / "app" / "api" / "layer3.py"
+    api = LAYER3_API
     tests = ROOT / "backend" / "tests" / "test_layer3_api.py"
     bootstrap = ROOT / "backend" / "app" / "services" / "layer3_bootstrap_contract.py"
     required_terms = {
@@ -108564,7 +108579,7 @@ def _check_sec_edgar_text_table_source_acquisition_authority_runtime_current_mai
         ),
     }
     for path, terms in required_terms.items():
-        body = _read_required_text(path, errors)
+        body = _resolve_layer3_api_source(errors) if path is LAYER3_API else _read_required_text(path, errors)
         for term in terms:
             if term not in body:
                 errors.append(
@@ -111706,7 +111721,7 @@ def _check_sec_edgar_real_filing_acquisition_connector_runtime(
     errors: list[str],
 ) -> None:
     runtime_service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_filing_acquisition_connector.py"
-    api = ROOT / "backend" / "app" / "api" / "layer3.py"
+    api = LAYER3_API
     api_tests = ROOT / "backend" / "tests" / "test_layer3_api.py"
     required_terms = {
         SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_RUNTIME: (
@@ -111797,7 +111812,7 @@ def _check_sec_edgar_real_filing_acquisition_connector_runtime(
         ),
     }
     for path, terms in required_terms.items():
-        body = _read_required_text(path, errors)
+        body = _resolve_layer3_api_source(errors) if path is LAYER3_API else _read_required_text(path, errors)
         for term in terms:
             if term not in body:
                 errors.append(
@@ -111882,7 +111897,7 @@ def _check_sec_edgar_real_filing_acquisition_connector_downstream_validation_run
 ) -> None:
     runtime_service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_filing_downstream_validation.py"
     connector_service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_filing_acquisition_connector.py"
-    api = ROOT / "backend" / "app" / "api" / "layer3.py"
+    api = LAYER3_API
     api_tests = ROOT / "backend" / "tests" / "test_layer3_api.py"
     required_terms = {
         SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_DOWNSTREAM_VALIDATION_RUNTIME: (
@@ -111962,7 +111977,7 @@ def _check_sec_edgar_real_filing_acquisition_connector_downstream_validation_run
         ),
     }
     for path, terms in required_terms.items():
-        body = _read_required_text(path, errors)
+        body = _resolve_layer3_api_source(errors) if path is LAYER3_API else _read_required_text(path, errors)
         for term in terms:
             if term not in body:
                 errors.append(
@@ -112054,7 +112069,7 @@ def _check_sec_edgar_html_inline_xbrl_source_family_parser_runtime(
 ) -> None:
     runtime_service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_html_inline_xbrl_parser.py"
     live_source_service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_live_source_artifact.py"
-    api = ROOT / "backend" / "app" / "api" / "layer3.py"
+    api = LAYER3_API
     api_tests = ROOT / "backend" / "tests" / "test_layer3_api.py"
     required_terms = {
         SEC_EDGAR_HTML_INLINE_XBRL_SOURCE_FAMILY_PARSER_RUNTIME: (
@@ -112146,7 +112161,7 @@ def _check_sec_edgar_html_inline_xbrl_source_family_parser_runtime(
         ),
     }
     for path, terms in required_terms.items():
-        body = _read_required_text(path, errors)
+        body = _resolve_layer3_api_source(errors) if path is LAYER3_API else _read_required_text(path, errors)
         for term in terms:
             if term not in body:
                 errors.append(
@@ -112468,7 +112483,7 @@ def _check_sec_edgar_html_inline_xbrl_downstream_layer3_proof_runtime(
     errors: list[str],
 ) -> None:
     service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_html_inline_xbrl_downstream_proof.py"
-    api = ROOT / "backend" / "app" / "api" / "layer3.py"
+    api = LAYER3_API
     api_tests = ROOT / "backend" / "tests" / "test_layer3_api.py"
     required_terms = {
         SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_LAYER3_PROOF_RUNTIME: (
@@ -112546,7 +112561,7 @@ def _check_sec_edgar_html_inline_xbrl_downstream_layer3_proof_runtime(
         ),
     }
     for path, terms in required_terms.items():
-        body = _read_required_text(path, errors)
+        body = _resolve_layer3_api_source(errors) if path is LAYER3_API else _read_required_text(path, errors)
         for term in terms:
             if term not in body:
                 errors.append(
@@ -112624,7 +112639,7 @@ def _check_sec_edgar_html_inline_xbrl_downstream_operator_status_runtime(
     errors: list[str],
 ) -> None:
     service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_html_inline_xbrl_downstream_status.py"
-    api = ROOT / "backend" / "app" / "api" / "layer3.py"
+    api = LAYER3_API
     api_tests = ROOT / "backend" / "tests" / "test_layer3_api.py"
     bootstrap = ROOT / "backend" / "app" / "services" / "layer3_bootstrap_contract.py"
     bootstrap_tests = ROOT / "backend" / "tests" / "test_layer3_bootstrap_contract.py"
@@ -112708,7 +112723,7 @@ def _check_sec_edgar_html_inline_xbrl_downstream_operator_status_runtime(
         ),
     }
     for path, terms in required_terms.items():
-        body = _read_required_text(path, errors)
+        body = _resolve_layer3_api_source(errors) if path is LAYER3_API else _read_required_text(path, errors)
         for term in terms:
             if term not in body:
                 errors.append(
@@ -113707,7 +113722,7 @@ def _check_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_r
     service = ROOT / "backend" / "app" / "services" / (
         "layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status.py"
     )
-    api = ROOT / "backend" / "app" / "api" / "layer3.py"
+    api = LAYER3_API
     api_tests = ROOT / "backend" / "tests" / "test_layer3_api.py"
     bootstrap = ROOT / "backend" / "app" / "services" / "layer3_bootstrap_contract.py"
     bootstrap_tests = ROOT / "backend" / "tests" / "test_layer3_bootstrap_contract.py"
@@ -113909,7 +113924,7 @@ def _check_sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_s
         ),
     }
     for path, terms in required_terms.items():
-        body = _read_required_text(path, errors)
+        body = _resolve_layer3_api_source(errors) if path is LAYER3_API else _read_required_text(path, errors)
         for term in terms:
             if term not in body:
                 errors.append(
