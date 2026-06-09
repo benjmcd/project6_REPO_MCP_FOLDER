@@ -595,6 +595,9 @@ def test_admission_preview_flag_on_one_product(seeded_db) -> None:
     assert p["product_kind"] == "finding"
     assert p["lifecycle_status"] == "package_eligible"
     assert "basis_hash" in p
+    # executor_type is a bounded enum — present in admission preview.
+    assert "executor_type" in p
+    assert p["executor_type"] == "human"
     # Bounded: no title, no evidence_refs, no body
     assert "title" not in p
     assert "evidence_refs" not in p
@@ -646,7 +649,137 @@ def test_admission_preview_bounded_keys_only(seeded_db) -> None:
 
     assert len(result["products"]) == 1
     p = result["products"][0]
-    allowed_keys = {"product_kind", "lifecycle_status", "evidence_count", "basis_hash"}
+    allowed_keys = {"product_kind", "lifecycle_status", "evidence_count", "basis_hash", "executor_type"}
     assert set(p.keys()) == allowed_keys, (
         f"Admission product must have exactly {allowed_keys}, got {set(p.keys())}"
     )
+
+
+# ---------------------------------------------------------------------------
+# TEXT ANCHOR: serializer_generation_method_tests
+# Unit tests for serialize_analysis_product generation_method field
+# (bounded provenance completeness — deterministic-only).
+# ---------------------------------------------------------------------------
+
+
+def test_serialize_analysis_product_deterministic_generation_method() -> None:
+    """A deterministic product with authoring_provenance_json containing
+    method_id + method_version must surface generation_method with only
+    those two keys.  Other provenance fields (param_hash, input_basis_hash,
+    result_summary, validation) must NOT appear."""
+    from types import SimpleNamespace
+    from app.services.layer3_sublayer_state import serialize_analysis_product
+
+    product = SimpleNamespace(
+        analysis_product_id="ap-det-001",
+        product_kind="summary",
+        executor_type="deterministic",
+        lifecycle_status="package_eligible",
+        title="Deterministic summary",
+        is_non_evidentiary=False,
+        basis_hash="bh-det",
+        spec_hash="sh-det",
+        created_at=None,
+        authoring_provenance_json={
+            "method_id": "working_set_composition_summary",
+            "method_version": 1,
+            "input_basis_hash": "ibh-secret",
+            "param_hash": "ph-secret",
+            "result_summary": {"member_count": 3},
+            "validation": "deterministic_recomputed_match",
+        },
+    )
+
+    result = serialize_analysis_product(product, evidence_links=[], latest_decision=None)
+
+    assert result["executor_type"] == "deterministic"
+    gm = result["generation_method"]
+    assert gm is not None
+    assert gm == {"method_id": "working_set_composition_summary", "method_version": 1}
+    # Only the two bounded keys — no leakage of param_hash, input_basis_hash, etc.
+    assert set(gm.keys()) == {"method_id", "method_version"}
+    assert "param_hash" not in gm
+    assert "input_basis_hash" not in gm
+    assert "result_summary" not in gm
+    assert "validation" not in gm
+
+
+def test_serialize_analysis_product_human_generation_method_is_none() -> None:
+    """A human-authored product must have generation_method == None regardless
+    of what authoring_provenance_json contains."""
+    from types import SimpleNamespace
+    from app.services.layer3_sublayer_state import serialize_analysis_product
+
+    product = SimpleNamespace(
+        analysis_product_id="ap-human-001",
+        product_kind="finding",
+        executor_type="human",
+        lifecycle_status="package_eligible",
+        title="Human finding",
+        is_non_evidentiary=False,
+        basis_hash="bh-human",
+        spec_hash="sh-human",
+        created_at=None,
+        authoring_provenance_json={"operator_note": "manually authored"},
+    )
+
+    result = serialize_analysis_product(product, evidence_links=[], latest_decision=None)
+
+    assert result["executor_type"] == "human"
+    assert result["generation_method"] is None
+
+
+def test_serialize_analysis_product_deterministic_missing_provenance_fields() -> None:
+    """A deterministic product whose authoring_provenance_json lacks method_id
+    or method_version must still return generation_method with None values for
+    the missing keys — no KeyError."""
+    from types import SimpleNamespace
+    from app.services.layer3_sublayer_state import serialize_analysis_product
+
+    product = SimpleNamespace(
+        analysis_product_id="ap-det-partial",
+        product_kind="summary",
+        executor_type="deterministic",
+        lifecycle_status="draft",
+        title="Partial provenance product",
+        is_non_evidentiary=False,
+        basis_hash="bh-partial",
+        spec_hash="sh-partial",
+        created_at=None,
+        authoring_provenance_json={"method_id": "some_method"},  # method_version absent
+    )
+
+    result = serialize_analysis_product(product, evidence_links=[], latest_decision=None)
+
+    gm = result["generation_method"]
+    assert gm is not None
+    assert gm["method_id"] == "some_method"
+    assert gm["method_version"] is None
+
+
+def test_serialize_analysis_product_deterministic_non_dict_provenance() -> None:
+    """A deterministic product whose authoring_provenance_json is not a dict
+    (e.g. empty default {}) still satisfies isinstance check — empty dict is
+    falsy for .get() but generation_method dict is still returned with None values."""
+    from types import SimpleNamespace
+    from app.services.layer3_sublayer_state import serialize_analysis_product
+
+    product = SimpleNamespace(
+        analysis_product_id="ap-det-empty",
+        product_kind="summary",
+        executor_type="deterministic",
+        lifecycle_status="draft",
+        title="Empty provenance product",
+        is_non_evidentiary=False,
+        basis_hash="bh-empty",
+        spec_hash="sh-empty",
+        created_at=None,
+        authoring_provenance_json={},
+    )
+
+    result = serialize_analysis_product(product, evidence_links=[], latest_decision=None)
+
+    # {} is a dict so generation_method dict is returned, both values are None.
+    gm = result["generation_method"]
+    assert gm is not None
+    assert gm == {"method_id": None, "method_version": None}

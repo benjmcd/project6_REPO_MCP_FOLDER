@@ -377,6 +377,19 @@ def serialize_analysis_product(
         "spec_hash": product.spec_hash,
         "created_at": product.created_at.isoformat() if product.created_at is not None else None,
         "latest_review_decision": latest_review_decision,
+        # TEXT ANCHOR: generation_method_field
+        # Bounded provenance: method_id + method_version only, and only for
+        # deterministic products.  Omits param_hash, input_basis_hash,
+        # result_summary, executor_identity, and free-form human provenance.
+        "generation_method": (
+            {
+                "method_id": product.authoring_provenance_json.get("method_id"),
+                "method_version": product.authoring_provenance_json.get("method_version"),
+            }
+            if product.executor_type == "deterministic"
+            and isinstance(product.authoring_provenance_json, dict)
+            else None
+        ),
     }
 
 
