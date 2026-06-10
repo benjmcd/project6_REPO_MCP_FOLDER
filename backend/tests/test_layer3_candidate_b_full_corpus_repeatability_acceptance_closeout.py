@@ -465,10 +465,9 @@ def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_api_re
     app.openapi_schema = None
 
     assert status_response.status_code == 401
-    assert (
-        status_response.json()["error"]["code"]
-        == "candidate_b_operator_workflow_access_policy_missing_identity_authority"
-    )
+    body = status_response.json()
+    assert body["status"] == "blocked"
+    assert body["error_code"] == "sec_xbrl_in_app_auth_policy_missing_identity_authority"
 
 
 def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_rejects_stale_hash(
