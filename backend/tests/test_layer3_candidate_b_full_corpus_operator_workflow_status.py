@@ -299,8 +299,8 @@ def test_candidate_b_full_corpus_operator_workflow_status_proxy_requires_server_
 
     assert response.status_code == 401
     body = response.json()
-    assert body["policy_status"] == "rejected"
-    assert body["error"]["code"] == "candidate_b_operator_workflow_access_policy_missing_identity_authority"
+    assert body["status"] == "blocked"
+    assert body["error_code"] == "sec_xbrl_in_app_auth_policy_missing_identity_authority"
 
 
 def test_candidate_b_full_corpus_operator_workflow_status_proxy_requires_tenant_authority(
@@ -319,10 +319,8 @@ def test_candidate_b_full_corpus_operator_workflow_status_proxy_requires_tenant_
 
     assert response.status_code == 401
     body = response.json()
-    assert body["policy_status"] == "rejected"
-    assert body["error"]["code"] == (
-        "candidate_b_operator_workflow_access_policy_missing_tenant_or_workspace_authority"
-    )
+    assert body["status"] == "blocked"
+    assert body["error_code"] == "sec_xbrl_in_app_auth_policy_missing_workspace_authority"
 
 
 def test_candidate_b_full_corpus_operator_workflow_status_proxy_requires_trusted_mode(
@@ -341,8 +339,8 @@ def test_candidate_b_full_corpus_operator_workflow_status_proxy_requires_trusted
 
     assert response.status_code == 409
     body = response.json()
-    assert body["policy_status"] == "rejected"
-    assert body["error"]["code"] == "candidate_b_operator_workflow_access_policy_untrusted_proxy_identity"
+    assert body["status"] == "blocked"
+    assert body["error_code"] == "sec_xbrl_in_app_auth_policy_untrusted_proxy_identity"
 
 
 def test_candidate_b_full_corpus_operator_workflow_status_proxy_rejects_cross_owner_receipt(
@@ -699,3 +697,46 @@ def test_candidate_b_full_corpus_operator_workflow_status_requires_configured_re
     body = response.json()
     assert body["status"] == "blocked"
     assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_status_dir_invalid"
+
+
+def test_candidate_b_service_policy_rejects_untrusted_proxy_identity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", False)
+
+    with pytest.raises(access_policy.CandidateBOperatorWorkflowAccessPolicyError) as exc_info:
+        access_policy.authorize_workflow_access(
+            fields={"client_request_id": "svc-test-untrusted-proxy"},
+            route_family="workflow_status",
+            rendered_surface="status",
+            workflow_receipt_id="cb-runtime-l3-aaaaaaaaaaaaaaaaaaaaaaaa",
+            workflow_receipt_hash="2" * 64,
+            authority_basis_hash="3" * 64,
+            requested_role="owner",
+            require_existing_owner_binding=False,
+        )
+
+    assert exc_info.value.code == "candidate_b_operator_workflow_access_policy_untrusted_proxy_identity"
+
+
+def test_candidate_b_service_policy_rejects_missing_tenant_or_workspace_authority(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+
+    with access_policy.request_context({"X-Forwarded-User": "alice"}):
+        with pytest.raises(access_policy.CandidateBOperatorWorkflowAccessPolicyError) as exc_info:
+            access_policy.authorize_workflow_access(
+                fields={"client_request_id": "svc-test-missing-tenant"},
+                route_family="workflow_status",
+                rendered_surface="status",
+                workflow_receipt_id="cb-runtime-l3-aaaaaaaaaaaaaaaaaaaaaaaa",
+                workflow_receipt_hash="2" * 64,
+                authority_basis_hash="3" * 64,
+                requested_role="owner",
+                require_existing_owner_binding=False,
+            )
+
+    assert exc_info.value.code == "candidate_b_operator_workflow_access_policy_missing_tenant_or_workspace_authority"

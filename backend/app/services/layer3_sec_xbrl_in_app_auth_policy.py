@@ -203,6 +203,17 @@ def derive_sec_xbrl_evidence_owner(headers: Mapping[str, str]) -> dict[str, Any]
     }
 
 
+def route_level_operator_identity_required(headers: Mapping[str, str]) -> dict[str, Any]:
+    """Doc-1358 route-level operator-identity seam: derive the server-side operator
+    principal without route-family registration or role gating."""
+    actor_ref_hash, workspace_ref_hash, auth_owner_mode = _server_derived_principal(headers)
+    return {
+        "operator_ref_hash": actor_ref_hash,
+        "workspace_ref_hash": workspace_ref_hash,
+        "auth_owner_mode": auth_owner_mode,
+    }
+
+
 def binding_client_request_id(*, client_request_id: str, route_family: str) -> str:
     digest = stable_hash(
         {

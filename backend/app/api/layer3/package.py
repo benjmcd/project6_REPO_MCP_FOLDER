@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -61,9 +61,14 @@ from app.api.layer3 import (  # Pydantic models still defined in __init__
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_review_preview(
+    request: Request,
     payload: Layer3PackageReviewPreviewRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.package_review_preview(db, payload.model_dump(exclude_unset=True)))
 
 
@@ -74,9 +79,14 @@ def post_package_review_preview(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_review_commit(
+    request: Request,
     payload: Layer3PackageConstructionCommitRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.package_construction_commit(db, payload.model_dump(exclude_unset=True)))
 
 
@@ -87,9 +97,14 @@ def post_package_review_commit(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_review_submit(
+    request: Request,
     payload: Layer3PackageReviewSubmitRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.package_review_submit(db, payload.model_dump(exclude_unset=True)))
 
 
@@ -100,9 +115,14 @@ def post_package_review_submit(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_mutation_preview(
+    request: Request,
     payload: Layer3PackageSupersessionPreviewRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_package_mutation_entry.preview_package_supersession(
             db,
@@ -118,9 +138,14 @@ def post_package_mutation_preview(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_replacement_artifact_materialize(
+    request: Request,
     payload: Layer3ReplacementPackageArtifactMaterializationRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_replacement_package_materialization.materialize_replacement_package_artifacts(
             db,
@@ -136,9 +161,14 @@ def post_package_replacement_artifact_materialize(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_replacement_set_record(
+    request: Request,
     payload: Layer3ReplacementPackageSetAuthorityRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_replacement_package_set_authority.record_replacement_package_set_authority(
             db,
@@ -158,9 +188,14 @@ def post_package_replacement_set_record(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_replacement_set_record_from_corrected_artifact_set(
+    request: Request,
     payload: Layer3ReplacementPackageSetAuthorityFromCorrectedArtifactSetRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_replacement_package_set_authority.record_replacement_package_set_authority_from_corrected_artifact_set(
             db,
@@ -176,9 +211,14 @@ def post_package_replacement_set_record_from_corrected_artifact_set(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_supersession_commit(
+    request: Request,
     payload: Layer3PackageSupersessionCommitRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_package_supersession_commit.commit_package_supersession(
             db,
@@ -196,9 +236,14 @@ def post_package_supersession_commit(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_supersession_commit_from_corrected_artifact_set_authority(
+    request: Request,
     payload: Layer3PackageSupersessionCommitFromCorrectedArtifactSetRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_package_supersession_commit.commit_package_supersession_from_corrected_artifact_set_authority(
             db,
@@ -214,9 +259,14 @@ def post_package_supersession_commit_from_corrected_artifact_set_authority(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_replacement_artifact_manifest_record(
+    request: Request,
     payload: Layer3ReplacementPackageArtifactManifestRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_replacement_package_artifact_manifest.record_replacement_package_artifact_manifest(
             db,
@@ -234,9 +284,14 @@ def post_package_replacement_artifact_manifest_record(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_replacement_artifact_manifest_record_from_authority(
+    request: Request,
     payload: Layer3ReplacementPackageArtifactManifestFromAuthorityRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_replacement_package_artifact_manifest.record_replacement_package_artifact_manifest_from_authority(
             db,
@@ -256,9 +311,14 @@ def post_package_replacement_artifact_manifest_record_from_authority(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_replacement_artifact_manifest_record_from_corrected_artifact_set_authority(
+    request: Request,
     payload: Layer3ReplacementPackageArtifactManifestFromCorrectedArtifactSetRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_replacement_package_artifact_manifest.record_replacement_package_artifact_manifest_from_corrected_artifact_set_authority(
             db,
@@ -274,9 +334,14 @@ def post_package_replacement_artifact_manifest_record_from_corrected_artifact_se
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_corrected_artifact_set_record(
+    request: Request,
     payload: Layer3CorrectedPackageArtifactSetRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_corrected_package_artifact_set.record_corrected_package_artifact_set(
             db,
@@ -292,9 +357,14 @@ def post_package_corrected_artifact_set_record(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_replacement_namespace_record(
+    request: Request,
     payload: Layer3ReplacementPackageNamespaceRecordRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_replacement_package_namespace.record_replacement_package_namespace(
             db,
@@ -314,9 +384,14 @@ def post_package_replacement_namespace_record(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_replacement_namespace_record_from_corrected_artifact_manifest_authority(
+    request: Request,
     payload: Layer3ReplacementPackageNamespaceFromCorrectedManifestRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_replacement_package_namespace.record_replacement_package_namespace_from_corrected_artifact_manifest_authority(
             db,
@@ -332,9 +407,14 @@ def post_package_replacement_namespace_record_from_corrected_artifact_manifest_a
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_replacement_activation_commit(
+    request: Request,
     payload: Layer3PackageReplacementActivationCommitRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_package_replacement_activation.commit_package_replacement_activation(
             db,

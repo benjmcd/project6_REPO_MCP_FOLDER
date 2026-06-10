@@ -59,6 +59,7 @@ __all__ = [
     "_sec_xbrl_value_reveal_authority_error_response",
     "_sec_xbrl_controlled_value_reveal_submit_error_response",
     "_sec_xbrl_auth_policy_error_response",
+    "_route_level_operator_identity",
     "_sec_xbrl_policy_request_fields",
     "_sec_xbrl_policy_decision",
     "_sec_xbrl_binding_request_id",
@@ -71,6 +72,7 @@ __all__ = [
     "_payload_from_request",
     "_FULL_PIPELINE_FORBIDDEN_MARKERS",
     "_full_pipeline_contains_forbidden_marker",
+    "SecXbrlInAppAuthPolicyError",
     # schema constants
     "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA",
     "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORM_REQUEST_SCHEMA",
@@ -3881,6 +3883,15 @@ def _sec_xbrl_controlled_value_reveal_submit_error_response(
                 next_allowed_actions=["prepare_sec_xbrl_value_reveal_authority"],
             )
         ),
+    )
+
+
+SecXbrlInAppAuthPolicyError = layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError
+
+
+def _route_level_operator_identity(request: Request) -> dict[str, Any]:
+    return layer3_sec_xbrl_in_app_auth_policy.route_level_operator_identity_required(
+        {str(key): str(value) for key, value in request.headers.items()}
     )
 
 

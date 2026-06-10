@@ -12763,20 +12763,25 @@ Status: validate-only config hardening and planning-only route-dependency contra
    by `production_admission_flag_enabled()`. Validate-only: the field exists and is read, but no
    admission gate is wired to live routes. Default remains `False`; no runtime default change.
 
-3. **Route-dependency contract doc 1358** (planning-only): Authored
-   `1358-route-level-operator-identity-route-dependency-contract.md` with
+3. **Route-dependency contract doc 1358** (originally planning-only, now implemented per doc
+   1359): `1358-route-level-operator-identity-route-dependency-contract.md` was authored with
    `contract_status: authored`, `runtime_status: not_implemented`,
-   `selected_future_mode: route_level_operator_identity_required`. Enumerates 19 handoff + 16
-   package POST routes requiring future operator identity; inventories 83 source-ingestion routes
-   as deferred; excludes SEC XBRL entirely. No runtime implementation admitted.
+   `selected_future_mode: route_level_operator_identity_required` on feat/prod-advance-0609.
+   Doc 1359 (`1359-route-level-operator-identity-implementation-and-source-ingestion-audit.md`)
+   supersedes the `not_implemented` claim: the route-dependency contract is now implemented on
+   feat/prod-advance-0610, wiring 19 handoff + 16 package + 83 source_ingestion POST handlers
+   (118 total). Identity seam is inert under AUTH_OWNER=none, fail-closed 409/401 under proxy.
+   No new flags/models/migrations. SEC XBRL excluded (already enforced via doc 1352).
+   Production readiness claim: false.
 
-Scope: config/settings hardening (items 1-2) and planning-only doc (item 3). No auth runtime,
-value-reveal, live network, default-on admission, route wiring, schema/model/migration change,
-connector/destination dispatch, package mutation, source expansion, qualitative/hybrid/RAG/vector
-behavior, or full mockup activation is admitted.
+Scope (feat/prod-advance-0609): config/settings hardening (items 1-2) and planning-only doc
+(item 3). No auth runtime, value-reveal, live network, default-on admission, route wiring,
+schema/model/migration change, connector/destination dispatch, package mutation, source
+expansion, qualitative/hybrid/RAG/vector behavior, or full mockup activation is admitted.
 
-Non-goals preserved: auth runtime remains `not_implemented` (docs 199/200/266 unchanged);
-admission evaluator default remains `False`; no route-level identity enforcement is live;
+Non-goals preserved (feat/prod-advance-0609): auth runtime remains `not_implemented` (docs
+199/200/266 unchanged); admission evaluator default remains `False`; no route-level identity
+enforcement is live (on that branch);
 SEC XBRL excluded from route-dependency scope.
 
 Verification: 8 new config tests passed

@@ -251,6 +251,10 @@ async def post_source_intake_upload(
     declared_media_type: str | None = Form(None),
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     _ = (
         client_request_id,
         operator_decision,
@@ -323,8 +327,13 @@ def get_source_intake_material_preview(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_bundle_material_bridge(
+    request: Request,
     payload: Layer3CandidateBBundleMaterialBridgeRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_bundle_bridge.prepare_candidate_b_bundle_material_bridge(
             payload.model_dump(exclude_unset=True),
@@ -339,8 +348,13 @@ def post_candidate_b_bundle_material_bridge(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_runtime_material_bridge(
+    request: Request,
     payload: Layer3CandidateBRuntimeMaterialBridgeRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_runtime_bridge.prepare_candidate_b_runtime_material_bridge(
             payload.model_dump(exclude_unset=True),
@@ -356,9 +370,14 @@ def post_candidate_b_runtime_material_bridge(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_runtime_material_bridge_source_scan(
+    request: Request,
     payload: Layer3CandidateBRuntimeBridgeSourceScanRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_runtime_bridge.scan_candidate_b_runtime_bridge_curated_source_directory(
             db,
@@ -377,8 +396,13 @@ def post_candidate_b_runtime_material_bridge_source_scan(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_artifact_family_status(
+    request: Request,
     payload: Layer3CandidateBArtifactFamilyStatusRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_artifact_status.candidate_b_retained_artifact_family_status(
             payload.model_dump(exclude_unset=True),
@@ -393,8 +417,13 @@ def post_candidate_b_artifact_family_status(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_visual_lane_status(
+    request: Request,
     payload: Layer3CandidateBVisualLaneStatusRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_visual_lane_status.candidate_b_visual_lane_status(
             payload.model_dump(exclude_unset=True),
@@ -409,8 +438,13 @@ def post_candidate_b_visual_lane_status(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_runtime_downstream_proof(
+    request: Request,
     payload: Layer3CandidateBRuntimeDownstreamProofRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_downstream_proof.candidate_b_runtime_downstream_proof(
             payload.model_dump(exclude_unset=True),
@@ -425,8 +459,13 @@ def post_candidate_b_runtime_downstream_proof(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_bundle_downstream_proof(
+    request: Request,
     payload: Layer3CandidateBBundleDownstreamProofRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_bundle_downstream_proof.candidate_b_bundle_downstream_proof(
             payload.model_dump(exclude_unset=True),
@@ -441,8 +480,13 @@ def post_candidate_b_bundle_downstream_proof(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_default_promotion_operator_status(
+    request: Request,
     payload: Layer3CandidateBDefaultPromotionOperatorStatusRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_operator_status.candidate_b_default_promotion_operator_status(
             payload.model_dump(exclude_unset=True),
@@ -460,6 +504,10 @@ def post_candidate_b_full_corpus_operator_workflow_run(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowRunRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_run_service = layer3_candidate_b_full_corpus_operator_workflow_run
     try:
         with layer3_candidate_b_operator_workflow_access_policy.request_context(
@@ -485,6 +533,10 @@ def post_candidate_b_full_corpus_operator_workflow_status(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowStatusRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_status_service = layer3_candidate_b_full_corpus_operator_workflow_status
     try:
         with layer3_candidate_b_operator_workflow_access_policy.request_context(
@@ -510,6 +562,10 @@ def post_candidate_b_full_corpus_operator_workflow_lifecycle_expire(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowLifecycleRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_lifecycle_service = layer3_candidate_b_full_corpus_operator_workflow_lifecycle
     try:
         return _candidate_b_policy_json_or_error(
@@ -531,6 +587,10 @@ def post_candidate_b_full_corpus_operator_workflow_queue_state(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowQueueStateRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_queue_state_service = layer3_candidate_b_full_corpus_operator_workflow_queue_state
     try:
         return _candidate_b_policy_json_or_error(
@@ -552,6 +612,10 @@ def post_candidate_b_full_corpus_operator_workflow_scheduler_lease(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowSchedulerLeaseRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_scheduler_lease_service = layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease
     try:
         return _candidate_b_policy_json_or_error(
@@ -573,6 +637,10 @@ def post_candidate_b_full_corpus_operator_workflow_worker_attempt(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowWorkerAttemptRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_worker_attempt_service = layer3_candidate_b_full_corpus_operator_workflow_worker_attempt
     try:
         return _candidate_b_policy_json_or_error(
@@ -594,6 +662,10 @@ def post_candidate_b_full_corpus_operator_workflow_progress_checkpoint(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowProgressCheckpointRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_progress_checkpoint_service = layer3_candidate_b_full_corpus_operator_workflow_progress_checkpoint
     try:
         return _candidate_b_policy_json_or_error(
@@ -615,6 +687,10 @@ def post_candidate_b_full_corpus_operator_workflow_completion_failure(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowCompletionFailureRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_completion_failure_service = layer3_candidate_b_full_corpus_operator_workflow_completion_failure
     try:
         return _candidate_b_policy_json_or_error(
@@ -636,6 +712,10 @@ def post_candidate_b_full_corpus_operator_workflow_retry_policy(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowRetryPolicyRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_retry_policy_service = layer3_candidate_b_full_corpus_operator_workflow_retry_policy
     try:
         return _candidate_b_policy_json_or_error(
@@ -657,6 +737,10 @@ def post_candidate_b_full_corpus_operator_workflow_retry_queue_state(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowRetryQueueStateRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_retry_queue_state_service = layer3_candidate_b_full_corpus_operator_workflow_retry_queue_state
     try:
         return _candidate_b_policy_json_or_error(
@@ -678,6 +762,10 @@ def post_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowRetrySchedulerLeaseRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_retry_scheduler_lease_service = layer3_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease
     try:
         return _candidate_b_policy_json_or_error(
@@ -699,6 +787,10 @@ def post_candidate_b_full_corpus_operator_workflow_retry_worker_attempt(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowRetryWorkerAttemptRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_retry_worker_attempt_service = layer3_candidate_b_full_corpus_operator_workflow_retry_worker_attempt
     try:
         return _candidate_b_policy_json_or_error(
@@ -722,6 +814,10 @@ def post_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowRetryProgressCheckpointRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_retry_progress_checkpoint_service = (
         layer3_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint
     )
@@ -747,6 +843,10 @@ def post_candidate_b_full_corpus_operator_workflow_retry_completion_failure(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowRetryCompletionFailureRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_retry_completion_failure_service = (
         layer3_candidate_b_full_corpus_operator_workflow_retry_completion_failure
     )
@@ -772,6 +872,10 @@ def post_candidate_b_full_corpus_operator_workflow_execution_boundary(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowExecutionBoundaryRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_execution_boundary_service = (
         layer3_candidate_b_full_corpus_operator_workflow_execution_boundary
     )
@@ -795,6 +899,10 @@ def post_candidate_b_full_corpus_operator_workflow_process_execution(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowProcessExecutionRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_process_execution_service = (
         layer3_candidate_b_full_corpus_operator_workflow_process_execution
     )
@@ -818,6 +926,10 @@ def post_candidate_b_full_corpus_operator_workflow_process_completion_result(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowProcessCompletionResultRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_process_completion_result_service = (
         layer3_candidate_b_full_corpus_operator_workflow_process_completion_result
     )
@@ -843,6 +955,10 @@ def post_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_pro
     payload: Layer3CandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_adopted_result_downstream_proof_service = (
         layer3_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof
     )
@@ -868,6 +984,10 @@ def post_candidate_b_full_corpus_operator_workflow_completion_monitor(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowCompletionMonitorRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_completion_monitor_service = (
         layer3_candidate_b_full_corpus_operator_workflow_completion_monitor
     )
@@ -893,6 +1013,10 @@ def post_candidate_b_full_corpus_operator_repeatability_checkpoint(
     payload: Layer3CandidateBFullCorpusOperatorRepeatabilityCheckpointRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     repeatability_checkpoint_service = (
         layer3_candidate_b_full_corpus_operator_repeatability_checkpoint
     )
@@ -918,6 +1042,10 @@ def post_candidate_b_full_corpus_repeatability_rerun_trial(
     payload: Layer3CandidateBFullCorpusRepeatabilityRerunTrialRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     rerun_trial_service = layer3_candidate_b_full_corpus_repeatability_rerun_trial
     try:
         return _candidate_b_policy_json_or_error(
@@ -939,6 +1067,10 @@ def post_candidate_b_full_corpus_repeatability_acceptance_checkpoint(
     payload: Layer3CandidateBFullCorpusRepeatabilityAcceptanceCheckpointRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     acceptance_checkpoint_service = layer3_candidate_b_full_corpus_repeatability_acceptance_checkpoint
     try:
         return _candidate_b_policy_json_or_error(
@@ -962,6 +1094,10 @@ def post_candidate_b_full_corpus_repeatability_acceptance_closeout(
     payload: Layer3CandidateBFullCorpusRepeatabilityAcceptanceCloseoutRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     closeout_service = layer3_candidate_b_full_corpus_repeatability_acceptance_closeout
     try:
         return _candidate_b_policy_json_or_error(
@@ -983,6 +1119,10 @@ def post_candidate_b_full_corpus_repeatability_acceptance_closeout_status(
     payload: Layer3CandidateBFullCorpusRepeatabilityAcceptanceCloseoutStatusRequest,
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     closeout_service = layer3_candidate_b_full_corpus_repeatability_acceptance_closeout
     try:
         return _candidate_b_policy_json_or_error(
@@ -1001,8 +1141,13 @@ def post_candidate_b_full_corpus_repeatability_acceptance_closeout_status(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_default_promotion_closure_evidence(
+    request: Request,
     payload: Layer3CandidateBDefaultPromotionClosureEvidenceRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_promotion_closure.candidate_b_default_promotion_closure_evidence(
             payload.model_dump(exclude_unset=True),
@@ -1039,8 +1184,13 @@ def get_candidate_b_full_corpus_operator_workflow_history(
     responses=_workbench_error_responses(400, 409),
 )
 def post_candidate_b_default_promotion_readiness_audit(
+    request: Request,
     payload: Layer3CandidateBDefaultPromotionReadinessAuditRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_default_readiness.evaluate_candidate_b_default_promotion_readiness(
             payload.model_dump(exclude_unset=True),
@@ -1055,8 +1205,13 @@ def post_candidate_b_default_promotion_readiness_audit(
     responses=_workbench_error_responses(400, 409),
 )
 def post_candidate_b_broader_eligible_corpus_scope_readiness_audit(
+    request: Request,
     payload: Layer3CandidateBBroaderEligibleCorpusScopeReadinessAuditRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_broader_scope_readiness.evaluate_candidate_b_broader_scope_readiness(
             payload.model_dump(exclude_unset=True),
@@ -1071,8 +1226,13 @@ def post_candidate_b_broader_eligible_corpus_scope_readiness_audit(
     responses=_workbench_error_responses(400, 409),
 )
 def post_candidate_b_broader_eligible_corpus_default_scope_runtime(
+    request: Request,
     payload: Layer3CandidateBBroaderEligibleCorpusDefaultScopeRuntimeRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_broader_scope_runtime.select_candidate_b_broader_scope_runtime(
             payload.model_dump(exclude_unset=True),
@@ -1087,8 +1247,13 @@ def post_candidate_b_broader_eligible_corpus_default_scope_runtime(
     responses=_workbench_error_responses(400, 409),
 )
 def post_candidate_b_broader_eligible_corpus_default_scope_selector_use(
+    request: Request,
     payload: Layer3CandidateBBroaderEligibleCorpusDefaultScopeSelectorUseRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_broader_scope_selector_use.record_candidate_b_broader_scope_selector_use(
             payload.model_dump(exclude_unset=True),
@@ -1103,8 +1268,13 @@ def post_candidate_b_broader_eligible_corpus_default_scope_selector_use(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_broader_eligible_corpus_default_scope_selector_use_status(
+    request: Request,
     payload: Layer3CandidateBBroaderEligibleCorpusDefaultScopeSelectorUseStatusRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_broader_scope_selector_use.inspect_candidate_b_broader_scope_selector_use_status(
             payload.model_dump(exclude_unset=True),
@@ -1121,8 +1291,13 @@ def post_candidate_b_broader_eligible_corpus_default_scope_selector_use_status(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_broader_eligible_corpus_default_scope_selector_activation(
+    request: Request,
     payload: Layer3CandidateBBroaderEligibleCorpusDefaultScopeSelectorActivationRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_broader_scope_selector_use.record_candidate_b_broader_scope_selector_activation(
             payload.model_dump(exclude_unset=True),
@@ -1141,8 +1316,13 @@ def post_candidate_b_broader_eligible_corpus_default_scope_selector_activation(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption(
+    request: Request,
     payload: Layer3CandidateBBroaderEligibleCorpusDefaultScopeActivationReceiptConsumptionRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_candidate_b_broader_scope_selector_use
@@ -1166,8 +1346,13 @@ def post_candidate_b_broader_eligible_corpus_default_scope_activation_receipt_co
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use(
+    request: Request,
     payload: Layer3CandidateBBroaderEligibleCorpusDefaultScopeConsumptionReceiptUseRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_broader_scope_selector_use.record_candidate_b_broader_scope_consumption_receipt_use(
             payload.model_dump(exclude_unset=True),
@@ -1190,8 +1375,13 @@ def post_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_u
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status(
+    request: Request,
     payload: Layer3CandidateBBroaderEligibleCorpusDefaultScopeConsumptionReceiptUseStatusRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_candidate_b_broader_scope_selector_use
@@ -1219,8 +1409,13 @@ def post_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_u
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial(
+    request: Request,
     payload: Layer3CandidateBBroaderEligibleCorpusDefaultScopeOperatorRepeatabilityTrialRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_candidate_b_broader_scope_repeatability_trial
@@ -1241,8 +1436,13 @@ def post_candidate_b_broader_eligible_corpus_default_scope_operator_repeatabilit
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_broader_eligible_corpus_default_scope_promotion_readiness(
+    request: Request,
     payload: Layer3CandidateBBroaderEligibleCorpusDefaultScopePromotionReadinessRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_candidate_b_broader_scope_promotion_readiness
@@ -1263,8 +1463,13 @@ def post_candidate_b_broader_eligible_corpus_default_scope_promotion_readiness(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_broader_eligible_corpus_default_scope_default_promotion(
+    request: Request,
     payload: Layer3CandidateBBroaderEligibleCorpusDefaultScopeDefaultPromotionRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_candidate_b_broader_scope_default_promotion
@@ -1285,8 +1490,13 @@ def post_candidate_b_broader_eligible_corpus_default_scope_default_promotion(
     responses=_workbench_error_responses(400, 409),
 )
 def post_candidate_b_default_promotion_final_proof(
+    request: Request,
     payload: Layer3CandidateBDefaultPromotionFinalProofRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_final_proof.candidate_b_default_promotion_final_proof(
             payload.model_dump(exclude_unset=True),
@@ -1301,8 +1511,13 @@ def post_candidate_b_default_promotion_final_proof(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_candidate_b_default_promotion_final_proof_status(
+    request: Request,
     payload: Layer3CandidateBDefaultPromotionFinalProofStatusRequest,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_candidate_b_final_proof.candidate_b_default_promotion_final_proof_status(
             payload.model_dump(exclude_unset=True),
@@ -1318,9 +1533,14 @@ def post_candidate_b_default_promotion_final_proof_status(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_ingestion_scan(
+    request: Request,
     payload: Layer3SourceDirectoryIngestionScanRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_source_directory_ingestion.scan_server_configured_directory(
             db,
@@ -1354,9 +1574,14 @@ def get_source_directory_ingestion_status(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_material_preview(
+    request: Request,
     payload: Layer3SourceDirectoryMaterialPreviewRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_source_directory_material_admission.source_directory_material_preview(
             db,
@@ -1372,9 +1597,14 @@ def post_source_directory_material_preview(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_hybrid_authority_prepare(
+    request: Request,
     payload: Layer3SourceDirectoryHybridAuthorityPrepareRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_source_directory_hybrid_authority.source_directory_hybrid_authority_prepare(
             db,
@@ -1394,9 +1624,14 @@ def post_source_directory_hybrid_authority_prepare(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_vector_retrieval(
+    request: Request,
     payload: Layer3SourceDirectoryVectorRetrievalRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_source_directory_vector_retrieval.source_directory_material_vector_retrieval(
             db,
@@ -1416,9 +1651,14 @@ def post_source_directory_vector_retrieval(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_hybrid_context_packet(
+    request: Request,
     payload: Layer3SourceDirectoryHybridContextPacketRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_source_directory_hybrid_context.source_directory_material_hybrid_retrieval_context_packet(
             db,
@@ -1441,9 +1681,14 @@ def post_source_directory_hybrid_context_packet(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_hybrid_context_packet_qualitative_analysis(
+    request: Request,
     payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_hybrid_analysis
@@ -1470,9 +1715,14 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_hybrid_context_packet_qualitative_analysis_status(
+    request: Request,
     payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisStatusRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_hybrid_analysis
@@ -1499,9 +1749,14 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis_status(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_hybrid_context_packet_qualitative_analysis_package_commit(
+    request: Request,
     payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisPackageCommitRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_hybrid_analysis
@@ -1529,9 +1784,14 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis_package_com
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_hybrid_context_packet_qualitative_analysis_package_review_submit(
+    request: Request,
     payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisPackageReviewSubmitRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_hybrid_analysis
@@ -1559,9 +1819,14 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis_package_rev
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_hybrid_context_packet_qualitative_analysis_handoff_export_prepare(
+    request: Request,
     payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisHandoffExportPrepareRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_hybrid_analysis
@@ -1589,9 +1854,14 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis_handoff_exp
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare(
+    request: Request,
     payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloadPrepareRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_hybrid_analysis
@@ -1622,9 +1892,14 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis_external_ex
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_hybrid_context_packet_qualitative_analysis_internal_webhook_dispatch(
+    request: Request,
     payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisInternalWebhookDispatchRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_source_directory_internal_webhook.dispatch_source_directory_internal_webhook(
             db,
@@ -1663,9 +1938,14 @@ def get_source_directory_hybrid_context_packet_qualitative_analysis_internal_web
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_status(
+    request: Request,
     payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloadDeliverRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_hybrid_analysis
@@ -1698,9 +1978,14 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis_external_ex
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url_prepare(
+    request: Request,
     payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisProviderPrivateSignedUrlPrepareRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_hybrid_analysis
@@ -1734,9 +2019,14 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis_provider_pr
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url_status(
+    request: Request,
     payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisProviderPrivateSignedUrlStatusRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_hybrid_analysis
@@ -1770,9 +2060,14 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis_provider_pr
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url_use(
+    request: Request,
     payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisProviderPrivateSignedUrlUseRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_hybrid_analysis
@@ -1806,9 +2101,14 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis_provider_pr
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url_revoke(
+    request: Request,
     payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisProviderPrivateSignedUrlRevokeRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_hybrid_analysis
@@ -1843,6 +2143,10 @@ async def post_source_directory_hybrid_context_packet_qualitative_analysis_exter
     request: Request,
     db: Session = Depends(get_db),
 ) -> FileResponse | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         payload = await _payload_from_request(request)
         delivery = (
@@ -1883,9 +2187,14 @@ async def post_source_directory_hybrid_context_packet_qualitative_analysis_exter
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_qualitative_hybrid_analysis(
+    request: Request,
     payload: Layer3SourceDirectoryQualitativeAnalysisRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_qualitative_analysis
@@ -1909,9 +2218,14 @@ def post_source_directory_qualitative_hybrid_analysis(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_qualitative_hybrid_analysis_status(
+    request: Request,
     payload: Layer3SourceDirectoryQualitativeAnalysisRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_qualitative_analysis
@@ -1935,9 +2249,14 @@ def post_source_directory_qualitative_hybrid_analysis_status(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_qualitative_analysis_package_commit(
+    request: Request,
     payload: Layer3SourceDirectoryQualitativeAnalysisPackageCommitRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_qualitative_analysis
@@ -1962,9 +2281,14 @@ def post_source_directory_qualitative_analysis_package_commit(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_qualitative_analysis_package_review_submit(
+    request: Request,
     payload: Layer3SourceDirectoryQualitativeAnalysisPackageReviewSubmitRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_qualitative_analysis
@@ -1992,9 +2316,14 @@ def post_source_directory_qualitative_analysis_package_review_submit(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_qualitative_analysis_package_supersession_preview(
+    request: Request,
     payload: Layer3SourceDirectoryQualitativeAnalysisPackageSupersessionPreviewRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_qualitative_analysis
@@ -2022,9 +2351,14 @@ def post_source_directory_qualitative_analysis_package_supersession_preview(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_qualitative_analysis_package_replacement_set_record(
+    request: Request,
     payload: Layer3SourceDirectoryReplacementPackageSetAuthorityRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: (
             layer3_replacement_package_set_authority
@@ -2045,9 +2379,14 @@ def post_source_directory_qualitative_analysis_package_replacement_set_record(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_qualitative_analysis_package_supersession_commit(
+    request: Request,
     payload: Layer3SourceDirectoryPackageSupersessionCommitRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_package_supersession_commit.commit_package_supersession_from_source_directory_lifecycle(
             db,
@@ -2065,9 +2404,14 @@ def post_source_directory_qualitative_analysis_package_supersession_commit(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_package_supersession_provider_private_signed_url_prepare(
+    request: Request,
     payload: Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlPrepareRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: (
             layer3_package_supersession_commit
@@ -2088,9 +2432,14 @@ def post_source_directory_package_supersession_provider_private_signed_url_prepa
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_package_supersession_provider_private_signed_url_status(
+    request: Request,
     payload: Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlStatusRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: (
             layer3_package_supersession_commit
@@ -2111,9 +2460,14 @@ def post_source_directory_package_supersession_provider_private_signed_url_statu
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_package_supersession_provider_private_signed_url_use(
+    request: Request,
     payload: Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlUseRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: (
             layer3_package_supersession_commit
@@ -2134,9 +2488,14 @@ def post_source_directory_package_supersession_provider_private_signed_url_use(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_package_supersession_provider_private_signed_url_revoke(
+    request: Request,
     payload: Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlRevokeRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: (
             layer3_package_supersession_commit
@@ -2154,9 +2513,14 @@ def post_source_directory_package_supersession_provider_private_signed_url_revok
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_qualitative_analysis_handoff_export_prepare(
+    request: Request,
     payload: Layer3SourceDirectoryQualitativeAnalysisHandoffExportPrepareRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_qualitative_analysis
@@ -2181,9 +2545,14 @@ def post_source_directory_qualitative_analysis_handoff_export_prepare(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_qualitative_analysis_external_export_download_prepare(
+    request: Request,
     payload: Layer3SourceDirectoryQualitativeAnalysisExternalExportDownloadPrepareRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_qualitative_analysis
@@ -2208,9 +2577,14 @@ def post_source_directory_qualitative_analysis_external_export_download_prepare(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_qualitative_analysis_external_export_download_delivery_status(
+    request: Request,
     payload: Layer3SourceDirectoryQualitativeAnalysisExternalExportDownloadDeliverRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return (
             layer3_source_directory_qualitative_analysis
@@ -2238,6 +2612,10 @@ async def post_source_directory_qualitative_analysis_external_export_download_de
     request: Request,
     db: Session = Depends(get_db),
 ) -> FileResponse | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         payload = await _payload_from_request(request)
         delivery = (
@@ -2276,9 +2654,14 @@ async def post_source_directory_qualitative_analysis_external_export_download_de
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_raw_mixed_corpus_seed(
+    request: Request,
     payload: Layer3RawMixedCorpusSeedRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_raw_mixed_bridge.seed_raw_mixed_corpus(payload.model_dump(exclude_unset=True), db)
     )
@@ -2291,9 +2674,14 @@ def post_raw_mixed_corpus_seed(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_raw_mixed_corpus_materialize(
+    request: Request,
     payload: Layer3RawMixedCorpusMaterializeRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_raw_mixed_materialization.materialize_raw_mixed_corpus(
             payload.model_dump(exclude_unset=True),

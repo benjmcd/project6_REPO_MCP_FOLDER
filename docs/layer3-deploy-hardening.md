@@ -32,7 +32,7 @@ The first implementation uses these defaults:
 
 1. **Deployment mode:** `DEPLOYMENT_MODE=local` by default; `DEPLOYMENT_MODE=nonlocal` selects the fail-closed profile.
 2. **CORS:** non-local mode requires explicit HTTPS origins; wildcard origins are rejected. `CORS_ALLOW_CREDENTIALS` defaults to false in non-local mode unless explicitly configured.
-3. **Authentication and authorization:** non-local mode requires `AUTH_OWNER=proxy`. `X-Forwarded-User` is the default required identity header, with `X-Forwarded-Email` and `X-Forwarded-Groups` available as optional header names.
+3. **Authentication and authorization:** non-local mode requires `AUTH_OWNER=proxy`. `X-Forwarded-User` is the default required identity header. `X-Forwarded-Groups` (the `PROXY_GROUPS_HEADER`) is REQUIRED on requests to the route-level operator-identity-enforced Layer 3 workbench POST surface under proxy posture: the in-app seam derives workspace authority from it and fails closed 401 (`sec_xbrl_in_app_auth_policy_missing_workspace_authority`) when it is absent. `X-Forwarded-Email` remains optional metadata.
 4. **Storage exposure:** non-local mode disables direct `/storage` mounting by default and rejects `enabled` or `proxy_protected` app mounts.
 5. **Proxy/TLS:** non-local mode requires `TRUSTED_PROXY_MODE=true`; HTTPS termination and forwarded-header enforcement remain trusted-proxy owned.
 6. **Secrets:** settings remain environment-injected; no deployment secrets are embedded in the repo.
@@ -55,9 +55,9 @@ Use this packet before any further deployment-hardening implementation. It recor
 
 1. **Allowed browser origins:** replace the placeholders with exact HTTPS origins for the deployed review UI/API clients. Do not use `*`.
 2. **Credentialed CORS:** keep `CORS_ALLOW_CREDENTIALS=false` unless a later cookie/session-auth design is explicitly selected and governed.
-3. **Auth owner:** keep `AUTH_OWNER=proxy`; the app currently requires proxy-owned posture but does not enforce in-app authorization.
+3. **Auth owner:** keep `AUTH_OWNER=proxy`; the app requires proxy-owned posture. Route-level operator-identity PRESENCE is now enforced in-app for the Layer 3 workbench POST surface (handoff/package/source_ingestion): fail-closed 409/401 under proxy posture, inert under local default. This is identity-presence enforcement only, NOT role/authorization policy. StaticFiles wrapping and reverse-proxy authn/authz remain deployment-owned.
 4. **Identity header:** keep `PROXY_IDENTITY_HEADER=X-Forwarded-User` unless the proxy contract chooses another nonblank identity header name. The proxy must strip or overwrite client-supplied identity headers before forwarding to the app.
-5. **Optional identity metadata:** configure `PROXY_EMAIL_HEADER` and `PROXY_GROUPS_HEADER` only if the proxy can supply trustworthy values; current app behavior names these headers but does not authorize requests from them.
+5. **Workspace/groups header (required) and optional email metadata:** the proxy MUST supply the configured `PROXY_GROUPS_HEADER` (default `X-Forwarded-Groups`) on every request to the Layer 3 workbench POST surface; the in-app identity seam derives workspace authority from it and rejects requests without it (401). Configure `PROXY_EMAIL_HEADER` only if the proxy can supply trustworthy values. The proxy must strip or overwrite any client-supplied values for both headers before forwarding.
 6. **Proxy/TLS boundary:** terminate HTTPS at the trusted proxy and forward only from that proxy to the app. `TRUSTED_PROXY_MODE=true` is a posture declaration, not proof that the network path is protected.
 7. **Storage exposure:** keep `STORAGE_EXPOSURE=auto` or `disabled`; non-local mode rejects direct and `proxy_protected` app-owned `/storage` mounts.
 8. **Secrets/config injection:** inject deployment values through the environment or deployment secret manager. Do not commit production origins, secrets, signing keys, or connector credentials into the repo.
@@ -101,12 +101,12 @@ ALLOWED_ORIGINS=<exact-https-origin-list>
 CORS_ALLOW_CREDENTIALS=false
 AUTH_OWNER=proxy
 PROXY_IDENTITY_HEADER=<selected identity header, default X-Forwarded-User>
+PROXY_GROUPS_HEADER=<selected workspace header, default X-Forwarded-Groups>
 TRUSTED_PROXY_MODE=true
 STORAGE_EXPOSURE=auto
 DB_INIT_MODE=none
 # Optional only if proxy-owned and trustworthy:
 # PROXY_EMAIL_HEADER=X-Forwarded-Email
-# PROXY_GROUPS_HEADER=X-Forwarded-Groups
 ```
 
 2. Run the repo-level guardrail proof from the repo root:
@@ -118,10 +118,10 @@ python -m pytest .\backend\tests\test_layer3_api.py -q -k "deployment_profile"
 3. Run a settings-only proof in the selected environment before exposing the app. From `.\backend`, import the settings with the selected environment already applied, then verify the reported profile:
 
 ```powershell
-python -c "from app.core.config import settings; print({'deployment_mode': settings.deployment_mode, 'origins': settings.allowed_origin_list, 'credentials': settings.cors_allow_credentials_enabled, 'auth_owner': settings.auth_owner, 'identity_header': settings.proxy_identity_header, 'trusted_proxy_mode': settings.trusted_proxy_mode, 'storage_exposure': settings.storage_exposure, 'storage_mount_enabled': settings.storage_mount_enabled})"
+python -c "from app.core.config import settings; print({'deployment_mode': settings.deployment_mode, 'origins': settings.allowed_origin_list, 'credentials': settings.cors_allow_credentials_enabled, 'auth_owner': settings.auth_owner, 'identity_header': settings.proxy_identity_header, 'groups_header': settings.proxy_groups_header, 'trusted_proxy_mode': settings.trusted_proxy_mode, 'storage_exposure': settings.storage_exposure, 'storage_mount_enabled': settings.storage_mount_enabled})"
 ```
 
-Passing evidence for the current guardrail is limited to: `deployment_mode` is `nonlocal`, `origins` exactly match the selected HTTPS origin list, `credentials` is `False` unless separately governed, `auth_owner` is `proxy`, `identity_header` is nonblank, `trusted_proxy_mode` is `True`, and `storage_mount_enabled` is `False`.
+Passing evidence for the current guardrail is limited to: `deployment_mode` is `nonlocal`, `origins` exactly match the selected HTTPS origin list, `credentials` is `False` unless separately governed, `auth_owner` is `proxy`, `identity_header` is nonblank, `groups_header` is nonblank (the workbench POST surface requires it for workspace authority under proxy posture), `trusted_proxy_mode` is `True`, and `storage_mount_enabled` is `False`.
 
 4. Record the selected non-secret environment keys, proxy ownership decision, and proof output in the deployment operator notes. Do not record production secrets, connector credentials, signing keys, or sensitive artifact paths in the repo.
 
