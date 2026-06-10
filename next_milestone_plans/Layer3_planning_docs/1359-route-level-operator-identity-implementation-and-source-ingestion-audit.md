@@ -283,6 +283,23 @@ would otherwise reach handler logic. Both behaviors are deliberate and tested (s
 `test_422_precedence_untrusted_proxy_forbid_model` in
 `backend/tests/test_layer3_handoff_operator_identity.py`).
 
+**(c) Multipart pre-parse on the upload route.**
+
+`POST /source/intake/upload` is the only multipart route on the wired surface (declared
+`UploadFile`/`Form` parameters; verified by grep across the three route modules). FastAPI's
+request handler parses form bodies before dependency resolution and before the handler body,
+so under proxy misconfiguration the multipart payload is parsed/spooled by the framework
+before the seam returns 401/409. No service logic executes, nothing is persisted by the
+route, and no payload content appears in the error response — the fail-closed properties
+hold for data exposure and writes. The residual pre-auth cost is bounded request parsing,
+which is the same class as amendment (b); request body size limits remain proxy/deployment
+owned (the trusted reverse proxy in the non-local profile is the enforcement point).
+Converting the route to manual in-handler form parsing, or adding a body-gating middleware,
+would change default-profile 422 semantics and the OpenAPI surface — out of scope for this
+inert-by-default pass; if pre-parse gating is later wanted it requires a separately governed
+slice. (Raised by external review on the implementation PR; resolved as documented-accepted
+with the rationale above.)
+
 ## GET Surface Note
 
 GET routes in `handoff.py` (5 status routes) remain unwired — outside doc-1358 scope
