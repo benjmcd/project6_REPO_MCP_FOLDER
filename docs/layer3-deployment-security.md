@@ -25,7 +25,7 @@ Current repo evidence supports local/dev and proof-harness use by default. It al
 Before deploying beyond a trusted local/dev environment, choose and document:
 
 1. The concrete allowed browser origin list for the target deployment and whether credentialed cross-origin requests are truly required.
-2. Reverse-proxy authentication and authorization enforcement for `/api/v1`, `/review/*`, and any file-serving surface; the app currently requires proxy-owned posture but does not enforce in-app auth.
+2. Reverse-proxy authentication and authorization enforcement for `/api/v1`, `/review/*`, and any file-serving surface; the app requires proxy-owned posture. Route-level operator-identity PRESENCE is now enforced in-app for the Layer 3 workbench POST surface (handoff/package/source_ingestion): fail-closed under proxy posture, inert under local default. This is identity-presence enforcement only, NOT role/authorization policy. SEC XBRL routes were already enforced via doc 1352. StaticFiles wrapping and reverse-proxy authn/authz remain deployment-owned.
 3. Whether future file delivery should remain disabled in-app, move behind authorized application delivery, or use a separately governed public/signed URL design.
 4. Artifact sensitivity and retention rules for APS evidence bundles, Layer 3 package payloads, downloads, logs, and reports.
 5. Deployment proxy/TLS/header assumptions, including whether the app runs behind a trusted reverse proxy.

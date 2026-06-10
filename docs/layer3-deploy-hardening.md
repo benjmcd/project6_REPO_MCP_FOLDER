@@ -55,7 +55,7 @@ Use this packet before any further deployment-hardening implementation. It recor
 
 1. **Allowed browser origins:** replace the placeholders with exact HTTPS origins for the deployed review UI/API clients. Do not use `*`.
 2. **Credentialed CORS:** keep `CORS_ALLOW_CREDENTIALS=false` unless a later cookie/session-auth design is explicitly selected and governed.
-3. **Auth owner:** keep `AUTH_OWNER=proxy`; the app currently requires proxy-owned posture but does not enforce in-app authorization.
+3. **Auth owner:** keep `AUTH_OWNER=proxy`; the app requires proxy-owned posture. Route-level operator-identity PRESENCE is now enforced in-app for the Layer 3 workbench POST surface (handoff/package/source_ingestion): fail-closed 409/401 under proxy posture, inert under local default. This is identity-presence enforcement only, NOT role/authorization policy. StaticFiles wrapping and reverse-proxy authn/authz remain deployment-owned.
 4. **Identity header:** keep `PROXY_IDENTITY_HEADER=X-Forwarded-User` unless the proxy contract chooses another nonblank identity header name. The proxy must strip or overwrite client-supplied identity headers before forwarding to the app.
 5. **Optional identity metadata:** configure `PROXY_EMAIL_HEADER` and `PROXY_GROUPS_HEADER` only if the proxy can supply trustworthy values; current app behavior names these headers but does not authorize requests from them.
 6. **Proxy/TLS boundary:** terminate HTTPS at the trusted proxy and forward only from that proxy to the app. `TRUSTED_PROXY_MODE=true` is a posture declaration, not proof that the network path is protected.
