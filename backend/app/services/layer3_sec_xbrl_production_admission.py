@@ -22,6 +22,8 @@ import os
 from collections.abc import Mapping
 from typing import Any
 
+from app.core.config import settings
+
 PRODUCTION_ADMISSION_SCHEMA_ID = "layer3.sec_xbrl_production_admission.v2"
 
 # DOMAIN-JUDGMENT THRESHOLD — fraction of projected facts that must be
@@ -35,10 +37,14 @@ ORACLE_COVERAGE_QUORUM = 0.5
 def production_admission_flag_enabled() -> bool:
     """Return True when the operator has explicitly enabled the evaluator.
 
-    Reads ``SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED`` from the
-    environment.  Accepted truthy values: ``1``, ``true``, ``yes``
+    Checks ``settings.sec_xbrl_production_admission_evaluator_enabled`` first;
+    if True, returns True immediately.  Otherwise falls back to reading
+    ``SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED`` from the environment
+    at call time.  Accepted truthy env values: ``1``, ``true``, ``yes``
     (case-insensitive).  Absent or any other value -> False (default OFF).
     """
+    if settings.sec_xbrl_production_admission_evaluator_enabled:
+        return True
     return os.environ.get(
         "SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED", ""
     ).strip().lower() in {"1", "true", "yes"}
