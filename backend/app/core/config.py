@@ -122,6 +122,10 @@ class Settings(BaseSettings):
         default=False,
         alias="LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED",
     )
+    sec_xbrl_production_admission_evaluator_enabled: bool = Field(
+        default=False,
+        alias="SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED",
+    )
     allowed_origins: str = Field(default="*", alias="ALLOWED_ORIGINS")
     cors_allow_credentials: bool | None = Field(default=None, alias="CORS_ALLOW_CREDENTIALS")
     auth_owner: Literal["none", "proxy"] = Field(default="none", alias="AUTH_OWNER")
@@ -234,6 +238,11 @@ class Settings(BaseSettings):
                 "LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED=true is required "
                 "when DEPLOYMENT_MODE=nonlocal and Arelle fact-authority cutover is enabled"
             )
+        # Forbid sqlite in nonlocal deployments. db_init_mode=none is exempt so
+        # proof harnesses can exercise the nonlocal profile while supplying their
+        # own engine and leaving the default sqlite DATABASE_URL unused.
+        if self.db_init_mode != "none" and self.database_url.startswith("sqlite"):
+            raise ValueError("DATABASE_URL must not use sqlite when DEPLOYMENT_MODE=nonlocal")
 
     @property
     def raw_storage_dir(self) -> str:

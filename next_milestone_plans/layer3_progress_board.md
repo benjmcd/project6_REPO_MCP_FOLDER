@@ -12739,3 +12739,50 @@ each).
 Next posture: use the hardened live acquisition gate as the prerequisite for one bounded
 live-source activation run, or proceed to Arelle invocation proof, delivery/export/package status,
 multi-filing gate enforcement, or nonlocal operator-auth hardening as separate passes.
+
+## Deployment-Profile SQLite Guard + Typed Admission-Evaluator Flag + Route-Dependency Contract
+
+Milestone: `deployment_profile_sqlite_guard_typed_admission_flag_route_dependency_contract_v1`.
+
+Branch: `feat/prod-advance-0609`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1358-route-level-operator-identity-route-dependency-contract.md`.
+
+Status: validate-only config hardening and planning-only route-dependency contract. Three changes:
+
+1. **Deployment-profile SQLite guard** (`backend/app/core/config.py`): The nonlocal deployment
+   validator now rejects a `DATABASE_URL` pointing at SQLite when `db_init_mode != "none"`. This
+   narrows startup to prevent accidental production misconfiguration. `live_behavior_change` is
+   `true` in the narrow sense: nonlocal + SQLite + `db_init_mode != "none"` now fails at startup
+   where it was previously allowed. Default local deployments are not affected.
+
+2. **Typed admission-evaluator flag** (`backend/app/core/config.py`): New typed `Settings` field
+   `sec_xbrl_production_admission_evaluator_enabled` (alias
+   `SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED`, default `False`) read settings-first-then-env
+   by `production_admission_flag_enabled()`. Validate-only: the field exists and is read, but no
+   admission gate is wired to live routes. Default remains `False`; no runtime default change.
+
+3. **Route-dependency contract doc 1358** (planning-only): Authored
+   `1358-route-level-operator-identity-route-dependency-contract.md` with
+   `contract_status: authored`, `runtime_status: not_implemented`,
+   `selected_future_mode: route_level_operator_identity_required`. Enumerates 19 handoff + 16
+   package POST routes requiring future operator identity; inventories 83 source-ingestion routes
+   as deferred; excludes SEC XBRL entirely. No runtime implementation admitted.
+
+Scope: config/settings hardening (items 1-2) and planning-only doc (item 3). No auth runtime,
+value-reveal, live network, default-on admission, route wiring, schema/model/migration change,
+connector/destination dispatch, package mutation, source expansion, qualitative/hybrid/RAG/vector
+behavior, or full mockup activation is admitted.
+
+Non-goals preserved: auth runtime remains `not_implemented` (docs 199/200/266 unchanged);
+admission evaluator default remains `False`; no route-level identity enforcement is live;
+SEC XBRL excluded from route-dependency scope.
+
+Verification: 8 new config tests passed
+(`test_deployment_profile_validation.py`, `test_admission_evaluator_settings_field.py`);
+`test_layer3_api.py` 313 passed; admission tests 29 passed; readiness gate tests 10 passed.
+
+Next posture: select one concrete next activation surface (live source acquisition, Arelle
+invocation, multi-filing gate enforcement, nonlocal operator-auth hardening, or route-level
+identity enforcement implementation-entry freeze) before advancing runtime scope.

@@ -4427,6 +4427,8 @@ def _load_json(path: Path, errors: list[str]) -> dict[str, Any]:
 
 
 def _read_required_text(path: Path, errors: list[str]) -> str:
+    if path == LAYER3_API:
+        return _resolve_layer3_api_source(errors)
     if not path.exists():
         errors.append(f"missing required text file: {_rel(path)}")
         return ""
@@ -4448,6 +4450,15 @@ def _resolve_layer3_api_source(errors: list[str]) -> str:
         return "\n".join(p.read_text(encoding="utf-8") for p in parts)
     errors.append(f"missing required source: {LAYER3_API} (file or package)")
     return ""
+
+
+def _layer3_api_exists() -> bool:
+    """Return True if the layer3 API exists as either the legacy file or the decomposed package."""
+    if LAYER3_API.is_file():
+        return True
+    if LAYER3_API_PACKAGE.is_dir() and (LAYER3_API_PACKAGE / "__init__.py").is_file():
+        return True
+    return False
 
 
 def _extract_fenced_block_after_heading(
@@ -4572,6 +4583,10 @@ def _capability_map(value: Any, name: str, errors: list[str]) -> dict[str, dict[
 
 
 def _require_file(path: Path, errors: list[str]) -> None:
+    if path == LAYER3_API:
+        if not _layer3_api_exists():
+            errors.append(f"missing required file: {_rel(path)}")
+        return
     if not path.exists():
         errors.append(f"missing required file: {_rel(path)}")
     elif path.is_file() and path.stat().st_size == 0:
@@ -6005,7 +6020,10 @@ def _check_referenced_paths(manifest: dict[str, Any], errors: list[str]) -> None
                 errors.append(f"malformed authoritative_file_refs entry: {ref!r}")
                 continue
             path = ROOT / str(candidate)
-            if not path.exists():
+            if str(candidate) == "backend/app/api/layer3.py":
+                if not _layer3_api_exists():
+                    errors.append(f"authoritative_file_refs path is missing: {candidate}")
+            elif not path.exists():
                 errors.append(f"authoritative_file_refs path is missing: {candidate}")
 
     slices = manifest.get("layer3_workbench_slices")
@@ -6025,7 +6043,10 @@ def _check_referenced_paths(manifest: dict[str, Any], errors: list[str]) -> None
             if not isinstance(doc, str) or not doc:
                 errors.append(f"{slice_id}: malformed governing doc entry: {doc!r}")
                 continue
-            if not (ROOT / doc).exists():
+            if doc == "backend/app/api/layer3.py":
+                if not _layer3_api_exists():
+                    errors.append(f"{slice_id}: governing doc is missing: {doc}")
+            elif not (ROOT / doc).exists():
                 errors.append(f"{slice_id}: governing doc is missing: {doc}")
 
 
