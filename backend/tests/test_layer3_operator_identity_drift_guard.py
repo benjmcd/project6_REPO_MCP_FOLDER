@@ -98,9 +98,39 @@ def _first_executable_stmt(
     return None
 
 
+def _walk_no_nested_scopes(node: ast.AST):
+    """Yield all descendant AST nodes, but do NOT descend into nested
+    FunctionDef / AsyncFunctionDef / Lambda scopes.  This keeps the walk
+    within the lexical body of the handler being inspected so that a stricter
+    auth call that only appears inside a helper defined *inside* the handler
+    (dead code for the handler's own control flow) does not satisfy the gate.
+    """
+    yield node
+    for child in ast.iter_child_nodes(node):
+        if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+            # Do not recurse into nested scopes.
+            continue
+        yield from _walk_no_nested_scopes(child)
+
+
 def _function_calls_stricter_mechanism(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
-    """Return True if the function body contains any call to a known stricter-mechanism auth function."""
-    for child in ast.walk(node):
+    """Return True if the handler body contains a stricter-mechanism auth call that is
+    reachable from the handler's own control flow.
+
+    Rule: the stricter call must appear within the handler's top-level statement
+    sequence (not inside a nested FunctionDef/AsyncFunctionDef/Lambda).  We walk
+    the handler body using _walk_no_nested_scopes, which descends into Try blocks,
+    If branches, and any other control-flow constructs at the handler scope, but
+    stops at nested function/lambda definitions.
+
+    This rejects a stricter call that only exists inside a nested helper defined
+    within the handler body (dead code from the handler's perspective) while
+    accepting all 12 known sec_xbrl handler shapes:
+      - try: ... authorize_sec_xbrl_route / _sec_xbrl_policy_decision as first stmt in try body
+      - Assign(s) before try: ... (e.g. route_family = ...; try: policy_decision = ...)
+      - try: derive_sec_xbrl_evidence_owner as the first stmt in the first try
+    """
+    for child in _walk_no_nested_scopes(node):
         if isinstance(child, ast.Call):
             func = child.func
             name = None

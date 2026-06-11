@@ -67,8 +67,10 @@ local proof behavior.
 - The reverse proxy **must** strip or overwrite any client-supplied values for
   the identity header, groups header, and roles header before forwarding. The
   app has no way to verify client-supplied header values.
-- `proxy_roles_header` is listed in `FORBIDDEN_REQUEST_FIELDS` and is included
-  in the readonly projection exposed by `/sec-xbrl/identity/projection`.
+- `proxy_roles_header` is listed in `FORBIDDEN_REQUEST_FIELDS`. It is not
+  included in the readonly projection exposed by `/sec-xbrl/identity/projection`
+  (the projection only exposes `route_authorization_mode` and identity header
+  presence flags, not the roles header name).
 - Token matching is case-insensitive. Custom token strings are configured via
   `LAYER3_OWNER_ROLE_TOKENS` and `LAYER3_AUDITOR_ROLE_TOKENS` (CSV; defaults
   are `owner` and `auditor` respectively).
@@ -114,9 +116,9 @@ declaration drift guard.
 
 The following routes are intentionally ungated and must remain so:
 
-- `GET /api/layer3/bootstrap` — public metadata
+- `GET /api/v1/layer3/bootstrap` — public metadata
 - `GET /readiness` — health/readiness probe
-- `GET /api/layer3/authority-matrix` — governance read-only exposure
+- `GET /api/v1/layer3/authority-matrix` — governance read-only exposure
 - `GET /health` — health probe
 - `GET /` — root
 - `GET /api/v1/layer3/sec-xbrl/identity/projection` — **fail-soft; ungated by

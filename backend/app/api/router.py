@@ -115,7 +115,7 @@ api_router.include_router(market_insight_ai.alias_router)
 # ---------------------------------------------------------------------------
 
 
-def _route_level_operator_identity(request: Request, *, access: str = "read") -> None:
+def _route_level_operator_identity(request: Request, *, access: str = "write") -> None:
     """Gate: raises SecXbrlInAppAuthPolicyError if operator identity is not admitted."""
     route_level_operator_authorization_required(
         {str(k): str(v) for k, v in request.headers.items()},

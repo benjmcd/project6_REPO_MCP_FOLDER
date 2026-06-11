@@ -74,6 +74,27 @@ def _is_try_with_route_level_call(stmt: ast.stmt | None) -> tuple[bool, str]:
     return False, f"called {ast.dump(func)!r}, expected _route_level_operator_identity"
 
 
+_VALID_ACCESS_VALUES = {"read", "write"}
+
+
+def _extract_access_kwarg(stmt: ast.stmt | None) -> str | None:
+    """Return the string value of access= kwarg on the _route_level_operator_identity call,
+    or None if not found or not a string constant."""
+    if stmt is None or not isinstance(stmt, ast.Try):
+        return None
+    try_body = stmt.body
+    if not try_body:
+        return None
+    first = try_body[0]
+    if not isinstance(first, ast.Expr) or not isinstance(first.value, ast.Call):
+        return None
+    call = first.value
+    for kw in call.keywords:
+        if kw.arg == "access" and isinstance(kw.value, ast.Constant):
+            return str(kw.value.value)
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
@@ -107,6 +128,42 @@ def test_all_routes_have_wired_identity_seam() -> None:
         formatted = "\n".join(f"  - {v}" for v in violations)
         raise AssertionError(
             f"{len(violations)} route(s) in review_nrc_aps.py missing wired identity seam:\n{formatted}"
+        )
+
+
+def test_all_routes_declare_access_keyword() -> None:
+    """Every _route_level_operator_identity call must declare access= as 'read' or 'write'."""
+    tree = ast.parse(SOURCE_FILE.read_text(encoding="utf-8"), filename=str(SOURCE_FILE))
+    violations: list[str] = []
+
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if not any(_is_router_route(d) for d in node.decorator_list):
+            continue
+
+        fname = node.name
+        lineno = node.lineno
+        label = f"review_nrc_aps.py:{lineno} {fname}"
+
+        first = _first_executable_stmt(node)
+        # Only check if the seam is wired (seam test handles missing-seam case)
+        ok, _ = _is_try_with_route_level_call(first)
+        if not ok:
+            continue
+
+        access_val = _extract_access_kwarg(first)
+        if access_val is None:
+            violations.append(f"{label}: access= keyword not present or not a string constant")
+        elif access_val not in _VALID_ACCESS_VALUES:
+            violations.append(
+                f"{label}: access={access_val!r} is not a valid access class (must be 'read' or 'write')"
+            )
+
+    if violations:
+        formatted = "\n".join(f"  - {v}" for v in violations)
+        raise AssertionError(
+            f"{len(violations)} route(s) in review_nrc_aps.py with invalid or missing access= declaration:\n{formatted}"
         )
 
 
