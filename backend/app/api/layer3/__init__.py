@@ -11239,7 +11239,7 @@ def post_preflight(
     payload: Layer3PreflightRequest,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.preflight(payload.model_dump(exclude_none=True)))
@@ -11256,7 +11256,7 @@ def post_source_preview(
     payload: Layer3SourcePreviewRequest,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.source_preview(payload.model_dump(exclude_none=True)))
@@ -11275,7 +11275,7 @@ def post_material_preview(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.material_preview(payload.model_dump(exclude_none=True), db))
@@ -11291,7 +11291,7 @@ def get_dataset_version_candidates(
     limit: int = 50, db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.aps_dataset_version_candidates(db, limit=limit))
@@ -11307,7 +11307,7 @@ def get_aps_content_document_candidates(
     limit: int = 50, db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.aps_content_document_candidates(db, limit=limit))
@@ -11323,7 +11323,7 @@ def get_aps_refused_artifact_traces(
     limit: int = 50, db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.aps_refused_artifact_traces(db, limit=limit))
@@ -11341,7 +11341,7 @@ def post_gate_b_decision(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.gate_b_decision(db, payload.model_dump(exclude_none=True)))
@@ -11359,7 +11359,7 @@ def post_gate_c_preview(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.gate_c_preview(db, payload.model_dump(exclude_none=True)))
@@ -11375,7 +11375,7 @@ def post_gate_c_override(
     payload: Layer3GateCOverrideUnavailableRequest,
 ) -> JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return JSONResponse(
@@ -11396,7 +11396,7 @@ def post_plan_preview(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.plan_preview(db, payload.model_dump(exclude_none=True)))
@@ -11414,7 +11414,7 @@ def post_plan_approve(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -11437,7 +11437,7 @@ def post_plan_approved_cancel(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.approved_plan_cancel(db, payload.model_dump(exclude_unset=True)))
@@ -11455,7 +11455,7 @@ def post_plan_revise(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.plan_revision(db, payload.model_dump(exclude_unset=True)))
@@ -11473,7 +11473,7 @@ def post_plan_revision_recover(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.plan_revision_recovery(db, payload.model_dump(exclude_unset=True)))
@@ -11491,7 +11491,7 @@ def post_execution_select(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.execution_selection(db, payload.model_dump(exclude_unset=True)))
@@ -11509,7 +11509,7 @@ def post_execution_start(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.analysis_execution_start(db, payload.model_dump(exclude_unset=True)))
@@ -11527,7 +11527,7 @@ def post_execution_result_status(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.execution_result_status(db, payload.model_dump(exclude_unset=True)))
@@ -11545,7 +11545,7 @@ def post_execution_result_review(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.execution_result_review(db, payload.model_dump(exclude_unset=True)))
@@ -11564,7 +11564,7 @@ def get_session_summary(
     session_id: str, db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.session_summary(db, session_id))
@@ -11584,7 +11584,7 @@ def get_session_sublayer_visualization_collection(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -11655,7 +11655,7 @@ def post_analysis_product_draft(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     draft = AnalysisProductDraft(
@@ -11749,7 +11749,7 @@ def post_working_set(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     draft = WorkingSetDraft(
@@ -11826,7 +11826,7 @@ def post_analysis_product_generate(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     from app.services.layer3_analysis_product_generation import (
@@ -11910,7 +11910,7 @@ def post_analysis_product_transition(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     request = AnalysisProductTransitionRequest(
