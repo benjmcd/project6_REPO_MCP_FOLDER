@@ -23,6 +23,7 @@ NGINX_CONF = DEPLOY_DIR / "proxy" / "nginx.conf"
 HTPASSWD_EXAMPLE = DEPLOY_DIR / "proxy" / "htpasswd.example"
 ROLES_MAP_EXAMPLE = DEPLOY_DIR / "proxy" / "roles.map.example"
 ENV_DEPLOY_EXAMPLE = DEPLOY_DIR / ".env.deploy.example"
+DOCKERFILE_APP = REPO_ROOT / "Dockerfile.app"
 GITIGNORE = REPO_ROOT / ".gitignore"
 
 # The five permanently-gated value-reveal flags that must never be true under deploy/
@@ -44,6 +45,10 @@ def _compose_text() -> str:
 
 def _nginx_text() -> str:
     return NGINX_CONF.read_text(encoding="utf-8")
+
+
+def _dockerfile_app_text() -> str:
+    return DOCKERFILE_APP.read_text(encoding="utf-8")
 
 
 def _gitignore_text() -> str:
@@ -304,4 +309,209 @@ def test_gitignore_deploy_proxy_roles_map() -> None:
     text = _gitignore_text()
     assert re.search(r"deploy/proxy/roles\.map\b", text), (
         ".gitignore must ignore deploy/proxy/roles.map (username->role mapping)"
+    )
+
+
+# ===========================================================================
+# Volumes: app_storage and export_data declared top-level and mounted
+# ===========================================================================
+
+
+def test_compose_app_storage_volume_declared() -> None:
+    text = _compose_text()
+    # top-level volumes block must include app_storage
+    assert re.search(r"^volumes\s*:.*?^\s{2}app_storage\s*:", text, re.MULTILINE | re.DOTALL), (
+        "Top-level 'volumes:' block in docker-compose.production.yml must declare 'app_storage'"
+    )
+
+
+def test_compose_export_data_volume_declared() -> None:
+    text = _compose_text()
+    assert re.search(r"^volumes\s*:.*?^\s{2}export_data\s*:", text, re.MULTILINE | re.DOTALL), (
+        "Top-level 'volumes:' block in docker-compose.production.yml must declare 'export_data'"
+    )
+
+
+def test_compose_app_storage_volume_mounted_on_app() -> None:
+    text = _compose_text()
+    assert re.search(r"app_storage:/app/app/storage", text), (
+        "app service must mount app_storage volume at /app/app/storage"
+    )
+
+
+def test_compose_export_data_volume_mounted_on_app() -> None:
+    text = _compose_text()
+    assert re.search(r"export_data:/app/export-outbox", text), (
+        "app service must mount export_data volume at /app/export-outbox"
+    )
+
+
+# ===========================================================================
+# STORAGE_DIR: fixed literal (not ${}-interpolated)
+# ===========================================================================
+
+
+def test_compose_storage_dir_fixed_literal() -> None:
+    text = _compose_text()
+    # Must appear as a plain literal value, not as a ${VAR} interpolation.
+    assert re.search(r"STORAGE_DIR\s*:\s*/app/app/storage\s*$", text, re.MULTILINE), (
+        "STORAGE_DIR in docker-compose.production.yml must be a fixed literal '/app/app/storage', "
+        "not a \\${VAR} interpolation — mount alignment must not be operator-breakable"
+    )
+    # Must NOT appear as an interpolated variable
+    assert not re.search(r"STORAGE_DIR\s*:\s*\$\{", text), (
+        "STORAGE_DIR must not use \\${VAR} interpolation in docker-compose.production.yml"
+    )
+
+
+# ===========================================================================
+# LAYER3_EXTERNAL_LOCAL_EXPORT_DIR: threaded with /app/export-outbox default
+# ===========================================================================
+
+
+def test_compose_external_export_dir_threaded_with_default() -> None:
+    text = _compose_text()
+    assert re.search(
+        r"LAYER3_EXTERNAL_LOCAL_EXPORT_DIR\s*:\s*\$\{LAYER3_EXTERNAL_LOCAL_EXPORT_DIR:-/app/export-outbox\}",
+        text,
+    ), (
+        "LAYER3_EXTERNAL_LOCAL_EXPORT_DIR must be threaded as "
+        "${LAYER3_EXTERNAL_LOCAL_EXPORT_DIR:-/app/export-outbox} in docker-compose.production.yml"
+    )
+
+
+# ===========================================================================
+# LAYER3_SIGNED_REFERENCE_SECRET: threaded with EMPTY default (not baked)
+# ===========================================================================
+
+
+def test_compose_signed_reference_secret_threaded_empty_default() -> None:
+    text = _compose_text()
+    assert re.search(r"LAYER3_SIGNED_REFERENCE_SECRET\s*:\s*\$\{LAYER3_SIGNED_REFERENCE_SECRET:-\}", text), (
+        "LAYER3_SIGNED_REFERENCE_SECRET must be threaded with an empty default "
+        "${LAYER3_SIGNED_REFERENCE_SECRET:-} — must NOT have a baked non-empty default"
+    )
+
+
+def test_compose_signed_reference_secret_no_baked_value() -> None:
+    text = _compose_text()
+    # Must not have a non-empty baked-in default (e.g. :-somevalue})
+    assert not re.search(
+        r"LAYER3_SIGNED_REFERENCE_SECRET\s*:\s*\$\{LAYER3_SIGNED_REFERENCE_SECRET:-[^}]+\}",
+        text,
+    ), (
+        "LAYER3_SIGNED_REFERENCE_SECRET must NOT have a baked non-empty default in "
+        "docker-compose.production.yml"
+    )
+
+
+# ===========================================================================
+# Logging: max-size present for all three services
+# ===========================================================================
+
+
+def test_compose_db_logging_max_size() -> None:
+    text = _compose_text()
+    # Find the db service block and verify logging max-size
+    db_section = re.search(
+        r"^\s{2}db\s*:\s*\n(.*?)(?=^\s{2}\w|\Z)",
+        text,
+        re.MULTILINE | re.DOTALL,
+    )
+    assert db_section, "Could not locate 'db:' service block"
+    assert re.search(r"max-size", db_section.group(1)), (
+        "db service must have logging.options.max-size configured"
+    )
+
+
+def test_compose_app_logging_max_size() -> None:
+    text = _compose_text()
+    app_section = re.search(
+        r"^\s{2}app\s*:\s*\n(.*?)(?=^\s{2}\w|\Z)",
+        text,
+        re.MULTILINE | re.DOTALL,
+    )
+    assert app_section, "Could not locate 'app:' service block"
+    assert re.search(r"max-size", app_section.group(1)), (
+        "app service must have logging.options.max-size configured"
+    )
+
+
+def test_compose_proxy_logging_max_size() -> None:
+    text = _compose_text()
+    proxy_section = re.search(
+        r"^\s{2}proxy\s*:\s*\n(.*?)(?=^\s{2}\w|\Z)",
+        text,
+        re.MULTILINE | re.DOTALL,
+    )
+    assert proxy_section, "Could not locate 'proxy:' service block"
+    assert re.search(r"max-size", proxy_section.group(1)), (
+        "proxy service must have logging.options.max-size configured"
+    )
+
+
+# ===========================================================================
+# nginx.conf: server_tokens off
+# ===========================================================================
+
+
+def test_nginx_conf_server_tokens_off() -> None:
+    text = _nginx_text()
+    assert re.search(r"\bserver_tokens\s+off\s*;", text), (
+        "nginx.conf must contain 'server_tokens off;' in the http block"
+    )
+
+
+# ===========================================================================
+# Dockerfile.app: export-outbox created in the chown'd layer
+# ===========================================================================
+
+
+def test_dockerfile_app_creates_export_outbox() -> None:
+    text = _dockerfile_app_text()
+    assert re.search(r"mkdir\s+-p\s+[^\n]*export-outbox", text), (
+        "Dockerfile.app RUN mkdir must include 'export-outbox' alongside app/storage"
+    )
+
+
+def test_dockerfile_app_export_outbox_in_chown_layer() -> None:
+    """export-outbox must appear in the same RUN layer that does the chown."""
+    text = _dockerfile_app_text()
+    # Find the RUN line that contains chown -R appuser and verify export-outbox is in it
+    assert re.search(r"RUN\s+mkdir\s+-p\s+[^\n]*export-outbox[^\n]*\n[^\n]*chown\s+-R", text, re.MULTILINE) or \
+           re.search(r"RUN\s+mkdir\s+-p\s+[^\n]*export-outbox[^\n]*&&[^\n]*chown\s+-R", text), (
+        "Dockerfile.app: export-outbox must be created in the same RUN layer as the chown -R"
+    )
+
+
+# ===========================================================================
+# Value-reveal flags and admission evaluator still absent from deploy/
+# (these assertions are already covered above, but restate clearly)
+# ===========================================================================
+
+
+def test_value_reveal_flags_not_in_compose() -> None:
+    """Value-reveal flags must not be assigned in docker-compose.production.yml."""
+    text = _compose_text()
+    for flag in VALUE_REVEAL_FLAGS:
+        assert not re.search(
+            r"^[^#]*" + re.escape(flag) + r"\s*[=:]",
+            text,
+            re.MULTILINE,
+        ), (
+            f"Permanently-gated value-reveal flag {flag} must not be assigned in "
+            "docker-compose.production.yml"
+        )
+
+
+def test_admission_evaluator_not_in_compose() -> None:
+    """SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED must not be assigned in compose."""
+    flag = "SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED"
+    text = _compose_text()
+    assert not re.search(
+        r"^[^#]*" + re.escape(flag) + r"\s*[=:]",
+        text,
+        re.MULTILINE,
+    ), (
+        f"{flag} must not be assigned in docker-compose.production.yml"
     )

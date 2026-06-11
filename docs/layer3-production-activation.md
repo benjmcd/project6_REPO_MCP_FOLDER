@@ -269,6 +269,80 @@ sections 1–6.  It is a starting point for operator adoption, not a
 production-hardened blueprint — TLS, secrets management, and log aggregation
 remain deployment-owned.
 
+### Durable volumes
+
+The stack declares two named Docker volumes:
+
+| Volume | Mounted at (container) | What persists |
+|---|---|---|
+| `db_data` | `/var/lib/postgresql/data` | Full PostgreSQL data directory (all tables, Alembic history) |
+| `app_storage` | `/app/app/storage` | Corpus validation receipts, storage-backed artifacts, ownership markers |
+| `export_data` | `/app/export-outbox` | External local export deliveries (the export terminal step below) |
+
+**Ownership on first mount**: `Dockerfile.app` creates `/app/app/storage` and
+chowns it to uid 1001 (`appuser`) during the image build; Docker copies this
+into the named volume on first mount, so no entrypoint `chown` is needed.
+
+### Export terminal step
+
+The external-local-export service writes output to an absolute directory that
+must be set, outside `storage_dir`, and outside the local outbox dir.  The
+default path in-container is `/app/export-outbox` (satisfies all checks in
+`backend/app/services/layer3_external_local_export.py:170–219`,
+`_configured_root`).
+
+A clean deploy works with the default path.  To override, set
+`LAYER3_EXTERNAL_LOCAL_EXPORT_DIR` to a different absolute path in the app
+container environment and mount a named volume at that path.
+
+**Retrieving exported files:**
+
+```sh
+# One-shot copy from the running container:
+docker compose -f deploy/docker-compose.production.yml \
+  exec app ls /app/export-outbox
+docker cp <container-id>:/app/export-outbox ./local-export-outbox
+
+# Alternative: bind-mount a host directory at the export path.
+# Trade-off: a bind-mount gives direct host access but bypasses the named-volume
+# ownership mechanism, so ensure the host directory is writable by uid 1001.
+```
+
+### `LAYER3_SIGNED_REFERENCE_SECRET` generation
+
+The signed-reference download feature requires `LAYER3_SIGNED_REFERENCE_SECRET`
+to be set in the app container environment.  Generate a strong random secret:
+
+```sh
+# openssl (recommended — 32 bytes hex = 64 chars):
+openssl rand -hex 32
+
+# Python alternative:
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Set the value in `deploy/.env` and thread it through the compose environment
+block under the `app` service.  Without it, the signed-reference generate route
+returns 409 `external_export_download_signed_reference_secret_required`.
+
+### Smoke test switches
+
+`deploy/smoke.ps1` supports three verification modes:
+
+| Switch | What it runs |
+|---|---|
+| _(none)_ | Auth + role matrix only (fast; default) |
+| `-Probe` | Auth matrix + 4-step product-flow probe (upload through gate-b admission) |
+| `-Durability` | Auth matrix + volume/restart survival check |
+| `-Full` | Auth matrix + product-flow probe + durability (restart survival) |
+
+```powershell
+.\deploy\smoke.ps1              # probe mode (auth matrix)
+.\deploy\smoke.ps1 -Durability  # + volume persistence
+.\deploy\smoke.ps1 -Full        # full verification suite
+.\deploy\smoke.ps1 -KeepUp      # leave stack running after test
+```
+
 ### Topology
 
 ```
@@ -396,18 +470,12 @@ Under `LAYER3_ROUTE_AUTHORIZATION_MODE=role_enforcing` the app then enforces:
 ### Smoke Test
 
 `deploy/smoke.ps1` (Windows PowerShell 5.1) automates end-to-end stack
-verification without requiring pre-created credentials:
-
-```powershell
-# From the repo root:
-.\deploy\smoke.ps1
-
-# Leave the stack running after the test:
-.\deploy\smoke.ps1 -KeepUp
-```
+verification without requiring pre-created credentials.  See the smoke switch
+table above for the available modes (`-Probe`, `-Durability`, `-Full`,
+`-KeepUp`).
 
 The script generates ephemeral random credentials, builds the stack, waits for
-app health, then asserts the full matrix:
+app health, then asserts the auth matrix:
 
 | Check | Expected |
 |---|---|
@@ -431,6 +499,32 @@ proxy in real deployments.**  Options:
 
 The `ALLOWED_ORIGINS` value in `deploy/.env` must match the actual HTTPS origin
 your clients connect to — the nonlocal validator requires explicit HTTPS origins.
+
+### NRC APS Posture
+
+The NRC APS review surface has two groups of routes:
+
+- **15 core review routes** (`/api/v1/review/nrc-aps/runs`, `/runs/{run_id}/overview`,
+  `/runs/{run_id}/tree`, `/runs/{run_id}/nodes/{node_id}`, `/runs/{run_id}/files/{tree_id}`,
+  `/runs/{run_id}/files/{tree_id}/preview`, `/runs/{run_id}/documents`,
+  `/runs/{run_id}/documents/{target_id}/trace`, source, visual-artifacts, diagnostics,
+  normalized-text, indexed-chunks, extracted-units, and pipeline-definition).
+  These routes operate against completed pipeline runs stored in the database and
+  require no extra env vars on a clean deploy.
+
+- **8 workbench/candidate-B routes** (`/workbench-compare/sources`,
+  `/workbench-compare/targets`, `/workbench-compare/targets/{fixture_id}/manifest`,
+  `/workbench-compare/targets/{fixture_id}/tabs/{tab_id}`,
+  `/candidate-b-trace/manifest`, `/candidate-b-trace/annotated-pdf`,
+  `/candidate-b-trace/raw-json`, `/candidate-b-trace/raw-markdown`).
+  These routes depend on local corpus fixture files that are not present on a clean
+  deploy — they will return errors or empty results until the fixtures are staged.
+
+`NRC_ADAMS_APS_SUBSCRIPTION_KEY` is only required for outbound connector
+acquisition (fetching new NRC ADAMS documents).  It is not needed to serve
+review routes against already-ingested runs.  Leave it unset or set
+`NRC_ADAMS_APS_SUBSCRIPTION_KEY=<REPLACE_IF_USED>` as a placeholder until the
+connector is activated.
 
 ### Value-Reveal Flags and Admission Evaluator
 
@@ -458,3 +552,135 @@ See section 3 for the full value-reveal gate rationale.
 # From backend/ directory:
 python -m pytest tests/test_layer3_deploy_compose_contract.py -q
 ```
+
+---
+
+## 8. Operations
+
+### Backup
+
+**Database backup** (PostgreSQL dump — preferred for point-in-time recovery):
+
+```sh
+docker compose -f deploy/docker-compose.production.yml \
+  exec db pg_dump -U app layer3 | gzip > layer3-db-$(date +%Y%m%d-%H%M%S).sql.gz
+```
+
+**Database backup via volume tar** (stops the stack for consistency):
+
+```sh
+docker compose -f deploy/docker-compose.production.yml --env-file deploy/.env down
+docker run --rm \
+  -v <project>_db_data:/data:ro \
+  -v "$(pwd)/backups":/backup \
+  alpine tar czf /backup/db_data-$(date +%Y%m%d-%H%M%S).tar.gz -C /data .
+docker compose -f deploy/docker-compose.production.yml --env-file deploy/.env up -d
+```
+
+**App storage backup** (corpus validation receipts, artifacts):
+
+```sh
+docker run --rm \
+  -v <project>_app_storage:/data:ro \
+  -v "$(pwd)/backups":/backup \
+  alpine tar czf /backup/app_storage-$(date +%Y%m%d-%H%M%S).tar.gz -C /data .
+```
+
+**Export outbox backup** (terminal export deliveries in `export_data`):
+
+```sh
+docker run --rm \
+  -v <project>_export_data:/data:ro \
+  -v "$(pwd)/backups":/backup \
+  alpine tar czf /backup/export_data-$(date +%Y%m%d-%H%M%S).tar.gz -C /data .
+```
+
+Replace `<project>` with your compose project name (Docker prepends it to
+volume names, e.g. `deploy_db_data` when running from the deploy/ directory).
+Run `docker volume ls | grep db_data` to confirm the exact name.
+
+### Restore
+
+```sh
+# Stop the stack, drop the old volume, recreate it, restore the dump:
+docker compose -f deploy/docker-compose.production.yml --env-file deploy/.env down
+docker volume rm <project>_db_data
+docker volume create <project>_db_data
+docker run --rm \
+  -v <project>_db_data:/var/lib/postgresql/data \
+  -v "$(pwd)/backups":/backup \
+  alpine sh -c 'cd /var/lib/postgresql/data && tar xzf /backup/<snapshot>.tar.gz'
+docker compose -f deploy/docker-compose.production.yml --env-file deploy/.env up -d
+```
+
+Or restore from a `pg_dump` SQL file:
+
+```sh
+# Start only the db service, restore, then bring up the rest:
+docker compose -f deploy/docker-compose.production.yml --env-file deploy/.env up -d db
+cat layer3-db-<snapshot>.sql.gz | gunzip | \
+  docker compose -f deploy/docker-compose.production.yml exec -T db \
+  psql -U app layer3
+docker compose -f deploy/docker-compose.production.yml up -d
+```
+
+### Upgrade procedure
+
+```sh
+# 1. Pull updated code:
+git pull
+
+# 2. Rebuild and restart with zero-downtime rolling replace:
+docker compose -f deploy/docker-compose.production.yml --env-file deploy/.env \
+  up -d --build
+
+# 3. Alembic runs automatically at container boot via the entrypoint
+#    (alembic upgrade head before uvicorn starts).
+
+# 4. Verify health:
+curl -u <owner-user>:<password> http://localhost:${PROXY_HTTP_PORT:-8080}/api/v1/layer3/ready
+```
+
+**Rollback**: tag the previous image before upgrading, then:
+
+```sh
+# Roll back to a prior image tag:
+docker compose -f deploy/docker-compose.production.yml --env-file deploy/.env \
+  up -d   # with the prior image tag pinned in compose or via DOCKER_IMAGE_TAG
+
+# Schema rollback caveat: if the new version added an Alembic migration and
+# the upgrade ran it, rolling back the image WITHOUT running alembic downgrade
+# will leave the schema one revision ahead of what the old code expects.
+# Run 'alembic downgrade -1' inside the old container before rolling back the
+# image when the new revision added schema changes.  If the revision only adds
+# data (no schema changes), image rollback alone is safe.
+```
+
+### Log rotation
+
+Compose log output is bounded via the `json-file` log driver options in
+`deploy/docker-compose.production.yml`.  Logs live in Docker's default log
+directory (typically `/var/lib/docker/containers/<id>/<id>-json.log` on Linux).
+To view live logs:
+
+```sh
+docker compose -f deploy/docker-compose.production.yml logs -f app
+docker compose -f deploy/docker-compose.production.yml logs -f proxy
+```
+
+For persistent log aggregation, configure the `fluentd`, `syslog`, or `gelf`
+driver in the compose file and point it at your log aggregation endpoint.
+
+### Monitoring note
+
+`GET /ready` returns `200` when the database is reachable and `503` when it is
+not.  In the reference stack, `/ready` is served through the nginx proxy and
+therefore requires HTTP Basic Auth credentials — use an owner or auditor account
+for probe requests.  The `HEALTHCHECK` in `Dockerfile.app` calls `/ready` on
+the internal network (port 8000, no proxy) so the internal healthcheck does not
+require credentials.
+
+To monitor without credentials, add a dedicated unauthenticated `/health`
+location block to `nginx.conf` (keeping it static, not DB-backed) or use
+container-native healthcheck status (`docker compose ps`) as the external
+liveness signal.

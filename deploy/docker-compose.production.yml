@@ -30,6 +30,11 @@ services:
       retries: 5
       start_period: 10s
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   app:
     build:
@@ -67,8 +72,17 @@ services:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
       CORS_ALLOW_CREDENTIALS: "true"
 
-      # --- Storage (nonlocal forbids enabled/proxy_protected) ---
+      # --- Storage ---
+      # STORAGE_DIR is pinned to the named-volume mount path; must NOT be
+      # operator-overridable so the volume mount and the app path stay aligned.
+      STORAGE_DIR: /app/app/storage
+      # (nonlocal forbids enabled/proxy_protected)
       STORAGE_EXPOSURE: auto
+
+      # --- Export outbox ---
+      # Defaults to the export_data named-volume mount.  Override only when
+      # mounting a host path or external volume at a different container path.
+      LAYER3_EXTERNAL_LOCAL_EXPORT_DIR: ${LAYER3_EXTERNAL_LOCAL_EXPORT_DIR:-/app/export-outbox}
 
       # --- Observability ---
       LAYER3_LOG_FORMAT: json
@@ -83,12 +97,46 @@ services:
       LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED: ${LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED:-false}
       LAYER3_SEC_EDGAR_USER_AGENT: ${LAYER3_SEC_EDGAR_USER_AGENT:-}
 
+      # --- Optional operator knobs (threaded with config.py Field defaults) ---
+      # Signed-reference HMAC secret; empty = signed-reference routes stay 409-blocked.
+      LAYER3_SIGNED_REFERENCE_SECRET: ${LAYER3_SIGNED_REFERENCE_SECRET:-}
+      # Ticker resolution and package inventory (both default OFF; enable for production posture).
+      LAYER3_SEC_EDGAR_OFFICIAL_TICKER_RESOLUTION_ENABLED: ${LAYER3_SEC_EDGAR_OFFICIAL_TICKER_RESOLUTION_ENABLED:-false}
+      LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED: ${LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED:-false}
+      # Upload and application identity.
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-64}
+      APP_NAME: ${APP_NAME:-Method-Aware Framework}
+      API_PREFIX: ${API_PREFIX:-/api/v1}
+      # Connector runtime limits.
+      CONNECTOR_LEASE_TTL_SECONDS: ${CONNECTOR_LEASE_TTL_SECONDS:-120}
+      CONNECTOR_SUBMISSION_TTL_HOURS: ${CONNECTOR_SUBMISSION_TTL_HOURS:-24}
+      CONNECTOR_MAX_REDIRECTS: ${CONNECTOR_MAX_REDIRECTS:-3}
+      CONNECTOR_MAX_CONCURRENT_RUNS: ${CONNECTOR_MAX_CONCURRENT_RUNS:-1}
+      CONNECTOR_MAX_DOWNLOADS_PER_RUN: ${CONNECTOR_MAX_DOWNLOADS_PER_RUN:-1}
+      CONNECTOR_PER_HOST_FETCH_LIMIT: ${CONNECTOR_PER_HOST_FETCH_LIMIT:-2}
+      # Outbound connector API endpoints and credentials.
+      NRC_ADAMS_APS_API_BASE_URL: ${NRC_ADAMS_APS_API_BASE_URL:-https://adams-api.nrc.gov}
+      NRC_ADAMS_APS_SUBSCRIPTION_KEY: ${NRC_ADAMS_APS_SUBSCRIPTION_KEY:-}
+      SCIENCEBASE_API_BASE_URL: ${SCIENCEBASE_API_BASE_URL:-https://www.sciencebase.gov/catalog}
+      SENATE_LDA_API_BASE_URL: ${SENATE_LDA_API_BASE_URL:-https://lda.senate.gov/api/v1}
+      SENATE_LDA_API_KEY: ${SENATE_LDA_API_KEY:-}
+      # SEC EDGAR rate-limiting and fetch limits.
+      LAYER3_SEC_EDGAR_RATE_LIMIT_PER_SECOND: ${LAYER3_SEC_EDGAR_RATE_LIMIT_PER_SECOND:-1}
+      LAYER3_SEC_EDGAR_MAX_BYTES: ${LAYER3_SEC_EDGAR_MAX_BYTES:-25000000}
+      LAYER3_SEC_EDGAR_TIMEOUT_SECONDS: ${LAYER3_SEC_EDGAR_TIMEOUT_SECONDS:-20}
+      # Internal webhook (optional; empty = disabled).
+      LAYER3_INTERNAL_WEBHOOK_URL: ${LAYER3_INTERNAL_WEBHOOK_URL:-}
+      LAYER3_INTERNAL_WEBHOOK_DISPLAY_NAME: ${LAYER3_INTERNAL_WEBHOOK_DISPLAY_NAME:-server-configured-internal-webhook}
+
       # NOTE: The following flags must NEVER be set here and must NEVER be true in CI:
       #   LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED
       #   LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED
       #   LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED
       #   LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED
       #   SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED
+    volumes:
+      - app_storage:/app/app/storage
+      - export_data:/app/export-outbox
     expose:
       - "8000"
     networks:
@@ -97,6 +145,11 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   proxy:
     image: nginx:1.27-alpine
@@ -111,6 +164,11 @@ services:
     depends_on:
       - app
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   internal:
@@ -118,3 +176,5 @@ networks:
 
 volumes:
   db_data:
+  app_storage:
+  export_data:

@@ -136,6 +136,9 @@ def test_production_example_all_vars_accepted_by_settings() -> None:
     # legitimately documented in the production example (consumed elsewhere).
     # LAYER3_LOG_FORMAT is read directly by observability.py via os.environ.
     recognized.add("LAYER3_LOG_FORMAT")
+    # LAYER3_SIGNED_REFERENCE_SECRET is read directly from os.environ by
+    # layer3_workbench._signed_reference_configured_secret() — not a Settings field.
+    recognized.add("LAYER3_SIGNED_REFERENCE_SECRET")
 
     unknown_keys = [k for k in parsed if k not in recognized]
     assert not unknown_keys, (
