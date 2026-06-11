@@ -1,4 +1,4 @@
-{
+﻿{
   "artifact_version": 1,
   "artifact_name": "layer3-progress-artifact",
   "artifact_scope": {
@@ -7,7 +7,7 @@
     "authoritative_remote": "project6-origin/main",
     "authoritative_local_checkout_rule": "Use a clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match the artifact state being refreshed. Prefer current `main` for merged repo truth, and use the active branch checkout only when the manifest declares an open or branch-only milestone.",
     "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/l3-synth-ref on codex/l3-synth-ref-sync, anchored to project6-origin/main at ad51b1c6736cd51ec3dd30de914e59ddb4c66158 after PR #609 APS source-family extraction; this docs/proof sync records current-main proof/progress metadata plus the external multi-audit synthesis/adjudication reference only.",
-    "snapshot_date": "2026-06-04",
+    "snapshot_date": "2026-06-11",
     "snapshot_base_main_commit": "ad51b1c6736cd51ec3dd30de914e59ddb4c66158",
     "snapshot_base_main_commit_source": "project6-origin/main at ad51b1c6736cd51ec3dd30de914e59ddb4c66158 after PR #609 APS source-family extraction; local branch codex/l3-synth-ref-sync records docs/proof-only current-main progress/proof refresh and synthesis reference.",
     "notes": [
@@ -45028,7 +45028,7 @@
     "py_compile": "PASS: python -m py_compile over touched diagnostic/test files"
   },
   "sec_xbrl_nonlocal_in_app_auth_owner_binding_route_enforcement_tracking": {
-    "status": "branch_local_tier2_route_enforcement_implementation",
+    "status": "merged_current_main_tier2_risk_assessed_implementation_verified",
     "milestone": "sec_xbrl_nonlocal_in_app_auth_owner_binding_route_enforcement_v1_tier2",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1326-auth-owner-binding-route-enforcement.md",
     "base_main": "bea8a49ccea009afb85f7473da9675734dc059e1",
@@ -45093,7 +45093,7 @@
     "diff_check": "PASS: git diff --check"
   },
   "sec_xbrl_nonlocal_in_app_auth_owner_binding_table_implementation_tracking": {
-    "status": "branch_local_tier2_schema_persistence_implementation",
+    "status": "merged_current_main_tier2_risk_assessed_implementation_verified",
     "milestone": "sec_xbrl_nonlocal_in_app_auth_owner_binding_table_implementation_v1_tier2",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1325-auth-owner-binding-table-implementation.md",
     "base_main": "031c66e555d2dc47b684537ad59f6bf7c2b772bb",
@@ -45155,7 +45155,7 @@
     "diff_check": "PASS: git diff --check exited 0 with only CRLF working-copy warnings on changed files"
   },
   "sec_xbrl_nonlocal_in_app_auth_owner_binding_table_design_tracking": {
-    "status": "branch_local_docs_only_design_pre_review",
+    "status": "merged_current_main_tier2_design_pre_review_verified",
     "milestone": "sec_xbrl_nonlocal_in_app_auth_owner_binding_table_design_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1324-auth-owner-binding-table-design.md",
     "base_main": "1116faf84d28e8a70f6657d867552bb9ca2b3c8f",
@@ -45209,7 +45209,7 @@
     "diff_check": "PASS: git diff --check exited 0 with only CRLF working-copy warnings on changed JSON manifests"
   },
   "sec_xbrl_nonlocal_in_app_auth_owner_binding_strategy_tracking": {
-    "status": "branch_local_tier1_validate_only_diagnostic_report_test",
+    "status": "merged_current_main_tier1_post_merge_audit_closure_verified",
     "milestone": "sec_xbrl_nonlocal_in_app_auth_owner_binding_strategy_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1323-auth-owner-binding-strategy.md",
     "diagnostic": "diagnostics/assessment/sec-xbrl-auth-owner-binding-strategy.py",
@@ -45271,7 +45271,7 @@
     "diff_check": "PASS: git diff --check"
   },
   "sec_xbrl_nonlocal_in_app_auth_policy_validation_tracking": {
-    "status": "branch_local_tier1_validate_only_diagnostic_report_test",
+    "status": "merged_current_main_tier1_post_merge_audit_closure_verified",
     "milestone": "sec_xbrl_nonlocal_in_app_auth_policy_validation_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1322-in-app-auth-policy-validation.md",
     "diagnostic": "diagnostics/assessment/sec-xbrl-in-app-auth-policy-validation.py",
@@ -45344,7 +45344,7 @@
     "diff_check": "PASS: git diff --check"
   },
   "sec_xbrl_nonlocal_in_app_auth_design_tracking": {
-    "status": "branch_local_docs_only_tier2_design_pre_review",
+    "status": "merged_current_main_tier2_design_pre_review_verified",
     "milestone": "sec_xbrl_nonlocal_in_app_auth_design_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1321-in-app-auth.md",
     "base_main": "236bd1a2d78f637d40a0d31fd46d2f3d410441be",
@@ -45576,7 +45576,7 @@
     "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only"
   },
   "sec_xbrl_nonlocal_readiness_in_app_auth_reconciliation_tracking": {
-    "status": "branch_local_tier1_validate_only_gate_reconciliation",
+    "status": "merged_current_main_tier1_post_merge_audit_closure_verified",
     "milestone": "sec_xbrl_nonlocal_readiness_in_app_auth_reconciliation_v1",
     "branch": "codex/secxbrl-readiness-inapp-reconcile",
     "base_main": "d9e6aa47281bffecfc13458b695945bda5181360",
@@ -45632,7 +45632,7 @@
     "diff_check": "PASS: git diff --check exited 0; Git emitted LF-to-CRLF working-copy warnings only"
   },
   "sec_xbrl_nonlocal_admission_disposition_tracking": {
-    "status": "branch_local_tier1_validate_only_packet_dir_intake_enhancement",
+    "status": "merged_current_main_tier1_post_merge_audit_closure_verified",
     "milestone": "sec_xbrl_nonlocal_production_admission_or_historical_backfill_disposition_v1",
     "branch": "codex/secxbrl-packet-dir-intake",
     "base_main": "2b4ab49e3db8a924e0b9a51795b028e25be70b42",

@@ -1,0 +1,19 @@
+{
+  "_template_note": "Fill in all fields before submitting. Choose disposition_mode based on unbound_receipt_count. Remove this _template_note field before submitting.",
+  "disposition_mode": "<no_historical_unbound_receipts|historical_unbound_receipts_fail_closed_pending_backfill|historical_unbound_receipts_backfill_authorized>",
+  "disposition_owner_ref": "<redacted-disposition-owner-ref>",
+  "disposition_record_ref": "<redacted-disposition-record-ref>",
+  "disposition_record_hash": "<64-char-lowercase-hex>",
+  "historical_inventory_ref": "<redacted-historical-inventory-ref>",
+  "historical_inventory_hash": "<64-char-lowercase-hex>",
+  "unbound_receipt_count": 0,
+  "backfill_required": false,
+  "backfill_authority_ref": "<redacted-backfill-authority-ref>",
+  "backfill_authority_hash": "<64-char-lowercase-hex>",
+  "containment_policy_ref": "<redacted-containment-policy-ref>",
+  "containment_policy_hash": "<64-char-lowercase-hex>",
+  "redaction_policy_id": "sec_xbrl_nonlocal_admission_disposition_redaction_v1",
+  "verification_run_ref": "<redacted-verification-run-ref>",
+  "disposition_provenance_ref": "<redacted-disposition-provenance-ref>",
+  "disposition_provenance_hash": "<64-char-lowercase-hex>"
+}
