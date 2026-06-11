@@ -46136,7 +46136,11 @@
   "latest_p22_mixed_source_signed_reference_governance_freeze_proof_summary": "P22 is a docs/control freeze for future mixed-source same-origin signed-reference governance over the existing P19/P20/P21 delivery chain. It admits no runtime or UI behavior by itself and keeps durable-state changes, download URLs, provider/public URLs, connector/destination, schema/parser/source-shape expansion, package payload rewrite, SEC XBRL, excluded-tool, value-reveal, default-on, and production-readiness scope closed.",
   "p22_mixed_source_signed_reference_runtime_proof": {
     "milestone": "p22_mixed_source_signed_reference_runtime",
-    "status": "branch_local_runtime_and_rendered_control_implementation_not_current_main",
+    "status": "current_main_runtime_implementation_verified",
+    "current_main_tip": "1f9a4ec6",
+    "post_merge_proof_date": "2026-06-11",
+    "post_merge_proof_command": "python -m pytest backend/tests -q -k signed_reference",
+    "post_merge_proof_result": "8 passed, 9 skipped, 3180 deselected",
     "planning_doc": "next_milestone_plans/multi-ingest/53-p22-mixed-signed-reference-freeze.md",
     "closeout_doc": "next_milestone_plans/multi-ingest/54-p22-runtime-closeout.md",
     "proof_terms": "P22 runtime admits mixed-source same-origin signed-reference generation/use over the existing P20 mixed-source delivery validator and existing durable signed-reference token/receipt/audit state, and renders /review/layer3 generate/use controls from State.sessionSummary.external_export_download_readiness. It does not add provider/public URLs, connector/destination/local-outbox behavior, schema/model/migration changes, parser/source-shape expansion, package payload rewrite/mutation, SEC XBRL, excluded-tool behavior, value reveal, default-on behavior, or production readiness.",
@@ -46186,7 +46190,11 @@
   "latest_p22_mixed_source_signed_reference_runtime_proof_summary": "Branch-local P22 runtime proof covers mixed-source same-origin signed-reference generation/use over the existing P20 mixed-source delivery validator and durable signed-reference state, plus rendered /review/layer3 controls over State.sessionSummary.external_export_download_readiness. It is not current-main proof until merged and synced, and it keeps download URLs, provider/public URLs, connector/destination/local-outbox behavior, schema/model/migration changes, parser/source-shape expansion, package rewrite/mutation, SEC XBRL, and production readiness blocked.",
   "p23_mixed_source_product_flow_usability_proof": {
     "milestone": "p23_mixed_source_product_flow_usability_proof",
-    "status": "branch_local_rendered_product_flow_usability_proof_not_current_main",
+    "status": "current_main_rendered_product_flow_usability_proof_verified",
+    "current_main_tip": "1f9a4ec6",
+    "post_merge_proof_date": "2026-06-11",
+    "post_merge_proof_command": "python -m pytest backend/tests -q -k signed_reference",
+    "post_merge_proof_result": "8 passed, 9 skipped, 3180 deselected",
     "closeout_doc": "next_milestone_plans/multi-ingest/55-p23-product-flow-usability-proof.md",
     "proof_terms": "P23 proves rendered mixed-source product-flow usability across already-admitted P17/P18/P19/P22 surfaces. The browser derives P18 APS handoff dispatch authority from recorded P17 material authority, derives P19 external export/download readiness authority from recorded P18 state, and then enables P22 same-origin signed-reference generation from recorded P19 readiness. It adds no backend route/service, schema/model/migration, durable persistence, provider/public URL, connector/destination/local-outbox behavior, parser/source-shape expansion, package rewrite/mutation, or production-readiness claim.",
     "positive_runtime_effects": [
@@ -46227,7 +46235,11 @@
   "latest_p23_mixed_source_product_flow_usability_proof_summary": "Branch-local P23 product-flow proof verifies rendered P18/P19/P22 mixed-source controls over existing server-authoritative routes and keeps provider/public URL, connector/destination/local-outbox, schema, parser/source-shape, package rewrite, and production-readiness behavior blocked.",
   "p24_mixed_source_product_authority_checkpoint_proof": {
     "milestone": "p24_mixed_source_product_authority_checkpoint",
-    "status": "branch_local_read_only_product_authority_checkpoint_not_current_main",
+    "status": "current_main_read_only_product_authority_checkpoint_verified",
+    "current_main_tip": "1f9a4ec6",
+    "post_merge_proof_date": "2026-06-11",
+    "post_merge_proof_command": "python -m pytest backend/tests -q -k signed_reference",
+    "post_merge_proof_result": "8 passed, 9 skipped, 3180 deselected",
     "closeout_doc": "next_milestone_plans/multi-ingest/56-p24-product-authority-checkpoint.md",
     "proof_terms": "P24 renders a read-only mixed-source product-authority checkpoint across already-loaded P17/P18/P19/P21/P22 server-authoritative state. It introduces no backend route/service, payload builder, submit handler, schema/model/migration, durable persistence, signed-reference status/revocation, provider/public URL, connector/destination/local-outbox behavior, parser/source-shape expansion, package rewrite/mutation, real export/dispatch, or production-readiness claim.",
     "positive_runtime_effects": [

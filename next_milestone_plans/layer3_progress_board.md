@@ -8,8 +8,10 @@ Milestone:
 Closeout doc:
 `next_milestone_plans/multi-ingest/56-p24-product-authority-checkpoint.md`.
 
-Status: branch-local read-only product-authority checkpoint. Not current-main
-until merged and post-merge proof is recorded.
+Status: current-main. Content present on main tip 1f9a4ec6. The P24
+read-only product-authority checkpoint rendered controls are on current main
+after the 2026-06-06 history rebuild folded the branch-local work into the
+canonical line. Post-merge proof recorded 2026-06-11 (see closeout doc).
 
 Scope: renders a read-only `/review/layer3` mixed-source checkpoint over the
 already-loaded P17 handoff/export prepare, P18 APS handoff dispatch, P19
@@ -26,9 +28,8 @@ production-readiness behavior is admitted.
 Proof: branch-local JS/module syntax, static page contract proof, and focused
 headless plus headed Playwright rendered-flow proof passed.
 
-Next posture: merge-review and current-main sync the branch-local P22/P23/P24
-work before selecting another downstream surface. Provider/public URL
-governance, connector/destination/local-outbox dispatch, durable revocation
+Next posture: P22/P23/P24 are on current main (tip 1f9a4ec6). Provider/public
+URL governance, connector/destination/local-outbox dispatch, durable revocation
 UI/API, schema/source-shape expansion, and production readiness remain separate
 future freezes.
 
@@ -40,8 +41,10 @@ Milestone:
 Closeout doc:
 `next_milestone_plans/multi-ingest/55-p23-product-flow-usability-proof.md`.
 
-Status: branch-local rendered product-flow usability proof. Not current-main
-until merged and post-merge proof is recorded.
+Status: current-main. Content present on main tip 1f9a4ec6. The P23
+rendered product-flow usability proof is on current main after the 2026-06-06
+history rebuild folded the branch-local work into the canonical line.
+Post-merge proof recorded 2026-06-11 (see closeout doc).
 
 Scope: proves the rendered `/review/layer3` mixed-source flow can proceed from
 server-owned P17 handoff/export prepare authority through P18 APS handoff
@@ -59,9 +62,9 @@ Proof: branch-local JS/module syntax, static page contract proof, focused
 headless and headed Playwright rendered-flow proof, plus the existing P21/P22
 rendered-control regression group passed.
 
-Next posture: superseded by branch-local P24 product-authority checkpoint for
-read-only operator inspection. Merge-review and current-main sync the combined
-P22/P23/P24 branch-local work before selecting another downstream surface.
+Next posture: superseded by P24 product-authority checkpoint (also on current
+main at tip 1f9a4ec6). The next downstream surface must be selected by a
+separate freeze before implementation.
 
 ## P22 Mixed-Source Signed-Reference Runtime And Rendered Controls
 
@@ -71,8 +74,12 @@ Milestone:
 Closeout doc:
 `next_milestone_plans/multi-ingest/54-p22-runtime-closeout.md`.
 
-Status: branch-local runtime and rendered-control implementation. Not
-current-main until merged and post-merge proof is recorded.
+Status: current-main. Content present on main tip 1f9a4ec6. The P22 runtime
+and rendered controls (layer3.js elements
+`external-export-download-signed-reference-generate` and
+`external-export-download-signed-reference-use`) are on current main after the
+2026-06-06 history rebuild folded the branch-local work into the canonical
+line. Post-merge proof recorded 2026-06-11 (see closeout doc).
 
 Scope: admits mixed-source same-origin signed-reference generation/use over the
 existing P20 mixed-source delivery validator and existing durable
@@ -95,10 +102,10 @@ focused headless and headed Playwright rendered-control proof,
 authority-index validation, frozen target-selection validation, progress check,
 and `git diff --check` passed.
 
-Next posture: after merge and current-main sync, freeze exactly one next
-downstream surface before implementation: provider/public URL governance,
-connector/destination/local-outbox dispatch, durable revocation UI,
-product-flow usability proof, or a product-authority checkpoint.
+Next posture: P22/P23/P24 are on current main (tip 1f9a4ec6). Freeze exactly
+one next downstream surface before implementation: provider/public URL
+governance, connector/destination/local-outbox dispatch, or durable revocation
+UI.
 
 ## P22 Mixed-Source Signed-Reference Governance Freeze
 

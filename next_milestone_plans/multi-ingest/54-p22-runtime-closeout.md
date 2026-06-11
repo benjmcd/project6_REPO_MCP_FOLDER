@@ -1,6 +1,6 @@
 # P22 Mixed-Source Signed-Reference Runtime And Rendered Controls Closeout
 
-Status: branch-local runtime and rendered-control implementation. Not current-main until merged and post-merge proof is recorded.
+Status: current-main. Content present on main tip 1f9a4ec6. The P22 runtime and rendered controls are on current main after the 2026-06-06 history rebuild. Post-merge proof recorded 2026-06-11.
 
 ## Scope
 
@@ -123,11 +123,29 @@ Branch-local verification passed:
 - Layer 3 progress check
 - `git diff --check`
 
+## Post-Merge Proof (2026-06-11)
+
+Signed-reference backend test slice run against main tip 1f9a4ec6:
+
+```
+python -m pytest backend/tests -q -k "signed_reference"
+```
+
+Result: **8 passed, 9 skipped, 3180 deselected** (4 warnings, no failures).
+
+Test nodes collected:
+- `backend/tests/test_layer3_api.py::test_layer3_api_json_or_error_call_sites_return_workbench_error_envelope[external_export_download_generate_signed_reference-...]`
+- `backend/tests/test_layer3_api.py::test_layer3_api_mixed_source_external_export_download_signed_reference_uses_delivery_authority`
+- `backend/tests/test_layer3_api.py::test_layer3_api_mixed_source_signed_reference_rejected_after_direct_delivery`
+- `backend/tests/test_layer3_signed_reference_state.py::test_record_generated_signed_reference_persists_sanitized_durable_state`
+- `backend/tests/test_layer3_signed_reference_state.py::test_single_use_reference_records_one_delivery_and_rejects_replay`
+- `backend/tests/test_layer3_signed_reference_state.py::test_revoked_reference_fails_closed_and_records_rejected_audit`
+- `backend/tests/test_layer3_signed_reference_state.py::test_expired_reference_fails_closed_and_marks_token_expired`
+- `backend/tests/test_layer3_signed_reference_state.py::test_concurrent_single_use_reference_does_not_double_deliver`
+
 ## Next Posture
 
-This branch now follows P22 with P23 product-flow usability proof over the
-already-admitted rendered P17/P18/P19/P22 path. After merge and current-main
-sync, the next downstream surface must still be selected by a separate freeze;
-durable revocation UI or a product-authority checkpoint remain safer candidates
-than provider/public URL governance or connector/destination/local-outbox
-dispatch.
+P22/P23/P24 are on current main. Provider/public URL governance,
+connector/destination/local-outbox dispatch, durable revocation UI or a
+product-authority checkpoint, schema/source-shape expansion, and production
+readiness remain separate future freezes.
