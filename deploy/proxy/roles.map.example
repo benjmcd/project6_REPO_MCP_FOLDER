@@ -1,0 +1,24 @@
+# roles.map.example — nginx map entries: username -> Layer 3 role token
+#
+# DO NOT USE THIS FILE DIRECTLY IN PRODUCTION.
+# Copy it to deploy/proxy/roles.map (untracked by git) and replace with real
+# usernames that match entries in deploy/proxy/htpasswd.
+#
+# FORMAT: One entry per line, both fields double-quoted, separated by a space,
+# terminated by a semicolon. This file is included inside the nginx map block:
+#
+#   map $remote_user $layer3_roles {
+#       default "";
+#       include /etc/nginx/roles.map;
+#   }
+#
+# Role tokens must match LAYER3_OWNER_ROLE_TOKENS and LAYER3_AUDITOR_ROLE_TOKENS
+# in your compose environment (defaults: "owner" and "auditor").
+#
+# Users NOT listed here get an empty role and are denied (403) by the proxy.
+
+# Owner: full read+write access
+"alice-owner" "owner";
+
+# Auditor: read-only access (write operations return 403)
+"bob-auditor" "auditor";

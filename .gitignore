@@ -27,3 +27,9 @@ backend/app/storage_nonsalient_sample/
 /playwright/.auth/
 .gstack/
 /onlook-ui-copy/
+
+# Deploy: operator secrets and ephemeral smoke artifacts (never committed)
+deploy/.env
+deploy/.smoke/
+deploy/proxy/htpasswd
+deploy/proxy/roles.map
