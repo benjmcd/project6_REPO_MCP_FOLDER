@@ -152,6 +152,17 @@ def authorize_sec_xbrl_route(
             details={"role": role, "route_family": route},
             http_status=403,
         )
+
+    if settings.layer3_route_authorization_mode == "role_enforcing":
+        server_role = _server_derived_role(headers)
+        if role == OWNER_ROLE and server_role == AUDITOR_ROLE:
+            raise SecXbrlInAppAuthPolicyError(
+                "sec_xbrl_in_app_auth_policy_role_claim_exceeds_server_authority",
+                "SEC XBRL in-app auth does not admit a role claim that exceeds server-derived authority.",
+                details={"route_family": route},
+                http_status=403,
+            )
+
     actor_ref_hash, workspace_ref_hash, auth_owner_mode = _server_derived_principal(headers)
     policy_hash = _policy_hash(
         actor_ref_hash=actor_ref_hash,

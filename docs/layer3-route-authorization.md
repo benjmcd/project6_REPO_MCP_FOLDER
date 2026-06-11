@@ -16,6 +16,16 @@ The mode flag `LAYER3_ROUTE_AUTHORIZATION_MODE` controls whether role
 enforcement is active. The default mode (`identity_presence`) is inert and
 bit-identical to prior behavior.
 
+Under `role_enforcing`, the server-derived role is the ceiling for
+`authorize_sec_xbrl_route` callers: a payload-claimed `owner` role is rejected
+when the server-derived role is `auditor` (error code
+`sec_xbrl_in_app_auth_policy_role_claim_exceeds_server_authority`, HTTP 403).
+Step-down is allowed — an owner-token caller may request the `auditor` role.
+Under `identity_presence` the cap is never evaluated and behavior is
+bit-identical to prior releases. Under `AUTH_OWNER=none` (local dev),
+`_server_derived_role` returns `owner` unconditionally so local development is
+unaffected regardless of mode.
+
 The canonical policy owner is
 `backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py`. The authority
 matrix row `auth_security_posture` cites this file as
@@ -136,17 +146,12 @@ decision.
 - No per-resource or object-level ACLs.
 - No UI or static-asset authentication (reverse-proxy-owned).
 - No cross-request role state or caching.
-- Capping the sec_xbrl payload-claimed `operator_role` at the server-derived
-  role under `role_enforcing` is deferred.
 - Requiring `role_enforcing` in nonlocal mode is deferred (currently opt-in).
 - `egress_write` and `decision_write` access classes are deferred.
 
 ## Deferred Follow-Ups
 
-1. Cap the sec_xbrl payload-claimed `operator_role` at the server-derived role
-   when `LAYER3_ROUTE_AUTHORIZATION_MODE=role_enforcing` — currently the
-   payload field is accepted as-is under role_enforcing.
-2. Consider requiring `role_enforcing` in nonlocal mode once reverse proxies
+1. Consider requiring `role_enforcing` in nonlocal mode once reverse proxies
    provision the roles header reliably.
-3. Consider `egress_write` / `decision_write` access classes for export and
+2. Consider `egress_write` / `decision_write` access classes for export and
    decision routes.
