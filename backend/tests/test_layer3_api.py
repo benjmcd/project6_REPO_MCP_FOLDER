@@ -14262,6 +14262,29 @@ def test_layer3_api_session_summary_exposes_analysis_product_inventory_projectio
     assert "payload_ref" not in repr(inventory)
 
 
+def test_layer3_api_session_summary_bounds_package_product_inventory_projection(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(layer3_workbench, "_OUTPUT_PACKAGE_INVENTORY_MAX", 2)
+    session_id = _construct_quant_package_set(
+        client, tmp_path, request_id="api-3c-inventory-package-bound"
+    )[0]
+
+    summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary.status_code == 200
+    inventory = summary.json()["analysis_product_inventory_projection"]
+
+    assert inventory["package_product_count"] == 2
+    assert inventory["package_product_included_count"] == 2
+    assert inventory["package_product_total"] >= 3
+    assert inventory["package_products_truncated"] is True
+    assert inventory["package_products_max"] == 2
+    assert len(inventory["package_products"]) == 2
+    assert "payload_ref" not in repr(inventory)
+
+
 def test_layer3_api_analysis_product_draft_request_schema_forbids_extra(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
     schema = spec["components"]["schemas"]["Layer3AnalysisProductDraftRequest"]

@@ -295,13 +295,24 @@ def serialize_output_package_product(package: L3OutputPackage) -> dict[str, Any]
     }
 
 
-def session_output_package_products(db: Session, *, session_id: str) -> list[dict[str, Any]]:
-    packages = (
+def count_session_output_package_products(db: Session, *, session_id: str) -> int:
+    return db.query(L3OutputPackage).filter(L3OutputPackage.session_id == session_id).count()
+
+
+def session_output_package_products(
+    db: Session,
+    *,
+    session_id: str,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
+    query = (
         db.query(L3OutputPackage)
         .filter(L3OutputPackage.session_id == session_id)
         .order_by(L3OutputPackage.output_package_id.asc())
-        .all()
     )
+    if limit is not None:
+        query = query.limit(max(0, int(limit)))
+    packages = query.all()
     return [serialize_output_package_product(package) for package in packages]
 
 

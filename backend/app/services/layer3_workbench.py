@@ -264,6 +264,7 @@ from app.services.layer3_typing_entry import (
 )
 from app.services.layer3_sublayer_state import (
     count_session_analyst_products as _count_session_analyst_products,
+    count_session_output_package_products as _count_session_output_package_products,
     count_session_working_sets as _count_session_working_sets,
     serialize_analysis_group as _serialize_analysis_group,
     serialize_analysis_set as _serialize_analysis_set,
@@ -3599,6 +3600,7 @@ def _qualitative_aps_package_payload_extras(
 
 _ANALYSIS_PRODUCT_INVENTORY_MAX = 100
 _EVIDENCE_REFS_PER_PRODUCT_MAX = 200
+_OUTPUT_PACKAGE_INVENTORY_MAX = 100
 _WORKING_SET_INVENTORY_MAX = 100
 
 
@@ -3662,6 +3664,24 @@ def _load_session_analyst_products_projection(
         "total": total,
         "included": len(roster),
         "max_products": _ANALYSIS_PRODUCT_INVENTORY_MAX,
+    }
+
+
+def _load_session_output_package_products_projection(
+    db: Session,
+    session_id: str,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    total = _count_session_output_package_products(db, session_id=session_id)
+    products = _session_output_package_products(
+        db,
+        session_id=session_id,
+        limit=_OUTPUT_PACKAGE_INVENTORY_MAX,
+    )
+    return products, {
+        "truncated": total > _OUTPUT_PACKAGE_INVENTORY_MAX,
+        "total": total,
+        "included": len(products),
+        "max_products": _OUTPUT_PACKAGE_INVENTORY_MAX,
     }
 
 
@@ -19607,6 +19627,12 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         downstream_unavailable=downstream_unavailable_values,
         authority_rail=authority_rail_state,
     )
+    output_package_products_projection, output_package_products_projection_meta = (
+        _load_session_output_package_products_projection(
+            db,
+            session_id=session_id,
+        )
+    )
     analyst_products_projection, analyst_products_projection_meta = _load_session_analyst_products_projection(
         db,
         session_id=session_id,
@@ -19619,7 +19645,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         sublayer_visualization=sublayer_visualization_state,
         analysis_environment_projection=analysis_environment_projection_state,
         execution_result_review=execution_result_review_state,
-        output_package_products=_session_output_package_products(db, session_id=session_id),
+        output_package_products=output_package_products_projection,
         reconciliation=_session_reconciliation_record(db, session_id=session_id),
         analyst_products=analyst_products_projection,
         working_sets=working_sets_projection,
@@ -19631,6 +19657,10 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
             "analyst_product_included_count": analyst_products_projection_meta["included"],
             "analyst_products_truncated": analyst_products_projection_meta["truncated"],
             "analyst_products_max": analyst_products_projection_meta["max_products"],
+            "package_product_total": output_package_products_projection_meta["total"],
+            "package_product_included_count": output_package_products_projection_meta["included"],
+            "package_products_truncated": output_package_products_projection_meta["truncated"],
+            "package_products_max": output_package_products_projection_meta["max_products"],
             "working_set_total": working_sets_projection_meta["total"],
             "working_set_included_count": working_sets_projection_meta["included"],
             "working_sets_truncated": working_sets_projection_meta["truncated"],
