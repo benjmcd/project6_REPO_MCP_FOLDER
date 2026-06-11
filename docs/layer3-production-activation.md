@@ -133,3 +133,108 @@ Configure your load balancer or orchestrator (e.g. Kubernetes) to use `/ready`
 as the readiness probe and `/health` as the liveness probe.  Never replace
 `/health` with the DB-backed check — liveness must remain static so it does not
 cause restart loops during database outages.
+
+---
+
+## 5. Deployment Packaging
+
+The production application image is defined in `Dockerfile.app` at the repo
+root.  It is separate from `Dockerfile`, which is the Claude Code dev-env image
+and must not be used for production deployments.
+
+### Build command
+
+Run from the repo root (the build context must include `backend/`):
+
+```sh
+docker build -f Dockerfile.app -t method-aware-app .
+```
+
+### Run command
+
+Supply the production env file.  Override `DATABASE_URL` as required for your
+environment:
+
+```sh
+docker run --env-file backend/.env.production.example \
+  -e DATABASE_URL=postgresql+psycopg://user:pass@db-host:5432/method_aware \
+  -p 8000:8000 \
+  method-aware-app
+```
+
+All required production flags (`DEPLOYMENT_MODE`, `AUTH_OWNER`,
+`TRUSTED_PROXY_MODE`, `PROXY_IDENTITY_HEADER`, etc.) are set in
+`backend/.env.production.example`.  Copy that file, fill in every `<REPLACE>`
+placeholder, and pass it via `--env-file`.
+
+### Migration-at-boot behavior
+
+The container entrypoint runs:
+
+```sh
+python -m alembic -c alembic.ini upgrade head && \
+exec python -m uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
+```
+
+Alembic applies all pending migrations before uvicorn starts.  If alembic
+fails (e.g. database unreachable or a migration error), the container exits
+non-zero and does not start the API server.
+
+`DB_INIT_MODE` in the env file controls how `main.py` itself initialises the
+database on import.  For production set `DB_INIT_MODE=migrate` (the default),
+which causes `main.py` to call `alembic upgrade head` a second time at import
+— this is a no-op if the entrypoint already applied all migrations and is safe
+for idempotency.  Alternatively set `DB_INIT_MODE=none` to suppress the
+`main.py`-side migration call entirely and rely solely on the entrypoint run.
+
+### Healthcheck endpoints
+
+| Endpoint | Purpose | Used for |
+|---|---|---|
+| `GET /health` | Static liveness — process alive | Docker `HEALTHCHECK`, liveness probe |
+| `GET /ready` | Readiness — `SELECT 1` against the DB | Readiness probe before load-balancer traffic |
+
+The `HEALTHCHECK` in `Dockerfile.app` uses `/ready` with a 60-second
+`start-period` to allow migrations to complete before probes fire.
+
+### Reverse proxy requirement
+
+**The image must run behind a trusted reverse proxy.**  When
+`DEPLOYMENT_MODE=nonlocal` (required for production):
+
+- `AUTH_OWNER=proxy` and `TRUSTED_PROXY_MODE=true` must be set.
+- The proxy must inject `PROXY_IDENTITY_HEADER` (and optionally
+  `PROXY_EMAIL_HEADER`, `PROXY_GROUPS_HEADER`, `PROXY_ROLES_HEADER`) on every
+  request.
+- The API server must not be directly internet-exposed; all operator identity
+  assertions come exclusively from the proxy headers.
+- Do not set `TRUSTED_PROXY_MODE=true` without an actual authenticating proxy
+  in front — the server will accept whatever identity the proxy sends.
+
+### Python dependency notes
+
+`backend/requirements.txt` is the complete production dependency set; all
+packages are reachable from `main.py`'s import graph.  Key inclusions and
+rationale:
+
+| Package | Why needed |
+|---|---|
+| `fastapi`, `uvicorn` | ASGI framework and server |
+| `sqlalchemy`, `alembic` | ORM and database migrations |
+| `pydantic-settings` | Typed settings from environment |
+| `psycopg[binary]` | PostgreSQL driver (psycopg3) |
+| `requests` | HTTP client used by NRC ADAMS / ScienceBase connectors |
+| `pandas`, `numpy` | DataFrame I/O, profiling, analysis services |
+| `scipy`, `statsmodels` | Statistical routines in `profiling.py` and `analysis.py` |
+| `scikit-learn` | Scalers/transformers in `transforms.py` |
+| `matplotlib` | Chart generation in `analysis.py` (Agg backend, no display) |
+| `ruptures` | Changepoint detection in `analysis.py` |
+| `PyMuPDF` (fitz) | PDF text extraction in `nrc_aps_document_processing.py` |
+| `camelot-py[cv]` | Advanced PDF table extraction (requires Ghostscript + Poppler) |
+| `paddlepaddle`, `paddleocr` | Advanced OCR path in `nrc_aps_advanced_ocr.py` |
+| `pyarrow` | Parquet read/write used by `dataframe_io.py` via pandas |
+| `statsmodels` | STL decomposition and ADF/KPSS stationarity tests |
+
+`scikit-learn`, `pandas`, `scipy`, `matplotlib`, `ruptures`, and `statsmodels`
+are all genuinely required — they are imported at module load time by services
+that are part of the router import chain, not optional or lazy-loaded.

@@ -1,0 +1,96 @@
+# .dockerignore — keep the production image lean.
+# Only backend/ source and config that Dockerfile.app needs should reach the build context.
+
+# Version control
+.git
+.gitmodules
+.gitattributes
+
+# Dev environment / IDE
+.vscode
+.omc
+.claude
+node_modules
+package.json
+package-lock.json
+
+# Archive and planning artifacts
+archive/
+frontend_UI_plans/
+onlook-ui/
+plans/
+next_milestone_plans/
+patches/
+diagnostics/
+tools/
+e2e/
+tests/
+handoff/
+sessionhistory_extracted/
+session_extracted/
+session_temp/
+setup_logs/
+tmp/
+temp_extract/
+_external/
+_forensic_exports/
+mcp_current_filestates/
+data_actual/
+data_demo/
+
+# Playwright / test artifacts
+playwright-report/
+test-results/
+playwright.config.js
+*.spec.ts
+*.spec.js
+
+# SQLite database files (production uses PostgreSQL)
+*.db
+*.sqlite
+*.sqlite3
+
+# Python caches and build artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+.tox/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+.project6_api_stdout.log
+.project6_api_stderr.log
+
+# Docs and markdown (not needed in the image)
+docs/
+*.md
+AGENTS.md
+README.md
+REPO_INDEX.md
+
+# Dev scripts
+project6.ps1
+corpus_diagnostics.py
+corpus_diagnostics*.log
+corpus_closure.log
+corpus_verify.log
+postreview_eval.py
+run_context_packet_single_export.py
+run_full_export.py
+
+# JSON session/export files
+*.json
+
+# The dev-env Dockerfile (not the app image)
+Dockerfile
+
+# App data directories that should not land in the image
+app/
