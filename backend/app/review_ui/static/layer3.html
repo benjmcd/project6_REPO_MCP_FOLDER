@@ -1132,6 +1132,19 @@
                     </div>
                     <p class="muted">Revocation permanently marks the provider-private receipt as revoked server-side. Raw provider URL, download bytes, connector dispatch, and public URL remain blocked in this rendered surface. Only the existing revoke route is called; no new backend behavior is introduced.</p>
                 </form>
+                <!-- W2-S8: Provider-private download control panel — download affordance only, URL never rendered as text -->
+                <section
+                    id="provider-private-download-control-panel"
+                    class="workband provider-private-download-control-panel"
+                    data-rendered-mode="rendered_provider_private_download_control"
+                    data-value-reveal-enabled="false"
+                    data-download-url-exposed="true"
+                    data-production-readiness-claimed="false"
+                    aria-label="Provider-private signed URL download control"
+                    aria-live="polite"
+                >
+                    <div class="empty-panel">Provider-private download control is blocked until signed URL receipt authority is present.</div>
+                </section>
             </section>
             </section>
         </section>

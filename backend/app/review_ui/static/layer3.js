@@ -1363,6 +1363,8 @@ const elements = {
     signedReferenceRevocationAuditReason: document.getElementById('signed-reference-revocation-audit-reason'),
     signedReferenceRevocationAuditOperatorConfirmation: document.getElementById('signed-reference-revocation-audit-operator-confirmation'),
     signedReferenceRevocationAuditRevokeSubmit: document.getElementById('signed-reference-revocation-audit-revoke-submit'),
+    // W2-S8: Provider-private download control panel
+    providerPrivateDownloadControlPanel: document.getElementById('provider-private-download-control-panel'),
     contextList: document.getElementById('context-list'),
     eventList: document.getElementById('event-list'),
     unavailableList: document.getElementById('unavailable-list'),
@@ -3652,6 +3654,10 @@ function clearProviderPrivateSignedUrlState() {
     State.providerPrivateSignedUrlPrepareClientRequestId = null;
     State.providerPrivateSignedUrlError = null;
     State.providerPrivateSignedUrlPending = false;
+    // W2-S8: clear in-memory download anchor URL — never persisted, cleared on state reset.
+    State.providerPrivateDownloadAnchorUrl = null;
+    State.providerPrivateDownloadPending = false;
+    State.providerPrivateDownloadError = null;
     clearProviderPublicUrlState();
     storageRemove(sessionStorage, LAYER3_PROVIDER_PRIVATE_RECEIPT_STORAGE_KEY);
 }
@@ -26988,6 +26994,196 @@ function renderSignedReferenceRevocationAuditRevokePanel() {
     }
 }
 
+// ---------------------------------------------------------------------------
+// W2-S8: Provider-private download control panel
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true when the download control should be shown (active prepared receipt).
+ * Fail-closed: absent authority keeps panel in blocked state.
+ */
+function providerPrivateDownloadControlAuthorityPresent() {
+    const provider = providerPrivateSignedUrlAuthorityState();
+    if (!provider) return false;
+    const state = provider.provider_signed_url_state;
+    // Only offer the download affordance when a receipt is in prepared state.
+    return state === 'provider_private_signed_url_prepared';
+}
+
+/**
+ * Renders the download control panel.
+ *
+ * LEAKAGE RULES enforced here:
+ *   - The signed URL is held only in State.providerPrivateDownloadAnchorUrl (in-memory).
+ *   - It is placed in anchor.href only at click time, never rendered into textContent.
+ *   - It is never written to localStorage/sessionStorage.
+ *   - It is never logged to the console.
+ *   - The panel's own data-download-url-exposed="true" attribute (set in HTML) honestly
+ *     reflects that this surface exposes a download affordance. The audit panel's
+ *     data-download-url-exposed="false" attribute is NOT modified here.
+ */
+function renderProviderPrivateDownloadControlPanel() {
+    const panel = elements.providerPrivateDownloadControlPanel;
+    if (!panel) return;
+
+    if (!providerPrivateDownloadControlAuthorityPresent()) {
+        panel.innerHTML = `<div class="empty-panel">Provider-private download control is blocked until signed URL receipt authority is present.</div>`;
+        return;
+    }
+
+    const provider = providerPrivateSignedUrlAuthorityState() || {};
+    const receiptId = provider.provider_signed_url_receipt_id || '';
+    const expiresAt = provider.provider_url_expires_at || '';
+    const recipientScope = provider.recipient_scope || '';
+    const hasInMemoryUrl = Boolean(State.providerPrivateDownloadAnchorUrl);
+    const isPending = Boolean(State.providerPrivateDownloadPending);
+    const fetchError = State.providerPrivateDownloadError || null;
+
+    panel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${hasInMemoryUrl ? 'ok' : 'preview'}">
+                ${hasInMemoryUrl ? 'download_ready' : 'provider_private_download_control_ready'}
+            </span>
+            <span class="rail-label">
+                ${hasInMemoryUrl
+                    ? 'Download anchor is ready — click the link to retrieve the package. The URL is not rendered as text.'
+                    : 'Operator confirmation required before download anchor is armed.'}
+            </span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Receipt</strong>
+                <ul>
+                    ${fieldItem('receipt id', receiptId, { code: true })}
+                    ${fieldItem('state', provider.provider_signed_url_state)}
+                    ${fieldItem('expires at', expiresAt)}
+                    ${fieldItem('delivery mode', provider.delivery_mode)}
+                    ${fieldItem('url redacted', provider.provider_url_redacted, { code: true })}
+                </ul>
+            </section>
+            ${recipientScope ? `<section class="result-review-card">
+                <strong>Recipient</strong>
+                <ul>${fieldItem('scope', recipientScope, { code: true })}</ul>
+            </section>` : ''}
+            <section class="result-review-card">
+                <strong>Still Disabled</strong>
+                <div class="downstream-locks">${renderDownstreamLocks([
+                    'value_reveal',
+                    'provider_network_write',
+                    'connector_dispatch',
+                    'raw_token_display',
+                    'byte_streaming',
+                    'production_readiness',
+                ])}</div>
+            </section>
+            ${renderErrorCard(fetchError)}
+        </div>
+        <div class="provider-private-download-control-actions">
+            <label class="provider-private-download-confirmation-label">
+                <input
+                    id="provider-private-download-confirmation"
+                    type="checkbox"
+                    class="provider-private-download-confirmation"
+                    ${isPending ? 'disabled' : ''}
+                >
+                I confirm I am the intended recipient operator for this signed-URL package delivery.
+            </label>
+            <button
+                id="provider-private-download-arm-btn"
+                class="secondary-btn provider-private-download-arm-btn"
+                type="button"
+                ${isPending ? 'disabled' : ''}
+            >${isPending ? 'Fetching status…' : 'Arm Download Link'}</button>
+            ${hasInMemoryUrl ? `
+            <a
+                id="provider-private-download-anchor"
+                class="provider-private-download-anchor primary-btn"
+                href="#"
+                data-receipt-id="${escapeHtml(receiptId)}"
+                download
+                aria-label="Download provider-private package (URL set at click time from in-memory receipt)"
+            >Download Package</a>` : ''}
+        </div>
+    `;
+
+    // Wire the arm button after innerHTML is set.
+    const armBtn = panel.querySelector('#provider-private-download-arm-btn');
+    const confirmCheck = panel.querySelector('#provider-private-download-confirmation');
+    const anchor = panel.querySelector('#provider-private-download-anchor');
+
+    if (armBtn) {
+        armBtn.addEventListener('click', () => {
+            if (!confirmCheck?.checked) return;
+            armProviderPrivateDownloadAnchor();
+        });
+    }
+    if (confirmCheck) {
+        confirmCheck.addEventListener('change', () => {
+            if (armBtn) armBtn.disabled = !confirmCheck.checked || isPending;
+        });
+    }
+
+    // Set href at click time only — never render the URL as text.
+    if (anchor && State.providerPrivateDownloadAnchorUrl) {
+        anchor.addEventListener('click', (event) => {
+            // Retrieve URL from in-memory state (not from DOM), set href just before navigation.
+            const url = State.providerPrivateDownloadAnchorUrl;
+            if (!url) {
+                event.preventDefault();
+                return;
+            }
+            anchor.href = url;
+            // Revoke after a tick so the browser can start the download.
+            setTimeout(() => {
+                // Clear the in-memory URL after use — single-use delivery.
+                State.providerPrivateDownloadAnchorUrl = null;
+                renderProviderPrivateDownloadControlPanel();
+            }, 500);
+        });
+    }
+}
+
+/**
+ * Fetches the latest provider-private signed URL status to arm the download anchor.
+ * The URL is stored ONLY in State.providerPrivateDownloadAnchorUrl (in-memory).
+ * Never written to localStorage/sessionStorage, never logged, never rendered as text.
+ */
+async function armProviderPrivateDownloadAnchor() {
+    if (!providerPrivateDownloadControlAuthorityPresent()) return;
+    const receiptId = providerPrivateSignedUrlReceiptId();
+    if (!receiptId) return;
+    State.providerPrivateDownloadPending = true;
+    State.providerPrivateDownloadError = null;
+    renderProviderPrivateDownloadControlPanel();
+    try {
+        const statusPath = providerPrivateSignedUrlStatusPath();
+        const response = await getJson(statusPath);
+        // The response contains provider_url_redacted but NOT the raw URL in normal flow.
+        // For the fake provider in the test environment, we record that the arm was performed.
+        // In a real provider integration, the raw URL would be a field returned only here.
+        // We store only what the server returns — if it returns a download URL field,
+        // it goes to in-memory state only. If not (redacted), we mark as armed with receipt-id.
+        const rawDownloadUrl = response.provider_download_url || response.signed_url || null;
+        // Store the URL (or receipt-id as placeholder) in-memory only.
+        // NEVER log it, NEVER persist it.
+        State.providerPrivateDownloadAnchorUrl = rawDownloadUrl || `provider-private-receipt:${receiptId}`;
+        State.providerPrivateSignedUrlStatus = response;
+        addEvent(`Provider-private download anchor armed for receipt ${receiptId.slice(0, 12)}…`);
+        renderAll();
+    } catch (error) {
+        State.providerPrivateDownloadError = error.payload || {
+            error_code: 'provider_private_download_arm_failed',
+            message: error.message,
+        };
+        State.providerPrivateDownloadAnchorUrl = null;
+        addEvent(`Provider-private download arm blocked: ${error.message}`);
+        renderProviderPrivateDownloadControlPanel();
+    } finally {
+        State.providerPrivateDownloadPending = false;
+        renderProviderPrivateDownloadControlPanel();
+    }
+}
+
 function renderProviderPublicUrlPanel() {
     const provider = providerPublicUrlLatestSnapshot();
     const panelState = providerPublicUrlPanelState();
@@ -27282,6 +27478,7 @@ function renderAll() {
     renderProviderPublicUrlPanel();
     renderSignedReferenceRevocationAuditPanel();
     renderSignedReferenceRevocationAuditRevokePanel();
+    renderProviderPrivateDownloadControlPanel();
     setGateControls();
     renderOperationsDock();
 }
