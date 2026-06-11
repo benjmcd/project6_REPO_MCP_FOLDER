@@ -27150,7 +27150,12 @@ async function armProviderPrivateDownloadAnchor() {
     renderProviderPrivateDownloadControlPanel();
     try {
         const statusPath = providerPrivateSignedUrlStatusPath();
-        const response = await getJson(statusPath);
+        const response = (
+            providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()
+            || providerPrivateSignedUrlUsesSourceDirectoryHybridFamily()
+        )
+            ? await postJson(statusPath, providerPrivateSignedUrlStatusPayload())
+            : await getJson(statusPath);
         // The response contains provider_url_redacted but NOT the raw URL in normal flow.
         // For the fake provider in the test environment, we record that the arm was performed.
         // In a real provider integration, the raw URL would be a field returned only here.
@@ -31117,16 +31122,15 @@ async function submitSignedReferenceRevocationAuditRevoke(event) {
     const revocationReason = String(
         elements.signedReferenceRevocationAuditReason?.value || 'operator revoked from signed-reference revocation audit panel'
     ).trim() || 'operator revoked from signed-reference revocation audit panel';
-    // Build payload mirroring the existing providerPrivateSignedUrlRevokePayload() conventions:
-    // client_request_id, provider_signed_url_receipt_id, idempotency_key, revoked_by,
-    // revocation_reason, operator_decision, decision_notes.
+    // Reuse the family-specific base payload so operator_decision and authority fields
+    // are correct for source-directory hybrid and package-supersession families,
+    // then override per-invocation and panel-provided fields.
     const payload = {
+        ...providerPrivateSignedUrlRevokePayload(),
         client_request_id: requestId(),
-        provider_signed_url_receipt_id: receiptId,
         idempotency_key: `signed-ref-audit-revoke:${receiptId}`,
         revoked_by: revokedBy,
         revocation_reason: revocationReason,
-        operator_decision: 'revoke_provider_private_signed_url',
         decision_notes: 'Revocation submitted from signed-reference revocation audit panel; rendered workbench surface only.',
     };
     State.signedReferenceRevocationAuditRevokePending = true;

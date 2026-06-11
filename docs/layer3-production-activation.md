@@ -139,7 +139,7 @@ cause restart loops during database outages.
 ## 5. Deployment Packaging
 
 The production application image is defined in `Dockerfile.app` at the repo
-root.  It is separate from `Dockerfile`, which is the Claude Code dev-env image
+root.  It is separate from `Dockerfile`, which is the development-environment image
 and must not be used for production deployments.
 
 ### Build command

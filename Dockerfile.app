@@ -1,6 +1,6 @@
 # Production application image for the Method-Aware Framework API.
 #
-# This is NOT the Claude Code dev-env image (Dockerfile at repo root).
+# This is NOT the dev-environment image (Dockerfile at repo root).
 # This image runs the FastAPI/uvicorn server behind a trusted reverse proxy.
 #
 # Build:
