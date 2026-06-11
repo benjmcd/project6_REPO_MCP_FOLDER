@@ -3645,6 +3645,24 @@ def _load_package_eligible_analysis_products(
     return roster, meta
 
 
+def _load_session_analyst_products_projection(
+    db: Session,
+    session_id: str,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    total = _count_session_analyst_products(db, session_id=session_id)
+    roster = _session_analyst_products(
+        db,
+        session_id=session_id,
+        limit=_ANALYSIS_PRODUCT_INVENTORY_MAX,
+    )
+    return roster, {
+        "truncated": total > _ANALYSIS_PRODUCT_INVENTORY_MAX,
+        "total": total,
+        "included": len(roster),
+        "max_products": _ANALYSIS_PRODUCT_INVENTORY_MAX,
+    }
+
+
 # TEXT ANCHOR: _build_analysis_product_admission_preview
 def _build_analysis_product_admission_preview(
     db: Session,
@@ -19569,15 +19587,27 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         downstream_unavailable=downstream_unavailable_values,
         authority_rail=authority_rail_state,
     )
+    analyst_products_projection, analyst_products_projection_meta = _load_session_analyst_products_projection(
+        db,
+        session_id=session_id,
+    )
     analysis_product_inventory_projection_state = _analysis_product_inventory_projection(
         sublayer_visualization=sublayer_visualization_state,
         analysis_environment_projection=analysis_environment_projection_state,
         execution_result_review=execution_result_review_state,
         output_package_products=_session_output_package_products(db, session_id=session_id),
         reconciliation=_session_reconciliation_record(db, session_id=session_id),
-        analyst_products=_session_analyst_products(db, session_id=session_id),
+        analyst_products=analyst_products_projection,
         working_sets=_session_working_sets(db, session_id=session_id),
         current_gate=current_gate,
+    )
+    analysis_product_inventory_projection_state.update(
+        {
+            "analyst_product_total": analyst_products_projection_meta["total"],
+            "analyst_product_included_count": analyst_products_projection_meta["included"],
+            "analyst_products_truncated": analyst_products_projection_meta["truncated"],
+            "analyst_products_max": analyst_products_projection_meta["max_products"],
+        }
     )
 
     return {

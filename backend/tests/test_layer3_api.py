@@ -14320,6 +14320,46 @@ def test_layer3_api_analysis_product_draft_authoring_and_inventory(client: TestC
     assert forbidden.status_code == 422
 
 
+def test_layer3_api_session_summary_bounds_analyst_product_inventory_projection(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(layer3_workbench, "_ANALYSIS_PRODUCT_INVENTORY_MAX", 2)
+    session_id = _construct_quant_package_set(client, tmp_path, request_id="api-3c-author-bounded")[0]
+    summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    snap_id = summary["sublayer_visualization"]["material_objects"][0]["material_snapshot_id"]
+
+    for idx in range(3):
+        resp = client.post(
+            "/api/v1/layer3/analysis-product/draft",
+            json={
+                "session_id": session_id,
+                "client_request_id": f"author-bound-{idx}",
+                "product_kind": "finding",
+                "title": f"Bounded finding {idx}",
+                "body": "Projection bounding body must not leak.",
+                "evidence": [
+                    {
+                        "ref_kind": "material_snapshot",
+                        "ref_id": snap_id,
+                        "evidence_role": "observation",
+                    }
+                ],
+            },
+        )
+        assert resp.status_code == 201, resp.text
+
+    inv = client.get(f"/api/v1/layer3/session/{session_id}").json()["analysis_product_inventory_projection"]
+    assert inv["analyst_product_count"] == 2
+    assert inv["analyst_product_included_count"] == 2
+    assert inv["analyst_product_total"] == 3
+    assert inv["analyst_products_truncated"] is True
+    assert inv["analyst_products_max"] == 2
+    assert len(inv["analyst_products"]) == 2
+    assert "Projection bounding body must not leak." not in repr(inv)
+
+
 def _submit_quant_package_review(
     client: TestClient,
     tmp_path,
