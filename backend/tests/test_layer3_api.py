@@ -21235,6 +21235,38 @@ def test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_sess
     assert projection["forbidden_runtime_authority"]["write_route_enabled"] is False
     assert projection["forbidden_runtime_authority"]["connector_dispatch_enabled"] is False
 
+    typing_page = client.get(
+        f"/api/v1/layer3/session/{session_id}/sublayer-visualization/typing_records?limit=1&offset=0"
+    )
+    assert typing_page.status_code == 200
+    typing_page_body = typing_page.json()
+    _assert_common_response_envelope(typing_page_body)
+    assert typing_page_body["schema_id"] == "layer3.sublayer_visualization_collection.v1"
+    assert typing_page_body["session_id"] == session_id
+    assert typing_page_body["collection"] == "typing_records"
+    assert typing_page_body["authority_source"] == "read_only_persisted_layer3_rows"
+    assert typing_page_body["read_model"] == "paged_sublayer_visualization_collection"
+    assert typing_page_body["total"] == 1
+    assert typing_page_body["included_count"] == 1
+    assert typing_page_body["limit"] == 1
+    assert typing_page_body["offset"] == 0
+    assert typing_page_body["has_more"] is False
+    assert typing_page_body["no_side_effects"] is True
+    assert typing_page_body["items"][0]["typing_record_id"] == sublayer["typing_records"][0]["typing_record_id"]
+    assert typing_page_body["items"][0]["payload_hash"] == sublayer["typing_records"][0]["payload_hash"]
+
+    invalid_collection = client.get(
+        f"/api/v1/layer3/session/{session_id}/sublayer-visualization/not-a-collection"
+    )
+    assert invalid_collection.status_code == 400
+    assert invalid_collection.json()["error_code"] == "invalid_sublayer_collection"
+
+    missing_session = client.get(
+        "/api/v1/layer3/session/missing-session/sublayer-visualization/material_objects"
+    )
+    assert missing_session.status_code == 404
+    assert missing_session.json()["error_code"] == "session_not_found"
+
     db = client.layer3_session_factory()
     try:
         stored_plan = db.query(L3AnalysisPlan).one()

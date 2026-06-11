@@ -4,7 +4,7 @@ import json
 from typing import Any, Callable, Literal
 from urllib.parse import parse_qsl
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
@@ -11198,6 +11198,20 @@ class Layer3SessionSummaryResponse(Layer3BaseResponse):
     authority_rail: dict[str, Any]
 
 
+class Layer3SublayerVisualizationCollectionResponse(Layer3BaseResponse):
+    session_id: str
+    collection: str
+    authority_source: str
+    read_model: str
+    total: int
+    included_count: int
+    limit: int
+    offset: int
+    has_more: bool
+    items: list[dict[str, Any]]
+    no_side_effects: bool
+
+
 
 @router.get("/bootstrap", response_model=Layer3WorkbenchBootstrapResponse)
 def get_bootstrap() -> dict[str, Any]:
@@ -11445,6 +11459,29 @@ def post_execution_result_review(
 )
 def get_session_summary(session_id: str, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.session_summary(db, session_id))
+
+
+@router.get(
+    "/session/{session_id}/sublayer-visualization/{collection}",
+    response_model=Layer3SublayerVisualizationCollectionResponse,
+    responses=_workbench_error_responses(400, 404),
+)
+def get_session_sublayer_visualization_collection(
+    session_id: str,
+    collection: str,
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_workbench.session_sublayer_visualization_collection(
+            db,
+            session_id=session_id,
+            collection=collection,
+            limit=limit,
+            offset=offset,
+        )
+    )
 
 
 # ---------------------------------------------------------------------------

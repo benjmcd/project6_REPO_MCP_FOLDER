@@ -34,6 +34,7 @@ from app.services.layer3_pass_entry import (
     PASS_TYPE_ASSOCIATED_COHORT,
     PLAN_STATUS_APPROVED,
 )
+from app.services.layer3_workbench_error import Layer3WorkbenchError
 
 
 @pytest.fixture()
@@ -411,3 +412,53 @@ def test_session_sublayer_visualization_state_bounds_collections_with_totals(db_
     assert state["analysis_sets"][0]["analysis_set_id"] == "set-01"
     assert state["analysis_sets"][0]["member_snapshot_ids"] == ["snapshot-03"]
     assert state["analysis_sets"][0]["unit_count"] == 1
+
+    typing_page = sublayer_state.session_sublayer_visualization_collection(
+        db_session,
+        session_id=session_id,
+        collection="typing_records",
+        limit=1,
+        offset=1,
+    )
+    assert typing_page["schema_id"] == "layer3.sublayer_visualization_collection.v1"
+    assert typing_page["authority_source"] == "read_only_persisted_layer3_rows"
+    assert typing_page["read_model"] == "paged_sublayer_visualization_collection"
+    assert typing_page["collection"] == "typing_records"
+    assert typing_page["total"] == 3
+    assert typing_page["included_count"] == 1
+    assert typing_page["limit"] == 1
+    assert typing_page["offset"] == 1
+    assert typing_page["has_more"] is True
+    assert typing_page["no_side_effects"] is True
+    assert typing_page["items"][0]["typing_record_id"] == "typing-02"
+    assert typing_page["items"][0]["payload_hash"] == "hash-snapshot-02"
+
+    analysis_set_page = sublayer_state.session_sublayer_visualization_collection(
+        db_session,
+        session_id=session_id,
+        collection="analysis_sets",
+        limit=1,
+        offset=0,
+    )
+    assert analysis_set_page["total"] == 3
+    assert analysis_set_page["included_count"] == 1
+    assert analysis_set_page["has_more"] is True
+    assert analysis_set_page["items"][0]["analysis_set_id"] == "set-01"
+    assert analysis_set_page["items"][0]["member_snapshot_ids"] == ["snapshot-03"]
+
+    with pytest.raises(Layer3WorkbenchError) as invalid_collection:
+        sublayer_state.session_sublayer_visualization_collection(
+            db_session,
+            session_id=session_id,
+            collection="unknown",
+        )
+    assert invalid_collection.value.error_code == "invalid_sublayer_collection"
+
+    with pytest.raises(Layer3WorkbenchError) as invalid_page:
+        sublayer_state.session_sublayer_visualization_collection(
+            db_session,
+            session_id=session_id,
+            collection="material_objects",
+            limit=0,
+        )
+    assert invalid_page.value.error_code == "invalid_pagination"

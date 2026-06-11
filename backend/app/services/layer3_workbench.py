@@ -273,6 +273,7 @@ from app.services.layer3_sublayer_state import (
     session_analyst_products as _session_analyst_products,
     session_output_package_products as _session_output_package_products,
     session_reconciliation_record as _session_reconciliation_record,
+    session_sublayer_visualization_collection as _session_sublayer_visualization_collection,
     session_sublayer_visualization_state as _session_sublayer_visualization_state,
     session_working_sets as _session_working_sets,
     snapshot_projection as _snapshot_projection,
@@ -19710,3 +19711,20 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "downstream_unavailable": downstream_unavailable_values,
         "authority_rail": authority_rail_state,
     }
+
+
+def session_sublayer_visualization_collection(
+    db: Session,
+    *,
+    session_id: str,
+    collection: str,
+    limit: int = 100,
+    offset: int = 0,
+) -> dict[str, Any]:
+    return _session_sublayer_visualization_collection(
+        db,
+        session_id=session_id,
+        collection=collection,
+        limit=limit,
+        offset=offset,
+    )

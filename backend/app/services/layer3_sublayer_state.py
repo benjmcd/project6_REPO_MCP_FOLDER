@@ -17,16 +17,28 @@ from app.models.models import (
     L3OutputPackage,
     L3PassRun,
     L3ReconciliationRecord,
+    L3Session,
     L3TypingRecord,
     L3WorkingSet,
 )
 from app.services.layer3_plan_flow_state import latest_analysis_plan
+from app.services.layer3_response_contract import base_response
 from app.services.layer3_typing_entry import SUPPORTED_TYPING_RULES
 from app.services.layer3_utils import json_clone
+from app.services.layer3_workbench_error import Layer3WorkbenchError
 
 
 SUBLAYER_VISUALIZATION_STATE_SCHEMA_ID = "layer3.sublayer_visualization_state.v1"
 SUBLAYER_VISUALIZATION_COLLECTION_MAX = 100
+SUBLAYER_VISUALIZATION_COLLECTION_PAGE_MAX = 500
+
+_SUBLAYER_VISUALIZATION_COLLECTION_PREFIXES = {
+    "material_objects": "material_object",
+    "typing_records": "typing_record",
+    "analysis_units": "analysis_unit",
+    "analysis_sets": "analysis_set",
+    "pass_runs": "pass_run",
+}
 
 
 def _normalize_collection_limit(collection_limit: int | None) -> int | None:
@@ -58,6 +70,68 @@ def _collection_meta(prefix: str, meta: dict[str, Any], *, max_items: int | None
         f"{prefix}_included_count": meta["included"],
         f"{prefix}s_truncated": meta["truncated"],
         f"{prefix}s_max": max_items,
+    }
+
+
+def _validate_collection_page(limit: int, offset: int) -> tuple[int, int]:
+    if not isinstance(limit, int) or isinstance(limit, bool) or limit < 1:
+        raise Layer3WorkbenchError(
+            "invalid_pagination",
+            "limit must be a positive integer.",
+            blocked_fields=["limit"],
+        )
+    if limit > SUBLAYER_VISUALIZATION_COLLECTION_PAGE_MAX:
+        raise Layer3WorkbenchError(
+            "invalid_pagination",
+            f"limit must be less than or equal to {SUBLAYER_VISUALIZATION_COLLECTION_PAGE_MAX}.",
+            blocked_fields=["limit"],
+        )
+    if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:
+        raise Layer3WorkbenchError(
+            "invalid_pagination",
+            "offset must be a non-negative integer.",
+            blocked_fields=["offset"],
+        )
+    return limit, offset
+
+
+def _paged_query_rows(
+    query: Any,
+    *,
+    limit: int,
+    offset: int,
+) -> tuple[list[Any], dict[str, Any]]:
+    total = query.order_by(None).count()
+    rows = query.offset(offset).limit(limit).all()
+    return rows, {
+        "total": total,
+        "included": len(rows),
+        "limit": limit,
+        "offset": offset,
+        "has_more": offset + len(rows) < total,
+    }
+
+
+def _collection_page_response(
+    *,
+    session_id: str,
+    collection: str,
+    items: list[dict[str, Any]],
+    page_meta: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        **base_response("layer3.sublayer_visualization_collection.v1"),
+        "session_id": session_id,
+        "collection": collection,
+        "authority_source": "read_only_persisted_layer3_rows",
+        "read_model": "paged_sublayer_visualization_collection",
+        "total": page_meta["total"],
+        "included_count": page_meta["included"],
+        "limit": page_meta["limit"],
+        "offset": page_meta["offset"],
+        "has_more": page_meta["has_more"],
+        "items": items,
+        "no_side_effects": True,
     }
 
 
@@ -390,6 +464,104 @@ def _bounded_session_sublayer_visualization_state(
         "latest_plan": serialize_sublayer_latest_plan(latest_analysis_plan(db, session_id=session_id)),
         "no_side_effects": True,
     }
+
+
+def session_sublayer_visualization_collection(
+    db: Session,
+    *,
+    session_id: str,
+    collection: str,
+    limit: int = SUBLAYER_VISUALIZATION_COLLECTION_MAX,
+    offset: int = 0,
+) -> dict[str, Any]:
+    collection = str(collection or "").strip()
+    if collection not in _SUBLAYER_VISUALIZATION_COLLECTION_PREFIXES:
+        raise Layer3WorkbenchError(
+            "invalid_sublayer_collection",
+            f"Unsupported sublayer visualization collection: {collection or '<empty>'}.",
+            blocked_fields=["collection"],
+        )
+    limit, offset = _validate_collection_page(limit, offset)
+    session_exists = db.query(L3Session.session_id).filter(L3Session.session_id == session_id).first()
+    if session_exists is None:
+        raise Layer3WorkbenchError(
+            "session_not_found",
+            f"Layer 3 session '{session_id}' was not found.",
+            http_status=404,
+        )
+
+    if collection == "material_objects":
+        snapshots, page_meta = _paged_query_rows(
+            db.query(L3MaterialSnapshot)
+            .filter(L3MaterialSnapshot.session_id == session_id)
+            .order_by(L3MaterialSnapshot.material_snapshot_id.asc()),
+            limit=limit,
+            offset=offset,
+        )
+        items = [serialize_sublayer_material_object(snapshot) for snapshot in snapshots]
+    elif collection == "typing_records":
+        typing_records, page_meta = _paged_query_rows(
+            db.query(L3TypingRecord)
+            .filter(L3TypingRecord.session_id == session_id)
+            .order_by(L3TypingRecord.typing_record_id.asc()),
+            limit=limit,
+            offset=offset,
+        )
+        snapshot_by_id: dict[str, L3MaterialSnapshot] = {}
+        _expand_snapshot_context_for_typing_records(
+            db,
+            session_id=session_id,
+            snapshot_by_id=snapshot_by_id,
+            typing_records=typing_records,
+        )
+        items = [
+            serialize_sublayer_typing_record(record, snapshot_by_id=snapshot_by_id)
+            for record in typing_records
+        ]
+    elif collection == "analysis_units":
+        analysis_units, page_meta = _paged_query_rows(
+            db.query(L3AnalysisUnit)
+            .filter(L3AnalysisUnit.session_id == session_id)
+            .order_by(L3AnalysisUnit.analysis_unit_id.asc()),
+            limit=limit,
+            offset=offset,
+        )
+        items = [serialize_analysis_unit(unit) for unit in analysis_units]
+    elif collection == "analysis_sets":
+        analysis_sets, page_meta = _paged_query_rows(
+            db.query(L3AnalysisSet)
+            .filter(L3AnalysisSet.session_id == session_id)
+            .order_by(L3AnalysisSet.analysis_set_id.asc()),
+            limit=limit,
+            offset=offset,
+        )
+        unit_by_id: dict[str, L3AnalysisUnit] = {}
+        _expand_unit_context_for_analysis_sets(
+            db,
+            session_id=session_id,
+            unit_by_id=unit_by_id,
+            analysis_sets=analysis_sets,
+        )
+        items = [
+            serialize_sublayer_analysis_set(analysis_set, unit_by_id=unit_by_id)
+            for analysis_set in analysis_sets
+        ]
+    else:
+        pass_runs, page_meta = _paged_query_rows(
+            db.query(L3PassRun)
+            .filter(L3PassRun.session_id == session_id)
+            .order_by(L3PassRun.pass_run_id.asc()),
+            limit=limit,
+            offset=offset,
+        )
+        items = [serialize_sublayer_pass_run(pass_run) for pass_run in pass_runs]
+
+    return _collection_page_response(
+        session_id=session_id,
+        collection=collection,
+        items=items,
+        page_meta=page_meta,
+    )
 
 
 def _nonneg_int(value: Any) -> int | None:
