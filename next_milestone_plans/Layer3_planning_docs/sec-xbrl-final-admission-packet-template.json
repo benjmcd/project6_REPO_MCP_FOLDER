@@ -1,0 +1,17 @@
+{
+  "_template_note": "Fill in all fields before submitting. All identifiers must be redacted kebab-case refs. Hashes must be 64-char lowercase hex. Remove this _template_note field before submitting.",
+  "admission_mode": "nonlocal_in_app_auth_final_admission",
+  "admission_owner_ref": "<redacted-admission-owner-ref>",
+  "approval_record_ref": "<redacted-approval-record-ref>",
+  "approval_record_hash": "<64-char-lowercase-hex>",
+  "in_app_auth_evidence_ref": "<redacted-in-app-auth-evidence-ref>",
+  "in_app_auth_evidence_hash": "<64-char-lowercase-hex>",
+  "auth_binding_evidence_ref": "<redacted-auth-binding-evidence-ref>",
+  "auth_binding_evidence_hash": "<64-char-lowercase-hex>",
+  "rollback_owner_ref": "<redacted-rollback-owner-ref>",
+  "incident_owner_ref": "<redacted-incident-owner-ref>",
+  "redaction_policy_id": "sec_xbrl_nonlocal_admission_disposition_redaction_v1",
+  "verification_run_ref": "<redacted-verification-run-ref>",
+  "admission_provenance_ref": "<redacted-admission-provenance-ref>",
+  "admission_provenance_hash": "<64-char-lowercase-hex>"
+}
