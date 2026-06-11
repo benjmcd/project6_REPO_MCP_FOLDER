@@ -8,11 +8,12 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import inspect as sa_inspect
+from sqlalchemy import inspect as sa_inspect, text
 
 from app.api.router import api_router
 from app.core.config import bootstrap_storage_tree, settings
-from app.db.session import Base, engine
+from app.core.observability import RequestIdMiddleware, setup_logging, unhandled_exception_handler
+from app.db.session import Base, engine, SessionLocal
 from app.services import layer3_sec_xbrl_in_app_auth_policy
 from app.services.layer3_workbench_error import Layer3WorkbenchError, workbench_error_response
 
@@ -41,7 +42,12 @@ def _initialize_database() -> None:
 
 _initialize_database()
 
+setup_logging()
+
 app = FastAPI(title=settings.app_name)
+
+# Observability: request-id propagation (CORS, added after, wraps this middleware)
+app.add_middleware(RequestIdMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origin_list,
@@ -49,6 +55,8 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
+# Global handler for unhandled exceptions — returns bounded 500, logs traceback
+app.add_exception_handler(Exception, unhandled_exception_handler)
 
 
 _PRE_BODY_OPERATOR_IDENTITY_POST_ROUTES = {
@@ -141,6 +149,17 @@ def analyst_insight_page() -> HTMLResponse:
 @app.get('/health')
 def health() -> dict[str, str]:
     return {'status': 'ok'}
+
+
+@app.get('/ready', response_model=None)
+def ready() -> JSONResponse:
+    """Readiness probe: executes SELECT 1 against the configured database."""
+    try:
+        with SessionLocal() as db:
+            db.execute(text('SELECT 1'))
+        return JSONResponse(status_code=200, content={'status': 'ready'})
+    except Exception:
+        return JSONResponse(status_code=503, content={'status': 'unavailable'})
 
 
 @app.get('/', response_class=HTMLResponse)
