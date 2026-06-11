@@ -15,6 +15,12 @@ LOCAL_WORKSPACE_REF = "sec-xbrl-local-single-workspace-dev-profile"
 OWNER_ROLE = "owner"
 AUDITOR_ROLE = "auditor"
 
+ACCESS_CLASSES = ("read", "write")
+ROLES_BY_ACCESS: dict[str, set[str]] = {
+    "read": {OWNER_ROLE, AUDITOR_ROLE},
+    "write": {OWNER_ROLE},
+}
+
 PROTECTED_ROUTE_FAMILIES: dict[str, dict[str, Any]] = {
     "sec_xbrl_operator_review_workflow_open_write": {
         "allowed_roles": {OWNER_ROLE},
@@ -83,6 +89,7 @@ FORBIDDEN_REQUEST_FIELDS = {
     "proxy_email_header",
     "proxy_groups_header",
     "proxy_identity_header",
+    "proxy_roles_header",
     "raw_operator_identity",
     "raw_proxy_header",
     "raw_receipt_path",
@@ -211,6 +218,95 @@ def route_level_operator_identity_required(headers: Mapping[str, str]) -> dict[s
         "operator_ref_hash": actor_ref_hash,
         "workspace_ref_hash": workspace_ref_hash,
         "auth_owner_mode": auth_owner_mode,
+    }
+
+
+def _server_derived_role(headers: Mapping[str, str]) -> str:
+    """Derive the caller's role from server-side authority.
+
+    Under AUTH_OWNER=none returns OWNER_ROLE unconditionally (local dev profile).
+    Under AUTH_OWNER=proxy + role_enforcing: parses the configured roles header CSV
+    case-insensitively against the token maps and returns the highest role present.
+    Missing or unrecognized tokens raise SecXbrlInAppAuthPolicyError.
+    """
+    if settings.auth_owner == "none":
+        return OWNER_ROLE
+
+    # proxy path — only reached when caller has already passed principal derivation
+    normalized_headers = {str(key).lower(): str(value) for key, value in headers.items()}
+    roles_header_name = str(settings.proxy_roles_header or "").strip().lower()
+    raw_value = str(normalized_headers.get(roles_header_name) or "").strip()
+
+    if not raw_value:
+        raise SecXbrlInAppAuthPolicyError(
+            "sec_xbrl_in_app_auth_policy_missing_role_authority",
+            "SEC XBRL in-app auth requires server-derived role authority.",
+            http_status=401,
+        )
+
+    owner_tokens = {t.strip().lower() for t in settings.layer3_owner_role_tokens.split(",") if t.strip()}
+    auditor_tokens = {t.strip().lower() for t in settings.layer3_auditor_role_tokens.split(",") if t.strip()}
+
+    tokens = {t.strip().lower() for t in raw_value.split(",") if t.strip()}
+    if tokens & owner_tokens:
+        return OWNER_ROLE
+    if tokens & auditor_tokens:
+        return AUDITOR_ROLE
+
+    raise SecXbrlInAppAuthPolicyError(
+        "sec_xbrl_in_app_auth_policy_missing_role_authority",
+        "SEC XBRL in-app auth requires server-derived role authority.",
+        http_status=401,
+    )
+
+
+def route_level_operator_authorization_required(
+    headers: Mapping[str, str],
+    *,
+    access: str,
+) -> dict[str, Any]:
+    """Doc-1358 route-level operator-authorization seam: identity presence (default)
+    or role-enforcing gate depending on LAYER3_ROUTE_AUTHORIZATION_MODE.
+
+    All existing callers that use route_level_operator_identity_required remain
+    bit-identical when mode=identity_presence (the default). The new access parameter
+    is threaded from the wrapper; all 206 call sites remain call-expression statements
+    so the drift guard is unaffected.
+    """
+    access_normalized = str(access or "").strip().lower()
+    if access_normalized not in ACCESS_CLASSES:
+        raise SecXbrlInAppAuthPolicyError(
+            "sec_xbrl_in_app_auth_policy_access_class_not_admitted",
+            "SEC XBRL in-app auth admits only 'read' or 'write' access classes.",
+            details={"access": access_normalized},
+            http_status=400,
+        )
+
+    identity_result = route_level_operator_identity_required(headers)
+
+    if settings.layer3_route_authorization_mode == "identity_presence":
+        return {
+            **identity_result,
+            "role": None,
+            "access": access_normalized,
+            "authorization_mode": "identity_presence",
+        }
+
+    # role_enforcing path
+    role = _server_derived_role(headers)
+    allowed = ROLES_BY_ACCESS[access_normalized]
+    if role not in allowed:
+        raise SecXbrlInAppAuthPolicyError(
+            "sec_xbrl_in_app_auth_policy_role_access_forbidden",
+            "SEC XBRL in-app auth does not admit the derived role for this access class.",
+            details={"access": access_normalized},
+            http_status=403,
+        )
+    return {
+        **identity_result,
+        "role": role,
+        "access": access_normalized,
+        "authorization_mode": "role_enforcing",
     }
 
 
@@ -391,6 +487,7 @@ def build_proxy_identity_readonly_projection(*, headers: Mapping[str, str]) -> d
         "raw_workspace_identity_exposed": False,
         "raw_value_exposed": False,
         "residual_magnitude_exposed": False,
+        "route_authorization_mode": settings.layer3_route_authorization_mode,
     }
     try:
         actor_ref_hash, workspace_ref_hash, auth_owner_mode = _server_derived_principal(headers)
