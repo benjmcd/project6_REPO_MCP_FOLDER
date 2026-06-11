@@ -358,8 +358,15 @@ try {
     } elseif ($KeepUp) {
         Write-Host ""
         Write-Host "-KeepUp specified: stack left running on port $ProxyPort" -ForegroundColor Yellow
+        Write-Host "Smoke artifacts preserved in $SmokeDir (the running stack's mounts and env point there)." -ForegroundColor Yellow
+        Write-Host "Tear down later with:" -ForegroundColor Yellow
+        Write-Host "  docker compose -f `"$ComposeFile`" -f `"$OverrideFile`" --env-file `"$EnvFile`" down -v" -ForegroundColor Yellow
+        Write-Host "then delete $SmokeDir." -ForegroundColor Yellow
     }
-    if (Test-Path $SmokeDir) {
+    # Only remove the ephemeral credentials when the stack is gone — a kept
+    # stack still bind-mounts htpasswd/roles.map from this directory and needs
+    # the .env/override files for its eventual teardown.
+    if (-not $KeepUp -and (Test-Path $SmokeDir)) {
         Remove-Item -Recurse -Force $SmokeDir
     }
 }

@@ -53,7 +53,13 @@ services:
       LAYER3_AUDITOR_ROLE_TOKENS: auditor
 
       # --- Database ---
-      DATABASE_URL: "postgresql+psycopg://app:${POSTGRES_PASSWORD}@db:5432/layer3"
+      # POSTGRES_PASSWORD is embedded in a URL: it must contain only
+      # URL-safe characters (recommend 32+ chars of [A-Za-z0-9_-]; hex is
+      # ideal). A password containing @ : / ? # % would misparse here even
+      # though postgres itself accepts it. Operators who need such a
+      # password can set the full DATABASE_URL (percent-encoded) in
+      # deploy/.env instead — it takes precedence over this default.
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://app:${POSTGRES_PASSWORD}@db:5432/layer3}
       # Entrypoint runs alembic upgrade head; suppress redundant in-process run.
       DB_INIT_MODE: none
 
@@ -71,9 +77,11 @@ services:
       LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED: "true"
       LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED: "true"
 
-      # --- SEC live network: operator sets this in deploy/.env when ready ---
-      # LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED is intentionally left to deploy/.env
-      # (default false). Set LAYER3_SEC_EDGAR_USER_AGENT there too when enabling.
+      # --- SEC live network (operator-owned via deploy/.env; defaults keep it OFF) ---
+      # --env-file only feeds compose interpolation — values reach the app
+      # container only because they are threaded through here explicitly.
+      LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED: ${LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED:-false}
+      LAYER3_SEC_EDGAR_USER_AGENT: ${LAYER3_SEC_EDGAR_USER_AGENT:-}
 
       # NOTE: The following flags must NEVER be set here and must NEVER be true in CI:
       #   LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED
