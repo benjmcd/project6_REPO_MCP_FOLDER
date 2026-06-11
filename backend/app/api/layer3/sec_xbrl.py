@@ -704,25 +704,63 @@ def post_sec_xbrl_operator_review_workflow_decision_status(
         if payload.sec_xbrl_operator_review_decision_id is None and payload.decision_basis_hash is None:
             return layer3_sec_xbrl_operator_review_workflow.inspect_redacted_operator_review_decision_status(
                 db,
-                **payload.model_dump(exclude={"status_mode", "operator_decision"}, exclude_none=True),
+                **payload.model_dump(exclude={"status_mode", "operator_decision", "operator_role"}, exclude_none=True),
             )
         route_family = "sec_xbrl_operator_review_decision_status_read"
         policy_decision = _sec_xbrl_policy_decision(
             request,
             payload,
             route_family=route_family,
+            requested_role=payload.operator_role or layer3_sec_xbrl_in_app_auth_policy.OWNER_ROLE,
         )
-        binding = _sec_xbrl_require_binding(
-            db,
-            source_receipt_kind="operator_review_decision",
-            source_receipt_id=payload.sec_xbrl_operator_review_decision_id,
-            source_receipt_basis_hash=payload.decision_basis_hash,
-            route_family=route_family,
-            policy_decision=policy_decision,
-        )
+        try:
+            binding = _sec_xbrl_require_binding(
+                db,
+                source_receipt_kind="operator_review_decision",
+                source_receipt_id=payload.sec_xbrl_operator_review_decision_id,
+                source_receipt_basis_hash=payload.decision_basis_hash,
+                route_family=route_family,
+                policy_decision=policy_decision,
+            )
+        except layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError as phase1_err:
+            # Phase-2 fallback for auditor role only.
+            # Decision-status needs this explicit workflow-scope fallback because attach
+            # mints workflow-scope bindings and the decision is 1:1 with its workflow;
+            # admission/workflow-status are natively workflow-scoped and do not need it.
+            if policy_decision.get("role") != layer3_sec_xbrl_in_app_auth_policy.AUDITOR_ROLE:
+                raise
+            try:
+                linkage = layer3_sec_xbrl_operator_review_workflow.resolve_operator_review_decision_workflow_linkage(
+                    db,
+                    sec_xbrl_operator_review_decision_id=payload.sec_xbrl_operator_review_decision_id,
+                    decision_basis_hash=payload.decision_basis_hash,
+                )
+                if linkage is None:
+                    raise phase1_err
+                workflow_id, workflow_basis_hash = linkage
+                policy_decision2 = _sec_xbrl_policy_decision(
+                    request,
+                    payload,
+                    route_family="sec_xbrl_operator_review_workflow_status_read",
+                    requested_role=layer3_sec_xbrl_in_app_auth_policy.AUDITOR_ROLE,
+                )
+                binding = _sec_xbrl_require_binding(
+                    db,
+                    source_receipt_kind="operator_review_workflow",
+                    source_receipt_id=workflow_id,
+                    source_receipt_basis_hash=workflow_basis_hash,
+                    route_family="sec_xbrl_operator_review_workflow_status_read",
+                    policy_decision=policy_decision2,
+                )
+            except layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError:
+                raise phase1_err
+            except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError:
+                raise phase1_err
+            except Exception:
+                raise phase1_err
         response = layer3_sec_xbrl_operator_review_workflow.inspect_redacted_operator_review_decision_status(
             db,
-            **payload.model_dump(exclude={"status_mode", "operator_decision"}, exclude_none=True),
+            **payload.model_dump(exclude={"status_mode", "operator_decision", "operator_role"}, exclude_none=True),
         )
         return {**response, **_sec_xbrl_auth_binding_projection(binding)}
     except (

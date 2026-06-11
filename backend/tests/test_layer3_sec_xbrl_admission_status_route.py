@@ -1324,3 +1324,749 @@ def test_admission_status_claimed_role_without_binding_denied(client, monkeypatc
     assert "auth_binding" in error_code, (
         f"Expected auth_binding error for escalation attempt, got: {error_code}"
     )
+
+
+# ---------------------------------------------------------------------------
+# T7: auditor read access to decision/status — two-phase binding fallback
+# ---------------------------------------------------------------------------
+
+DECISION_STATUS_ROUTE = (
+    "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/status"
+)
+DECISION_SUBMIT_ROUTE = (
+    "/api/v1/layer3/sec-xbrl/operator-review/workflow/decision/submit"
+)
+
+
+def _seed_decision(SessionLocal, *, workflow_id: str, workflow_basis_hash: str, stable_hash, suffix: str) -> dict:
+    """Seed a decision row linked to the given workflow and return response-like dict."""
+    from app.models.models import (
+        L3SecXbrlOperatorReviewDecision,
+        L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_MODE,
+        L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REDACTION_POLICY,
+        L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_STATUS_RECORDED,
+    )
+    from app.services import layer3_sec_xbrl_operator_review_workflow as wf_svc
+
+    decision_basis = stable_hash({"test": f"decision-basis-{suffix}"})
+    seed_db = SessionLocal()
+    try:
+        decision = L3SecXbrlOperatorReviewDecision(
+            sec_xbrl_operator_review_workflow_id=workflow_id,
+            client_request_id=f"{suffix}-decision",
+            decision_basis_hash=decision_basis,
+            decision_schema_id=wf_svc.DECISION_SCHEMA_ID,
+            workflow_basis_hash=workflow_basis_hash,
+            statement_packet_basis_hash=stable_hash({"test": f"spb-{suffix}"}),
+            source_projection_basis_hash=stable_hash({"test": f"proj-{suffix}"}),
+            decision_mode=L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_MODE,
+            review_decision="approved",
+            decision_status=L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_STATUS_RECORDED,
+            redaction_policy=L3_SEC_XBRL_OPERATOR_REVIEW_DECISION_REDACTION_POLICY,
+            decision_reason_code="ready_for_next_freeze",
+            decision_notes_present=False,
+            decision_summary_json={},
+            authority_refs_json={},
+            permitted_controls_after_decision_json=[],
+            blocked_controls_after_decision_json=[],
+        )
+        seed_db.add(decision)
+        seed_db.commit()
+        seed_db.refresh(decision)
+        return {
+            "sec_xbrl_operator_review_decision_id": decision.sec_xbrl_operator_review_decision_id,
+            "decision_basis_hash": decision.decision_basis_hash,
+            "sec_xbrl_operator_review_workflow_id": decision.sec_xbrl_operator_review_workflow_id,
+            "workflow_basis_hash": decision.workflow_basis_hash,
+        }
+    finally:
+        seed_db.close()
+
+
+def _decision_status_payload(decision: dict, *, client_request_id: str = "decision-status-req", **overrides) -> dict:
+    payload = {
+        "client_request_id": client_request_id,
+        "status_mode": "sec_xbrl_operator_review_decision_status_v1",
+        "operator_decision": "inspect_sec_xbrl_operator_review_decision_status",
+        "sec_xbrl_operator_review_decision_id": decision["sec_xbrl_operator_review_decision_id"],
+        "decision_basis_hash": decision["decision_basis_hash"],
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_auditor_decision_status_e2e_happy_path(
+    proxy_client_with_session, monkeypatch
+) -> None:
+    """T7a — e2e happy path: auditor with a workflow-scope attach binding can read
+    decision/status for the linked decision via the two-phase fallback.
+
+    Cross-principal read: OWNER seeds the workflow + decision + owner binding;
+    AUDITOR attaches then POSTs decision/status with operator_role='auditor' → 200,
+    auth_binding_role == 'auditor'.
+    """
+    from app.services.layer3_utils import stable_hash
+    from app.services import layer3_sec_xbrl_auth_binding as auth_binding_svc
+
+    test_client, SessionLocal, storage_dir = proxy_client_with_session
+    monkeypatch.delenv("SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED", raising=False)
+
+    _AUDITOR_IDENTITY = "auditor-decision-t7a@example.com"
+    _AUDITOR_GROUPS = "sec-xbrl-auditors-decision-t7a"
+    _AUDITOR_HEADERS = {
+        "x-forwarded-user": _AUDITOR_IDENTITY,
+        "x-forwarded-groups": _AUDITOR_GROUPS,
+    }
+    _WORKSPACE_REF_HASH = stable_hash({"auth_owner": "proxy", "workspace_ref": _AUDITOR_GROUPS})
+    _ACTOR_REF_HASH = stable_hash({"auth_owner": "proxy", "actor_ref": _AUDITOR_IDENTITY})
+
+    _WF_ID = "wf-decision-t7a-e2e"
+    _SIDECAR_HASH = "f" * 64
+
+    # Seed workflow
+    wf_basis = _seed_workflow(
+        SessionLocal,
+        workflow_id=_WF_ID,
+        stable_hash=stable_hash,
+        sidecar_hash=_SIDECAR_HASH,
+        suffix="t7a-e2e",
+    )
+
+    # Seed decision directly (owner path — no HTTP needed)
+    decision = _seed_decision(
+        SessionLocal,
+        workflow_id=_WF_ID,
+        workflow_basis_hash=wf_basis,
+        stable_hash=stable_hash,
+        suffix="t7a-e2e",
+    )
+
+    # Record ownership marker for the auditor's workspace
+    auth_binding_svc.record_sec_xbrl_evidence_ownership_marker(
+        str(storage_dir),
+        owner_ref_hash=_ACTOR_REF_HASH,
+        workspace_ref_hash=_WORKSPACE_REF_HASH,
+        sidecar_receipt_hash=_SIDECAR_HASH,
+    )
+
+    # Auditor attaches (mints workflow-scope binding)
+    attach_resp = test_client.post(
+        AUDITOR_ATTACH_ROUTE,
+        json={
+            "client_request_id": "t7a-auditor-attach",
+            "auditor_attach_mode": "sec_xbrl_operator_review_workflow_auditor_attach_v1",
+            "operator_decision": "attach_sec_xbrl_operator_review_auditor_read",
+            "operator_role": "auditor",
+            "sec_xbrl_operator_review_workflow_id": _WF_ID,
+            "workflow_basis_hash": wf_basis,
+        },
+        headers=_AUDITOR_HEADERS,
+    )
+    assert attach_resp.status_code == 200, (
+        f"attach failed: {attach_resp.status_code}: {attach_resp.text}"
+    )
+    assert attach_resp.json().get("auth_binding_role") == "auditor"
+
+    # Auditor reads decision/status — two-phase fallback resolves workflow-scope binding.
+    # Patch the service function so the strict JSON validators inside _decision_status_response
+    # are bypassed; the test focus is the auth binding path, not decision content validation.
+    _stub_decision_status = {
+        "schema_id": "layer3.sec_xbrl_operator_review_decision_status.v1",
+        "schema_version": 1,
+        "request_id": "t7a-decision-status",
+        "server_time": "2026-01-01T00:00:00Z",
+        "status": "decision_recorded",
+        "mode": "sec_xbrl_operator_review_decision_status_v1",
+        "operator_decision": "inspect_sec_xbrl_operator_review_decision_status",
+        "decision_schema_id": "layer3.sec_xbrl_operator_review_decision.v1",
+        "sec_xbrl_operator_review_decision_id": decision["sec_xbrl_operator_review_decision_id"],
+        "sec_xbrl_operator_review_workflow_id": decision["sec_xbrl_operator_review_workflow_id"],
+        "decision_basis_hash": decision["decision_basis_hash"],
+        "workflow_basis_hash": decision["workflow_basis_hash"],
+        "statement_packet_basis_hash": "0" * 64,
+        "source_projection_basis_hash": "0" * 64,
+        "decision_mode": "sec_xbrl_operator_review_decision_v1",
+        "review_decision": "approved",
+        "decision_status": "decision_recorded",
+        "redaction_policy": "sec_xbrl_operator_review_decision_redact_v1",
+        "decision_reason_code": "ready_for_next_freeze",
+        "decision_notes_present": False,
+        "decision_notes_hash": None,
+        "decision_summary": {},
+        "authority_refs": {},
+        "permitted_controls_after_decision": [],
+        "blocked_controls_after_decision": [],
+        "status_surface_mode": "read_only_redacted_operator_review_decision_status",
+        "read_only_status_surface": True,
+        "durable_decision_authority_used": True,
+        "decision_status_api_route_enabled": True,
+        "decision_submit_api_route_enabled": False,
+        "workflow_open_api_route_enabled": True,
+        "runtime_default_enabled": False,
+        "value_reveal_performed": False,
+        "source_acquisition_performed": False,
+        "arelle_invoked": False,
+        "delivery_export_enabled": False,
+        "rendered_ui_enabled": False,
+        "operator_review_decision_recorded": True,
+        "workflow_mutated": False,
+        "statement_packet_mutated": False,
+        "projection_mutated": False,
+        "negative_invariants": {"raw_values_exposed": False},
+        "next_allowed_actions": [],
+    }
+    with patch(
+        "app.services.layer3_sec_xbrl_operator_review_workflow.inspect_redacted_operator_review_decision_status",
+        return_value=_stub_decision_status,
+    ):
+        resp = test_client.post(
+            DECISION_STATUS_ROUTE,
+            json=_decision_status_payload(
+                decision,
+                client_request_id="t7a-decision-status",
+                operator_role="auditor",
+            ),
+            headers=_AUDITOR_HEADERS,
+        )
+    assert resp.status_code == 200, (
+        f"decision/status with auditor expected 200, got {resp.status_code}: {resp.text}"
+    )
+    body = resp.json()
+    assert body.get("auth_binding_role") == "auditor", (
+        f"Expected auth_binding_role='auditor', got: {body.get('auth_binding_role')!r}; body={body}"
+    )
+    assert body.get("auth_binding_route_family") == "sec_xbrl_operator_review_workflow_status_read", (
+        f"Expected workflow_status_read route family in projection, got: {body.get('auth_binding_route_family')!r}"
+    )
+    assert "auth_binding_ref" in body, f"auth_binding_ref missing: {body}"
+
+
+def test_auditor_decision_status_cross_workspace_denied(
+    proxy_client_with_session, monkeypatch
+) -> None:
+    """T7b — cross-workspace auditor (different groups header) → fail-closed, no leak
+    of workflow id or hash in the response body.
+    """
+    from app.services.layer3_utils import stable_hash
+    from app.services import layer3_sec_xbrl_auth_binding as auth_binding_svc
+
+    test_client, SessionLocal, storage_dir = proxy_client_with_session
+
+    # Seed workflow owned by workspace A
+    _WF_ID = "wf-decision-t7b-xws"
+    _SIDECAR_HASH = "a1" * 32
+    _WS_A_GROUPS = "workspace-a-owners-t7b"
+    _WS_A_ACTOR = "owner-a-t7b@example.com"
+    _WS_A_REF = stable_hash({"auth_owner": "proxy", "workspace_ref": _WS_A_GROUPS})
+    _WS_A_ACTOR_REF = stable_hash({"auth_owner": "proxy", "actor_ref": _WS_A_ACTOR})
+
+    wf_basis = _seed_workflow(
+        SessionLocal,
+        workflow_id=_WF_ID,
+        stable_hash=stable_hash,
+        sidecar_hash=_SIDECAR_HASH,
+        suffix="t7b-xws",
+    )
+    decision = _seed_decision(
+        SessionLocal,
+        workflow_id=_WF_ID,
+        workflow_basis_hash=wf_basis,
+        stable_hash=stable_hash,
+        suffix="t7b-xws",
+    )
+    # Ownership marker only for workspace A
+    auth_binding_svc.record_sec_xbrl_evidence_ownership_marker(
+        str(storage_dir),
+        owner_ref_hash=_WS_A_ACTOR_REF,
+        workspace_ref_hash=_WS_A_REF,
+        sidecar_receipt_hash=_SIDECAR_HASH,
+    )
+
+    # Auditor B is in a different workspace — no ownership marker, no attach binding
+    _AUDITOR_B_IDENTITY = "auditor-b-t7b@example.com"
+    _AUDITOR_B_GROUPS = "workspace-b-auditors-t7b"
+    _AUDITOR_B_HEADERS = {
+        "x-forwarded-user": _AUDITOR_B_IDENTITY,
+        "x-forwarded-groups": _AUDITOR_B_GROUPS,
+    }
+
+    resp = test_client.post(
+        DECISION_STATUS_ROUTE,
+        json=_decision_status_payload(
+            decision,
+            client_request_id="t7b-cross-ws",
+            operator_role="auditor",
+        ),
+        headers=_AUDITOR_B_HEADERS,
+    )
+    assert resp.status_code in (400, 403, 404, 409), (
+        f"Expected auth-binding error, got {resp.status_code}: {resp.text}"
+    )
+    body = resp.json()
+    assert body.get("schema_id") == "layer3.workbench_error.v1", body
+    # No workflow id or hash must appear in the error body
+    body_text = str(body)
+    assert _WF_ID not in body_text, f"Workflow id leaked in error body: {body_text}"
+    assert wf_basis not in body_text, f"Workflow basis hash leaked in error body: {body_text}"
+    assert decision["sec_xbrl_operator_review_workflow_id"] not in body_text
+
+
+def test_auditor_decision_status_contradiction_cross_workflow(
+    proxy_client_with_session, monkeypatch
+) -> None:
+    """T7c — contradiction: decision_id from workflow A + decision_basis_hash from
+    workflow B's decision → one_or_none returns None → error byte-identical to plain
+    binding-missing body (phase-1 error re-raised).
+    """
+    from app.services.layer3_utils import stable_hash
+    from app.services import layer3_sec_xbrl_auth_binding as auth_binding_svc
+
+    test_client, SessionLocal, storage_dir = proxy_client_with_session
+
+    _AUDITOR_IDENTITY = "auditor-t7c@example.com"
+    _AUDITOR_GROUPS = "sec-xbrl-auditors-t7c"
+    _AUDITOR_HEADERS = {
+        "x-forwarded-user": _AUDITOR_IDENTITY,
+        "x-forwarded-groups": _AUDITOR_GROUPS,
+    }
+    _WORKSPACE_REF_HASH = stable_hash({"auth_owner": "proxy", "workspace_ref": _AUDITOR_GROUPS})
+    _ACTOR_REF_HASH = stable_hash({"auth_owner": "proxy", "actor_ref": _AUDITOR_IDENTITY})
+
+    # Seed two distinct workflows + decisions
+    _WF_A_ID = "wf-decision-t7c-a"
+    _WF_B_ID = "wf-decision-t7c-b"
+    _SIDECAR_A = "b2" * 32
+    _SIDECAR_B = "c3" * 32
+
+    wf_a_basis = _seed_workflow(
+        SessionLocal, workflow_id=_WF_A_ID, stable_hash=stable_hash,
+        sidecar_hash=_SIDECAR_A, suffix="t7c-a",
+    )
+    wf_b_basis = _seed_workflow(
+        SessionLocal, workflow_id=_WF_B_ID, stable_hash=stable_hash,
+        sidecar_hash=_SIDECAR_B, suffix="t7c-b",
+    )
+    decision_a = _seed_decision(
+        SessionLocal, workflow_id=_WF_A_ID, workflow_basis_hash=wf_a_basis,
+        stable_hash=stable_hash, suffix="t7c-a",
+    )
+    decision_b = _seed_decision(
+        SessionLocal, workflow_id=_WF_B_ID, workflow_basis_hash=wf_b_basis,
+        stable_hash=stable_hash, suffix="t7c-b",
+    )
+
+    # Auditor attaches to both workflows
+    for sidecar, wf_id, wf_basis, attach_id in (
+        (_SIDECAR_A, _WF_A_ID, wf_a_basis, "t7c-attach-a"),
+        (_SIDECAR_B, _WF_B_ID, wf_b_basis, "t7c-attach-b"),
+    ):
+        auth_binding_svc.record_sec_xbrl_evidence_ownership_marker(
+            str(storage_dir),
+            owner_ref_hash=_ACTOR_REF_HASH,
+            workspace_ref_hash=_WORKSPACE_REF_HASH,
+            sidecar_receipt_hash=sidecar,
+        )
+        attach_resp = test_client.post(
+            AUDITOR_ATTACH_ROUTE,
+            json={
+                "client_request_id": attach_id,
+                "auditor_attach_mode": "sec_xbrl_operator_review_workflow_auditor_attach_v1",
+                "operator_decision": "attach_sec_xbrl_operator_review_auditor_read",
+                "operator_role": "auditor",
+                "sec_xbrl_operator_review_workflow_id": wf_id,
+                "workflow_basis_hash": wf_basis,
+            },
+            headers=_AUDITOR_HEADERS,
+        )
+        assert attach_resp.status_code == 200, (
+            f"attach {attach_id} failed: {attach_resp.status_code}: {attach_resp.text}"
+        )
+
+    # Contradiction: decision_id from A + decision_basis_hash from B
+    # one_or_none returns None → phase-1 error re-raised
+    resp = test_client.post(
+        DECISION_STATUS_ROUTE,
+        json={
+            "client_request_id": "t7c-contradiction",
+            "status_mode": "sec_xbrl_operator_review_decision_status_v1",
+            "operator_decision": "inspect_sec_xbrl_operator_review_decision_status",
+            "sec_xbrl_operator_review_decision_id": decision_a["sec_xbrl_operator_review_decision_id"],
+            "decision_basis_hash": decision_b["decision_basis_hash"],
+            "operator_role": "auditor",
+        },
+        headers=_AUDITOR_HEADERS,
+    )
+    assert resp.status_code in (400, 403, 404, 409), (
+        f"Expected error for contradiction, got {resp.status_code}: {resp.text}"
+    )
+    body = resp.json()
+    assert body.get("schema_id") == "layer3.workbench_error.v1", body
+    assert "auth_binding" in body.get("error_code", ""), (
+        f"Expected auth_binding error (phase-1 re-raised), got: {body.get('error_code')!r}"
+    )
+
+    # Body must be identical to the plain "no prior binding" error: fetch that
+    resp_plain = test_client.post(
+        DECISION_STATUS_ROUTE,
+        json={
+            "client_request_id": "t7c-plain-missing",
+            "status_mode": "sec_xbrl_operator_review_decision_status_v1",
+            "operator_decision": "inspect_sec_xbrl_operator_review_decision_status",
+            "sec_xbrl_operator_review_decision_id": decision_a["sec_xbrl_operator_review_decision_id"],
+            "decision_basis_hash": decision_a["decision_basis_hash"],
+            "operator_role": "auditor",
+        },
+        headers={
+            "x-forwarded-user": "no-binding-user@example.com",
+            "x-forwarded-groups": "no-binding-group-t7c",
+        },
+    )
+    assert resp_plain.status_code in (400, 403, 404, 409), resp_plain.text
+    assert "auth_binding" in resp_plain.json().get("error_code", "")
+
+    # Full response-body equality after removing per-request volatile keys.
+    _VOLATILE = {"request_id", "server_time"}
+    body_contradiction = resp.json()
+    body_plain_missing = resp_plain.json()
+    d_contradiction = {k: v for k, v in body_contradiction.items() if k not in _VOLATILE}
+    d_plain_missing = {k: v for k, v in body_plain_missing.items() if k not in _VOLATILE}
+    assert d_contradiction == d_plain_missing, (
+        f"Contradiction body != plain-missing body (after removing {_VOLATILE}):\n"
+        f"  contradiction: {d_contradiction}\n"
+        f"  plain-missing: {d_plain_missing}"
+    )
+
+
+def test_auditor_decision_status_error_body_equivalence(
+    proxy_client_with_session, monkeypatch
+) -> None:
+    """T7d — error body equivalence: 'decision exists, auditor lacks attach binding'
+    vs 'decision absent entirely' → identical error JSON, proving no existence oracle.
+    """
+    from app.services.layer3_utils import stable_hash
+
+    test_client, SessionLocal, storage_dir = proxy_client_with_session
+
+    _AUDITOR_HEADERS = {
+        "x-forwarded-user": "auditor-t7d@example.com",
+        "x-forwarded-groups": "sec-xbrl-auditors-t7d",
+    }
+
+    stable_hash_val = stable_hash({"test": "t7d"})
+    _WF_ID = "wf-decision-t7d"
+    wf_basis = _seed_workflow(
+        SessionLocal,
+        workflow_id=_WF_ID,
+        stable_hash=stable_hash,
+        sidecar_hash="d4" * 32,
+        suffix="t7d",
+    )
+    # Seed a real decision (exists) but no auditor attach binding
+    decision = _seed_decision(
+        SessionLocal,
+        workflow_id=_WF_ID,
+        workflow_basis_hash=wf_basis,
+        stable_hash=stable_hash,
+        suffix="t7d",
+    )
+
+    # Case 1: decision exists, auditor lacks binding
+    resp_exists = test_client.post(
+        DECISION_STATUS_ROUTE,
+        json=_decision_status_payload(
+            decision,
+            client_request_id="t7d-exists-no-binding",
+            operator_role="auditor",
+        ),
+        headers=_AUDITOR_HEADERS,
+    )
+    assert resp_exists.status_code in (400, 403, 404, 409), resp_exists.text
+
+    # Case 2: decision absent entirely (fabricated ids)
+    absent_hash = stable_hash({"test": "t7d-absent-decision"})
+    resp_absent = test_client.post(
+        DECISION_STATUS_ROUTE,
+        json={
+            "client_request_id": "t7d-absent",
+            "status_mode": "sec_xbrl_operator_review_decision_status_v1",
+            "operator_decision": "inspect_sec_xbrl_operator_review_decision_status",
+            "sec_xbrl_operator_review_decision_id": "nonexistent-decision-t7d",
+            "decision_basis_hash": absent_hash,
+            "operator_role": "auditor",
+        },
+        headers=_AUDITOR_HEADERS,
+    )
+    assert resp_absent.status_code in (400, 403, 404, 409), resp_absent.text
+
+    body_exists = resp_exists.json()
+    body_absent = resp_absent.json()
+    # Both must carry an auth_binding error code — existence oracle proof
+    assert "auth_binding" in body_exists.get("error_code", ""), body_exists
+    assert "auth_binding" in body_absent.get("error_code", ""), body_absent
+
+    # Full response-body equality after removing per-request volatile keys.
+    _VOLATILE = {"request_id", "server_time"}
+    d_exists = {k: v for k, v in body_exists.items() if k not in _VOLATILE}
+    d_absent = {k: v for k, v in body_absent.items() if k not in _VOLATILE}
+    assert d_exists == d_absent, (
+        f"Error bodies differ (after removing {_VOLATILE}) — existence oracle may be leaking:\n"
+        f"  decision-exists body: {d_exists}\n"
+        f"  decision-absent body: {d_absent}"
+    )
+
+
+def test_auditor_decision_submit_still_forbidden(
+    proxy_client_with_session, monkeypatch
+) -> None:
+    """T7e — auditor decision-SUBMIT is forbidden (owner-only write family).
+    After a successful attach, decision/submit with operator_role='auditor' → 403.
+    """
+    from app.services.layer3_utils import stable_hash
+    from app.services import layer3_sec_xbrl_auth_binding as auth_binding_svc
+
+    test_client, SessionLocal, storage_dir = proxy_client_with_session
+
+    _AUDITOR_IDENTITY = "auditor-submit-t7e@example.com"
+    _AUDITOR_GROUPS = "sec-xbrl-auditors-submit-t7e"
+    _AUDITOR_HEADERS = {
+        "x-forwarded-user": _AUDITOR_IDENTITY,
+        "x-forwarded-groups": _AUDITOR_GROUPS,
+    }
+    _WORKSPACE_REF_HASH = stable_hash({"auth_owner": "proxy", "workspace_ref": _AUDITOR_GROUPS})
+    _ACTOR_REF_HASH = stable_hash({"auth_owner": "proxy", "actor_ref": _AUDITOR_IDENTITY})
+
+    _WF_ID = "wf-decision-submit-t7e"
+    _SIDECAR_HASH = "e5" * 32
+    wf_basis = _seed_workflow(
+        SessionLocal, workflow_id=_WF_ID, stable_hash=stable_hash,
+        sidecar_hash=_SIDECAR_HASH, suffix="t7e",
+    )
+    auth_binding_svc.record_sec_xbrl_evidence_ownership_marker(
+        str(storage_dir),
+        owner_ref_hash=_ACTOR_REF_HASH,
+        workspace_ref_hash=_WORKSPACE_REF_HASH,
+        sidecar_receipt_hash=_SIDECAR_HASH,
+    )
+    attach_resp = test_client.post(
+        AUDITOR_ATTACH_ROUTE,
+        json={
+            "client_request_id": "t7e-attach",
+            "auditor_attach_mode": "sec_xbrl_operator_review_workflow_auditor_attach_v1",
+            "operator_decision": "attach_sec_xbrl_operator_review_auditor_read",
+            "operator_role": "auditor",
+            "sec_xbrl_operator_review_workflow_id": _WF_ID,
+            "workflow_basis_hash": wf_basis,
+        },
+        headers=_AUDITOR_HEADERS,
+    )
+    assert attach_resp.status_code == 200, attach_resp.text
+
+    # Attempt decision-submit as auditor — must be rejected at policy layer (owner-only)
+    submit_resp = test_client.post(
+        DECISION_SUBMIT_ROUTE,
+        json={
+            "client_request_id": "t7e-submit-attempt",
+            "submit_mode": "sec_xbrl_operator_review_decision_submit_v1",
+            "operator_decision": "submit_sec_xbrl_operator_review_decision",
+            "sec_xbrl_operator_review_workflow_id": _WF_ID,
+            "workflow_basis_hash": wf_basis,
+            "review_decision": "approved",
+            "decision_reason_code": "ready_for_next_freeze",
+            "operator_role": "auditor",
+        },
+        headers=_AUDITOR_HEADERS,
+    )
+    assert submit_resp.status_code in (400, 403, 404, 409), (
+        f"Auditor decision-submit must be forbidden, got {submit_resp.status_code}: {submit_resp.text}"
+    )
+    body = submit_resp.json()
+    assert body.get("schema_id") == "layer3.workbench_error.v1", body
+
+
+def test_auditor_decision_status_none_mode_owner_path_unchanged(
+    client_with_session, monkeypatch
+) -> None:
+    """T7f — none-mode: existing owner path is byte-unchanged; operator_role field
+    is accepted without a 422.
+
+    (a) With no operator_role: owner binding → 200, auth_binding_role='owner'.
+    (b) With operator_role='auditor': the new field is accepted (no 422); under
+        none-mode there is no auditor binding, so the response is a 404 auth error —
+        not a validation error.  This proves the DTO change is non-breaking and the
+        field is forwarded rather than rejected as an unknown key.
+    """
+    from app.services import layer3_sec_xbrl_in_app_auth_policy as auth_policy_svc
+    from app.services import layer3_sec_xbrl_auth_binding as auth_binding_svc
+    from app.services.layer3_utils import stable_hash
+
+    test_client, SessionLocal = client_with_session
+
+    _ACTOR_HASH = stable_hash({"sec_xbrl_decision_status_none_mode_t7f": "actor"})
+    _WS_HASH = stable_hash({"sec_xbrl_decision_status_none_mode_t7f": "workspace"})
+
+    def _fake_authorize(*, headers, route_family, requested_role, request_fields=None):
+        ph = stable_hash({"route": route_family, "role": requested_role})
+        return {
+            "decision": "allow",
+            "policy_status": "admitted",
+            "auth_owner_mode": "AUTH_OWNER_none_single_operator_dev_profile",
+            "route_family": route_family,
+            "role": requested_role,
+            "actor_ref_hash": _ACTOR_HASH,
+            "workspace_ref_hash": _WS_HASH,
+            "policy_hash": ph,
+            "compatible_policy_hashes": {ph},
+            "requires_owner_binding": True,
+            "mutating_route": False,
+            "may_expose_revealed_values": False,
+            "raw_operator_identity_exposed": False,
+            "raw_proxy_header_exposed": False,
+        }
+
+    monkeypatch.setattr(auth_policy_svc, "authorize_sec_xbrl_route", _fake_authorize)
+
+    # Seed workflow + decision
+    _WF_ID = "wf-none-mode-t7f"
+    _SIDECAR_HASH = "f7" * 32
+    wf_basis = _seed_workflow(
+        SessionLocal,
+        workflow_id=_WF_ID,
+        stable_hash=stable_hash,
+        sidecar_hash=_SIDECAR_HASH,
+        suffix="t7f",
+    )
+    decision = _seed_decision(
+        SessionLocal,
+        workflow_id=_WF_ID,
+        workflow_basis_hash=wf_basis,
+        stable_hash=stable_hash,
+        suffix="t7f",
+    )
+    decision_id = decision["sec_xbrl_operator_review_decision_id"]
+    decision_basis = decision["decision_basis_hash"]
+
+    # Record an owner binding directly against the in-memory DB
+    db_gen = app.dependency_overrides[get_db]()
+    db = next(db_gen)
+    try:
+        owner_ph = stable_hash({"route": "sec_xbrl_operator_review_decision_status_read", "role": "owner"})
+        owner_policy = {
+            "decision": "allow",
+            "policy_status": "admitted",
+            "auth_owner_mode": "AUTH_OWNER_none_single_operator_dev_profile",
+            "route_family": "sec_xbrl_operator_review_decision_status_read",
+            "role": "owner",
+            "actor_ref_hash": _ACTOR_HASH,
+            "workspace_ref_hash": _WS_HASH,
+            "policy_hash": owner_ph,
+            "compatible_policy_hashes": {owner_ph},
+            "requires_owner_binding": True,
+            "mutating_route": False,
+            "may_expose_revealed_values": False,
+            "raw_operator_identity_exposed": False,
+            "raw_proxy_header_exposed": False,
+        }
+        auth_binding_svc.record_sec_xbrl_auth_binding(
+            db,
+            client_request_id=auth_policy_svc.binding_client_request_id(
+                client_request_id="t7f-owner-bind",
+                route_family="sec_xbrl_operator_review_decision_status_read",
+            ),
+            source_receipt_kind="operator_review_decision",
+            source_receipt_id=decision_id,
+            source_receipt_basis_hash=decision_basis,
+            route_family="sec_xbrl_operator_review_decision_status_read",
+            policy_decision=owner_policy,
+        )
+    finally:
+        try:
+            next(db_gen)
+        except StopIteration:
+            pass
+
+    _stub_t7f = {
+        "schema_id": "layer3.sec_xbrl_operator_review_decision_status.v1",
+        "schema_version": 1,
+        "request_id": "t7f-owner-read",
+        "server_time": "2026-01-01T00:00:00Z",
+        "status": "decision_recorded",
+        "mode": "sec_xbrl_operator_review_decision_status_v1",
+        "operator_decision": "inspect_sec_xbrl_operator_review_decision_status",
+        "decision_schema_id": "layer3.sec_xbrl_operator_review_decision.v1",
+        "sec_xbrl_operator_review_decision_id": decision_id,
+        "sec_xbrl_operator_review_workflow_id": _WF_ID,
+        "decision_basis_hash": decision_basis,
+        "workflow_basis_hash": wf_basis,
+        "statement_packet_basis_hash": "0" * 64,
+        "source_projection_basis_hash": "0" * 64,
+        "decision_mode": "sec_xbrl_operator_review_decision_v1",
+        "review_decision": "approved",
+        "decision_status": "decision_recorded",
+        "redaction_policy": "sec_xbrl_operator_review_decision_redact_v1",
+        "decision_reason_code": "ready_for_next_freeze",
+        "decision_notes_present": False,
+        "decision_notes_hash": None,
+        "decision_summary": {},
+        "authority_refs": {},
+        "permitted_controls_after_decision": [],
+        "blocked_controls_after_decision": [],
+        "status_surface_mode": "read_only_redacted_operator_review_decision_status",
+        "read_only_status_surface": True,
+        "durable_decision_authority_used": True,
+        "decision_status_api_route_enabled": True,
+        "decision_submit_api_route_enabled": False,
+        "workflow_open_api_route_enabled": True,
+        "runtime_default_enabled": False,
+        "value_reveal_performed": False,
+        "source_acquisition_performed": False,
+        "arelle_invoked": False,
+        "delivery_export_enabled": False,
+        "rendered_ui_enabled": False,
+        "operator_review_decision_recorded": True,
+        "workflow_mutated": False,
+        "statement_packet_mutated": False,
+        "projection_mutated": False,
+        "negative_invariants": {"raw_values_exposed": False},
+        "next_allowed_actions": [],
+    }
+
+    # (a) Owner path (no operator_role) → 200, owner binding satisfied
+    with patch(
+        "app.services.layer3_sec_xbrl_operator_review_workflow.inspect_redacted_operator_review_decision_status",
+        return_value=_stub_t7f,
+    ):
+        resp_owner = test_client.post(
+            DECISION_STATUS_ROUTE,
+            json={
+                "client_request_id": "t7f-owner-read",
+                "status_mode": "sec_xbrl_operator_review_decision_status_v1",
+                "operator_decision": "inspect_sec_xbrl_operator_review_decision_status",
+                "sec_xbrl_operator_review_decision_id": decision_id,
+                "decision_basis_hash": decision_basis,
+            },
+        )
+    assert resp_owner.status_code == 200, (
+        f"Owner path expected 200, got {resp_owner.status_code}: {resp_owner.text}"
+    )
+    assert resp_owner.json().get("auth_binding_role") == "owner"
+
+    # (b) operator_role='auditor' accepted as valid field (no 422).
+    # Under none-mode there is no auditor binding, so the result is an auth error
+    # (not a validation error) — proving the field is accepted but access fails closed.
+    resp_auditor_field = test_client.post(
+        DECISION_STATUS_ROUTE,
+        json={
+            "client_request_id": "t7f-auditor-field-accepted",
+            "status_mode": "sec_xbrl_operator_review_decision_status_v1",
+            "operator_decision": "inspect_sec_xbrl_operator_review_decision_status",
+            "sec_xbrl_operator_review_decision_id": decision_id,
+            "decision_basis_hash": decision_basis,
+            "operator_role": "auditor",
+        },
+    )
+    assert resp_auditor_field.status_code != 422, (
+        f"operator_role='auditor' must not cause a 422 (field rejected); "
+        f"got {resp_auditor_field.status_code}: {resp_auditor_field.text}"
+    )
+    body_auditor = resp_auditor_field.json()
+    assert body_auditor.get("schema_id") != "validation_error", body_auditor
