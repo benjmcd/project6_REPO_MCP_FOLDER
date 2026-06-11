@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_logger = logging.getLogger(__name__)
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_ENV_FILE = BACKEND_ROOT / ".env"
@@ -205,11 +208,48 @@ class Settings(BaseSettings):
             raise ValueError(f"LAYER3_ROUTE_AUTHORIZATION_MODE must be one of: {allowed}")
         return normalized
 
+    def _armed_value_reveal_flags(self) -> list[str]:
+        """Return names of value-reveal conjunction flags that are currently true.
+
+        Used for warning emission in any deployment mode.  Includes all five flags
+        from the value-reveal conjunction documented in .env.example.
+        """
+        checks = [
+            ("LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED", self.layer3_sec_edgar_arelle_internal_value_store_enabled),
+            ("LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED", self.layer3_sec_edgar_arelle_corpus_validation_enabled),
+            ("LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED", self.layer3_sec_edgar_arelle_fact_authority_nonlocal_authorized),
+            ("LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED", self.layer3_sec_edgar_arelle_value_reveal_enabled),
+            ("LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED", self.layer3_sec_xbrl_controlled_value_reveal_submit_enabled),
+        ]
+        return [name for name, armed in checks if armed]
+
+    def _armed_value_reveal_flags_nonlocal_forbidden(self) -> list[str]:
+        """Return names of value-reveal flags that must be false in nonlocal posture.
+
+        LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED is intentionally
+        excluded: it is a required authorization gate in nonlocal deployments and is
+        already validated separately by _validate_deployment_profile.
+        """
+        checks = [
+            ("LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED", self.layer3_sec_edgar_arelle_internal_value_store_enabled),
+            ("LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED", self.layer3_sec_edgar_arelle_corpus_validation_enabled),
+            ("LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED", self.layer3_sec_edgar_arelle_value_reveal_enabled),
+            ("LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED", self.layer3_sec_xbrl_controlled_value_reveal_submit_enabled),
+        ]
+        return [name for name, armed in checks if armed]
+
     def model_post_init(self, __context: object) -> None:
         if self.database_url.startswith("sqlite"):
             self.database_url = _normalize_sqlite_url(self.database_url)
         self.storage_dir = _normalize_storage_path(self.storage_dir)
         self._validate_deployment_profile()
+        armed = self._armed_value_reveal_flags()
+        if armed:
+            _logger.warning(
+                "Value-reveal conjunction flag(s) armed: %s. "
+                "Ensure this is intentional; these flags must stay false in nonlocal/production posture.",
+                armed,
+            )
 
     @property
     def allowed_origin_list(self) -> list[str]:
@@ -264,6 +304,12 @@ class Settings(BaseSettings):
             raise ValueError(
                 "PROXY_ROLES_HEADER is required when DEPLOYMENT_MODE=nonlocal and "
                 "LAYER3_ROUTE_AUTHORIZATION_MODE=role_enforcing"
+            )
+        armed = self._armed_value_reveal_flags_nonlocal_forbidden()
+        if armed:
+            raise ValueError(
+                "Value-reveal conjunction flag(s) must be false when DEPLOYMENT_MODE=nonlocal: "
+                + ", ".join(armed)
             )
 
     @property
