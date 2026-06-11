@@ -3401,8 +3401,16 @@ async function recoverSessionFromStorage() {
         addEvent(`Session ${summary.session_id} restored from server state.`);
         return true;
     } catch (error) {
-        clearSessionRecoveryAnchor();
-        addEvent(`Stored session recovery anchor cleared: ${error.message}`);
+        // Do NOT clear the anchor here.  The anchor was already validated by
+        // loadSessionRecoveryAnchor (schema, contract signature).  A fetch
+        // failure (network error, transient server error, or a concurrent
+        // init() reading an anchor that was just written by the test harness
+        // while a previous recovery fetch was still in-flight) should not
+        // destroy a structurally-valid anchor — the next page load will retry.
+        // Clearing here was the root cause of the reload-recovery race:
+        // init() on the first page.goto could read a freshly-written anchor,
+        // fail the fetch, and clear the anchor before page.reload() fired.
+        addEvent(`Session recovery fetch failed (anchor preserved): ${error.message}`);
         return false;
     }
 }
