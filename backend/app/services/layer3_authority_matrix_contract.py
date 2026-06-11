@@ -23,6 +23,7 @@ AUTHORITY_MATRIX_ADMISSION_VOCABULARY = (
     "requires_audit_before_runtime",
     AUTHORITY_MATRIX_FAIL_CLOSED_RESULT,
     "not_applicable_to_selected_tranche",
+    "admitted_by_route_level_role_authorization_phase1",
 )
 
 AUTHORITY_MATRIX_COLUMNS = (
@@ -134,13 +135,19 @@ AUTHORITY_MATRIX_ROWS = (
     },
     {
         "row": "auth_security_posture",
-        "canonical_owner": "later_auth_security_lane",
-        "schema_or_contract_id": "not_exposed_by_selected_slice",
-        "source_authority": "auth_security_behavior_not_admitted",
-        "admission_result": AUTHORITY_MATRIX_FAIL_CLOSED_RESULT,
-        "blocked_scope": ["auth_security_behavior"],
-        "tests_required": ["prove_auth_security_behavior_remains_deferred"],
-        "next_allowed_action": "freeze_auth_security_before_auth_work",
+        "canonical_owner": "backend/app/services/layer3_sec_xbrl_in_app_auth_policy.py",
+        "schema_or_contract_id": "layer3.sec_xbrl.repo_owned_in_app_operator_auth_policy.v1",
+        "source_authority": "docs/layer3-route-authorization.md",
+        "admission_result": "admitted_by_route_level_role_authorization_phase1",
+        "blocked_scope": [],
+        "tests_required": [
+            "prove_route_level_authorization_identity_presence_mode_is_bit_identical",
+            "prove_role_enforcing_mode_owner_write_allowed",
+            "prove_role_enforcing_mode_auditor_write_forbidden",
+            "prove_role_enforcing_mode_missing_role_header_fails_closed",
+            "prove_no_raw_role_header_leak_in_error_payloads",
+        ],
+        "next_allowed_action": "annotate_call_sites_with_access_classes",
     },
 )
 

@@ -57,7 +57,7 @@ def test_authority_matrix_rows_have_required_columns_and_block_runtime_scope() -
     assert rows["route_api_posture"]["admission_result"] == AUTHORITY_MATRIX_FAIL_CLOSED_RESULT
     assert rows["response_dto_posture"]["admission_result"] == AUTHORITY_MATRIX_FAIL_CLOSED_RESULT
     assert rows["rendered_review_posture"]["admission_result"] == AUTHORITY_MATRIX_FAIL_CLOSED_RESULT
-    assert rows["auth_security_posture"]["admission_result"] == AUTHORITY_MATRIX_FAIL_CLOSED_RESULT
+    assert rows["auth_security_posture"]["admission_result"] == "admitted_by_route_level_role_authorization_phase1"
 
     blocked_side_effects = set(rows["side_effect_policy"]["blocked_scope"])
     assert {
