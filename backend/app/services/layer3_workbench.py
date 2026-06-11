@@ -3316,23 +3316,27 @@ def _source_intake_package_review_preview_hash(
     preview_hash: str,
     result_review_record_ref: str | None,
     output_metadata_summary: dict[str, Any],
+    analysis_product_admission_hash: str | None = None,
 ) -> str:
+    basis = {
+        "schema_id": "layer3.source_intake_package_review_preview_hash.v1",
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_id,
+        "preview_hash": preview_hash,
+        "result_review_record_ref": result_review_record_ref,
+        "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+        "output_hash": output_metadata_summary.get("output_hash"),
+        "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
+        "candidate_id": output_metadata_summary.get("candidate_id"),
+        "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+    }
+    if analysis_product_admission_hash is not None:
+        basis["analysis_product_admission_hash"] = analysis_product_admission_hash
     return _stable_id(
         "l3-source-intake-package-preview",
-        {
-            "schema_id": "layer3.source_intake_package_review_preview_hash.v1",
-            "session_id": session_id,
-            "analysis_plan_id": analysis_plan_id,
-            "pass_run_id": pass_run_id,
-            "preview_id": preview_id,
-            "preview_hash": preview_hash,
-            "result_review_record_ref": result_review_record_ref,
-            "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
-            "output_hash": output_metadata_summary.get("output_hash"),
-            "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
-            "candidate_id": output_metadata_summary.get("candidate_id"),
-            "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
-        },
+        basis,
     )
 
 
@@ -3426,27 +3430,31 @@ def _qualitative_aps_package_review_preview_hash(
     result_review_record_ref: str | None,
     output_payload_ref: Any,
     qualitative_basis: dict[str, Any],
+    analysis_product_admission_hash: str | None = None,
 ) -> str:
+    basis = {
+        "schema_id": "layer3.qual_aps_package_review_preview_hash.v1",
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_id,
+        "preview_hash": preview_hash,
+        "result_review_record_ref": result_review_record_ref,
+        "output_payload_ref": output_payload_ref,
+        "output_payload_hash": qualitative_basis["output_payload_hash"],
+        "content_id": qualitative_basis["content_id"],
+        "content_contract_id": qualitative_basis["content_contract_id"],
+        "chunking_contract_id": qualitative_basis["chunking_contract_id"],
+        "material_snapshot_id": qualitative_basis["material_snapshot_id"],
+        "analysis_unit_id": qualitative_basis["analysis_unit_id"],
+        "analysis_set_id": qualitative_basis["analysis_set_id"],
+        "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+    }
+    if analysis_product_admission_hash is not None:
+        basis["analysis_product_admission_hash"] = analysis_product_admission_hash
     return _stable_id(
         "l3-qual-aps-package-preview",
-        {
-            "schema_id": "layer3.qual_aps_package_review_preview_hash.v1",
-            "session_id": session_id,
-            "analysis_plan_id": analysis_plan_id,
-            "pass_run_id": pass_run_id,
-            "preview_id": preview_id,
-            "preview_hash": preview_hash,
-            "result_review_record_ref": result_review_record_ref,
-            "output_payload_ref": output_payload_ref,
-            "output_payload_hash": qualitative_basis["output_payload_hash"],
-            "content_id": qualitative_basis["content_id"],
-            "content_contract_id": qualitative_basis["content_contract_id"],
-            "chunking_contract_id": qualitative_basis["chunking_contract_id"],
-            "material_snapshot_id": qualitative_basis["material_snapshot_id"],
-            "analysis_unit_id": qualitative_basis["analysis_unit_id"],
-            "analysis_set_id": qualitative_basis["analysis_set_id"],
-            "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
-        },
+        basis,
     )
 
 
@@ -3683,6 +3691,28 @@ def _build_analysis_product_admission_preview(
         "truncated": bool(meta.get("truncated", False)),
         "products": products,
     }
+
+
+def _analysis_product_admission_hash(
+    admission: dict[str, Any],
+) -> str | None:
+    if not settings.layer3_analysis_product_package_inventory_enabled:
+        return None
+    return _stable_hash(
+        {
+            "schema_id": "layer3.analysis_product_admission_hash.v1",
+            "analysis_product_admission": _json_clone(admission),
+        }
+    )
+
+
+def _analysis_product_admission_hash_for_session(
+    db: Session,
+    session_id: str,
+) -> str | None:
+    return _analysis_product_admission_hash(
+        _build_analysis_product_admission_preview(db, session_id)
+    )
 
 
 def _analysis_product_package_payload_extras(
@@ -6702,6 +6732,7 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
     # TEXT ANCHOR: analysis_product_admission_preview_compute
     # Computed once, after session validation, OUTSIDE all hash computations.
     analysis_product_admission = _build_analysis_product_admission_preview(db, session_id)
+    analysis_product_admission_hash = _analysis_product_admission_hash(analysis_product_admission)
 
     if source_intake_preview:
         downstream_unavailable = SOURCE_INTAKE_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
@@ -6713,6 +6744,7 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             preview_hash=preview_hash,
             result_review_record_ref=str(review_state.get("review_record_ref") or "") or None,
             output_metadata_summary=output_metadata_summary,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
         return {
             **_base_response(
@@ -6817,6 +6849,7 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             result_review_record_ref=str(review_state.get("review_record_ref") or "") or None,
             output_payload_ref=output_metadata_summary.get("output_payload_ref"),
             qualitative_basis=qualitative_basis,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
         return {
             **_base_response(
@@ -6933,6 +6966,7 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
         analysis_run_id=str(status_body.get("analysis_run_id") or "") or None,
         result_review_record_ref=str(review_state.get("review_record_ref") or "") or None,
         output_metadata_summary=output_metadata_summary,
+        analysis_product_admission_hash=analysis_product_admission_hash,
     )
     return {
         **_base_response(PACKAGE_REVIEW_PREVIEW_SCHEMA_ID, request_id=request_id, status="available"),
@@ -7830,6 +7864,7 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
     )
 
     qualitative_basis: dict[str, Any] | None = None
+    analysis_product_admission_hash = _analysis_product_admission_hash_for_session(db, session_id)
     if source_intake_commit:
         expected_package_preview_hash = _source_intake_package_review_preview_hash(
             session_id=session_id,
@@ -7839,6 +7874,7 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             preview_hash=preview_hash,
             result_review_record_ref=supplied_review_ref,
             output_metadata_summary=output_metadata_summary,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
     elif qualitative_aps_commit:
         qualitative_basis = _require_qualitative_aps_package_review_authority(
@@ -7859,6 +7895,7 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             result_review_record_ref=supplied_review_ref,
             output_payload_ref=output_metadata_summary.get("output_payload_ref"),
             qualitative_basis=qualitative_basis,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
     else:
         expected_package_preview_hash = _package_review_preview_hash(
@@ -7870,6 +7907,7 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             analysis_run_id=str(status_body.get("analysis_run_id") or "") or None,
             result_review_record_ref=supplied_review_ref,
             output_metadata_summary=output_metadata_summary,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
     if supplied_package_preview_hash != expected_package_preview_hash:
         raise Layer3WorkbenchError(
@@ -8412,6 +8450,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         action_label="package-review submit",
     )
 
+    analysis_product_admission_hash = _analysis_product_admission_hash_for_session(db, session_id)
     if source_intake_submit:
         expected_package_preview_hash = _source_intake_package_review_preview_hash(
             session_id=session_id,
@@ -8421,6 +8460,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             preview_hash=preview_hash,
             result_review_record_ref=supplied_review_ref,
             output_metadata_summary=output_metadata_summary,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
     elif qualitative_aps_submit:
         expected_package_preview_hash = _qualitative_aps_package_review_preview_hash(
@@ -8432,6 +8472,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             result_review_record_ref=supplied_review_ref,
             output_payload_ref=output_metadata_summary.get("output_payload_ref"),
             qualitative_basis=qualitative_basis or {},
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
     else:
         expected_package_preview_hash = _package_review_preview_hash(
@@ -8443,6 +8484,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             analysis_run_id=str(status_body.get("analysis_run_id") or "") or None,
             result_review_record_ref=supplied_review_ref,
             output_metadata_summary=output_metadata_summary,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
     if supplied_package_preview_hash != expected_package_preview_hash:
         raise Layer3WorkbenchError(
@@ -9741,6 +9783,7 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
     )
 
     analysis_run_id = str(status_body.get("analysis_run_id") or "") or None
+    analysis_product_admission_hash = _analysis_product_admission_hash_for_session(db, session_id)
     if source_intake_prepare:
         expected_package_preview_hash = _source_intake_package_review_preview_hash(
             session_id=session_id,
@@ -9750,6 +9793,7 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             preview_hash=preview_hash,
             result_review_record_ref=supplied_review_ref,
             output_metadata_summary=output_metadata_summary,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
     elif qualitative_basis is not None:
         expected_package_preview_hash = _qualitative_aps_package_review_preview_hash(
@@ -9761,6 +9805,7 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             result_review_record_ref=supplied_review_ref,
             output_payload_ref=output_metadata_summary.get("output_payload_ref"),
             qualitative_basis=qualitative_basis,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
     else:
         expected_package_preview_hash = _package_review_preview_hash(
@@ -9772,6 +9817,7 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             analysis_run_id=analysis_run_id,
             result_review_record_ref=supplied_review_ref,
             output_metadata_summary=output_metadata_summary,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
     if supplied_package_preview_hash != expected_package_preview_hash:
         raise Layer3WorkbenchError(
@@ -12820,6 +12866,7 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
         )
 
     analysis_run_id = str(status_body.get("analysis_run_id") or "") or None
+    analysis_product_admission_hash = _analysis_product_admission_hash_for_session(db, session_id)
     if source_intake_dispatch:
         expected_package_preview_hash = _source_intake_package_review_preview_hash(
             session_id=session_id,
@@ -12829,6 +12876,7 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             preview_hash=preview_hash,
             result_review_record_ref=supplied_review_ref,
             output_metadata_summary=output_metadata_summary,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
     elif qualitative_aps_dispatch:
         expected_package_preview_hash = _qualitative_aps_package_review_preview_hash(
@@ -12840,6 +12888,7 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             result_review_record_ref=supplied_review_ref,
             output_payload_ref=output_metadata_summary.get("output_payload_ref"),
             qualitative_basis=qualitative_basis,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
     else:
         expected_package_preview_hash = _package_review_preview_hash(
@@ -12851,6 +12900,7 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             analysis_run_id=analysis_run_id,
             result_review_record_ref=supplied_review_ref,
             output_metadata_summary=output_metadata_summary,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
     if supplied_package_preview_hash != expected_package_preview_hash:
         raise Layer3WorkbenchError(
@@ -14057,6 +14107,7 @@ def external_export_download_prepare(
 
     analysis_run_id = str(status_body.get("analysis_run_id") or "") or None
     qualitative_basis = None
+    analysis_product_admission_hash = _analysis_product_admission_hash_for_session(db, session_id)
     if source_intake_readiness:
         expected_package_preview_hash = _source_intake_package_review_preview_hash(
             session_id=session_id,
@@ -14066,6 +14117,7 @@ def external_export_download_prepare(
             preview_hash=preview_hash,
             result_review_record_ref=supplied_review_ref,
             output_metadata_summary=output_metadata_summary,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
     elif qualitative_aps_readiness:
         qualitative_basis = _require_qualitative_aps_package_review_authority(
@@ -14086,6 +14138,7 @@ def external_export_download_prepare(
             result_review_record_ref=supplied_review_ref,
             output_payload_ref=output_metadata_summary.get("output_payload_ref"),
             qualitative_basis=qualitative_basis,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
     else:
         expected_package_preview_hash = _package_review_preview_hash(
@@ -14097,6 +14150,7 @@ def external_export_download_prepare(
             analysis_run_id=analysis_run_id,
             result_review_record_ref=supplied_review_ref,
             output_metadata_summary=output_metadata_summary,
+            analysis_product_admission_hash=analysis_product_admission_hash,
         )
     if supplied_package_preview_hash != expected_package_preview_hash:
         raise Layer3WorkbenchError(
