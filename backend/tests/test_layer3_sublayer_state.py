@@ -34,6 +34,7 @@ from app.services.layer3_pass_entry import (
     PASS_TYPE_ASSOCIATED_COHORT,
     PLAN_STATUS_APPROVED,
 )
+from app.services.layer3_workbench_error import Layer3WorkbenchError
 
 
 @pytest.fixture()
@@ -212,3 +213,252 @@ def test_session_sublayer_visualization_state_preserves_workbench_projection(db_
     assert state["latest_plan"]["analysis_plan_id"] == plan_id
     assert state["latest_plan"]["planned_passes"] == [{"pass_run_id": pass_run_id}]
     assert state["pass_runs"][0]["analysis_run_id"] == "analysis-run-sublayer-state"
+    assert state["material_object_total"] == 1
+    assert state["material_object_included_count"] == 1
+    assert state["material_objects_truncated"] is False
+    assert state["material_objects_max"] == sublayer_state.SUBLAYER_VISUALIZATION_COLLECTION_MAX
+    assert state["sublayer_collections_truncated"] is False
+
+
+def test_session_sublayer_visualization_state_bounds_collections_with_totals(db_session, monkeypatch) -> None:
+    session_id = "session-sublayer-bounded"
+    db_session.add(
+        L3Session(
+            session_id=session_id,
+            selection_manifest_id="manifest-sublayer-bounded",
+            operator_context_json={},
+            summary_json={},
+        )
+    )
+    for idx in range(1, 4):
+        snapshot_id = f"snapshot-0{idx}"
+        db_session.add(
+            L3MaterialSnapshot(
+                material_snapshot_id=snapshot_id,
+                session_id=session_id,
+                descriptor_id=f"descriptor-0{idx}",
+                source_plane="runtime",
+                source_shape="dataset_version",
+                payload_ref=f"payload://dataset-version-{idx}",
+                payload_hash=f"hash-{snapshot_id}",
+                source_identity_json={"dataset_version_id": f"dv-0{idx}"},
+                source_provenance_json={},
+                load_summary_json={"row_count": idx},
+            )
+        )
+    db_session.add_all(
+        [
+            L3TypingRecord(
+                typing_record_id="typing-01",
+                session_id=session_id,
+                material_snapshot_id="snapshot-03",
+                candidate_modalities_json=["quantitative"],
+                chosen_modality="quantitative",
+                typing_basis_json={"planning_shape_family": "tabular_numeric"},
+                confidence=1.0,
+            ),
+            L3TypingRecord(
+                typing_record_id="typing-02",
+                session_id=session_id,
+                material_snapshot_id="snapshot-02",
+                candidate_modalities_json=["quantitative"],
+                chosen_modality="quantitative",
+                typing_basis_json={"planning_shape_family": "tabular_numeric"},
+                confidence=1.0,
+            ),
+            L3TypingRecord(
+                typing_record_id="typing-03",
+                session_id=session_id,
+                material_snapshot_id="snapshot-01",
+                candidate_modalities_json=["quantitative"],
+                chosen_modality="quantitative",
+                typing_basis_json={"planning_shape_family": "tabular_numeric"},
+                confidence=1.0,
+            ),
+            L3AnalysisUnit(
+                analysis_unit_id="unit-01",
+                session_id=session_id,
+                unit_kind="material_snapshot",
+                analysis_modality="quantitative",
+                member_snapshot_ids_json=["snapshot-01"],
+                member_ranges_json=[],
+                must_remain_intact=True,
+                typing_record_ids_json=["typing-03"],
+                unit_hash="unit-hash-01",
+                summary_json={},
+            ),
+            L3AnalysisUnit(
+                analysis_unit_id="unit-02",
+                session_id=session_id,
+                unit_kind="material_snapshot",
+                analysis_modality="quantitative",
+                member_snapshot_ids_json=["snapshot-02"],
+                member_ranges_json=[],
+                must_remain_intact=True,
+                typing_record_ids_json=["typing-02"],
+                unit_hash="unit-hash-02",
+                summary_json={},
+            ),
+            L3AnalysisUnit(
+                analysis_unit_id="unit-03",
+                session_id=session_id,
+                unit_kind="material_snapshot",
+                analysis_modality="quantitative",
+                member_snapshot_ids_json=["snapshot-03"],
+                member_ranges_json=[],
+                must_remain_intact=True,
+                typing_record_ids_json=["typing-01"],
+                unit_hash="unit-hash-03",
+                summary_json={},
+            ),
+            L3AnalysisSet(
+                analysis_set_id="set-01",
+                session_id=session_id,
+                analysis_group_ids_json=[],
+                analysis_unit_ids_json=["unit-03"],
+                set_type="associated_cohort",
+                formation_basis_json={"analysis_modality": "quantitative"},
+            ),
+            L3AnalysisSet(
+                analysis_set_id="set-02",
+                session_id=session_id,
+                analysis_group_ids_json=[],
+                analysis_unit_ids_json=["unit-02"],
+                set_type="associated_cohort",
+                formation_basis_json={"analysis_modality": "quantitative"},
+            ),
+            L3AnalysisSet(
+                analysis_set_id="set-03",
+                session_id=session_id,
+                analysis_group_ids_json=[],
+                analysis_unit_ids_json=["unit-01"],
+                set_type="associated_cohort",
+                formation_basis_json={"analysis_modality": "quantitative"},
+            ),
+            L3AnalysisPlan(
+                analysis_plan_id="plan-bounded",
+                session_id=session_id,
+                analysis_set_ids_json=["set-01", "set-02", "set-03"],
+                status=PLAN_STATUS_APPROVED,
+                approved_by_operator=True,
+                plan_json={},
+            ),
+            L3PassRun(
+                pass_run_id="pass-run-01",
+                session_id=session_id,
+                analysis_plan_id="plan-bounded",
+                analysis_set_id="set-01",
+                pass_type=PASS_TYPE_ASSOCIATED_COHORT,
+                engine_family=ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS,
+                status=PASS_STATUS_COMPLETED,
+                input_payload_ref="payload://input-01",
+                output_payload_ref="payload://output-01",
+                summary_json={},
+            ),
+            L3PassRun(
+                pass_run_id="pass-run-02",
+                session_id=session_id,
+                analysis_plan_id="plan-bounded",
+                analysis_set_id="set-02",
+                pass_type=PASS_TYPE_ASSOCIATED_COHORT,
+                engine_family=ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS,
+                status=PASS_STATUS_COMPLETED,
+                input_payload_ref="payload://input-02",
+                output_payload_ref="payload://output-02",
+                summary_json={},
+            ),
+            L3PassRun(
+                pass_run_id="pass-run-03",
+                session_id=session_id,
+                analysis_plan_id="plan-bounded",
+                analysis_set_id="set-03",
+                pass_type=PASS_TYPE_ASSOCIATED_COHORT,
+                engine_family=ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS,
+                status=PASS_STATUS_COMPLETED,
+                input_payload_ref="payload://input-03",
+                output_payload_ref="payload://output-03",
+                summary_json={},
+            ),
+        ]
+    )
+    db_session.commit()
+    monkeypatch.setattr(sublayer_state, "SUBLAYER_VISUALIZATION_COLLECTION_MAX", 2)
+
+    state = sublayer_state.session_sublayer_visualization_state(
+        db_session,
+        session_id=session_id,
+    )
+
+    assert len(state["material_objects"]) == 2
+    assert state["material_object_total"] == 3
+    assert state["material_object_included_count"] == 2
+    assert state["material_objects_truncated"] is True
+    assert state["material_objects_max"] == 2
+    assert state["typing_record_total"] == 3
+    assert state["typing_record_included_count"] == 2
+    assert state["typing_records_truncated"] is True
+    assert state["analysis_unit_total"] == 3
+    assert state["analysis_unit_included_count"] == 2
+    assert state["analysis_units_truncated"] is True
+    assert state["analysis_set_total"] == 3
+    assert state["analysis_set_included_count"] == 2
+    assert state["analysis_sets_truncated"] is True
+    assert state["pass_run_total"] == 3
+    assert state["pass_run_included_count"] == 2
+    assert state["pass_runs_truncated"] is True
+    assert state["sublayer_collections_truncated"] is True
+    assert state["typing_records"][0]["material_snapshot_id"] == "snapshot-03"
+    assert state["typing_records"][0]["payload_hash"] == "hash-snapshot-03"
+    assert state["analysis_sets"][0]["analysis_set_id"] == "set-01"
+    assert state["analysis_sets"][0]["member_snapshot_ids"] == ["snapshot-03"]
+    assert state["analysis_sets"][0]["unit_count"] == 1
+
+    typing_page = sublayer_state.session_sublayer_visualization_collection(
+        db_session,
+        session_id=session_id,
+        collection="typing_records",
+        limit=1,
+        offset=1,
+    )
+    assert typing_page["schema_id"] == "layer3.sublayer_visualization_collection.v1"
+    assert typing_page["authority_source"] == "read_only_persisted_layer3_rows"
+    assert typing_page["read_model"] == "paged_sublayer_visualization_collection"
+    assert typing_page["collection"] == "typing_records"
+    assert typing_page["total"] == 3
+    assert typing_page["included_count"] == 1
+    assert typing_page["limit"] == 1
+    assert typing_page["offset"] == 1
+    assert typing_page["has_more"] is True
+    assert typing_page["no_side_effects"] is True
+    assert typing_page["items"][0]["typing_record_id"] == "typing-02"
+    assert typing_page["items"][0]["payload_hash"] == "hash-snapshot-02"
+
+    analysis_set_page = sublayer_state.session_sublayer_visualization_collection(
+        db_session,
+        session_id=session_id,
+        collection="analysis_sets",
+        limit=1,
+        offset=0,
+    )
+    assert analysis_set_page["total"] == 3
+    assert analysis_set_page["included_count"] == 1
+    assert analysis_set_page["has_more"] is True
+    assert analysis_set_page["items"][0]["analysis_set_id"] == "set-01"
+    assert analysis_set_page["items"][0]["member_snapshot_ids"] == ["snapshot-03"]
+
+    with pytest.raises(Layer3WorkbenchError) as invalid_collection:
+        sublayer_state.session_sublayer_visualization_collection(
+            db_session,
+            session_id=session_id,
+            collection="unknown",
+        )
+    assert invalid_collection.value.error_code == "invalid_sublayer_collection"
+
+    with pytest.raises(Layer3WorkbenchError) as invalid_page:
+        sublayer_state.session_sublayer_visualization_collection(
+            db_session,
+            session_id=session_id,
+            collection="material_objects",
+            limit=0,
+        )
+    assert invalid_page.value.error_code == "invalid_pagination"

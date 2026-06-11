@@ -244,23 +244,27 @@ def package_review_preview_hash(
     analysis_run_id: str | None,
     result_review_record_ref: str | None,
     output_metadata_summary: dict[str, Any],
+    analysis_product_admission_hash: str | None = None,
 ) -> str:
+    basis = {
+        "schema_id": "layer3.package_review_preview_hash.v1",
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_id,
+        "preview_hash": preview_hash,
+        "analysis_run_id": analysis_run_id,
+        "result_review_record_ref": result_review_record_ref,
+        "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+        "artifact_refs": output_metadata_summary.get("artifact_refs") or [],
+        "artifact_types": output_metadata_summary.get("artifact_types") or [],
+        "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+    }
+    if analysis_product_admission_hash is not None:
+        basis["analysis_product_admission_hash"] = analysis_product_admission_hash
     return stable_id(
         "l3-package-preview",
-        {
-            "schema_id": "layer3.package_review_preview_hash.v1",
-            "session_id": session_id,
-            "analysis_plan_id": analysis_plan_id,
-            "pass_run_id": pass_run_id,
-            "preview_id": preview_id,
-            "preview_hash": preview_hash,
-            "analysis_run_id": analysis_run_id,
-            "result_review_record_ref": result_review_record_ref,
-            "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
-            "artifact_refs": output_metadata_summary.get("artifact_refs") or [],
-            "artifact_types": output_metadata_summary.get("artifact_types") or [],
-            "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
-        },
+        basis,
     )
 
 

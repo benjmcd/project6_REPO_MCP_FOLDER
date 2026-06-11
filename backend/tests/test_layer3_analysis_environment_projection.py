@@ -54,6 +54,8 @@ def test_analysis_environment_projection_fails_closed_for_missing_sublayer() -> 
         "sublayer_visualization_missing_or_invalid",
         "sublayer_visualization_not_read_only",
     ]
+    assert projection["source_state"]["source_collection_counts_complete"] is False
+    assert projection["source_state"]["sublayer_collections_truncated"] is False
     assert projection["no_side_effects"] is True
     assert projection["forbidden_runtime_authority"] == {
         "write_route_enabled": False,
@@ -80,6 +82,8 @@ def test_analysis_environment_projection_reports_structural_state_without_inputs
         "output_payload_count": 0,
         "latest_plan_status": None,
         "latest_plan_approved": False,
+        "source_collection_counts_complete": True,
+        "sublayer_collections_truncated": False,
     }
     assert {item["plane"]: item["state"] for item in projection["plane_readiness"]} == {
         "quantitative": "absent",
@@ -131,6 +135,7 @@ def test_analysis_environment_projection_derives_delivery_ready_state_without_mu
     assert projection["available_for_downstream_analysis"] is True
     assert projection["source_state"]["output_payload_count"] == 1
     assert projection["source_state"]["latest_plan_approved"] is True
+    assert projection["source_state"]["source_collection_counts_complete"] is True
     assert projection["package_authority"]["external_local_export"]["recorded"] is True
     assert projection["downstream_unavailable"] == [
         "real_connector_invocation",
@@ -142,6 +147,26 @@ def test_analysis_environment_projection_derives_delivery_ready_state_without_mu
         "hybrid": "absent",
     }
     assert projection["sublayer_visualization_unchanged"] is True
+
+
+def test_analysis_environment_projection_reports_truncated_sublayer_source() -> None:
+    projection = _projection(
+        sublayer_visualization={
+            "schema_id": "layer3.sublayer_visualization_state.v1",
+            "authority_source": "read_only_persisted_layer3_rows",
+            "material_objects": [{"material_snapshot_id": "snapshot-1"}],
+            "typing_records": [],
+            "analysis_units": [],
+            "analysis_sets": [],
+            "pass_runs": [],
+            "latest_plan": None,
+            "no_side_effects": True,
+            "sublayer_collections_truncated": True,
+        }
+    )
+
+    assert projection["source_state"]["source_collection_counts_complete"] is False
+    assert projection["source_state"]["sublayer_collections_truncated"] is True
 
 
 def test_analysis_environment_projection_requires_step_specific_recorded_authority() -> None:

@@ -1389,6 +1389,40 @@ const PACKAGE_REVIEW_PACKAGE_SCHEMA_IDS = Object.freeze({
     review_facing: 'layer3.review_facing_package.v1',
 });
 const SUBLAYER_MODALITIES = ['quantitative', 'qualitative', 'hybrid', 'unclassified'];
+const SUBLAYER_VISUALIZATION_COLLECTION_PAGE_SIZE = 500;
+const SUBLAYER_VISUALIZATION_HYDRATION_MAX_PAGES = 20;
+const SUBLAYER_VISUALIZATION_COLLECTIONS = Object.freeze([
+    {
+        key: 'material_objects',
+        totalKey: 'material_object_total',
+        includedKey: 'material_object_included_count',
+        truncatedKey: 'material_objects_truncated',
+    },
+    {
+        key: 'typing_records',
+        totalKey: 'typing_record_total',
+        includedKey: 'typing_record_included_count',
+        truncatedKey: 'typing_records_truncated',
+    },
+    {
+        key: 'analysis_units',
+        totalKey: 'analysis_unit_total',
+        includedKey: 'analysis_unit_included_count',
+        truncatedKey: 'analysis_units_truncated',
+    },
+    {
+        key: 'analysis_sets',
+        totalKey: 'analysis_set_total',
+        includedKey: 'analysis_set_included_count',
+        truncatedKey: 'analysis_sets_truncated',
+    },
+    {
+        key: 'pass_runs',
+        totalKey: 'pass_run_total',
+        includedKey: 'pass_run_included_count',
+        truncatedKey: 'pass_runs_truncated',
+    },
+]);
 const SUBLAYER_MODALITY_META = {
     quantitative: {
         label: 'Quantitative Data',
@@ -2451,9 +2485,62 @@ async function parseResponse(res) {
     return data;
 }
 
+function isSessionSummaryReadPath(path) {
+    const text = String(path || '');
+    return /^\/session\/[^/?]+(?:\?.*)?$/.test(text);
+}
+
+async function fetchSublayerVisualizationCollection(sessionId, collection) {
+    const items = [];
+    let offset = 0;
+    let page = null;
+    for (let pageIndex = 0; pageIndex < SUBLAYER_VISUALIZATION_HYDRATION_MAX_PAGES; pageIndex += 1) {
+        page = await getJson(
+            `/session/${encodeURIComponent(sessionId)}/sublayer-visualization/${encodeURIComponent(collection)}?limit=${SUBLAYER_VISUALIZATION_COLLECTION_PAGE_SIZE}&offset=${offset}`,
+        );
+        const pageItems = Array.isArray(page?.items) ? page.items : [];
+        items.push(...pageItems);
+        if (!page?.has_more || pageItems.length === 0) break;
+        offset += pageItems.length;
+    }
+    return {
+        items,
+        total: Number.isFinite(Number(page?.total)) ? Number(page.total) : items.length,
+        complete: !page?.has_more,
+    };
+}
+
+async function hydrateSublayerVisualizationCollections(summary) {
+    const sv = summary?.sublayer_visualization;
+    if (!summary?.session_id || !sv || typeof sv !== 'object' || sv.sublayer_collections_truncated !== true) {
+        return summary;
+    }
+
+    let hydratedAny = false;
+    for (const meta of SUBLAYER_VISUALIZATION_COLLECTIONS) {
+        if (sv[meta.truncatedKey] !== true) continue;
+        try {
+            const page = await fetchSublayerVisualizationCollection(summary.session_id, meta.key);
+            sv[meta.key] = page.items;
+            sv[meta.totalKey] = page.total;
+            sv[meta.includedKey] = page.items.length;
+            sv[meta.truncatedKey] = !page.complete;
+            hydratedAny = true;
+        } catch (error) {
+            addEvent(`Sublayer ${meta.key} hydration skipped: ${error.message}`);
+        }
+    }
+    sv.sublayer_collections_truncated = SUBLAYER_VISUALIZATION_COLLECTIONS.some((meta) => sv[meta.truncatedKey] === true);
+    if (hydratedAny) {
+        sv.sublayer_collection_read_model = 'hydrated_from_paged_sublayer_visualization_collection';
+    }
+    return summary;
+}
+
 async function getJson(path) {
     const res = await fetch(`${API_ROOT}${path}`);
-    return parseResponse(res);
+    const data = await parseResponse(res);
+    return isSessionSummaryReadPath(path) ? hydrateSublayerVisualizationCollections(data) : data;
 }
 
 async function postJson(path, body) {

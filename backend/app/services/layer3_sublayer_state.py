@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -16,15 +17,122 @@ from app.models.models import (
     L3OutputPackage,
     L3PassRun,
     L3ReconciliationRecord,
+    L3Session,
     L3TypingRecord,
     L3WorkingSet,
 )
 from app.services.layer3_plan_flow_state import latest_analysis_plan
+from app.services.layer3_response_contract import base_response
 from app.services.layer3_typing_entry import SUPPORTED_TYPING_RULES
 from app.services.layer3_utils import json_clone
+from app.services.layer3_workbench_error import Layer3WorkbenchError
 
 
 SUBLAYER_VISUALIZATION_STATE_SCHEMA_ID = "layer3.sublayer_visualization_state.v1"
+SUBLAYER_VISUALIZATION_COLLECTION_MAX = 100
+SUBLAYER_VISUALIZATION_COLLECTION_PAGE_MAX = 500
+
+_SUBLAYER_VISUALIZATION_COLLECTION_PREFIXES = {
+    "material_objects": "material_object",
+    "typing_records": "typing_record",
+    "analysis_units": "analysis_unit",
+    "analysis_sets": "analysis_set",
+    "pass_runs": "pass_run",
+}
+
+
+def _normalize_collection_limit(collection_limit: int | None) -> int | None:
+    if collection_limit is None:
+        return None
+    return max(0, int(collection_limit))
+
+
+def _bounded_query_rows(
+    query: Any,
+    *,
+    collection_limit: int | None,
+) -> tuple[list[Any], dict[str, Any]]:
+    normalized_limit = _normalize_collection_limit(collection_limit)
+    total = query.order_by(None).count()
+    if normalized_limit is not None:
+        query = query.limit(normalized_limit)
+    rows = query.all()
+    return rows, {
+        "total": total,
+        "included": len(rows),
+        "truncated": total > len(rows),
+    }
+
+
+def _collection_meta(prefix: str, meta: dict[str, Any], *, max_items: int | None) -> dict[str, Any]:
+    return {
+        f"{prefix}_total": meta["total"],
+        f"{prefix}_included_count": meta["included"],
+        f"{prefix}s_truncated": meta["truncated"],
+        f"{prefix}s_max": max_items,
+    }
+
+
+def _validate_collection_page(limit: int, offset: int) -> tuple[int, int]:
+    if not isinstance(limit, int) or isinstance(limit, bool) or limit < 1:
+        raise Layer3WorkbenchError(
+            "invalid_pagination",
+            "limit must be a positive integer.",
+            blocked_fields=["limit"],
+        )
+    if limit > SUBLAYER_VISUALIZATION_COLLECTION_PAGE_MAX:
+        raise Layer3WorkbenchError(
+            "invalid_pagination",
+            f"limit must be less than or equal to {SUBLAYER_VISUALIZATION_COLLECTION_PAGE_MAX}.",
+            blocked_fields=["limit"],
+        )
+    if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:
+        raise Layer3WorkbenchError(
+            "invalid_pagination",
+            "offset must be a non-negative integer.",
+            blocked_fields=["offset"],
+        )
+    return limit, offset
+
+
+def _paged_query_rows(
+    query: Any,
+    *,
+    limit: int,
+    offset: int,
+) -> tuple[list[Any], dict[str, Any]]:
+    total = query.order_by(None).count()
+    rows = query.offset(offset).limit(limit).all()
+    return rows, {
+        "total": total,
+        "included": len(rows),
+        "limit": limit,
+        "offset": offset,
+        "has_more": offset + len(rows) < total,
+    }
+
+
+def _collection_page_response(
+    *,
+    session_id: str,
+    collection: str,
+    items: list[dict[str, Any]],
+    page_meta: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        **base_response("layer3.sublayer_visualization_collection.v1"),
+        "session_id": session_id,
+        "collection": collection,
+        "authority_source": "read_only_persisted_layer3_rows",
+        "read_model": "paged_sublayer_visualization_collection",
+        "total": page_meta["total"],
+        "included_count": page_meta["included"],
+        "limit": page_meta["limit"],
+        "offset": page_meta["offset"],
+        "has_more": page_meta["has_more"],
+        "items": items,
+        "no_side_effects": True,
+    }
 
 
 def unsupported_snapshot_trace(snapshot: L3MaterialSnapshot) -> dict[str, Any]:
@@ -213,42 +321,135 @@ def serialize_sublayer_latest_plan(analysis_plan: L3AnalysisPlan | None) -> dict
     }
 
 
-def session_sublayer_visualization_state(db: Session, *, session_id: str) -> dict[str, Any]:
+def _expand_snapshot_context_for_typing_records(
+    db: Session,
+    *,
+    session_id: str,
+    snapshot_by_id: dict[str, L3MaterialSnapshot],
+    typing_records: list[L3TypingRecord],
+) -> None:
+    missing_snapshot_ids = {
+        record.material_snapshot_id
+        for record in typing_records
+        if record.material_snapshot_id and record.material_snapshot_id not in snapshot_by_id
+    }
+    if not missing_snapshot_ids:
+        return
     snapshots = (
         db.query(L3MaterialSnapshot)
         .filter(L3MaterialSnapshot.session_id == session_id)
-        .order_by(L3MaterialSnapshot.material_snapshot_id.asc())
+        .filter(L3MaterialSnapshot.material_snapshot_id.in_(sorted(missing_snapshot_ids)))
         .all()
     )
-    typing_records = (
-        db.query(L3TypingRecord)
-        .filter(L3TypingRecord.session_id == session_id)
-        .order_by(L3TypingRecord.typing_record_id.asc())
-        .all()
-    )
-    analysis_units = (
+    for snapshot in snapshots:
+        snapshot_by_id.setdefault(snapshot.material_snapshot_id, snapshot)
+
+
+def _expand_unit_context_for_analysis_sets(
+    db: Session,
+    *,
+    session_id: str,
+    unit_by_id: dict[str, L3AnalysisUnit],
+    analysis_sets: list[L3AnalysisSet],
+) -> None:
+    missing_unit_ids: set[str] = set()
+    for analysis_set in analysis_sets:
+        for unit_id in analysis_set.analysis_unit_ids_json or []:
+            unit_id = str(unit_id)
+            if unit_id and unit_id not in unit_by_id:
+                missing_unit_ids.add(unit_id)
+    if not missing_unit_ids:
+        return
+    units = (
         db.query(L3AnalysisUnit)
         .filter(L3AnalysisUnit.session_id == session_id)
-        .order_by(L3AnalysisUnit.analysis_unit_id.asc())
+        .filter(L3AnalysisUnit.analysis_unit_id.in_(sorted(missing_unit_ids)))
         .all()
     )
-    analysis_sets = (
+    for unit in units:
+        unit_by_id.setdefault(unit.analysis_unit_id, unit)
+
+
+def session_sublayer_visualization_state(db: Session, *, session_id: str) -> dict[str, Any]:
+    return _bounded_session_sublayer_visualization_state(
+        db,
+        session_id=session_id,
+        collection_limit=SUBLAYER_VISUALIZATION_COLLECTION_MAX,
+    )
+
+
+def _bounded_session_sublayer_visualization_state(
+    db: Session,
+    *,
+    session_id: str,
+    collection_limit: int | None = SUBLAYER_VISUALIZATION_COLLECTION_MAX,
+) -> dict[str, Any]:
+    normalized_limit = _normalize_collection_limit(collection_limit)
+    snapshots, material_object_limits = _bounded_query_rows(
+        db.query(L3MaterialSnapshot)
+        .filter(L3MaterialSnapshot.session_id == session_id)
+        .order_by(L3MaterialSnapshot.material_snapshot_id.asc()),
+        collection_limit=normalized_limit,
+    )
+    typing_records, typing_record_limits = _bounded_query_rows(
+        db.query(L3TypingRecord)
+        .filter(L3TypingRecord.session_id == session_id)
+        .order_by(L3TypingRecord.typing_record_id.asc()),
+        collection_limit=normalized_limit,
+    )
+    analysis_units, analysis_unit_limits = _bounded_query_rows(
+        db.query(L3AnalysisUnit)
+        .filter(L3AnalysisUnit.session_id == session_id)
+        .order_by(L3AnalysisUnit.analysis_unit_id.asc()),
+        collection_limit=normalized_limit,
+    )
+    analysis_sets, analysis_set_limits = _bounded_query_rows(
         db.query(L3AnalysisSet)
         .filter(L3AnalysisSet.session_id == session_id)
-        .order_by(L3AnalysisSet.analysis_set_id.asc())
-        .all()
+        .order_by(L3AnalysisSet.analysis_set_id.asc()),
+        collection_limit=normalized_limit,
     )
-    pass_runs = (
+    pass_runs, pass_run_limits = _bounded_query_rows(
         db.query(L3PassRun)
         .filter(L3PassRun.session_id == session_id)
-        .order_by(L3PassRun.pass_run_id.asc())
-        .all()
+        .order_by(L3PassRun.pass_run_id.asc()),
+        collection_limit=normalized_limit,
     )
     snapshot_by_id = {snapshot.material_snapshot_id: snapshot for snapshot in snapshots}
     unit_by_id = {unit.analysis_unit_id: unit for unit in analysis_units}
+    _expand_snapshot_context_for_typing_records(
+        db,
+        session_id=session_id,
+        snapshot_by_id=snapshot_by_id,
+        typing_records=typing_records,
+    )
+    _expand_unit_context_for_analysis_sets(
+        db,
+        session_id=session_id,
+        unit_by_id=unit_by_id,
+        analysis_sets=analysis_sets,
+    )
+    collection_meta = {
+        **_collection_meta("material_object", material_object_limits, max_items=normalized_limit),
+        **_collection_meta("typing_record", typing_record_limits, max_items=normalized_limit),
+        **_collection_meta("analysis_unit", analysis_unit_limits, max_items=normalized_limit),
+        **_collection_meta("analysis_set", analysis_set_limits, max_items=normalized_limit),
+        **_collection_meta("pass_run", pass_run_limits, max_items=normalized_limit),
+    }
+    collection_meta["sublayer_collections_truncated"] = any(
+        meta["truncated"]
+        for meta in (
+            material_object_limits,
+            typing_record_limits,
+            analysis_unit_limits,
+            analysis_set_limits,
+            pass_run_limits,
+        )
+    )
     return {
         "schema_id": SUBLAYER_VISUALIZATION_STATE_SCHEMA_ID,
         "authority_source": "read_only_persisted_layer3_rows",
+        **collection_meta,
         "material_objects": [serialize_sublayer_material_object(snapshot) for snapshot in snapshots],
         "typing_records": [
             serialize_sublayer_typing_record(record, snapshot_by_id=snapshot_by_id)
@@ -263,6 +464,104 @@ def session_sublayer_visualization_state(db: Session, *, session_id: str) -> dic
         "latest_plan": serialize_sublayer_latest_plan(latest_analysis_plan(db, session_id=session_id)),
         "no_side_effects": True,
     }
+
+
+def session_sublayer_visualization_collection(
+    db: Session,
+    *,
+    session_id: str,
+    collection: str,
+    limit: int = SUBLAYER_VISUALIZATION_COLLECTION_MAX,
+    offset: int = 0,
+) -> dict[str, Any]:
+    collection = str(collection or "").strip()
+    if collection not in _SUBLAYER_VISUALIZATION_COLLECTION_PREFIXES:
+        raise Layer3WorkbenchError(
+            "invalid_sublayer_collection",
+            f"Unsupported sublayer visualization collection: {collection or '<empty>'}.",
+            blocked_fields=["collection"],
+        )
+    limit, offset = _validate_collection_page(limit, offset)
+    session_exists = db.query(L3Session.session_id).filter(L3Session.session_id == session_id).first()
+    if session_exists is None:
+        raise Layer3WorkbenchError(
+            "session_not_found",
+            f"Layer 3 session '{session_id}' was not found.",
+            http_status=404,
+        )
+
+    if collection == "material_objects":
+        snapshots, page_meta = _paged_query_rows(
+            db.query(L3MaterialSnapshot)
+            .filter(L3MaterialSnapshot.session_id == session_id)
+            .order_by(L3MaterialSnapshot.material_snapshot_id.asc()),
+            limit=limit,
+            offset=offset,
+        )
+        items = [serialize_sublayer_material_object(snapshot) for snapshot in snapshots]
+    elif collection == "typing_records":
+        typing_records, page_meta = _paged_query_rows(
+            db.query(L3TypingRecord)
+            .filter(L3TypingRecord.session_id == session_id)
+            .order_by(L3TypingRecord.typing_record_id.asc()),
+            limit=limit,
+            offset=offset,
+        )
+        snapshot_by_id: dict[str, L3MaterialSnapshot] = {}
+        _expand_snapshot_context_for_typing_records(
+            db,
+            session_id=session_id,
+            snapshot_by_id=snapshot_by_id,
+            typing_records=typing_records,
+        )
+        items = [
+            serialize_sublayer_typing_record(record, snapshot_by_id=snapshot_by_id)
+            for record in typing_records
+        ]
+    elif collection == "analysis_units":
+        analysis_units, page_meta = _paged_query_rows(
+            db.query(L3AnalysisUnit)
+            .filter(L3AnalysisUnit.session_id == session_id)
+            .order_by(L3AnalysisUnit.analysis_unit_id.asc()),
+            limit=limit,
+            offset=offset,
+        )
+        items = [serialize_analysis_unit(unit) for unit in analysis_units]
+    elif collection == "analysis_sets":
+        analysis_sets, page_meta = _paged_query_rows(
+            db.query(L3AnalysisSet)
+            .filter(L3AnalysisSet.session_id == session_id)
+            .order_by(L3AnalysisSet.analysis_set_id.asc()),
+            limit=limit,
+            offset=offset,
+        )
+        unit_by_id: dict[str, L3AnalysisUnit] = {}
+        _expand_unit_context_for_analysis_sets(
+            db,
+            session_id=session_id,
+            unit_by_id=unit_by_id,
+            analysis_sets=analysis_sets,
+        )
+        items = [
+            serialize_sublayer_analysis_set(analysis_set, unit_by_id=unit_by_id)
+            for analysis_set in analysis_sets
+        ]
+    else:
+        pass_runs, page_meta = _paged_query_rows(
+            db.query(L3PassRun)
+            .filter(L3PassRun.session_id == session_id)
+            .order_by(L3PassRun.pass_run_id.asc()),
+            limit=limit,
+            offset=offset,
+        )
+        items = [serialize_sublayer_pass_run(pass_run) for pass_run in pass_runs]
+
+    return _collection_page_response(
+        session_id=session_id,
+        collection=collection,
+        items=items,
+        page_meta=page_meta,
+    )
 
 
 def _nonneg_int(value: Any) -> int | None:
@@ -294,13 +593,24 @@ def serialize_output_package_product(package: L3OutputPackage) -> dict[str, Any]
     }
 
 
-def session_output_package_products(db: Session, *, session_id: str) -> list[dict[str, Any]]:
-    packages = (
+def count_session_output_package_products(db: Session, *, session_id: str) -> int:
+    return db.query(L3OutputPackage).filter(L3OutputPackage.session_id == session_id).count()
+
+
+def session_output_package_products(
+    db: Session,
+    *,
+    session_id: str,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
+    query = (
         db.query(L3OutputPackage)
         .filter(L3OutputPackage.session_id == session_id)
         .order_by(L3OutputPackage.output_package_id.asc())
-        .all()
     )
+    if limit is not None:
+        query = query.limit(max(0, int(limit)))
+    packages = query.all()
     return [serialize_output_package_product(package) for package in packages]
 
 
@@ -393,34 +703,79 @@ def serialize_analysis_product(
     }
 
 
-def session_analyst_products(db: Session, *, session_id: str) -> list[dict[str, Any]]:
-    """Return bounded read-only inventory of all analysis products in the session."""
-    products = (
-        db.query(L3AnalysisProduct)
-        .filter(L3AnalysisProduct.session_id == session_id)
-        .order_by(L3AnalysisProduct.analysis_product_id.asc())
+def _serialize_analysis_products(
+    db: Session,
+    products: list[L3AnalysisProduct],
+) -> list[dict[str, Any]]:
+    product_ids = [product.analysis_product_id for product in products]
+    if not product_ids:
+        return []
+
+    links_by_product: dict[str, list[L3AnalysisProductEvidenceLink]] = defaultdict(list)
+    links = (
+        db.query(L3AnalysisProductEvidenceLink)
+        .filter(L3AnalysisProductEvidenceLink.analysis_product_id.in_(product_ids))
+        .order_by(
+            L3AnalysisProductEvidenceLink.analysis_product_id.asc(),
+            L3AnalysisProductEvidenceLink.evidence_link_id.asc(),
+        )
         .all()
     )
-    result: list[dict[str, Any]] = []
-    for product in products:
-        links = (
-            db.query(L3AnalysisProductEvidenceLink)
-            .filter(
-                L3AnalysisProductEvidenceLink.analysis_product_id == product.analysis_product_id
-            )
-            .order_by(L3AnalysisProductEvidenceLink.evidence_link_id.asc())
-            .all()
+    for link in links:
+        links_by_product[link.analysis_product_id].append(link)
+
+    latest_decision_by_product: dict[str, L3AnalysisProductReviewDecision] = {}
+    decisions = (
+        db.query(L3AnalysisProductReviewDecision)
+        .filter(L3AnalysisProductReviewDecision.analysis_product_id.in_(product_ids))
+        .order_by(
+            L3AnalysisProductReviewDecision.analysis_product_id.asc(),
+            L3AnalysisProductReviewDecision.created_at.desc(),
+            L3AnalysisProductReviewDecision.analysis_product_review_decision_id.desc(),
         )
-        latest_decision = (
-            db.query(L3AnalysisProductReviewDecision)
-            .filter(
-                L3AnalysisProductReviewDecision.analysis_product_id == product.analysis_product_id
-            )
-            .order_by(L3AnalysisProductReviewDecision.created_at.desc())
-            .first()
+        .all()
+    )
+    for decision in decisions:
+        latest_decision_by_product.setdefault(decision.analysis_product_id, decision)
+
+    return [
+        serialize_analysis_product(
+            product,
+            links_by_product.get(product.analysis_product_id, []),
+            latest_decision_by_product.get(product.analysis_product_id),
         )
-        result.append(serialize_analysis_product(product, links, latest_decision))
-    return result
+        for product in products
+    ]
+
+
+def count_session_analyst_products(
+    db: Session,
+    *,
+    session_id: str,
+    lifecycle_status: str | None = None,
+) -> int:
+    query = db.query(L3AnalysisProduct).filter(L3AnalysisProduct.session_id == session_id)
+    if lifecycle_status is not None:
+        query = query.filter(L3AnalysisProduct.lifecycle_status == lifecycle_status)
+    return query.count()
+
+
+def session_analyst_products(
+    db: Session,
+    *,
+    session_id: str,
+    lifecycle_status: str | None = None,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
+    """Return bounded read-only inventory of analysis products in the session."""
+    query = db.query(L3AnalysisProduct).filter(L3AnalysisProduct.session_id == session_id)
+    if lifecycle_status is not None:
+        query = query.filter(L3AnalysisProduct.lifecycle_status == lifecycle_status)
+    query = query.order_by(L3AnalysisProduct.analysis_product_id.asc())
+    if limit is not None:
+        query = query.limit(max(0, int(limit)))
+    products = query.all()
+    return _serialize_analysis_products(db, products)
 
 
 def serialize_working_set(ws: L3WorkingSet) -> dict[str, Any]:
@@ -442,12 +797,23 @@ def serialize_working_set(ws: L3WorkingSet) -> dict[str, Any]:
     }
 
 
-def session_working_sets(db: Session, *, session_id: str) -> list[dict[str, Any]]:
+def count_session_working_sets(db: Session, *, session_id: str) -> int:
+    return db.query(L3WorkingSet).filter(L3WorkingSet.session_id == session_id).count()
+
+
+def session_working_sets(
+    db: Session,
+    *,
+    session_id: str,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
     """Return bounded read-only inventory of all working sets in the session."""
-    working_sets = (
+    query = (
         db.query(L3WorkingSet)
         .filter(L3WorkingSet.session_id == session_id)
         .order_by(L3WorkingSet.working_set_id.asc())
-        .all()
     )
+    if limit is not None:
+        query = query.limit(max(0, int(limit)))
+    working_sets = query.all()
     return [serialize_working_set(ws) for ws in working_sets]

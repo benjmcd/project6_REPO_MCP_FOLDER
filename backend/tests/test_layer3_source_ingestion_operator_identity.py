@@ -1626,7 +1626,7 @@ def test_none_mode_inertness_sweep(path, client_none):
     )
 
 
-def test_422_precedence_pin_upload_route(client_proxy_untrusted):
+def test_pre_body_operator_identity_upload_route(client_proxy_untrusted):
     resp = client_proxy_untrusted.post(
         _p("/source/intake/upload"),
         data={"operator_decision": "upload"},
@@ -1635,8 +1635,22 @@ def test_422_precedence_pin_upload_route(client_proxy_untrusted):
             "X-Forwarded-Groups": _GROUPS_CANARY,
         },
     )
-    assert resp.status_code == 422, resp.text
+    assert resp.status_code == 409, resp.text
+    body = resp.json()
+    assert "untrusted_proxy_identity" in body.get("error_code", ""), body
     assert _IDENTITY_CANARY not in resp.text
+    assert _GROUPS_CANARY not in resp.text
+
+
+def test_pre_body_operator_identity_upload_route_missing_identity(client_proxy_trusted):
+    resp = client_proxy_trusted.post(
+        _p("/source/intake/upload"),
+        data={"operator_decision": "upload"},
+        headers={"X-Forwarded-Groups": _GROUPS_CANARY},
+    )
+    assert resp.status_code == 401, resp.text
+    body = resp.json()
+    assert "missing_identity_authority" in body.get("error_code", ""), body
     assert _GROUPS_CANARY not in resp.text
 
 

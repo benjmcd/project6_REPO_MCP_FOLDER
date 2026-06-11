@@ -685,7 +685,89 @@ def test_3c_golden_path_flag_on_inventory_present(client, tmp_path, monkeypatch)
 
 
 # ---------------------------------------------------------------------------
-# TEST C — working_set evidence ref survives into committed package payload
+# TEST C - package preview hash binds the package-eligible roster
+# ---------------------------------------------------------------------------
+
+def test_3c_package_commit_rejects_stale_analysis_product_roster(
+    client,
+    tmp_path,
+    monkeypatch,
+):
+    request_prefix = "3c-roster-stale"
+
+    monkeypatch.setattr(
+        layer3_workbench.settings,
+        "layer3_analysis_product_package_inventory_enabled",
+        True,
+    )
+
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        status_body,
+        review_body,
+    ) = _build_session_with_package_eligible_product(
+        client, tmp_path, request_prefix=request_prefix
+    )
+
+    pass_run_id = selection_body["pass_run_ids"][0]
+    pkg_preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": f"{request_prefix}-pkg-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert pkg_preview.status_code == 200, pkg_preview.text
+    pkg_preview_body = pkg_preview.json()
+
+    db = client.layer3_session_factory()
+    try:
+        late_product = _make_grounded_product_for_session(
+            db,
+            session_id=session_id,
+            client_request_id=f"{request_prefix}-late-product",
+        )
+        _promote_to_package_eligible(
+            db,
+            session_id=session_id,
+            product_id=late_product.analysis_product_id,
+            prefix=f"{request_prefix}-late-promote",
+        )
+    finally:
+        db.close()
+
+    stale_commit = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": f"{request_prefix}-pkg-commit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": pkg_preview_body["package_review_preview_hash"],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+
+    assert stale_commit.status_code == 409, stale_commit.text
+    assert stale_commit.json()["error_code"] == "package_review_preview_mismatch"
+
+
+# ---------------------------------------------------------------------------
+# TEST D - working_set evidence ref survives into committed package payload
 # ---------------------------------------------------------------------------
 
 

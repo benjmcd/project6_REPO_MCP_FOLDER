@@ -128,6 +128,8 @@ from test_layer3_pass_entry import (
 )
 from test_layer3_workbench import _seed_aps_derived_dataset_version
 
+_POSTGRES_URL = "postgresql+psycopg://placeholder:placeholder@localhost:5432/placeholder_db"
+
 
 def _settings_for_test(**values):
     base_values = {
@@ -214,6 +216,7 @@ def test_layer3_deployment_profile_local_defaults_enable_arelle_cutover_without_
 def test_layer3_deployment_profile_nonlocal_accepts_proxy_owned_guardrail() -> None:
     profile = _settings_for_test(
         DEPLOYMENT_MODE="nonlocal",
+        DATABASE_URL=_POSTGRES_URL,
         ALLOWED_ORIGINS="https://review.example.com, https://ops.example.com",
         AUTH_OWNER="proxy",
         TRUSTED_PROXY_MODE="true",
@@ -254,6 +257,7 @@ print(json.dumps({
         {
             "PYTHONPATH": str(BACKEND) + os.pathsep + env.get("PYTHONPATH", ""),
             "DB_INIT_MODE": "none",
+            "DATABASE_URL": _POSTGRES_URL,
             "STORAGE_DIR": str(tmp_path / "storage"),
             "DEPLOYMENT_MODE": "nonlocal",
             "ALLOWED_ORIGINS": "https://review.example.com",
@@ -335,6 +339,18 @@ print(json.dumps({
                 "STORAGE_EXPOSURE": "proxy_protected",
             },
             "STORAGE_EXPOSURE must be auto or disabled",
+        ),
+        (
+            {
+                "DEPLOYMENT_MODE": "nonlocal",
+                "DB_INIT_MODE": "none",
+                "DATABASE_URL": "sqlite:///some.db",
+                "ALLOWED_ORIGINS": "https://review.example.com",
+                "AUTH_OWNER": "proxy",
+                "TRUSTED_PROXY_MODE": "true",
+                "LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED": "true",
+            },
+            "DATABASE_URL must not use sqlite",
         ),
     ],
 )
@@ -14246,6 +14262,29 @@ def test_layer3_api_session_summary_exposes_analysis_product_inventory_projectio
     assert "payload_ref" not in repr(inventory)
 
 
+def test_layer3_api_session_summary_bounds_package_product_inventory_projection(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(layer3_workbench, "_OUTPUT_PACKAGE_INVENTORY_MAX", 2)
+    session_id = _construct_quant_package_set(
+        client, tmp_path, request_id="api-3c-inventory-package-bound"
+    )[0]
+
+    summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary.status_code == 200
+    inventory = summary.json()["analysis_product_inventory_projection"]
+
+    assert inventory["package_product_count"] == 2
+    assert inventory["package_product_included_count"] == 2
+    assert inventory["package_product_total"] >= 3
+    assert inventory["package_products_truncated"] is True
+    assert inventory["package_products_max"] == 2
+    assert len(inventory["package_products"]) == 2
+    assert "payload_ref" not in repr(inventory)
+
+
 def test_layer3_api_analysis_product_draft_request_schema_forbids_extra(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
     schema = spec["components"]["schemas"]["Layer3AnalysisProductDraftRequest"]
@@ -14302,6 +14341,46 @@ def test_layer3_api_analysis_product_draft_authoring_and_inventory(client: TestC
         json={**draft_body, "client_request_id": "author-x", "lifecycle_status": "packaged"},
     )
     assert forbidden.status_code == 422
+
+
+def test_layer3_api_session_summary_bounds_analyst_product_inventory_projection(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(layer3_workbench, "_ANALYSIS_PRODUCT_INVENTORY_MAX", 2)
+    session_id = _construct_quant_package_set(client, tmp_path, request_id="api-3c-author-bounded")[0]
+    summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    snap_id = summary["sublayer_visualization"]["material_objects"][0]["material_snapshot_id"]
+
+    for idx in range(3):
+        resp = client.post(
+            "/api/v1/layer3/analysis-product/draft",
+            json={
+                "session_id": session_id,
+                "client_request_id": f"author-bound-{idx}",
+                "product_kind": "finding",
+                "title": f"Bounded finding {idx}",
+                "body": "Projection bounding body must not leak.",
+                "evidence": [
+                    {
+                        "ref_kind": "material_snapshot",
+                        "ref_id": snap_id,
+                        "evidence_role": "observation",
+                    }
+                ],
+            },
+        )
+        assert resp.status_code == 201, resp.text
+
+    inv = client.get(f"/api/v1/layer3/session/{session_id}").json()["analysis_product_inventory_projection"]
+    assert inv["analyst_product_count"] == 2
+    assert inv["analyst_product_included_count"] == 2
+    assert inv["analyst_product_total"] == 3
+    assert inv["analyst_products_truncated"] is True
+    assert inv["analyst_products_max"] == 2
+    assert len(inv["analyst_products"]) == 2
+    assert "Projection bounding body must not leak." not in repr(inv)
 
 
 def _submit_quant_package_review(
@@ -21119,6 +21198,10 @@ def test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_sess
     assert sublayer["schema_id"] == "layer3.sublayer_visualization_state.v1"
     assert sublayer["authority_source"] == "read_only_persisted_layer3_rows"
     assert sublayer["no_side_effects"] is True
+    assert sublayer["material_object_total"] == 1
+    assert sublayer["material_object_included_count"] == 1
+    assert sublayer["material_objects_truncated"] is False
+    assert sublayer["sublayer_collections_truncated"] is False
     assert len(sublayer["material_objects"]) == 1
     assert sublayer["material_objects"][0]["source_shape"] == "dataset_version"
     assert sublayer["material_objects"][0]["source_identity"]["dataset_version_id"] == "dv-pass-001"
@@ -21147,8 +21230,42 @@ def test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_sess
     assert projection["source_state"]["analysis_set_count"] == 1
     assert projection["source_state"]["pass_run_count"] == 0
     assert projection["source_state"]["latest_plan_approved"] is True
+    assert projection["source_state"]["source_collection_counts_complete"] is True
+    assert projection["source_state"]["sublayer_collections_truncated"] is False
     assert projection["forbidden_runtime_authority"]["write_route_enabled"] is False
     assert projection["forbidden_runtime_authority"]["connector_dispatch_enabled"] is False
+
+    typing_page = client.get(
+        f"/api/v1/layer3/session/{session_id}/sublayer-visualization/typing_records?limit=1&offset=0"
+    )
+    assert typing_page.status_code == 200
+    typing_page_body = typing_page.json()
+    _assert_common_response_envelope(typing_page_body)
+    assert typing_page_body["schema_id"] == "layer3.sublayer_visualization_collection.v1"
+    assert typing_page_body["session_id"] == session_id
+    assert typing_page_body["collection"] == "typing_records"
+    assert typing_page_body["authority_source"] == "read_only_persisted_layer3_rows"
+    assert typing_page_body["read_model"] == "paged_sublayer_visualization_collection"
+    assert typing_page_body["total"] == 1
+    assert typing_page_body["included_count"] == 1
+    assert typing_page_body["limit"] == 1
+    assert typing_page_body["offset"] == 0
+    assert typing_page_body["has_more"] is False
+    assert typing_page_body["no_side_effects"] is True
+    assert typing_page_body["items"][0]["typing_record_id"] == sublayer["typing_records"][0]["typing_record_id"]
+    assert typing_page_body["items"][0]["payload_hash"] == sublayer["typing_records"][0]["payload_hash"]
+
+    invalid_collection = client.get(
+        f"/api/v1/layer3/session/{session_id}/sublayer-visualization/not-a-collection"
+    )
+    assert invalid_collection.status_code == 400
+    assert invalid_collection.json()["error_code"] == "invalid_sublayer_collection"
+
+    missing_session = client.get(
+        "/api/v1/layer3/session/missing-session/sublayer-visualization/material_objects"
+    )
+    assert missing_session.status_code == 404
+    assert missing_session.json()["error_code"] == "session_not_found"
 
     db = client.layer3_session_factory()
     try:
@@ -36911,6 +37028,37 @@ def test_layer3_api_working_set_create_201_and_inventory(
     assert inv["working_set_count"] >= 1
     ws_ids = [ws["working_set_id"] for ws in inv["working_sets"]]
     assert ws_id in ws_ids
+
+
+def test_layer3_api_session_summary_bounds_working_set_inventory_projection(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(layer3_workbench, "_WORKING_SET_INVENTORY_MAX", 2)
+    session_id = _construct_quant_package_set(client, tmp_path, request_id="api-ws-bounded")[0]
+    summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    snap_id = summary["sublayer_visualization"]["material_objects"][0]["material_snapshot_id"]
+
+    for idx in range(3):
+        resp = client.post(
+            "/api/v1/layer3/working-set",
+            json={
+                "session_id": session_id,
+                "client_request_id": f"ws-bound-{idx}",
+                "name": f"Bounded scope {idx}",
+                "members": [{"ref_kind": "material_snapshot", "ref_id": snap_id}],
+            },
+        )
+        assert resp.status_code == 201, resp.text
+
+    inv = client.get(f"/api/v1/layer3/session/{session_id}").json()["analysis_product_inventory_projection"]
+    assert inv["working_set_count"] == 2
+    assert inv["working_set_included_count"] == 2
+    assert inv["working_set_total"] == 3
+    assert inv["working_sets_truncated"] is True
+    assert inv["working_sets_max"] == 2
+    assert len(inv["working_sets"]) == 2
 
 
 def test_layer3_api_working_set_extra_forbid_rejects_server_fields(

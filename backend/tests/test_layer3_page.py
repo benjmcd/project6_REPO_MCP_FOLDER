@@ -432,6 +432,10 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "State.preflight" in js.text
     assert "State.sourcePreview" in js.text
     assert "State.sessionSummary?.sublayer_visualization" in js.text
+    assert "SUBLAYER_VISUALIZATION_COLLECTION_PAGE_SIZE = 500" in js.text
+    assert "function hydrateSublayerVisualizationCollections" in js.text
+    assert "sublayer-visualization/${encodeURIComponent(collection)}" in js.text
+    assert "hydrated_from_paged_sublayer_visualization_collection" in js.text
     assert "State.materialPreview" in js.text
     assert "State.gateB" in js.text
     assert "State.gateC" in js.text

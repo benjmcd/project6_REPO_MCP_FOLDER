@@ -44,6 +44,7 @@ from app.services.layer3_analysis_product_promotion import (
 )
 from app.services import layer3_workbench
 from app.services.layer3_workbench import (
+    _analysis_product_admission_hash,
     _analysis_product_package_payload_extras,
     _build_analysis_product_admission_preview,
     _load_package_eligible_analysis_products,
@@ -502,6 +503,37 @@ def test_truncation_at_max(seeded_db) -> None:
     assert len(roster) == _ANALYSIS_PRODUCT_INVENTORY_MAX
 
 
+def test_roster_load_queries_only_eligible_capped_rows(seeded_db) -> None:
+    db = seeded_db
+    with patch(
+        "app.services.layer3_workbench._count_session_analyst_products",
+        return_value=_ANALYSIS_PRODUCT_INVENTORY_MAX + 5,
+    ) as count_products:
+        with patch(
+            "app.services.layer3_workbench._session_analyst_products",
+            return_value=[],
+        ) as load_products:
+            roster, meta = _load_package_eligible_analysis_products(db, SESSION_ID)
+
+    count_products.assert_called_once_with(
+        db,
+        session_id=SESSION_ID,
+        lifecycle_status="package_eligible",
+    )
+    load_products.assert_called_once_with(
+        db,
+        session_id=SESSION_ID,
+        lifecycle_status="package_eligible",
+        limit=_ANALYSIS_PRODUCT_INVENTORY_MAX,
+    )
+    assert roster == []
+    assert meta == {
+        "truncated": True,
+        "total": _ANALYSIS_PRODUCT_INVENTORY_MAX + 5,
+        "included": 0,
+    }
+
+
 # ---------------------------------------------------------------------------
 # (f) Evidence ref with unknown ref_kind => fail-closed (raises ValueError)
 # ---------------------------------------------------------------------------
@@ -653,6 +685,43 @@ def test_admission_preview_bounded_keys_only(seeded_db) -> None:
     assert set(p.keys()) == allowed_keys, (
         f"Admission product must have exactly {allowed_keys}, got {set(p.keys())}"
     )
+
+
+def test_admission_hash_is_flag_gated_and_roster_sensitive(seeded_db) -> None:
+    db = seeded_db
+    first_product = _make_grounded_product(db, client_request_id="adm-hash-001")
+    _promote_to_package_eligible(
+        db,
+        session_id=SESSION_ID,
+        product_id=first_product.analysis_product_id,
+        prefix="adm-hash-one",
+    )
+
+    with patch.object(layer3_workbench.settings, "layer3_analysis_product_package_inventory_enabled", False):
+        admission_one_flag_off = _build_analysis_product_admission_preview(db, SESSION_ID)
+        assert _analysis_product_admission_hash(admission_one_flag_off) is None
+
+    with patch.object(layer3_workbench.settings, "layer3_analysis_product_package_inventory_enabled", True):
+        admission_one = _build_analysis_product_admission_preview(db, SESSION_ID)
+        hash_one = _analysis_product_admission_hash(admission_one)
+
+    second_product = _make_grounded_product(db, client_request_id="adm-hash-002")
+    _promote_to_package_eligible(
+        db,
+        session_id=SESSION_ID,
+        product_id=second_product.analysis_product_id,
+        prefix="adm-hash-two",
+    )
+
+    with patch.object(layer3_workbench.settings, "layer3_analysis_product_package_inventory_enabled", True):
+        admission_two = _build_analysis_product_admission_preview(db, SESSION_ID)
+        hash_two = _analysis_product_admission_hash(admission_two)
+
+    assert admission_one["package_eligible_product_count"] == 1
+    assert admission_two["package_eligible_product_count"] == 2
+    assert hash_one is not None
+    assert hash_two is not None
+    assert hash_two != hash_one
 
 
 # ---------------------------------------------------------------------------

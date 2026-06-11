@@ -787,4 +787,8 @@ export async function attachSessionToWorkbench(page, sessionId, sourceClasses = 
     renderAll();
     persistSessionRecoveryAnchor('test-harness');
   }, { session_id: sessionId, source_classes: sourceClasses });
+  const recoveryAnchor = await page.evaluate(() => (
+    JSON.parse(localStorage.getItem('layer3_workbench_session_recovery_v1') || 'null')
+  ));
+  expect(recoveryAnchor?.session_id).toBe(sessionId);
 }
