@@ -502,6 +502,37 @@ def test_truncation_at_max(seeded_db) -> None:
     assert len(roster) == _ANALYSIS_PRODUCT_INVENTORY_MAX
 
 
+def test_roster_load_queries_only_eligible_capped_rows(seeded_db) -> None:
+    db = seeded_db
+    with patch(
+        "app.services.layer3_workbench._count_session_analyst_products",
+        return_value=_ANALYSIS_PRODUCT_INVENTORY_MAX + 5,
+    ) as count_products:
+        with patch(
+            "app.services.layer3_workbench._session_analyst_products",
+            return_value=[],
+        ) as load_products:
+            roster, meta = _load_package_eligible_analysis_products(db, SESSION_ID)
+
+    count_products.assert_called_once_with(
+        db,
+        session_id=SESSION_ID,
+        lifecycle_status="package_eligible",
+    )
+    load_products.assert_called_once_with(
+        db,
+        session_id=SESSION_ID,
+        lifecycle_status="package_eligible",
+        limit=_ANALYSIS_PRODUCT_INVENTORY_MAX,
+    )
+    assert roster == []
+    assert meta == {
+        "truncated": True,
+        "total": _ANALYSIS_PRODUCT_INVENTORY_MAX + 5,
+        "included": 0,
+    }
+
+
 # ---------------------------------------------------------------------------
 # (f) Evidence ref with unknown ref_kind => fail-closed (raises ValueError)
 # ---------------------------------------------------------------------------

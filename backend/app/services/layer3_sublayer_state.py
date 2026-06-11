@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -393,34 +394,79 @@ def serialize_analysis_product(
     }
 
 
-def session_analyst_products(db: Session, *, session_id: str) -> list[dict[str, Any]]:
-    """Return bounded read-only inventory of all analysis products in the session."""
-    products = (
-        db.query(L3AnalysisProduct)
-        .filter(L3AnalysisProduct.session_id == session_id)
-        .order_by(L3AnalysisProduct.analysis_product_id.asc())
+def _serialize_analysis_products(
+    db: Session,
+    products: list[L3AnalysisProduct],
+) -> list[dict[str, Any]]:
+    product_ids = [product.analysis_product_id for product in products]
+    if not product_ids:
+        return []
+
+    links_by_product: dict[str, list[L3AnalysisProductEvidenceLink]] = defaultdict(list)
+    links = (
+        db.query(L3AnalysisProductEvidenceLink)
+        .filter(L3AnalysisProductEvidenceLink.analysis_product_id.in_(product_ids))
+        .order_by(
+            L3AnalysisProductEvidenceLink.analysis_product_id.asc(),
+            L3AnalysisProductEvidenceLink.evidence_link_id.asc(),
+        )
         .all()
     )
-    result: list[dict[str, Any]] = []
-    for product in products:
-        links = (
-            db.query(L3AnalysisProductEvidenceLink)
-            .filter(
-                L3AnalysisProductEvidenceLink.analysis_product_id == product.analysis_product_id
-            )
-            .order_by(L3AnalysisProductEvidenceLink.evidence_link_id.asc())
-            .all()
+    for link in links:
+        links_by_product[link.analysis_product_id].append(link)
+
+    latest_decision_by_product: dict[str, L3AnalysisProductReviewDecision] = {}
+    decisions = (
+        db.query(L3AnalysisProductReviewDecision)
+        .filter(L3AnalysisProductReviewDecision.analysis_product_id.in_(product_ids))
+        .order_by(
+            L3AnalysisProductReviewDecision.analysis_product_id.asc(),
+            L3AnalysisProductReviewDecision.created_at.desc(),
+            L3AnalysisProductReviewDecision.analysis_product_review_decision_id.desc(),
         )
-        latest_decision = (
-            db.query(L3AnalysisProductReviewDecision)
-            .filter(
-                L3AnalysisProductReviewDecision.analysis_product_id == product.analysis_product_id
-            )
-            .order_by(L3AnalysisProductReviewDecision.created_at.desc())
-            .first()
+        .all()
+    )
+    for decision in decisions:
+        latest_decision_by_product.setdefault(decision.analysis_product_id, decision)
+
+    return [
+        serialize_analysis_product(
+            product,
+            links_by_product.get(product.analysis_product_id, []),
+            latest_decision_by_product.get(product.analysis_product_id),
         )
-        result.append(serialize_analysis_product(product, links, latest_decision))
-    return result
+        for product in products
+    ]
+
+
+def count_session_analyst_products(
+    db: Session,
+    *,
+    session_id: str,
+    lifecycle_status: str | None = None,
+) -> int:
+    query = db.query(L3AnalysisProduct).filter(L3AnalysisProduct.session_id == session_id)
+    if lifecycle_status is not None:
+        query = query.filter(L3AnalysisProduct.lifecycle_status == lifecycle_status)
+    return query.count()
+
+
+def session_analyst_products(
+    db: Session,
+    *,
+    session_id: str,
+    lifecycle_status: str | None = None,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
+    """Return bounded read-only inventory of analysis products in the session."""
+    query = db.query(L3AnalysisProduct).filter(L3AnalysisProduct.session_id == session_id)
+    if lifecycle_status is not None:
+        query = query.filter(L3AnalysisProduct.lifecycle_status == lifecycle_status)
+    query = query.order_by(L3AnalysisProduct.analysis_product_id.asc())
+    if limit is not None:
+        query = query.limit(max(0, int(limit)))
+    products = query.all()
+    return _serialize_analysis_products(db, products)
 
 
 def serialize_working_set(ws: L3WorkingSet) -> dict[str, Any]:

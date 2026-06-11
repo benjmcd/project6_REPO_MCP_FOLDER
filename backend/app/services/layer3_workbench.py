@@ -263,6 +263,7 @@ from app.services.layer3_typing_entry import (
     materialize_typing_entry,
 )
 from app.services.layer3_sublayer_state import (
+    count_session_analyst_products as _count_session_analyst_products,
     serialize_analysis_group as _serialize_analysis_group,
     serialize_analysis_set as _serialize_analysis_set,
     serialize_analysis_unit as _serialize_analysis_unit,
@@ -3602,11 +3603,19 @@ def _load_package_eligible_analysis_products(
     already scoped to session_id and ordered by analysis_product_id asc.
     Evidence ref kinds are validated defensively against the allowed set.
     """
-    all_products = _session_analyst_products(db, session_id=session_id)
-    eligible = [p for p in all_products if p.get("lifecycle_status") == "package_eligible"]
-    total = len(eligible)
+    total = _count_session_analyst_products(
+        db,
+        session_id=session_id,
+        lifecycle_status="package_eligible",
+    )
+    roster = _session_analyst_products(
+        db,
+        session_id=session_id,
+        lifecycle_status="package_eligible",
+        limit=_ANALYSIS_PRODUCT_INVENTORY_MAX,
+    )
 
-    for product in eligible:
+    for product in roster:
         for ref in product.get("evidence_refs") or []:
             ref_kind = ref.get("ref_kind")
             if ref_kind not in L3_ANALYSIS_PRODUCT_EVIDENCE_REF_KIND_VALUES:
@@ -3617,7 +3626,8 @@ def _load_package_eligible_analysis_products(
                 )
 
     truncated = total > _ANALYSIS_PRODUCT_INVENTORY_MAX
-    roster = eligible[:_ANALYSIS_PRODUCT_INVENTORY_MAX]
+    if len(roster) > _ANALYSIS_PRODUCT_INVENTORY_MAX:
+        roster = roster[:_ANALYSIS_PRODUCT_INVENTORY_MAX]
     included = len(roster)
     meta: dict[str, Any] = {
         "truncated": truncated,
