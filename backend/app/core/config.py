@@ -238,10 +238,7 @@ class Settings(BaseSettings):
                 "LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED=true is required "
                 "when DEPLOYMENT_MODE=nonlocal and Arelle fact-authority cutover is enabled"
             )
-        # Forbid sqlite in nonlocal deployments. db_init_mode=none is exempt so
-        # proof harnesses can exercise the nonlocal profile while supplying their
-        # own engine and leaving the default sqlite DATABASE_URL unused.
-        if self.db_init_mode != "none" and self.database_url.startswith("sqlite"):
+        if self.database_url.startswith("sqlite"):
             raise ValueError("DATABASE_URL must not use sqlite when DEPLOYMENT_MODE=nonlocal")
 
     @property

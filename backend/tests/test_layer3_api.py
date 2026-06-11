@@ -128,6 +128,8 @@ from test_layer3_pass_entry import (
 )
 from test_layer3_workbench import _seed_aps_derived_dataset_version
 
+_POSTGRES_URL = "postgresql+psycopg://placeholder:placeholder@localhost:5432/placeholder_db"
+
 
 def _settings_for_test(**values):
     base_values = {
@@ -214,6 +216,7 @@ def test_layer3_deployment_profile_local_defaults_enable_arelle_cutover_without_
 def test_layer3_deployment_profile_nonlocal_accepts_proxy_owned_guardrail() -> None:
     profile = _settings_for_test(
         DEPLOYMENT_MODE="nonlocal",
+        DATABASE_URL=_POSTGRES_URL,
         ALLOWED_ORIGINS="https://review.example.com, https://ops.example.com",
         AUTH_OWNER="proxy",
         TRUSTED_PROXY_MODE="true",
@@ -254,6 +257,7 @@ print(json.dumps({
         {
             "PYTHONPATH": str(BACKEND) + os.pathsep + env.get("PYTHONPATH", ""),
             "DB_INIT_MODE": "none",
+            "DATABASE_URL": _POSTGRES_URL,
             "STORAGE_DIR": str(tmp_path / "storage"),
             "DEPLOYMENT_MODE": "nonlocal",
             "ALLOWED_ORIGINS": "https://review.example.com",
@@ -335,6 +339,18 @@ print(json.dumps({
                 "STORAGE_EXPOSURE": "proxy_protected",
             },
             "STORAGE_EXPOSURE must be auto or disabled",
+        ),
+        (
+            {
+                "DEPLOYMENT_MODE": "nonlocal",
+                "DB_INIT_MODE": "none",
+                "DATABASE_URL": "sqlite:///some.db",
+                "ALLOWED_ORIGINS": "https://review.example.com",
+                "AUTH_OWNER": "proxy",
+                "TRUSTED_PROXY_MODE": "true",
+                "LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED": "true",
+            },
+            "DATABASE_URL must not use sqlite",
         ),
     ],
 )

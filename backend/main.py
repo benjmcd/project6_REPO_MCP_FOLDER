@@ -4,15 +4,17 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect as sa_inspect
 
 from app.api.router import api_router
 from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base, engine
+from app.services import layer3_sec_xbrl_in_app_auth_policy
+from app.services.layer3_workbench_error import Layer3WorkbenchError, workbench_error_response
 
 
 def _run_migrations() -> None:
@@ -47,6 +49,49 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
+
+
+_PRE_BODY_OPERATOR_IDENTITY_POST_ROUTES = {
+    f"{settings.api_prefix.rstrip('/')}/layer3/source/intake/upload",
+}
+
+
+def _auth_policy_error_response(
+    exc: layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.http_status,
+        content=workbench_error_response(
+            Layer3WorkbenchError(
+                error_code=exc.code,
+                message=exc.message,
+                status="blocked",
+                http_status=exc.http_status,
+                blocked_fields=[
+                    str(field)
+                    for field in exc.details.get(
+                        "blocked_fields",
+                        exc.details.get("mismatched_fields", []),
+                    )
+                ],
+                next_allowed_actions=["inspect_existing_sec_xbrl_auth_binding_authority"],
+            )
+        ),
+    )
+
+
+@app.middleware("http")
+async def _pre_body_operator_identity_middleware(request: Request, call_next):
+    if request.method.upper() == "POST" and request.url.path in _PRE_BODY_OPERATOR_IDENTITY_POST_ROUTES:
+        try:
+            layer3_sec_xbrl_in_app_auth_policy.route_level_operator_identity_required(
+                {str(key): str(value) for key, value in request.headers.items()}
+            )
+        except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+            return _auth_policy_error_response(exc)
+    return await call_next(request)
+
+
 app.include_router(api_router, prefix=settings.api_prefix)
 bootstrap_storage_tree()
 if settings.storage_mount_enabled:
