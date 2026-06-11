@@ -11955,6 +11955,7 @@ from app.api.layer3 import package  # noqa: F401  -- registers package routes on
 from app.api.layer3 import source_ingestion  # noqa: F401  -- registers source-ingestion routes on the shared router
 from app.api.layer3 import source_sec_edgar  # noqa: F401  -- registers source-sec-edgar routes on the shared router
 from app.api.layer3 import sec_xbrl  # noqa: F401
+from app.api.layer3 import operator_identity  # noqa: F401  -- registers operator identity projection route on the shared router
 from app.api.layer3.sec_xbrl import (  # re-export for test coupling
     post_sec_xbrl_operator_review_workflow_open_from_staged_evidence,
     _full_pipeline_leaf_equals_raw_cik,
