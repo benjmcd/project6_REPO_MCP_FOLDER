@@ -66,6 +66,7 @@
             <h1>Layer 3 Workbench</h1>
         </div>
         <div class="header-right">
+            <span id="operator-identity-chip" class="operator-identity-chip" aria-label="Operator identity" aria-live="polite"></span>
             <label for="theme-selector">Theme:</label>
             <select id="theme-selector">
                 <option value="system">System</option>
@@ -77,6 +78,23 @@
             </select>
         </div>
     </header>
+    <div id="operator-auth-banner" class="operator-auth-banner" role="alert" aria-live="assertive" aria-atomic="true" hidden></div>
+    <details id="dev-header-injection" class="dev-header-injection" tabindex="-1" hidden>
+        <summary class="dev-header-injection-summary">Dev header injection (local operator only)</summary>
+        <div class="dev-header-injection-body">
+            <p class="dev-header-injection-notice">These values are sent as request headers for this page session only. Not persisted. Available only when <code>auth_owner=none</code>.</p>
+            <div class="dev-header-injection-grid">
+                <label for="dev-x-forwarded-user">X-Forwarded-User</label>
+                <input id="dev-x-forwarded-user" class="dev-header-input" type="text" autocomplete="off" spellcheck="false" placeholder="local-operator">
+                <label for="dev-x-forwarded-groups">X-Forwarded-Groups</label>
+                <input id="dev-x-forwarded-groups" class="dev-header-input" type="text" autocomplete="off" spellcheck="false" placeholder="group1,group2">
+            </div>
+            <div class="dev-header-injection-actions">
+                <button id="dev-header-inject-apply" class="secondary-btn" type="button">Apply and Re-fetch Identity</button>
+                <button id="dev-header-inject-clear" class="secondary-btn" type="button">Clear</button>
+            </div>
+        </div>
+    </details>
 
     <main class="app-body layer3-body">
         <aside class="layer3-stepper" aria-label="Layer 3 workflow">
@@ -913,6 +931,10 @@
                     <div id="replacement-package-namespace-panel" class="result-review-panel replacement-package-namespace-panel" data-rendered-mode="rendered_replacement_package_namespace_control" aria-label="Replacement package namespace" aria-live="polite">
                         <div class="empty-panel">Replacement package namespace is not available.</div>
                     </div>
+                    <!-- W1-S9: Package supersession history projection (read-only, fail-closed) -->
+                    <div id="package-supersession-history-panel" class="result-review-panel package-supersession-history-panel" data-rendered-mode="rendered_package_supersession_history_read_only_projection" data-frontend-durable-authority="false" data-value-reveal-enabled="false" data-production-readiness-claimed="false" aria-label="Package supersession history read-only projection surface" aria-live="polite">
+                        <div class="empty-panel">Package supersession history is not available — replacement-package authority or supersession commit must be present.</div>
+                    </div>
                     <label for="source-directory-package-supersession-preview-authority">Source-directory package authority JSON</label>
                     <textarea id="source-directory-package-supersession-preview-authority" rows="5" autocomplete="off" spellcheck="false" placeholder="Paste server-returned source-directory qualitative-analysis package submit authority."></textarea>
                     <div class="result-review-controls package-review-controls" aria-label="Package review controls">
@@ -1092,6 +1114,37 @@
                     </div>
                     <p class="muted">Provider-public raw public URL display, public proxy access, byte streaming, provider network/object writes, and browser durable authority remain blocked. The use control records only a server-returned redacted allow/deny decision.</p>
                 </form>
+                <div id="signed-reference-revocation-audit-panel" class="result-review-panel signed-reference-revocation-audit-panel" data-rendered-mode="rendered_signed_reference_revocation_audit_read_only_surface" data-frontend-durable-authority="false" data-value-reveal-enabled="false" data-download-url-exposed="false" aria-label="Signed-reference and provider-private URL revocation audit read-only surface" aria-live="polite">
+                    <div class="empty-panel">External export download readiness authority is not available — signed-reference revocation audit surface is blocked.</div>
+                </div>
+                <form id="signed-reference-revocation-audit-revoke-form" class="result-review-form" data-rendered-mode="signed_reference_revocation_audit_revoke_control" data-value-reveal-enabled="false">
+                    <div id="signed-reference-revocation-audit-revoke-panel" class="result-review-panel">
+                        <div class="empty-panel">Provider-private signed URL receipt authority is not available — revocation control is blocked.</div>
+                    </div>
+                    <div class="result-review-controls external-export-download-controls" aria-label="Signed-reference revocation audit controls">
+                        <label class="field-label" for="signed-reference-revocation-audit-revoked-by">Revoked by (operator ID)</label>
+                        <input id="signed-reference-revocation-audit-revoked-by" class="dev-header-input" type="text" autocomplete="off" spellcheck="false" placeholder="layer3-rendered-workbench">
+                        <label class="field-label" for="signed-reference-revocation-audit-reason">Revocation reason</label>
+                        <input id="signed-reference-revocation-audit-reason" class="dev-header-input" type="text" autocomplete="off" spellcheck="false" placeholder="operator revoked from audit panel">
+                        <label class="field-label" for="signed-reference-revocation-audit-operator-confirmation">Operator confirmation (type REVOKE to confirm)</label>
+                        <input id="signed-reference-revocation-audit-operator-confirmation" class="dev-header-input" type="text" autocomplete="off" spellcheck="false" placeholder="REVOKE">
+                        <button id="signed-reference-revocation-audit-revoke-submit" class="secondary-btn" type="submit" disabled>Revoke Provider-Private Receipt</button>
+                    </div>
+                    <p class="muted">Revocation permanently marks the provider-private receipt as revoked server-side. Raw provider URL, download bytes, connector dispatch, and public URL remain blocked in this rendered surface. Only the existing revoke route is called; no new backend behavior is introduced.</p>
+                </form>
+                <!-- W2-S8: Provider-private download control panel — download affordance only, URL never rendered as text -->
+                <section
+                    id="provider-private-download-control-panel"
+                    class="workband provider-private-download-control-panel"
+                    data-rendered-mode="rendered_provider_private_download_control"
+                    data-value-reveal-enabled="false"
+                    data-download-url-exposed="true"
+                    data-production-readiness-claimed="false"
+                    aria-label="Provider-private signed URL download control"
+                    aria-live="polite"
+                >
+                    <div class="empty-panel">Provider-private download control is blocked until signed URL receipt authority is present.</div>
+                </section>
             </section>
             </section>
         </section>

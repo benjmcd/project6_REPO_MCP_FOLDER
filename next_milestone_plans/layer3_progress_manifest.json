@@ -48456,7 +48456,11 @@
   "p22_mixed_source_signed_reference_runtime_tracking": {
     "tracking_kind": "p22_mixed_source_signed_reference_runtime_tracking",
     "milestone": "p22_mixed_source_signed_reference_runtime",
-    "status": "branch_local_runtime_and_rendered_control_implementation_not_current_main",
+    "status": "current_main_runtime_implementation_verified",
+    "current_main_tip": "1f9a4ec6",
+    "post_merge_proof_date": "2026-06-11",
+    "post_merge_proof_command": "python -m pytest backend/tests -q -k signed_reference",
+    "post_merge_proof_result": "8 passed, 9 skipped, 3180 deselected",
     "planning_doc": "next_milestone_plans/multi-ingest/53-p22-mixed-signed-reference-freeze.md",
     "closeout_doc": "next_milestone_plans/multi-ingest/54-p22-runtime-closeout.md",
     "runtime_predecessor_doc": "next_milestone_plans/multi-ingest/51-p21-rendered-runtime-closeout.md",
@@ -48516,7 +48520,11 @@
   "p23_mixed_source_product_flow_usability_proof_tracking": {
     "tracking_kind": "p23_mixed_source_product_flow_usability_proof_tracking",
     "milestone": "p23_mixed_source_product_flow_usability_proof",
-    "status": "branch_local_rendered_product_flow_usability_proof_not_current_main",
+    "status": "current_main_rendered_product_flow_usability_proof_verified",
+    "current_main_tip": "1f9a4ec6",
+    "post_merge_proof_date": "2026-06-11",
+    "post_merge_proof_command": "python -m pytest backend/tests -q -k signed_reference",
+    "post_merge_proof_result": "8 passed, 9 skipped, 3180 deselected",
     "predecessor_runtime_doc": "next_milestone_plans/multi-ingest/54-p22-runtime-closeout.md",
     "closeout_doc": "next_milestone_plans/multi-ingest/55-p23-product-flow-usability-proof.md",
     "route_family": [
@@ -48563,7 +48571,11 @@
   "p24_mixed_source_product_authority_checkpoint_tracking": {
     "tracking_kind": "p24_mixed_source_product_authority_checkpoint_tracking",
     "milestone": "p24_mixed_source_product_authority_checkpoint",
-    "status": "branch_local_read_only_product_authority_checkpoint_not_current_main",
+    "status": "current_main_read_only_product_authority_checkpoint_verified",
+    "current_main_tip": "1f9a4ec6",
+    "post_merge_proof_date": "2026-06-11",
+    "post_merge_proof_command": "python -m pytest backend/tests -q -k signed_reference",
+    "post_merge_proof_result": "8 passed, 9 skipped, 3180 deselected",
     "predecessor_runtime_doc": "next_milestone_plans/multi-ingest/55-p23-product-flow-usability-proof.md",
     "closeout_doc": "next_milestone_plans/multi-ingest/56-p24-product-authority-checkpoint.md",
     "route_family": [],

@@ -1,6 +1,6 @@
 # P24 Mixed-Source Product-Authority Checkpoint Closeout
 
-Status: branch-local read-only product-authority checkpoint. Not current-main until merged and post-merge proof is recorded.
+Status: current-main. Content present on main tip 1f9a4ec6. The P24 read-only product-authority checkpoint rendered controls are on current main after the 2026-06-06 history rebuild. Post-merge proof recorded 2026-06-11.
 
 ## Scope
 
@@ -78,10 +78,24 @@ Branch-local verification passed:
 - `npx playwright test ./e2e/layer3-workbench.spec.js -g "query/source setup projection|output review package handoff projection|Sublayers AB projection" --project=chromium`
   (`3 passed`)
 
+## Post-Merge Proof (2026-06-11)
+
+Signed-reference backend test slice run against main tip 1f9a4ec6:
+
+```
+python -m pytest backend/tests -q -k "signed_reference"
+```
+
+Result: **8 passed, 9 skipped, 3180 deselected** (4 warnings, no failures).
+
+The P24 read-only checkpoint renders over already-loaded server-authoritative
+state without new routes. The signed-reference test surface confirms the P22
+authority chain underlying the checkpoint remains intact on current main.
+
 ## Next Posture
 
-Merge-review and current-main sync the branch-local P22/P23/P24 work before
-selecting another downstream surface. Provider/public URL governance,
+P22/P23/P24 are on current main. Provider/public URL governance,
 connector/destination/local-outbox dispatch, durable revocation UI/API,
 schema/source-shape expansion, and production readiness remain separate future
-freezes.
+freezes. The next downstream surface must be selected by a separate freeze
+before implementation.

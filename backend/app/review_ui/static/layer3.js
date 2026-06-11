@@ -632,6 +632,11 @@ const MOCKUP_ACTIVATION_READINESS_RENDERED_MODE = 'rendered_mockup_activation_re
 const MOCKUP_ACTIVATION_READINESS_RESPONSE_AUTHORITY = 'State.bootstrap.mockup_activation_readiness';
 
 const State = {
+    operatorIdentity: null,
+    operatorIdentityError: null,
+    operatorIdentityPending: false,
+    // Dev-mode in-memory header injection (only when auth_owner=none). Never persisted.
+    devInjectedHeaders: {},
     bootstrap: null,
     datasetVersionCandidates: null,
     datasetVersionCandidateError: null,
@@ -755,6 +760,8 @@ const State = {
     providerPublicUrlPrepareClientRequestId: null,
     providerPublicUrlError: null,
     providerPublicUrlPending: false,
+    signedReferenceRevocationAuditRevokeError: null,
+    signedReferenceRevocationAuditRevokePending: false,
     candidateBDefaultPromotionFinalProof: null,
     candidateBDefaultPromotionFinalProofError: null,
     candidateBDefaultPromotionFinalProofPending: false,
@@ -1201,6 +1208,13 @@ const State = {
 
 const elements = {
     themeSelector: document.getElementById('theme-selector'),
+    operatorIdentityChip: document.getElementById('operator-identity-chip'),
+    operatorAuthBanner: document.getElementById('operator-auth-banner'),
+    devHeaderInjection: document.getElementById('dev-header-injection'),
+    devXForwardedUser: document.getElementById('dev-x-forwarded-user'),
+    devXForwardedGroups: document.getElementById('dev-x-forwarded-groups'),
+    devHeaderInjectApply: document.getElementById('dev-header-inject-apply'),
+    devHeaderInjectClear: document.getElementById('dev-header-inject-clear'),
     authorityRail: document.getElementById('authority-rail'),
     authorityMatrixReviewPanel: document.getElementById('authority-matrix-review-panel'),
     candidateBDefaultPromotionStatusPanel: document.getElementById('candidate-b-default-promotion-status-panel'),
@@ -1340,6 +1354,16 @@ const elements = {
     providerPublicUrlStatus: document.getElementById('provider-public-url-status'),
     providerPublicUrlUse: document.getElementById('provider-public-url-use'),
     providerPublicUrlRevoke: document.getElementById('provider-public-url-revoke'),
+    packageSupersessionHistoryPanel: document.getElementById('package-supersession-history-panel'),
+    signedReferenceRevocationAuditPanel: document.getElementById('signed-reference-revocation-audit-panel'),
+    signedReferenceRevocationAuditRevokeForm: document.getElementById('signed-reference-revocation-audit-revoke-form'),
+    signedReferenceRevocationAuditRevokePanel: document.getElementById('signed-reference-revocation-audit-revoke-panel'),
+    signedReferenceRevocationAuditRevokedBy: document.getElementById('signed-reference-revocation-audit-revoked-by'),
+    signedReferenceRevocationAuditReason: document.getElementById('signed-reference-revocation-audit-reason'),
+    signedReferenceRevocationAuditOperatorConfirmation: document.getElementById('signed-reference-revocation-audit-operator-confirmation'),
+    signedReferenceRevocationAuditRevokeSubmit: document.getElementById('signed-reference-revocation-audit-revoke-submit'),
+    // W2-S8: Provider-private download control panel
+    providerPrivateDownloadControlPanel: document.getElementById('provider-private-download-control-panel'),
     contextList: document.getElementById('context-list'),
     eventList: document.getElementById('event-list'),
     unavailableList: document.getElementById('unavailable-list'),
@@ -2537,8 +2561,21 @@ async function hydrateSublayerVisualizationCollections(summary) {
     return summary;
 }
 
+function devInjectedFetchHeaders() {
+    // Return extra headers for all API fetches when dev injection is active.
+    // Only populated when auth_owner=none; never includes identity material in storage.
+    const headers = {};
+    const user = State.devInjectedHeaders['x-forwarded-user'];
+    const groups = State.devInjectedHeaders['x-forwarded-groups'];
+    if (user) headers['X-Forwarded-User'] = user;
+    if (groups) headers['X-Forwarded-Groups'] = groups;
+    return headers;
+}
+
 async function getJson(path) {
-    const res = await fetch(`${API_ROOT}${path}`);
+    const res = await fetch(`${API_ROOT}${path}`, {
+        headers: devInjectedFetchHeaders(),
+    });
     const data = await parseResponse(res);
     return isSessionSummaryReadPath(path) ? hydrateSublayerVisualizationCollections(data) : data;
 }
@@ -2546,10 +2583,165 @@ async function getJson(path) {
 async function postJson(path, body) {
     const res = await fetch(`${API_ROOT}${path}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...devInjectedFetchHeaders() },
         body: JSON.stringify(body),
     });
     return parseResponse(res);
+}
+
+// ---------------------------------------------------------------------------
+// W1-S6: Operator identity projection
+// ---------------------------------------------------------------------------
+
+const OPERATOR_IDENTITY_PATH = `${API_ROOT}/operator/identity`;
+const OPERATOR_AUTH_ERROR_CODES = new Set([
+    'sec_xbrl_in_app_auth_policy_missing_identity_authority',
+    'sec_xbrl_in_app_auth_policy_untrusted_proxy_identity',
+    'sec_xbrl_in_app_auth_policy_missing_workspace_authority',
+    'sec_xbrl_in_app_auth_policy_missing_role_authority',
+    'sec_xbrl_in_app_auth_policy_insufficient_role',
+]);
+
+async function fetchOperatorIdentity() {
+    if (State.operatorIdentityPending) return;
+    State.operatorIdentityPending = true;
+    State.operatorIdentityError = null;
+    renderOperatorIdentityChip();
+    try {
+        const res = await fetch(OPERATOR_IDENTITY_PATH, {
+            headers: devInjectedFetchHeaders(),
+        });
+        const text = await res.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch (_) { data = { message: text }; }
+        if (!res.ok) {
+            const err = new Error(data?.message || `HTTP ${res.status}`);
+            err.status = res.status;
+            err.payload = data;
+            throw err;
+        }
+        State.operatorIdentity = data;
+    } catch (error) {
+        State.operatorIdentityError = error;
+        addEvent(`Operator identity fetch failed: ${error.message}`);
+    } finally {
+        State.operatorIdentityPending = false;
+    }
+    renderOperatorIdentityChip();
+    renderOperatorAuthBanner();
+    renderDevHeaderInjection();
+}
+
+function operatorIdentityAuthOwner() {
+    return State.operatorIdentity?.auth_owner || null;
+}
+
+function renderOperatorIdentityChip() {
+    const chip = elements.operatorIdentityChip;
+    if (!chip) return;
+
+    const error = State.operatorIdentityError;
+    const identity = State.operatorIdentity;
+    const pending = State.operatorIdentityPending;
+
+    if (pending && !identity && !error) {
+        chip.removeAttribute('data-auth-state');
+        chip.textContent = 'Identifying…';
+        return;
+    }
+
+    if (error) {
+        const code = error.status || '?';
+        chip.setAttribute('data-auth-state', 'blocked');
+        chip.textContent = `Auth blocked — ${code}`;
+        chip.title = error.payload?.error_code || error.message || `HTTP ${code}`;
+        return;
+    }
+
+    if (!identity) {
+        chip.removeAttribute('data-auth-state');
+        chip.textContent = 'Identity unavailable';
+        return;
+    }
+
+    const authOwner = identity.auth_owner || 'none';
+    const role = identity.derived_role || 'unknown';
+    const deploymentMode = identity.deployment_mode || '';
+    const refHash = identity.operator_ref_hash ? String(identity.operator_ref_hash).slice(0, 8) : null;
+
+    let label = '';
+    if (authOwner === 'none') {
+        // Local single-operator profile
+        label = `local • ${role}`;
+        if (deploymentMode) label += ` • ${deploymentMode}`;
+        chip.setAttribute('data-auth-state', 'local');
+    } else {
+        // Proxy-backed identity
+        label = refHash ? `${refHash}…` : 'proxy';
+        label += ` • ${role}`;
+        if (deploymentMode) label += ` • ${deploymentMode}`;
+        chip.setAttribute('data-auth-state', 'proxy');
+    }
+    chip.textContent = label;
+    chip.title = [
+        `auth_owner: ${authOwner}`,
+        `role: ${role}`,
+        `deployment_mode: ${deploymentMode}`,
+        refHash ? `operator_ref: ${refHash}…` : null,
+    ].filter(Boolean).join('\n');
+}
+
+function renderOperatorAuthBanner() {
+    const banner = elements.operatorAuthBanner;
+    if (!banner) return;
+    const error = State.operatorIdentityError;
+    if (!error) {
+        banner.hidden = true;
+        banner.innerHTML = '';
+        return;
+    }
+    const status = error.status;
+    const payload = error.payload;
+    const errorCode = payload?.error_code || `http_${status}`;
+    const isAuthCode = OPERATOR_AUTH_ERROR_CODES.has(errorCode)
+        || status === 401
+        || status === 409
+        || status === 403;
+    if (!isAuthCode) {
+        banner.hidden = true;
+        banner.innerHTML = '';
+        return;
+    }
+    const nextActions = Array.isArray(payload?.next_allowed_actions)
+        ? payload.next_allowed_actions
+        : [];
+    const actionText = nextActions.length
+        ? nextActions.map((a) => escapeHtml(a)).join(', ')
+        : (status === 409
+            ? 'Check TRUSTED_PROXY_MODE server configuration.'
+            : 'Check AUTH_OWNER and identity header configuration.');
+    banner.hidden = false;
+    banner.innerHTML = `
+        <div>
+            <span class="operator-auth-banner-code">${escapeHtml(errorCode)}</span>
+            Auth policy blocked this session.
+            <span class="operator-auth-banner-code">HTTP ${escapeHtml(String(status))}</span>
+        </div>
+        <div class="operator-auth-banner-action">${actionText}</div>
+    `;
+}
+
+function renderDevHeaderInjection() {
+    const container = elements.devHeaderInjection;
+    if (!container) return;
+    // Gate: only shown when server-derived auth_owner is 'none'.
+    // If identity not yet loaded or errored with proxy rejection, keep hidden.
+    const authOwner = operatorIdentityAuthOwner();
+    if (authOwner !== 'none') {
+        container.hidden = true;
+        return;
+    }
+    container.hidden = false;
 }
 
 function submitAttachmentForm(path, body) {
@@ -3209,8 +3401,16 @@ async function recoverSessionFromStorage() {
         addEvent(`Session ${summary.session_id} restored from server state.`);
         return true;
     } catch (error) {
-        clearSessionRecoveryAnchor();
-        addEvent(`Stored session recovery anchor cleared: ${error.message}`);
+        // Do NOT clear the anchor here.  The anchor was already validated by
+        // loadSessionRecoveryAnchor (schema, contract signature).  A fetch
+        // failure (network error, transient server error, or a concurrent
+        // init() reading an anchor that was just written by the test harness
+        // while a previous recovery fetch was still in-flight) should not
+        // destroy a structurally-valid anchor — the next page load will retry.
+        // Clearing here was the root cause of the reload-recovery race:
+        // init() on the first page.goto could read a freshly-written anchor,
+        // fail the fetch, and clear the anchor before page.reload() fired.
+        addEvent(`Session recovery fetch failed (anchor preserved): ${error.message}`);
         return false;
     }
 }
@@ -3442,6 +3642,11 @@ function clearProviderPrivateSignedUrlState() {
     State.providerPrivateSignedUrlPrepareClientRequestId = null;
     State.providerPrivateSignedUrlError = null;
     State.providerPrivateSignedUrlPending = false;
+    // W2-S8: clear in-memory download anchor URL — never persisted, cleared on state reset.
+    State.providerPrivateDownloadAnchorUrl = null;
+    State.providerPrivateDownloadPending = false;
+    State.providerPrivateDownloadError = null;
+    State.providerPrivateDownloadRedactedNotice = null;
     clearProviderPublicUrlState();
     storageRemove(sessionStorage, LAYER3_PROVIDER_PRIVATE_RECEIPT_STORAGE_KEY);
 }
@@ -26392,6 +26597,598 @@ function providerPublicUrlDisplayValue(value) {
     return value ?? 'none';
 }
 
+// ── W1-S9: Package supersession history read-only projection ──
+
+/**
+ * Returns true when at least one supersession authority record is in State.
+ * Fail-closed: absent authority → blocked panel.
+ */
+function packageSupersessionHistoryAuthorityPresent() {
+    return Boolean(
+        State.replacementPackageSetAuthority
+        || State.packageSupersessionCommit
+        || State.replacementPackageArtifactMaterialization
+    );
+}
+
+/**
+ * Returns the label / pill for the history projection panel.
+ */
+function packageSupersessionHistoryPanelState() {
+    if (!packageSupersessionHistoryAuthorityPresent()) {
+        return {
+            label: 'package_supersession_history_blocked',
+            pill: 'blocked',
+            message: 'Replacement-package authority or supersession commit must be present.',
+        };
+    }
+    const commit = packageSupersessionCommitState() || {};
+    const authority = replacementPackageSetAuthorityState() || {};
+    if (commit.package_supersession_commit_id) {
+        return {
+            label: 'package_supersession_commit_recorded',
+            pill: 'ok',
+            message: 'Package supersession commit is recorded in session State.',
+        };
+    }
+    if (authority.replacement_package_set_authority_id) {
+        return {
+            label: 'replacement_package_set_authority_recorded',
+            pill: 'ready',
+            message: 'Replacement-package set authority is recorded; supersession commit pending.',
+        };
+    }
+    return {
+        label: 'package_supersession_history_partial',
+        pill: 'preview',
+        message: 'Replacement artifact materialization recorded; authority and commit pending.',
+    };
+}
+
+/**
+ * Renders the W1-S9 read-only supersession history projection panel.
+ *
+ * No backend GET/history route exists for supersession records — this panel
+ * reflects only in-session State (replacementPackageSetAuthority,
+ * packageSupersessionCommit). A dedicated history projection route has not
+ * been implemented; when one is added, this panel can be extended to hydrate
+ * from it.
+ */
+function renderPackageSupersessionHistoryPanel() {
+    const panel = elements.packageSupersessionHistoryPanel;
+    if (!panel) return;
+
+    const panelState = packageSupersessionHistoryPanelState();
+
+    if (!packageSupersessionHistoryAuthorityPresent()) {
+        panel.innerHTML = `
+            <div class="result-review-status">
+                <span class="status-pill blocked">${escapeHtml(panelState.label)}</span>
+                <span class="rail-label">${escapeHtml(panelState.message)}</span>
+            </div>
+        `;
+        return;
+    }
+
+    const materialization = replacementPackageArtifactMaterializationState() || {};
+    const authority = replacementPackageSetAuthorityState() || {};
+    const commit = packageSupersessionCommitState() || {};
+
+    panel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+            <span class="rail-label">${escapeHtml(panelState.message)}</span>
+        </div>
+        <div class="result-review-grid package-supersession-history-grid">
+            <section class="result-review-card">
+                <strong>History Projection Notice</strong>
+                <ul>
+                    ${fieldItem('read-only surface', 'rendered_package_supersession_history_read_only_projection', { code: true })}
+                    ${fieldItem('browser durable authority', false)}
+                    ${fieldItem('value reveal enabled', false)}
+                    ${fieldItem('production readiness claimed', false)}
+                    ${fieldItem('backend history route', 'none — no GET/history route exists in package.py; projection reflects session State only')}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Replacement Artifact Materialization</strong>
+                <ul>
+                    ${fieldItem('materialization id', materialization.replacement_artifact_materialization_id, { code: true })}
+                    ${fieldItem('mode', materialization.replacement_package_artifact_materialization_mode, { code: true })}
+                    ${fieldItem('namespace', materialization.artifact_namespace, { code: true })}
+                    ${fieldItem('replacement set id', materialization.replacement_package_set_id, { code: true })}
+                    ${fieldItem('replacement set hash', materialization.replacement_package_set_hash, { code: true })}
+                    ${fieldItem('next state', materialization.next_state)}
+                    ${fieldItem('status', materialization.status)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Replacement Package Set Authority</strong>
+                <ul>
+                    ${fieldItem('authority id', authority.replacement_package_set_authority_id, { code: true })}
+                    ${fieldItem('replacement set id', authority.replacement_package_set_id, { code: true })}
+                    ${fieldItem('replacement set hash', authority.replacement_package_set_hash, { code: true })}
+                    ${fieldItem('authority basis hash', authority.authority_basis_hash, { code: true })}
+                    ${fieldItem('next state', authority.next_state)}
+                    ${fieldItem('status', authority.status)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Package Supersession Commit</strong>
+                <ul>
+                    ${fieldItem('commit id', commit.package_supersession_commit_id, { code: true })}
+                    ${fieldItem('commit mode', commit.package_supersession_commit_mode, { code: true })}
+                    ${fieldItem('commit basis hash', commit.commit_basis_hash, { code: true })}
+                    ${fieldItem('downstream dependency hash', commit.downstream_dependency_hash, { code: true })}
+                    ${fieldItem('next state', commit.next_state)}
+                    ${fieldItem('status', commit.status)}
+                </ul>
+            </section>
+            ${renderErrorCard(State.replacementPackageSetAuthorityError || State.packageSupersessionCommitError || State.replacementPackageArtifactMaterializationError)}
+        </div>
+    `;
+}
+
+// ── W1-S7: Signed-reference & provider-private URL revocation audit panel ──
+
+/**
+ * Returns true when there is enough server authority to show the audit surface.
+ * Fail-closed: absent readiness → blocked panel, no controls enabled.
+ */
+function signedReferenceRevocationAuditAuthorityPresent() {
+    return Boolean(
+        externalExportDownloadPrepareState()
+        || State.providerPrivateSignedUrlPrepare
+        || State.providerPrivateSignedUrlStatus
+        || State.providerPrivateSignedUrlRevoke
+    );
+}
+
+/**
+ * Returns the current panel state object for the read-only audit surface.
+ */
+function signedReferenceRevocationAuditPanelState() {
+    if (!signedReferenceRevocationAuditAuthorityPresent()) {
+        return {
+            label: 'signed_reference_revocation_audit_blocked',
+            pill: 'blocked',
+            message: 'External export download readiness authority is not available — audit surface is blocked.',
+        };
+    }
+    if (State.signedReferenceRevocationAuditRevokeError) {
+        return {
+            label: State.signedReferenceRevocationAuditRevokeError.error_code || 'signed_reference_revocation_audit_revoke_blocked',
+            pill: 'blocked',
+            message: State.signedReferenceRevocationAuditRevokeError.message || 'Revocation was rejected by the server.',
+        };
+    }
+    const receiptId = providerPrivateSignedUrlReceiptId();
+    const latestState = providerPrivateSignedUrlLatestState();
+    if (latestState === 'provider_private_signed_url_revoked') {
+        return {
+            label: 'signed_reference_revocation_recorded',
+            pill: 'ok',
+            message: 'Provider-private signed URL receipt has been revoked. Audit record is final.',
+        };
+    }
+    if (receiptId) {
+        return {
+            label: 'signed_reference_revocation_audit_ready',
+            pill: 'ready',
+            message: 'Provider-private signed URL receipt is present. Revocation control is available.',
+        };
+    }
+    const signed = State.externalExportDownloadSignedReference || {};
+    if (signed.signed_reference_receipt_id) {
+        return {
+            label: 'signed_reference_present_provider_private_pending',
+            pill: 'preview',
+            message: 'Signed-reference token is recorded. Prepare a provider-private receipt to enable revocation control.',
+        };
+    }
+    return {
+        label: 'signed_reference_revocation_audit_no_receipt',
+        pill: 'preview',
+        message: 'External export readiness is present but no signed-reference or provider-private receipt has been prepared yet.',
+    };
+}
+
+/**
+ * Returns true when the revoke button should be enabled.
+ * Mirrors the same gate as canRevokeProviderPrivateSignedUrl() but adds
+ * the operator confirmation check.
+ */
+function canSubmitSignedReferenceRevocationAuditRevoke() {
+    const confirmation = String(
+        elements.signedReferenceRevocationAuditOperatorConfirmation?.value || ''
+    ).trim();
+    return Boolean(
+        confirmation === 'REVOKE'
+        && canRevokeProviderPrivateSignedUrl()
+        && !State.signedReferenceRevocationAuditRevokePending
+    );
+}
+
+/**
+ * Redacts any token/URL value before display.
+ * Non-empty strings are replaced with a character-count indicator.
+ * null/undefined → 'none'. All other values → String(value).
+ */
+function signedReferenceAuditRedact(value) {
+    if (value == null) return 'none';
+    if (typeof value === 'string' && value.length > 0) {
+        return `[redacted: ${value.length} chars]`;
+    }
+    return String(value);
+}
+
+/**
+ * Renders the read-only audit listing panel (signed-reference tokens + provider-private URL state).
+ */
+function renderSignedReferenceRevocationAuditPanel() {
+    const panel = elements.signedReferenceRevocationAuditPanel;
+    if (!panel) return;
+    const panelState = signedReferenceRevocationAuditPanelState();
+
+    if (!signedReferenceRevocationAuditAuthorityPresent()) {
+        panel.innerHTML = `
+            <div class="result-review-status">
+                <span class="status-pill blocked">${escapeHtml(panelState.label)}</span>
+                <span class="rail-label">${escapeHtml(panelState.message)}</span>
+            </div>
+        `;
+        return;
+    }
+
+    const external = externalExportDownloadPrepareState() || {};
+    const signed = State.externalExportDownloadSignedReference || {};
+    const provider = providerPrivateSignedUrlAuthorityState() || {};
+    const providerRevoke = State.providerPrivateSignedUrlRevoke || {};
+
+    panel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+            <span class="rail-label">${escapeHtml(panelState.message)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Signed Reference Audit</strong>
+                <ul>
+                    ${fieldItem('receipt id', signed.signed_reference_receipt_id, { code: true })}
+                    ${fieldItem('token id', signed.signed_reference_token_id, { code: true })}
+                    ${fieldItem('token prefix', signed.signed_reference_token_prefix, { code: true })}
+                    ${fieldItem('state', signed.signed_reference_state)}
+                    ${fieldItem('revoked', signed.signed_reference_revoked)}
+                    ${fieldItem('use count', signed.signed_reference_use_count)}
+                    ${fieldItem('max use count', signed.signed_reference_max_use_count)}
+                    ${fieldItem('replay policy', signed.signed_reference_replay_policy)}
+                    ${fieldItem('expires at', signed.signed_reference_expires_at)}
+                    ${fieldItem('audit event id', signed.signed_reference_audit_event_id, { code: true })}
+                    ${fieldItem('token', signedReferenceAuditRedact(signed.signed_reference_token), { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Provider-Private Receipt</strong>
+                <ul>
+                    ${fieldItem('receipt id', provider.provider_signed_url_receipt_id, { code: true })}
+                    ${fieldItem('state', provider.provider_signed_url_state)}
+                    ${fieldItem('delivery mode', provider.delivery_mode)}
+                    ${fieldItem('url redacted', provider.provider_url_redacted, { code: true })}
+                    ${fieldItem('expires at', provider.provider_url_expires_at)}
+                    ${fieldItem('use count', provider.provider_url_use_count)}
+                    ${fieldItem('max use count', provider.provider_url_max_use_count)}
+                    ${fieldItem('revoked', provider.provider_url_revoked)}
+                    ${fieldItem('revocation supported', provider.provider_url_revocation_supported)}
+                    ${fieldItem('artifact hash', provider.source_artifact_hash, { code: true })}
+                    ${fieldItem('artifact size bytes', provider.source_artifact_size_bytes)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Readiness Gate</strong>
+                <ul>
+                    ${fieldItem('readiness ref', external.external_export_download_record_ref, { code: true })}
+                    ${fieldItem('descriptor ref', external.export_download_descriptor_ref, { code: true })}
+                    ${fieldItem('readiness state', externalExportDownloadStateName(external))}
+                    ${fieldItem('pass type', external.pass_type)}
+                    ${fieldItem('method', external.method)}
+                    ${fieldItem('source gate', external.source_gate)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Revocation Record</strong>
+                <ul>
+                    ${fieldItem('revocation recorded', providerRevoke.revocation_recorded)}
+                    ${fieldItem('idempotency key', providerRevoke.revocation_idempotency_key, { code: true })}
+                    ${fieldItem('receipt id', providerRevoke.provider_signed_url_receipt_id, { code: true })}
+                    ${fieldItem('final state', providerRevoke.provider_signed_url_state)}
+                    ${fieldItem('next state', providerRevoke.next_state)}
+                    ${fieldItem('next allowed actions', Array.isArray(providerRevoke.next_allowed_actions) ? providerRevoke.next_allowed_actions.join(', ') : providerRevoke.next_allowed_actions)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Still Disabled</strong>
+                <div class="downstream-locks">${renderDownstreamLocks([
+                    'download_url_exposure',
+                    'provider_public_url_governance',
+                    'connector_dispatch',
+                    'raw_token_display',
+                    'byte_streaming',
+                    'provider_network_write',
+                ])}</div>
+            </section>
+            ${renderErrorCard(State.signedReferenceRevocationAuditRevokeError)}
+        </div>
+    `;
+}
+
+/**
+ * Renders the revocation control sub-panel and manages button enable state.
+ */
+function renderSignedReferenceRevocationAuditRevokePanel() {
+    const revokePanel = elements.signedReferenceRevocationAuditRevokePanel;
+    const revokeSubmit = elements.signedReferenceRevocationAuditRevokeSubmit;
+    if (!revokePanel) return;
+
+    if (!signedReferenceRevocationAuditAuthorityPresent()) {
+        revokePanel.innerHTML = `<div class="empty-panel">Provider-private signed URL receipt authority is not available — revocation control is blocked.</div>`;
+        if (revokeSubmit) revokeSubmit.disabled = true;
+        return;
+    }
+
+    const receiptId = providerPrivateSignedUrlReceiptId();
+    const latestState = providerPrivateSignedUrlLatestState();
+    const providerRevoke = State.providerPrivateSignedUrlRevoke || {};
+
+    if (!receiptId) {
+        revokePanel.innerHTML = `<div class="empty-panel">No provider-private receipt is available for revocation. Prepare a receipt first using the provider-private signed URL controls above.</div>`;
+        if (revokeSubmit) revokeSubmit.disabled = true;
+        return;
+    }
+
+    const revokeState = {
+        label: latestState === 'provider_private_signed_url_revoked'
+            ? 'revocation_already_recorded'
+            : 'revocation_control_ready',
+        pill: latestState === 'provider_private_signed_url_revoked' ? 'ok' : 'ready',
+    };
+
+    revokePanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(revokeState.pill)}">${escapeHtml(revokeState.label)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Revoke Target</strong>
+                <ul>
+                    ${fieldItem('receipt id', receiptId, { code: true })}
+                    ${fieldItem('current state', latestState)}
+                    ${fieldItem('revoke path', providerPrivateSignedUrlRevokePath(), { code: true })}
+                    ${fieldItem('operator decision', 'revoke_provider_private_signed_url')}
+                    ${fieldItem('revocation recorded', providerRevoke.revocation_recorded)}
+                    ${fieldItem('idempotency key', providerRevoke.revocation_idempotency_key, { code: true })}
+                </ul>
+            </section>
+        </div>
+    `;
+
+    if (revokeSubmit) {
+        revokeSubmit.disabled = !canSubmitSignedReferenceRevocationAuditRevoke();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// W2-S8: Provider-private download control panel
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true when the download control should be shown (active prepared receipt).
+ * Fail-closed: absent authority keeps panel in blocked state.
+ */
+function providerPrivateDownloadControlAuthorityPresent() {
+    const provider = providerPrivateSignedUrlAuthorityState();
+    if (!provider) return false;
+    const state = provider.provider_signed_url_state;
+    // Only offer the download affordance when a receipt is in prepared state.
+    return state === 'provider_private_signed_url_prepared';
+}
+
+/**
+ * Renders the download control panel.
+ *
+ * LEAKAGE RULES enforced here:
+ *   - The signed URL is held only in State.providerPrivateDownloadAnchorUrl (in-memory).
+ *   - It is placed in anchor.href only at click time, never rendered into textContent.
+ *   - It is never written to localStorage/sessionStorage.
+ *   - It is never logged to the console.
+ *   - The panel's own data-download-url-exposed="true" attribute (set in HTML) honestly
+ *     reflects that this surface exposes a download affordance. The audit panel's
+ *     data-download-url-exposed="false" attribute is NOT modified here.
+ */
+function renderProviderPrivateDownloadControlPanel() {
+    const panel = elements.providerPrivateDownloadControlPanel;
+    if (!panel) return;
+
+    if (!providerPrivateDownloadControlAuthorityPresent()) {
+        panel.innerHTML = `<div class="empty-panel">Provider-private download control is blocked until signed URL receipt authority is present.</div>`;
+        return;
+    }
+
+    const provider = providerPrivateSignedUrlAuthorityState() || {};
+    const receiptId = provider.provider_signed_url_receipt_id || '';
+    const expiresAt = provider.provider_url_expires_at || '';
+    const recipientScope = provider.recipient_scope || '';
+    const hasInMemoryUrl = Boolean(State.providerPrivateDownloadAnchorUrl);
+    const isPending = Boolean(State.providerPrivateDownloadPending);
+    const fetchError = State.providerPrivateDownloadError || null;
+    const redactedNotice = State.providerPrivateDownloadRedactedNotice || null;
+
+    // Status pill and message — three states: url ready, redacted (no url), awaiting arm.
+    const pillClass = hasInMemoryUrl ? 'ok' : (redactedNotice ? 'blocked' : 'preview');
+    const pillLabel = hasInMemoryUrl
+        ? 'download_ready'
+        : (redactedNotice ? 'provider_private_download_redacted' : 'provider_private_download_control_ready');
+    const railMessage = hasInMemoryUrl
+        ? 'Download anchor is ready — click the link to retrieve the package. The URL is not rendered as text.'
+        : (redactedNotice
+            ? escapeHtml(redactedNotice)
+            : 'Operator confirmation required before download anchor is armed.');
+
+    panel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${pillClass}">
+                ${pillLabel}
+            </span>
+            <span class="rail-label">
+                ${railMessage}
+            </span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Receipt</strong>
+                <ul>
+                    ${fieldItem('receipt id', receiptId, { code: true })}
+                    ${fieldItem('state', provider.provider_signed_url_state)}
+                    ${fieldItem('expires at', expiresAt)}
+                    ${fieldItem('delivery mode', provider.delivery_mode)}
+                    ${fieldItem('url redacted', provider.provider_url_redacted, { code: true })}
+                </ul>
+            </section>
+            ${recipientScope ? `<section class="result-review-card">
+                <strong>Recipient</strong>
+                <ul>${fieldItem('scope', recipientScope, { code: true })}</ul>
+            </section>` : ''}
+            <section class="result-review-card">
+                <strong>Still Disabled</strong>
+                <div class="downstream-locks">${renderDownstreamLocks([
+                    'value_reveal',
+                    'provider_network_write',
+                    'connector_dispatch',
+                    'raw_token_display',
+                    'byte_streaming',
+                    'production_readiness',
+                ])}</div>
+            </section>
+            ${renderErrorCard(fetchError)}
+        </div>
+        <div class="provider-private-download-control-actions">
+            <label class="provider-private-download-confirmation-label">
+                <input
+                    id="provider-private-download-confirmation"
+                    type="checkbox"
+                    class="provider-private-download-confirmation"
+                    ${isPending ? 'disabled' : ''}
+                >
+                I confirm I am the intended recipient operator for this signed-URL package delivery.
+            </label>
+            <button
+                id="provider-private-download-arm-btn"
+                class="secondary-btn provider-private-download-arm-btn"
+                type="button"
+                ${isPending ? 'disabled' : ''}
+            >${isPending ? 'Fetching status…' : 'Arm Download Link'}</button>
+            ${hasInMemoryUrl ? `
+            <a
+                id="provider-private-download-anchor"
+                class="provider-private-download-anchor primary-btn"
+                href="#"
+                data-receipt-id="${escapeHtml(receiptId)}"
+                download
+                aria-label="Download provider-private package (URL set at click time from in-memory receipt)"
+            >Download Package</a>` : ''}
+        </div>
+    `;
+
+    // Wire the arm button after innerHTML is set.
+    const armBtn = panel.querySelector('#provider-private-download-arm-btn');
+    const confirmCheck = panel.querySelector('#provider-private-download-confirmation');
+    const anchor = panel.querySelector('#provider-private-download-anchor');
+
+    if (armBtn) {
+        armBtn.addEventListener('click', () => {
+            if (!confirmCheck?.checked) return;
+            armProviderPrivateDownloadAnchor();
+        });
+    }
+    if (confirmCheck) {
+        confirmCheck.addEventListener('change', () => {
+            if (armBtn) armBtn.disabled = !confirmCheck.checked || isPending;
+        });
+    }
+
+    // Set href at click time only — never render the URL as text.
+    if (anchor && State.providerPrivateDownloadAnchorUrl) {
+        anchor.addEventListener('click', (event) => {
+            // Retrieve URL from in-memory state (not from DOM), set href just before navigation.
+            const url = State.providerPrivateDownloadAnchorUrl;
+            if (!url) {
+                event.preventDefault();
+                return;
+            }
+            anchor.href = url;
+            // Revoke after a tick so the browser can start the download.
+            setTimeout(() => {
+                // Clear the in-memory URL after use — single-use delivery.
+                State.providerPrivateDownloadAnchorUrl = null;
+                renderProviderPrivateDownloadControlPanel();
+            }, 500);
+        });
+    }
+}
+
+/**
+ * Fetches the latest provider-private signed URL status to arm the download anchor.
+ * The URL is stored ONLY in State.providerPrivateDownloadAnchorUrl (in-memory).
+ * Never written to localStorage/sessionStorage, never logged, never rendered as text.
+ */
+async function armProviderPrivateDownloadAnchor() {
+    if (!providerPrivateDownloadControlAuthorityPresent()) return;
+    const receiptId = providerPrivateSignedUrlReceiptId();
+    if (!receiptId) return;
+    State.providerPrivateDownloadPending = true;
+    State.providerPrivateDownloadError = null;
+    State.providerPrivateDownloadRedactedNotice = null;
+    renderProviderPrivateDownloadControlPanel();
+    try {
+        const statusPath = providerPrivateSignedUrlStatusPath();
+        const response = (
+            providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()
+            || providerPrivateSignedUrlUsesSourceDirectoryHybridFamily()
+        )
+            ? await postJson(statusPath, providerPrivateSignedUrlStatusPayload())
+            : await getJson(statusPath);
+        // The response contains provider_url_redacted but NOT the raw URL in normal flow.
+        // For the fake provider in the test environment, we record that the arm was performed.
+        // In a real provider integration, the raw URL would be a field returned only here.
+        // We store only what the server returns — if it returns a download URL field,
+        // it goes to in-memory state only. If not (redacted), we mark as armed with receipt-id.
+        const rawDownloadUrl = response.provider_download_url || response.signed_url || null;
+        State.providerPrivateSignedUrlStatus = response;
+        if (rawDownloadUrl) {
+            // Real URL present — arm the anchor. Store in-memory only; never log or persist.
+            State.providerPrivateDownloadAnchorUrl = rawDownloadUrl;
+            addEvent(`Provider-private download anchor armed for receipt ${receiptId.slice(0, 12)}…`);
+        } else {
+            // No real URL exposed (normal redacted posture) — do NOT arm the anchor.
+            // Render an honest status rather than presenting a non-functional armed state.
+            State.providerPrivateDownloadAnchorUrl = null;
+            State.providerPrivateDownloadRedactedNotice = 'redacted — no download URL exposed by server';
+            addEvent(`Provider-private download: redacted posture — no URL returned by server for receipt ${receiptId.slice(0, 12)}…`);
+        }
+        renderAll();
+    } catch (error) {
+        State.providerPrivateDownloadError = error.payload || {
+            error_code: 'provider_private_download_arm_failed',
+            message: error.message,
+        };
+        State.providerPrivateDownloadAnchorUrl = null;
+        addEvent(`Provider-private download arm blocked: ${error.message}`);
+        renderProviderPrivateDownloadControlPanel();
+    } finally {
+        State.providerPrivateDownloadPending = false;
+        renderProviderPrivateDownloadControlPanel();
+    }
+}
+
 function renderProviderPublicUrlPanel() {
     const provider = providerPublicUrlLatestSnapshot();
     const panelState = providerPublicUrlPanelState();
@@ -26620,6 +27417,9 @@ function setGateControls() {
 }
 
 function renderAll() {
+    renderOperatorIdentityChip();
+    renderOperatorAuthBanner();
+    renderDevHeaderInjection();
     renderMockupThemeShell();
     renderAuthority();
     renderRawMixedMaterializationPanel();
@@ -26662,6 +27462,7 @@ function renderAll() {
     renderPackageSupersessionCommitPanel();
     renderReplacementPackageArtifactManifestPanel();
     renderReplacementPackageNamespacePanel();
+    renderPackageSupersessionHistoryPanel();
     renderDownstreamAccessLifecycleDashboardPanel();
     renderHandoffExportPreparePanel();
     renderApsHandoffDispatchPanel();
@@ -26680,6 +27481,9 @@ function renderAll() {
     renderInternalWebhookDispatchStatusPanel();
     renderProviderPrivateSignedUrlPanel();
     renderProviderPublicUrlPanel();
+    renderSignedReferenceRevocationAuditPanel();
+    renderSignedReferenceRevocationAuditRevokePanel();
+    renderProviderPrivateDownloadControlPanel();
     setGateControls();
     renderOperationsDock();
 }
@@ -30307,6 +31111,54 @@ async function revokeProviderPrivateSignedUrl() {
     }
 }
 
+// W1-S7: Signed-reference revocation audit panel — revoke submit handler
+async function submitSignedReferenceRevocationAuditRevoke(event) {
+    event.preventDefault();
+    if (!canSubmitSignedReferenceRevocationAuditRevoke()) return;
+    const receiptId = providerPrivateSignedUrlReceiptId();
+    const revokedBy = String(
+        elements.signedReferenceRevocationAuditRevokedBy?.value || 'layer3-rendered-workbench'
+    ).trim() || 'layer3-rendered-workbench';
+    const revocationReason = String(
+        elements.signedReferenceRevocationAuditReason?.value || 'operator revoked from signed-reference revocation audit panel'
+    ).trim() || 'operator revoked from signed-reference revocation audit panel';
+    // Reuse the family-specific base payload so operator_decision and authority fields
+    // are correct for source-directory hybrid and package-supersession families,
+    // then override per-invocation and panel-provided fields.
+    const payload = {
+        ...providerPrivateSignedUrlRevokePayload(),
+        client_request_id: requestId(),
+        idempotency_key: `signed-ref-audit-revoke:${receiptId}`,
+        revoked_by: revokedBy,
+        revocation_reason: revocationReason,
+        decision_notes: 'Revocation submitted from signed-reference revocation audit panel; rendered workbench surface only.',
+    };
+    State.signedReferenceRevocationAuditRevokePending = true;
+    State.signedReferenceRevocationAuditRevokeError = null;
+    renderAll();
+    setBusy(elements.signedReferenceRevocationAuditRevokeSubmit, true, 'Revoke Provider-Private Receipt');
+    try {
+        State.providerPrivateSignedUrlRevoke = await postJson(
+            providerPrivateSignedUrlRevokePath(),
+            payload,
+        );
+        persistProviderPrivateReceiptSnapshot(State.providerPrivateSignedUrlRevoke);
+        addEvent('Provider-private signed URL receipt revoked from signed-reference audit panel.');
+        renderAll();
+    } catch (error) {
+        State.signedReferenceRevocationAuditRevokeError = error.payload || {
+            error_code: 'signed_reference_revocation_audit_revoke_failed',
+            message: error.message,
+        };
+        addEvent(`Signed-reference revocation audit revoke blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.signedReferenceRevocationAuditRevokePending = false;
+        setBusy(elements.signedReferenceRevocationAuditRevokeSubmit, false, 'Revoke Provider-Private Receipt');
+        setGateControls();
+    }
+}
+
 async function submitProviderPublicUrlPrepare(event) {
     event.preventDefault();
     if (!canPrepareProviderPublicUrl()) return;
@@ -30450,6 +31302,10 @@ async function loadApsRefusedArtifactTraces() {
 }
 
 async function init() {
+    // Identity chip: only bootstrap when the chip element is present in the DOM.
+    // Mockup pages include layer3.js but omit #operator-identity-chip, so this
+    // guard prevents spurious network requests (and console 404 errors) on those pages.
+    if (elements.operatorIdentityChip) fetchOperatorIdentity();
     try {
         State.bootstrap = await getJson('/bootstrap');
         await loadDatasetVersionCandidates();
@@ -30481,6 +31337,36 @@ if (systemThemeQuery) {
         if (State.themePreference === 'system') {
             applyThemePreference('system', { persist: false });
         }
+    });
+}
+
+// W1-S6: Dev header injection controls (only active when auth_owner=none).
+if (elements.devHeaderInjectApply) {
+    elements.devHeaderInjectApply.addEventListener('click', () => {
+        // Guard: only allow if server confirmed auth_owner=none.
+        if (operatorIdentityAuthOwner() !== 'none') return;
+        const user = (elements.devXForwardedUser?.value || '').trim();
+        const groups = (elements.devXForwardedGroups?.value || '').trim();
+        State.devInjectedHeaders = {};
+        if (user) State.devInjectedHeaders['x-forwarded-user'] = user;
+        if (groups) State.devInjectedHeaders['x-forwarded-groups'] = groups;
+        // Re-fetch identity with injected headers to reflect proxy-posture test.
+        State.operatorIdentity = null;
+        State.operatorIdentityError = null;
+        State.operatorIdentityPending = false;
+        fetchOperatorIdentity();
+    });
+}
+if (elements.devHeaderInjectClear) {
+    elements.devHeaderInjectClear.addEventListener('click', () => {
+        if (operatorIdentityAuthOwner() !== 'none') return;
+        State.devInjectedHeaders = {};
+        if (elements.devXForwardedUser) elements.devXForwardedUser.value = '';
+        if (elements.devXForwardedGroups) elements.devXForwardedGroups.value = '';
+        State.operatorIdentity = null;
+        State.operatorIdentityError = null;
+        State.operatorIdentityPending = false;
+        fetchOperatorIdentity();
     });
 }
 
@@ -30578,6 +31464,15 @@ elements.providerPrivateSignedUrlArtifactFamily.addEventListener('change', () =>
 elements.providerPrivateSignedUrlStatus.addEventListener('click', inspectProviderPrivateSignedUrlStatus);
 elements.providerPrivateSignedUrlUse.addEventListener('click', useProviderPrivateSignedUrl);
 elements.providerPrivateSignedUrlRevoke.addEventListener('click', revokeProviderPrivateSignedUrl);
+// W1-S7: Signed-reference revocation audit panel event listeners
+if (elements.signedReferenceRevocationAuditRevokeForm) {
+    elements.signedReferenceRevocationAuditRevokeForm.addEventListener('submit', submitSignedReferenceRevocationAuditRevoke);
+}
+if (elements.signedReferenceRevocationAuditOperatorConfirmation) {
+    elements.signedReferenceRevocationAuditOperatorConfirmation.addEventListener('input', () => {
+        renderSignedReferenceRevocationAuditRevokePanel();
+    });
+}
 elements.providerPublicUrlForm.addEventListener('submit', submitProviderPublicUrlPrepare);
 elements.providerPublicUrlStatus.addEventListener('click', inspectProviderPublicUrlStatus);
 elements.providerPublicUrlUse.addEventListener('click', useProviderPublicUrlDecision);
