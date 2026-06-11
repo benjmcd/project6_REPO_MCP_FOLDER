@@ -28,7 +28,7 @@ _OPERATOR_IDENTITY_PROJECTION_SCHEMA_ID = (
 )
 
 
-@router.get("/review/layer3/operator/identity", response_model=None)
+@router.get("/operator/identity", response_model=None)
 def get_operator_identity(request: Request) -> dict[str, Any] | JSONResponse:
     """Return the server-derived operator principal as a read-only projection.
 

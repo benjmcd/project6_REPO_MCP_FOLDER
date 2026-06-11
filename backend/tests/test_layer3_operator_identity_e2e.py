@@ -28,8 +28,8 @@ from main import app
 
 _API = "/api/v1/layer3"
 
-# The new projection endpoint under test
-_ME_PATH = "/review/layer3/operator/identity"
+# The new projection endpoint under test (served at _API + this path)
+_ME_PATH = "/operator/identity"
 
 # Representative routes — one from each family.
 # Handoff and package POST routes have all-optional Pydantic models so the auth
