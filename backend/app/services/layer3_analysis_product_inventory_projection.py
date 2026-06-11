@@ -427,10 +427,13 @@ def analysis_product_inventory_projection(
         blocked_reasons.append("sublayer_visualization_missing_or_invalid")
     if sublayer.get("no_side_effects") is not True:
         blocked_reasons.append("sublayer_visualization_not_read_only")
+    source_collection_counts_complete = not blocked_reasons
 
     material_objects = _as_list(sublayer.get("material_objects"))
     analysis_sets = _as_list(sublayer.get("analysis_sets"))
     pass_runs = _as_list(sublayer.get("pass_runs"))
+    sublayer_collections_truncated = sublayer.get("sublayer_collections_truncated") is True
+    source_collection_counts_complete = source_collection_counts_complete and not sublayer_collections_truncated
 
     package_authority = _as_dict(environment.get("package_authority"))
     session_eligibility = _session_eligibility(package_authority)
@@ -516,6 +519,8 @@ def analysis_product_inventory_projection(
             "session_review_state": session_review_state,
         },
         "blocked_reasons": blocked_reasons,
+        "source_collection_counts_complete": source_collection_counts_complete,
+        "sublayer_collections_truncated": sublayer_collections_truncated,
         # Scope: these flags describe the runtime authority of THIS read-only inventory
         # projection (it performs no writes and grants no package/promotion/dispatch
         # authority). They are NOT a global assertion that the system has no write routes

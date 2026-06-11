@@ -21198,6 +21198,10 @@ def test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_sess
     assert sublayer["schema_id"] == "layer3.sublayer_visualization_state.v1"
     assert sublayer["authority_source"] == "read_only_persisted_layer3_rows"
     assert sublayer["no_side_effects"] is True
+    assert sublayer["material_object_total"] == 1
+    assert sublayer["material_object_included_count"] == 1
+    assert sublayer["material_objects_truncated"] is False
+    assert sublayer["sublayer_collections_truncated"] is False
     assert len(sublayer["material_objects"]) == 1
     assert sublayer["material_objects"][0]["source_shape"] == "dataset_version"
     assert sublayer["material_objects"][0]["source_identity"]["dataset_version_id"] == "dv-pass-001"
@@ -21226,6 +21230,8 @@ def test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_sess
     assert projection["source_state"]["analysis_set_count"] == 1
     assert projection["source_state"]["pass_run_count"] == 0
     assert projection["source_state"]["latest_plan_approved"] is True
+    assert projection["source_state"]["source_collection_counts_complete"] is True
+    assert projection["source_state"]["sublayer_collections_truncated"] is False
     assert projection["forbidden_runtime_authority"]["write_route_enabled"] is False
     assert projection["forbidden_runtime_authority"]["connector_dispatch_enabled"] is False
 

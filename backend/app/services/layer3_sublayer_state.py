@@ -26,6 +26,39 @@ from app.services.layer3_utils import json_clone
 
 
 SUBLAYER_VISUALIZATION_STATE_SCHEMA_ID = "layer3.sublayer_visualization_state.v1"
+SUBLAYER_VISUALIZATION_COLLECTION_MAX = 100
+
+
+def _normalize_collection_limit(collection_limit: int | None) -> int | None:
+    if collection_limit is None:
+        return None
+    return max(0, int(collection_limit))
+
+
+def _bounded_query_rows(
+    query: Any,
+    *,
+    collection_limit: int | None,
+) -> tuple[list[Any], dict[str, Any]]:
+    normalized_limit = _normalize_collection_limit(collection_limit)
+    total = query.order_by(None).count()
+    if normalized_limit is not None:
+        query = query.limit(normalized_limit)
+    rows = query.all()
+    return rows, {
+        "total": total,
+        "included": len(rows),
+        "truncated": total > len(rows),
+    }
+
+
+def _collection_meta(prefix: str, meta: dict[str, Any], *, max_items: int | None) -> dict[str, Any]:
+    return {
+        f"{prefix}_total": meta["total"],
+        f"{prefix}_included_count": meta["included"],
+        f"{prefix}s_truncated": meta["truncated"],
+        f"{prefix}s_max": max_items,
+    }
 
 
 def unsupported_snapshot_trace(snapshot: L3MaterialSnapshot) -> dict[str, Any]:
@@ -214,42 +247,135 @@ def serialize_sublayer_latest_plan(analysis_plan: L3AnalysisPlan | None) -> dict
     }
 
 
-def session_sublayer_visualization_state(db: Session, *, session_id: str) -> dict[str, Any]:
+def _expand_snapshot_context_for_typing_records(
+    db: Session,
+    *,
+    session_id: str,
+    snapshot_by_id: dict[str, L3MaterialSnapshot],
+    typing_records: list[L3TypingRecord],
+) -> None:
+    missing_snapshot_ids = {
+        record.material_snapshot_id
+        for record in typing_records
+        if record.material_snapshot_id and record.material_snapshot_id not in snapshot_by_id
+    }
+    if not missing_snapshot_ids:
+        return
     snapshots = (
         db.query(L3MaterialSnapshot)
         .filter(L3MaterialSnapshot.session_id == session_id)
-        .order_by(L3MaterialSnapshot.material_snapshot_id.asc())
+        .filter(L3MaterialSnapshot.material_snapshot_id.in_(sorted(missing_snapshot_ids)))
         .all()
     )
-    typing_records = (
-        db.query(L3TypingRecord)
-        .filter(L3TypingRecord.session_id == session_id)
-        .order_by(L3TypingRecord.typing_record_id.asc())
-        .all()
-    )
-    analysis_units = (
+    for snapshot in snapshots:
+        snapshot_by_id.setdefault(snapshot.material_snapshot_id, snapshot)
+
+
+def _expand_unit_context_for_analysis_sets(
+    db: Session,
+    *,
+    session_id: str,
+    unit_by_id: dict[str, L3AnalysisUnit],
+    analysis_sets: list[L3AnalysisSet],
+) -> None:
+    missing_unit_ids: set[str] = set()
+    for analysis_set in analysis_sets:
+        for unit_id in analysis_set.analysis_unit_ids_json or []:
+            unit_id = str(unit_id)
+            if unit_id and unit_id not in unit_by_id:
+                missing_unit_ids.add(unit_id)
+    if not missing_unit_ids:
+        return
+    units = (
         db.query(L3AnalysisUnit)
         .filter(L3AnalysisUnit.session_id == session_id)
-        .order_by(L3AnalysisUnit.analysis_unit_id.asc())
+        .filter(L3AnalysisUnit.analysis_unit_id.in_(sorted(missing_unit_ids)))
         .all()
     )
-    analysis_sets = (
+    for unit in units:
+        unit_by_id.setdefault(unit.analysis_unit_id, unit)
+
+
+def session_sublayer_visualization_state(db: Session, *, session_id: str) -> dict[str, Any]:
+    return _bounded_session_sublayer_visualization_state(
+        db,
+        session_id=session_id,
+        collection_limit=SUBLAYER_VISUALIZATION_COLLECTION_MAX,
+    )
+
+
+def _bounded_session_sublayer_visualization_state(
+    db: Session,
+    *,
+    session_id: str,
+    collection_limit: int | None = SUBLAYER_VISUALIZATION_COLLECTION_MAX,
+) -> dict[str, Any]:
+    normalized_limit = _normalize_collection_limit(collection_limit)
+    snapshots, material_object_limits = _bounded_query_rows(
+        db.query(L3MaterialSnapshot)
+        .filter(L3MaterialSnapshot.session_id == session_id)
+        .order_by(L3MaterialSnapshot.material_snapshot_id.asc()),
+        collection_limit=normalized_limit,
+    )
+    typing_records, typing_record_limits = _bounded_query_rows(
+        db.query(L3TypingRecord)
+        .filter(L3TypingRecord.session_id == session_id)
+        .order_by(L3TypingRecord.typing_record_id.asc()),
+        collection_limit=normalized_limit,
+    )
+    analysis_units, analysis_unit_limits = _bounded_query_rows(
+        db.query(L3AnalysisUnit)
+        .filter(L3AnalysisUnit.session_id == session_id)
+        .order_by(L3AnalysisUnit.analysis_unit_id.asc()),
+        collection_limit=normalized_limit,
+    )
+    analysis_sets, analysis_set_limits = _bounded_query_rows(
         db.query(L3AnalysisSet)
         .filter(L3AnalysisSet.session_id == session_id)
-        .order_by(L3AnalysisSet.analysis_set_id.asc())
-        .all()
+        .order_by(L3AnalysisSet.analysis_set_id.asc()),
+        collection_limit=normalized_limit,
     )
-    pass_runs = (
+    pass_runs, pass_run_limits = _bounded_query_rows(
         db.query(L3PassRun)
         .filter(L3PassRun.session_id == session_id)
-        .order_by(L3PassRun.pass_run_id.asc())
-        .all()
+        .order_by(L3PassRun.pass_run_id.asc()),
+        collection_limit=normalized_limit,
     )
     snapshot_by_id = {snapshot.material_snapshot_id: snapshot for snapshot in snapshots}
     unit_by_id = {unit.analysis_unit_id: unit for unit in analysis_units}
+    _expand_snapshot_context_for_typing_records(
+        db,
+        session_id=session_id,
+        snapshot_by_id=snapshot_by_id,
+        typing_records=typing_records,
+    )
+    _expand_unit_context_for_analysis_sets(
+        db,
+        session_id=session_id,
+        unit_by_id=unit_by_id,
+        analysis_sets=analysis_sets,
+    )
+    collection_meta = {
+        **_collection_meta("material_object", material_object_limits, max_items=normalized_limit),
+        **_collection_meta("typing_record", typing_record_limits, max_items=normalized_limit),
+        **_collection_meta("analysis_unit", analysis_unit_limits, max_items=normalized_limit),
+        **_collection_meta("analysis_set", analysis_set_limits, max_items=normalized_limit),
+        **_collection_meta("pass_run", pass_run_limits, max_items=normalized_limit),
+    }
+    collection_meta["sublayer_collections_truncated"] = any(
+        meta["truncated"]
+        for meta in (
+            material_object_limits,
+            typing_record_limits,
+            analysis_unit_limits,
+            analysis_set_limits,
+            pass_run_limits,
+        )
+    )
     return {
         "schema_id": SUBLAYER_VISUALIZATION_STATE_SCHEMA_ID,
         "authority_source": "read_only_persisted_layer3_rows",
+        **collection_meta,
         "material_objects": [serialize_sublayer_material_object(snapshot) for snapshot in snapshots],
         "typing_records": [
             serialize_sublayer_typing_record(record, snapshot_by_id=snapshot_by_id)

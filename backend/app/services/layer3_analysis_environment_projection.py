@@ -219,6 +219,7 @@ def analysis_environment_projection(
         blocked_reasons.append("sublayer_visualization_missing_or_invalid")
     if sublayer.get("no_side_effects") is not True:
         blocked_reasons.append("sublayer_visualization_not_read_only")
+    source_collection_counts_complete = not blocked_reasons
 
     material_objects = _as_list(sublayer.get("material_objects"))
     typing_records = _as_list(sublayer.get("typing_records"))
@@ -226,6 +227,8 @@ def analysis_environment_projection(
     pass_runs = _as_list(sublayer.get("pass_runs"))
     latest_plan_value = sublayer.get("latest_plan")
     latest_plan = latest_plan_value if isinstance(latest_plan_value, dict) else None
+    sublayer_collections_truncated = sublayer.get("sublayer_collections_truncated") is True
+    source_collection_counts_complete = source_collection_counts_complete and not sublayer_collections_truncated
     output_payload_count = sum(
         1 for pass_run in pass_runs if _as_dict(pass_run).get("output_payload_available") is True
     )
@@ -313,6 +316,8 @@ def analysis_environment_projection(
             "output_payload_count": output_payload_count,
             "latest_plan_status": latest_plan.get("plan_status") if latest_plan else None,
             "latest_plan_approved": bool(latest_plan.get("approved")) if latest_plan else False,
+            "source_collection_counts_complete": source_collection_counts_complete,
+            "sublayer_collections_truncated": sublayer_collections_truncated,
         },
         "plane_readiness": _plane_readiness(
             typing_records=typing_records,

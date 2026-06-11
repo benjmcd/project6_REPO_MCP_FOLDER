@@ -185,6 +185,8 @@ def test_inventory_fails_closed_for_missing_sublayer() -> None:
         "sublayer_visualization_missing_or_invalid",
         "sublayer_visualization_not_read_only",
     ]
+    assert projection["source_collection_counts_complete"] is False
+    assert projection["sublayer_collections_truncated"] is False
     assert projection["no_side_effects"] is True
     assert projection["forbidden_runtime_authority"] == {
         "write_route_enabled": False,
@@ -212,6 +214,15 @@ def test_inventory_empty_without_pass_runs() -> None:
         "session_review_state": None,
     }
     assert projection["no_side_effects"] is True
+    assert projection["source_collection_counts_complete"] is True
+    assert projection["sublayer_collections_truncated"] is False
+
+
+def test_inventory_reports_truncated_sublayer_source() -> None:
+    projection = _projection(sublayer=_sublayer(sublayer_collections_truncated=True))
+
+    assert projection["source_collection_counts_complete"] is False
+    assert projection["sublayer_collections_truncated"] is True
 
 
 def test_inventory_blocked_for_non_read_only_sublayer() -> None:
