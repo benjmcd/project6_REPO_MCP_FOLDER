@@ -36969,6 +36969,37 @@ def test_layer3_api_working_set_create_201_and_inventory(
     assert ws_id in ws_ids
 
 
+def test_layer3_api_session_summary_bounds_working_set_inventory_projection(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(layer3_workbench, "_WORKING_SET_INVENTORY_MAX", 2)
+    session_id = _construct_quant_package_set(client, tmp_path, request_id="api-ws-bounded")[0]
+    summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    snap_id = summary["sublayer_visualization"]["material_objects"][0]["material_snapshot_id"]
+
+    for idx in range(3):
+        resp = client.post(
+            "/api/v1/layer3/working-set",
+            json={
+                "session_id": session_id,
+                "client_request_id": f"ws-bound-{idx}",
+                "name": f"Bounded scope {idx}",
+                "members": [{"ref_kind": "material_snapshot", "ref_id": snap_id}],
+            },
+        )
+        assert resp.status_code == 201, resp.text
+
+    inv = client.get(f"/api/v1/layer3/session/{session_id}").json()["analysis_product_inventory_projection"]
+    assert inv["working_set_count"] == 2
+    assert inv["working_set_included_count"] == 2
+    assert inv["working_set_total"] == 3
+    assert inv["working_sets_truncated"] is True
+    assert inv["working_sets_max"] == 2
+    assert len(inv["working_sets"]) == 2
+
+
 def test_layer3_api_working_set_extra_forbid_rejects_server_fields(
     client: TestClient,
 ) -> None:

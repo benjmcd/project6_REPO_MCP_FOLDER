@@ -488,12 +488,23 @@ def serialize_working_set(ws: L3WorkingSet) -> dict[str, Any]:
     }
 
 
-def session_working_sets(db: Session, *, session_id: str) -> list[dict[str, Any]]:
+def count_session_working_sets(db: Session, *, session_id: str) -> int:
+    return db.query(L3WorkingSet).filter(L3WorkingSet.session_id == session_id).count()
+
+
+def session_working_sets(
+    db: Session,
+    *,
+    session_id: str,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
     """Return bounded read-only inventory of all working sets in the session."""
-    working_sets = (
+    query = (
         db.query(L3WorkingSet)
         .filter(L3WorkingSet.session_id == session_id)
         .order_by(L3WorkingSet.working_set_id.asc())
-        .all()
     )
+    if limit is not None:
+        query = query.limit(max(0, int(limit)))
+    working_sets = query.all()
     return [serialize_working_set(ws) for ws in working_sets]
