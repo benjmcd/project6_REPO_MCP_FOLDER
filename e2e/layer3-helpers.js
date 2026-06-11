@@ -787,15 +787,6 @@ export async function attachSessionToWorkbench(page, sessionId, sourceClasses = 
     renderAll();
     persistSessionRecoveryAnchor('test-harness');
   }, { session_id: sessionId, source_classes: sourceClasses });
-  await page.evaluate(async (session_id) => {
-    State.sessionSummary = await getJson(`/session/${encodeURIComponent(session_id)}`);
-    persistSessionRecoveryAnchor('test-harness-session-summary');
-    renderAll();
-  }, sessionId);
-  await page.waitForFunction(
-    (id) => State.sessionSummary?.session_id === id,
-    sessionId,
-  );
   const recoveryAnchor = await page.evaluate(() => (
     JSON.parse(localStorage.getItem('layer3_workbench_session_recovery_v1') || 'null')
   ));
