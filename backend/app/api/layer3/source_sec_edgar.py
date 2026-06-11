@@ -133,7 +133,7 @@ def post_sec_edgar_text_table_authority_envelope_validate(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -155,7 +155,7 @@ def post_sec_edgar_text_table_material_authority_bridge(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -177,7 +177,7 @@ def post_sec_edgar_text_table_live_source_artifact_material_authority_bridge(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -199,7 +199,7 @@ def post_sec_edgar_text_table_source_acquisition_authority(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -220,7 +220,7 @@ def post_sec_edgar_text_table_live_source_artifact_acquire(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -240,7 +240,7 @@ def post_sec_edgar_companyfacts_acquire_and_stage(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error_with_companyfacts_stage(
@@ -263,7 +263,7 @@ def get_sec_edgar_text_table_live_source_artifact_status(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -283,7 +283,7 @@ def post_sec_edgar_real_filing_acquisition_connector(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -303,7 +303,7 @@ def get_sec_edgar_real_filing_acquisition_connector_status(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -324,7 +324,7 @@ def post_sec_edgar_real_filing_downstream_validation(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -345,7 +345,7 @@ def get_sec_edgar_real_filing_downstream_validation_status(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -366,7 +366,7 @@ def post_sec_edgar_real_company_corpus_validation(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
         owner_stamp = layer3_sec_xbrl_in_app_auth_policy.derive_sec_xbrl_evidence_owner(
             dict(request.headers)
         )
@@ -391,7 +391,7 @@ def get_sec_edgar_real_company_corpus_validation_status(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -412,7 +412,7 @@ def post_sec_edgar_delivery_status_provenance(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -433,7 +433,7 @@ def get_sec_edgar_delivery_status_provenance_status(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -454,7 +454,7 @@ def post_sec_edgar_operator_inspection(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -475,7 +475,7 @@ def get_sec_edgar_operator_inspection_status(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -496,7 +496,7 @@ def post_sec_edgar_operator_product_surface(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -517,7 +517,7 @@ def get_sec_edgar_operator_product_surface_status(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -538,7 +538,7 @@ def post_sec_edgar_arelle_value_reveal(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -559,7 +559,7 @@ def get_sec_edgar_arelle_value_reveal_status(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -580,7 +580,7 @@ def post_sec_edgar_durable_delivery_archive(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -601,7 +601,7 @@ def get_sec_edgar_durable_delivery_archive_status(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -621,7 +621,7 @@ def post_sec_edgar_html_inline_xbrl_source_family_parser(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -641,7 +641,7 @@ def get_sec_edgar_html_inline_xbrl_source_family_parser_status(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -661,7 +661,7 @@ def post_sec_edgar_html_inline_xbrl_fact_authority(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -681,7 +681,7 @@ def get_sec_edgar_html_inline_xbrl_fact_authority_status(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -702,7 +702,7 @@ def post_sec_edgar_html_inline_xbrl_fact_material_bridge(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -723,7 +723,7 @@ def get_sec_edgar_html_inline_xbrl_fact_material_bridge_status(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -743,7 +743,7 @@ def post_sec_edgar_html_inline_xbrl_fact_statement_classification(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -763,7 +763,7 @@ def get_sec_edgar_html_inline_xbrl_fact_statement_classification_status(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -783,7 +783,7 @@ def post_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_pro
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -803,7 +803,7 @@ def get_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_prod
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -823,7 +823,7 @@ def post_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_pro
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -843,7 +843,7 @@ def get_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_prod
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -863,7 +863,7 @@ def post_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_pro
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -883,7 +883,7 @@ def get_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_prod
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -903,7 +903,7 @@ def post_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_pro
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -923,7 +923,7 @@ def get_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_prod
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -943,7 +943,7 @@ def post_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_pro
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -963,7 +963,7 @@ def get_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_prod
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -984,7 +984,7 @@ def post_sec_edgar_html_inline_xbrl_fact_material_downstream_proof(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -1006,7 +1006,7 @@ def post_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -1028,7 +1028,7 @@ def post_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatabil
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -1050,7 +1050,7 @@ def post_sec_edgar_html_inline_xbrl_material_bridge(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -1071,7 +1071,7 @@ def get_sec_edgar_html_inline_xbrl_material_bridge_status(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -1092,7 +1092,7 @@ def post_sec_edgar_html_inline_xbrl_downstream_proof(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -1114,7 +1114,7 @@ def post_sec_edgar_text_table_downstream_proof(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -1136,7 +1136,7 @@ def post_sec_edgar_text_table_live_source_artifact_downstream_proof(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -1158,7 +1158,7 @@ def post_sec_edgar_html_inline_xbrl_downstream_operator_status(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -1180,7 +1180,7 @@ def post_sec_edgar_text_table_live_source_artifact_downstream_operator_status(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -1202,7 +1202,7 @@ def post_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatabi
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -1224,7 +1224,7 @@ def post_sec_edgar_text_table_downstream_operator_status(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -1246,7 +1246,7 @@ def post_sec_edgar_text_table_downstream_operator_repeatability_trial(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
