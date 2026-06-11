@@ -7,6 +7,7 @@ BACKEND = Path(__file__).resolve().parents[1]
 SOURCE_FILES = [
     BACKEND / "app" / "api" / "layer3" / "handoff.py",
     BACKEND / "app" / "api" / "layer3" / "package.py",
+    BACKEND / "app" / "api" / "layer3" / "source_sec_edgar.py",
     BACKEND / "app" / "api" / "layer3" / "source_ingestion.py",
 ]
 

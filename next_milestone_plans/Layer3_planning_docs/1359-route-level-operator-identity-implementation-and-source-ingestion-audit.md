@@ -305,6 +305,44 @@ with the rationale above.)
 GET routes in `handoff.py` (5 status routes) remain unwired — outside doc-1358 scope
 (POST-only contract). No GET route is targeted by this implementation.
 
+## Source SEC EDGAR Surface Addendum
+
+Status: follow-up production-hardening runtime slice.
+
+`backend/app/api/layer3/source_sec_edgar.py` is now covered by the same route-level
+operator-identity seam and AST drift guard as the handoff, package, and source_ingestion
+POST modules.
+
+```yaml
+additional_wired_surface:
+  source_sec_edgar_post_routes: 35
+  drift_guard_files:
+    - backend/app/api/layer3/handoff.py
+    - backend/app/api/layer3/package.py
+    - backend/app/api/layer3/source_sec_edgar.py
+    - backend/app/api/layer3/source_ingestion.py
+identity_seam_under_none: inert; local single-operator principal derived via
+  _server_derived_principal; default local API behavior remains covered by test_layer3_api.py
+fail_closed_proxy_untrusted: HTTP 409, sec_xbrl_in_app_auth_policy_untrusted_proxy_identity
+fail_closed_proxy_missing_identity_header: HTTP 401, sec_xbrl_in_app_auth_policy_missing_identity_authority
+fail_closed_proxy_missing_groups_header: HTTP 401, sec_xbrl_in_app_auth_policy_missing_workspace_authority
+new_flags: none
+new_models: none
+new_migrations: none
+default_on_changes: none
+value_reveal_activation: false
+controlled_submit_activation: false
+model_migration_change: false
+production_readiness_claim: false
+```
+
+Rationale: the source/sec-edgar POST surface contains source acquisition, downstream proof,
+operator product surface, value reveal, durable delivery archive, parser, package review, and
+handoff/export preparation routes. Even when individual handlers are read projections, proxy
+posture should fail closed before service logic can expose source, value, artifact, or delivery
+state. This is still identity-presence enforcement only; GET status routes, StaticFiles, and
+reverse-proxy authn/authz remain separately owned unless a later slice governs them.
+
 ## Rollback
 
 The wiring is a single reversible commit set (the `_route_level_operator_identity` call +
@@ -313,7 +351,8 @@ Revert restores prior behavior. No schema change, no data migration, no new mode
 
 ## Test Evidence
 
-Four new test files provide evidence for the doc-1358 test contract:
+The original test files plus the source/sec-edgar addendum test provide evidence for the
+route-level identity contract:
 
 1. `backend/tests/test_layer3_handoff_operator_identity.py` (62 collected cases) — covers all
    19 handoff POST routes: inertness under `AUTH_OWNER=none` (parametrized sweep), 409 under
@@ -333,15 +372,21 @@ Four new test files provide evidence for the doc-1358 test contract:
    route), and JSON error-body assertions on the two FileResponse delivery routes.
 
 4. `backend/tests/test_layer3_operator_identity_drift_guard.py` (2 tests) — AST structural
-   guard over handoff.py/package.py/source_ingestion.py: every `router.post` handler must
+   guard over handoff.py/package.py/source_sec_edgar.py/source_ingestion.py: every `router.post` handler must
    carry a `request` parameter and begin with the seam try/except as its first executable
    statement (empty skip-list), so future POST routes cannot ship unwired or with a
    misplaced seam.
 
-Pre-existing `backend/tests/test_layer3_api.py` regression baseline is preserved (313 passed
-before and after wiring); the full `test_layer3_*` selection passes with no prior test counts
-decreased after wiring and the four reconciled candidate-b proxy route tests updated to the
-seam-first contract.
+5. `backend/tests/test_layer3_source_sec_edgar_operator_identity.py` (3 tests) - focused
+   runtime proof that a source/sec-edgar POST route fails closed with 409 under untrusted
+   proxy posture, fails closed with 401 when either configured proxy identity or workspace
+   authority is absent, does not echo proxy canaries, and does not reach source acquisition
+   service logic before the identity seam.
+
+Pre-existing `backend/tests/test_layer3_api.py` regression baseline is preserved (317 passed
+for this source/sec-edgar addendum slice); the full `test_layer3_*` selection from the original
+implementation record passed with no prior test counts decreased after wiring and the four
+reconciled candidate-b proxy route tests updated to the seam-first contract.
 
 Contract slices satisfied:
 - `inertness_proof_none`: covered by handoff + package inertness sweeps; seam function
