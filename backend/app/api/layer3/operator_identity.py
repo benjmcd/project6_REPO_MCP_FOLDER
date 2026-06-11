@@ -14,7 +14,7 @@ from app.api.layer3._shared import (  # noqa: F401
 )
 
 # ---------------------------------------------------------------------------
-# GET /review/layer3/operator/identity
+# GET /operator/identity (served at /api/v1/layer3/operator/identity)
 #
 # Read-only projection of the server-derived operator principal.  Never echoes
 # raw header values beyond what the policy already derives.  Fail-closed
