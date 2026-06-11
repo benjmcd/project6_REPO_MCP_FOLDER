@@ -149,6 +149,13 @@ class Settings(BaseSettings):
     connector_max_concurrent_runs: int = Field(default=1, alias="CONNECTOR_MAX_CONCURRENT_RUNS")
     connector_max_downloads_per_run: int = Field(default=1, alias="CONNECTOR_MAX_DOWNLOADS_PER_RUN")
     connector_per_host_fetch_limit: int = Field(default=2, alias="CONNECTOR_PER_HOST_FETCH_LIMIT")
+    layer3_route_authorization_mode: Literal["identity_presence", "role_enforcing"] = Field(
+        default="identity_presence",
+        alias="LAYER3_ROUTE_AUTHORIZATION_MODE",
+    )
+    proxy_roles_header: str = Field(default="X-Forwarded-Roles", alias="PROXY_ROLES_HEADER")
+    layer3_owner_role_tokens: str = Field(default="owner", alias="LAYER3_OWNER_ROLE_TOKENS")
+    layer3_auditor_role_tokens: str = Field(default="auditor", alias="LAYER3_AUDITOR_ROLE_TOKENS")
 
     model_config = SettingsConfigDict(env_file=str(BACKEND_ENV_FILE), env_file_encoding="utf-8", extra="ignore")
 
@@ -186,6 +193,16 @@ class Settings(BaseSettings):
         if normalized not in STORAGE_EXPOSURE_MODES:
             allowed = ", ".join(sorted(STORAGE_EXPOSURE_MODES))
             raise ValueError(f"STORAGE_EXPOSURE must be one of: {allowed}")
+        return normalized
+
+    @field_validator("layer3_route_authorization_mode", mode="before")
+    @classmethod
+    def _normalize_layer3_route_authorization_mode(cls, value: object) -> str:
+        normalized = "identity_presence" if value is None else str(value).strip().lower()
+        allowed_modes = {"identity_presence", "role_enforcing"}
+        if normalized not in allowed_modes:
+            allowed = ", ".join(sorted(allowed_modes))
+            raise ValueError(f"LAYER3_ROUTE_AUTHORIZATION_MODE must be one of: {allowed}")
         return normalized
 
     def model_post_init(self, __context: object) -> None:
@@ -240,6 +257,14 @@ class Settings(BaseSettings):
             )
         if self.database_url.startswith("sqlite"):
             raise ValueError("DATABASE_URL must not use sqlite when DEPLOYMENT_MODE=nonlocal")
+        if (
+            self.layer3_route_authorization_mode == "role_enforcing"
+            and not self.proxy_roles_header.strip()
+        ):
+            raise ValueError(
+                "PROXY_ROLES_HEADER is required when DEPLOYMENT_MODE=nonlocal and "
+                "LAYER3_ROUTE_AUTHORIZATION_MODE=role_enforcing"
+            )
 
     @property
     def raw_storage_dir(self) -> str:

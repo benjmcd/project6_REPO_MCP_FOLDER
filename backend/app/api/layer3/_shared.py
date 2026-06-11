@@ -3889,9 +3889,10 @@ def _sec_xbrl_controlled_value_reveal_submit_error_response(
 SecXbrlInAppAuthPolicyError = layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError
 
 
-def _route_level_operator_identity(request: Request) -> dict[str, Any]:
-    return layer3_sec_xbrl_in_app_auth_policy.route_level_operator_identity_required(
-        {str(key): str(value) for key, value in request.headers.items()}
+def _route_level_operator_identity(request: Request, *, access: str = "write") -> dict[str, Any]:
+    return layer3_sec_xbrl_in_app_auth_policy.route_level_operator_authorization_required(
+        {str(key): str(value) for key, value in request.headers.items()},
+        access=access,
     )
 
 

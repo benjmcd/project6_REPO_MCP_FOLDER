@@ -53,6 +53,7 @@ app.add_middleware(
 
 _PRE_BODY_OPERATOR_IDENTITY_POST_ROUTES = {
     f"{settings.api_prefix.rstrip('/')}/layer3/source/intake/upload",
+    f"{settings.api_prefix.rstrip('/')}/sources/upload",
 }
 
 

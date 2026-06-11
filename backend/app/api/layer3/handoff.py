@@ -77,7 +77,7 @@ def post_handoff_export_prepare(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.handoff_export_prepare(db, payload.model_dump(exclude_unset=True)))
@@ -95,7 +95,7 @@ def post_aps_handoff_dispatch(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.aps_handoff_dispatch(db, payload.model_dump(exclude_unset=True)))
@@ -113,7 +113,7 @@ def post_mixed_source_external_export_download_readiness(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -136,7 +136,7 @@ def post_external_export_download_prepare(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -156,7 +156,7 @@ def post_connector_dispatch_record(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -179,7 +179,7 @@ def post_connector_local_destination_receipt(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -202,7 +202,7 @@ def post_server_owned_local_outbox_fake_target(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -225,7 +225,7 @@ def post_server_owned_local_outbox_write(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -248,7 +248,7 @@ def post_local_outbox_provider_private_handoff_prepare(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -270,7 +270,7 @@ def get_local_outbox_provider_private_handoff_status(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -293,7 +293,7 @@ def post_external_local_export_write(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -315,7 +315,7 @@ def get_external_local_export_status(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -338,7 +338,7 @@ def post_internal_webhook_dispatch(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -360,7 +360,7 @@ def get_internal_webhook_dispatch_status(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -383,7 +383,7 @@ def post_external_export_download_signed_reference_generate(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.external_export_download_generate_signed_reference(db, payload))
@@ -401,7 +401,7 @@ def post_provider_private_signed_url_prepare(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -423,7 +423,7 @@ def get_provider_private_signed_url_status(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -446,7 +446,7 @@ def post_provider_private_signed_url_revoke(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -469,7 +469,7 @@ def post_provider_public_url_prepare(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -491,7 +491,7 @@ def get_provider_public_url_status(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -514,7 +514,7 @@ def post_provider_public_url_revoke(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -537,7 +537,7 @@ def post_provider_public_url_delivery_use(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
@@ -587,7 +587,7 @@ async def post_external_export_download_deliver(
     db: Session = Depends(get_db),
 ) -> FileResponse | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     try:
@@ -643,7 +643,7 @@ def post_external_export_download_signed_reference_use(
     db: Session = Depends(get_db),
 ) -> FileResponse | JSONResponse:
     try:
-        _route_level_operator_identity(request)
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     try:

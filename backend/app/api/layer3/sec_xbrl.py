@@ -1016,13 +1016,17 @@ def get_sec_xbrl_proxy_identity_readonly_projection(request: Request) -> dict[st
 
 
 @router.get("/sec-xbrl/runtime/posture")
-def get_sec_xbrl_runtime_posture() -> dict[str, Any]:
-    posture = layer3_sec_xbrl_posture.build_sec_xbrl_runtime_posture()
-    return {
-        **base_response(
-            layer3_sec_xbrl_posture.POSTURE_SCHEMA_ID,
-            request_id="sec-xbrl-runtime-posture",
-            status=posture["posture_state"],
-        ),
-        "sec_xbrl_runtime_posture": posture,
-    }
+def get_sec_xbrl_runtime_posture(request: Request) -> dict[str, Any]:
+    try:
+        _route_level_operator_identity(request, access="read")
+        posture = layer3_sec_xbrl_posture.build_sec_xbrl_runtime_posture()
+        return {
+            **base_response(
+                layer3_sec_xbrl_posture.POSTURE_SCHEMA_ID,
+                request_id="sec-xbrl-runtime-posture",
+                status=posture["posture_state"],
+            ),
+            "sec_xbrl_runtime_posture": posture,
+        }
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
