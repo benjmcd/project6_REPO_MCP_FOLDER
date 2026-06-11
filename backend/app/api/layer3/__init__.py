@@ -1303,6 +1303,7 @@ class Layer3SecXbrlOperatorReviewDecisionStatusRequest(BaseModel):
     operator_decision: Literal["inspect_sec_xbrl_operator_review_decision_status"]
     sec_xbrl_operator_review_decision_id: str | None = Field(default=None, min_length=1)
     decision_basis_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    operator_role: Literal["owner", "auditor"] | None = Field(default=None)
 
 
 class Layer3SecXbrlValueRevealAuthorityPrepareRequest(BaseModel):

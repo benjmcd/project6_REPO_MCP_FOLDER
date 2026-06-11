@@ -894,6 +894,41 @@ def _resolve_decision_for_status(
     return decision
 
 
+def resolve_operator_review_decision_workflow_linkage(
+    db: Session,
+    *,
+    sec_xbrl_operator_review_decision_id: str | None,
+    decision_basis_hash: str | None,
+) -> tuple[str, str] | None:
+    """Return (workflow_id, workflow_basis_hash) from the SERVER-STORED decision row.
+
+    Uses the same AND-filtered one_or_none lookup as _resolve_decision_for_status.
+    Returns None when no single row matches both supplied fields.
+    NEVER accepts caller-supplied workflow fields — linkage is always read from the row.
+    """
+    decision_id = _optional_text(
+        sec_xbrl_operator_review_decision_id,
+        "sec_xbrl_operator_review_decision_id",
+    )
+    basis_hash = _optional_text(decision_basis_hash, "decision_basis_hash")
+    if decision_id is None and basis_hash is None:
+        return None
+    query = db.query(L3SecXbrlOperatorReviewDecision)
+    if decision_id is not None:
+        query = query.filter(
+            L3SecXbrlOperatorReviewDecision.sec_xbrl_operator_review_decision_id == decision_id
+        )
+    if basis_hash is not None:
+        query = query.filter(L3SecXbrlOperatorReviewDecision.decision_basis_hash == basis_hash)
+    decision = query.one_or_none()
+    if decision is None:
+        return None
+    return (
+        str(decision.sec_xbrl_operator_review_workflow_id),
+        str(decision.workflow_basis_hash),
+    )
+
+
 def _validate_workflow_row_for_status(row: L3SecXbrlOperatorReviewWorkflow) -> None:
     packet_set = row.statement_packet_set
     if packet_set is None:
