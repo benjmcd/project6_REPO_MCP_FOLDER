@@ -266,8 +266,13 @@ def post_local_outbox_provider_private_handoff_prepare(
 )
 def get_local_outbox_provider_private_handoff_status(
     provider_private_handoff_receipt_id: str,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_local_outbox_provider_private_handoff.local_outbox_provider_private_handoff_status(
             db,
@@ -306,8 +311,13 @@ def post_external_local_export_write(
 )
 def get_external_local_export_status(
     external_local_export_receipt_id: str,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_external_local_export.external_local_export_status(
             db,
@@ -346,8 +356,13 @@ def post_internal_webhook_dispatch(
 )
 def get_internal_webhook_dispatch_status(
     internal_webhook_dispatch_receipt_id: str,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_internal_webhook_connector.internal_webhook_status(
             db,
@@ -404,8 +419,13 @@ def post_provider_private_signed_url_prepare(
 )
 def get_provider_private_signed_url_status(
     provider_signed_url_receipt_id: str,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_provider_private_signed_url.provider_private_signed_url_status(
             db,
@@ -467,8 +487,13 @@ def post_provider_public_url_prepare(
 )
 def get_provider_public_url_status(
     provider_public_url_receipt_id: str,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_provider_public_url.provider_public_url_status(
             db,

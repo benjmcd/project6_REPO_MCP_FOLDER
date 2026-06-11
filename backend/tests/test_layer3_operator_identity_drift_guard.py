@@ -10,12 +10,25 @@ SOURCE_FILES = [
     BACKEND / "app" / "api" / "layer3" / "source_sec_edgar.py",
     BACKEND / "app" / "api" / "layer3" / "source_ingestion.py",
 ]
+SENSITIVE_GET_SOURCE_FILES = [
+    BACKEND / "app" / "api" / "layer3" / "handoff.py",
+    BACKEND / "app" / "api" / "layer3" / "source_sec_edgar.py",
+    BACKEND / "app" / "api" / "layer3" / "source_ingestion.py",
+]
 
 
 def _is_router_post(decorator: ast.expr) -> bool:
+    return _is_router_route(decorator, "post")
+
+
+def _is_router_get(decorator: ast.expr) -> bool:
+    return _is_router_route(decorator, "get")
+
+
+def _is_router_route(decorator: ast.expr, method: str) -> bool:
     if isinstance(decorator, ast.Call):
         func = decorator.func
-        if isinstance(func, ast.Attribute) and func.attr == "post":
+        if isinstance(func, ast.Attribute) and func.attr == method:
             return True
     return False
 
@@ -65,14 +78,18 @@ def _is_try_with_route_level_call(stmt: ast.stmt | None) -> tuple[bool, str]:
     return False, f"called {ast.dump(func)!r}, expected _route_level_operator_identity"
 
 
-def _collect_violations() -> list[str]:
+def _collect_violations(
+    *,
+    source_files: list[Path],
+    matcher,
+) -> list[str]:
     violations: list[str] = []
-    for source_path in SOURCE_FILES:
+    for source_path in source_files:
         tree = ast.parse(source_path.read_text(encoding="utf-8"), filename=str(source_path))
         for node in ast.walk(tree):
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 continue
-            if not any(_is_router_post(d) for d in node.decorator_list):
+            if not any(matcher(d) for d in node.decorator_list):
                 continue
             fname = node.name
             lineno = node.lineno
@@ -88,7 +105,10 @@ def _collect_violations() -> list[str]:
 
 
 def test_all_post_routes_have_wired_identity_seam() -> None:
-    violations = _collect_violations()
+    violations = _collect_violations(
+        source_files=SOURCE_FILES,
+        matcher=_is_router_post,
+    )
     if violations:
         formatted = "\n".join(f"  - {v}" for v in violations)
         raise AssertionError(
@@ -96,7 +116,19 @@ def test_all_post_routes_have_wired_identity_seam() -> None:
         )
 
 
+def test_sensitive_get_routes_have_wired_identity_seam() -> None:
+    violations = _collect_violations(
+        source_files=SENSITIVE_GET_SOURCE_FILES,
+        matcher=_is_router_get,
+    )
+    if violations:
+        formatted = "\n".join(f"  - {v}" for v in violations)
+        raise AssertionError(
+            f"{len(violations)} GET route(s) missing wired identity seam:\n{formatted}"
+        )
+
+
 def test_source_files_are_parseable() -> None:
-    for path in SOURCE_FILES:
+    for path in [*SOURCE_FILES, *SENSITIVE_GET_SOURCE_FILES]:
         assert path.exists(), f"source file not found: {path}"
         ast.parse(path.read_text(encoding="utf-8"), filename=str(path))

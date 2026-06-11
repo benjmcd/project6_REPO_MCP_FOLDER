@@ -300,10 +300,48 @@ inert-by-default pass; if pre-parse gating is later wanted it requires a separat
 slice. (Raised by external review on the implementation PR; resolved as documented-accepted
 with the rationale above.)
 
-## GET Surface Note
+## Sensitive GET Surface Addendum
 
-GET routes in `handoff.py` (5 status routes) remain unwired — outside doc-1358 scope
-(POST-only contract). No GET route is targeted by this implementation.
+Status: follow-up production-hardening runtime slice.
+
+Selected sensitive GET status/read routes now use the same route-level operator-identity
+presence seam before service logic as the POST surface. This supersedes the earlier
+POST-only GET surface note for the modules listed below.
+
+```yaml
+additional_wired_get_surface:
+  handoff_get_routes: 5
+  source_ingestion_get_routes: 5
+  source_sec_edgar_get_routes: 19
+  total_get_routes: 29
+  drift_guard_get_files:
+    - backend/app/api/layer3/handoff.py
+    - backend/app/api/layer3/source_ingestion.py
+    - backend/app/api/layer3/source_sec_edgar.py
+excluded_get_surfaces:
+  - backend/app/api/layer3/__init__.py public/session/workbench listing GETs
+  - backend/app/api/layer3/sec_xbrl.py surfaces with separate SEC XBRL governance
+identity_seam_under_none: inert; local default remains unchanged
+fail_closed_proxy_untrusted: HTTP 409, sec_xbrl_in_app_auth_policy_untrusted_proxy_identity
+fail_closed_proxy_missing_identity_header: HTTP 401, sec_xbrl_in_app_auth_policy_missing_identity_authority
+fail_closed_proxy_missing_groups_header: HTTP 401, sec_xbrl_in_app_auth_policy_missing_workspace_authority
+new_flags: none
+new_models: none
+new_migrations: none
+default_on_changes: none
+value_reveal_activation: false
+controlled_submit_activation: false
+model_migration_change: false
+production_readiness_claim: false
+```
+
+Rationale: these GET routes expose handoff status, source material previews/inventory,
+operator workflow history, source-directory ingestion status, internal-webhook delivery
+state, and SEC EDGAR artifact/status projections. Under proxy posture they should fail
+closed before service logic can expose source, value, artifact, or delivery state. This
+remains identity-presence enforcement only; role authorization, StaticFiles wrapping,
+remaining GET surfaces, and reverse-proxy authn/authz remain separately owned unless a
+later slice governs them.
 
 ## Source SEC EDGAR Surface Addendum
 
@@ -340,8 +378,10 @@ Rationale: the source/sec-edgar POST surface contains source acquisition, downst
 operator product surface, value reveal, durable delivery archive, parser, package review, and
 handoff/export preparation routes. Even when individual handlers are read projections, proxy
 posture should fail closed before service logic can expose source, value, artifact, or delivery
-state. This is still identity-presence enforcement only; GET status routes, StaticFiles, and
-reverse-proxy authn/authz remain separately owned unless a later slice governs them.
+state. This is still identity-presence enforcement only; selected source/sec-edgar GET status
+routes are covered by the Sensitive GET Surface Addendum above, while StaticFiles, remaining
+GET surfaces, and reverse-proxy authn/authz remain separately owned unless a later slice
+governs them.
 
 ## Rollback
 
@@ -371,17 +411,23 @@ route-level identity contract:
    pins (multipart upload missing required form fields; extra forbidden field on a typed
    route), and JSON error-body assertions on the two FileResponse delivery routes.
 
-4. `backend/tests/test_layer3_operator_identity_drift_guard.py` (2 tests) — AST structural
+4. `backend/tests/test_layer3_operator_identity_drift_guard.py` (3 tests) - AST structural
    guard over handoff.py/package.py/source_sec_edgar.py/source_ingestion.py: every `router.post` handler must
    carry a `request` parameter and begin with the seam try/except as its first executable
-   statement (empty skip-list), so future POST routes cannot ship unwired or with a
-   misplaced seam.
+   statement (empty skip-list), and every selected sensitive `router.get` handler in
+   handoff.py/source_ingestion.py/source_sec_edgar.py must do the same. Future POST routes
+   and selected sensitive GET routes cannot ship unwired or with a misplaced seam.
 
 5. `backend/tests/test_layer3_source_sec_edgar_operator_identity.py` (3 tests) - focused
    runtime proof that a source/sec-edgar POST route fails closed with 409 under untrusted
    proxy posture, fails closed with 401 when either configured proxy identity or workspace
    authority is absent, does not echo proxy canaries, and does not reach source acquisition
    service logic before the identity seam.
+
+6. `backend/tests/test_layer3_sensitive_get_operator_identity.py` (3 tests) - focused
+   runtime proof that representative handoff, source_ingestion, and source/sec-edgar GET
+   routes fail closed with 409 under untrusted proxy posture, return JSON policy errors, do
+   not echo proxy canaries, and do not reach service logic before the identity seam.
 
 Pre-existing `backend/tests/test_layer3_api.py` regression baseline is preserved (317 passed
 for this source/sec-edgar addendum slice); the full `test_layer3_*` selection from the original

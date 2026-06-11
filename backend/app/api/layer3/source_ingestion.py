@@ -285,11 +285,16 @@ async def post_source_intake_upload(
     responses=_workbench_error_responses(400),
 )
 def get_source_intake_inventory(
+    request: Request,
     limit: str = "50",
     source_family: str | None = None,
     status: str | None = None,
     db: Session = Depends(get_db),
 ):
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_source_intake.source_intake_inventory(
             db,
@@ -308,9 +313,14 @@ def get_source_intake_inventory(
 )
 def get_source_intake_material_preview(
     source_intake_record_id: str,
+    request: Request,
     max_chars: int = 4000,
     db: Session = Depends(get_db),
 ):
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_source_intake.source_intake_material_preview(
             db,
@@ -1164,6 +1174,10 @@ def post_candidate_b_default_promotion_closure_evidence(
 def get_candidate_b_full_corpus_operator_workflow_history(
     request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     workflow_history_service = layer3_candidate_b_full_corpus_operator_workflow_history
     try:
         with layer3_candidate_b_operator_workflow_access_policy.request_context(
@@ -1557,8 +1571,13 @@ def post_source_directory_ingestion_scan(
 )
 def get_source_directory_ingestion_status(
     source_ingestion_batch_id: str,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     try:
         return layer3_source_directory_ingestion.source_directory_ingestion_status(
             db,
@@ -1919,8 +1938,13 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis_internal_we
 )
 def get_source_directory_hybrid_context_packet_qualitative_analysis_internal_webhook_status(
     source_directory_internal_webhook_dispatch_receipt_id: str,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_source_directory_internal_webhook.source_directory_internal_webhook_status(
             db,

@@ -260,7 +260,12 @@ def post_sec_edgar_companyfacts_acquire_and_stage(
 )
 def get_sec_edgar_text_table_live_source_artifact_status(
     live_source_artifact_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_live_source_artifact.inspect_sec_edgar_text_table_live_source_artifact_status(
             live_source_artifact_receipt_id,
@@ -295,7 +300,12 @@ def post_sec_edgar_real_filing_acquisition_connector(
 )
 def get_sec_edgar_real_filing_acquisition_connector_status(
     sec_edgar_real_filing_acquisition_connector_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_real_filing_acquisition_connector.inspect_sec_edgar_real_filing_acquisition_connector_status(
             sec_edgar_real_filing_acquisition_connector_receipt_id,
@@ -332,7 +342,12 @@ def post_sec_edgar_real_filing_downstream_validation(
 )
 def get_sec_edgar_real_filing_downstream_validation_status(
     sec_edgar_real_filing_downstream_validation_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_real_filing_downstream_validation.inspect_sec_edgar_real_filing_downstream_validation_status(
             sec_edgar_real_filing_downstream_validation_receipt_id,
@@ -373,7 +388,12 @@ def post_sec_edgar_real_company_corpus_validation(
 )
 def get_sec_edgar_real_company_corpus_validation_status(
     sec_edgar_real_company_corpus_validation_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_real_company_corpus_validation.inspect_sec_edgar_real_company_corpus_validation_status(
             sec_edgar_real_company_corpus_validation_receipt_id,
@@ -410,7 +430,12 @@ def post_sec_edgar_delivery_status_provenance(
 )
 def get_sec_edgar_delivery_status_provenance_status(
     sec_edgar_delivery_status_provenance_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_delivery_status_provenance.inspect_sec_edgar_delivery_status_provenance_status(
             sec_edgar_delivery_status_provenance_receipt_id,
@@ -447,7 +472,12 @@ def post_sec_edgar_operator_inspection(
 )
 def get_sec_edgar_operator_inspection_status(
     sec_edgar_operator_inspection_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_operator_inspection.inspect_sec_edgar_operator_inspection_status(
             sec_edgar_operator_inspection_receipt_id,
@@ -484,7 +514,12 @@ def post_sec_edgar_operator_product_surface(
 )
 def get_sec_edgar_operator_product_surface_status(
     sec_edgar_operator_product_surface_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_operator_product_surface.inspect_sec_edgar_operator_product_surface_status(
             sec_edgar_operator_product_surface_receipt_id,
@@ -521,7 +556,12 @@ def post_sec_edgar_arelle_value_reveal(
 )
 def get_sec_edgar_arelle_value_reveal_status(
     reveal_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_arelle_value_reveal.inspect_sec_edgar_arelle_value_reveal_status(
             reveal_receipt_id,
@@ -558,7 +598,12 @@ def post_sec_edgar_durable_delivery_archive(
 )
 def get_sec_edgar_durable_delivery_archive_status(
     sec_edgar_durable_delivery_archive_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_durable_delivery_archive.inspect_sec_edgar_durable_delivery_archive_status(
             sec_edgar_durable_delivery_archive_receipt_id,
@@ -593,7 +638,12 @@ def post_sec_edgar_html_inline_xbrl_source_family_parser(
 )
 def get_sec_edgar_html_inline_xbrl_source_family_parser_status(
     sec_edgar_html_inline_xbrl_parser_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_parser.inspect_sec_edgar_html_inline_xbrl_source_family_parser_status(
             sec_edgar_html_inline_xbrl_parser_receipt_id,
@@ -628,7 +678,12 @@ def post_sec_edgar_html_inline_xbrl_fact_authority(
 )
 def get_sec_edgar_html_inline_xbrl_fact_authority_status(
     sec_edgar_html_inline_xbrl_fact_authority_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_fact_authority.inspect_sec_edgar_html_inline_xbrl_fact_authority_status(
             sec_edgar_html_inline_xbrl_fact_authority_receipt_id,
@@ -665,7 +720,12 @@ def post_sec_edgar_html_inline_xbrl_fact_material_bridge(
 )
 def get_sec_edgar_html_inline_xbrl_fact_material_bridge_status(
     sec_edgar_html_inline_xbrl_fact_material_bridge_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.inspect_sec_edgar_html_inline_xbrl_fact_material_bridge_status(
             sec_edgar_html_inline_xbrl_fact_material_bridge_receipt_id,
@@ -700,7 +760,12 @@ def post_sec_edgar_html_inline_xbrl_fact_statement_classification(
 )
 def get_sec_edgar_html_inline_xbrl_fact_statement_classification_status(
     statement_classification_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.inspect_sec_edgar_html_inline_xbrl_fact_statement_classification_status(
             statement_classification_receipt_id,
@@ -735,7 +800,12 @@ def post_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_pro
 )
 def get_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_status(
     downstream_product_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.inspect_sec_edgar_html_inline_xbrl_statement_candidate_product_status(
             downstream_product_receipt_id,
@@ -770,7 +840,12 @@ def post_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_pro
 )
 def get_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview_status(
     package_review_preview_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review.inspect_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_preview_status(
             package_review_preview_receipt_id,
@@ -805,7 +880,12 @@ def post_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_pro
 )
 def get_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_construction_status(
     package_construction_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_construction.inspect_sec_edgar_html_inline_xbrl_statement_candidate_product_package_construction_status(
             package_construction_receipt_id,
@@ -840,7 +920,12 @@ def post_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_pro
 )
 def get_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_submit_status(
     package_review_submit_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_submit.inspect_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_submit_status(
             package_review_submit_receipt_id,
@@ -875,7 +960,12 @@ def post_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_pro
 )
 def get_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_status(
     handoff_export_prepare_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare.inspect_sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export_prepare_status(
             handoff_export_prepare_receipt_id,
@@ -978,7 +1068,12 @@ def post_sec_edgar_html_inline_xbrl_material_bridge(
 )
 def get_sec_edgar_html_inline_xbrl_material_bridge_status(
     sec_edgar_html_inline_xbrl_material_bridge_receipt_id: str,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request)
+    except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_material_bridge.inspect_sec_edgar_html_inline_xbrl_material_bridge_status(
             sec_edgar_html_inline_xbrl_material_bridge_receipt_id,

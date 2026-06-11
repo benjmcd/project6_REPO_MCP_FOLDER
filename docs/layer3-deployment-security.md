@@ -14,7 +14,7 @@ This note tracks the current deployment/security posture for the Layer 3 workben
 - `DEPLOYMENT_MODE=nonlocal` now fails closed unless `ALLOWED_ORIGINS` is an explicit HTTPS origin list, `AUTH_OWNER=proxy`, `TRUSTED_PROXY_MODE=true`, and `PROXY_IDENTITY_HEADER` is nonblank.
 - In non-local mode, `CORS_ALLOW_CREDENTIALS` defaults to false unless explicitly configured, and direct app-owned `/storage` mounting is disabled by default.
 - In non-local mode, `STORAGE_EXPOSURE=enabled` and `STORAGE_EXPOSURE=proxy_protected` are rejected because the app does not yet wrap `StaticFiles` with in-app auth.
-- In proxy-owned non-local posture, the route-level operator-identity seam now fails closed before service logic on Layer 3 handoff, package, source-ingestion, and source/sec-edgar POST routes. The seam is inert under the local default profile.
+- In proxy-owned non-local posture, the route-level operator-identity seam now fails closed before service logic on Layer 3 handoff, package, source-ingestion, and source/sec-edgar POST routes, plus selected sensitive handoff/source-ingestion/source/sec-edgar GET status/read routes. The seam is inert under the local default profile.
 - Current Layer 3 export/download delivery remains same-origin delivery over the existing validated APS evidence-bundle artifact. It does not create public or signed URLs.
 
 ## Current Admitted Use
@@ -26,7 +26,7 @@ Current repo evidence supports local/dev and proof-harness use by default. It al
 Before deploying beyond a trusted local/dev environment, choose and document:
 
 1. The concrete allowed browser origin list for the target deployment and whether credentialed cross-origin requests are truly required.
-2. Reverse-proxy authentication and authorization enforcement for `/api/v1`, `/review/*`, and any file-serving surface; the app requires proxy-owned posture. Route-level operator-identity PRESENCE is now enforced in-app for the Layer 3 handoff/package/source_ingestion/source-sec-edgar POST surface: fail-closed under proxy posture, inert under local default. This is identity-presence enforcement only, NOT role/authorization policy. SEC XBRL routes were already enforced via doc 1352. StaticFiles wrapping, GET surfaces, and reverse-proxy authn/authz remain deployment-owned.
+2. Reverse-proxy authentication and authorization enforcement for `/api/v1`, `/review/*`, and any file-serving surface; the app requires proxy-owned posture. Route-level operator-identity PRESENCE is now enforced in-app for the Layer 3 handoff/package/source_ingestion/source-sec-edgar POST surface and selected sensitive handoff/source_ingestion/source-sec-edgar GET status/read routes: fail-closed under proxy posture, inert under local default. This is identity-presence enforcement only, NOT role/authorization policy. SEC XBRL routes were already enforced via doc 1352. StaticFiles wrapping, remaining GET surfaces, and reverse-proxy authn/authz remain deployment-owned.
 3. Whether future file delivery should remain disabled in-app, move behind authorized application delivery, or use a separately governed public/signed URL design.
 4. Artifact sensitivity and retention rules for APS evidence bundles, Layer 3 package payloads, downloads, logs, and reports.
 5. Deployment proxy/TLS/header assumptions, including whether the app runs behind a trusted reverse proxy.
