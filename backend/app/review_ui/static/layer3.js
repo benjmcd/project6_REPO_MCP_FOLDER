@@ -760,7 +760,6 @@ const State = {
     providerPublicUrlPrepareClientRequestId: null,
     providerPublicUrlError: null,
     providerPublicUrlPending: false,
-    signedReferenceRevocationAuditRevoke: null,
     signedReferenceRevocationAuditRevokeError: null,
     signedReferenceRevocationAuditRevokePending: false,
     candidateBDefaultPromotionFinalProof: null,
@@ -2732,25 +2731,6 @@ function renderOperatorAuthBanner() {
     `;
 }
 
-// Expose a hook so that route-level auth errors from any workbench fetch can
-// surface the banner without duplicating machinery.  Call this from catch
-// blocks when err.status is 401/403/409 and err.payload?.error_code is an auth
-// policy code.
-function maybeShowAuthBanner(error) {
-    if (!error) return;
-    const status = error.status;
-    const errorCode = error.payload?.error_code || '';
-    if (
-        (status === 401 || status === 403 || status === 409)
-        && (OPERATOR_AUTH_ERROR_CODES.has(errorCode) || !errorCode)
-    ) {
-        // Mirror error into identity error state so banner renders
-        State.operatorIdentityError = error;
-        renderOperatorIdentityChip();
-        renderOperatorAuthBanner();
-    }
-}
-
 function renderDevHeaderInjection() {
     const container = elements.devHeaderInjection;
     if (!container) return;
@@ -3658,6 +3638,7 @@ function clearProviderPrivateSignedUrlState() {
     State.providerPrivateDownloadAnchorUrl = null;
     State.providerPrivateDownloadPending = false;
     State.providerPrivateDownloadError = null;
+    State.providerPrivateDownloadRedactedNotice = null;
     clearProviderPublicUrlState();
     storageRemove(sessionStorage, LAYER3_PROVIDER_PRIVATE_RECEIPT_STORAGE_KEY);
 }
@@ -26821,21 +26802,14 @@ function canSubmitSignedReferenceRevocationAuditRevoke() {
 }
 
 /**
- * Redacts any URL/token material from a value before display — consistent with
- * how provider_url_redacted fields are already rendered in providerPrivateSignedUrlPanel.
- * Raw URLs and token strings are replaced with a length-prefix hash indicator.
+ * Redacts any token/URL value before display.
+ * Non-empty strings are replaced with a character-count indicator.
+ * null/undefined → 'none'. All other values → String(value).
  */
-function signedReferenceAuditRedact(value, fieldName) {
+function signedReferenceAuditRedact(value) {
     if (value == null) return 'none';
-    const sensitiveFields = [
-        'signed_reference_token', 'raw_provider_private_signed_url_token',
-        'provider_private_signed_url_token', 'signed_url', 'download_url',
-        'public_url', 'provider_url', 'raw_public_url',
-    ];
-    if (sensitiveFields.some((f) => fieldName && fieldName.includes(f))) {
-        if (typeof value === 'string' && value.length > 0) {
-            return `[redacted: ${value.length} chars]`;
-        }
+    if (typeof value === 'string' && value.length > 0) {
+        return `[redacted: ${value.length} chars]`;
     }
     return String(value);
 }
@@ -26861,7 +26835,7 @@ function renderSignedReferenceRevocationAuditPanel() {
     const external = externalExportDownloadPrepareState() || {};
     const signed = State.externalExportDownloadSignedReference || {};
     const provider = providerPrivateSignedUrlAuthorityState() || {};
-    const providerRevoke = State.signedReferenceRevocationAuditRevoke || State.providerPrivateSignedUrlRevoke || {};
+    const providerRevoke = State.providerPrivateSignedUrlRevoke || {};
 
     panel.innerHTML = `
         <div class="result-review-status">
@@ -26882,7 +26856,7 @@ function renderSignedReferenceRevocationAuditPanel() {
                     ${fieldItem('replay policy', signed.signed_reference_replay_policy)}
                     ${fieldItem('expires at', signed.signed_reference_expires_at)}
                     ${fieldItem('audit event id', signed.signed_reference_audit_event_id, { code: true })}
-                    ${fieldItem('token', signedReferenceAuditRedact(signed.signed_reference_token, 'signed_reference_token'), { code: true })}
+                    ${fieldItem('token', signedReferenceAuditRedact(signed.signed_reference_token), { code: true })}
                 </ul>
             </section>
             <section class="result-review-card">
@@ -26955,7 +26929,7 @@ function renderSignedReferenceRevocationAuditRevokePanel() {
 
     const receiptId = providerPrivateSignedUrlReceiptId();
     const latestState = providerPrivateSignedUrlLatestState();
-    const providerRevoke = State.signedReferenceRevocationAuditRevoke || State.providerPrivateSignedUrlRevoke || {};
+    const providerRevoke = State.providerPrivateSignedUrlRevoke || {};
 
     if (!receiptId) {
         revokePanel.innerHTML = `<div class="empty-panel">No provider-private receipt is available for revocation. Prepare a receipt first using the provider-private signed URL controls above.</div>`;
@@ -27038,16 +27012,26 @@ function renderProviderPrivateDownloadControlPanel() {
     const hasInMemoryUrl = Boolean(State.providerPrivateDownloadAnchorUrl);
     const isPending = Boolean(State.providerPrivateDownloadPending);
     const fetchError = State.providerPrivateDownloadError || null;
+    const redactedNotice = State.providerPrivateDownloadRedactedNotice || null;
+
+    // Status pill and message — three states: url ready, redacted (no url), awaiting arm.
+    const pillClass = hasInMemoryUrl ? 'ok' : (redactedNotice ? 'blocked' : 'preview');
+    const pillLabel = hasInMemoryUrl
+        ? 'download_ready'
+        : (redactedNotice ? 'provider_private_download_redacted' : 'provider_private_download_control_ready');
+    const railMessage = hasInMemoryUrl
+        ? 'Download anchor is ready — click the link to retrieve the package. The URL is not rendered as text.'
+        : (redactedNotice
+            ? escapeHtml(redactedNotice)
+            : 'Operator confirmation required before download anchor is armed.');
 
     panel.innerHTML = `
         <div class="result-review-status">
-            <span class="status-pill ${hasInMemoryUrl ? 'ok' : 'preview'}">
-                ${hasInMemoryUrl ? 'download_ready' : 'provider_private_download_control_ready'}
+            <span class="status-pill ${pillClass}">
+                ${pillLabel}
             </span>
             <span class="rail-label">
-                ${hasInMemoryUrl
-                    ? 'Download anchor is ready — click the link to retrieve the package. The URL is not rendered as text.'
-                    : 'Operator confirmation required before download anchor is armed.'}
+                ${railMessage}
             </span>
         </div>
         <div class="result-review-grid">
@@ -27154,6 +27138,7 @@ async function armProviderPrivateDownloadAnchor() {
     if (!receiptId) return;
     State.providerPrivateDownloadPending = true;
     State.providerPrivateDownloadError = null;
+    State.providerPrivateDownloadRedactedNotice = null;
     renderProviderPrivateDownloadControlPanel();
     try {
         const statusPath = providerPrivateSignedUrlStatusPath();
@@ -27164,11 +27149,18 @@ async function armProviderPrivateDownloadAnchor() {
         // We store only what the server returns — if it returns a download URL field,
         // it goes to in-memory state only. If not (redacted), we mark as armed with receipt-id.
         const rawDownloadUrl = response.provider_download_url || response.signed_url || null;
-        // Store the URL (or receipt-id as placeholder) in-memory only.
-        // NEVER log it, NEVER persist it.
-        State.providerPrivateDownloadAnchorUrl = rawDownloadUrl || `provider-private-receipt:${receiptId}`;
         State.providerPrivateSignedUrlStatus = response;
-        addEvent(`Provider-private download anchor armed for receipt ${receiptId.slice(0, 12)}…`);
+        if (rawDownloadUrl) {
+            // Real URL present — arm the anchor. Store in-memory only; never log or persist.
+            State.providerPrivateDownloadAnchorUrl = rawDownloadUrl;
+            addEvent(`Provider-private download anchor armed for receipt ${receiptId.slice(0, 12)}…`);
+        } else {
+            // No real URL exposed (normal redacted posture) — do NOT arm the anchor.
+            // Render an honest status rather than presenting a non-functional armed state.
+            State.providerPrivateDownloadAnchorUrl = null;
+            State.providerPrivateDownloadRedactedNotice = 'redacted — no download URL exposed by server';
+            addEvent(`Provider-private download: redacted posture — no URL returned by server for receipt ${receiptId.slice(0, 12)}…`);
+        }
         renderAll();
     } catch (error) {
         State.providerPrivateDownloadError = error.payload || {
@@ -31134,13 +31126,11 @@ async function submitSignedReferenceRevocationAuditRevoke(event) {
     renderAll();
     setBusy(elements.signedReferenceRevocationAuditRevokeSubmit, true, 'Revoke Provider-Private Receipt');
     try {
-        State.signedReferenceRevocationAuditRevoke = await postJson(
+        State.providerPrivateSignedUrlRevoke = await postJson(
             providerPrivateSignedUrlRevokePath(),
             payload,
         );
-        // Mirror into the main provider-private revoke state so existing render paths reflect the outcome.
-        State.providerPrivateSignedUrlRevoke = State.signedReferenceRevocationAuditRevoke;
-        persistProviderPrivateReceiptSnapshot(State.signedReferenceRevocationAuditRevoke);
+        persistProviderPrivateReceiptSnapshot(State.providerPrivateSignedUrlRevoke);
         addEvent('Provider-private signed URL receipt revoked from signed-reference audit panel.');
         renderAll();
     } catch (error) {

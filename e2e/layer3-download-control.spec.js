@@ -86,6 +86,23 @@ const STATUS_RESPONSE_WITH_URL = {
     provider_download_url: 'https://provider.example/private/download/test-w2s8',
 };
 
+// Status response without a download URL — represents normal redacted posture from real backend.
+const STATUS_RESPONSE_REDACTED = {
+    schema_id: 'layer3.provider_private_signed_url_status.v1',
+    provider_signed_url_receipt_id: 'test-pp-receipt-id-w2s8',
+    provider_signed_url_state: 'provider_private_signed_url_prepared',
+    delivery_mode: 'provider_private_signed_url',
+    provider_url_redacted: '[redacted]',
+    provider_url_expires_at: '2099-01-01T00:00:00Z',
+    provider_url_use_count: 0,
+    provider_url_max_use_count: 1,
+    provider_url_revoked: false,
+    provider_url_revocation_supported: true,
+    source_artifact_hash: 'test-artifact-hash-w2s8',
+    source_artifact_size_bytes: 99999,
+    // No provider_download_url — this is the normal redacted posture.
+};
+
 /**
  * Mock local identity so chip renders without blocking.
  */
@@ -348,7 +365,48 @@ test.describe('W2-S8 provider-private download control panel', () => {
         await expect(allDownloadExposed).toHaveCount(1);
     });
 
-    test('(h) zero console errors on page load (element-presence gate prevents spurious fetches on mockup pages)', async ({ page }) => {
+    test('(h-redacted) redacted posture: arm returns no URL, anchor is NOT armed, honest status shown', async ({ page }) => {
+        await mockLocalIdentity(page);
+        await mockBootstrap(page);
+
+        // Status route returns redacted response — no provider_download_url field.
+        await page.route(STATUS_PATH_PATTERN, (route) => {
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify(STATUS_RESPONSE_REDACTED),
+            });
+        });
+
+        await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+        await injectProviderPrivateState(page);
+
+        const panel = page.locator('#provider-private-download-control-panel');
+
+        // Confirm and arm.
+        const confirmCheck = page.locator('#provider-private-download-confirmation');
+        await confirmCheck.check();
+        const armBtn = page.locator('#provider-private-download-arm-btn');
+        await armBtn.click();
+
+        // Wait for render to settle after the arm attempt.
+        await page.waitForTimeout(500);
+
+        // Anchor must NOT be present — no real URL was returned.
+        const anchor = panel.locator('#provider-private-download-anchor');
+        await expect(anchor).not.toBeVisible();
+
+        // Panel must show the honest redacted notice, not an armed state.
+        await expect(panel).toContainText('redacted');
+
+        // No raw URL must appear anywhere in the panel.
+        const panelText = await panel.textContent();
+        expect(panelText).not.toMatch(/https?:\/\//);
+        // The placeholder receipt string must NOT appear as a functional href.
+        expect(panelText).not.toMatch(/provider-private-receipt:/);
+    });
+
+    test('(i) zero console errors on page load (element-presence gate prevents spurious fetches on mockup pages)', async ({ page }) => {
         const consoleErrors = [];
         const pageErrors = [];
         page.on('console', (message) => {

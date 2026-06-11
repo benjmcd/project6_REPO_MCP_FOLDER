@@ -1,6 +1,15 @@
 # .dockerignore — keep the production image lean.
 # Only backend/ source and config that Dockerfile.app needs should reach the build context.
 
+# Env files — never bake real credentials into image layers
+.env
+**/.env
+*.env.local
+*.env.production
+backend/.env
+backend/.env.example
+backend/.env.production.example
+
 # Version control
 .git
 .gitmodules

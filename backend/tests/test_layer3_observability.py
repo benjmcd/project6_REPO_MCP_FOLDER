@@ -70,14 +70,49 @@ def client(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# 1. Request-ID roundtrip: inbound header honored
+# 1. Request-ID roundtrip: valid inbound header honored
 # ---------------------------------------------------------------------------
 
 def test_request_id_inbound_honored(client):
+    # Valid id: alphanumeric + safe punctuation, <= 128 chars
     inbound_id = "test-request-id-12345"
     response = client.get("/health", headers={"X-Request-ID": inbound_id})
     assert response.status_code == 200
     assert response.headers.get("X-Request-ID") == inbound_id
+
+
+# ---------------------------------------------------------------------------
+# 1b. Request-ID: overlong id rejected → generated uuid4 returned instead
+# ---------------------------------------------------------------------------
+
+def test_request_id_overlong_rejected(client):
+    overlong_id = "a" * 129  # exceeds 128-char limit
+    response = client.get("/health", headers={"X-Request-ID": overlong_id})
+    assert response.status_code == 200
+    returned_id = response.headers.get("X-Request-ID")
+    assert returned_id is not None
+    # Must NOT echo back the overlong id
+    assert returned_id != overlong_id
+    # Must be a UUID4 (8-4-4-4-12)
+    parts = returned_id.split("-")
+    assert len(parts) == 5, f"Expected UUID4 format for rejected id, got: {returned_id}"
+
+
+# ---------------------------------------------------------------------------
+# 1c. Request-ID: id with newline/invalid chars rejected → generated uuid4
+# ---------------------------------------------------------------------------
+
+def test_request_id_invalid_chars_rejected(client):
+    # Newline in header value is a classic header injection vector
+    invalid_id = "valid-prefix\r\nX-Injected: malicious"
+    response = client.get("/health", headers={"X-Request-ID": invalid_id})
+    assert response.status_code == 200
+    returned_id = response.headers.get("X-Request-ID")
+    assert returned_id is not None
+    assert returned_id != invalid_id
+    # Must be a UUID4 (8-4-4-4-12)
+    parts = returned_id.split("-")
+    assert len(parts) == 5, f"Expected UUID4 format for rejected id, got: {returned_id}"
 
 
 # ---------------------------------------------------------------------------

@@ -5,8 +5,9 @@ Covers:
    asserts every var is accepted by Settings, pinning the example file against
    drift (uses a placeholder postgres URL so the nonlocal validator passes).
 2. Fail-closed asserts (parametrized): the six nonlocal rejection cases.
-3. Boot smoke with DB_INIT_MODE=migrate: fresh tmp SQLite DB, import the app,
-   assert /health 200, /ready 200, and alembic_version table populated.
+3. Boot smoke with DB_INIT_MODE=migrate: runs in a SUBPROCESS to avoid leaking
+   module state into the test session.  The subprocess sets env, imports the
+   app, exercises /health and /ready via TestClient, and checks alembic_version.
 4. create_all guard: production example must set DB_INIT_MODE=migrate (or
    default is migrate); production must never silently use create_all.
 5. Results reported via pytest pass/fail (run with -q from repo root).
@@ -14,6 +15,7 @@ Covers:
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -22,9 +24,8 @@ from pydantic import ValidationError
 
 # ---------------------------------------------------------------------------
 # Path / env bootstrap — must happen before any app import.
-# DB_INIT_MODE=none prevents _initialize_database() from touching disk when
-# main.py is imported for the TestClient smoke test.  Task 3 overrides this
-# per-test via monkeypatch + importlib.reload.
+# DB_INIT_MODE=none prevents _initialize_database() from touching disk on import.
+# Task 3 runs its boot+probe entirely in a subprocess — no in-process reload.
 # ---------------------------------------------------------------------------
 os.environ.setdefault("DB_INIT_MODE", "none")
 
@@ -213,98 +214,85 @@ def test_nonlocal_fail_closed(overrides: dict[str, str], match_fragment: str) ->
 # ===========================================================================
 
 
-def test_boot_smoke_migrate_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_boot_smoke_migrate_mode(tmp_path: Path) -> None:
     """Start the app with migrate mode against a fresh tmp SQLite DB.
 
-    Verifies:
+    Runs entirely in a subprocess to avoid leaking reloaded module state into
+    the test session (which caused test_full_pipeline_records_ownership_marker_for_caller
+    to fail when this test ran first).
+
+    Verifies (inside the subprocess):
     - /health returns 200 {"status": "ok"}
     - /ready returns 200 {"status": "ready"}
     - alembic_version table exists (proves the migrate path ran, not create_all)
-
-    Strategy mirrors test_layer3_observability.py but uses a real file-based
-    SQLite DB (not :memory:) so alembic can inspect it and the alembic_version
-    table persists across connections.
     """
-    import importlib
-
-    from sqlalchemy import create_engine, inspect as sa_inspect, text
-    from sqlalchemy.orm import sessionmaker
-    from sqlalchemy.pool import StaticPool
-    from fastapi.testclient import TestClient
-
     db_file = tmp_path / "smoke.db"
     db_url = f"sqlite:///{db_file.as_posix()}"
     storage_dir = tmp_path / "storage"
+    storage_dir.mkdir(parents=True, exist_ok=True)
 
-    # Point the app at the tmp DB before importing main.
-    monkeypatch.setenv("DATABASE_URL", db_url)
-    monkeypatch.setenv("DB_INIT_MODE", "migrate")
-    monkeypatch.setenv("STORAGE_DIR", str(storage_dir))
+    # Inline script executed in a fresh interpreter — no shared module state.
+    script = f"""
+import os, sys
+sys.path.insert(0, {str(BACKEND)!r})
 
-    # Re-import app modules so the patched env is picked up.
-    # We must reload in reverse-dependency order.
-    import app.db.session as _db_session_mod
-    import app.core.config as _config_mod
-    import main as _main_mod
+os.environ["DATABASE_URL"] = {db_url!r}
+os.environ["DB_INIT_MODE"] = "migrate"
+os.environ["STORAGE_DIR"] = {str(storage_dir)!r}
 
-    importlib.reload(_config_mod)
-    importlib.reload(_db_session_mod)
-    importlib.reload(_main_mod)
+# Import the app — _initialize_database() runs automatically (migrate mode).
+from main import app
+from fastapi.testclient import TestClient
 
-    reloaded_app = _main_mod.app
+client = TestClient(app, raise_server_exceptions=False)
 
-    # After reload, _initialize_database() has already run (migrate mode).
-    # Verify alembic_version exists before exercising HTTP endpoints.
-    engine = create_engine(
-        db_url,
-        future=True,
-        connect_args={"check_same_thread": False},
+health_resp = client.get("/health")
+assert health_resp.status_code == 200, (
+    f"/health returned {{health_resp.status_code}}: {{health_resp.text}}"
+)
+assert health_resp.json().get("status") == "ok", (
+    f"/health body unexpected: {{health_resp.json()}}"
+)
+
+ready_resp = client.get("/ready")
+assert ready_resp.status_code == 200, (
+    f"/ready returned {{ready_resp.status_code}}: {{ready_resp.text}}"
+)
+assert ready_resp.json().get("status") == "ready", (
+    f"/ready body unexpected: {{ready_resp.json()}}"
+)
+
+# Verify alembic_version table was created by the migrate path.
+from sqlalchemy import create_engine, inspect as sa_inspect
+engine = create_engine({db_url!r}, future=True, connect_args={{"check_same_thread": False}})
+inspector = sa_inspect(engine)
+live_tables = set(inspector.get_table_names())
+assert "alembic_version" in live_tables, (
+    f"alembic_version not found in tables: {{live_tables}}"
+)
+engine.dispose()
+
+print("BOOT_SMOKE_OK")
+sys.exit(0)
+"""
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=str(BACKEND),
+        capture_output=True,
+        text=True,
+        timeout=120,
     )
-    inspector = sa_inspect(engine)
-    live_tables = set(inspector.get_table_names())
-    assert "alembic_version" in live_tables, (
-        "alembic_version table not found after DB_INIT_MODE=migrate boot — "
-        "migrate path did not run or was skipped."
+    assert result.returncode == 0, (
+        f"Boot smoke subprocess failed (returncode={result.returncode}).\n"
+        f"--- stdout ---\n{result.stdout}\n"
+        f"--- stderr ---\n{result.stderr}"
     )
-
-    # Wire TestClient; override get_db so /ready hits the same tmp DB.
-    from app.api.deps import get_db as _get_db
-    from app.core.config import bootstrap_storage_tree, settings as _settings
-
-    monkeypatch.setattr(_settings, "storage_dir", str(storage_dir))
-    bootstrap_storage_tree(storage_dir)
-
-    SessionLocal = sessionmaker(
-        bind=engine, autocommit=False, autoflush=False, future=True
+    assert "BOOT_SMOKE_OK" in result.stdout, (
+        f"Sentinel 'BOOT_SMOKE_OK' not found in subprocess output.\n"
+        f"--- stdout ---\n{result.stdout}\n"
+        f"--- stderr ---\n{result.stderr}"
     )
-
-    def override_get_db():
-        db = SessionLocal()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    reloaded_app.dependency_overrides[_get_db] = override_get_db
-    try:
-        client = TestClient(reloaded_app, raise_server_exceptions=False)
-
-        health_resp = client.get("/health")
-        assert health_resp.status_code == 200, (
-            f"/health returned {health_resp.status_code}: {health_resp.text}"
-        )
-        assert health_resp.json().get("status") == "ok"
-
-        # /ready needs the engine to point at our tmp DB; _db_session_mod.engine
-        # was reloaded, so it should already target db_url.
-        ready_resp = client.get("/ready")
-        assert ready_resp.status_code == 200, (
-            f"/ready returned {ready_resp.status_code}: {ready_resp.text}"
-        )
-        assert ready_resp.json().get("status") == "ready"
-    finally:
-        reloaded_app.dependency_overrides.pop(_get_db, None)
-        engine.dispose()
 
 
 # ===========================================================================

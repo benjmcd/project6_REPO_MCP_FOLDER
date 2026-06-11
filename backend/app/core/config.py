@@ -226,17 +226,13 @@ class Settings(BaseSettings):
     def _armed_value_reveal_flags_nonlocal_forbidden(self) -> list[str]:
         """Return names of value-reveal flags that must be false in nonlocal posture.
 
-        LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED is intentionally
-        excluded: it is a required authorization gate in nonlocal deployments and is
-        already validated separately by _validate_deployment_profile.
+        Derived from _armed_value_reveal_flags() by filtering out
+        LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED, which is
+        intentionally excluded: it is a required authorization gate in nonlocal
+        deployments and is already validated separately by _validate_deployment_profile.
         """
-        checks = [
-            ("LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED", self.layer3_sec_edgar_arelle_internal_value_store_enabled),
-            ("LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED", self.layer3_sec_edgar_arelle_corpus_validation_enabled),
-            ("LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED", self.layer3_sec_edgar_arelle_value_reveal_enabled),
-            ("LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED", self.layer3_sec_xbrl_controlled_value_reveal_submit_enabled),
-        ]
-        return [name for name, armed in checks if armed]
+        _excluded = {"LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED"}
+        return [name for name in self._armed_value_reveal_flags() if name not in _excluded]
 
     def model_post_init(self, __context: object) -> None:
         if self.database_url.startswith("sqlite"):

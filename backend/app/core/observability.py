@@ -10,18 +10,20 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import traceback
 import uuid
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
 
 logger = logging.getLogger(__name__)
 
 _REQUEST_ID_HEADER = "X-Request-ID"
-_RESPONSE_ID_HEADER = "X-Request-ID"
+
+# Allowlist: alphanumeric plus safe punctuation only; max 128 chars.
+_REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
 
 
 # ---------------------------------------------------------------------------
@@ -75,20 +77,24 @@ def setup_logging() -> None:
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
     """
-    Accept an inbound X-Request-ID header if present; otherwise generate a
-    UUID4.  Exposes the id on ``request.state.request_id`` and returns it
-    in the response header.
-    """
+    Accept an inbound X-Request-ID header if it passes validation; otherwise
+    generate a UUID4.  Validation: at most 128 chars, matching ^[A-Za-z0-9._-]+$.
+    Invalid or absent inbound ids are silently replaced — prevents log/header
+    injection via reflected user-controlled input.
 
-    def __init__(self, app: ASGIApp) -> None:
-        super().__init__(app)
+    Exposes the id on ``request.state.request_id`` and returns it in the
+    response header.
+    """
 
     async def dispatch(self, request: Request, call_next):  # type: ignore[override]
         inbound = request.headers.get(_REQUEST_ID_HEADER)
-        request_id = inbound if inbound else str(uuid.uuid4())
+        if inbound and _REQUEST_ID_RE.match(inbound):
+            request_id = inbound
+        else:
+            request_id = str(uuid.uuid4())
         request.state.request_id = request_id
         response = await call_next(request)
-        response.headers[_RESPONSE_ID_HEADER] = request_id
+        response.headers[_REQUEST_ID_HEADER] = request_id
         return response
 
 
