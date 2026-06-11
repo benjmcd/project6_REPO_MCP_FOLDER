@@ -480,7 +480,9 @@ try {
     $ProbeSourceIntakeRecordId = ""
     $ProbeComplete = $false
 
-    if ($Probe -or $Durability) {
+    # -Durability alone must NOT require the full probe: the durability block
+    # has its own steps-1-2 seeding path and only needs an intake record.
+    if ($Probe) {
         Write-Host "=== Product-Flow Probe ===" -ForegroundColor Cyan
         Write-Host ""
 
@@ -698,9 +700,16 @@ try {
                 if ($rs2.StatusCode -eq 201) {
                     try {
                         $parsed = $rs2.Content | ConvertFrom-Json
-                        $ProbeSourceIntakeRecordId = $parsed.source_intake_record_id
+                        $ProbeSourceIntakeRecordId = [string]$parsed.source_intake_record_id
                     } catch { }
-                    Write-Host "  Seeded source_intake_record_id: $ProbeSourceIntakeRecordId" -ForegroundColor Gray
+                    if ($ProbeSourceIntakeRecordId -eq "") {
+                        # Fail closed: an empty id would vacuously skip every
+                        # subsequent durability assertion.
+                        Write-Host "  FAIL  Durability seed: upload returned 201 but no source_intake_record_id could be parsed" -ForegroundColor Red
+                        $AllPass = $false
+                    } else {
+                        Write-Host "  Seeded source_intake_record_id: $ProbeSourceIntakeRecordId" -ForegroundColor Gray
+                    }
                 } else {
                     $excerpt = if ($rs2.Content.Length -gt 300) { $rs2.Content.Substring(0, 300) } else { $rs2.Content }
                     Write-Host "  FAIL  Durability seed step 2 (upload) returned HTTP $($rs2.StatusCode): $excerpt" -ForegroundColor Red

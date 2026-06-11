@@ -569,12 +569,12 @@ docker compose -f deploy/docker-compose.production.yml \
 **Database backup via volume tar** (stops the stack for consistency):
 
 ```sh
-docker compose -f deploy/docker-compose.production.yml down
+docker compose -f deploy/docker-compose.production.yml --env-file deploy/.env down
 docker run --rm \
   -v <project>_db_data:/data:ro \
   -v "$(pwd)/backups":/backup \
   alpine tar czf /backup/db_data-$(date +%Y%m%d-%H%M%S).tar.gz -C /data .
-docker compose -f deploy/docker-compose.production.yml up -d
+docker compose -f deploy/docker-compose.production.yml --env-file deploy/.env up -d
 ```
 
 **App storage backup** (corpus validation receipts, artifacts):
@@ -586,6 +586,15 @@ docker run --rm \
   alpine tar czf /backup/app_storage-$(date +%Y%m%d-%H%M%S).tar.gz -C /data .
 ```
 
+**Export outbox backup** (terminal export deliveries in `export_data`):
+
+```sh
+docker run --rm \
+  -v <project>_export_data:/data:ro \
+  -v "$(pwd)/backups":/backup \
+  alpine tar czf /backup/export_data-$(date +%Y%m%d-%H%M%S).tar.gz -C /data .
+```
+
 Replace `<project>` with your compose project name (Docker prepends it to
 volume names, e.g. `deploy_db_data` when running from the deploy/ directory).
 Run `docker volume ls | grep db_data` to confirm the exact name.
@@ -594,21 +603,21 @@ Run `docker volume ls | grep db_data` to confirm the exact name.
 
 ```sh
 # Stop the stack, drop the old volume, recreate it, restore the dump:
-docker compose -f deploy/docker-compose.production.yml down
+docker compose -f deploy/docker-compose.production.yml --env-file deploy/.env down
 docker volume rm <project>_db_data
 docker volume create <project>_db_data
 docker run --rm \
   -v <project>_db_data:/var/lib/postgresql/data \
   -v "$(pwd)/backups":/backup \
   alpine sh -c 'cd /var/lib/postgresql/data && tar xzf /backup/<snapshot>.tar.gz'
-docker compose -f deploy/docker-compose.production.yml up -d
+docker compose -f deploy/docker-compose.production.yml --env-file deploy/.env up -d
 ```
 
 Or restore from a `pg_dump` SQL file:
 
 ```sh
 # Start only the db service, restore, then bring up the rest:
-docker compose -f deploy/docker-compose.production.yml up -d db
+docker compose -f deploy/docker-compose.production.yml --env-file deploy/.env up -d db
 cat layer3-db-<snapshot>.sql.gz | gunzip | \
   docker compose -f deploy/docker-compose.production.yml exec -T db \
   psql -U app layer3

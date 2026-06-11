@@ -139,6 +139,10 @@ def cmd_verify(args: argparse.Namespace) -> int:
         _die("packet JSON must be a JSON object (dict)")
 
     mapping = _parse_field_mapping(args.field)
+    if not mapping:
+        # Fail closed: zero comparisons must not report success — this tool's
+        # whole purpose is proving packet hashes correspond to evidence files.
+        _die("verify requires at least one --field FIELD=EVIDENCE_FILE mapping")
 
     mismatches: list[str] = []
     for field, file_path in mapping.items():
