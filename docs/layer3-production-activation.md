@@ -238,3 +238,23 @@ rationale:
 `scikit-learn`, `pandas`, `scipy`, `matplotlib`, `ruptures`, and `statsmodels`
 are all genuinely required — they are imported at module load time by services
 that are part of the router import chain, not optional or lazy-loaded.
+
+---
+
+## 6. Role Enforcement Mode
+
+By default, `LAYER3_ROUTE_AUTHORIZATION_MODE=identity_presence` — operator identity is required
+but the role claim is not enforced. This is the safe-start posture.
+
+To activate full role enforcement once the proxy is provisioning roles:
+
+1. Confirm `X-Forwarded-Roles` is being sent by the proxy with value `owner` or `auditor`.
+2. Set `LAYER3_ROUTE_AUTHORIZATION_MODE=role_enforcing` in your env file.
+3. Restart the application.
+
+Under `role_enforcing`:
+- Requests without `X-Forwarded-Roles` → 401 `missing_workspace_authority`.
+- Role claims in the request body that exceed the server-derived role → 409 `sec_xbrl_in_app_auth_policy_role_claim_exceeds_server_authority`.
+- `PROXY_ROLES_HEADER` (default `X-Forwarded-Roles`) can be overridden if your proxy uses a different header name.
+
+Do NOT enable `role_enforcing` before the proxy is configured to send the roles header — it will block all authenticated requests.

@@ -218,7 +218,7 @@ jobs:
           --cov=app.api.layer3 \
           --cov=app.services.layer3_sec_xbrl_in_app_auth_policy \
           --cov-report=term \
-          --cov-fail-under=30
+          --cov-fail-under=90
 
   backend-migrations-postgres:
     name: backend-migrations-postgres
