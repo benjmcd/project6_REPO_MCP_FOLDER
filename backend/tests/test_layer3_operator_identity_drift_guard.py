@@ -5,16 +5,25 @@ from pathlib import Path
 
 BACKEND = Path(__file__).resolve().parents[1]
 SOURCE_FILES = [
+    BACKEND / "app" / "api" / "layer3" / "__init__.py",
     BACKEND / "app" / "api" / "layer3" / "handoff.py",
     BACKEND / "app" / "api" / "layer3" / "package.py",
     BACKEND / "app" / "api" / "layer3" / "source_sec_edgar.py",
     BACKEND / "app" / "api" / "layer3" / "source_ingestion.py",
 ]
 SENSITIVE_GET_SOURCE_FILES = [
+    BACKEND / "app" / "api" / "layer3" / "__init__.py",
     BACKEND / "app" / "api" / "layer3" / "handoff.py",
     BACKEND / "app" / "api" / "layer3" / "source_sec_edgar.py",
     BACKEND / "app" / "api" / "layer3" / "source_ingestion.py",
 ]
+PUBLIC_GET_EXEMPTIONS = {
+    "__init__.py": {
+        "get_bootstrap",
+        "get_readiness",
+        "get_authority_matrix",
+    },
+}
 
 
 def _is_router_post(decorator: ast.expr) -> bool:
@@ -82,6 +91,7 @@ def _collect_violations(
     *,
     source_files: list[Path],
     matcher,
+    exemptions: dict[str, set[str]] | None = None,
 ) -> list[str]:
     violations: list[str] = []
     for source_path in source_files:
@@ -92,6 +102,8 @@ def _collect_violations(
             if not any(matcher(d) for d in node.decorator_list):
                 continue
             fname = node.name
+            if fname in (exemptions or {}).get(source_path.name, set()):
+                continue
             lineno = node.lineno
             label = f"{source_path.name}:{lineno} {fname}"
             if not _has_param_named(node, "request"):
@@ -120,6 +132,7 @@ def test_sensitive_get_routes_have_wired_identity_seam() -> None:
     violations = _collect_violations(
         source_files=SENSITIVE_GET_SOURCE_FILES,
         matcher=_is_router_get,
+        exemptions=PUBLIC_GET_EXEMPTIONS,
     )
     if violations:
         formatted = "\n".join(f"  - {v}" for v in violations)

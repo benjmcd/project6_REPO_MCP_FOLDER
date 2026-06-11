@@ -383,6 +383,46 @@ routes are covered by the Sensitive GET Surface Addendum above, while StaticFile
 GET surfaces, and reverse-proxy authn/authz remain separately owned unless a later slice
 governs them.
 
+## Core Workbench Surface Addendum
+
+Status: follow-up production-hardening runtime slice.
+
+`backend/app/api/layer3/__init__.py` is now covered by the same route-level
+operator-identity seam and AST drift guard for core workbench POST routes and selected
+sensitive GET routes. The public metadata GETs stay intentionally open because they expose
+static contract/readiness metadata needed by local/UI bootstrap and do not read session or
+candidate state.
+
+```yaml
+additional_core_workbench_surface:
+  core_workbench_post_routes: 19
+  core_workbench_sensitive_get_routes: 5
+  public_get_exemptions:
+    - /bootstrap
+    - /readiness
+    - /authority-matrix
+identity_seam_under_none: inert; local default remains unchanged
+fail_closed_proxy_untrusted: HTTP 409, sec_xbrl_in_app_auth_policy_untrusted_proxy_identity
+fail_closed_proxy_missing_identity_header: HTTP 401, sec_xbrl_in_app_auth_policy_missing_identity_authority
+fail_closed_proxy_missing_groups_header: HTTP 401, sec_xbrl_in_app_auth_policy_missing_workspace_authority
+new_flags: none
+new_models: none
+new_migrations: none
+default_on_changes: none
+value_reveal_activation: false
+controlled_submit_activation: false
+model_migration_change: false
+production_readiness_claim: false
+```
+
+Rationale: the core workbench POST surface admits preflight, source/material preview,
+gate, plan, execution, result, analyst-product, and working-set behavior; the sensitive GET
+surface exposes APS candidate/refused-artifact lists, session summary, and sublayer
+visualization state. Under proxy posture these routes should fail closed before service
+logic can mutate or expose workflow state. This remains identity-presence enforcement only;
+role authorization, StaticFiles wrapping, remaining GET surfaces, and reverse-proxy
+authn/authz remain separately owned unless a later slice governs them.
+
 ## Rollback
 
 The wiring is a single reversible commit set (the `_route_level_operator_identity` call +
@@ -412,11 +452,12 @@ route-level identity contract:
    route), and JSON error-body assertions on the two FileResponse delivery routes.
 
 4. `backend/tests/test_layer3_operator_identity_drift_guard.py` (3 tests) - AST structural
-   guard over handoff.py/package.py/source_sec_edgar.py/source_ingestion.py: every `router.post` handler must
+   guard over __init__.py/handoff.py/package.py/source_sec_edgar.py/source_ingestion.py: every `router.post` handler must
    carry a `request` parameter and begin with the seam try/except as its first executable
    statement (empty skip-list), and every selected sensitive `router.get` handler in
-   handoff.py/source_ingestion.py/source_sec_edgar.py must do the same. Future POST routes
-   and selected sensitive GET routes cannot ship unwired or with a misplaced seam.
+   __init__.py/handoff.py/source_ingestion.py/source_sec_edgar.py must do the same. Future
+   POST routes and selected sensitive GET routes cannot ship unwired or with a misplaced
+   seam. The public metadata GET exemptions are explicit.
 
 5. `backend/tests/test_layer3_source_sec_edgar_operator_identity.py` (3 tests) - focused
    runtime proof that a source/sec-edgar POST route fails closed with 409 under untrusted
@@ -428,6 +469,13 @@ route-level identity contract:
    runtime proof that representative handoff, source_ingestion, and source/sec-edgar GET
    routes fail closed with 409 under untrusted proxy posture, return JSON policy errors, do
    not echo proxy canaries, and do not reach service logic before the identity seam.
+
+7. `backend/tests/test_layer3_core_workbench_operator_identity.py` (6 tests) - focused
+   runtime proof that a representative core workbench POST route and representative
+   candidate/session GET routes fail closed with 409 under untrusted proxy posture, return
+   JSON policy errors, do not echo proxy canaries, and do not reach service logic before the
+   identity seam; also proves `/bootstrap`, `/readiness`, and `/authority-matrix` stay
+   available as public metadata GETs.
 
 Pre-existing `backend/tests/test_layer3_api.py` regression baseline is preserved (317 passed
 for this source/sec-edgar addendum slice); the full `test_layer3_*` selection from the original
