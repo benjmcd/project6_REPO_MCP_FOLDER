@@ -40,6 +40,7 @@ from main import app
 _API = "/api/v1"
 _IDENTITY_HEADER = "x-forwarded-user"
 _GROUPS_HEADER = "x-forwarded-groups"
+_ROLES_HEADER = "x-forwarded-roles"
 _IDENTITY_CANARY = "legacy-api-test-operator@example.invalid"
 _GROUPS_CANARY = "legacy-api-test-workspace@example.invalid"
 
@@ -407,3 +408,34 @@ def test_post_multipart_route_local_default_mode_not_auth_rejected(
         assert not _is_auth_error_code(body), (
             f"Auth-gate error in local default mode on multipart POST {path}: {body}"
         )
+
+
+@pytest.mark.parametrize("path", _POST_MULTIPART_ROUTES)
+def test_post_multipart_route_rejects_auditor_role_before_body_parsing(
+    tmp_path,
+    monkeypatch,
+    path: str,
+) -> None:
+    client = _make_client(tmp_path, monkeypatch, auth_owner="proxy", trusted=True)
+    monkeypatch.setattr(settings, "layer3_route_authorization_mode", "role_enforcing")
+    monkeypatch.setattr(settings, "proxy_roles_header", _ROLES_HEADER)
+    monkeypatch.setattr(settings, "layer3_owner_role_tokens", "owner")
+    monkeypatch.setattr(settings, "layer3_auditor_role_tokens", "auditor")
+
+    try:
+        response = client.post(
+            path,
+            headers={
+                _IDENTITY_HEADER: _IDENTITY_CANARY,
+                _GROUPS_HEADER: _GROUPS_CANARY,
+                _ROLES_HEADER: "auditor",
+            },
+        )
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+    assert response.status_code == 403, response.text
+    body = response.json()
+    assert "role_access_forbidden" in body.get("error_code", ""), body
+    assert _IDENTITY_CANARY not in response.text
+    assert _GROUPS_CANARY not in response.text

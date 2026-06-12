@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import inspect
+import re
 from pathlib import Path
+from typing import Any
 
 from alembic import command
 from alembic.config import Config
@@ -59,10 +62,86 @@ app.add_middleware(
 app.add_exception_handler(Exception, unhandled_exception_handler)
 
 
-_PRE_BODY_OPERATOR_IDENTITY_POST_ROUTES = {
-    f"{settings.api_prefix.rstrip('/')}/layer3/source/intake/upload",
-    f"{settings.api_prefix.rstrip('/')}/sources/upload",
+_PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTES: dict[str, str] = {}
+_PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTE_PATTERNS: tuple[
+    tuple[re.Pattern[str], str, str],
+    ...,
+] = ()
+_REQUIRED_PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTES = {
+    f"{settings.api_prefix.rstrip('/')}/analysis-runs": "write",
+    f"{settings.api_prefix.rstrip('/')}/layer3/source/intake/upload": "write",
+    f"{settings.api_prefix.rstrip('/')}/layer3/sec-xbrl/operator-review/workflow/status": "read",
 }
+
+
+def _endpoint_source(endpoint: Any) -> str:
+    try:
+        return inspect.getsource(endpoint)
+    except (OSError, TypeError):
+        return ""
+
+
+def _operator_authorization_access_from_endpoint(endpoint: Any) -> str | None:
+    source = _endpoint_source(endpoint)
+    if "_route_level_operator_identity" in source:
+        match = re.search(
+            r"_route_level_operator_identity\([\s\S]*?access\s*=\s*['\"](read|write)['\"]",
+            source,
+        )
+        return match.group(1) if match else "write"
+    if "_sec_xbrl_policy_decision" in source or "authorize_sec_xbrl_route" in source:
+        route_family_access = set(
+            re.findall(r"\bsec_xbrl_[A-Za-z0-9_]+_(read|write)\b", source)
+        )
+        if "write" in route_family_access:
+            return "write"
+        if "read" in route_family_access:
+            return "read"
+    return None
+
+
+def _build_pre_body_operator_authorization_post_routes(
+    routes: list[Any],
+) -> tuple[dict[str, str], tuple[tuple[re.Pattern[str], str, str], ...]]:
+    routes_by_path: dict[str, str] = {}
+    route_patterns: list[tuple[re.Pattern[str], str, str]] = []
+    for route in routes:
+        methods = getattr(route, "methods", set()) or set()
+        if "POST" not in methods:
+            continue
+        access = _operator_authorization_access_from_endpoint(getattr(route, "endpoint", None))
+        if access is None:
+            continue
+        path = str(getattr(route, "path", ""))
+        path_regex = getattr(route, "path_regex", None)
+        if not path or path_regex is None:
+            continue
+        routes_by_path[path] = access
+        route_patterns.append((path_regex, path, access))
+    return routes_by_path, tuple(route_patterns)
+
+
+def _pre_body_operator_authorization_access_for_path(path: str) -> str | None:
+    exact = _PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTES.get(path)
+    if exact is not None:
+        return exact
+    for path_regex, _path_template, access in _PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTE_PATTERNS:
+        if path_regex.match(path):
+            return access
+    return None
+
+
+def _require_pre_body_operator_authorization_routes(routes_by_path: dict[str, str]) -> None:
+    missing = {
+        path: expected_access
+        for path, expected_access in _REQUIRED_PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTES.items()
+        if routes_by_path.get(path) != expected_access
+    }
+    if missing:
+        raise RuntimeError(
+            "pre-body operator authorization route discovery failed for required protected POST routes: "
+            + ", ".join(f"{path}={access}" for path, access in sorted(missing.items()))
+        )
 
 
 def _auth_policy_error_response(
@@ -90,11 +169,13 @@ def _auth_policy_error_response(
 
 
 @app.middleware("http")
-async def _pre_body_operator_identity_middleware(request: Request, call_next):
-    if request.method.upper() == "POST" and request.url.path in _PRE_BODY_OPERATOR_IDENTITY_POST_ROUTES:
+async def _pre_body_operator_authorization_middleware(request: Request, call_next):
+    access = _pre_body_operator_authorization_access_for_path(request.url.path)
+    if request.method.upper() == "POST" and access is not None:
         try:
-            layer3_sec_xbrl_in_app_auth_policy.route_level_operator_identity_required(
-                {str(key): str(value) for key, value in request.headers.items()}
+            layer3_sec_xbrl_in_app_auth_policy.route_level_operator_authorization_required(
+                {str(key): str(value) for key, value in request.headers.items()},
+                access=access,
             )
         except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
             return _auth_policy_error_response(exc)
@@ -102,6 +183,11 @@ async def _pre_body_operator_identity_middleware(request: Request, call_next):
 
 
 app.include_router(api_router, prefix=settings.api_prefix)
+(
+    _PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTES,
+    _PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTE_PATTERNS,
+) = _build_pre_body_operator_authorization_post_routes(app.router.routes)
+_require_pre_body_operator_authorization_routes(_PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTES)
 bootstrap_storage_tree()
 if settings.storage_mount_enabled:
     app.mount('/storage', StaticFiles(directory=settings.storage_dir), name='storage')
