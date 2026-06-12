@@ -292,6 +292,8 @@ def _analyst_blocked_reasons(lifecycle_status: str) -> list[str]:
         return []
     if lifecycle_status == "rejected":
         return ["rejected"]
+    if lifecycle_status == "superseded":
+        return ["superseded"]
     if lifecycle_status == "package_eligible":
         return ["package_lane_not_wired"]
     return []

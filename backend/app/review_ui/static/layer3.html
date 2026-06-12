@@ -877,11 +877,14 @@
                                 <option value="mark_package_eligible">mark_package_eligible</option>
                                 <option value="reject">reject</option>
                                 <option value="revise">revise</option>
+                                <option value="supersede">supersede</option>
                             </select>
                             <label for="apw-tr-reason">Reason code</label>
                             <select id="apw-tr-reason"></select>
                             <label for="apw-tr-notes">Notes</label>
                             <textarea id="apw-tr-notes" rows="2"></textarea>
+                            <label for="apw-tr-successor">Successor product id</label>
+                            <input id="apw-tr-successor" type="text" placeholder="(optional; required for superseded_by_successor)">
                             <button id="apw-tr-submit" type="submit" class="primary-btn">Submit Decision</button>
                         </div>
                     </fieldset>

@@ -45,11 +45,14 @@ ALLOWED_TRANSITIONS: dict[tuple[str, str], str] = {
     ("accepted", "reject"): "rejected",
     ("proposed", "revise"): "draft",
     ("validated", "revise"): "draft",
+    ("accepted", "supersede"): "superseded",
+    ("package_eligible", "supersede"): "superseded",
+    ("packaged", "supersede"): "superseded",
 }
 
 GROUNDING_REQUIRED_TARGETS: frozenset[str] = frozenset({"accepted", "package_eligible"})
 
-TERMINAL_STATES: frozenset[str] = frozenset({"rejected", "package_eligible"})
+TERMINAL_STATES: frozenset[str] = frozenset({"rejected", "superseded"})
 
 REASON_CODES_BY_DECISION: dict[str, set[str]] = {
     "promote": {"proposed_ready", "validation_passed"},
@@ -57,9 +60,71 @@ REASON_CODES_BY_DECISION: dict[str, set[str]] = {
     "mark_package_eligible": {"package_ready"},
     "reject": {"insufficient_grounding", "evidence_gap", "operator_rejected"},
     "revise": {"revision_requested"},
+    "supersede": {"superseded_by_successor", "stale_basis"},
 }
 
-NOTES_REQUIRED_DECISIONS: frozenset[str] = frozenset({"reject", "revise"})
+NOTES_REQUIRED_DECISIONS: frozenset[str] = frozenset({"reject", "revise", "supersede"})
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _normalize_successor_id(raw: object) -> str | None:
+    """Normalize a raw successor_analysis_product_id value to str-or-None.
+
+    Treats missing, None, or empty/whitespace-only strings as None.
+    Raises Layer3AnalysisProductError with error_code
+    "supersede_successor_invalid_type" (http 409) if the value is neither
+    None nor str — coercing int/list garbage would produce strings that 404
+    on the write path.
+    """
+    if raw is None:
+        return None
+    if not isinstance(raw, str):
+        raise Layer3AnalysisProductError(
+            "decision_provenance.successor_analysis_product_id must be a string or null; "
+            f"got {type(raw).__name__}.",
+            error_code="supersede_successor_invalid_type",
+            http_status=409,
+        )
+    stripped = raw.strip()
+    return stripped if stripped else None
+
+
+def _stored_decision_basis_hash(existing: L3AnalysisProductReviewDecision) -> str:
+    """Reconstruct the decision_basis_hash from a persisted decision row.
+
+    Used by both the early idempotency pre-check and the late IntegrityError
+    catch so the hash-equality comparison is computed once, consistently.
+
+    For rows with review_decision == "supersede" the successor id is folded in
+    (read from decision_provenance_json).  Non-str stored values are treated as
+    None (replay must not crash on legacy/garbage rows).
+    """
+    stored_dict: dict = {
+        "schema_id": ANALYSIS_PRODUCT_PROMOTION_SCHEMA_ID,
+        "analysis_product_id": existing.analysis_product_id,
+        "from_status": existing.from_status,
+        "to_status": existing.to_status,
+        "review_decision": existing.review_decision,
+        "decision_reason_code": existing.decision_reason_code,
+        "decision_status": L3_ANALYSIS_PRODUCT_REVIEW_DECISION_STATUS_RECORDED,
+        "product_basis_hash": existing.product_basis_hash,
+        "grounding_asserted": existing.grounding_asserted,
+        "notes_hash": existing.decision_notes_hash,
+    }
+    if existing.review_decision == "supersede":
+        raw_stored = (
+            existing.decision_provenance_json.get("successor_analysis_product_id")
+            if isinstance(existing.decision_provenance_json, dict)
+            else None
+        )
+        # Stored rows: treat non-str as None (no raise — replay must not crash).
+        stored_successor = raw_stored.strip() if isinstance(raw_stored, str) else None
+        stored_dict["successor_analysis_product_id"] = stored_successor if stored_successor else None
+    return stable_hash(stored_dict)
 
 
 # ---------------------------------------------------------------------------
@@ -98,8 +163,11 @@ def transition_analysis_product(
 ) -> Layer3AnalysisProductPromotionResult:
     """Advance (or idempotently replay) a product lifecycle transition.
 
-    Validation order matches the spec exactly.  On success, rows are
-    flushed but NOT committed — the caller commits.
+    Fail-closed validation ordered: intent → reason → notes → load →
+    idempotent replay → terminal gate → transition → supersede
+    provenance/grounding → hashes → write.  Replays return the originally
+    recorded result.  On success, rows are flushed but NOT committed — the
+    caller commits.
     """
 
     decision_intent = request.decision_intent
@@ -156,7 +224,56 @@ def transition_analysis_product(
             http_status=409,
         )
 
-    # --- Step 5: terminal state gate ------------------------------------------
+    # --- Step 5: idempotency pre-check (before terminal gate) -----------------
+    # Must run before Step 6 so a supersede replay returns replayed=True rather
+    # than hitting "product_terminal".
+    _early_existing = (
+        db.query(L3AnalysisProductReviewDecision)
+        .filter(L3AnalysisProductReviewDecision.client_request_id == client_request_id)
+        .one_or_none()
+    )
+    if _early_existing is not None:
+        _early_stored_hash = _stored_decision_basis_hash(_early_existing)
+
+        _early_notes_stripped: str | None = request.decision_notes.strip() if request.decision_notes else None
+        _early_notes_hash: str | None = stable_hash({"notes": _early_notes_stripped}) if _early_notes_stripped else None
+
+        _early_incoming_matches = (
+            _early_existing.analysis_product_id == analysis_product_id
+            and _early_existing.review_decision == decision_intent
+            and _early_existing.decision_reason_code == decision_reason_code
+            and _early_existing.decision_notes_hash == _early_notes_hash
+        )
+        if decision_intent == "supersede":
+            _early_incoming_successor = _normalize_successor_id(
+                request.decision_provenance.get("successor_analysis_product_id")
+                if isinstance(request.decision_provenance, dict)
+                else None
+            )
+            _early_stored_successor = (
+                _early_existing.decision_provenance_json.get("successor_analysis_product_id")
+                if isinstance(_early_existing.decision_provenance_json, dict)
+                else None
+            )
+            _early_stored_successor = _early_stored_successor.strip() if isinstance(_early_stored_successor, str) else None
+            _early_incoming_matches = _early_incoming_matches and (
+                _early_incoming_successor == (_early_stored_successor if _early_stored_successor else None)
+            )
+
+        if _early_incoming_matches and _early_existing.decision_basis_hash == _early_stored_hash:
+            return Layer3AnalysisProductPromotionResult(
+                product=product,
+                decision=_early_existing,
+                replayed=True,
+            )
+        raise Layer3AnalysisProductError(
+            f"client_request_id '{client_request_id}' already exists with a different "
+            "decision_basis_hash.",
+            error_code="idempotency_conflict",
+            http_status=409,
+        )
+
+    # --- Step 6: terminal state gate ------------------------------------------
     current = product.lifecycle_status
     if current in TERMINAL_STATES:
         raise Layer3AnalysisProductError(
@@ -166,7 +283,7 @@ def transition_analysis_product(
             http_status=409,
         )
 
-    # --- Step 6: allowed transition -------------------------------------------
+    # --- Step 7: allowed transition -------------------------------------------
     to_status = ALLOWED_TRANSITIONS.get((current, decision_intent))
     if to_status is None:
         raise Layer3AnalysisProductError(
@@ -176,7 +293,7 @@ def transition_analysis_product(
             http_status=409,
         )
 
-    # --- Step 7: grounding gate (live read) -----------------------------------
+    # --- Step 8: supersede provenance/grounding validation --------------------
     grounding_asserted = to_status in GROUNDING_REQUIRED_TARGETS
     if grounding_asserted:
         if product.is_non_evidentiary is True:
@@ -201,76 +318,71 @@ def transition_analysis_product(
                 http_status=409,
             )
 
-    # --- Step 8: notes hash ---------------------------------------------------
+    successor_id: str | None = None
+    if decision_intent == "supersede":
+        successor_id = _normalize_successor_id(
+            request.decision_provenance.get("successor_analysis_product_id")
+            if isinstance(request.decision_provenance, dict)
+            else None
+        )
+        if decision_reason_code == "superseded_by_successor" and successor_id is None:
+            raise Layer3AnalysisProductError(
+                "decision_provenance.successor_analysis_product_id is required when "
+                "decision_reason_code is 'superseded_by_successor'.",
+                error_code="supersede_successor_required",
+                http_status=409,
+            )
+        if successor_id is not None:
+            if successor_id == analysis_product_id:
+                raise Layer3AnalysisProductError(
+                    f"successor_analysis_product_id must not equal analysis_product_id "
+                    f"('{analysis_product_id}').",
+                    error_code="supersede_successor_self",
+                    http_status=409,
+                )
+            successor_product = (
+                db.query(L3AnalysisProduct)
+                .filter(L3AnalysisProduct.analysis_product_id == successor_id)
+                .one_or_none()
+            )
+            if successor_product is None:
+                raise Layer3AnalysisProductError(
+                    f"Successor analysis product '{successor_id}' not found.",
+                    error_code="supersede_successor_not_found",
+                    http_status=404,
+                )
+            if successor_product.session_id != session_id:
+                raise Layer3AnalysisProductError(
+                    f"Successor analysis product '{successor_id}' does not belong to "
+                    f"session '{session_id}'.",
+                    error_code="supersede_successor_not_in_session",
+                    http_status=409,
+                )
+
+    # --- Step 9: notes hash ---------------------------------------------------
     notes_hash: str | None = (
         stable_hash({"notes": notes_stripped}) if notes_stripped else None
     )
     notes_present = bool(notes_stripped)
 
-    # --- Step 9: decision basis hash ------------------------------------------
-    decision_basis_hash = stable_hash(
-        {
-            "schema_id": ANALYSIS_PRODUCT_PROMOTION_SCHEMA_ID,
-            "analysis_product_id": analysis_product_id,
-            "from_status": current,
-            "to_status": to_status,
-            "review_decision": decision_intent,
-            "decision_reason_code": decision_reason_code,
-            "decision_status": L3_ANALYSIS_PRODUCT_REVIEW_DECISION_STATUS_RECORDED,
-            "product_basis_hash": product.basis_hash,
-            "grounding_asserted": grounding_asserted,
-            "notes_hash": notes_hash,
-        }
-    )
+    # --- Step 10: decision basis hash -----------------------------------------
+    basis_dict: dict = {
+        "schema_id": ANALYSIS_PRODUCT_PROMOTION_SCHEMA_ID,
+        "analysis_product_id": analysis_product_id,
+        "from_status": current,
+        "to_status": to_status,
+        "review_decision": decision_intent,
+        "decision_reason_code": decision_reason_code,
+        "decision_status": L3_ANALYSIS_PRODUCT_REVIEW_DECISION_STATUS_RECORDED,
+        "product_basis_hash": product.basis_hash,
+        "grounding_asserted": grounding_asserted,
+        "notes_hash": notes_hash,
+    }
+    if decision_intent == "supersede":
+        basis_dict["successor_analysis_product_id"] = successor_id
+    decision_basis_hash = stable_hash(basis_dict)
 
-    # --- Step 10: idempotency pre-check ---------------------------------------
-    existing_decision = (
-        db.query(L3AnalysisProductReviewDecision)
-        .filter(
-            L3AnalysisProductReviewDecision.client_request_id == client_request_id
-        )
-        .one_or_none()
-    )
-    if existing_decision is not None:
-        # Reconstruct the basis hash from the stored decision's own fields so
-        # comparison is stable regardless of what the current product status is.
-        stored_basis_hash = stable_hash(
-            {
-                "schema_id": ANALYSIS_PRODUCT_PROMOTION_SCHEMA_ID,
-                "analysis_product_id": existing_decision.analysis_product_id,
-                "from_status": existing_decision.from_status,
-                "to_status": existing_decision.to_status,
-                "review_decision": existing_decision.review_decision,
-                "decision_reason_code": existing_decision.decision_reason_code,
-                "decision_status": L3_ANALYSIS_PRODUCT_REVIEW_DECISION_STATUS_RECORDED,
-                "product_basis_hash": existing_decision.product_basis_hash,
-                "grounding_asserted": existing_decision.grounding_asserted,
-                "notes_hash": existing_decision.decision_notes_hash,
-            }
-        )
-        # The incoming decision_basis_hash uses `current` (live product status).
-        # For a true replay the intent/reason/notes must match the stored row AND
-        # the stored row must pertain to the same product.  Compare field-by-field:
-        incoming_matches = (
-            existing_decision.analysis_product_id == analysis_product_id
-            and existing_decision.review_decision == decision_intent
-            and existing_decision.decision_reason_code == decision_reason_code
-            and existing_decision.decision_notes_hash == notes_hash
-        )
-        if incoming_matches and existing_decision.decision_basis_hash == stored_basis_hash:
-            return Layer3AnalysisProductPromotionResult(
-                product=product,
-                decision=existing_decision,
-                replayed=True,
-            )
-        raise Layer3AnalysisProductError(
-            f"client_request_id '{client_request_id}' already exists with a different "
-            "decision_basis_hash.",
-            error_code="idempotency_conflict",
-            http_status=409,
-        )
-
-    # --- Step 11: create decision row + mutate product ------------------------
+    # --- Step 11: write decision row + mutate product -------------------------
     decision = L3AnalysisProductReviewDecision(
         analysis_product_review_decision_id=uuid_str(),
         analysis_product_id=analysis_product_id,
@@ -315,7 +427,25 @@ def transition_analysis_product(
         )
         if recovered is None:
             raise
-        if recovered.decision_basis_hash == decision_basis_hash:
+        recovered_stored_hash = _stored_decision_basis_hash(recovered)
+        recovered_notes_hash: str | None = stable_hash({"notes": notes_stripped}) if notes_stripped else None
+        recovered_field_match = (
+            recovered.analysis_product_id == analysis_product_id
+            and recovered.review_decision == decision_intent
+            and recovered.decision_reason_code == decision_reason_code
+            and recovered.decision_notes_hash == recovered_notes_hash
+        )
+        if decision_intent == "supersede":
+            _rec_stored_raw = (
+                recovered.decision_provenance_json.get("successor_analysis_product_id")
+                if isinstance(recovered.decision_provenance_json, dict)
+                else None
+            )
+            _rec_stored_succ = _rec_stored_raw.strip() if isinstance(_rec_stored_raw, str) else None
+            recovered_field_match = recovered_field_match and (
+                successor_id == (_rec_stored_succ if _rec_stored_succ else None)
+            )
+        if recovered_field_match and recovered.decision_basis_hash == recovered_stored_hash:
             # Reload product to get current state from DB after rollback
             product = (
                 db.query(L3AnalysisProduct)

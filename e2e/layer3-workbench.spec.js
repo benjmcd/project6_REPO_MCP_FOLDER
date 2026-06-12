@@ -25698,3 +25698,11 @@ test('Analysis Products dock panel surfaces package-roster embed flag state and 
   await expect(page.locator('#apw-packaging-readiness .apw-packaging-flag')).toHaveAttribute('data-embed-state', 'active');
   await expect(page.locator('#apw-packaging-readiness')).toContainText('ACTIVE');
 });
+
+test('Layer 3 workbench transition form exposes supersede intent option with successor input', async ({ page }) => {
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  // The supersede option must be present in the intent picker.
+  await expect(page.locator('#apw-tr-intent option[value="supersede"]')).toHaveCount(1);
+  // The successor product id input must be present.
+  await expect(page.locator('#apw-tr-successor')).toHaveCount(1);
+});

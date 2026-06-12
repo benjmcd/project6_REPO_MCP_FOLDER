@@ -656,12 +656,19 @@ def serialize_analysis_product(
     for link in evidence_links:
         by_role[link.evidence_role] = by_role.get(link.evidence_role, 0) + 1
     if latest_decision is not None:
+        _successor: str | None = None
+        if latest_decision.review_decision == "supersede":
+            _prov = latest_decision.decision_provenance_json if isinstance(latest_decision.decision_provenance_json, dict) else {}
+            _raw_successor = _prov.get("successor_analysis_product_id")
+            if _raw_successor is not None and isinstance(_raw_successor, str) and _raw_successor.strip():
+                _successor = _raw_successor.strip()
         latest_review_decision: dict[str, Any] | None = {
             "review_decision": latest_decision.review_decision,
             "decision_reason_code": latest_decision.decision_reason_code,
             "from_status": latest_decision.from_status,
             "to_status": latest_decision.to_status,
             "created_at": latest_decision.created_at.isoformat() if latest_decision.created_at is not None else None,
+            "successor_analysis_product_id": _successor,
         }
     else:
         latest_review_decision = None
