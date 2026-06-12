@@ -23,6 +23,7 @@ from app.models.models import (
     DatasetVersion,
     L3AnalysisGroup,
     L3AnalysisPlan,
+    L3AnalysisProduct,
     L3AnalysisSet,
     L3AnalysisUnit,
     L3ConnectorLocalDestinationReceipt,
@@ -48,7 +49,21 @@ from app.models.models import (
     VariableDefinition,
     VariableProfile,
 )
-from app.services import dataframe_io
+from app.services import dataframe_io, layer3_workbench
+from app.services.layer3_analysis_product_authoring import (
+    AnalysisProductDraft,
+    AnalysisProductEvidenceDraft,
+    create_analysis_product_draft,
+)
+from app.services.layer3_analysis_product_promotion import (
+    AnalysisProductTransitionRequest,
+    transition_analysis_product,
+)
+from app.services.layer3_package_entry import (
+    PACKAGE_KIND_CANONICAL_INTERNAL,
+    PACKAGE_KIND_REVIEW_FACING,
+    PACKAGE_KIND_USER_FACING,
+)
 from app.services.layer3_raw_mixed_bridge import (
     RAW_MIXED_CORPUS_SEED_MANIFEST_SCHEMA_ID,
     RAW_MIXED_CORPUS_SEED_MODE,
@@ -2289,3 +2304,448 @@ def _assert_response_refs_exist(payload: dict[str, Any]) -> None:
         assert Path(ref).exists()
     for package in payload.get("output_packages") or []:
         _assert_file_sha256(package["payload_ref"], package["payload_hash"])
+
+
+# ---------------------------------------------------------------------------
+# 3C roster + APS bundle boundedness
+# ---------------------------------------------------------------------------
+
+
+def _make_aps_session_product(db, *, session_id: str, client_request_id: str) -> "L3AnalysisProduct":
+    """Author a grounded 'finding' product whose evidence ref points to the
+    first real L3MaterialSnapshot in the given APS-capable session."""
+    snapshot = (
+        db.query(L3MaterialSnapshot)
+        .filter(L3MaterialSnapshot.session_id == session_id)
+        .first()
+    )
+    assert snapshot is not None, f"No material snapshot found for session {session_id}"
+
+    draft = AnalysisProductDraft(
+        product_kind="finding",
+        title=f"APS-session finding [{client_request_id}]",
+        body="Body text — must never appear in package payloads.",
+        evidence=(
+            AnalysisProductEvidenceDraft(
+                ref_kind="material_snapshot",
+                ref_id=snapshot.material_snapshot_id,
+                evidence_role="observation",
+            ),
+        ),
+    )
+    result = create_analysis_product_draft(
+        db,
+        session_id=session_id,
+        client_request_id=client_request_id,
+        draft=draft,
+    )
+    db.commit()
+    return result.product
+
+
+def _promote_aps_product_to_package_eligible(
+    db,
+    *,
+    session_id: str,
+    product_id: str,
+    prefix: str,
+) -> None:
+    """Walk draft -> proposed_ready -> validation_passed -> grounded_accept -> package_ready."""
+    steps = [
+        ("promote", "proposed_ready"),
+        ("promote", "validation_passed"),
+        ("accept", "grounded_accept"),
+        ("mark_package_eligible", "package_ready"),
+    ]
+    for i, (intent, code) in enumerate(steps):
+        transition_analysis_product(
+            db,
+            session_id=session_id,
+            analysis_product_id=product_id,
+            client_request_id=f"{prefix}-step-{i}",
+            request=AnalysisProductTransitionRequest(
+                decision_intent=intent,
+                decision_reason_code=code,
+            ),
+        )
+        db.commit()
+
+    refreshed = (
+        db.query(L3AnalysisProduct)
+        .filter(L3AnalysisProduct.analysis_product_id == product_id)
+        .first()
+    )
+    assert refreshed is not None, f"Product {product_id} missing after promotion"
+    assert refreshed.lifecycle_status == "package_eligible", (
+        f"Product {product_id} did not reach package_eligible; got {refreshed.lifecycle_status}"
+    )
+
+
+def test_3c_roster_survives_to_handoff_boundary_and_aps_bundle_stays_bounded(
+    client: TestClient,
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """Roster in committed payloads; APS bundle byte stream contains NO inventory.
+
+    Drives the full APS-seeded (associated cohort) bounded-e2e path with ONE
+    package_eligible analysis product present and the bridge flag ON.  Asserts:
+
+    1. All three committed package kinds carry analysis_product_inventory with
+       package_eligible_product_count == 1.
+    2. canonical_internal + review_facing: full entry fields present (title,
+       evidence_refs, basis_hash); no body key.
+    3. user_facing: minimized entry — analysis_product_id, product_kind,
+       by_evidence_role ONLY; no title/evidence_refs/basis_hash.
+    4. After APS dispatch: the persisted aps.evidence_bundle.v2 artifact bytes
+       contain NO occurrence of the string "analysis_product_inventory".
+    5. The chain reaches download readiness unchanged (flag-on is transparent
+       to handoff mechanics).
+    """
+    _patch_cohort_dataframe_persistence(monkeypatch, tmp_path)
+    seeded = _seed_sources(client, tmp_path)
+    driver = Layer3ApiDriver(client)
+    state = Layer3StateAssertions(client, tmp_path)
+    seeded_counts = state.counts()
+    seeded_files = state.files()
+    request_prefix = "3c-aps-bundle-bounded"
+
+    # ------------------------------------------------------------------
+    # Gate B + Gate C (APS-seeded associated-cohort session)
+    # ------------------------------------------------------------------
+    preflight = driver.preflight()
+    _assert_forbidden_response_surface_absent(preflight)
+
+    source = driver.source_preview(preflight_id=preflight["preflight_id"])
+    _assert_source_preview(source)
+
+    material = driver.material_preview(
+        preflight_id=preflight["preflight_id"],
+        source=source,
+        seeded=seeded,
+    )
+    _assert_material_preview(material, seeded=seeded)
+
+    gate_b = driver.gate_b_decision(
+        preflight_id=preflight["preflight_id"],
+        source_set_id=source["source_set_id"],
+        material=material,
+    )
+    assert gate_b["status"] == "ok"
+    session_id = gate_b["session_id"]
+    state.assert_gate_b_state(session_id=session_id, seeded=seeded)
+    state.assert_forbidden_side_effects_absent(seeded_counts=seeded_counts)
+
+    gate_c = driver.gate_c_commit(session_id=session_id)
+    assert gate_c["next_state"] == "plan_preview_ready"
+    state.assert_gate_c_associated_cohort_boundary(session_id=session_id)
+    state.assert_forbidden_side_effects_absent(seeded_counts=seeded_counts)
+
+    # ------------------------------------------------------------------
+    # Plan preview / approve
+    # ------------------------------------------------------------------
+    plan_preview = driver.plan_preview(session_id=session_id)
+    _assert_descriptive_cohort_plan_preview(plan_preview, seeded=seeded)
+
+    plan_approval = driver.plan_approve(session_id=session_id, preview=plan_preview)
+    assert plan_approval["next_state"] == "plan_approved"
+
+    # ------------------------------------------------------------------
+    # Execution select / start / status / review
+    # ------------------------------------------------------------------
+    selection = driver.execution_select(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+    )
+    assert selection["status"] == "selected_not_started"
+
+    start = driver.execution_start(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+    )
+    assert start["status"] in {"completed", "completed_with_warnings"}
+
+    status = driver.execution_status(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+    )
+    assert status["status"] == "available"
+
+    review = driver.execution_review(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        status=status,
+    )
+    assert review["review_state"] == "execution_result_review_approved"
+
+    # ------------------------------------------------------------------
+    # Author + promote a 3C analysis product to package_eligible.
+    # Done after execution review, before package preview (the commit step
+    # reads the live DB roster; timing between preview hash and commit is
+    # validated by the stale-roster test in test_layer3_3c_golden_path.py).
+    # ------------------------------------------------------------------
+    with client.layer3_session_factory() as db:
+        product = _make_aps_session_product(
+            db,
+            session_id=session_id,
+            client_request_id=f"{request_prefix}-product",
+        )
+        product_id = product.analysis_product_id
+
+    with client.layer3_session_factory() as db:
+        _promote_aps_product_to_package_eligible(
+            db,
+            session_id=session_id,
+            product_id=product_id,
+            prefix=f"{request_prefix}-promote",
+        )
+
+    # ------------------------------------------------------------------
+    # Package preview + commit with flag ON
+    # ------------------------------------------------------------------
+    monkeypatch.setattr(
+        layer3_workbench.settings,
+        "layer3_analysis_product_package_inventory_enabled",
+        True,
+    )
+
+    package_preview = driver.package_preview(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+    )
+    assert package_preview["pass_type"] == "associated_cohort"
+
+    package_commit = driver.package_commit(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        package_preview=package_preview,
+    )
+    assert package_commit["status"] == "committed"
+    _assert_response_refs_exist(package_commit)
+
+    # ------------------------------------------------------------------
+    # Payload assertions: all three kinds carry the bounded roster
+    # ------------------------------------------------------------------
+    with client.layer3_session_factory() as db:
+        pkg_rows = {
+            row.package_kind: row
+            for row in db.query(L3OutputPackage)
+            .filter(L3OutputPackage.session_id == session_id)
+            .all()
+        }
+
+    assert {PACKAGE_KIND_CANONICAL_INTERNAL, PACKAGE_KIND_USER_FACING, PACKAGE_KIND_REVIEW_FACING}.issubset(
+        set(pkg_rows)
+    ), f"Missing expected package kinds; got {set(pkg_rows)}"
+
+    canonical_payload = json.loads(Path(pkg_rows[PACKAGE_KIND_CANONICAL_INTERNAL].payload_ref).read_text(encoding="utf-8"))
+    user_payload = json.loads(Path(pkg_rows[PACKAGE_KIND_USER_FACING].payload_ref).read_text(encoding="utf-8"))
+    review_payload = json.loads(Path(pkg_rows[PACKAGE_KIND_REVIEW_FACING].payload_ref).read_text(encoding="utf-8"))
+
+    # Inventory present in all three.
+    for kind, payload in [
+        (PACKAGE_KIND_CANONICAL_INTERNAL, canonical_payload),
+        (PACKAGE_KIND_USER_FACING, user_payload),
+        (PACKAGE_KIND_REVIEW_FACING, review_payload),
+    ]:
+        assert "analysis_product_inventory" in payload, (
+            f"analysis_product_inventory missing from {kind} when flag is ON"
+        )
+
+    # canonical_internal: full entry, count == 1, product_id present.
+    canonical_inv = canonical_payload["analysis_product_inventory"]
+    assert canonical_inv["package_eligible_product_count"] == 1
+    assert len(canonical_inv["products"]) == 1
+    canonical_product = canonical_inv["products"][0]
+    assert canonical_product["analysis_product_id"] == product_id
+    assert canonical_product["product_kind"] == "finding"
+    assert canonical_product.get("title"), "canonical_internal product must have a non-empty title"
+    assert "evidence_refs" in canonical_product
+    assert "basis_hash" in canonical_product
+    assert "body" not in canonical_product
+
+    # review_facing: same full structure.
+    review_inv = review_payload["analysis_product_inventory"]
+    assert review_inv["package_eligible_product_count"] == 1
+    assert len(review_inv["products"]) == 1
+    review_product = review_inv["products"][0]
+    assert review_product["analysis_product_id"] == product_id
+    assert review_product["product_kind"] == "finding"
+    assert review_product.get("title"), "review_facing product must have a non-empty title"
+    assert "evidence_refs" in review_product
+    assert "basis_hash" in review_product
+    assert "body" not in review_product
+
+    # user_facing: minimized — analysis_product_id + product_kind + by_evidence_role only.
+    user_inv = user_payload["analysis_product_inventory"]
+    assert user_inv["package_eligible_product_count"] == 1
+    assert len(user_inv["products"]) == 1
+    user_product = user_inv["products"][0]
+    assert user_product["analysis_product_id"] == product_id
+    assert user_product["product_kind"] == "finding"
+    assert "by_evidence_role" in user_product
+    assert "title" not in user_product
+    assert "evidence_refs" not in user_product
+    assert "basis_hash" not in user_product
+    assert "body" not in user_product
+
+    # No-body invariant: "body" must not appear in any payload JSON string.
+    for kind, payload in [
+        (PACKAGE_KIND_CANONICAL_INTERNAL, canonical_payload),
+        (PACKAGE_KIND_USER_FACING, user_payload),
+        (PACKAGE_KIND_REVIEW_FACING, review_payload),
+    ]:
+        payload_text = json.dumps(payload)
+        assert '"body"' not in payload_text, (
+            f"'body' key found in {kind} payload"
+        )
+
+    # ------------------------------------------------------------------
+    # Submit → handoff prepare → APS dispatch
+    # ------------------------------------------------------------------
+    package_submit = driver.package_submit(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        commit=package_commit,
+    )
+    assert package_submit["package_review_state"] == "package_review_approved"
+
+    handoff_prepare = driver.handoff_prepare(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        commit=package_commit,
+        submit=package_submit,
+    )
+    assert handoff_prepare["handoff_export_state"] == "handoff_export_prepared"
+    _assert_response_refs_exist(handoff_prepare)
+
+    aps_dispatch = driver.aps_dispatch(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        commit=package_commit,
+        submit=package_submit,
+        prepare=handoff_prepare,
+    )
+    assert aps_dispatch["status"] == "dispatched"
+    assert aps_dispatch["aps_handoff_state"] == "aps_handoff_dispatched"
+    _assert_response_refs_exist(aps_dispatch)
+
+    # ------------------------------------------------------------------
+    # Boundedness assertion: the persisted APS bundle must NOT contain
+    # "analysis_product_inventory" anywhere in its serialized bytes.
+    # The bundle artifact is the file pointed to by aps_bundle_ref.
+    # ------------------------------------------------------------------
+    bundle_ref = aps_dispatch["aps_bundle_ref"]
+    assert bundle_ref, "aps_bundle_ref must be non-empty"
+    bundle_path = Path(bundle_ref)
+    assert bundle_path.exists(), f"APS bundle artifact not found at {bundle_ref}"
+
+    bundle_bytes = bundle_path.read_bytes()
+    assert b"analysis_product_inventory" not in bundle_bytes, (
+        "APS evidence bundle must NOT contain 'analysis_product_inventory' — "
+        "the 3C roster is bounded to the package payloads and must not leak into the handoff bundle"
+    )
+
+    # Verify the bundle parses and its schema/checksum fields are intact.
+    bundle_payload_on_disk = json.loads(bundle_bytes.decode("utf-8"))
+    assert "schema_id" in bundle_payload_on_disk, "Bundle missing schema_id"
+    assert "bundle_checksum" in bundle_payload_on_disk, "Bundle missing bundle_checksum"
+    assert "results" in bundle_payload_on_disk, "Bundle missing results"
+
+    # ------------------------------------------------------------------
+    # Continue to download readiness (same terminal state as existing test)
+    # ------------------------------------------------------------------
+    download_prepare_payload, download_prepare = driver.external_export_download_prepare(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        commit=package_commit,
+        submit=package_submit,
+        prepare=handoff_prepare,
+        dispatch=aps_dispatch,
+    )
+    assert download_prepare["status"] == "prepared"
+    assert download_prepare["external_export_download_state"] == "external_export_download_prepared"
+    assert download_prepare["source_artifact_ref"] == aps_dispatch["aps_bundle_ref"]
+
+    connector = driver.connector_dispatch_record(
+        session_id=session_id,
+        preview=plan_preview,
+        approval=plan_approval,
+        selection=selection,
+        start=start,
+        review=review,
+        commit=package_commit,
+        submit=package_submit,
+        prepare=handoff_prepare,
+        dispatch=aps_dispatch,
+        readiness=download_prepare,
+    )
+    assert connector["status"] == "recorded"
+
+    local_receipt = driver.connector_local_destination_receipt(
+        session_id=session_id,
+        approval=plan_approval,
+        selection=selection,
+        commit=package_commit,
+        connector=connector,
+        readiness=download_prepare,
+    )
+    assert local_receipt["status"] == "recorded"
+
+    local_outbox_target = driver.server_owned_local_outbox_fake_target(
+        session_id=session_id,
+        approval=plan_approval,
+        selection=selection,
+        commit=package_commit,
+        connector=connector,
+        local_receipt=local_receipt,
+        readiness=download_prepare,
+    )
+    assert local_outbox_target["status"] == "recorded"
+
+    delivery = driver.external_export_download_deliver(
+        prepare_payload=download_prepare_payload,
+        readiness=download_prepare,
+    )
+    assert delivery.headers["x-layer3-delivery-state"] == "external_export_download_delivered"
+    # The delivered bytes are a byte-for-byte copy of the bundle artifact.
+    assert delivery.content == bundle_bytes, (
+        "Delivered bytes must be identical to the persisted APS bundle artifact"
+    )
+    # Re-confirm: the delivered content also contains no inventory string.
+    assert b"analysis_product_inventory" not in delivery.content, (
+        "Delivered APS bundle content must NOT contain 'analysis_product_inventory'"
+    )
