@@ -12498,7 +12498,7 @@ Milestone: `sec_xbrl_proxy_identity_read_only_projection_freeze_v1`.
 Planning doc:
 `next_milestone_plans/Layer3_planning_docs/1351-sec-xbrl-proxy-identity-readonly-projection.md`.
 
-Status: branch-local activation freeze plus the one admitted runtime artifact —
+Status: branch-local activation freeze plus the one admitted runtime artifact â€”
 a read-only, server-derived identity projection for the SEC XBRL lane. This is
 the `next_follow_up` activation anticipated by doc
 `1350-sec-xbrl-activation-lane-selection.md` and by the auth entry layer
@@ -12558,8 +12558,8 @@ Scope: test-only + docs. New
 `backend/tests/test_sec_xbrl_route_level_auth_enforcement.py` (12 tests) proves, via
 TestClient, that under `AUTH_OWNER=proxy` + `TRUSTED_PROXY_MODE=true` with the identity
 header absent, all six protected routes fail closed (401 `missing_identity_authority`);
-untrusted proxy → 409 `untrusted_proxy_identity`; the fail-closed body leaks no raw
-identity/header value; caller-supplied forbidden fields → 400; and the anonymous redacted
+untrusted proxy â†’ 409 `untrusted_proxy_identity`; the fail-closed body leaks no raw
+identity/header value; caller-supplied forbidden fields â†’ 400; and the anonymous redacted
 operator-review path (no receipt referenced) is preserved under `AUTH_OWNER=none`.
 
 Non-goals: no route admit/deny behavior change; no value-reveal activation; no flip of the
@@ -12798,3 +12798,90 @@ Verification: 8 new config tests passed
 Next posture: select one concrete next activation surface (live source acquisition, Arelle
 invocation, multi-filing gate enforcement, nonlocal operator-auth hardening, or route-level
 identity enforcement implementation-entry freeze) before advancing runtime scope.
+
+## 3C Analytical Capability Expansion v1
+
+Milestone: `3c_analytical_capability_expansion_v1`.
+
+Branch: `feat/3c-analytical-methods`.
+
+Design doc: `3c-analytical-methods-v1-design.md` (post-grill, R1â€“R12 binding).
+
+Status: implemented-on-branch. The tranche extends the existing deterministic analysis-product
+pipeline with a member-state input frame and two state-consuming methods, then adds a
+server-owned method catalog route and wires UI method selection and provenance visibility.
+Changes are Tier-1: no migration, no ORM/schema change, no default-on flip, no
+redaction-posture change; new persisted provenance keys ride the existing
+`authoring_provenance_json` JSON column via the existing operator-initiated write path
+(additive, reversible).
+
+Scope:
+
+1. **Member-state input frame** (`backend/app/services/layer3_analysis_product_generation.py`):
+   `_resolve_member_states()` sorts members by `(ref_kind, ref_id)`, queries each row
+   session-scoped via `MEMBER_REF_KIND_TABLE` (public alias of the private mapping in
+   `layer3_working_set.py`), and extracts bounded state fields only (`lifecycle_status`,
+   `product_kind`, `executor_type`, `status`, `pass_type`, `engine_family`, `package_kind`,
+   `set_type`, `group_count`, `unit_count`, `source_plane`, `source_shape`). Hard exclusions:
+   `payload_ref`, any URI, local path, credential, raw value, product body. A row absent from
+   the session resolves as `resolved: false`; generation does not 500 on integrity anomalies.
+
+2. **Registry generalization** (`backend/app/services/layer3_deterministic_methods.py`):
+   `_MethodSpec` gains `version`, `fn`, `product_kind`, `label`, `description`,
+   `consumes_member_state`, `render_title`, `render_body`. `run_method` accepts
+   `member_states=None`; fail-closed `ValueError` when `consumes_member_state` is `True` and
+   `member_states` is `None`. Module-level `render_title`/`render_body` become thin dispatchers
+   so all existing imports and tests are unchanged.
+
+3. **Two new pure methods** (`backend/app/services/layer3_deterministic_methods.py`):
+   - `working_set_member_state_profile` (`product_kind="summary"`, `consumes_member_state=True`):
+     per-ref-kind rollups of resolved status fields plus member count and unresolved count;
+     unresolved members listed prominently up to 20 ("+K more" suffix).
+   - `working_set_staleness_diagnostic` (`product_kind="diagnostic"`, `consumes_member_state=True`):
+     flags superseded `prior_product` members, failed/terminal-bad `pass_run` members, and
+     unresolved members; clean verdict when all three zero; informational counts
+     (`incomplete_pass_runs`, `pass_runs_completed_with_warnings`) do not affect the verdict.
+     Body cap: each flagged category lists up to 20 member refs ("+K more"); worst-case body
+     provably < 16 384 chars. `result_summary` keeps exact counts with ref-id lists capped at 100.
+
+4. **Provenance honesty split** (`backend/app/services/layer3_analysis_product_generation.py`):
+   state-free methods (`composition_summary`) keep `validation="deterministic_recomputed_match"`
+   with no `input_state_hash`; state-consuming methods add
+   `validation="function_purity_recomputed_match"` and
+   `input_state_hash=stable_hash(member_states)`. The run-twice gate is retained for both.
+   Generation service uses `spec.product_kind` instead of the former hardcoded `"summary"`.
+
+5. **Server-owned method catalog** (`backend/app/api/layer3/__init__.py`):
+   `GET /analysis-product/methods` returns `schema_id` plus a list of
+   `{method_id, method_version, label, product_kind, consumes_member_state, description}`
+   derived from the registry. No DB, no params. Route calls
+   `_route_level_operator_identity(request, access="read")` exactly like sibling GETs (R9).
+
+6. **UI: method selection + provenance visibility** (`backend/app/review_ui/static/layer3.js`,
+   `layer3.html`): hardcoded method label replaced with a dropdown populated from the catalog
+   endpoint; `bindApwGenForm` uses the selected `method_id`. Inventory projection passes
+   through bounded `generation_method {method_id, method_version}`. Product detail markup
+   shows "Method: <id> v<version>" for deterministic products. `param_hash`,
+   `input_state_hash`, and `result_summary` are not exposed in package payloads or serialized
+   output (existing no-leak contract unchanged).
+
+7. **Supersession-of-generated-product proof** (`backend/tests/test_layer3_3c_golden_path.py`):
+   a generated deterministic product is taken through `accepted/package_eligible` â†’ `superseded`
+   with reason code `stale_basis`, closing the only evidence gap in the executor-agnostic state
+   machine.
+
+PR: `2312`.
+
+Runtime behavior introduced by this pass: `true`.
+
+Implemented services: `backend/app/services/layer3_deterministic_methods.py`,
+`backend/app/services/layer3_analysis_product_generation.py`,
+`backend/app/services/layer3_working_set.py` (public alias),
+`backend/app/api/layer3/__init__.py`.
+
+Proof tests: `backend/tests/test_layer3_deterministic_methods.py`,
+`backend/tests/test_layer3_analysis_product_generation.py`,
+`backend/tests/test_layer3_3c_golden_path.py`, `backend/tests/test_layer3_api.py`.
+
+No migration, ORM/schema change, new egress, value-reveal, default-on flip, payload
+URI/path/credential/body exposure, or Tier-2 surface is admitted by this tranche.

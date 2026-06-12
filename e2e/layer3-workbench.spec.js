@@ -25706,3 +25706,89 @@ test('Layer 3 workbench transition form exposes supersede intent option with suc
   // The successor product id input must be present.
   await expect(page.locator('#apw-tr-successor')).toHaveCount(1);
 });
+
+// R8: Focused spec — catalog populates method dropdown -> select staleness diagnostic
+// -> generate against a seeded working set -> product row appears.
+test('Analysis Products generate form: catalog populates method dropdown and staleness diagnostic generates a product', async ({ page, request }) => {
+  // Step 1: Navigate to the workbench. populateMethodSelect fires on DOMContentLoaded
+  // and fetches the real catalog from the running server.
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+
+  // Step 2: Activate the analysis-product-workspace-band dock panel.
+  await page.evaluate(() => {
+    State.activeOperationId = 'analysis-product-workspace-band';
+    State.operationDockManual = true;
+    renderAll();
+  });
+  await expect(page.locator('#analysis-product-workspace-band')).toHaveAttribute('data-operation-active', 'true');
+
+  // Step 3: Wait for populateMethodSelect to complete — the select must have options
+  // beyond the placeholder. The catalog has 3 methods; any non-empty value suffices.
+  await expect(page.locator('#apw-gen-method option[value="working_set_composition_summary"]')).toHaveCount(1);
+  await expect(page.locator('#apw-gen-method option[value="working_set_member_state_profile"]')).toHaveCount(1);
+  await expect(page.locator('#apw-gen-method option[value="working_set_staleness_diagnostic"]')).toHaveCount(1);
+
+  // Step 4: Seed a session with one material_snapshot via the test seed endpoint,
+  // then fetch the session summary to obtain a real snapshot id to use as a member.
+  const seed = await expectJsonStatus(await request.post('/__test/layer3/seed-quant'), 200);
+  const sessionId = seed.session_id;
+  expect(sessionId).toBeTruthy();
+
+  const sessionSummary = await expectJson(await request.get(`/api/v1/layer3/session/${encodeURIComponent(sessionId)}`));
+  const snapshots = sessionSummary?.sublayer_visualization?.material_objects ?? [];
+  expect(snapshots.length).toBeGreaterThan(0);
+  const snapshotId = snapshots[0].material_snapshot_id;
+  expect(snapshotId).toBeTruthy();
+
+  // Step 5: Create a working set in that session via the real API.
+  const ws = await expectJsonStatus(
+    await request.post('/api/v1/layer3/working-set', {
+      data: {
+        client_request_id: `e2e-ws-staleness-${Date.now()}`,
+        session_id: sessionId,
+        name: 'E2E staleness test set',
+        members: [{ ref_kind: 'material_snapshot', ref_id: snapshotId }],
+      },
+    }),
+    201,
+  );
+  expect(ws.working_set_id).toBeTruthy();
+
+  // Step 6: Load the session summary into the page so the working-set dropdown
+  // and inventory projection populate.
+  await page.evaluate(async (sid) => {
+    State.sessionSummary = await getJson('/session/' + encodeURIComponent(sid));
+    renderAll();
+  }, sessionId);
+
+  // Step 7: Select the staleness diagnostic method and the seeded working set.
+  await page.locator('#apw-gen-method').selectOption('working_set_staleness_diagnostic');
+  const wsId = ws.working_set_id;
+  await page.locator('#apw-gen-ws').selectOption(wsId);
+
+  // Step 8: Submit the generate form and capture the server response.
+  const genRespPromise = page.waitForResponse(
+    (r) => r.url().includes('/api/v1/layer3/analysis-product/generate'),
+  );
+  await page.locator('#apw-gen-submit').click();
+  const genResp = await genRespPromise;
+  expect(genResp.status()).toBe(201);
+  const genBody = await genResp.json();
+  expect(genBody.method_id).toBe('working_set_staleness_diagnostic');
+  expect(genBody.executor_type).toBe('deterministic');
+  expect(genBody.lifecycle_status).toBe('draft');
+
+  // Step 9: Wait for the session refresh (triggered by refreshSession inside the
+  // submit handler) to repopulate the inventory view with at least the new product row.
+  // The seeded session may already contain other analyst products, so assert >=1.
+  await expect(page.locator('#apw-inventory-view .mockup-analyst-product-list li')).not.toHaveCount(0);
+
+  // Step 10: Confirm the inventory row for the new product shows the expected kind
+  // and lifecycle status. The prefixed product_id contains the bare UUID so we
+  // assert the product_kind and lifecycle_status are visible in the inventory row.
+  const productId = genBody.analysis_product_id;
+  expect(productId).toBeTruthy();
+  // The inventory row text includes "diagnostic / draft" for the generated product.
+  await expect(page.locator('#apw-inventory-view')).toContainText('diagnostic');
+  await expect(page.locator('#apw-inventory-view')).toContainText('draft');
+});

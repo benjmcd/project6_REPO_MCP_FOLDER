@@ -88,6 +88,7 @@ def _analyst_input(
     by_evidence_role: dict[str, int] | None = None,
     evidence_refs: list[dict[str, Any]] | None = None,
     basis_hash: str = "bhash",
+    generation_method: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "analysis_product_id": analysis_product_id,
@@ -102,6 +103,7 @@ def _analyst_input(
         if evidence_refs is not None
         else [{"ref_kind": "material_snapshot", "ref_id": "snap-1", "evidence_role": "observation"}],
         "basis_hash": basis_hash,
+        "generation_method": generation_method,
     }
 
 
@@ -827,3 +829,120 @@ def test_inventory_no_side_effects_and_forbidden_runtime_authority_unchanged_wit
         "provider_url_enabled": False,
         "frontend_durable_authority_enabled": False,
     }
+
+
+# ---------------------------------------------------------------------------
+# generation_method passthrough tests (design section 5 + R10)
+# ---------------------------------------------------------------------------
+
+
+def test_enumerate_analyst_products_generation_method_present_for_deterministic() -> None:
+    """A deterministic product with a generation_method dict in the input record
+    must surface generation_method with exactly {method_id, method_version} in
+    the inventory projection output."""
+    analyst = [
+        _analyst_input(
+            "ap-det",
+            executor_type="deterministic",
+            product_kind="summary",
+            generation_method={
+                "method_id": "working_set_composition_summary",
+                "method_version": 1,
+            },
+        )
+    ]
+    projection = _projection(analyst_products=analyst)
+    ap = projection["analyst_products"][0]
+    gm = ap["generation_method"]
+    assert gm is not None
+    assert gm == {"method_id": "working_set_composition_summary", "method_version": 1}
+    assert set(gm.keys()) == {"method_id", "method_version"}
+
+
+def test_enumerate_analyst_products_generation_method_none_for_human() -> None:
+    """A human-authored product must have generation_method == None in the
+    inventory projection regardless of what the input record carries."""
+    analyst = [
+        _analyst_input(
+            "ap-human",
+            executor_type="human",
+            product_kind="finding",
+            generation_method=None,
+        )
+    ]
+    projection = _projection(analyst_products=analyst)
+    ap = projection["analyst_products"][0]
+    assert ap["generation_method"] is None
+
+
+def test_enumerate_analyst_products_generation_method_none_when_absent_from_input() -> None:
+    """When the input record has no generation_method key at all (e.g. older
+    serialized records), the projection must still surface generation_method=None."""
+    raw_input: dict[str, Any] = {
+        "analysis_product_id": "ap-legacy",
+        "product_kind": "finding",
+        "executor_type": "human",
+        "lifecycle_status": "draft",
+        "grounded": True,
+        "is_non_evidentiary": False,
+        "evidence_count": 0,
+        "by_evidence_role": {},
+        "evidence_refs": [],
+        "basis_hash": "bh-legacy",
+        # deliberately no generation_method key
+    }
+    projection = _projection(analyst_products=[raw_input])
+    ap = projection["analyst_products"][0]
+    assert ap["generation_method"] is None
+
+
+def test_enumerate_analyst_products_generation_method_bounded_keys_only() -> None:
+    """Even if the input generation_method dict contains extra keys (e.g. a
+    future field), only method_id and method_version must appear in the output."""
+    analyst = [
+        _analyst_input(
+            "ap-extra",
+            executor_type="deterministic",
+            product_kind="diagnostic",
+            generation_method={
+                "method_id": "working_set_staleness_diagnostic",
+                "method_version": 1,
+                "unexpected_extra_key": "should_be_stripped",
+            },
+        )
+    ]
+    projection = _projection(analyst_products=analyst)
+    ap = projection["analyst_products"][0]
+    gm = ap["generation_method"]
+    assert gm is not None
+    assert set(gm.keys()) == {"method_id", "method_version"}
+    assert gm["method_id"] == "working_set_staleness_diagnostic"
+    assert gm["method_version"] == 1
+    assert "unexpected_extra_key" not in gm
+
+
+def test_enumerate_analyst_products_generation_method_both_executor_types_together() -> None:
+    """Mixed deterministic + human products in one projection: each must carry
+    the correct generation_method shape independently."""
+    analyst = [
+        _analyst_input(
+            "ap-det-mix",
+            executor_type="deterministic",
+            product_kind="summary",
+            generation_method={"method_id": "working_set_member_state_profile", "method_version": 1},
+        ),
+        _analyst_input(
+            "ap-human-mix",
+            executor_type="human",
+            product_kind="finding",
+            generation_method=None,
+        ),
+    ]
+    projection = _projection(analyst_products=analyst)
+    by_id = {ap["product_id"]: ap for ap in projection["analyst_products"]}
+
+    det = by_id["layer3_analyst_product:ap-det-mix"]
+    assert det["generation_method"] == {"method_id": "working_set_member_state_profile", "method_version": 1}
+
+    human = by_id["layer3_analyst_product:ap-human-mix"]
+    assert human["generation_method"] is None

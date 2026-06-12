@@ -852,3 +852,207 @@ def test_serialize_analysis_product_deterministic_non_dict_provenance() -> None:
     gm = result["generation_method"]
     assert gm is not None
     assert gm == {"method_id": None, "method_version": None}
+
+
+# ---------------------------------------------------------------------------
+# TEXT ANCHOR: new_provenance_keys_no_leak_tests
+# R10: state-consuming method provenance keys (input_state_hash,
+# validation="function_purity_recomputed_match", result_summary with capped
+# ref lists) must NEVER appear in serialize_analysis_product output.
+# ---------------------------------------------------------------------------
+
+
+def test_serialize_no_leak_state_consuming_provenance_keys() -> None:
+    """A deterministic product whose authoring_provenance_json contains the NEW
+    state-consuming provenance keys (input_state_hash, validation sentinel
+    'function_purity_recomputed_match', result_summary with capped ref lists)
+    must expose ONLY {method_id, method_version} in generation_method and NONE
+    of those new keys anywhere in the serialized output."""
+    from types import SimpleNamespace
+    from app.services.layer3_sublayer_state import serialize_analysis_product
+
+    product = SimpleNamespace(
+        analysis_product_id="ap-state-consuming-001",
+        product_kind="summary",
+        executor_type="deterministic",
+        lifecycle_status="package_eligible",
+        title="Member state profile product",
+        is_non_evidentiary=False,
+        basis_hash="bh-msp",
+        spec_hash="sh-msp",
+        created_at=None,
+        authoring_provenance_json={
+            "method_id": "working_set_member_state_profile",
+            "method_version": 1,
+            # new state-consuming keys that must not leak
+            "input_basis_hash": "ibh-msp-secret",
+            "input_state_hash": "ish-msp-secret",
+            "param_hash": "ph-msp-secret",
+            "validation": "function_purity_recomputed_match",
+            "result_summary": {
+                "member_count": 5,
+                "resolved_count": 4,
+                "unresolved_count": 1,
+                "unresolved_refs": ["ref-a", "ref-b"],
+                "by_ref_kind": {"prior_product": 2, "pass_run": 3},
+            },
+        },
+    )
+
+    result = serialize_analysis_product(product, evidence_links=[], latest_decision=None)
+
+    # generation_method must be bounded: only the two identity keys
+    gm = result["generation_method"]
+    assert gm is not None
+    assert set(gm.keys()) == {"method_id", "method_version"}
+    assert gm["method_id"] == "working_set_member_state_profile"
+    assert gm["method_version"] == 1
+
+    # New provenance keys must not appear in generation_method
+    assert "input_state_hash" not in gm
+    assert "validation" not in gm
+    assert "result_summary" not in gm
+    assert "input_basis_hash" not in gm
+    assert "param_hash" not in gm
+
+    # New provenance keys must not appear at the top-level result dict either
+    assert "input_state_hash" not in result
+    assert "input_basis_hash" not in result
+    assert "param_hash" not in result
+    assert "result_summary" not in result
+    assert "validation" not in result
+    # authoring_provenance_json itself must not be exposed
+    assert "authoring_provenance_json" not in result
+
+
+def test_serialize_no_leak_staleness_diagnostic_provenance_keys() -> None:
+    """Same no-leak contract for the staleness diagnostic method, which also
+    uses function_purity_recomputed_match and stores a result_summary with
+    capped per-category ref-id lists."""
+    from types import SimpleNamespace
+    from app.services.layer3_sublayer_state import serialize_analysis_product
+
+    product = SimpleNamespace(
+        analysis_product_id="ap-stale-diag-001",
+        product_kind="diagnostic",
+        executor_type="deterministic",
+        lifecycle_status="package_eligible",
+        title="Staleness diagnostic product",
+        is_non_evidentiary=False,
+        basis_hash="bh-sd",
+        spec_hash="sh-sd",
+        created_at=None,
+        authoring_provenance_json={
+            "method_id": "working_set_staleness_diagnostic",
+            "method_version": 1,
+            # new state-consuming keys
+            "input_basis_hash": "ibh-sd-secret",
+            "input_state_hash": "ish-sd-secret",
+            "param_hash": "ph-sd-secret",
+            "validation": "function_purity_recomputed_match",
+            "result_summary": {
+                "clean": False,
+                "superseded_prior_product_count": 2,
+                "failed_pass_run_count": 1,
+                "unresolved_member_count": 0,
+                # capped ref-id lists — must never leak
+                "superseded_prior_product_refs": ["pp-1", "pp-2"],
+                "failed_pass_run_refs": ["pr-7"],
+                "unresolved_member_refs": [],
+            },
+        },
+    )
+
+    result = serialize_analysis_product(product, evidence_links=[], latest_decision=None)
+
+    gm = result["generation_method"]
+    assert gm is not None
+    assert set(gm.keys()) == {"method_id", "method_version"}
+    assert gm["method_id"] == "working_set_staleness_diagnostic"
+    assert gm["method_version"] == 1
+
+    # None of the new provenance keys may appear in generation_method
+    assert "input_state_hash" not in gm
+    assert "validation" not in gm
+    assert "result_summary" not in gm
+
+    # None of the new provenance keys may appear at the top level
+    assert "input_state_hash" not in result
+    assert "input_basis_hash" not in result
+    assert "param_hash" not in result
+    assert "result_summary" not in result
+    assert "validation" not in result
+    assert "authoring_provenance_json" not in result
+
+
+def test_serialize_no_leak_full_serialized_dict_contains_no_provenance_internals() -> None:
+    """Exhaustive check: iterate the entire flattened key set of the serialized
+    output and assert none of the forbidden provenance internal keys appear at
+    any level of the top-level dict (not recursive, but covers all direct keys
+    and keys inside generation_method)."""
+    import json as _json
+    from types import SimpleNamespace
+    from app.services.layer3_sublayer_state import serialize_analysis_product
+
+    _FORBIDDEN_KEYS = {
+        "input_state_hash",
+        "input_basis_hash",
+        "param_hash",
+        "result_summary",
+        "validation",
+        "authoring_provenance_json",
+        "executor_identity",
+        "payload_ref",
+    }
+
+    product = SimpleNamespace(
+        analysis_product_id="ap-exhaustive-001",
+        product_kind="diagnostic",
+        executor_type="deterministic",
+        lifecycle_status="accepted",
+        title="Exhaustive no-leak product",
+        is_non_evidentiary=False,
+        basis_hash="bh-ex",
+        spec_hash="sh-ex",
+        created_at=None,
+        authoring_provenance_json={
+            "method_id": "working_set_staleness_diagnostic",
+            "method_version": 1,
+            "input_basis_hash": "ibh-ex",
+            "input_state_hash": "ish-ex",
+            "param_hash": "ph-ex",
+            "validation": "function_purity_recomputed_match",
+            "executor_identity": {"operator_id": "op-1"},
+            "result_summary": {
+                "clean": True,
+                "superseded_prior_product_count": 0,
+                "failed_pass_run_count": 0,
+                "unresolved_member_count": 0,
+                "superseded_prior_product_refs": [],
+                "failed_pass_run_refs": [],
+                "unresolved_member_refs": [],
+            },
+        },
+    )
+
+    result = serialize_analysis_product(product, evidence_links=[], latest_decision=None)
+
+    # Collect all top-level keys of the result dict and all keys inside
+    # generation_method (the only nested dict from provenance)
+    all_exposed_keys: set[str] = set(result.keys())
+    gm = result.get("generation_method")
+    if isinstance(gm, dict):
+        all_exposed_keys |= set(gm.keys())
+
+    for forbidden in _FORBIDDEN_KEYS:
+        assert forbidden not in all_exposed_keys, (
+            f"Forbidden provenance key '{forbidden}' leaked into serialized output. "
+            f"Exposed keys: {sorted(all_exposed_keys)}"
+        )
+
+    # Confirm no forbidden key appears anywhere in the JSON-serialized output string
+    serialized_str = _json.dumps(result)
+    for forbidden in _FORBIDDEN_KEYS:
+        assert f'"{forbidden}"' not in serialized_str, (
+            f"Forbidden key '{forbidden}' appeared in JSON-serialized output"
+        )

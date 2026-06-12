@@ -2719,3 +2719,395 @@ def test_3c_supersede_only_eligible_product_empty_roster_commit_succeeds(
             f"{kind}: superseded product id {sole_product_id!r} found in "
             f"serialized analysis_product_inventory"
         )
+
+
+# ---------------------------------------------------------------------------
+# TEST I — staleness-diagnostic product survives package commit with correct
+#           provenance and no-body / no-input_state_hash leak invariants
+# ---------------------------------------------------------------------------
+
+_STALENESS_DIAGNOSTIC_METHOD_ID = "working_set_staleness_diagnostic"
+_STALENESS_DIAGNOSTIC_METHOD_VERSION = DETERMINISTIC_METHODS[_STALENESS_DIAGNOSTIC_METHOD_ID].version
+
+
+def test_3c_staleness_diagnostic_provenance_survives_package_commit(
+    client, tmp_path, monkeypatch
+):
+    """Rails proof: a working_set_staleness_diagnostic product (product_kind='diagnostic',
+    executor_type='deterministic') carries exact generation_method into the committed
+    canonical_internal and review_facing payloads.
+
+    Invariants asserted for canonical_internal and review_facing:
+      - product present (matched by analysis_product_id).
+      - product_kind == "diagnostic".
+      - executor_type == "deterministic".
+      - generation_method == {"method_id": "working_set_staleness_diagnostic",
+                               "method_version": 1}.
+      - No "body" key anywhere in the payload (no-body invariant).
+      - "input_state_hash" absent from the serialized payload bytes.
+    """
+    request_prefix = "3c-stale-diag-prov"
+
+    monkeypatch.setattr(
+        layer3_workbench.settings,
+        "layer3_analysis_product_package_inventory_enabled",
+        True,
+    )
+
+    # Build quant-ready session.
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    # Create working set and generate the staleness-diagnostic product.
+    db = client.layer3_session_factory()
+    try:
+        snapshot = (
+            db.query(L3MaterialSnapshot)
+            .filter(L3MaterialSnapshot.session_id == session_id)
+            .first()
+        )
+        assert snapshot is not None, f"No material snapshot for session {session_id}"
+
+        ws_draft = WorkingSetDraft(
+            name="Staleness diagnostic rails test set",
+            members=(
+                WorkingSetMemberDraft(
+                    ref_kind="material_snapshot",
+                    ref_id=snapshot.material_snapshot_id,
+                ),
+            ),
+        )
+        ws_result = create_working_set(
+            db,
+            session_id=session_id,
+            client_request_id=f"{request_prefix}-ws-create",
+            draft=ws_draft,
+        )
+        db.commit()
+        working_set_id = ws_result.working_set.working_set_id
+
+        gen_result = generate_analysis_product(
+            db,
+            session_id=session_id,
+            client_request_id=f"{request_prefix}-gen",
+            working_set_id=working_set_id,
+            method_id=_STALENESS_DIAGNOSTIC_METHOD_ID,
+        )
+        db.commit()
+        generated_product_id = gen_result.product.analysis_product_id
+
+        _promote_to_package_eligible(
+            db,
+            session_id=session_id,
+            product_id=generated_product_id,
+            prefix=f"{request_prefix}-promote",
+        )
+    finally:
+        db.close()
+
+    # Run plan/approve + exec/select + exec/start + result/review via API,
+    # then commit the package (reusing _build_session_with_deterministic_eligible_product
+    # pattern but inline since we already have session_id + product ready).
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": f"{request_prefix}-plan-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    )
+    assert preview.status_code == 200, preview.text
+    preview_body = preview.json()
+
+    approval = client.post(
+        "/api/v1/layer3/plan/approve",
+        json={
+            "client_request_id": f"{request_prefix}-plan-approve",
+            "session_id": session_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "operator_confirmation": True,
+            "approval_scope": "owner_service_default",
+        },
+    )
+    assert approval.status_code == 200, approval.text
+    approval_body = approval.json()
+
+    selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": f"{request_prefix}-exec-select",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert selection.status_code == 200, selection.text
+    selection_body = selection.json()
+    pass_run_id = selection_body["pass_run_ids"][0]
+
+    start = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": f"{request_prefix}-exec-start",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert start.status_code == 200, start.text
+    start_body = start.json()
+
+    status = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert status.status_code == 200, status.text
+    status_body = status.json()
+    assert status_body["status"] == "available"
+
+    review = client.post(
+        "/api/v1/layer3/execution/result/review",
+        json={
+            "client_request_id": f"{request_prefix}-result-review",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "operator_decision": "approved",
+            "review_notes": "Staleness-diagnostic rails proof — provenance traceable.",
+            "reviewed_output_items": [
+                {
+                    "item_ref": "primary-output",
+                    "item_type": "generated_narrative",
+                    "trace": {
+                        "session_id": session_id,
+                        "analysis_plan_id": approval_body["analysis_plan_id"],
+                        "pass_run_id": pass_run_id,
+                        "analysis_run_id": start_body["analysis_run_id"],
+                        "output_payload_ref": status_body["output_payload_ref"],
+                    },
+                }
+            ],
+        },
+    )
+    assert review.status_code == 200, review.text
+    review_body = review.json()
+    assert review_body["review_state"] == "execution_result_review_approved"
+
+    _commit_package(
+        client,
+        request_prefix=request_prefix,
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        preview_body=preview_body,
+        start_body=start_body,
+        review_body=review_body,
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        rows = _packages_by_kind(db, session_id)
+    finally:
+        db.close()
+
+    assert set(rows) >= {PACKAGE_KIND_CANONICAL_INTERNAL, PACKAGE_KIND_REVIEW_FACING}, (
+        f"Expected at least canonical_internal and review_facing; got {set(rows)}"
+    )
+
+    expected_generation_method = {
+        "method_id": _STALENESS_DIAGNOSTIC_METHOD_ID,
+        "method_version": _STALENESS_DIAGNOSTIC_METHOD_VERSION,
+    }
+
+    for kind in (PACKAGE_KIND_CANONICAL_INTERNAL, PACKAGE_KIND_REVIEW_FACING):
+        row = rows[kind]
+        assert row.payload_ref and Path(row.payload_ref).exists(), (
+            f"Payload file missing for kind {kind}"
+        )
+        payload = _load_payload(row.payload_ref)
+
+        assert "analysis_product_inventory" in payload, (
+            f"analysis_product_inventory missing from {kind} payload"
+        )
+
+        products = payload["analysis_product_inventory"]["products"]
+
+        matching = [
+            p for p in products
+            if p.get("analysis_product_id") == generated_product_id
+        ]
+        assert len(matching) == 1, (
+            f"{kind}: expected exactly 1 product with analysis_product_id="
+            f"{generated_product_id!r}; found {len(matching)}"
+        )
+        diag_product = matching[0]
+
+        # product_kind must be "diagnostic" (spec-level proof).
+        assert diag_product.get("product_kind") == "diagnostic", (
+            f"{kind}: product_kind must be 'diagnostic'; "
+            f"got {diag_product.get('product_kind')!r}"
+        )
+
+        # CORE PROOF — executor_type.
+        assert diag_product.get("executor_type") == "deterministic", (
+            f"{kind}: executor_type must be 'deterministic'; "
+            f"got {diag_product.get('executor_type')!r}"
+        )
+
+        # CORE PROOF — generation_method exact dict.
+        assert diag_product.get("generation_method") == expected_generation_method, (
+            f"{kind}: generation_method mismatch.\n"
+            f"  expected: {expected_generation_method!r}\n"
+            f"  got:      {diag_product.get('generation_method')!r}"
+        )
+
+        # No-body invariant: "body" key must never appear in package payloads.
+        payload_text = json.dumps(payload)
+        assert '"body"' not in payload_text, (
+            f"'body' key found in {kind} payload — body must never appear in package payloads"
+        )
+
+        # No-leak: "input_state_hash" must never appear in serialized payload bytes.
+        payload_bytes = Path(row.payload_ref).read_bytes()
+        assert b"input_state_hash" not in payload_bytes, (
+            f"'input_state_hash' found in {kind} serialized payload bytes — "
+            f"provenance internals must not leak into package payloads"
+        )
+
+
+# ---------------------------------------------------------------------------
+# TEST J — R6: supersession of a GENERATED (deterministic) product; closes
+#           the only rails evidence gap (no prior test superseded a deterministic
+#           product before this tranche)
+# ---------------------------------------------------------------------------
+
+
+def test_3c_generated_product_supersession_stale_basis(client, tmp_path, monkeypatch):
+    """R6 minimal proof: a deterministic product promoted to package_eligible can be
+    superseded (reason: stale_basis); lifecycle_status becomes 'superseded' and the
+    product drops out of the package_eligible roster query.
+    """
+    request_prefix = "3c-gen-supersede"
+
+    monkeypatch.setattr(
+        layer3_workbench.settings,
+        "layer3_analysis_product_package_inventory_enabled",
+        True,
+    )
+
+    # Build session and generate a deterministic product, promote to package_eligible.
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    db = client.layer3_session_factory()
+    try:
+        snapshot = (
+            db.query(L3MaterialSnapshot)
+            .filter(L3MaterialSnapshot.session_id == session_id)
+            .first()
+        )
+        assert snapshot is not None
+        ws_result = create_working_set(
+            db,
+            session_id=session_id,
+            client_request_id=f"{request_prefix}-ws",
+            draft=WorkingSetDraft(
+                name="R6 supersession test set",
+                members=(
+                    WorkingSetMemberDraft(
+                        ref_kind="material_snapshot",
+                        ref_id=snapshot.material_snapshot_id,
+                    ),
+                ),
+            ),
+        )
+        db.commit()
+        gen_result = generate_analysis_product(
+            db,
+            session_id=session_id,
+            client_request_id=f"{request_prefix}-gen",
+            working_set_id=ws_result.working_set.working_set_id,
+            method_id=_DETERMINISTIC_METHOD_ID,
+        )
+        db.commit()
+        generated_id = gen_result.product.analysis_product_id
+        _promote_to_package_eligible(
+            db,
+            session_id=session_id,
+            product_id=generated_id,
+            prefix=f"{request_prefix}-promote",
+        )
+    finally:
+        db.close()
+
+    # Confirm the product is in the package_eligible roster before supersession.
+    db = client.layer3_session_factory()
+    try:
+        before = (
+            db.query(L3AnalysisProduct)
+            .filter(
+                L3AnalysisProduct.session_id == session_id,
+                L3AnalysisProduct.lifecycle_status == "package_eligible",
+            )
+            .all()
+        )
+        assert any(r.analysis_product_id == generated_id for r in before), (
+            f"Generated product {generated_id!r} not in package_eligible roster before supersession"
+        )
+    finally:
+        db.close()
+
+    # Supersede the generated product (stale_basis; no successor required).
+    supersede_resp = client.post(
+        f"/api/v1/layer3/analysis-product/{generated_id}/transition",
+        json={
+            "session_id": session_id,
+            "client_request_id": f"{request_prefix}-supersede",
+            "decision_intent": "supersede",
+            "decision_reason_code": "stale_basis",
+            "decision_notes": "Generated product superseded due to stale basis — R6 proof.",
+        },
+    )
+    assert supersede_resp.status_code == 201, supersede_resp.text
+    assert supersede_resp.json()["lifecycle_status"] == "superseded", (
+        f"Expected lifecycle_status 'superseded'; "
+        f"got {supersede_resp.json()['lifecycle_status']!r}"
+    )
+
+    # Product must be absent from the package_eligible roster after supersession.
+    db = client.layer3_session_factory()
+    try:
+        after = (
+            db.query(L3AnalysisProduct)
+            .filter(
+                L3AnalysisProduct.session_id == session_id,
+                L3AnalysisProduct.lifecycle_status == "package_eligible",
+            )
+            .all()
+        )
+        assert not any(r.analysis_product_id == generated_id for r in after), (
+            f"Superseded generated product {generated_id!r} still appears in "
+            f"package_eligible roster after supersession"
+        )
+    finally:
+        db.close()

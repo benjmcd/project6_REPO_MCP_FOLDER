@@ -321,6 +321,19 @@ def _enumerate_analyst_products(analyst_products: list[Any]) -> list[dict[str, A
         blocked_reasons = _analyst_blocked_reasons(lifecycle_status)
         # Pass through latest_review_decision from the serialized record (None if absent)
         latest_review_decision = record.get("latest_review_decision")
+        # Pass through bounded generation_method {method_id, method_version} for
+        # deterministic products; None for human-authored products.  The field is
+        # produced by serialize_analysis_product and carries no payload_ref, URI,
+        # or free-form provenance — only the two bounded identity keys.
+        raw_generation_method = record.get("generation_method")
+        generation_method = (
+            {
+                "method_id": _as_dict(raw_generation_method).get("method_id"),
+                "method_version": _as_dict(raw_generation_method).get("method_version"),
+            }
+            if isinstance(raw_generation_method, dict)
+            else None
+        )
         products.append(
             {
                 "product_id": f"layer3_analyst_product:{analysis_product_id}",
@@ -336,6 +349,7 @@ def _enumerate_analyst_products(analyst_products: list[Any]) -> list[dict[str, A
                 "promotable": promotable,
                 "blocked_reasons": blocked_reasons,
                 "latest_review_decision": latest_review_decision,
+                "generation_method": generation_method,
             }
         )
     return products
