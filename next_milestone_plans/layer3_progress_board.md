@@ -1,4 +1,4 @@
-﻿# Layer3 Progress Board
+# Layer3 Progress Board
 
 ## P24 Mixed-Source Product-Authority Checkpoint
 
