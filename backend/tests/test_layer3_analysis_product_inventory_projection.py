@@ -630,6 +630,7 @@ def test_inventory_surfaces_review_state_at_session_level_not_per_product() -> N
     ("accepted", [], True),
     ("rejected", ["rejected"], False),
     ("package_eligible", ["package_lane_not_wired"], False),
+    ("superseded", ["superseded"], False),
 ])
 def test_analyst_product_blocked_reasons_by_status(lifecycle_status, expected_blocked, expected_promotable) -> None:
     analyst = [_analyst_input("ap-1", lifecycle_status=lifecycle_status)]

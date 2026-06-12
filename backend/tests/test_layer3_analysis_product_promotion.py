@@ -38,6 +38,7 @@ from app.services.layer3_analysis_product_authoring import (
 from app.services.layer3_analysis_product_promotion import (
     AnalysisProductTransitionRequest,
     Layer3AnalysisProductPromotionResult,
+    _stored_decision_basis_hash,
     transition_analysis_product,
 )
 
@@ -375,6 +376,8 @@ def test_accepted_to_draft_not_allowed(seeded_db) -> None:
 
 
 def test_terminal_package_eligible_blocks_further_transitions(seeded_db) -> None:
+    # package_eligible is no longer a terminal state; non-supersede intents fail
+    # at the transition-lookup step with transition_not_allowed, not product_terminal.
     db = seeded_db
     product = _make_grounded_product(db, client_request_id="req-terminal-pe-001")
     pid = product.analysis_product_id
@@ -401,7 +404,7 @@ def test_terminal_package_eligible_blocks_further_transitions(seeded_db) -> None
                 decision_reason_code="proposed_ready",
             ),
         )
-    assert exc_info.value.error_code == "product_terminal"
+    assert exc_info.value.error_code == "transition_not_allowed"
     assert exc_info.value.http_status == 409
 
 
@@ -831,3 +834,526 @@ def test_product_not_in_session_raises_409(seeded_db) -> None:
         )
     assert exc_info.value.error_code == "product_not_in_session"
     assert exc_info.value.http_status == 409
+
+
+# ---------------------------------------------------------------------------
+# Supersession: happy paths
+# ---------------------------------------------------------------------------
+
+
+def _walk_to_accepted(db, pid: str, sid: str, prefix: str) -> None:
+    """Drive a product from draft -> accepted."""
+    for step, (intent, reason) in enumerate([
+        ("promote", "proposed_ready"),
+        ("promote", "validation_passed"),
+        ("accept", "grounded_accept"),
+    ]):
+        transition_analysis_product(
+            db, session_id=sid, analysis_product_id=pid,
+            client_request_id=f"{prefix}-walk-{step}",
+            request=AnalysisProductTransitionRequest(decision_intent=intent, decision_reason_code=reason),
+        )
+        db.commit()
+
+
+def _walk_to_package_eligible(db, pid: str, sid: str, prefix: str) -> None:
+    """Drive a product from draft -> package_eligible."""
+    _walk_to_accepted(db, pid, sid, prefix)
+    transition_analysis_product(
+        db, session_id=sid, analysis_product_id=pid,
+        client_request_id=f"{prefix}-walk-pe",
+        request=AnalysisProductTransitionRequest(
+            decision_intent="mark_package_eligible",
+            decision_reason_code="package_ready",
+        ),
+    )
+    db.commit()
+
+
+def test_accepted_to_superseded_stale_basis(seeded_db) -> None:
+    """accepted -> superseded with stale_basis reason (no successor provenance required)."""
+    db = seeded_db
+    product = _make_grounded_product(db, client_request_id="req-sup-stale-001")
+    pid = product.analysis_product_id
+    sid = "session-promo-test"
+    _walk_to_accepted(db, pid, sid, "sup-stale")
+
+    result = transition_analysis_product(
+        db, session_id=sid, analysis_product_id=pid,
+        client_request_id="sup-stale-final",
+        request=AnalysisProductTransitionRequest(
+            decision_intent="supersede",
+            decision_reason_code="stale_basis",
+            decision_notes="This analysis is based on outdated data.",
+        ),
+    )
+    db.commit()
+    assert result.replayed is False
+    assert result.product.lifecycle_status == "superseded"
+    assert result.decision.from_status == "accepted"
+    assert result.decision.to_status == "superseded"
+    assert result.decision.review_decision == "supersede"
+    assert result.decision.decision_reason_code == "stale_basis"
+    assert result.decision.decision_notes_present is True
+
+
+def test_package_eligible_to_superseded_with_successor(seeded_db) -> None:
+    """package_eligible -> superseded with superseded_by_successor, recording provenance."""
+    db = seeded_db
+    sid = "session-promo-test"
+
+    # Product to be superseded
+    product = _make_grounded_product(db, client_request_id="req-sup-pe-001")
+    pid = product.analysis_product_id
+    _walk_to_package_eligible(db, pid, sid, "sup-pe")
+
+    # Successor product (just needs to exist in the session)
+    successor = _make_grounded_product(db, client_request_id="req-sup-succ-001")
+    succ_id = successor.analysis_product_id
+
+    result = transition_analysis_product(
+        db, session_id=sid, analysis_product_id=pid,
+        client_request_id="sup-pe-final",
+        request=AnalysisProductTransitionRequest(
+            decision_intent="supersede",
+            decision_reason_code="superseded_by_successor",
+            decision_notes="Replaced by a more complete analysis.",
+            decision_provenance={"successor_analysis_product_id": succ_id},
+        ),
+    )
+    db.commit()
+    assert result.product.lifecycle_status == "superseded"
+    assert result.decision.decision_reason_code == "superseded_by_successor"
+    assert result.decision.decision_provenance_json.get("successor_analysis_product_id") == succ_id
+
+
+def test_packaged_to_superseded(seeded_db) -> None:
+    """packaged -> superseded via a direct-DB-constructed product row (no API path produces packaged)."""
+    db = seeded_db
+    sid = "session-promo-test"
+
+    # Directly insert a product at lifecycle_status="packaged"
+    from app.services.layer3_utils import stable_hash
+    packaged_product = L3AnalysisProduct(
+        analysis_product_id="ap-packaged-direct-001",
+        session_id=sid,
+        product_kind="finding",
+        executor_type="human",
+        lifecycle_status="packaged",
+        title="Directly-packaged product",
+        body="Created directly in DB for supersession test.",
+        is_non_evidentiary=False,
+        basis_hash=stable_hash({"seed": "packaged-direct"}),
+        spec_hash=stable_hash({"spec": "packaged-direct"}),
+        client_request_id="req-packaged-direct-001",
+        authoring_provenance_json={},
+        summary_json={},
+    )
+    db.add(packaged_product)
+    db.commit()
+
+    result = transition_analysis_product(
+        db, session_id=sid, analysis_product_id="ap-packaged-direct-001",
+        client_request_id="sup-packaged-final",
+        request=AnalysisProductTransitionRequest(
+            decision_intent="supersede",
+            decision_reason_code="stale_basis",
+            decision_notes="Packaged product is now superseded.",
+        ),
+    )
+    db.commit()
+    assert result.product.lifecycle_status == "superseded"
+    assert result.decision.from_status == "packaged"
+    assert result.decision.to_status == "superseded"
+
+
+# ---------------------------------------------------------------------------
+# Supersession: terminal state
+# ---------------------------------------------------------------------------
+
+
+def test_superseded_is_terminal(seeded_db) -> None:
+    """Any further transition from superseded -> product_terminal."""
+    db = seeded_db
+    product = _make_grounded_product(db, client_request_id="req-sup-term-001")
+    pid = product.analysis_product_id
+    sid = "session-promo-test"
+    _walk_to_accepted(db, pid, sid, "sup-term")
+
+    transition_analysis_product(
+        db, session_id=sid, analysis_product_id=pid,
+        client_request_id="sup-term-supersede",
+        request=AnalysisProductTransitionRequest(
+            decision_intent="supersede",
+            decision_reason_code="stale_basis",
+            decision_notes="Now superseded.",
+        ),
+    )
+    db.commit()
+
+    with pytest.raises(Layer3AnalysisProductError) as exc_info:
+        transition_analysis_product(
+            db, session_id=sid, analysis_product_id=pid,
+            client_request_id="sup-term-after",
+            request=AnalysisProductTransitionRequest(
+                decision_intent="supersede",
+                decision_reason_code="stale_basis",
+                decision_notes="Trying to supersede again.",
+            ),
+        )
+    assert exc_info.value.error_code == "product_terminal"
+    assert exc_info.value.http_status == 409
+
+
+# ---------------------------------------------------------------------------
+# Supersession: validation failures
+# ---------------------------------------------------------------------------
+
+
+def test_supersede_notes_required(seeded_db) -> None:
+    """supersede without notes -> decision_notes_required."""
+    db = seeded_db
+    product = _make_grounded_product(db, client_request_id="req-sup-nonotes-001")
+    pid = product.analysis_product_id
+    sid = "session-promo-test"
+    _walk_to_accepted(db, pid, sid, "sup-nonotes")
+
+    with pytest.raises(Layer3AnalysisProductError) as exc_info:
+        transition_analysis_product(
+            db, session_id=sid, analysis_product_id=pid,
+            client_request_id="sup-nonotes-attempt",
+            request=AnalysisProductTransitionRequest(
+                decision_intent="supersede",
+                decision_reason_code="stale_basis",
+                decision_notes=None,
+            ),
+        )
+    assert exc_info.value.error_code == "decision_notes_required"
+
+
+def test_supersede_reason_mismatch(seeded_db) -> None:
+    """supersede with a reason code belonging to another intent -> decision_reason_mismatch."""
+    db = seeded_db
+    product = _make_grounded_product(db, client_request_id="req-sup-mismatch-001")
+    pid = product.analysis_product_id
+    sid = "session-promo-test"
+
+    with pytest.raises(Layer3AnalysisProductError) as exc_info:
+        transition_analysis_product(
+            db, session_id=sid, analysis_product_id=pid,
+            client_request_id="sup-mismatch-attempt",
+            request=AnalysisProductTransitionRequest(
+                decision_intent="supersede",
+                decision_reason_code="proposed_ready",  # belongs to promote
+                decision_notes="Notes here.",
+            ),
+        )
+    assert exc_info.value.error_code == "decision_reason_mismatch"
+
+
+def test_supersede_successor_required_when_reason_is_successor(seeded_db) -> None:
+    """superseded_by_successor without providing successor_analysis_product_id -> supersede_successor_required."""
+    db = seeded_db
+    product = _make_grounded_product(db, client_request_id="req-sup-reqd-001")
+    pid = product.analysis_product_id
+    sid = "session-promo-test"
+    _walk_to_accepted(db, pid, sid, "sup-reqd")
+
+    with pytest.raises(Layer3AnalysisProductError) as exc_info:
+        transition_analysis_product(
+            db, session_id=sid, analysis_product_id=pid,
+            client_request_id="sup-reqd-attempt",
+            request=AnalysisProductTransitionRequest(
+                decision_intent="supersede",
+                decision_reason_code="superseded_by_successor",
+                decision_notes="Should fail — no successor provided.",
+                decision_provenance=None,
+            ),
+        )
+    assert exc_info.value.error_code == "supersede_successor_required"
+    assert exc_info.value.http_status == 409
+
+
+def test_supersede_successor_not_found(seeded_db) -> None:
+    """Referencing a non-existent successor -> supersede_successor_not_found (404-style)."""
+    db = seeded_db
+    product = _make_grounded_product(db, client_request_id="req-sup-nf-001")
+    pid = product.analysis_product_id
+    sid = "session-promo-test"
+    _walk_to_accepted(db, pid, sid, "sup-nf")
+
+    with pytest.raises(Layer3AnalysisProductError) as exc_info:
+        transition_analysis_product(
+            db, session_id=sid, analysis_product_id=pid,
+            client_request_id="sup-nf-attempt",
+            request=AnalysisProductTransitionRequest(
+                decision_intent="supersede",
+                decision_reason_code="superseded_by_successor",
+                decision_notes="Successor does not exist.",
+                decision_provenance={"successor_analysis_product_id": "nonexistent-succ-id"},
+            ),
+        )
+    assert exc_info.value.error_code == "supersede_successor_not_found"
+    assert exc_info.value.http_status == 404
+
+
+def test_supersede_successor_self(seeded_db) -> None:
+    """Referencing itself as successor -> supersede_successor_self."""
+    db = seeded_db
+    product = _make_grounded_product(db, client_request_id="req-sup-self-001")
+    pid = product.analysis_product_id
+    sid = "session-promo-test"
+    _walk_to_accepted(db, pid, sid, "sup-self")
+
+    with pytest.raises(Layer3AnalysisProductError) as exc_info:
+        transition_analysis_product(
+            db, session_id=sid, analysis_product_id=pid,
+            client_request_id="sup-self-attempt",
+            request=AnalysisProductTransitionRequest(
+                decision_intent="supersede",
+                decision_reason_code="superseded_by_successor",
+                decision_notes="Self-reference attempt.",
+                decision_provenance={"successor_analysis_product_id": pid},
+            ),
+        )
+    assert exc_info.value.error_code == "supersede_successor_self"
+    assert exc_info.value.http_status == 409
+
+
+def test_supersede_successor_not_in_session(seeded_db) -> None:
+    """Referencing a successor in a different session -> supersede_successor_not_in_session."""
+    db = seeded_db
+    sid = "session-promo-test"
+
+    # Product to supersede
+    product = _make_grounded_product(db, client_request_id="req-sup-nis-001")
+    pid = product.analysis_product_id
+    _walk_to_accepted(db, pid, sid, "sup-nis")
+
+    # Successor in a different session — create the second session first
+    from app.services.layer3_utils import stable_hash
+    other_session = L3Session(
+        session_id="session-other-sup-test",
+        selection_manifest_id="manifest-other-sup-test",
+        status="active_execution",
+        operator_context_json={},
+        summary_json={},
+    )
+    db.add(other_session)
+    db.commit()
+
+    other_product = L3AnalysisProduct(
+        analysis_product_id="ap-other-session-succ-001",
+        session_id="session-other-sup-test",
+        product_kind="finding",
+        executor_type="human",
+        lifecycle_status="draft",
+        title="Successor in other session",
+        body="In a different session.",
+        is_non_evidentiary=False,
+        basis_hash=stable_hash({"seed": "other-session-succ"}),
+        spec_hash=stable_hash({"spec": "other-session-succ"}),
+        client_request_id="req-other-session-succ-001",
+        authoring_provenance_json={},
+        summary_json={},
+    )
+    db.add(other_product)
+    db.commit()
+
+    with pytest.raises(Layer3AnalysisProductError) as exc_info:
+        transition_analysis_product(
+            db, session_id=sid, analysis_product_id=pid,
+            client_request_id="sup-nis-attempt",
+            request=AnalysisProductTransitionRequest(
+                decision_intent="supersede",
+                decision_reason_code="superseded_by_successor",
+                decision_notes="Successor is in another session.",
+                decision_provenance={"successor_analysis_product_id": "ap-other-session-succ-001"},
+            ),
+        )
+    assert exc_info.value.error_code == "supersede_successor_not_in_session"
+    assert exc_info.value.http_status == 409
+
+
+# ---------------------------------------------------------------------------
+# Supersession: idempotency
+# ---------------------------------------------------------------------------
+
+
+def test_supersede_idempotent_replay(seeded_db) -> None:
+    """Same client_request_id with same successor -> replayed=True."""
+    db = seeded_db
+    product = _make_grounded_product(db, client_request_id="req-sup-idem-001")
+    pid = product.analysis_product_id
+    sid = "session-promo-test"
+    _walk_to_accepted(db, pid, sid, "sup-idem")
+
+    successor = _make_grounded_product(db, client_request_id="req-sup-idem-succ-001")
+    succ_id = successor.analysis_product_id
+
+    r1 = transition_analysis_product(
+        db, session_id=sid, analysis_product_id=pid,
+        client_request_id="sup-idem-req",
+        request=AnalysisProductTransitionRequest(
+            decision_intent="supersede",
+            decision_reason_code="superseded_by_successor",
+            decision_notes="First supersession.",
+            decision_provenance={"successor_analysis_product_id": succ_id},
+        ),
+    )
+    db.commit()
+    assert r1.replayed is False
+
+    r2 = transition_analysis_product(
+        db, session_id=sid, analysis_product_id=pid,
+        client_request_id="sup-idem-req",  # same request id
+        request=AnalysisProductTransitionRequest(
+            decision_intent="supersede",
+            decision_reason_code="superseded_by_successor",
+            decision_notes="First supersession.",
+            decision_provenance={"successor_analysis_product_id": succ_id},
+        ),
+    )
+    assert r2.replayed is True
+    assert r2.decision.analysis_product_review_decision_id == r1.decision.analysis_product_review_decision_id
+
+
+def test_supersede_idempotency_conflict_different_successor(seeded_db) -> None:
+    """Same client_request_id but different successor -> idempotency_conflict (hash-folding proof)."""
+    db = seeded_db
+    product = _make_grounded_product(db, client_request_id="req-sup-conf-001")
+    pid = product.analysis_product_id
+    sid = "session-promo-test"
+    _walk_to_accepted(db, pid, sid, "sup-conf")
+
+    successor1 = _make_grounded_product(db, client_request_id="req-sup-conf-succ1-001")
+    succ1_id = successor1.analysis_product_id
+    successor2 = _make_grounded_product(db, client_request_id="req-sup-conf-succ2-001")
+    succ2_id = successor2.analysis_product_id
+
+    transition_analysis_product(
+        db, session_id=sid, analysis_product_id=pid,
+        client_request_id="sup-conf-req",
+        request=AnalysisProductTransitionRequest(
+            decision_intent="supersede",
+            decision_reason_code="superseded_by_successor",
+            decision_notes="Original supersession.",
+            decision_provenance={"successor_analysis_product_id": succ1_id},
+        ),
+    )
+    db.commit()
+
+    with pytest.raises(Layer3AnalysisProductError) as exc_info:
+        transition_analysis_product(
+            db, session_id=sid, analysis_product_id=pid,
+            client_request_id="sup-conf-req",  # same request id
+            request=AnalysisProductTransitionRequest(
+                decision_intent="supersede",
+                decision_reason_code="superseded_by_successor",
+                decision_notes="Original supersession.",
+                decision_provenance={"successor_analysis_product_id": succ2_id},  # different successor
+            ),
+        )
+    assert exc_info.value.error_code == "idempotency_conflict"
+    assert exc_info.value.http_status == 409
+
+
+# ---------------------------------------------------------------------------
+# Supersession: grounding NOT required
+# ---------------------------------------------------------------------------
+
+
+def test_supersede_does_not_require_grounding(seeded_db) -> None:
+    """Grounding is not asserted for supersede transitions.
+
+    An accepted product already has evidence (required to reach accepted), but
+    we verify grounding_asserted is False on the supersede decision row.
+    """
+    db = seeded_db
+    product = _make_grounded_product(db, client_request_id="req-sup-noground-001")
+    pid = product.analysis_product_id
+    sid = "session-promo-test"
+    _walk_to_accepted(db, pid, sid, "sup-noground")
+
+    result = transition_analysis_product(
+        db, session_id=sid, analysis_product_id=pid,
+        client_request_id="sup-noground-final",
+        request=AnalysisProductTransitionRequest(
+            decision_intent="supersede",
+            decision_reason_code="stale_basis",
+            decision_notes="Superseding without grounding check.",
+        ),
+    )
+    db.commit()
+    assert result.decision.grounding_asserted is False
+
+
+# ---------------------------------------------------------------------------
+# FIX 3: _normalize_successor_id rejects non-str types
+# ---------------------------------------------------------------------------
+
+
+def test_supersede_successor_invalid_type_int(seeded_db) -> None:
+    """supersede with an int successor id raises supersede_successor_invalid_type (409)."""
+    db = seeded_db
+    product = _make_grounded_product(db, client_request_id="req-sup-invtype-001")
+    pid = product.analysis_product_id
+    sid = "session-promo-test"
+    _walk_to_accepted(db, pid, sid, "sup-invtype")
+
+    with pytest.raises(Layer3AnalysisProductError) as exc_info:
+        transition_analysis_product(
+            db, session_id=sid, analysis_product_id=pid,
+            client_request_id="sup-invtype-req",
+            request=AnalysisProductTransitionRequest(
+                decision_intent="supersede",
+                decision_reason_code="superseded_by_successor",
+                decision_notes="Successor is an int, not a string.",
+                decision_provenance={"successor_analysis_product_id": 5},
+            ),
+        )
+    assert exc_info.value.error_code == "supersede_successor_invalid_type"
+    assert exc_info.value.http_status == 409
+
+
+# ---------------------------------------------------------------------------
+# FIX 5: _stored_decision_basis_hash folds successor into the hash
+# ---------------------------------------------------------------------------
+
+
+def test_stored_decision_basis_hash_differs_by_successor() -> None:
+    """_stored_decision_basis_hash produces distinct values for distinct successors
+    and equal values when successors match — no DB required."""
+    from datetime import datetime, timezone
+
+    def _make_row(successor_id: str) -> L3AnalysisProductReviewDecision:
+        return L3AnalysisProductReviewDecision(
+            analysis_product_review_decision_id=f"dec-hash-test-{successor_id}",
+            analysis_product_id="prod-hash-test",
+            session_id="session-hash-test",
+            from_status="accepted",
+            to_status="superseded",
+            review_decision="supersede",
+            decision_reason_code="superseded_by_successor",
+            decision_status="recorded",
+            decision_basis_hash="placeholder",
+            decision_schema_id="layer3.analysis_product_promotion.v1",
+            product_basis_hash="basis-hash-test",
+            grounding_asserted=False,
+            decision_notes_present=True,
+            decision_notes_hash="notes-hash-test",
+            client_request_id=f"crid-hash-test-{successor_id}",
+            decision_provenance_json={"successor_analysis_product_id": successor_id},
+            decision_summary_json={},
+        )
+
+    row_a = _make_row("succ-aaa")
+    row_b = _make_row("succ-bbb")
+    row_a2 = _make_row("succ-aaa")
+
+    hash_a = _stored_decision_basis_hash(row_a)
+    hash_b = _stored_decision_basis_hash(row_b)
+    hash_a2 = _stored_decision_basis_hash(row_a2)
+
+    assert hash_a != hash_b, "different successors must produce different basis hashes"
+    assert hash_a == hash_a2, "identical successors must produce equal basis hashes"

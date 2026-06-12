@@ -2263,3 +2263,459 @@ def test_3c_two_product_roster_stale_after_third_promotion_rejected(
 
     assert stale_commit.status_code == 409, stale_commit.text
     assert stale_commit.json()["error_code"] == "package_review_preview_mismatch"
+
+
+# ---------------------------------------------------------------------------
+# TEST G — supersession v0: superseding a package_eligible product drops it
+# from the future roster; stale hash is rejected; fresh preview/commit succeeds
+# ---------------------------------------------------------------------------
+
+
+def test_3c_supersede_drops_product_from_future_roster(
+    client, tmp_path, monkeypatch
+):
+    """Superseding a package_eligible product removes it from the roster.
+
+    Flow:
+      1. Build a session with two package_eligible products (product #1, product #2).
+      2. POST package/review/preview → admission count == 2 (capture preview hash).
+      3. Supersede product #2 via the API transition route.
+      4. Assert transition response lifecycle_status == "superseded".
+      5. Assert the stored supersede decision carries
+         successor_analysis_product_id == product #1's id (via DB).
+      6. POST package/review/commit with the STALE preview hash → 409 mismatch.
+      7. Re-run package/review/preview → admission count == 1, only product #1 remains.
+      8. Commit with fresh hash → success; load all three committed payloads;
+         assert inventory contains exactly product #1 (count 1), product #2 absent.
+    """
+    request_prefix = "3c-supersede-roster"
+
+    monkeypatch.setattr(
+        layer3_workbench.settings,
+        "layer3_analysis_product_package_inventory_enabled",
+        True,
+    )
+
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        status_body,
+        review_body,
+    ) = _build_session_with_two_package_eligible_products(
+        client, tmp_path, request_prefix=request_prefix
+    )
+
+    pass_run_id = selection_body["pass_run_ids"][0]
+
+    # Query the two package_eligible product ids from DB (ordered by id asc,
+    # matching _load_package_eligible_analysis_products ordering).
+    db = client.layer3_session_factory()
+    try:
+        eligible_rows = (
+            db.query(L3AnalysisProduct)
+            .filter(
+                L3AnalysisProduct.session_id == session_id,
+                L3AnalysisProduct.lifecycle_status == "package_eligible",
+            )
+            .order_by(L3AnalysisProduct.analysis_product_id)
+            .all()
+        )
+        assert len(eligible_rows) == 2, (
+            f"Expected 2 package_eligible products before supersession; "
+            f"got {len(eligible_rows)}"
+        )
+        product_1_id = eligible_rows[0].analysis_product_id
+        product_2_id = eligible_rows[1].analysis_product_id
+    finally:
+        db.close()
+
+    # Step 2: package/review/preview — capture hash over the 2-product roster.
+    pkg_preview_1 = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": f"{request_prefix}-pkg-preview-1",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert pkg_preview_1.status_code == 200, pkg_preview_1.text
+    pkg_preview_1_body = pkg_preview_1.json()
+
+    admission_1 = pkg_preview_1_body["analysis_product_admission"]
+    assert admission_1["package_eligible_product_count"] == 2, (
+        f"Expected 2 eligible products before supersession; "
+        f"got {admission_1['package_eligible_product_count']!r}"
+    )
+    stale_pkg_hash = pkg_preview_1_body["package_review_preview_hash"]
+
+    # Step 3: supersede product #2 via the API.
+    supersede_resp = client.post(
+        f"/api/v1/layer3/analysis-product/{product_2_id}/transition",
+        json={
+            "session_id": session_id,
+            "client_request_id": f"{request_prefix}-supersede-p2",
+            "decision_intent": "supersede",
+            "decision_reason_code": "superseded_by_successor",
+            "decision_notes": "Product #2 superseded by product #1 in this test.",
+            "decision_provenance": {"successor_analysis_product_id": product_1_id},
+        },
+    )
+    assert supersede_resp.status_code == 201, supersede_resp.text
+    supersede_body = supersede_resp.json()
+
+    # Step 4: transition response must show lifecycle_status == "superseded".
+    assert supersede_body["lifecycle_status"] == "superseded", (
+        f"Expected lifecycle_status 'superseded'; got {supersede_body['lifecycle_status']!r}"
+    )
+
+    # Step 5: verify successor_analysis_product_id stored on the decision (via DB).
+    from app.models.models import L3AnalysisProductReviewDecision
+    db = client.layer3_session_factory()
+    try:
+        p2_row = (
+            db.query(L3AnalysisProduct)
+            .filter(L3AnalysisProduct.analysis_product_id == product_2_id)
+            .first()
+        )
+        assert p2_row is not None
+        assert p2_row.lifecycle_status == "superseded", (
+            f"product_2 lifecycle_status in DB must be 'superseded'; "
+            f"got {p2_row.lifecycle_status!r}"
+        )
+        latest_decision = (
+            db.query(L3AnalysisProductReviewDecision)
+            .filter(
+                L3AnalysisProductReviewDecision.analysis_product_id == product_2_id,
+                L3AnalysisProductReviewDecision.review_decision == "supersede",
+            )
+            .order_by(L3AnalysisProductReviewDecision.analysis_product_review_decision_id.desc())
+            .first()
+        )
+        assert latest_decision is not None, "No supersede decision recorded for product_2"
+        stored_provenance = (
+            latest_decision.decision_provenance_json
+            if isinstance(latest_decision.decision_provenance_json, dict)
+            else {}
+        )
+        assert stored_provenance.get("successor_analysis_product_id") == product_1_id, (
+            f"Stored successor_analysis_product_id mismatch: "
+            f"expected {product_1_id!r}, "
+            f"got {stored_provenance.get('successor_analysis_product_id')!r}"
+        )
+    finally:
+        db.close()
+
+    # Step 6: commit with the STALE preview hash (captured before supersession) → 409.
+    stale_commit_2 = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": f"{request_prefix}-pkg-commit-stale",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": stale_pkg_hash,
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert stale_commit_2.status_code == 409, stale_commit_2.text
+    assert stale_commit_2.json()["error_code"] == "package_review_preview_mismatch"
+
+    # Step 7: fresh package/review/preview → admission count == 1, only product #1.
+    pkg_preview_2 = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": f"{request_prefix}-pkg-preview-2",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert pkg_preview_2.status_code == 200, pkg_preview_2.text
+    pkg_preview_2_body = pkg_preview_2.json()
+
+    admission_2 = pkg_preview_2_body["analysis_product_admission"]
+    assert admission_2["available"] is True, (
+        f"admission.available must be True after supersession; "
+        f"got {admission_2['available']!r}"
+    )
+    assert admission_2["package_eligible_product_count"] == 1, (
+        f"Expected 1 eligible product after supersession; "
+        f"got {admission_2['package_eligible_product_count']!r}"
+    )
+
+    # Step 8: commit with the FRESH hash → success.
+    fresh_commit = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": f"{request_prefix}-pkg-commit-fresh",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": pkg_preview_2_body["package_review_preview_hash"],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert fresh_commit.status_code == 200, fresh_commit.text
+
+    # Load all three committed payloads and assert inventory invariants.
+    db = client.layer3_session_factory()
+    try:
+        rows = _packages_by_kind(db, session_id)
+    finally:
+        db.close()
+
+    assert set(rows) == {
+        PACKAGE_KIND_CANONICAL_INTERNAL,
+        PACKAGE_KIND_USER_FACING,
+        PACKAGE_KIND_REVIEW_FACING,
+    }, f"Unexpected package kinds: {set(rows)}"
+
+    canonical_payload = _load_payload(rows[PACKAGE_KIND_CANONICAL_INTERNAL].payload_ref)
+    user_payload = _load_payload(rows[PACKAGE_KIND_USER_FACING].payload_ref)
+    review_payload = _load_payload(rows[PACKAGE_KIND_REVIEW_FACING].payload_ref)
+
+    for kind, payload in [
+        (PACKAGE_KIND_CANONICAL_INTERNAL, canonical_payload),
+        (PACKAGE_KIND_USER_FACING, user_payload),
+        (PACKAGE_KIND_REVIEW_FACING, review_payload),
+    ]:
+        inv = payload["analysis_product_inventory"]
+
+        # Exactly one product in the inventory.
+        assert inv["package_eligible_product_count"] == 1, (
+            f"{kind}: package_eligible_product_count must be 1; "
+            f"got {inv['package_eligible_product_count']!r}"
+        )
+
+        products = inv["products"]
+        assert len(products) == 1, (
+            f"{kind}: inventory must contain exactly 1 product; got {len(products)}"
+        )
+
+        # Only product #1 present; product #2 absent from the serialized inventory.
+        assert products[0]["analysis_product_id"] == product_1_id, (
+            f"{kind}: inventory product must be product_1 ({product_1_id!r}); "
+            f"got {products[0]['analysis_product_id']!r}"
+        )
+        inv_text = json.dumps(inv)
+        assert product_2_id not in inv_text, (
+            f"{kind}: superseded product_2 id {product_2_id!r} found in serialized inventory"
+        )
+
+        # The surviving product's latest_review_decision must NOT be a supersede
+        # decision (it is product #1, not the superseded one).
+        if kind != PACKAGE_KIND_USER_FACING:
+            p1_entry = products[0]
+            lrd = p1_entry.get("latest_review_decision")
+            assert lrd is not None, (
+                f"{kind}: product_1 latest_review_decision must be present"
+            )
+            assert lrd.get("review_decision") != "supersede", (
+                f"{kind}: product_1 latest_review_decision must NOT be a supersede "
+                f"decision; got {lrd.get('review_decision')!r}"
+            )
+
+
+# ---------------------------------------------------------------------------
+# TEST H — supersession v0: superseding the only eligible product yields an
+# empty roster; commit with count==0 succeeds
+# ---------------------------------------------------------------------------
+
+
+def test_3c_supersede_only_eligible_product_empty_roster_commit_succeeds(
+    client, tmp_path, monkeypatch
+):
+    """Superseding the only package_eligible product gives an empty roster.
+
+    Flow:
+      1. Build a session with ONE package_eligible product.
+      2. Supersede it via the API (reason: stale_basis; no successor required).
+      3. POST package/review/preview → admission: available=True,
+         embedding_enabled=True, count=0, products=[].
+      4. POST package/review/commit with that hash → SUCCESS (count→0 boundary).
+      5. Load all three committed payloads: inventory present with count=0,
+         products==[], superseded product id absent from every serialized section.
+    """
+    request_prefix = "3c-supersede-empty"
+
+    monkeypatch.setattr(
+        layer3_workbench.settings,
+        "layer3_analysis_product_package_inventory_enabled",
+        True,
+    )
+
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        status_body,
+        review_body,
+    ) = _build_session_with_package_eligible_product(
+        client, tmp_path, request_prefix=request_prefix
+    )
+
+    pass_run_id = selection_body["pass_run_ids"][0]
+
+    # Capture the single product's id from DB.
+    db = client.layer3_session_factory()
+    try:
+        eligible_rows = (
+            db.query(L3AnalysisProduct)
+            .filter(
+                L3AnalysisProduct.session_id == session_id,
+                L3AnalysisProduct.lifecycle_status == "package_eligible",
+            )
+            .all()
+        )
+        assert len(eligible_rows) == 1, (
+            f"Expected 1 package_eligible product; got {len(eligible_rows)}"
+        )
+        sole_product_id = eligible_rows[0].analysis_product_id
+    finally:
+        db.close()
+
+    # Step 2: supersede the only eligible product (stale_basis; no successor).
+    supersede_resp = client.post(
+        f"/api/v1/layer3/analysis-product/{sole_product_id}/transition",
+        json={
+            "session_id": session_id,
+            "client_request_id": f"{request_prefix}-supersede-sole",
+            "decision_intent": "supersede",
+            "decision_reason_code": "stale_basis",
+            "decision_notes": "Sole product superseded due to stale basis — empty roster test.",
+        },
+    )
+    assert supersede_resp.status_code == 201, supersede_resp.text
+    assert supersede_resp.json()["lifecycle_status"] == "superseded", (
+        f"Expected lifecycle_status 'superseded'; "
+        f"got {supersede_resp.json()['lifecycle_status']!r}"
+    )
+
+    # Step 3: package/review/preview → empty roster admission.
+    pkg_preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": f"{request_prefix}-pkg-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert pkg_preview.status_code == 200, pkg_preview.text
+    pkg_preview_body = pkg_preview.json()
+
+    admission = pkg_preview_body["analysis_product_admission"]
+    assert admission["available"] is True, (
+        f"admission.available must be True (roster can be empty); "
+        f"got {admission['available']!r}"
+    )
+    assert admission["embedding_enabled"] is True, (
+        f"admission.embedding_enabled must be True (flag is ON); "
+        f"got {admission['embedding_enabled']!r}"
+    )
+    assert admission["package_eligible_product_count"] == 0, (
+        f"admission.package_eligible_product_count must be 0; "
+        f"got {admission['package_eligible_product_count']!r}"
+    )
+    assert admission["total_package_eligible"] == 0, (
+        f"admission.total_package_eligible must be 0; "
+        f"got {admission['total_package_eligible']!r}"
+    )
+    assert admission["products"] == [], (
+        f"admission.products must be [] (empty roster); "
+        f"got {admission['products']!r}"
+    )
+
+    # Step 4: commit with the empty-roster hash → SUCCESS.
+    pkg_commit = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": f"{request_prefix}-pkg-commit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": pkg_preview_body["package_review_preview_hash"],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert pkg_commit.status_code == 200, pkg_commit.text
+
+    # Step 5: load all three committed payloads and assert empty-inventory invariants.
+    db = client.layer3_session_factory()
+    try:
+        rows = _packages_by_kind(db, session_id)
+    finally:
+        db.close()
+
+    assert set(rows) == {
+        PACKAGE_KIND_CANONICAL_INTERNAL,
+        PACKAGE_KIND_USER_FACING,
+        PACKAGE_KIND_REVIEW_FACING,
+    }, f"Unexpected package kinds: {set(rows)}"
+
+    canonical_payload = _load_payload(rows[PACKAGE_KIND_CANONICAL_INTERNAL].payload_ref)
+    user_payload = _load_payload(rows[PACKAGE_KIND_USER_FACING].payload_ref)
+    review_payload = _load_payload(rows[PACKAGE_KIND_REVIEW_FACING].payload_ref)
+
+    for kind, payload in [
+        (PACKAGE_KIND_CANONICAL_INTERNAL, canonical_payload),
+        (PACKAGE_KIND_USER_FACING, user_payload),
+        (PACKAGE_KIND_REVIEW_FACING, review_payload),
+    ]:
+        assert "analysis_product_inventory" in payload, (
+            f"{kind}: analysis_product_inventory must be present when flag is ON"
+        )
+        inv = payload["analysis_product_inventory"]
+
+        assert inv["package_eligible_product_count"] == 0, (
+            f"{kind}: package_eligible_product_count must be 0; "
+            f"got {inv['package_eligible_product_count']!r}"
+        )
+        assert inv.get("total_package_eligible") == 0, (
+            f"{kind}: total_package_eligible must be 0; "
+            f"got {inv.get('total_package_eligible')!r}"
+        )
+        assert inv.get("truncated") is False, (
+            f"{kind}: truncated must be False; got {inv.get('truncated')!r}"
+        )
+        assert inv["products"] == [], (
+            f"{kind}: inventory products must be [] (empty); "
+            f"got {inv['products']!r}"
+        )
+
+        # Superseded product id must be absent from the entire serialized inventory.
+        inv_text = json.dumps(inv)
+        assert sole_product_id not in inv_text, (
+            f"{kind}: superseded product id {sole_product_id!r} found in "
+            f"serialized analysis_product_inventory"
+        )

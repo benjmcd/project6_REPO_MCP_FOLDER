@@ -130,6 +130,7 @@ L3_ANALYSIS_PRODUCT_LIFECYCLE_VALUES = (
     "rejected",
     "package_eligible",
     "packaged",
+    "superseded",
 )
 L3_ANALYSIS_PRODUCT_REVIEW_DECISION_VALUES = (
     "promote",
@@ -137,6 +138,7 @@ L3_ANALYSIS_PRODUCT_REVIEW_DECISION_VALUES = (
     "mark_package_eligible",
     "reject",
     "revise",
+    "supersede",
 )
 L3_ANALYSIS_PRODUCT_REVIEW_REASON_CODES = (
     "proposed_ready",
@@ -147,6 +149,8 @@ L3_ANALYSIS_PRODUCT_REVIEW_REASON_CODES = (
     "evidence_gap",
     "operator_rejected",
     "revision_requested",
+    "superseded_by_successor",
+    "stale_basis",
 )
 L3_ANALYSIS_PRODUCT_REVIEW_DECISION_STATUS_RECORDED = "decision_recorded"
 L3_ANALYSIS_PRODUCT_EVIDENCE_ROLE_VALUES = (

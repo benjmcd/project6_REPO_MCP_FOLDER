@@ -32208,6 +32208,7 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
         mark_package_eligible: ['package_ready'],
         reject: ['insufficient_grounding', 'evidence_gap', 'operator_rejected'],
         revise: ['revision_requested'],
+        supersede: ['superseded_by_successor', 'stale_basis'],
     };
 
     function populateApwTrReason(intent) {
@@ -32480,8 +32481,13 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
                 setApwStatus(statusEl, 'Select a product.');
                 return;
             }
-            if ((intent === 'reject' || intent === 'revise') && !notes) {
-                setApwStatus(statusEl, 'Notes required for reject/revise.');
+            if ((intent === 'reject' || intent === 'revise' || intent === 'supersede') && !notes) {
+                setApwStatus(statusEl, 'Notes required for reject/revise/supersede.');
+                return;
+            }
+            const successorId = (document.getElementById('apw-tr-successor')?.value || '').trim();
+            if (intent === 'supersede' && document.getElementById('apw-tr-reason')?.value === 'superseded_by_successor' && !successorId) {
+                setApwStatus(statusEl, 'Successor product id required for superseded_by_successor.');
                 return;
             }
             const body = {
@@ -32490,6 +32496,7 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
                 decision_intent: intent,
                 decision_reason_code: document.getElementById('apw-tr-reason')?.value || '',
                 ...(notes ? { decision_notes: notes } : {}),
+                ...(intent === 'supersede' && successorId ? { decision_provenance: { successor_analysis_product_id: successorId } } : {}),
             };
             try {
                 const res = await postJson(`/analysis-product/${encodeURIComponent(productId)}/transition`, body);
