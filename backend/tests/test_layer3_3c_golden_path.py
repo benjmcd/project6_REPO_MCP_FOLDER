@@ -1371,3 +1371,895 @@ def test_3c_deterministic_provenance_survives_package_commit(client, tmp_path, m
         assert '"body"' not in payload_text, (
             f"'body' key found in {kind} payload — body must never appear in package payloads"
         )
+
+
+# ---------------------------------------------------------------------------
+# TEST E — mixed-state roster: only package_eligible subset embeds
+# ---------------------------------------------------------------------------
+
+# Expected key sets (verified against source layer3_workbench.py).
+_PREVIEW_PRODUCT_KEYS = frozenset(
+    {"product_kind", "lifecycle_status", "evidence_count", "basis_hash", "executor_type"}
+)
+_FULL_INVENTORY_PRODUCT_KEYS = frozenset(
+    {
+        "analysis_product_id",
+        "product_kind",
+        "title",
+        "lifecycle_status",
+        "basis_hash",
+        "evidence_refs",
+        "evidence_refs_truncated",
+        "by_evidence_role",
+        "latest_review_decision",
+        "executor_type",
+        "generation_method",
+    }
+)
+_USER_FACING_PRODUCT_KEYS = frozenset(
+    {"analysis_product_id", "product_kind", "by_evidence_role"}
+)
+
+
+def _build_session_with_mixed_products(
+    client: TestClient,
+    tmp_path: Path,
+    *,
+    request_prefix: str,
+) -> tuple[str, str, str, dict, dict, dict, dict, dict, dict]:
+    """Build a quant session with 5 products in different lifecycle states,
+    run the full plan/approve + exec/select + exec/start + result/review chain.
+
+    Products created:
+      1. draft_id         — created, never transitioned
+      2. accepted_id      — promoted to 'accepted' (not package_eligible)
+      3. rejected_id      — promoted draft->proposed, then rejected
+      4. eligible_human   — human-authored w/ material_snapshot ref, package_eligible
+      5. eligible_det     — deterministic product via working_set, package_eligible
+
+    Returns:
+        (session_id, eligible_human_id, eligible_det_id,
+         preview_body, approval_body, selection_body,
+         start_body, status_body, review_body)
+    """
+    # 1. Build the quant-ready session via direct DB call.
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    # 2. Create all 5 products.
+    db = client.layer3_session_factory()
+    try:
+        snapshot = (
+            db.query(L3MaterialSnapshot)
+            .filter(L3MaterialSnapshot.session_id == session_id)
+            .first()
+        )
+        assert snapshot is not None, f"No material snapshot for session {session_id}"
+
+        # --- product 1: draft (never transitioned) ---
+        draft_result = create_analysis_product_draft(
+            db,
+            session_id=session_id,
+            client_request_id=f"{request_prefix}-p1-draft",
+            draft=AnalysisProductDraft(
+                product_kind="finding",
+                title="Mixed-state: draft product",
+                body="Body — draft.",
+                evidence=(
+                    AnalysisProductEvidenceDraft(
+                        ref_kind="material_snapshot",
+                        ref_id=snapshot.material_snapshot_id,
+                        evidence_role="observation",
+                    ),
+                ),
+            ),
+        )
+        db.commit()
+        draft_id = draft_result.product.analysis_product_id
+
+        # --- product 2: accepted (draft->proposed->validated->accepted) ---
+        accepted_result = create_analysis_product_draft(
+            db,
+            session_id=session_id,
+            client_request_id=f"{request_prefix}-p2-accepted",
+            draft=AnalysisProductDraft(
+                product_kind="finding",
+                title="Mixed-state: accepted product",
+                body="Body — accepted.",
+                evidence=(
+                    AnalysisProductEvidenceDraft(
+                        ref_kind="material_snapshot",
+                        ref_id=snapshot.material_snapshot_id,
+                        evidence_role="observation",
+                    ),
+                ),
+            ),
+        )
+        db.commit()
+        accepted_id = accepted_result.product.analysis_product_id
+        for i, (intent, code) in enumerate(
+            [("promote", "proposed_ready"), ("promote", "validation_passed"), ("accept", "grounded_accept")]
+        ):
+            transition_analysis_product(
+                db,
+                session_id=session_id,
+                analysis_product_id=accepted_id,
+                client_request_id=f"{request_prefix}-p2-step-{i}",
+                request=AnalysisProductTransitionRequest(
+                    decision_intent=intent,
+                    decision_reason_code=code,
+                ),
+            )
+            db.commit()
+
+        # --- product 3: rejected (draft->proposed->rejected) ---
+        rejected_result = create_analysis_product_draft(
+            db,
+            session_id=session_id,
+            client_request_id=f"{request_prefix}-p3-rejected",
+            draft=AnalysisProductDraft(
+                product_kind="finding",
+                title="Mixed-state: rejected product",
+                body="Body — rejected.",
+                evidence=(
+                    AnalysisProductEvidenceDraft(
+                        ref_kind="material_snapshot",
+                        ref_id=snapshot.material_snapshot_id,
+                        evidence_role="observation",
+                    ),
+                ),
+            ),
+        )
+        db.commit()
+        rejected_id = rejected_result.product.analysis_product_id
+        transition_analysis_product(
+            db,
+            session_id=session_id,
+            analysis_product_id=rejected_id,
+            client_request_id=f"{request_prefix}-p3-step-0",
+            request=AnalysisProductTransitionRequest(
+                decision_intent="promote",
+                decision_reason_code="proposed_ready",
+            ),
+        )
+        db.commit()
+        transition_analysis_product(
+            db,
+            session_id=session_id,
+            analysis_product_id=rejected_id,
+            client_request_id=f"{request_prefix}-p3-step-1",
+            request=AnalysisProductTransitionRequest(
+                decision_intent="reject",
+                decision_reason_code="evidence_gap",
+                decision_notes="Insufficient evidence for inclusion.",
+            ),
+        )
+        db.commit()
+
+        # --- product 4: eligible_human (material_snapshot evidence, package_eligible) ---
+        human_result = create_analysis_product_draft(
+            db,
+            session_id=session_id,
+            client_request_id=f"{request_prefix}-p4-human",
+            draft=AnalysisProductDraft(
+                product_kind="finding",
+                title="Mixed-state: human-authored eligible product",
+                body="Body — human eligible.",
+                evidence=(
+                    AnalysisProductEvidenceDraft(
+                        ref_kind="material_snapshot",
+                        ref_id=snapshot.material_snapshot_id,
+                        evidence_role="observation",
+                    ),
+                ),
+            ),
+        )
+        db.commit()
+        eligible_human_id = human_result.product.analysis_product_id
+        _promote_to_package_eligible(
+            db,
+            session_id=session_id,
+            product_id=eligible_human_id,
+            prefix=f"{request_prefix}-p4-promote",
+        )
+
+        # --- product 5: eligible_det (deterministic generation over working_set) ---
+        ws_draft = WorkingSetDraft(
+            name="Mixed-state deterministic working set",
+            members=(
+                WorkingSetMemberDraft(
+                    ref_kind="material_snapshot",
+                    ref_id=snapshot.material_snapshot_id,
+                ),
+            ),
+        )
+        ws_result = create_working_set(
+            db,
+            session_id=session_id,
+            client_request_id=f"{request_prefix}-p5-ws",
+            draft=ws_draft,
+        )
+        db.commit()
+        working_set_id = ws_result.working_set.working_set_id
+
+        gen_result = generate_analysis_product(
+            db,
+            session_id=session_id,
+            client_request_id=f"{request_prefix}-p5-gen",
+            working_set_id=working_set_id,
+            method_id=_DETERMINISTIC_METHOD_ID,
+        )
+        db.commit()
+        eligible_det_id = gen_result.product.analysis_product_id
+        _promote_to_package_eligible(
+            db,
+            session_id=session_id,
+            product_id=eligible_det_id,
+            prefix=f"{request_prefix}-p5-promote",
+        )
+    finally:
+        db.close()
+
+    # 3. Plan preview + approve (API).
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": f"{request_prefix}-plan-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    )
+    assert preview.status_code == 200, preview.text
+    preview_body = preview.json()
+
+    approval = client.post(
+        "/api/v1/layer3/plan/approve",
+        json={
+            "client_request_id": f"{request_prefix}-plan-approve",
+            "session_id": session_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "operator_confirmation": True,
+            "approval_scope": "owner_service_default",
+        },
+    )
+    assert approval.status_code == 200, approval.text
+    approval_body = approval.json()
+
+    # 4. Execution select.
+    selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": f"{request_prefix}-exec-select",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert selection.status_code == 200, selection.text
+    selection_body = selection.json()
+    pass_run_id = selection_body["pass_run_ids"][0]
+
+    # 5. Execution start.
+    start = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": f"{request_prefix}-exec-start",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert start.status_code == 200, start.text
+    start_body = start.json()
+
+    # 6. Result status check.
+    status = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert status.status_code == 200, status.text
+    status_body = status.json()
+    assert status_body["status"] == "available"
+
+    # 7. Result review (approve).
+    review = client.post(
+        "/api/v1/layer3/execution/result/review",
+        json={
+            "client_request_id": f"{request_prefix}-result-review",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "operator_decision": "approved",
+            "review_notes": "Mixed-state golden path — only eligible subset embeds.",
+            "reviewed_output_items": [
+                {
+                    "item_ref": "primary-output",
+                    "item_type": "finding",
+                    "trace": {
+                        "session_id": session_id,
+                        "analysis_plan_id": approval_body["analysis_plan_id"],
+                        "pass_run_id": pass_run_id,
+                        "analysis_run_id": start_body["analysis_run_id"],
+                        "output_payload_ref": status_body["output_payload_ref"],
+                    },
+                }
+            ],
+        },
+    )
+    assert review.status_code == 200, review.text
+    review_body = review.json()
+    assert review_body["review_state"] == "execution_result_review_approved"
+
+    return (
+        session_id,
+        eligible_human_id,
+        eligible_det_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        status_body,
+        review_body,
+    )
+
+
+def test_3c_multi_product_mixed_states_only_eligible_subset_embeds(
+    client, tmp_path, monkeypatch
+):
+    """Five products in mixed states — only the two package_eligible ones embed.
+
+    Products: draft, accepted (not eligible), rejected, eligible_human,
+    eligible_det.
+
+    Asserts:
+      (a) package/review/preview admission section: available=True,
+          embedding_enabled=True, count=2, correct basis_hash set,
+          preview entries carry exactly the preview key set.
+      (b) package/review/commit payloads: each kind's inventory contains
+          exactly {eligible_human, eligible_det}; draft/accepted/rejected ids
+          absent; key-set invariants per kind; no '"body"' substring; executor
+          provenance correct for each eligible product.
+    """
+    request_prefix = "3c-mixed-states"
+
+    monkeypatch.setattr(
+        layer3_workbench.settings,
+        "layer3_analysis_product_package_inventory_enabled",
+        True,
+    )
+
+    (
+        session_id,
+        eligible_human_id,
+        eligible_det_id,
+        plan_preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        status_body,
+        review_body,
+    ) = _build_session_with_mixed_products(
+        client, tmp_path, request_prefix=request_prefix
+    )
+
+    pass_run_id = selection_body["pass_run_ids"][0]
+
+    # ------------------------------------------------------------------
+    # (a) package/review/preview — assert admission section.
+    # ------------------------------------------------------------------
+    pkg_preview_resp = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": f"{request_prefix}-pkg-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": plan_preview_body["preview_id"],
+            "preview_hash": plan_preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert pkg_preview_resp.status_code == 200, pkg_preview_resp.text
+    pkg_preview_body = pkg_preview_resp.json()
+
+    admission = pkg_preview_body["analysis_product_admission"]
+    assert admission["available"] is True, (
+        f"admission.available must be True; got {admission['available']!r}"
+    )
+    assert admission["embedding_enabled"] is True, (
+        f"admission.embedding_enabled must be True; got {admission['embedding_enabled']!r}"
+    )
+    assert admission["package_eligible_product_count"] == 2, (
+        f"admission.package_eligible_product_count must be 2; "
+        f"got {admission['package_eligible_product_count']!r}"
+    )
+    assert admission["total_package_eligible"] == 2, (
+        f"admission.total_package_eligible must be 2; "
+        f"got {admission['total_package_eligible']!r}"
+    )
+    assert admission["truncated"] is False, (
+        f"admission.truncated must be False; got {admission['truncated']!r}"
+    )
+    assert len(admission["products"]) == 2, (
+        f"admission must carry exactly 2 preview products; "
+        f"got {len(admission['products'])}"
+    )
+
+    # Fetch the two eligible products' basis_hashes from DB to compare.
+    db = client.layer3_session_factory()
+    try:
+        human_row = (
+            db.query(L3AnalysisProduct)
+            .filter(L3AnalysisProduct.analysis_product_id == eligible_human_id)
+            .first()
+        )
+        det_row = (
+            db.query(L3AnalysisProduct)
+            .filter(L3AnalysisProduct.analysis_product_id == eligible_det_id)
+            .first()
+        )
+        assert human_row is not None and det_row is not None
+        expected_basis_hashes = {human_row.basis_hash, det_row.basis_hash}
+    finally:
+        db.close()
+
+    preview_basis_hashes = {p["basis_hash"] for p in admission["products"]}
+    assert preview_basis_hashes == expected_basis_hashes, (
+        f"admission preview basis_hash set mismatch.\n"
+        f"  expected: {expected_basis_hashes!r}\n"
+        f"  got:      {preview_basis_hashes!r}"
+    )
+
+    # Each preview entry must carry ONLY the preview key set (no extra keys).
+    for entry in admission["products"]:
+        assert set(entry.keys()) == _PREVIEW_PRODUCT_KEYS, (
+            f"Preview product entry has unexpected keys.\n"
+            f"  expected: {sorted(_PREVIEW_PRODUCT_KEYS)}\n"
+            f"  got:      {sorted(entry.keys())}"
+        )
+
+    # ------------------------------------------------------------------
+    # (b) package/review/commit — assert committed payloads.
+    # ------------------------------------------------------------------
+    pkg_commit_resp = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": f"{request_prefix}-pkg-commit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": plan_preview_body["preview_id"],
+            "preview_hash": plan_preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": pkg_preview_body["package_review_preview_hash"],
+            "expected_package_kinds": [
+                "canonical_internal",
+                "user_facing",
+                "review_facing",
+            ],
+        },
+    )
+    assert pkg_commit_resp.status_code == 200, pkg_commit_resp.text
+
+    db = client.layer3_session_factory()
+    try:
+        rows = _packages_by_kind(db, session_id)
+    finally:
+        db.close()
+
+    assert set(rows) == {
+        PACKAGE_KIND_CANONICAL_INTERNAL,
+        PACKAGE_KIND_USER_FACING,
+        PACKAGE_KIND_REVIEW_FACING,
+    }, f"Unexpected package kinds: {set(rows)}"
+
+    canonical_payload = _load_payload(rows[PACKAGE_KIND_CANONICAL_INTERNAL].payload_ref)
+    user_payload = _load_payload(rows[PACKAGE_KIND_USER_FACING].payload_ref)
+    review_payload = _load_payload(rows[PACKAGE_KIND_REVIEW_FACING].payload_ref)
+
+    expected_eligible_ids = {eligible_human_id, eligible_det_id}
+
+    # Collect all product ids in this session to derive the non-eligible ones.
+    db = client.layer3_session_factory()
+    try:
+        all_products = (
+            db.query(L3AnalysisProduct)
+            .filter(L3AnalysisProduct.session_id == session_id)
+            .all()
+        )
+        non_eligible_ids = {
+            p.analysis_product_id
+            for p in all_products
+            if p.analysis_product_id not in expected_eligible_ids
+        }
+    finally:
+        db.close()
+
+    # Pin the excluded population: draft + accepted + rejected must all exist,
+    # otherwise the exclusion loop below weakens silently.
+    assert len(non_eligible_ids) == 3, non_eligible_ids
+
+    for kind, payload in [
+        (PACKAGE_KIND_CANONICAL_INTERNAL, canonical_payload),
+        (PACKAGE_KIND_USER_FACING, user_payload),
+        (PACKAGE_KIND_REVIEW_FACING, review_payload),
+    ]:
+        inv = payload["analysis_product_inventory"]
+
+        # Correct counts.
+        assert inv["package_eligible_product_count"] == 2, (
+            f"{kind}: package_eligible_product_count must be 2; got {inv['package_eligible_product_count']!r}"
+        )
+        assert inv["total_package_eligible"] == 2, (
+            f"{kind}: total_package_eligible must be 2; got {inv['total_package_eligible']!r}"
+        )
+        assert inv["truncated"] is False, (
+            f"{kind}: truncated must be False; got {inv['truncated']!r}"
+        )
+
+        products = inv["products"]
+        assert len(products) == 2, (
+            f"{kind}: inventory must contain exactly 2 products; got {len(products)}"
+        )
+
+        # Exact id set matches the two eligible products.
+        actual_ids = {p["analysis_product_id"] for p in products}
+        assert actual_ids == expected_eligible_ids, (
+            f"{kind}: product id set mismatch.\n"
+            f"  expected: {expected_eligible_ids!r}\n"
+            f"  got:      {actual_ids!r}"
+        )
+
+        # Non-eligible ids must be absent from the serialized inventory section.
+        inv_text = json.dumps(inv)
+        for bad_id in non_eligible_ids:
+            assert bad_id not in inv_text, (
+                f"{kind}: non-eligible product id {bad_id!r} found in serialized "
+                f"analysis_product_inventory"
+            )
+
+        # No '"body"' key anywhere in the committed payload (full-payload scope,
+        # matching Test D and the bounded-e2e boundedness test).
+        payload_text = json.dumps(payload)
+        assert '"body"' not in payload_text, (
+            f"{kind}: '\"body\"' found in serialized committed payload"
+        )
+
+    # Per-kind key-set invariants.
+    for kind, payload in [
+        (PACKAGE_KIND_CANONICAL_INTERNAL, canonical_payload),
+        (PACKAGE_KIND_REVIEW_FACING, review_payload),
+    ]:
+        for entry in payload["analysis_product_inventory"]["products"]:
+            assert set(entry.keys()) == _FULL_INVENTORY_PRODUCT_KEYS, (
+                f"{kind}: full product entry has unexpected keys.\n"
+                f"  expected: {sorted(_FULL_INVENTORY_PRODUCT_KEYS)}\n"
+                f"  got:      {sorted(entry.keys())}"
+            )
+
+    for entry in user_payload["analysis_product_inventory"]["products"]:
+        assert set(entry.keys()) == _USER_FACING_PRODUCT_KEYS, (
+            f"user_facing: product entry has unexpected keys.\n"
+            f"  expected: {sorted(_USER_FACING_PRODUCT_KEYS)}\n"
+            f"  got:      {sorted(entry.keys())}"
+        )
+
+    # Executor provenance: one human, one deterministic.
+    canonical_products = canonical_payload["analysis_product_inventory"]["products"]
+
+    human_entries = [
+        p for p in canonical_products
+        if p["analysis_product_id"] == eligible_human_id
+    ]
+    assert len(human_entries) == 1
+    human_entry = human_entries[0]
+    assert human_entry.get("executor_type") == "human", (
+        f"eligible_human executor_type must be 'human'; "
+        f"got {human_entry.get('executor_type')!r}"
+    )
+    assert human_entry.get("generation_method") is None, (
+        f"eligible_human generation_method must be None; "
+        f"got {human_entry.get('generation_method')!r}"
+    )
+
+    det_entries = [
+        p for p in canonical_products
+        if p["analysis_product_id"] == eligible_det_id
+    ]
+    assert len(det_entries) == 1
+    det_entry = det_entries[0]
+    assert det_entry.get("executor_type") == "deterministic", (
+        f"eligible_det executor_type must be 'deterministic'; "
+        f"got {det_entry.get('executor_type')!r}"
+    )
+    expected_gen_method = {
+        "method_id": _DETERMINISTIC_METHOD_ID,
+        "method_version": _DETERMINISTIC_METHOD_VERSION,
+    }
+    assert det_entry.get("generation_method") == expected_gen_method, (
+        f"eligible_det generation_method mismatch.\n"
+        f"  expected: {expected_gen_method!r}\n"
+        f"  got:      {det_entry.get('generation_method')!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# TEST F — two-product roster stale after third promotion (2-product baseline)
+# ---------------------------------------------------------------------------
+
+
+def _build_session_with_two_package_eligible_products(
+    client: TestClient,
+    tmp_path: Path,
+    *,
+    request_prefix: str,
+) -> tuple[str, dict, dict, dict, dict, dict, dict]:
+    """Build a quant session with TWO package_eligible products and run
+    the full plan/approve + exec/select + exec/start + result/review chain.
+
+    Returns:
+        (session_id, preview_body, approval_body, selection_body,
+         start_body, status_body, review_body)
+    """
+    # 1. Build the quant-ready session via direct DB call.
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    # 2. Author two grounded products and promote both to package_eligible.
+    db = client.layer3_session_factory()
+    try:
+        snapshot = (
+            db.query(L3MaterialSnapshot)
+            .filter(L3MaterialSnapshot.session_id == session_id)
+            .first()
+        )
+        assert snapshot is not None, f"No material snapshot for session {session_id}"
+
+        for idx in range(2):
+            prod_result = create_analysis_product_draft(
+                db,
+                session_id=session_id,
+                client_request_id=f"{request_prefix}-p{idx}",
+                draft=AnalysisProductDraft(
+                    product_kind="finding",
+                    title=f"Two-eligible product {idx}",
+                    body="Body — never in payload.",
+                    evidence=(
+                        AnalysisProductEvidenceDraft(
+                            ref_kind="material_snapshot",
+                            ref_id=snapshot.material_snapshot_id,
+                            evidence_role="observation",
+                        ),
+                    ),
+                ),
+            )
+            db.commit()
+            _promote_to_package_eligible(
+                db,
+                session_id=session_id,
+                product_id=prod_result.product.analysis_product_id,
+                prefix=f"{request_prefix}-p{idx}-promote",
+            )
+    finally:
+        db.close()
+
+    # 3. Plan preview + approve (API).
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": f"{request_prefix}-plan-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    )
+    assert preview.status_code == 200, preview.text
+    preview_body = preview.json()
+
+    approval = client.post(
+        "/api/v1/layer3/plan/approve",
+        json={
+            "client_request_id": f"{request_prefix}-plan-approve",
+            "session_id": session_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "operator_confirmation": True,
+            "approval_scope": "owner_service_default",
+        },
+    )
+    assert approval.status_code == 200, approval.text
+    approval_body = approval.json()
+
+    # 4. Execution select.
+    selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": f"{request_prefix}-exec-select",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert selection.status_code == 200, selection.text
+    selection_body = selection.json()
+    pass_run_id = selection_body["pass_run_ids"][0]
+
+    # 5. Execution start.
+    start = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": f"{request_prefix}-exec-start",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert start.status_code == 200, start.text
+    start_body = start.json()
+
+    # 6. Result status check.
+    status = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert status.status_code == 200, status.text
+    status_body = status.json()
+    assert status_body["status"] == "available"
+
+    # 7. Result review (approve).
+    review = client.post(
+        "/api/v1/layer3/execution/result/review",
+        json={
+            "client_request_id": f"{request_prefix}-result-review",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "operator_decision": "approved",
+            "review_notes": "Two-eligible baseline — stale-roster test.",
+            "reviewed_output_items": [
+                {
+                    "item_ref": "primary-output",
+                    "item_type": "finding",
+                    "trace": {
+                        "session_id": session_id,
+                        "analysis_plan_id": approval_body["analysis_plan_id"],
+                        "pass_run_id": pass_run_id,
+                        "analysis_run_id": start_body["analysis_run_id"],
+                        "output_payload_ref": status_body["output_payload_ref"],
+                    },
+                }
+            ],
+        },
+    )
+    assert review.status_code == 200, review.text
+    review_body = review.json()
+    assert review_body["review_state"] == "execution_result_review_approved"
+
+    return (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        status_body,
+        review_body,
+    )
+
+
+def test_3c_two_product_roster_stale_after_third_promotion_rejected(
+    client, tmp_path, monkeypatch
+):
+    """Roster hash computed over a 2-product eligible set becomes stale when a
+    third product is promoted to package_eligible before commit.
+
+    The package/review/commit MUST reject with 409 / package_review_preview_mismatch.
+    """
+    request_prefix = "3c-2p-stale"
+
+    monkeypatch.setattr(
+        layer3_workbench.settings,
+        "layer3_analysis_product_package_inventory_enabled",
+        True,
+    )
+
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        status_body,
+        review_body,
+    ) = _build_session_with_two_package_eligible_products(
+        client, tmp_path, request_prefix=request_prefix
+    )
+
+    pass_run_id = selection_body["pass_run_ids"][0]
+
+    # Capture the admission hash over the 2-product roster.
+    pkg_preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": f"{request_prefix}-pkg-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert pkg_preview.status_code == 200, pkg_preview.text
+    pkg_preview_body = pkg_preview.json()
+
+    # Promote a THIRD product to package_eligible after the preview hash was captured.
+    db = client.layer3_session_factory()
+    try:
+        late_product = _make_grounded_product_for_session(
+            db,
+            session_id=session_id,
+            client_request_id=f"{request_prefix}-late-product",
+        )
+        _promote_to_package_eligible(
+            db,
+            session_id=session_id,
+            product_id=late_product.analysis_product_id,
+            prefix=f"{request_prefix}-late-promote",
+        )
+    finally:
+        db.close()
+
+    # Commit with the now-stale preview hash — must be rejected.
+    stale_commit = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": f"{request_prefix}-pkg-commit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": pkg_preview_body["package_review_preview_hash"],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+
+    assert stale_commit.status_code == 409, stale_commit.text
+    assert stale_commit.json()["error_code"] == "package_review_preview_mismatch"
