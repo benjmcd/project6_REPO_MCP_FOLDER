@@ -1,4 +1,4 @@
-# Layer3 Progress Board
+﻿# Layer3 Progress Board
 
 ## P24 Mixed-Source Product-Authority Checkpoint
 
@@ -12498,7 +12498,7 @@ Milestone: `sec_xbrl_proxy_identity_read_only_projection_freeze_v1`.
 Planning doc:
 `next_milestone_plans/Layer3_planning_docs/1351-sec-xbrl-proxy-identity-readonly-projection.md`.
 
-Status: branch-local activation freeze plus the one admitted runtime artifact —
+Status: branch-local activation freeze plus the one admitted runtime artifact â€”
 a read-only, server-derived identity projection for the SEC XBRL lane. This is
 the `next_follow_up` activation anticipated by doc
 `1350-sec-xbrl-activation-lane-selection.md` and by the auth entry layer
@@ -12558,8 +12558,8 @@ Scope: test-only + docs. New
 `backend/tests/test_sec_xbrl_route_level_auth_enforcement.py` (12 tests) proves, via
 TestClient, that under `AUTH_OWNER=proxy` + `TRUSTED_PROXY_MODE=true` with the identity
 header absent, all six protected routes fail closed (401 `missing_identity_authority`);
-untrusted proxy → 409 `untrusted_proxy_identity`; the fail-closed body leaks no raw
-identity/header value; caller-supplied forbidden fields → 400; and the anonymous redacted
+untrusted proxy â†’ 409 `untrusted_proxy_identity`; the fail-closed body leaks no raw
+identity/header value; caller-supplied forbidden fields â†’ 400; and the anonymous redacted
 operator-review path (no receipt referenced) is preserved under `AUTH_OWNER=none`.
 
 Non-goals: no route admit/deny behavior change; no value-reveal activation; no flip of the
@@ -12805,7 +12805,7 @@ Milestone: `3c_analytical_capability_expansion_v1`.
 
 Branch: `feat/3c-analytical-methods`.
 
-Design doc: `3c-analytical-methods-v1-design.md` (post-grill, R1–R12 binding).
+Design doc: `3c-analytical-methods-v1-design.md` (post-grill, R1â€“R12 binding).
 
 Status: implemented-on-branch. The tranche extends the existing deterministic analysis-product
 pipeline with a member-state input frame and two state-consuming methods, then adds a
@@ -12866,11 +12866,11 @@ Scope:
    output (existing no-leak contract unchanged).
 
 7. **Supersession-of-generated-product proof** (`backend/tests/test_layer3_3c_golden_path.py`):
-   a generated deterministic product is taken through `accepted/package_eligible` → `superseded`
+   a generated deterministic product is taken through `accepted/package_eligible` â†’ `superseded`
    with reason code `stale_basis`, closing the only evidence gap in the executor-agnostic state
    machine.
 
-PR: `__PR_NUMBER__`.
+PR: `2312`.
 
 Runtime behavior introduced by this pass: `true`.
 
