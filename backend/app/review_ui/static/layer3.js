@@ -2170,6 +2170,12 @@ function analysisProductDetailMarkup(product, productClass) {
         if (snapshots.length) add('Source objects', snapshots.length);
         if (hashes.length) add('Basis hashes', hashes.slice(0, 3).map((hash) => shortText(String(hash), 16)).join(', '));
     }
+    // Method provenance line for deterministic products (design section 5 + R7).
+    // Never renders param_hash / input_state_hash — those are not in the data.
+    const gm = product?.generation_method;
+    if (gm && typeof gm === 'object' && gm.method_id) {
+        rows.push(['Method', String(gm.method_id) + ' v' + String(gm.method_version ?? '?')]);
+    }
     if (!rows.length) return '';
     const grid = rows.map(([key, value]) => `<div><dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('');
     return `<dl class="mockup-analysis-product-detail-grid">${grid}</dl>`;
@@ -32246,6 +32252,40 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
         statusEl.textContent = message;
     }
 
+    // Populate #apw-gen-method from GET /analysis-product/methods (catalog endpoint).
+    // Fail-closed: on fetch failure or empty catalog, disable submit and show error.
+    async function populateMethodSelect() {
+        const methodSelect = document.getElementById('apw-gen-method');
+        const submitBtn = document.getElementById('apw-gen-submit');
+        const statusEl = document.getElementById('apw-gen-status');
+        if (!methodSelect) return;
+        try {
+            const data = await getJson('/analysis-product/methods');
+            const methods = Array.isArray(data?.methods) ? data.methods : [];
+            if (methods.length === 0) {
+                methodSelect.innerHTML = '<option value="">(no methods available)</option>';
+                if (submitBtn) submitBtn.disabled = true;
+                setApwStatus(statusEl, 'Method catalog returned no methods — generate is unavailable.');
+                return;
+            }
+            const prevMethod = methodSelect.value;
+            methodSelect.innerHTML = '<option value=""></option>' + methods.map((m) => {
+                const val = escapeHtml(String(m.method_id || ''));
+                const lbl = escapeHtml(String(m.label || m.method_id || ''));
+                const kind = escapeHtml(String(m.product_kind || ''));
+                return `<option value="${val}">${lbl} (${kind})</option>`;
+            }).join('');
+            if (prevMethod && Array.from(methodSelect.options).some((o) => o.value === prevMethod)) {
+                methodSelect.value = prevMethod;
+            }
+            if (submitBtn) submitBtn.disabled = false;
+        } catch (err) {
+            methodSelect.innerHTML = '<option value="">(catalog unavailable)</option>';
+            if (submitBtn) submitBtn.disabled = true;
+            setApwStatus(statusEl, `Method catalog failed: ${escapeHtml(err.message || 'request blocked')} — generate is unavailable.`);
+        }
+    }
+
     function buildEvRow() {
         const row = document.createElement('div');
         row.className = 'apw-ev-row';
@@ -32445,11 +32485,16 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
                 setApwStatus(statusEl, 'Select a working set before generating.');
                 return;
             }
+            const methodId = document.getElementById('apw-gen-method')?.value || '';
+            if (!methodId) {
+                setApwStatus(statusEl, 'Select a method before generating.');
+                return;
+            }
             const body = {
                 client_request_id: requestId(),
                 session_id: currentSessionId(),
                 working_set_id: workingSetId,
-                method_id: 'working_set_composition_summary',
+                method_id: methodId,
             };
             try {
                 const res = await postJson('/analysis-product/generate', body);
@@ -32515,6 +32560,7 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
             bindApwWsForm();
             bindApwGenForm();
             bindApwTransitionForm();
+            populateMethodSelect();
         });
     } else {
         bindApwRowControls();
@@ -32522,6 +32568,7 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
         bindApwWsForm();
         bindApwGenForm();
         bindApwTransitionForm();
+        populateMethodSelect();
     }
 }());
 
