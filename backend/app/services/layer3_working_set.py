@@ -57,6 +57,9 @@ _MEMBER_REF_KIND_TABLE: dict[str, tuple[Any, str]] = {
     "prior_product": (L3AnalysisProduct, "analysis_product_id"),
 }
 
+# Public alias — used by layer3_analysis_product_generation.py for frame resolution.
+MEMBER_REF_KIND_TABLE = _MEMBER_REF_KIND_TABLE
+
 
 # ---------------------------------------------------------------------------
 # Error type

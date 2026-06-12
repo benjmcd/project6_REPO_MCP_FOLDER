@@ -449,3 +449,331 @@ def test_authoring_allows_deterministic_executor_type(seeded_db) -> None:
     db.commit()
     assert result.product.executor_type == "deterministic"
     assert result.replayed is False
+
+
+# ===========================================================================
+# New methods: working_set_member_state_profile
+# ===========================================================================
+
+
+def test_generate_member_state_profile_happy_path(seeded_db) -> None:
+    """Happy path: product_kind=summary, executor_identity, evidence link, lifecycle draft."""
+    db = seeded_db
+    ws = _make_working_set(
+        db, session_id="session-gen-test", name="WS Profile", client_request_id="req-ws-profile-001"
+    )
+    result = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-profile-001",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_member_state_profile",
+    )
+    db.commit()
+
+    product = result.product
+    assert product.executor_type == "deterministic"
+    assert product.product_kind == "summary"
+    assert product.lifecycle_status == "draft"
+    assert result.replayed is False
+    assert result.method_id == "working_set_member_state_profile"
+    assert result.method_version == 1
+    # Evidence link
+    assert len(result.evidence_links) == 1
+    link = result.evidence_links[0]
+    assert link.ref_kind == "working_set"
+    assert link.ref_id == ws.working_set_id
+    assert link.evidence_role == "context"
+    # Reserved columns
+    assert product.output_schema_validation_status == "validated"
+    assert product.executor_identity == "working_set_member_state_profile"
+    # Provenance: state-consuming sentinel + input_state_hash present
+    prov = product.authoring_provenance_json
+    assert prov["method_id"] == "working_set_member_state_profile"
+    assert prov["validation"] == "function_purity_recomputed_match"
+    assert "input_state_hash" in prov
+    assert "input_basis_hash" in prov
+    assert "param_hash" in prov
+    assert "result_summary" in prov
+
+
+def test_generate_member_state_profile_input_state_hash_absent_for_composition_summary(seeded_db) -> None:
+    """Composition summary (state-free) must NOT have input_state_hash in provenance (R2)."""
+    db = seeded_db
+    ws = _make_working_set(
+        db, session_id="session-gen-test", name="WS NoHash", client_request_id="req-ws-nohash-001"
+    )
+    result = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-nohash-001",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_composition_summary",
+    )
+    db.commit()
+    prov = result.product.authoring_provenance_json
+    assert "input_state_hash" not in prov
+    assert prov["validation"] == "deterministic_recomputed_match"
+
+
+def test_generate_member_state_profile_idempotent_replay(seeded_db) -> None:
+    """Same client_request_id for member_state_profile -> replayed, single product row."""
+    db = seeded_db
+    ws = _make_working_set(
+        db, session_id="session-gen-test", name="WS Profile Idem", client_request_id="req-ws-profile-002"
+    )
+    r1 = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-profile-idem",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_member_state_profile",
+    )
+    db.commit()
+    r2 = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-profile-idem",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_member_state_profile",
+    )
+    db.commit()
+    assert r2.replayed is True
+    assert r2.product.analysis_product_id == r1.product.analysis_product_id
+    # Count only state-profile products to avoid cross-test interference
+    count = (
+        db.query(L3AnalysisProduct)
+        .filter(L3AnalysisProduct.executor_identity == "working_set_member_state_profile")
+        .count()
+    )
+    assert count == 1
+
+
+# ===========================================================================
+# New methods: working_set_staleness_diagnostic
+# ===========================================================================
+
+
+def test_generate_staleness_diagnostic_happy_path(seeded_db) -> None:
+    """Happy path: product_kind=diagnostic, executor_identity, evidence link, lifecycle draft."""
+    db = seeded_db
+    ws = _make_working_set(
+        db, session_id="session-gen-test", name="WS Diagnostic", client_request_id="req-ws-diag-001"
+    )
+    result = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-diag-001",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_staleness_diagnostic",
+    )
+    db.commit()
+
+    product = result.product
+    assert product.executor_type == "deterministic"
+    assert product.product_kind == "diagnostic"
+    assert product.lifecycle_status == "draft"
+    assert result.replayed is False
+    assert result.method_id == "working_set_staleness_diagnostic"
+    assert result.method_version == 1
+    # Evidence link
+    assert len(result.evidence_links) == 1
+    link = result.evidence_links[0]
+    assert link.ref_kind == "working_set"
+    assert link.ref_id == ws.working_set_id
+    # Reserved columns
+    assert product.output_schema_validation_status == "validated"
+    assert product.executor_identity == "working_set_staleness_diagnostic"
+    # Provenance: state-consuming sentinel + input_state_hash present
+    prov = product.authoring_provenance_json
+    assert prov["method_id"] == "working_set_staleness_diagnostic"
+    assert prov["validation"] == "function_purity_recomputed_match"
+    assert "input_state_hash" in prov
+
+
+def test_generate_staleness_diagnostic_idempotent_replay(seeded_db) -> None:
+    db = seeded_db
+    ws = _make_working_set(
+        db, session_id="session-gen-test", name="WS Diag Idem", client_request_id="req-ws-diag-002"
+    )
+    r1 = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-diag-idem",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_staleness_diagnostic",
+    )
+    db.commit()
+    r2 = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-diag-idem",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_staleness_diagnostic",
+    )
+    db.commit()
+    assert r2.replayed is True
+    assert r2.product.analysis_product_id == r1.product.analysis_product_id
+
+
+# ===========================================================================
+# R2 mutation test: different state -> different input_state_hash, same basis_hash
+# ===========================================================================
+
+
+def test_r2_mutation_different_state_different_input_state_hash(seeded_db) -> None:
+    """Generate, mutate a member's state, generate again with new client_request_id.
+
+    Proves: different input_state_hash, same input_basis_hash (lineage honesty).
+    """
+    db = seeded_db
+
+    # Create a prior_product member in session-gen-test so it's reachable
+    prior_product_row = L3AnalysisProduct(
+        analysis_product_id="pp-mutation-test",
+        session_id="session-gen-test",
+        product_kind="summary",
+        executor_type="human",
+        lifecycle_status="draft",
+        title="Mutation test product",
+        body="Body text here.",
+        is_non_evidentiary=False,
+        basis_hash="basis-pp-mutation",
+        spec_hash="spec-pp-mutation",
+        client_request_id="req-pp-mutation-seed",
+        authoring_provenance_json={},
+        summary_json={},
+    )
+    db.add(prior_product_row)
+    db.commit()
+
+    # Working set includes the prior_product member
+    from app.services.layer3_working_set import WorkingSetDraft, WorkingSetMemberDraft, create_working_set
+
+    draft = WorkingSetDraft(
+        name="WS Mutation",
+        members=(
+            WorkingSetMemberDraft(ref_kind="prior_product", ref_id="pp-mutation-test"),
+        ),
+    )
+    ws_result = create_working_set(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-ws-mutation-001",
+        draft=draft,
+    )
+    db.commit()
+    ws = ws_result.working_set
+
+    # --- First generation (draft state) ---
+    gen1 = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-mutation-gen-001",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_staleness_diagnostic",
+    )
+    db.commit()
+    hash1 = gen1.product.authoring_provenance_json["input_state_hash"]
+    basis_hash1 = gen1.product.authoring_provenance_json["input_basis_hash"]
+
+    # --- Mutate the prior_product lifecycle_status to "superseded" ---
+    prior_product_row.lifecycle_status = "superseded"
+    db.commit()
+
+    # --- Second generation with a NEW client_request_id ---
+    gen2 = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-mutation-gen-002",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_staleness_diagnostic",
+    )
+    db.commit()
+    hash2 = gen2.product.authoring_provenance_json["input_state_hash"]
+    basis_hash2 = gen2.product.authoring_provenance_json["input_basis_hash"]
+
+    # input_state_hash must differ (member state changed)
+    assert hash1 != hash2, "input_state_hash must differ after state mutation"
+    # input_basis_hash must be identical (same working set identity)
+    assert basis_hash1 == basis_hash2, "input_basis_hash must be identical (same working set)"
+
+
+# ===========================================================================
+# R3 session-scoping test: ref_id exists only in another session -> resolved:false
+# ===========================================================================
+
+
+def test_r3_cross_session_member_resolved_false(seeded_db) -> None:
+    """A member ref_id existing only in another session -> resolved:false, no 500.
+
+    The staleness diagnostic must surface it as unresolved, not crash.
+    """
+    db = seeded_db
+
+    # Create a second session
+    other_session = L3Session(
+        session_id="session-gen-other-r3",
+        selection_manifest_id="manifest-gen-other-r3",
+        status="active_execution",
+        operator_context_json={},
+        summary_json={},
+    )
+    db.add(other_session)
+    db.commit()
+
+    # Create a snapshot in the OTHER session only
+    other_snap = L3MaterialSnapshot(
+        material_snapshot_id="snapshot-other-session-r3",
+        session_id="session-gen-other-r3",
+        descriptor_id="descriptor-gen-test",  # descriptor exists
+        source_plane="runtime",
+        source_shape="dataset_version",
+        payload_ref="payload://other-r3",
+        payload_hash="hash-other-r3",
+        source_identity_json={},
+        source_provenance_json={},
+        load_summary_json={},
+    )
+    db.add(other_snap)
+    db.commit()
+
+    # Build working set in session-gen-test referencing the OTHER session's snapshot.
+    # We must bypass create_working_set's membership check since the snapshot is in a
+    # different session. Insert the working set row directly.
+    from app.models.models import L3WorkingSet, uuid_str
+    from app.services.layer3_utils import stable_hash
+
+    cross_ws_id = "ws-cross-session-r3"
+    members = [{"ref_kind": "material_snapshot", "ref_id": "snapshot-other-session-r3"}]
+    ws_row = L3WorkingSet(
+        working_set_id=cross_ws_id,
+        session_id="session-gen-test",
+        name="Cross Session WS",
+        member_refs_json=members,
+        member_count=1,
+        basis_hash=stable_hash({"members": members}),
+        client_request_id="req-ws-cross-r3",
+        provenance_json={},
+        summary_json={"member_count": 1, "by_ref_kind": {"material_snapshot": 1}},
+    )
+    db.add(ws_row)
+    db.commit()
+
+    # Generate using staleness diagnostic — must NOT raise, must surface unresolved
+    result = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-cross-r3-diag",
+        working_set_id=cross_ws_id,
+        method_id="working_set_staleness_diagnostic",
+    )
+    db.commit()
+
+    prov = result.product.authoring_provenance_json
+    result_summary = prov["result_summary"]
+    # The cross-session member must appear as unresolved
+    assert result_summary["unresolved_members"]["count"] == 1
+    assert "snapshot-other-session-r3" in result_summary["unresolved_members"]["members"]
+    # Product should still be created (no 500)
+    assert result.product.lifecycle_status == "draft"
