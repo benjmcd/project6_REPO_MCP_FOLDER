@@ -38,6 +38,11 @@ _BODY_LIST_CAP = 20
 # Maximum ref-id strings stored in result_summary per-category list.
 _RESULT_LIST_CAP = 100
 
+# Maximum distinct rollup keys stored in result_summary rollup mappings.
+_ROLLUP_RESULT_CAP = 25
+# Maximum rollup lines rendered in the profile body per section.
+_ROLLUP_BODY_CAP = 10
+
 
 # ---------------------------------------------------------------------------
 # Internal method spec
@@ -105,6 +110,17 @@ def _render_body_composition_summary(method_id: str, *, result: dict[str, Any]) 
 # ---------------------------------------------------------------------------
 
 
+def _cap_rollup(counter: Counter, cap: int) -> dict[str, int]:
+    """Return an ordered dict of at most *cap* entries from *counter*.
+
+    Selection: top entries by (-count, key) — count descending, key ascending
+    (a total order, deterministic under ties).  Counts inside the mapping stay
+    exact; only the number of listed keys is capped.
+    """
+    ordered = sorted(counter.items(), key=lambda kv: (-kv[1], kv[0]))
+    return dict(ordered[:cap])
+
+
 def _working_set_member_state_profile(
     *,
     member_refs: list[dict[str, str]],
@@ -169,10 +185,22 @@ def _working_set_member_state_profile(
     return {
         "member_count": member_count,
         "by_ref_kind": by_ref_kind,
-        "prior_product": {"by_lifecycle_status": dict(prior_product_by_lifecycle)},
-        "pass_run": {"by_status": dict(pass_run_by_status)},
-        "output_package": {"by_status": dict(output_package_by_status)},
-        "material_snapshot": {"by_source_plane": dict(material_snapshot_by_source_plane)},
+        "prior_product": {
+            "by_lifecycle_status": _cap_rollup(prior_product_by_lifecycle, _ROLLUP_RESULT_CAP),
+            "distinct_lifecycle_status_values": len(prior_product_by_lifecycle),
+        },
+        "pass_run": {
+            "by_status": _cap_rollup(pass_run_by_status, _ROLLUP_RESULT_CAP),
+            "distinct_status_values": len(pass_run_by_status),
+        },
+        "output_package": {
+            "by_status": _cap_rollup(output_package_by_status, _ROLLUP_RESULT_CAP),
+            "distinct_status_values": len(output_package_by_status),
+        },
+        "material_snapshot": {
+            "by_source_plane": _cap_rollup(material_snapshot_by_source_plane, _ROLLUP_RESULT_CAP),
+            "distinct_source_plane_values": len(material_snapshot_by_source_plane),
+        },
         "analysis_set": analysis_set_rollup,
         # PROMINENT unresolved section (R5)
         "unresolved": {
@@ -198,29 +226,45 @@ def _render_body_member_state_profile(method_id: str, *, result: dict[str, Any])
             lines.append(f"  {kind}: {by_ref_kind[kind]}")
 
     # per-kind rollup lines (counts only — R4)
-    pp = result.get("prior_product", {}).get("by_lifecycle_status", {})
-    if pp:
-        lines.append("Prior product lifecycle statuses:")
-        for k in sorted(pp):
-            lines.append(f"  {k}: {pp[k]}")
+    def _render_rollup_section(label: str, mapping: dict[str, int], distinct_count: int) -> None:
+        if not mapping:
+            return
+        lines.append(f"{label}:")
+        # mapping is already ordered by (-count, key) from _cap_rollup; honour that order
+        shown = list(mapping.items())[:_ROLLUP_BODY_CAP]
+        for k, v in shown:
+            lines.append(f"  {k}: {v}")
+        remainder = distinct_count - len(shown)
+        if remainder > 0:
+            lines.append(f"  +{remainder} more values")
 
-    pr = result.get("pass_run", {}).get("by_status", {})
-    if pr:
-        lines.append("Pass run statuses:")
-        for k in sorted(pr):
-            lines.append(f"  {k}: {pr[k]}")
+    pp_section = result.get("prior_product", {})
+    _render_rollup_section(
+        "Prior product lifecycle statuses",
+        pp_section.get("by_lifecycle_status", {}),
+        pp_section.get("distinct_lifecycle_status_values", len(pp_section.get("by_lifecycle_status", {}))),
+    )
 
-    op = result.get("output_package", {}).get("by_status", {})
-    if op:
-        lines.append("Output package statuses:")
-        for k in sorted(op):
-            lines.append(f"  {k}: {op[k]}")
+    pr_section = result.get("pass_run", {})
+    _render_rollup_section(
+        "Pass run statuses",
+        pr_section.get("by_status", {}),
+        pr_section.get("distinct_status_values", len(pr_section.get("by_status", {}))),
+    )
 
-    ms = result.get("material_snapshot", {}).get("by_source_plane", {})
-    if ms:
-        lines.append("Material snapshot source planes:")
-        for k in sorted(ms):
-            lines.append(f"  {k}: {ms[k]}")
+    op_section = result.get("output_package", {})
+    _render_rollup_section(
+        "Output package statuses",
+        op_section.get("by_status", {}),
+        op_section.get("distinct_status_values", len(op_section.get("by_status", {}))),
+    )
+
+    ms_section = result.get("material_snapshot", {})
+    _render_rollup_section(
+        "Material snapshot source planes",
+        ms_section.get("by_source_plane", {}),
+        ms_section.get("distinct_source_plane_values", len(ms_section.get("by_source_plane", {}))),
+    )
 
     asr = result.get("analysis_set", {})
     if asr.get("count", 0):

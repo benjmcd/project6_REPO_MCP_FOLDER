@@ -632,3 +632,131 @@ def test_render_title_staleness_diagnostic_includes_name() -> None:
     ws = _FakeWorkingSet(name="My Diag Set", member_refs_json=[], member_count=0)
     title = render_title("working_set_staleness_diagnostic", working_set=ws)
     assert "My Diag Set" in title
+
+
+# ===========================================================================
+# Rollup bounding: _ROLLUP_RESULT_CAP=25, _ROLLUP_BODY_CAP=10
+# ===========================================================================
+
+
+def test_rollup_result_cap_lists_exactly_25_with_exact_distinct_count() -> None:
+    """30 distinct source_plane values -> result lists exactly 25, distinct count = 30."""
+    n = 30
+    # Give each a unique source_plane value; one member per plane, so all counts == 1
+    refs, states = _make_states(
+        material_snapshots=[{"ref_id": f"ms-{i}", "source_plane": f"plane-{i:02d}"} for i in range(n)],
+    )
+    ws = _FakeWorkingSet(name="RollupCap", member_refs_json=refs, member_count=n)
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    ms_section = result["material_snapshot"]
+    assert ms_section["distinct_source_plane_values"] == n
+    assert len(ms_section["by_source_plane"]) == 25
+
+
+def test_rollup_result_cap_ordering_by_count_desc_then_key_asc() -> None:
+    """Cap selects top entries by (-count, key): count descending, then key ascending."""
+    # Create 30 planes: plane-00..plane-05 get 3 hits each, plane-06..plane-29 get 1 hit each
+    # (6 high-count + 24 low-count = 30 total distinct)
+    # Top 25 by (-count, key) = plane-00..05 (count=3) + plane-06..plane-24 (count=1, alpha order)
+    high_planes = [f"plane-{i:02d}" for i in range(6)]  # 6 planes x 3 members = 18 members
+    low_planes = [f"plane-{i:02d}" for i in range(6, 30)]  # 24 planes x 1 member = 24 members
+
+    snapshots = []
+    uid = 0
+    for p in high_planes:
+        for _ in range(3):
+            snapshots.append({"ref_id": f"ms-h-{uid}", "source_plane": p})
+            uid += 1
+    for p in low_planes:
+        snapshots.append({"ref_id": f"ms-l-{uid}", "source_plane": p})
+        uid += 1
+
+    refs, states = _make_states(material_snapshots=snapshots)
+    ws = _FakeWorkingSet(name="Order", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    ms_section = result["material_snapshot"]
+
+    assert ms_section["distinct_source_plane_values"] == 30
+    listed_keys = list(ms_section["by_source_plane"].keys())
+    assert len(listed_keys) == 25
+
+    # All 6 high-count planes must be present
+    for p in high_planes:
+        assert p in ms_section["by_source_plane"]
+        assert ms_section["by_source_plane"][p] == 3
+
+    # The 19 low-count planes included must be the lexicographically first 19
+    # (plane-06..plane-24), because among equal counts key-ascending order applies
+    expected_low = sorted(low_planes)[:19]
+    for p in expected_low:
+        assert p in ms_section["by_source_plane"]
+
+    # plane-25..plane-29 must be excluded (25th and beyond after sorting low-count set)
+    excluded_low = sorted(low_planes)[19:]
+    for p in excluded_low:
+        assert p not in ms_section["by_source_plane"]
+
+
+def test_rollup_body_cap_10_lines_plus_more_suffix() -> None:
+    """30 distinct source_plane values -> body shows 10 lines + '+20 more values'."""
+    n = 30
+    refs, states = _make_states(
+        material_snapshots=[{"ref_id": f"ms-{i}", "source_plane": f"plane-{i:02d}"} for i in range(n)],
+    )
+    ws = _FakeWorkingSet(name="BodyCap", member_refs_json=refs, member_count=n)
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    body = render_body("working_set_member_state_profile", result=result)
+    assert "+20 more values" in body
+    # Count how many "plane-" lines appear in the body (each rollup entry line)
+    plane_lines = [ln for ln in body.splitlines() if "plane-" in ln]
+    assert len(plane_lines) == 10
+
+
+def test_rollup_tie_ordering_is_key_ascending() -> None:
+    """When counts are equal, keys must appear in ascending alphabetical order."""
+    # All planes have count=1; alphabetical order must be preserved in listed keys
+    planes = ["zebra-plane", "alpha-plane", "middle-plane", "beta-plane"]
+    refs, states = _make_states(
+        material_snapshots=[{"ref_id": f"ms-{i}", "source_plane": p} for i, p in enumerate(planes)],
+    )
+    ws = _FakeWorkingSet(name="TieOrder", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    listed = list(result["material_snapshot"]["by_source_plane"].keys())
+    assert listed == sorted(planes)
+
+
+def test_rollup_small_frame_full_mapping_and_distinct_count_equal() -> None:
+    """Frames under caps keep full mappings and distinct_* == len(by_*)."""
+    refs, states = _make_states(
+        material_snapshots=[
+            {"ref_id": "ms-a", "source_plane": "runtime"},
+            {"ref_id": "ms-b", "source_plane": "archive"},
+        ],
+        output_packages=[
+            {"ref_id": "op-a", "status": "ready"},
+        ],
+        prior_products=[
+            {"ref_id": "pp-a", "lifecycle_status": "accepted"},
+        ],
+        pass_runs=[
+            {"ref_id": "pr-a", "status": "completed"},
+        ],
+    )
+    ws = _FakeWorkingSet(name="Small", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+
+    ms = result["material_snapshot"]
+    assert ms["distinct_source_plane_values"] == 2
+    assert len(ms["by_source_plane"]) == 2
+
+    op = result["output_package"]
+    assert op["distinct_status_values"] == 1
+    assert len(op["by_status"]) == 1
+
+    pp = result["prior_product"]
+    assert pp["distinct_lifecycle_status_values"] == 1
+    assert len(pp["by_lifecycle_status"]) == 1
+
+    pr = result["pass_run"]
+    assert pr["distinct_status_values"] == 1
+    assert len(pr["by_status"]) == 1
