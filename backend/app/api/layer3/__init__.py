@@ -11865,6 +11865,66 @@ def post_analysis_product_generate(
 
 
 # ---------------------------------------------------------------------------
+# Analysis-product method catalog — Deterministic 3C Method Catalog (R9)
+# ---------------------------------------------------------------------------
+
+ANALYSIS_PRODUCT_METHODS_SCHEMA_ID = "layer3.deterministic_method_catalog.v1"
+
+
+class Layer3AnalysisProductMethodEntryResponse(BaseModel):
+    method_id: str
+    method_version: int
+    label: str
+    product_kind: str
+    consumes_member_state: bool
+    description: str
+
+
+class Layer3AnalysisProductMethodsResponse(Layer3BaseResponse):
+    methods: list[Layer3AnalysisProductMethodEntryResponse]
+
+
+@router.get(
+    "/analysis-product/methods",
+    response_model=Layer3AnalysisProductMethodsResponse,
+    responses=_workbench_error_responses(400),
+)
+def get_analysis_product_methods(
+    request: Request,
+) -> dict[str, Any] | JSONResponse:
+    """Return the server-owned deterministic method catalog.
+
+    Derived solely from the DETERMINISTIC_METHODS registry; no DB access,
+    no query parameters.  Sorted by method_id for stable UI ordering.
+    Requires operator-identity seam (read access) exactly like sibling GETs.
+    """
+    try:
+        _route_level_operator_identity(request, access="read")
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
+    from app.services.layer3_deterministic_methods import DETERMINISTIC_METHODS
+
+    methods = sorted(
+        [
+            {
+                "method_id": spec.method_id,
+                "method_version": spec.version,
+                "label": spec.label,
+                "product_kind": spec.product_kind,
+                "consumes_member_state": spec.consumes_member_state,
+                "description": spec.description,
+            }
+            for spec in DETERMINISTIC_METHODS.values()
+        ],
+        key=lambda m: m["method_id"],
+    )
+    return {
+        **base_response(ANALYSIS_PRODUCT_METHODS_SCHEMA_ID),
+        "methods": methods,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Analysis-product promotion — 3C Review/Promotion
 # ---------------------------------------------------------------------------
 

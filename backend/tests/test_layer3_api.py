@@ -37236,3 +37236,128 @@ def test_layer3_api_analysis_product_generate_openapi_additional_properties_fals
     # Required client fields must be present.
     for required in ("session_id", "client_request_id", "working_set_id", "method_id"):
         assert required in props
+
+
+# ---------------------------------------------------------------------------
+# Analysis-product method catalog — GET /analysis-product/methods
+# ---------------------------------------------------------------------------
+
+_METHODS_ENDPOINT = "/api/v1/layer3/analysis-product/methods"
+
+_EXPECTED_METHOD_IDS = {
+    "working_set_composition_summary",
+    "working_set_member_state_profile",
+    "working_set_staleness_diagnostic",
+}
+
+_REQUIRED_METHOD_FIELDS = {
+    "method_id",
+    "method_version",
+    "label",
+    "product_kind",
+    "consumes_member_state",
+    "description",
+}
+
+
+def test_layer3_api_analysis_product_methods_response_shape(
+    client: TestClient,
+) -> None:
+    """GET /analysis-product/methods returns schema_id, status='ok', and a methods list."""
+    resp = client.get(_METHODS_ENDPOINT)
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["schema_id"] == "layer3.deterministic_method_catalog.v1"  # R9: schema_id per design section 4
+    assert body["status"] == "ok"
+    assert "schema_version" in body
+    assert "request_id" in body
+    assert "server_time" in body
+    methods = body["methods"]
+    assert isinstance(methods, list)
+    assert len(methods) >= 3
+
+
+def test_layer3_api_analysis_product_methods_all_three_present_with_correct_fields(
+    client: TestClient,
+) -> None:
+    """All three registry methods appear with the required fields and correct typed values."""
+    resp = client.get(_METHODS_ENDPOINT)
+    assert resp.status_code == 200, resp.text
+    methods = resp.json()["methods"]
+    by_id = {m["method_id"]: m for m in methods}
+
+    assert _EXPECTED_METHOD_IDS <= set(by_id.keys())
+
+    for method_id, entry in by_id.items():
+        # All required fields present.
+        assert _REQUIRED_METHOD_FIELDS <= set(entry.keys()), (
+            f"{method_id} missing fields: {_REQUIRED_METHOD_FIELDS - set(entry.keys())}"
+        )
+        assert isinstance(entry["method_id"], str) and entry["method_id"]
+        assert isinstance(entry["method_version"], int) and entry["method_version"] >= 1
+        assert isinstance(entry["label"], str) and entry["label"]
+        assert isinstance(entry["product_kind"], str) and entry["product_kind"]
+        assert isinstance(entry["consumes_member_state"], bool)
+        assert isinstance(entry["description"], str) and entry["description"]
+
+    # Per-method spot checks.
+    cs = by_id["working_set_composition_summary"]
+    assert cs["product_kind"] == "summary"
+    assert cs["consumes_member_state"] is False
+    assert cs["method_version"] == 1
+
+    msp = by_id["working_set_member_state_profile"]
+    assert msp["product_kind"] == "summary"
+    assert msp["consumes_member_state"] is True
+    assert msp["method_version"] == 1
+
+    sd = by_id["working_set_staleness_diagnostic"]
+    assert sd["product_kind"] == "diagnostic"
+    assert sd["consumes_member_state"] is True
+    assert sd["method_version"] == 1
+
+
+def test_layer3_api_analysis_product_methods_sorted_by_method_id(
+    client: TestClient,
+) -> None:
+    """methods list is sorted by method_id (stable lexicographic order)."""
+    resp = client.get(_METHODS_ENDPOINT)
+    assert resp.status_code == 200, resp.text
+    method_ids = [m["method_id"] for m in resp.json()["methods"]]
+    assert method_ids == sorted(method_ids), (
+        f"methods not sorted by method_id: {method_ids}"
+    )
+
+
+def test_layer3_api_analysis_product_methods_identity_parity(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Route rejects requests when operator-identity requirement is unmet (proxy, no identity header)."""
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+
+    resp = client.get(_METHODS_ENDPOINT)
+
+    assert resp.status_code == 401, resp.text
+    body = resp.json()
+    assert body["status"] == "blocked"
+    assert body["error_code"] == "sec_xbrl_in_app_auth_policy_missing_identity_authority"
+
+
+def test_layer3_api_analysis_product_methods_openapi_response_schema(
+    client: TestClient,
+) -> None:
+    """OpenAPI: GET /analysis-product/methods response schema appears in components and
+    exposes the catalog shape; does NOT touch the existing generate-request schema."""
+    spec = client.get("/openapi.json").json()
+
+    # Response schema for the catalog route.
+    catalog_schema = _openapi_response_schema(spec, _METHODS_ENDPOINT, "get")
+    assert catalog_schema["title"] == "Layer3AnalysisProductMethodsResponse"
+    required_fields = set(catalog_schema.get("required", []))
+    assert {"schema_id", "schema_version", "request_id", "server_time", "status", "methods"} <= required_fields
+
+    # The generate-request schema is untouched.
+    gen_schema = spec["components"]["schemas"]["Layer3AnalysisProductGenerateRequest"]
+    assert gen_schema.get("additionalProperties") is False
