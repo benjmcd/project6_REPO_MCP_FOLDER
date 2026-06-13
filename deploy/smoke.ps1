@@ -8,7 +8,7 @@
     ephemeral credentials, runs an assertion matrix, then tears down.
 
     Write-class probe route: POST /api/v1/layer3/handoff/export/prepare
-      Payload: {} (empty JSON object — auth is validated first, then workbench
+      Payload: {} (empty JSON object -- auth is validated first, then workbench
       returns 400 client_request_id_required; HTTP 400 proves auth PASSED for owner)
 
     Assertion matrix:
@@ -33,23 +33,37 @@
 .PARAMETER Full
     Equivalent to running the auth matrix + -Probe + -Durability.
 
+.PARAMETER BackupRestore
+    Run a total-loss backup/restore round-trip: seeds a record, backs up all
+    three volumes, destroys them, restores, and verifies byte-consistent
+    recovery. Explicit opt-in -- NOT implied by -Full. Destroys and recreates
+    named volumes; takes ~3 min. Mutually exclusive with -KeepUp.
+
 .EXAMPLE
     .\deploy\smoke.ps1
     .\deploy\smoke.ps1 -KeepUp
     .\deploy\smoke.ps1 -Probe
     .\deploy\smoke.ps1 -Durability
     .\deploy\smoke.ps1 -Full
+    .\deploy\smoke.ps1 -BackupRestore
 #>
 [CmdletBinding()]
 param(
     [switch]$KeepUp,
     [switch]$Probe,
     [switch]$Durability,
-    [switch]$Full
+    [switch]$Full,
+    [switch]$BackupRestore
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+# Mutual exclusion: -BackupRestore destroys volumes so -KeepUp is contradictory.
+if ($BackupRestore -and $KeepUp) {
+    Write-Host "ERROR: -BackupRestore and -KeepUp are mutually exclusive. -BackupRestore destroys and recreates volumes; the stack cannot be kept up in a meaningful state." -ForegroundColor Red
+    exit 1
+}
 
 # Expand combined flags
 if ($Full) {
@@ -233,18 +247,19 @@ function Wait-AppHealthy {
         [string]$ComposeFile,
         [string]$OverrideFile,
         [string]$EnvFile,
+        [string]$ServiceName = 'app',
         [int]$MaxWait = 180,
         [int]$Interval = 5
     )
     $Elapsed = 0
     while ($Elapsed -lt $MaxWait) {
-        $AppContainerId = (& docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile ps -q app | Select-Object -First 1)
+        $ContainerId = (& docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile ps -q $ServiceName | Select-Object -First 1)
         $HealthStatus = "starting"
-        if ($AppContainerId) {
-            $HealthStatus = & docker inspect --format "{{.State.Health.Status}}" $AppContainerId
+        if ($ContainerId) {
+            $HealthStatus = & docker inspect --format "{{.State.Health.Status}}" $ContainerId
         }
         if ($HealthStatus -eq "healthy") {
-            Write-Host "App is healthy after ${Elapsed}s." -ForegroundColor Green
+            Write-Host "$ServiceName is healthy after ${Elapsed}s." -ForegroundColor Green
             return $true
         }
         Start-Sleep -Seconds $Interval
@@ -252,6 +267,75 @@ function Wait-AppHealthy {
         Write-Host "  ... waited ${Elapsed}s (status: $HealthStatus)" -ForegroundColor Gray
     }
     return $false
+}
+
+function Invoke-GnuTarBackup {
+    param(
+        [string]$VolumeName,
+        [string]$ArchivePath
+    )
+    # Use debian:bookworm-slim for GNU tar (avoids busybox/alpine tar quirks).
+    # Host path uses forward slashes for docker volume mount compatibility.
+    $ArchiveDir  = (Split-Path -Parent $ArchivePath) -replace '\\','/'
+    $ArchiveFile = Split-Path -Leaf $ArchivePath
+
+    # Discard stdout (image-pull/tar listing) so the function returns ONLY the
+    # boolean; a leaked Object[] would break Write-Check's [bool] param. Exit
+    # code is preserved by $LASTEXITCODE.
+    $null = & docker run --rm `
+        -v "${VolumeName}:/data:ro" `
+        -v "${ArchiveDir}:/out" `
+        debian:bookworm-slim `
+        tar czf "/out/$ArchiveFile" -C /data . --numeric-owner
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  FAIL  Invoke-GnuTarBackup: tar czf failed for volume $VolumeName" -ForegroundColor Red
+        return $false
+    }
+
+    # Verify archive integrity (list contents; exit 0 = intact). Discard the listing.
+    $null = & docker run --rm `
+        -v "${ArchiveDir}:/out:ro" `
+        debian:bookworm-slim `
+        tar -tzf "/out/$ArchiveFile"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  FAIL  Invoke-GnuTarBackup: archive integrity check failed for $ArchiveFile" -ForegroundColor Red
+        return $false
+    }
+    return $true
+}
+
+function Invoke-GnuTarRestore {
+    param(
+        [string]$VolumeName,
+        [string]$ArchivePath
+    )
+    $ArchiveDir  = (Split-Path -Parent $ArchivePath) -replace '\\','/'
+    $ArchiveFile = Split-Path -Leaf $ArchivePath
+
+    # Restore with numeric owner, then chown to 1001:1001 (appuser/appgroup).
+    # --numeric-owner alone is insufficient: the helper image uid/gid table
+    # may remap owners during extraction; explicit chown guarantees the
+    # non-root app can read and write its restored tree.
+    # Discard stdout so the function returns ONLY the boolean (see Invoke-GnuTarBackup).
+    $null = & docker run --rm `
+        -v "${VolumeName}:/data" `
+        -v "${ArchiveDir}:/backup:ro" `
+        debian:bookworm-slim `
+        sh -c "tar xzf /backup/$ArchiveFile -C /data --numeric-owner"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  FAIL  Invoke-GnuTarRestore: tar xzf failed for volume $VolumeName" -ForegroundColor Red
+        return $false
+    }
+
+    $null = & docker run --rm `
+        -v "${VolumeName}:/data" `
+        debian:bookworm-slim `
+        chown -R 1001:1001 /data
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  FAIL  Invoke-GnuTarRestore: chown 1001:1001 failed for volume $VolumeName" -ForegroundColor Red
+        return $false
+    }
+    return $true
 }
 
 # ---------------------------------------------------------------------------
@@ -294,7 +378,7 @@ if (Test-Path $SmokeDir) {
 }
 New-Item -ItemType Directory -Force -Path $SmokeDir | Out-Null
 
-# Generate random POSTGRES_PASSWORD (32 hex chars)
+# Generate random POSTGRES_PASSWORD (32 hex chars -- only [a-f0-9], always URL-safe)
 $RandBytes = New-Object byte[] 16
 [Security.Cryptography.RNGCryptoServiceProvider]::Create().GetBytes($RandBytes)
 $PostgresPassword = ([BitConverter]::ToString($RandBytes) -replace "-","").ToLower()
@@ -363,7 +447,7 @@ $HtpasswdPath  = $HtpasswdFile -replace "\\","/"
 $RolesMapPath  = $RolesMapFile -replace "\\","/"
 
 # Convert Windows paths (C:/...) to the format docker understands on Windows
-# docker compose on Windows accepts /c/... or C:/... — use C:/ form
+# docker compose on Windows accepts /c/... or C:/... -- use C:/ form
 $OverrideContent = @"
 services:
   proxy:
@@ -403,7 +487,7 @@ try {
     # -----------------------------------------------------------------------
     Write-Host "Waiting for app container to become healthy (up to 180s) ..." -ForegroundColor Yellow
 
-    # NOTE: no 2>$null here — under $ErrorActionPreference=Stop, PS5.1
+    # NOTE: no 2>$null here -- under $ErrorActionPreference=Stop, PS5.1
     # promotes redirected native stderr to a terminating error.
     $AppHealthy = Wait-AppHealthy -ComposeFile $ComposeFile -OverrideFile $OverrideFile -EnvFile $EnvFile
 
@@ -492,7 +576,7 @@ try {
         # (step 4).  All post-gate-b tests (gate-c, plan/preview, plan/approve,
         # execution/*, package/*) either (a) seed L3Session rows directly via
         # ORM service calls, or (b) use dataset_version/aps_content_document
-        # sources that also require ORM-seeded source authority — neither
+        # sources that also require ORM-seeded source authority -- neither
         # qualifies as an HTTP-proven chain from upload.  The probe therefore
         # stops honestly at step 4 with a clear note.
         #
@@ -766,6 +850,503 @@ try {
     }
 
     # -----------------------------------------------------------------------
+    # BackupRestore check (-BackupRestore)
+    # -----------------------------------------------------------------------
+    if ($BackupRestore -and -not $AllPass) {
+        Write-Host "=== BackupRestore Check skipped: earlier checks failed ===" -ForegroundColor Yellow
+        Write-Host ""
+    }
+    if ($BackupRestore -and $AllPass) {
+        Write-Host "=== BackupRestore Check ===" -ForegroundColor Cyan
+        Write-Host ""
+
+        $BrDir = Join-Path $SmokeDir "br_backups"
+        New-Item -ItemType Directory -Force -Path $BrDir | Out-Null
+
+        try {
+            $ApiBase = "$BaseUrl/api/v1/layer3"
+
+            # ---------------------------------------------------------------
+            # BR-0: derive compose project name + assert db_data volume present
+            # ---------------------------------------------------------------
+            Write-Host "  BR-0: Deriving compose project name ..." -ForegroundColor Yellow
+            $ComposeProject = $null
+            try {
+                $configJson = & docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile config --format json 2>$null
+                $configObj  = $configJson | ConvertFrom-Json
+                $ComposeProject = [string]$configObj.name
+            } catch { }
+            if (-not $ComposeProject) {
+                Write-Host "  FAIL  BR-0: could not derive compose project name from config --format json" -ForegroundColor Red
+                $AllPass = $false
+            } else {
+                Write-Host "  Compose project: $ComposeProject" -ForegroundColor Gray
+            }
+
+            if ($AllPass) {
+                $DbDataVolume     = "${ComposeProject}_db_data"
+                $AppStorageVolume = "${ComposeProject}_app_storage"
+                $ExportDataVolume = "${ComposeProject}_export_data"
+
+                # Assert db_data volume is present (anchored filter)
+                $DbDataPresent = & docker volume ls -q --filter "name=^${DbDataVolume}$"
+                $PassBR0 = ($DbDataPresent -eq $DbDataVolume)
+                Write-Check "BR-0: db_data volume present (${DbDataVolume})" $PassBR0
+                if (-not $PassBR0) { $AllPass = $false }
+            }
+
+            if ($AllPass) {
+                # Capture pre-destroy volume CreatedAt for identity comparison later (BR-7)
+                $BrDbDataPreId = & docker volume inspect -f "{{.CreatedAt}}" $DbDataVolume
+                Write-Host "  Pre-destroy db_data CreatedAt: $BrDbDataPreId" -ForegroundColor Gray
+            }
+
+            # ---------------------------------------------------------------
+            # BR-0b: validate POSTGRES_PASSWORD URL-safety
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                Write-Host "  BR-0b: Validating POSTGRES_PASSWORD URL-safety ..." -ForegroundColor Yellow
+                $EnvFileContent = Get-Content -Raw $EnvFile
+                $PgPassMatch = [regex]::Match($EnvFileContent, '(?m)^POSTGRES_PASSWORD=(.+)$')
+                $PgPassValue = if ($PgPassMatch.Success) { $PgPassMatch.Groups[1].Value.Trim() } else { "" }
+                $PassBR0b = ($PgPassValue -match '^[A-Za-z0-9_-]+$')
+                Write-Check "BR-0b: POSTGRES_PASSWORD is URL-safe [A-Za-z0-9_-]" $PassBR0b
+                if (-not $PassBR0b) {
+                    Write-Host "    POSTGRES_PASSWORD contains characters that would misparse the DATABASE_URL DSN." -ForegroundColor Red
+                    $AllPass = $false
+                }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-1: seed (bootstrap GET + multipart upload)
+            # ---------------------------------------------------------------
+            $BrRecordId      = ""
+            $BrContentSha256 = ""
+
+            if ($AllPass) {
+                Write-Host "  BR-1: Seeding source intake record ..." -ForegroundColor Yellow
+
+                # Step 1a: Bootstrap
+                $brBoot = Invoke-ProbeRequest -Url "$ApiBase/bootstrap" -Method GET -Username "smoke-owner" -Password $OwnerPassword
+                $PassBR1Boot = ($brBoot.StatusCode -eq 200)
+                Write-Check "BR-1 bootstrap GET /bootstrap -> 200 (got $($brBoot.StatusCode))" $PassBR1Boot
+                if (-not $PassBR1Boot) {
+                    $AllPass = $false
+                }
+            }
+
+            if ($AllPass) {
+                # Step 1b: multipart upload with a unique nonce so content is
+                # byte-distinct from any other smoke run (guards against
+                # content-addressed storage reuse masking a restore failure).
+                $BrNonce = [System.Guid]::NewGuid().ToString("N")
+                $BrUploadContent = "Layer 3 backup-restore probe artifact`nNONCE: $BrNonce`n"
+                $BrTmpFile = Join-Path $SmokeDir "br_seed.txt"
+                Write-FileLfNoBom -Path $BrTmpFile -Content $BrUploadContent
+
+                $BrClientId = [System.Guid]::NewGuid().ToString()
+                $BrFields = @{
+                    client_request_id = $BrClientId
+                    operator_decision  = "record_operator_uploaded_source"
+                    source_label       = "BackupRestore probe seed"
+                    source_family      = "operator_uploaded_single_source"
+                }
+                $brUpload = Invoke-MultipartProbeRequest `
+                    -Url "$ApiBase/source/intake/upload" `
+                    -Username "smoke-owner" -Password $OwnerPassword `
+                    -Fields $BrFields -FilePath $BrTmpFile -FileName "br_seed.txt"
+
+                # Fail closed: empty id must not be silently skipped.
+                if ($brUpload.StatusCode -ne 201) {
+                    $excerpt = if ($brUpload.Content.Length -gt 300) { $brUpload.Content.Substring(0, 300) } else { $brUpload.Content }
+                    Write-Host "  FAIL  BR-1: upload returned HTTP $($brUpload.StatusCode) (expected 201): $excerpt" -ForegroundColor Red
+                    $AllPass = $false
+                } else {
+                    try {
+                        $brBody = $brUpload.Content | ConvertFrom-Json
+                        $BrRecordId      = [string]$brBody.source_intake_record_id
+                        # The 201 response exposes content_sha256 as a top-level field
+                        # (confirmed in _record_response() in layer3_source_intake.py).
+                        $BrContentSha256 = [string]$brBody.content_sha256
+                    } catch { }
+
+                    if ($BrRecordId -eq "") {
+                        Write-Host "  FAIL  BR-1: upload returned 201 but source_intake_record_id is empty -- cannot proceed (not skipping)" -ForegroundColor Red
+                        $AllPass = $false
+                    } else {
+                        Write-Host "  Seeded source_intake_record_id: $BrRecordId" -ForegroundColor Gray
+                        Write-Host "  content_sha256 (from 201):      $BrContentSha256" -ForegroundColor Gray
+                        Write-Check "BR-1: upload 201 + non-empty record id" $true
+                    }
+                }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-1b: export sentinel (proves export_data restore is real)
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                Write-Host "  BR-1b: Writing export sentinel ..." -ForegroundColor Yellow
+                $BrSentinelNonce = [System.Guid]::NewGuid().ToString("N")
+                & docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile `
+                    exec -T app sh -c "printf '$BrSentinelNonce' > /app/export-outbox/.br_sentinel"
+                $PassBR1b = ($LASTEXITCODE -eq 0)
+                Write-Check "BR-1b: export sentinel written to /app/export-outbox/.br_sentinel" $PassBR1b
+                if (-not $PassBR1b) { $AllPass = $false }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-2: pre-existence verify (record is real before destruction)
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                Write-Host "  BR-2: Pre-existence verify ..." -ForegroundColor Yellow
+                $brPreview = Invoke-ProbeRequest -Url "$ApiBase/source/intake/$BrRecordId/preview" -Method GET -Username "smoke-owner" -Password $OwnerPassword
+                $PassBR2Status = ($brPreview.StatusCode -eq 200)
+                Write-Check "BR-2: GET /source/intake/{id}/preview -> 200 (got $($brPreview.StatusCode))" $PassBR2Status
+                if (-not $PassBR2Status) { $AllPass = $false }
+
+                if ($AllPass) {
+                    # If content_sha256 was not in 201 (should always be, but be safe),
+                    # capture it from the preview response's material_candidate.content_sha256.
+                    if ($BrContentSha256 -eq "") {
+                        try {
+                            $prevBody = $brPreview.Content | ConvertFrom-Json
+                            $BrContentSha256 = [string]$prevBody.material_candidate.content_sha256
+                            Write-Host "  content_sha256 (from preview):  $BrContentSha256" -ForegroundColor Gray
+                        } catch { }
+                    }
+                    $PassBR2Hash = ($BrContentSha256 -ne "")
+                    Write-Check "BR-2: content_sha256 captured (non-empty)" $PassBR2Hash
+                    if (-not $PassBR2Hash) { $AllPass = $false }
+                }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-2b: quiesce app (backup-side consistency window)
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                Write-Host "  BR-2b: Quiescing app for consistent backup ..." -ForegroundColor Yellow
+                & docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile stop app
+                $PassBR2b = ($LASTEXITCODE -eq 0)
+                Write-Check "BR-2b: docker compose stop app (quiesce)" $PassBR2b
+                if (-not $PassBR2b) { $AllPass = $false }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-3: pg_dump via cmd redirect (binary fidelity)
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                Write-Host "  BR-3: pg_dump ..." -ForegroundColor Yellow
+                $DumpPath = Join-Path $BrDir "db.pgdump"
+                $DumpPathFwd = $DumpPath -replace '\\','/'
+                # cmd /c redirect preserves binary fidelity -- PowerShell pipelines
+                # re-encode bytes and corrupt pg_dump's binary custom format.
+                cmd /c "docker compose -f `"$ComposeFile`" -f `"$OverrideFile`" --env-file `"$EnvFile`" exec -T db pg_dump -U app -d layer3 --format=custom --compress=6 > `"$DumpPath`""
+                $PassBR3Exit = ($LASTEXITCODE -eq 0)
+                $PassBR3Size = ($PassBR3Exit -and (Test-Path $DumpPath) -and ((Get-Item $DumpPath).Length -gt 0))
+                Write-Check "BR-3: pg_dump exit 0 + file non-empty" $PassBR3Size
+                if (-not $PassBR3Size) { $AllPass = $false }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-3b: capture alembic version set
+            # ---------------------------------------------------------------
+            $BrAlembicSet = @()
+            if ($AllPass) {
+                Write-Host "  BR-3b: Capturing alembic version set ..." -ForegroundColor Yellow
+                $alembicRaw = & docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile `
+                    exec -T db psql -U app -d layer3 -Atc "SELECT version_num FROM alembic_version ORDER BY version_num"
+                $BrAlembicSet = @($alembicRaw | Where-Object { $_ -ne "" } | Sort-Object)
+                $PassBR3b = ($BrAlembicSet.Count -gt 0)
+                Write-Check "BR-3b: alembic_version set non-empty ($($BrAlembicSet.Count) rows)" $PassBR3b
+                if (-not $PassBR3b) { $AllPass = $false }
+                else { Write-Host "  Alembic set: $($BrAlembicSet -join ', ')" -ForegroundColor Gray }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-4: tar app_storage
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                Write-Host "  BR-4: Backing up app_storage ..." -ForegroundColor Yellow
+                $AppStorageArchive = Join-Path $BrDir "app_storage.tar.gz"
+                $PassBR4 = Invoke-GnuTarBackup -VolumeName $AppStorageVolume -ArchivePath $AppStorageArchive
+                Write-Check "BR-4: app_storage backup + integrity check" $PassBR4
+                if (-not $PassBR4) { $AllPass = $false }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-5: tar export_data
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                Write-Host "  BR-5: Backing up export_data ..." -ForegroundColor Yellow
+                $ExportDataArchive = Join-Path $BrDir "export_data.tar.gz"
+                $PassBR5 = Invoke-GnuTarBackup -VolumeName $ExportDataVolume -ArchivePath $ExportDataArchive
+                Write-Check "BR-5: export_data backup + integrity check" $PassBR5
+                if (-not $PassBR5) { $AllPass = $false }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-6: destroy stack + verify all three volumes absent
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                Write-Host "  BR-6: Destroying stack (down -v) ..." -ForegroundColor Yellow
+                & docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile down -v --remove-orphans
+                $PassBR6Down = ($LASTEXITCODE -eq 0)
+                Write-Check "BR-6: docker compose down -v exit 0" $PassBR6Down
+                if (-not $PassBR6Down) { $AllPass = $false }
+            }
+
+            if ($AllPass) {
+                # Anchored volume absence checks -- each is its own fail-closed assertion.
+                $AbsDb     = & docker volume ls -q --filter "name=^${DbDataVolume}$"
+                $PassAbsDb = ($AbsDb -eq "" -or $null -eq $AbsDb)
+                Write-Check "BR-6: db_data volume absent after down -v" $PassAbsDb
+                if (-not $PassAbsDb) {
+                    Write-Host "    Volume still present: $AbsDb" -ForegroundColor Red
+                    $AllPass = $false
+                }
+
+                $AbsApp     = & docker volume ls -q --filter "name=^${AppStorageVolume}$"
+                $PassAbsApp = ($AbsApp -eq "" -or $null -eq $AbsApp)
+                Write-Check "BR-6: app_storage volume absent after down -v" $PassAbsApp
+                if (-not $PassAbsApp) {
+                    Write-Host "    Volume still present: $AbsApp" -ForegroundColor Red
+                    $AllPass = $false
+                }
+
+                $AbsExp     = & docker volume ls -q --filter "name=^${ExportDataVolume}$"
+                $PassAbsExp = ($AbsExp -eq "" -or $null -eq $AbsExp)
+                Write-Check "BR-6: export_data volume absent after down -v" $PassAbsExp
+                if (-not $PassAbsExp) {
+                    Write-Host "    Volume still present: $AbsExp" -ForegroundColor Red
+                    $AllPass = $false
+                }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-7: start fresh db + verify new volume ID differs from pre-destroy
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                Write-Host "  BR-7: Starting fresh db ..." -ForegroundColor Yellow
+                & docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile up -d db
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "  FAIL  BR-7: docker compose up -d db failed" -ForegroundColor Red
+                    $AllPass = $false
+                }
+            }
+
+            if ($AllPass) {
+                $DbWait = Wait-AppHealthy -ComposeFile $ComposeFile -OverrideFile $OverrideFile -EnvFile $EnvFile -ServiceName 'db'
+                Write-Check "BR-7: db service healthy after fresh start" $DbWait
+                if (-not $DbWait) { $AllPass = $false }
+            }
+
+            if ($AllPass) {
+                $BrDbDataPostId = & docker volume inspect -f "{{.CreatedAt}}" $DbDataVolume
+                $PassBR7Id = ($BrDbDataPostId -ne $BrDbDataPreId)
+                Write-Check "BR-7: new db_data CreatedAt differs from pre-destroy (proves real recreation)" $PassBR7Id
+                if (-not $PassBR7Id) {
+                    Write-Host "    Pre: $BrDbDataPreId  Post: $BrDbDataPostId" -ForegroundColor Red
+                    $AllPass = $false
+                }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-8: assert app container is NOT running
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                $AppContainers = & docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile ps -q app
+                $PassBR8 = ($AppContainers -eq "" -or $null -eq $AppContainers)
+                Write-Check "BR-8: app container not running (do not start before pg_restore)" $PassBR8
+                if (-not $PassBR8) { $AllPass = $false }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-8b: KEYSTONE -- affirmative empty-DB proof before restore
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                Write-Host "  BR-8b: Affirmative empty-DB check (keystone) ..." -ForegroundColor Yellow
+                # Check whether the table even exists yet (fresh DB has no schema).
+                $tableCheck = & docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile `
+                    exec -T db psql -U app -d layer3 -Atc "SELECT to_regclass('public.l3_source_intake_record')"
+                $tableCheckStr = [string]$tableCheck
+                if ($tableCheckStr.Trim() -eq "" -or $tableCheckStr.Trim() -eq "\N" -or $tableCheckStr.Trim() -eq "null") {
+                    # Table does not exist yet -- fresh DB with no schema. This is
+                    # the expected state immediately after 'up -d db' on a new volume
+                    # before any alembic migrations (app has not started yet).
+                    Write-Check "BR-8b: l3_source_intake_record table absent (fresh DB -- correct before restore)" $true
+                } else {
+                    # Table exists -- assert seeded row is not present. Parse fail-closed:
+                    # a non-integer (query error) must FAIL, never masquerade as count 0.
+                    $rowCount = & docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile `
+                        exec -T db psql -U app -d layer3 -Atc "SELECT COUNT(*) FROM l3_source_intake_record WHERE source_intake_record_id='$BrRecordId'"
+                    $rowCountStr = ([string]$rowCount).Trim()
+                    if ($rowCountStr -match '^\d+$') {
+                        $PassBR8b = ([int]$rowCountStr -eq 0)
+                    } else {
+                        $PassBR8b = $false
+                    }
+                    Write-Check "BR-8b: seeded row absent in fresh DB (count=$rowCountStr, expected 0)" $PassBR8b
+                    if (-not $PassBR8b) {
+                        Write-Host "    FAIL: row present (or count query failed) before restore -- volume was NOT destroyed (false-pass risk)" -ForegroundColor Red
+                        $AllPass = $false
+                    }
+                }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-9: pg_restore via cmd redirect
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                Write-Host "  BR-9: pg_restore ..." -ForegroundColor Yellow
+                $DumpPath = Join-Path $BrDir "db.pgdump"
+                cmd /c "docker compose -f `"$ComposeFile`" -f `"$OverrideFile`" --env-file `"$EnvFile`" exec -T db pg_restore -U app -d layer3 --no-owner --role=app --clean --if-exists --exit-on-error --format=custom < `"$DumpPath`""
+                $PassBR9 = ($LASTEXITCODE -eq 0)
+                Write-Check "BR-9: pg_restore exit 0" $PassBR9
+                if (-not $PassBR9) { $AllPass = $false }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-9b: verify alembic set AND seeded row present after restore
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                Write-Host "  BR-9b: Verifying restored DB ..." -ForegroundColor Yellow
+                $alembicPost = & docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile `
+                    exec -T db psql -U app -d layer3 -Atc "SELECT version_num FROM alembic_version ORDER BY version_num"
+                $BrAlembicSetPost = @($alembicPost | Where-Object { $_ -ne "" } | Sort-Object)
+
+                $PassBR9bAlembic = (($BrAlembicSetPost -join ",") -eq ($BrAlembicSet -join ","))
+                Write-Check "BR-9b: alembic_version SET matches backup set ($($BrAlembicSetPost -join ', '))" $PassBR9bAlembic
+                if (-not $PassBR9bAlembic) {
+                    Write-Host "    Expected: $($BrAlembicSet -join ', ')  Got: $($BrAlembicSetPost -join ', ')" -ForegroundColor Red
+                    $AllPass = $false
+                }
+
+                if ($AllPass) {
+                    $rowCountPost = & docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile `
+                        exec -T db psql -U app -d layer3 -Atc "SELECT COUNT(*) FROM l3_source_intake_record WHERE source_intake_record_id='$BrRecordId'"
+                    # Parse fail-closed: non-integer (query error) must FAIL, not pass.
+                    $rowCountPostStr = ([string]$rowCountPost).Trim()
+                    if ($rowCountPostStr -match '^\d+$') {
+                        $PassBR9bRow = ([int]$rowCountPostStr -eq 1)
+                    } else {
+                        $PassBR9bRow = $false
+                    }
+                    Write-Check "BR-9b: seeded row present after pg_restore (count=$rowCountPostStr, expected 1)" $PassBR9bRow
+                    if (-not $PassBR9bRow) { $AllPass = $false }
+                }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-10: recreate empty file volumes + restore app_storage
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                Write-Host "  BR-10: Recreating empty volumes + restoring app_storage ..." -ForegroundColor Yellow
+                & docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile up --no-start
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "  FAIL  BR-10: docker compose up --no-start failed" -ForegroundColor Red
+                    $AllPass = $false
+                }
+            }
+
+            if ($AllPass) {
+                $AppStorageArchive = Join-Path $BrDir "app_storage.tar.gz"
+                $PassBR10 = Invoke-GnuTarRestore -VolumeName $AppStorageVolume -ArchivePath $AppStorageArchive
+                Write-Check "BR-10: app_storage restored (tar xzf + chown 1001:1001)" $PassBR10
+                if (-not $PassBR10) { $AllPass = $false }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-11: restore export_data + verify sentinel
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                Write-Host "  BR-11: Restoring export_data ..." -ForegroundColor Yellow
+                $ExportDataArchive = Join-Path $BrDir "export_data.tar.gz"
+                $PassBR11Restore = Invoke-GnuTarRestore -VolumeName $ExportDataVolume -ArchivePath $ExportDataArchive
+                Write-Check "BR-11: export_data restored (tar xzf + chown 1001:1001)" $PassBR11Restore
+                if (-not $PassBR11Restore) { $AllPass = $false }
+            }
+
+            if ($AllPass) {
+                # Verify sentinel fidelity from the restored volume
+                $sentinelContent = & docker run --rm `
+                    -v "${ExportDataVolume}:/data:ro" `
+                    debian:bookworm-slim `
+                    sh -c "cat /data/.br_sentinel 2>/dev/null || echo ''"
+                $sentinelStr = [string]$sentinelContent
+                $PassBR11Sentinel = ($sentinelStr.Trim() -eq $BrSentinelNonce.Trim())
+                Write-Check "BR-11: export sentinel content matches nonce after restore" $PassBR11Sentinel
+                if (-not $PassBR11Sentinel) {
+                    Write-Host "    Expected: '$BrSentinelNonce'  Got: '$($sentinelStr.Trim())'" -ForegroundColor Red
+                    $AllPass = $false
+                }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-12: full up + wait healthy (larger budget: 240s)
+            # ---------------------------------------------------------------
+            if ($AllPass) {
+                Write-Host "  BR-12: Starting full stack ..." -ForegroundColor Yellow
+                & docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile up -d app proxy
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host "  FAIL  BR-12: docker compose up -d app proxy failed" -ForegroundColor Red
+                    $AllPass = $false
+                }
+            }
+
+            if ($AllPass) {
+                # Budget: 240s > start-period(120s) + retries*interval(3*30s=90s) = 210s worst-case.
+                $BrAppHealthy = Wait-AppHealthy `
+                    -ComposeFile $ComposeFile -OverrideFile $OverrideFile -EnvFile $EnvFile `
+                    -ServiceName 'app' -MaxWait 240
+                Write-Check "BR-12: app healthy after full restore up (budget 240s)" $BrAppHealthy
+                if (-not $BrAppHealthy) { $AllPass = $false }
+            }
+
+            # ---------------------------------------------------------------
+            # BR-13: FINAL -- content-hash proof (must be reached unconditionally
+            #         when matrix-passed; empty id -> explicit FAIL, not skip)
+            # ---------------------------------------------------------------
+            Write-Host "  BR-13: Final content-hash proof ..." -ForegroundColor Yellow
+            if ($BrRecordId -eq "") {
+                # Empty id is an explicit failure, not a skip.
+                Write-Check "BR-13: record id is non-empty (required for final assertion)" $false
+                $AllPass = $false
+            } else {
+                $brFinal = Invoke-ProbeRequest -Url "$ApiBase/source/intake/$BrRecordId/preview" -Method GET -Username "smoke-owner" -Password $OwnerPassword
+                $PassBR13Status = ($brFinal.StatusCode -eq 200)
+                Write-Check "BR-13: GET /source/intake/{id}/preview -> 200 (got $($brFinal.StatusCode))" $PassBR13Status
+                if (-not $PassBR13Status) {
+                    $AllPass = $false
+                } else {
+                    # Assert content_sha256 from the restored preview matches what
+                    # was captured at upload time. This proves the DB row AND the
+                    # uploaded file bytes both survived the destroy+restore cycle
+                    # byte-consistently.
+                    $FinalSha256 = ""
+                    try {
+                        $finalBody = $brFinal.Content | ConvertFrom-Json
+                        $FinalSha256 = [string]$finalBody.material_candidate.content_sha256
+                    } catch { }
+                    $PassBR13Hash = ($FinalSha256 -ne "" -and $FinalSha256 -eq $BrContentSha256)
+                    Write-Check "BR-13: content_sha256 matches backup value ($FinalSha256)" $PassBR13Hash
+                    if (-not $PassBR13Hash) {
+                        Write-Host "    Expected: '$BrContentSha256'  Got: '$FinalSha256'" -ForegroundColor Red
+                        $AllPass = $false
+                    }
+                }
+            }
+
+            Write-Host ""
+
+        } finally {
+            # BR-fin: remove backup artifacts
+            if (Test-Path $BrDir) {
+                Remove-Item -Recurse -Force $BrDir
+            }
+        }
+    }
+
+    # -----------------------------------------------------------------------
     # Summary
     # -----------------------------------------------------------------------
     Write-Host "=== Summary ===" -ForegroundColor Cyan
@@ -783,7 +1364,7 @@ try {
             -f $ComposeFile `
             -f $OverrideFile `
             --env-file $EnvFile `
-            down -v
+            down -v --remove-orphans
     } elseif ($KeepUp) {
         Write-Host ""
         Write-Host "-KeepUp specified: stack left running on port $ProxyPort" -ForegroundColor Yellow
@@ -792,7 +1373,7 @@ try {
         Write-Host "  docker compose -f `"$ComposeFile`" -f `"$OverrideFile`" --env-file `"$EnvFile`" down -v" -ForegroundColor Yellow
         Write-Host "then delete $SmokeDir." -ForegroundColor Yellow
     }
-    # Only remove the ephemeral credentials when the stack is gone — a kept
+    # Only remove the ephemeral credentials when the stack is gone -- a kept
     # stack still bind-mounts htpasswd/roles.map from this directory and needs
     # the .env/override files for its eventual teardown.
     if (-not $KeepUp -and (Test-Path $SmokeDir)) {
