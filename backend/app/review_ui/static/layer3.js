@@ -30995,8 +30995,8 @@ async function revisePlan(operatorDecision) {
             preview_hash: State.planPreview.preview_hash,
             operator_decision: operatorDecision,
         });
-        State.sessionSummary = await getJson(`/session/${encodeURIComponent(currentSessionId())}`);
         clearResultReviewState();
+        State.sessionSummary = await getJson(`/session/${encodeURIComponent(currentSessionId())}`);
         persistSessionRecoveryAnchor('plan_revision');
         addEvent(operatorDecision === 'reject_current_preview' ? 'Plan rejected. Execution has not started.' : 'Plan revision requested. Execution has not started.');
         renderAll();
