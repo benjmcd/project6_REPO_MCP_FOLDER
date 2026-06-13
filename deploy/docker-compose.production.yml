@@ -162,7 +162,11 @@ services:
     networks:
       - internal
     depends_on:
-      - app
+      # Gated on app health (Dockerfile.app HEALTHCHECK probes /ready) to close
+      # the transient-502 window during cold start / migrations. Removing that
+      # HEALTHCHECK would deadlock proxy startup.
+      app:
+        condition: service_healthy
     restart: unless-stopped
     logging:
       driver: json-file
