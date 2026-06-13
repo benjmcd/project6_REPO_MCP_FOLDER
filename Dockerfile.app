@@ -54,7 +54,7 @@ EXPOSE 8000
 
 # Healthcheck: probe the /ready endpoint which executes SELECT 1 against the DB.
 # Start-period gives alembic time to complete migrations before probes fire.
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
     CMD python -c "import urllib.request, sys; r=urllib.request.urlopen('http://localhost:8000/ready', timeout=8); sys.exit(0 if r.status==200 else 1)" || exit 1
 
 # Entrypoint runs alembic migrations then hands off to uvicorn.
