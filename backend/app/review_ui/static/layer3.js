@@ -30996,8 +30996,12 @@ async function revisePlan(operatorDecision) {
             operator_decision: operatorDecision,
         });
         clearResultReviewState();
-        State.sessionSummary = await getJson(`/session/${encodeURIComponent(currentSessionId())}`);
         persistSessionRecoveryAnchor('plan_revision');
+        try {
+            State.sessionSummary = await getJson(`/session/${encodeURIComponent(currentSessionId())}`);
+        } catch (refreshError) {
+            addEvent(`Plan revision recorded; session refresh blocked: ${refreshError.message}`);
+        }
         addEvent(operatorDecision === 'reject_current_preview' ? 'Plan rejected. Execution has not started.' : 'Plan revision requested. Execution has not started.');
         renderAll();
     } catch (error) {
