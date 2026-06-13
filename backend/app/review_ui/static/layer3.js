@@ -3139,6 +3139,7 @@ function clearLayer3FlowStateForSourceChange() {
     State.planPreview = null;
     State.planApproval = null;
     State.planRevision = null;
+    State.planRevisionRecovery = null;
     clearGateBDraftSnapshot();
     clearResultReviewState();
     clearSessionRecoveryAnchor();
@@ -8221,6 +8222,7 @@ function canPlanRevise() {
 
 function canRecoverPlanRevision() {
     const revisionState = State.planRevision?.next_state;
+    const recovery = State.planRevisionRecovery || State.sessionSummary?.plan_revision_recovery;
     return Boolean(
         currentSessionId()
         && State.planRevision
@@ -8228,6 +8230,7 @@ function canRecoverPlanRevision() {
         && !State.planRevision.execution_started
         && !State.planRevisionRecoverPending
         && !State.planRevisionPending
+        && recovery?.available === true
     );
 }
 
@@ -8248,6 +8251,7 @@ async function recoverPlanRevision() {
             operator_decision: 'recover_for_preview_refresh',
         });
         State.planRevision = null;
+        State.planRevisionRecovery = null;
         persistSessionRecoveryAnchor('plan_revision_recover');
         addEvent('Plan revision recovered. Preview refresh is required before approval.');
         renderAll();
@@ -30815,6 +30819,7 @@ async function runPreflightFlow(event) {
         State.planPreview = null;
         State.planApproval = null;
         State.planRevision = null;
+        State.planRevisionRecovery = null;
         clearSessionRecoveryAnchor();
         clearResultReviewState();
         if (!State.operationDockManual) State.activeOperationId = 'gate-b-band';
@@ -30850,6 +30855,7 @@ async function commitGateB() {
         State.planPreview = null;
         State.planApproval = null;
         State.planRevision = null;
+        State.planRevisionRecovery = null;
         clearResultReviewState();
         clearGateBDraftSnapshot();
         persistSessionRecoveryAnchor('gate_b_commit');
@@ -30879,6 +30885,7 @@ async function previewGateC() {
         State.planPreview = null;
         State.planApproval = null;
         State.planRevision = null;
+        State.planRevisionRecovery = null;
         clearResultReviewState();
         persistSessionRecoveryAnchor('gate_c_preview');
         addEvent('Gate C typing preview loaded.');
@@ -30905,6 +30912,7 @@ async function commitGateC() {
         State.planPreview = null;
         State.planApproval = null;
         State.planRevision = null;
+        State.planRevisionRecovery = null;
         clearResultReviewState();
         persistSessionRecoveryAnchor('gate_c_commit');
         addEvent('Gate C typing committed.');
@@ -30930,6 +30938,7 @@ async function previewPlan() {
         });
         State.planApproval = null;
         State.planRevision = null;
+        State.planRevisionRecovery = null;
         clearResultReviewState();
         persistSessionRecoveryAnchor('plan_preview');
         addEvent('Plan preview loaded.');
@@ -30996,6 +31005,12 @@ async function revisePlan(operatorDecision) {
         });
         clearResultReviewState();
         persistSessionRecoveryAnchor('plan_revision');
+        try {
+            const refreshed = await getJson(`/session/${encodeURIComponent(currentSessionId())}`);
+            State.planRevisionRecovery = refreshed?.plan_revision_recovery || null;
+        } catch (refreshError) {
+            addEvent(`Plan revision recorded; session refresh blocked: ${refreshError.message}`);
+        }
         addEvent(operatorDecision === 'reject_current_preview' ? 'Plan rejected. Execution has not started.' : 'Plan revision requested. Execution has not started.');
         renderAll();
     } catch (error) {
@@ -32848,6 +32863,7 @@ init();
             State.planPreview = null;
             State.planApproval = null;
             State.planRevision = null;
+            State.planRevisionRecovery = null;
             clearResultReviewState();
             persistSessionRecoveryAnchor('source_intake_gate_b_commit');
             sourceIntakeState.committedPreviewId = preview.material_preview_id;
@@ -33251,6 +33267,7 @@ init();
             State.planPreview = null;
             State.planApproval = null;
             State.planRevision = null;
+            State.planRevisionRecovery = null;
             clearSourceDirectoryHybridAuthorityState({ sourceSessionId: State.gateB.session_id });
             clearResultReviewState();
             persistSessionRecoveryAnchor('source_directory_gate_b_commit');
