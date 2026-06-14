@@ -746,230 +746,232 @@ def _write_senate_lda_summary(
 
 def execute_senate_lda_run(connector_run_id: str) -> None:
     db = SessionLocal()
-    SENATE_LDA_EXECUTOR_GUARDS.acquire_run_slot()
     try:
-        run = db.get(ConnectorRun, connector_run_id)
-        if not run:
-            return
-        if run.status in RUN_TERMINAL_STATUSES:
-            return
-        if not _acquire_lease(db, run):
-            run.error_summary = "lease_conflict"
-            _record_run_event(
-                db,
-                run=run,
-                event_type="lease_conflict",
-                phase="planning",
-                status_after=run.status,
-                error_class="lease_conflict",
-            )
-            db.commit()
-            return
-        _record_run_event(
-            db,
-            run=run,
-            event_type="lease_acquired",
-            phase="planning",
-            status_after=run.status,
-            metrics_json={"lease_owner": run.execution_lease_owner},
-            commit=True,
-        )
-
-        config = dict(run.request_config_json or {})
-        client = get_senate_lda_client(config)
-        run.effective_search_params_json = {
-            "base_url": settings.senate_lda_api_base_url,
-            "auth_mode": _client_auth_mode(client),
-            "logical_query": _logical_query_from_config(config),
-        }
-        run.effective_filters_json = [{"field": key, "value": value} for key, value in _logical_query_from_config(config).items()]
-        run.effective_sort = str(config.get("ordering", "-dt_posted"))
-        run.effective_order = "desc" if str(config.get("ordering", "")).startswith("-") else "asc"
-        run.effective_page_size = int(config.get("page_size", 25))
-        db.commit()
-
-        retry_counters: dict[str, Any] = {}
-        rate_limiter = _RateLimiter(float(config.get("max_rps", 2.0)))
-        page_refs: list[str] = []
-
-        target_count = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run.connector_run_id).count()
-        if target_count == 0:
-            _record_run_event(
-                db,
-                run=run,
-                event_type="discovery_started",
-                phase="discovery",
-                status_after=run.status,
-            )
-            discovered_records: list[dict[str, Any]] = []
-            page_number = 1
-            max_items = int(config.get("max_items", 0))
-            while True:
-                if run.cancellation_requested_at:
-                    run.status = "cancelling"
-                    db.commit()
-                    break
-                payload = client.list_filings(
-                    params=_build_list_params(config, page=page_number),
-                    timeout_seconds=int(config.get("request_timeout_seconds", 30)),
-                    retry_max_attempts_per_request=int(config.get("retry_max_attempts_per_request", 4)),
-                    retry_base_backoff_seconds=float(config.get("retry_base_backoff_seconds", 0.4)),
-                    retry_max_backoff_seconds=float(config.get("retry_max_backoff_seconds", 3.0)),
-                    retry_respect_retry_after=bool(config.get("retry_respect_retry_after", True)),
-                    rate_limiter=rate_limiter,
-                    retry_counters=retry_counters,
-                )
-                page_ref = _write_json(
-                    _page_snapshot_path(run.connector_run_id, page_number),
-                    {
-                        "schema_id": "senate_lda.page_snapshot.v1",
-                        "schema_version": 1,
-                        "connector_run_id": run.connector_run_id,
-                        "page_number": page_number,
-                        "params": _build_list_params(config, page=page_number),
-                        "payload": payload,
-                    },
-                )
-                page_refs.append(page_ref)
-                results = [item for item in (payload.get("results") or []) if isinstance(item, dict)]
-                for item in results:
-                    if max_items and len(discovered_records) >= max_items:
-                        break
-                    normalized_item = dict(item)
-                    normalized_item["_page_ref"] = page_ref
-                    discovered_records.append(normalized_item)
-                run.page_count_completed = int(page_number)
-                run.last_offset_committed = len(discovered_records)
-                next_url = str(payload.get("next") or "").strip()
-                max_items_reached = bool(max_items and len(discovered_records) >= max_items)
-                run.next_page_available = bool(next_url) and not max_items_reached
-                run.search_exhaustion_reason = "max_items_reached" if max_items_reached else ("next_page_absent" if not next_url else None)
-                db.commit()
+        SENATE_LDA_EXECUTOR_GUARDS.acquire_run_slot()
+        try:
+            run = db.get(ConnectorRun, connector_run_id)
+            if not run:
+                return
+            if run.status in RUN_TERMINAL_STATUSES:
+                return
+            if not _acquire_lease(db, run):
+                run.error_summary = "lease_conflict"
                 _record_run_event(
                     db,
                     run=run,
-                    event_type="discovery_page_fetched",
-                    phase="discovery",
+                    event_type="lease_conflict",
+                    phase="planning",
                     status_after=run.status,
-                    metrics_json={"page_number": page_number, "result_count": len(results)},
+                    error_class="lease_conflict",
                 )
-                if max_items_reached or not next_url or not results:
-                    break
-                page_number += 1
-                _renew_lease(db, run)
-
-            discovery_snapshot = {
-                "schema_id": DISCOVERY_SCHEMA_ID,
-                "schema_version": 1,
-                "generated_at_utc": _utcnow().isoformat(),
-                "connector_run_id": run.connector_run_id,
-                "logical_query": _logical_query_from_config(config),
-                "page_refs": page_refs,
-                "page_count_completed": int(run.page_count_completed or 0),
-                "search_exhaustion_reason": run.search_exhaustion_reason,
-                "discovered_records": [
-                    {
-                        "filing_uuid": item.get("filing_uuid"),
-                        "filing_type": item.get("filing_type"),
-                        "filing_year": item.get("filing_year"),
-                        "filing_period": item.get("filing_period"),
-                        "dt_posted": item.get("dt_posted"),
-                        "registrant_name": _registrant_name(item),
-                        "client_name": _client_name(item),
-                        "detail_url": item.get("url"),
-                        "filing_document_url": item.get("filing_document_url"),
-                        "page_ref": item.get("_page_ref"),
-                    }
-                    for item in discovered_records
-                ],
-            }
-            run.discovery_snapshot_ref = _write_json(_discovery_snapshot_path(run.connector_run_id), discovery_snapshot)
-            db.commit()
-            _create_targets_from_discovery(
-                db,
-                run=run,
-                discovered_records=discovered_records,
-                run_mode=str(config.get("run_mode", "metadata_only")),
-                include_filing_detail=bool(config.get("include_filing_detail", False)),
-            )
-            targets = (
-                db.query(ConnectorRunTarget)
-                .filter(ConnectorRunTarget.connector_run_id == run.connector_run_id)
-                .order_by(ConnectorRunTarget.ordinal.asc())
-                .all()
-            )
-            run.selection_manifest_ref = _write_json(
-                _selection_manifest_path(run.connector_run_id),
-                {
-                    "schema_id": SELECTION_SCHEMA_ID,
-                    "schema_version": 1,
-                    "generated_at_utc": _utcnow().isoformat(),
-                    "connector_run_id": run.connector_run_id,
-                    "target_count": len(targets),
-                    "targets": [
-                        {
-                            "ordinal": int(target.ordinal or 0),
-                            "filing_uuid": target.sciencebase_item_id,
-                            "status": target.status,
-                            "detail_url": dict(target.source_reference_json or {}).get("detail_url"),
-                            "document_url": target.sciencebase_download_uri,
-                        }
-                        for target in targets
-                    ],
-                },
-            )
-            db.commit()
-
-        if (
-            str(config.get("run_mode", "metadata_only")) != "dry_run"
-            and bool(config.get("include_filing_detail", False))
-            and run.status != "cancelling"
-        ):
-            _hydrate_detail_targets(
-                db,
-                run=run,
-                client=client,
-                config=config,
-                rate_limiter=rate_limiter,
-                retry_counters=retry_counters,
-            )
-
-        retry_counters["rate_limiter_sleep_seconds"] = rate_limiter.total_sleep_seconds
-        _finalize_run(db, run)
-        _write_senate_lda_summary(
-            db,
-            run=run,
-            config=config,
-            client=client,
-            page_refs=page_refs,
-            retry_counters=retry_counters,
-        )
-        _record_run_event(
-            db,
-            run=run,
-            event_type="run_finalized",
-            phase="finalizing",
-            status_after=run.status,
-            metrics_json={"completed_at": run.completed_at.isoformat() if run.completed_at else None},
-            commit=True,
-        )
-    except Exception as exc:
-        run = db.get(ConnectorRun, connector_run_id)
-        if run:
-            run.status = "failed"
-            run.error_summary = f"orchestrator_internal_error: {exc}"
-            run.completed_at = _utcnow()
-            _release_lease(run)
+                db.commit()
+                return
             _record_run_event(
                 db,
                 run=run,
-                event_type="run_failed",
+                event_type="lease_acquired",
+                phase="planning",
+                status_after=run.status,
+                metrics_json={"lease_owner": run.execution_lease_owner},
+                commit=True,
+            )
+
+            config = dict(run.request_config_json or {})
+            client = get_senate_lda_client(config)
+            run.effective_search_params_json = {
+                "base_url": settings.senate_lda_api_base_url,
+                "auth_mode": _client_auth_mode(client),
+                "logical_query": _logical_query_from_config(config),
+            }
+            run.effective_filters_json = [{"field": key, "value": value} for key, value in _logical_query_from_config(config).items()]
+            run.effective_sort = str(config.get("ordering", "-dt_posted"))
+            run.effective_order = "desc" if str(config.get("ordering", "")).startswith("-") else "asc"
+            run.effective_page_size = int(config.get("page_size", 25))
+            db.commit()
+
+            retry_counters: dict[str, Any] = {}
+            rate_limiter = _RateLimiter(float(config.get("max_rps", 2.0)))
+            page_refs: list[str] = []
+
+            target_count = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run.connector_run_id).count()
+            if target_count == 0:
+                _record_run_event(
+                    db,
+                    run=run,
+                    event_type="discovery_started",
+                    phase="discovery",
+                    status_after=run.status,
+                )
+                discovered_records: list[dict[str, Any]] = []
+                page_number = 1
+                max_items = int(config.get("max_items", 0))
+                while True:
+                    if run.cancellation_requested_at:
+                        run.status = "cancelling"
+                        db.commit()
+                        break
+                    payload = client.list_filings(
+                        params=_build_list_params(config, page=page_number),
+                        timeout_seconds=int(config.get("request_timeout_seconds", 30)),
+                        retry_max_attempts_per_request=int(config.get("retry_max_attempts_per_request", 4)),
+                        retry_base_backoff_seconds=float(config.get("retry_base_backoff_seconds", 0.4)),
+                        retry_max_backoff_seconds=float(config.get("retry_max_backoff_seconds", 3.0)),
+                        retry_respect_retry_after=bool(config.get("retry_respect_retry_after", True)),
+                        rate_limiter=rate_limiter,
+                        retry_counters=retry_counters,
+                    )
+                    page_ref = _write_json(
+                        _page_snapshot_path(run.connector_run_id, page_number),
+                        {
+                            "schema_id": "senate_lda.page_snapshot.v1",
+                            "schema_version": 1,
+                            "connector_run_id": run.connector_run_id,
+                            "page_number": page_number,
+                            "params": _build_list_params(config, page=page_number),
+                            "payload": payload,
+                        },
+                    )
+                    page_refs.append(page_ref)
+                    results = [item for item in (payload.get("results") or []) if isinstance(item, dict)]
+                    for item in results:
+                        if max_items and len(discovered_records) >= max_items:
+                            break
+                        normalized_item = dict(item)
+                        normalized_item["_page_ref"] = page_ref
+                        discovered_records.append(normalized_item)
+                    run.page_count_completed = int(page_number)
+                    run.last_offset_committed = len(discovered_records)
+                    next_url = str(payload.get("next") or "").strip()
+                    max_items_reached = bool(max_items and len(discovered_records) >= max_items)
+                    run.next_page_available = bool(next_url) and not max_items_reached
+                    run.search_exhaustion_reason = "max_items_reached" if max_items_reached else ("next_page_absent" if not next_url else None)
+                    db.commit()
+                    _record_run_event(
+                        db,
+                        run=run,
+                        event_type="discovery_page_fetched",
+                        phase="discovery",
+                        status_after=run.status,
+                        metrics_json={"page_number": page_number, "result_count": len(results)},
+                    )
+                    if max_items_reached or not next_url or not results:
+                        break
+                    page_number += 1
+                    _renew_lease(db, run)
+
+                discovery_snapshot = {
+                    "schema_id": DISCOVERY_SCHEMA_ID,
+                    "schema_version": 1,
+                    "generated_at_utc": _utcnow().isoformat(),
+                    "connector_run_id": run.connector_run_id,
+                    "logical_query": _logical_query_from_config(config),
+                    "page_refs": page_refs,
+                    "page_count_completed": int(run.page_count_completed or 0),
+                    "search_exhaustion_reason": run.search_exhaustion_reason,
+                    "discovered_records": [
+                        {
+                            "filing_uuid": item.get("filing_uuid"),
+                            "filing_type": item.get("filing_type"),
+                            "filing_year": item.get("filing_year"),
+                            "filing_period": item.get("filing_period"),
+                            "dt_posted": item.get("dt_posted"),
+                            "registrant_name": _registrant_name(item),
+                            "client_name": _client_name(item),
+                            "detail_url": item.get("url"),
+                            "filing_document_url": item.get("filing_document_url"),
+                            "page_ref": item.get("_page_ref"),
+                        }
+                        for item in discovered_records
+                    ],
+                }
+                run.discovery_snapshot_ref = _write_json(_discovery_snapshot_path(run.connector_run_id), discovery_snapshot)
+                db.commit()
+                _create_targets_from_discovery(
+                    db,
+                    run=run,
+                    discovered_records=discovered_records,
+                    run_mode=str(config.get("run_mode", "metadata_only")),
+                    include_filing_detail=bool(config.get("include_filing_detail", False)),
+                )
+                targets = (
+                    db.query(ConnectorRunTarget)
+                    .filter(ConnectorRunTarget.connector_run_id == run.connector_run_id)
+                    .order_by(ConnectorRunTarget.ordinal.asc())
+                    .all()
+                )
+                run.selection_manifest_ref = _write_json(
+                    _selection_manifest_path(run.connector_run_id),
+                    {
+                        "schema_id": SELECTION_SCHEMA_ID,
+                        "schema_version": 1,
+                        "generated_at_utc": _utcnow().isoformat(),
+                        "connector_run_id": run.connector_run_id,
+                        "target_count": len(targets),
+                        "targets": [
+                            {
+                                "ordinal": int(target.ordinal or 0),
+                                "filing_uuid": target.sciencebase_item_id,
+                                "status": target.status,
+                                "detail_url": dict(target.source_reference_json or {}).get("detail_url"),
+                                "document_url": target.sciencebase_download_uri,
+                            }
+                            for target in targets
+                        ],
+                    },
+                )
+                db.commit()
+
+            if (
+                str(config.get("run_mode", "metadata_only")) != "dry_run"
+                and bool(config.get("include_filing_detail", False))
+                and run.status != "cancelling"
+            ):
+                _hydrate_detail_targets(
+                    db,
+                    run=run,
+                    client=client,
+                    config=config,
+                    rate_limiter=rate_limiter,
+                    retry_counters=retry_counters,
+                )
+
+            retry_counters["rate_limiter_sleep_seconds"] = rate_limiter.total_sleep_seconds
+            _finalize_run(db, run)
+            _write_senate_lda_summary(
+                db,
+                run=run,
+                config=config,
+                client=client,
+                page_refs=page_refs,
+                retry_counters=retry_counters,
+            )
+            _record_run_event(
+                db,
+                run=run,
+                event_type="run_finalized",
                 phase="finalizing",
                 status_after=run.status,
-                error_class="orchestrator_internal_error",
-                message=str(exc),
+                metrics_json={"completed_at": run.completed_at.isoformat() if run.completed_at else None},
+                commit=True,
             )
-            db.commit()
+        except Exception as exc:
+            run = db.get(ConnectorRun, connector_run_id)
+            if run:
+                run.status = "failed"
+                run.error_summary = f"orchestrator_internal_error: {exc}"
+                run.completed_at = _utcnow()
+                _release_lease(run)
+                _record_run_event(
+                    db,
+                    run=run,
+                    event_type="run_failed",
+                    phase="finalizing",
+                    status_after=run.status,
+                    error_class="orchestrator_internal_error",
+                    message=str(exc),
+                )
+                db.commit()
+        finally:
+            SENATE_LDA_EXECUTOR_GUARDS.release_run_slot()
     finally:
-        SENATE_LDA_EXECUTOR_GUARDS.release_run_slot()
         db.close()

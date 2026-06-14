@@ -2709,120 +2709,146 @@ def _finalize_run(db: Session, run: ConnectorRun) -> None:
 
 def execute_connector_run(connector_run_id: str) -> None:
     db = SessionLocal()
-    EXECUTOR_GUARDS.acquire_run_slot()
     try:
-        run = db.get(ConnectorRun, connector_run_id)
-        if not run:
-            return
-        if run.status in RUN_TERMINAL_STATUSES:
-            return
-        if not _acquire_lease(db, run):
-            run.error_summary = "lease_conflict"
-            _record_run_event(
-                db,
-                run=run,
-                event_type="lease_conflict",
-                phase="planning",
-                status_after=run.status,
-                error_class="lease_conflict",
-            )
-            db.commit()
-            return
-        lease_token = run.execution_lease_token
-        _record_run_event(
-            db,
-            run=run,
-            event_type="lease_acquired",
-            phase="planning",
-            status_after=run.status,
-            metrics_json={"lease_owner": run.execution_lease_owner},
-            commit=True,
-        )
-
-        config = dict(run.request_config_json or {})
-        adapter = get_sciencebase_adapter(config)
-
-        existing_target_count = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run.connector_run_id).count()
-        if existing_target_count == 0:
-            _discover_targets(db, run, adapter)
-            _apply_reconciliation_targets(db, run, config)
-            _record_run_event(
-                db,
-                run=run,
-                event_type="targets_discovered",
-                phase="target_creation",
-                status_after=run.status,
-                metrics_json={"discovered_count": int(run.discovered_count or 0)},
-                commit=True,
-            )
-
-        targets = (
-            db.query(ConnectorRunTarget)
-            .filter(ConnectorRunTarget.connector_run_id == run.connector_run_id)
-            .order_by(ConnectorRunTarget.ordinal.asc())
-            .all()
-        )
-        resume_target_ordinal = _resolve_resume_target_ordinal(db, run)
-        targets_to_process = targets
-        if resume_target_ordinal > 0:
-            has_nonterminal_before_cursor = any(
-                not _target_terminal_for_processing(item)
-                for item in targets
-                if int(item.ordinal or 0) <= resume_target_ordinal
-            )
-            if not has_nonterminal_before_cursor:
-                targets_to_process = [item for item in targets if int(item.ordinal or 0) > resume_target_ordinal]
-
-        _maybe_record_checkpoint(
-            db,
-            run=run,
-            config=config,
-            granularity="phase",
-            phase="downloading",
-            partition_cursor="0",
-            page_offset=0,
-            last_successful_stage="downloading",
-            payload_json={"resume_target_ordinal": resume_target_ordinal},
-        )
-        for target in targets_to_process:
-            db.refresh(run)
-            _assert_active_lease(run, lease_token)
-            if run.cancellation_requested_at:
-                run.status = "cancelling"
+        EXECUTOR_GUARDS.acquire_run_slot()
+        try:
+            run = db.get(ConnectorRun, connector_run_id)
+            if not run:
+                return
+            if run.status in RUN_TERMINAL_STATUSES:
+                return
+            if not _acquire_lease(db, run):
+                run.error_summary = "lease_conflict"
                 _record_run_event(
                     db,
                     run=run,
-                    event_type="run_cancelling",
-                    phase="finalizing",
+                    event_type="lease_conflict",
+                    phase="planning",
                     status_after=run.status,
+                    error_class="lease_conflict",
                 )
                 db.commit()
-                break
-            if run.budget_exhausted and target.status == "selected":
-                _transition_target_atomic(
+                return
+            lease_token = run.execution_lease_token
+            _record_run_event(
+                db,
+                run=run,
+                event_type="lease_acquired",
+                phase="planning",
+                status_after=run.status,
+                metrics_json={"lease_owner": run.execution_lease_owner},
+                commit=True,
+            )
+
+            config = dict(run.request_config_json or {})
+            adapter = get_sciencebase_adapter(config)
+
+            existing_target_count = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run.connector_run_id).count()
+            if existing_target_count == 0:
+                _discover_targets(db, run, adapter)
+                _apply_reconciliation_targets(db, run, config)
+                _record_run_event(
                     db,
                     run=run,
-                    target=target,
-                    lease_token=lease_token,
-                    status_after="budget_blocked",
-                    phase="downloading",
-                    stage="downloading",
-                    event_type="target_budget_blocked",
-                    operator_reason_code="budget_exhausted",
-                    retry_eligible=False,
-                    target_updates={
-                        "versioning_reason_code": "budget_exhausted_before_start",
-                        "error_stage": None,
-                        "error_message": None,
-                        "last_error_class": None,
-                    },
+                    event_type="targets_discovered",
+                    phase="target_creation",
+                    status_after=run.status,
+                    metrics_json={"discovered_count": int(run.discovered_count or 0)},
+                    commit=True,
                 )
+
+            targets = (
+                db.query(ConnectorRunTarget)
+                .filter(ConnectorRunTarget.connector_run_id == run.connector_run_id)
+                .order_by(ConnectorRunTarget.ordinal.asc())
+                .all()
+            )
+            resume_target_ordinal = _resolve_resume_target_ordinal(db, run)
+            targets_to_process = targets
+            if resume_target_ordinal > 0:
+                has_nonterminal_before_cursor = any(
+                    not _target_terminal_for_processing(item)
+                    for item in targets
+                    if int(item.ordinal or 0) <= resume_target_ordinal
+                )
+                if not has_nonterminal_before_cursor:
+                    targets_to_process = [item for item in targets if int(item.ordinal or 0) > resume_target_ordinal]
+
+            _maybe_record_checkpoint(
+                db,
+                run=run,
+                config=config,
+                granularity="phase",
+                phase="downloading",
+                partition_cursor="0",
+                page_offset=0,
+                last_successful_stage="downloading",
+                payload_json={"resume_target_ordinal": resume_target_ordinal},
+            )
+            for target in targets_to_process:
+                db.refresh(run)
+                _assert_active_lease(run, lease_token)
+                if run.cancellation_requested_at:
+                    run.status = "cancelling"
+                    _record_run_event(
+                        db,
+                        run=run,
+                        event_type="run_cancelling",
+                        phase="finalizing",
+                        status_after=run.status,
+                    )
+                    db.commit()
+                    break
+                if run.budget_exhausted and target.status == "selected":
+                    _transition_target_atomic(
+                        db,
+                        run=run,
+                        target=target,
+                        lease_token=lease_token,
+                        status_after="budget_blocked",
+                        phase="downloading",
+                        stage="downloading",
+                        event_type="target_budget_blocked",
+                        operator_reason_code="budget_exhausted",
+                        retry_eligible=False,
+                        target_updates={
+                            "versioning_reason_code": "budget_exhausted_before_start",
+                            "error_stage": None,
+                            "error_message": None,
+                            "last_error_class": None,
+                        },
+                    )
+                    _maybe_record_checkpoint(
+                        db,
+                        run=run,
+                        config=config,
+                        granularity="target",
+                        phase="downloading",
+                        partition_cursor="0",
+                        page_offset=0,
+                        last_item_id=target.sciencebase_item_id,
+                        last_target_id=target.connector_run_target_id,
+                        last_successful_stage=target.status,
+                        payload_json={"target_status": target.status},
+                    )
+                    continue
+                _run_target_pipeline(db, run, target, adapter, config, lease_token)
+                _assert_active_lease(run, lease_token)
+                run.query_plan_json = {
+                    **(run.query_plan_json or {}),
+                    "checkpoint": {
+                        "target_ordinal_completed": target.ordinal,
+                        "last_stage": target.status,
+                        "updated_at": _utcnow().isoformat(),
+                    },
+                }
+                db.commit()
                 _maybe_record_checkpoint(
                     db,
                     run=run,
                     config=config,
                     granularity="target",
-                    phase="downloading",
+                    phase="downloading" if target.status in {"downloaded", "download_failed", "blocked_by_fetch_policy"} else "recommending",
                     partition_cursor="0",
                     page_offset=0,
                     last_item_id=target.sciencebase_item_id,
@@ -2830,82 +2856,58 @@ def execute_connector_run(connector_run_id: str) -> None:
                     last_successful_stage=target.status,
                     payload_json={"target_status": target.status},
                 )
-                continue
-            _run_target_pipeline(db, run, target, adapter, config, lease_token)
-            _assert_active_lease(run, lease_token)
-            run.query_plan_json = {
-                **(run.query_plan_json or {}),
-                "checkpoint": {
-                    "target_ordinal_completed": target.ordinal,
-                    "last_stage": target.status,
-                    "updated_at": _utcnow().isoformat(),
-                },
-            }
-            db.commit()
+                _renew_lease(db, run)
+                lease_token = run.execution_lease_token
+
+            if run.budget_exhausted and not run.search_exhaustion_reason:
+                run.search_exhaustion_reason = "budget_exhausted"
+                db.commit()
+
             _maybe_record_checkpoint(
                 db,
                 run=run,
                 config=config,
-                granularity="target",
-                phase="downloading" if target.status in {"downloaded", "download_failed", "blocked_by_fetch_policy"} else "recommending",
+                granularity="phase",
+                phase="finalizing",
                 partition_cursor="0",
                 page_offset=0,
-                last_item_id=target.sciencebase_item_id,
-                last_target_id=target.connector_run_target_id,
-                last_successful_stage=target.status,
-                payload_json={"target_status": target.status},
+                last_successful_stage="finalizing",
             )
-            _renew_lease(db, run)
-            lease_token = run.execution_lease_token
-
-        if run.budget_exhausted and not run.search_exhaustion_reason:
-            run.search_exhaustion_reason = "budget_exhausted"
-            db.commit()
-
-        _maybe_record_checkpoint(
-            db,
-            run=run,
-            config=config,
-            granularity="phase",
-            phase="finalizing",
-            partition_cursor="0",
-            page_offset=0,
-            last_successful_stage="finalizing",
-        )
-        _finalize_run(db, run)
-        _record_run_event(
-            db,
-            run=run,
-            event_type="run_finalized",
-            phase="finalizing",
-            status_after=run.status,
-            metrics_json={"completed_at": run.completed_at.isoformat() if run.completed_at else None},
-            commit=True,
-        )
-    except Exception as exc:
-        run = db.get(ConnectorRun, connector_run_id)
-        if run:
-            run.status = "failed"
-            if "lease_conflict" in str(exc):
-                run.error_summary = "lease_conflict"
-                error_class = "lease_conflict"
-            else:
-                run.error_summary = f"orchestrator_internal_error: {exc}"
-                error_class = "orchestrator_internal_error"
-            run.completed_at = _utcnow()
-            _release_lease(run)
+            _finalize_run(db, run)
             _record_run_event(
                 db,
                 run=run,
-                event_type="run_failed",
+                event_type="run_finalized",
                 phase="finalizing",
                 status_after=run.status,
-                error_class=error_class,
-                message=str(exc),
+                metrics_json={"completed_at": run.completed_at.isoformat() if run.completed_at else None},
+                commit=True,
             )
-            db.commit()
+        except Exception as exc:
+            run = db.get(ConnectorRun, connector_run_id)
+            if run:
+                run.status = "failed"
+                if "lease_conflict" in str(exc):
+                    run.error_summary = "lease_conflict"
+                    error_class = "lease_conflict"
+                else:
+                    run.error_summary = f"orchestrator_internal_error: {exc}"
+                    error_class = "orchestrator_internal_error"
+                run.completed_at = _utcnow()
+                _release_lease(run)
+                _record_run_event(
+                    db,
+                    run=run,
+                    event_type="run_failed",
+                    phase="finalizing",
+                    status_after=run.status,
+                    error_class=error_class,
+                    message=str(exc),
+                )
+                db.commit()
+        finally:
+            EXECUTOR_GUARDS.release_run_slot()
     finally:
-        EXECUTOR_GUARDS.release_run_slot()
         db.close()
 
 
