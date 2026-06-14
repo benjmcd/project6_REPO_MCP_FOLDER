@@ -2,26 +2,33 @@ import tempfile
 import os
 import warnings
 from typing import Any, List, Dict, Tuple
-import camelot
 import fitz
 
 def extract_advanced_table(
-    pdf_source: str | bytes, 
+    pdf_source: str | bytes,
     page_index_0: int
 ) -> Dict[str, Any]:
     """
     Extracts tables from a specific page using Camelot (Stream flavor).
-    
+
     Returns:
         Dict containing:
             'tables': List of units with kind 'pdf_table'
             'exclusion_bboxes': List of [x0, y0, x1, y1] regions
     """
+    try:
+        import camelot
+    except ImportError:
+        raise RuntimeError(
+            "camelot is not installed; advanced PDF table extraction is unavailable. "
+            "Install camelot-py[cv] + Ghostscript."
+        )
+
     result = {
         "tables": [],
         "exclusion_bboxes": []
     }
-    
+
     # Camelot requires a filesystem path.
     temp_pdf_path = None
     if isinstance(pdf_source, bytes):
