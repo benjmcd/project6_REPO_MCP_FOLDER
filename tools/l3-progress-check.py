@@ -4389,7 +4389,7 @@ LAYER3_STATIC = ROOT / "backend" / "app" / "review_ui" / "static"
 LAYER3_HTML = LAYER3_STATIC / "layer3.html"
 LAYER3_CSS = LAYER3_STATIC / "layer3.css"
 LAYER3_JS = LAYER3_STATIC / "layer3.js"
-LAYER3_CLAUDE = LAYER3_STATIC / "claude.html"
+LAYER3_CLAUDE = LAYER3_STATIC / "workbench.html"
 LAYER3_WORKBENCH_E2E = ROOT / "e2e" / "layer3-workbench.spec.js"
 LAYER3_FLOW_E2E = ROOT / "e2e" / "layer3-flow.spec.js"
 LAYER3_HANDOFF_E2E = ROOT / "e2e" / "layer3-handoff.spec.js"
@@ -26833,7 +26833,7 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
         "codex/l3-source-intake-delivery-controls-freeze",
         "ac3a776d6ce7cdfdac7a0d4ac82d9959951a3350",
         "325_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY.md",
-        "backend/app/review_ui/static/claude.html",
+        "backend/app/review_ui/static/workbench.html",
         "backend/app/review_ui/static/layer3.js",
         "backend/app/review_ui/static/layer3.html",
         "layer3.source_intake_external_export_download_delivery.v1",
@@ -26884,9 +26884,9 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
             "freeze_predecessor": "source_intake_external_export_download_delivery_boundary",
             "canonical_source_of_truth": "server_owned_source_intake_external_export_download_delivery_authority_and_rendered_projection_state",
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
-            "owner_ui": "backend/app/review_ui/static/claude.html",
+            "owner_ui": "backend/app/review_ui/static/workbench.html",
             "owner_service": "backend/app/services/layer3_workbench.py",
-            "rendered_surface": "backend/app/review_ui/static/claude.html",
+            "rendered_surface": "backend/app/review_ui/static/workbench.html",
             "future_owner_ui": "backend/app/review_ui/static/layer3.js",
             "future_rendered_shell": "backend/app/review_ui/static/layer3.html",
             "current_failure_boundary": "historical_source_intake_external_export_download_rendered_controls_absent_before_doc_327",
@@ -26947,8 +26947,8 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
             "branch": "codex/l3-source-intake-delivery-controls-freeze",
             "current_main_predecessor_commit": "ac3a776d6ce7cdfdac7a0d4ac82d9959951a3350",
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
-            "owner_ui": "backend/app/review_ui/static/claude.html",
-            "rendered_surface": "backend/app/review_ui/static/claude.html",
+            "owner_ui": "backend/app/review_ui/static/workbench.html",
+            "rendered_surface": "backend/app/review_ui/static/workbench.html",
             "future_owner_ui": "backend/app/review_ui/static/layer3.js",
             "future_rendered_shell": "backend/app/review_ui/static/layer3.html",
             "owner_service": "backend/app/services/layer3_workbench.py",

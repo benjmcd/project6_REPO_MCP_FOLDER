@@ -1160,7 +1160,7 @@ html, body {
         <option value="light">Light</option>
         <option value="dark">Dark</option>
         <option value="workbench">Workbench</option>
-        <option value="claude" selected>Claude</option>
+        <option value="prototype" selected>Prototype</option>
       </select>
     </div>
   </header>
@@ -1460,10 +1460,10 @@ function persistLayer3ThemePreference(preference) {
 function initializeThemeSelector() {
   const selector = document.getElementById('theme-selector');
   if (!selector) return;
-  selector.value = 'claude';
+  selector.value = 'prototype';
   selector.addEventListener('change', (event) => {
     const preference = event.target.value;
-    if (preference === 'claude') return;
+    if (preference === 'prototype') return;
     persistLayer3ThemePreference(preference);
     window.location.assign('/review/layer3');
   });
