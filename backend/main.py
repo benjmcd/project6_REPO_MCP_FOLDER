@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import inspect
+import os
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -79,6 +81,26 @@ def _endpoint_source(endpoint: Any) -> str:
     try:
         return inspect.getsource(endpoint)
     except (OSError, TypeError):
+        pass
+    # Robust fallback: inspect.getsource can fail (OSError) in some runtime
+    # environments when its linecache lookup misses (e.g. relative co_filename
+    # under a changed cwd). Read the defining module's file by its absolute
+    # __file__ and slice the function's source window directly.
+    try:
+        code = getattr(endpoint, "__code__", None)
+        if code is None:
+            return ""
+        module = sys.modules.get(getattr(endpoint, "__module__", "") or "")
+        path = getattr(module, "__file__", None) or code.co_filename
+        if not path:
+            return ""
+        if not os.path.isabs(path) and module is not None and getattr(module, "__file__", None):
+            path = module.__file__
+        with open(path, "r", encoding="utf-8") as handle:
+            lines = handle.readlines()
+        start = max(0, code.co_firstlineno - 1)
+        return "".join(lines[start:start + 400])
+    except Exception:  # noqa: BLE001 - best-effort source recovery
         return ""
 
 
