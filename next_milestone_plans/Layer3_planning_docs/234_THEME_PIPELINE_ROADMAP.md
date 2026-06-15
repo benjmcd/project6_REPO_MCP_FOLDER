@@ -9,7 +9,7 @@ This document plans from current main to a Layer 3 pipeline that can be exercise
 - live authority: `project6-origin/main`
 - audit anchor: `f956686b45337112d5cd1e28f5e1cfe28dac055f`
 - live workbench route: `/review/layer3`
-- static Claude prototype route: `/review/layer3/static/claude.html`
+- static Claude prototype route: `/review/layer3/static/workbench.html`
 - governing raw mixed rendered UI docs: `155_RAW_MIXED_RENDERED_UI_FREEZE.md` and `156_RAW_MIXED_RENDERED_UI_CONTRACT.md`
 - provider-private backend/API status doc: `233_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_STATUS_API.md`
 - proof/checker authority: `tools/l3-progress-check.py`, progress manifests, source, tests, and actual route behavior
@@ -90,7 +90,7 @@ flowchart TD
 - goal: freeze which pages and themes are live, prototype, deferred, or out of scope.
 - blocker: Claude is currently static prototype and must not be treated as live.
 - implementation-entry freeze needed: yes before any UI behavior change.
-- likely files: this planning pack, `layer3.html`, `layer3.js`, `layer3.css`, `claude.html`, Playwright specs.
+- likely files: this planning pack, `layer3.html`, `layer3.js`, `layer3.css`, `workbench.html`, Playwright specs.
 - required tests: static assertions for theme selector behavior, absence of unsupported controls, headed/headless screenshots for touched pages.
 - negative invariants: themes cannot alter API payloads, durable state, source authority, package behavior, provider behavior, connector behavior, or auth.
 - priority: P1.
@@ -112,7 +112,7 @@ flowchart TD
 - goal: decide whether Claude remains static prototype or becomes a live theme over the real workbench runtime.
 - blocker: current Claude file is monolithic, sample-state oriented, and not bound to live Layer 3 API state.
 - implementation-entry freeze needed: yes.
-- likely files: `claude.html`, `layer3.html`, `layer3.js`, `layer3.css`, Playwright specs, static page tests.
+- likely files: `workbench.html`, `layer3.html`, `layer3.js`, `layer3.css`, Playwright specs, static page tests.
 - required tests: prototype-only guard if deferred; full live-theme E2E if admitted.
 - negative invariants: no hidden sample data in user-manual/custom-spec fields unless it is connected to corpus authority; no browser-only durable authority; no extra product behavior.
 - priority: P2.

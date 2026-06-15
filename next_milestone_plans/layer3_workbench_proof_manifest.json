@@ -10882,7 +10882,7 @@
     "claude_manual_spec_status": "manual_spec_empty_and_stale_manual_source_node_removed",
     "implemented_files": [
       "backend/app/services/layer3_workbench.py",
-      "backend/app/review_ui/static/claude.html"
+      "backend/app/review_ui/static/workbench.html"
     ],
     "validation_tests": [
       "python -m pytest .\\backend\\tests\\test_layer3_workbench.py .\\backend\\tests\\test_layer3_page.py -q",
@@ -16028,7 +16028,7 @@
     "branch": "codex/l3-source-intake-delivery-controls-freeze",
     "current_main_predecessor_commit": "ac3a776d6ce7cdfdac7a0d4ac82d9959951a3350",
     "repo_confirmed_failure_boundary": "historical pre-implementation rendered UI absence before doc 327 added source-intake external export/download delivery controls",
-    "owner_ui": "backend/app/review_ui/static/claude.html",
+    "owner_ui": "backend/app/review_ui/static/workbench.html",
     "owner_service": "backend/app/services/layer3_workbench.py",
     "frozen_future_scope": [
       "layer3.source_intake_external_export_download_delivery.v1",
@@ -16057,7 +16057,7 @@
       "full_mockup_activation"
     ],
     "validation_status": "planning_control_freeze_only_progress_check_required",
-    "rendered_surface": "backend/app/review_ui/static/claude.html",
+    "rendered_surface": "backend/app/review_ui/static/workbench.html",
     "future_owner_ui": "backend/app/review_ui/static/layer3.js",
     "future_rendered_shell": "backend/app/review_ui/static/layer3.html"
   },

@@ -13,14 +13,14 @@ This document defines the presentation/runtime boundary for Layer 3 themes. It d
 | `dark` | live shared theme preference | `/review/layer3` live runtime | maintain parity proof |
 | `workbench` | live Layer 3-specific theme | `/review/layer3` live runtime | maintain parity proof |
 | `claude` selector option | live redirect only | redirects to static prototype | decide prototype-only vs live admission |
-| `/review/layer3/static/claude.html` | static prototype/sample-state surface | no live Layer 3 API authority | separate implementation freeze before live use |
+| `/review/layer3/static/workbench.html` | static prototype/sample-state surface | no live Layer 3 API authority | separate implementation freeze before live use |
 
 ## Page Classification
 
 | Page | Current Layer 3 role | Theme relevance | Boundary |
 | --- | --- | --- | --- |
 | `/review/layer3` | live Layer 3 workbench | primary theme-complete target | can drive current supported pipeline |
-| `/review/layer3/static/claude.html` | static prototype | visual/design reference only | not a live pipeline page |
+| `/review/layer3/static/workbench.html` | static prototype | visual/design reference only | not a live pipeline page |
 | `/review/nrc-aps` and subpages | upstream review surfaces | shared theme context only | not Layer 3 workbench authority |
 | `/review/analyst-insight` | adjacent review surface | future cross-page consistency | not current Layer 3 pipeline authority |
 | test harness routes under `/__test/layer3/*` | setup only | no user-facing theme | may seed authority for tests only |

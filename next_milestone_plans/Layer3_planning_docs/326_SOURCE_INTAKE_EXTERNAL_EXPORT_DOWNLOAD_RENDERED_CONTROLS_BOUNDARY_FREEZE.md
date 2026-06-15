@@ -5,7 +5,7 @@ Status: planning/control freeze for `source_intake_external_export_download_rend
 Branch: `codex/l3-source-intake-delivery-controls-freeze`
 Current-main predecessor commit: `ac3a776d6ce7cdfdac7a0d4ac82d9959951a3350`
 Predecessor implementation: `325_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY.md`
-Owner UI absence surface: `backend/app/review_ui/static/claude.html`
+Owner UI absence surface: `backend/app/review_ui/static/workbench.html`
 Future implementation owner UI: `backend/app/review_ui/static/layer3.js`
 Future implementation rendered shell: `backend/app/review_ui/static/layer3.html`
 Owner service: `backend/app/services/layer3_workbench.py`
