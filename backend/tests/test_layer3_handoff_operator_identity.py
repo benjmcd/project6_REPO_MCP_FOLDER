@@ -275,7 +275,7 @@ def test_none_mode_inertness_sweep(client, path):
     assert resp.status_code != 401, f"{path}: got 401 under none mode"
 
 
-def test_422_precedence_untrusted_proxy_forbid_model(proxy_untrusted_client):
+def test_pre_body_operator_authorization_export_prepare_precedes_body_validation(proxy_untrusted_client):
     headers = {
         _IDENTITY_HEADER: _CANARY_IDENTITY,
         _GROUPS_HEADER: _CANARY_GROUPS,
@@ -285,12 +285,14 @@ def test_422_precedence_untrusted_proxy_forbid_model(proxy_untrusted_client):
         json={"__unknown_forbidden_field__": "value"},
         headers=headers,
     )
-    assert resp.status_code == 422
+    assert resp.status_code == 409, resp.text
+    body = resp.json()
+    assert "untrusted_proxy_identity" in body.get("error_code", ""), body
     assert _CANARY_IDENTITY not in resp.text
     assert _CANARY_GROUPS not in resp.text
 
 
-def test_422_precedence_untrusted_proxy_forbid_model_connector_record(proxy_untrusted_client):
+def test_pre_body_operator_authorization_connector_record_precedes_body_validation(proxy_untrusted_client):
     headers = {
         _IDENTITY_HEADER: _CANARY_IDENTITY,
         _GROUPS_HEADER: _CANARY_GROUPS,
@@ -300,7 +302,9 @@ def test_422_precedence_untrusted_proxy_forbid_model_connector_record(proxy_untr
         json={"__unknown_forbidden_field__": "value"},
         headers=headers,
     )
-    assert resp.status_code == 422
+    assert resp.status_code == 409, resp.text
+    body = resp.json()
+    assert "untrusted_proxy_identity" in body.get("error_code", ""), body
     assert _CANARY_IDENTITY not in resp.text
     assert _CANARY_GROUPS not in resp.text
 
