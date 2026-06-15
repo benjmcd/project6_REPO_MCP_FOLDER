@@ -162,7 +162,7 @@ def test_none_mode_inertness_sweep(path, client):
     "/api/v1/layer3/package/review/preview",
     "/api/v1/layer3/package/review/commit",
 ])
-def test_422_precedence_pin(path, client, monkeypatch):
+def test_pre_body_operator_authorization_precedes_body_validation(path, client, monkeypatch):
     monkeypatch.setattr(settings, "auth_owner", "proxy")
     monkeypatch.setattr(settings, "trusted_proxy_mode", False)
 
@@ -175,7 +175,9 @@ def test_422_precedence_pin(path, client, monkeypatch):
         },
     )
 
-    assert resp.status_code == 422
+    assert resp.status_code == 409, resp.text
+    body = resp.json()
+    assert "untrusted_proxy_identity" in body.get("error_code", ""), body
     raw = resp.text
     assert _IDENTITY_CANARY not in raw
     assert _GROUPS_CANARY not in raw

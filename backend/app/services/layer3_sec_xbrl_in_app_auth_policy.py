@@ -153,6 +153,8 @@ def authorize_sec_xbrl_route(
             http_status=403,
         )
 
+    actor_ref_hash, workspace_ref_hash, auth_owner_mode = _server_derived_principal(headers)
+
     if settings.layer3_route_authorization_mode == "role_enforcing":
         server_role = _server_derived_role(headers)
         if role == OWNER_ROLE and server_role == AUDITOR_ROLE:
@@ -163,7 +165,6 @@ def authorize_sec_xbrl_route(
                 http_status=403,
             )
 
-    actor_ref_hash, workspace_ref_hash, auth_owner_mode = _server_derived_principal(headers)
     policy_hash = _policy_hash(
         actor_ref_hash=actor_ref_hash,
         workspace_ref_hash=workspace_ref_hash,

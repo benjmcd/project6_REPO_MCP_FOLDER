@@ -11,6 +11,7 @@ from typing import Iterable
 
 
 ALLOWED_ROOT_ENTRIES = {
+    ".dockerignore",
     ".gitattributes",
     ".github",
     ".gitignore",
@@ -26,6 +27,7 @@ ALLOWED_ROOT_ENTRIES = {
     "BREAK_REFINEMENT_SUMMARY.md",
     "DECOMP_BREAK_PATCH_SUMMARY.md",
     "Dockerfile",
+    "Dockerfile.app",
     "METHOD_AWARE_FRAMEWORK_CHANGELOG.md",
     "POST_REVIEW_PATCH_SUMMARY.md",
     "PRIMARY_INVESTIGATION_FILE_LATEST_SESSION.json",
@@ -45,6 +47,7 @@ ALLOWED_ROOT_ENTRIES = {
     "corpus_verify.log",
     "data_actual",
     "data_demo",
+    "deploy",
     "diagnostics",
     "docs",
     "e2e",

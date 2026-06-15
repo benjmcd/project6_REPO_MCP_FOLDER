@@ -18,6 +18,19 @@ def test_root_surface_fails_unknown_top_level() -> None:
     assert issues[0].path == "surprise"
 
 
+def test_root_surface_allows_production_deployment_entries() -> None:
+    issues = validate_structure.check_root_surface(
+        [
+            ".dockerignore",
+            "Dockerfile.app",
+            "deploy/docker-compose.production.yml",
+            "deploy/proxy/nginx.conf",
+        ]
+    )
+
+    assert issues == []
+
+
 def test_json_syntax_reports_invalid_json(tmp_path: Path) -> None:
     (tmp_path / "bad.json").write_text("{bad", encoding="utf-8")
     (tmp_path / "good.json").write_text(json.dumps({"ok": True}), encoding="utf-8")

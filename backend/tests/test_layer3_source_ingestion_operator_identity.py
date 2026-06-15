@@ -1654,7 +1654,39 @@ def test_pre_body_operator_identity_upload_route_missing_identity(client_proxy_t
     assert _GROUPS_CANARY not in resp.text
 
 
-def test_422_precedence_pin_scan_route(client_proxy_untrusted):
+def test_pre_body_operator_authorization_upload_route_rejects_auditor_role(
+    tmp_path,
+    monkeypatch,
+):
+    client = _build_client(tmp_path, monkeypatch, auth_owner="proxy", trusted_proxy=True)
+    monkeypatch.setattr(settings, "layer3_route_authorization_mode", "role_enforcing")
+    monkeypatch.setattr(settings, "proxy_roles_header", "X-Forwarded-Roles")
+    monkeypatch.setattr(settings, "layer3_owner_role_tokens", "owner")
+    monkeypatch.setattr(settings, "layer3_auditor_role_tokens", "auditor")
+
+    try:
+        resp = client.post(
+            _p("/source/intake/upload"),
+            data={"operator_decision": "upload"},
+            headers={
+                "X-Forwarded-User": _IDENTITY_CANARY,
+                "X-Forwarded-Groups": _GROUPS_CANARY,
+                "X-Forwarded-Roles": "auditor",
+            },
+        )
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+    assert resp.status_code == 403, resp.text
+    body = resp.json()
+    assert "role_access_forbidden" in body.get("error_code", ""), body
+    assert _IDENTITY_CANARY not in resp.text
+    assert _GROUPS_CANARY not in resp.text
+
+
+def test_pre_body_operator_authorization_scan_route_precedes_body_validation(
+    client_proxy_untrusted,
+):
     resp = client_proxy_untrusted.post(
         _p("/source/ingestion/server-configured-directory/scan"),
         json={"extra_forbidden_field": "value"},
@@ -1663,7 +1695,9 @@ def test_422_precedence_pin_scan_route(client_proxy_untrusted):
             "X-Forwarded-Groups": _GROUPS_CANARY,
         },
     )
-    assert resp.status_code == 422, resp.text
+    assert resp.status_code == 409, resp.text
+    body = resp.json()
+    assert "untrusted_proxy_identity" in body.get("error_code", ""), body
     assert _IDENTITY_CANARY not in resp.text
     assert _GROUPS_CANARY not in resp.text
 

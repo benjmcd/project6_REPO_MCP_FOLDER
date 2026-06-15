@@ -32,11 +32,9 @@ _API = "/api/v1/layer3"
 _ME_PATH = "/operator/identity"
 
 # Representative routes — one from each family.
-# Handoff and package POST routes have all-optional Pydantic models so the auth
-# seam fires before business-logic validation.  Source_ingestion POST models all
-# have required fields, so FastAPI's 422 precedes the seam; we use the GET
-# source/intake/inventory route which is in source_ingestion.py and exercises
-# the identical seam.
+# Handoff, package, and source-ingestion POST routes are covered by the
+# pre-body authorization middleware. This representative GET route still
+# exercises the in-handler source-ingestion read seam.
 _HANDOFF_POST = "/handoff/export/prepare"
 _PACKAGE_POST = "/package/review/preview"
 _SOURCE_ROUTE = "/source/intake/inventory"  # GET — seam fires before DB lookup
@@ -386,10 +384,10 @@ class TestPackagePostAuthMatrix:
 class TestSourceIngestionAuthMatrix:
     """Auth matrix for the source_ingestion GET route.
 
-    All source_ingestion POST models have required Pydantic fields so FastAPI's
-    422 precedes the auth seam.  GET /source/intake/inventory is registered in
-    source_ingestion.py, uses _route_level_operator_identity(access='read'),
-    and is therefore the appropriate representative for this route family.
+    Source-ingestion POST routes are covered by the pre-body authorization
+    middleware.  GET /source/intake/inventory is registered in source_ingestion.py,
+    uses _route_level_operator_identity(access='read'), and remains the
+    representative in-handler read seam for this route family.
     """
 
     def test_none_mode_inert(self, client):

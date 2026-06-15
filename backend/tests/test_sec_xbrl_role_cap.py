@@ -239,6 +239,44 @@ class TestRoleEnforcingAuditorTokens:
         assert exc_info.value.http_status == 403
 
 
+class TestRoleEnforcingProxyPrincipalPrecedence:
+    """Principal posture errors remain authoritative before the role ceiling."""
+
+    @pytest.fixture(autouse=True)
+    def _setup(self, monkeypatch) -> None:
+        monkeypatch.setattr(settings, "layer3_route_authorization_mode", "role_enforcing")
+        _configure_proxy(monkeypatch)
+
+    def test_missing_identity_is_reported_before_role_claim_exceeds_authority(self) -> None:
+        headers = {
+            _GROUPS_HEADER: _GROUPS_CANARY,
+            _ROLES_HEADER: "auditor",
+        }
+
+        with pytest.raises(SecXbrlInAppAuthPolicyError) as exc_info:
+            authorize_sec_xbrl_route(
+                headers=headers,
+                route_family=_AUDITOR_ALLOWED_FAMILY,
+                requested_role=OWNER_ROLE,
+            )
+
+        assert exc_info.value.code == "sec_xbrl_in_app_auth_policy_missing_identity_authority"
+        assert exc_info.value.http_status == 401
+
+    def test_untrusted_proxy_is_reported_before_role_claim_exceeds_authority(self, monkeypatch) -> None:
+        monkeypatch.setattr(settings, "trusted_proxy_mode", False)
+
+        with pytest.raises(SecXbrlInAppAuthPolicyError) as exc_info:
+            authorize_sec_xbrl_route(
+                headers=_proxy_headers(role_value="auditor"),
+                route_family=_AUDITOR_ALLOWED_FAMILY,
+                requested_role=OWNER_ROLE,
+            )
+
+        assert exc_info.value.code == "sec_xbrl_in_app_auth_policy_untrusted_proxy_identity"
+        assert exc_info.value.http_status == 409
+
+
 # ---------------------------------------------------------------------------
 # 4. role_enforcing + AUTH_OWNER=none
 # ---------------------------------------------------------------------------
