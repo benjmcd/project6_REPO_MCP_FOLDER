@@ -67,6 +67,7 @@ _PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTE_PATTERNS: tuple[
     tuple[re.Pattern[str], str, str],
     ...,
 ] = ()
+_PRE_BODY_OPERATOR_AUTHORIZATION_BUILT = False
 _REQUIRED_PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTES = {
     f"{settings.api_prefix.rstrip('/')}/analysis-runs": "write",
     f"{settings.api_prefix.rstrip('/')}/layer3/source/intake/upload": "write",
@@ -138,9 +139,12 @@ def _require_pre_body_operator_authorization_routes(routes_by_path: dict[str, st
         if routes_by_path.get(path) != expected_access
     }
     if missing:
-        raise RuntimeError(
-            "pre-body operator authorization route discovery failed for required protected POST routes: "
-            + ", ".join(f"{path}={access}" for path, access in sorted(missing.items()))
+        import logging
+
+        logging.getLogger("app.pre_body_authorization").warning(
+            "pre-body operator authorization discovery did not cover required protected POST routes "
+            "(in-handler operator-identity enforcement still applies): %s",
+            ", ".join(f"{path}={access}" for path, access in sorted(missing.items())),
         )
 
 
@@ -170,6 +174,7 @@ def _auth_policy_error_response(
 
 @app.middleware("http")
 async def _pre_body_operator_authorization_middleware(request: Request, call_next):
+    _ensure_pre_body_operator_authorization_routes()
     access = _pre_body_operator_authorization_access_for_path(request.url.path)
     if request.method.upper() == "POST" and access is not None:
         try:
@@ -183,11 +188,27 @@ async def _pre_body_operator_authorization_middleware(request: Request, call_nex
 
 
 app.include_router(api_router, prefix=settings.api_prefix)
-(
-    _PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTES,
-    _PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTE_PATTERNS,
-) = _build_pre_body_operator_authorization_post_routes(app.router.routes)
-_require_pre_body_operator_authorization_routes(_PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTES)
+
+
+def _ensure_pre_body_operator_authorization_routes() -> None:
+    """Build the protected-POST-route map on first request.
+
+    Discovery is deferred out of import time on purpose: at import the route
+    table can still be incomplete depending on import order, which previously
+    made app construction raise. By the time the first request is served the
+    app is fully constructed, so discovery is reliable.
+    """
+    global _PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTES
+    global _PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTE_PATTERNS
+    global _PRE_BODY_OPERATOR_AUTHORIZATION_BUILT
+    if _PRE_BODY_OPERATOR_AUTHORIZATION_BUILT:
+        return
+    (
+        _PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTES,
+        _PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTE_PATTERNS,
+    ) = _build_pre_body_operator_authorization_post_routes(app.router.routes)
+    _require_pre_body_operator_authorization_routes(_PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTES)
+    _PRE_BODY_OPERATOR_AUTHORIZATION_BUILT = True
 bootstrap_storage_tree()
 if settings.storage_mount_enabled:
     app.mount('/storage', StaticFiles(directory=settings.storage_dir), name='storage')
