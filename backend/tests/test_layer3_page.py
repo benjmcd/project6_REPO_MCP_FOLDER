@@ -323,24 +323,24 @@ def test_layer3_static_assets_are_mounted() -> None:
     review_css = client.get("/review/layer3/static/review.css")
     css = client.get("/review/layer3/static/layer3.css")
     js = client.get("/review/layer3/static/layer3.js")
-    claude = client.get("/review/layer3/static/claude.html")
+    workbench = client.get("/review/layer3/static/workbench.html")
 
     assert review_css.status_code == 200
     assert css.status_code == 200
     assert js.status_code == 200
-    assert claude.status_code == 200
+    assert workbench.status_code == 200
     js_text = js.text.replace("\r\n", "\n")
-    assert "mockup spec §8A plus one bounded APS content document trace sample" in claude.text
-    assert "APS content document<br>selection" in claude.text
-    assert "aps-doc-operator-evidence-001" in claude.text
-    assert "ML26001A001" in claude.text
-    assert "aps_content_units_v2" in claude.text
-    assert "traceable_aps_content_document" in claude.text
-    assert "No corpus-backed manual/custom specification loaded." in claude.text
-    assert "const SPEC_CHIPS = [];" in claude.text
-    assert "Manual spec choices are intentionally empty" in claude.text
-    assert "Manual source classes<br>and intent chips" not in claude.text
-    assert "String(MATERIALS.length)" in claude.text
+    assert "mockup spec §8A plus one bounded APS content document trace sample" in workbench.text
+    assert "APS content document<br>selection" in workbench.text
+    assert "aps-doc-operator-evidence-001" in workbench.text
+    assert "ML26001A001" in workbench.text
+    assert "aps_content_units_v2" in workbench.text
+    assert "traceable_aps_content_document" in workbench.text
+    assert "No corpus-backed manual/custom specification loaded." in workbench.text
+    assert "const SPEC_CHIPS = [];" in workbench.text
+    assert "Manual spec choices are intentionally empty" in workbench.text
+    assert "Manual source classes<br>and intent chips" not in workbench.text
+    assert "String(MATERIALS.length)" in workbench.text
     assert 'html[data-theme="workbench"]' in review_css.text
     assert ".authority-rail" in css.text
     assert "body.layer3-page" in css.text
@@ -2512,7 +2512,7 @@ def test_layer3_package3_remaining_ui_state_contracts() -> None:
         "elements.resultReviewDecision.addEventListener",
     )
 
-    assert '<option value="claude">Claude</option>' in html
+    assert '<option value="prototype">Prototype</option>' in html
     for target in ("quantitative", "qualitative", "hybrid-mixed"):
         assert f'data-transfer-target="{target}"' in html
     for object_index in range(1, 21):

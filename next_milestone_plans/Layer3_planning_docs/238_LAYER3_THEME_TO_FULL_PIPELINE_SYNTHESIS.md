@@ -19,7 +19,7 @@ Purpose: consolidate current Layer 3 state from `project6-origin/main` into one 
 ## Current Surface Reality (as of this working snapshot)
 
 - **Live Layer 3 workbench route:** `/review/layer3`
-- **Static prototype route:** `/review/layer3/static/claude.html`
+- **Static prototype route:** `/review/layer3/static/workbench.html`
 - **Current Claude status:** prototype-only static surface; not a live pipeline theme.
 - **Live themes on `/review/layer3`:** `system`, `light`, `dark`, `workbench` (presentation variants only).
 - **Admitted source classes:** `dataset_version`, `aps_content_document` (server-owned manifest + hash flow for mixed input).
@@ -35,7 +35,7 @@ Purpose: consolidate current Layer 3 state from `project6-origin/main` into one 
 | `dark` | live | same as `system` | same as `system` |
 | `workbench` | live | same as `system` | same as `system` |
 | `claude` selector | prototype-only redirect | static sample-state route only | runtime parity not admitted |
-| `/review/layer3/static/claude.html` | static | manual or design-only proof only | not a live source of authority |
+| `/review/layer3/static/workbench.html` | static | manual or design-only proof only | not a live source of authority |
 
 Notes:
 

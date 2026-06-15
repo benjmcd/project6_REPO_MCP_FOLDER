@@ -323,6 +323,7 @@ py -3.12 tools\run_attached_dataset_eval.py --method-name cross_correlation --da
 ```
 
 ## Key docs
+- [docs/first-boot-capabilities.md](docs/first-boot-capabilities.md) (What works on a default boot vs. what is gated by key/secret/flag)
 - [docs/analyst_insight/analyst_insight_status_handoff.md](docs/analyst_insight/analyst_insight_status_handoff.md)
 - [docs/nrc_adams/nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md)
 - [docs/nrc_adams/nrc_aps_ui_launch_runbook.md](docs/nrc_adams/nrc_aps_ui_launch_runbook.md)

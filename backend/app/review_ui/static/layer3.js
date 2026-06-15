@@ -1511,12 +1511,12 @@ function isLayer3ThemePreference(value) {
     return value === 'workbench' || value === LAYER3_MOCKUP_WORKBENCH_THEME;
 }
 
-function isClaudePrototypePreference(value) {
-    return value === 'claude';
+function isPrototypeThemePreference(value) {
+    return value === 'prototype';
 }
 
 function isValidThemePreference(value) {
-    return isSharedThemePreference(value) || isLayer3ThemePreference(value) || isClaudePrototypePreference(value);
+    return isSharedThemePreference(value) || isLayer3ThemePreference(value) || isPrototypeThemePreference(value);
 }
 
 function resolveTheme(preference) {
@@ -1527,9 +1527,9 @@ function resolveTheme(preference) {
 
 function applyThemePreference(preference, { persist = true } = {}) {
     const normalized = isValidThemePreference(preference) ? preference : 'system';
-    if (isClaudePrototypePreference(normalized)) {
+    if (isPrototypeThemePreference(normalized)) {
         if (persist) {
-            window.location.assign('/review/layer3/static/claude.html');
+            window.location.assign('/review/layer3/static/workbench.html');
         }
         return;
     }

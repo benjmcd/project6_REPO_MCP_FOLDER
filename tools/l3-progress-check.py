@@ -4389,7 +4389,7 @@ LAYER3_STATIC = ROOT / "backend" / "app" / "review_ui" / "static"
 LAYER3_HTML = LAYER3_STATIC / "layer3.html"
 LAYER3_CSS = LAYER3_STATIC / "layer3.css"
 LAYER3_JS = LAYER3_STATIC / "layer3.js"
-LAYER3_CLAUDE = LAYER3_STATIC / "claude.html"
+LAYER3_PROTOTYPE = LAYER3_STATIC / "workbench.html"
 LAYER3_WORKBENCH_E2E = ROOT / "e2e" / "layer3-workbench.spec.js"
 LAYER3_FLOW_E2E = ROOT / "e2e" / "layer3-flow.spec.js"
 LAYER3_HANDOFF_E2E = ROOT / "e2e" / "layer3-handoff.spec.js"
@@ -26833,7 +26833,7 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
         "codex/l3-source-intake-delivery-controls-freeze",
         "ac3a776d6ce7cdfdac7a0d4ac82d9959951a3350",
         "325_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BOUNDARY.md",
-        "backend/app/review_ui/static/claude.html",
+        "backend/app/review_ui/static/workbench.html",
         "backend/app/review_ui/static/layer3.js",
         "backend/app/review_ui/static/layer3.html",
         "layer3.source_intake_external_export_download_delivery.v1",
@@ -26884,9 +26884,9 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
             "freeze_predecessor": "source_intake_external_export_download_delivery_boundary",
             "canonical_source_of_truth": "server_owned_source_intake_external_export_download_delivery_authority_and_rendered_projection_state",
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
-            "owner_ui": "backend/app/review_ui/static/claude.html",
+            "owner_ui": "backend/app/review_ui/static/workbench.html",
             "owner_service": "backend/app/services/layer3_workbench.py",
-            "rendered_surface": "backend/app/review_ui/static/claude.html",
+            "rendered_surface": "backend/app/review_ui/static/workbench.html",
             "future_owner_ui": "backend/app/review_ui/static/layer3.js",
             "future_rendered_shell": "backend/app/review_ui/static/layer3.html",
             "current_failure_boundary": "historical_source_intake_external_export_download_rendered_controls_absent_before_doc_327",
@@ -26947,8 +26947,8 @@ def _check_source_intake_external_export_download_rendered_controls_boundary_fre
             "branch": "codex/l3-source-intake-delivery-controls-freeze",
             "current_main_predecessor_commit": "ac3a776d6ce7cdfdac7a0d4ac82d9959951a3350",
             "governing_doc": "next_milestone_plans/Layer3_planning_docs/326_SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_CONTROLS_BOUNDARY_FREEZE.md",
-            "owner_ui": "backend/app/review_ui/static/claude.html",
-            "rendered_surface": "backend/app/review_ui/static/claude.html",
+            "owner_ui": "backend/app/review_ui/static/workbench.html",
+            "rendered_surface": "backend/app/review_ui/static/workbench.html",
             "future_owner_ui": "backend/app/review_ui/static/layer3.js",
             "future_rendered_shell": "backend/app/review_ui/static/layer3.html",
             "owner_service": "backend/app/services/layer3_workbench.py",
@@ -31711,14 +31711,14 @@ def _check_pr798_review_debt_closeout(errors: list[str]) -> None:
         if term not in workbench_test_text:
             errors.append(f"{_rel(LAYER3_WORKBENCH_TEST)} missing PR #798 test term: {term}")
 
-    claude_text = _read_required_text(LAYER3_CLAUDE, errors)
+    claude_text = _read_required_text(LAYER3_PROTOTYPE, errors)
     if "const SPEC_CHIPS = [];" not in claude_text:
-        errors.append(f"{_rel(LAYER3_CLAUDE)} missing empty SPEC_CHIPS guard")
+        errors.append(f"{_rel(LAYER3_PROTOTYPE)} missing empty SPEC_CHIPS guard")
     if "Manual source classes<br>and intent chips" in claude_text:
-        errors.append(f"{_rel(LAYER3_CLAUDE)} still contains stale manual source node")
+        errors.append(f"{_rel(LAYER3_PROTOTYPE)} still contains stale manual source node")
 
     page_test_text = _read_required_text(LAYER3_PAGE_TEST, errors)
-    if '"Manual source classes<br>and intent chips" not in claude.text' not in page_test_text:
+    if '"Manual source classes<br>and intent chips" not in workbench.text' not in page_test_text:
         errors.append(f"{_rel(LAYER3_PAGE_TEST)} missing stale Claude manual-node absence assertion")
 
 
@@ -118796,7 +118796,7 @@ def main() -> int:
         LAYER3_HTML,
         LAYER3_CSS,
         LAYER3_JS,
-        LAYER3_CLAUDE,
+        LAYER3_PROTOTYPE,
         SOURCE_BOUNDARY_TEST,
         PREFLIGHT_REQUEST_CONTRACT_TEST,
         APS_SOURCE_FAMILY_TEST,

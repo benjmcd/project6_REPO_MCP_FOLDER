@@ -23,7 +23,7 @@ If any validation is infeasible, report the exact reason and continue only withi
 Use these questions before editing. If the answer cannot be proven from current source/tests/docs, stay in audit mode.
 
 1. Is the target surface live, prototype, or deferred?
-   - recommended answer now: `/review/layer3` is live; `/review/layer3/static/claude.html` is prototype.
+   - recommended answer now: `/review/layer3` is live; `/review/layer3/static/workbench.html` is prototype.
 2. Does the change alter product behavior or only proof/planning?
    - recommended answer for the next pass: test-only over existing live themes.
 3. Could the change accidentally make Claude live?

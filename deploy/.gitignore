@@ -1,0 +1,8 @@
+# Operator-generated secret files — never commit these.
+# The corresponding .example files remain tracked.
+.env
+proxy/htpasswd
+proxy/roles.map
+
+# Ephemeral smoke-test directory created by deploy/smoke.ps1
+.smoke/

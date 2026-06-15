@@ -3530,230 +3530,252 @@ def _process_target_metadata(
 
 def execute_nrc_adams_run(connector_run_id: str) -> None:
     db = SessionLocal()
-    NRC_EXECUTOR_GUARDS.acquire_run_slot()
-    client: Any | None = None
     try:
-        run = db.get(ConnectorRun, connector_run_id)
-        if not run:
-            return
-        if run.status in RUN_TERMINAL_STATUSES:
-            return
-        if not _acquire_lease(db, run):
-            run.error_summary = "lease_conflict"
-            _record_run_event(
-                db,
-                run=run,
-                event_type="lease_conflict",
-                phase="planning",
-                status_after=run.status,
-                error_class="lease_conflict",
-            )
-            db.commit()
-            return
-        lease_token = run.execution_lease_token
-        _record_run_event(
-            db,
-            run=run,
-            event_type="lease_acquired",
-            phase="planning",
-            status_after=run.status,
-            metrics_json={"lease_owner": run.execution_lease_owner},
-            commit=True,
-        )
-
-        config = dict(run.request_config_json or {})
-        client = get_nrc_adams_client(config)
-        wire_shape_mode = _enum_wire_shape_mode(config.get("wire_shape_mode"), default="auto_probe")
-        base_logical_query = _logical_query_from_config(config)
-        runtime_logical_query, sync_runtime_meta = _resolve_runtime_logical_query(
-            db,
-            base_logical_query=base_logical_query,
-            config=config,
-        )
-        traversal_defaults = dict(config.get("traversal_defaults") or {})
-        skip = max(0, _coerce_int(traversal_defaults.get("initial_skip", 0), 0))
-        page_size = max(1, min(_coerce_int(config.get("page_size", 100), 100), 100))
-        effective_take = max(1, min(_coerce_int(traversal_defaults.get("default_take", page_size), page_size), 100))
-        max_items = int(config.get("max_items", 0))
-        subscription_key_hash = str(config.get("subscription_key_hash") or client.subscription_key_hash)
-        api_host = str(config.get("api_host") or client.api_host)
-        dialect_order = _preferred_dialect_order(
-            db,
-            subscription_key_hash=subscription_key_hash,
-            api_host=api_host,
-            forced_mode=wire_shape_mode,
-        )
-        wire_payload_candidates = _build_wire_payload_candidates(
-            runtime_logical_query,
-            dialect_order=dialect_order,
-            skip=skip,
-            take=effective_take,
-        )
-
-        run.effective_search_params_json = {
-            "mode": config.get("mode"),
-            "wire_shape_mode": wire_shape_mode,
-            "wire_shape_candidates": [item.get("wire_shape") for item in wire_payload_candidates],
-            "mapper_version": config.get("mapper_version"),
-            "compiler_version": config.get("compiler_version", APS_COMPILER_VERSION),
-            "logical_query": _logical_query_dict(runtime_logical_query),
-            "mapper_warnings": config.get("mapper_warnings", []),
-            "lint_warnings": config.get("lint_warnings", []),
-            "sync_metadata": sync_runtime_meta,
-            "safeguard_effective_config": _safeguard_effective_config(config),
-        }
-        run.effective_filters_json = [_strip_internal_fields(dict(item or {})) for item in runtime_logical_query.properties]
-        run.effective_sort = runtime_logical_query.sort_field
-        run.effective_order = "desc" if int(runtime_logical_query.sort_direction) == 1 else "asc"
-        run.effective_page_size = page_size
-        db.commit()
-
-        _record_run_event(
-            db,
-            run=run,
-            event_type="mapping_applied",
-            phase="planning",
-            status_after=run.status,
-            metrics_json={
-                "mapper_version": config.get("mapper_version"),
-                "warnings": config.get("mapper_warnings", []),
-                "lint_warnings": config.get("lint_warnings", []),
-                "compiler_version": config.get("compiler_version", APS_COMPILER_VERSION),
-                "safeguard_policy_hash": config.get("safeguard_policy_hash"),
-            },
-            commit=True,
-        )
-        observed_schema_variants: dict[str, int] = {}
-        accession_seen: set[str] = set()
-        search_exchange_refs: list[str] = []
-        discovery_pages: list[dict[str, Any]] = []
-        selection_targets: list[dict[str, Any]] = []
-        ordinal = 0
-        page_index = 0
-        max_observed_watermark: datetime | None = None
-
-        while True:
-            db.refresh(run)
-            _assert_active_lease(run, lease_token)
-            if run.cancellation_requested_at:
-                run.status = "cancelling"
+        NRC_EXECUTOR_GUARDS.acquire_run_slot()
+        client: Any | None = None
+        try:
+            run = db.get(ConnectorRun, connector_run_id)
+            if not run:
+                return
+            if run.status in RUN_TERMINAL_STATUSES:
+                return
+            if not _acquire_lease(db, run):
+                run.error_summary = "lease_conflict"
                 _record_run_event(
                     db,
                     run=run,
-                    event_type="run_cancelling",
-                    phase="finalizing",
+                    event_type="lease_conflict",
+                    phase="planning",
                     status_after=run.status,
+                    error_class="lease_conflict",
                 )
                 db.commit()
-                break
-            if max_items > 0 and len(accession_seen) >= max_items:
-                run.search_exhaustion_reason = "max_items_cap"
-                db.commit()
-                break
+                return
+            lease_token = run.execution_lease_token
+            _record_run_event(
+                db,
+                run=run,
+                event_type="lease_acquired",
+                phase="planning",
+                status_after=run.status,
+                metrics_json={"lease_owner": run.execution_lease_owner},
+                commit=True,
+            )
 
+            config = dict(run.request_config_json or {})
+            client = get_nrc_adams_client(config)
+            wire_shape_mode = _enum_wire_shape_mode(config.get("wire_shape_mode"), default="auto_probe")
+            base_logical_query = _logical_query_from_config(config)
+            runtime_logical_query, sync_runtime_meta = _resolve_runtime_logical_query(
+                db,
+                base_logical_query=base_logical_query,
+                config=config,
+            )
+            traversal_defaults = dict(config.get("traversal_defaults") or {})
+            skip = max(0, _coerce_int(traversal_defaults.get("initial_skip", 0), 0))
+            page_size = max(1, min(_coerce_int(config.get("page_size", 100), 100), 100))
+            effective_take = max(1, min(_coerce_int(traversal_defaults.get("default_take", page_size), page_size), 100))
+            max_items = int(config.get("max_items", 0))
+            subscription_key_hash = str(config.get("subscription_key_hash") or client.subscription_key_hash)
+            api_host = str(config.get("api_host") or client.api_host)
+            dialect_order = _preferred_dialect_order(
+                db,
+                subscription_key_hash=subscription_key_hash,
+                api_host=api_host,
+                forced_mode=wire_shape_mode,
+            )
             wire_payload_candidates = _build_wire_payload_candidates(
                 runtime_logical_query,
                 dialect_order=dialect_order,
                 skip=skip,
                 take=effective_take,
             )
-            page_attempts: list[dict[str, Any]] = []
-            selected_wire_shape = "unknown"
-            selected_outbound_payload: dict[str, Any] | None = None
-            selected_exchange_ref: str | None = None
-            selected_schema_variant = "unknown"
-            selected_normalized_search: dict[str, Any] | None = None
 
-            for attempt_index, candidate in enumerate(wire_payload_candidates, start=1):
-                outbound_payload = dict(candidate.get("payload") or {})
-                wire_shape = str(candidate.get("wire_shape") or "unknown")
-                take_sent = max(1, _coerce_int(outbound_payload.get("take", effective_take), effective_take))
+            run.effective_search_params_json = {
+                "mode": config.get("mode"),
+                "wire_shape_mode": wire_shape_mode,
+                "wire_shape_candidates": [item.get("wire_shape") for item in wire_payload_candidates],
+                "mapper_version": config.get("mapper_version"),
+                "compiler_version": config.get("compiler_version", APS_COMPILER_VERSION),
+                "logical_query": _logical_query_dict(runtime_logical_query),
+                "mapper_warnings": config.get("mapper_warnings", []),
+                "lint_warnings": config.get("lint_warnings", []),
+                "sync_metadata": sync_runtime_meta,
+                "safeguard_effective_config": _safeguard_effective_config(config),
+            }
+            run.effective_filters_json = [_strip_internal_fields(dict(item or {})) for item in runtime_logical_query.properties]
+            run.effective_sort = runtime_logical_query.sort_field
+            run.effective_order = "desc" if int(runtime_logical_query.sort_direction) == 1 else "asc"
+            run.effective_page_size = page_size
+            db.commit()
 
-                request_id = uuid.uuid4().hex
-                sent_at = _utcnow()
-                search_scope = f"search:{skip}:{wire_shape}:{take_sent}"
-                try:
-                    response = client.search(outbound_payload, scope_key=search_scope)
-                except TypeError:
-                    # Backward compatibility for test doubles that still expose search(payload) only.
-                    response = client.search(outbound_payload)
-                received_at = _utcnow()
-                response_payload, parse_status = _parse_json_response(response)
-                normalized_search = _normalize_search_response(response_payload or {})
-                schema_variant = str(normalized_search.get("schema_variant") or "unknown")
-                observed_schema_variants[schema_variant] = int(observed_schema_variants.get(schema_variant, 0)) + 1
-                parse_failure = str(parse_status or "").strip().lower() in nrc_aps_safeguards.APS_PARSE_FAILURE_STATUSES
+            _record_run_event(
+                db,
+                run=run,
+                event_type="mapping_applied",
+                phase="planning",
+                status_after=run.status,
+                metrics_json={
+                    "mapper_version": config.get("mapper_version"),
+                    "warnings": config.get("mapper_warnings", []),
+                    "lint_warnings": config.get("lint_warnings", []),
+                    "compiler_version": config.get("compiler_version", APS_COMPILER_VERSION),
+                    "safeguard_policy_hash": config.get("safeguard_policy_hash"),
+                },
+                commit=True,
+            )
+            observed_schema_variants: dict[str, int] = {}
+            accession_seen: set[str] = set()
+            search_exchange_refs: list[str] = []
+            discovery_pages: list[dict[str, Any]] = []
+            selection_targets: list[dict[str, Any]] = []
+            ordinal = 0
+            page_index = 0
+            max_observed_watermark: datetime | None = None
 
-                exchange = _build_exchange_payload(
-                    request_id=request_id,
-                    endpoint="POST /aps/api/search",
-                    request_url=str(response.request.url) if response.request else f"{settings.nrc_adams_api_base_url.rstrip('/')}/aps/api/search",
-                    request_headers={"Content-Type": "application/json", "Accept": "application/json"},
-                    request_body=outbound_payload,
-                    sent_at=sent_at,
-                    response_status=int(response.status_code),
-                    response_headers=dict(response.headers),
-                    response_body_text=response.text,
-                    received_at=received_at,
-                    metadata={
-                        "wire_shape": wire_shape,
-                        "attempt_index": attempt_index,
-                        "parse_status": parse_status,
-                        "schema_variant_observed": schema_variant,
-                        "results_key_observed": normalized_search.get("results_key"),
-                        "count_returned": normalized_search.get("count_returned"),
-                        "total_hits": normalized_search.get("total_hits"),
-                        "raw_total_key": normalized_search.get("raw_total_key"),
-                    },
-                )
-                exchange_ref = _write_json(
-                    Path(settings.connector_snapshots_dir) / f"{run.connector_run_id}_{request_id}_search_exchange.json",
-                    exchange,
-                )
-                search_exchange_refs.append(exchange_ref)
-                if parse_failure and hasattr(client, "record_parse_failure"):
-                    client.record_parse_failure(
-                        parse_status=parse_status,
-                        call_class="search",
-                        status_code=int(response.status_code),
-                        scope_key=search_scope,
-                        exchange_ref=exchange_ref,
+            while True:
+                db.refresh(run)
+                _assert_active_lease(run, lease_token)
+                if run.cancellation_requested_at:
+                    run.status = "cancelling"
+                    _record_run_event(
+                        db,
+                        run=run,
+                        event_type="run_cancelling",
+                        phase="finalizing",
+                        status_after=run.status,
                     )
-                _upsert_capability_attempt(
-                    db,
-                    subscription_key_hash=subscription_key_hash,
-                    api_host=api_host,
-                    dialect=wire_shape,
-                    status_code=int(response.status_code),
-                    exchange_ref=exchange_ref,
-                    parse_status=parse_status,
-                    normalized_search=normalized_search,
-                    take_sent=take_sent,
-                )
-
-                attempt_record = {
-                    "attempt_index": attempt_index,
-                    "wire_shape": wire_shape,
-                    "status_code": int(response.status_code),
-                    "parse_status": parse_status,
-                    "parse_failure": parse_failure,
-                    "schema_variant": schema_variant,
-                    "results_key": normalized_search.get("results_key"),
-                    "count_returned": normalized_search.get("count_returned"),
-                    "total_hits": normalized_search.get("total_hits"),
-                    "exchange_ref": exchange_ref,
-                }
-                page_attempts.append(attempt_record)
-
-                if int(response.status_code) < 400 and not parse_failure:
-                    selected_wire_shape = wire_shape
-                    selected_outbound_payload = outbound_payload
-                    selected_exchange_ref = exchange_ref
-                    selected_schema_variant = schema_variant
-                    selected_normalized_search = normalized_search
+                    db.commit()
+                    break
+                if max_items > 0 and len(accession_seen) >= max_items:
+                    run.search_exhaustion_reason = "max_items_cap"
+                    db.commit()
                     break
 
-                if int(response.status_code) < 400 and parse_failure:
+                wire_payload_candidates = _build_wire_payload_candidates(
+                    runtime_logical_query,
+                    dialect_order=dialect_order,
+                    skip=skip,
+                    take=effective_take,
+                )
+                page_attempts: list[dict[str, Any]] = []
+                selected_wire_shape = "unknown"
+                selected_outbound_payload: dict[str, Any] | None = None
+                selected_exchange_ref: str | None = None
+                selected_schema_variant = "unknown"
+                selected_normalized_search: dict[str, Any] | None = None
+
+                for attempt_index, candidate in enumerate(wire_payload_candidates, start=1):
+                    outbound_payload = dict(candidate.get("payload") or {})
+                    wire_shape = str(candidate.get("wire_shape") or "unknown")
+                    take_sent = max(1, _coerce_int(outbound_payload.get("take", effective_take), effective_take))
+
+                    request_id = uuid.uuid4().hex
+                    sent_at = _utcnow()
+                    search_scope = f"search:{skip}:{wire_shape}:{take_sent}"
+                    try:
+                        response = client.search(outbound_payload, scope_key=search_scope)
+                    except TypeError:
+                        # Backward compatibility for test doubles that still expose search(payload) only.
+                        response = client.search(outbound_payload)
+                    received_at = _utcnow()
+                    response_payload, parse_status = _parse_json_response(response)
+                    normalized_search = _normalize_search_response(response_payload or {})
+                    schema_variant = str(normalized_search.get("schema_variant") or "unknown")
+                    observed_schema_variants[schema_variant] = int(observed_schema_variants.get(schema_variant, 0)) + 1
+                    parse_failure = str(parse_status or "").strip().lower() in nrc_aps_safeguards.APS_PARSE_FAILURE_STATUSES
+
+                    exchange = _build_exchange_payload(
+                        request_id=request_id,
+                        endpoint="POST /aps/api/search",
+                        request_url=str(response.request.url) if response.request else f"{settings.nrc_adams_api_base_url.rstrip('/')}/aps/api/search",
+                        request_headers={"Content-Type": "application/json", "Accept": "application/json"},
+                        request_body=outbound_payload,
+                        sent_at=sent_at,
+                        response_status=int(response.status_code),
+                        response_headers=dict(response.headers),
+                        response_body_text=response.text,
+                        received_at=received_at,
+                        metadata={
+                            "wire_shape": wire_shape,
+                            "attempt_index": attempt_index,
+                            "parse_status": parse_status,
+                            "schema_variant_observed": schema_variant,
+                            "results_key_observed": normalized_search.get("results_key"),
+                            "count_returned": normalized_search.get("count_returned"),
+                            "total_hits": normalized_search.get("total_hits"),
+                            "raw_total_key": normalized_search.get("raw_total_key"),
+                        },
+                    )
+                    exchange_ref = _write_json(
+                        Path(settings.connector_snapshots_dir) / f"{run.connector_run_id}_{request_id}_search_exchange.json",
+                        exchange,
+                    )
+                    search_exchange_refs.append(exchange_ref)
+                    if parse_failure and hasattr(client, "record_parse_failure"):
+                        client.record_parse_failure(
+                            parse_status=parse_status,
+                            call_class="search",
+                            status_code=int(response.status_code),
+                            scope_key=search_scope,
+                            exchange_ref=exchange_ref,
+                        )
+                    _upsert_capability_attempt(
+                        db,
+                        subscription_key_hash=subscription_key_hash,
+                        api_host=api_host,
+                        dialect=wire_shape,
+                        status_code=int(response.status_code),
+                        exchange_ref=exchange_ref,
+                        parse_status=parse_status,
+                        normalized_search=normalized_search,
+                        take_sent=take_sent,
+                    )
+
+                    attempt_record = {
+                        "attempt_index": attempt_index,
+                        "wire_shape": wire_shape,
+                        "status_code": int(response.status_code),
+                        "parse_status": parse_status,
+                        "parse_failure": parse_failure,
+                        "schema_variant": schema_variant,
+                        "results_key": normalized_search.get("results_key"),
+                        "count_returned": normalized_search.get("count_returned"),
+                        "total_hits": normalized_search.get("total_hits"),
+                        "exchange_ref": exchange_ref,
+                    }
+                    page_attempts.append(attempt_record)
+
+                    if int(response.status_code) < 400 and not parse_failure:
+                        selected_wire_shape = wire_shape
+                        selected_outbound_payload = outbound_payload
+                        selected_exchange_ref = exchange_ref
+                        selected_schema_variant = schema_variant
+                        selected_normalized_search = normalized_search
+                        break
+
+                    if int(response.status_code) < 400 and parse_failure:
+                        if attempt_index < len(wire_payload_candidates):
+                            _record_run_event(
+                                db,
+                                run=run,
+                                event_type="search_shape_fallback",
+                                phase="planning",
+                                stage="search",
+                                status_after=run.status,
+                                reason_code="parse_failure_no_retry",
+                                message=f"wire_shape={wire_shape} parse_status={parse_status}",
+                                metrics_json={
+                                    "attempt": attempt_index,
+                                    "wire_shape": wire_shape,
+                                    "status_code": int(response.status_code),
+                                    "parse_status": parse_status,
+                                },
+                                commit=True,
+                            )
+                            continue
+                        raise RuntimeError(f"search_parse_failed:{parse_status}")
+
                     if attempt_index < len(wire_payload_candidates):
                         _record_run_event(
                             db,
@@ -3762,554 +3784,466 @@ def execute_nrc_adams_run(connector_run_id: str) -> None:
                             phase="planning",
                             stage="search",
                             status_after=run.status,
-                            reason_code="parse_failure_no_retry",
-                            message=f"wire_shape={wire_shape} parse_status={parse_status}",
-                            metrics_json={
-                                "attempt": attempt_index,
-                                "wire_shape": wire_shape,
-                                "status_code": int(response.status_code),
-                                "parse_status": parse_status,
-                            },
+                            message=f"wire_shape={wire_shape} status={response.status_code}",
+                            metrics_json={"attempt": attempt_index, "wire_shape": wire_shape, "status_code": int(response.status_code)},
                             commit=True,
                         )
                         continue
-                    raise RuntimeError(f"search_parse_failed:{parse_status}")
 
-                if attempt_index < len(wire_payload_candidates):
-                    _record_run_event(
-                        db,
-                        run=run,
-                        event_type="search_shape_fallback",
-                        phase="planning",
-                        stage="search",
-                        status_after=run.status,
-                        message=f"wire_shape={wire_shape} status={response.status_code}",
-                        metrics_json={"attempt": attempt_index, "wire_shape": wire_shape, "status_code": int(response.status_code)},
-                        commit=True,
-                    )
-                    continue
+                    response.raise_for_status()
 
-                response.raise_for_status()
+                if not selected_normalized_search or not selected_outbound_payload or not selected_exchange_ref:
+                    raise RuntimeError("search_response_not_selected")
 
-            if not selected_normalized_search or not selected_outbound_payload or not selected_exchange_ref:
-                raise RuntimeError("search_response_not_selected")
-
-            hits = list(selected_normalized_search.get("hits") or [])
-            run.adapter_dialect = selected_wire_shape
-            run.page_count_completed = int(run.page_count_completed or 0) + 1
-            run.last_offset_committed = skip
-            run.next_page_available = bool(hits)
-            db.commit()
-            discovery_pages.append(
-                {
-                    "offset": skip,
-                    "take": int(selected_outbound_payload.get("take") or page_size),
-                    "wire_shape": selected_wire_shape,
-                    "schema_variant": selected_schema_variant,
-                    "results_key": selected_normalized_search.get("results_key"),
-                    "count_returned": len(hits),
-                    "total_hits": selected_normalized_search.get("total_hits"),
-                    "exchange_ref": selected_exchange_ref,
-                    "attempts": page_attempts,
-                }
-            )
-
-            if not hits:
-                run.search_exhaustion_reason = run.search_exhaustion_reason or "no_more_pages"
+                hits = list(selected_normalized_search.get("hits") or [])
+                run.adapter_dialect = selected_wire_shape
+                run.page_count_completed = int(run.page_count_completed or 0) + 1
+                run.last_offset_committed = skip
+                run.next_page_available = bool(hits)
                 db.commit()
-                break
-
-            for hit in hits:
-                projection = dict(hit.get("projection") or {})
-                watermark = _parse_iso_datetime(projection.get("date_added_timestamp"))
-                if watermark and (max_observed_watermark is None or watermark > max_observed_watermark):
-                    max_observed_watermark = watermark
-                accession = str(projection.get("accession_number") or "").strip()
-                if not accession or accession in accession_seen:
-                    continue
-                accession_seen.add(accession)
-                ordinal += 1
-                target = _create_target_for_hit(
-                    db,
-                    run=run,
-                    lease_token=lease_token,
-                    ordinal=ordinal,
-                    hit=hit,
-                    source_reference_json={
-                        "search_exchange_ref": selected_exchange_ref,
-                        "selection_ref": _expected_selection_ref(run.connector_run_id),
-                        "schema_variant_observed": selected_schema_variant,
-                        "wire_shape_observed": selected_wire_shape,
-                        "provider": "nrc_adams_aps",
-                    },
-                )
-                selection_targets.append(
+                discovery_pages.append(
                     {
-                        "target_id": target.connector_run_target_id,
-                        "item_id": target.sciencebase_item_id,
-                        "name": target.sciencebase_file_name,
-                        "surface": target.artifact_surface,
-                        "status": target.status,
-                        "reason": target.operator_reason_code,
-                        "source_artifact_key": target.source_artifact_key,
-                        "canonical_artifact_key": target.canonical_artifact_key,
+                        "offset": skip,
+                        "take": int(selected_outbound_payload.get("take") or page_size),
+                        "wire_shape": selected_wire_shape,
+                        "schema_variant": selected_schema_variant,
+                        "results_key": selected_normalized_search.get("results_key"),
+                        "count_returned": len(hits),
+                        "total_hits": selected_normalized_search.get("total_hits"),
+                        "exchange_ref": selected_exchange_ref,
+                        "attempts": page_attempts,
                     }
                 )
-                try:
-                    _process_target_metadata(
-                        db,
-                        run=run,
-                        lease_token=lease_token,
-                        client=client,
-                        target=target,
-                        hit=hit,
-                        config=config,
-                    )
-                except Exception as exc:  # noqa: BLE001
-                    error_class, retryable = _classify_target_exception(exc)
-                    transition_target_state(
-                        db,
-                        run=run,
-                        target=target,
-                        status_after="download_failed",
-                        phase="indexing",
-                        stage="indexing",
-                        event_type="target_indexing_failed",
-                        operator_reason_code="metadata_indexing_failed",
-                        error_class=error_class,
-                        message=str(exc),
-                        retry_eligible=retryable,
-                        target_updates={
-                            "error_stage": "indexing",
-                            "error_message": str(exc),
-                            "last_error_class": error_class,
-                        },
-                        assert_lease=_assert_active_lease,
-                        lease_token=lease_token,
-                    )
-                _renew_lease(db, run)
-                lease_token = run.execution_lease_token
-                if max_items > 0 and len(accession_seen) >= max_items:
-                    run.search_exhaustion_reason = "max_items_cap"
+
+                if not hits:
+                    run.search_exhaustion_reason = run.search_exhaustion_reason or "no_more_pages"
                     db.commit()
                     break
 
-            if max_items > 0 and len(accession_seen) >= max_items:
-                break
+                for hit in hits:
+                    projection = dict(hit.get("projection") or {})
+                    watermark = _parse_iso_datetime(projection.get("date_added_timestamp"))
+                    if watermark and (max_observed_watermark is None or watermark > max_observed_watermark):
+                        max_observed_watermark = watermark
+                    accession = str(projection.get("accession_number") or "").strip()
+                    if not accession or accession in accession_seen:
+                        continue
+                    accession_seen.add(accession)
+                    ordinal += 1
+                    target = _create_target_for_hit(
+                        db,
+                        run=run,
+                        lease_token=lease_token,
+                        ordinal=ordinal,
+                        hit=hit,
+                        source_reference_json={
+                            "search_exchange_ref": selected_exchange_ref,
+                            "selection_ref": _expected_selection_ref(run.connector_run_id),
+                            "schema_variant_observed": selected_schema_variant,
+                            "wire_shape_observed": selected_wire_shape,
+                            "provider": "nrc_adams_aps",
+                        },
+                    )
+                    selection_targets.append(
+                        {
+                            "target_id": target.connector_run_target_id,
+                            "item_id": target.sciencebase_item_id,
+                            "name": target.sciencebase_file_name,
+                            "surface": target.artifact_surface,
+                            "status": target.status,
+                            "reason": target.operator_reason_code,
+                            "source_artifact_key": target.source_artifact_key,
+                            "canonical_artifact_key": target.canonical_artifact_key,
+                        }
+                    )
+                    try:
+                        _process_target_metadata(
+                            db,
+                            run=run,
+                            lease_token=lease_token,
+                            client=client,
+                            target=target,
+                            hit=hit,
+                            config=config,
+                        )
+                    except Exception as exc:  # noqa: BLE001
+                        error_class, retryable = _classify_target_exception(exc)
+                        transition_target_state(
+                            db,
+                            run=run,
+                            target=target,
+                            status_after="download_failed",
+                            phase="indexing",
+                            stage="indexing",
+                            event_type="target_indexing_failed",
+                            operator_reason_code="metadata_indexing_failed",
+                            error_class=error_class,
+                            message=str(exc),
+                            retry_eligible=retryable,
+                            target_updates={
+                                "error_stage": "indexing",
+                                "error_message": str(exc),
+                                "last_error_class": error_class,
+                            },
+                            assert_lease=_assert_active_lease,
+                            lease_token=lease_token,
+                        )
+                    _renew_lease(db, run)
+                    lease_token = run.execution_lease_token
+                    if max_items > 0 and len(accession_seen) >= max_items:
+                        run.search_exhaustion_reason = "max_items_cap"
+                        db.commit()
+                        break
 
-            skip += int(selected_outbound_payload.get("take") or page_size)
-            page_index += 1
-            run.partition_count_completed = page_index
-            db.commit()
+                if max_items > 0 and len(accession_seen) >= max_items:
+                    break
 
-        run.discovery_snapshot_ref = _write_json(
-            Path(settings.connector_manifests_dir) / f"{run.connector_run_id}_discovery.json",
-            {
-                "provider": "nrc_adams_aps",
-                "logical_query": _logical_query_dict(runtime_logical_query),
-                "logical_query_fingerprint": runtime_logical_query.identity_fingerprint,
-                "page_size": page_size,
-                "take": effective_take,
-                "max_items": max_items,
-                "search_exhaustion_reason": run.search_exhaustion_reason,
-                "sync_metadata": sync_runtime_meta,
-                "search_exchange_refs": search_exchange_refs,
-                "pages": discovery_pages,
-            },
-        )
-        run.selection_manifest_ref = _write_json(
-            Path(settings.connector_manifests_dir) / f"{run.connector_run_id}_selection.json",
-            {
-                "provider": "nrc_adams_aps",
-                "candidate_count": len(selection_targets),
-                "selected_count": len(selection_targets),
-                "targets": selection_targets,
-            },
-        )
-        run.query_plan_json = {
-            **(run.query_plan_json or {}),
-            "aps_mapper_version": config.get("mapper_version"),
-            "aps_compiler_version": config.get("compiler_version", APS_COMPILER_VERSION),
-            "aps_comparison_contract_version": nrc_aps_sync_drift.APS_COMPARISON_CONTRACT_VERSION,
-            "aps_projection_hash_contract": nrc_aps_sync_drift.APS_PROJECTION_HASH_CONTRACT,
-            "aps_mapper_warnings": config.get("mapper_warnings", []),
-            "aps_lint_warnings": config.get("lint_warnings", []),
-            "aps_safeguard_policy_schema": config.get("safeguard_policy_schema"),
-            "aps_safeguard_policy_hash": config.get("safeguard_policy_hash"),
-            "aps_safeguard_effective_config": _safeguard_effective_config(config),
-            "aps_wire_shape_mode": wire_shape_mode,
-            "aps_dialect_order": dialect_order,
-            "aps_observed_schema_variants": observed_schema_variants,
-            "aps_sync_mode": config.get("sync_mode", "full_scan"),
-            "aps_sync_metadata": sync_runtime_meta,
-            "aps_logical_query_fingerprint": runtime_logical_query.identity_fingerprint,
-            "aps_max_observed_watermark": _iso_utc(max_observed_watermark),
-            "aps_artifact_pipeline_mode": config.get("artifact_pipeline_mode"),
-            "aps_artifact_required_for_target_success": bool(config.get("artifact_required_for_target_success", False)),
-            "aps_text_normalization_contract_id": nrc_aps_artifact_ingestion.APS_TEXT_NORMALIZATION_CONTRACT_ID,
-            "aps_content_contract_id": nrc_aps_content_index.APS_CONTENT_CONTRACT_ID,
-            "aps_chunking_contract_id": nrc_aps_content_index.APS_CHUNKING_CONTRACT_ID,
-            "aps_csv_dataset_bridge_enabled": bool(config.get("csv_dataset_bridge_enabled", False)),
-            "aps_csv_dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_DATASET_BRIDGE_CONTRACT_ID,
-            "aps_table_dataset_bridge_enabled": bool(config.get("table_dataset_bridge_enabled", False)),
-            "aps_table_dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_TABLE_DATASET_BRIDGE_CONTRACT_ID,
-            "aps_content_chunking_policy": {
-                "chunk_size_chars": int(config.get("content_chunk_size_chars") or APS_CONTENT_INDEX_DEFAULT_CHUNK_SIZE),
-                "chunk_overlap_chars": int(config.get("content_chunk_overlap_chars") or APS_CONTENT_INDEX_DEFAULT_CHUNK_OVERLAP),
-                "min_chunk_chars": int(config.get("content_chunk_min_chars") or APS_CONTENT_INDEX_DEFAULT_MIN_CHUNK),
-            },
-            "checkpoint": {
-                "target_ordinal_completed": ordinal,
-                "updated_at": _utcnow().isoformat(),
-            },
-        }
-        db.commit()
+                skip += int(selected_outbound_payload.get("take") or page_size)
+                page_index += 1
+                run.partition_count_completed = page_index
+                db.commit()
 
-        _finalize_run(db, run)
-        artifact_ingestion_summary: dict[str, Any] | None = None
-        try:
-            artifact_run_ref = _persist_artifact_ingestion_run_artifact(
-                db,
-                run=run,
-                config=config,
-            )
-            artifact_ingestion_summary = {
-                "artifact_run_ref": artifact_run_ref,
-                "pipeline_mode": config.get("artifact_pipeline_mode"),
-            }
-            _record_run_event(
-                db,
-                run=run,
-                event_type="aps_artifact_ingestion_artifacts_generated",
-                phase="finalizing",
-                stage="reporting",
-                status_after=run.status,
-                metrics_json={
-                    "aps_artifact_ingestion_ref": artifact_run_ref,
-                    "pipeline_mode": config.get("artifact_pipeline_mode"),
-                    "selected_targets": int(run.selected_count or 0),
+            run.discovery_snapshot_ref = _write_json(
+                Path(settings.connector_manifests_dir) / f"{run.connector_run_id}_discovery.json",
+                {
+                    "provider": "nrc_adams_aps",
+                    "logical_query": _logical_query_dict(runtime_logical_query),
+                    "logical_query_fingerprint": runtime_logical_query.identity_fingerprint,
+                    "page_size": page_size,
+                    "take": effective_take,
+                    "max_items": max_items,
+                    "search_exhaustion_reason": run.search_exhaustion_reason,
+                    "sync_metadata": sync_runtime_meta,
+                    "search_exchange_refs": search_exchange_refs,
+                    "pages": discovery_pages,
                 },
             )
-        except Exception as artifact_exc:  # noqa: BLE001
-            failure_ref = _persist_artifact_ingestion_failure_artifact(
-                db,
-                run=run,
-                error=artifact_exc,
+            run.selection_manifest_ref = _write_json(
+                Path(settings.connector_manifests_dir) / f"{run.connector_run_id}_selection.json",
+                {
+                    "provider": "nrc_adams_aps",
+                    "candidate_count": len(selection_targets),
+                    "selected_count": len(selection_targets),
+                    "targets": selection_targets,
+                },
             )
-            artifact_ingestion_summary = {
-                "artifact_generation_failed": True,
-                "failure_ref": failure_ref,
+            run.query_plan_json = {
+                **(run.query_plan_json or {}),
+                "aps_mapper_version": config.get("mapper_version"),
+                "aps_compiler_version": config.get("compiler_version", APS_COMPILER_VERSION),
+                "aps_comparison_contract_version": nrc_aps_sync_drift.APS_COMPARISON_CONTRACT_VERSION,
+                "aps_projection_hash_contract": nrc_aps_sync_drift.APS_PROJECTION_HASH_CONTRACT,
+                "aps_mapper_warnings": config.get("mapper_warnings", []),
+                "aps_lint_warnings": config.get("lint_warnings", []),
+                "aps_safeguard_policy_schema": config.get("safeguard_policy_schema"),
+                "aps_safeguard_policy_hash": config.get("safeguard_policy_hash"),
+                "aps_safeguard_effective_config": _safeguard_effective_config(config),
+                "aps_wire_shape_mode": wire_shape_mode,
+                "aps_dialect_order": dialect_order,
+                "aps_observed_schema_variants": observed_schema_variants,
+                "aps_sync_mode": config.get("sync_mode", "full_scan"),
+                "aps_sync_metadata": sync_runtime_meta,
+                "aps_logical_query_fingerprint": runtime_logical_query.identity_fingerprint,
+                "aps_max_observed_watermark": _iso_utc(max_observed_watermark),
+                "aps_artifact_pipeline_mode": config.get("artifact_pipeline_mode"),
+                "aps_artifact_required_for_target_success": bool(config.get("artifact_required_for_target_success", False)),
+                "aps_text_normalization_contract_id": nrc_aps_artifact_ingestion.APS_TEXT_NORMALIZATION_CONTRACT_ID,
+                "aps_content_contract_id": nrc_aps_content_index.APS_CONTENT_CONTRACT_ID,
+                "aps_chunking_contract_id": nrc_aps_content_index.APS_CHUNKING_CONTRACT_ID,
+                "aps_csv_dataset_bridge_enabled": bool(config.get("csv_dataset_bridge_enabled", False)),
+                "aps_csv_dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_DATASET_BRIDGE_CONTRACT_ID,
+                "aps_table_dataset_bridge_enabled": bool(config.get("table_dataset_bridge_enabled", False)),
+                "aps_table_dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_TABLE_DATASET_BRIDGE_CONTRACT_ID,
+                "aps_content_chunking_policy": {
+                    "chunk_size_chars": int(config.get("content_chunk_size_chars") or APS_CONTENT_INDEX_DEFAULT_CHUNK_SIZE),
+                    "chunk_overlap_chars": int(config.get("content_chunk_overlap_chars") or APS_CONTENT_INDEX_DEFAULT_CHUNK_OVERLAP),
+                    "min_chunk_chars": int(config.get("content_chunk_min_chars") or APS_CONTENT_INDEX_DEFAULT_MIN_CHUNK),
+                },
+                "checkpoint": {
+                    "target_ordinal_completed": ordinal,
+                    "updated_at": _utcnow().isoformat(),
+                },
             }
+            db.commit()
 
-        content_index_summary: dict[str, Any] | None = None
-        if run.status in {"completed", "completed_with_errors"}:
+            _finalize_run(db, run)
+            artifact_ingestion_summary: dict[str, Any] | None = None
             try:
-                content_index_summary = _generate_content_index_artifacts(
+                artifact_run_ref = _persist_artifact_ingestion_run_artifact(
                     db,
                     run=run,
                     config=config,
                 )
+                artifact_ingestion_summary = {
+                    "artifact_run_ref": artifact_run_ref,
+                    "pipeline_mode": config.get("artifact_pipeline_mode"),
+                }
                 _record_run_event(
                     db,
                     run=run,
-                    event_type="aps_content_index_artifacts_generated",
+                    event_type="aps_artifact_ingestion_artifacts_generated",
                     phase="finalizing",
                     stage="reporting",
                     status_after=run.status,
                     metrics_json={
-                        "aps_content_index_ref": content_index_summary.get("run_ref"),
-                        "aps_content_index_failure_ref": content_index_summary.get("failure_ref"),
-                        "processed_targets": content_index_summary.get("processed_targets"),
-                        "indexed_content_units": content_index_summary.get("indexed_content_units"),
-                        "indexing_failures_count": content_index_summary.get("indexing_failures_count"),
-                    },
-                )
-            except Exception as content_index_exc:  # noqa: BLE001
-                failure_ref = _persist_content_index_failure_artifact(
-                    db,
-                    run=run,
-                    error=content_index_exc,
-                )
-                content_index_summary = {
-                    "artifact_generation_failed": True,
-                    "failure_ref": failure_ref,
-                }
-
-        table_dataset_bridge_summary: dict[str, Any] | None = None
-        csv_dataset_bridge_summary: dict[str, Any] | None = None
-        if run.status in {"completed", "completed_with_errors"} and bool(config.get("table_dataset_bridge_enabled", False)):
-            try:
-                table_dataset_bridge_summary = _generate_table_dataset_bridge_artifacts(
-                    db,
-                    run=run,
-                    config=config,
-                )
-                _record_run_event(
-                    db,
-                    run=run,
-                    event_type="aps_table_dataset_bridge_artifacts_generated",
-                    phase="finalizing",
-                    stage="reporting",
-                    status_after=run.status,
-                    metrics_json={
-                        "aps_table_dataset_bridge_ref": table_dataset_bridge_summary.get("run_ref"),
-                        "run_outcome": table_dataset_bridge_summary.get("run_outcome"),
-                        "processed_targets": table_dataset_bridge_summary.get("processed_targets"),
-                        "materialized_dataset_versions": table_dataset_bridge_summary.get("materialized_dataset_versions"),
-                        "created_dataset_versions": table_dataset_bridge_summary.get("created_dataset_versions"),
-                        "failures_count": table_dataset_bridge_summary.get("failures_count"),
-                    },
-                )
-            except Exception as table_bridge_exc:  # noqa: BLE001
-                failure_payload = {
-                    "schema_id": APS_TABLE_DATASET_BRIDGE_RUN_SCHEMA_ID,
-                    "schema_version": APS_TABLE_DATASET_BRIDGE_RUN_SCHEMA_VERSION,
-                    "run_id": run.connector_run_id,
-                    "run_status": str(run.status or ""),
-                    "dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_TABLE_DATASET_BRIDGE_CONTRACT_ID,
-                    "enabled": True,
-                    "run_outcome": "dataset_bridge_artifact_generation_failed",
-                    "failures_count": 1,
-                    "failures": [
-                        {
-                            "code": "dataset_bridge_artifact_generation_failed",
-                            "error_class": table_bridge_exc.__class__.__name__,
-                            "message": str(table_bridge_exc),
-                        }
-                    ],
-                }
-                failure_ref = nrc_aps_content_index.write_json_atomic(
-                    _table_dataset_bridge_run_report_path(
-                        run.connector_run_id,
-                        reports_dir=config.get("connector_reports_dir"),
-                    ),
-                    failure_payload,
-                )
-                run.error_summary = _append_error_summary_token(
-                    run.error_summary,
-                    token="aps_table_dataset_bridge_failed",
-                )
-                if run.status not in {"failed", "cancelled"}:
-                    run.status = "completed_with_errors"
-                run.query_plan_json = {
-                    **(run.query_plan_json or {}),
-                    "aps_table_dataset_bridge_report_refs": {"aps_table_dataset_bridge": failure_ref},
-                    "aps_table_dataset_bridge_summary": {
-                        "artifact_generation_failed": True,
-                        "error_class": table_bridge_exc.__class__.__name__,
-                        "error_message": str(table_bridge_exc),
-                    },
-                }
-                table_dataset_bridge_summary = {
-                    "artifact_generation_failed": True,
-                    "run_ref": failure_ref,
-                    "failures_count": 1,
-                }
-
-        if (
-            _should_generate_csv_dataset_bridge_artifacts(
-                run=run,
-                config=config,
-            )
-        ):
-            try:
-                csv_dataset_bridge_summary = _generate_csv_dataset_bridge_artifacts(
-                    db,
-                    run=run,
-                    config=config,
-                )
-                _record_run_event(
-                    db,
-                    run=run,
-                    event_type="aps_csv_dataset_bridge_artifacts_generated",
-                    phase="finalizing",
-                    stage="reporting",
-                    status_after=run.status,
-                    metrics_json={
-                        "aps_csv_dataset_bridge_ref": csv_dataset_bridge_summary.get("run_ref"),
-                        "run_outcome": csv_dataset_bridge_summary.get("run_outcome"),
-                        "processed_targets": csv_dataset_bridge_summary.get("processed_targets"),
-                        "materialized_dataset_versions": csv_dataset_bridge_summary.get("materialized_dataset_versions"),
-                        "created_dataset_versions": csv_dataset_bridge_summary.get("created_dataset_versions"),
-                        "failures_count": csv_dataset_bridge_summary.get("failures_count"),
-                    },
-                )
-            except Exception as csv_bridge_exc:  # noqa: BLE001
-                failure_payload = {
-                    "schema_id": APS_CSV_DATASET_BRIDGE_RUN_SCHEMA_ID,
-                    "schema_version": APS_CSV_DATASET_BRIDGE_RUN_SCHEMA_VERSION,
-                    "run_id": run.connector_run_id,
-                    "run_status": str(run.status or ""),
-                    "dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_DATASET_BRIDGE_CONTRACT_ID,
-                    "enabled": True,
-                    "run_outcome": "dataset_bridge_artifact_generation_failed",
-                    "failures_count": 1,
-                    "failures": [
-                        {
-                            "code": "dataset_bridge_artifact_generation_failed",
-                            "error_class": csv_bridge_exc.__class__.__name__,
-                            "message": str(csv_bridge_exc),
-                        }
-                    ],
-                }
-                failure_ref = nrc_aps_content_index.write_json_atomic(
-                    _csv_dataset_bridge_run_report_path(run.connector_run_id),
-                    failure_payload,
-                )
-                run.error_summary = _append_error_summary_token(
-                    run.error_summary,
-                    token="aps_csv_dataset_bridge_failed",
-                )
-                if run.status not in {"failed", "cancelled"}:
-                    run.status = "completed_with_errors"
-                run.query_plan_json = {
-                    **(run.query_plan_json or {}),
-                    "aps_csv_dataset_bridge_report_refs": {"aps_csv_dataset_bridge": failure_ref},
-                    "aps_csv_dataset_bridge_summary": {
-                        "artifact_generation_failed": True,
-                        "error_class": csv_bridge_exc.__class__.__name__,
-                        "error_message": str(csv_bridge_exc),
-                    },
-                }
-                csv_dataset_bridge_summary = {
-                    "artifact_generation_failed": True,
-                    "run_ref": failure_ref,
-                    "failures_count": 1,
-                }
-
-        sync_drift_summary: dict[str, Any] | None = None
-        if run.status in APS_SYNC_BASELINE_ELIGIBLE_STATUSES:
-            try:
-                sync_drift_summary = _generate_sync_drift_artifacts(db, run=run)
-                _record_run_event(
-                    db,
-                    run=run,
-                    event_type="aps_sync_drift_artifacts_generated",
-                    phase="finalizing",
-                    stage="reporting",
-                    status_after=run.status,
-                    metrics_json={
-                        "baseline_resolution": sync_drift_summary.get("baseline_resolution"),
-                        "baseline_run_id": sync_drift_summary.get("baseline_run_id"),
-                        "comparison_status": sync_drift_summary.get("comparison_status"),
-                        "finding_counts": sync_drift_summary.get("finding_counts", {}),
+                        "aps_artifact_ingestion_ref": artifact_run_ref,
+                        "pipeline_mode": config.get("artifact_pipeline_mode"),
+                        "selected_targets": int(run.selected_count or 0),
                     },
                 )
             except Exception as artifact_exc:  # noqa: BLE001
-                failure_ref = _persist_sync_drift_failure_artifact(
+                failure_ref = _persist_artifact_ingestion_failure_artifact(
                     db,
                     run=run,
                     error=artifact_exc,
                 )
-                sync_drift_summary = {
+                artifact_ingestion_summary = {
                     "artifact_generation_failed": True,
                     "failure_ref": failure_ref,
                 }
 
-        _upsert_sync_cursor_after_run(
-            db,
-            run=run,
-            logical_query_fingerprint=str(config.get("source_query_fingerprint") or ""),
-            overlap_seconds=int(config.get("incremental_overlap_seconds", APS_DEFAULT_SYNC_OVERLAP_SECONDS) or APS_DEFAULT_SYNC_OVERLAP_SECONDS),
-            reconciliation_lookback_days=int(config.get("reconciliation_lookback_days", APS_DEFAULT_RECONCILIATION_LOOKBACK_DAYS) or APS_DEFAULT_RECONCILIATION_LOOKBACK_DAYS),
-            max_observed_watermark=_iso_utc(max_observed_watermark),
-            sync_metadata={
-                **sync_runtime_meta,
-                "dialect_order": dialect_order,
-                "observed_schema_variants": observed_schema_variants,
-                "run_mode": config.get("run_mode"),
-                "artifact_ingestion_summary": artifact_ingestion_summary or {},
-                "content_index_summary": content_index_summary or {},
-                "table_dataset_bridge_summary": table_dataset_bridge_summary or {},
-                "csv_dataset_bridge_summary": csv_dataset_bridge_summary or {},
-                "sync_drift_summary": sync_drift_summary or {},
-            },
-        )
-        safeguard_events_emitted = 0
-        safeguard_report_ref: str | None = None
-        try:
-            if client is not None:
-                safeguard_events_emitted = _emit_safeguard_events(db, run=run, client=client)
-            safeguard_report_ref = _persist_safeguard_report_artifact(
+            content_index_summary: dict[str, Any] | None = None
+            if run.status in {"completed", "completed_with_errors"}:
+                try:
+                    content_index_summary = _generate_content_index_artifacts(
+                        db,
+                        run=run,
+                        config=config,
+                    )
+                    _record_run_event(
+                        db,
+                        run=run,
+                        event_type="aps_content_index_artifacts_generated",
+                        phase="finalizing",
+                        stage="reporting",
+                        status_after=run.status,
+                        metrics_json={
+                            "aps_content_index_ref": content_index_summary.get("run_ref"),
+                            "aps_content_index_failure_ref": content_index_summary.get("failure_ref"),
+                            "processed_targets": content_index_summary.get("processed_targets"),
+                            "indexed_content_units": content_index_summary.get("indexed_content_units"),
+                            "indexing_failures_count": content_index_summary.get("indexing_failures_count"),
+                        },
+                    )
+                except Exception as content_index_exc:  # noqa: BLE001
+                    failure_ref = _persist_content_index_failure_artifact(
+                        db,
+                        run=run,
+                        error=content_index_exc,
+                    )
+                    content_index_summary = {
+                        "artifact_generation_failed": True,
+                        "failure_ref": failure_ref,
+                    }
+
+            table_dataset_bridge_summary: dict[str, Any] | None = None
+            csv_dataset_bridge_summary: dict[str, Any] | None = None
+            if run.status in {"completed", "completed_with_errors"} and bool(config.get("table_dataset_bridge_enabled", False)):
+                try:
+                    table_dataset_bridge_summary = _generate_table_dataset_bridge_artifacts(
+                        db,
+                        run=run,
+                        config=config,
+                    )
+                    _record_run_event(
+                        db,
+                        run=run,
+                        event_type="aps_table_dataset_bridge_artifacts_generated",
+                        phase="finalizing",
+                        stage="reporting",
+                        status_after=run.status,
+                        metrics_json={
+                            "aps_table_dataset_bridge_ref": table_dataset_bridge_summary.get("run_ref"),
+                            "run_outcome": table_dataset_bridge_summary.get("run_outcome"),
+                            "processed_targets": table_dataset_bridge_summary.get("processed_targets"),
+                            "materialized_dataset_versions": table_dataset_bridge_summary.get("materialized_dataset_versions"),
+                            "created_dataset_versions": table_dataset_bridge_summary.get("created_dataset_versions"),
+                            "failures_count": table_dataset_bridge_summary.get("failures_count"),
+                        },
+                    )
+                except Exception as table_bridge_exc:  # noqa: BLE001
+                    failure_payload = {
+                        "schema_id": APS_TABLE_DATASET_BRIDGE_RUN_SCHEMA_ID,
+                        "schema_version": APS_TABLE_DATASET_BRIDGE_RUN_SCHEMA_VERSION,
+                        "run_id": run.connector_run_id,
+                        "run_status": str(run.status or ""),
+                        "dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_TABLE_DATASET_BRIDGE_CONTRACT_ID,
+                        "enabled": True,
+                        "run_outcome": "dataset_bridge_artifact_generation_failed",
+                        "failures_count": 1,
+                        "failures": [
+                            {
+                                "code": "dataset_bridge_artifact_generation_failed",
+                                "error_class": table_bridge_exc.__class__.__name__,
+                                "message": str(table_bridge_exc),
+                            }
+                        ],
+                    }
+                    failure_ref = nrc_aps_content_index.write_json_atomic(
+                        _table_dataset_bridge_run_report_path(
+                            run.connector_run_id,
+                            reports_dir=config.get("connector_reports_dir"),
+                        ),
+                        failure_payload,
+                    )
+                    run.error_summary = _append_error_summary_token(
+                        run.error_summary,
+                        token="aps_table_dataset_bridge_failed",
+                    )
+                    if run.status not in {"failed", "cancelled"}:
+                        run.status = "completed_with_errors"
+                    run.query_plan_json = {
+                        **(run.query_plan_json or {}),
+                        "aps_table_dataset_bridge_report_refs": {"aps_table_dataset_bridge": failure_ref},
+                        "aps_table_dataset_bridge_summary": {
+                            "artifact_generation_failed": True,
+                            "error_class": table_bridge_exc.__class__.__name__,
+                            "error_message": str(table_bridge_exc),
+                        },
+                    }
+                    table_dataset_bridge_summary = {
+                        "artifact_generation_failed": True,
+                        "run_ref": failure_ref,
+                        "failures_count": 1,
+                    }
+
+            if (
+                _should_generate_csv_dataset_bridge_artifacts(
+                    run=run,
+                    config=config,
+                )
+            ):
+                try:
+                    csv_dataset_bridge_summary = _generate_csv_dataset_bridge_artifacts(
+                        db,
+                        run=run,
+                        config=config,
+                    )
+                    _record_run_event(
+                        db,
+                        run=run,
+                        event_type="aps_csv_dataset_bridge_artifacts_generated",
+                        phase="finalizing",
+                        stage="reporting",
+                        status_after=run.status,
+                        metrics_json={
+                            "aps_csv_dataset_bridge_ref": csv_dataset_bridge_summary.get("run_ref"),
+                            "run_outcome": csv_dataset_bridge_summary.get("run_outcome"),
+                            "processed_targets": csv_dataset_bridge_summary.get("processed_targets"),
+                            "materialized_dataset_versions": csv_dataset_bridge_summary.get("materialized_dataset_versions"),
+                            "created_dataset_versions": csv_dataset_bridge_summary.get("created_dataset_versions"),
+                            "failures_count": csv_dataset_bridge_summary.get("failures_count"),
+                        },
+                    )
+                except Exception as csv_bridge_exc:  # noqa: BLE001
+                    failure_payload = {
+                        "schema_id": APS_CSV_DATASET_BRIDGE_RUN_SCHEMA_ID,
+                        "schema_version": APS_CSV_DATASET_BRIDGE_RUN_SCHEMA_VERSION,
+                        "run_id": run.connector_run_id,
+                        "run_status": str(run.status or ""),
+                        "dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_DATASET_BRIDGE_CONTRACT_ID,
+                        "enabled": True,
+                        "run_outcome": "dataset_bridge_artifact_generation_failed",
+                        "failures_count": 1,
+                        "failures": [
+                            {
+                                "code": "dataset_bridge_artifact_generation_failed",
+                                "error_class": csv_bridge_exc.__class__.__name__,
+                                "message": str(csv_bridge_exc),
+                            }
+                        ],
+                    }
+                    failure_ref = nrc_aps_content_index.write_json_atomic(
+                        _csv_dataset_bridge_run_report_path(run.connector_run_id),
+                        failure_payload,
+                    )
+                    run.error_summary = _append_error_summary_token(
+                        run.error_summary,
+                        token="aps_csv_dataset_bridge_failed",
+                    )
+                    if run.status not in {"failed", "cancelled"}:
+                        run.status = "completed_with_errors"
+                    run.query_plan_json = {
+                        **(run.query_plan_json or {}),
+                        "aps_csv_dataset_bridge_report_refs": {"aps_csv_dataset_bridge": failure_ref},
+                        "aps_csv_dataset_bridge_summary": {
+                            "artifact_generation_failed": True,
+                            "error_class": csv_bridge_exc.__class__.__name__,
+                            "error_message": str(csv_bridge_exc),
+                        },
+                    }
+                    csv_dataset_bridge_summary = {
+                        "artifact_generation_failed": True,
+                        "run_ref": failure_ref,
+                        "failures_count": 1,
+                    }
+
+            sync_drift_summary: dict[str, Any] | None = None
+            if run.status in APS_SYNC_BASELINE_ELIGIBLE_STATUSES:
+                try:
+                    sync_drift_summary = _generate_sync_drift_artifacts(db, run=run)
+                    _record_run_event(
+                        db,
+                        run=run,
+                        event_type="aps_sync_drift_artifacts_generated",
+                        phase="finalizing",
+                        stage="reporting",
+                        status_after=run.status,
+                        metrics_json={
+                            "baseline_resolution": sync_drift_summary.get("baseline_resolution"),
+                            "baseline_run_id": sync_drift_summary.get("baseline_run_id"),
+                            "comparison_status": sync_drift_summary.get("comparison_status"),
+                            "finding_counts": sync_drift_summary.get("finding_counts", {}),
+                        },
+                    )
+                except Exception as artifact_exc:  # noqa: BLE001
+                    failure_ref = _persist_sync_drift_failure_artifact(
+                        db,
+                        run=run,
+                        error=artifact_exc,
+                    )
+                    sync_drift_summary = {
+                        "artifact_generation_failed": True,
+                        "failure_ref": failure_ref,
+                    }
+
+            _upsert_sync_cursor_after_run(
                 db,
                 run=run,
-                config=config,
-                client=client or {},
+                logical_query_fingerprint=str(config.get("source_query_fingerprint") or ""),
+                overlap_seconds=int(config.get("incremental_overlap_seconds", APS_DEFAULT_SYNC_OVERLAP_SECONDS) or APS_DEFAULT_SYNC_OVERLAP_SECONDS),
+                reconciliation_lookback_days=int(config.get("reconciliation_lookback_days", APS_DEFAULT_RECONCILIATION_LOOKBACK_DAYS) or APS_DEFAULT_RECONCILIATION_LOOKBACK_DAYS),
+                max_observed_watermark=_iso_utc(max_observed_watermark),
+                sync_metadata={
+                    **sync_runtime_meta,
+                    "dialect_order": dialect_order,
+                    "observed_schema_variants": observed_schema_variants,
+                    "run_mode": config.get("run_mode"),
+                    "artifact_ingestion_summary": artifact_ingestion_summary or {},
+                    "content_index_summary": content_index_summary or {},
+                    "table_dataset_bridge_summary": table_dataset_bridge_summary or {},
+                    "csv_dataset_bridge_summary": csv_dataset_bridge_summary or {},
+                    "sync_drift_summary": sync_drift_summary or {},
+                },
             )
-        except Exception as safeguard_exc:  # noqa: BLE001
-            run.error_summary = _append_error_summary_token(
-                run.error_summary,
-                token="aps_safeguard_artifact_generation_failed",
-            )
-            if run.status not in {"failed", "cancelled"}:
-                run.status = "completed_with_errors"
-            _record_run_event(
-                db,
-                run=run,
-                event_type="aps_safeguard_artifact_failed",
-                phase="finalizing",
-                stage="reporting",
-                status_after=run.status,
-                error_class=safeguard_exc.__class__.__name__,
-                message=str(safeguard_exc),
-            )
-        db.commit()
-        _record_run_event(
-            db,
-            run=run,
-            event_type="run_finalized",
-            phase="finalizing",
-            status_after=run.status,
-            metrics_json={
-                "completed_at": run.completed_at.isoformat() if run.completed_at else None,
-                "aps_safeguard_report_ref": safeguard_report_ref,
-                "aps_safeguard_events_emitted": safeguard_events_emitted,
-                "aps_artifact_ingestion_report_ref": dict((run.query_plan_json or {}).get("aps_artifact_ingestion_report_refs") or {}).get("aps_artifact_ingestion"),
-                "aps_artifact_ingestion_failure_ref": dict((run.query_plan_json or {}).get("aps_artifact_ingestion_report_refs") or {}).get("aps_artifact_ingestion_failure"),
-                "aps_content_index_report_ref": dict((run.query_plan_json or {}).get("aps_content_index_report_refs") or {}).get("aps_content_index"),
-                "aps_content_index_failure_ref": dict((run.query_plan_json or {}).get("aps_content_index_report_refs") or {}).get("aps_content_index_failure"),
-                "aps_table_dataset_bridge_report_ref": dict((run.query_plan_json or {}).get("aps_table_dataset_bridge_report_refs") or {}).get("aps_table_dataset_bridge"),
-                "aps_csv_dataset_bridge_report_ref": dict((run.query_plan_json or {}).get("aps_csv_dataset_bridge_report_refs") or {}).get("aps_csv_dataset_bridge"),
-            },
-            commit=True,
-        )
-    except Exception as exc:  # noqa: BLE001
-        run = db.get(ConnectorRun, connector_run_id)
-        if run:
-            run.status = "failed"
-            if "lease_conflict" in str(exc):
-                run.error_summary = "lease_conflict"
-                error_class = "lease_conflict"
-            else:
-                run.error_summary = f"orchestrator_internal_error: {exc}"
-                error_class = "orchestrator_internal_error"
-            run.completed_at = _utcnow()
-            _release_lease(run)
-            _record_run_event(
-                db,
-                run=run,
-                event_type="run_failed",
-                phase="finalizing",
-                status_after=run.status,
-                error_class=error_class,
-                message=str(exc),
-            )
-            config = dict(run.request_config_json or {})
+            safeguard_events_emitted = 0
+            safeguard_report_ref: str | None = None
             try:
                 if client is not None:
-                    _emit_safeguard_events(db, run=run, client=client)
-                _persist_safeguard_report_artifact(
+                    safeguard_events_emitted = _emit_safeguard_events(db, run=run, client=client)
+                safeguard_report_ref = _persist_safeguard_report_artifact(
                     db,
                     run=run,
                     config=config,
                     client=client or {},
-                    run_error=exc,
                 )
             except Exception as safeguard_exc:  # noqa: BLE001
                 run.error_summary = _append_error_summary_token(
                     run.error_summary,
                     token="aps_safeguard_artifact_generation_failed",
                 )
+                if run.status not in {"failed", "cancelled"}:
+                    run.status = "completed_with_errors"
                 _record_run_event(
                     db,
                     run=run,
@@ -4321,6 +4255,74 @@ def execute_nrc_adams_run(connector_run_id: str) -> None:
                     message=str(safeguard_exc),
                 )
             db.commit()
+            _record_run_event(
+                db,
+                run=run,
+                event_type="run_finalized",
+                phase="finalizing",
+                status_after=run.status,
+                metrics_json={
+                    "completed_at": run.completed_at.isoformat() if run.completed_at else None,
+                    "aps_safeguard_report_ref": safeguard_report_ref,
+                    "aps_safeguard_events_emitted": safeguard_events_emitted,
+                    "aps_artifact_ingestion_report_ref": dict((run.query_plan_json or {}).get("aps_artifact_ingestion_report_refs") or {}).get("aps_artifact_ingestion"),
+                    "aps_artifact_ingestion_failure_ref": dict((run.query_plan_json or {}).get("aps_artifact_ingestion_report_refs") or {}).get("aps_artifact_ingestion_failure"),
+                    "aps_content_index_report_ref": dict((run.query_plan_json or {}).get("aps_content_index_report_refs") or {}).get("aps_content_index"),
+                    "aps_content_index_failure_ref": dict((run.query_plan_json or {}).get("aps_content_index_report_refs") or {}).get("aps_content_index_failure"),
+                    "aps_table_dataset_bridge_report_ref": dict((run.query_plan_json or {}).get("aps_table_dataset_bridge_report_refs") or {}).get("aps_table_dataset_bridge"),
+                    "aps_csv_dataset_bridge_report_ref": dict((run.query_plan_json or {}).get("aps_csv_dataset_bridge_report_refs") or {}).get("aps_csv_dataset_bridge"),
+                },
+                commit=True,
+            )
+        except Exception as exc:  # noqa: BLE001
+            run = db.get(ConnectorRun, connector_run_id)
+            if run:
+                run.status = "failed"
+                if "lease_conflict" in str(exc):
+                    run.error_summary = "lease_conflict"
+                    error_class = "lease_conflict"
+                else:
+                    run.error_summary = f"orchestrator_internal_error: {exc}"
+                    error_class = "orchestrator_internal_error"
+                run.completed_at = _utcnow()
+                _release_lease(run)
+                _record_run_event(
+                    db,
+                    run=run,
+                    event_type="run_failed",
+                    phase="finalizing",
+                    status_after=run.status,
+                    error_class=error_class,
+                    message=str(exc),
+                )
+                config = dict(run.request_config_json or {})
+                try:
+                    if client is not None:
+                        _emit_safeguard_events(db, run=run, client=client)
+                    _persist_safeguard_report_artifact(
+                        db,
+                        run=run,
+                        config=config,
+                        client=client or {},
+                        run_error=exc,
+                    )
+                except Exception as safeguard_exc:  # noqa: BLE001
+                    run.error_summary = _append_error_summary_token(
+                        run.error_summary,
+                        token="aps_safeguard_artifact_generation_failed",
+                    )
+                    _record_run_event(
+                        db,
+                        run=run,
+                        event_type="aps_safeguard_artifact_failed",
+                        phase="finalizing",
+                        stage="reporting",
+                        status_after=run.status,
+                        error_class=safeguard_exc.__class__.__name__,
+                        message=str(safeguard_exc),
+                    )
+                db.commit()
+        finally:
+            NRC_EXECUTOR_GUARDS.release_run_slot()
     finally:
-        NRC_EXECUTOR_GUARDS.release_run_slot()
         db.close()

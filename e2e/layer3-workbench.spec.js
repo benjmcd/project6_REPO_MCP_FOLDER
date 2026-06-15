@@ -4393,8 +4393,8 @@ test('Layer 3 workbench keeps Layer 3-only theme preferences page-local', async 
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
 
   await Promise.all([
-    page.waitForURL('**/review/layer3/static/claude.html'),
-    page.locator('#theme-selector').selectOption('claude'),
+    page.waitForURL('**/review/layer3/static/workbench.html'),
+    page.locator('#theme-selector').selectOption('prototype'),
   ]);
   await expect(page).toHaveTitle(/Layer 3 Workbench.*Prototype/);
   await expect(page.locator('.app-shell')).toBeVisible();
@@ -4402,7 +4402,7 @@ test('Layer 3 workbench keeps Layer 3-only theme preferences page-local', async 
   await expect(page.locator('header.app-header.layer3-header')).toBeVisible();
   await expect(page.locator('a.back-link')).toHaveAttribute('href', '/review/nrc-aps');
   await expect(page.locator('.proto-badge')).toHaveText('PROTOTYPE');
-  await expect(page.locator('#theme-selector')).toHaveValue('claude');
+  await expect(page.locator('#theme-selector')).toHaveValue('prototype');
   await page.locator('[data-screen="overview"]').click();
   await expect(page.locator('#ov-sources')).toContainText('APS content document');
   await page.locator('[data-screen="3a"]').click();
@@ -4411,11 +4411,11 @@ test('Layer 3 workbench keeps Layer 3-only theme preferences page-local', async 
   await expect(page.locator('#detail-3a-gate')).toContainText('aps_content_units_v2');
   await expect(page.locator('#detail-3a-gate')).toContainText('traceable_aps_content_document');
   await expect(page.locator('#detail-3a-status')).toContainText('21');
-  const storageAfterClaude = await page.evaluate(() => ({
+  const storageAfterPrototype = await page.evaluate(() => ({
     sharedTheme: localStorage.getItem('nrc_aps_review_theme'),
     layer3Theme: localStorage.getItem('layer3_workbench_theme'),
   }));
-  expect(storageAfterClaude).toEqual({
+  expect(storageAfterPrototype).toEqual({
     sharedTheme: 'light',
     layer3Theme: 'workbench',
   });
@@ -10455,19 +10455,19 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   expect(mobileApsControlColumns).toBe(1);
 });
 
-test('Layer 3 workbench opens the exact Claude prototype as a durable standalone mode', async ({ page }) => {
+test('Layer 3 workbench opens the exact prototype as a durable standalone mode', async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   await Promise.all([
-    page.waitForURL('**/review/layer3/static/claude.html'),
-    page.locator('#theme-selector').selectOption('claude'),
+    page.waitForURL('**/review/layer3/static/workbench.html'),
+    page.locator('#theme-selector').selectOption('prototype'),
   ]);
 
   await expect(page).toHaveTitle(/Layer 3 Workbench.*Prototype/);
   await expect(page.locator('.chrome-bar')).toHaveCount(0);
   await expect(page.locator('header.app-header.layer3-header')).toBeVisible();
   await expect(page.locator('.proto-badge')).toHaveText('PROTOTYPE');
-  await expect(page.locator('#theme-selector')).toHaveValue('claude');
+  await expect(page.locator('#theme-selector')).toHaveValue('prototype');
   await expect(page.locator('.nav-tab[data-screen="overview"]')).toContainText('Overview');
   await expect(page.locator('.state-btn[data-state="loaded"]')).toHaveClass(/active/);
   await expect(page.locator('#screen-intent')).toHaveClass(/active/);
@@ -10491,7 +10491,7 @@ test('Layer 3 workbench opens the exact Claude prototype as a durable standalone
   expect(mobileState).toEqual({
     screenCount: 5,
     hasPrototypeBadge: true,
-    themeValue: 'claude',
+    themeValue: 'prototype',
   });
 
   await Promise.all([
