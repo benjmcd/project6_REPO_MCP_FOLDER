@@ -4,6 +4,11 @@ import warnings
 from typing import Any, List, Dict, Tuple
 import fitz
 
+try:
+    import camelot
+except ImportError:  # optional heavy dependency (needs Ghostscript); advanced tables only
+    camelot = None
+
 def extract_advanced_table(
     pdf_source: str | bytes,
     page_index_0: int
@@ -16,9 +21,7 @@ def extract_advanced_table(
             'tables': List of units with kind 'pdf_table'
             'exclusion_bboxes': List of [x0, y0, x1, y1] regions
     """
-    try:
-        import camelot
-    except ImportError:
+    if camelot is None:
         raise RuntimeError(
             "camelot is not installed; advanced PDF table extraction is unavailable. "
             "Install camelot-py[cv] + Ghostscript."
