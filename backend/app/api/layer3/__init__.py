@@ -11925,6 +11925,92 @@ def get_analysis_product_methods(
 
 
 # ---------------------------------------------------------------------------
+# Analysis-product replay verify — Deterministic 3C Reproducibility Verify
+# ---------------------------------------------------------------------------
+
+ANALYSIS_PRODUCT_REPLAY_VERIFY_SCHEMA_ID = "layer3.analysis_product_replay_verify.v1"
+
+
+class Layer3AnalysisProductReplayVerifyRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    session_id: str = Field(min_length=1)
+    analysis_product_id: str = Field(min_length=1)
+
+
+class Layer3AnalysisProductReplayVerifyResponse(Layer3BaseResponse):
+    analysis_product_id: str
+    executor_type: str
+    method_id: str
+    reproduced: bool
+    classification: str
+    method_present: bool
+    method_version_match: bool | None
+    input_basis_match: bool | None
+    input_state_match: bool | None
+    result_match: bool | None
+    method_version_recorded: int | None
+    method_version_current: int | None
+    input_basis_hash_recorded: str | None
+    input_basis_hash_current: str | None
+    input_state_hash_recorded: str | None
+    input_state_hash_current: str | None
+    param_hash_recorded: str | None
+    validation_recorded: str | None
+    result_summary_hash_recorded: str | None
+    result_summary_hash_current: str | None
+
+
+@router.post(
+    "/analysis-product/replay-verify",
+    response_model=Layer3AnalysisProductReplayVerifyResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_analysis_product_replay_verify(
+    payload: Layer3AnalysisProductReplayVerifyRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request, access="read")
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
+    from app.services.layer3_analysis_product_replay import verify_analysis_product_replay
+
+    try:
+        result = verify_analysis_product_replay(
+            db,
+            session_id=payload.session_id,
+            analysis_product_id=payload.analysis_product_id,
+        )
+        return {
+            **base_response(ANALYSIS_PRODUCT_REPLAY_VERIFY_SCHEMA_ID),
+            "analysis_product_id": result.analysis_product_id,
+            "executor_type": result.executor_type,
+            "method_id": result.method_id,
+            "reproduced": result.reproduced,
+            "classification": result.classification,
+            "method_present": result.method_present,
+            "method_version_match": result.method_version_match,
+            "input_basis_match": result.input_basis_match,
+            "input_state_match": result.input_state_match,
+            "result_match": result.result_match,
+            "method_version_recorded": result.method_version_recorded,
+            "method_version_current": result.method_version_current,
+            "input_basis_hash_recorded": result.input_basis_hash_recorded,
+            "input_basis_hash_current": result.input_basis_hash_current,
+            "input_state_hash_recorded": result.input_state_hash_recorded,
+            "input_state_hash_current": result.input_state_hash_current,
+            "param_hash_recorded": result.param_hash_recorded,
+            "validation_recorded": result.validation_recorded,
+            "result_summary_hash_recorded": result.result_summary_hash_recorded,
+            "result_summary_hash_current": result.result_summary_hash_current,
+        }
+    except Layer3AnalysisProductError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+# ---------------------------------------------------------------------------
 # Analysis-product promotion — 3C Review/Promotion
 # ---------------------------------------------------------------------------
 
