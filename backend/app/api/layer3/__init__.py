@@ -11826,7 +11826,7 @@ def post_analysis_product_generate(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _principal = _route_level_operator_identity(request, access="write")
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     from app.services.layer3_analysis_product_generation import (
@@ -11834,6 +11834,11 @@ def post_analysis_product_generate(
         generate_analysis_product,
     )
     from app.services.layer3_lifecycle_events import bounded_operator_ref, emit_lifecycle_event
+
+    # Re-derive the (idempotent, side-effect-free) principal for the bounded
+    # audit ref. The gate above stays a bare call so the identity-seam drift
+    # guard sees it as the first statement in the try.
+    _principal = _route_level_operator_identity(request, access="write")
 
     try:
         gen_result = generate_analysis_product(
@@ -11984,11 +11989,15 @@ def post_analysis_product_replay_verify(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _principal = _route_level_operator_identity(request, access="read")
+        _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     from app.services.layer3_analysis_product_replay import verify_analysis_product_replay
     from app.services.layer3_lifecycle_events import bounded_operator_ref, emit_lifecycle_event
+
+    # Re-derive the (idempotent, side-effect-free) principal for the bounded
+    # audit ref; the gate above stays a bare call for the identity-seam guard.
+    _principal = _route_level_operator_identity(request, access="read")
 
     try:
         result = verify_analysis_product_replay(
@@ -12127,12 +12136,17 @@ def post_analysis_product_transition(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _principal = _route_level_operator_identity(request, access="write")
+        _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     from app.services.layer3_lifecycle_events import bounded_operator_ref, emit_lifecycle_event
+    # Capture request_id + bounded operator ref BEFORE `request` is rebound below.
+    # The gate above stays a bare call for the identity-seam guard; re-deriving
+    # the principal here is idempotent and side-effect-free.
     _lifecycle_request_id = getattr(getattr(request, "state", None), "request_id", None)
-    _lifecycle_operator_ref = bounded_operator_ref(_principal)
+    _lifecycle_operator_ref = bounded_operator_ref(
+        _route_level_operator_identity(request, access="write")
+    )
     request = AnalysisProductTransitionRequest(
         decision_intent=payload.decision_intent,
         decision_reason_code=payload.decision_reason_code,
