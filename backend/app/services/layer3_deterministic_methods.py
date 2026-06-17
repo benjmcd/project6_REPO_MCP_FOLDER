@@ -21,6 +21,7 @@ from app.models.models import (
     L3_PASS_RUN_STATUS_PLANNED,
     L3_PASS_RUN_STATUS_RUNNING,
     L3_PASS_RUN_STATUS_SELECTED_NOT_STARTED,
+    L3_WORKING_SET_MEMBER_REF_KIND_VALUES,
 )
 
 # ---------------------------------------------------------------------------
@@ -45,6 +46,13 @@ _ROLLUP_BODY_CAP = 10
 
 
 # ---------------------------------------------------------------------------
+# Canonical member kinds — single source of truth derived from the model constant.
+# ---------------------------------------------------------------------------
+
+_CANONICAL_MEMBER_KINDS: frozenset[str] = frozenset(L3_WORKING_SET_MEMBER_REF_KIND_VALUES)
+
+
+# ---------------------------------------------------------------------------
 # Internal method spec
 # ---------------------------------------------------------------------------
 
@@ -60,6 +68,9 @@ class _MethodSpec:
     consumes_member_state: bool
     render_title: Callable[..., str]
     render_body: Callable[..., str]
+    # Per-method declaration of which working-set member ref_kinds are accepted.
+    # run_method validates this before invoking spec.fn (fail-closed).
+    accepted_member_kinds: frozenset[str]
 
 
 # ---------------------------------------------------------------------------
@@ -442,6 +453,7 @@ DETERMINISTIC_METHODS: dict[str, _MethodSpec] = {
         consumes_member_state=False,
         render_title=_render_title_composition_summary,
         render_body=_render_body_composition_summary,
+        accepted_member_kinds=_CANONICAL_MEMBER_KINDS,
     ),
     "working_set_member_state_profile": _MethodSpec(
         method_id="working_set_member_state_profile",
@@ -457,6 +469,7 @@ DETERMINISTIC_METHODS: dict[str, _MethodSpec] = {
         consumes_member_state=True,
         render_title=_render_title_member_state_profile,
         render_body=_render_body_member_state_profile,
+        accepted_member_kinds=_CANONICAL_MEMBER_KINDS,
     ),
     "working_set_staleness_diagnostic": _MethodSpec(
         method_id="working_set_staleness_diagnostic",
@@ -471,6 +484,7 @@ DETERMINISTIC_METHODS: dict[str, _MethodSpec] = {
         consumes_member_state=True,
         render_title=_render_title_staleness_diagnostic,
         render_body=_render_body_staleness_diagnostic,
+        accepted_member_kinds=_CANONICAL_MEMBER_KINDS,
     ),
 }
 
@@ -498,6 +512,18 @@ def run_method(
     Deterministic: identical (working_set, member_states) -> identical result.
     """
     spec = DETERMINISTIC_METHODS[method_id]  # KeyError propagates to caller
+
+    # Fail-closed: validate every distinct ref_kind in the working set against
+    # the method's declared accepted_member_kinds.  A single unsupported kind
+    # among otherwise supported ones still raises (no partial accept).
+    # Only kind names are included in the message — never ref_ids or bodies.
+    present_kinds: set[str] = {m["ref_kind"] for m in working_set.member_refs_json}
+    unsupported = present_kinds - spec.accepted_member_kinds
+    if unsupported:
+        raise ValueError(
+            f"method '{method_id}' does not accept member kinds: {sorted(unsupported)};"
+            f" accepted: {sorted(spec.accepted_member_kinds)}"
+        )
 
     if spec.consumes_member_state:
         if member_states is None:
