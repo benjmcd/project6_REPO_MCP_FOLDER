@@ -3604,6 +3604,18 @@ _EVIDENCE_REFS_PER_PRODUCT_MAX = 200
 _OUTPUT_PACKAGE_INVENTORY_MAX = 100
 _WORKING_SET_INVENTORY_MAX = 100
 
+# Why a non-package_eligible product is excluded from package admission (lifecycle gate only).
+_ANALYSIS_PRODUCT_EXCLUSION_REASON_BY_STATUS: dict[str, str] = {
+    "draft": "not_yet_promoted",
+    "proposed": "pending_validation",
+    "validated": "pending_acceptance",
+    "accepted": "not_marked_package_eligible",
+    "rejected": "rejected",
+    "superseded": "superseded",
+    "packaged": "already_packaged",
+}
+_ANALYSIS_PRODUCT_EXCLUSION_REASON_FALLBACK = "ineligible_lifecycle_status"
+
 
 def _load_package_eligible_analysis_products(
     db: Session,
@@ -3648,6 +3660,36 @@ def _load_package_eligible_analysis_products(
         "included": included,
     }
     return roster, meta
+
+
+def _load_excluded_analysis_products(
+    db: Session,
+    session_id: str,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Load non-package_eligible analysis products for package admission preview.
+
+    Returns (excluded_sample, meta) where meta contains truncation info.
+    The excluded set is selected DB-side (lifecycle_status != "package_eligible")
+    and capped at _ANALYSIS_PRODUCT_INVENTORY_MAX, so eligible products can never
+    starve the excluded sample and excluded_product_count is the true visible
+    count.  truncated fires only when more excluded products exist than the cap.
+    """
+    total_excluded = _count_session_analyst_products(
+        db, session_id=session_id, exclude_lifecycle_status="package_eligible"
+    )
+    excluded_sample = _session_analyst_products(
+        db,
+        session_id=session_id,
+        exclude_lifecycle_status="package_eligible",
+        limit=_ANALYSIS_PRODUCT_INVENTORY_MAX,
+    )
+    truncated = total_excluded > len(excluded_sample)
+    meta: dict[str, Any] = {
+        "truncated": truncated,
+        "total": total_excluded,
+        "included": len(excluded_sample),
+    }
+    return excluded_sample, meta
 
 
 def _load_session_analyst_products_projection(
@@ -3726,6 +3768,10 @@ def _build_analysis_product_admission_preview(
             "truncated": None,
             "products": [],
             "note": "admission_preview_unavailable",
+            "excluded_products": [],
+            "excluded_product_count": None,
+            "total_excluded": None,
+            "excluded_truncated": None,
         }
     products = [
         {
@@ -3741,6 +3787,35 @@ def _build_analysis_product_admission_preview(
         }
         for p in roster
     ]
+    try:
+        excluded_sample, excluded_meta = _load_excluded_analysis_products(db, session_id)
+        excluded_products = []
+        for p in excluded_sample:
+            _status = p.get("lifecycle_status")
+            excluded_products.append(
+                {
+                    "product_kind": p.get("product_kind"),
+                    "lifecycle_status": _status,
+                    "evidence_count": (
+                        p.get("evidence_count")
+                        if p.get("evidence_count") is not None
+                        else len(p.get("evidence_refs") or [])
+                    ),
+                    "basis_hash": p.get("basis_hash"),
+                    "executor_type": p.get("executor_type"),
+                    "exclusion_reason": _ANALYSIS_PRODUCT_EXCLUSION_REASON_BY_STATUS.get(
+                        _status, _ANALYSIS_PRODUCT_EXCLUSION_REASON_FALLBACK
+                    ),
+                }
+            )
+        excluded_product_count: int | None = int(excluded_meta["included"])
+        total_excluded: int | None = int(excluded_meta["total"])
+        excluded_truncated: bool | None = bool(excluded_meta["truncated"])
+    except Exception:
+        excluded_products = []
+        excluded_product_count = None
+        total_excluded = None
+        excluded_truncated = None
     return {
         "schema_id": "layer3.analysis_product_admission_preview.v1",
         "embedding_enabled": enabled,
@@ -3749,6 +3824,10 @@ def _build_analysis_product_admission_preview(
         "total_package_eligible": int(meta.get("total", len(products))),
         "truncated": bool(meta.get("truncated", False)),
         "products": products,
+        "excluded_products": excluded_products,
+        "excluded_product_count": excluded_product_count,
+        "total_excluded": total_excluded,
+        "excluded_truncated": excluded_truncated,
     }
 
 

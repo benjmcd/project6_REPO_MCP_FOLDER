@@ -760,10 +760,13 @@ def count_session_analyst_products(
     *,
     session_id: str,
     lifecycle_status: str | None = None,
+    exclude_lifecycle_status: str | None = None,
 ) -> int:
     query = db.query(L3AnalysisProduct).filter(L3AnalysisProduct.session_id == session_id)
     if lifecycle_status is not None:
         query = query.filter(L3AnalysisProduct.lifecycle_status == lifecycle_status)
+    if exclude_lifecycle_status is not None:
+        query = query.filter(L3AnalysisProduct.lifecycle_status != exclude_lifecycle_status)
     return query.count()
 
 
@@ -772,12 +775,19 @@ def session_analyst_products(
     *,
     session_id: str,
     lifecycle_status: str | None = None,
+    exclude_lifecycle_status: str | None = None,
     limit: int | None = None,
 ) -> list[dict[str, Any]]:
-    """Return bounded read-only inventory of analysis products in the session."""
+    """Return bounded read-only inventory of analysis products in the session.
+
+    lifecycle_status selects a single status; exclude_lifecycle_status selects
+    every status except the given one (the two are independent filters).
+    """
     query = db.query(L3AnalysisProduct).filter(L3AnalysisProduct.session_id == session_id)
     if lifecycle_status is not None:
         query = query.filter(L3AnalysisProduct.lifecycle_status == lifecycle_status)
+    if exclude_lifecycle_status is not None:
+        query = query.filter(L3AnalysisProduct.lifecycle_status != exclude_lifecycle_status)
     query = query.order_by(L3AnalysisProduct.analysis_product_id.asc())
     if limit is not None:
         query = query.limit(max(0, int(limit)))
