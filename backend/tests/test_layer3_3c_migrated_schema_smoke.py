@@ -15,6 +15,7 @@ Coverage:
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
 from datetime import datetime, timezone
@@ -91,9 +92,22 @@ def _run_upgrade(url: str) -> None:
     must set that env var — not just the alembic config option — to ensure the
     online migration path targets the correct file.  The previous value is
     restored after the upgrade completes.
+
+    Alembic's env.py calls ``logging.config.fileConfig(...)``, which defaults to
+    ``disable_existing_loggers=True`` and would disable every app logger not
+    named in alembic.ini (e.g. ``layer3.lifecycle``) for the REST of the test
+    process — silently breaking later caplog-based tests sharing the worker.  We
+    snapshot every logger's ``disabled`` flag and restore it after the upgrade so
+    this fixture leaves the logging configuration exactly as it found it.
     """
     prev = os.environ.get("DATABASE_URL")
     os.environ["DATABASE_URL"] = url
+    manager = logging.Logger.manager
+    disabled_before = {
+        name: lg.disabled
+        for name, lg in manager.loggerDict.items()
+        if isinstance(lg, logging.Logger)
+    }
     try:
         cfg = _make_alembic_config(url)
         command.upgrade(cfg, "head")
@@ -102,6 +116,10 @@ def _run_upgrade(url: str) -> None:
             os.environ.pop("DATABASE_URL", None)
         else:
             os.environ["DATABASE_URL"] = prev
+        # Restore the disabled-state alembic's fileConfig may have changed.
+        for name, lg in manager.loggerDict.items():
+            if isinstance(lg, logging.Logger):
+                lg.disabled = disabled_before.get(name, False)
 
 
 # ---------------------------------------------------------------------------
