@@ -46,6 +46,7 @@ from app.services.layer3_analysis_product_authoring import (
 )
 from app.services.layer3_analysis_product_generation import generate_analysis_product
 from app.services.layer3_analysis_product_lineage import (
+    _LINEAGE_REVIEW_TRAIL_MAX,
     _order_review_decisions,
     build_analysis_product_lineage,
 )
@@ -720,3 +721,176 @@ def test_lineage_api_cross_session_409(seeded_db) -> None:
         )
     assert exc_info.value.error_code == "analysis_product_not_in_session"
     assert exc_info.value.http_status == 409
+
+
+# ---------------------------------------------------------------------------
+# Helpers for review_trail bounding tests
+# ---------------------------------------------------------------------------
+
+
+def _insert_decision(
+    db,
+    *,
+    did: str,
+    product_id: str,
+    session_id: str,
+    frm: str,
+    to: str,
+    ts: datetime,
+) -> None:
+    """Insert a persisted L3AnalysisProductReviewDecision row directly."""
+    row = L3AnalysisProductReviewDecision(
+        analysis_product_review_decision_id=did,
+        analysis_product_id=product_id,
+        session_id=session_id,
+        from_status=frm,
+        to_status=to,
+        review_decision="promote",
+        decision_reason_code="proposed_ready",
+        decision_basis_hash="h-" + did,
+        decision_schema_id="schema-v1",
+        product_basis_hash="pb-" + did,
+        client_request_id="crid-" + did,
+        created_at=ts,
+    )
+    db.add(row)
+
+
+def _make_product_for_bound_tests(db, *, ws_name: str, crid_ws: str, crid_gen: str):
+    """Create a working set + deterministic product; return (product_id, session_id)."""
+    ws = _make_working_set(
+        db,
+        session_id="session-lin-test",
+        name=ws_name,
+        client_request_id=crid_ws,
+    )
+    gen = generate_analysis_product(
+        db,
+        session_id="session-lin-test",
+        client_request_id=crid_gen,
+        working_set_id=ws.working_set_id,
+        method_id="working_set_composition_summary",
+    )
+    db.commit()
+    return gen.product.analysis_product_id, "session-lin-test"
+
+
+# ---------------------------------------------------------------------------
+# Review trail bounding tests
+# ---------------------------------------------------------------------------
+
+
+def test_lineage_review_trail_bounded(seeded_db) -> None:
+    """Inserting more than _LINEAGE_REVIEW_TRAIL_MAX decisions must:
+    - cap review_trail at _LINEAGE_REVIEW_TRAIL_MAX entries,
+    - set review_trail_truncated=True,
+    - set review_trail_total to the actual inserted count.
+    """
+    db = seeded_db
+    pid, sid = _make_product_for_bound_tests(
+        db,
+        ws_name="WS Lin Bound",
+        crid_ws="req-ws-lin-bound-001",
+        crid_gen="req-lin-bound-001",
+    )
+
+    n_decisions = _LINEAGE_REVIEW_TRAIL_MAX + 10
+    base_ts = datetime(2026, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+    for i in range(n_decisions):
+        _insert_decision(
+            db,
+            did=f"bd-{i:04d}",
+            product_id=pid,
+            session_id=sid,
+            frm="draft",
+            to="proposed",
+            ts=base_ts.replace(minute=i % 60, second=i // 60),
+        )
+    db.commit()
+
+    lineage = build_analysis_product_lineage(db, session_id=sid, analysis_product_id=pid)
+
+    assert len(lineage["review_trail"]) == _LINEAGE_REVIEW_TRAIL_MAX
+    assert lineage["review_trail_truncated"] is True
+    assert lineage["review_trail_total"] == n_decisions
+
+
+def test_lineage_review_trail_not_truncated_when_small(seeded_db) -> None:
+    """A product with fewer than _LINEAGE_REVIEW_TRAIL_MAX decisions must:
+    - set review_trail_truncated=False,
+    - set review_trail_total == len(review_trail).
+    """
+    db = seeded_db
+    pid, sid = _make_product_for_bound_tests(
+        db,
+        ws_name="WS Lin Small",
+        crid_ws="req-ws-lin-small-001",
+        crid_gen="req-lin-small-001",
+    )
+
+    n_decisions = 3
+    base_ts = datetime(2026, 2, 1, tzinfo=timezone.utc)
+    for i in range(n_decisions):
+        _insert_decision(
+            db,
+            did=f"sd-{i:04d}",
+            product_id=pid,
+            session_id=sid,
+            frm="draft",
+            to="proposed",
+            ts=base_ts.replace(minute=i),
+        )
+    db.commit()
+
+    lineage = build_analysis_product_lineage(db, session_id=sid, analysis_product_id=pid)
+
+    assert lineage["review_trail_truncated"] is False
+    assert lineage["review_trail_total"] == n_decisions
+    assert lineage["review_trail_total"] == len(lineage["review_trail"])
+
+
+def test_lineage_review_trail_preserves_chronological_head(seeded_db) -> None:
+    """With more than _LINEAGE_REVIEW_TRAIL_MAX decisions, the earliest decision
+    (chain head, e.g. from_status='draft') must be review_trail[0] — truncation
+    keeps the earliest decisions, not the latest.
+    """
+    db = seeded_db
+    pid, sid = _make_product_for_bound_tests(
+        db,
+        ws_name="WS Lin Head",
+        crid_ws="req-ws-lin-head-001",
+        crid_gen="req-lin-head-001",
+    )
+
+    n_decisions = _LINEAGE_REVIEW_TRAIL_MAX + 5
+    # First decision: draft->proposed at earliest timestamp (the chain head).
+    earliest_ts = datetime(2025, 1, 1, tzinfo=timezone.utc)
+    _insert_decision(
+        db,
+        did="head-decision",
+        product_id=pid,
+        session_id=sid,
+        frm="draft",
+        to="proposed",
+        ts=earliest_ts,
+    )
+    # Remaining decisions: all later timestamps, from_status='proposed'.
+    later_base = datetime(2026, 3, 1, tzinfo=timezone.utc)
+    for i in range(n_decisions - 1):
+        _insert_decision(
+            db,
+            did=f"hd-{i:04d}",
+            product_id=pid,
+            session_id=sid,
+            frm="proposed",
+            to="validated",
+            ts=later_base.replace(minute=i % 60, second=i // 60),
+        )
+    db.commit()
+
+    lineage = build_analysis_product_lineage(db, session_id=sid, analysis_product_id=pid)
+
+    assert lineage["review_trail_truncated"] is True
+    assert len(lineage["review_trail"]) == _LINEAGE_REVIEW_TRAIL_MAX
+    # The chain head (earliest, draft->proposed) must be first in the trail.
+    assert lineage["review_trail"][0]["from_status"] == "draft"
