@@ -319,6 +319,61 @@ def test_generate_idempotency_same_request(seeded_db) -> None:
     assert db.query(L3AnalysisProduct).count() == 1
 
 
+def test_generate_idempotent_replay_survives_spec_change(seeded_db, monkeypatch) -> None:
+    """A duplicate generate with the same client_request_id replays the existing
+    deterministic product even if the method spec (product_kind / version) changed
+    between calls — e.g. a taxonomy/version bump across a deploy — instead of
+    raising idempotency_conflict.  The (method, working_set) inputs match, so it
+    is the same logical generation request."""
+    import dataclasses
+
+    from app.services import layer3_deterministic_methods as dm
+
+    db = seeded_db
+    ws = _make_working_set(
+        db, session_id="session-gen-test", name="WS SpecChange", client_request_id="req-ws-specchg"
+    )
+    first = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-gen-specchg",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_composition_summary",
+    )
+    db.commit()
+    assert first.replayed is False
+    original_id = first.product.analysis_product_id
+    original_kind = first.product.product_kind
+
+    # Simulate a later deploy that changes the composition spec (kind + version).
+    orig_spec = dm.DETERMINISTIC_METHODS["working_set_composition_summary"]
+    changed_spec = dataclasses.replace(
+        orig_spec, product_kind="summary", version=orig_spec.version + 1
+    )
+    monkeypatch.setitem(dm.DETERMINISTIC_METHODS, "working_set_composition_summary", changed_spec)
+
+    # Retry the SAME client_request_id -> must replay the existing product (no 409).
+    second = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-gen-specchg",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_composition_summary",
+    )
+    db.commit()
+    assert second.replayed is True
+    assert second.product.analysis_product_id == original_id
+    # The replayed product keeps its ORIGINAL kind — proves replay, not a rebuild.
+    assert second.product.product_kind == original_kind
+    # Still exactly one composition product row.
+    count = (
+        db.query(L3AnalysisProduct)
+        .filter(L3AnalysisProduct.executor_identity == "working_set_composition_summary")
+        .count()
+    )
+    assert count == 1
+
+
 # ---------------------------------------------------------------------------
 # Error: unknown method_id -> 400
 # ---------------------------------------------------------------------------
