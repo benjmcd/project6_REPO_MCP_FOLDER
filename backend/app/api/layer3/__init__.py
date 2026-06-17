@@ -11826,13 +11826,14 @@ def post_analysis_product_generate(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request, access="write")
+        _principal = _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     from app.services.layer3_analysis_product_generation import (
         Layer3GenerationResult,
         generate_analysis_product,
     )
+    from app.services.layer3_lifecycle_events import bounded_operator_ref, emit_lifecycle_event
 
     try:
         gen_result = generate_analysis_product(
@@ -11844,6 +11845,17 @@ def post_analysis_product_generate(
         )
         db.commit()
         product = gen_result.product
+        # Emit immediately after commit (before serialization) so a committed
+        # product always fires its lifecycle event even if serialization fails.
+        emit_lifecycle_event(
+            "product_generated",
+            request_id=getattr(getattr(request, "state", None), "request_id", None),
+            operator_ref=bounded_operator_ref(_principal),
+            product_id=product.analysis_product_id,
+            method_id=gen_result.method_id,
+            method_version=gen_result.method_version,
+            lifecycle_status=product.lifecycle_status,
+        )
         serialized = _serialize_analysis_product(product, list(gen_result.evidence_links))
         return {
             **base_response(ANALYSIS_PRODUCT_GENERATE_SCHEMA_ID),
@@ -11972,16 +11984,25 @@ def post_analysis_product_replay_verify(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request, access="read")
+        _principal = _route_level_operator_identity(request, access="read")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     from app.services.layer3_analysis_product_replay import verify_analysis_product_replay
+    from app.services.layer3_lifecycle_events import bounded_operator_ref, emit_lifecycle_event
 
     try:
         result = verify_analysis_product_replay(
             db,
             session_id=payload.session_id,
             analysis_product_id=payload.analysis_product_id,
+        )
+        emit_lifecycle_event(
+            "product_replay_verified",
+            request_id=getattr(getattr(request, "state", None), "request_id", None),
+            operator_ref=bounded_operator_ref(_principal),
+            product_id=result.analysis_product_id,
+            reproduced=result.reproduced,
+            classification=result.classification,
         )
         return {
             **base_response(ANALYSIS_PRODUCT_REPLAY_VERIFY_SCHEMA_ID),
@@ -12106,9 +12127,12 @@ def post_analysis_product_transition(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
-        _route_level_operator_identity(request, access="write")
+        _principal = _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
+    from app.services.layer3_lifecycle_events import bounded_operator_ref, emit_lifecycle_event
+    _lifecycle_request_id = getattr(getattr(request, "state", None), "request_id", None)
+    _lifecycle_operator_ref = bounded_operator_ref(_principal)
     request = AnalysisProductTransitionRequest(
         decision_intent=payload.decision_intent,
         decision_reason_code=payload.decision_reason_code,
@@ -12127,6 +12151,16 @@ def post_analysis_product_transition(
         db.commit()
         decision = result.decision
         product = result.product
+        emit_lifecycle_event(
+            "product_transitioned",
+            request_id=_lifecycle_request_id,
+            operator_ref=_lifecycle_operator_ref,
+            product_id=product.analysis_product_id,
+            from_status=decision.from_status,
+            to_status=product.lifecycle_status,
+            review_decision=decision.review_decision,
+            decision_reason_code=decision.decision_reason_code,
+        )
         return {
             **base_response(ANALYSIS_PRODUCT_TRANSITION_SCHEMA_ID),
             "analysis_product_id": product.analysis_product_id,

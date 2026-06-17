@@ -45,6 +45,10 @@ class _JsonFormatter(logging.Formatter):
             payload["request_id"] = request_id
         if record.exc_info:
             payload["exc_info"] = self.formatException(record.exc_info)
+        # Include bounded lifecycle event dict when present (layer3.lifecycle records).
+        layer3_event = getattr(record, "layer3_event", None)
+        if layer3_event is not None:
+            payload["event"] = layer3_event
         return json.dumps(payload, ensure_ascii=False)
 
 
