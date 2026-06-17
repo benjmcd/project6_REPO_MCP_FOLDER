@@ -12059,6 +12059,8 @@ class Layer3AnalysisProductLineageResponse(Layer3BaseResponse):
     evidence_refs: list[dict[str, Any]]
     evidence_refs_truncated: bool
     review_trail: list[dict[str, Any]]
+    review_trail_truncated: bool
+    review_trail_total: int
     package: dict[str, Any]
 
 

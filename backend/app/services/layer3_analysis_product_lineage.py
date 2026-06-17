@@ -94,6 +94,7 @@ LINEAGE_SCHEMA_ID = "layer3.analysis_product_lineage.v1"
 # ---------------------------------------------------------------------------
 
 _LINEAGE_EVIDENCE_REFS_MAX = 200
+_LINEAGE_REVIEW_TRAIL_MAX = 100
 _PACKAGE_ELIGIBLE_STATUSES = frozenset({"package_eligible", "packaged"})
 
 
@@ -212,14 +213,35 @@ def build_analysis_product_lineage(
             "validation": prov.get("validation"),
         }
 
-    # --- Step 6: review trail (all decisions, chain-ordered) ----------------
-    decision_rows = _order_review_decisions(
+    # --- Step 6: review trail (bounded, chain-ordered) ----------------------
+    # Count the true total first (no full load) so we can report truncation.
+    review_trail_total: int = (
         db.query(L3AnalysisProductReviewDecision)
         .filter(
             L3AnalysisProductReviewDecision.analysis_product_id == analysis_product_id,
         )
+        .count()
+    )
+    # Fetch at most _LINEAGE_REVIEW_TRAIL_MAX + 1 rows ordered earliest-first so
+    # the linearizer input is bounded (O(n^2) cost bounded) and the chain head
+    # (typically the earliest decision, e.g. draft->proposed) is preserved.
+    # The trail shows the earliest _LINEAGE_REVIEW_TRAIL_MAX decisions
+    # chronologically; review_trail_total reports the true count so consumers
+    # know when the view is truncated.
+    bounded_rows = (
+        db.query(L3AnalysisProductReviewDecision)
+        .filter(
+            L3AnalysisProductReviewDecision.analysis_product_id == analysis_product_id,
+        )
+        .order_by(
+            L3AnalysisProductReviewDecision.created_at.asc(),
+            L3AnalysisProductReviewDecision.analysis_product_review_decision_id.asc(),
+        )
+        .limit(_LINEAGE_REVIEW_TRAIL_MAX + 1)
         .all()
     )
+    decision_rows = _order_review_decisions(bounded_rows)[:_LINEAGE_REVIEW_TRAIL_MAX]
+    review_trail_truncated: bool = review_trail_total > _LINEAGE_REVIEW_TRAIL_MAX
     review_trail: list[dict[str, Any]] = []
     for decision in decision_rows:
         prov_json = (
@@ -270,5 +292,7 @@ def build_analysis_product_lineage(
         "evidence_refs": evidence_refs,
         "evidence_refs_truncated": evidence_refs_truncated,
         "review_trail": review_trail,
+        "review_trail_truncated": review_trail_truncated,
+        "review_trail_total": review_trail_total,
         "package": package,
     }
