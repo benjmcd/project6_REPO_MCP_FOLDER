@@ -37323,6 +37323,73 @@ def test_layer3_api_analysis_product_replay_verify_openapi_additional_properties
 
 
 # ---------------------------------------------------------------------------
+# Analysis-product lineage — GET /analysis-product/{id}/lineage
+# ---------------------------------------------------------------------------
+
+
+def test_layer3_api_analysis_product_lineage_200(client: TestClient, tmp_path) -> None:
+    """GET /analysis-product/{id}/lineage -> 200 with the bounded lineage view;
+    working_set is linked, method_provenance present for a deterministic product,
+    and no product body/title leaks into the response."""
+    session_id = _construct_quant_package_set(client, tmp_path, request_id="api-lineage")[0]
+    summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    snap_id = summary["sublayer_visualization"]["material_objects"][0]["material_snapshot_id"]
+
+    ws_resp = client.post(
+        "/api/v1/layer3/working-set",
+        json={
+            "session_id": session_id,
+            "client_request_id": "ws-lineage-1",
+            "name": "Lineage scope",
+            "members": [{"ref_kind": "material_snapshot", "ref_id": snap_id}],
+        },
+    )
+    assert ws_resp.status_code == 201, ws_resp.text
+    ws_id = ws_resp.json()["working_set_id"]
+
+    gen_resp = client.post(
+        "/api/v1/layer3/analysis-product/generate",
+        json={
+            "session_id": session_id,
+            "client_request_id": "gen-lineage-1",
+            "working_set_id": ws_id,
+            "method_id": "working_set_staleness_diagnostic",
+        },
+    )
+    assert gen_resp.status_code == 201, gen_resp.text
+    product_id = gen_resp.json()["analysis_product_id"]
+
+    resp = client.get(
+        f"/api/v1/layer3/analysis-product/{product_id}/lineage",
+        params={"session_id": session_id},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["schema_id"] == "layer3.analysis_product_lineage.v1"
+    assert body["analysis_product_id"] == product_id
+    assert body["working_set_linked"] is True
+    assert body["working_set"]["working_set_id"] == ws_id
+    assert body["method_provenance"]["method_id"] == "working_set_staleness_diagnostic"
+    assert "input_basis_hash" in body["method_provenance"]
+    assert body["package"]["package_eligible_or_packaged"] is False
+    assert isinstance(body["review_trail"], list)
+    # Bounded: product body/title must not leak, and provenance must not carry result_summary.
+    assert "body" not in body["product"]
+    assert "title" not in body["product"]
+    assert "result_summary" not in body["method_provenance"]
+
+
+def test_layer3_api_analysis_product_lineage_not_found_404(client: TestClient) -> None:
+    """Lineage for an unknown product id -> 404 analysis_product_not_found."""
+    resp = client.get(
+        "/api/v1/layer3/analysis-product/no-such-product/lineage",
+        params={"session_id": "no-such-session"},
+    )
+    assert resp.status_code == 404, resp.text
+    assert resp.json()["error_code"] == "analysis_product_not_found"
+
+
+# ---------------------------------------------------------------------------
 # Analysis-product method catalog — GET /analysis-product/methods
 # ---------------------------------------------------------------------------
 
