@@ -11833,6 +11833,12 @@ def post_analysis_product_generate(
         Layer3GenerationResult,
         generate_analysis_product,
     )
+    from app.services.layer3_lifecycle_events import bounded_operator_ref, emit_lifecycle_event
+
+    # Re-derive the (idempotent, side-effect-free) principal for the bounded
+    # audit ref. The gate above stays a bare call so the identity-seam drift
+    # guard sees it as the first statement in the try.
+    _principal = _route_level_operator_identity(request, access="write")
 
     try:
         gen_result = generate_analysis_product(
@@ -11844,6 +11850,20 @@ def post_analysis_product_generate(
         )
         db.commit()
         product = gen_result.product
+        # Emit immediately after commit (before serialization) so a committed
+        # product always fires its lifecycle event even if serialization fails.
+        # Skip on idempotent replay: no new product was created, so it is not a
+        # real lifecycle change and must not inflate the audit stream.
+        if not gen_result.replayed:
+            emit_lifecycle_event(
+                "product_generated",
+                request_id=getattr(getattr(request, "state", None), "request_id", None),
+                operator_ref=bounded_operator_ref(_principal),
+                product_id=product.analysis_product_id,
+                method_id=gen_result.method_id,
+                method_version=gen_result.method_version,
+                lifecycle_status=product.lifecycle_status,
+            )
         serialized = _serialize_analysis_product(product, list(gen_result.evidence_links))
         return {
             **base_response(ANALYSIS_PRODUCT_GENERATE_SCHEMA_ID),
@@ -11976,12 +11996,25 @@ def post_analysis_product_replay_verify(
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     from app.services.layer3_analysis_product_replay import verify_analysis_product_replay
+    from app.services.layer3_lifecycle_events import bounded_operator_ref, emit_lifecycle_event
+
+    # Re-derive the (idempotent, side-effect-free) principal for the bounded
+    # audit ref; the gate above stays a bare call for the identity-seam guard.
+    _principal = _route_level_operator_identity(request, access="read")
 
     try:
         result = verify_analysis_product_replay(
             db,
             session_id=payload.session_id,
             analysis_product_id=payload.analysis_product_id,
+        )
+        emit_lifecycle_event(
+            "product_replay_verified",
+            request_id=getattr(getattr(request, "state", None), "request_id", None),
+            operator_ref=bounded_operator_ref(_principal),
+            product_id=result.analysis_product_id,
+            reproduced=result.reproduced,
+            classification=result.classification,
         )
         return {
             **base_response(ANALYSIS_PRODUCT_REPLAY_VERIFY_SCHEMA_ID),
@@ -12109,6 +12142,14 @@ def post_analysis_product_transition(
         _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
+    from app.services.layer3_lifecycle_events import bounded_operator_ref, emit_lifecycle_event
+    # Capture request_id + bounded operator ref BEFORE `request` is rebound below.
+    # The gate above stays a bare call for the identity-seam guard; re-deriving
+    # the principal here is idempotent and side-effect-free.
+    _lifecycle_request_id = getattr(getattr(request, "state", None), "request_id", None)
+    _lifecycle_operator_ref = bounded_operator_ref(
+        _route_level_operator_identity(request, access="write")
+    )
     request = AnalysisProductTransitionRequest(
         decision_intent=payload.decision_intent,
         decision_reason_code=payload.decision_reason_code,
@@ -12127,6 +12168,19 @@ def post_analysis_product_transition(
         db.commit()
         decision = result.decision
         product = result.product
+        # Skip on idempotent replay: a re-submitted decision did not change
+        # lifecycle state, so it must not be recorded as a real transition.
+        if not result.replayed:
+            emit_lifecycle_event(
+                "product_transitioned",
+                request_id=_lifecycle_request_id,
+                operator_ref=_lifecycle_operator_ref,
+                product_id=product.analysis_product_id,
+                from_status=decision.from_status,
+                to_status=product.lifecycle_status,
+                review_decision=decision.review_decision,
+                decision_reason_code=decision.decision_reason_code,
+            )
         return {
             **base_response(ANALYSIS_PRODUCT_TRANSITION_SCHEMA_ID),
             "analysis_product_id": product.analysis_product_id,
