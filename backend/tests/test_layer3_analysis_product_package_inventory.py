@@ -47,8 +47,11 @@ from app.services.layer3_workbench import (
     _analysis_product_admission_hash,
     _analysis_product_package_payload_extras,
     _build_analysis_product_admission_preview,
+    _load_excluded_analysis_products,
     _load_package_eligible_analysis_products,
     _merge_analysis_product_inventory_extras,
+    _ANALYSIS_PRODUCT_EXCLUSION_REASON_BY_STATUS,
+    _ANALYSIS_PRODUCT_EXCLUSION_REASON_FALLBACK,
     _ANALYSIS_PRODUCT_INVENTORY_MAX,
     _EVIDENCE_REFS_PER_PRODUCT_MAX,
 )
@@ -722,6 +725,225 @@ def test_admission_hash_is_flag_gated_and_roster_sensitive(seeded_db) -> None:
     assert hash_one is not None
     assert hash_two is not None
     assert hash_two != hash_one
+
+
+# ---------------------------------------------------------------------------
+# TEXT ANCHOR: admission_preview_exclusion_tests
+# _build_analysis_product_admission_preview — excluded_products section
+# ---------------------------------------------------------------------------
+
+
+def _insert_product_direct(db, *, session_id: str, lifecycle_status: str, client_request_id: str) -> L3AnalysisProduct:
+    """Insert an L3AnalysisProduct row directly with the given lifecycle_status,
+    bypassing the authoring workflow so we can place products in any lifecycle state."""
+    import hashlib
+
+    row = L3AnalysisProduct(
+        session_id=session_id,
+        product_kind="finding",
+        executor_type="human",
+        lifecycle_status=lifecycle_status,
+        title=f"Direct insert [{client_request_id}]",
+        body="body text",
+        is_non_evidentiary=False,
+        basis_hash=hashlib.sha256(client_request_id.encode()).hexdigest()[:16],
+        spec_hash=hashlib.sha256(f"spec-{client_request_id}".encode()).hexdigest()[:16],
+        client_request_id=client_request_id,
+        authoring_provenance_json={},
+        summary_json={},
+    )
+    db.add(row)
+    db.commit()
+    return row
+
+
+def test_admission_preview_excluded_products_present_with_reasons(seeded_db) -> None:
+    """Mix of eligible and non-eligible products: excluded_products lists the
+    non-eligible ones with correct exclusion_reason; the package_eligible product
+    appears only in products, not in excluded_products."""
+    db = seeded_db
+
+    # One package_eligible product (via normal promotion path)
+    eligible = _make_grounded_product(db, client_request_id="excl-mix-eligible")
+    _promote_to_package_eligible(
+        db, session_id=SESSION_ID, product_id=eligible.analysis_product_id, prefix="excl-mix-e"
+    )
+
+    # Three non-eligible products inserted directly
+    _insert_product_direct(db, session_id=SESSION_ID, lifecycle_status="draft", client_request_id="excl-mix-draft")
+    _insert_product_direct(db, session_id=SESSION_ID, lifecycle_status="rejected", client_request_id="excl-mix-rejected")
+    _insert_product_direct(db, session_id=SESSION_ID, lifecycle_status="accepted", client_request_id="excl-mix-accepted")
+
+    with patch.object(layer3_workbench.settings, "layer3_analysis_product_package_inventory_enabled", False):
+        result = _build_analysis_product_admission_preview(db, SESSION_ID)
+
+    assert result["available"] is True
+    assert result["package_eligible_product_count"] == 1
+    assert len(result["products"]) == 1
+    assert result["products"][0]["lifecycle_status"] == "package_eligible"
+
+    excluded = result["excluded_products"]
+    assert isinstance(excluded, list)
+    assert len(excluded) == 3
+
+    by_status = {e["lifecycle_status"]: e for e in excluded}
+    assert set(by_status.keys()) == {"draft", "rejected", "accepted"}
+    assert by_status["draft"]["exclusion_reason"] == "not_yet_promoted"
+    assert by_status["rejected"]["exclusion_reason"] == "rejected"
+    assert by_status["accepted"]["exclusion_reason"] == "not_marked_package_eligible"
+
+    # The eligible product must NOT appear in excluded_products
+    eligible_ids_in_excluded = [e for e in excluded if e.get("lifecycle_status") == "package_eligible"]
+    assert eligible_ids_in_excluded == []
+
+    assert result["total_excluded"] == 3
+    assert result["excluded_product_count"] == 3
+    assert result["excluded_truncated"] is False
+
+
+def test_admission_preview_excluded_bounded_keys_only(seeded_db) -> None:
+    """Every excluded_products entry has exactly the 6 bounded keys."""
+    db = seeded_db
+
+    _insert_product_direct(db, session_id=SESSION_ID, lifecycle_status="draft", client_request_id="excl-keys-draft")
+    _insert_product_direct(db, session_id=SESSION_ID, lifecycle_status="superseded", client_request_id="excl-keys-sup")
+
+    with patch.object(layer3_workbench.settings, "layer3_analysis_product_package_inventory_enabled", False):
+        result = _build_analysis_product_admission_preview(db, SESSION_ID)
+
+    assert result["available"] is True
+    excluded = result["excluded_products"]
+    assert len(excluded) == 2
+
+    expected_keys = {"product_kind", "lifecycle_status", "evidence_count", "basis_hash", "executor_type", "exclusion_reason"}
+    for entry in excluded:
+        assert set(entry.keys()) == expected_keys, (
+            f"Excluded entry must have exactly {expected_keys}, got {set(entry.keys())}"
+        )
+
+
+def test_admission_preview_no_excluded_when_all_eligible(seeded_db) -> None:
+    """A session whose only product is package_eligible: excluded_products is empty."""
+    db = seeded_db
+
+    product = _make_grounded_product(db, client_request_id="excl-none-001")
+    _promote_to_package_eligible(
+        db, session_id=SESSION_ID, product_id=product.analysis_product_id, prefix="excl-none"
+    )
+
+    with patch.object(layer3_workbench.settings, "layer3_analysis_product_package_inventory_enabled", False):
+        result = _build_analysis_product_admission_preview(db, SESSION_ID)
+
+    assert result["available"] is True
+    assert result["excluded_products"] == []
+    assert result["total_excluded"] == 0
+    assert result["excluded_product_count"] == 0
+    assert result["excluded_truncated"] is False
+
+
+def test_admission_preview_excluded_error_path_defaults(seeded_db) -> None:
+    """If _load_excluded_analysis_products raises, the preview still returns
+    available=True with the eligible roster intact and excluded fields defaulted."""
+    db = seeded_db
+
+    product = _make_grounded_product(db, client_request_id="excl-err-001")
+    _promote_to_package_eligible(
+        db, session_id=SESSION_ID, product_id=product.analysis_product_id, prefix="excl-err"
+    )
+    _insert_product_direct(db, session_id=SESSION_ID, lifecycle_status="draft", client_request_id="excl-err-draft")
+
+    def _raise(*args, **kwargs):
+        raise RuntimeError("simulated excluded loader failure")
+
+    with patch("app.services.layer3_workbench._load_excluded_analysis_products", side_effect=_raise):
+        with patch.object(layer3_workbench.settings, "layer3_analysis_product_package_inventory_enabled", False):
+            result = _build_analysis_product_admission_preview(db, SESSION_ID)
+
+    assert result["available"] is True
+    # Eligible roster unaffected
+    assert result["package_eligible_product_count"] == 1
+    assert len(result["products"]) == 1
+    assert result["products"][0]["lifecycle_status"] == "package_eligible"
+    # Excluded fields defaulted to safe values
+    assert result["excluded_products"] == []
+    assert result["excluded_product_count"] is None
+    assert result["total_excluded"] is None
+    assert result["excluded_truncated"] is None
+
+
+def test_admission_preview_excluded_reason_for_every_non_eligible_status(seeded_db) -> None:
+    """Each non-package_eligible lifecycle status maps to its declared exclusion_reason."""
+    db = seeded_db
+
+    expected = {
+        "draft": "not_yet_promoted",
+        "proposed": "pending_validation",
+        "validated": "pending_acceptance",
+        "accepted": "not_marked_package_eligible",
+        "rejected": "rejected",
+        "superseded": "superseded",
+        "packaged": "already_packaged",
+    }
+    for status in expected:
+        _insert_product_direct(
+            db, session_id=SESSION_ID, lifecycle_status=status, client_request_id=f"excl-reason-{status}"
+        )
+
+    with patch.object(layer3_workbench.settings, "layer3_analysis_product_package_inventory_enabled", False):
+        result = _build_analysis_product_admission_preview(db, SESSION_ID)
+
+    by_status = {e["lifecycle_status"]: e["exclusion_reason"] for e in result["excluded_products"]}
+    assert by_status == expected
+    assert result["total_excluded"] == len(expected)
+    assert result["excluded_truncated"] is False
+
+
+def test_admission_preview_excluded_truncates_beyond_cap(seeded_db) -> None:
+    """More than _ANALYSIS_PRODUCT_INVENTORY_MAX excluded products: the sample is
+    capped at MAX, total_excluded reflects the true count, and excluded_truncated
+    is True.  Eligible products never starve the excluded sample (DB-side filter)."""
+    db = seeded_db
+
+    cap = layer3_workbench._ANALYSIS_PRODUCT_INVENTORY_MAX
+    over = cap + 5
+
+    # One eligible product to prove it does not consume excluded-sample slots.
+    eligible = _make_grounded_product(db, client_request_id="excl-cap-eligible")
+    _promote_to_package_eligible(
+        db, session_id=SESSION_ID, product_id=eligible.analysis_product_id, prefix="excl-cap-e"
+    )
+
+    rows = [
+        L3AnalysisProduct(
+            session_id=SESSION_ID,
+            product_kind="finding",
+            executor_type="human",
+            lifecycle_status="draft",
+            title=f"Bulk excluded {i}",
+            body="body text",
+            is_non_evidentiary=False,
+            basis_hash=f"basis-cap-{i:04d}",
+            spec_hash=f"spec-cap-{i:04d}",
+            client_request_id=f"excl-cap-{i:04d}",
+            authoring_provenance_json={},
+            summary_json={},
+        )
+        for i in range(over)
+    ]
+    db.add_all(rows)
+    db.commit()
+
+    with patch.object(layer3_workbench.settings, "layer3_analysis_product_package_inventory_enabled", False):
+        result = _build_analysis_product_admission_preview(db, SESSION_ID)
+
+    assert result["total_excluded"] == over
+    assert result["excluded_product_count"] == cap
+    assert len(result["excluded_products"]) == cap
+    assert result["excluded_truncated"] is True
+    # Eligible product still surfaces in the included roster, unaffected by excluded volume.
+    assert result["package_eligible_product_count"] == 1
+    # Excluded entries are all the draft inserts, never the eligible product.
+    assert all(e["lifecycle_status"] == "draft" for e in result["excluded_products"])
 
 
 # ---------------------------------------------------------------------------
