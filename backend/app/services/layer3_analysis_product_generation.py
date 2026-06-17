@@ -24,6 +24,7 @@ from app.services.layer3_analysis_product_authoring import (
 )
 from app.services.layer3_deterministic_methods import (
     DETERMINISTIC_METHODS,
+    method_quality_signals,
     render_body,
     render_title,
     run_method,
@@ -234,6 +235,10 @@ def generate_analysis_product(
         k: v for k, v in result.items() if k not in ("method_id", "method_version")
     }
 
+    # Derive bounded quality signals (confidence_level + limitations).
+    # Counts only — never ref_ids or raw bodies.
+    quality = method_quality_signals(method_id, result=result)
+
     if spec.consumes_member_state:
         # State-consuming: validation sentinel is "function_purity_recomputed_match"
         # because the run-twice gate proves fn purity over a fixed frame, NOT full
@@ -247,6 +252,8 @@ def generate_analysis_product(
             "result_summary": result_summary_dict,
             "validation": "function_purity_recomputed_match",
             "input_state_hash": stable_hash(member_states),
+            "confidence_level": quality["confidence_level"],
+            "limitations": quality["limitations"],
         }
     else:
         # State-free: sentinel stays "deterministic_recomputed_match"; NO input_state_hash.
@@ -258,6 +265,8 @@ def generate_analysis_product(
             "result_summary": result_summary_dict,
             # Recorded only after an actual recompute-and-compare above.
             "validation": "deterministic_recomputed_match",
+            "confidence_level": quality["confidence_level"],
+            "limitations": quality["limitations"],
         }
 
     # --- Step 6: create the analysis product draft --------------------------

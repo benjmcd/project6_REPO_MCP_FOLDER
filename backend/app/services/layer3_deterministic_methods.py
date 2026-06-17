@@ -580,10 +580,96 @@ def render_title(method_id: str, *, working_set: L3WorkingSet) -> str:
     return f"Deterministic analysis: {working_set.name} [{method_id}]"
 
 
+# ---------------------------------------------------------------------------
+# Quality signals
+# ---------------------------------------------------------------------------
+
+# Maximum number of limitation strings (defensive cap; categories are few)
+_QUALITY_LIMITATIONS_CAP = 10
+
+
+def method_quality_signals(method_id: str, *, result: dict[str, Any]) -> dict[str, Any]:
+    """Derive a bounded {confidence_level, limitations} from a method result.
+
+    confidence_level in {"high","medium","low"}. limitations is a bounded list of
+    short strings (kind+count only — never ref_ids/paths/bodies). Pure + deterministic.
+    """
+    if method_id == "working_set_composition_summary":
+        # Pure count over member metadata; can never be degraded.
+        return {"confidence_level": "high", "limitations": []}
+
+    if method_id == "working_set_member_state_profile":
+        u = result.get("unresolved", {}).get("count", 0)
+        if u == 0:
+            return {"confidence_level": "high", "limitations": []}
+        limitations: list[str] = [f"{u} unresolved member(s)"]
+        return {"confidence_level": "medium", "limitations": limitations[:_QUALITY_LIMITATIONS_CAP]}
+
+    if method_id == "working_set_staleness_diagnostic":
+        superseded_n = result.get("superseded_prior_products", {}).get("count", 0)
+        failed_n = result.get("failed_pass_runs", {}).get("count", 0)
+        unresolved_n = result.get("unresolved_members", {}).get("count", 0)
+        incomplete_n = result.get("incomplete_pass_runs", 0)
+        with_warnings_n = result.get("pass_runs_completed_with_warnings", 0)
+
+        if result.get("clean", False):
+            # Informational-only limitations (do not degrade confidence).
+            info: list[str] = []
+            if incomplete_n > 0:
+                info.append(f"{incomplete_n} incomplete pass run(s)")
+            if with_warnings_n > 0:
+                info.append(f"{with_warnings_n} pass run(s) completed with warnings")
+            return {
+                "confidence_level": "high",
+                "limitations": sorted(info)[:_QUALITY_LIMITATIONS_CAP],
+            }
+        else:
+            # Not clean: confidence is low. One limitation per non-zero flagged category.
+            # Append order is fixed (failed -> superseded -> unresolved, then the
+            # informational signals) so the list is deterministic.
+            lims: list[str] = []
+            if failed_n > 0:
+                lims.append(f"{failed_n} failed pass run(s)")
+            if superseded_n > 0:
+                lims.append(f"{superseded_n} superseded prior product(s)")
+            if unresolved_n > 0:
+                lims.append(f"{unresolved_n} unresolved member(s)")
+            # Informational signals are appended after flagged ones.
+            if incomplete_n > 0:
+                lims.append(f"{incomplete_n} incomplete pass run(s)")
+            if with_warnings_n > 0:
+                lims.append(f"{with_warnings_n} pass run(s) completed with warnings")
+            return {
+                "confidence_level": "low",
+                "limitations": lims[:_QUALITY_LIMITATIONS_CAP],
+            }
+
+    # Unknown method: no signals available.
+    return {"confidence_level": "high", "limitations": []}
+
+
+def _quality_footer(method_id: str, *, result: dict[str, Any]) -> str:
+    """Build the confidence/limitations footer lines for render_body."""
+    signals = method_quality_signals(method_id, result=result)
+    level = signals["confidence_level"]
+    limitations: list[str] = signals["limitations"]
+    lines = [f"Confidence: {level}"]
+    if limitations:
+        lines.append("Limitations:")
+        for lim in limitations:
+            lines.append(f"  - {lim}")
+    return "\n".join(lines)
+
+
 def render_body(method_id: str, *, result: dict[str, Any]) -> str:
     """Return a deterministic, human-readable product body."""
     spec = DETERMINISTIC_METHODS.get(method_id)
     if spec is not None:
-        return spec.render_body(method_id, result=result)
-    # Generic fallback for unknown method ids (preserves existing contract)
+        core = spec.render_body(method_id, result=result)
+        footer = _quality_footer(method_id, result=result)
+        return core + "\n" + footer
+    # Generic fallback for unknown method ids (preserves existing contract).
+    # No quality footer here: generate_analysis_product rejects unknown method
+    # ids before body generation, so this degenerate path never reaches a stored
+    # product or provenance — it exists only for legacy/internal callers.
     return f"method_id={result.get('method_id')} method_version={result.get('method_version')}"
