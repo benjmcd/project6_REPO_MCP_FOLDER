@@ -111,6 +111,7 @@ def _build_static_pre_body_routes(
         (f"{L}/analysis-product/draft", "write"),
         (f"{L}/working-set", "write"),
         (f"{L}/analysis-product/generate", "write"),
+        (f"{L}/analysis-product/replay-verify", "read"),
         # --- layer3/handoff.py ---
         (f"{L}/handoff/export/prepare", "write"),
         (f"{L}/handoff/aps/dispatch", "write"),

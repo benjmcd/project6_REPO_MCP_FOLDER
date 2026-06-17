@@ -37239,6 +37239,90 @@ def test_layer3_api_analysis_product_generate_openapi_additional_properties_fals
 
 
 # ---------------------------------------------------------------------------
+# Analysis-product replay verify — POST /analysis-product/replay-verify
+# ---------------------------------------------------------------------------
+
+
+def test_layer3_api_analysis_product_replay_verify_reproduced_200(
+    client: TestClient, tmp_path
+) -> None:
+    """POST /analysis-product/replay-verify on a freshly generated deterministic
+    product -> 200 reproduced=True/classification='reproduced'; verdict is bounded
+    (no working_set_id / body / raw refs in the response)."""
+    session_id = _construct_quant_package_set(client, tmp_path, request_id="api-replay-verify")[0]
+    summary = client.get(f"/api/v1/layer3/session/{session_id}").json()
+    snap_id = summary["sublayer_visualization"]["material_objects"][0]["material_snapshot_id"]
+
+    ws_resp = client.post(
+        "/api/v1/layer3/working-set",
+        json={
+            "session_id": session_id,
+            "client_request_id": "ws-replay-verify-1",
+            "name": "Replay verify scope",
+            "members": [{"ref_kind": "material_snapshot", "ref_id": snap_id}],
+        },
+    )
+    assert ws_resp.status_code == 201, ws_resp.text
+    ws_id = ws_resp.json()["working_set_id"]
+
+    gen_resp = client.post(
+        "/api/v1/layer3/analysis-product/generate",
+        json={
+            "session_id": session_id,
+            "client_request_id": "gen-replay-verify-1",
+            "working_set_id": ws_id,
+            "method_id": "working_set_staleness_diagnostic",
+        },
+    )
+    assert gen_resp.status_code == 201, gen_resp.text
+    product_id = gen_resp.json()["analysis_product_id"]
+
+    verify_resp = client.post(
+        "/api/v1/layer3/analysis-product/replay-verify",
+        json={"session_id": session_id, "analysis_product_id": product_id},
+    )
+    assert verify_resp.status_code == 200, verify_resp.text
+    body = verify_resp.json()
+    assert body["analysis_product_id"] == product_id
+    assert body["executor_type"] == "deterministic"
+    assert body["method_id"] == "working_set_staleness_diagnostic"
+    assert body["reproduced"] is True
+    assert body["classification"] == "reproduced"
+    assert body["method_present"] is True
+    assert body["method_version_match"] is True
+    assert body["input_basis_match"] is True
+    assert body["input_state_match"] is True
+    assert body["result_match"] is True
+    # Bounded verdict: no product body, and the working_set_id is not echoed.
+    assert "body" not in body
+    assert ws_id not in verify_resp.text
+
+
+def test_layer3_api_analysis_product_replay_verify_not_found_404(
+    client: TestClient,
+) -> None:
+    """Replay-verify on an unknown product id -> 404 analysis_product_not_found."""
+    resp = client.post(
+        "/api/v1/layer3/analysis-product/replay-verify",
+        json={"session_id": "no-such-session", "analysis_product_id": "no-such-product"},
+    )
+    assert resp.status_code == 404, resp.text
+    assert resp.json()["error_code"] == "analysis_product_not_found"
+
+
+def test_layer3_api_analysis_product_replay_verify_openapi_additional_properties_false(
+    client: TestClient,
+) -> None:
+    """OpenAPI: Layer3AnalysisProductReplayVerifyRequest has additionalProperties=False
+    and exposes only the two client-owned request fields."""
+    spec = client.get("/openapi.json").json()
+    schema = spec["components"]["schemas"]["Layer3AnalysisProductReplayVerifyRequest"]
+    assert schema.get("additionalProperties") is False
+    props = schema.get("properties", {})
+    assert set(props) == {"session_id", "analysis_product_id"}
+
+
+# ---------------------------------------------------------------------------
 # Analysis-product method catalog — GET /analysis-product/methods
 # ---------------------------------------------------------------------------
 
