@@ -777,3 +777,51 @@ def test_r3_cross_session_member_resolved_false(seeded_db) -> None:
     assert "snapshot-other-session-r3" in result_summary["unresolved_members"]["members"]
     # Product should still be created (no 500)
     assert result.product.lifecycle_status == "draft"
+
+
+# ===========================================================================
+# Method input authority: unsupported ref_kind -> 400 unsupported_member_kinds
+# ===========================================================================
+
+
+def test_generate_unsupported_member_kind_raises_400(seeded_db) -> None:
+    """A working set containing ref_kind='custom_unknown_type' -> Layer3AnalysisProductError 400.
+
+    Inserts the L3WorkingSet row directly (bypassing create_working_set membership
+    validation) to carry an unsupported ref_kind, mirroring the test_r3_cross_session_member_resolved_false
+    direct-insert pattern.
+    """
+    db = seeded_db
+
+    from app.models.models import L3WorkingSet
+    from app.services.layer3_utils import stable_hash
+
+    bad_ws_id = "ws-bad-kind-test"
+    members = [{"ref_kind": "custom_unknown_type", "ref_id": "ref-bad-kind-001"}]
+    ws_row = L3WorkingSet(
+        working_set_id=bad_ws_id,
+        session_id="session-gen-test",
+        name="Bad Kind WS",
+        member_refs_json=members,
+        member_count=1,
+        basis_hash=stable_hash({"members": members}),
+        client_request_id="req-ws-bad-kind-001",
+        provenance_json={},
+        summary_json={"member_count": 1, "by_ref_kind": {"custom_unknown_type": 1}},
+    )
+    db.add(ws_row)
+    db.commit()
+
+    with pytest.raises(Layer3AnalysisProductError) as exc_info:
+        generate_analysis_product(
+            db,
+            session_id="session-gen-test",
+            client_request_id="req-bad-kind-gen-001",
+            working_set_id=bad_ws_id,
+            method_id="working_set_composition_summary",
+        )
+
+    err = exc_info.value
+    assert err.error_code == "unsupported_member_kinds"
+    assert err.http_status == 400
+    assert "custom_unknown_type" in str(err)

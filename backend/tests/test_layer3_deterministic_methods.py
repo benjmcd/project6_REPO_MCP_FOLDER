@@ -20,6 +20,9 @@ import pytest
 from app.services.layer3_deterministic_methods import (
     DETERMINISTIC_METHODS,
     DETERMINISTIC_METHODS_SCHEMA_ID,
+    _COMPOSITION_SUMMARY_KINDS,
+    _MEMBER_STATE_PROFILE_KINDS,
+    _STALENESS_DIAGNOSTIC_KINDS,
     render_body,
     render_title,
     run_method,
@@ -760,3 +763,110 @@ def test_rollup_small_frame_full_mapping_and_distinct_count_equal() -> None:
     pr = result["pass_run"]
     assert pr["distinct_status_values"] == 1
     assert len(pr["by_status"]) == 1
+
+
+# ===========================================================================
+# Method input authority / fail-closed (Lane 5)
+# ===========================================================================
+
+
+def test_method_spec_declares_accepted_member_kinds() -> None:
+    """Every registry entry must declare a non-empty accepted_member_kinds frozenset."""
+    for method_id, spec in DETERMINISTIC_METHODS.items():
+        assert isinstance(spec.accepted_member_kinds, frozenset), (
+            f"{method_id}: accepted_member_kinds must be a frozenset"
+        )
+        assert len(spec.accepted_member_kinds) > 0, (
+            f"{method_id}: accepted_member_kinds must not be empty"
+        )
+
+
+def test_method_accepted_kinds_match_model_enum() -> None:
+    """Drift guard: each method's accepted_member_kinds equals the model's current
+    canonical ref-kind enum. This test FAILS when a new ref_kind is added to
+    L3_WORKING_SET_MEMBER_REF_KIND_VALUES, forcing a deliberate review of every
+    method's handler before the new kind is accepted — until then run_method fails
+    closed on the new kind. The accepted sets are explicit literals (not derived
+    from the enum) precisely so this check is meaningful."""
+    from app.models.models import L3_WORKING_SET_MEMBER_REF_KIND_VALUES
+
+    enum_kinds = frozenset(L3_WORKING_SET_MEMBER_REF_KIND_VALUES)
+    for method_id, spec in DETERMINISTIC_METHODS.items():
+        assert spec.accepted_member_kinds == enum_kinds, (
+            f"{method_id}: accepted_member_kinds {sorted(spec.accepted_member_kinds)} "
+            f"drifted from the model enum {sorted(enum_kinds)} — review this method's "
+            f"handler for the new kind(s) and update its accepted set deliberately."
+        )
+
+
+def test_run_method_rejects_unsupported_member_kind() -> None:
+    """A working set containing ref_kind='custom_unknown_type' raises ValueError for all 3 methods."""
+    ws_state_free = _FakeWorkingSet(
+        name="Bad Kind",
+        member_refs_json=[{"ref_kind": "custom_unknown_type", "ref_id": "ref-001"}],
+        member_count=1,
+    )
+
+    # State-free method
+    with pytest.raises(ValueError) as exc_info:
+        run_method("working_set_composition_summary", working_set=ws_state_free)
+    msg = str(exc_info.value)
+    assert "custom_unknown_type" in msg
+    # Must list kind names only — not ref_ids
+    assert "ref-001" not in msg
+
+    # State-consuming methods need member_states; include the unsupported kind there too
+    unknown_states = [{"ref_kind": "custom_unknown_type", "ref_id": "ref-001", "resolved": False}]
+
+    with pytest.raises(ValueError) as exc_info:
+        run_method(
+            "working_set_member_state_profile",
+            working_set=ws_state_free,
+            member_states=unknown_states,
+        )
+    assert "custom_unknown_type" in str(exc_info.value)
+    assert "ref-001" not in str(exc_info.value)
+
+    with pytest.raises(ValueError) as exc_info:
+        run_method(
+            "working_set_staleness_diagnostic",
+            working_set=ws_state_free,
+            member_states=unknown_states,
+        )
+    assert "custom_unknown_type" in str(exc_info.value)
+    assert "ref-001" not in str(exc_info.value)
+
+
+def test_run_method_accepts_all_canonical_kinds() -> None:
+    """A working set with one member of each canonical kind passes all 3 methods without raising."""
+    refs = [{"ref_kind": k, "ref_id": f"ref-{k}"} for k in sorted(_COMPOSITION_SUMMARY_KINDS)]
+    states = [{"ref_kind": k, "ref_id": f"ref-{k}", "resolved": False} for k in sorted(_COMPOSITION_SUMMARY_KINDS)]
+    ws = _FakeWorkingSet(name="All Canonical", member_refs_json=refs, member_count=len(refs))
+
+    # State-free method
+    result = run_method("working_set_composition_summary", working_set=ws)
+    assert result["member_count"] == len(refs)
+
+    # State-consuming methods
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    assert result["member_count"] == len(refs)
+
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    assert result["member_count"] == len(refs)
+
+
+def test_run_method_fail_closed_partial_unsupported() -> None:
+    """Mixing supported kinds with one unsupported kind still raises (no partial accept)."""
+    refs = [
+        {"ref_kind": "material_snapshot", "ref_id": "ms-1"},
+        {"ref_kind": "pass_run", "ref_id": "pr-1"},
+        {"ref_kind": "custom_unknown_type", "ref_id": "ref-bad"},
+    ]
+    ws = _FakeWorkingSet(name="Partial Bad", member_refs_json=refs, member_count=3)
+
+    with pytest.raises(ValueError) as exc_info:
+        run_method("working_set_composition_summary", working_set=ws)
+    msg = str(exc_info.value)
+    assert "custom_unknown_type" in msg
+    # The message must mention what was accepted too
+    assert "accepted" in msg

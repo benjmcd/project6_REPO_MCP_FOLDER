@@ -205,8 +205,20 @@ def generate_analysis_product(
     # is not deterministic -> fail closed (a non-deterministic "deterministic"
     # product would be a dishonest provenance claim).
     # Both runs use the SAME already-resolved frame (cost negligible; R3 documented choice).
-    result = run_method(method_id, working_set=working_set, member_states=member_states)
-    recomputed = run_method(method_id, working_set=working_set, member_states=member_states)
+    #
+    # Any ValueError raised here is the member-kind authority check (run_method validates
+    # accepted_member_kinds before invoking spec.fn).  Generation always provides
+    # member_states correctly for state-consuming methods, so the only remaining
+    # ValueError source at this call site is the kind-validation failure.
+    try:
+        result = run_method(method_id, working_set=working_set, member_states=member_states)
+        recomputed = run_method(method_id, working_set=working_set, member_states=member_states)
+    except ValueError as exc:
+        raise Layer3AnalysisProductError(
+            str(exc),
+            error_code="unsupported_member_kinds",
+            http_status=400,
+        ) from exc
     recomputed_match = stable_hash(result) == stable_hash(recomputed)
     if not recomputed_match:
         raise Layer3AnalysisProductError(
