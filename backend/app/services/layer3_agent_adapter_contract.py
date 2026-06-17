@@ -176,15 +176,25 @@ def validate_agent_adapter_contract(contract: AgentAdapterContract) -> None:
             error_code="invalid_adapter_id",
         )
 
-    # 2. adapter_version
-    if not isinstance(contract.adapter_version, int) or contract.adapter_version < 1:
+    # 2. adapter_version — reject bool explicitly (bool is a subclass of int,
+    #    so True would otherwise satisfy `>= 1`).
+    if (
+        isinstance(contract.adapter_version, bool)
+        or not isinstance(contract.adapter_version, int)
+        or contract.adapter_version < 1
+    ):
         raise AgentAdapterContractError(
             "adapter_version must be an integer >= 1.",
             error_code="invalid_adapter_version",
         )
 
-    # 3. executor_type
-    if contract.executor_type not in ALLOWED_ADAPTER_EXECUTOR_TYPES:
+    # 3. executor_type — type-guard before membership so a non-string (e.g. an
+    #    unhashable list/dict from malformed input) fails closed as a contract
+    #    error rather than a raw TypeError.
+    if (
+        not isinstance(contract.executor_type, str)
+        or contract.executor_type not in ALLOWED_ADAPTER_EXECUTOR_TYPES
+    ):
         raise AgentAdapterContractError(
             f"executor_type '{contract.executor_type}' is not allowed; "
             f"must be one of {sorted(ALLOWED_ADAPTER_EXECUTOR_TYPES)}.",
@@ -207,8 +217,11 @@ def validate_agent_adapter_contract(contract: AgentAdapterContract) -> None:
             error_code="invalid_prompt_spec_hash",
         )
 
-    # 6. trust_policy
-    if contract.trust_policy not in ALLOWED_TRUST_POLICIES:
+    # 6. trust_policy — type-guard before membership (fail closed on non-string).
+    if (
+        not isinstance(contract.trust_policy, str)
+        or contract.trust_policy not in ALLOWED_TRUST_POLICIES
+    ):
         raise AgentAdapterContractError(
             f"trust_policy '{contract.trust_policy}' is not supported in v0; "
             f"must be one of {sorted(ALLOWED_TRUST_POLICIES)}.",
@@ -244,21 +257,27 @@ def validate_agent_adapter_contract(contract: AgentAdapterContract) -> None:
 def assert_adapter_egress_denied_by_default(
     contract: AgentAdapterContract,
     *,
-    model_egress_enabled: bool = False,
+    model_egress_enabled: bool = True,
 ) -> None:
-    """Cross-check with Lane 17: assert that this contract's executor is denied egress.
+    """Cross-check with Lane 17: assert that this contract's BOUND POLICY denies egress.
 
     Calls ``evaluate_executor_egress`` (Lane 17) with the contract's
-    ``executor_type`` and ``egress_policy``.  For a valid v0 contract the
-    decision MUST be denied (``allowed is False``).
+    ``executor_type`` and ``egress_policy``.  The default is
+    ``model_egress_enabled=True`` ON PURPOSE: with the master flag off, Lane 17
+    denies every model executor before the bound policy is even consulted, so the
+    proof would be vacuous (it would "pass" even for a contract carrying an
+    allowing policy).  Forcing the flag on isolates the bound policy as the sole
+    remaining gate, so a pass genuinely proves ``egress_policy.allow_model_egress``
+    is False.
 
-    If the decision is unexpectedly allowed — which should be impossible for a
-    valid v0 contract because ``validate_agent_adapter_contract`` rejects any
-    allowing policy and the flag defaults off — raises
-    ``AgentAdapterContractError`` with ``error_code="egress_unexpectedly_permitted"``
-    and ``http_status=500`` to signal an internal invariant violation.
+    For a valid v0 contract the decision MUST be denied (``allowed is False``).
+    If it is unexpectedly allowed — impossible for a contract that passed
+    ``validate_agent_adapter_contract`` (which rejects any allowing policy) —
+    raises ``AgentAdapterContractError`` with
+    ``error_code="egress_unexpectedly_permitted"`` and ``http_status=500``.
 
-    This function proves that a valid v0 contract can NEVER egress.
+    Callers SHOULD ``validate_agent_adapter_contract`` first; this is the
+    independent runtime cross-check Lane 19 uses.
     """
     decision = evaluate_executor_egress(
         contract.executor_type,

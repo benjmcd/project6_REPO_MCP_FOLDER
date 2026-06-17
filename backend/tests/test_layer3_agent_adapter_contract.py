@@ -319,6 +319,48 @@ def test_assert_egress_denied_model_egress_enabled_flag_true_policy_deny() -> No
     assert_adapter_egress_denied_by_default(contract, model_egress_enabled=True)
 
 
+def test_assert_egress_cross_check_catches_allowing_policy() -> None:
+    """The cross-check is MEANINGFUL: it defaults the flag on, so a contract whose
+    bound policy allows egress is caught (egress_unexpectedly_permitted) rather
+    than silently passing because the master flag was off."""
+    bad = _valid_contract(egress_policy=EgressPolicy(allow_model_egress=True))
+    with pytest.raises(AgentAdapterContractError) as exc_info:
+        assert_adapter_egress_denied_by_default(bad)  # default flag is now True
+    assert exc_info.value.error_code == "egress_unexpectedly_permitted"
+    assert exc_info.value.http_status == 500
+
+
+# ---------------------------------------------------------------------------
+# Type-guard rejections (fail-closed on malformed / non-canonical inputs)
+# ---------------------------------------------------------------------------
+
+
+def test_adapter_version_bool_rejected() -> None:
+    """adapter_version=True must be rejected (bool is a subclass of int)."""
+    contract = _valid_contract(adapter_version=True)
+    with pytest.raises(AgentAdapterContractError) as exc_info:
+        validate_agent_adapter_contract(contract)
+    assert exc_info.value.error_code == "invalid_adapter_version"
+
+
+@pytest.mark.parametrize("bad_executor", [["agent"], {"t": "agent"}, 123, None])
+def test_non_string_executor_type_fails_closed(bad_executor) -> None:
+    """A non-string executor_type fails closed as a contract error, not a TypeError."""
+    contract = _valid_contract(executor_type=bad_executor)
+    with pytest.raises(AgentAdapterContractError) as exc_info:
+        validate_agent_adapter_contract(contract)
+    assert exc_info.value.error_code == "invalid_executor_type"
+
+
+@pytest.mark.parametrize("bad_policy", [["draft_only_review_required"], {"x": 1}, 7, None])
+def test_non_string_trust_policy_fails_closed(bad_policy) -> None:
+    """A non-string trust_policy fails closed as a contract error, not a TypeError."""
+    contract = _valid_contract(trust_policy=bad_policy)
+    with pytest.raises(AgentAdapterContractError) as exc_info:
+        validate_agent_adapter_contract(contract)
+    assert exc_info.value.error_code == "unsupported_trust_policy"
+
+
 # ---------------------------------------------------------------------------
 # Constants sanity checks
 # ---------------------------------------------------------------------------
