@@ -468,3 +468,44 @@ class TestRouteReplayVerifiedEvent:
                 assert forbidden not in evt_str, (
                     f"Forbidden field '{forbidden}' found in lifecycle record: {evt_str}"
                 )
+
+
+# ===========================================================================
+# REPLAY + LOGGER-LEVEL — codex review hardening
+# ===========================================================================
+
+
+def test_lifecycle_logger_level_is_info():
+    """The lifecycle logger pins its own INFO level so events are not silently
+    filtered by an inherited WARNING root level (uvicorn/Docker default)."""
+    assert logging.getLogger("layer3.lifecycle").level == logging.INFO
+
+
+def test_generate_replay_emits_no_lifecycle_event(client: TestClient, tmp_path, caplog):
+    """An idempotent generate replay (same client_request_id) records replayed=True
+    but must NOT emit a new product_generated event — the audit stream records
+    real lifecycle changes only."""
+    session_id, _product_id, ws_id, method_id = _seed_and_generate(
+        client, tmp_path, request_id="lc-ev-replay-001"
+    )
+    # Drop the first generate's event so only the replay call's records remain.
+    caplog.clear()
+    # Re-POST the identical generate request -> replayed=True, no new product.
+    with caplog.at_level(logging.INFO, logger="layer3.lifecycle"):
+        resp = client.post(
+            "/api/v1/layer3/analysis-product/generate",
+            json={
+                "session_id": session_id,
+                "client_request_id": "lc-ev-replay-001-gen",  # same id _seed_and_generate used
+                "working_set_id": ws_id,
+                "method_id": method_id,
+            },
+        )
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["replayed"] is True
+    gen_events = [
+        r for r in caplog.records
+        if r.name == "layer3.lifecycle"
+        and getattr(r, "layer3_event", {}).get("event") == "product_generated"
+    ]
+    assert gen_events == [], "an idempotent replay must not emit a product_generated event"

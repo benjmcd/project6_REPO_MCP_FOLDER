@@ -20,6 +20,12 @@ import logging
 from typing import Any
 
 _lifecycle_logger = logging.getLogger("layer3.lifecycle")
+# Pin the level to INFO explicitly: otherwise this logger inherits the root
+# effective level, and under uvicorn/Docker the root can stay at WARNING, which
+# would silently filter every lifecycle event before any handler/formatter sees
+# it. Setting it here guarantees the records are produced and propagate to
+# whatever root handlers are configured.
+_lifecycle_logger.setLevel(logging.INFO)
 
 
 def bounded_operator_ref(principal: dict[str, Any] | None) -> str | None:

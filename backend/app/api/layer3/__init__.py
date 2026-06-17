@@ -11852,15 +11852,18 @@ def post_analysis_product_generate(
         product = gen_result.product
         # Emit immediately after commit (before serialization) so a committed
         # product always fires its lifecycle event even if serialization fails.
-        emit_lifecycle_event(
-            "product_generated",
-            request_id=getattr(getattr(request, "state", None), "request_id", None),
-            operator_ref=bounded_operator_ref(_principal),
-            product_id=product.analysis_product_id,
-            method_id=gen_result.method_id,
-            method_version=gen_result.method_version,
-            lifecycle_status=product.lifecycle_status,
-        )
+        # Skip on idempotent replay: no new product was created, so it is not a
+        # real lifecycle change and must not inflate the audit stream.
+        if not gen_result.replayed:
+            emit_lifecycle_event(
+                "product_generated",
+                request_id=getattr(getattr(request, "state", None), "request_id", None),
+                operator_ref=bounded_operator_ref(_principal),
+                product_id=product.analysis_product_id,
+                method_id=gen_result.method_id,
+                method_version=gen_result.method_version,
+                lifecycle_status=product.lifecycle_status,
+            )
         serialized = _serialize_analysis_product(product, list(gen_result.evidence_links))
         return {
             **base_response(ANALYSIS_PRODUCT_GENERATE_SCHEMA_ID),
@@ -12165,16 +12168,19 @@ def post_analysis_product_transition(
         db.commit()
         decision = result.decision
         product = result.product
-        emit_lifecycle_event(
-            "product_transitioned",
-            request_id=_lifecycle_request_id,
-            operator_ref=_lifecycle_operator_ref,
-            product_id=product.analysis_product_id,
-            from_status=decision.from_status,
-            to_status=product.lifecycle_status,
-            review_decision=decision.review_decision,
-            decision_reason_code=decision.decision_reason_code,
-        )
+        # Skip on idempotent replay: a re-submitted decision did not change
+        # lifecycle state, so it must not be recorded as a real transition.
+        if not result.replayed:
+            emit_lifecycle_event(
+                "product_transitioned",
+                request_id=_lifecycle_request_id,
+                operator_ref=_lifecycle_operator_ref,
+                product_id=product.analysis_product_id,
+                from_status=decision.from_status,
+                to_status=product.lifecycle_status,
+                review_decision=decision.review_decision,
+                decision_reason_code=decision.decision_reason_code,
+            )
         return {
             **base_response(ANALYSIS_PRODUCT_TRANSITION_SCHEMA_ID),
             "analysis_product_id": product.analysis_product_id,
