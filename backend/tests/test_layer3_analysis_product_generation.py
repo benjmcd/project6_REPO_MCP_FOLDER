@@ -825,3 +825,203 @@ def test_generate_unsupported_member_kind_raises_400(seeded_db) -> None:
     assert err.error_code == "unsupported_member_kinds"
     assert err.http_status == 400
     assert "custom_unknown_type" in str(err)
+
+
+# ===========================================================================
+# Lane 8 — confidence_level + limitations in authoring_provenance_json
+# ===========================================================================
+
+
+def test_generate_composition_summary_provenance_has_confidence_high(seeded_db) -> None:
+    """composition_summary (state-free) -> provenance has confidence_level=='high' and limitations==[]."""
+    db = seeded_db
+    ws = _make_working_set(
+        db,
+        session_id="session-gen-test",
+        name="WS Conf High",
+        client_request_id="req-ws-conf-high-001",
+    )
+    result = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-conf-high-001",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_composition_summary",
+    )
+    db.commit()
+    prov = result.product.authoring_provenance_json
+    assert prov["confidence_level"] == "high"
+    assert prov["limitations"] == []
+    # Quality signals live in provenance ONLY, never in result_summary — otherwise
+    # they would change the replay-verify result hash. Guard against that leak.
+    assert "confidence_level" not in prov["result_summary"]
+    assert "limitations" not in prov["result_summary"]
+
+
+def test_generate_staleness_diagnostic_clean_provenance_confidence_high(seeded_db) -> None:
+    """staleness_diagnostic over a clean working set -> provenance confidence_level=='high', limitations==[]."""
+    db = seeded_db
+    ws = _make_working_set(
+        db,
+        session_id="session-gen-test",
+        name="WS Clean Conf",
+        client_request_id="req-ws-clean-conf-001",
+    )
+    # The seeded_db has a material_snapshot member only — no superseded/failed/unresolved,
+    # so staleness_diagnostic result is clean.
+    result = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-clean-conf-001",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_staleness_diagnostic",
+    )
+    db.commit()
+    prov = result.product.authoring_provenance_json
+    assert prov["confidence_level"] == "high"
+    assert prov["limitations"] == []
+
+
+def test_generate_staleness_diagnostic_superseded_provenance_confidence_low(seeded_db) -> None:
+    """staleness_diagnostic over a working set with a superseded prior_product member
+    -> provenance confidence_level=='low' and limitations contains the superseded entry.
+
+    Setup mirrors test_r2_mutation_different_state_different_input_state_hash: create a
+    prior_product, supersede it directly, then build a working set containing it.
+    """
+    db = seeded_db
+
+    # Create a prior_product member already in 'superseded' state.
+    prior_product_row = L3AnalysisProduct(
+        analysis_product_id="pp-conf-low-test",
+        session_id="session-gen-test",
+        product_kind="summary",
+        executor_type="human",
+        lifecycle_status="superseded",
+        title="Low confidence test product",
+        body="Body here.",
+        is_non_evidentiary=False,
+        basis_hash="basis-conf-low",
+        spec_hash="spec-conf-low",
+        client_request_id="req-pp-conf-low-seed",
+        authoring_provenance_json={},
+        summary_json={},
+    )
+    db.add(prior_product_row)
+    db.commit()
+
+    from app.services.layer3_working_set import WorkingSetDraft, WorkingSetMemberDraft, create_working_set
+
+    draft = WorkingSetDraft(
+        name="WS Superseded Conf",
+        members=(
+            WorkingSetMemberDraft(ref_kind="prior_product", ref_id="pp-conf-low-test"),
+        ),
+    )
+    ws_result = create_working_set(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-ws-conf-low-001",
+        draft=draft,
+    )
+    db.commit()
+    ws = ws_result.working_set
+
+    result = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-conf-low-001",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_staleness_diagnostic",
+    )
+    db.commit()
+
+    prov = result.product.authoring_provenance_json
+    assert prov["confidence_level"] == "low", (
+        f"Expected confidence_level='low' for superseded member; got {prov['confidence_level']!r}"
+    )
+    lims = prov["limitations"]
+    assert any("superseded" in lim for lim in lims), (
+        f"Expected a 'superseded prior product(s)' limitation; got {lims!r}"
+    )
+    # Limitations must contain counts only — no ref_ids
+    for lim in lims:
+        assert "pp-conf-low-test" not in lim, (
+            f"ref_id leaked into limitation string: {lim!r}"
+        )
+
+
+def test_generate_member_state_profile_unresolved_provenance_confidence_medium(seeded_db) -> None:
+    """member_state_profile over a working set referencing a cross-session (unresolvable) member
+    -> provenance confidence_level=='medium' and limitations contains the unresolved count.
+
+    Uses the cross-session pattern from test_r3_cross_session_member_resolved_false.
+    """
+    db = seeded_db
+
+    other_session = L3Session(
+        session_id="session-gen-other-conf",
+        selection_manifest_id="manifest-gen-other-conf",
+        status="active_execution",
+        operator_context_json={},
+        summary_json={},
+    )
+    db.add(other_session)
+    db.commit()
+
+    other_snap = L3MaterialSnapshot(
+        material_snapshot_id="snapshot-other-conf",
+        session_id="session-gen-other-conf",
+        descriptor_id="descriptor-gen-test",
+        source_plane="runtime",
+        source_shape="dataset_version",
+        payload_ref="payload://other-conf",
+        payload_hash="hash-other-conf",
+        source_identity_json={},
+        source_provenance_json={},
+        load_summary_json={},
+    )
+    db.add(other_snap)
+    db.commit()
+
+    from app.models.models import L3WorkingSet
+    from app.services.layer3_utils import stable_hash
+
+    cross_ws_id = "ws-cross-conf-medium"
+    members = [{"ref_kind": "material_snapshot", "ref_id": "snapshot-other-conf"}]
+    ws_row = L3WorkingSet(
+        working_set_id=cross_ws_id,
+        session_id="session-gen-test",
+        name="Cross Session Conf WS",
+        member_refs_json=members,
+        member_count=1,
+        basis_hash=stable_hash({"members": members}),
+        client_request_id="req-ws-cross-conf",
+        provenance_json={},
+        summary_json={"member_count": 1, "by_ref_kind": {"material_snapshot": 1}},
+    )
+    db.add(ws_row)
+    db.commit()
+
+    result = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-conf-medium-001",
+        working_set_id=cross_ws_id,
+        method_id="working_set_member_state_profile",
+    )
+    db.commit()
+
+    prov = result.product.authoring_provenance_json
+    assert prov["confidence_level"] == "medium", (
+        f"Expected confidence_level='medium' for unresolvable member; got {prov['confidence_level']!r}"
+    )
+    lims = prov["limitations"]
+    assert any("unresolved" in lim for lim in lims), (
+        f"Expected an 'unresolved member(s)' limitation; got {lims!r}"
+    )
+    # Limitations must be bounded — no raw ref_ids
+    for lim in lims:
+        assert "snapshot-other-conf" not in lim, (
+            f"ref_id leaked into limitation string: {lim!r}"
+        )

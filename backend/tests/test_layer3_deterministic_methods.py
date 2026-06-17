@@ -23,6 +23,7 @@ from app.services.layer3_deterministic_methods import (
     _COMPOSITION_SUMMARY_KINDS,
     _MEMBER_STATE_PROFILE_KINDS,
     _STALENESS_DIAGNOSTIC_KINDS,
+    method_quality_signals,
     render_body,
     render_title,
     run_method,
@@ -1232,3 +1233,322 @@ def test_render_body_member_state_profile_rollup_body_cap_plus_more_values() -> 
     # Exactly 10 'status-XX' lines should appear (the body-capped entries)
     status_lines = [ln for ln in body.splitlines() if "status-" in ln]
     assert len(status_lines) == 10
+
+
+# ===========================================================================
+# Lane 8 — method_quality_signals: confidence_level + limitations
+# ===========================================================================
+
+
+# ---------------------------------------------------------------------------
+# composition_summary: always high confidence, no limitations
+# ---------------------------------------------------------------------------
+
+
+def test_quality_signals_composition_summary_always_high() -> None:
+    """composition_summary always returns high confidence with no limitations."""
+    result = run_method(
+        "working_set_composition_summary",
+        working_set=_FakeWorkingSet(
+            name="QS",
+            member_refs_json=[
+                {"ref_kind": "material_snapshot", "ref_id": "ms-1"},
+                {"ref_kind": "pass_run", "ref_id": "pr-1"},
+            ],
+            member_count=2,
+        ),
+    )
+    signals = method_quality_signals("working_set_composition_summary", result=result)
+    assert signals["confidence_level"] == "high"
+    assert signals["limitations"] == []
+
+
+def test_quality_signals_composition_summary_empty_set_still_high() -> None:
+    """Empty working set still returns high confidence for composition_summary."""
+    result = run_method(
+        "working_set_composition_summary",
+        working_set=_FakeWorkingSet(name="Empty", member_refs_json=[], member_count=0),
+    )
+    signals = method_quality_signals("working_set_composition_summary", result=result)
+    assert signals["confidence_level"] == "high"
+    assert signals["limitations"] == []
+
+
+# ---------------------------------------------------------------------------
+# member_state_profile: high when unresolved==0, medium + limitation otherwise
+# ---------------------------------------------------------------------------
+
+
+def test_quality_signals_member_state_profile_high_when_all_resolved() -> None:
+    """member_state_profile with unresolved.count == 0 -> high, []."""
+    refs, states = _make_states(
+        prior_products=[{"ref_id": "pp-1", "lifecycle_status": "accepted"}],
+        pass_runs=[{"ref_id": "pr-1", "status": "completed"}],
+    )
+    ws = _FakeWorkingSet(name="AllRes", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    signals = method_quality_signals("working_set_member_state_profile", result=result)
+    assert signals["confidence_level"] == "high"
+    assert signals["limitations"] == []
+
+
+def test_quality_signals_member_state_profile_medium_with_one_unresolved() -> None:
+    """member_state_profile with 1 unresolved member -> medium, exact limitation string."""
+    refs, states = _make_states(
+        prior_products=[{"ref_id": "pp-ok", "lifecycle_status": "draft"}],
+        unresolved=[("pass_run", "pr-ghost")],
+    )
+    ws = _FakeWorkingSet(name="OneUnres", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    signals = method_quality_signals("working_set_member_state_profile", result=result)
+    assert signals["confidence_level"] == "medium"
+    assert signals["limitations"] == ["1 unresolved member(s)"]
+
+
+def test_quality_signals_member_state_profile_medium_with_multiple_unresolved() -> None:
+    """member_state_profile with 3 unresolved members -> medium, count in limitation."""
+    refs, states = _make_states(
+        unresolved=[
+            ("prior_product", "pp-a"),
+            ("pass_run", "pr-b"),
+            ("material_snapshot", "ms-c"),
+        ],
+    )
+    ws = _FakeWorkingSet(name="ThreeUnres", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    signals = method_quality_signals("working_set_member_state_profile", result=result)
+    assert signals["confidence_level"] == "medium"
+    assert signals["limitations"] == ["3 unresolved member(s)"]
+
+
+# ---------------------------------------------------------------------------
+# staleness_diagnostic: clean -> high; not-clean -> low; informational stays high
+# ---------------------------------------------------------------------------
+
+
+def test_quality_signals_staleness_clean_high_no_limitations() -> None:
+    """Fully clean working set -> high confidence, no limitations."""
+    refs, states = _make_states(
+        prior_products=[{"ref_id": "pp-ok", "lifecycle_status": "accepted"}],
+        pass_runs=[{"ref_id": "pr-ok", "status": "completed"}],
+    )
+    ws = _FakeWorkingSet(name="Clean", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    signals = method_quality_signals("working_set_staleness_diagnostic", result=result)
+    assert signals["confidence_level"] == "high"
+    assert signals["limitations"] == []
+
+
+def test_quality_signals_staleness_clean_with_informational_high_with_limitations() -> None:
+    """Clean (no flags) but with incomplete + completed_with_warnings -> high, informational limitations."""
+    refs, states = _make_states(
+        pass_runs=[
+            {"ref_id": "pr-plan", "status": "planned"},
+            {"ref_id": "pr-warn", "status": "completed_with_warnings"},
+        ],
+    )
+    ws = _FakeWorkingSet(name="Info", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    signals = method_quality_signals("working_set_staleness_diagnostic", result=result)
+    assert signals["confidence_level"] == "high"
+    # Both informational limitations must appear
+    assert "1 incomplete pass run(s)" in signals["limitations"]
+    assert "1 pass run(s) completed with warnings" in signals["limitations"]
+
+
+def test_quality_signals_staleness_not_clean_low_superseded() -> None:
+    """Superseded prior product -> low, exact limitation string."""
+    refs, states = _make_states(
+        prior_products=[{"ref_id": "pp-sup", "lifecycle_status": "superseded"}],
+    )
+    ws = _FakeWorkingSet(name="Sup", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    signals = method_quality_signals("working_set_staleness_diagnostic", result=result)
+    assert signals["confidence_level"] == "low"
+    assert "1 superseded prior product(s)" in signals["limitations"]
+
+
+def test_quality_signals_staleness_not_clean_low_failed() -> None:
+    """Failed pass run -> low, exact limitation string."""
+    refs, states = _make_states(
+        pass_runs=[{"ref_id": "pr-fail", "status": "failed"}],
+    )
+    ws = _FakeWorkingSet(name="Fail", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    signals = method_quality_signals("working_set_staleness_diagnostic", result=result)
+    assert signals["confidence_level"] == "low"
+    assert "1 failed pass run(s)" in signals["limitations"]
+
+
+def test_quality_signals_staleness_not_clean_low_unresolved() -> None:
+    """Unresolved member -> low, exact limitation string."""
+    refs, states = _make_states(
+        unresolved=[("prior_product", "pp-ghost")],
+    )
+    ws = _FakeWorkingSet(name="Unres", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    signals = method_quality_signals("working_set_staleness_diagnostic", result=result)
+    assert signals["confidence_level"] == "low"
+    assert "1 unresolved member(s)" in signals["limitations"]
+
+
+def test_quality_signals_staleness_not_clean_all_flagged_categories() -> None:
+    """All three flagged categories present -> low, one limitation per category with exact counts."""
+    refs = [
+        {"ref_kind": "prior_product", "ref_id": "pp-sup"},
+        {"ref_kind": "pass_run", "ref_id": "pr-fail"},
+        {"ref_kind": "material_snapshot", "ref_id": "ms-ghost"},
+    ]
+    states = [
+        {"ref_kind": "prior_product", "ref_id": "pp-sup", "resolved": True, "lifecycle_status": "superseded"},
+        {"ref_kind": "pass_run", "ref_id": "pr-fail", "resolved": True, "status": "failed"},
+        {"ref_kind": "material_snapshot", "ref_id": "ms-ghost", "resolved": False},
+    ]
+    ws = _FakeWorkingSet(name="AllFlagged", member_refs_json=refs, member_count=3)
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    signals = method_quality_signals("working_set_staleness_diagnostic", result=result)
+    assert signals["confidence_level"] == "low"
+    lims = signals["limitations"]
+    assert "1 superseded prior product(s)" in lims
+    assert "1 failed pass run(s)" in lims
+    assert "1 unresolved member(s)" in lims
+
+
+def test_quality_signals_staleness_not_clean_multiple_counts() -> None:
+    """Multiple items per flagged category -> limitation strings show correct counts."""
+    refs, states = _make_states(
+        prior_products=[
+            {"ref_id": "pp-s1", "lifecycle_status": "superseded"},
+            {"ref_id": "pp-s2", "lifecycle_status": "superseded"},
+            {"ref_id": "pp-s3", "lifecycle_status": "superseded"},
+        ],
+        pass_runs=[
+            {"ref_id": "pr-f1", "status": "failed"},
+            {"ref_id": "pr-f2", "status": "failed"},
+        ],
+    )
+    ws = _FakeWorkingSet(name="MultiCount", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    signals = method_quality_signals("working_set_staleness_diagnostic", result=result)
+    assert signals["confidence_level"] == "low"
+    assert "3 superseded prior product(s)" in signals["limitations"]
+    assert "2 failed pass run(s)" in signals["limitations"]
+
+
+def test_quality_signals_is_pure_deterministic() -> None:
+    """method_quality_signals must be pure: same result dict -> same output."""
+    refs, states = _make_states(
+        prior_products=[{"ref_id": "pp-sup", "lifecycle_status": "superseded"}],
+        pass_runs=[{"ref_id": "pr-fail", "status": "failed"}],
+    )
+    ws = _FakeWorkingSet(name="Pure", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    s1 = method_quality_signals("working_set_staleness_diagnostic", result=result)
+    s2 = method_quality_signals("working_set_staleness_diagnostic", result=result)
+    assert s1 == s2
+
+
+# ---------------------------------------------------------------------------
+# render_body footer presence
+# ---------------------------------------------------------------------------
+
+
+def test_render_body_footer_composition_summary_has_confidence_high() -> None:
+    """render_body for composition_summary always appends 'Confidence: high'."""
+    ws = _FakeWorkingSet(
+        name="Footer Test",
+        member_refs_json=[{"ref_kind": "material_snapshot", "ref_id": "ms-1"}],
+        member_count=1,
+    )
+    result = run_method("working_set_composition_summary", working_set=ws)
+    body = render_body("working_set_composition_summary", result=result)
+    assert "Confidence: high" in body
+    # No Limitations section for composition_summary
+    assert "Limitations:" not in body
+
+
+def test_render_body_footer_staleness_clean_has_confidence_high() -> None:
+    """render_body for clean staleness_diagnostic appends 'Confidence: high'."""
+    refs, states = _make_states(
+        pass_runs=[{"ref_id": "pr-ok", "status": "completed"}],
+    )
+    ws = _FakeWorkingSet(name="CleanBody", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    body = render_body("working_set_staleness_diagnostic", result=result)
+    assert "Confidence: high" in body
+
+
+def test_render_body_footer_staleness_degraded_has_confidence_low_and_limitations() -> None:
+    """Degraded staleness body contains 'Confidence: low' and the limitation lines."""
+    refs, states = _make_states(
+        prior_products=[{"ref_id": "pp-sup", "lifecycle_status": "superseded"}],
+        pass_runs=[{"ref_id": "pr-fail", "status": "failed"}],
+        unresolved=[("material_snapshot", "ms-ghost")],
+    )
+    ws = _FakeWorkingSet(name="DegBody", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    body = render_body("working_set_staleness_diagnostic", result=result)
+    assert "Confidence: low" in body
+    assert "Limitations:" in body
+    assert "1 superseded prior product(s)" in body
+    assert "1 failed pass run(s)" in body
+    assert "1 unresolved member(s)" in body
+
+
+def test_render_body_footer_member_state_profile_medium_with_limitation() -> None:
+    """Degraded member_state_profile body contains 'Confidence: medium' and limitation."""
+    refs, states = _make_states(
+        unresolved=[("pass_run", "pr-ghost")],
+    )
+    ws = _FakeWorkingSet(name="MedBody", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    body = render_body("working_set_member_state_profile", result=result)
+    assert "Confidence: medium" in body
+    assert "Limitations:" in body
+    assert "1 unresolved member(s)" in body
+
+
+def test_render_body_footer_does_not_contain_ref_ids() -> None:
+    """The footer must never expose ref_ids — only counts.
+
+    Checks only the text from 'Confidence:' onward (the footer appended by
+    _quality_footer), not the core body section which intentionally lists ref_ids
+    from the staleness render_body.
+    """
+    refs, states = _make_states(
+        prior_products=[{"ref_id": "SECRET-PP-ID", "lifecycle_status": "superseded"}],
+    )
+    ws = _FakeWorkingSet(name="NoRef", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    body = render_body("working_set_staleness_diagnostic", result=result)
+    # Isolate only the footer: from the last "Confidence:" line onward.
+    conf_idx = body.rfind("Confidence:")
+    assert conf_idx != -1, "render_body must include a 'Confidence:' footer line"
+    footer_text = body[conf_idx:]
+    assert "SECRET-PP-ID" not in footer_text
+
+
+def test_render_body_footer_deterministic() -> None:
+    """render_body including footer is deterministic — same input same output."""
+    refs, states = _make_states(
+        prior_products=[{"ref_id": "pp-sup", "lifecycle_status": "superseded"}],
+    )
+    ws = _FakeWorkingSet(name="DetFoot", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    body1 = render_body("working_set_staleness_diagnostic", result=result)
+    body2 = render_body("working_set_staleness_diagnostic", result=result)
+    assert body1 == body2
+
+
+def test_render_body_with_footer_still_under_16384_chars() -> None:
+    """Large degraded frame's body + footer stays under 16384 chars."""
+    n = 200
+    refs, states = _make_states(
+        prior_products=[{"ref_id": f"pp-{i}", "lifecycle_status": "superseded"} for i in range(n)],
+        pass_runs=[{"ref_id": f"pr-{i}", "status": "failed"} for i in range(n)],
+        unresolved=[("material_snapshot", f"ms-{i}") for i in range(n)],
+    )
+    ws = _FakeWorkingSet(name="Large", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    body = render_body("working_set_staleness_diagnostic", result=result)
+    assert len(body) < 16384
