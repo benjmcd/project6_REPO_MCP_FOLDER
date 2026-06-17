@@ -963,17 +963,17 @@ def test_serialize_analysis_product_deterministic_generation_method() -> None:
 
     product = SimpleNamespace(
         analysis_product_id="ap-det-001",
-        product_kind="summary",
+        product_kind="metric",
         executor_type="deterministic",
         lifecycle_status="package_eligible",
-        title="Deterministic summary",
+        title="Deterministic metric",
         is_non_evidentiary=False,
         basis_hash="bh-det",
         spec_hash="sh-det",
         created_at=None,
         authoring_provenance_json={
             "method_id": "working_set_composition_summary",
-            "method_version": 1,
+            "method_version": 2,
             "input_basis_hash": "ibh-secret",
             "param_hash": "ph-secret",
             "result_summary": {"member_count": 3},
@@ -986,7 +986,7 @@ def test_serialize_analysis_product_deterministic_generation_method() -> None:
     assert result["executor_type"] == "deterministic"
     gm = result["generation_method"]
     assert gm is not None
-    assert gm == {"method_id": "working_set_composition_summary", "method_version": 1}
+    assert gm == {"method_id": "working_set_composition_summary", "method_version": 2}
     # Only the two bounded keys — no leakage of param_hash, input_basis_hash, etc.
     assert set(gm.keys()) == {"method_id", "method_version"}
     assert "param_hash" not in gm

@@ -37453,9 +37453,9 @@ def test_layer3_api_analysis_product_methods_all_three_present_with_correct_fiel
 
     # Per-method spot checks.
     cs = by_id["working_set_composition_summary"]
-    assert cs["product_kind"] == "summary"
+    assert cs["product_kind"] == "metric"
     assert cs["consumes_member_state"] is False
-    assert cs["method_version"] == 1
+    assert cs["method_version"] == 2
 
     msp = by_id["working_set_member_state_profile"]
     assert msp["product_kind"] == "summary"

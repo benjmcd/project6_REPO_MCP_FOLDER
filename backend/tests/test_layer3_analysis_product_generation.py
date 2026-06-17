@@ -200,15 +200,15 @@ def test_generate_happy_path(seeded_db) -> None:
     product = result.product
     # executor_type must be "deterministic"
     assert product.executor_type == "deterministic"
-    # product_kind must be "summary"
-    assert product.product_kind == "summary"
+    # product_kind must be "metric" (composition emits quantitative counts)
+    assert product.product_kind == "metric"
     # lifecycle must be "draft"
     assert product.lifecycle_status == "draft"
     # replayed is False on first call
     assert result.replayed is False
     # method fields
     assert result.method_id == "working_set_composition_summary"
-    assert result.method_version == 1
+    assert result.method_version == 2
     # exactly 1 evidence link, ref_kind="working_set"
     assert len(result.evidence_links) == 1
     link = result.evidence_links[0]
