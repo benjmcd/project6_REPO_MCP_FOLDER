@@ -36,6 +36,7 @@ from app.models.models import (
     L3_ANALYSIS_PRODUCT_KIND_VALUES,
     uuid_str,
 )
+from app.services.layer3_egress_policy import assert_executor_egress_allowed
 from app.services.layer3_utils import stable_hash, stable_json_text
 
 
@@ -155,12 +156,26 @@ def create_analysis_product_draft(
     """
 
     # --- Step 1: executor_type gate ----------------------------------------
+    # The ALLOWED_EXECUTOR_TYPES check (human/deterministic only) rejects model
+    # executor types (agent, external_api) before the egress assertion below is
+    # reached.  The egress assertion is the policy authority seam that Lane 18/19
+    # will extend when model executors are introduced; for now it is a no-op pass
+    # for human/deterministic (affirms local-only, no egress).
     if draft.executor_type not in ALLOWED_EXECUTOR_TYPES:
         raise Layer3AnalysisProductError(
             f"executor_type '{draft.executor_type}' is not supported; "
             f"admitted types: {sorted(ALLOWED_EXECUTOR_TYPES)}.",
             error_code="unsupported_executor_type",
         )
+
+    # Egress policy authority (Lane 17): affirm local-only for current executor
+    # types; will block model/agent types when ALLOWED_EXECUTOR_TYPES is extended
+    # in Lane 18/19.  Read flag defensively to avoid any potential import cycle.
+    from app.core.config import settings as _settings  # noqa: PLC0415
+    assert_executor_egress_allowed(
+        draft.executor_type,
+        model_egress_enabled=getattr(_settings, "layer3_model_egress_enabled", False),
+    )
 
     # --- Step 2: product_kind -----------------------------------------------
     if draft.product_kind not in L3_ANALYSIS_PRODUCT_KIND_VALUES:
