@@ -12011,6 +12011,56 @@ def post_analysis_product_replay_verify(
 
 
 # ---------------------------------------------------------------------------
+# Analysis-product lineage — 3C read-only inspector
+# ---------------------------------------------------------------------------
+
+LINEAGE_SCHEMA_ID = "layer3.analysis_product_lineage.v1"
+
+
+class Layer3AnalysisProductLineageResponse(Layer3BaseResponse):
+    analysis_product_id: str
+    product: dict[str, Any]
+    working_set: dict[str, Any] | None
+    working_set_linked: bool
+    method_provenance: dict[str, Any] | None
+    evidence_refs: list[dict[str, Any]]
+    evidence_refs_truncated: bool
+    review_trail: list[dict[str, Any]]
+    package: dict[str, Any]
+
+
+@router.get(
+    "/analysis-product/{analysis_product_id}/lineage",
+    response_model=Layer3AnalysisProductLineageResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_analysis_product_lineage(
+    analysis_product_id: str,
+    request: Request,
+    session_id: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request, access="read")
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
+    from app.services.layer3_analysis_product_lineage import build_analysis_product_lineage
+
+    try:
+        lineage = build_analysis_product_lineage(
+            db,
+            session_id=session_id,
+            analysis_product_id=analysis_product_id,
+        )
+        return {
+            **base_response(LINEAGE_SCHEMA_ID),
+            **{k: v for k, v in lineage.items() if k != "schema_id"},
+        }
+    except Layer3AnalysisProductError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+# ---------------------------------------------------------------------------
 # Analysis-product promotion — 3C Review/Promotion
 # ---------------------------------------------------------------------------
 
