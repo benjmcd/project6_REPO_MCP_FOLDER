@@ -125,6 +125,16 @@ class Settings(BaseSettings):
         default=False,
         alias="LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED",
     )
+    layer3_model_egress_enabled: bool = Field(
+        default=False,
+        alias="LAYER3_MODEL_EGRESS_ENABLED",
+        description=(
+            "Master off-switch for any model/agent egress from Layer 3 / Sublayer 3C. "
+            "Must remain False until an explicit egress policy lane (18/19) is in place "
+            "and an authorized EgressPolicy factory has been constructed.  "
+            "Default: False (deny all model/agent egress)."
+        ),
+    )
     sec_xbrl_production_admission_evaluator_enabled: bool = Field(
         default=False,
         alias="SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED",
