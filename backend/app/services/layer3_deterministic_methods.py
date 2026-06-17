@@ -21,7 +21,6 @@ from app.models.models import (
     L3_PASS_RUN_STATUS_PLANNED,
     L3_PASS_RUN_STATUS_RUNNING,
     L3_PASS_RUN_STATUS_SELECTED_NOT_STARTED,
-    L3_WORKING_SET_MEMBER_REF_KIND_VALUES,
 )
 
 # ---------------------------------------------------------------------------
@@ -46,10 +45,27 @@ _ROLLUP_BODY_CAP = 10
 
 
 # ---------------------------------------------------------------------------
-# Canonical member kinds — single source of truth derived from the model constant.
+# Accepted member kinds, per method.
+#
+# These are EXPLICIT literals, deliberately NOT derived from
+# L3_WORKING_SET_MEMBER_REF_KIND_VALUES: each set lists exactly the kinds that
+# the corresponding method's computation actually handles. If a new ref_kind is
+# added to the model enum, these stay put, so run_method fails closed on the new
+# kind for each method until that method's handler is reviewed and its set is
+# updated deliberately — otherwise a state-consuming method would silently count
+# the new kind in by_ref_kind while omitting it from its rollups.
+# test_method_accepted_kinds_match_model_enum guards against silent drift.
 # ---------------------------------------------------------------------------
 
-_CANONICAL_MEMBER_KINDS: frozenset[str] = frozenset(L3_WORKING_SET_MEMBER_REF_KIND_VALUES)
+_COMPOSITION_SUMMARY_KINDS: frozenset[str] = frozenset(
+    {"material_snapshot", "pass_run", "output_package", "analysis_set", "prior_product"}
+)
+_MEMBER_STATE_PROFILE_KINDS: frozenset[str] = frozenset(
+    {"material_snapshot", "pass_run", "output_package", "analysis_set", "prior_product"}
+)
+_STALENESS_DIAGNOSTIC_KINDS: frozenset[str] = frozenset(
+    {"material_snapshot", "pass_run", "output_package", "analysis_set", "prior_product"}
+)
 
 
 # ---------------------------------------------------------------------------
@@ -453,7 +469,7 @@ DETERMINISTIC_METHODS: dict[str, _MethodSpec] = {
         consumes_member_state=False,
         render_title=_render_title_composition_summary,
         render_body=_render_body_composition_summary,
-        accepted_member_kinds=_CANONICAL_MEMBER_KINDS,
+        accepted_member_kinds=_COMPOSITION_SUMMARY_KINDS,
     ),
     "working_set_member_state_profile": _MethodSpec(
         method_id="working_set_member_state_profile",
@@ -469,7 +485,7 @@ DETERMINISTIC_METHODS: dict[str, _MethodSpec] = {
         consumes_member_state=True,
         render_title=_render_title_member_state_profile,
         render_body=_render_body_member_state_profile,
-        accepted_member_kinds=_CANONICAL_MEMBER_KINDS,
+        accepted_member_kinds=_MEMBER_STATE_PROFILE_KINDS,
     ),
     "working_set_staleness_diagnostic": _MethodSpec(
         method_id="working_set_staleness_diagnostic",
@@ -484,7 +500,7 @@ DETERMINISTIC_METHODS: dict[str, _MethodSpec] = {
         consumes_member_state=True,
         render_title=_render_title_staleness_diagnostic,
         render_body=_render_body_staleness_diagnostic,
-        accepted_member_kinds=_CANONICAL_MEMBER_KINDS,
+        accepted_member_kinds=_STALENESS_DIAGNOSTIC_KINDS,
     ),
 }
 

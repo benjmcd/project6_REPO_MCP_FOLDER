@@ -20,7 +20,9 @@ import pytest
 from app.services.layer3_deterministic_methods import (
     DETERMINISTIC_METHODS,
     DETERMINISTIC_METHODS_SCHEMA_ID,
-    _CANONICAL_MEMBER_KINDS,
+    _COMPOSITION_SUMMARY_KINDS,
+    _MEMBER_STATE_PROFILE_KINDS,
+    _STALENESS_DIAGNOSTIC_KINDS,
     render_body,
     render_title,
     run_method,
@@ -779,6 +781,24 @@ def test_method_spec_declares_accepted_member_kinds() -> None:
         )
 
 
+def test_method_accepted_kinds_match_model_enum() -> None:
+    """Drift guard: each method's accepted_member_kinds equals the model's current
+    canonical ref-kind enum. This test FAILS when a new ref_kind is added to
+    L3_WORKING_SET_MEMBER_REF_KIND_VALUES, forcing a deliberate review of every
+    method's handler before the new kind is accepted — until then run_method fails
+    closed on the new kind. The accepted sets are explicit literals (not derived
+    from the enum) precisely so this check is meaningful."""
+    from app.models.models import L3_WORKING_SET_MEMBER_REF_KIND_VALUES
+
+    enum_kinds = frozenset(L3_WORKING_SET_MEMBER_REF_KIND_VALUES)
+    for method_id, spec in DETERMINISTIC_METHODS.items():
+        assert spec.accepted_member_kinds == enum_kinds, (
+            f"{method_id}: accepted_member_kinds {sorted(spec.accepted_member_kinds)} "
+            f"drifted from the model enum {sorted(enum_kinds)} — review this method's "
+            f"handler for the new kind(s) and update its accepted set deliberately."
+        )
+
+
 def test_run_method_rejects_unsupported_member_kind() -> None:
     """A working set containing ref_kind='custom_unknown_type' raises ValueError for all 3 methods."""
     ws_state_free = _FakeWorkingSet(
@@ -819,8 +839,8 @@ def test_run_method_rejects_unsupported_member_kind() -> None:
 
 def test_run_method_accepts_all_canonical_kinds() -> None:
     """A working set with one member of each canonical kind passes all 3 methods without raising."""
-    refs = [{"ref_kind": k, "ref_id": f"ref-{k}"} for k in sorted(_CANONICAL_MEMBER_KINDS)]
-    states = [{"ref_kind": k, "ref_id": f"ref-{k}", "resolved": False} for k in sorted(_CANONICAL_MEMBER_KINDS)]
+    refs = [{"ref_kind": k, "ref_id": f"ref-{k}"} for k in sorted(_COMPOSITION_SUMMARY_KINDS)]
+    states = [{"ref_kind": k, "ref_id": f"ref-{k}", "resolved": False} for k in sorted(_COMPOSITION_SUMMARY_KINDS)]
     ws = _FakeWorkingSet(name="All Canonical", member_refs_json=refs, member_count=len(refs))
 
     # State-free method
