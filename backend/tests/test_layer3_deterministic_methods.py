@@ -870,3 +870,365 @@ def test_run_method_fail_closed_partial_unsupported() -> None:
     assert "custom_unknown_type" in msg
     # The message must mention what was accepted too
     assert "accepted" in msg
+
+
+# ===========================================================================
+# Lane 4 — fixture-backed expected-output + edge-case tests
+# ===========================================================================
+
+
+# ---------------------------------------------------------------------------
+# composition_summary — fixture-backed + edge cases
+# ---------------------------------------------------------------------------
+
+
+def test_composition_summary_empty_working_set() -> None:
+    """Empty working set: member_refs_json=[] -> zero counts, empty dicts/lists."""
+    ws = _FakeWorkingSet(name="Empty", member_refs_json=[], member_count=0)
+    result = run_method("working_set_composition_summary", working_set=ws)
+    assert result["by_ref_kind"] == {}
+    assert result["distinct_ref_kinds"] == []
+    assert result["member_count"] == 0
+    assert result["method_id"] == "working_set_composition_summary"
+    assert result["method_version"] == 1
+
+
+def test_composition_summary_single_member() -> None:
+    """Single member of one kind -> by_ref_kind == {kind: 1}, distinct_ref_kinds == [kind]."""
+    ws = _FakeWorkingSet(
+        name="Single",
+        member_refs_json=[{"ref_kind": "pass_run", "ref_id": "pr-solo"}],
+        member_count=1,
+    )
+    result = run_method("working_set_composition_summary", working_set=ws)
+    assert result["by_ref_kind"] == {"pass_run": 1}
+    assert result["distinct_ref_kinds"] == ["pass_run"]
+    assert result["member_count"] == 1
+
+
+# ---------------------------------------------------------------------------
+# member_state_profile — fixture-backed + edge cases
+# ---------------------------------------------------------------------------
+
+
+def test_member_state_profile_empty_working_set() -> None:
+    """Empty working set and empty member_states -> all rollups empty, unresolved.count == 0."""
+    ws = _FakeWorkingSet(name="EmptyProfile", member_refs_json=[], member_count=0)
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=[])
+    assert result["member_count"] == 0
+    assert result["by_ref_kind"] == {}
+    assert result["prior_product"]["by_lifecycle_status"] == {}
+    assert result["prior_product"]["distinct_lifecycle_status_values"] == 0
+    assert result["pass_run"]["by_status"] == {}
+    assert result["pass_run"]["distinct_status_values"] == 0
+    assert result["output_package"]["by_status"] == {}
+    assert result["output_package"]["distinct_status_values"] == 0
+    assert result["material_snapshot"]["by_source_plane"] == {}
+    assert result["material_snapshot"]["distinct_source_plane_values"] == 0
+    assert result["analysis_set"]["count"] == 0
+    assert result["analysis_set"]["total_group_refs"] == 0
+    assert result["analysis_set"]["total_unit_refs"] == 0
+    assert result["unresolved"]["count"] == 0
+    assert result["unresolved"]["refs"] == []
+
+
+def test_member_state_profile_all_unresolved() -> None:
+    """3 members all resolved=False -> unresolved.count == 3, every rollup empty."""
+    refs = [
+        {"ref_kind": "prior_product", "ref_id": "pp-a"},
+        {"ref_kind": "pass_run", "ref_id": "pr-b"},
+        {"ref_kind": "material_snapshot", "ref_id": "ms-c"},
+    ]
+    states = [
+        {"ref_kind": "prior_product", "ref_id": "pp-a", "resolved": False},
+        {"ref_kind": "pass_run", "ref_id": "pr-b", "resolved": False},
+        {"ref_kind": "material_snapshot", "ref_id": "ms-c", "resolved": False},
+    ]
+    ws = _FakeWorkingSet(name="AllUnres", member_refs_json=refs, member_count=3)
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    assert result["unresolved"]["count"] == 3
+    # refs list must be sorted and contain all three
+    assert result["unresolved"]["refs"] == sorted(["pp-a", "pr-b", "ms-c"])
+    # Every rollup must be empty because all members are unresolved
+    assert result["prior_product"]["by_lifecycle_status"] == {}
+    assert result["pass_run"]["by_status"] == {}
+    assert result["output_package"]["by_status"] == {}
+    assert result["material_snapshot"]["by_source_plane"] == {}
+    assert result["analysis_set"]["count"] == 0
+
+
+def test_member_state_profile_missing_state_entry_counted_as_unresolved() -> None:
+    """A member in member_refs_json with NO matching entry in member_states -> unresolved."""
+    refs = [
+        {"ref_kind": "pass_run", "ref_id": "pr-present"},
+        {"ref_kind": "pass_run", "ref_id": "pr-missing"},
+    ]
+    # Only provide state for one of the two members
+    states = [
+        {"ref_kind": "pass_run", "ref_id": "pr-present", "resolved": True, "status": "completed"},
+    ]
+    ws = _FakeWorkingSet(name="MissingState", member_refs_json=refs, member_count=2)
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    assert result["unresolved"]["count"] == 1
+    assert "pr-missing" in result["unresolved"]["refs"]
+    # The resolved one must appear in the rollup
+    assert result["pass_run"]["by_status"]["completed"] == 1
+
+
+def test_member_state_profile_missing_optional_fields_use_unknown_bucket() -> None:
+    """Resolved prior_product with lifecycle_status absent/None -> 'unknown' bucket.
+    Resolved material_snapshot with source_plane absent -> 'unknown' bucket."""
+    refs = [
+        {"ref_kind": "prior_product", "ref_id": "pp-no-status"},
+        {"ref_kind": "prior_product", "ref_id": "pp-none-status"},
+        {"ref_kind": "material_snapshot", "ref_id": "ms-no-plane"},
+    ]
+    states = [
+        # lifecycle_status key absent entirely
+        {"ref_kind": "prior_product", "ref_id": "pp-no-status", "resolved": True},
+        # lifecycle_status present but None
+        {"ref_kind": "prior_product", "ref_id": "pp-none-status", "resolved": True, "lifecycle_status": None},
+        # source_plane key absent entirely
+        {"ref_kind": "material_snapshot", "ref_id": "ms-no-plane", "resolved": True},
+    ]
+    ws = _FakeWorkingSet(name="MissingOptional", member_refs_json=refs, member_count=3)
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    # Both prior_products with absent/None lifecycle_status fall into 'unknown'
+    assert result["prior_product"]["by_lifecycle_status"].get("unknown") == 2
+    # material_snapshot with absent source_plane falls into 'unknown'
+    assert result["material_snapshot"]["by_source_plane"].get("unknown") == 1
+    # All three are resolved, so unresolved.count == 0
+    assert result["unresolved"]["count"] == 0
+
+
+def test_member_state_profile_analysis_set_zero_counts() -> None:
+    """Resolved analysis_sets with group_count/unit_count == 0 -> totals remain 0."""
+    refs, states = _make_states(
+        analysis_sets=[
+            {"ref_id": "as-zero", "group_count": 0, "unit_count": 0},
+        ],
+    )
+    ws = _FakeWorkingSet(name="ASZero", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    assert result["analysis_set"]["count"] == 1
+    assert result["analysis_set"]["total_group_refs"] == 0
+    assert result["analysis_set"]["total_unit_refs"] == 0
+
+
+def test_member_state_profile_analysis_set_sum_totals() -> None:
+    """Multiple resolved analysis_sets -> total_group_refs and total_unit_refs equal the sums."""
+    refs, states = _make_states(
+        analysis_sets=[
+            {"ref_id": "as-1", "group_count": 3, "unit_count": 7},
+            {"ref_id": "as-2", "group_count": 5, "unit_count": 2},
+            {"ref_id": "as-3", "group_count": 0, "unit_count": 11},
+        ],
+    )
+    ws = _FakeWorkingSet(name="ASSum", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    assert result["analysis_set"]["count"] == 3
+    assert result["analysis_set"]["total_group_refs"] == 3 + 5 + 0
+    assert result["analysis_set"]["total_unit_refs"] == 7 + 2 + 11
+
+
+def test_member_state_profile_result_structure() -> None:
+    """Result dict has exactly the documented top-level keys (guards against schema drift)."""
+    refs, states = _make_states(
+        prior_products=[{"ref_id": "pp-1", "lifecycle_status": "accepted"}],
+    )
+    ws = _FakeWorkingSet(name="Schema", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    expected_keys = {
+        "method_id",
+        "method_version",
+        "member_count",
+        "by_ref_kind",
+        "prior_product",
+        "pass_run",
+        "output_package",
+        "material_snapshot",
+        "analysis_set",
+        "unresolved",
+    }
+    assert set(result.keys()) == expected_keys
+
+
+# ---------------------------------------------------------------------------
+# staleness_diagnostic — fixture-backed + edge cases
+# ---------------------------------------------------------------------------
+
+
+def test_staleness_diagnostic_empty_working_set() -> None:
+    """Empty working set -> clean=True, all category counts 0."""
+    ws = _FakeWorkingSet(name="EmptyDiag", member_refs_json=[], member_count=0)
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=[])
+    assert result["clean"] is True
+    assert result["member_count"] == 0
+    assert result["superseded_prior_products"]["count"] == 0
+    assert result["superseded_prior_products"]["members"] == []
+    assert result["failed_pass_runs"]["count"] == 0
+    assert result["failed_pass_runs"]["members"] == []
+    assert result["unresolved_members"]["count"] == 0
+    assert result["unresolved_members"]["members"] == []
+    assert result["incomplete_pass_runs"] == 0
+    assert result["pass_runs_completed_with_warnings"] == 0
+
+
+def test_staleness_diagnostic_all_clean() -> None:
+    """Resolved prior_product not superseded + resolved pass_run completed -> clean True."""
+    refs, states = _make_states(
+        prior_products=[{"ref_id": "pp-ok", "lifecycle_status": "accepted"}],
+        pass_runs=[{"ref_id": "pr-ok", "status": "completed"}],
+    )
+    ws = _FakeWorkingSet(name="AllClean", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    assert result["clean"] is True
+    assert result["superseded_prior_products"]["count"] == 0
+    assert result["failed_pass_runs"]["count"] == 0
+    assert result["unresolved_members"]["count"] == 0
+    assert result["incomplete_pass_runs"] == 0
+    assert result["pass_runs_completed_with_warnings"] == 0
+
+
+def test_staleness_diagnostic_multi_issue() -> None:
+    """Superseded prior_product + failed pass_run + unresolved member -> clean False.
+    Assert exact counts and that ref_ids appear in the right category lists."""
+    refs = [
+        {"ref_kind": "prior_product", "ref_id": "pp-sup"},
+        {"ref_kind": "pass_run", "ref_id": "pr-fail"},
+        {"ref_kind": "material_snapshot", "ref_id": "ms-ghost"},
+    ]
+    states = [
+        {"ref_kind": "prior_product", "ref_id": "pp-sup", "resolved": True, "lifecycle_status": "superseded"},
+        {"ref_kind": "pass_run", "ref_id": "pr-fail", "resolved": True, "status": "failed"},
+        {"ref_kind": "material_snapshot", "ref_id": "ms-ghost", "resolved": False},
+    ]
+    ws = _FakeWorkingSet(name="MultiIssue", member_refs_json=refs, member_count=3)
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    assert result["clean"] is False
+    assert result["superseded_prior_products"]["count"] == 1
+    assert "pp-sup" in result["superseded_prior_products"]["members"]
+    assert result["failed_pass_runs"]["count"] == 1
+    assert "pr-fail" in result["failed_pass_runs"]["members"]
+    assert result["unresolved_members"]["count"] == 1
+    assert "ms-ghost" in result["unresolved_members"]["members"]
+    # Informational counts not affected by the flagged issues
+    assert result["incomplete_pass_runs"] == 0
+    assert result["pass_runs_completed_with_warnings"] == 0
+
+
+def test_staleness_diagnostic_all_incomplete_statuses_clean() -> None:
+    """All three incomplete statuses (planned/running/selected_not_started) plus
+    completed_with_warnings do NOT set clean=False; assert exact informational counters
+    using the imported status constants (not string literals)."""
+    from app.models.models import (
+        L3_PASS_RUN_STATUS_PLANNED,
+        L3_PASS_RUN_STATUS_RUNNING,
+        L3_PASS_RUN_STATUS_SELECTED_NOT_STARTED,
+        L3_PASS_RUN_STATUS_COMPLETED_WITH_WARNINGS,
+    )
+    refs = [
+        {"ref_kind": "pass_run", "ref_id": "pr-planned"},
+        {"ref_kind": "pass_run", "ref_id": "pr-running"},
+        {"ref_kind": "pass_run", "ref_id": "pr-sns"},
+        {"ref_kind": "pass_run", "ref_id": "pr-warn"},
+    ]
+    states = [
+        {"ref_kind": "pass_run", "ref_id": "pr-planned", "resolved": True, "status": L3_PASS_RUN_STATUS_PLANNED},
+        {"ref_kind": "pass_run", "ref_id": "pr-running", "resolved": True, "status": L3_PASS_RUN_STATUS_RUNNING},
+        {"ref_kind": "pass_run", "ref_id": "pr-sns", "resolved": True, "status": L3_PASS_RUN_STATUS_SELECTED_NOT_STARTED},
+        {"ref_kind": "pass_run", "ref_id": "pr-warn", "resolved": True, "status": L3_PASS_RUN_STATUS_COMPLETED_WITH_WARNINGS},
+    ]
+    ws = _FakeWorkingSet(name="InfoOnly", member_refs_json=refs, member_count=4)
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    assert result["clean"] is True
+    assert result["superseded_prior_products"]["count"] == 0
+    assert result["failed_pass_runs"]["count"] == 0
+    assert result["unresolved_members"]["count"] == 0
+    assert result["incomplete_pass_runs"] == 3
+    assert result["pass_runs_completed_with_warnings"] == 1
+
+
+def test_staleness_diagnostic_unknown_pass_run_status_not_failed() -> None:
+    """A resolved pass_run with status='unknown' is not classified as failed; clean stays True."""
+    refs = [{"ref_kind": "pass_run", "ref_id": "pr-unk"}]
+    states = [{"ref_kind": "pass_run", "ref_id": "pr-unk", "resolved": True, "status": "unknown"}]
+    ws = _FakeWorkingSet(name="UnknownStatus", member_refs_json=refs, member_count=1)
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    assert result["clean"] is True
+    assert result["failed_pass_runs"]["count"] == 0
+    assert result["incomplete_pass_runs"] == 0
+    assert result["pass_runs_completed_with_warnings"] == 0
+
+
+def test_staleness_diagnostic_result_structure() -> None:
+    """Result dict has exactly the documented top-level keys (guards against schema drift)."""
+    refs, states = _make_states(
+        pass_runs=[{"ref_id": "pr-1", "status": "completed"}],
+    )
+    ws = _FakeWorkingSet(name="DiagSchema", member_refs_json=refs, member_count=len(refs))
+    result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
+    expected_keys = {
+        "method_id",
+        "method_version",
+        "clean",
+        "member_count",
+        "superseded_prior_products",
+        "failed_pass_runs",
+        "unresolved_members",
+        "incomplete_pass_runs",
+        "pass_runs_completed_with_warnings",
+    }
+    assert set(result.keys()) == expected_keys
+
+
+# ---------------------------------------------------------------------------
+# render bounds — title length and body rollup cap wording
+# ---------------------------------------------------------------------------
+
+
+def test_render_title_composition_summary_max_256() -> None:
+    """render_title for composition_summary must be <= 256 chars."""
+    ws = _FakeWorkingSet(name="Title Len Check", member_refs_json=[], member_count=0)
+    title = render_title("working_set_composition_summary", working_set=ws)
+    assert len(title) <= 256
+
+
+def test_render_title_member_state_profile_max_512() -> None:
+    """render_title for member_state_profile must be <= 512 chars."""
+    ws = _FakeWorkingSet(name="Profile Title Len", member_refs_json=[], member_count=0)
+    title = render_title("working_set_member_state_profile", working_set=ws)
+    assert len(title) <= 512
+
+
+def test_render_title_staleness_diagnostic_max_512() -> None:
+    """render_title for staleness_diagnostic must be <= 512 chars."""
+    ws = _FakeWorkingSet(name="Diag Title Len", member_refs_json=[], member_count=0)
+    title = render_title("working_set_staleness_diagnostic", working_set=ws)
+    assert len(title) <= 512
+
+
+def test_render_body_member_state_profile_rollup_body_cap_plus_more_values() -> None:
+    """member_state_profile with > _ROLLUP_BODY_CAP (10) distinct values in a rollup
+    shows at most 10 lines + a '+N more values' indicator in the rendered body.
+
+    Setup: 15 distinct prior_product lifecycle statuses (1 member each).
+    Result cap (_ROLLUP_RESULT_CAP=25) keeps all 15.
+    Body cap (_ROLLUP_BODY_CAP=10) shows 10 lines; remainder = 15 - 10 = 5.
+    Expected suffix: '+5 more values'.
+    """
+    n = 15
+    refs, states = _make_states(
+        prior_products=[
+            {"ref_id": f"pp-{i}", "lifecycle_status": f"status-{i:02d}"}
+            for i in range(n)
+        ],
+    )
+    ws = _FakeWorkingSet(name="RollupBodyCap", member_refs_json=refs, member_count=n)
+    result = run_method("working_set_member_state_profile", working_set=ws, member_states=states)
+    body = render_body("working_set_member_state_profile", result=result)
+    # The rendered body must include the '+5 more values' suffix
+    assert "+5 more values" in body
+    # Exactly 10 'status-XX' lines should appear (the body-capped entries)
+    status_lines = [ln for ln in body.splitlines() if "status-" in ln]
+    assert len(status_lines) == 10
