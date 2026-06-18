@@ -33,3 +33,9 @@ deploy/.env
 deploy/.smoke/
 deploy/proxy/htpasswd
 deploy/proxy/roles.map
+
+# Generated logs (API harness via project6.ps1, corpus diagnostics, setup logs) — never committed
+*.log
+
+# Scratch session capture (regenerated ad hoc; not source of truth)
+/temp_session.json
