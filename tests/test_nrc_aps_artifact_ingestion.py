@@ -19,6 +19,7 @@ os.environ.setdefault("NRC_ADAMS_APS_SUBSCRIPTION_KEY", "test-nrc-key")
 os.environ.setdefault("NRC_ADAMS_APS_API_BASE_URL", "https://adams-api.nrc.gov")
 
 from app.services import nrc_aps_artifact_ingestion  # noqa: E402
+from support_nrc_aps_fake_opendataloader import install_fake_opendataloader_pdf  # noqa: E402
 from support_nrc_aps_xlsx import build_xlsx_bytes  # noqa: E402
 
 
@@ -71,7 +72,11 @@ def test_processing_config_from_run_config_preserves_candidate_b_engine(tmp_path
     assert config["artifact_storage_dir"] == str(tmp_path)
 
 
-def test_extract_and_normalize_forwards_candidate_b_engine(tmp_path: Path):
+def test_extract_and_normalize_forwards_candidate_b_engine(monkeypatch, tmp_path: Path):
+    install_fake_opendataloader_pdf(
+        monkeypatch,
+        nrc_aps_artifact_ingestion.nrc_aps_document_processing,
+    )
     result = nrc_aps_artifact_ingestion.extract_and_normalize(
         content=_fixture_bytes("layout.pdf"),
         content_type="application/pdf",

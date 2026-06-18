@@ -1,11 +1,9 @@
-import os
 import sys
 from pathlib import Path
 from io import BytesIO
 import zipfile
 import base64
 import pytest
-import fitz
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "backend"
@@ -29,10 +27,20 @@ def test_media_detection_expansion():
         assert result["sniffed_content_type"] == expected_type
         assert result["supported_for_processing"] is expected_supported
 
-def test_standalone_image_processing():
+def test_standalone_image_processing(monkeypatch: pytest.MonkeyPatch):
     """Verify OCR routing for standalone images."""
-    # Create a simple 1x1 white PNG
-    import base64
+    monkeypatch.setattr(dp.nrc_aps_ocr, "tesseract_available", lambda: True)
+    monkeypatch.setattr(
+        dp.nrc_aps_ocr,
+        "run_tesseract_ocr",
+        lambda **_: {
+            "text": "standalone image alpha",
+            "average_confidence": 99.0,
+            "rows": [],
+            "engine": "fake_tesseract_cli",
+        },
+    )
+
     # 1x1 white png
     png_data = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=")
     

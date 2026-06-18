@@ -119,6 +119,102 @@ jobs:
         fi
         echo "All Layer 3 backend pytest shards passed."
 
+  root-tests-shard:
+    name: root-tests-shard-${{ matrix.shard }}/4
+    timeout-minutes: 25
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+        cache: pip
+        cache-dependency-path: ./backend/tests/requirements-layer3-api.txt
+    - name: Install root test dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -r ./backend/tests/requirements-layer3-api.txt
+    - name: Run repo-root pytest guardrail
+      env:
+        PYTEST_ROOT_SHARD_INDEX: ${{ matrix.shard }}
+        PYTEST_ROOT_SHARD_TOTAL: 4
+      run: |
+        SECONDS=0
+        python <<'PY'
+        import glob
+        import os
+        import subprocess
+        import sys
+
+        shard = int(os.environ["PYTEST_ROOT_SHARD_INDEX"])
+        total = int(os.environ["PYTEST_ROOT_SHARD_TOTAL"])
+        if shard < 1 or shard > total:
+            raise SystemExit(f"Invalid root pytest shard {shard}/{total}")
+
+        # Repo-root tests are not covered by backend/tests shards. They are
+        # intentionally collected from root and sharded separately to keep
+        # root harness, NRC APS, parser, and structural tests visible in CI.
+        files = sorted(glob.glob("./tests/test_*.py"))
+        if not files:
+            raise SystemExit("No repo-root pytest files found.")
+
+        collect = subprocess.run(
+            [sys.executable, "-m", "pytest", "--collect-only", "-q", *files],
+            capture_output=True,
+            text=True,
+        )
+        if collect.returncode != 0:
+            sys.stdout.write(collect.stdout)
+            sys.stderr.write(collect.stderr)
+            raise SystemExit(collect.returncode)
+
+        nodeids = [
+            line.strip()
+            for line in collect.stdout.splitlines()
+            if "::" in line and line.strip().startswith("tests/")
+        ]
+        if not nodeids:
+            raise SystemExit("Repo-root pytest collection produced no nodeids.")
+
+        selected = [
+            nodeid
+            for index, nodeid in enumerate(nodeids)
+            if index % total == shard - 1
+        ]
+        if not selected:
+            raise SystemExit(
+                f"Repo-root pytest shard {shard}/{total} selected no tests "
+                f"from {len(nodeids)} collected tests."
+            )
+
+        print(
+            f"Repo-root pytest shard {shard}/{total} selected "
+            f"{len(selected)} of {len(nodeids)} tests."
+        )
+        completed = subprocess.run([sys.executable, "-m", "pytest", *selected, "-q"])
+        raise SystemExit(completed.returncode)
+        PY
+        echo "root_tests_shard_${{ matrix.shard }}_seconds=$SECONDS"
+
+  root-tests:
+    name: root-tests
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    needs: root-tests-shard
+    if: ${{ always() }}
+    steps:
+    - name: Check root test shard results
+      run: |
+        if [ "${{ needs.root-tests-shard.result }}" != "success" ]; then
+          echo "Repo-root pytest shard result: ${{ needs.root-tests-shard.result }}"
+          exit 1
+        fi
+        echo "All repo-root pytest shards passed."
+
   sec-xbrl-arelle-provisioning:
     name: sec-xbrl-arelle-provisioning
     timeout-minutes: 20

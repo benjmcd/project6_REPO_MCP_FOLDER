@@ -17,6 +17,10 @@ if str(BACKEND) not in sys.path:
 from tools import nrc_ui_launch  # noqa: E402
 
 
+def _portable_path(value: object) -> str:
+    return str(value).replace("\\", "/")
+
+
 def test_selection_storage_root_prefers_shared_repo_root_for_worktree(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     lane_root = repo_root / "worktrees" / "lane-a"
@@ -66,7 +70,7 @@ def test_command_serve_uses_selection_storage_root_for_env(monkeypatch) -> None:
     assert captured["cwd"] == str(nrc_ui_launch.REPO_ROOT)
     assert captured["check"] is False
     assert captured["env"]["DATABASE_URL"] == "sqlite:///C:/demo/storage_test_runtime/lc_e2e/run-123/lc.db"
-    assert captured["env"]["STORAGE_DIR"] == "C:\\shared\\storage_test_runtime"
+    assert _portable_path(captured["env"]["STORAGE_DIR"]) == _portable_path(selected.selection_storage_root)
     assert captured["env"]["DB_INIT_MODE"] == "none"
 
 

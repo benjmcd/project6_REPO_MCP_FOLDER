@@ -97,13 +97,14 @@ def expected_behavior(
         or entry.get("expected_failure")
         or None
     )
-    gold_queries = entry.get(f"gold_queries{query_suffix}") or entry.get("gold_queries") or []
+    gold_queries_key = f"gold_queries{query_suffix}"
+    gold_queries = entry.get(gold_queries_key) if gold_queries_key in entry else entry.get("gold_queries") or []
     if advanced_ocr_weights_available is None:
         advanced_ocr_weights_available = corpus_advanced_ocr_weights_available()
     degradation_codes = (
         (
             entry.get("expected_degradation_codes_without_advanced_ocr_weights")
-            if requires_ocr and ocr_available and not advanced_ocr_weights_available
+            if requires_ocr and not advanced_ocr_weights_available
             else None
         )
         or entry.get(f"expected_degradation_codes{query_suffix}")

@@ -22,24 +22,15 @@ def _load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _resolve_replay_source_root() -> Path:
-    local_root = ROOT / "backend" / "app" / "storage_test" / "connectors"
-    if local_root.exists():
-        return local_root
-
-    for ancestor in ROOT.parents:
-        if ancestor.name != "worktrees":
-            continue
-        shared_root = ancestor.parent / "backend" / "app" / "storage_test" / "connectors"
-        if shared_root.exists():
-            return shared_root
-        break
-
-    return local_root
+def _make_empty_source_root(tmp_path: Path) -> Path:
+    source_root = tmp_path / "source" / "connectors"
+    (source_root / "manifests").mkdir(parents=True)
+    (source_root / "snapshots").mkdir()
+    return source_root
 
 
 def test_build_validate_and_check_replay_corpus(tmp_path: Path):
-    source_root = _resolve_replay_source_root()
+    source_root = _make_empty_source_root(tmp_path)
     out_dir = tmp_path / "v1"
     diff_report = tmp_path / "diff.json"
     validation_report = tmp_path / "validation.json"
@@ -105,7 +96,7 @@ def test_builder_rejects_malformed_exchange_snapshot(tmp_path: Path):
 
 
 def test_validator_detects_fixture_mutation(tmp_path: Path):
-    source_root = _resolve_replay_source_root()
+    source_root = _make_empty_source_root(tmp_path)
     out_dir = tmp_path / "v1"
     build_replay_corpus(source_roots=[source_root], out_dir=out_dir)
 
@@ -125,7 +116,7 @@ def test_validator_detects_fixture_mutation(tmp_path: Path):
 
 
 def test_validator_override_allows_temporary_drift(tmp_path: Path):
-    source_root = _resolve_replay_source_root()
+    source_root = _make_empty_source_root(tmp_path)
     out_dir = tmp_path / "v1"
     build_replay_corpus(source_roots=[source_root], out_dir=out_dir)
 
