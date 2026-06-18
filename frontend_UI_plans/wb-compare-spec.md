@@ -1,4 +1,4 @@
-# NRC APS Workbench Compare Workspace Specification
+﻿# NRC APS Workbench Compare Workspace Specification
 
 ## 1. Objective
 
@@ -16,29 +16,29 @@ This feature is not a broad cross-run explorer and it is not an extension of the
 This specification relies on the following repo-confirmed authority surfaces:
 
 - live web entrypoint:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\main.py`
+  - `backend\main.py`
 - live review API routes:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\api\review_nrc_aps.py`
+  - `backend\app\api\review_nrc_aps.py`
 - live review schemas:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\schemas\review_nrc_aps.py`
+  - `backend\app\schemas\review_nrc_aps.py`
 - live review runtime/path helpers:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_runtime.py`
+  - `backend\app\services\review_nrc_aps_runtime.py`
 - live single-run document-trace model:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_document_trace.py`
+  - `backend\app\services\review_nrc_aps_document_trace.py`
 - live review UI assets:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\index.html`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\review.css`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\review.js`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\document_trace.html`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\document_trace.css`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\document_trace.js`
+  - `backend\app\review_ui\static\index.html`
+  - `backend\app\review_ui\static\review.css`
+  - `backend\app\review_ui\static\review.js`
+  - `backend\app\review_ui\static\document_trace.html`
+  - `backend\app\review_ui\static\document_trace.css`
+  - `backend\app\review_ui\static\document_trace.js`
 - current lower-layer compare/workbench authority:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\run_nrc_aps_candidate_b_compare.py`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\run_nrc_aps_candidate_b_baseline.py`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\support_nrc_aps_candidate_b_opendataloader.py`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\next_milestone_plans\candidate_b_workbench\04C_CANDIDATE_B_OPENDATALOADER_OUTPUT_CROSSWALK_AND_NON_EQUIVALENCE_MAP.md`
+  - `tools\run_nrc_aps_candidate_b_compare.py`
+  - `tools\run_nrc_aps_candidate_b_baseline.py`
+  - `tests\support_nrc_aps_candidate_b_opendataloader.py`
+  - `next_milestone_plans\candidate_b_workbench\04C_CANDIDATE_B_OPENDATALOADER_OUTPUT_CROSSWALK_AND_NON_EQUIVALENCE_MAP.md`
 - corpus identity authority:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\fixtures\nrc_aps_docs\v1\manifest.json`
+  - `tests\fixtures\nrc_aps_docs\v1\manifest.json`
 
 Current local operator-evidence note:
 

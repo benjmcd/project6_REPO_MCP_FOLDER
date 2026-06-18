@@ -1,4 +1,4 @@
-# NRC APS UI Planning Set
+﻿# NRC APS UI Planning Set
 
 This folder now contains the retained design and implementation-reference documents for the NRC APS review UI surface.
 
@@ -19,58 +19,58 @@ These files remain useful as design and maintenance references even though the s
 
 For the live UI and API behavior, the canonical implementation source of truth is in the root repo backend surface:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\main.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\api\review_nrc_aps.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\schemas\review_nrc_aps.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_catalog.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_runtime.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_document_trace.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\index.html`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\review.css`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\review.js`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\document_trace.html`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\document_trace.css`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\document_trace.js`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\workbench_compare.html`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\workbench_compare.css`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\workbench_compare.js`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\candidate_b_trace.html`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\candidate_b_trace.css`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\candidate_b_trace.js`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\vendor\`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_graph.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_overview.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_tree.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_details.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_workbench_compare.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_candidate_b_trace.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_api.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_api.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_service.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_page.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_workbench_compare_api.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_workbench_compare_service.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_workbench_compare_page.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_candidate_b_trace_api.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_candidate_b_trace_service.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_candidate_b_trace_page.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\review_browser_fixture.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\review_browser_server.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_browser_server.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\requirements-browser.txt`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\e2e\nrc-aps-review.spec.js`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\playwright.config.js`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.github\workflows\playwright.yml`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\seed_wb_compare.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_seed_wb_compare.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\support_nrc_aps_candidate_b_opendataloader.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_nrc_aps_candidate_b_opendataloader.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\validate_wb_prep.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_validate_wb_prep.py`
+- `backend\main.py`
+- `backend\app\api\review_nrc_aps.py`
+- `backend\app\schemas\review_nrc_aps.py`
+- `backend\app\services\review_nrc_aps_catalog.py`
+- `backend\app\services\review_nrc_aps_runtime.py`
+- `backend\app\services\review_nrc_aps_document_trace.py`
+- `backend\app\review_ui\static\index.html`
+- `backend\app\review_ui\static\review.css`
+- `backend\app\review_ui\static\review.js`
+- `backend\app\review_ui\static\document_trace.html`
+- `backend\app\review_ui\static\document_trace.css`
+- `backend\app\review_ui\static\document_trace.js`
+- `backend\app\review_ui\static\workbench_compare.html`
+- `backend\app\review_ui\static\workbench_compare.css`
+- `backend\app\review_ui\static\workbench_compare.js`
+- `backend\app\review_ui\static\candidate_b_trace.html`
+- `backend\app\review_ui\static\candidate_b_trace.css`
+- `backend\app\review_ui\static\candidate_b_trace.js`
+- `backend\app\review_ui\static\vendor\`
+- `backend\app\services\review_nrc_aps_graph.py`
+- `backend\app\services\review_nrc_aps_overview.py`
+- `backend\app\services\review_nrc_aps_tree.py`
+- `backend\app\services\review_nrc_aps_details.py`
+- `backend\app\services\review_nrc_aps_workbench_compare.py`
+- `backend\app\services\review_nrc_aps_candidate_b_trace.py`
+- `backend\tests\test_review_nrc_aps_api.py`
+- `backend\tests\test_review_nrc_aps_document_trace_api.py`
+- `backend\tests\test_review_nrc_aps_document_trace_service.py`
+- `backend\tests\test_review_nrc_aps_document_trace_page.py`
+- `backend\tests\test_review_nrc_aps_workbench_compare_api.py`
+- `backend\tests\test_review_nrc_aps_workbench_compare_service.py`
+- `backend\tests\test_review_nrc_aps_workbench_compare_page.py`
+- `backend\tests\test_review_nrc_aps_candidate_b_trace_api.py`
+- `backend\tests\test_review_nrc_aps_candidate_b_trace_service.py`
+- `backend\tests\test_review_nrc_aps_candidate_b_trace_page.py`
+- `backend\tests\review_browser_fixture.py`
+- `backend\tests\review_browser_server.py`
+- `backend\tests\test_review_browser_server.py`
+- `backend\tests\requirements-browser.txt`
+- `e2e\nrc-aps-review.spec.js`
+- `playwright.config.js`
+- `.github\workflows\playwright.yml`
+- `tools\seed_wb_compare.py`
+- `tests\test_seed_wb_compare.py`
+- `tests\support_nrc_aps_candidate_b_opendataloader.py`
+- `tests\test_nrc_aps_candidate_b_opendataloader.py`
+- `tools\validate_wb_prep.py`
+- `tests\test_validate_wb_prep.py`
 
 The files in this folder are reference material, not the live implementation surface.
 
-For canonical operator bring-up of the shipped review/document-trace/workbench/Candidate B Trace surfaces, start with [docs/nrc_adams/nrc_aps_ui_launch_runbook.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/docs/nrc_adams/nrc_aps_ui_launch_runbook.md).
+For canonical operator bring-up of the shipped review/document-trace/workbench/Candidate B Trace surfaces, start with [docs/nrc_adams/nrc_aps_ui_launch_runbook.md](../docs/nrc_adams/nrc_aps_ui_launch_runbook.md).
 
 Important runtime-fixture note:
 
@@ -183,6 +183,6 @@ Ordered next-decision note:
 
 The retired Jules/Antigravity bake-off artifacts, prompts, mirrors, and workspaces were moved out of the live planning surface to:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\archive\files_to_be_trashed\2026-03-28_bakeoff_closeout\`
+- `archive\files_to_be_trashed\2026-03-28_bakeoff_closeout\`
 
 That archive area now holds the obsolete bake-off packet files, agent workspaces, mirror repos, and related worktrees that are no longer intended to drive active implementation.

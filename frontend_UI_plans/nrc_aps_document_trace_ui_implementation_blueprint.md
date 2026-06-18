@@ -1,4 +1,4 @@
-# NRC APS Document Trace UI Implementation Blueprint
+﻿# NRC APS Document Trace UI Implementation Blueprint
 
 ## 1. Purpose
 
@@ -16,17 +16,17 @@ It freezes:
 
 Live authority surfaces for this blueprint:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\main.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\api\review_nrc_aps.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\schemas\review_nrc_aps.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_runtime.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\models\models.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\index.html`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\review.css`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\review.js`
+- `backend\main.py`
+- `backend\app\api\review_nrc_aps.py`
+- `backend\app\schemas\review_nrc_aps.py`
+- `backend\app\services\review_nrc_aps_runtime.py`
+- `backend\app\models\models.py`
+- `backend\app\review_ui\static\index.html`
+- `backend\app\review_ui\static\review.css`
+- `backend\app\review_ui\static\review.js`
 - historical runtime example used when this blueprint was written:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260328_150207\`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260328_150207\lc.db`
+  - `backend\app\storage_test_runtime\lc_e2e\20260328_150207\`
+  - `backend\app\storage_test_runtime\lc_e2e\20260328_150207\lc.db`
 
 Current repo-state note:
 

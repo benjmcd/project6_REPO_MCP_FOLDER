@@ -1,4 +1,4 @@
-# NRC APS Workbench Compare Implementation Blueprint
+﻿# NRC APS Workbench Compare Implementation Blueprint
 
 ## 1. Purpose
 
@@ -33,7 +33,7 @@ flowchart LR
 
 ### 4.1 Page routing
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\main.py`
+- `backend\main.py`
 
 Add one additive page shell route:
 
@@ -44,7 +44,7 @@ Do not add a second static mount for this page.
 
 ### 4.2 API surface
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\api\review_nrc_aps.py`
+- `backend\app\api\review_nrc_aps.py`
 
 Add four additive compare routes:
 
@@ -58,7 +58,7 @@ The existing `review_nrc_aps.router` mount already serves any additive routes ad
 
 ### 4.3 Schemas
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\schemas\review_nrc_aps.py`
+- `backend\app\schemas\review_nrc_aps.py`
 
 Add dedicated compare schemas instead of overloading the existing single-run trace schemas.
 
@@ -66,7 +66,7 @@ Add dedicated compare schemas instead of overloading the existing single-run tra
 
 Primary new service:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_workbench_compare.py`
+- `backend\app\services\review_nrc_aps_workbench_compare.py`
 
 Expected responsibilities:
 
@@ -82,7 +82,7 @@ Expected responsibilities:
 
 Expected narrow shared-runtime extension:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_runtime.py`
+- `backend\app\services\review_nrc_aps_runtime.py`
 
 Only if needed for:
 
@@ -104,9 +104,9 @@ Do not widen `review_nrc_aps_document_trace.py` into the compare owner.
 
 Add new static files:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\workbench_compare.html`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\workbench_compare.css`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\workbench_compare.js`
+- `backend\app\review_ui\static\workbench_compare.html`
+- `backend\app\review_ui\static\workbench_compare.css`
+- `backend\app\review_ui\static\workbench_compare.js`
 
 Reuse:
 
@@ -124,9 +124,9 @@ in the first pass unless a narrow navigation addition is explicitly reopened lat
 
 Add:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_workbench_compare_api.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_workbench_compare_service.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_workbench_compare_page.py`
+- `backend\tests\test_review_nrc_aps_workbench_compare_api.py`
+- `backend\tests\test_review_nrc_aps_workbench_compare_service.py`
+- `backend\tests\test_review_nrc_aps_workbench_compare_page.py`
 
 ## 5. Frozen Implementation Decisions
 

@@ -1,4 +1,4 @@
-# NRC APS Runtime DB Reconceptualization And Next Steps
+﻿# NRC APS Runtime DB Reconceptualization And Next Steps
 
 ## Purpose
 
@@ -11,15 +11,15 @@ It now reflects current `main` after the runtime-centric review/document-trace s
 
 For the current live implementation on `main`, the primary authority is:
 
-- [backend/app/core/config.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/core/config.py)
-- [backend/app/db/session.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/db/session.py)
-- [backend/app/api/deps.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/api/deps.py)
-- [backend/app/api/review_nrc_aps.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/api/review_nrc_aps.py)
-- [backend/app/services/review_nrc_aps_catalog.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_catalog.py)
-- [backend/app/services/review_nrc_aps_runtime.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_runtime.py)
-- [backend/app/services/review_nrc_aps_document_trace.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_document_trace.py)
-- [backend/app/models/models.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/models/models.py)
-- [backend/main.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/main.py)
+- [backend/app/core/config.py](../backend/app/core/config.py)
+- [backend/app/db/session.py](../backend/app/db/session.py)
+- [backend/app/api/deps.py](../backend/app/api/deps.py)
+- [backend/app/api/review_nrc_aps.py](../backend/app/api/review_nrc_aps.py)
+- [backend/app/services/review_nrc_aps_catalog.py](../backend/app/services/review_nrc_aps_catalog.py)
+- [backend/app/services/review_nrc_aps_runtime.py](../backend/app/services/review_nrc_aps_runtime.py)
+- [backend/app/services/review_nrc_aps_document_trace.py](../backend/app/services/review_nrc_aps_document_trace.py)
+- [backend/app/models/models.py](../backend/app/models/models.py)
+- [backend/main.py](../backend/main.py)
 
 Historical reference only:
 
@@ -39,16 +39,16 @@ The repo currently mixes:
 
 This is not theoretical. It is visible in:
 
-- [config.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/core/config.py), which binds one process-global `database_url`
-- [session.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/db/session.py), which creates one global `engine` and one global `SessionLocal`
-- [review_nrc_aps_runtime.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_runtime.py), which separately discovers summary-backed runtime roots on disk
+- [config.py](../backend/app/core/config.py), which binds one process-global `database_url`
+- [session.py](../backend/app/db/session.py), which creates one global `engine` and one global `SessionLocal`
+- [review_nrc_aps_runtime.py](../backend/app/services/review_nrc_aps_runtime.py), which separately discovers summary-backed runtime roots on disk
 
 ### 2. Current `main` now routes review/document-trace through runtime DB sessions
 
 On current `main`, the review/document-trace routes use the runtime DB helper in:
 
-- [review_nrc_aps.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/api/review_nrc_aps.py)
-- [review_nrc_aps_runtime_db.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_runtime_db.py)
+- [review_nrc_aps.py](../backend/app/api/review_nrc_aps.py)
+- [review_nrc_aps_runtime_db.py](../backend/app/services/review_nrc_aps_runtime_db.py)
 
 Current live behavior now includes:
 
@@ -74,15 +74,15 @@ Use current `main` as authority first and consult that branch only if a narrowly
 The most important immediate DB risks are:
 
 - wrong runtime binding because `.env` or startup defaults point at the wrong DB/storage pair
-- accidental migration of a runtime snapshot DB because [main.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/main.py) runs migrations unless `DB_INIT_MODE=none`
+- accidental migration of a runtime snapshot DB because [main.py](../backend/main.py) runs migrations unless `DB_INIT_MODE=none`
 - stale operator or docs assumptions about which runtime DB/storage pair is actually being viewed
 
 ### 5. Performance is secondary to correct binding
 
 There are real query and schema issues, but they are not the first priority:
 
-- [review_nrc_aps_document_trace.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_document_trace.py) issues repeated run/target/content queries and broad extracted-unit loads
-- [models.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/models/models.py) stores `visual_page_refs_json` as `Text` in APS tables
+- [review_nrc_aps_document_trace.py](../backend/app/services/review_nrc_aps_document_trace.py) issues repeated run/target/content queries and broad extracted-unit loads
+- [models.py](../backend/app/models/models.py) stores `visual_page_refs_json` as `Text` in APS tables
 - APS tables rely mostly on unique constraints and do not express many targeted read indexes in the model layer
 
 Those are real future work items, but they are less urgent than making runtime identity and operator visibility clearer.
