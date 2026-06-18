@@ -119,6 +119,114 @@ jobs:
         fi
         echo "All Layer 3 backend pytest shards passed."
 
+  nrc-aps-ocr:
+    name: nrc-aps-ocr
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+        cache: pip
+        cache-dependency-path: ./backend/tests/requirements-layer3-api.txt
+    - name: Install Tesseract OCR
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y tesseract-ocr
+        tesseract --version
+    - name: Install NRC APS OCR test dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -r ./backend/tests/requirements-layer3-api.txt
+    - name: Run NRC APS OCR proof with required OCR
+      env:
+        NRC_APS_CORPUS_OCR_MODE: required
+      run: |
+        set -euo pipefail
+        proof_dir="$RUNNER_TEMP/nrc-aps-ocr"
+        report="$proof_dir/document-processing-proof.json"
+        mkdir -p "$proof_dir"
+
+        set +e
+        python tools/run_nrc_aps_document_processing_proof.py --require-ocr \
+          --runtime-root "$proof_dir/runtime" \
+          --report "$report" \
+          --artifact-report "$proof_dir/artifact-ingestion-report.json" \
+          --content-index-report "$proof_dir/content-index-report.json"
+        proof_status=$?
+        set -e
+
+        if [ "$proof_status" -ne 0 ]; then
+          echo "NRC APS OCR proof failed with exit code $proof_status"
+          if [ -f "$report" ]; then
+            python - "$report" <<'PY'
+        import json
+        import sys
+        from pathlib import Path
+
+        payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+        print("failure_reason=", payload.get("failure_reason"))
+        print("tesseract_available=", payload.get("tesseract_available"))
+        print("ocr_success_proven=", payload.get("ocr_success_proven"))
+        for command in payload.get("commands") or []:
+            print(
+                "command=",
+                command.get("label"),
+                "exit=",
+                command.get("exit_code"),
+                "passed=",
+                command.get("passed"),
+            )
+        PY
+          fi
+          exit "$proof_status"
+        fi
+    - name: Verify NRC APS OCR proof executed
+      run: |
+        set -euo pipefail
+        python - <<'PY'
+        import json
+        import os
+        from pathlib import Path
+
+        report = Path(os.environ["RUNNER_TEMP"]) / "nrc-aps-ocr" / "document-processing-proof.json"
+        payload = json.loads(report.read_text(encoding="utf-8"))
+        failures = []
+        if payload.get("ocr_mode") != "required":
+            failures.append("ocr_mode_not_required")
+        if payload.get("passed") is not True:
+            failures.append("proof_not_passed")
+        if payload.get("tesseract_available") is not True:
+            failures.append("tesseract_not_available")
+        if payload.get("ocr_success_proven") is not True:
+            failures.append("ocr_success_not_proven")
+
+        commands = payload.get("commands") or []
+        labels = {command.get("label") for command in commands}
+        for label in ("lower_layer_pytest", "api_proof_pytest"):
+            if label not in labels:
+                failures.append(f"missing_{label}")
+
+        combined_output = "\n".join(
+            str(command.get("stdout") or "") + "\n" + str(command.get("stderr") or "")
+            for command in commands
+        ).lower()
+        for forbidden in (
+            "tesseract unavailable",
+            "tesseract_required",
+            "ocr_required_but_unavailable",
+            "skipped",
+        ):
+            if forbidden in combined_output:
+                failures.append(f"forbidden_fallback:{forbidden}")
+
+        if failures:
+            raise SystemExit("NRC APS OCR proof did not execute cleanly: " + ", ".join(failures))
+
+        print("NRC APS OCR proof executed with required OCR and real Tesseract.")
+        PY
+
   playwright-shard:
     name: test-shard-${{ matrix.shard }}/4
     timeout-minutes: 60

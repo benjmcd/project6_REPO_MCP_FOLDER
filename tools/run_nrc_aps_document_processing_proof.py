@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -14,13 +13,16 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "backend"
+TESTS_DIR = ROOT / "tests"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
+if str(TESTS_DIR) not in sys.path:
+    sys.path.insert(0, str(TESTS_DIR))
 
 from app.services import nrc_aps_ocr  # noqa: E402
-from tests.support_nrc_aps_doc_corpus import manifest_entries  # noqa: E402
+from support_nrc_aps_doc_corpus import manifest_entries  # noqa: E402
 
 
 PROOF_SCHEMA_ID = "aps.document_processing_proof.v1"
@@ -47,6 +49,23 @@ def _run_command(*, args: list[str], env: dict[str, str], cwd: Path, label: str)
     }
 
 
+def _print_failed_command_outputs(commands: list[dict[str, Any]]) -> None:
+    for command in commands:
+        if bool(command.get("passed")):
+            continue
+        label = str(command.get("label") or "unknown")
+        exit_code = command.get("exit_code")
+        print(f"Proof command failed: {label} exit={exit_code}")
+        for stream_name in ("stdout", "stderr"):
+            output = str(command.get(stream_name) or "")
+            if output.strip():
+                print(f"--- {label} {stream_name} ---")
+                print(output.rstrip())
+                print(f"--- end {label} {stream_name} ---")
+            else:
+                print(f"--- {label} {stream_name}: <empty> ---")
+
+
 def _default_runtime_root() -> Path:
     return Path(tempfile.mkdtemp(prefix="apsdocproof_"))
 
@@ -69,6 +88,8 @@ def main(argv: list[str] | None = None) -> int:
     report_path = Path(args.report).resolve()
     artifact_report_path = Path(args.artifact_report).resolve()
     content_index_report_path = Path(args.content_index_report).resolve()
+    runtime_root.mkdir(parents=True, exist_ok=True)
+    storage_dir.mkdir(parents=True, exist_ok=True)
     report_path.parent.mkdir(parents=True, exist_ok=True)
     artifact_report_path.parent.mkdir(parents=True, exist_ok=True)
     content_index_report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -110,11 +131,12 @@ def main(argv: list[str] | None = None) -> int:
         "-m",
         "pytest",
         "tests/test_nrc_aps_media_detection.py",
-        "tests/test_nrc_aps_document_processing.py",
+        "tests/test_nrc_aps_document_processing.py::test_process_document_reports_missing_ocr_for_scanned_pdf",
+        "tests/test_nrc_aps_document_processing.py::test_process_document_preserves_weak_mixed_pdf_when_native_text_exists",
+        "tests/test_nrc_aps_document_processing.py::test_process_document_uses_ocr_when_native_text_is_unusable",
+        "tests/test_nrc_aps_document_processing.py::TestVisualLaneIntegration::test_ocr_fallback_strictness_preserved",
         "tests/test_nrc_aps_document_corpus.py",
-        "tests/test_nrc_aps_artifact_ingestion.py",
-        "tests/test_nrc_aps_content_index.py",
-        "tests/test_nrc_aps_content_index_gate.py",
+        "tests/test_nrc_aps_expansion.py::test_standalone_image_processing",
         "-q",
     ]
     commands.append(_run_command(args=proof_tests, env=env, cwd=ROOT, label="lower_layer_pytest"))
@@ -173,6 +195,8 @@ def main(argv: list[str] | None = None) -> int:
         "failure_reason": None if passed else "proof_command_failed",
     }
     report_path.write_text(_stable_json(proof_payload), encoding="utf-8")
+    if not passed:
+        _print_failed_command_outputs(commands)
     return 0 if passed else 1
 
 

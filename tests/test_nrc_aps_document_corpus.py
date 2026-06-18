@@ -74,6 +74,22 @@ def test_manifest_entries_are_resolvable_and_well_formed():
         assert "expects_success" in expectation
 
 
+def test_ocr_required_manifest_distinguishes_missing_advanced_ocr_weights():
+    scanned = next(entry for entry in manifest_entries() if _entry_id(entry) == "scanned")
+
+    missing_weights = expected_behavior(scanned, ocr_available=True, advanced_ocr_weights_available=False)
+    assert missing_weights["expected_degradation_codes"] == [
+        "advanced_ocr_weights_missing",
+        "ocr_execution_failed",
+    ]
+
+    weights_present = expected_behavior(scanned, ocr_available=True, advanced_ocr_weights_available=True)
+    assert weights_present["expected_degradation_codes"] == [
+        "advanced_ocr_execution_failed",
+        "ocr_execution_failed",
+    ]
+
+
 @pytest.mark.parametrize("entry", manifest_entries(), ids=_entry_id)
 def test_manifest_entries_drive_document_processing_contract(entry: dict[str, object]):
     expectation = expected_behavior(entry, ocr_available=corpus_ocr_available())
