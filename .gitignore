@@ -33,3 +33,14 @@ deploy/.env
 deploy/.smoke/
 deploy/proxy/htpasswd
 deploy/proxy/roles.map
+
+# Generated root logs (API harness via project6.ps1, corpus diagnostics, py311 setup) —
+# regenerated; a historical snapshot is archived under
+# archive/files_to_be_trashed/2026-06-18-root-generated-logs/
+/.project6_api_stdout.log
+/.project6_api_stderr.log
+/corpus_*.log
+/setup_logs/*.log
+
+# Scratch session capture (regenerated ad hoc; not source of truth; archived snapshot as above)
+/temp_session.json
