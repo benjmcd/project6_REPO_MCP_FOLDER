@@ -17,7 +17,7 @@ import sys
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
-from app.services import nrc_aps_ocr  # noqa: E402
+from app.services import nrc_aps_ocr, nrc_aps_settings  # noqa: E402
 
 
 def load_manifest() -> dict[str, Any]:
@@ -53,7 +53,23 @@ def fixture_bytes(entry: dict[str, Any]) -> bytes:
     return fixture_path(entry).read_bytes()
 
 
-def expected_behavior(entry: dict[str, Any], *, ocr_available: bool) -> dict[str, Any]:
+def corpus_advanced_ocr_weights_available() -> bool:
+    return all(
+        Path(str(model_dir)).exists()
+        for model_dir in (
+            nrc_aps_settings.PADDLE_DET_MODEL_DIR,
+            nrc_aps_settings.PADDLE_REC_MODEL_DIR,
+            nrc_aps_settings.PADDLE_CLS_MODEL_DIR,
+        )
+    )
+
+
+def expected_behavior(
+    entry: dict[str, Any],
+    *,
+    ocr_available: bool,
+    advanced_ocr_weights_available: bool | None = None,
+) -> dict[str, Any]:
     requires_ocr = bool(entry.get("requires_ocr", False))
     if requires_ocr and not ocr_available and str(entry.get("expected_failure_without_ocr") or "").strip():
         return {
@@ -82,8 +98,15 @@ def expected_behavior(entry: dict[str, Any], *, ocr_available: bool) -> dict[str
         or None
     )
     gold_queries = entry.get(f"gold_queries{query_suffix}") or entry.get("gold_queries") or []
+    if advanced_ocr_weights_available is None:
+        advanced_ocr_weights_available = corpus_advanced_ocr_weights_available()
     degradation_codes = (
-        entry.get(f"expected_degradation_codes{query_suffix}")
+        (
+            entry.get("expected_degradation_codes_without_advanced_ocr_weights")
+            if requires_ocr and ocr_available and not advanced_ocr_weights_available
+            else None
+        )
+        or entry.get(f"expected_degradation_codes{query_suffix}")
         or entry.get("expected_degradation_codes")
         or []
     )

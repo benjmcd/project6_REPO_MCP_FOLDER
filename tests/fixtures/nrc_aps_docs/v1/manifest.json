@@ -97,6 +97,10 @@
         "advanced_ocr_execution_failed",
         "ocr_execution_failed"
       ],
+      "expected_degradation_codes_without_advanced_ocr_weights": [
+        "advanced_ocr_weights_missing",
+        "ocr_execution_failed"
+      ],
       "gold_queries": [
         "turbine blade inspection"
       ],
@@ -116,6 +120,10 @@
       "searchable_expected_without_ocr": false,
       "expected_degradation_codes": [
         "advanced_ocr_execution_failed",
+        "ocr_execution_failed"
+      ],
+      "expected_degradation_codes_without_advanced_ocr_weights": [
+        "advanced_ocr_weights_missing",
         "ocr_execution_failed"
       ],
       "expected_degradation_codes_without_ocr": [
