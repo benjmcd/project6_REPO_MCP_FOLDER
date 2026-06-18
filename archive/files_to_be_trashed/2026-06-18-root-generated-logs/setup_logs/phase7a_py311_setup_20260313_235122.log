@@ -1,0 +1,49 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260313235122
+Username: DESKTOP-I0THJK0\benny
+RunAs User: DESKTOP-I0THJK0\benny
+Configuration Name: 
+Machine: DESKTOP-I0THJK0 (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+Process ID: 28160
+PSVersion: 5.1.26100.7920
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.7920
+BuildVersion: 10.0.26100.7920
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+[INFO] Phase 7A Python 3.11 environment setup starting.
+[INFO] Log file: C:\Users\benny\OneDrive\Desktop\Project6\setup_logs\phase7a_py311_setup_20260313_235122.log
+[INFO] Model directories present.
+[INFO] Ghostscript found: C:\Program Files\gs\gs10.06.0\bin\gswin64c.exe
+PS>TerminatingError(py.exe): "The running command stopped because the preference variable "ErrorActionPreference" or common parameter is set to Stop: No suitable Python runtime found"
+[WARN] Python 3.11 not found via py launcher. Installing with winget.
+[INFO] Running: winget install -e --id Python.Python.3.11 --accept-package-agreements --accept-source-agreements --no-upgrade --force
+Successfully verified installer hash
+Starting package install...
+Successfully installed
+[INFO] Using Python 3.11 executable: C:\Users\benny\AppData\Local\Programs\Python\Python311\python.exe
+[INFO] Creating venv at C:\Users\benny\OneDrive\Desktop\Project6\.venvs\phase7a-py311
+
+[INFO] Set PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True for this session.
+[INFO] Upgrading pip/setuptools/wheel in the venv
+
+[INFO] Installing packages into the venv...
+
+[INFO] Running sanity checks inside the venv
+
+
+=== SUCCESS ===
+Python 3.11 venv ready: C:\Users\benny\OneDrive\Desktop\Project6\.venvs\phase7a-py311
+Activate with: & 'C:\Users\benny\OneDrive\Desktop\Project6\.venvs\phase7a-py311\Scripts\Activate.ps1'
+Current session helper: 
+$env:PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK = 'True'
+Log file: C:\Users\benny\OneDrive\Desktop\Project6\setup_logs\phase7a_py311_setup_20260313_235122.log
+**********************
+Windows PowerShell transcript end
+End time: 20260313235353
+**********************
