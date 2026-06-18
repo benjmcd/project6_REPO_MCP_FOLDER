@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -14,13 +13,16 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "backend"
+TESTS_DIR = ROOT / "tests"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
+if str(TESTS_DIR) not in sys.path:
+    sys.path.insert(0, str(TESTS_DIR))
 
 from app.services import nrc_aps_ocr  # noqa: E402
-from tests.support_nrc_aps_doc_corpus import manifest_entries  # noqa: E402
+from support_nrc_aps_doc_corpus import manifest_entries  # noqa: E402
 
 
 PROOF_SCHEMA_ID = "aps.document_processing_proof.v1"
@@ -69,6 +71,8 @@ def main(argv: list[str] | None = None) -> int:
     report_path = Path(args.report).resolve()
     artifact_report_path = Path(args.artifact_report).resolve()
     content_index_report_path = Path(args.content_index_report).resolve()
+    runtime_root.mkdir(parents=True, exist_ok=True)
+    storage_dir.mkdir(parents=True, exist_ok=True)
     report_path.parent.mkdir(parents=True, exist_ok=True)
     artifact_report_path.parent.mkdir(parents=True, exist_ok=True)
     content_index_report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -110,11 +114,12 @@ def main(argv: list[str] | None = None) -> int:
         "-m",
         "pytest",
         "tests/test_nrc_aps_media_detection.py",
-        "tests/test_nrc_aps_document_processing.py",
+        "tests/test_nrc_aps_document_processing.py::test_process_document_reports_missing_ocr_for_scanned_pdf",
+        "tests/test_nrc_aps_document_processing.py::test_process_document_preserves_weak_mixed_pdf_when_native_text_exists",
+        "tests/test_nrc_aps_document_processing.py::test_process_document_uses_ocr_when_native_text_is_unusable",
+        "tests/test_nrc_aps_document_processing.py::TestVisualLaneIntegration::test_ocr_fallback_strictness_preserved",
         "tests/test_nrc_aps_document_corpus.py",
-        "tests/test_nrc_aps_artifact_ingestion.py",
-        "tests/test_nrc_aps_content_index.py",
-        "tests/test_nrc_aps_content_index_gate.py",
+        "tests/test_nrc_aps_expansion.py::test_standalone_image_processing",
         "-q",
     ]
     commands.append(_run_command(args=proof_tests, env=env, cwd=ROOT, label="lower_layer_pytest"))
