@@ -53,20 +53,22 @@ The first selected governance boundary for that work is `docs/layer3-deploy-hard
 
 ## SEC Value-Reveal and Live-Egress Capability Flags
 
-The SEC/XBRL capability surface is governed by a set of default-off, fail-closed feature flags. None of these capabilities are active in the default deployment posture. Enabling any of them requires explicit per-flag operator decision; the flags are independent and most require multiple flags to be set before they have any effect.
+The SEC/XBRL value-reveal and live-egress capability surface is governed by feature flags that are default-off and fail-closed. In the default posture no live network, value reveal, internal value store, nonlocal authority, or controlled value-reveal submission is active. The flags are independent; enabling a sensitive capability requires its own (default-`false`) flag and still fails closed when preconditions (a real Arelle environment, authorized non-local operation) are absent.
 
 The flags and their shipped defaults (from `backend/.env.example`):
 
 | Flag | Default |
 |------|---------|
 | `LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED` | `false` |
-| `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED` | `true` (inert without the other Arelle flags) |
+| `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED` | `true` (default-on path selector — see note below; **not** inert) |
 | `LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED` | `false` |
 | `LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED` | `false` |
 | `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED` | `false` |
 | `LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED` | `false` |
 | `LAYER3_SEC_EDGAR_OFFICIAL_TICKER_RESOLUTION_ENABLED` | `false` |
 | `LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED` | `false` |
+
+**On the cutover flag:** `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED` ships `true` and is **not** inert. It selects the Arelle sidecar as the fact authority (over the regex path) in the corpus-validation and inline-XBRL material-bridge flows (`backend/app/services/layer3_sec_edgar_real_company_corpus_validation.py`, `backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.py`), independently of the other Arelle flags. It does **not** by itself reveal values or open egress: the sidecar fails closed (returns a `BLOCKED` state) and actual value reveal / live network / nonlocal authority remain governed by the default-`false` flags above.
 
 Enforcement lives in `backend/app/core/config.py`, which validates at settings construction time that nonlocal and value-reveal capabilities require explicit authorization. The SEC value-reveal service guards enforce the same fail-closed posture at call time.
 
