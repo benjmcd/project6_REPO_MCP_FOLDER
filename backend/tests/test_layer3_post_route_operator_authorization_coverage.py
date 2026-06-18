@@ -54,12 +54,19 @@ def _post_routes() -> list[tuple[str, object]]:
 
 
 def _build_isolated_app() -> FastAPI:
-    """A fresh app mounting the canonical api_router plus main's real pre-body
-    operator-authorization middleware. Independent of the shared main.app so the
-    401-before-body assertion cannot be perturbed by other tests in the process."""
+    """A fresh app mounting the market routers (the only ones this file's 401 test
+    exercises) plus main's real pre-body operator-authorization middleware. Built
+    from the market modules' own routers — not the shared api_router/main.app — so
+    the 401-before-body assertion cannot be perturbed by another test in the same
+    worker mutating shared app route state. The middleware reads the static
+    pre-body registry, which is independent of any app instance."""
+    from app.api import market_data_integration, market_data_validation, market_insight_ai
+
     app = FastAPI()
     app.middleware("http")(main._pre_body_operator_authorization_middleware)
-    app.include_router(api_router, prefix=settings.api_prefix)
+    for mod in (market_data_integration, market_data_validation, market_insight_ai):
+        app.include_router(mod.router, prefix=settings.api_prefix)
+        app.include_router(mod.alias_router, prefix=settings.api_prefix)
     return app
 
 
