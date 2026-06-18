@@ -1,4 +1,7 @@
-fastapi>=0.115
+# Python runtime: 3.12. Keep this FastAPI pin mirrored in
+# backend/tests/requirements-layer3-api.txt; included test requirement files
+# inherit from there and must not carry a second FastAPI constraint.
+fastapi==0.137.2
 uvicorn>=0.30
 sqlalchemy>=2.0
 pandas>=2.2
