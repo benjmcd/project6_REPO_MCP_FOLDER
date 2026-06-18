@@ -1,4 +1,4 @@
-# NRC APS Document Trace UI Specification
+﻿# NRC APS Document Trace UI Specification
 
 ## 1. Objective
 
@@ -11,23 +11,23 @@ This feature is not a generic file preview page. It is a run-scoped provenance a
 This specification relies on the following repo-confirmed authority surfaces:
 
 - live web entrypoint:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\main.py`
+  - `backend\main.py`
 - live review API routes:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\api\review_nrc_aps.py`
+  - `backend\app\api\review_nrc_aps.py`
 - live review schemas:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\schemas\review_nrc_aps.py`
+  - `backend\app\schemas\review_nrc_aps.py`
 - live review runtime/path helpers:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_runtime.py`
+  - `backend\app\services\review_nrc_aps_runtime.py`
 - live review UI assets:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\index.html`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\review.css`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\review.js`
+  - `backend\app\review_ui\static\index.html`
+  - `backend\app\review_ui\static\review.css`
+  - `backend\app\review_ui\static\review.js`
 - live ORM models:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\models\models.py`
+  - `backend\app\models\models.py`
 - historical audited runtime example used when this spec was written:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260328_150207\`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260328_150207\local_corpus_e2e_summary.json`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260328_150207\lc.db`
+  - `backend\app\storage_test_runtime\lc_e2e\20260328_150207\`
+  - `backend\app\storage_test_runtime\lc_e2e\20260328_150207\local_corpus_e2e_summary.json`
+  - `backend\app\storage_test_runtime\lc_e2e\20260328_150207\lc.db`
 
 Current repo-state note:
 

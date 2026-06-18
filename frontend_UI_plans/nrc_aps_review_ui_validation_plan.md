@@ -1,4 +1,4 @@
-# NRC APS Review UI Validation Plan
+﻿# NRC APS Review UI Validation Plan
 
 ## 1. Purpose
 
@@ -10,7 +10,7 @@ Validation should be anchored to a current local review runtime.
 
 Current adopted root-local review runtime:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011`
+- `backend\app\storage_test_runtime\lc_e2e\20260327_062011`
 
 Golden run identity:
 
@@ -18,7 +18,7 @@ Golden run identity:
 
 Golden summary:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
+- `backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
 
 Current repo-state note:
 

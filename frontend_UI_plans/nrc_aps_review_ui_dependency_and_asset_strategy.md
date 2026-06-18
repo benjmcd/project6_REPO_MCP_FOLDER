@@ -1,4 +1,4 @@
-# NRC APS Review UI Dependency And Asset Strategy
+﻿# NRC APS Review UI Dependency And Asset Strategy
 
 ## 1. Purpose
 
@@ -8,8 +8,8 @@ This document freezes the dependency, asset, and delivery strategy for the NRC A
 
 Authority surfaces:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\main.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\requirements.txt`
+- `backend\main.py`
+- `backend\requirements.txt`
 - the current repo shape, which does not contain a dedicated frontend application scaffold for this surface
 
 Repo-confirmed facts:

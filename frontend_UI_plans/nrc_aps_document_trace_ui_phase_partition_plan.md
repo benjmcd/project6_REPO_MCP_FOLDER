@@ -1,4 +1,4 @@
-# NRC APS Document Trace UI Phase Partition Plan
+﻿# NRC APS Document Trace UI Phase Partition Plan
 
 ## 1. Purpose
 
@@ -17,10 +17,10 @@ This document is not a replacement for the higher-level spec, contract, blueprin
 
 This phase plan must be read together with:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\nrc_aps_document_trace_ui_spec.md`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\nrc_aps_document_trace_ui_data_contract.md`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\nrc_aps_document_trace_ui_implementation_blueprint.md`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\nrc_aps_document_trace_ui_validation_plan.md`
+- `frontend_UI_plans\nrc_aps_document_trace_ui_spec.md`
+- `frontend_UI_plans\nrc_aps_document_trace_ui_data_contract.md`
+- `frontend_UI_plans\nrc_aps_document_trace_ui_implementation_blueprint.md`
+- `frontend_UI_plans\nrc_aps_document_trace_ui_validation_plan.md`
 
 If this phase plan and those documents disagree, the implementation must stop and reconcile the docs before proceeding.
 

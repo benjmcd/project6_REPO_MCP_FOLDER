@@ -1,4 +1,4 @@
-# NRC APS Review UI Mapping And Reviewability Rules
+﻿# NRC APS Review UI Mapping And Reviewability Rules
 
 ## 1. Purpose
 
@@ -15,12 +15,12 @@ Without these rules, implementation would be forced to invent review semantics a
 
 Live authority for these rules:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\models\models.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\api\router.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\core\config.py`
+- `backend\app\models\models.py`
+- `backend\app\api\router.py`
+- `backend\app\core\config.py`
 - adopted root-local golden runtime fixture used to ground these rules:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\storage\connectors\reports\`
+  - `backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
+  - `backend\app\storage_test_runtime\lc_e2e\20260327_062011\storage\connectors\reports\`
 
 Current repo-state note:
 
@@ -42,7 +42,7 @@ The review implementation should not browse arbitrary repo paths.
 
 V1 review discovery may scan only these roots:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime`
+- `backend\app\storage_test_runtime`
 - the current runtime storage root implied by `settings.storage_dir`
 
 ### 3.2 Summary-Backed Review Root Rule

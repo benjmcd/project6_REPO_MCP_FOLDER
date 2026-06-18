@@ -1,4 +1,4 @@
-# NRC APS Workbench Compare Validation Plan
+﻿# NRC APS Workbench Compare Validation Plan
 
 ## 1. Purpose
 
@@ -11,13 +11,13 @@ It must not trigger new Candidate B runs or seed runtime artifacts during normal
 
 This is the canonical same-checkout prep and populated compare-validation document for the shipped Option 1 flow.
 
-Use [docs/nrc_adams/nrc_aps_ui_launch_runbook.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/docs/nrc_adams/nrc_aps_ui_launch_runbook.md) for:
+Use [docs/nrc_adams/nrc_aps_ui_launch_runbook.md](../docs/nrc_adams/nrc_aps_ui_launch_runbook.md) for:
 
 - the canonical launch contract
 - current-main runtime preconditions
 - explicit backend binding rules
 
-Use [frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md) for:
+Use [frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md](nrc_aps_review_ui_startup_and_smoke_test.md) for:
 
 - the concise startup walkthrough
 - route/page-shell bring-up
@@ -31,23 +31,23 @@ Use this document for:
 - Candidate B Trace follow-through from compare
 - runtime-source Workbench Compare follow-through into existing document-trace
 
-Use [frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md) for the broader manual validation pass after launch and prep succeed.
+Use [frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md](nrc_aps_frontend_ui_operator_validation_guide.md) for the broader manual validation pass after launch and prep succeed.
 
 ## 2. Canonical Validation Sources
 
 Use these files as authority when implementing and validating:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_api.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_api.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_service.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_page.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_page.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\seed_wb_compare.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\validate_wb_prep.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_seed_wb_compare.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_validate_wb_prep.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_nrc_aps_candidate_b_opendataloader_compare.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\archive\20260412-cb-proof\README.md`
+- `backend\tests\test_review_nrc_aps_api.py`
+- `backend\tests\test_review_nrc_aps_document_trace_api.py`
+- `backend\tests\test_review_nrc_aps_document_trace_service.py`
+- `backend\tests\test_review_nrc_aps_document_trace_page.py`
+- `backend\tests\test_review_nrc_aps_page.py`
+- `tools\seed_wb_compare.py`
+- `tools\validate_wb_prep.py`
+- `tests\test_seed_wb_compare.py`
+- `tests\test_validate_wb_prep.py`
+- `tests\test_nrc_aps_candidate_b_opendataloader_compare.py`
+- `archive\20260412-cb-proof\README.md`
 
 ## 3. Required Automated Coverage
 

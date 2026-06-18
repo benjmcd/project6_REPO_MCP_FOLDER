@@ -1,4 +1,4 @@
-# NRC APS Review UI Startup And Smoke Test
+﻿# NRC APS Review UI Startup And Smoke Test
 
 ## Purpose
 
@@ -24,37 +24,37 @@ Use this guide to:
 - start the backend on a known port
 - prove basic route and page-shell reachability for the review, Document Trace, and Workbench Compare surfaces
 
-Use [docs/nrc_adams/nrc_aps_ui_launch_runbook.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/docs/nrc_adams/nrc_aps_ui_launch_runbook.md) first for:
+Use [docs/nrc_adams/nrc_aps_ui_launch_runbook.md](../docs/nrc_adams/nrc_aps_ui_launch_runbook.md) first for:
 
 - the canonical launch contract
 - current-main preconditions
 - allowlisted runtime-discovery rules
 - the authoritative distinction between launch, compare prep, and broader operator validation
 
-Use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for:
+Use [frontend_UI_plans/wb-compare-validation.md](wb-compare-validation.md) for:
 
 - same-checkout prep
 - `tools/validate_wb_prep.py`
 - populated Workbench Compare and bundle-sourced Candidate B Trace follow-through
 
-Use [frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md) for the broader manual validation pass after launch and prep succeed.
+Use [frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md](nrc_aps_frontend_ui_operator_validation_guide.md) for the broader manual validation pass after launch and prep succeed.
 
 ## Canonical Source Of Truth
 
 The live implementation authority for the UI routes and startup surface is:
 
-- [backend/main.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/main.py)
-- [backend/app/api/review_nrc_aps.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/api/review_nrc_aps.py)
-- [backend/app/review_ui/static/index.html](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/index.html)
-- [backend/app/review_ui/static/review.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/review.js)
-- [backend/app/review_ui/static/document_trace.html](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/document_trace.html)
-- [backend/app/review_ui/static/document_trace.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/document_trace.js)
-- [backend/app/review_ui/static/workbench_compare.html](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/workbench_compare.html)
-- [backend/app/review_ui/static/workbench_compare.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/workbench_compare.js)
-- [backend/app/review_ui/static/candidate_b_trace.html](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/candidate_b_trace.html)
-- [backend/app/review_ui/static/candidate_b_trace.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/candidate_b_trace.js)
-- [tools/nrc_ui_launch.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/tools/nrc_ui_launch.py)
-- [project6.ps1](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/project6.ps1)
+- [backend/main.py](../backend/main.py)
+- [backend/app/api/review_nrc_aps.py](../backend/app/api/review_nrc_aps.py)
+- [backend/app/review_ui/static/index.html](../backend/app/review_ui/static/index.html)
+- [backend/app/review_ui/static/review.js](../backend/app/review_ui/static/review.js)
+- [backend/app/review_ui/static/document_trace.html](../backend/app/review_ui/static/document_trace.html)
+- [backend/app/review_ui/static/document_trace.js](../backend/app/review_ui/static/document_trace.js)
+- [backend/app/review_ui/static/workbench_compare.html](../backend/app/review_ui/static/workbench_compare.html)
+- [backend/app/review_ui/static/workbench_compare.js](../backend/app/review_ui/static/workbench_compare.js)
+- [backend/app/review_ui/static/candidate_b_trace.html](../backend/app/review_ui/static/candidate_b_trace.html)
+- [backend/app/review_ui/static/candidate_b_trace.js](../backend/app/review_ui/static/candidate_b_trace.js)
+- [tools/nrc_ui_launch.py](../tools/nrc_ui_launch.py)
+- [project6.ps1](../project6.ps1)
 
 This file is an operational reference layered on top of those sources.
 
@@ -76,7 +76,7 @@ Workbench-compare scope note:
 - this guide covers route reachability and shell bring-up for `/review/nrc-aps/workbench-compare`
 - populated compare validation requires same-checkout prep for baseline, Candidate A, and Candidate B sources
 - the canonical populated prep flow now includes the validate-only same-checkout prep gate in `tools/validate_wb_prep.py`, including its emitted operator handoff metadata for prep/recovery
-- use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for the dedicated prep, `tools/validate_wb_prep.py` gate, emitted operator handoff metadata, and populated compare validation flow
+- use [frontend_UI_plans/wb-compare-validation.md](wb-compare-validation.md) for the dedicated prep, `tools/validate_wb_prep.py` gate, emitted operator handoff metadata, and populated compare validation flow
 - after same-checkout prep, bundle-sourced Candidate B follow-through should use the separate `Candidate B Trace` page rather than widening `document-trace`; runtime-sourced Candidate B follow-through uses the existing `document-trace` route, has repo-native browser coverage through the Workbench Compare `Candidate B Runtime Trace` link, and must not be described as Candidate B Trace parity
 
 ## Preconditions
@@ -88,7 +88,7 @@ Workbench-compare scope note:
   - `local_corpus_e2e_summary.json` with `"passed": true`
 - Current `main` does not guarantee that a populated local review runtime is already present under the checkout's allowlisted roots.
 - If you are launching from a worktree, the shell-neutral helper can also discover and bind the shared repo-root review-runtime root when it exists.
-- If no allowlisted runtime exists yet, stop and follow [docs/nrc_adams/local_corpus_e2e_runbook.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/docs/nrc_adams/local_corpus_e2e_runbook.md) or another approved restore path before using this walkthrough.
+- If no allowlisted runtime exists yet, stop and follow [docs/nrc_adams/local_corpus_e2e_runbook.md](../docs/nrc_adams/local_corpus_e2e_runbook.md) or another approved restore path before using this walkthrough.
 - Prefer a dedicated port for UI validation so you do not collide with another local API process.
 
 ## Step 1: Identify The Runtime You Want To Serve
@@ -238,7 +238,7 @@ If you set process-local environment variables in that shell only, closing the s
 
 ## Optional: Wrapper Reference
 
-[project6.ps1](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/project6.ps1) contains API startup helpers and database/storage binding helpers, but the explicit `uvicorn` path above is the most direct operational reference for frontend/UI bring-up because it makes the runtime choice visible.
+[project6.ps1](../project6.ps1) contains API startup helpers and database/storage binding helpers, but the explicit `uvicorn` path above is the most direct operational reference for frontend/UI bring-up because it makes the runtime choice visible.
 
 ## Troubleshooting
 

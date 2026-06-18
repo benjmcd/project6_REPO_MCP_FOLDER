@@ -1,4 +1,4 @@
-# NRC APS Review UI Example Payloads
+﻿# NRC APS Review UI Example Payloads
 
 ## 1. Purpose
 
@@ -13,11 +13,11 @@ They are reference payloads derived from the current adopted root-local fixture;
 
 These examples are derived from the adopted `20260327_062011` root-local golden runtime fixture:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
+- `backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
 - runtime artifacts under:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\storage\connectors\reports\`
+  - `backend\app\storage_test_runtime\lc_e2e\20260327_062011\storage\connectors\reports\`
 - gate reports under:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\gate_reports\`
+  - `backend\app\storage_test_runtime\lc_e2e\20260327_062011\gate_reports\`
 
 ## 3. Run Selector Example
 
@@ -274,7 +274,7 @@ Example for the final review packet file:
 {
   "run_id": "d6be0fff-bbd7-468a-9b00-7103d5995494",
   "tree_entry_id": "tree::<sha256(storage/connectors/reports/run_d6be0fff-bbd7-468a-9b00-7103d5995494_8ed797c94d61bc37dc6761b9_aps_deterministic_challenge_review_packet_v1.json)>",
-  "absolute_path": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/storage_test_runtime/lc_e2e/20260327_062011/storage/connectors/reports/run_d6be0fff-bbd7-468a-9b00-7103d5995494_8ed797c94d61bc37dc6761b9_aps_deterministic_challenge_review_packet_v1.json",
+  "absolute_path": "backend/app/storage_test_runtime/lc_e2e/20260327_062011/storage/connectors/reports/run_d6be0fff-bbd7-468a-9b00-7103d5995494_8ed797c94d61bc37dc6761b9_aps_deterministic_challenge_review_packet_v1.json",
   "display_path": "storage/connectors/reports/run_d6be0fff-bbd7-468a-9b00-7103d5995494_8ed797c94d61bc37dc6761b9_aps_deterministic_challenge_review_packet_v1.json",
   "entry_kind": "file",
   "file_class": "run_report",

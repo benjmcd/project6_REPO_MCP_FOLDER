@@ -1,10 +1,10 @@
-Implementation pass. Execute the attached bbox-overlay execution plan as the governing implementation spec.
+﻿Implementation pass. Execute the attached bbox-overlay execution plan as the governing implementation spec.
 
 Repo:
-C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER
+.
 
 Attach and obey:
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\bbox_overlay_execution_plan.md
+- frontend_UI_plans\bbox_overlay_execution_plan.md
 
 This is an implementation / test / verification pass, not a planning pass.
 

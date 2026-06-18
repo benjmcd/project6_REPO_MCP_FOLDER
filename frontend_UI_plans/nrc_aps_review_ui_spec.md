@@ -1,4 +1,4 @@
-# NRC APS Review UI Specification
+﻿# NRC APS Review UI Specification
 
 ## 1. Objective
 
@@ -13,17 +13,17 @@ The first target is the latest completed reviewable NRC APS run, with support fo
 
 This specification relies on the following repo-confirmed authority surfaces:
 
-- web/app entrypoint: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\main.py`
-- live connector API routes: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\api\router.py`
-- repo authority hierarchy: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\docs\nrc_adams\nrc_aps_authority_matrix.md`
-- live NRC APS status surface: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\docs\nrc_adams\nrc_aps_status_handoff.md`
+- web/app entrypoint: `backend\main.py`
+- live connector API routes: `backend\app\api\router.py`
+- repo authority hierarchy: `docs\nrc_adams\nrc_aps_authority_matrix.md`
+- live NRC APS status surface: `docs\nrc_adams\nrc_aps_status_handoff.md`
 - historical verified runtime example used when this spec was written:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
+  - `backend\app\storage_test_runtime\lc_e2e\20260327_062011\`
+  - `backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
 
 Current repo-state note:
 
-- the root-local branch now carries an adopted review runtime at `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011`
+- the root-local branch now carries an adopted review runtime at `backend\app\storage_test_runtime\lc_e2e\20260327_062011`
 - the root grouped review/runtime T8 bundle was revalidated green against that adopted runtime in this pass
 - later references in this spec to the verified runtime mean that adopted root-local runtime unless a section is explicitly scoped as historical
 

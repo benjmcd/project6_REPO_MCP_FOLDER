@@ -1,4 +1,4 @@
-# NRC APS Review UI Implementation Blueprint
+﻿# NRC APS Review UI Implementation Blueprint
 
 ## 1. Purpose
 
@@ -17,14 +17,14 @@ This blueprint is intentionally narrow. It is designed to let implementation pro
 
 Live authority surfaces for this blueprint:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\main.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\api\router.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\core\config.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\models\models.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\schemas\api.py`
+- `backend\main.py`
+- `backend\app\api\router.py`
+- `backend\app\core\config.py`
+- `backend\app\models\models.py`
+- `backend\app\schemas\api.py`
 - adopted root-local golden runtime fixture used for current validation and implementation anchoring:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\`
+  - `backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
+  - `backend\app\storage_test_runtime\lc_e2e\20260327_062011\`
 
 Current repo-state note:
 

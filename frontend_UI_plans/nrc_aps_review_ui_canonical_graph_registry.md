@@ -1,4 +1,4 @@
-# NRC APS Review UI Canonical Graph Registry
+﻿# NRC APS Review UI Canonical Graph Registry
 
 ## 1. Purpose
 
@@ -14,11 +14,11 @@ The graph registry exists so the UI does not derive its structure from Mermaid t
 Authority inputs for this registry:
 
 - the proven NRC APS proof flow documented in the historical runtime summary used when this registry was written:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
+  - `backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
 - the live downstream API surfaces in:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\api\router.py`
+  - `backend\app\api\router.py`
 - the live persisted downstream artifact families under:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\storage\connectors\reports\`
+  - `backend\app\storage_test_runtime\lc_e2e\20260327_062011\storage\connectors\reports\`
 
 Current repo-state note:
 
