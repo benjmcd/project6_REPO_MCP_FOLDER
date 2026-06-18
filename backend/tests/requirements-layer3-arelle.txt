@@ -1,0 +1,2 @@
+-r requirements-layer3-api.txt
+-r ../requirements-sec-xbrl.txt

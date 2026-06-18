@@ -119,6 +119,47 @@ jobs:
         fi
         echo "All Layer 3 backend pytest shards passed."
 
+  sec-xbrl-arelle-provisioning:
+    name: sec-xbrl-arelle-provisioning
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+        cache: pip
+        cache-dependency-path: |
+          ./backend/tests/requirements-layer3-arelle.txt
+          ./backend/tests/requirements-layer3-api.txt
+          ./backend/requirements-sec-xbrl.txt
+    - name: Install optional SEC XBRL Arelle dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -r ./backend/tests/requirements-layer3-arelle.txt
+    - name: Provision pinned SEC XBRL taxonomy packages
+      env:
+        SEC_XBRL_ARELLE_TAXONOMY_DIR: ${{ runner.temp }}/sec-xbrl-taxonomy
+        SEC_XBRL_ARELLE_CACHE_DIR: ${{ runner.temp }}/sec-xbrl-cache
+      run: |
+        python ./tools/sec-xbrl-arelle-provision.py \
+          --taxonomy-dir "$SEC_XBRL_ARELLE_TAXONOMY_DIR" \
+          --cache-dir "$SEC_XBRL_ARELLE_CACHE_DIR" \
+          --report "$RUNNER_TEMP/sec-xbrl-arelle-provisioning-report.json"
+    - name: Run Arelle readiness and fail-closed tests
+      env:
+        SEC_XBRL_ARELLE_TAXONOMY_PACKAGES: ${{ runner.temp }}/sec-xbrl-taxonomy/us-gaap-2025.zip:${{ runner.temp }}/sec-xbrl-taxonomy/srt-2025.zip
+        SEC_XBRL_ARELLE_CACHE_DIR: ${{ runner.temp }}/sec-xbrl-cache
+        SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY: offline
+      run: |
+        python -m pytest \
+          ./backend/tests/test_sec_xbrl_arelle_provisioning.py \
+          ./backend/tests/test_sec_xbrl_arelle_helper.py \
+          ./backend/tests/test_sec_xbrl_sidecar.py \
+          ./backend/tests/test_sec_xbrl_value_reveal_authority_provisioning_preflight.py \
+          ./backend/tests/test_sec_xbrl_stratified_real_filing_validation_matrix_preflight.py \
+          -q
+
   nrc-aps-ocr:
     name: nrc-aps-ocr
     timeout-minutes: 30
