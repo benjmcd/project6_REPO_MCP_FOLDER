@@ -16,6 +16,8 @@ if str(BACKEND) not in sys.path:
 import main  # noqa: E402
 from app.core.config import settings  # noqa: E402
 
+from _route_enum import post_routes  # noqa: E402
+
 
 def _configure_proxy(monkeypatch, *, role_enforcing: bool = False) -> None:
     monkeypatch.setattr(settings, "auth_owner", "proxy")
@@ -33,17 +35,14 @@ def _configure_proxy(monkeypatch, *, role_enforcing: bool = False) -> None:
 
 
 def test_pre_body_map_covers_registered_protected_post_routes() -> None:
+    # post_routes() resolves the route table on both fastapi 0.111 (flat) and
+    # >=0.115 (lazy _IncludedRouter); naive main.app.router.routes iteration finds
+    # nothing under the newer pin. See tests/_route_enum.py.
     protected_routes: list[tuple[str, str]] = []
-    for route in main.app.router.routes:
-        methods = getattr(route, "methods", set()) or set()
-        if "POST" not in methods:
-            continue
-        access = main._operator_authorization_access_from_endpoint(
-            getattr(route, "endpoint", None)
-        )
+    for path, endpoint in post_routes(main.app):
+        access = main._operator_authorization_access_from_endpoint(endpoint)
         if access is None:
             continue
-        path = str(getattr(route, "path", ""))
         protected_routes.append((path, access))
         assert main._PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTES[path] == access
 

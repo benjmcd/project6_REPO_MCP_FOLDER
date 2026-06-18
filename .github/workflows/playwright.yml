@@ -45,9 +45,23 @@ jobs:
         if shard < 1 or shard > total:
             raise SystemExit(f"Invalid backend pytest shard {shard}/{total}")
 
-        files = sorted(glob.glob("./backend/tests/test_layer3_*.py"))
+        # Backend API test families gated by CI. test_layer3_* is the bulk; the
+        # market-pipeline / analyst-insight / pre-body operator-authorization
+        # families share the same operator-identity seam and route table but did
+        # not match the original test_layer3_* glob, so they previously never ran
+        # in CI. They are included here (not in the layer3-coverage job, which
+        # stays scoped to layer3 coverage measurement).
+        patterns = (
+            "test_layer3_*.py",
+            "test_market_*.py",
+            "test_analyst_*.py",
+            "test_pre_body_*.py",
+        )
+        files = sorted({
+            f for pat in patterns for f in glob.glob(f"./backend/tests/{pat}")
+        })
         if not files:
-            raise SystemExit("No Layer 3 backend test files found.")
+            raise SystemExit("No backend API test files found.")
 
         collect = subprocess.run(
             [sys.executable, "-m", "pytest", "--collect-only", "-q", *files],

@@ -107,10 +107,12 @@ def _seed_and_generate(client: TestClient, tmp_path, *, request_id: str):
     Returns (session_id, product_id, ws_id, method_id).
     """
     # ---- 1. Bootstrap a session through analysis-run start ---
-    from tests.test_layer3_api import (  # noqa: PLC0415
-        _execute_and_approve_quant_result_review,
-        _construct_quant_package_set,
-    )
+    # Top-level import (not `tests.test_layer3_api`): pytest's prepend import mode
+    # puts backend/tests on sys.path and imports sibling test modules top-level.
+    # The `tests.` form only resolves when backend/ is also on sys.path as a
+    # namespace package, which held in CI but not locally — hence the prior
+    # local-only ModuleNotFoundError. This form is consistent in both.
+    from test_layer3_api import _construct_quant_package_set  # noqa: PLC0415
 
     # We only need a session with a committed pass-run/snapshot; _construct_quant_package_set
     # gives us that plus a committed package.  Use it so we get the same level of seeding
