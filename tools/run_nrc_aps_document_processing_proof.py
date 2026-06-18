@@ -49,6 +49,23 @@ def _run_command(*, args: list[str], env: dict[str, str], cwd: Path, label: str)
     }
 
 
+def _print_failed_command_outputs(commands: list[dict[str, Any]]) -> None:
+    for command in commands:
+        if bool(command.get("passed")):
+            continue
+        label = str(command.get("label") or "unknown")
+        exit_code = command.get("exit_code")
+        print(f"Proof command failed: {label} exit={exit_code}")
+        for stream_name in ("stdout", "stderr"):
+            output = str(command.get(stream_name) or "")
+            if output.strip():
+                print(f"--- {label} {stream_name} ---")
+                print(output.rstrip())
+                print(f"--- end {label} {stream_name} ---")
+            else:
+                print(f"--- {label} {stream_name}: <empty> ---")
+
+
 def _default_runtime_root() -> Path:
     return Path(tempfile.mkdtemp(prefix="apsdocproof_"))
 
@@ -178,6 +195,8 @@ def main(argv: list[str] | None = None) -> int:
         "failure_reason": None if passed else "proof_command_failed",
     }
     report_path.write_text(_stable_json(proof_payload), encoding="utf-8")
+    if not passed:
+        _print_failed_command_outputs(commands)
     return 0 if passed else 1
 
 
