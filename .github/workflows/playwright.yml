@@ -263,22 +263,29 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install -r ./backend/tests/requirements-layer3-api.txt
-        python -m pip install psycopg2-binary
     - name: Run alembic upgrade head against Postgres
       env:
         DB_INIT_MODE: none
-        DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+        DATABASE_URL: postgresql+psycopg://testuser:testpassword@localhost:5432/testdb
       run: |
         cd backend
         python -m alembic -c alembic.ini upgrade head
     - name: Run Postgres migration tests
       env:
         DB_INIT_MODE: none
-        DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
-        LAYER3_MIGRATION_TEST_DATABASE_URL: postgresql://testuser:testpassword@localhost:5432/testdb
+        DATABASE_URL: postgresql+psycopg://testuser:testpassword@localhost:5432/testdb
+        LAYER3_MIGRATION_TEST_DATABASE_URL: postgresql+psycopg://testuser:testpassword@localhost:5432/testdb
       run: |
         cd backend
         python -m pytest tests/test_layer3_migrations.py -v
+    - name: Run 3C golden-path tests against Postgres
+      env:
+        DB_INIT_MODE: none
+        DATABASE_URL: postgresql+psycopg://testuser:testpassword@localhost:5432/testdb
+        LAYER3_GOLDEN_PATH_TEST_DATABASE_URL: postgresql+psycopg://testuser:testpassword@localhost:5432/testdb
+      run: |
+        cd backend
+        python -m pytest tests/test_layer3_3c_golden_path.py -v
 
   test:
     name: test

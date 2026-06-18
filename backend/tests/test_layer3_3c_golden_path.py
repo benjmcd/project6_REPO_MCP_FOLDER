@@ -32,7 +32,7 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect as sa_inspect, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -44,7 +44,7 @@ sys.path.insert(0, str(BACKEND))
 sys.path.insert(0, str(TESTS))
 
 from app.api.deps import get_db
-from app.core.config import Settings, bootstrap_storage_tree, settings
+from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base
 from app.models.models import (
     L3AnalysisProduct,
@@ -73,10 +73,54 @@ from app.services.layer3_package_entry import (
     PACKAGE_KIND_REVIEW_FACING,
     PACKAGE_KIND_USER_FACING,
 )
+from alembic.config import Config as AlembicConfig
+from alembic import command as alembic_command
+
 from main import app
 
 # Import the session builder from test_layer3_pass_entry (returns tuple[str, str, datetime])
 from test_layer3_pass_entry import _build_quant_ready_session
+
+# ---------------------------------------------------------------------------
+# PostgreSQL skip guard (mirrors test_layer3_migrations.py)
+# ---------------------------------------------------------------------------
+
+_GOLDEN_PATH_PG_URL = os.environ.get("LAYER3_GOLDEN_PATH_TEST_DATABASE_URL", "")
+
+
+def _psycopg_available() -> bool:
+    try:
+        import psycopg  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+_PG_AVAILABLE = _psycopg_available() and bool(_GOLDEN_PATH_PG_URL)
+
+ALEMBIC_INI = BACKEND / "alembic.ini"
+
+
+def _make_alembic_config_gp(url: str) -> AlembicConfig:
+    """Return an Alembic Config for the golden-path PG database."""
+    cfg = AlembicConfig(str(ALEMBIC_INI))
+    cfg.set_main_option("script_location", str(BACKEND / "alembic"))
+    cfg.set_main_option("sqlalchemy.url", url)
+    return cfg
+
+
+def _run_alembic_upgrade_gp(url: str) -> None:
+    """Run alembic upgrade head, setting DATABASE_URL so env.py picks it up."""
+    prev = os.environ.get("DATABASE_URL")
+    os.environ["DATABASE_URL"] = url
+    try:
+        cfg = _make_alembic_config_gp(url)
+        alembic_command.upgrade(cfg, "head")
+    finally:
+        if prev is None:
+            os.environ.pop("DATABASE_URL", None)
+        else:
+            os.environ["DATABASE_URL"] = prev
 
 
 # ---------------------------------------------------------------------------
@@ -84,26 +128,81 @@ from test_layer3_pass_entry import _build_quant_ready_session
 # ---------------------------------------------------------------------------
 
 
+@pytest.fixture(scope="session")
+def _pg_schema_built():
+    """Build the PG schema once per test session via alembic upgrade head.
+
+    Skipped (returns None) when PG is not configured.  The per-test `client`
+    fixture depends on this to ensure schema exists before running tests.
+    """
+    if not _PG_AVAILABLE:
+        return None
+    _run_alembic_upgrade_gp(_GOLDEN_PATH_PG_URL)
+    return _GOLDEN_PATH_PG_URL
+
+
+def _truncate_all_pg_tables(engine) -> None:
+    """TRUNCATE every non-alembic table between tests for isolation.
+
+    Derives the table list from the LIVE inspector (not metadata) so that
+    any forward-drift migration table is also covered.  Asserts non-empty
+    and that the set covers every inspector-reported table minus alembic_version.
+    """
+    inspector = sa_inspect(engine)
+    live_tables = set(inspector.get_table_names())
+    truncate_tables = live_tables - {"alembic_version"}
+    assert truncate_tables, (
+        "No tables found to truncate — schema may not have been built correctly"
+    )
+    # Assert full coverage: every live non-alembic table must be in the truncate set.
+    missed = (live_tables - {"alembic_version"}) - truncate_tables
+    assert not missed, (
+        f"Truncate set missed live tables: {sorted(missed)}"
+    )
+    # Build a quoted, comma-separated table list for a single TRUNCATE statement.
+    table_list = ", ".join(f'"{t}"' for t in sorted(truncate_tables))
+    with engine.begin() as conn:
+        conn.execute(text(f"TRUNCATE {table_list} RESTART IDENTITY CASCADE"))
+
+
 @pytest.fixture()
-def client(tmp_path, monkeypatch):
-    """TestClient wired to a fresh in-memory SQLite DB, matching the fixture
-    pattern from test_layer3_api.py."""
+def client(tmp_path, monkeypatch, _pg_schema_built):
+    """TestClient wired to either PostgreSQL (when LAYER3_GOLDEN_PATH_TEST_DATABASE_URL
+    is set and psycopg v3 is importable) or an in-memory SQLite database.
+
+    PostgreSQL branch:
+      - Engine built on the env URL with postgresql+psycopg:// dialect.
+      - Schema built ONCE per session via alembic upgrade head (_pg_schema_built).
+      - Per-test isolation: TRUNCATE all non-alembic tables RESTART IDENTITY CASCADE.
+
+    SQLite branch (default):
+      - Unchanged: StaticPool, check_same_thread=False, Base.metadata.create_all.
+    """
     storage_dir = tmp_path / "storage"
     monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
     monkeypatch.setattr(settings, "layer3_external_local_export_dir", str(tmp_path / "external-local-export"))
     monkeypatch.setattr(settings, "layer3_internal_webhook_url", "http://127.0.0.1/layer3-internal-webhook")
     monkeypatch.setattr(settings, "layer3_internal_webhook_display_name", "test-internal-webhook")
-    monkeypatch.setattr(settings, "layer3_sec_edgar_live_network_enabled", True)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_live_network_enabled", False)
     bootstrap_storage_tree(storage_dir)
 
-    engine = create_engine(
-        "sqlite:///:memory:",
-        future=True,
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+    if _pg_schema_built is not None:
+        # --- PostgreSQL branch ---
+        pg_url = _pg_schema_built
+        engine = create_engine(pg_url, future=True, pool_pre_ping=True)
+        # Truncate all tables before each test for clean isolation.
+        _truncate_all_pg_tables(engine)
+        SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+    else:
+        # --- SQLite branch (default, unchanged behaviour) ---
+        engine = create_engine(
+            "sqlite:///:memory:",
+            future=True,
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+        Base.metadata.create_all(engine)
+        SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
 
     def override_get_db():
         db = SessionLocal()
@@ -119,6 +218,7 @@ def client(tmp_path, monkeypatch):
         yield test_client
     finally:
         app.dependency_overrides.pop(get_db, None)
+        engine.dispose()
 
 
 # ---------------------------------------------------------------------------
@@ -1458,7 +1558,7 @@ def _build_session_with_mixed_products(
             ),
         )
         db.commit()
-        draft_id = draft_result.product.analysis_product_id
+        _draft_id = draft_result.product.analysis_product_id  # noqa: F841
 
         # --- product 2: accepted (draft->proposed->validated->accepted) ---
         accepted_result = create_analysis_product_draft(
