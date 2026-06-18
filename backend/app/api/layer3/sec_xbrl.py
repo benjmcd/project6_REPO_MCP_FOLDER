@@ -275,8 +275,10 @@ def post_sec_xbrl_operator_review_workflow_open_full_pipeline(
     request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
-    # 1) Auth policy: derive evidence owner stamp (same as corpus-validation route)
+    # 1) Auth policy: route-level operator identity + evidence owner stamp
+    #    (mirrors the corpus-validation route's gate exactly — this is a write).
     try:
+        _route_level_operator_identity(request, access="write")
         owner_stamp = layer3_sec_xbrl_in_app_auth_policy.derive_sec_xbrl_evidence_owner(
             dict(request.headers)
         )

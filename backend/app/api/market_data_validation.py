@@ -2,9 +2,14 @@ from __future__ import annotations
 
 from typing import Any, Literal, Union
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 
+from app.api.market_route_auth import (
+    _analyst_insight_auth_policy_error_response,
+    _route_level_operator_identity,
+)
+from app.services.layer3_sec_xbrl_in_app_auth_policy import SecXbrlInAppAuthPolicyError
 from app.services.market_data_validation import validate_market_rows
 
 router = APIRouter(prefix="/market-pipeline/validation", tags=["market_data_validation"])
@@ -94,20 +99,24 @@ class MarketDataValidationRunResponse(BaseModel):
 
 
 @router.post("/run", response_model=MarketDataValidationRunResponse)
-def run_market_data_validation(payload: MarketDataValidationRunRequest) -> MarketDataValidationRunResponse:
-    opts = payload.options
-    return MarketDataValidationRunResponse(
-        **validate_market_rows(
-            payload.rows,
-            required_fields=opts.required_fields,
-            numeric_columns=opts.numeric_columns,
-            outlier_method=opts.outlier_method,
-            zscore_threshold=opts.zscore_threshold,
-            iqr_multiplier=opts.iqr_multiplier,
-            normalize_columns=opts.normalize_columns,
-            check_key_consistency=opts.check_key_consistency,
+def run_market_data_validation(request: Request, payload: MarketDataValidationRunRequest) -> MarketDataValidationRunResponse:
+    try:
+        _route_level_operator_identity(request, access="write")
+        opts = payload.options
+        return MarketDataValidationRunResponse(
+            **validate_market_rows(
+                payload.rows,
+                required_fields=opts.required_fields,
+                numeric_columns=opts.numeric_columns,
+                outlier_method=opts.outlier_method,
+                zscore_threshold=opts.zscore_threshold,
+                iqr_multiplier=opts.iqr_multiplier,
+                normalize_columns=opts.normalize_columns,
+                check_key_consistency=opts.check_key_consistency,
+            )
         )
-    )
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _analyst_insight_auth_policy_error_response(exc)
 
 
 alias_router.add_api_route(

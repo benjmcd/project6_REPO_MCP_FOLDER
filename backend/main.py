@@ -274,6 +274,7 @@ def _build_static_pre_body_routes(
         #   route_family suffix determines access (_write -> "write", _read -> "read").
         (f"{L}/sec-xbrl/operator-review/workflow/open", "write"),
         (f"{L}/sec-xbrl/operator-review/workflow/open-from-staged-evidence", "write"),
+        (f"{L}/sec-xbrl/operator-review/workflow/open-full-pipeline", "write"),
         (f"{L}/sec-xbrl/operator-review/workflow/status", "read"),
         (f"{L}/sec-xbrl/operator-review/workflow/admission-status", "read"),
         (f"{L}/sec-xbrl/operator-review/workflow/auditor-attach", "read"),
@@ -300,6 +301,14 @@ def _build_static_pre_body_routes(
         (f"{p}/connectors/nrc-adams-aps/deterministic-insight-artifacts", "write"),
         (f"{p}/connectors/nrc-adams-aps/deterministic-challenge-artifacts", "write"),
         (f"{p}/connectors/nrc-adams-aps/deterministic-challenge-review-packets", "write"),
+        # --- app/api/market_*.py (analyst-insight compute surface — no /layer3
+        #     sub-prefix; each canonical route plus its /analyst-insight alias) ---
+        (f"{p}/market-pipeline/integration/cross-reference", "write"),
+        (f"{p}/analyst-insight/integration/cross-reference", "write"),
+        (f"{p}/market-pipeline/validation/run", "write"),
+        (f"{p}/analyst-insight/validation/run", "write"),
+        (f"{p}/market-pipeline/insights/process", "write"),
+        (f"{p}/analyst-insight/insights/process", "write"),
     ]
 
     # Parametrized routes — (path_template, access); regex compiled from template

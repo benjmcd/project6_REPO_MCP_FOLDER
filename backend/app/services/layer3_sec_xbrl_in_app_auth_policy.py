@@ -282,8 +282,9 @@ def route_level_operator_authorization_required(
 
     All existing callers that use route_level_operator_identity_required remain
     bit-identical when mode=identity_presence (the default). The new access parameter
-    is threaded from the wrapper; all 207 call sites remain call-expression statements
-    so the drift guard is unaffected.
+    is threaded from the wrapper; every call site (across the layer3, legacy-API, and
+    analyst-insight route modules) remains a call-expression statement so the drift
+    guard is unaffected.
     """
     access_normalized = str(access or "").strip().lower()
     if access_normalized not in ACCESS_CLASSES:
