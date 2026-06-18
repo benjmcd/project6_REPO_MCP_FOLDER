@@ -20,9 +20,9 @@ It is not a backend implementation spec and it is not a replacement for the deep
 
 Use the current operator docs in this order:
 
-1. Use [docs/nrc_adams/nrc_aps_ui_launch_runbook.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/docs/nrc_adams/nrc_aps_ui_launch_runbook.md) for the canonical launch contract and current-main runtime preconditions.
-2. Use [frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md) for the concise startup walkthrough and route/page-shell reachability checks.
-3. If Workbench Compare or Candidate B Trace are in scope, use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for same-checkout prep and the `tools/validate_wb_prep.py` readiness gate.
+1. Use [docs/nrc_adams/nrc_aps_ui_launch_runbook.md](../docs/nrc_adams/nrc_aps_ui_launch_runbook.md) for the canonical launch contract and current-main runtime preconditions.
+2. Use [frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md](nrc_aps_review_ui_startup_and_smoke_test.md) for the concise startup walkthrough and route/page-shell reachability checks.
+3. If Workbench Compare or Candidate B Trace are in scope, use [frontend_UI_plans/wb-compare-validation.md](wb-compare-validation.md) for same-checkout prep and the `tools/validate_wb_prep.py` readiness gate.
 4. Use this guide for the broader manual validation pass after launch and prep have already succeeded.
 
 ## When To Use This Document
@@ -42,34 +42,34 @@ The live implementation authority is the current repo code, not older frozen run
 
 Primary authority files:
 
-- [backend/main.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/main.py)
-- [backend/app/api/review_nrc_aps.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/api/review_nrc_aps.py)
-- [backend/app/services/review_nrc_aps_catalog.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_catalog.py)
-- [backend/app/services/review_nrc_aps_runtime.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_runtime.py)
-- [backend/app/services/review_nrc_aps_runtime_db.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_runtime_db.py)
-- [backend/app/review_ui/static/index.html](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/index.html)
-- [backend/app/review_ui/static/review.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/review.js)
-- [backend/app/review_ui/static/document_trace.html](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/document_trace.html)
-- [backend/app/review_ui/static/document_trace.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/document_trace.js)
-- [backend/app/review_ui/static/document_trace.css](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/document_trace.css)
-- [backend/app/review_ui/static/workbench_compare.html](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/workbench_compare.html)
-- [backend/app/review_ui/static/workbench_compare.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/workbench_compare.js)
-- [backend/app/review_ui/static/workbench_compare.css](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/workbench_compare.css)
-- [backend/app/review_ui/static/candidate_b_trace.html](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/candidate_b_trace.html)
-- [backend/app/review_ui/static/candidate_b_trace.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/candidate_b_trace.js)
-- [backend/app/review_ui/static/candidate_b_trace.css](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/candidate_b_trace.css)
-- [backend/app/services/review_nrc_aps_workbench_compare.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_workbench_compare.py)
-- [backend/app/services/review_nrc_aps_candidate_b_trace.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_candidate_b_trace.py)
-- [tools/nrc_ui_launch.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/tools/nrc_ui_launch.py)
+- [backend/main.py](../backend/main.py)
+- [backend/app/api/review_nrc_aps.py](../backend/app/api/review_nrc_aps.py)
+- [backend/app/services/review_nrc_aps_catalog.py](../backend/app/services/review_nrc_aps_catalog.py)
+- [backend/app/services/review_nrc_aps_runtime.py](../backend/app/services/review_nrc_aps_runtime.py)
+- [backend/app/services/review_nrc_aps_runtime_db.py](../backend/app/services/review_nrc_aps_runtime_db.py)
+- [backend/app/review_ui/static/index.html](../backend/app/review_ui/static/index.html)
+- [backend/app/review_ui/static/review.js](../backend/app/review_ui/static/review.js)
+- [backend/app/review_ui/static/document_trace.html](../backend/app/review_ui/static/document_trace.html)
+- [backend/app/review_ui/static/document_trace.js](../backend/app/review_ui/static/document_trace.js)
+- [backend/app/review_ui/static/document_trace.css](../backend/app/review_ui/static/document_trace.css)
+- [backend/app/review_ui/static/workbench_compare.html](../backend/app/review_ui/static/workbench_compare.html)
+- [backend/app/review_ui/static/workbench_compare.js](../backend/app/review_ui/static/workbench_compare.js)
+- [backend/app/review_ui/static/workbench_compare.css](../backend/app/review_ui/static/workbench_compare.css)
+- [backend/app/review_ui/static/candidate_b_trace.html](../backend/app/review_ui/static/candidate_b_trace.html)
+- [backend/app/review_ui/static/candidate_b_trace.js](../backend/app/review_ui/static/candidate_b_trace.js)
+- [backend/app/review_ui/static/candidate_b_trace.css](../backend/app/review_ui/static/candidate_b_trace.css)
+- [backend/app/services/review_nrc_aps_workbench_compare.py](../backend/app/services/review_nrc_aps_workbench_compare.py)
+- [backend/app/services/review_nrc_aps_candidate_b_trace.py](../backend/app/services/review_nrc_aps_candidate_b_trace.py)
+- [tools/nrc_ui_launch.py](../tools/nrc_ui_launch.py)
 
 Related supporting docs:
 
-- [docs/nrc_adams/nrc_aps_ui_launch_runbook.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/docs/nrc_adams/nrc_aps_ui_launch_runbook.md)
-- [frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md)
-- [frontend_UI_plans/nrc_aps_review_ui_validation_plan.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_review_ui_validation_plan.md)
-- [frontend_UI_plans/nrc_aps_document_trace_ui_validation_plan.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_document_trace_ui_validation_plan.md)
-- [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md)
-- [frontend_UI_plans/bbox_overlay_execution_plan.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/bbox_overlay_execution_plan.md)
+- [docs/nrc_adams/nrc_aps_ui_launch_runbook.md](../docs/nrc_adams/nrc_aps_ui_launch_runbook.md)
+- [frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md](nrc_aps_review_ui_startup_and_smoke_test.md)
+- [frontend_UI_plans/nrc_aps_review_ui_validation_plan.md](nrc_aps_review_ui_validation_plan.md)
+- [frontend_UI_plans/nrc_aps_document_trace_ui_validation_plan.md](nrc_aps_document_trace_ui_validation_plan.md)
+- [frontend_UI_plans/wb-compare-validation.md](wb-compare-validation.md)
+- [frontend_UI_plans/bbox_overlay_execution_plan.md](bbox_overlay_execution_plan.md)
 
 Important note:
 
@@ -112,11 +112,11 @@ Important workbench-compare note:
 - once same-checkout prep exists, this guide should also validate bundle-sourced Candidate B Trace follow-through from the compare page
 - bundle-sourced Candidate B Trace follow-through should preserve available Workbench Compare return context, show artifact availability/unavailable states, and show fixture navigation/status from the existing Workbench Compare targets API; runtime-sourced Candidate B follow-through uses the existing `document-trace` route, current repo-native browser coverage verifies the `Candidate B Runtime Trace` click-through into that route, and this must not be described as Candidate B Trace parity
 - the current repo-native browser fixture proves active multi-fixture Previous/Next navigation across `fontish` and `ml17123a319`; one-target source sets should still render `Fixture 1 of 1` with disabled Previous/Next
-- use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for the dedicated same-corpus compare prep, `tools/validate_wb_prep.py` gate, emitted operator handoff metadata, and populated operator-validation sequence
+- use [frontend_UI_plans/wb-compare-validation.md](wb-compare-validation.md) for the dedicated same-corpus compare prep, `tools/validate_wb_prep.py` gate, emitted operator handoff metadata, and populated operator-validation sequence
 
 ## Preconditions
 
-- repo root: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER`
+- repo root: the root of the current repo checkout or worktree
 - Python environment available for `python -m uvicorn`
 - one or more successful local-corpus runtimes available under the checkout's allowlisted review-runtime roots
 - current clean `main` may not ship a populated local review runtime by default
