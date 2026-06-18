@@ -104,7 +104,24 @@ def test_guard_detects_an_ungated_post_route() -> None:
 
 
 def test_market_and_analyst_post_routes_are_gated() -> None:
-    """Explicit anchor for the six routes this guard was introduced to cover."""
+    """Explicit anchor for the six routes this guard was introduced to cover.
+
+    Builds a fresh app from the market modules' own routers rather than reading
+    the shared api_router/main.app, so a sibling test mutating shared app state in
+    the same worker cannot perturb this anchor. The pre-body registry lookup is a
+    static dict and is likewise independent of any app instance."""
+    from app.api import market_data_integration, market_data_validation, market_insight_ai
+
+    anchor_app = FastAPI()
+    for mod in (market_data_integration, market_data_validation, market_insight_ai):
+        anchor_app.include_router(mod.router, prefix=settings.api_prefix)
+        anchor_app.include_router(mod.alias_router, prefix=settings.api_prefix)
+    registered = {
+        str(getattr(route, "path", ""))
+        for route in anchor_app.router.routes
+        if "POST" in (getattr(route, "methods", set()) or set())
+    }
+
     expected = [
         f"{_API_PREFIX}/market-pipeline/integration/cross-reference",
         f"{_API_PREFIX}/analyst-insight/integration/cross-reference",
@@ -113,9 +130,8 @@ def test_market_and_analyst_post_routes_are_gated() -> None:
         f"{_API_PREFIX}/market-pipeline/insights/process",
         f"{_API_PREFIX}/analyst-insight/insights/process",
     ]
-    registered = {path for path, _ in _post_routes()}
     for path in expected:
-        assert path in registered, f"expected POST route not registered on api_router: {path}"
+        assert path in registered, f"market/analyst route not defined by its module router: {path}"
         assert main._pre_body_operator_authorization_access_for_path(path) == "write", (
             f"market/analyst route missing from pre-body registry: {path}"
         )
