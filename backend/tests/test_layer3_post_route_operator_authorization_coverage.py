@@ -8,6 +8,13 @@ direction (a handler that gates in-code must also appear in the pre-body
 registry). That leaves a fully-ungated route invisible to it — which is exactly
 how the analyst-insight / market-pipeline compute routes shipped open. This test
 closes the reverse gap: it fails if any POST route is gated by NEITHER mechanism.
+
+Route enumeration reads the canonical ``api_router`` (the object ``main`` mounts),
+NOT the module-level ``main.app``. Under the sharded CI run, other tests sharing
+the process can leave ``main.app.router.routes`` empty; ``api_router`` stays
+intact, so enumerating it keeps this guard order-independent. The 401-before-body
+test builds an isolated app from the same ``api_router`` plus ``main``'s real
+pre-body middleware, for the same reason.
 """
 from __future__ import annotations
 
@@ -16,6 +23,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 os.environ.setdefault("DB_INIT_MODE", "none")
@@ -25,22 +33,43 @@ if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
 import main  # noqa: E402
+from app.api.router import api_router  # noqa: E402
 from app.core.config import settings  # noqa: E402
+
+_API_PREFIX = settings.api_prefix.rstrip("/")
 
 
 def _post_routes() -> list[tuple[str, object]]:
+    """POST routes from the canonical api_router, prefixed with the API mount
+    prefix. Enumerating api_router (not the shared module-level main.app) keeps
+    this guard immune to other tests in the same process mutating main.app."""
     routes: list[tuple[str, object]] = []
-    for route in main.app.router.routes:
+    for route in api_router.routes:
         methods = getattr(route, "methods", set()) or set()
         if "POST" not in methods:
             continue
-        routes.append((str(getattr(route, "path", "")), getattr(route, "endpoint", None)))
+        full_path = _API_PREFIX + str(getattr(route, "path", ""))
+        routes.append((full_path, getattr(route, "endpoint", None)))
     return routes
+
+
+def _build_isolated_app() -> FastAPI:
+    """A fresh app mounting the canonical api_router plus main's real pre-body
+    operator-authorization middleware. Independent of the shared main.app so the
+    401-before-body assertion cannot be perturbed by other tests in the process."""
+    app = FastAPI()
+    app.middleware("http")(main._pre_body_operator_authorization_middleware)
+    app.include_router(api_router, prefix=settings.api_prefix)
+    return app
 
 
 def test_every_post_route_is_operator_gated() -> None:
     post_routes = _post_routes()
-    assert post_routes, "no POST routes discovered — enumeration is broken"
+    assert post_routes, (
+        "no POST routes discovered from api_router — enumeration is broken "
+        f"(api_router has {len(api_router.routes)} total routes, "
+        f"main.app has {len(main.app.router.routes)} total routes)"
+    )
 
     ungated: list[str] = []
     for path, endpoint in post_routes:
@@ -76,18 +105,17 @@ def test_guard_detects_an_ungated_post_route() -> None:
 
 def test_market_and_analyst_post_routes_are_gated() -> None:
     """Explicit anchor for the six routes this guard was introduced to cover."""
-    prefix = main.settings.api_prefix.rstrip("/")
     expected = [
-        f"{prefix}/market-pipeline/integration/cross-reference",
-        f"{prefix}/analyst-insight/integration/cross-reference",
-        f"{prefix}/market-pipeline/validation/run",
-        f"{prefix}/analyst-insight/validation/run",
-        f"{prefix}/market-pipeline/insights/process",
-        f"{prefix}/analyst-insight/insights/process",
+        f"{_API_PREFIX}/market-pipeline/integration/cross-reference",
+        f"{_API_PREFIX}/analyst-insight/integration/cross-reference",
+        f"{_API_PREFIX}/market-pipeline/validation/run",
+        f"{_API_PREFIX}/analyst-insight/validation/run",
+        f"{_API_PREFIX}/market-pipeline/insights/process",
+        f"{_API_PREFIX}/analyst-insight/insights/process",
     ]
     registered = {path for path, _ in _post_routes()}
     for path in expected:
-        assert path in registered, f"expected POST route not registered on app: {path}"
+        assert path in registered, f"expected POST route not registered on api_router: {path}"
         assert main._pre_body_operator_authorization_access_for_path(path) == "write", (
             f"market/analyst route missing from pre-body registry: {path}"
         )
@@ -116,7 +144,7 @@ def test_market_route_rejects_missing_identity_before_body_validation(monkeypatc
     """Proxy mode, no identity header, deliberately malformed body: the gate must
     reject with 401 BEFORE body parsing — proving the route is genuinely closed."""
     _configure_proxy(monkeypatch)
-    client = TestClient(main.app, raise_server_exceptions=False)
+    client = TestClient(_build_isolated_app(), raise_server_exceptions=False)
 
     response = client.post(
         path,
