@@ -7,25 +7,25 @@ This proof runner exercises the live NRC ADAMS APS route chain against the local
 Run it directly with the repo-local Phase 7A interpreter:
 
 ```powershell
-C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.venvs\phase7a-py311\Scripts\python.exe `
-  C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\run_nrc_aps_local_corpus_e2e.py
+.venvs\phase7a-py311\Scripts\python.exe `
+  tools\run_nrc_aps_local_corpus_e2e.py
 ```
 
 Optional:
 
 ```powershell
-C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.venvs\phase7a-py311\Scripts\python.exe `
-  C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\run_nrc_aps_local_corpus_e2e.py `
-  --runtime-root C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\<empty_dir>
+.venvs\phase7a-py311\Scripts\python.exe `
+  tools\run_nrc_aps_local_corpus_e2e.py `
+  --runtime-root backend\app\storage_test_runtime\lc_e2e\<empty_dir>
 ```
 
 Candidate B / OpenDataLoader PDF runtime admission can be selected through the same proof tool and the existing `/api/v1/connectors/nrc-adams-aps/runs` path:
 
 ```powershell
-C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.venvs\phase7a-py311\Scripts\python.exe `
-  C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\run_nrc_aps_local_corpus_e2e.py `
+.venvs\phase7a-py311\Scripts\python.exe `
+  tools\run_nrc_aps_local_corpus_e2e.py `
   --document-processing-engine candidate_b_opendataloader_pdf `
-  --runtime-root C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\<empty_dir>
+  --runtime-root backend\app\storage_test_runtime\lc_e2e\<empty_dir>
 ```
 
 Allowed `--document-processing-engine` values are `baseline` and `candidate_b_opendataloader_pdf`. The runner default remains `baseline` and is sent explicitly so the proof exercises baseline rollback even though omitted eligible-PDF submissions select Candidate B in the live API.
@@ -380,7 +380,7 @@ Stop and report the exact missing runtime root, run id, bridge receipt, curated 
 ## What The Tool Does
 - Fails closed unless the corpus root, folder counts, PDF total, Phase 7A interpreter, `fitz`/`camelot`/`paddleocr`, Paddle model dirs, and Ghostscript all check out.
 - In Candidate B mode, fails closed during preflight unless the active Phase 7A interpreter has importable `opendataloader-pdf==2.0.0`. This is checked before the proof submits a run so package drift does not appear later as a missing extraction artifact.
-- Assumes that `.venvs\phase7a-py311` is aligned with [backend/requirements.txt](C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\requirements.txt). If that interpreter drifts, real app import surfaces like FastAPI form handling or analysis-module imports will fail before the NRC proof can start.
+- Assumes that `.venvs\phase7a-py311` is aligned with [backend/requirements.txt](../../backend/requirements.txt). If that interpreter drifts, real app import surfaces like FastAPI form handling or analysis-module imports will fail before the NRC proof can start.
 - Creates a fresh isolated runtime under `backend/app/storage_test_runtime/lc_e2e/...` with its own SQLite DB and `STORAGE_DIR`.
 - Raises `CONNECTOR_LEASE_TTL_SECONDS` to `1800` inside that isolated runtime so the largest local-corpus OCR/table targets do not self-expire the connector lease mid-proof.
 - Boots the live FastAPI app in-process with `TestClient`.
@@ -404,7 +404,7 @@ The Candidate B runtime tests exercise the same package pin as the proof runner.
 When the Phase 7A interpreter has the pinned package but not `pytest`, run focused Candidate B runtime tests with the normal test runner and prepend the Phase 7A package path explicitly for that command only:
 
 ```powershell
-$env:PYTHONPATH = "C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.venvs\phase7a-py311\Lib\site-packages"
+$env:PYTHONPATH = ".venvs\phase7a-py311\Lib\site-packages"
 python -m pytest .\tests\test_api.py .\tests\test_nrc_aps_artifact_ingestion.py .\tests\test_nrc_aps_document_processing.py .\backend\tests\test_review_nrc_aps_page.py .\backend\tests\test_review_nrc_aps_document_trace_page.py -q
 ```
 

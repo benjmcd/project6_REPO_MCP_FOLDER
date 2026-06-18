@@ -20,18 +20,18 @@ This file is the authoritative operator doc for NRC APS UI bring-up on current `
 
 Implementation authority still lives in:
 
-- [backend/main.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/main.py)
-- [backend/app/api/review_nrc_aps.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/api/review_nrc_aps.py)
-- [backend/app/core/config.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/core/config.py)
-- [backend/app/services/review_nrc_aps_runtime.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_runtime.py)
-- [backend/app/services/review_nrc_aps_runtime_roots.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_runtime_roots.py)
-- [backend/app/services/review_nrc_aps_catalog.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_catalog.py)
-- [backend/app/services/review_nrc_aps_workbench_compare.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_workbench_compare.py)
-- [backend/app/review_ui/static/review.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/review.js)
-- [backend/app/review_ui/static/document_trace.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/document_trace.js)
-- [backend/app/review_ui/static/workbench_compare.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/workbench_compare.js)
-- [backend/app/review_ui/static/candidate_b_trace.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/candidate_b_trace.js)
-- [tools/nrc_ui_launch.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/tools/nrc_ui_launch.py)
+- [backend/main.py](../../backend/main.py)
+- [backend/app/api/review_nrc_aps.py](../../backend/app/api/review_nrc_aps.py)
+- [backend/app/core/config.py](../../backend/app/core/config.py)
+- [backend/app/services/review_nrc_aps_runtime.py](../../backend/app/services/review_nrc_aps_runtime.py)
+- [backend/app/services/review_nrc_aps_runtime_roots.py](../../backend/app/services/review_nrc_aps_runtime_roots.py)
+- [backend/app/services/review_nrc_aps_catalog.py](../../backend/app/services/review_nrc_aps_catalog.py)
+- [backend/app/services/review_nrc_aps_workbench_compare.py](../../backend/app/services/review_nrc_aps_workbench_compare.py)
+- [backend/app/review_ui/static/review.js](../../backend/app/review_ui/static/review.js)
+- [backend/app/review_ui/static/document_trace.js](../../backend/app/review_ui/static/document_trace.js)
+- [backend/app/review_ui/static/workbench_compare.js](../../backend/app/review_ui/static/workbench_compare.js)
+- [backend/app/review_ui/static/candidate_b_trace.js](../../backend/app/review_ui/static/candidate_b_trace.js)
+- [tools/nrc_ui_launch.py](../../tools/nrc_ui_launch.py)
 
 ## Scope
 
@@ -91,7 +91,7 @@ Important current-main note:
 - if you are serving from a worktree, the helper below can also use the shared repo-root review-runtime root when it exists
 - if no reviewable runtime is available from the helper's discovery roots, stop here and create or restore one first
 
-If you need to create a fresh isolated local-corpus runtime, use [local_corpus_e2e_runbook.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/docs/nrc_adams/local_corpus_e2e_runbook.md) first.
+If you need to create a fresh isolated local-corpus runtime, use [local_corpus_e2e_runbook.md](local_corpus_e2e_runbook.md) first.
 
 ## Allowlisted Review Runtime Roots
 
@@ -143,8 +143,8 @@ Important:
 
 - keep this terminal open while using the UI
 - this helper-backed launch path is the canonical operator path for review-runtime bring-up
-- [project6.ps1](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/project6.ps1) `-Action start-api` is useful for generic API startup, but it is not the canonical path when you need explicit review-runtime binding
-- [tools/start-review-api.ps1](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/tools/start-review-api.ps1) remains a PowerShell-only wrapper; it uses the same shared-root/worktree-local runtime discovery posture as the Python helper and still accepts an explicit `-RuntimeRoot` override
+- [project6.ps1](../../project6.ps1) `-Action start-api` is useful for generic API startup, but it is not the canonical path when you need explicit review-runtime binding
+- [tools/start-review-api.ps1](../../tools/start-review-api.ps1) remains a PowerShell-only wrapper; it uses the same shared-root/worktree-local runtime discovery posture as the Python helper and still accepts an explicit `-RuntimeRoot` override
 
 If you need a specific discovered run instead of the default latest one, use:
 
@@ -241,7 +241,7 @@ Trust starts after `/health` and `/api/v1/review/nrc-aps/runs` confirm the inten
 ### Launch authority vs smoke walkthrough
 
 This file is the launch authority.
-[nrc_aps_review_ui_startup_and_smoke_test.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md) remains a concise walkthrough layered on top of this contract.
+[nrc_aps_review_ui_startup_and_smoke_test.md](../../frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md) remains a concise walkthrough layered on top of this contract.
 
 ### Shell-neutral commands vs parameterized follow-up checks
 
@@ -251,7 +251,7 @@ Commands or URLs that still contain `<RUN_ID>`, `<TARGET_ID>`, `<BUNDLE_ID>`, or
 ### Shell reachability vs populated compare validation
 
 This runbook covers bringing up the compare page shell.
-Use [wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for same-checkout prep and populated compare plus Candidate B Trace validation.
+Use [wb-compare-validation.md](../../frontend_UI_plans/wb-compare-validation.md) for same-checkout prep and populated compare plus Candidate B Trace validation.
 
 ### Runtime truth vs bundle-scoped Candidate B evidence
 
@@ -262,11 +262,11 @@ It does not widen the normal review runtime model.
 
 After this runbook:
 
-- use [frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md) for the concise bring-up walkthrough
-- use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for same-checkout prep and populated compare validation
-- use [frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md) for the broader manual validation pass
-- use [nrc_aps_status_handoff.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/docs/nrc_adams/nrc_aps_status_handoff.md) for live merged-main posture
-- use [nrc_aps_authority_matrix.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/docs/nrc_adams/nrc_aps_authority_matrix.md) if documentation surfaces conflict
+- use [frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md](../../frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md) for the concise bring-up walkthrough
+- use [frontend_UI_plans/wb-compare-validation.md](../../frontend_UI_plans/wb-compare-validation.md) for same-checkout prep and populated compare validation
+- use [frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md](../../frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md) for the broader manual validation pass
+- use [nrc_aps_status_handoff.md](nrc_aps_status_handoff.md) for live merged-main posture
+- use [nrc_aps_authority_matrix.md](nrc_aps_authority_matrix.md) if documentation surfaces conflict
 
 ## Non-Goals
 

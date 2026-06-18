@@ -50,3 +50,24 @@ Before deploying beyond a trusted local/dev environment, choose and document:
 The first startup/settings guardrail is live through PR #320 and PR #321. Any future implementation may proceed only after the next slice is separately governed. The narrow hardening contract should state the target environment, exact changed settings/routes/middleware, backward-compatible local proof behavior, focused API/static-delivery tests, and rollback expectations.
 
 The first selected governance boundary for that work is `docs/layer3-deploy-hardening.md`. PR #319 is the governance-only packet; PR #320 and PR #321 are the separate implementation of the startup/settings guardrail.
+
+## SEC Value-Reveal and Live-Egress Capability Flags
+
+The SEC/XBRL capability surface is governed by a set of default-off, fail-closed feature flags. None of these capabilities are active in the default deployment posture. Enabling any of them requires explicit per-flag operator decision; the flags are independent and most require multiple flags to be set before they have any effect.
+
+The flags and their shipped defaults (from `backend/.env.example`):
+
+| Flag | Default |
+|------|---------|
+| `LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED` | `false` |
+| `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED` | `true` (inert without the other Arelle flags) |
+| `LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED` | `false` |
+| `LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED` | `false` |
+| `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED` | `false` |
+| `LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED` | `false` |
+| `LAYER3_SEC_EDGAR_OFFICIAL_TICKER_RESOLUTION_ENABLED` | `false` |
+| `LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED` | `false` |
+
+Enforcement lives in `backend/app/core/config.py`, which validates at settings construction time that nonlocal and value-reveal capabilities require explicit authorization. The SEC value-reveal service guards enforce the same fail-closed posture at call time.
+
+This section is a navigational pointer to already-shipped default-off behavior. It does not change any default and does not document how to enable these capabilities.

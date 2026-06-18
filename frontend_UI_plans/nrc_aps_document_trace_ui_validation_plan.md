@@ -10,7 +10,7 @@ Validation should be anchored to a current local document-trace-ready runtime.
 
 Current adopted root-local runtime:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\`
+- `backend\app\storage_test_runtime\lc_e2e\20260327_062011\`
 
 Current adopted run identity:
 
@@ -18,15 +18,15 @@ Current adopted run identity:
 
 Current adopted summary:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
+- `backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
 
 Current adopted DB:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\lc.db`
+- `backend\app\storage_test_runtime\lc_e2e\20260327_062011\lc.db`
 
 Historical document-trace-specific runtime example used when this plan was first written:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260328_150207\`
+- `backend\app\storage_test_runtime\lc_e2e\20260328_150207\`
 - `run_id = 5cd56147-4b5b-4278-8b32-79b9b1b34db5`
 
 Current repo-state note:
