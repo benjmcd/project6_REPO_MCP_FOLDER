@@ -9,18 +9,17 @@ registry). That leaves a fully-ungated route invisible to it — which is exactl
 how the analyst-insight / market-pipeline compute routes shipped open. This test
 closes the reverse gap: it fails if any POST route is gated by NEITHER mechanism.
 
-Isolation note: under the sharded CI run, sibling tests in the same worker can
-leave the shared module-level route registries (main.app, api_router, and even
-the per-module APIRouter objects) mutated/empty. The assertions here therefore
-lean on mutation-immune sources wherever the property allows it:
-  * the static pre-body registry (a dict built once at import from a hardcoded
-    list — independent of any app instance);
-  * the AST access-declaration drift guard (test_layer3_access_declaration_drift
-    _guard.py) covers the in-handler gates from source;
-  * the 401-before-body proof uses a self-contained probe app carrying main's
-    real pre-body middleware, so it never depends on the market routers.
-The broad reverse-enumeration guard still reads api_router (the canonical route
-set) and skips — rather than false-fails — if a worker hands it an empty set.
+Version note (the real root cause of the earlier sharded-CI flakiness): fastapi
+changed `include_router` around 0.115 to insert a lazy `_IncludedRouter` node
+instead of flattening a sub-router's routes into `app.router.routes`. Naive
+iteration over `app.router.routes` therefore finds zero of the included routes
+under the CI fastapi pin (>=0.115), even though the app serves them all. The
+earlier "sibling test empties the registries" theory was a misdiagnosis — every
+worker sees the same lazy structure. Enumeration here goes through
+``_route_enum.post_routes`` which resolves the included routes on both fastapi
+0.111 (flat) and >=0.115 (`_IncludedRouter`), matching ``app.openapi()`` exactly.
+The pre-body registry and the AST drift guard remain the static, app-independent
+sources of the gating classification itself.
 """
 from __future__ import annotations
 
@@ -39,8 +38,9 @@ if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
 import main  # noqa: E402
-from app.api.router import api_router  # noqa: E402
 from app.core.config import settings  # noqa: E402
+
+from _route_enum import post_routes  # noqa: E402
 
 _API_PREFIX = settings.api_prefix.rstrip("/")
 
@@ -57,30 +57,20 @@ _MARKET_POST_PATHS = [
 
 
 def _post_routes() -> list[tuple[str, object]]:
-    """POST routes from the canonical api_router, prefixed with the API mount
-    prefix. Enumerating api_router (not the shared main.app) keeps this guard
-    closer to the real route table while staying off main.app's mutation surface."""
-    routes: list[tuple[str, object]] = []
-    for route in api_router.routes:
-        methods = getattr(route, "methods", set()) or set()
-        if "POST" not in methods:
-            continue
-        full_path = _API_PREFIX + str(getattr(route, "path", ""))
-        routes.append((full_path, getattr(route, "endpoint", None)))
-    return routes
+    """Every registered POST route as (full_path, endpoint), resolved through the
+    version-robust walker so it works on both fastapi 0.111 and >=0.115."""
+    return post_routes(main.app)
 
 
 def test_every_post_route_is_operator_gated() -> None:
-    post_routes = _post_routes()
-    if not post_routes:
-        pytest.skip(
-            "api_router exposed no POST routes in this worker — a known sharded-CI "
-            "isolation artifact. Gating is still proven by the static-registry "
-            "anchor test below and the AST access-declaration drift guard."
-        )
+    discovered = _post_routes()
+    assert discovered, (
+        "no POST routes discovered from main.app — route enumeration is broken "
+        "(check _route_enum against the installed fastapi version)"
+    )
 
     ungated: list[str] = []
-    for path, endpoint in post_routes:
+    for path, endpoint in discovered:
         gated_in_handler = main._operator_authorization_access_from_endpoint(endpoint) is not None
         registered_pre_body = main._pre_body_operator_authorization_access_for_path(path) is not None
         if not (gated_in_handler or registered_pre_body):
@@ -90,6 +80,26 @@ def test_every_post_route_is_operator_gated() -> None:
         f"{len(ungated)} POST route(s) operator-gated by NEITHER an in-handler "
         "_route_level_operator_identity call NOR the pre-body registry:\n"
         + "\n".join(f"  - {p}" for p in sorted(ungated))
+    )
+
+
+def test_enumeration_matches_openapi_post_paths() -> None:
+    """The version-robust resolver must agree with fastapi's own public OpenAPI
+    view of the app. This cross-check turns a future fastapi route-exposure change
+    (e.g. _IncludedRouter.effective_route_contexts removed/renamed) into a loud,
+    self-explaining failure rather than a silently-partial enumeration."""
+    discovered_paths = {path for path, _ in _post_routes()}
+    openapi_post_paths = {
+        path
+        for path, operations in main.app.openapi()["paths"].items()
+        if any(method.lower() == "post" for method in operations)
+    }
+    missing = openapi_post_paths - discovered_paths
+    extra = discovered_paths - openapi_post_paths
+    assert not missing and not extra, (
+        "route enumeration disagrees with app.openapi():\n"
+        f"  missing from enumeration: {sorted(missing)}\n"
+        f"  extra in enumeration: {sorted(extra)}"
     )
 
 
@@ -112,13 +122,12 @@ def test_guard_detects_an_ungated_post_route() -> None:
 
 
 def test_market_and_analyst_post_routes_are_gated() -> None:
-    """Explicit anchor for the six routes this guard was introduced to cover.
-
-    Asserts each path's pre-body registry classification, the gating authority the
-    pre-body middleware consults. The registry is a static dict built once at
-    import (not derived from app.router.routes), so this anchor is immune to any
-    sibling test mutating shared app/router state in the same worker."""
+    """Explicit anchor for the six routes this guard was introduced to cover:
+    each is registered on the app AND classified `write` in the pre-body registry
+    (the gating authority the middleware consults)."""
+    registered = {path for path, _ in _post_routes()}
     for path in _MARKET_POST_PATHS:
+        assert path in registered, f"expected POST route not registered on app: {path}"
         assert main._pre_body_operator_authorization_access_for_path(path) == "write", (
             f"market/analyst route missing from pre-body authorization registry "
             f"as write: {path}"
