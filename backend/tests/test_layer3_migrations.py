@@ -135,18 +135,18 @@ def _check_schema_match(url: str) -> None:
 _POSTGRES_URL = os.environ.get("LAYER3_MIGRATION_TEST_DATABASE_URL", "")
 
 
-def _psycopg2_available() -> bool:
+def _psycopg_available() -> bool:
     try:
-        import psycopg2  # noqa: F401
+        import psycopg  # noqa: F401
         return True
     except ImportError:
         return False
 
 
 _skip_postgres = pytest.mark.skipif(
-    not (_psycopg2_available() and bool(_POSTGRES_URL)),
+    not (_psycopg_available() and bool(_POSTGRES_URL)),
     reason=(
-        "Postgres migration tests require psycopg2 and "
+        "Postgres migration tests require psycopg (v3) and "
         "LAYER3_MIGRATION_TEST_DATABASE_URL to be set"
     ),
 )
