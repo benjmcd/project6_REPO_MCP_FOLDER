@@ -15,6 +15,8 @@
 
 Agent/operator harness entry point: [docs/agent-harness.md](docs/agent-harness.md).
 
+> Layer 3 live-main note (2026-06-18, `project6-origin/main` `f679f64f`): the current FastAPI/SQLAlchemy surface is identity-gated by default (`AUTH_OWNER=none`, `LAYER3_ROUTE_AUTHORIZATION_MODE=identity_presence`) with role enforcement available but inert unless configured. Sublayer 3C deterministic method/product flows and the default-deny model/agent egress policy are present, the gated agent runtime fails closed under local-only posture, SEC-XBRL live network/value reveal/controlled reveal submit remain default-off, and CI now covers the PostgreSQL 3C golden path plus the SEC-XBRL test families. This is not a production-ready claim for SEC value reveal, real provider delivery, live network, model egress, or default-on behavior.
+
 This repository has three active tracks in one backend:
 
 1. Method-aware tabular analytics flow:

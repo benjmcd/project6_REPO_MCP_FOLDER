@@ -4646,7 +4646,7 @@ def _check_snapshot_consistency(manifest: dict[str, Any], errors: list[str]) -> 
 def _check_latest_progress_sync(
     manifest: dict[str, Any], errors: list[str]
 ) -> None:
-    expected_commit = "ad51b1c6736cd51ec3dd30de914e59ddb4c66158"
+    expected_commit = "f679f64f08a595fe724158d46006be77a179c786"
     snapshot_values = {
         "snapshot_base_main_commit": manifest.get("snapshot_base_main_commit"),
         "artifact_scope.snapshot_base_main_commit": _nested(
@@ -4659,8 +4659,8 @@ def _check_latest_progress_sync(
     for name, value in snapshot_values.items():
         if value != expected_commit:
             errors.append(
-                f"{name} must identify the post-PR609 current-main "
-                f"APS source-family extraction proof boundary {expected_commit}"
+                f"{name} must identify the post-PR2334 current-main "
+                f"front-door truth boundary {expected_commit}"
             )
 
     for name, source in (
@@ -4674,16 +4674,41 @@ def _check_latest_progress_sync(
         ),
     ):
         if not isinstance(source, str):
-            errors.append(f"{name} must be present after PR609 APS source-family extraction")
+            errors.append(f"{name} must be present after PR2334 front-door truth re-anchor")
             continue
         for term in (
             expected_commit,
-            "after PR #609",
-            "APS source-family extraction",
-            "codex/l3-synth-ref-sync",
+            "after PR #2334",
+            "SEC-XBRL CI family coverage",
+            "front-door truth re-anchor",
         ):
             if term not in source:
-                errors.append(f"{name} missing PR609 progress-sync term: {term}")
+                errors.append(f"{name} missing PR2334 progress-sync term: {term}")
+
+    legacy_note_terms = (
+        "LEGACY SHA SEMANTICS (2026-06-18)",
+        "mixed historical ledger",
+        "current live-main SHA claims",
+        "archival lineage/proof notes",
+        "project6-origin/main",
+    )
+    notes = _nested(manifest, "artifact_scope", "notes")
+    has_legacy_note = isinstance(notes, list) and any(
+        isinstance(note, str) and all(term in note for term in legacy_note_terms)
+        for note in notes
+    )
+    if not has_legacy_note:
+        errors.append("artifact_scope.notes missing front-door legacy SHA semantics note")
+
+    board_text = _read_required_text(BOARD, errors)
+    for term in (
+        "Live-main SHA semantics (2026-06-18)",
+        expected_commit,
+        "mixed historical ledger",
+        "historical lineage/proof notes",
+    ):
+        if term not in board_text:
+            errors.append(f"{_rel(BOARD)} missing front-door legacy SHA semantics term: {term}")
 
     namespace_runtime = manifest.get("package_replacement_namespace_runtime")
     if not isinstance(namespace_runtime, dict):
@@ -5185,15 +5210,27 @@ def _check_plan_revision_recovery_entry_freeze(
         errors.append(f"{_rel(PROOF_MANIFEST)} scope missing for revision recovery runtime")
     else:
         expected_top_scope = {
-            "merged_pr": "#609",
-            "merge_commit": "ad51b1c6736cd51ec3dd30de914e59ddb4c66158",
-            "source_branch": "codex/l3-synth-ref-sync",
-            "base_commit": "ad51b1c6736cd51ec3dd30de914e59ddb4c66158",
-            "source_base_commit": "ad51b1c6736cd51ec3dd30de914e59ddb4c66158",
+            "merged_pr": "#2334",
+            "merge_commit": "f679f64f08a595fe724158d46006be77a179c786",
+            "source_branch": "fix/sec-xbrl-ci-coverage",
+            "base_commit": "f679f64f08a595fe724158d46006be77a179c786",
+            "source_base_commit": "f679f64f08a595fe724158d46006be77a179c786",
         }
         for key, value in expected_top_scope.items():
             if proof_scope.get(key) != value:
                 errors.append(f"{_rel(PROOF_MANIFEST)} scope.{key} must be {value!r}")
+        legacy_semantics = proof_scope.get("legacy_sha_semantics")
+        for term in (
+            "LEGACY SHA SEMANTICS (2026-06-18)",
+            "mixed historical ledger",
+            "current live-main SHA claims",
+            "archival lineage/proof notes",
+            "project6-origin/main",
+        ):
+            if not isinstance(legacy_semantics, str) or term not in legacy_semantics:
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} scope.legacy_sha_semantics missing term: {term}"
+                )
         expected_runtime_scope = {
             "latest_plan_revision_recovery_runtime_branch": "codex/l3-revision-recovery-runtime",
             "latest_plan_revision_recovery_runtime_pr": "#599",
@@ -5228,16 +5265,16 @@ def _check_plan_revision_recovery_entry_freeze(
 
     seed_checkout_hint = _nested(manifest, "artifact_scope", "seed_checkout_hint")
     if not isinstance(seed_checkout_hint, str):
-        errors.append("artifact_scope.seed_checkout_hint must be present for PR #609 proof/progress sync")
+        errors.append("artifact_scope.seed_checkout_hint must be present for PR #2334 front-door truth re-anchor")
     else:
         for term in (
-            "codex/l3-synth-ref-sync",
-            "ad51b1c6736cd51ec3dd30de914e59ddb4c66158",
-            "PR #609 APS source-family extraction",
-            "external multi-audit synthesis/adjudication reference only",
+            "project6-origin/main",
+            "f679f64f08a595fe724158d46006be77a179c786",
+            "PR #2334 SEC-XBRL CI family coverage",
+            "front-door truth re-anchor only",
         ):
             if term not in seed_checkout_hint:
-                errors.append(f"artifact_scope.seed_checkout_hint missing PR #609 sync term: {term}")
+                errors.append(f"artifact_scope.seed_checkout_hint missing PR #2334 sync term: {term}")
 
     top_level = manifest.get("plan_revision_recovery_runtime")
     if not isinstance(top_level, dict):
@@ -12813,7 +12850,7 @@ def _check_ci_performance_observability_entry_freeze(errors: list[str]) -> None:
         "backend-layer3-api:",
         "timeout-minutes: 20",
         '"-m", "pytest"',
-        "./backend/tests/test_layer3_*.py",
+        "test_layer3_*.py",
         "PYTEST_SHARD_TOTAL: 4",
         "test:",
         "npx playwright test --project=chromium",
@@ -27971,7 +28008,7 @@ def _check_ci_layer3_backend_guardrail(errors: list[str]) -> None:
         errors.append(f"missing required workflow file: {_rel(PLAYWRIGHT_WORKFLOW)}")
         return
     text = PLAYWRIGHT_WORKFLOW.read_text(encoding="utf-8")
-    focused_glob = "./backend/tests/test_layer3_*.py"
+    focused_glob = "test_layer3_*.py"
     invokes_pytest = "python -m pytest" in text or '"-m", "pytest"' in text
     if focused_glob not in text or not invokes_pytest:
         errors.append(
@@ -38273,9 +38310,7 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
                 f"{_rel(LAYER3_AUTHORITY_MATRIX_RENDERED_REVIEW_SURFACE_IMPLEMENTATION)} missing authority matrix rendered review implementation term: {term}"
             )
 
-    html_text = _read_required_text(LAYER3_HTML, errors)
     js_text = _read_required_text(LAYER3_JS, errors)
-    css_text = _read_required_text(LAYER3_CSS, errors)
     page_test_text = _read_required_text(LAYER3_PAGE_TEST, errors)
     for path, terms in {
         LAYER3_HTML: (
@@ -87699,7 +87734,7 @@ def _check_provider_public_url_delivery_use_rendered_control_status_freshness_re
             f'"{entry_key}"',
             f'"status": "{status}"',
             f'"doc": "{doc_path}"',
-            f'"review_result": "valid_findings_remediated"',
+            '"review_result": "valid_findings_remediated"',
             f'"next_posture": "{next_posture}"',
         ),
         PROOF_MANIFEST: (
@@ -88024,7 +88059,7 @@ def _check_full_mockup_activation_next_blocker_selection(errors: list[str]) -> N
     for term in (
         "917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md",
         "Status: no-runtime selection/control artifact for `full_mockup_activation_next_blocker_selection_after_source_directory_gate_b_sync`.",
-        f"Predecessor sync doc: `916_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md`.",
+        "Predecessor sync doc: `916_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md`.",
         f"Current-main checkpoint before selection: `{checkpoint}`.",
         f"Selection branch: `{selection_branch}`.",
         f"Selected immediate next pass: `{next_posture}`.",
@@ -88167,7 +88202,7 @@ def _check_query_source_setup_activation_entry_freeze(errors: list[str]) -> None
     for term in (
         "955-query-source-freeze.md",
         "Status: no-runtime single-journey activation-entry freeze for `query_source_setup_existing_controls_activation_entry_freeze`.",
-        f"Predecessor selection doc: `954-post-final-readiness-next-phase-selection-freeze.md`.",
+        "Predecessor selection doc: `954-post-final-readiness-next-phase-selection-freeze.md`.",
         f"Current-main checkpoint before freeze: `{checkpoint}`.",
         f"Freeze branch: `{freeze_branch}`.",
         f"Selected journey: `{selected_journey}`.",

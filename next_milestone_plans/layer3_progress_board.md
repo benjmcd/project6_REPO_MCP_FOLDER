@@ -1,5 +1,13 @@
 # Layer3 Progress Board
 
+Live-main SHA semantics (2026-06-18): this board is a mixed historical ledger.
+The current front-door anchor is `project6-origin/main`
+`f679f64f08a595fe724158d46006be77a179c786`. Older `Current-main` sections
+and embedded 40-character hashes before this re-anchor are retained as
+historical lineage/proof notes, not as live ancestry declarations, unless a
+later focused refresh explicitly revalidates that entry against
+`project6-origin/main`.
+
 ## P24 Mixed-Source Product-Authority Checkpoint
 
 Milestone:
@@ -8,7 +16,7 @@ Milestone:
 Closeout doc:
 `next_milestone_plans/multi-ingest/56-p24-product-authority-checkpoint.md`.
 
-Status: current-main. Content present on main tip 1f9a4ec6. The P24
+Status: current-main. Content present on main tip f679f64f. The P24
 read-only product-authority checkpoint rendered controls are on current main
 after the 2026-06-06 history rebuild folded the branch-local work into the
 canonical line. Post-merge proof recorded 2026-06-11 (see closeout doc).
@@ -28,7 +36,7 @@ production-readiness behavior is admitted.
 Proof: branch-local JS/module syntax, static page contract proof, and focused
 headless plus headed Playwright rendered-flow proof passed.
 
-Next posture: P22/P23/P24 are on current main (tip 1f9a4ec6). Provider/public
+Next posture: P22/P23/P24 are on current main (tip f679f64f). Provider/public
 URL governance, connector/destination/local-outbox dispatch, durable revocation
 UI/API, schema/source-shape expansion, and production readiness remain separate
 future freezes.
@@ -41,7 +49,7 @@ Milestone:
 Closeout doc:
 `next_milestone_plans/multi-ingest/55-p23-product-flow-usability-proof.md`.
 
-Status: current-main. Content present on main tip 1f9a4ec6. The P23
+Status: current-main. Content present on main tip f679f64f. The P23
 rendered product-flow usability proof is on current main after the 2026-06-06
 history rebuild folded the branch-local work into the canonical line.
 Post-merge proof recorded 2026-06-11 (see closeout doc).
@@ -63,7 +71,7 @@ headless and headed Playwright rendered-flow proof, plus the existing P21/P22
 rendered-control regression group passed.
 
 Next posture: superseded by P24 product-authority checkpoint (also on current
-main at tip 1f9a4ec6). The next downstream surface must be selected by a
+main at tip f679f64f). The next downstream surface must be selected by a
 separate freeze before implementation.
 
 ## P22 Mixed-Source Signed-Reference Runtime And Rendered Controls
@@ -74,7 +82,7 @@ Milestone:
 Closeout doc:
 `next_milestone_plans/multi-ingest/54-p22-runtime-closeout.md`.
 
-Status: current-main. Content present on main tip 1f9a4ec6. The P22 runtime
+Status: current-main. Content present on main tip f679f64f. The P22 runtime
 and rendered controls (layer3.js elements
 `external-export-download-signed-reference-generate` and
 `external-export-download-signed-reference-use`) are on current main after the
@@ -102,7 +110,7 @@ focused headless and headed Playwright rendered-control proof,
 authority-index validation, frozen target-selection validation, progress check,
 and `git diff --check` passed.
 
-Next posture: P22/P23/P24 are on current main (tip 1f9a4ec6). Freeze exactly
+Next posture: P22/P23/P24 are on current main (tip f679f64f). Freeze exactly
 one next downstream surface before implementation: provider/public URL
 governance, connector/destination/local-outbox dispatch, or durable revocation
 UI.
