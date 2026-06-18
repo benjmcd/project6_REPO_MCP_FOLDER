@@ -26,13 +26,24 @@ def test_sec_xbrl_arelle_provisioning_declares_pinned_packages_with_provenance()
     assert [spec["id"] for spec in specs] == [
         "fasb-us-gaap-2025",
         "fasb-srt-2025",
+        "sec-2025",
+    ]
+    assert [spec["kind"] for spec in specs] == [
+        "arelle_taxonomy_package",
+        "arelle_taxonomy_package",
+        "offline_cache_archive",
     ]
     assert all(spec["version"] == "2025" for spec in specs)
     assert {spec["sha256"] for spec in specs} == {
         "a3b835925ad74030eb5be865a26d7dfe44013081c4ab7204b6122316a685fff4",
         "aad1daeb4bdfe3057f4ed81482c06130f873a59fa7fce5193c5731f93b1fef88",
+        "6a963051af02ff458e02669549bd55f9d547281724f3b4e053cb0157be8121e4",
     }
-    assert all(spec["url"].startswith("https://xbrl.fasb.org/") for spec in specs)
+    assert {Path(spec["url"]).name for spec in specs} == {
+        "us-gaap-2025.zip",
+        "srt-2025.zip",
+        "2025.zip",
+    }
     assert all(spec["source"] for spec in specs)
 
 
