@@ -46,16 +46,19 @@ jobs:
             raise SystemExit(f"Invalid backend pytest shard {shard}/{total}")
 
         # Backend API test families gated by CI. test_layer3_* is the bulk; the
-        # market-pipeline / analyst-insight / pre-body operator-authorization
-        # families share the same operator-identity seam and route table but did
-        # not match the original test_layer3_* glob, so they previously never ran
-        # in CI. They are included here (not in the layer3-coverage job, which
-        # stays scoped to layer3 coverage measurement).
+        # market-pipeline / analyst-insight / pre-body operator-authorization and
+        # sec-xbrl families share the same operator-identity seam and route table
+        # but did not match the original test_layer3_* glob, so they previously
+        # never ran in CI. They are included here (not in the layer3-coverage job,
+        # which stays scoped to layer3 coverage measurement). The sec-xbrl family
+        # (auth binding, role caps, redaction, evidence-owner authz, admission) is
+        # security-critical and verified to pass under the CI fastapi pin.
         patterns = (
             "test_layer3_*.py",
             "test_market_*.py",
             "test_analyst_*.py",
             "test_pre_body_*.py",
+            "test_sec_xbrl_*.py",
         )
         files = sorted({
             f for pat in patterns for f in glob.glob(f"./backend/tests/{pat}")
