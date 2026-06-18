@@ -22,6 +22,12 @@ SOURCE_FILES = [
     BACKEND / "app" / "api" / "layer3" / "source_sec_edgar.py",
     BACKEND / "app" / "api" / "layer3" / "source_ingestion.py",
     BACKEND / "app" / "api" / "layer3" / "sec_xbrl.py",
+    # Non-layer3 route modules that share the same operator-identity seam.
+    BACKEND / "app" / "api" / "router.py",
+    BACKEND / "app" / "api" / "review_nrc_aps.py",
+    BACKEND / "app" / "api" / "market_data_integration.py",
+    BACKEND / "app" / "api" / "market_data_validation.py",
+    BACKEND / "app" / "api" / "market_insight_ai.py",
 ]
 
 _VALID_ACCESS_VALUES = {"read", "write"}
