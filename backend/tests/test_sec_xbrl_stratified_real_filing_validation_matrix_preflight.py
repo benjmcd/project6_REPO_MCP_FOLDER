@@ -447,6 +447,12 @@ def _runtime_paths(tmp_path: Path) -> dict[str, Path]:
     cache_dir = tmp_path / "cache"
     storage_dir = tmp_path / "storage"
     arelle_python.write_text("", encoding="utf-8")
+    # Mark the mock interpreter executable so the preflight's os.access(X_OK)
+    # check passes on POSIX CI runners. On Windows any file reads as executable
+    # (no execute bit), which is why the "ready" assertion only failed under CI.
+    # The preflight correctly requires an executable python; this makes the
+    # isolated-env mock satisfy it portably without changing what is asserted.
+    arelle_python.chmod(0o755)
     taxonomy_package.write_text("", encoding="utf-8")
     cache_dir.mkdir()
     storage_dir.mkdir()
