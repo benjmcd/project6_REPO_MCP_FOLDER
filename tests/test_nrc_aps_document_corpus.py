@@ -38,6 +38,13 @@ def _in_memory_session():
     return Session()
 
 
+def _apply_corpus_ocr_mode(monkeypatch: pytest.MonkeyPatch) -> bool:
+    ocr_available = corpus_ocr_available()
+    if not ocr_available:
+        monkeypatch.setattr(nrc_aps_document_processing.nrc_aps_ocr, "tesseract_available", lambda: False)
+    return ocr_available
+
+
 def _download_only_target_artifact(*, blob_path: Path, entry: dict[str, object]) -> dict[str, object]:
     return {
         "run_id": f"run-{_entry_id(entry)}",
@@ -91,8 +98,11 @@ def test_ocr_required_manifest_distinguishes_missing_advanced_ocr_weights():
 
 
 @pytest.mark.parametrize("entry", manifest_entries(), ids=_entry_id)
-def test_manifest_entries_drive_document_processing_contract(entry: dict[str, object]):
-    expectation = expected_behavior(entry, ocr_available=corpus_ocr_available())
+def test_manifest_entries_drive_document_processing_contract(
+    entry: dict[str, object],
+    monkeypatch: pytest.MonkeyPatch,
+):
+    expectation = expected_behavior(entry, ocr_available=_apply_corpus_ocr_mode(monkeypatch))
     content = fixture_bytes(entry)
     if not expectation["expects_success"]:
         with pytest.raises(ValueError, match=str(expectation["expected_failure"])):
@@ -117,8 +127,12 @@ def test_manifest_entries_drive_document_processing_contract(entry: dict[str, ob
 
 
 @pytest.mark.parametrize("entry", manifest_entries(), ids=_entry_id)
-def test_manifest_entries_drive_content_index_searchability(entry: dict[str, object], tmp_path: Path):
-    expectation = expected_behavior(entry, ocr_available=corpus_ocr_available())
+def test_manifest_entries_drive_content_index_searchability(
+    entry: dict[str, object],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    expectation = expected_behavior(entry, ocr_available=_apply_corpus_ocr_mode(monkeypatch))
     blob_path = tmp_path / str(entry.get("path") or "fixture.bin")
     blob_path.write_bytes(fixture_bytes(entry))
 

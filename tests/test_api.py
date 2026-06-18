@@ -99,6 +99,7 @@ from app.services.analysis import (  # noqa: E402
     _descriptive_column_summary,
     analysis_method_registry,
 )
+from support_nrc_aps_fake_opendataloader import install_fake_opendataloader_pdf  # noqa: E402
 
 SQLALCHEMY_DATABASE_URL = TEST_DATABASE_URL
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={'check_same_thread': False})
@@ -2566,8 +2567,10 @@ def test_nrc_hydrate_process_emits_normalization_contract(monkeypatch):
 def test_nrc_hydrate_process_supports_candidate_b_document_processing_engine(monkeypatch):
     from app.models import ConnectorRun
     from app.services import connectors_nrc_adams as nrc
+    from app.services import nrc_aps_document_processing
 
     fake = _FakeNrcClient(fixture_name="layout.pdf")
+    install_fake_opendataloader_pdf(monkeypatch, nrc_aps_document_processing)
     monkeypatch.setattr(nrc, "get_nrc_adams_client", lambda config: fake)
 
     submit = client.post(
@@ -5115,16 +5118,6 @@ def test_nrc_deterministic_challenge_review_packet_routes_return_errors(monkeypa
 
 def test_nrc_deterministic_challenge_review_packet_persist_and_report_refs(monkeypatch):
     from app.models import ConnectorRun
-    from app.services import nrc_aps_deterministic_insight_artifact
-    from app.services import nrc_aps_deterministic_challenge_artifact as challenge_svc
-    from app.services import nrc_aps_deterministic_challenge_review_packet as rp_svc
-    from app.services import nrc_aps_context_dossier
-    from app.services import nrc_aps_context_packet
-    from app.services import nrc_aps_evidence_report_export_package
-    from app.services import nrc_aps_evidence_report_export
-    from app.services import nrc_aps_evidence_report
-    from app.services import nrc_aps_evidence_citation_pack
-    from app.services import nrc_aps_evidence_bundle
 
     reports_dir = TEST_STORAGE_DIR / "connectors" / "reports"
     reports_dir.mkdir(parents=True, exist_ok=True)

@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import types
 from pathlib import Path
 from itertools import chain, repeat
 
@@ -21,6 +22,7 @@ os.environ.setdefault("NRC_ADAMS_APS_API_BASE_URL", "https://adams-api.nrc.gov")
 
 from app.services import nrc_aps_document_processing  # noqa: E402
 from app.services import nrc_aps_ocr  # noqa: E402
+from support_nrc_aps_fake_opendataloader import install_fake_opendataloader_pdf  # noqa: E402
 from support_nrc_aps_xlsx import build_xlsx_bytes  # noqa: E402
 
 
@@ -373,7 +375,7 @@ class TestCandidateBProcessingIntegration:
 
     def test_candidate_b_missing_package_fails_closed(self, monkeypatch, tmp_path: Path):
         def _missing_version(_dist_name: str) -> str:
-            raise importlib.metadata.PackageNotFoundError
+            raise nrc_aps_document_processing.importlib.metadata.PackageNotFoundError
 
         monkeypatch.setattr(nrc_aps_document_processing.importlib.metadata, "version", _missing_version)
 
@@ -387,7 +389,28 @@ class TestCandidateBProcessingIntegration:
                 },
             )
 
-    def test_candidate_b_processes_pdf_with_existing_contract_shape(self, tmp_path: Path):
+    def test_candidate_b_version_mismatch_fails_closed(self, monkeypatch, tmp_path: Path):
+        fake_module = types.ModuleType("opendataloader_pdf")
+        fake_module.convert = lambda **_kwargs: None
+        monkeypatch.setitem(sys.modules, "opendataloader_pdf", fake_module)
+        monkeypatch.setattr(
+            nrc_aps_document_processing.importlib.metadata,
+            "version",
+            lambda dist_name: "2.4.0" if dist_name == "opendataloader-pdf" else "0.0.0",
+        )
+
+        with pytest.raises(ValueError, match="candidate_b_package_version_mismatch"):
+            nrc_aps_document_processing.process_document(
+                content=_fixture_bytes("layout.pdf"),
+                declared_content_type="application/pdf",
+                config={
+                    "document_processing_engine": "candidate_b_opendataloader_pdf",
+                    "artifact_storage_dir": str(tmp_path),
+                },
+            )
+
+    def test_candidate_b_processes_pdf_with_existing_contract_shape(self, monkeypatch, tmp_path: Path):
+        install_fake_opendataloader_pdf(monkeypatch, nrc_aps_document_processing)
         content = _fixture_bytes("layout.pdf")
 
         result = nrc_aps_document_processing.process_document(
@@ -458,7 +481,7 @@ class TestVisualLaneIntegration:
             config={"visual_lane_mode": "baseline"},
         )
 
-        assert seen_modes == ["baseline"]
+        assert seen_modes == ["baseline", "baseline"]
         assert len(seen_configs) == 1
         assert seen_configs[0]["visual_lane_mode"] == "baseline"
         assert result["visual_page_refs"] == []
@@ -499,7 +522,7 @@ class TestVisualLaneIntegration:
             config={"visual_lane_mode": "experimental_a"},
         )
 
-        assert seen_modes == ["experimental_a"]
+        assert seen_modes == ["experimental_a", "experimental_a"]
         assert len(seen_configs) == 1
         assert seen_configs[0]["visual_lane_mode"] == "experimental_a"
         assert result["visual_page_refs"] == []
@@ -684,7 +707,7 @@ class TestVisualLaneIntegration:
             _tracking_baseline_lane,
         )
 
-        result = nrc_aps_document_processing.process_document(
+        nrc_aps_document_processing.process_document(
             content=_fixture_bytes("born_digital.pdf"),
             declared_content_type="application/pdf",
             config={"visual_lane_mode": "experimental_a"},

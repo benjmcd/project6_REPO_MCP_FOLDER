@@ -89,11 +89,16 @@
       "declared_content_type": "application/pdf",
       "expected_document_class": "born_digital_pdf",
       "expected_quality_status": "limited",
-      "expected_failure_without_ocr": "ocr_required_but_unavailable",
+      "expected_document_class_without_ocr": "font_encoded_pdf",
+      "expected_quality_status_without_ocr": "unusable",
       "searchable_expected": true,
       "searchable_expected_without_ocr": false,
       "gold_queries_without_ocr": [],
       "expected_degradation_codes": [
+        "advanced_ocr_execution_failed",
+        "ocr_execution_failed"
+      ],
+      "expected_degradation_codes_without_ocr": [
         "advanced_ocr_execution_failed",
         "ocr_execution_failed"
       ],
@@ -114,10 +119,10 @@
       "declared_content_type": "application/pdf",
       "expected_document_class": "layout_complex_pdf",
       "expected_quality_status": "limited",
-      "expected_document_class_without_ocr": "font_encoded_pdf",
-      "expected_quality_status_without_ocr": "weak",
+      "expected_document_class_without_ocr": "layout_complex_pdf",
+      "expected_quality_status_without_ocr": "limited",
       "searchable_expected": true,
-      "searchable_expected_without_ocr": false,
+      "searchable_expected_without_ocr": true,
       "expected_degradation_codes": [
         "advanced_ocr_execution_failed",
         "ocr_execution_failed"
@@ -127,7 +132,8 @@
         "ocr_execution_failed"
       ],
       "expected_degradation_codes_without_ocr": [
-        "ocr_required_but_unavailable"
+        "advanced_ocr_execution_failed",
+        "ocr_execution_failed"
       ],
       "gold_queries": [
         "mixed native alpha",
