@@ -372,7 +372,7 @@ jobs:
       # - Locally measurable subset (auth-policy service tests alone) yields 41%
       #   on the single service file; the api/layer3 package cannot be imported
       #   locally due to a FastAPI version pinning difference, but CI installs
-      #   fastapi>=0.115 (from requirements-layer3-api.txt) which resolves it.
+      #   the exact fastapi pin from requirements-layer3-api.txt, which resolves it.
       # - 30% = measured-subset (41%) minus 15 points, and is above the hard
       #   floor of 30 specified in the task.  Adjust upward once a stable CI
       #   baseline is established.
