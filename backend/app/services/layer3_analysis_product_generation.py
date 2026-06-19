@@ -195,6 +195,60 @@ def generate_analysis_product(
             http_status=404,
         )
 
+    # --- Step 2b: idempotent replay across a method-spec change --------------
+    # A deterministic generation is fully determined by (method_id, working_set).
+    # If a deterministic product already exists for this (session,
+    # client_request_id) over the SAME method and working set, return it
+    # unchanged — even if the method spec (product_kind / version) changed since
+    # it was created (e.g. a taxonomy or version bump across a deploy).  Without
+    # this, re-running would rebuild a draft whose basis_hash reflects the new
+    # spec and trip create_analysis_product_draft's idempotency_conflict, breaking
+    # a legitimate duplicate-request retry that spans the change.  This is safe: a
+    # different method or working set does NOT match here and falls through to the
+    # normal basis comparison, which still rejects true client_request_id reuse.
+    existing = (
+        db.query(L3AnalysisProduct)
+        .filter(
+            L3AnalysisProduct.session_id == session_id,
+            L3AnalysisProduct.client_request_id == client_request_id,
+        )
+        .one_or_none()
+    )
+    if (
+        existing is not None
+        and existing.executor_type == "deterministic"
+        and existing.executor_identity == method_id
+    ):
+        ws_link = (
+            db.query(L3AnalysisProductEvidenceLink)
+            .filter(
+                L3AnalysisProductEvidenceLink.analysis_product_id
+                == existing.analysis_product_id,
+                L3AnalysisProductEvidenceLink.ref_kind == "working_set",
+            )
+            .one_or_none()
+        )
+        if ws_link is not None and ws_link.ref_id == working_set_id:
+            existing_links = (
+                db.query(L3AnalysisProductEvidenceLink)
+                .filter(
+                    L3AnalysisProductEvidenceLink.analysis_product_id
+                    == existing.analysis_product_id
+                )
+                .order_by(L3AnalysisProductEvidenceLink.evidence_link_id.asc())
+                .all()
+            )
+            prov = existing.authoring_provenance_json or {}
+            return Layer3GenerationResult(
+                product=existing,
+                evidence_links=tuple(existing_links),
+                method_id=method_id,
+                # Report the version the product was stored with (it may predate a
+                # version bump) — the replayed product is the original, unchanged.
+                method_version=prov.get("method_version", spec.version),
+                replayed=True,
+            )
+
     # --- Step 3: resolve member-state frame (once, when needed) -------------
     member_states: list[dict[str, Any]] | None = None
     if spec.consumes_member_state:

@@ -17,12 +17,11 @@ sys.path.insert(0, str(BACKEND))
 
 import pytest
 
+from app.models.models import L3_ANALYSIS_PRODUCT_KIND_VALUES
 from app.services.layer3_deterministic_methods import (
     DETERMINISTIC_METHODS,
     DETERMINISTIC_METHODS_SCHEMA_ID,
     _COMPOSITION_SUMMARY_KINDS,
-    _MEMBER_STATE_PROFILE_KINDS,
-    _STALENESS_DIAGNOSTIC_KINDS,
     method_quality_signals,
     render_body,
     render_title,
@@ -63,7 +62,7 @@ def test_registry_has_working_set_composition_summary() -> None:
     assert "working_set_composition_summary" in DETERMINISTIC_METHODS
     spec = DETERMINISTIC_METHODS["working_set_composition_summary"]
     assert spec.method_id == "working_set_composition_summary"
-    assert spec.version == 1
+    assert spec.version == 2
     assert callable(spec.fn)
 
 
@@ -127,7 +126,7 @@ def test_composition_counts_single_kind() -> None:
     )
     result = run_method("working_set_composition_summary", working_set=ws)
     assert result["method_id"] == "working_set_composition_summary"
-    assert result["method_version"] == 1
+    assert result["method_version"] == 2
     assert result["by_ref_kind"] == {"material_snapshot": 3}
     assert result["member_count"] == 3
     assert result["distinct_ref_kinds"] == ["material_snapshot"]
@@ -891,7 +890,7 @@ def test_composition_summary_empty_working_set() -> None:
     assert result["distinct_ref_kinds"] == []
     assert result["member_count"] == 0
     assert result["method_id"] == "working_set_composition_summary"
-    assert result["method_version"] == 1
+    assert result["method_version"] == 2
 
 
 def test_composition_summary_single_member() -> None:
@@ -1552,3 +1551,52 @@ def test_render_body_with_footer_still_under_16384_chars() -> None:
     result = run_method("working_set_staleness_diagnostic", working_set=ws, member_states=states)
     body = render_body("working_set_staleness_diagnostic", result=result)
     assert len(body) < 16384
+
+
+# ---------------------------------------------------------------------------
+# Product kind taxonomy
+# ---------------------------------------------------------------------------
+
+
+def test_methods_have_distinct_product_kinds() -> None:
+    """The three Sublayer 3C deterministic methods must carry distinct product_kinds.
+
+    Expected mapping:
+      working_set_composition_summary   -> "metric"   (emits quantitative counts)
+      working_set_member_state_profile  -> "summary"  (per-kind state rollups)
+      working_set_staleness_diagnostic  -> "diagnostic" (clean/stale verdict)
+
+    All three kinds must be distinct (no two methods share a kind) and each must
+    be a recognised value in L3_ANALYSIS_PRODUCT_KIND_VALUES.
+    """
+    expected: dict[str, str] = {
+        "working_set_composition_summary": "metric",
+        "working_set_member_state_profile": "summary",
+        "working_set_staleness_diagnostic": "diagnostic",
+    }
+    for method_id, expected_kind in expected.items():
+        spec = DETERMINISTIC_METHODS[method_id]
+        assert spec.product_kind == expected_kind, (
+            f"{method_id}: expected product_kind={expected_kind!r}, got {spec.product_kind!r}"
+        )
+        assert spec.product_kind in L3_ANALYSIS_PRODUCT_KIND_VALUES, (
+            f"{method_id}: product_kind={spec.product_kind!r} not in L3_ANALYSIS_PRODUCT_KIND_VALUES"
+        )
+    # All three kinds are distinct (no collisions).
+    kinds = [DETERMINISTIC_METHODS[m].product_kind for m in expected]
+    assert len(set(kinds)) == 3, (
+        f"Expected 3 distinct product_kinds among the three methods; got {kinds}"
+    )
+
+
+def test_composition_summary_version_is_2() -> None:
+    """working_set_composition_summary version must be 2 after the metric taxonomy bump.
+
+    The version bump keeps replay/reproducibility honest: a product recorded under
+    v1 (product_kind='summary') will replay as method_version_changed rather than
+    silently matching the v2 (product_kind='metric') registry entry.
+    """
+    spec = DETERMINISTIC_METHODS["working_set_composition_summary"]
+    assert spec.version == 2, (
+        f"Expected version=2 for working_set_composition_summary; got {spec.version}"
+    )

@@ -200,15 +200,15 @@ def test_generate_happy_path(seeded_db) -> None:
     product = result.product
     # executor_type must be "deterministic"
     assert product.executor_type == "deterministic"
-    # product_kind must be "summary"
-    assert product.product_kind == "summary"
+    # product_kind must be "metric" (composition emits quantitative counts)
+    assert product.product_kind == "metric"
     # lifecycle must be "draft"
     assert product.lifecycle_status == "draft"
     # replayed is False on first call
     assert result.replayed is False
     # method fields
     assert result.method_id == "working_set_composition_summary"
-    assert result.method_version == 1
+    assert result.method_version == 2
     # exactly 1 evidence link, ref_kind="working_set"
     assert len(result.evidence_links) == 1
     link = result.evidence_links[0]
@@ -317,6 +317,61 @@ def test_generate_idempotency_same_request(seeded_db) -> None:
     assert result2.product.analysis_product_id == result1.product.analysis_product_id
     # Only one product row
     assert db.query(L3AnalysisProduct).count() == 1
+
+
+def test_generate_idempotent_replay_survives_spec_change(seeded_db, monkeypatch) -> None:
+    """A duplicate generate with the same client_request_id replays the existing
+    deterministic product even if the method spec (product_kind / version) changed
+    between calls — e.g. a taxonomy/version bump across a deploy — instead of
+    raising idempotency_conflict.  The (method, working_set) inputs match, so it
+    is the same logical generation request."""
+    import dataclasses
+
+    from app.services import layer3_deterministic_methods as dm
+
+    db = seeded_db
+    ws = _make_working_set(
+        db, session_id="session-gen-test", name="WS SpecChange", client_request_id="req-ws-specchg"
+    )
+    first = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-gen-specchg",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_composition_summary",
+    )
+    db.commit()
+    assert first.replayed is False
+    original_id = first.product.analysis_product_id
+    original_kind = first.product.product_kind
+
+    # Simulate a later deploy that changes the composition spec (kind + version).
+    orig_spec = dm.DETERMINISTIC_METHODS["working_set_composition_summary"]
+    changed_spec = dataclasses.replace(
+        orig_spec, product_kind="summary", version=orig_spec.version + 1
+    )
+    monkeypatch.setitem(dm.DETERMINISTIC_METHODS, "working_set_composition_summary", changed_spec)
+
+    # Retry the SAME client_request_id -> must replay the existing product (no 409).
+    second = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-gen-specchg",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_composition_summary",
+    )
+    db.commit()
+    assert second.replayed is True
+    assert second.product.analysis_product_id == original_id
+    # The replayed product keeps its ORIGINAL kind — proves replay, not a rebuild.
+    assert second.product.product_kind == original_kind
+    # Still exactly one composition product row.
+    count = (
+        db.query(L3AnalysisProduct)
+        .filter(L3AnalysisProduct.executor_identity == "working_set_composition_summary")
+        .count()
+    )
+    assert count == 1
 
 
 # ---------------------------------------------------------------------------
@@ -741,7 +796,7 @@ def test_r3_cross_session_member_resolved_false(seeded_db) -> None:
     # Build working set in session-gen-test referencing the OTHER session's snapshot.
     # We must bypass create_working_set's membership check since the snapshot is in a
     # different session. Insert the working set row directly.
-    from app.models.models import L3WorkingSet, uuid_str
+    from app.models.models import L3WorkingSet
     from app.services.layer3_utils import stable_hash
 
     cross_ws_id = "ws-cross-session-r3"

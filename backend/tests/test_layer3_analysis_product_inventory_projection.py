@@ -844,10 +844,10 @@ def test_enumerate_analyst_products_generation_method_present_for_deterministic(
         _analyst_input(
             "ap-det",
             executor_type="deterministic",
-            product_kind="summary",
+            product_kind="metric",
             generation_method={
                 "method_id": "working_set_composition_summary",
-                "method_version": 1,
+                "method_version": 2,
             },
         )
     ]
@@ -855,7 +855,7 @@ def test_enumerate_analyst_products_generation_method_present_for_deterministic(
     ap = projection["analyst_products"][0]
     gm = ap["generation_method"]
     assert gm is not None
-    assert gm == {"method_id": "working_set_composition_summary", "method_version": 1}
+    assert gm == {"method_id": "working_set_composition_summary", "method_version": 2}
     assert set(gm.keys()) == {"method_id", "method_version"}
 
 

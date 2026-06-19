@@ -47,13 +47,9 @@ from app.services.layer3_workbench import (
     _analysis_product_admission_hash,
     _analysis_product_package_payload_extras,
     _build_analysis_product_admission_preview,
-    _load_excluded_analysis_products,
     _load_package_eligible_analysis_products,
     _merge_analysis_product_inventory_extras,
-    _ANALYSIS_PRODUCT_EXCLUSION_REASON_BY_STATUS,
-    _ANALYSIS_PRODUCT_EXCLUSION_REASON_FALLBACK,
     _ANALYSIS_PRODUCT_INVENTORY_MAX,
-    _EVIDENCE_REFS_PER_PRODUCT_MAX,
 )
 
 # ---------------------------------------------------------------------------
@@ -224,9 +220,7 @@ def test_flag_off_gate_returns_input_unchanged(seeded_db) -> None:
     the input dict byte-identical — no analysis_product_inventory key added,
     pre-existing keys preserved."""
     from app.services.layer3_package_entry import (
-        PACKAGE_KIND_CANONICAL_INTERNAL,
         PACKAGE_KIND_USER_FACING,
-        PACKAGE_KIND_REVIEW_FACING,
     )
 
     db = seeded_db
@@ -963,17 +957,17 @@ def test_serialize_analysis_product_deterministic_generation_method() -> None:
 
     product = SimpleNamespace(
         analysis_product_id="ap-det-001",
-        product_kind="summary",
+        product_kind="metric",
         executor_type="deterministic",
         lifecycle_status="package_eligible",
-        title="Deterministic summary",
+        title="Deterministic metric",
         is_non_evidentiary=False,
         basis_hash="bh-det",
         spec_hash="sh-det",
         created_at=None,
         authoring_provenance_json={
             "method_id": "working_set_composition_summary",
-            "method_version": 1,
+            "method_version": 2,
             "input_basis_hash": "ibh-secret",
             "param_hash": "ph-secret",
             "result_summary": {"member_count": 3},
@@ -986,7 +980,7 @@ def test_serialize_analysis_product_deterministic_generation_method() -> None:
     assert result["executor_type"] == "deterministic"
     gm = result["generation_method"]
     assert gm is not None
-    assert gm == {"method_id": "working_set_composition_summary", "method_version": 1}
+    assert gm == {"method_id": "working_set_composition_summary", "method_version": 2}
     # Only the two bounded keys — no leakage of param_hash, input_basis_hash, etc.
     assert set(gm.keys()) == {"method_id", "method_version"}
     assert "param_hash" not in gm

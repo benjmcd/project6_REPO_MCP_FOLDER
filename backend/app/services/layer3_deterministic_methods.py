@@ -461,9 +461,9 @@ def _render_body_staleness_diagnostic(method_id: str, *, result: dict[str, Any])
 DETERMINISTIC_METHODS: dict[str, _MethodSpec] = {
     "working_set_composition_summary": _MethodSpec(
         method_id="working_set_composition_summary",
-        version=1,
+        version=2,
         fn=_working_set_composition_summary,
-        product_kind="summary",
+        product_kind="metric",
         label="Composition summary",
         description="Counts member ref_kind strings; no state access.",
         consumes_member_state=False,
