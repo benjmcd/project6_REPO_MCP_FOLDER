@@ -47,13 +47,9 @@ from app.services.layer3_workbench import (
     _analysis_product_admission_hash,
     _analysis_product_package_payload_extras,
     _build_analysis_product_admission_preview,
-    _load_excluded_analysis_products,
     _load_package_eligible_analysis_products,
     _merge_analysis_product_inventory_extras,
-    _ANALYSIS_PRODUCT_EXCLUSION_REASON_BY_STATUS,
-    _ANALYSIS_PRODUCT_EXCLUSION_REASON_FALLBACK,
     _ANALYSIS_PRODUCT_INVENTORY_MAX,
-    _EVIDENCE_REFS_PER_PRODUCT_MAX,
 )
 
 # ---------------------------------------------------------------------------
@@ -224,9 +220,7 @@ def test_flag_off_gate_returns_input_unchanged(seeded_db) -> None:
     the input dict byte-identical — no analysis_product_inventory key added,
     pre-existing keys preserved."""
     from app.services.layer3_package_entry import (
-        PACKAGE_KIND_CANONICAL_INTERNAL,
         PACKAGE_KIND_USER_FACING,
-        PACKAGE_KIND_REVIEW_FACING,
     )
 
     db = seeded_db

@@ -22,8 +22,6 @@ from app.services.layer3_deterministic_methods import (
     DETERMINISTIC_METHODS,
     DETERMINISTIC_METHODS_SCHEMA_ID,
     _COMPOSITION_SUMMARY_KINDS,
-    _MEMBER_STATE_PROFILE_KINDS,
-    _STALENESS_DIAGNOSTIC_KINDS,
     method_quality_signals,
     render_body,
     render_title,

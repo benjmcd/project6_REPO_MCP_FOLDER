@@ -8,7 +8,6 @@ verify_analysis_product_replay.
 
 from __future__ import annotations
 
-import copy
 import os
 import sys
 from datetime import datetime, timezone
@@ -389,6 +388,44 @@ def test_replay_method_version_changed(seeded_db) -> None:
 
     assert result.reproduced is False
     assert result.classification == "method_version_changed"
+    assert result.method_version_match is False
+
+
+def test_replay_v1_composition_product_reports_method_version_changed(seeded_db) -> None:
+    db = seeded_db
+    ws = _make_working_set(
+        db,
+        session_id="session-gen-test",
+        name="WS MVC V1",
+        client_request_id="req-ws-replay-mvc-v1-001",
+    )
+
+    gen = generate_analysis_product(
+        db,
+        session_id="session-gen-test",
+        client_request_id="req-replay-mvc-v1-001",
+        working_set_id=ws.working_set_id,
+        method_id="working_set_composition_summary",
+    )
+    db.commit()
+
+    product = gen.product
+    product.product_kind = "summary"
+    prior_provenance = dict(product.authoring_provenance_json)
+    prior_provenance["method_version"] = 1
+    product.authoring_provenance_json = prior_provenance
+    db.commit()
+
+    result = verify_analysis_product_replay(
+        db,
+        session_id="session-gen-test",
+        analysis_product_id=product.analysis_product_id,
+    )
+
+    assert result.reproduced is False
+    assert result.classification == "method_version_changed"
+    assert result.method_version_recorded == 1
+    assert result.method_version_current == 2
     assert result.method_version_match is False
 
 

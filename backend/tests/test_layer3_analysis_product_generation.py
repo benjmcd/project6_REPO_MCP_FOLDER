@@ -796,7 +796,7 @@ def test_r3_cross_session_member_resolved_false(seeded_db) -> None:
     # Build working set in session-gen-test referencing the OTHER session's snapshot.
     # We must bypass create_working_set's membership check since the snapshot is in a
     # different session. Insert the working set row directly.
-    from app.models.models import L3WorkingSet, uuid_str
+    from app.models.models import L3WorkingSet
     from app.services.layer3_utils import stable_hash
 
     cross_ws_id = "ws-cross-session-r3"
