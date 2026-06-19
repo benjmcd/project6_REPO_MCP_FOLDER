@@ -240,7 +240,6 @@ def _fetch_submissions_records(cik_refs: tuple[str, ...], *, user_agent: str) ->
         if index:
             _sleep_for_rate_policy()
         url = f"https://data.sec.gov/submissions/CIK{cik.zfill(10)}.json"
-        layer3_sec_edgar_live_source_artifact._enforce_rate_limit()
         result = layer3_sec_edgar_live_source_artifact._fetch_with_retry(
             url=url,
             user_agent=user_agent,

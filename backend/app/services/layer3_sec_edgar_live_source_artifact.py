@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import re
+import threading
 import time
 from typing import Any, Mapping, NoReturn, Protocol
 import urllib.error
@@ -46,7 +47,10 @@ RECEIPT_DIR = "layer3-sec-edgar-live-source-artifact-acquisition"
 REDACTION_POLICY_ID = "sec_edgar_text_table_live_source_artifact_acquisition_redaction_v1"
 RATE_POLICY_ID = "sec_edgar_text_table_live_source_artifact_default_1rps_max_10rps_v1"
 SEC_RATE_LIMIT_CEILING_PER_SECOND = 10
+SEC_LIVE_REQUEST_COUNT_CEILING_DEFAULT = 10
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+_SEC_LIVE_REQUEST_COUNT = 0
+_SEC_LIVE_REQUEST_COUNT_LOCK = threading.Lock()
 
 ALLOWED_FIELDS = {
     "schema_id",
@@ -242,7 +246,6 @@ def acquire_sec_edgar_text_table_live_source_artifact(fields: Mapping[str, Any])
 
     url = _server_derived_complete_submission_text_url(request)
     url_hash = _sha256_text(url)
-    _enforce_rate_limit()
     fetch_result = _fetch_with_retry(
         url=url,
         user_agent=user_agent,
@@ -385,8 +388,7 @@ def _fetch_with_retry(
     attempts = 0
     result = SecEdgarFetchResult(status_code=503, complete=False)
     while attempts < 3:
-        if attempts:
-            _enforce_rate_limit()
+        _enforce_rate_limit()
         result = SEC_EDGAR_CLIENT.fetch_complete_submission_text(
             url=url,
             user_agent=user_agent,
@@ -903,6 +905,7 @@ def _enforce_rate_limit() -> None:
                 http_status=409,
                 blocked_fields=["rate_limit"],
             )
+    _enforce_live_request_count_ceiling()
     marker.parent.mkdir(parents=True, exist_ok=True)
     marker.write_text(
         json.dumps({"last_network_request_at": now, "rate_policy_id": RATE_POLICY_ID}, sort_keys=True) + "\n",
@@ -942,6 +945,47 @@ def _configured_rate_per_second() -> int:
             blocked_fields=["layer3_sec_edgar_rate_limit_per_second"],
         )
     return value
+
+
+def _configured_max_live_requests_per_process() -> int:
+    value = int(
+        getattr(
+            settings,
+            "layer3_sec_edgar_max_live_requests_per_process",
+            SEC_LIVE_REQUEST_COUNT_CEILING_DEFAULT,
+        )
+        or 0
+    )
+    if value <= 0:
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_request_count_ceiling_not_admitted",
+            "SEC EDGAR live request-count ceiling must be a positive integer.",
+            http_status=409,
+            blocked_fields=["layer3_sec_edgar_max_live_requests_per_process"],
+        )
+    return value
+
+
+def _enforce_live_request_count_ceiling() -> None:
+    global _SEC_LIVE_REQUEST_COUNT
+
+    limit = _configured_max_live_requests_per_process()
+    with _SEC_LIVE_REQUEST_COUNT_LOCK:
+        if _SEC_LIVE_REQUEST_COUNT >= limit:
+            _blocked(
+                "sec_edgar_text_table_live_source_artifact_request_count_ceiling_exceeded",
+                "SEC EDGAR live request-count ceiling for this server process has been exhausted.",
+                http_status=409,
+                blocked_fields=["layer3_sec_edgar_max_live_requests_per_process"],
+            )
+        _SEC_LIVE_REQUEST_COUNT += 1
+
+
+def _reset_live_request_count_for_tests() -> None:
+    global _SEC_LIVE_REQUEST_COUNT
+
+    with _SEC_LIVE_REQUEST_COUNT_LOCK:
+        _SEC_LIVE_REQUEST_COUNT = 0
 
 
 def _max_bytes() -> int:
@@ -1212,7 +1256,6 @@ def acquire_sec_edgar_companyfacts_live_artifact(fields: Mapping[str, Any]) -> d
             http_status=409,
         )
 
-    _enforce_rate_limit()
     fetch_result = _fetch_companyfacts_with_retry(
         url=url,
         user_agent=user_agent,
@@ -1329,8 +1372,7 @@ def _fetch_companyfacts_with_retry(
     attempts = 0
     result = SecEdgarFetchResult(status_code=503, complete=False)
     while attempts < 3:
-        if attempts:
-            _enforce_rate_limit()
+        _enforce_rate_limit()
         # The underlying HTTP client gate is identical; we pass Accept:application/json by
         # reusing _fetch_companyfacts_once which calls the client's method with the JSON URL.
         result = _fetch_companyfacts_once(url=url, user_agent=user_agent, timeout_seconds=timeout_seconds, max_bytes=max_bytes)
