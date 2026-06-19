@@ -91,6 +91,10 @@ class Settings(BaseSettings):
         default=1,
         alias="LAYER3_SEC_EDGAR_RATE_LIMIT_PER_SECOND",
     )
+    layer3_sec_edgar_max_live_requests_per_process: int = Field(
+        default=10,
+        alias="LAYER3_SEC_EDGAR_MAX_LIVE_REQUESTS_PER_PROCESS",
+    )
     layer3_sec_edgar_max_bytes: int = Field(default=25_000_000, alias="LAYER3_SEC_EDGAR_MAX_BYTES")
     layer3_sec_edgar_timeout_seconds: int = Field(default=20, alias="LAYER3_SEC_EDGAR_TIMEOUT_SECONDS")
     layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(

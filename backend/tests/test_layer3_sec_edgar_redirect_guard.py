@@ -10,12 +10,14 @@ import urllib.request
 
 import pytest
 
+from app.core.config import settings
 from app.services.layer3_sec_edgar_live_source_artifact import (
     SecEdgarFetchResult,
     _SecEdgarRedirectGuard,
     _SEC_OPENER,
 )
 from app.services import layer3_sec_edgar_live_source_artifact as live_source_artifact
+from app.services.layer3_workbench_error import Layer3WorkbenchError
 
 
 def _make_headers() -> email.message.Message:
@@ -181,3 +183,45 @@ class TestSecEdgarRetryPolicy:
 
         assert result.status_code == 403
         assert client.calls == 1
+
+    def test_live_request_count_ceiling_blocks_extra_retry(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path,
+    ) -> None:
+        class RetryableClient:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def fetch_complete_submission_text(self, **_kwargs) -> SecEdgarFetchResult:
+                self.calls += 1
+                return SecEdgarFetchResult(
+                    status_code=429,
+                    complete=False,
+                    headers={"Retry-After": "0"},
+                )
+
+        client = RetryableClient()
+        live_source_artifact._reset_live_request_count_for_tests()
+        monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+        monkeypatch.setattr(settings, "layer3_sec_edgar_max_live_requests_per_process", 2)
+        monkeypatch.setattr(live_source_artifact, "SEC_EDGAR_CLIENT", client)
+        monkeypatch.setattr(live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+        time_values = iter([1_000.0, 1_001.0, 1_002.0])
+        monkeypatch.setattr(live_source_artifact.time, "time", lambda: next(time_values))
+
+        try:
+            with pytest.raises(Layer3WorkbenchError) as exc_info:
+                live_source_artifact._fetch_with_retry(
+                    url="https://www.sec.gov/Archives/edgar/data/1/test.txt",
+                    user_agent="project6-test contact@example.com",
+                    timeout_seconds=1,
+                    max_bytes=128,
+                )
+
+            assert exc_info.value.error_code == (
+                "sec_edgar_text_table_live_source_artifact_request_count_ceiling_exceeded"
+            )
+            assert client.calls == 2
+        finally:
+            live_source_artifact._reset_live_request_count_for_tests()
