@@ -421,7 +421,7 @@ def _resolve_sidecar_authority(sidecar_receipt_hash: str, value_store_hash: str)
             "sec_xbrl_value_reveal_authority_value_store_hash_mismatch",
             "SEC XBRL value-reveal authority requires the persisted internal value-store hash to match projection authority.",
         )
-    if receipt.get("sidecar_state") != "ready":
+    if receipt.get("sidecar_state") != layer3_sec_xbrl_sidecar.READY_STATE:
         raise SecXbrlValueRevealAuthorityError(
             "sec_xbrl_value_reveal_authority_sidecar_not_ready",
             "SEC XBRL value-reveal authority requires a READY sidecar receipt.",

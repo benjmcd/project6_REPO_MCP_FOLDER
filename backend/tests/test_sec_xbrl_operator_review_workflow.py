@@ -518,6 +518,65 @@ def _submit_sidecar_and_value_store(
     return sidecar, value_store
 
 
+def _write_ready_sidecar_fixture(storage_dir: Path) -> tuple[str, str]:
+    sidecar = authority_service.layer3_sec_xbrl_sidecar
+    sidecar_hash = _hash("b")
+    receipt_id = f"{sidecar.RECEIPT_PREFIX}-{sidecar_hash[:24]}"
+    value_records = [
+        {
+            "resolved_fact_id": "resolved-fact-1",
+            "effective_value": "123.45",
+            "lexical_value": "123.45",
+            "effective_value_hash": _hash("v"),
+            "value_semantics": sidecar.VALUE_SEMANTICS_ID,
+            "transform": {"decimals": "2", "scale": "0"},
+        }
+    ]
+    value_store_hash = sidecar.stable_hash(value_records)
+    receipt = {
+        "schema_id": sidecar.SCHEMA_ID,
+        "schema_version": sidecar.SCHEMA_VERSION,
+        "sidecar_mode": sidecar.SIDECAR_MODE,
+        "operator_decision": sidecar.OPERATOR_DECISION,
+        "sidecar_state": sidecar.READY_STATE,
+        "sidecar_receipt_id": receipt_id,
+        "sidecar_receipt_ref": f"{sidecar.RECEIPT_PREFIX}:{sidecar_hash[:24]}",
+        "sidecar_receipt_hash": sidecar_hash,
+        "internal_value_store": {
+            "schema_id": sidecar.INTERNAL_VALUE_STORE_SCHEMA_ID,
+            "store_state": "persisted",
+            "value_store_hash": value_store_hash,
+            "value_record_count": len(value_records),
+        },
+        "resolved_fact_projection": [{"fact_ref_hash": _hash("e")}],
+    }
+    root = storage_dir / sidecar.RECEIPT_DIR
+    receipt_path = root / "receipts" / f"{receipt_id}.json"
+    value_store_path = root / sidecar.INTERNAL_VALUE_STORE_DIR / f"{receipt_id}.json"
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    value_store_path.parent.mkdir(parents=True, exist_ok=True)
+    receipt_path.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    value_store_path.write_text(
+        json.dumps(
+            {
+                "schema_id": sidecar.INTERNAL_VALUE_STORE_SCHEMA_ID,
+                "schema_version": sidecar.SCHEMA_VERSION,
+                "sidecar_receipt_id": receipt_id,
+                "sidecar_receipt_hash": sidecar_hash,
+                "value_store_hash": value_store_hash,
+                "value_record_count": len(value_records),
+                "value_semantics": sidecar.VALUE_SEMANTICS_ID,
+                "value_records": value_records,
+            },
+            sort_keys=True,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return sidecar_hash, value_store_hash
+
+
 def _prepare_authority_receipt(db_session, monkeypatch, *, request_id: str = "controlled-submit-authority"):
     monkeypatch.setattr(authority_service, "_resolve_sidecar_authority", lambda *_args: _sidecar_authority())
     decision = _record_decision(db_session, request_id=f"{request_id}-decision")
@@ -554,7 +613,7 @@ def test_value_reveal_authority_resolves_sidecar_and_internal_value_store(monkey
         return {
             "sidecar_receipt_id": receipt_id,
             "sidecar_receipt_hash": _hash("b"),
-            "sidecar_state": "ready",
+            "sidecar_state": authority_service.layer3_sec_xbrl_sidecar.READY_STATE,
             "internal_value_store": {"value_store_hash": _hash("c")},
             "resolved_fact_projection": [{"fact_ref_hash": _hash("e")}],
         }
@@ -580,6 +639,19 @@ def test_value_reveal_authority_resolves_sidecar_and_internal_value_store(monkey
     assert calls == {"receipt": True, "value_store": True}
     assert response["sidecar_receipt_hash"] == _hash("b")
     assert response["value_store_hash"] == _hash("c")
+    assert "sidecar_receipt_id" not in response
+    assert "_value" not in json.dumps(response)
+
+
+def test_value_reveal_authority_accepts_real_sidecar_ready_state(tmp_path, monkeypatch) -> None:
+    storage_dir = tmp_path / "storage"
+    monkeypatch.setattr(authority_service.layer3_sec_xbrl_sidecar.settings, "storage_dir", str(storage_dir))
+    sidecar_hash, value_store_hash = _write_ready_sidecar_fixture(storage_dir)
+
+    response = authority_service._resolve_sidecar_authority(sidecar_hash, value_store_hash)
+
+    assert response["sidecar_receipt_hash"] == sidecar_hash
+    assert response["value_store_hash"] == value_store_hash
     assert "sidecar_receipt_id" not in response
     assert "_value" not in json.dumps(response)
 
