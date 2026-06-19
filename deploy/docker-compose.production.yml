@@ -75,7 +75,8 @@ services:
       # --- Storage ---
       # STORAGE_DIR is pinned to the named-volume mount path; must NOT be
       # operator-overridable so the volume mount and the app path stay aligned.
-      STORAGE_DIR: /app/app/storage
+      # Keep outside /app because live SEC egress writes raw-bearing artifacts.
+      STORAGE_DIR: /var/lib/project6/storage
       # (nonlocal forbids enabled/proxy_protected)
       STORAGE_EXPOSURE: auto
 
@@ -135,7 +136,7 @@ services:
       #   LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED
       #   SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED
     volumes:
-      - app_storage:/app/app/storage
+      - app_storage:/var/lib/project6/storage
       - export_data:/app/export-outbox
     expose:
       - "8000"

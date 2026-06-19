@@ -127,6 +127,14 @@ _NONLOCAL_FORBIDDEN_FLAGS = [
     "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
 ]
 
+_RAW_BEARING_STORAGE_CONTAINMENT_FLAGS = [
+    "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
+    "LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED",
+    "LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED",
+    "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
+    "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
+]
+
 
 class TestNonlocalRejectsArmedValueRevealFlags:
     """Contract: Settings(DEPLOYMENT_MODE=nonlocal) must raise ValueError (or ValidationError)
@@ -155,10 +163,60 @@ class TestNonlocalRejectsArmedValueRevealFlags:
         ):
             _build_nonlocal(LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED="true")
 
-    def test_local_mode_armed_flags_does_not_raise(self) -> None:
-        """In local mode, armed flags emit a warning but do not raise at construction time."""
+    @pytest.mark.parametrize("flag", _RAW_BEARING_STORAGE_CONTAINMENT_FLAGS)
+    def test_local_storage_mount_rejects_raw_bearing_flags(self, flag: str) -> None:
+        """Local default /storage exposure must not coexist with raw-bearing flags."""
+        with pytest.raises((ValidationError, ValueError), match=flag):
+            Settings(_env_file=None, **{flag: "true"})
+
+    def test_onedrive_storage_rejects_raw_bearing_flag_even_when_unmounted(self, tmp_path: Path) -> None:
+        """A synced storage root is unsafe even when /storage exposure is disabled."""
+        storage_dir = tmp_path / "OneDrive - Contoso" / "storage"
+        database_url = f"sqlite:///{(tmp_path / 'safe.db').as_posix()}"
+
+        with pytest.raises((ValidationError, ValueError), match="STORAGE_DIR"):
+            Settings(
+                _env_file=None,
+                STORAGE_EXPOSURE="disabled",
+                STORAGE_DIR=str(storage_dir),
+                DATABASE_URL=database_url,
+                LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED="true",
+            )
+
+    def test_onedrive_sqlite_database_rejects_raw_bearing_flag_even_when_unmounted(self, tmp_path: Path) -> None:
+        """A synced SQLite DB path is unsafe even when /storage exposure is disabled."""
+        storage_dir = tmp_path / "private-storage"
+        database_path = tmp_path / "OneDrive" / "method_aware.db"
+
+        with pytest.raises((ValidationError, ValueError), match="DATABASE_URL"):
+            Settings(
+                _env_file=None,
+                STORAGE_EXPOSURE="disabled",
+                STORAGE_DIR=str(storage_dir),
+                DATABASE_URL=f"sqlite:///{database_path.as_posix()}",
+                LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED="true",
+            )
+
+    def test_sqlite_file_uri_database_rejects_raw_bearing_flag_when_inside_repo(self) -> None:
+        """Persistent SQLite file: URIs must be containment-checked."""
+        repo_database = BACKEND / "app" / "storage" / "sec.db"
+
+        with pytest.raises((ValidationError, ValueError), match="DATABASE_URL"):
+            Settings(
+                _env_file=None,
+                STORAGE_EXPOSURE="disabled",
+                STORAGE_DIR="/tmp/project6-storage",
+                DATABASE_URL=f"sqlite:///file:{repo_database.as_posix()}?uri=true",
+                LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED="true",
+            )
+
+    def test_safe_unmounted_local_mode_armed_flag_constructs_ok(self, tmp_path: Path) -> None:
+        """Local raw-bearing flags require private storage and disabled storage exposure."""
         profile = Settings(
             _env_file=None,
+            STORAGE_EXPOSURE="disabled",
+            STORAGE_DIR=str(tmp_path / "private-storage"),
+            DATABASE_URL=f"sqlite:///{(tmp_path / 'private.db').as_posix()}",
             LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED="true",
         )
         assert profile.deployment_mode == "local"

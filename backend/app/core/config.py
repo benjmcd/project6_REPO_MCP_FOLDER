@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import Literal
+import urllib.parse
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -24,6 +25,53 @@ DB_INIT_MODES = {"migrate", "create_all", "none"}
 DEPLOYMENT_MODES = {"local", "nonlocal"}
 AUTH_OWNERS = {"none", "proxy"}
 STORAGE_EXPOSURE_MODES = {"auto", "enabled", "disabled", "proxy_protected"}
+
+
+def _path_inside_repo_or_onedrive(path: Path) -> bool:
+    resolved = path.resolve(strict=False)
+    for root in _local_application_roots():
+        try:
+            resolved.relative_to(root)
+            return True
+        except ValueError:
+            continue
+    return any(_is_onedrive_path_part(part) for part in resolved.parts)
+
+
+def _local_application_roots() -> tuple[Path, ...]:
+    roots = [BACKEND_ROOT.resolve(strict=False)]
+    parent = BACKEND_ROOT.parent.resolve(strict=False)
+    parent_backend = (parent / "backend").resolve(strict=False)
+    if parent_backend == BACKEND_ROOT.resolve(strict=False):
+        roots.append(parent)
+    return tuple(dict.fromkeys(roots))
+
+
+def _is_onedrive_path_part(value: str) -> bool:
+    normalized = value.strip().lower()
+    return normalized == "onedrive" or normalized.startswith("onedrive - ")
+
+
+def _sqlite_database_path(database_url: str) -> Path | None:
+    raw = str(database_url).strip()
+    prefix = "sqlite:///"
+    if not raw.startswith(prefix):
+        return None
+
+    raw_path = raw[len(prefix):].strip()
+    if not raw_path or raw_path == ":memory:":
+        return None
+    if raw_path.startswith("file:"):
+        parsed = urllib.parse.urlparse(raw_path)
+        path_value = urllib.parse.unquote(parsed.path or "")
+        if not path_value or path_value == ":memory:":
+            return None
+        raw_path = path_value
+
+    candidate = Path(raw_path)
+    if not candidate.is_absolute():
+        candidate = BACKEND_ROOT / candidate
+    return candidate.resolve(strict=False)
 
 
 def _normalize_sqlite_url(value: str) -> str:
@@ -248,10 +296,21 @@ class Settings(BaseSettings):
         _excluded = {"LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED"}
         return [name for name in self._armed_value_reveal_flags() if name not in _excluded]
 
+    def _armed_raw_bearing_sec_flags(self) -> list[str]:
+        checks = [
+            ("LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED", self.layer3_sec_edgar_live_network_enabled),
+            ("LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED", self.layer3_sec_edgar_arelle_internal_value_store_enabled),
+            ("LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED", self.layer3_sec_edgar_arelle_corpus_validation_enabled),
+            ("LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED", self.layer3_sec_edgar_arelle_value_reveal_enabled),
+            ("LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED", self.layer3_sec_xbrl_controlled_value_reveal_submit_enabled),
+        ]
+        return [name for name, armed in checks if armed]
+
     def model_post_init(self, __context: object) -> None:
         if self.database_url.startswith("sqlite"):
             self.database_url = _normalize_sqlite_url(self.database_url)
         self.storage_dir = _normalize_storage_path(self.storage_dir)
+        self._validate_raw_bearing_sec_storage_containment()
         self._validate_deployment_profile()
         armed = self._armed_value_reveal_flags()
         if armed:
@@ -279,6 +338,30 @@ class Settings(BaseSettings):
         if self.storage_exposure == "auto":
             return self.deployment_mode == "local"
         return True
+
+    def _validate_raw_bearing_sec_storage_containment(self) -> None:
+        armed = self._armed_raw_bearing_sec_flags()
+        if not armed:
+            return
+
+        unsafe_surfaces: list[str] = []
+        if self.storage_mount_enabled:
+            unsafe_surfaces.append("STORAGE_EXPOSURE")
+        if _path_inside_repo_or_onedrive(Path(self.storage_dir)):
+            unsafe_surfaces.append("STORAGE_DIR")
+        database_path = _sqlite_database_path(self.database_url)
+        if database_path is not None and _path_inside_repo_or_onedrive(database_path):
+            unsafe_surfaces.append("DATABASE_URL")
+        if not unsafe_surfaces:
+            return
+
+        raise ValueError(
+            "Raw-bearing SEC egress/value-reveal flag(s) cannot be armed while storage or database "
+            "containment is unsafe. Armed flags: "
+            + ", ".join(armed)
+            + ". Unsafe surface(s): "
+            + ", ".join(unsafe_surfaces)
+        )
 
     def _validate_deployment_profile(self) -> None:
         if self.deployment_mode != "nonlocal":

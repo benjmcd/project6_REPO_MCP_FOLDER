@@ -8,7 +8,6 @@ Collected by pytest via the test_layer3_*.py glob.
 from __future__ import annotations
 
 import re
-import sys
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -334,8 +333,8 @@ def test_compose_export_data_volume_declared() -> None:
 
 def test_compose_app_storage_volume_mounted_on_app() -> None:
     text = _compose_text()
-    assert re.search(r"app_storage:/app/app/storage", text), (
-        "app service must mount app_storage volume at /app/app/storage"
+    assert re.search(r"app_storage:/var/lib/project6/storage", text), (
+        "app service must mount app_storage volume at /var/lib/project6/storage"
     )
 
 
@@ -354,8 +353,8 @@ def test_compose_export_data_volume_mounted_on_app() -> None:
 def test_compose_storage_dir_fixed_literal() -> None:
     text = _compose_text()
     # Must appear as a plain literal value, not as a ${VAR} interpolation.
-    assert re.search(r"STORAGE_DIR\s*:\s*/app/app/storage\s*$", text, re.MULTILINE), (
-        "STORAGE_DIR in docker-compose.production.yml must be a fixed literal '/app/app/storage', "
+    assert re.search(r"STORAGE_DIR\s*:\s*/var/lib/project6/storage\s*$", text, re.MULTILINE), (
+        "STORAGE_DIR in docker-compose.production.yml must be a fixed literal '/var/lib/project6/storage', "
         "not a \\${VAR} interpolation — mount alignment must not be operator-breakable"
     )
     # Must NOT appear as an interpolated variable
@@ -474,6 +473,13 @@ def test_dockerfile_app_creates_export_outbox() -> None:
     )
 
 
+def test_dockerfile_app_creates_private_sec_storage_root() -> None:
+    text = _dockerfile_app_text()
+    assert re.search(r"mkdir\s+-p\s+[^\n]*/var/lib/project6/storage", text), (
+        "Dockerfile.app RUN mkdir must include /var/lib/project6/storage"
+    )
+
+
 def test_dockerfile_app_export_outbox_in_chown_layer() -> None:
     """export-outbox must appear in the same RUN layer that does the chown."""
     text = _dockerfile_app_text()
@@ -481,6 +487,14 @@ def test_dockerfile_app_export_outbox_in_chown_layer() -> None:
     assert re.search(r"RUN\s+mkdir\s+-p\s+[^\n]*export-outbox[^\n]*\n[^\n]*chown\s+-R", text, re.MULTILINE) or \
            re.search(r"RUN\s+mkdir\s+-p\s+[^\n]*export-outbox[^\n]*&&[^\n]*chown\s+-R", text), (
         "Dockerfile.app: export-outbox must be created in the same RUN layer as the chown -R"
+    )
+
+
+def test_dockerfile_app_private_storage_in_chown_layer() -> None:
+    """Private SEC storage must be writable by appuser."""
+    text = _dockerfile_app_text()
+    assert re.search(r"chown\s+-R\s+appuser:appgroup\s+[^\n]*/var/lib/project6", text), (
+        "Dockerfile.app must chown /var/lib/project6 for the non-root appuser"
     )
 
 

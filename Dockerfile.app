@@ -44,7 +44,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY backend/ ./
 
 # Make sure storage and export runtime directories exist and are writable.
-RUN mkdir -p app/storage export-outbox && chown -R appuser:appgroup /app
+RUN mkdir -p app/storage export-outbox /var/lib/project6/storage \
+    && chown -R appuser:appgroup /app /var/lib/project6
 
 # Switch to non-root user for runtime.
 USER appuser
