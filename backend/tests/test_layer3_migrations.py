@@ -11,6 +11,8 @@ Covers:
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 import os
 import sys
@@ -66,8 +68,8 @@ def _make_alembic_config(url: str) -> Config:
     return cfg
 
 
-def _run_upgrade(url: str) -> None:
-    """Run alembic upgrade head against *url*.
+def _run_alembic_command(url: str, operation, revision: str) -> None:
+    """Run an Alembic operation against *url*.
 
     env.py's ``_database_url()`` checks ``os.environ["DATABASE_URL"]`` first,
     so we must set that env var — not just the alembic config option — to
@@ -91,7 +93,7 @@ def _run_upgrade(url: str) -> None:
     }
     try:
         cfg = _make_alembic_config(url)
-        command.upgrade(cfg, "head")
+        operation(cfg, revision)
     finally:
         if prev is None:
             os.environ.pop("DATABASE_URL", None)
@@ -101,6 +103,21 @@ def _run_upgrade(url: str) -> None:
         for name, lg in manager.loggerDict.items():
             if isinstance(lg, logging.Logger):
                 lg.disabled = disabled_before.get(name, False)
+
+
+def _run_upgrade(url: str) -> None:
+    """Run alembic upgrade head against *url*."""
+    _run_alembic_command(url, command.upgrade, "head")
+
+
+def _run_upgrade_to(url: str, revision: str) -> None:
+    """Run alembic upgrade to a specific revision against *url*."""
+    _run_alembic_command(url, command.upgrade, revision)
+
+
+def _run_downgrade_to(url: str, revision: str) -> None:
+    """Run alembic downgrade to a specific revision against *url*."""
+    _run_alembic_command(url, command.downgrade, revision)
 
 
 def _check_schema_match(url: str) -> None:
@@ -212,6 +229,172 @@ def test_alembic_orm_metadata_match_sqlite(tmp_path):
     db_url = f"sqlite:///{tmp_path / 'metadata_match.db'}"
     _run_upgrade(db_url)
     _check_schema_match(db_url)
+
+
+def test_controlled_value_reveal_submit_request_hash_migration_up_down_sqlite(tmp_path):
+    """0053 hashes legacy controlled-submit client_request_id values and redacts raw storage."""
+    db_url = f"sqlite:///{tmp_path / 'controlled_submit_hash.db'}"
+    legacy_revision = "0052_layer3_analysis_product_supersession"
+    raw_request_id = "legacy-private-submit-request"
+    expected_hash = hashlib.sha256(raw_request_id.encode("utf-8")).hexdigest()
+
+    _run_upgrade_to(db_url, legacy_revision)
+    engine = create_engine(db_url, future=True)
+    with engine.begin() as conn:
+        conn.execute(text("PRAGMA foreign_keys=OFF"))
+        conn.execute(
+            text(
+                """
+                INSERT INTO l3_sec_xbrl_controlled_value_reveal_submit_receipt (
+                    sec_xbrl_controlled_value_reveal_submit_receipt_id,
+                    client_request_id,
+                    submit_basis_hash,
+                    submit_schema_id,
+                    sec_xbrl_value_reveal_authority_receipt_id,
+                    authority_basis_hash,
+                    sec_xbrl_operator_review_decision_id,
+                    decision_basis_hash,
+                    sec_xbrl_operator_review_workflow_id,
+                    workflow_basis_hash,
+                    sec_xbrl_statement_packet_set_id,
+                    statement_packet_basis_hash,
+                    sec_xbrl_projection_set_id,
+                    projection_basis_hash,
+                    dataset_version_id,
+                    dataset_version_hash,
+                    sidecar_receipt_id_hash,
+                    sidecar_receipt_hash,
+                    value_store_hash,
+                    submit_state,
+                    submit_policy_id,
+                    redaction_policy,
+                    revealed_fact_count,
+                    value_redacted_fact_count,
+                    fact_inventory_hash,
+                    value_inventory_hash,
+                    response_inventory_hash,
+                    submit_summary_json,
+                    negative_invariants_json,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    :receipt_id,
+                    :client_request_id,
+                    :submit_basis_hash,
+                    :submit_schema_id,
+                    :authority_receipt_id,
+                    :authority_basis_hash,
+                    :decision_id,
+                    :decision_basis_hash,
+                    :workflow_id,
+                    :workflow_basis_hash,
+                    :packet_set_id,
+                    :statement_packet_basis_hash,
+                    :projection_set_id,
+                    :projection_basis_hash,
+                    :dataset_version_id,
+                    :dataset_version_hash,
+                    :sidecar_receipt_id_hash,
+                    :sidecar_receipt_hash,
+                    :value_store_hash,
+                    :submit_state,
+                    :submit_policy_id,
+                    :redaction_policy,
+                    :revealed_fact_count,
+                    :value_redacted_fact_count,
+                    :fact_inventory_hash,
+                    :value_inventory_hash,
+                    :response_inventory_hash,
+                    :submit_summary_json,
+                    :negative_invariants_json,
+                    :created_at,
+                    :updated_at
+                )
+                """
+            ),
+            {
+                "receipt_id": "legacy-submit-receipt",
+                "client_request_id": raw_request_id,
+                "submit_basis_hash": "a" * 64,
+                "submit_schema_id": "layer3.sec_xbrl_controlled_value_reveal_submit.v1",
+                "authority_receipt_id": "legacy-authority-receipt",
+                "authority_basis_hash": "b" * 64,
+                "decision_id": "legacy-decision",
+                "decision_basis_hash": "c" * 64,
+                "workflow_id": "legacy-workflow",
+                "workflow_basis_hash": "d" * 64,
+                "packet_set_id": "legacy-packet-set",
+                "statement_packet_basis_hash": "e" * 64,
+                "projection_set_id": "legacy-projection-set",
+                "projection_basis_hash": "f" * 64,
+                "dataset_version_id": "legacy-dataset-version",
+                "dataset_version_hash": "1" * 64,
+                "sidecar_receipt_id_hash": "2" * 64,
+                "sidecar_receipt_hash": "3" * 64,
+                "value_store_hash": "4" * 64,
+                "submit_state": "controlled_values_revealed_transiently",
+                "submit_policy_id": "sec_xbrl_authority_receipt_bound_controlled_value_reveal_submit_v1",
+                "redaction_policy": "sec_xbrl_controlled_value_reveal_submit_hash_count_receipt_v1",
+                "revealed_fact_count": 1,
+                "value_redacted_fact_count": 0,
+                "fact_inventory_hash": "5" * 64,
+                "value_inventory_hash": "6" * 64,
+                "response_inventory_hash": "7" * 64,
+                "submit_summary_json": json.dumps({"legacy": True}),
+                "negative_invariants_json": json.dumps({"raw_values_persisted": False}),
+                "created_at": "2026-06-19T00:00:00Z",
+                "updated_at": "2026-06-19T00:00:00Z",
+            },
+        )
+    engine.dispose()
+
+    _run_upgrade(db_url)
+    engine = create_engine(db_url, future=True)
+    inspector = sa_inspect(engine)
+    columns = {
+        column["name"]
+        for column in inspector.get_columns("l3_sec_xbrl_controlled_value_reveal_submit_receipt")
+    }
+    assert "client_request_id_hash" in columns
+    with engine.connect() as conn:
+        migrated = conn.execute(
+            text(
+                """
+                SELECT client_request_id, client_request_id_hash
+                FROM l3_sec_xbrl_controlled_value_reveal_submit_receipt
+                WHERE sec_xbrl_controlled_value_reveal_submit_receipt_id = :receipt_id
+                """
+            ),
+            {"receipt_id": "legacy-submit-receipt"},
+        ).mappings().one()
+    engine.dispose()
+    assert migrated["client_request_id_hash"] == expected_hash
+    assert migrated["client_request_id"] == f"redacted-client-request-id:{expected_hash}"
+    assert migrated["client_request_id"] != raw_request_id
+
+    _run_downgrade_to(db_url, legacy_revision)
+    engine = create_engine(db_url, future=True)
+    inspector = sa_inspect(engine)
+    downgraded_columns = {
+        column["name"]
+        for column in inspector.get_columns("l3_sec_xbrl_controlled_value_reveal_submit_receipt")
+    }
+    assert "client_request_id_hash" not in downgraded_columns
+    with engine.connect() as conn:
+        downgraded_request_id = conn.execute(
+            text(
+                """
+                SELECT client_request_id
+                FROM l3_sec_xbrl_controlled_value_reveal_submit_receipt
+                WHERE sec_xbrl_controlled_value_reveal_submit_receipt_id = :receipt_id
+                """
+            ),
+            {"receipt_id": "legacy-submit-receipt"},
+        ).scalar_one()
+    engine.dispose()
+    assert downgraded_request_id == f"redacted-client-request-id:{expected_hash}"
+    assert downgraded_request_id != raw_request_id
 
 
 # ---------------------------------------------------------------------------

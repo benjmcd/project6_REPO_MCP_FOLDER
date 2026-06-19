@@ -912,9 +912,13 @@ def post_sec_xbrl_controlled_value_reveal_submit(
             },
             commit=False,
         )
+        submit_request_id = (
+            "sec-xbrl-controlled-value-reveal-submit-"
+            f"{receipt['client_request_id_hash'][:24]}"
+        )
         submit_binding = _sec_xbrl_record_binding(
             db,
-            client_request_id=payload.client_request_id,
+            client_request_id=submit_request_id,
             source_receipt_kind="controlled_value_reveal_submit",
             source_receipt_id=receipt["sec_xbrl_controlled_value_reveal_submit_receipt_id"],
             source_receipt_basis_hash=receipt["submit_basis_hash"],
@@ -926,7 +930,7 @@ def post_sec_xbrl_controlled_value_reveal_submit(
         return {
             **base_response(
                 receipt["schema_id"],
-                request_id=payload.client_request_id,
+                request_id=submit_request_id,
                 status=receipt["status"],
             ),
             **receipt,

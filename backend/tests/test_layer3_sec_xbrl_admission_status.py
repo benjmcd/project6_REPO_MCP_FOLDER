@@ -7,11 +7,11 @@ evidence assembly and admission evaluation rather than workflow schema checks
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sys
 import uuid
-from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -393,9 +393,11 @@ def _build_submit_receipt(
     auth: L3SecXbrlValueRevealAuthorityReceipt,
 ) -> L3SecXbrlControlledValueRevealSubmitReceipt:
     submit_basis = stable_hash({"submit": "test", "authority": auth.authority_basis_hash})
+    client_request_id_hash = hashlib.sha256(b"test-submit-client").hexdigest()
     row = L3SecXbrlControlledValueRevealSubmitReceipt(
         sec_xbrl_controlled_value_reveal_submit_receipt_id=_uid(),
-        client_request_id="test-submit-client",
+        client_request_id=f"redacted-client-request-id:{client_request_id_hash}",
+        client_request_id_hash=client_request_id_hash,
         submit_basis_hash=submit_basis,
         submit_schema_id="layer3.sec_xbrl_controlled_value_reveal_submit.v1",
         sec_xbrl_value_reveal_authority_receipt_id=auth.sec_xbrl_value_reveal_authority_receipt_id,

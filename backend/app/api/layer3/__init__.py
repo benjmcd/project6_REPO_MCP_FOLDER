@@ -9637,7 +9637,7 @@ class Layer3SecXbrlControlledValueRevealSubmitResponse(Layer3BaseResponse):
     submit_state: str
     sec_xbrl_controlled_value_reveal_submit_receipt_id: str
     value_reveal_submit_receipt_ref: str
-    client_request_id: str | None = None
+    client_request_id_hash: str
     submit_basis_hash: str
     sec_xbrl_value_reveal_authority_receipt_id: str
     authority_basis_hash: str
