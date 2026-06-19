@@ -70,10 +70,17 @@ Run the same tests under the global interpreter too; both must pass.
 
 ## Optional heavyweight stacks stay optional
 
-OCR (Tesseract) and SEC/Arelle are **not** required for a base install and are
-**default-off**. They are provisioned only in their own dedicated paths/jobs, with
-pinned versions and (for Arelle) versioned taxonomy artifacts. Keep them out of the
-base app install so a clean environment installs reproducibly without them.
+Tesseract OCR (a system binary, not a pip package) and the SEC/Arelle stack are
+**not** required for a base install and are **default-off**: they are provisioned
+only in their own dedicated paths/jobs, with pinned versions and (for Arelle)
+versioned taxonomy artifacts. Keep those out of the base app install so a clean
+environment installs reproducibly without them.
+
+Note: the **PaddleOCR advanced-table stack** (`paddlepaddle`, `paddleocr`) is, by
+contrast, currently declared in `backend/requirements.txt` under the
+`# Advanced Table and OCR` comment, so a clean `pip install -r backend/requirements.txt`
+**does** pull it (it additionally needs OS-level Ghostscript/Poppler to function).
+Only Tesseract and SEC/Arelle are the out-of-base optional stacks described here.
 
 ## POSIX executable-bit gotcha in tests
 
