@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import Literal
+import urllib.parse
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,12 +29,22 @@ STORAGE_EXPOSURE_MODES = {"auto", "enabled", "disabled", "proxy_protected"}
 
 def _path_inside_repo_or_onedrive(path: Path) -> bool:
     resolved = path.resolve(strict=False)
-    repo = BACKEND_ROOT.parent.resolve(strict=False)
-    try:
-        resolved.relative_to(repo)
-        return True
-    except ValueError:
-        return any(_is_onedrive_path_part(part) for part in resolved.parts)
+    for root in _local_application_roots():
+        try:
+            resolved.relative_to(root)
+            return True
+        except ValueError:
+            continue
+    return any(_is_onedrive_path_part(part) for part in resolved.parts)
+
+
+def _local_application_roots() -> tuple[Path, ...]:
+    roots = [BACKEND_ROOT.resolve(strict=False)]
+    parent = BACKEND_ROOT.parent.resolve(strict=False)
+    parent_backend = (parent / "backend").resolve(strict=False)
+    if parent_backend == BACKEND_ROOT.resolve(strict=False):
+        roots.append(parent)
+    return tuple(dict.fromkeys(roots))
 
 
 def _is_onedrive_path_part(value: str) -> bool:
@@ -48,8 +59,14 @@ def _sqlite_database_path(database_url: str) -> Path | None:
         return None
 
     raw_path = raw[len(prefix):].strip()
-    if not raw_path or raw_path == ":memory:" or raw_path.startswith("file:"):
+    if not raw_path or raw_path == ":memory:":
         return None
+    if raw_path.startswith("file:"):
+        parsed = urllib.parse.urlparse(raw_path)
+        path_value = urllib.parse.unquote(parsed.path or "")
+        if not path_value or path_value == ":memory:":
+            return None
+        raw_path = path_value
 
     candidate = Path(raw_path)
     if not candidate.is_absolute():
