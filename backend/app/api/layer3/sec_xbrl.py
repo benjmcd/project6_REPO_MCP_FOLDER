@@ -985,7 +985,7 @@ def get_sec_xbrl_controlled_value_reveal_submit_status(
                 sec_xbrl_controlled_value_reveal_submit_receipt_id
             ),
         )
-        return {
+        response_body = {
             **base_response(
                 receipt["schema_id"],
                 request_id=(
@@ -997,6 +997,7 @@ def get_sec_xbrl_controlled_value_reveal_submit_status(
             **receipt,
             **_sec_xbrl_auth_binding_projection(binding),
         }
+        return JSONResponse(content=response_body)
     except (
         layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError,
         layer3_sec_xbrl_auth_binding.SecXbrlAuthBindingError,

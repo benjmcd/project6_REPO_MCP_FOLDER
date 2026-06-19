@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+import base64
 import hashlib
+import hmac
+import json
+import os
 import re
+import secrets
 from collections.abc import Mapping
 from typing import Any
 
@@ -34,6 +39,10 @@ from app.services.layer3_workbench_error import Layer3WorkbenchError
 
 SUBMIT_SCHEMA_ID = "layer3.sec_xbrl_controlled_value_reveal_submit.v1"
 STATUS_SCHEMA_ID = "layer3.sec_xbrl_controlled_value_reveal_submit_status.v1"
+PAGE_CURSOR_SCHEMA_ID = "layer3.sec_xbrl_controlled_value_reveal_submit_page_cursor.v1"
+PAGE_CURSOR_VERSION = 1
+PAGE_CURSOR_SIGNATURE_SECRET_ENV_VAR = "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_CURSOR_SECRET"
+PAGE_CURSOR_PROCESS_SECRET = secrets.token_bytes(32)
 SUBMIT_MODE = "sec_xbrl_controlled_value_reveal_submit_v1"
 SUBMIT_OPERATOR_DECISION = "submit_explicit_sec_xbrl_value_reveal_from_authority_receipt"
 SUBMIT_RECEIPT_REF_PREFIX = "sec-xbrl-controlled-value-reveal-submit"
@@ -111,13 +120,6 @@ def submit_controlled_value_reveal(
             details={"blocked_keys": ["operator_reveal_confirmation"]},
             http_status=400,
         )
-    if page_cursor is not None:
-        raise SecXbrlControlledValueRevealSubmitError(
-            "sec_xbrl_controlled_value_reveal_submit_pagination_not_implemented",
-            "SEC XBRL controlled value-reveal submit v1 does not admit page cursors.",
-            details={"blocked_keys": ["page_cursor"]},
-            http_status=400,
-        )
     cap = _max_records(max_records)
     receipt_id = _required_text(
         sec_xbrl_value_reveal_authority_receipt_id,
@@ -163,19 +165,18 @@ def submit_controlled_value_reveal(
             "sec_xbrl_controlled_value_reveal_submit_no_resolved_values",
             "SEC XBRL controlled value reveal found no sidecar-bound values to reveal.",
         )
-    if len(reveal_records) > cap:
-        raise SecXbrlControlledValueRevealSubmitError(
-            "sec_xbrl_controlled_value_reveal_submit_record_cap_exceeded",
-            "SEC XBRL controlled value reveal requires pagination before returning this many records.",
-            details={"revealed_fact_count": len(reveal_records), "max_records": cap},
-            http_status=400,
-        )
-    receipt_basis = _receipt_basis(authority=authority, reveal_records=reveal_records)
+    page = _page_reveal_records(
+        authority=authority,
+        reveal_records=reveal_records,
+        page_size=cap,
+        page_cursor=page_cursor,
+    )
+    receipt_basis = _receipt_basis(authority=authority, reveal_records=page["reveal_records"], page=page)
     submit_basis_hash = stable_hash(receipt_basis)
-    existing = _existing_receipt(db, request_id, submit_basis_hash, authority)
+    existing = _existing_receipt(db, request_id, submit_basis_hash)
     if existing is not None:
         _validate_existing_receipt(existing, submit_basis_hash, receipt_basis)
-        return _submit_response(existing, reveal_records=reveal_records, idempotent_replay=True)
+        return _submit_response(existing, reveal_records=page["reveal_records"], idempotent_replay=True)
 
     submit_receipt = _new_receipt(
         request_id=request_id,
@@ -200,7 +201,7 @@ def submit_controlled_value_reveal(
         db.rollback()
         raise
     db.refresh(submit_receipt)
-    return _submit_response(submit_receipt, reveal_records=reveal_records, idempotent_replay=False)
+    return _submit_response(submit_receipt, reveal_records=page["reveal_records"], idempotent_replay=False)
 
 
 def inspect_controlled_value_reveal_submit_status(
@@ -407,12 +408,230 @@ def _controlled_reveal_records(
                 "continued": bool(record.get("continued")),
             }
         )
+    records = sorted(records, key=_controlled_reveal_sort_key)
     if _response_has_forbidden_reference(records):
         raise SecXbrlControlledValueRevealSubmitError(
             "sec_xbrl_controlled_value_reveal_submit_response_redaction_violation",
             "SEC XBRL controlled value reveal response failed redaction/reference checks.",
         )
     return records
+
+
+def _controlled_reveal_sort_key(record: Mapping[str, Any]) -> tuple[int, int, str, str, str, str]:
+    return (
+        int(record.get("source_order") or 0),
+        int(record.get("entry_document_index") or 0),
+        str((record.get("concept") or {}).get("qname") or ""),
+        str(record.get("fact_identity_hash") or ""),
+        str(record.get("resolved_fact_id_hash") or ""),
+        str(record.get("value_hash") or ""),
+    )
+
+
+def _page_reveal_records(
+    *,
+    authority: L3SecXbrlValueRevealAuthorityReceipt,
+    reveal_records: list[dict[str, Any]],
+    page_size: int,
+    page_cursor: str | None,
+) -> dict[str, Any]:
+    total_record_count = len(reveal_records)
+    result_set_identity_hash = _result_set_identity_hash(authority=authority, reveal_records=reveal_records)
+    if page_cursor is None:
+        page_offset = 0
+    else:
+        page_offset = _decode_page_cursor(
+            page_cursor,
+            authority=authority,
+            result_set_identity_hash=result_set_identity_hash,
+            page_size=page_size,
+            total_record_count=total_record_count,
+        )
+    if page_offset >= total_record_count:
+        _raise_invalid_page_cursor("page cursor offset exceeds current result set")
+    page_records = reveal_records[page_offset : page_offset + page_size]
+    page_record_count = len(page_records)
+    next_offset = page_offset + page_record_count
+    binding_hash = _page_cursor_binding_hash(
+        authority=authority,
+        result_set_identity_hash=result_set_identity_hash,
+        page_size=page_size,
+    )
+    next_page_cursor = (
+        _encode_page_cursor(
+            offset=next_offset,
+            result_set_identity_hash=result_set_identity_hash,
+            page_size=page_size,
+            binding_hash=binding_hash,
+        )
+        if next_offset < total_record_count
+        else None
+    )
+    return {
+        "reveal_records": page_records,
+        "total_record_count": total_record_count,
+        "page_record_count": page_record_count,
+        "page_index": (page_offset // page_size) + 1,
+        "page_offset": page_offset,
+        "page_size": page_size,
+        "result_set_identity_hash": result_set_identity_hash,
+        "page_cursor_binding_hash": binding_hash,
+        "next_page_cursor": next_page_cursor,
+    }
+
+
+def _result_set_identity_hash(
+    *,
+    authority: L3SecXbrlValueRevealAuthorityReceipt,
+    reveal_records: list[dict[str, Any]],
+) -> str:
+    return stable_hash(
+        {
+            "schema_id": "layer3.sec_xbrl_controlled_value_reveal_submit_result_set_identity.v1",
+            "sec_xbrl_value_reveal_authority_receipt_id": (
+                authority.sec_xbrl_value_reveal_authority_receipt_id
+            ),
+            "authority_basis_hash": authority.authority_basis_hash,
+            "dataset_version_hash": authority.dataset_version_hash,
+            "sidecar_receipt_hash": authority.sidecar_receipt_hash,
+            "value_store_hash": authority.value_store_hash,
+            "record_count": len(reveal_records),
+            "record_identities": [
+                {
+                    "source_order": int(record.get("source_order") or 0),
+                    "entry_document_index": int(record.get("entry_document_index") or 0),
+                    "fact_identity_hash": str(record.get("fact_identity_hash") or ""),
+                    "resolved_fact_id_hash": str(record.get("resolved_fact_id_hash") or ""),
+                    "value_hash": str(record.get("value_hash") or ""),
+                    "value_redacted": bool(record.get("value_redacted")),
+                }
+                for record in reveal_records
+            ],
+        }
+    )
+
+
+def _page_cursor_binding_hash(
+    *,
+    authority: L3SecXbrlValueRevealAuthorityReceipt,
+    result_set_identity_hash: str,
+    page_size: int,
+) -> str:
+    return stable_hash(
+        {
+            "schema_id": "layer3.sec_xbrl_controlled_value_reveal_submit_page_cursor_binding.v1",
+            "sec_xbrl_value_reveal_authority_receipt_id": (
+                authority.sec_xbrl_value_reveal_authority_receipt_id
+            ),
+            "authority_basis_hash": authority.authority_basis_hash,
+            "result_set_identity_hash": result_set_identity_hash,
+            "page_size": page_size,
+        }
+    )
+
+
+def _encode_page_cursor(
+    *,
+    offset: int,
+    result_set_identity_hash: str,
+    page_size: int,
+    binding_hash: str,
+) -> str:
+    payload: dict[str, Any] = {
+        "schema_id": PAGE_CURSOR_SCHEMA_ID,
+        "version": PAGE_CURSOR_VERSION,
+        "offset": offset,
+        "page_size": page_size,
+        "result_set_identity_hash": result_set_identity_hash,
+        "binding_hash": binding_hash,
+    }
+    payload["cursor_hash"] = stable_hash(payload)
+    payload["cursor_signature"] = _page_cursor_signature(payload)
+    raw = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+
+
+def _decode_page_cursor(
+    page_cursor: str,
+    *,
+    authority: L3SecXbrlValueRevealAuthorityReceipt,
+    result_set_identity_hash: str,
+    page_size: int,
+    total_record_count: int,
+) -> int:
+    token = _required_text(page_cursor, "page_cursor")
+    if len(token) > 4096:
+        _raise_invalid_page_cursor("page cursor is too long")
+    try:
+        raw = base64.urlsafe_b64decode(token + ("=" * (-len(token) % 4)))
+        payload = json.loads(raw.decode("utf-8"))
+    except Exception:
+        _raise_invalid_page_cursor("page cursor is not decodable")
+    if not isinstance(payload, Mapping):
+        _raise_invalid_page_cursor("page cursor payload is invalid")
+    cursor_hash = payload.get("cursor_hash")
+    unsigned_payload = dict(payload)
+    unsigned_payload.pop("cursor_hash", None)
+    unsigned_payload.pop("cursor_signature", None)
+    if cursor_hash != stable_hash(unsigned_payload):
+        _raise_invalid_page_cursor("page cursor payload hash mismatch")
+    signed_payload = dict(unsigned_payload)
+    signed_payload["cursor_hash"] = cursor_hash
+    cursor_signature = str(payload.get("cursor_signature") or "")
+    if not hmac.compare_digest(cursor_signature, _page_cursor_signature(signed_payload)):
+        _raise_invalid_page_cursor("page cursor signature mismatch")
+    if payload.get("schema_id") != PAGE_CURSOR_SCHEMA_ID or payload.get("version") != PAGE_CURSOR_VERSION:
+        _raise_invalid_page_cursor("page cursor schema is invalid")
+    expected_binding_hash = _page_cursor_binding_hash(
+        authority=authority,
+        result_set_identity_hash=result_set_identity_hash,
+        page_size=page_size,
+    )
+    try:
+        cursor_page_size = int(payload.get("page_size"))
+    except (TypeError, ValueError):
+        _raise_invalid_page_cursor("page cursor page size is invalid")
+    if (
+        payload.get("binding_hash") != expected_binding_hash
+        or payload.get("result_set_identity_hash") != result_set_identity_hash
+        or cursor_page_size != page_size
+    ):
+        raise SecXbrlControlledValueRevealSubmitError(
+            "sec_xbrl_controlled_value_reveal_submit_page_cursor_authority_mismatch",
+            "SEC XBRL controlled value reveal page cursor does not match the current authority, result set, or page size.",
+            details={"blocked_keys": ["page_cursor"]},
+            http_status=400,
+        )
+    try:
+        offset = int(payload.get("offset"))
+    except (TypeError, ValueError):
+        _raise_invalid_page_cursor("page cursor offset is invalid")
+    if offset < 0 or offset >= total_record_count or offset % page_size != 0:
+        _raise_invalid_page_cursor("page cursor offset is outside the current result set")
+    return offset
+
+
+def _raise_invalid_page_cursor(reason: str) -> None:
+    raise SecXbrlControlledValueRevealSubmitError(
+        "sec_xbrl_controlled_value_reveal_submit_page_cursor_invalid",
+        "SEC XBRL controlled value reveal page cursor is invalid or tampered.",
+        details={"blocked_keys": ["page_cursor"], "reason": reason},
+        http_status=400,
+    )
+
+
+def _page_cursor_signature(payload: Mapping[str, Any]) -> str:
+    raw = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hmac.new(_page_cursor_signing_key(), raw, hashlib.sha256).hexdigest()
+
+
+def _page_cursor_signing_key() -> bytes:
+    configured_secret = (
+        os.environ.get(PAGE_CURSOR_SIGNATURE_SECRET_ENV_VAR, "").strip().encode("utf-8")
+    )
+    if configured_secret:
+        return hashlib.sha256(configured_secret).digest()
+    return PAGE_CURSOR_PROCESS_SECRET
 
 
 def _value_text_requires_redaction(*values: str) -> bool:
@@ -448,6 +667,7 @@ def _receipt_basis(
     *,
     authority: L3SecXbrlValueRevealAuthorityReceipt,
     reveal_records: list[dict[str, Any]],
+    page: Mapping[str, Any],
 ) -> dict[str, Any]:
     fact_identity_hashes = [str(record["fact_identity_hash"]) for record in reveal_records]
     value_hashes = [str(record.get("value_hash") or "") for record in reveal_records]
@@ -486,6 +706,14 @@ def _receipt_basis(
         "redaction_policy": L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_REDACTION_POLICY,
         "revealed_fact_count": len(reveal_records),
         "value_redacted_fact_count": sum(1 for record in reveal_records if record.get("value_redacted") is True),
+        "total_record_count": int(page["total_record_count"]),
+        "page_record_count": int(page["page_record_count"]),
+        "page_index": int(page["page_index"]),
+        "page_offset": int(page["page_offset"]),
+        "page_size": int(page["page_size"]),
+        "result_set_identity_hash": str(page["result_set_identity_hash"]),
+        "page_cursor_binding_hash": str(page["page_cursor_binding_hash"]),
+        "next_page_cursor": page.get("next_page_cursor"),
         "fact_inventory_hash": stable_hash(fact_identity_hashes),
         "value_inventory_hash": stable_hash(value_hashes),
         "response_inventory_hash": stable_hash(response_inventory),
@@ -496,7 +724,6 @@ def _existing_receipt(
     db: Session,
     request_id: str,
     submit_basis_hash: str,
-    authority: L3SecXbrlValueRevealAuthorityReceipt,
 ) -> L3SecXbrlControlledValueRevealSubmitReceipt | None:
     request_id_hash = _sha256_text(request_id)
     existing_by_request = (
@@ -509,31 +736,13 @@ def _existing_receipt(
         .filter(L3SecXbrlControlledValueRevealSubmitReceipt.submit_basis_hash == submit_basis_hash)
         .one_or_none()
     )
-    existing_by_authority = (
-        db.query(L3SecXbrlControlledValueRevealSubmitReceipt)
-        .filter(
-            L3SecXbrlControlledValueRevealSubmitReceipt.sec_xbrl_value_reveal_authority_receipt_id
-            == authority.sec_xbrl_value_reveal_authority_receipt_id
-        )
-        .one_or_none()
-    )
     if existing_by_request is not None and existing_by_request.submit_basis_hash != submit_basis_hash:
         raise SecXbrlControlledValueRevealSubmitError(
             "sec_xbrl_controlled_value_reveal_submit_client_request_conflict",
             "client_request_id already submitted a different SEC XBRL controlled value-reveal basis.",
             details={"client_request_id_hash": request_id_hash},
         )
-    if existing_by_authority is not None and existing_by_authority.submit_basis_hash != submit_basis_hash:
-        raise SecXbrlControlledValueRevealSubmitError(
-            "sec_xbrl_controlled_value_reveal_submit_authority_conflict",
-            "SEC XBRL value-reveal authority already has a conflicting submit receipt.",
-            details={
-                "sec_xbrl_value_reveal_authority_receipt_id": (
-                    authority.sec_xbrl_value_reveal_authority_receipt_id
-                )
-            },
-        )
-    return existing_by_request or existing_by_basis or existing_by_authority
+    return existing_by_request or existing_by_basis
 
 
 def _validate_existing_receipt(
@@ -572,6 +781,14 @@ def _new_receipt(
         "decision_reason_ready": decision_status.get("decision_reason_code") == "ready_for_next_freeze",
         "revealed_fact_count": receipt_basis["revealed_fact_count"],
         "value_redacted_fact_count": receipt_basis["value_redacted_fact_count"],
+        "total_record_count": receipt_basis["total_record_count"],
+        "page_record_count": receipt_basis["page_record_count"],
+        "page_index": receipt_basis["page_index"],
+        "page_offset": receipt_basis["page_offset"],
+        "page_size": receipt_basis["page_size"],
+        "result_set_identity_hash": receipt_basis["result_set_identity_hash"],
+        "page_cursor_binding_hash": receipt_basis["page_cursor_binding_hash"],
+        "next_page_cursor": receipt_basis["next_page_cursor"],
         "transient_values_returned": True,
         "audit_receipt_raw_values_persisted": False,
         "raw_sidecar_receipt_id_persisted": False,
@@ -644,6 +861,7 @@ def _status_response(row: L3SecXbrlControlledValueRevealSubmitReceipt) -> dict[s
         "submit_policy_id": row.submit_policy_id,
         "redaction_policy": row.redaction_policy,
         "revealed_fact_count": int(row.revealed_fact_count),
+        **_receipt_page_projection(row),
         "revealed_facts": [],
         "value_redacted_fact_count": int(row.value_redacted_fact_count),
         "fact_inventory_hash": row.fact_inventory_hash,
@@ -700,6 +918,7 @@ def _receipt_projection(
         "sidecar_receipt_id_hash": row.sidecar_receipt_id_hash,
         "sidecar_receipt_hash": row.sidecar_receipt_hash,
         "value_store_hash": row.value_store_hash,
+        **_receipt_page_projection(row),
         "value_redacted_fact_count": int(row.value_redacted_fact_count),
         "fact_inventory_hash": row.fact_inventory_hash,
         "value_inventory_hash": row.value_inventory_hash,
@@ -716,6 +935,26 @@ def _receipt_projection(
         "rendered_ui_enabled": False,
         "production_readiness_claimed": False,
     }
+
+
+def _receipt_page_projection(row: L3SecXbrlControlledValueRevealSubmitReceipt) -> dict[str, Any]:
+    summary = row.submit_summary_json if isinstance(row.submit_summary_json, Mapping) else {}
+    next_page_cursor = summary.get("next_page_cursor")
+    if next_page_cursor is not None and not isinstance(next_page_cursor, str):
+        next_page_cursor = None
+    return {
+        "next_page_cursor": next_page_cursor,
+        "total_record_count": _summary_int(summary, "total_record_count", int(row.revealed_fact_count)),
+        "page_record_count": _summary_int(summary, "page_record_count", int(row.revealed_fact_count)),
+        "page_index": _summary_int(summary, "page_index", 1),
+    }
+
+
+def _summary_int(summary: Mapping[str, Any], key: str, default: int) -> int:
+    try:
+        return int(summary.get(key))
+    except (TypeError, ValueError):
+        return default
 
 
 def _negative_invariants() -> dict[str, bool]:

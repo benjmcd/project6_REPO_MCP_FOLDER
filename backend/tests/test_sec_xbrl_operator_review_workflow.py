@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
@@ -71,6 +72,9 @@ SUBMIT_MIGRATION_PATH = (
 )
 SUBMIT_HASH_MIGRATION_PATH = (
     ROOT / "backend" / "alembic" / "versions" / "0053_layer3_sec_xbrl_controlled_submit_request_hash.py"
+)
+SUBMIT_PAGINATION_MIGRATION_PATH = (
+    ROOT / "backend" / "alembic" / "versions" / "0054_layer3_sec_xbrl_controlled_submit_pagination.py"
 )
 
 
@@ -180,7 +184,12 @@ def _seed_dataset_version(db_session, *, dataset_version_id: str = "dv-redacted-
     db_session.flush()
 
 
-def _persisted_projection(db_session, *, request_id: str = "projection-1") -> dict[str, Any]:
+def _persisted_projection(
+    db_session,
+    *,
+    request_id: str = "projection-1",
+    source_report_hash: str = _hash("a"),
+) -> dict[str, Any]:
     _seed_dataset_version(db_session)
     return projection_persistence.materialize_redacted_projection_set(
         db_session,
@@ -203,7 +212,7 @@ def _persisted_projection(db_session, *, request_id: str = "projection-1") -> di
             ],
         },
         source_report_schema_id="diagnostics.sec_xbrl_sector_family_real_filer_validation_report.v1",
-        source_report_hash=_hash("a"),
+        source_report_hash=source_report_hash,
     )
 
 
@@ -254,9 +263,14 @@ def _materialized_packet(
     *,
     packet_request_id: str = "packet-1",
     projection_request_id: str = "projection-1",
+    projection_source_report_hash: str = _hash("a"),
     packet: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    projection = _persisted_projection(db_session, request_id=projection_request_id)
+    projection = _persisted_projection(
+        db_session,
+        request_id=projection_request_id,
+        source_report_hash=projection_source_report_hash,
+    )
     return packet_persistence.materialize_redacted_statement_packet(
         db_session,
         client_request_id=packet_request_id,
@@ -272,11 +286,13 @@ def _open_workflow(
     packet: dict[str, Any] | None = None,
     packet_request_id: str = "packet-1",
     projection_request_id: str = "projection-1",
+    projection_source_report_hash: str = _hash("a"),
 ) -> dict[str, Any]:
     packet_response = _materialized_packet(
         db_session,
         packet_request_id=packet_request_id,
         projection_request_id=projection_request_id,
+        projection_source_report_hash=projection_source_report_hash,
         packet=packet,
     )
     return workflow_service.open_redacted_operator_review_workflow(
@@ -516,6 +532,62 @@ def _submit_sidecar_and_value_store(
         ],
     }
     return sidecar, value_store
+
+
+def _paginated_submit_sidecar_and_value_store(
+    count: int,
+    *,
+    redacted_indices: set[int] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    redacted_indices = redacted_indices or set()
+    sidecar_records: list[dict[str, Any]] = []
+    value_records: list[dict[str, Any]] = []
+    for index in range(count):
+        resolved_fact_id = f"resolved-fact-{index:04d}"
+        value_hash = _request_hash(f"value-{index}")
+        source_order = count - index
+        value = "0000123456-26-000001" if index in redacted_indices else f"{1000 + index}.01"
+        sidecar_records.append(
+            {
+                "resolved_fact_id": resolved_fact_id,
+                "source_order": source_order,
+                "entry_document_index": index % 3,
+                "value_hash": value_hash,
+                "concept": {
+                    "qname": f"us-gaap:PaginatedFact{index:04d}",
+                    "local_name": f"PaginatedFact{index:04d}",
+                    "standard": True,
+                    "extension": False,
+                },
+                "period": {"type": "duration", "start": "2026-01-01", "end": "2026-12-31"},
+                "unit": {"currency": "USD", "resolved": True},
+                "dimensions": {},
+                "hidden": False,
+                "continued": False,
+            }
+        )
+        value_records.append(
+            {
+                "resolved_fact_id": resolved_fact_id,
+                "effective_value": value,
+                "lexical_value": value,
+                "effective_value_hash": value_hash,
+                "value_semantics": "arelle_effective_canonical_value_v1",
+                "transform": {"scale": "0", "decimals": "2"},
+            }
+        )
+    return (
+        {
+            "sidecar_receipt_id": "sec-edgar-arelle-resolved-fact-authority-server-owned",
+            "sidecar_receipt_hash": _hash("b"),
+            "sidecar_state": "sec_edgar_arelle_resolved_fact_authority_sidecar_ready",
+            "resolved_fact_records": sidecar_records,
+        },
+        {
+            "value_store_hash": _hash("c"),
+            "value_records": value_records,
+        },
+    )
 
 
 def _write_ready_sidecar_fixture(storage_dir: Path) -> tuple[str, str]:
@@ -2201,6 +2273,10 @@ def test_controlled_value_reveal_submit_returns_transient_values_and_hash_only_r
     assert response["submit_mode"] == submit_service.SUBMIT_MODE
     assert response["transient_values_returned"] is True
     assert response["revealed_fact_count"] == 1
+    assert response["total_record_count"] == 1
+    assert response["page_record_count"] == 1
+    assert response["page_index"] == 1
+    assert response["next_page_cursor"] is None
     assert response["revealed_facts"][0]["effective_value"] == "123.45"
     assert response["revealed_facts"][0]["lexical_value"] == "123.45"
     assert "period" not in response["revealed_facts"][0]
@@ -2233,6 +2309,10 @@ def test_controlled_value_reveal_submit_returns_transient_values_and_hash_only_r
     )
     assert status["schema_id"] == submit_service.STATUS_SCHEMA_ID
     assert status["revealed_fact_count"] == 1
+    assert status["total_record_count"] == 1
+    assert status["page_record_count"] == 1
+    assert status["page_index"] == 1
+    assert status["next_page_cursor"] is None
     assert status["revealed_facts"] == []
     assert status["transient_values_returned"] is False
     assert status["client_request_id_hash"] == client_request_id_hash
@@ -2311,6 +2391,193 @@ def test_controlled_value_reveal_submit_redacts_identity_like_transient_values(d
     assert row.value_redacted_fact_count == 1
     assert "0000123456-26-000001" not in json.dumps(row.submit_summary_json, sort_keys=True)
     assert "0000123456-26-000001" not in json.dumps(row.negative_invariants_json, sort_keys=True)
+
+
+def test_controlled_value_reveal_submit_paginates_large_result_set_without_dup_gap(
+    db_session,
+    monkeypatch,
+) -> None:
+    _enable_controlled_submit(monkeypatch)
+    authority = _prepare_authority_receipt(db_session, monkeypatch, request_id="controlled-submit-pagination-authority")
+    sidecar, value_store = _paginated_submit_sidecar_and_value_store(submit_service.MAX_REVEAL_RECORDS + 3)
+    monkeypatch.setattr(submit_service, "_resolve_sidecar_and_value_store", lambda *_args: (sidecar, value_store))
+
+    first = submit_service.submit_controlled_value_reveal(
+        db_session,
+        client_request_id="controlled-submit-pagination-page-1",
+        sec_xbrl_value_reveal_authority_receipt_id=authority["sec_xbrl_value_reveal_authority_receipt_id"],
+        authority_basis_hash=authority["authority_basis_hash"],
+        operator_reveal_confirmation=True,
+    )
+
+    assert first["total_record_count"] == submit_service.MAX_REVEAL_RECORDS + 3
+    assert first["page_record_count"] == submit_service.MAX_REVEAL_RECORDS
+    assert first["revealed_fact_count"] == submit_service.MAX_REVEAL_RECORDS
+    assert first["page_index"] == 1
+    assert first["next_page_cursor"]
+
+    second = submit_service.submit_controlled_value_reveal(
+        db_session,
+        client_request_id="controlled-submit-pagination-page-2",
+        sec_xbrl_value_reveal_authority_receipt_id=authority["sec_xbrl_value_reveal_authority_receipt_id"],
+        authority_basis_hash=authority["authority_basis_hash"],
+        operator_reveal_confirmation=True,
+        page_cursor=first["next_page_cursor"],
+    )
+
+    assert second["total_record_count"] == submit_service.MAX_REVEAL_RECORDS + 3
+    assert second["page_record_count"] == 3
+    assert second["revealed_fact_count"] == 3
+    assert second["page_index"] == 2
+    assert second["next_page_cursor"] is None
+
+    traversed = first["revealed_facts"] + second["revealed_facts"]
+    assert len(traversed) == submit_service.MAX_REVEAL_RECORDS + 3
+    assert len({record["fact_identity_hash"] for record in traversed}) == len(traversed)
+    assert [record["source_order"] for record in traversed] == sorted(
+        record["source_order"] for record in traversed
+    )
+    assert db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 2
+
+    status = submit_service.inspect_controlled_value_reveal_submit_status(
+        db_session,
+        sec_xbrl_controlled_value_reveal_submit_receipt_id=(
+            second["sec_xbrl_controlled_value_reveal_submit_receipt_id"]
+        ),
+    )
+    assert status["revealed_facts"] == []
+    assert status["total_record_count"] == second["total_record_count"]
+    assert status["page_record_count"] == second["page_record_count"]
+    assert status["page_index"] == second["page_index"]
+    assert status["next_page_cursor"] is None
+
+
+def test_controlled_value_reveal_submit_rejects_tampered_page_cursor(db_session, monkeypatch) -> None:
+    _enable_controlled_submit(monkeypatch)
+    authority = _prepare_authority_receipt(db_session, monkeypatch, request_id="controlled-submit-cursor-tamper")
+    sidecar, value_store = _paginated_submit_sidecar_and_value_store(5)
+    monkeypatch.setattr(submit_service, "_resolve_sidecar_and_value_store", lambda *_args: (sidecar, value_store))
+
+    first = submit_service.submit_controlled_value_reveal(
+        db_session,
+        client_request_id="controlled-submit-cursor-tamper-page-1",
+        sec_xbrl_value_reveal_authority_receipt_id=authority["sec_xbrl_value_reveal_authority_receipt_id"],
+        authority_basis_hash=authority["authority_basis_hash"],
+        operator_reveal_confirmation=True,
+        max_records=2,
+    )
+
+    cursor = first["next_page_cursor"]
+    padded_cursor = cursor + ("=" * (-len(cursor) % 4))
+    decoded_cursor = base64.urlsafe_b64decode(padded_cursor).decode("utf-8")
+    payload = json.loads(decoded_cursor)
+    payload["offset"] = 4
+    unsigned_payload = dict(payload)
+    unsigned_payload.pop("cursor_hash", None)
+    unsigned_payload.pop("cursor_signature", None)
+    payload["cursor_hash"] = submit_service.stable_hash(unsigned_payload)
+    tampered_cursor_body = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    tampered_cursor = base64.urlsafe_b64encode(tampered_cursor_body).decode("ascii").rstrip("=")
+    with pytest.raises(submit_service.SecXbrlControlledValueRevealSubmitError) as exc:
+        submit_service.submit_controlled_value_reveal(
+            db_session,
+            client_request_id="controlled-submit-cursor-tamper-page-2",
+            sec_xbrl_value_reveal_authority_receipt_id=authority["sec_xbrl_value_reveal_authority_receipt_id"],
+            authority_basis_hash=authority["authority_basis_hash"],
+            operator_reveal_confirmation=True,
+            max_records=2,
+            page_cursor=tampered_cursor,
+        )
+
+    assert exc.value.http_status == 400
+    assert exc.value.code == "sec_xbrl_controlled_value_reveal_submit_page_cursor_invalid"
+    assert db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 1
+
+
+def test_controlled_value_reveal_submit_rejects_cross_authority_page_cursor(db_session, monkeypatch) -> None:
+    _enable_controlled_submit(monkeypatch)
+    first_authority = _prepare_authority_receipt(db_session, monkeypatch, request_id="controlled-submit-cursor-a")
+    second_workflow = _open_workflow(
+        db_session,
+        request_id="controlled-submit-cursor-b-workflow",
+        packet_request_id="controlled-submit-cursor-b-packet",
+        projection_request_id="controlled-submit-cursor-b-projection",
+        projection_source_report_hash=_request_hash("controlled-submit-cursor-b-source"),
+    )
+    second_decision = _record_decision(
+        db_session,
+        workflow=second_workflow,
+        request_id="controlled-submit-cursor-b-decision",
+        decision_notes="distinct approved decision basis for cross-authority cursor test",
+    )
+    second_authority = authority_service.prepare_value_reveal_authority_receipt(
+        db_session,
+        client_request_id="controlled-submit-cursor-b",
+        sec_xbrl_operator_review_decision_id=second_decision["sec_xbrl_operator_review_decision_id"],
+        decision_basis_hash=second_decision["decision_basis_hash"],
+    )
+    sidecar, value_store = _paginated_submit_sidecar_and_value_store(5)
+    monkeypatch.setattr(submit_service, "_resolve_sidecar_and_value_store", lambda *_args: (sidecar, value_store))
+
+    first = submit_service.submit_controlled_value_reveal(
+        db_session,
+        client_request_id="controlled-submit-cursor-a-page-1",
+        sec_xbrl_value_reveal_authority_receipt_id=first_authority["sec_xbrl_value_reveal_authority_receipt_id"],
+        authority_basis_hash=first_authority["authority_basis_hash"],
+        operator_reveal_confirmation=True,
+        max_records=2,
+    )
+
+    with pytest.raises(submit_service.SecXbrlControlledValueRevealSubmitError) as exc:
+        submit_service.submit_controlled_value_reveal(
+            db_session,
+            client_request_id="controlled-submit-cursor-b-page-2",
+            sec_xbrl_value_reveal_authority_receipt_id=second_authority["sec_xbrl_value_reveal_authority_receipt_id"],
+            authority_basis_hash=second_authority["authority_basis_hash"],
+            operator_reveal_confirmation=True,
+            max_records=2,
+            page_cursor=first["next_page_cursor"],
+        )
+
+    assert exc.value.http_status == 400
+    assert exc.value.code == "sec_xbrl_controlled_value_reveal_submit_page_cursor_authority_mismatch"
+    assert db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 1
+
+
+def test_controlled_value_reveal_submit_redacts_each_paginated_page(db_session, monkeypatch) -> None:
+    _enable_controlled_submit(monkeypatch)
+    authority = _prepare_authority_receipt(db_session, monkeypatch, request_id="controlled-submit-paged-redaction")
+    sidecar, value_store = _paginated_submit_sidecar_and_value_store(4, redacted_indices={0, 2})
+    monkeypatch.setattr(submit_service, "_resolve_sidecar_and_value_store", lambda *_args: (sidecar, value_store))
+    raw_value = "0000123456-26-000001"
+
+    first = submit_service.submit_controlled_value_reveal(
+        db_session,
+        client_request_id="controlled-submit-paged-redaction-page-1",
+        sec_xbrl_value_reveal_authority_receipt_id=authority["sec_xbrl_value_reveal_authority_receipt_id"],
+        authority_basis_hash=authority["authority_basis_hash"],
+        operator_reveal_confirmation=True,
+        max_records=2,
+    )
+    second = submit_service.submit_controlled_value_reveal(
+        db_session,
+        client_request_id="controlled-submit-paged-redaction-page-2",
+        sec_xbrl_value_reveal_authority_receipt_id=authority["sec_xbrl_value_reveal_authority_receipt_id"],
+        authority_basis_hash=authority["authority_basis_hash"],
+        operator_reveal_confirmation=True,
+        max_records=2,
+        page_cursor=first["next_page_cursor"],
+    )
+
+    assert any(record["value_redacted"] is True for record in first["revealed_facts"])
+    assert any(record["value_redacted"] is True for record in second["revealed_facts"])
+    assert raw_value not in json.dumps(first, sort_keys=True)
+    assert raw_value not in json.dumps(second, sort_keys=True)
+    rows = db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).all()
+    assert len(rows) == 2
+    assert all(row.value_redacted_fact_count == 1 for row in rows)
+    assert raw_value not in json.dumps([row.submit_summary_json for row in rows], sort_keys=True)
+    assert raw_value not in json.dumps([row.negative_invariants_json for row in rows], sort_keys=True)
 
 
 def test_controlled_value_reveal_submit_explicit_off_blocks_without_receipt(db_session, monkeypatch) -> None:
@@ -2415,6 +2682,10 @@ def test_controlled_value_reveal_submit_api_records_receipt_and_status_hash_coun
     assert body["client_request_id_hash"] == raw_client_request_id_hash
     assert "client_request_id" not in body
     assert body["revealed_fact_count"] == 1
+    assert body["total_record_count"] == 1
+    assert body["page_record_count"] == 1
+    assert body["page_index"] == 1
+    assert body["next_page_cursor"] is None
     assert body["revealed_facts"][0]["effective_value"] == "123.45"
     assert body["auth_binding_required"] is True
     assert body["auth_binding_ref"].startswith("sec-xbrl-auth-binding:")
@@ -2444,6 +2715,10 @@ def test_controlled_value_reveal_submit_api_records_receipt_and_status_hash_coun
     assert status["schema_id"] == submit_service.STATUS_SCHEMA_ID
     assert status["client_request_id_hash"] == raw_client_request_id_hash
     assert "client_request_id" not in status
+    assert status["total_record_count"] == 1
+    assert status["page_record_count"] == 1
+    assert status["page_index"] == 1
+    assert status["next_page_cursor"] is None
     assert status["revealed_facts"] == []
     assert status["auth_binding_required"] is True
     assert status["auth_binding_route_family"] == CONTROLLED_VALUE_REVEAL_SUBMIT_ROUTE_FAMILY
@@ -2486,6 +2761,10 @@ def test_controlled_value_reveal_submit_api_with_flag_enabled_returns_values_beh
     body = submit_response.json()
     assert body["schema_id"] == submit_service.SUBMIT_SCHEMA_ID
     assert body["revealed_fact_count"] == 1
+    assert body["total_record_count"] == 1
+    assert body["page_record_count"] == 1
+    assert body["page_index"] == 1
+    assert body["next_page_cursor"] is None
     assert body["revealed_facts"][0]["effective_value"] == "123.45"
     assert body["auth_binding_required"] is True
     assert body["status_surface_hash_count_only"] is True
@@ -2633,6 +2912,17 @@ def test_operator_review_workflow_tables_are_registered_in_metadata() -> None:
         assert "sec_xbrl_value_reveal_authority_receipt_id" in submit_columns
         assert "revealed_fact_count" in submit_columns
         assert "response_inventory_hash" in submit_columns
+        submit_unique_constraints = {
+            constraint["name"]: tuple(constraint["column_names"])
+            for constraint in inspector.get_unique_constraints("l3_sec_xbrl_controlled_value_reveal_submit_receipt")
+        }
+        assert submit_unique_constraints["uq_l3_sec_xbrl_controlled_value_reveal_client_request"] == (
+            "client_request_id_hash",
+        )
+        assert submit_unique_constraints["uq_l3_sec_xbrl_controlled_value_reveal_basis_hash"] == (
+            "submit_basis_hash",
+        )
+        assert "uq_l3_sec_xbrl_controlled_value_reveal_authority" not in submit_unique_constraints
     finally:
         Base.metadata.drop_all(engine)
         engine.dispose()
@@ -2730,6 +3020,27 @@ def test_controlled_value_reveal_submit_request_hash_migration_declares_rekey() 
     assert "redacted-client-request-id:" in source
     assert "hashlib.sha256" in source
     assert "batch_op.create_unique_constraint" in source
+
+
+def test_controlled_value_reveal_submit_pagination_migration_drops_authority_uniqueness() -> None:
+    backend_root = str(ROOT / "backend")
+    if backend_root not in sys.path:
+        sys.path.insert(0, backend_root)
+    spec = importlib.util.spec_from_file_location(
+        "migration_0054_sec_xbrl_controlled_submit_pagination",
+        SUBMIT_PAGINATION_MIGRATION_PATH,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    assert module.revision == "0054_layer3_sec_xbrl_controlled_submit_pagination"
+    assert module.down_revision == "0053_layer3_sec_xbrl_controlled_submit_request_hash"
+    source = SUBMIT_PAGINATION_MIGRATION_PATH.read_text(encoding="utf-8")
+    assert "uq_l3_sec_xbrl_controlled_value_reveal_authority" in source
+    assert "batch_op.drop_constraint" in source
+    assert "batch_op.create_unique_constraint" in source
+    assert "GROUP BY sec_xbrl_value_reveal_authority_receipt_id" in source
 
 
 def _direct_packet_set(
