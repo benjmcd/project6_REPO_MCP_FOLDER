@@ -274,7 +274,7 @@ Example for the final review packet file:
 {
   "run_id": "d6be0fff-bbd7-468a-9b00-7103d5995494",
   "tree_entry_id": "tree::<sha256(storage/connectors/reports/run_d6be0fff-bbd7-468a-9b00-7103d5995494_8ed797c94d61bc37dc6761b9_aps_deterministic_challenge_review_packet_v1.json)>",
-  "absolute_path": "<repo-root>/backend/app/storage_test_runtime/lc_e2e/20260327_062011/storage/connectors/reports/run_d6be0fff-bbd7-468a-9b00-7103d5995494_8ed797c94d61bc37dc6761b9_aps_deterministic_challenge_review_packet_v1.json",
+  "absolute_path": "/path/to/repo/backend/app/storage_test_runtime/lc_e2e/20260327_062011/storage/connectors/reports/run_d6be0fff-bbd7-468a-9b00-7103d5995494_8ed797c94d61bc37dc6761b9_aps_deterministic_challenge_review_packet_v1.json",
   "display_path": "storage/connectors/reports/run_d6be0fff-bbd7-468a-9b00-7103d5995494_8ed797c94d61bc37dc6761b9_aps_deterministic_challenge_review_packet_v1.json",
   "entry_kind": "file",
   "file_class": "run_report",

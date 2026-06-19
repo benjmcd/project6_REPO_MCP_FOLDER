@@ -40,7 +40,7 @@ The completed PostgreSQL lane established all of the following in the live works
 
 - fresh SQLite `alembic upgrade head` succeeded
 - fresh PostgreSQL `alembic upgrade head` succeeded
-- the SQLite-to-PostgreSQL Tier1 migration utility succeeded against the canonical [backend/method_aware.db](../../backend/method_aware.db)
+- the SQLite-to-PostgreSQL Tier1 migration utility succeeded against the canonical `backend/method_aware.db` runtime database (gitignored; not a tracked file)
 - PostgreSQL-default Tier1 smoke succeeded:
   - Tier1 migrate
   - Tier1 data migration into PostgreSQL
