@@ -9657,6 +9657,10 @@ class Layer3SecXbrlControlledValueRevealSubmitResponse(Layer3BaseResponse):
     sidecar_receipt_hash: str | None = None
     value_store_hash: str | None = None
     revealed_fact_count: int
+    next_page_cursor: str | None = None
+    total_record_count: int
+    page_record_count: int
+    page_index: int
     revealed_facts: list[dict[str, Any]]
     value_redacted_fact_count: int
     fact_inventory_hash: str

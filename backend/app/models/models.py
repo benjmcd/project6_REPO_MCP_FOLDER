@@ -1523,10 +1523,6 @@ class L3SecXbrlControlledValueRevealSubmitReceipt(Base):
     __table_args__ = (
         UniqueConstraint("client_request_id_hash", name="uq_l3_sec_xbrl_controlled_value_reveal_client_request"),
         UniqueConstraint("submit_basis_hash", name="uq_l3_sec_xbrl_controlled_value_reveal_basis_hash"),
-        UniqueConstraint(
-            "sec_xbrl_value_reveal_authority_receipt_id",
-            name="uq_l3_sec_xbrl_controlled_value_reveal_authority",
-        ),
         CheckConstraint(
             f"submit_state = '{L3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_STATE_READY}'",
             name="ck_l3_sec_xbrl_controlled_value_reveal_state",
