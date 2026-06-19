@@ -43,6 +43,7 @@ def test_review_browser_server_restores_layer3_patch_state_after_app_creation() 
     original_internal_webhook_transport = layer3_internal_webhook_connector.INTERNAL_WEBHOOK_TRANSPORT
     original_sec_edgar_client = layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT
     original_sec_edgar_sleep = layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP
+    original_sec_edgar_enforce_rate_limit = layer3_sec_edgar_live_source_artifact._enforce_rate_limit
     original_sec_edgar_user_agent = settings.layer3_sec_edgar_user_agent
     original_sec_edgar_live_network_enabled = settings.layer3_sec_edgar_live_network_enabled
     original_sec_edgar_rate_limit = settings.layer3_sec_edgar_rate_limit_per_second
@@ -71,6 +72,7 @@ def test_review_browser_server_restores_layer3_patch_state_after_app_creation() 
         assert layer3_internal_webhook_connector.INTERNAL_WEBHOOK_TRANSPORT is original_internal_webhook_transport
         assert layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT is original_sec_edgar_client
         assert layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP is original_sec_edgar_sleep
+        assert layer3_sec_edgar_live_source_artifact._enforce_rate_limit is original_sec_edgar_enforce_rate_limit
         assert settings.layer3_sec_edgar_user_agent == original_sec_edgar_user_agent
         assert settings.layer3_sec_edgar_live_network_enabled == original_sec_edgar_live_network_enabled
         assert settings.layer3_sec_edgar_rate_limit_per_second == original_sec_edgar_rate_limit

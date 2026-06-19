@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import sys
 from dataclasses import dataclass
@@ -41,6 +42,19 @@ APS_CONTENT_STATUS_INDEXED = "indexed"
 APS_EVIDENCE_BUNDLE_MODULE = "app.services.nrc_aps_evidence_bundle"
 CANDIDATE_B_VISUAL_LANE_MODE = "candidate_b_opendataloader_page_evidence_v1"
 _MISSING_MODULE = object()
+_REVIEW_BROWSER_SETTING_NAMES = (
+    "storage_dir",
+    "layer3_external_local_export_dir",
+    "layer3_internal_webhook_url",
+    "layer3_internal_webhook_display_name",
+    "layer3_candidate_b_bundle_bridge_dir",
+    "layer3_candidate_b_runtime_bridge_dir",
+    "layer3_source_ingestion_dir",
+    "layer3_sec_edgar_user_agent",
+    "layer3_sec_edgar_live_network_enabled",
+    "layer3_sec_edgar_rate_limit_per_second",
+    "layer3_sec_edgar_arelle_fact_authority_cutover_enabled",
+)
 
 
 @dataclass(frozen=True)
@@ -602,6 +616,11 @@ def build_review_browser_fixture(tmp_path: Path) -> ReviewBrowserFixture:
 
 def capture_review_browser_patch_state() -> dict[str, object]:
     return {
+        "env_storage_dir": os.environ.get("STORAGE_DIR", _MISSING_MODULE),
+        "settings": {
+            name: getattr(settings, name, None)
+            for name in _REVIEW_BROWSER_SETTING_NAMES
+        },
         "aps_evidence_bundle_module": sys.modules.get(APS_EVIDENCE_BUNDLE_MODULE, _MISSING_MODULE),
         "layer3_check_aps_handoff_compatibility": layer3_workbench_module.check_aps_handoff_compatibility,
         "layer3_materialize_aps_handoff": layer3_workbench_module.materialize_aps_handoff,
@@ -622,13 +641,7 @@ def capture_review_browser_patch_state() -> dict[str, object]:
         "api_load_candidate_b_trace_raw_markdown": review_api.load_candidate_b_trace_raw_markdown,
         "layer3_sec_edgar_client": layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT,
         "layer3_sec_edgar_sleep": layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP,
-        "settings_layer3_sec_edgar_user_agent": getattr(settings, "layer3_sec_edgar_user_agent", None),
-        "settings_layer3_sec_edgar_live_network_enabled": getattr(
-            settings, "layer3_sec_edgar_live_network_enabled", None
-        ),
-        "settings_layer3_sec_edgar_rate_limit_per_second": getattr(
-            settings, "layer3_sec_edgar_rate_limit_per_second", None
-        ),
+        "layer3_sec_edgar_enforce_rate_limit": layer3_sec_edgar_live_source_artifact._enforce_rate_limit,
     }
 
 
@@ -657,13 +670,16 @@ def restore_review_browser_patches(patch_state: dict[str, object]) -> None:
     review_api.load_candidate_b_trace_raw_markdown = patch_state["api_load_candidate_b_trace_raw_markdown"]
     layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT = patch_state["layer3_sec_edgar_client"]
     layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP = patch_state["layer3_sec_edgar_sleep"]
-    settings.layer3_sec_edgar_user_agent = patch_state["settings_layer3_sec_edgar_user_agent"]
-    settings.layer3_sec_edgar_live_network_enabled = patch_state[
-        "settings_layer3_sec_edgar_live_network_enabled"
+    layer3_sec_edgar_live_source_artifact._enforce_rate_limit = patch_state[
+        "layer3_sec_edgar_enforce_rate_limit"
     ]
-    settings.layer3_sec_edgar_rate_limit_per_second = patch_state[
-        "settings_layer3_sec_edgar_rate_limit_per_second"
-    ]
+    saved_env_storage_dir = patch_state["env_storage_dir"]
+    if saved_env_storage_dir is _MISSING_MODULE:
+        os.environ.pop("STORAGE_DIR", None)
+    else:
+        os.environ["STORAGE_DIR"] = str(saved_env_storage_dir)
+    for setting_name, value in dict(patch_state["settings"]).items():
+        setattr(settings, setting_name, value)
     runtime_service._load_binding_request_config_json.cache_clear()
 
 
