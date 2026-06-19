@@ -241,6 +241,75 @@ def test_sec_xbrl_arelle_tool_prefers_context_dates_and_corrects_adjusted_end_da
     }
 
 
+def test_sec_xbrl_sidecar_arelle_connectivity_guard_covers_reveal_and_egress_flags():
+    guarded = {flag for flag, _settings_attr in layer3_sec_xbrl_sidecar._ARELLE_CONNECTIVITY_FORCE_OFFLINE_FLAGS}
+
+    assert guarded == {
+        "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
+        "LAYER3_SEC_EDGAR_OFFICIAL_TICKER_RESOLUTION_ENABLED",
+        "LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED",
+        "LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED",
+        "LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED",
+        "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
+        "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
+    }
+
+
+def test_sec_xbrl_sidecar_honors_online_connectivity_only_when_guard_flags_clear(monkeypatch):
+    _clear_arelle_connectivity_guard_flags(monkeypatch)
+    monkeypatch.setenv("SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY", "online")
+
+    assert layer3_sec_xbrl_sidecar._taxonomy_internet_connectivity() == "online"
+
+
+@pytest.mark.parametrize(
+    ("flag_name", "settings_attr"),
+    layer3_sec_xbrl_sidecar._ARELLE_CONNECTIVITY_FORCE_OFFLINE_FLAGS,
+)
+def test_sec_xbrl_sidecar_forces_arelle_offline_when_reveal_or_egress_flag_armed(
+    monkeypatch,
+    flag_name: str,
+    settings_attr: str,
+):
+    _clear_arelle_connectivity_guard_flags(monkeypatch)
+    monkeypatch.setenv("SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY", "online")
+    monkeypatch.setattr(settings, settings_attr, True)
+
+    assert layer3_sec_xbrl_sidecar._armed_arelle_connectivity_force_offline_flags() == [flag_name]
+    assert layer3_sec_xbrl_sidecar._taxonomy_internet_connectivity() == "offline"
+
+
+def test_sec_xbrl_sidecar_arelle_command_forces_offline_when_live_egress_flag_armed(monkeypatch, tmp_path):
+    captured: dict[str, list[str]] = {}
+
+    def runner(command, *_args, **_kwargs):
+        captured["command"] = command
+        return _ready_arelle_runner()
+
+    _clear_arelle_connectivity_guard_flags(monkeypatch)
+    monkeypatch.setenv("SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY", "online")
+    monkeypatch.setattr(settings, "layer3_sec_edgar_live_network_enabled", True)
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", runner)
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_package_files", lambda: [tmp_path / "taxonomy.zip"])
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_cache_dir", lambda: tmp_path / "cache")
+
+    result = layer3_sec_xbrl_sidecar._run_arelle(
+        primary_document="<html></html>",
+        max_facts=layer3_sec_xbrl_sidecar.MIN_MAX_FACTS,
+        submission_documents=[],
+    )
+
+    command = captured["command"]
+    connectivity_arg = command[command.index("--internet-connectivity") + 1]
+    assert result["status"] == "ready"
+    assert connectivity_arg == "offline"
+
+
+def _clear_arelle_connectivity_guard_flags(monkeypatch) -> None:
+    for _flag_name, settings_attr in layer3_sec_xbrl_sidecar._ARELLE_CONNECTIVITY_FORCE_OFFLINE_FLAGS:
+        monkeypatch.setattr(settings, settings_attr, False)
+
+
 def _install_receipt_fakes(monkeypatch, tmp_path, runner):
     content = b"retained complete submission text"
     parsed = {

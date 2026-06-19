@@ -49,6 +49,15 @@ AUTHORITY_HASH_VERSION = "sec_edgar_arelle_resolved_fact_authority_sidecar_hash_
 DEFAULT_TIMEOUT_SECONDS = 120
 MIN_MAX_FACTS = 100_000
 DEFAULT_MAX_FACTS = 100_000
+_ARELLE_CONNECTIVITY_FORCE_OFFLINE_FLAGS = (
+    ("LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED", "layer3_sec_edgar_live_network_enabled"),
+    ("LAYER3_SEC_EDGAR_OFFICIAL_TICKER_RESOLUTION_ENABLED", "layer3_sec_edgar_official_ticker_resolution_enabled"),
+    ("LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED", "layer3_sec_edgar_arelle_fact_authority_nonlocal_authorized"),
+    ("LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED", "layer3_sec_edgar_arelle_internal_value_store_enabled"),
+    ("LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED", "layer3_sec_edgar_arelle_corpus_validation_enabled"),
+    ("LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED", "layer3_sec_edgar_arelle_value_reveal_enabled"),
+    ("LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED", "layer3_sec_xbrl_controlled_value_reveal_submit_enabled"),
+)
 
 ARELLE_SUBPROCESS_RUNNER: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run
 
@@ -1380,7 +1389,19 @@ def _taxonomy_cache_dir() -> Path | None:
 
 def _taxonomy_internet_connectivity() -> str:
     value = str(os.environ.get("SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY") or "offline").strip().lower()
-    return "online" if value == "online" else "offline"
+    if value != "online":
+        return "offline"
+    if _armed_arelle_connectivity_force_offline_flags():
+        return "offline"
+    return "online"
+
+
+def _armed_arelle_connectivity_force_offline_flags() -> list[str]:
+    return [
+        flag
+        for flag, settings_attr in _ARELLE_CONNECTIVITY_FORCE_OFFLINE_FLAGS
+        if bool(getattr(settings, settings_attr, False))
+    ]
 
 
 def _arelle_fact_authority_cutover_enabled() -> bool:
