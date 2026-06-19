@@ -1521,7 +1521,7 @@ class L3SecXbrlValueRevealAuthorityReceipt(Base):
 class L3SecXbrlControlledValueRevealSubmitReceipt(Base):
     __tablename__ = "l3_sec_xbrl_controlled_value_reveal_submit_receipt"
     __table_args__ = (
-        UniqueConstraint("client_request_id", name="uq_l3_sec_xbrl_controlled_value_reveal_client_request"),
+        UniqueConstraint("client_request_id_hash", name="uq_l3_sec_xbrl_controlled_value_reveal_client_request"),
         UniqueConstraint("submit_basis_hash", name="uq_l3_sec_xbrl_controlled_value_reveal_basis_hash"),
         UniqueConstraint(
             "sec_xbrl_value_reveal_authority_receipt_id",
@@ -1554,6 +1554,7 @@ class L3SecXbrlControlledValueRevealSubmitReceipt(Base):
         default=uuid_str,
     )
     client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    client_request_id_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     submit_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     submit_schema_id: Mapped[str] = mapped_column(String(128), nullable=False)
     sec_xbrl_value_reveal_authority_receipt_id: Mapped[str] = mapped_column(

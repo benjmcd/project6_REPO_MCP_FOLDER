@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import re
 from collections.abc import Mapping
 from typing import Any
@@ -497,9 +498,10 @@ def _existing_receipt(
     submit_basis_hash: str,
     authority: L3SecXbrlValueRevealAuthorityReceipt,
 ) -> L3SecXbrlControlledValueRevealSubmitReceipt | None:
+    request_id_hash = _sha256_text(request_id)
     existing_by_request = (
         db.query(L3SecXbrlControlledValueRevealSubmitReceipt)
-        .filter(L3SecXbrlControlledValueRevealSubmitReceipt.client_request_id == request_id)
+        .filter(L3SecXbrlControlledValueRevealSubmitReceipt.client_request_id_hash == request_id_hash)
         .one_or_none()
     )
     existing_by_basis = (
@@ -519,7 +521,7 @@ def _existing_receipt(
         raise SecXbrlControlledValueRevealSubmitError(
             "sec_xbrl_controlled_value_reveal_submit_client_request_conflict",
             "client_request_id already submitted a different SEC XBRL controlled value-reveal basis.",
-            details={"client_request_id": request_id},
+            details={"client_request_id_hash": request_id_hash},
         )
     if existing_by_authority is not None and existing_by_authority.submit_basis_hash != submit_basis_hash:
         raise SecXbrlControlledValueRevealSubmitError(
@@ -575,8 +577,10 @@ def _new_receipt(
         "raw_sidecar_receipt_id_persisted": False,
         "status_surface_hash_count_only": True,
     }
+    request_id_hash = _sha256_text(request_id)
     return L3SecXbrlControlledValueRevealSubmitReceipt(
-        client_request_id=request_id,
+        client_request_id=_redacted_client_request_id_surrogate(request_id_hash),
+        client_request_id_hash=request_id_hash,
         submit_basis_hash=submit_basis_hash,
         submit_schema_id=SUBMIT_SCHEMA_ID,
         sec_xbrl_value_reveal_authority_receipt_id=authority.sec_xbrl_value_reveal_authority_receipt_id,
@@ -633,6 +637,7 @@ def _status_response(row: L3SecXbrlControlledValueRevealSubmitReceipt) -> dict[s
             row.sec_xbrl_controlled_value_reveal_submit_receipt_id
         ),
         "value_reveal_submit_receipt_ref": f"{SUBMIT_RECEIPT_REF_PREFIX}:{row.submit_basis_hash[:24]}",
+        "client_request_id_hash": row.client_request_id_hash,
         "submit_basis_hash": row.submit_basis_hash,
         "sec_xbrl_value_reveal_authority_receipt_id": row.sec_xbrl_value_reveal_authority_receipt_id,
         "authority_basis_hash": row.authority_basis_hash,
@@ -676,7 +681,7 @@ def _receipt_projection(
             row.sec_xbrl_controlled_value_reveal_submit_receipt_id
         ),
         "value_reveal_submit_receipt_ref": f"{SUBMIT_RECEIPT_REF_PREFIX}:{row.submit_basis_hash[:24]}",
-        "client_request_id": row.client_request_id,
+        "client_request_id_hash": row.client_request_id_hash,
         "submit_basis_hash": row.submit_basis_hash,
         "sec_xbrl_value_reveal_authority_receipt_id": row.sec_xbrl_value_reveal_authority_receipt_id,
         "authority_basis_hash": row.authority_basis_hash,
@@ -730,6 +735,14 @@ def _negative_invariants() -> dict[str, bool]:
         "rendered_ui_enabled": False,
         "production_readiness_claimed": False,
     }
+
+
+def _sha256_text(value: str) -> str:
+    return hashlib.sha256(str(value or "").encode("utf-8")).hexdigest()
+
+
+def _redacted_client_request_id_surrogate(client_request_id_hash: str) -> str:
+    return f"redacted-client-request-id:{client_request_id_hash}"
 
 
 def _max_records(value: int | None) -> int:
