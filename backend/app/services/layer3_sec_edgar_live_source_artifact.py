@@ -46,7 +46,7 @@ RECEIPT_DIR = "layer3-sec-edgar-live-source-artifact-acquisition"
 REDACTION_POLICY_ID = "sec_edgar_text_table_live_source_artifact_acquisition_redaction_v1"
 RATE_POLICY_ID = "sec_edgar_text_table_live_source_artifact_default_1rps_max_10rps_v1"
 SEC_RATE_LIMIT_CEILING_PER_SECOND = 10
-RETRYABLE_STATUS_CODES = {408, 403, 429, 500, 502, 503, 504}
+RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
 ALLOWED_FIELDS = {
     "schema_id",
@@ -1253,7 +1253,7 @@ def acquire_sec_edgar_companyfacts_live_artifact(fields: Mapping[str, Any]) -> d
 
     try:
         payload = json.loads(content.decode("utf-8"))
-    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+    except (json.JSONDecodeError, UnicodeDecodeError):
         _blocked(
             "sec_edgar_companyfacts_live_artifact_json_invalid",
             "SEC EDGAR CompanyFacts response is not valid JSON.",

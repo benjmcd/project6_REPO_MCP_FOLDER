@@ -11,9 +11,11 @@ import urllib.request
 import pytest
 
 from app.services.layer3_sec_edgar_live_source_artifact import (
+    SecEdgarFetchResult,
     _SecEdgarRedirectGuard,
     _SEC_OPENER,
 )
+from app.services import layer3_sec_edgar_live_source_artifact as live_source_artifact
 
 
 def _make_headers() -> email.message.Message:
@@ -151,3 +153,31 @@ class TestSecOpenerIsWiredWithGuard:
             "_SEC_OPENER must contain a _SecEdgarRedirectGuard handler; "
             f"found handlers: {[type(h).__name__ for h in handlers]}"
         )
+
+
+class TestSecEdgarRetryPolicy:
+    """Direct unit tests for SEC fetch retry classification."""
+
+    def test_403_policy_rejection_is_not_retried(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        class ForbiddenClient:
+            def __init__(self) -> None:
+                self.calls = 0
+
+            def fetch_complete_submission_text(self, **_kwargs) -> SecEdgarFetchResult:
+                self.calls += 1
+                return SecEdgarFetchResult(status_code=403, complete=False)
+
+        client = ForbiddenClient()
+        monkeypatch.setattr(live_source_artifact, "SEC_EDGAR_CLIENT", client)
+        monkeypatch.setattr(live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+        monkeypatch.setattr(live_source_artifact, "_enforce_rate_limit", lambda: None)
+
+        result = live_source_artifact._fetch_with_retry(
+            url="https://www.sec.gov/Archives/edgar/data/1/test.txt",
+            user_agent="project6-test contact@example.com",
+            timeout_seconds=1,
+            max_bytes=128,
+        )
+
+        assert result.status_code == 403
+        assert client.calls == 1
