@@ -29,10 +29,13 @@ def _seed_sidecar_run(storage_root: Path, run_id: str) -> dict[str, Path]:
     tool = _load_tool()
     run_hash = tool.sha256_text(run_id)
     sidecar_root = storage_root / "layer3-sec-edgar-arelle-resolved-fact-authority"
+    value_reveal_root = storage_root / "layer3-sec-edgar-arelle-value-reveal"
     sidecar_id = "sec-edgar-arelle-resolved-fact-authority-" + "a" * 24
     receipt = sidecar_root / "receipts" / f"{sidecar_id}.json"
     value_store = sidecar_root / "internal-value-stores" / f"{sidecar_id}.json"
     binding = sidecar_root / "request-bindings" / f"{run_hash}.json"
+    value_reveal_id = "sec-edgar-arelle-value-reveal-" + "d" * 24
+    value_reveal_receipt = value_reveal_root / "receipts" / f"{value_reveal_id}.json"
     _write_json(
         binding,
         {
@@ -60,7 +63,22 @@ def _seed_sidecar_run(storage_root: Path, run_id: str) -> dict[str, Path]:
             "value_records": [{"effective_value": "123.45"}],
         },
     )
-    return {"binding": binding, "receipt": receipt, "value_store": value_store}
+    _write_json(
+        value_reveal_receipt,
+        {
+            "schema_id": "layer3.sec_edgar_arelle_value_reveal.v1",
+            "reveal_receipt_id": value_reveal_id,
+            "client_request_id_hash": "e" * 64,
+            "sidecar_receipt_id": sidecar_id,
+            "sidecar_receipt_hash": "b" * 64,
+        },
+    )
+    return {
+        "binding": binding,
+        "receipt": receipt,
+        "value_store": value_store,
+        "value_reveal_receipt": value_reveal_receipt,
+    }
 
 
 def test_sec_h6_dry_run_inventory_is_zero_mutation_and_links_sidecar_value_store(tmp_path) -> None:
@@ -77,9 +95,14 @@ def test_sec_h6_dry_run_inventory_is_zero_mutation_and_links_sidecar_value_store
     assert report["sec_egress_performed"] is False
     assert report["arelle_invoked"] is False
     assert report["value_reveal_performed"] is False
-    assert report["file_candidate_count"] == 3
+    assert report["file_candidate_count"] == 4
     kinds = {item["kind"] for item in report["files"]}
-    assert kinds == {"sidecar_request_bindings", "sidecar_receipts", "sidecar_internal_value_stores"}
+    assert kinds == {
+        "sidecar_internal_value_stores",
+        "sidecar_receipts",
+        "sidecar_request_bindings",
+        "value_reveal_receipts",
+    }
     assert all(path.exists() for path in paths.values())
 
 
@@ -127,12 +150,39 @@ def test_sec_h6_execute_moves_files_to_flat_archive_only_with_ack(tmp_path) -> N
     assert quarantined["db_mutation_performed"] is False
     assert all(not path.exists() for path in paths.values())
     moved = [Path(item["archive_path"]) for item in quarantined["moved_files"]]
-    assert len(moved) == 3
+    assert len(moved) == 4
     assert all(path.exists() for path in moved)
-    assert all(path.parent == repo_root / "archive" / "sec-h6" for path in moved)
+    assert all(path.parent == repo_root / "backend" / "app" / "storage_archive" for path in moved)
     manifest = Path(quarantined["archive_manifest"])
     assert manifest.exists()
-    assert manifest.parent == repo_root / "archive" / "sec-h6"
+    assert manifest.parent == repo_root / "backend" / "app" / "storage_archive"
+
+
+def test_sec_h6_execute_refuses_existing_manifest_before_moving(tmp_path) -> None:
+    tool = _load_tool()
+    run_id = "h6-existing-manifest"
+    paths = _seed_sidecar_run(tmp_path / "storage", run_id)
+    repo_root = tmp_path / "repo"
+    archive_dir = repo_root / "backend" / "app" / "storage_archive"
+    archive_dir.mkdir(parents=True)
+    existing_manifest = archive_dir / f"sec-h6-{tool.sha256_text(run_id)[:16]}-manifest.json"
+    existing_manifest.write_text("{}\n", encoding="utf-8")
+    report = tool.build_inventory(run_id=run_id, storage_root=tmp_path / "storage")
+
+    refused = tool.quarantine_files(
+        report,
+        run_id=run_id,
+        storage_root=tmp_path / "storage",
+        repo_root=repo_root,
+        confirm_run_id=run_id,
+        confirm_quarantine=True,
+        ack_outside_repo_onedrive=True,
+    )
+
+    assert refused["status"] == "refused"
+    assert refused["mutation_performed"] is False
+    assert {item["code"] for item in refused["refusals"]} == {"archive_manifest_exists"}
+    assert all(path.exists() for path in paths.values())
 
 
 def test_sec_h6_sqlite_inventory_reports_controlled_submit_row_without_db_mutation(tmp_path) -> None:

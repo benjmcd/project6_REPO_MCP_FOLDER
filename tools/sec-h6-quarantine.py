@@ -14,7 +14,8 @@ from typing import Any
 
 
 SCHEMA_ID = "tools.sec_xbrl_raw_at_rest_quarantine.v1"
-ARCHIVE_DIR = "sec-h6"
+ARCHIVE_NAME = "sec-h6"
+ARCHIVE_RELATIVE_DIR = Path("backend") / "app" / "storage_archive"
 MAX_SCAN_BYTES = 4 * 1024 * 1024
 
 FILE_SINKS = (
@@ -204,6 +205,7 @@ def _add_linked_file_candidates(candidates: dict[Path, FileCandidate], *, storag
                     matched_by=(f"linked_from:{candidate.kind}",),
                 )
                 changed = changed or len(candidates) > before
+    _add_value_reveal_receipts_for_sidecars(candidates, storage_root=storage_root)
 
 
 def _linked_paths(payload: dict[str, Any], *, storage_root: Path) -> list[tuple[str, Path]]:
@@ -224,6 +226,37 @@ def _linked_paths(payload: dict[str, Any], *, storage_root: Path) -> list[tuple[
         linked.append(("sidecar_receipts", sidecar_root / "receipts" / f"{sidecar_receipt_id}.json"))
         linked.append(("sidecar_internal_value_stores", sidecar_root / "internal-value-stores" / f"{sidecar_receipt_id}.json"))
     return linked
+
+
+def _add_value_reveal_receipts_for_sidecars(candidates: dict[Path, FileCandidate], *, storage_root: Path) -> None:
+    sidecar_ids = _sidecar_receipt_ids(candidates)
+    if not sidecar_ids:
+        return
+    directory = storage_root / "layer3-sec-edgar-arelle-value-reveal" / "receipts"
+    if not directory.exists():
+        return
+    for path in sorted(item for item in directory.glob("*.json") if item.is_file()):
+        text = scan_text(path)
+        if any(sidecar_id in text for sidecar_id in sidecar_ids):
+            _add_candidate(
+                candidates,
+                kind="value_reveal_receipts",
+                path=path,
+                storage_root=storage_root,
+                matched_by=("linked_from:sidecar_receipt_id",),
+            )
+
+
+def _sidecar_receipt_ids(candidates: dict[Path, FileCandidate]) -> set[str]:
+    sidecar_ids: set[str] = set()
+    for candidate in candidates.values():
+        payload = read_json_file(candidate.path)
+        if payload is None:
+            continue
+        sidecar_id = _text(payload.get("sidecar_receipt_id"))
+        if sidecar_id:
+            sidecar_ids.add(sidecar_id)
+    return sidecar_ids
 
 
 def scan_sqlite_rows(sqlite_db: Path, *, run_id: str, run_id_hash: str) -> list[dict[str, Any]]:
@@ -299,8 +332,11 @@ def quarantine_files(
         confirm_quarantine=confirm_quarantine,
         ack_outside_repo_onedrive=ack_outside_repo_onedrive,
     )
-    archive_dir = (repo_root / "archive" / ARCHIVE_DIR).resolve()
+    archive_dir = (repo_root / ARCHIVE_RELATIVE_DIR).resolve()
     move_plan = _move_plan(files, storage_root=storage_root.resolve(), archive_dir=archive_dir, run_id_hash=run_id_hash)
+    manifest = archive_dir / f"{ARCHIVE_NAME}-{run_id_hash[:16]}-manifest.json"
+    if manifest.exists():
+        refusals.append({"code": "archive_manifest_exists", "path": str(manifest)})
     for target in move_plan.values():
         if target.exists():
             refusals.append({"code": "archive_target_exists", "path": str(target)})
@@ -314,7 +350,6 @@ def quarantine_files(
     for source, target in move_plan.items():
         shutil.move(str(source), str(target))
         moved_files.append({"source": str(source), "archive_path": str(target)})
-    manifest = archive_dir / f"{run_id_hash[:16]}-manifest.json"
     report["status"] = "quarantined"
     report["mutation_performed"] = bool(moved_files)
     report["moved_files"] = moved_files
@@ -359,7 +394,7 @@ def _move_plan(files: list[Path], *, storage_root: Path, archive_dir: Path, run_
             relative = source.name
         name_hash = sha256_text(relative)[:16]
         suffix = source.suffix if source.suffix else ".bin"
-        flattened_name = f"{run_id_hash[:12]}-{name_hash}{suffix.lower()}"
+        flattened_name = f"{ARCHIVE_NAME}-{run_id_hash[:12]}-{name_hash}{suffix.lower()}"
         plan[source] = archive_dir / flattened_name
     return plan
 
