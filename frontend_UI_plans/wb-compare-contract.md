@@ -13,7 +13,7 @@ Use these files as authority before implementation:
 - `backend\app\services\review_nrc_aps_runtime.py`
 - `backend\app\services\review_nrc_aps_document_trace.py`
 - `tests\fixtures\nrc_aps_docs\v1\manifest.json`
-- `archive\20260412-cb-proof\README.md`
+- `archive/20260412-cb-proof/README.md` *(optional local operator proof evidence — not tracked in this repo; skip if absent, it is not required authority)*
 - `next_milestone_plans\candidate_b_workbench\04C_CANDIDATE_B_OPENDATALOADER_OUTPUT_CROSSWALK_AND_NON_EQUIVALENCE_MAP.md`
 
 ## 3. Source Discovery Contract
