@@ -180,7 +180,8 @@ Minimum local verification:
 - `git diff --check`.
 
 CI must be green before merge. Independent review is recommended because this is Tier-2
-persistence work. Under the softened policy, merge is blocked by failed required checks,
+persistence work. Under the softened policy, merge is blocked by failing CI checks
+(author-enforced; `main` has no branch-protection required-status-check gate),
 unresolved critical/blocking findings, missing rollback or containment notes, unclear
 authority, or an explicit operator instruction requiring review.
 

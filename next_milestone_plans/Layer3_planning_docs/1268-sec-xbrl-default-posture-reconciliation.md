@@ -47,6 +47,8 @@ The decision pass did not silently treat the broader reliability admission as a 
 
 ## Required Checks Before Any Runtime Default Change
 
+These are policy-required author steps, not GitHub-enforced required status checks; `main` has no branch-protection gate.
+
 - committed defaults are still off before the pass begins;
 - flag-off behavior still blocks with current reason codes;
 - default status/product surfaces remain value-redacted;
