@@ -47,6 +47,7 @@ def test_local_expert_doc_names_canonical_operator_journey():
     text = LOCAL_EXPERT_SUPPORT.read_text(encoding="utf-8")
     assert "canonical local_expert operator journey" in text
     assert "config/support_matrix.yaml" in text
+    assert "method_aware_analytics_vertical" in text
     for phrase in [
         "CSV upload",
         "variable profiling",

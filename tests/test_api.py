@@ -280,6 +280,13 @@ def test_canonical_local_expert_journey_recovers_state_with_fresh_client():
     transformed = apply_response.json()
     transformed_version_id = transformed['output_dataset_version_id']
 
+    transformed_profile_response = client.post(
+        f'/api/v1/datasets/{dataset_id}/versions/{transformed_version_id}/profile',
+        json={'detect_seasonality': False, 'detect_stationarity': True},
+    )
+    assert transformed_profile_response.status_code == 200, transformed_profile_response.text
+    assert len(transformed_profile_response.json()) == 3
+
     annotation_response = client.post(
         f'/api/v1/datasets/{dataset_id}/versions/{transformed_version_id}/annotations',
         json={
@@ -309,6 +316,13 @@ def test_canonical_local_expert_journey_recovers_state_with_fresh_client():
     assert analysis['artifacts']
     assert analysis['assumptions']
     assert analysis['caveats']
+    stationarity_assumption = next(
+        item for item in analysis['assumptions']
+        if item['assumption_name'] == 'series_stationarity'
+    )
+    assert stationarity_assumption['notes'] != 'no_profile_data'
+    assert 'revenue:' in stationarity_assumption['notes']
+    assert 'traffic:' in stationarity_assumption['notes']
 
     recovery_client = TestClient(app)
     recovered_analysis = recovery_client.get(f'/api/v1/analysis-runs/{analysis_id}')

@@ -10,7 +10,7 @@ The selected RC1 profile does not claim the public connectors overlay. ScienceBa
 
 ## Canonical Operator Journey
 
-The canonical local_expert operator journey for analytics-only RC1 is the method-aware tabular analytics flow named by `config/support_matrix.yaml`.
+The canonical local_expert operator journey for analytics-only RC1 is the documented composition of the `method_aware_analytics_vertical` capability selected by `config/support_matrix.yaml`.
 
 The supported path is: CSV upload, variable profiling, transform recommend/apply, annotation, analysis with `cross_correlation`, `decomposition`, or `structural_break`, inspection of result artifacts, assumptions, and caveats, then persisted recovery through `GET /api/v1/analysis-runs/{id}` and dataset detail reads. The path runs on local libraries, SQLite, and the local filesystem under the default local auth posture; it does not use connectors, SEC, OCR, model/agent egress, provider delivery, overlays, or a nonlocal base.
 
