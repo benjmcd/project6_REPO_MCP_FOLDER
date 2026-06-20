@@ -668,6 +668,7 @@ jobs:
       env:
         DB_INIT_MODE: none
         PROJECT6_SOURCE_SHA: ${{ github.sha }}
+        PROJECT6_CI_BACKEND_LAYER3_API_RESULT: ${{ needs['backend-layer3-api'].result }}
       run: |
         python ./scripts/rc1_local_expert_acceptance.py --json
 

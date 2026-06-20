@@ -57,9 +57,10 @@ def test_rc1_acceptance_doc_records_profile_boundaries_and_proofs() -> None:
         assert phrase in text
 
 
-def test_rc1_acceptance_runner_reports_profile_bounded_pass_with_injected_checks() -> None:
+def test_rc1_acceptance_runner_reports_profile_bounded_pass_with_injected_checks(monkeypatch) -> None:
     runner = _load_runner()
     calls: list[tuple[str, ...]] = []
+    monkeypatch.setenv("PROJECT6_CI_BACKEND_LAYER3_API_RESULT", "success")
 
     def fake_command_runner(command: list[str], cwd: Path):
         calls.append(tuple(command))
@@ -106,12 +107,16 @@ def test_rc1_acceptance_runner_reports_profile_bounded_pass_with_injected_checks
         assert criteria[criterion_id]["status"] == "pass"
     assert criteria["upgrade_subcontract"]["status"] == "not_claimed"
     assert criteria["local_profile_operational_acceptance"]["execution"] == "referenced_not_rerun"
+    assert criteria["local_profile_operational_acceptance"]["ci_dependency"] == "backend-layer3-api"
+    assert criteria["local_profile_operational_acceptance"]["ci_dependency_result"] == "success"
 
     assert ("python", "./scripts/support_matrix_check.py") in calls
     assert ("python", "./scripts/release_readiness_check.py") in calls
     flat_calls = "\n".join(" ".join(command) for command in calls)
     assert "test_canonical_local_expert_journey_recovers_state_with_fresh_client" in flat_calls
     assert "test_upload_counts_blank_csv_lines_as_dropped_source_rows" in flat_calls
+    assert "test_release_local_profile_operational_acceptance.py" in flat_calls
+    assert "--collect-only" in flat_calls
     assert "test_deployment_profile_validation.py" in flat_calls
     assert "test_app_image_build_script_passes_current_git_source_sha" in flat_calls
     assert "local_profile_acceptance.py" not in flat_calls
@@ -148,6 +153,32 @@ def test_rc1_acceptance_runner_cli_emits_json_with_injected_empty_runtime_fail_c
     json.dumps(report)
 
 
+def test_rc1_acceptance_runner_fails_when_ci_dependency_failed(monkeypatch) -> None:
+    runner = _load_runner()
+    monkeypatch.setenv("PROJECT6_CI_BACKEND_LAYER3_API_RESULT", "failure")
+
+    report = runner.run_rc1_acceptance(
+        repo_root=REPO_ROOT,
+        command_runner=lambda _command, _cwd: runner.CommandResult(
+            returncode=0,
+            stdout="ok",
+            stderr="",
+        ),
+        build_info_provider=lambda _root: {
+            "source": "/ready build_info",
+            "ready_status_code": 200,
+            "status": "ready",
+            "version": "0.1.0-rc1",
+            "source_sha": "c" * 40,
+        },
+    )
+
+    criteria = {item["id"]: item for item in report["criteria"]}
+    assert report["verdict"] == "FAIL"
+    assert criteria["local_profile_operational_acceptance"]["status"] == "fail"
+    assert criteria["local_profile_operational_acceptance"]["ci_dependency_status"] == "fail"
+
+
 def test_rc1_version_bump_and_release_readiness_remain_profile_neutral() -> None:
     version_text = VERSION_PATH.read_text(encoding="utf-8")
     release_manifest = json.loads(RELEASE_READINESS_PATH.read_text(encoding="utf-8"))
@@ -168,6 +199,7 @@ def test_rc1_version_bump_and_release_readiness_remain_profile_neutral() -> None
 def test_rc1_acceptance_runner_is_release_gate_ci_hook() -> None:
     workflow_text = WORKFLOW_PATH.read_text(encoding="utf-8")
     assert "Run RC1 local expert acceptance capstone" in workflow_text
+    assert "PROJECT6_CI_BACKEND_LAYER3_API_RESULT: ${{ needs['backend-layer3-api'].result }}" in workflow_text
     assert "python ./scripts/rc1_local_expert_acceptance.py --json" in workflow_text
 
     coverage_text = (REPO_ROOT / "backend" / "tests" / "test_ci_coverage_completeness.py").read_text(

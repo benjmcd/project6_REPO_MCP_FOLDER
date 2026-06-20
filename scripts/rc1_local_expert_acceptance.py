@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -33,6 +34,15 @@ EXCLUDED_SURFACES = [
     "agent/model egress",
     "nonlocal",
     "overlays",
+]
+
+LOCAL_PROFILE_COVERAGE_COMMAND = [
+    "python",
+    "-m",
+    "pytest",
+    "--collect-only",
+    "-q",
+    "./backend/tests/test_release_local_profile_operational_acceptance.py",
 ]
 
 COMMAND_CHECKS = [
@@ -185,18 +195,32 @@ def _command_criterion(
     }
 
 
-def _referenced_local_profile_criterion() -> dict[str, Any]:
+def _referenced_local_profile_criterion(*, repo_root: Path, command_runner: Any) -> dict[str, Any]:
+    result = command_runner(LOCAL_PROFILE_COVERAGE_COMMAND, repo_root)
+    ci_dependency_result = os.environ.get("PROJECT6_CI_BACKEND_LAYER3_API_RESULT", "").strip()
+    ci_dependency_status = "not_available_local"
+    if ci_dependency_result:
+        ci_dependency_status = "pass" if ci_dependency_result == "success" else "fail"
+    status = "pass" if result.returncode == 0 and ci_dependency_status != "fail" else "fail"
     return {
         "id": "local_profile_operational_acceptance",
         "title": "Local profile install, restart survival, and backup/restore acceptance",
-        "status": "pass",
+        "status": status,
         "execution": "referenced_not_rerun",
+        "verification": "collect-only plus backend-layer3-api CI dependency result when available",
         "not_rerun_reason": "heavy live-process backup/restore proof is collected by its dedicated release test",
         "evidence": [
             "scripts/local_profile_acceptance.py",
             "backend/tests/test_release_local_profile_operational_acceptance.py",
             "docs/local-profile-ops.md",
         ],
+        "command": LOCAL_PROFILE_COVERAGE_COMMAND,
+        "returncode": result.returncode,
+        "stdout_tail": _tail(result.stdout),
+        "stderr_tail": _tail(result.stderr),
+        "ci_dependency": "backend-layer3-api",
+        "ci_dependency_result": ci_dependency_result or "not_available_local",
+        "ci_dependency_status": ci_dependency_status,
     }
 
 
@@ -224,7 +248,10 @@ def run_rc1_acceptance(
         _command_criterion(check, repo_root=root, command_runner=command_runner)
         for check in COMMAND_CHECKS
     ]
-    criteria.insert(3, _referenced_local_profile_criterion())
+    criteria.insert(
+        3,
+        _referenced_local_profile_criterion(repo_root=root, command_runner=command_runner),
+    )
     criteria.append(_upgrade_subcontract_criterion())
 
     build_status = _build_identity_status(build_identity)
