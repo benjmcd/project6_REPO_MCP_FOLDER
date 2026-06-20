@@ -7,10 +7,13 @@ import re
 import sys
 from pathlib import Path
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_ROOT = REPO_ROOT / "backend"
 WORKFLOW_PATH = REPO_ROOT / ".github" / "workflows" / "playwright.yml"
+BUILD_SCRIPT = REPO_ROOT / "scripts" / "build_app_image.py"
 
 
 def test_release_lock_is_hash_pinned_and_keeps_ranges_as_source_of_truth() -> None:
@@ -40,8 +43,89 @@ def test_dockerfile_uses_digest_pinned_python312_release_base_and_lock() -> None
     dockerfile = (REPO_ROOT / "Dockerfile.app").read_text(encoding="utf-8")
 
     assert re.search(r"^FROM python:3\.12-slim@sha256:[0-9a-f]{64}$", dockerfile, re.MULTILINE)
+    assert "scripts/build_app_image.py" in dockerfile
+    assert "--build-arg PROJECT6_SOURCE_SHA=" in dockerfile
+    assert "ARG PROJECT6_SOURCE_SHA=unknown" in dockerfile
+    assert "ENV PROJECT6_SOURCE_SHA=${PROJECT6_SOURCE_SHA}" in dockerfile
     assert "requirements.lock.txt" in dockerfile
     assert "pip install --no-cache-dir --require-hashes -r requirements.lock.txt" in dockerfile
+
+    pip_index = dockerfile.index("pip install --no-cache-dir --require-hashes -r requirements.lock.txt")
+    arg_index = dockerfile.index("\nARG PROJECT6_SOURCE_SHA=unknown")
+    env_index = dockerfile.index("\nENV PROJECT6_SOURCE_SHA=${PROJECT6_SOURCE_SHA}")
+    copy_index = dockerfile.index("\nCOPY backend/ ./")
+    assert pip_index < arg_index < env_index < copy_index
+
+
+def test_app_image_build_script_passes_current_git_source_sha(monkeypatch) -> None:
+    source_sha = "b" * 40
+    spec = importlib.util.spec_from_file_location("build_app_image", BUILD_SCRIPT)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    monkeypatch.setattr(module, "_current_git_sha", lambda _repo_root: source_sha)
+    monkeypatch.setattr(module, "_worktree_status", lambda _repo_root: "", raising=False)
+
+    command = module.build_command(
+        REPO_ROOT,
+        image_tag="method-aware-app:test",
+        docker_executable="docker",
+    )
+
+    assert command == [
+        "docker",
+        "build",
+        "-f",
+        "Dockerfile.app",
+        "--build-arg",
+        f"PROJECT6_SOURCE_SHA={source_sha}",
+        "-t",
+        "method-aware-app:test",
+        ".",
+    ]
+
+
+def test_app_image_build_script_refuses_dirty_worktree_when_using_head(monkeypatch) -> None:
+    source_sha = "d" * 40
+    spec = importlib.util.spec_from_file_location("build_app_image", BUILD_SCRIPT)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    monkeypatch.setattr(module, "_current_git_sha", lambda _repo_root: source_sha)
+    monkeypatch.setattr(
+        module,
+        "_worktree_status",
+        lambda _repo_root: " M backend/app/_version.py\n",
+        raising=False,
+    )
+
+    with pytest.raises(RuntimeError, match="worktree must be clean"):
+        module.build_command(REPO_ROOT, image_tag="method-aware-app:test")
+
+
+def test_build_info_reports_passed_project6_source_sha(monkeypatch) -> None:
+    source_sha = "c" * 40
+    prior_version_module = sys.modules.get("app._version")
+    monkeypatch.setenv("PROJECT6_SOURCE_SHA", source_sha)
+    monkeypatch.delenv("GITHUB_SHA", raising=False)
+
+    if str(BACKEND_ROOT) not in sys.path:
+        sys.path.insert(0, str(BACKEND_ROOT))
+
+    try:
+        sys.modules.pop("app._version", None)
+        version_module = importlib.import_module("app._version")
+        assert version_module.BUILD_INFO["source_sha"] == source_sha
+        assert version_module.BUILD_INFO["source_sha"] != version_module.UNKNOWN_SOURCE_SHA
+    finally:
+        sys.modules.pop("app._version", None)
+        if prior_version_module is not None:
+            sys.modules["app._version"] = prior_version_module
+    assert sys.modules.get("app._version") is prior_version_module
 
 
 def test_fastapi_and_ready_expose_bounded_release_identity(monkeypatch) -> None:

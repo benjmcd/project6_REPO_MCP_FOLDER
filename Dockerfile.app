@@ -3,8 +3,11 @@
 # This is NOT the dev-environment image (Dockerfile at repo root).
 # This image runs the FastAPI/uvicorn server behind a trusted reverse proxy.
 #
-# Build:
-#   docker build -f Dockerfile.app -t method-aware-app .
+# Build with source identity:
+#   python scripts/build_app_image.py --tag method-aware-app:local
+#
+# Direct docker equivalent:
+#   docker build -f Dockerfile.app --build-arg PROJECT6_SOURCE_SHA=<git rev-parse HEAD> -t method-aware-app:local .
 #
 # Run (production):
 #   docker run --env-file backend/.env.production.example \
@@ -12,9 +15,6 @@
 #     -p 8000:8000 method-aware-app
 
 FROM python:3.12-slim@sha256:d764629ce0ddd8c71fd371e9901efb324a95789d2315a47db7e4d27e78f1b0e9
-
-ARG PROJECT6_SOURCE_SHA=unknown
-ENV PROJECT6_SOURCE_SHA=${PROJECT6_SOURCE_SHA}
 
 # Install OS-level libs required by runtime deps:
 #   libpq-dev / libpq5  — psycopg (postgres C driver)
@@ -42,6 +42,9 @@ WORKDIR /app
 COPY backend/requirements.txt backend/requirements.lock.txt ./
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir --require-hashes -r requirements.lock.txt
+
+ARG PROJECT6_SOURCE_SHA=unknown
+ENV PROJECT6_SOURCE_SHA=${PROJECT6_SOURCE_SHA}
 
 # Copy the backend application source.
 COPY backend/ ./
