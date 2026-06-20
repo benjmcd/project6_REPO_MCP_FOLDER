@@ -13,6 +13,16 @@ This runbook covers the selected L05 operational subcontracts for the analytics-
 
 `config/release_readiness.yaml` remains profile-neutral. Its `owner_selected_profile_specific_gates` list stays empty.
 
+## Artifact-Baked Build Identity
+
+Build the app image from the repo root with the scripted Docker build path:
+
+```powershell
+python .\scripts\build_app_image.py --tag method-aware-app:local
+```
+
+The helper resolves the current source identity with `git rev-parse HEAD`, validates it as a 40-character SHA, and passes it to `Dockerfile.app` as `--build-arg PROJECT6_SOURCE_SHA=<sha>`. `Dockerfile.app` promotes that build arg to the runtime `PROJECT6_SOURCE_SHA` env var, so `/ready` reports the same SHA at `build.source_sha` instead of `unknown`.
+
 ## CI Acceptance
 
 Run the local posture acceptance harness from the repo root (`scripts/local_profile_acceptance.py`):

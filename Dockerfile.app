@@ -3,8 +3,11 @@
 # This is NOT the dev-environment image (Dockerfile at repo root).
 # This image runs the FastAPI/uvicorn server behind a trusted reverse proxy.
 #
-# Build:
-#   docker build -f Dockerfile.app -t method-aware-app .
+# Build with source identity:
+#   python scripts/build_app_image.py --tag method-aware-app:local
+#
+# Direct docker equivalent:
+#   docker build -f Dockerfile.app --build-arg PROJECT6_SOURCE_SHA=<git rev-parse HEAD> -t method-aware-app:local .
 #
 # Run (production):
 #   docker run --env-file backend/.env.production.example \
