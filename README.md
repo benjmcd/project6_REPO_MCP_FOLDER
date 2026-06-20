@@ -1,21 +1,25 @@
 # Project6: Method-Aware Framework + Connector Stack
 
-> Status note (2026-03-25): Phase 7/7A (Advanced NRC APS Ingestion) is in an `accepted-state`. Phase 8 (Downstream Consumption) is in a **CLOSED** state (all APS-table materialization invariants satisfied in closure-run-005). The authoritative status and navigation surfaces live in:
-> - [nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md) (Accepted 7A Truth)
-> - [nrc_aps_authority_matrix.md](docs/nrc_adams/nrc_aps_authority_matrix.md) (Repo-wide Authority Map)
-> - [nrc_aps_reader_path.md](docs/nrc_adams/nrc_aps_reader_path.md) (Navigational Guide)
-> - [nrc_aps_ui_launch_runbook.md](docs/nrc_adams/nrc_aps_ui_launch_runbook.md) (Canonical review/document-trace/workbench/Candidate B Trace launch contract)
-> - [frontend_UI_plans/README.md](frontend_UI_plans/README.md) (Review UI / Document Trace / Workbench Compare / Candidate B Trace retained operator/reference front door)
-> - [docs/onlook-ops.md](docs/onlook-ops.md) (Onlook testing / troubleshooting / audit / operator front door)
-> - [docs/layer3-deployment-security.md](docs/layer3-deployment-security.md) (Layer 3 local/dev deployment-security posture, live non-local startup guardrail, and remaining hardening decisions)
-> - [docs/layer3-deploy-hardening.md](docs/layer3-deploy-hardening.md) (Layer 3 non-local deployment hardening governance and first settings guardrail)
-> - [postgres_status_handoff.md](docs/postgres/postgres_status_handoff.md) (PostgreSQL Tier1 Status)
+> **Current status** (tracked on `project6-origin/main`): the FastAPI/SQLAlchemy surface is identity-gated by default (`AUTH_OWNER=none`, `LAYER3_ROUTE_AUTHORIZATION_MODE=identity_presence`), with role enforcement available but inert unless configured. Sublayer 3C deterministic method/product flows and the default-deny model/agent egress policy are present; the gated agent runtime fails closed under local-only posture; SEC-XBRL live network / value reveal / controlled reveal submit remain default-off; and CI covers the PostgreSQL 3C golden path plus the SEC-XBRL test families. **No release profile is selected yet, and this is not a production-ready claim** for SEC value reveal, real provider delivery, live network, model egress, or any default-on behavior.
 >
-> **CRITICAL WARNING**: Unverified `tests/...` and `tools/...` paths referenced below may not exist in this specific export workspace and should not be trusted as safe authority paths unless their on-disk presence is directly confirmed.
+> Agent/operator harness entry point: [docs/agent-harness.md](docs/agent-harness.md).
 
-Agent/operator harness entry point: [docs/agent-harness.md](docs/agent-harness.md).
+#### Layer-specific and historical status surfaces
 
-> Layer 3 live-main note (2026-06-18, `project6-origin/main` `f679f64f`): the current FastAPI/SQLAlchemy surface is identity-gated by default (`AUTH_OWNER=none`, `LAYER3_ROUTE_AUTHORIZATION_MODE=identity_presence`) with role enforcement available but inert unless configured. Sublayer 3C deterministic method/product flows and the default-deny model/agent egress policy are present, the gated agent runtime fails closed under local-only posture, SEC-XBRL live network/value reveal/controlled reveal submit remain default-off, and CI now covers the PostgreSQL 3C golden path plus the SEC-XBRL test families. This is not a production-ready claim for SEC value reveal, real provider delivery, live network, model egress, or default-on behavior.
+The notes below are layer-specific milestones and navigation pointers, not the repository-wide current support posture stated above.
+
+> Earlier NRC APS phase note (2026-03-25): Phase 7/7A (Advanced NRC APS Ingestion) reached an `accepted-state` and Phase 8 (Downstream Consumption) a **CLOSED** state (APS-table materialization invariants satisfied in closure-run-005). Canonical per-layer status and navigation:
+> - [nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md) (NRC APS continuation truth)
+> - [nrc_aps_authority_matrix.md](docs/nrc_adams/nrc_aps_authority_matrix.md) (repo-wide authority map)
+> - [nrc_aps_reader_path.md](docs/nrc_adams/nrc_aps_reader_path.md) (navigational guide)
+> - [nrc_aps_ui_launch_runbook.md](docs/nrc_adams/nrc_aps_ui_launch_runbook.md) (review/document-trace/workbench/Candidate B Trace launch contract)
+> - [frontend_UI_plans/README.md](frontend_UI_plans/README.md) (review UI / document trace / workbench compare front door)
+> - [docs/onlook-ops.md](docs/onlook-ops.md) (Onlook testing / troubleshooting / audit / operator front door)
+> - [docs/layer3-deployment-security.md](docs/layer3-deployment-security.md) (Layer 3 local/dev deployment-security posture and hardening decisions)
+> - [docs/layer3-deploy-hardening.md](docs/layer3-deploy-hardening.md) (Layer 3 non-local deployment hardening governance)
+> - [postgres_status_handoff.md](docs/postgres/postgres_status_handoff.md) (PostgreSQL Tier1 status)
+>
+> Some `tests/...` and `tools/...` paths referenced in older docs may not exist in a given export workspace; confirm on-disk presence before treating any as an authority path.
 
 This repository has three active tracks in one backend:
 
