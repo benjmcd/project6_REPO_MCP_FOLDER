@@ -11,7 +11,10 @@ import time
 from pathlib import Path
 from typing import Any, NamedTuple
 
-import yaml
+try:
+    import yaml
+except ModuleNotFoundError:  # pragma: no cover - exercised in minimal CI envs.
+    yaml = None
 
 
 SCHEMA_ID = "project6.release_readiness.v1"
@@ -53,8 +56,14 @@ def _tail(text: str, limit: int = 2000) -> str:
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
-    with path.open("r", encoding="utf-8") as handle:
-        loaded = yaml.safe_load(handle)
+    text = path.read_text(encoding="utf-8")
+    if yaml is not None:
+        loaded = yaml.safe_load(text)
+    else:
+        try:
+            loaded = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{path} requires PyYAML for non-JSON YAML content") from exc
     if not isinstance(loaded, dict):
         raise ValueError(f"{path} did not parse to a mapping")
     return loaded

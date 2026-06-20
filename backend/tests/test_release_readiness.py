@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
-from textwrap import dedent
-
-import yaml
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -32,14 +30,23 @@ def _load_runner():
 
 def test_release_readiness_manifest_is_profile_neutral_and_maps_existing_gates():
     manifest_text = MANIFEST_PATH.read_text(encoding="utf-8")
-    manifest = yaml.safe_load(manifest_text)
+    manifest = json.loads(manifest_text)
+    runner = _load_runner()
+    original_yaml = runner.yaml
+    try:
+        runner.yaml = None
+        assert runner._load_yaml(MANIFEST_PATH) == manifest
+    finally:
+        runner.yaml = original_yaml
 
     assert manifest["schema_id"] == "project6.release_readiness.v1"
     assert manifest["release"]["milestone"] == "M-L02-RELEASE-ACCEPTANCE"
     assert manifest["release"]["version"] == "0.1.0-rc1-foundation"
     assert manifest["build_identity"]["source"] == "/ready build_info"
     assert manifest["owner_selected_profile_specific_gates"] == []
-    assert "owner-selected profile-specific gates intentionally empty" in manifest_text
+    assert "owner-selected profile-specific gates intentionally empty" in manifest[
+        "profile_boundary_note"
+    ]
 
     gate_ids = [gate["id"] for gate in manifest["required_gates"]]
     assert gate_ids == EXPECTED_PROFILE_NEUTRAL_GATES
@@ -48,7 +55,7 @@ def test_release_readiness_manifest_is_profile_neutral_and_maps_existing_gates()
     workflow_text = (REPO_ROOT / ".github" / "workflows" / "playwright.yml").read_text(
         encoding="utf-8"
     )
-    gate_text = yaml.safe_dump(manifest["required_gates"], sort_keys=True)
+    gate_text = json.dumps(manifest["required_gates"], sort_keys=True)
 
     assert (REPO_ROOT / "backend" / "tests" / "test_deployment_profile_validation.py").exists()
     assert (REPO_ROOT / "backend" / "tests" / "test_ci_coverage_completeness.py").exists()
@@ -70,22 +77,26 @@ def test_release_readiness_runner_reports_pass_and_fail_paths(tmp_path):
     def write_manifest(command_name: str) -> Path:
         manifest_path = tmp_path / f"{command_name}.yaml"
         manifest_path.write_text(
-            dedent(
-                f"""
-                schema_id: project6.release_readiness.v1
-                release:
-                  milestone: M-L02-RELEASE-ACCEPTANCE
-                  version: 0.1.0-rc1-foundation
-                build_identity:
-                  source: /ready build_info
-                owner_selected_profile_specific_gates: []
-                required_gates:
-                  - id: command_gate
-                    kind: command
-                    profile_scope: profile-neutral
-                    command: [{command_name!r}]
-                """
-            ).lstrip(),
+            json.dumps(
+                {
+                    "schema_id": "project6.release_readiness.v1",
+                    "release": {
+                        "milestone": "M-L02-RELEASE-ACCEPTANCE",
+                        "version": "0.1.0-rc1-foundation",
+                    },
+                    "build_identity": {"source": "/ready build_info"},
+                    "owner_selected_profile_specific_gates": [],
+                    "required_gates": [
+                        {
+                            "id": "command_gate",
+                            "kind": "command",
+                            "profile_scope": "profile-neutral",
+                            "command": [command_name],
+                        }
+                    ],
+                },
+                indent=2,
+            ),
             encoding="utf-8",
         )
         return manifest_path
