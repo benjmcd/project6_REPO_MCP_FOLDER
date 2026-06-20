@@ -16,9 +16,6 @@
 
 FROM python:3.12-slim@sha256:d764629ce0ddd8c71fd371e9901efb324a95789d2315a47db7e4d27e78f1b0e9
 
-ARG PROJECT6_SOURCE_SHA=unknown
-ENV PROJECT6_SOURCE_SHA=${PROJECT6_SOURCE_SHA}
-
 # Install OS-level libs required by runtime deps:
 #   libpq-dev / libpq5  — psycopg (postgres C driver)
 #   libglib2.0-0        — required by OpenCV (cv2), used by camelot-py
@@ -45,6 +42,9 @@ WORKDIR /app
 COPY backend/requirements.txt backend/requirements.lock.txt ./
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir --require-hashes -r requirements.lock.txt
+
+ARG PROJECT6_SOURCE_SHA=unknown
+ENV PROJECT6_SOURCE_SHA=${PROJECT6_SOURCE_SHA}
 
 # Copy the backend application source.
 COPY backend/ ./

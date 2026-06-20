@@ -30,6 +30,29 @@ def _current_git_sha(repo_root: Path) -> str:
     return source_sha
 
 
+def _worktree_status(repo_root: Path) -> str:
+    completed = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=all"],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(completed.stderr.strip() or "git status --porcelain failed")
+    return completed.stdout
+
+
+def _assert_clean_worktree(repo_root: Path) -> None:
+    status = _worktree_status(repo_root).strip()
+    if status:
+        raise RuntimeError(
+            "worktree must be clean before stamping git HEAD into PROJECT6_SOURCE_SHA; "
+            "commit or remove local changes first"
+        )
+
+
 def build_command(
     repo_root: Path,
     *,
@@ -37,6 +60,8 @@ def build_command(
     docker_executable: str = "docker",
     source_sha: str | None = None,
 ) -> list[str]:
+    if source_sha is None:
+        _assert_clean_worktree(repo_root)
     selected_sha = (source_sha or _current_git_sha(repo_root)).strip().lower()
     if not SOURCE_SHA_RE.fullmatch(selected_sha):
         raise ValueError(f"PROJECT6_SOURCE_SHA must be a 40-char git SHA, got {selected_sha!r}")
