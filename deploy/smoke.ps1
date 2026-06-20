@@ -360,6 +360,7 @@ try {
 # Resolve paths
 # ---------------------------------------------------------------------------
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoRoot  = Split-Path -Parent $ScriptDir
 $SmokeDir  = Join-Path $ScriptDir ".smoke"
 $ComposeFile = Join-Path $ScriptDir "docker-compose.production.yml"
 
@@ -400,11 +401,27 @@ $AuditorPassword = ([BitConverter]::ToString($AuditorPwBytes) -replace "-","").T
 # Decide proxy port (avoid conflicts by using a high ephemeral port)
 $ProxyPort = 18080
 
+# Bind the compose build/runtime to the git source identity that /ready must report.
+$ReleaseSourceSha = "unknown"
+try {
+    $GitSha = (& git -C $RepoRoot rev-parse HEAD)
+    if ($LASTEXITCODE -eq 0 -and $GitSha) {
+        $ReleaseSourceSha = ([string]$GitSha).Trim().ToLower()
+    }
+} catch {
+    $ReleaseSourceSha = "unknown"
+}
+if ($ReleaseSourceSha -notmatch '^(?:[0-9a-f]{40}|[0-9a-f]{64})$') {
+    Write-Host "ERROR: Could not resolve a full git source SHA for release identity (got '$ReleaseSourceSha')." -ForegroundColor Red
+    exit 1
+}
+
 # Write deploy/.smoke/.env
 $EnvContent = @"
 POSTGRES_PASSWORD=$PostgresPassword
 PROXY_HTTP_PORT=$ProxyPort
 ALLOWED_ORIGINS=https://smoke.invalid
+PROJECT6_SOURCE_SHA=$ReleaseSourceSha
 LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED=false
 LAYER3_SIGNED_REFERENCE_SECRET=$SignedReferenceSecret
 "@
@@ -550,10 +567,38 @@ try {
     Write-Check "(f) GET /ready -> 200 (got $StatusF)" $PassF
     if (-not $PassF) { $AllPass = $false }
 
-    # (g) Direct app port 8000 -> connection refused (-1)
+    # (f2) /ready release-identity -> immutable version and source SHA reported by build_info
+    $ReadyBuildInfo = $null
+    $ReadyIdentityPass = $false
+    if ($PassF) {
+        $ReadyIdentityResponse = Invoke-ProbeRequest -Url $ReadyUrl -Method GET -Username "smoke-owner" -Password $OwnerPassword
+        try {
+            $ReadyPayload = $ReadyIdentityResponse.Content | ConvertFrom-Json
+            $ReadyBuildInfo = $ReadyPayload.build
+            $ReadyIdentityPass = (
+                $ReadyIdentityResponse.StatusCode -eq 200 -and
+                $ReadyBuildInfo.version -eq "0.1.0-rc1-foundation" -and
+                $ReadyBuildInfo.source_sha -eq $ReleaseSourceSha
+            )
+        } catch {
+            $ReadyIdentityPass = $false
+        }
+    }
+    $ReadyIdentityDetail = if ($ReadyBuildInfo) { "version=$($ReadyBuildInfo.version), source_sha=$($ReadyBuildInfo.source_sha)" } else { "missing build_info" }
+    Write-Check "(f2) /ready release-identity build_info ($ReadyIdentityDetail)" $ReadyIdentityPass
+    if (-not $ReadyIdentityPass) { $AllPass = $false }
+
+    # (g) App container port 8000 is not published to the host.  A direct
+    # localhost:8000 probe is informational only because another local process
+    # may already own that port on an operator workstation.
     $StatusG = Invoke-ProbeRequestStatusOnly -Url $AppDirect -Method GET
-    $PassG = ($StatusG -eq -1)
-    Write-Check "(g) Direct localhost:8000 -> connection refused (got $StatusG)" $PassG
+    $AppContainerForPorts = (& docker compose -f $ComposeFile -f $OverrideFile --env-file $EnvFile ps -q app | Select-Object -First 1)
+    $AppPortsJson = ""
+    if ($AppContainerForPorts) {
+        $AppPortsJson = & docker inspect --format "{{json .NetworkSettings.Ports}}" $AppContainerForPorts
+    }
+    $PassG = ($AppContainerForPorts -ne "" -and ($AppPortsJson -match '"8000/tcp":null' -or $AppPortsJson -notmatch 'HostPort'))
+    Write-Check "(g) App container has no published host port 8000 (localhost probe got $StatusG)" $PassG "ports=$AppPortsJson"
     if (-not $PassG) { $AllPass = $false }
 
     Write-Host ""
@@ -570,25 +615,24 @@ try {
         Write-Host "=== Product-Flow Probe ===" -ForegroundColor Cyan
         Write-Host ""
 
-        # NOTE: The probe implements the longest HTTP chain that the repo's own
-        # tests prove works from a clean DB over HTTP routes (no ORM seeding).
-        # The proven chain for the source-intake path ends at gate-b admission
-        # (step 4).  All post-gate-b tests (gate-c, plan/preview, plan/approve,
-        # execution/*, package/*) either (a) seed L3Session rows directly via
-        # ORM service calls, or (b) use dataset_version/aps_content_document
-        # sources that also require ORM-seeded source authority -- neither
-        # qualifies as an HTTP-proven chain from upload.  The probe therefore
-        # stops honestly at step 4 with a clear note.
-        #
-        # Proving reference:
-        #   Step 1: test_layer3_bootstrap_contract.py (bootstrap route)
-        #   Step 2: test_layer3_source_intake.py:318-319 (_upload_source_intake)
-        #   Step 3: test_layer3_source_intake.py:321 (GET .../preview)
-        #   Step 4: test_layer3_source_intake.py:325-332 (POST gate-b/decision)
+        # Route contract exercised when each prior step exposes the IDs needed
+        # for the next profile-neutral operator workflow step:
+        #   POST /api/v1/layer3/gate-c/preview
+        #   POST /api/v1/layer3/plan/preview
+        #   POST /api/v1/layer3/plan/approve
+        #   POST /api/v1/layer3/execution/select
+        #   POST /api/v1/layer3/execution/start
+        #   POST /api/v1/layer3/execution/result/review
+        #   POST /api/v1/layer3/working-set
+        #   POST /api/v1/layer3/analysis-product/generate
+        #   POST /api/v1/layer3/analysis-product/{id}/transition
+        #   POST /api/v1/layer3/package/review/preview
 
         $ApiBase = "$BaseUrl/api/v1/layer3"
         $ProbePass = $true
         $LongestStep = 0
+        $script:ProbeBoundary = ""
+        $script:PackageReviewPreviewHash = ""
 
         function Invoke-ProbeStep {
             param(
@@ -611,6 +655,30 @@ try {
             return $resp
         }
 
+        function Read-ProbeJson {
+            param(
+                [object]$Response,
+                [string]$StepNum,
+                [string]$Label
+            )
+            try {
+                return ($Response.Content | ConvertFrom-Json)
+            } catch {
+                Write-Host "  WARN  Step $StepNum ${Label}: could not parse response JSON" -ForegroundColor Yellow
+                return $null
+            }
+        }
+
+        function Stop-ProbeAtBoundary {
+            param(
+                [string]$Stage,
+                [string]$Detail
+            )
+            $script:ProbeBoundary = "profile-boundary: $Stage - $Detail"
+            Write-Host "  NOTE  $($script:ProbeBoundary)" -ForegroundColor Yellow
+            Write-Host "        No selected profile was advertised; defaults preserved." -ForegroundColor Yellow
+        }
+
         # Use script-scope variables for cross-step data
         $script:ClientRequestId = [System.Guid]::NewGuid().ToString()
         $script:SourceIntakeRecordId = ""
@@ -625,6 +693,16 @@ try {
         $script:MaterialPayload = $null
         $script:MaterialLoadSummary = $null
         $script:SessionId = ""
+        $script:PlanPreviewId = ""
+        $script:PlanPreviewHash = ""
+        $script:AnalysisPlanId = ""
+        $script:PassRunId = ""
+        $script:AnalysisRunId = ""
+        $script:OutputPayloadRef = ""
+        $script:ReviewRecordRef = ""
+        $script:MaterialSnapshotId = ""
+        $script:WorkingSetId = ""
+        $script:AnalysisProductId = ""
 
         # -- Step 1: Bootstrap --
         # test_layer3_bootstrap_contract.py: GET /api/v1/layer3/bootstrap -> 200
@@ -727,20 +805,346 @@ try {
                     $script:SessionId = $parsed4.session_id
                 } catch { }
                 $LongestStep = 4
-                $ProbeComplete = $true
+            }
+        }
+
+        # -- Step 5: Gate-C preview, committing profile-neutral typing when admitted --
+        if ($ProbePass) {
+            $gateCPayload = @{
+                client_request_id = "smoke-gate-c-$($script:ClientRequestId)"
+                session_id        = $script:SessionId
+                commit_typing     = $true
+                actor             = "smoke-owner"
+            }
+            $gateCBody = $gateCPayload | ConvertTo-Json -Depth 10 -Compress
+            $r5 = Invoke-ProbeStep -StepNum "5" -Label "POST /gate-c/preview" -Url "$ApiBase/gate-c/preview" -Body $gateCBody -ExpectedStatus 200
+            if ($r5.StatusCode -ne 200) { $ProbePass = $false }
+            if ($ProbePass) { $LongestStep = 5 }
+        }
+
+        # -- Step 6: Plan preview --
+        if ($ProbePass) {
+            $planPayload = @{
+                client_request_id  = "smoke-plan-preview-$($script:ClientRequestId)"
+                session_id         = $script:SessionId
+                include_exclusions = $true
+                preview_scope      = "owner_service_default"
+            }
+            $planBody = $planPayload | ConvertTo-Json -Depth 10 -Compress
+            $r6 = Invoke-ProbeStep -StepNum "6" -Label "POST /plan/preview" -Url "$ApiBase/plan/preview" -Body $planBody -ExpectedStatus 200
+            if ($r6.StatusCode -ne 200) { $ProbePass = $false }
+            if ($ProbePass) {
+                $parsed6 = Read-ProbeJson -Response $r6 -StepNum "6" -Label "POST /plan/preview"
+                if ($null -ne $parsed6) {
+                    $script:PlanPreviewId = [string]$parsed6.preview_id
+                    $script:PlanPreviewHash = [string]$parsed6.preview_hash
+                }
+                if ($script:PlanPreviewId -eq "" -or $script:PlanPreviewHash -eq "") {
+                    Write-Host "  FAIL  Step 6 did not return preview_id and preview_hash" -ForegroundColor Red
+                    $ProbePass = $false
+                } else {
+                    $LongestStep = 6
+                }
+            }
+        }
+
+        # -- Step 7: Plan approve --
+        if ($ProbePass) {
+            $approvalPayload = @{
+                client_request_id     = "smoke-plan-approve-$($script:ClientRequestId)"
+                session_id            = $script:SessionId
+                preview_id            = $script:PlanPreviewId
+                preview_hash          = $script:PlanPreviewHash
+                operator_confirmation = $true
+                approval_scope        = "owner_service_default"
+            }
+            $approvalBody = $approvalPayload | ConvertTo-Json -Depth 10 -Compress
+            $r7 = Invoke-ProbeStep -StepNum "7" -Label "POST /plan/approve" -Url "$ApiBase/plan/approve" -Body $approvalBody -ExpectedStatus 200
+            if ($r7.StatusCode -ne 200) { $ProbePass = $false }
+            if ($ProbePass) {
+                $parsed7 = Read-ProbeJson -Response $r7 -StepNum "7" -Label "POST /plan/approve"
+                if ($null -ne $parsed7) {
+                    $script:AnalysisPlanId = [string]$parsed7.analysis_plan_id
+                }
+                if ($script:AnalysisPlanId -eq "") {
+                    Write-Host "  FAIL  Step 7 did not return analysis_plan_id" -ForegroundColor Red
+                    $ProbePass = $false
+                } else {
+                    $LongestStep = 7
+                }
+            }
+        }
+
+        # -- Step 8: Execution select --
+        if ($ProbePass) {
+            $selectionPayload = @{
+                client_request_id = "smoke-exec-select-$($script:ClientRequestId)"
+                session_id        = $script:SessionId
+                analysis_plan_id  = $script:AnalysisPlanId
+                preview_id        = $script:PlanPreviewId
+                preview_hash      = $script:PlanPreviewHash
+            }
+            $selectionBody = $selectionPayload | ConvertTo-Json -Depth 10 -Compress
+            $r8 = Invoke-ProbeStep -StepNum "8" -Label "POST /execution/select" -Url "$ApiBase/execution/select" -Body $selectionBody -ExpectedStatus 200
+            if ($r8.StatusCode -ne 200) { $ProbePass = $false }
+            if ($ProbePass) {
+                $parsed8 = Read-ProbeJson -Response $r8 -StepNum "8" -Label "POST /execution/select"
+                if ($null -ne $parsed8 -and $null -ne $parsed8.pass_run_ids -and @($parsed8.pass_run_ids).Count -gt 0) {
+                    $script:PassRunId = [string]@($parsed8.pass_run_ids)[0]
+                }
+                if ($script:PassRunId -eq "") {
+                    Write-Host "  FAIL  Step 8 did not return pass_run_ids[0]" -ForegroundColor Red
+                    $ProbePass = $false
+                } else {
+                    $LongestStep = 8
+                }
+            }
+        }
+
+        # -- Step 9: Execution start --
+        if ($ProbePass) {
+            $startPayload = @{
+                client_request_id = "smoke-exec-start-$($script:ClientRequestId)"
+                session_id        = $script:SessionId
+                analysis_plan_id  = $script:AnalysisPlanId
+                pass_run_id       = $script:PassRunId
+                preview_id        = $script:PlanPreviewId
+                preview_hash      = $script:PlanPreviewHash
+            }
+            $startBody = $startPayload | ConvertTo-Json -Depth 10 -Compress
+            $r9 = Invoke-ProbeStep -StepNum "9" -Label "POST /execution/start" -Url "$ApiBase/execution/start" -Body $startBody -ExpectedStatus 200
+            if ($r9.StatusCode -ne 200) { $ProbePass = $false }
+            if ($ProbePass) {
+                $parsed9 = Read-ProbeJson -Response $r9 -StepNum "9" -Label "POST /execution/start"
+                if ($null -ne $parsed9) {
+                    $script:AnalysisRunId = [string]$parsed9.analysis_run_id
+                    $script:OutputPayloadRef = [string]$parsed9.output_payload_ref
+                }
+                if ($script:AnalysisRunId -eq "" -and $script:OutputPayloadRef -eq "") {
+                    Write-Host "  FAIL  Step 9 did not return analysis_run_id or source-intake output_payload_ref" -ForegroundColor Red
+                    $ProbePass = $false
+                } else {
+                    $LongestStep = 9
+                }
+            }
+        }
+
+        # -- Step 10: Execution result status, needed to review a concrete output --
+        if ($ProbePass) {
+            $statusPayload = @{
+                client_request_id  = "smoke-result-status-$($script:ClientRequestId)"
+                session_id         = $script:SessionId
+                analysis_plan_id   = $script:AnalysisPlanId
+                pass_run_id        = $script:PassRunId
+                preview_id         = $script:PlanPreviewId
+                preview_hash       = $script:PlanPreviewHash
+                operator_view_mode = "status_only"
+            }
+            if ($script:AnalysisRunId -ne "") {
+                $statusPayload["analysis_run_id"] = $script:AnalysisRunId
+            }
+            $statusBody = $statusPayload | ConvertTo-Json -Depth 10 -Compress
+            $r10 = Invoke-ProbeStep -StepNum "10" -Label "POST /execution/result/status" -Url "$ApiBase/execution/result/status" -Body $statusBody -ExpectedStatus 200
+            if ($r10.StatusCode -ne 200) { $ProbePass = $false }
+            if ($ProbePass) {
+                $parsed10 = Read-ProbeJson -Response $r10 -StepNum "10" -Label "POST /execution/result/status"
+                if ($null -ne $parsed10) {
+                    $script:OutputPayloadRef = [string]$parsed10.output_payload_ref
+                }
+                if ($script:OutputPayloadRef -eq "") {
+                    Write-Host "  FAIL  Step 10 did not return output_payload_ref" -ForegroundColor Red
+                    $ProbePass = $false
+                } else {
+                    $LongestStep = 10
+                }
+            }
+        }
+
+        # -- Step 11: Result review --
+        if ($ProbePass) {
+            $reviewPayload = @{
+                client_request_id       = "smoke-result-review-$($script:ClientRequestId)"
+                session_id              = $script:SessionId
+                analysis_plan_id        = $script:AnalysisPlanId
+                pass_run_id             = $script:PassRunId
+                preview_id              = $script:PlanPreviewId
+                preview_hash            = $script:PlanPreviewHash
+                operator_decision       = "approved"
+                review_notes            = "Smoke release-acceptance result review."
+                reviewed_output_items   = @(
+                    @{
+                        item_ref  = "smoke-primary-output"
+                        item_type = "finding"
+                        trace     = @{
+                            session_id         = $script:SessionId
+                            analysis_plan_id   = $script:AnalysisPlanId
+                            pass_run_id        = $script:PassRunId
+                            output_payload_ref = $script:OutputPayloadRef
+                        }
+                    }
+                )
+            }
+            if ($script:AnalysisRunId -ne "") {
+                $reviewPayload["analysis_run_id"] = $script:AnalysisRunId
+                $reviewPayload.reviewed_output_items[0].trace["analysis_run_id"] = $script:AnalysisRunId
+            }
+            $reviewBody = $reviewPayload | ConvertTo-Json -Depth 12 -Compress
+            $r11 = Invoke-ProbeStep -StepNum "11" -Label "POST /execution/result/review" -Url "$ApiBase/execution/result/review" -Body $reviewBody -ExpectedStatus 200
+            if ($r11.StatusCode -ne 200) { $ProbePass = $false }
+            if ($ProbePass) {
+                $parsed11 = Read-ProbeJson -Response $r11 -StepNum "11" -Label "POST /execution/result/review"
+                if ($null -ne $parsed11) {
+                    $script:ReviewRecordRef = [string]$parsed11.review_record_ref
+                }
+                if ($script:ReviewRecordRef -eq "") {
+                    Write-Host "  FAIL  Step 11 did not return review_record_ref" -ForegroundColor Red
+                    $ProbePass = $false
+                } else {
+                    $LongestStep = 11
+                }
+            }
+        }
+
+        # -- Step 12: Session summary, find a material snapshot for analysis-product scope --
+        if ($ProbePass) {
+            $r12 = Invoke-ProbeStep -StepNum "12" -Label "GET /session/{id}" -Url "$ApiBase/session/$($script:SessionId)" -Method GET -ExpectedStatus 200
+            if ($r12.StatusCode -ne 200) { $ProbePass = $false }
+            if ($ProbePass) {
+                $parsed12 = Read-ProbeJson -Response $r12 -StepNum "12" -Label "GET /session/{id}"
+                if ($null -ne $parsed12 -and $null -ne $parsed12.sublayer_visualization -and $null -ne $parsed12.sublayer_visualization.material_objects) {
+                    foreach ($materialObject in @($parsed12.sublayer_visualization.material_objects)) {
+                        if ($null -ne $materialObject -and $materialObject.material_snapshot_id) {
+                            $script:MaterialSnapshotId = [string]$materialObject.material_snapshot_id
+                            break
+                        }
+                    }
+                }
+                $LongestStep = 12
+                if ($script:MaterialSnapshotId -eq "") {
+                    Stop-ProbeAtBoundary -Stage "session-summary/material-snapshot" -Detail "no material_snapshot_id surfaced for the default source-intake path; selected profile not provided"
+                }
+            }
+        }
+
+        # -- Step 13: Working set --
+        if ($ProbePass -and ($script:ProbeBoundary -eq "")) {
+            $workingSetPayload = @{
+                client_request_id = "smoke-working-set-$($script:ClientRequestId)"
+                session_id        = $script:SessionId
+                name              = "Smoke release acceptance scope"
+                members           = @(@{ ref_kind = "material_snapshot"; ref_id = $script:MaterialSnapshotId })
+            }
+            $workingSetBody = $workingSetPayload | ConvertTo-Json -Depth 12 -Compress
+            $r13 = Invoke-ProbeStep -StepNum "13" -Label "POST /working-set" -Url "$ApiBase/working-set" -Body $workingSetBody -ExpectedStatus 201
+            if ($r13.StatusCode -ne 201) { $ProbePass = $false }
+            if ($ProbePass) {
+                $parsed13 = Read-ProbeJson -Response $r13 -StepNum "13" -Label "POST /working-set"
+                if ($null -ne $parsed13) {
+                    $script:WorkingSetId = [string]$parsed13.working_set_id
+                }
+                if ($script:WorkingSetId -eq "") {
+                    Write-Host "  FAIL  Step 13 did not return working_set_id" -ForegroundColor Red
+                    $ProbePass = $false
+                } else {
+                    $LongestStep = 13
+                }
+            }
+        }
+
+        # -- Step 14: Deterministic analysis-product generation --
+        if ($ProbePass -and ($script:ProbeBoundary -eq "")) {
+            $generatePayload = @{
+                client_request_id = "smoke-generate-product-$($script:ClientRequestId)"
+                session_id        = $script:SessionId
+                working_set_id    = $script:WorkingSetId
+                method_id         = "working_set_composition_summary"
+            }
+            $generateBody = $generatePayload | ConvertTo-Json -Depth 10 -Compress
+            $r14 = Invoke-ProbeStep -StepNum "14" -Label "POST /analysis-product/generate" -Url "$ApiBase/analysis-product/generate" -Body $generateBody -ExpectedStatus 201
+            if ($r14.StatusCode -ne 201) { $ProbePass = $false }
+            if ($ProbePass) {
+                $parsed14 = Read-ProbeJson -Response $r14 -StepNum "14" -Label "POST /analysis-product/generate"
+                if ($null -ne $parsed14) {
+                    $script:AnalysisProductId = [string]$parsed14.analysis_product_id
+                }
+                if ($script:AnalysisProductId -eq "") {
+                    Write-Host "  FAIL  Step 14 did not return analysis_product_id" -ForegroundColor Red
+                    $ProbePass = $false
+                } else {
+                    $LongestStep = 14
+                }
+            }
+        }
+
+        # -- Steps 15-18: Promote the deterministic product to package_eligible --
+        $TransitionSteps = @(
+            @{ StepNum = "15"; Intent = "promote"; Code = "proposed_ready" },
+            @{ StepNum = "16"; Intent = "promote"; Code = "validation_passed" },
+            @{ StepNum = "17"; Intent = "accept"; Code = "grounded_accept" },
+            @{ StepNum = "18"; Intent = "mark_package_eligible"; Code = "package_ready" }
+        )
+        foreach ($Transition in $TransitionSteps) {
+            if (-not ($ProbePass -and ($script:ProbeBoundary -eq ""))) {
+                break
+            }
+            $transitionPayload = @{
+                client_request_id    = "smoke-product-transition-$($Transition.StepNum)-$($script:ClientRequestId)"
+                session_id           = $script:SessionId
+                decision_intent      = $Transition.Intent
+                decision_reason_code = $Transition.Code
+            }
+            $transitionBody = $transitionPayload | ConvertTo-Json -Depth 10 -Compress
+            $transitionLabel = "POST /analysis-product/{id}/transition $($Transition.Intent)/$($Transition.Code)"
+            $transitionUrl = "$ApiBase/analysis-product/$($script:AnalysisProductId)/transition"
+            $transitionResp = Invoke-ProbeStep -StepNum $Transition.StepNum -Label $transitionLabel -Url $transitionUrl -Body $transitionBody -ExpectedStatus 201
+            if ($transitionResp.StatusCode -ne 201) {
+                $ProbePass = $false
+            } else {
+                $LongestStep = [int]$Transition.StepNum
+            }
+        }
+
+        # -- Step 19: Package review preview --
+        if ($ProbePass -and ($script:ProbeBoundary -eq "")) {
+            $packagePreviewPayload = @{
+                client_request_id         = "smoke-package-preview-$($script:ClientRequestId)"
+                session_id                = $script:SessionId
+                analysis_plan_id          = $script:AnalysisPlanId
+                pass_run_id               = $script:PassRunId
+                preview_id                = $script:PlanPreviewId
+                preview_hash              = $script:PlanPreviewHash
+                result_review_record_ref  = $script:ReviewRecordRef
+            }
+            if ($script:AnalysisRunId -ne "") {
+                $packagePreviewPayload["analysis_run_id"] = $script:AnalysisRunId
+            }
+            $packagePreviewBody = $packagePreviewPayload | ConvertTo-Json -Depth 10 -Compress
+            $r19 = Invoke-ProbeStep -StepNum "19" -Label "POST /package/review/preview" -Url "$ApiBase/package/review/preview" -Body $packagePreviewBody -ExpectedStatus 200
+            if ($r19.StatusCode -ne 200) { $ProbePass = $false }
+            if ($ProbePass) {
+                $parsed19 = Read-ProbeJson -Response $r19 -StepNum "19" -Label "POST /package/review/preview"
+                if ($null -ne $parsed19) {
+                    $script:PackageReviewPreviewHash = [string]$parsed19.package_review_preview_hash
+                }
+                if ($script:PackageReviewPreviewHash -eq "") {
+                    Write-Host "  FAIL  Step 19 did not return package_review_preview_hash" -ForegroundColor Red
+                    $ProbePass = $false
+                } else {
+                    $LongestStep = 19
+                    $ProbeComplete = $true
+                }
             }
         }
 
         Write-Host ""
-        Write-Host "  NOTE: Proven HTTP chain ends at step 4 (gate-b admission)." -ForegroundColor Yellow
-        Write-Host "        Post-gate-b routes (gate-c, plan/preview, execution/*, package/*)" -ForegroundColor Yellow
-        Write-Host "        are tested only with ORM-seeded sessions, not from an HTTP-only" -ForegroundColor Yellow
-        Write-Host "        source-intake upload chain. Probe stops here honestly." -ForegroundColor Yellow
-        Write-Host ""
-        if ($ProbePass) {
-            Write-Host "  Product-flow probe: ALL STEPS PASSED (longest: $LongestStep/4)" -ForegroundColor Green
+        if ($ProbePass -and $ProbeComplete) {
+            Write-Host "  Product-flow probe: ALL STEPS PASSED (longest: $LongestStep/19)" -ForegroundColor Green
+            Write-Host "  Inspectable package preview hash: $($script:PackageReviewPreviewHash)" -ForegroundColor Green
+        } elseif ($ProbePass -and ($script:ProbeBoundary -ne "")) {
+            Write-Host "  Product-flow probe: STOPPED AT PROFILE BOUNDARY (longest: $LongestStep/19)" -ForegroundColor Yellow
+            Write-Host "  Boundary: $($script:ProbeBoundary)" -ForegroundColor Yellow
         } else {
-            Write-Host "  Product-flow probe: FAILED at step $($LongestStep + 1) (longest prefix reached: $LongestStep/4)" -ForegroundColor Red
+            Write-Host "  Product-flow probe: FAILED at step $($LongestStep + 1) (longest prefix reached: $LongestStep/19)" -ForegroundColor Red
             $AllPass = $false
         }
         Write-Host ""
