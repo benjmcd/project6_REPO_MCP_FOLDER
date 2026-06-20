@@ -104,6 +104,25 @@ def _current_git_sha(repo_root: Path) -> str:
 
 
 def collect_ready_build_info(repo_root: Path) -> dict[str, Any]:
+    original_source_sha = os.environ.get("PROJECT6_SOURCE_SHA")
+    original_db_init_mode = os.environ.get("DB_INIT_MODE")
+    source_sha_was_present = "PROJECT6_SOURCE_SHA" in os.environ
+    db_init_mode_was_present = "DB_INIT_MODE" in os.environ
+
+    try:
+        return _collect_ready_build_info(repo_root)
+    finally:
+        if source_sha_was_present:
+            os.environ["PROJECT6_SOURCE_SHA"] = original_source_sha or ""
+        else:
+            os.environ.pop("PROJECT6_SOURCE_SHA", None)
+        if db_init_mode_was_present:
+            os.environ["DB_INIT_MODE"] = original_db_init_mode or ""
+        else:
+            os.environ.pop("DB_INIT_MODE", None)
+
+
+def _collect_ready_build_info(repo_root: Path) -> dict[str, Any]:
     existing_sha = os.environ.get("PROJECT6_SOURCE_SHA", "").strip()
     if not SOURCE_SHA_RE.fullmatch(existing_sha):
         git_sha = _current_git_sha(repo_root)
