@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -35,6 +36,20 @@ def _sha256(text: str) -> str:
 
 def _hash(char: str) -> str:
     return char * 64
+
+
+# Receipt digest/id fields are long hex runs (SHA-256 = 64 chars; truncated id
+# segments = 24 chars). A decimal raw token such as the CIK "320193" or a financial
+# value like "200"/"100" can appear *inside* such a digest by chance, which made the
+# raw-leak substring scans below non-deterministically fail (hash-collision false
+# positive). Redacting hex runs of length >= 16 removes that false-positive source
+# while still catching a genuine raw-value leak: the CIK, financial values, and
+# concept names being guarded against are all far shorter than 16 contiguous hex chars.
+_LONG_HEX_RUN = re.compile(r"[0-9a-fA-F]{16,}")
+
+
+def _redact_hash_runs(text: str) -> str:
+    return _LONG_HEX_RUN.sub("<redacted-hash>", text)
 
 
 def _write_json(path: Path, payload: Any) -> None:
@@ -172,8 +187,10 @@ class TestStageReceiptRedaction:
         assert receipt["gitignored_local_storage"] is True
         assert receipt["operator_surface_exposure"] is False
 
-        # Receipt must NOT contain raw values, CIK, accession, issuer name
-        receipt_text = json.dumps(receipt)
+        # Receipt must NOT contain raw values, CIK, accession, issuer name.
+        # Redact digest/id hex runs first so a hash that coincidentally contains a
+        # banned decimal substring (e.g. "200") cannot cause a false failure.
+        receipt_text = _redact_hash_runs(json.dumps(receipt))
         assert cik not in receipt_text  # raw CIK absent
         assert "320193" not in receipt_text
         assert "200" not in receipt_text  # raw financial value absent
@@ -746,9 +763,11 @@ class TestSecurityFixes:
         target = receipts_dir / f"{receipt_id}.json"
         target.write_text(json.dumps(receipt, sort_keys=True, indent=2), encoding="utf-8")
 
-        # Read back and assert no raw data leaked
+        # Read back and assert no raw data leaked. Redact digest/id hex runs first so
+        # a hash coincidentally containing a banned decimal substring (e.g. "200"/"100")
+        # cannot cause a false failure.
         on_disk = json.loads(target.read_text(encoding="utf-8"))
-        receipt_text = json.dumps(on_disk)
+        receipt_text = _redact_hash_runs(json.dumps(on_disk))
 
         # Must NOT contain raw CIK
         assert raw_cik not in receipt_text, "Raw CIK leaked into receipt"
