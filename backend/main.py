@@ -15,6 +15,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect as sa_inspect, text
 
+from app._version import BUILD_INFO
 from app.api.router import api_router
 from app.core.config import bootstrap_storage_tree, settings
 from app.core.observability import RequestIdMiddleware, setup_logging, unhandled_exception_handler
@@ -49,7 +50,7 @@ _initialize_database()
 
 setup_logging()
 
-app = FastAPI(title=settings.app_name)
+app = FastAPI(title=settings.app_name, version=BUILD_INFO["version"])
 
 # Observability: request-id propagation (CORS, added after, wraps this middleware)
 app.add_middleware(RequestIdMiddleware)
@@ -517,9 +518,9 @@ def ready() -> JSONResponse:
     try:
         with SessionLocal() as db:
             db.execute(text('SELECT 1'))
-        return JSONResponse(status_code=200, content={'status': 'ready'})
+        return JSONResponse(status_code=200, content={'status': 'ready', 'build': BUILD_INFO})
     except Exception:
-        return JSONResponse(status_code=503, content={'status': 'unavailable'})
+        return JSONResponse(status_code=503, content={'status': 'unavailable', 'build': BUILD_INFO})
 
 
 @app.get('/', response_class=HTMLResponse)

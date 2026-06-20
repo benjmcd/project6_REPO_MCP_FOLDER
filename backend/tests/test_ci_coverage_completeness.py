@@ -29,6 +29,7 @@ BACKEND_SHARD_PATTERNS = (
     "test_review_nrc_aps_operator_identity*.py",
     "test_review_nrc_aps_page.py",
     "test_review_nrc_aps_workbench_compare_*.py",
+    "test_release_*.py",
     "test_sec_refs.py",
     "test_sec_xbrl_*.py",
     "test_visual_artifact_*.py",

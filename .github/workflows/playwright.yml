@@ -9,6 +9,82 @@ permissions:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 jobs:
+  release-lock-install:
+    name: release-lock-install
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+        cache: pip
+        cache-dependency-path: ./backend/requirements.lock.txt
+    - name: Clean install release lock
+      run: |
+        python -m pip install --upgrade pip
+        pip install --require-hashes -r ./backend/requirements.lock.txt
+    - name: Record resolved release closure identity
+      run: |
+        python <<'PY'
+        import hashlib
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        lock_path = Path("./backend/requirements.lock.txt")
+        lock_text = lock_path.read_text(encoding="utf-8")
+        if "--require-hashes" not in lock_text:
+            raise SystemExit("Release lock must require hashes.")
+
+        freeze = subprocess.check_output(
+            [sys.executable, "-m", "pip", "freeze", "--all"],
+            text=True,
+        )
+        print(f"requirements.lock.txt sha256: {hashlib.sha256(lock_path.read_bytes()).hexdigest()}")
+        print(f"pip freeze --all sha256: {hashlib.sha256(freeze.encode('utf-8')).hexdigest()}")
+        PY
+    - name: Assert release build info
+      env:
+        DB_INIT_MODE: none
+        PROJECT6_SOURCE_SHA: ${{ github.sha }}
+        PYTHONPATH: ./backend
+      run: |
+        python <<'PY'
+        import json
+
+        import main
+
+        class Session:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_exc):
+                return None
+
+            def execute(self, _statement):
+                return None
+
+        main.SessionLocal = lambda: Session()
+        response = main.ready()
+        payload = json.loads(response.body.decode("utf-8"))
+        assert response.status_code == 200
+        assert payload["build"] == {
+            "version": main.BUILD_INFO["version"],
+            "source_sha": main.BUILD_INFO["source_sha"],
+        }
+        PY
+    - name: Run release identity contract test
+      env:
+        DB_INIT_MODE: none
+        PROJECT6_SOURCE_SHA: ${{ github.sha }}
+      run: |
+        python -m pip install pytest
+        python -m pytest ./backend/tests/test_release_identity.py -q
+    - name: Build release app image
+      run: |
+        docker build --build-arg PROJECT6_SOURCE_SHA="${GITHUB_SHA}" -f Dockerfile.app -t project6-release-identity:${GITHUB_SHA} .
+
   backend-layer3-api-shard:
     name: backend-layer3-api-shard-${{ matrix.shard }}/4
     timeout-minutes: 20
@@ -68,6 +144,7 @@ jobs:
             "test_review_nrc_aps_operator_identity*.py",
             "test_review_nrc_aps_page.py",
             "test_review_nrc_aps_workbench_compare_*.py",
+            "test_release_*.py",
             "test_sec_refs.py",
             "test_sec_xbrl_*.py",
             "test_visual_artifact_*.py",
