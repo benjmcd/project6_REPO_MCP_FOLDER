@@ -1,0 +1,222 @@
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+
+SCHEMA_ID = "project6.support_matrix.v1"
+REPORT_SCHEMA_ID = "project6.support_matrix_check.v1"
+STATUS_VOCABULARY = {
+    "supported",
+    "experimental_default_off",
+    "simulation",
+    "unsupported",
+}
+PINNED_FALSE_FLAGS = [
+    "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
+    "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
+    "LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED",
+    "LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED",
+    "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
+    "LAYER3_MODEL_EGRESS_ENABLED",
+    "SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED",
+    "LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED",
+]
+REQUIRED_UNSUPPORTED = {
+    "sec_live_network_egress",
+    "real_provider_delivery",
+    "model_agent_egress",
+    "nonlocal_multi_trust_multi_identity",
+    "high_availability",
+    "keyed_connectors",
+    "signed_reference_export",
+}
+
+
+def default_repo_root() -> Path:
+    return Path(__file__).resolve().parents[1]
+
+
+def _load_json_compatible_yaml(path: Path) -> dict[str, Any]:
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{path} must remain JSON-compatible YAML") from exc
+    if not isinstance(loaded, dict):
+        raise ValueError(f"{path} did not parse to a mapping")
+    return loaded
+
+
+def _load_release_owner_gates(repo_root: Path) -> list[Any]:
+    release_manifest = _load_json_compatible_yaml(repo_root / "config" / "release_readiness.yaml")
+    gates = release_manifest.get("owner_selected_profile_specific_gates")
+    if not isinstance(gates, list):
+        raise ValueError("release_readiness owner_selected_profile_specific_gates must be a list")
+    return gates
+
+
+def _settings_defaults(repo_root: Path) -> tuple[type[Any], dict[str, Any]]:
+    backend_path = str(repo_root / "backend")
+    if backend_path not in sys.path:
+        sys.path.insert(0, backend_path)
+
+    from app.core.config import Settings
+
+    fields = Settings.model_fields
+    defaults = {
+        field.alias or name: field.default
+        for name, field in fields.items()
+    }
+    return Settings, defaults
+
+
+def _database_kind(value: object) -> str:
+    raw = str(value)
+    if raw.startswith("sqlite"):
+        return "sqlite"
+    if raw.startswith("postgres"):
+        return "postgres"
+    return "other"
+
+
+def _validate_matrix_shape(matrix: dict[str, Any], errors: list[str]) -> None:
+    if matrix.get("schema_id") != SCHEMA_ID:
+        errors.append(f"schema_id must be {SCHEMA_ID!r}")
+    if matrix.get("profile") != "local_expert":
+        errors.append("profile must be local_expert")
+    if matrix.get("overlays") != "none":
+        errors.append("overlays must be none")
+    if matrix.get("release_readiness_manifest") != "profile-neutral; do not populate owner_selected_profile_specific_gates":
+        errors.append("release_readiness_manifest boundary statement is missing or changed")
+    if matrix.get("pinned_false_flags") != PINNED_FALSE_FLAGS:
+        errors.append("pinned_false_flags must match the selected local_expert pin set")
+
+    capabilities = matrix.get("capabilities")
+    if not isinstance(capabilities, list) or not capabilities:
+        errors.append("capabilities must be a non-empty list")
+        return
+
+    seen: set[str] = set()
+    for item in capabilities:
+        if not isinstance(item, dict):
+            errors.append("each capability must be a mapping")
+            continue
+        if set(item) != {"id", "status", "evidence"}:
+            errors.append(f"capability {item.get('id')!r} must have only id/status/evidence")
+        capability_id = item.get("id")
+        if not isinstance(capability_id, str) or not capability_id.strip():
+            errors.append("each capability needs a non-empty id")
+        elif capability_id in seen:
+            errors.append(f"duplicate capability id {capability_id!r}")
+        else:
+            seen.add(capability_id)
+        if item.get("status") not in STATUS_VOCABULARY:
+            errors.append(f"capability {capability_id!r} has invalid status {item.get('status')!r}")
+        if not isinstance(item.get("evidence"), str) or not item["evidence"].strip():
+            errors.append(f"capability {capability_id!r} needs evidence")
+
+    by_id = {item.get("id"): item for item in capabilities if isinstance(item, dict)}
+    for capability_id in REQUIRED_UNSUPPORTED:
+        if by_id.get(capability_id, {}).get("status") != "unsupported":
+            errors.append(f"{capability_id} must be unsupported in local_expert")
+
+
+def run_support_matrix_check(
+    matrix_path: Path | str | None = None,
+    *,
+    repo_root: Path | None = None,
+) -> dict[str, Any]:
+    root = (repo_root or default_repo_root()).resolve()
+    path = Path(matrix_path) if matrix_path is not None else root / "config" / "support_matrix.yaml"
+    errors: list[str] = []
+
+    try:
+        matrix = _load_json_compatible_yaml(path)
+    except Exception as exc:
+        return {
+            "schema_id": REPORT_SCHEMA_ID,
+            "status": "fail",
+            "error": str(exc),
+        }
+
+    _validate_matrix_shape(matrix, errors)
+
+    try:
+        owner_gates = _load_release_owner_gates(root)
+    except Exception as exc:
+        owner_gates = None
+        errors.append(str(exc))
+    if owner_gates != []:
+        errors.append("release_readiness owner_selected_profile_specific_gates must stay []")
+
+    try:
+        _settings, defaults = _settings_defaults(root)
+    except Exception as exc:
+        defaults = {}
+        errors.append(f"could not load Settings defaults: {exc}")
+
+    default_profile = {
+        "deployment_mode": defaults.get("DEPLOYMENT_MODE"),
+        "auth_owner": defaults.get("AUTH_OWNER"),
+        "route_authorization_mode": defaults.get("LAYER3_ROUTE_AUTHORIZATION_MODE"),
+        "database": _database_kind(defaults.get("DATABASE_URL", "")),
+    }
+    if default_profile != {
+        "deployment_mode": "local",
+        "auth_owner": "none",
+        "route_authorization_mode": "identity_presence",
+        "database": "sqlite",
+    }:
+        errors.append("Settings defaults do not match local_expert local/no-auth/sqlite posture")
+
+    pinned_results = {
+        flag: defaults.get(flag)
+        for flag in PINNED_FALSE_FLAGS
+    }
+    bad_flags = [flag for flag, value in pinned_results.items() if value is not False]
+    if bad_flags:
+        errors.append("pinned false flag default is not false: " + ", ".join(bad_flags))
+
+    if defaults.get("NRC_ADAMS_APS_SUBSCRIPTION_KEY", None) not in {"", None}:
+        errors.append("NRC_ADAMS_APS_SUBSCRIPTION_KEY must default empty for local_expert")
+    if defaults.get("SENATE_LDA_API_KEY", None) not in {"", None}:
+        errors.append("SENATE_LDA_API_KEY must default empty for local_expert")
+    if defaults.get("TRUSTED_PROXY_MODE", None) is not False:
+        errors.append("TRUSTED_PROXY_MODE must default false for local_expert")
+
+    return {
+        "schema_id": REPORT_SCHEMA_ID,
+        "status": "pass" if not errors else "fail",
+        "profile": matrix.get("profile"),
+        "overlays": matrix.get("overlays"),
+        "default_profile": default_profile,
+        "pinned_false_flags_status": "pass" if not bad_flags else "fail",
+        "pinned_false_flags": pinned_results,
+        "release_readiness_owner_selected_profile_specific_gates": owner_gates,
+        "errors": errors,
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Validate the selected local_expert support matrix.")
+    parser.add_argument(
+        "--matrix",
+        default=str(default_repo_root() / "config" / "support_matrix.yaml"),
+        help="Path to the JSON-compatible support matrix.",
+    )
+    parser.add_argument(
+        "--repo-root",
+        default=str(default_repo_root()),
+        help="Repository root used for config/default checks.",
+    )
+    args = parser.parse_args(argv)
+    report = run_support_matrix_check(Path(args.matrix), repo_root=Path(args.repo_root))
+    print(json.dumps(report, indent=2, sort_keys=True))
+    return 0 if report.get("status") == "pass" else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

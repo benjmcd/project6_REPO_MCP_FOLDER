@@ -36,6 +36,7 @@ BACKEND_SHARD_PATTERNS = (
     "test_release_*.py",
     "test_sec_refs.py",
     "test_sec_xbrl_*.py",
+    "test_support_matrix.py",
     "test_visual_artifact_*.py",
 )
 
