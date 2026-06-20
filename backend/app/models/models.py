@@ -225,6 +225,9 @@ class DatasetVersion(Base, TimestampMixin):
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="ready")
     storage_ref: Mapped[str | None] = mapped_column(String(512))
     row_count: Mapped[int] = mapped_column(Integer, default=0)
+    content_hash: Mapped[str | None] = mapped_column(String(64))
+    source_row_count: Mapped[int | None] = mapped_column(Integer)
+    dropped_row_count: Mapped[int | None] = mapped_column(Integer)
     notes: Mapped[str | None] = mapped_column(Text)
 
     dataset: Mapped[Dataset] = relationship(back_populates="versions", foreign_keys=[dataset_id])

@@ -200,7 +200,27 @@ def get_dataset(dataset_id: str, request: Request, db: Session = Depends(get_db)
         if not dataset:
             raise HTTPException(status_code=404, detail='dataset not found')
         versions = db.query(DatasetVersion).filter(DatasetVersion.dataset_id == dataset_id).all()
-        return DatasetDetailOut.model_validate({'dataset_id': dataset.dataset_id, 'name': dataset.name, 'description': dataset.description, 'time_column': dataset.time_column, 'frequency_hint': dataset.frequency_hint, 'versions': [{'dataset_version_id': v.dataset_version_id, 'version_label': v.version_label, 'version_type': v.version_type, 'row_count': v.row_count} for v in versions]})
+        return DatasetDetailOut.model_validate(
+            {
+                'dataset_id': dataset.dataset_id,
+                'name': dataset.name,
+                'description': dataset.description,
+                'time_column': dataset.time_column,
+                'frequency_hint': dataset.frequency_hint,
+                'versions': [
+                    {
+                        'dataset_version_id': v.dataset_version_id,
+                        'version_label': v.version_label,
+                        'version_type': v.version_type,
+                        'row_count': v.row_count,
+                        'source_row_count': v.source_row_count,
+                        'dropped_row_count': v.dropped_row_count,
+                        'content_hash': v.content_hash,
+                    }
+                    for v in versions
+                ],
+            }
+        )
     except SecXbrlInAppAuthPolicyError as exc:
         return _legacy_api_auth_policy_error_response(exc)
 

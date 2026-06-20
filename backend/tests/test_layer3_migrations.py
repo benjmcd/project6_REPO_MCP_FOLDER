@@ -397,6 +397,89 @@ def test_controlled_value_reveal_submit_request_hash_migration_up_down_sqlite(tm
     assert downgraded_request_id != raw_request_id
 
 
+def test_dataset_version_source_fidelity_migration_up_down_sqlite(tmp_path):
+    """0055 adds nullable source-fidelity metadata to dataset_version and rolls it back."""
+    db_url = f"sqlite:///{tmp_path / 'dataset_version_source_fidelity.db'}"
+    previous_revision = "0054_layer3_sec_xbrl_controlled_submit_pagination"
+    fidelity_revision = "0055_dataset_version_source_fidelity"
+    fidelity_columns = {"content_hash", "source_row_count", "dropped_row_count"}
+
+    engine = create_engine(db_url, future=True)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                CREATE TABLE dataset_version (
+                    dataset_version_id VARCHAR(36) NOT NULL,
+                    row_count INTEGER,
+                    PRIMARY KEY (dataset_version_id)
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO dataset_version (dataset_version_id, row_count)
+                VALUES ('legacy-version', 2)
+                """
+            )
+        )
+    engine.dispose()
+
+    _run_alembic_command(db_url, command.stamp, previous_revision)
+    engine = create_engine(db_url, future=True)
+    inspector = sa_inspect(engine)
+    prior_columns = {
+        column["name"] for column in inspector.get_columns("dataset_version")
+    }
+    engine.dispose()
+    assert fidelity_columns.isdisjoint(prior_columns)
+
+    _run_upgrade_to(db_url, fidelity_revision)
+    engine = create_engine(db_url, future=True)
+    inspector = sa_inspect(engine)
+    upgraded_columns = {
+        column["name"]: column for column in inspector.get_columns("dataset_version")
+    }
+    assert fidelity_columns.issubset(upgraded_columns)
+    assert upgraded_columns["content_hash"]["nullable"] is True
+    assert upgraded_columns["source_row_count"]["nullable"] is True
+    assert upgraded_columns["dropped_row_count"]["nullable"] is True
+    with engine.connect() as conn:
+        upgraded_row = conn.execute(
+            text(
+                """
+                SELECT row_count, content_hash, source_row_count, dropped_row_count
+                FROM dataset_version
+                WHERE dataset_version_id = 'legacy-version'
+                """
+            )
+        ).one()
+    engine.dispose()
+    assert upgraded_row == (2, None, None, None)
+
+    _run_downgrade_to(db_url, previous_revision)
+    engine = create_engine(db_url, future=True)
+    inspector = sa_inspect(engine)
+    downgraded_columns = {
+        column["name"] for column in inspector.get_columns("dataset_version")
+    }
+    assert fidelity_columns.isdisjoint(downgraded_columns)
+    with engine.connect() as conn:
+        downgraded_row_count = conn.execute(
+            text(
+                """
+                SELECT row_count
+                FROM dataset_version
+                WHERE dataset_version_id = 'legacy-version'
+                """
+            )
+        ).scalar_one()
+    engine.dispose()
+    assert downgraded_row_count == 2
+
+
 # ---------------------------------------------------------------------------
 # Postgres tests (skipped when driver or URL absent)
 # ---------------------------------------------------------------------------

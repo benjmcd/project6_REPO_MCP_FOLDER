@@ -1,5 +1,6 @@
 import io
 import importlib
+import hashlib
 import json
 import os
 import sys
@@ -94,6 +95,7 @@ app = main_module.app
 from app.core.config import bootstrap_storage_tree  # noqa: E402
 from app.api.deps import get_db  # noqa: E402
 from app.db.session import Base  # noqa: E402
+from app.models import DatasetVersion  # noqa: E402
 from app.services.analysis import (  # noqa: E402
     SUPPORTED_ANALYSIS_METHOD_IDS,
     _descriptive_column_summary,
@@ -317,8 +319,64 @@ def test_year_column_and_placeholders_are_handled():
     )
     assert response.status_code == 200, response.text
     payload = response.json()
+    dataset_id = payload['dataset_id']
+    version_id = payload['dataset_version_id']
     assert payload['time_column'] == 'Year'
     assert payload['row_count'] == 3
+    assert payload['source_row_count'] == 4
+    assert payload['dropped_row_count'] == 1
+    assert payload['content_hash'] == hashlib.sha256(csv_bytes).hexdigest()
+
+    db = TestingSessionLocal()
+    try:
+        version = db.get(DatasetVersion, version_id)
+        assert version is not None
+        assert version.row_count == 3
+        assert version.source_row_count == 4
+        assert version.dropped_row_count == 1
+        assert version.content_hash == hashlib.sha256(csv_bytes).hexdigest()
+    finally:
+        db.close()
+
+    detail_response = client.get(f'/api/v1/datasets/{dataset_id}')
+    assert detail_response.status_code == 200, detail_response.text
+    [version_detail] = [
+        item for item in detail_response.json()['versions']
+        if item['dataset_version_id'] == version_id
+    ]
+    assert version_detail['row_count'] == 3
+    assert version_detail['source_row_count'] == 4
+    assert version_detail['dropped_row_count'] == 1
+    assert version_detail['content_hash'] == hashlib.sha256(csv_bytes).hexdigest()
+
+
+def test_upload_content_hash_is_stable_for_identical_source_bytes():
+    csv_bytes = (
+        b"year,amount\n"
+        b"2020,10\n"
+        b",\n"
+        b"2021,11\n"
+    )
+    expected_hash = hashlib.sha256(csv_bytes).hexdigest()
+
+    responses = [
+        client.post(
+            '/api/v1/sources/upload',
+            files={'file': ('stable-source.csv', io.BytesIO(csv_bytes), 'text/csv')},
+            data={'name': f'Stable Source {idx}', 'description': 'Hash stability', 'domain_pack': 'macro'},
+        )
+        for idx in range(2)
+    ]
+
+    for response in responses:
+        assert response.status_code == 200, response.text
+
+    payloads = [response.json() for response in responses]
+    assert payloads[0]['dataset_version_id'] != payloads[1]['dataset_version_id']
+    assert [payload['content_hash'] for payload in payloads] == [expected_hash, expected_hash]
+    assert [payload['source_row_count'] for payload in payloads] == [3, 3]
+    assert [payload['row_count'] for payload in payloads] == [2, 2]
+    assert [payload['dropped_row_count'] for payload in payloads] == [1, 1]
 
 
 def test_descriptive_summary_classifies_numeric_after_placeholder_nulls():
