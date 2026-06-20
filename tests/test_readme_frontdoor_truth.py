@@ -10,6 +10,9 @@ that selection into a production-ready or nonlocal claim.
 from pathlib import Path
 
 README = Path(__file__).resolve().parents[1] / "README.md"
+LOCAL_EXPERT_SUPPORT = (
+    Path(__file__).resolve().parents[1] / "docs" / "support-matrix-local-expert.md"
+)
 
 
 def _text() -> str:
@@ -38,3 +41,25 @@ def test_readme_states_honest_selected_local_profile():
     assert "overlays=none" in text
     assert "connectors are deferred to RC2" in text
     assert "No release profile is selected yet" not in text
+
+
+def test_local_expert_doc_names_canonical_operator_journey():
+    text = LOCAL_EXPERT_SUPPORT.read_text(encoding="utf-8")
+    assert "canonical local_expert operator journey" in text
+    assert "config/support_matrix.yaml" in text
+    assert "method_aware_analytics_vertical" in text
+    for phrase in [
+        "CSV upload",
+        "variable profiling",
+        "transform recommend/apply",
+        "annotation",
+        "cross_correlation",
+        "decomposition",
+        "structural_break",
+        "content_hash",
+        "source_row_count",
+        "dropped_row_count",
+        "GET /api/v1/analysis-runs/{id}",
+        "unsupported_method",
+    ]:
+        assert phrase in text
