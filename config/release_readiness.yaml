@@ -1,0 +1,57 @@
+schema_id: project6.release_readiness.v1
+release:
+  milestone: M-L02-RELEASE-ACCEPTANCE
+  version: 0.1.0-rc1-foundation
+  scope: profile-neutral release acceptance harness
+build_identity:
+  source: /ready build_info
+  required_fields:
+    - version
+    - source_sha
+  source_sha_authority: PROJECT6_SOURCE_SHA, falling back to the local git HEAD for runner-only collection.
+required_gates:
+  - id: deployment_profile_fail_closed_validation
+    kind: command
+    profile_scope: profile-neutral
+    command:
+      - python
+      - -m
+      - pytest
+      - ./backend/tests/test_deployment_profile_validation.py
+      - -q
+  - id: ci_coverage_completeness
+    kind: command
+    profile_scope: profile-neutral
+    command:
+      - python
+      - -m
+      - pytest
+      - ./backend/tests/test_ci_coverage_completeness.py
+      - -q
+  - id: backend_migrations_postgres_golden_path
+    kind: workflow_contains
+    profile_scope: profile-neutral
+    path: ./.github/workflows/playwright.yml
+    must_contain:
+      - backend-migrations-postgres
+      - python -m alembic -c alembic.ini upgrade head
+      - tests/test_layer3_migrations.py
+      - tests/test_layer3_3c_golden_path.py
+  - id: backend_coverage_floor
+    kind: workflow_contains
+    profile_scope: profile-neutral
+    path: ./.github/workflows/playwright.yml
+    must_contain:
+      - backend-coverage
+      - --cov-fail-under=90
+  - id: release_lock_install
+    kind: workflow_contains
+    profile_scope: profile-neutral
+    path: ./.github/workflows/playwright.yml
+    must_contain:
+      - release-lock-install
+      - pip install --require-hashes -r ./backend/requirements.lock.txt
+      - test_release_identity.py
+
+# owner-selected profile-specific gates intentionally empty until the owner selects a production profile.
+owner_selected_profile_specific_gates: []
