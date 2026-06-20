@@ -4,7 +4,7 @@ import os
 import re
 
 
-VERSION = "0.1.0-rc1-foundation"
+VERSION = "0.1.0-rc1"
 UNKNOWN_SOURCE_SHA = "unknown"
 _SOURCE_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$|^[0-9a-f]{64}$", re.IGNORECASE)
 

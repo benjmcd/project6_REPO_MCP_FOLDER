@@ -211,6 +211,10 @@ def test_release_gate_job_runs_manifest_runner_after_manifest_ci_jobs() -> None:
     gate_block = _workflow_job_block("release-gate")
     assert "if: ${{ always() }}" in gate_block
     assert "python ./scripts/release_readiness_check.py" in gate_block
+    assert "python ./scripts/rc1_local_expert_acceptance.py --json" in gate_block
+    assert gate_block.index("python ./scripts/release_readiness_check.py") < gate_block.index(
+        "python ./scripts/rc1_local_expert_acceptance.py --json"
+    )
     for job_id in RELEASE_GATE_AGGREGATED_JOBS:
         assert job_id in gate_block
         assert f"needs['{job_id}'].result" in gate_block

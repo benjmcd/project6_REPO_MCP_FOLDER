@@ -664,6 +664,12 @@ jobs:
         PROJECT6_SOURCE_SHA: ${{ github.sha }}
       run: |
         python ./scripts/release_readiness_check.py
+    - name: Run RC1 local expert acceptance capstone
+      env:
+        DB_INIT_MODE: none
+        PROJECT6_SOURCE_SHA: ${{ github.sha }}
+      run: |
+        python ./scripts/rc1_local_expert_acceptance.py --json
 
   test:
     name: test
