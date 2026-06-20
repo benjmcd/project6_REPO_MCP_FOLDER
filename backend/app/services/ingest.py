@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import csv
+import hashlib
+import io
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -37,6 +40,11 @@ def _read_csv_with_fallback(raw_path: Path) -> tuple[pd.DataFrame, str]:
     raise ValueError(f"unable to decode CSV with tried encodings: {tried}; last_error={last_error}")
 
 
+def _count_csv_source_rows(content: bytes, encoding: str) -> int:
+    records = list(csv.reader(io.StringIO(content.decode(encoding), newline="")))
+    return max(len(records) - 1, 0)
+
+
 def _next_version_label(db: Session, dataset_id: str) -> str:
     count = db.query(DatasetVersion).filter(DatasetVersion.dataset_id == dataset_id).count()
     return f"raw_v{count + 1}"
@@ -62,6 +70,7 @@ def ingest_csv_bytes_to_dataset(
         raise HTTPException(status_code=400, detail="only CSV upload is supported in this starter")
     if len(content) > settings.max_upload_mb * 1024 * 1024:
         raise HTTPException(status_code=400, detail="file exceeds configured upload limit")
+    content_hash = hashlib.sha256(content).hexdigest()
 
     raw_dir = Path(settings.raw_storage_dir)
     raw_dir.mkdir(parents=True, exist_ok=True)
@@ -74,7 +83,9 @@ def ingest_csv_bytes_to_dataset(
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"unable to parse CSV: {exc}") from exc
 
+    source_row_count = _count_csv_source_rows(content, used_encoding)
     df = clean_dataframe(df)
+    dropped_row_count = source_row_count - int(len(df))
     if df.empty:
         raise HTTPException(status_code=400, detail="CSV contains no non-empty rows")
 
@@ -125,6 +136,9 @@ def ingest_csv_bytes_to_dataset(
         version_label=label,
         version_type="raw",
         status="ready",
+        content_hash=content_hash,
+        source_row_count=source_row_count,
+        dropped_row_count=dropped_row_count,
         notes="; ".join(note_parts),
     )
     db.add(version)
@@ -156,6 +170,9 @@ def ingest_csv_bytes_to_dataset(
         "dataset_version_id": version.dataset_version_id,
         "dataset_name": dataset.name,
         "row_count": version.row_count,
+        "source_row_count": version.source_row_count,
+        "dropped_row_count": version.dropped_row_count,
+        "content_hash": version.content_hash,
         "time_column": time_column,
         "numeric_variables": numeric_variables,
         "csv_encoding": used_encoding,

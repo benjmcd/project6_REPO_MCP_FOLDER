@@ -49,6 +49,9 @@ class UploadResponse(BaseModel):
     dataset_version_id: str
     dataset_name: str
     row_count: int
+    source_row_count: int | None = None
+    dropped_row_count: int | None = None
+    content_hash: str | None = None
     time_column: str | None = None
     numeric_variables: list[str]
 
@@ -58,6 +61,9 @@ class DatasetVersionOut(BaseModel):
     version_label: str
     version_type: str
     row_count: int
+    source_row_count: int | None = None
+    dropped_row_count: int | None = None
+    content_hash: str | None = None
 
 
 class DatasetOut(BaseModel):
