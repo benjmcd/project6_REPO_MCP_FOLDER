@@ -4,7 +4,7 @@
 >
 > Agent/operator harness entry point: [docs/agent-harness.md](docs/agent-harness.md).
 
-#### Layer-specific and historical status surfaces
+## Layer-specific and historical status surfaces
 
 The notes below are layer-specific milestones and navigation pointers, not the repository-wide current support posture stated above.
 
@@ -13,10 +13,10 @@ The notes below are layer-specific milestones and navigation pointers, not the r
 > - [nrc_aps_authority_matrix.md](docs/nrc_adams/nrc_aps_authority_matrix.md) (repo-wide authority map)
 > - [nrc_aps_reader_path.md](docs/nrc_adams/nrc_aps_reader_path.md) (navigational guide)
 > - [nrc_aps_ui_launch_runbook.md](docs/nrc_adams/nrc_aps_ui_launch_runbook.md) (review/document-trace/workbench/Candidate B Trace launch contract)
-> - [frontend_UI_plans/README.md](frontend_UI_plans/README.md) (review UI / document trace / workbench compare front door)
+> - [frontend_UI_plans/README.md](frontend_UI_plans/README.md) (review UI / document trace / workbench compare / Candidate B Trace operator/reference front door)
 > - [docs/onlook-ops.md](docs/onlook-ops.md) (Onlook testing / troubleshooting / audit / operator front door)
-> - [docs/layer3-deployment-security.md](docs/layer3-deployment-security.md) (Layer 3 local/dev deployment-security posture and hardening decisions)
-> - [docs/layer3-deploy-hardening.md](docs/layer3-deploy-hardening.md) (Layer 3 non-local deployment hardening governance)
+> - [docs/layer3-deployment-security.md](docs/layer3-deployment-security.md) (Layer 3 local/dev deployment-security posture, live non-local startup guardrail, and hardening decisions)
+> - [docs/layer3-deploy-hardening.md](docs/layer3-deploy-hardening.md) (Layer 3 non-local deployment hardening governance and first settings guardrail)
 > - [postgres_status_handoff.md](docs/postgres/postgres_status_handoff.md) (PostgreSQL Tier1 status)
 >
 > Some `tests/...` and `tools/...` paths referenced in older docs may not exist in a given export workspace; confirm on-disk presence before treating any as an authority path.
