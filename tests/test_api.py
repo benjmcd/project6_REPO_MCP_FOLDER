@@ -379,6 +379,27 @@ def test_upload_content_hash_is_stable_for_identical_source_bytes():
     assert [payload['dropped_row_count'] for payload in payloads] == [1, 1]
 
 
+def test_upload_counts_blank_csv_lines_as_dropped_source_rows():
+    csv_bytes = (
+        b"year,amount\n"
+        b"2020,10\n"
+        b"\n"
+        b"2021,11\n"
+    )
+
+    response = client.post(
+        '/api/v1/sources/upload',
+        files={'file': ('blank-line-source.csv', io.BytesIO(csv_bytes), 'text/csv')},
+        data={'name': 'Blank Line Source', 'description': 'Blank line fidelity', 'domain_pack': 'macro'},
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload['row_count'] == 2
+    assert payload['source_row_count'] == 3
+    assert payload['dropped_row_count'] == 1
+    assert payload['content_hash'] == hashlib.sha256(csv_bytes).hexdigest()
+
+
 def test_descriptive_summary_classifies_numeric_after_placeholder_nulls():
     summary = _descriptive_column_summary(pd.Series(["10", "W", "12"]), is_time_column=False)
 

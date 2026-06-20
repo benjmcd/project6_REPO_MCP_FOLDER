@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import csv
 import hashlib
+import io
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,6 +38,11 @@ def _read_csv_with_fallback(raw_path: Path) -> tuple[pd.DataFrame, str]:
     last_error = decode_failures[-1] if decode_failures else "unknown decoding error"
     tried = ", ".join(CSV_READ_ENCODINGS)
     raise ValueError(f"unable to decode CSV with tried encodings: {tried}; last_error={last_error}")
+
+
+def _count_csv_source_rows(content: bytes, encoding: str) -> int:
+    records = list(csv.reader(io.StringIO(content.decode(encoding), newline="")))
+    return max(len(records) - 1, 0)
 
 
 def _next_version_label(db: Session, dataset_id: str) -> str:
@@ -76,7 +83,7 @@ def ingest_csv_bytes_to_dataset(
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"unable to parse CSV: {exc}") from exc
 
-    source_row_count = int(len(df))
+    source_row_count = _count_csv_source_rows(content, used_encoding)
     df = clean_dataframe(df)
     dropped_row_count = source_row_count - int(len(df))
     if df.empty:
