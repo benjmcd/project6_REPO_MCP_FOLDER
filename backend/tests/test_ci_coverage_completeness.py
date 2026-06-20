@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 from fnmatch import fnmatch
+import json
 from pathlib import Path
 import re
+import subprocess
+import sys
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_TESTS_ROOT = REPO_ROOT / "backend" / "tests"
 WORKFLOW_PATH = REPO_ROOT / ".github" / "workflows" / "playwright.yml"
+RELEASE_READINESS_MANIFEST_PATH = REPO_ROOT / "config" / "release_readiness.yaml"
 
 BACKEND_SHARD_PATTERNS = (
     "test_admission_evaluator_*.py",
@@ -52,6 +56,36 @@ EXCLUDED_BACKEND_TESTS = {
     "test_review_nrc_aps_tree.py": RUNTIME_REQUIRED_REASON,
 }
 
+EXPECTED_RELEASE_GATE_COVERAGE = {
+    "deployment_profile_fail_closed_validation": {
+        "kind": "command",
+        "test_path": "backend/tests/test_deployment_profile_validation.py",
+    },
+    "ci_coverage_completeness": {
+        "kind": "command",
+        "test_path": "backend/tests/test_ci_coverage_completeness.py",
+    },
+    "backend_migrations_postgres_golden_path": {
+        "kind": "workflow_contains",
+        "job_id": "backend-migrations-postgres",
+    },
+    "backend_coverage_floor": {
+        "kind": "workflow_contains",
+        "job_id": "backend-coverage",
+    },
+    "release_lock_install": {
+        "kind": "workflow_contains",
+        "job_id": "release-lock-install",
+    },
+}
+
+RELEASE_GATE_AGGREGATED_JOBS = (
+    "release-lock-install",
+    "backend-layer3-api",
+    "backend-coverage",
+    "backend-migrations-postgres",
+)
+
 
 def _backend_test_files() -> list[str]:
     return sorted(path.name for path in BACKEND_TESTS_ROOT.glob("test_*.py") if path.is_file())
@@ -70,6 +104,44 @@ def _workflow_backend_patterns() -> tuple[str, ...]:
     )
     assert match is not None, "Could not locate backend shard patterns tuple in playwright.yml"
     return tuple(re.findall(r'"([^"]+\.py)"', match.group("body")))
+
+
+def _workflow_job_ids() -> set[str]:
+    workflow_text = WORKFLOW_PATH.read_text(encoding="utf-8")
+    return set(re.findall(r"^  ([A-Za-z0-9_-]+):\s*$", workflow_text, flags=re.MULTILINE))
+
+
+def _workflow_job_block(job_id: str) -> str:
+    workflow_text = WORKFLOW_PATH.read_text(encoding="utf-8")
+    match = re.search(
+        rf"^  {re.escape(job_id)}:\s*$\n(?P<body>.*?)(?=^  [A-Za-z0-9_-]+:\s*$|\Z)",
+        workflow_text,
+        flags=re.DOTALL | re.MULTILINE,
+    )
+    assert match is not None, f"Could not locate workflow job {job_id!r}"
+    return match.group("body")
+
+
+def _release_readiness_manifest() -> dict:
+    return json.loads(RELEASE_READINESS_MANIFEST_PATH.read_text(encoding="utf-8"))
+
+
+def _collect_pytest_nodeids(relative_path: str) -> list[str]:
+    completed = subprocess.run(
+        [sys.executable, "-m", "pytest", "--collect-only", "-q", relative_path],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    nodeids = [
+        line.strip().replace("\\", "/")
+        for line in completed.stdout.splitlines()
+        if "::" in line
+    ]
+    assert nodeids, f"{relative_path} collected no pytest node ids"
+    return nodeids
 
 
 def test_backend_test_files_are_ci_covered_or_allowlisted() -> None:
@@ -100,3 +172,51 @@ def test_backend_shard_pattern_mirror_matches_workflow() -> None:
     workflow_text = WORKFLOW_PATH.read_text(encoding="utf-8")
     for pattern in BACKEND_SHARD_PATTERNS:
         assert f'"{pattern}"' in workflow_text
+
+
+def test_release_readiness_manifest_gates_map_to_ci_jobs_or_collected_tests() -> None:
+    manifest = _release_readiness_manifest()
+    gates_by_id = {gate["id"]: gate for gate in manifest["required_gates"]}
+    assert set(gates_by_id) == set(EXPECTED_RELEASE_GATE_COVERAGE)
+
+    workflow_jobs = _workflow_job_ids()
+    workflow_text = WORKFLOW_PATH.read_text(encoding="utf-8")
+    for gate_id, expected in EXPECTED_RELEASE_GATE_COVERAGE.items():
+        gate = gates_by_id[gate_id]
+        assert gate["kind"] == expected["kind"], gate_id
+
+        if expected["kind"] == "command":
+            relative_path = expected["test_path"]
+            file_name = Path(relative_path).name
+            command_parts = [str(part).lstrip("./").replace("\\", "/") for part in gate["command"]]
+            assert (REPO_ROOT / relative_path).exists(), gate_id
+            assert relative_path in command_parts, gate_id
+            assert _covered_by_backend_shard(file_name), gate_id
+            nodeids = _collect_pytest_nodeids(relative_path)
+            assert any(nodeid.startswith(f"{relative_path}::") for nodeid in nodeids), gate_id
+            continue
+
+        job_id = expected["job_id"]
+        assert job_id in workflow_jobs, gate_id
+        assert job_id in gate["must_contain"], gate_id
+        for token in gate["must_contain"]:
+            assert token in workflow_text, f"{gate_id} missing workflow token {token!r}"
+
+
+def test_release_gate_job_runs_manifest_runner_after_manifest_ci_jobs() -> None:
+    workflow_jobs = _workflow_job_ids()
+    assert "release-gate" in workflow_jobs
+
+    gate_block = _workflow_job_block("release-gate")
+    assert "if: ${{ always() }}" in gate_block
+    assert "python ./scripts/release_readiness_check.py" in gate_block
+    for job_id in RELEASE_GATE_AGGREGATED_JOBS:
+        assert job_id in gate_block
+        assert f"needs['{job_id}'].result" in gate_block
+
+
+def test_backend_coverage_comment_matches_enforced_floor() -> None:
+    coverage_block = _workflow_job_block("backend-coverage")
+    assert "--cov-fail-under=90" in coverage_block
+    assert "Coverage floor is set to 90%" in coverage_block
+    assert "30%" not in coverage_block
