@@ -27,7 +27,8 @@ The harness uses an isolated SQLite DB and storage tree, starts the FastAPI app 
 
 - install/run: a clean local runtime reaches `/ready`, uploads CSV, profiles variables, applies transforms, annotates, runs `cross_correlation`, and records artifacts, assumptions, caveats, and CSV source-fidelity fields.
 - restart-survival: the same DB and storage tree are re-opened by a fresh app process, then the analysis run and dataset source-fidelity fields re-read identically.
-- backup/restore: the SQLite DB and storage tree are copied to a backup point, restored into a new isolated runtime, and the restored app re-reads the same analysis run, `content_hash`, and artifact hashes.
+- backup/restore: the SQLite DB and storage tree are copied to a backup point, restored into the configured isolated local runtime path, and the restored app re-reads the same analysis run, `content_hash`, and artifact hashes.
+- backup/restore total-loss check: the original runtime is relocated before restore; the SQLite DB and storage tree are restored from backup into the configured local paths, then dataframe-backed profile reads prove dataset files are loaded from the restored storage tree.
 - UPGRADE: not claimed.
 
 The CI hook is `backend/tests/test_release_local_profile_operational_acceptance.py`, which invokes the harness in a pytest temp directory.

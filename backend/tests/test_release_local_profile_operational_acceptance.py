@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "local_profile_acceptance.py"
 RUNBOOK = ROOT / "docs" / "local-profile-ops.md"
+ACCEPTANCE_TIMEOUT_SECONDS = 520
 
 
 def test_local_profile_acceptance_script_proves_install_restart_and_restore(tmp_path: Path) -> None:
@@ -23,7 +24,7 @@ def test_local_profile_acceptance_script_proves_install_restart_and_restore(tmp_
         cwd=ROOT,
         capture_output=True,
         text=True,
-        timeout=180,
+        timeout=ACCEPTANCE_TIMEOUT_SECONDS,
     )
     assert result.returncode == 0, (
         f"local profile acceptance failed with {result.returncode}\n"
@@ -50,7 +51,10 @@ def test_local_profile_acceptance_script_proves_install_restart_and_restore(tmp_
     assert payload["source_fidelity"]["dropped_row_count"] == 1
     assert payload["restored"]["analysis_run_id"] == payload["restart"]["analysis_run_id"]
     assert payload["restored"]["content_hash"] == payload["source_fidelity"]["content_hash"]
+    assert payload["restored"]["dataframe_reads"]["raw_profile_count"] > 0
+    assert payload["restored"]["dataframe_reads"]["transformed_profile_count"] > 0
     assert payload["artifact_hashes"]
+    assert payload["backup"]["original_runtime_relocated"] is True
 
 
 def test_local_profile_runbook_records_selected_l05_subcontracts() -> None:

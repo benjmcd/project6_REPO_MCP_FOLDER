@@ -15,6 +15,7 @@ from typing import Any
 SCHEMA_ID = "project6.local_profile_acceptance.v1"
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "backend"
+CHILD_TIMEOUT_SECONDS = 150
 
 CSV_BYTES = (
     b"date,revenue,traffic,temperature\n"
@@ -88,6 +89,20 @@ def _artifact_hashes(storage_dir: Path, analysis: dict[str, Any]) -> dict[str, s
     return hashes
 
 
+def _sorted_records(records: Any, label: str) -> list[dict[str, Any]]:
+    if not isinstance(records, list):
+        raise AssertionError(f"analysis {label} is not a list")
+    return sorted(
+        records,
+        key=lambda item: json.dumps(item, sort_keys=True, default=str),
+    )
+
+
+def _assert_same_records(actual: Any, expected: Any, label: str) -> None:
+    if _sorted_records(actual, label) != _sorted_records(expected, label):
+        raise AssertionError(f"analysis {label} changed after restart/restore")
+
+
 def _local_env(db_path: Path, storage_dir: Path) -> dict[str, str]:
     env = os.environ.copy()
     env.update(
@@ -148,6 +163,31 @@ def _raw_version(dataset: dict[str, Any], version_id: str) -> dict[str, Any]:
         if version.get("dataset_version_id") == version_id:
             return version
     raise AssertionError(f"raw dataset version not found: {version_id}")
+
+
+def _profile_count(
+    client: Any,
+    dataset_id: str,
+    version_id: str,
+    label: str,
+    *,
+    detect_stationarity: bool,
+) -> int:
+    profiles = _require_status(
+        client.post(
+            f"/api/v1/datasets/{dataset_id}/versions/{version_id}/profile",
+            json={
+                "detect_seasonality": False,
+                "detect_stationarity": detect_stationarity,
+            },
+        ),
+        200,
+        f"POST profile {label} version",
+    )
+    count = len(profiles)
+    if count <= 0:
+        raise AssertionError(f"profile {label} version returned no variable profiles")
+    return count
 
 
 def _seed(db_path: Path, storage_dir: Path) -> dict[str, Any]:
@@ -285,7 +325,13 @@ def _seed(db_path: Path, storage_dir: Path) -> dict[str, Any]:
     }
 
 
-def _verify(db_path: Path, storage_dir: Path, expected: dict[str, Any]) -> dict[str, Any]:
+def _verify(
+    db_path: Path,
+    storage_dir: Path,
+    expected: dict[str, Any],
+    *,
+    require_dataframe_reads: bool = False,
+) -> dict[str, Any]:
     client = _load_client(db_path, storage_dir)
     _require_status(client.get("/ready"), 200, "GET /ready")
 
@@ -295,8 +341,7 @@ def _verify(db_path: Path, storage_dir: Path, expected: dict[str, Any]) -> dict[
         "GET /api/v1/analysis-runs/{id}",
     )
     for key in ("artifacts", "assumptions", "caveats"):
-        if analysis.get(key) != expected["analysis"].get(key):
-            raise AssertionError(f"analysis {key} changed after restart/restore")
+        _assert_same_records(analysis.get(key), expected["analysis"].get(key), key)
 
     dataset = _require_status(
         client.get(f"/api/v1/datasets/{expected['dataset_id']}"),
@@ -320,15 +365,41 @@ def _verify(db_path: Path, storage_dir: Path, expected: dict[str, Any]) -> dict[
         raise AssertionError(
             f"artifact hashes changed: expected {expected['artifact_hashes']}, got {artifact_hashes}"
         )
+    dataframe_reads: dict[str, int] = {}
+    if require_dataframe_reads:
+        dataframe_reads = {
+            "raw_profile_count": _profile_count(
+                client,
+                expected["dataset_id"],
+                expected["raw_version_id"],
+                "raw",
+                detect_stationarity=False,
+            ),
+            "transformed_profile_count": _profile_count(
+                client,
+                expected["dataset_id"],
+                expected["transformed_version_id"],
+                "transformed",
+                detect_stationarity=True,
+            ),
+        }
     return {
         "analysis_run_id": analysis["analysis_run_id"],
         "dataset_id": expected["dataset_id"],
         "content_hash": source_fidelity["content_hash"],
         "artifact_hashes": artifact_hashes,
+        "dataframe_reads": dataframe_reads,
     }
 
 
-def _run_child(mode: str, db_path: Path, storage_dir: Path, snapshot_path: Path | None = None) -> dict[str, Any]:
+def _run_child(
+    mode: str,
+    db_path: Path,
+    storage_dir: Path,
+    snapshot_path: Path | None = None,
+    *,
+    require_dataframe_reads: bool = False,
+) -> dict[str, Any]:
     args = [
         sys.executable,
         str(Path(__file__).resolve()),
@@ -341,13 +412,15 @@ def _run_child(mode: str, db_path: Path, storage_dir: Path, snapshot_path: Path 
     ]
     if snapshot_path is not None:
         args.extend(["--snapshot", str(snapshot_path)])
+    if require_dataframe_reads:
+        args.append("--require-dataframe-reads")
     result = subprocess.run(
         args,
         cwd=ROOT,
         env=_local_env(db_path, storage_dir),
         capture_output=True,
         text=True,
-        timeout=150,
+        timeout=CHILD_TIMEOUT_SECONDS,
     )
     if result.returncode != 0:
         raise RuntimeError(
@@ -375,7 +448,7 @@ def _run_acceptance(work_dir: Path) -> dict[str, Any]:
     _ensure_clean_work_dir(work_dir)
     runtime_dir = work_dir / "runtime"
     backup_dir = work_dir / "backup"
-    restore_dir = work_dir / "restore"
+    archive_dir = work_dir / "archive"
     runtime_dir.mkdir(parents=True)
     db_path = runtime_dir / "method_aware.db"
     storage_dir = runtime_dir / "storage"
@@ -392,12 +465,20 @@ def _run_acceptance(work_dir: Path) -> dict[str, Any]:
     _copy_file(db_path, db_backup)
     shutil.copytree(storage_dir, storage_backup)
 
-    restored_runtime = restore_dir / "runtime"
-    restored_db = restored_runtime / "method_aware.db"
-    restored_storage = restored_runtime / "storage"
-    _copy_file(db_backup, restored_db)
-    shutil.copytree(storage_backup, restored_storage)
-    restored = _run_child("verify", restored_db, restored_storage, snapshot_path)
+    offline_runtime = archive_dir / "original-runtime"
+    archive_dir.mkdir(parents=True)
+    shutil.move(str(runtime_dir), str(offline_runtime))
+    if runtime_dir.exists():
+        raise AssertionError(f"runtime was not relocated before restore: {runtime_dir}")
+    _copy_file(db_backup, db_path)
+    shutil.copytree(storage_backup, storage_dir)
+    restored = _run_child(
+        "verify",
+        db_path,
+        storage_dir,
+        snapshot_path,
+        require_dataframe_reads=True,
+    )
 
     return {
         "schema_id": SCHEMA_ID,
@@ -421,6 +502,8 @@ def _run_acceptance(work_dir: Path) -> dict[str, Any]:
         "backup": {
             "sqlite_sha256": _sha256_file(db_backup),
             "storage_manifest": sorted(seeded["artifact_hashes"].keys()),
+            "original_runtime_relocated": True,
+            "original_runtime_archive": str(offline_runtime.resolve()),
         },
     }
 
@@ -433,6 +516,7 @@ def main() -> int:
     parser.add_argument("--db-path", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--storage-dir", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--snapshot", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--require-dataframe-reads", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
     try:
@@ -447,7 +531,12 @@ def main() -> int:
                 if args.snapshot is None:
                     raise ValueError("--snapshot is required for verify child mode")
                 expected = json.loads(args.snapshot.read_text(encoding="utf-8"))
-                payload = _verify(db_path, storage_dir, expected)
+                payload = _verify(
+                    db_path,
+                    storage_dir,
+                    expected,
+                    require_dataframe_reads=args.require_dataframe_reads,
+                )
             print(json.dumps(payload, sort_keys=True))
             return 0
 
