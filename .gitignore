@@ -44,3 +44,22 @@ deploy/proxy/roles.map
 
 # Scratch session capture (regenerated ad hoc; not source of truth; archived snapshot as above)
 /temp_session.json
+
+# --- large data / runtime artifacts (untracked; kept on disk) ---
+.venvs/
+data_demo/
+app/storage/
+tmp/storage/
+tmp_parsed_sessions/
+session_temp/
+session_extracted/
+sessionhistory_extracted/
+temp_extract/
+session-*.json
+temp_session.json
+sessionhistoryfiles.zip
+PRIMARY_INVESTIGATION_FILE_LATEST_SESSION.json
+chatgpt_project6_repo_creation.json
+sessionhistory*.md
+.codesight/
+corpus_*.log
