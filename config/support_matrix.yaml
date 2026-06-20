@@ -78,7 +78,7 @@
     {
       "id": "ocr_external_engine",
       "status": "experimental_default_off",
-      "evidence": "README.md:114; README.md:138; tests/test_nrc_aps_document_processing.py"
+      "evidence": "README.md:114; README.md:138; backend/app/services/nrc_aps_document_processing.py:342-348; backend/app/services/nrc_aps_document_processing.py:808-884; backend/app/services/nrc_aps_document_processing.py:1146-1242; tests/test_nrc_aps_document_processing.py"
     },
     {
       "id": "sec_offline_replay_path",

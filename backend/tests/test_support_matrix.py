@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -77,6 +80,25 @@ def test_support_matrix_declares_local_expert_capability_boundary() -> None:
 
     assert by_id["sec_live_network_egress"]["status"] == "unsupported"
     assert by_id["model_agent_egress"]["status"] == "unsupported"
+    assert "nrc_aps_document_processing.py" in by_id["ocr_external_engine"]["evidence"]
+
+
+def test_front_door_names_selected_local_expert_profile_without_old_unselected_claim() -> None:
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "base=local_expert" in readme
+    assert "overlays=none" in readme
+    assert "No release profile is selected yet" not in readme
+
+
+def test_ocr_support_matrix_doc_acknowledges_installed_tesseract_runtime() -> None:
+    matrix = _load_json_compatible_yaml(MATRIX_PATH)
+    doc = (REPO_ROOT / "docs" / "support-matrix-local-expert.md").read_text(encoding="utf-8")
+    by_id = {item["id"]: item for item in matrix["capabilities"]}
+
+    assert by_id["ocr_external_engine"]["status"] == "experimental_default_off"
+    assert "installed Tesseract" in doc
+    assert "not part of the selected RC1 claim" in doc
 
 
 def test_support_matrix_pins_local_expert_flags_without_release_manifest_profile_gates() -> None:
@@ -113,3 +135,35 @@ def test_support_matrix_checker_passes_against_current_config_defaults() -> None
         "database": "sqlite",
     }
     assert report["pinned_false_flags_status"] == "pass"
+
+
+def test_support_matrix_checker_uses_source_defaults_not_process_environment(tmp_path) -> None:
+    env = os.environ.copy()
+    env.update(
+        {
+            "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED": "true",
+            "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED": "true",
+            "LAYER3_MODEL_EGRESS_ENABLED": "true",
+            "AUTH_OWNER": "proxy",
+            "DEPLOYMENT_MODE": "nonlocal",
+        }
+    )
+
+    completed = subprocess.run(
+        [sys.executable, str(CHECKER_PATH)],
+        cwd=REPO_ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    report = json.loads(completed.stdout)
+    assert report["status"] == "pass"
+    assert report["default_profile"] == {
+        "deployment_mode": "local",
+        "auth_owner": "none",
+        "route_authorization_mode": "identity_presence",
+        "database": "sqlite",
+    }

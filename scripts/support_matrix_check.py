@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -58,24 +58,56 @@ def _load_release_owner_gates(repo_root: Path) -> list[Any]:
     return gates
 
 
-def _settings_defaults(repo_root: Path) -> tuple[type[Any], dict[str, Any]]:
-    backend_path = str(repo_root / "backend")
-    if backend_path not in sys.path:
-        sys.path.insert(0, backend_path)
+def _ast_literal(node: ast.AST) -> Any:
+    if isinstance(node, ast.Constant):
+        return node.value
+    if isinstance(node, ast.Name):
+        return node.id
+    return None
 
-    from app.core.config import Settings
 
-    fields = Settings.model_fields
-    defaults = {
-        field.alias or name: field.default
-        for name, field in fields.items()
-    }
-    return Settings, defaults
+def _settings_defaults(repo_root: Path) -> dict[str, Any]:
+    config_path = repo_root / "backend" / "app" / "core" / "config.py"
+    tree = ast.parse(config_path.read_text(encoding="utf-8"), filename=str(config_path))
+    settings_class = next(
+        (
+            node
+            for node in tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "Settings"
+        ),
+        None,
+    )
+    if settings_class is None:
+        raise ValueError("Settings class not found in backend/app/core/config.py")
+
+    defaults: dict[str, Any] = {}
+    for statement in settings_class.body:
+        if not isinstance(statement, ast.AnnAssign):
+            continue
+        if not isinstance(statement.target, ast.Name):
+            continue
+        if not isinstance(statement.value, ast.Call):
+            continue
+        field_call = statement.value
+        if not isinstance(field_call.func, ast.Name) or field_call.func.id != "Field":
+            continue
+
+        alias = statement.target.id
+        default: Any = None
+        for keyword in field_call.keywords:
+            if keyword.arg == "alias":
+                alias_value = _ast_literal(keyword.value)
+                if isinstance(alias_value, str):
+                    alias = alias_value
+            if keyword.arg == "default":
+                default = _ast_literal(keyword.value)
+        defaults[alias] = default
+    return defaults
 
 
 def _database_kind(value: object) -> str:
     raw = str(value)
-    if raw.startswith("sqlite"):
+    if raw == "DEFAULT_DATABASE_URL" or raw.startswith("sqlite"):
         return "sqlite"
     if raw.startswith("postgres"):
         return "postgres"
@@ -153,7 +185,7 @@ def run_support_matrix_check(
         errors.append("release_readiness owner_selected_profile_specific_gates must stay []")
 
     try:
-        _settings, defaults = _settings_defaults(root)
+        defaults = _settings_defaults(root)
     except Exception as exc:
         defaults = {}
         errors.append(f"could not load Settings defaults: {exc}")

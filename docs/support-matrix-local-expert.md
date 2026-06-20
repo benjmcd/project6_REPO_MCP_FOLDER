@@ -11,7 +11,7 @@ The profile is a single-operator local source-run posture: `DEPLOYMENT_MODE=loca
 | Status | Meaning |
 | --- | --- |
 | `supported` | In scope for local expert RC1 under the default local posture. |
-| `experimental_default_off` | Present or partially wired, but default-off and not part of the selected local RC1 claim without an explicit future decision. |
+| `experimental_default_off` | Present or partially wired, but not part of the selected local RC1 claim without an explicit future decision. This includes features guarded by false defaults and features that require an external engine that is not bundled with this profile. |
 | `simulation` | Useful as offline/replay/staged proof only, not a live production capability. |
 | `unsupported` | Not armable or not claimed for this selected profile. |
 
@@ -31,7 +31,7 @@ The profile is a single-operator local source-run posture: `DEPLOYMENT_MODE=loca
 | Arelle corpus validation | `experimental_default_off` | `backend/app/core/config.py:156-158`; `backend/.env.example:64-65` |
 | SEC XBRL production-admission evaluator | `experimental_default_off` | `backend/app/core/config.py:190-192`; `backend/.env.example:93-96` |
 | Analysis product package inventory | `experimental_default_off` | `backend/app/core/config.py:176-178`; `backend/app/services/layer3_analysis_product_inventory_projection.py` |
-| OCR external engine | `experimental_default_off` | `README.md:114`; `README.md:138`; `tests/test_nrc_aps_document_processing.py` |
+| OCR external engine | `experimental_default_off` | `README.md:114`; `README.md:138`; `backend/app/services/nrc_aps_document_processing.py:342-348`; `backend/app/services/nrc_aps_document_processing.py:808-884`; `backend/app/services/nrc_aps_document_processing.py:1146-1242`; `tests/test_nrc_aps_document_processing.py` |
 | SEC offline replay path | `simulation` | `backend/app/services/layer3_sec_xbrl_offline_evidence_loader.py:23-62`; `backend/tests/test_layer3_sec_xbrl_companyfacts_stage_and_oracle.py` |
 | NRC APS replay corpus gate | `simulation` | `README.md:198`; `tests/test_nrc_aps_replay_gate.py`; `backend/app/services/nrc_aps_replay_gate.py` |
 | Offline-staged redaction/value-store resolution | `simulation` | `backend/app/services/layer3_sec_xbrl_offline_evidence_loader.py:160-180`; `backend/app/models/models.py:1449-1536` |
@@ -59,3 +59,5 @@ The support-matrix checker pins the following flags false for this profile:
 | `LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED` |
 
 The selected profile does not enable, advertise, or imply overlays. It does not select the nonlocal base.
+
+OCR note: NRC APS document-processing code can use an installed Tesseract runtime for image or low-text PDF handling. That path remains outside the canonical local expert analytics journey and is not part of the selected RC1 claim because the external engine is not bundled with this source-run profile.
