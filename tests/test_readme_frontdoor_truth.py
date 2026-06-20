@@ -4,8 +4,8 @@ The README opening status note silently rotted for ~3 months (a 2026-03-25
 phase-closure note led the file long after it stopped being the current
 posture). These guards keep the front door honest: it must lead with the
 current support posture, must not present a dated historical phase note as the
-headline, and must not advertise a release profile (profile selection is an
-owner-reserved decision).
+headline, and must name the selected local expert RC1 profile without upgrading
+that selection into a production-ready or nonlocal claim.
 """
 from pathlib import Path
 
@@ -28,11 +28,13 @@ def test_readme_leads_with_current_status_before_any_dated_phase_note():
     )
 
 
-def test_readme_states_honest_posture_and_no_selected_profile():
+def test_readme_states_honest_selected_local_profile():
     text = _text()
     assert "not a production-ready claim" in text, (
         "README dropped its not-production-ready honesty"
     )
-    assert "No release profile is selected yet" in text, (
-        "README must state no release profile is selected (selection is owner-reserved)"
-    )
+    assert "analytics-only" in text
+    assert "base=local_expert" in text
+    assert "overlays=none" in text
+    assert "connectors are deferred to RC2" in text
+    assert "No release profile is selected yet" not in text

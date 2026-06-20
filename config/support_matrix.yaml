@@ -1,0 +1,134 @@
+{
+  "schema_id": "project6.support_matrix.v1",
+  "profile": "local_expert",
+  "overlays": "none",
+  "boundary_note": "Selected RC1 profile is analytics-only single-operator local source-run: DEPLOYMENT_MODE=local, AUTH_OWNER=none, SQLite/local filesystem, loopback/local trust, and no auth boundary. No overlay, nonlocal base, public_connectors overlay, multi-trust, provider delivery, model/agent egress, keyed connector, live SEC network, value-reveal, controlled-submit, HA, or bundled OCR-engine claim is selected; connectors are deferred to RC2.",
+  "release_readiness_manifest": "profile-neutral; do not populate owner_selected_profile_specific_gates",
+  "pinned_false_flags": [
+    "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
+    "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
+    "LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED",
+    "LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED",
+    "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
+    "LAYER3_MODEL_EGRESS_ENABLED",
+    "SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED",
+    "LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED"
+  ],
+  "capabilities": [
+    {
+      "id": "method_aware_analytics_vertical",
+      "status": "supported",
+      "evidence": "README.md:41-46; tests/test_api.py:125-138; backend/app/services/analysis.py:44-100"
+    },
+    {
+      "id": "sciencebase_public_connector_slice",
+      "status": "experimental_default_off",
+      "evidence": "README.md:48-51; backend/app/api/router.py:319-382; backend/app/core/config.py:206 (SCIENCEBASE_API_BASE_URL alias); RC2-targeted; not part of analytics-only RC1"
+    },
+    {
+      "id": "senate_lda_anonymous_connector_slice",
+      "status": "experimental_default_off",
+      "evidence": "README.md:146-150; backend/app/api/router.py:426-452; backend/app/core/config.py:209-210 (SENATE_LDA_API_BASE_URL/SENATE_LDA_API_KEY aliases); RC2-targeted; not part of analytics-only RC1"
+    },
+    {
+      "id": "connector_run_observability",
+      "status": "experimental_default_off",
+      "evidence": "README.md:54-60; backend/app/api/router.py:461-542; backend/app/services/connectors_sciencebase.py:3145-3164; RC2-targeted; observes experimental connector runs, not analytics-only RC1"
+    },
+    {
+      "id": "layer3_workbench_ui",
+      "status": "supported",
+      "evidence": "backend/main.py:498-504; backend/app/review_ui/static/layer3.html; backend/app/review_ui/static/layer3.js"
+    },
+    {
+      "id": "health_readiness_openapi",
+      "status": "supported",
+      "evidence": "backend/main.py:53; backend/main.py:510-521; backend/main.py:526-536"
+    },
+    {
+      "id": "sec_value_reveal",
+      "status": "experimental_default_off",
+      "evidence": "backend/app/core/config.py:164-166; backend/.env.example:68-69; README.md:3"
+    },
+    {
+      "id": "sec_controlled_value_reveal_submit",
+      "status": "experimental_default_off",
+      "evidence": "backend/app/core/config.py:172-174; backend/.env.example:86-87; backend/app/services/layer3_sec_xbrl_controlled_value_reveal_submit.py"
+    },
+    {
+      "id": "arelle_internal_value_store",
+      "status": "experimental_default_off",
+      "evidence": "backend/app/core/config.py:152-154; backend/.env.example:62-63; backend/app/services/layer3_sec_xbrl_offline_evidence_loader.py:26"
+    },
+    {
+      "id": "arelle_corpus_validation",
+      "status": "experimental_default_off",
+      "evidence": "backend/app/core/config.py:156-158; backend/.env.example:64-65"
+    },
+    {
+      "id": "sec_xbrl_production_admission_evaluator",
+      "status": "experimental_default_off",
+      "evidence": "backend/app/core/config.py:190-192; backend/.env.example:93-96"
+    },
+    {
+      "id": "analysis_product_package_inventory",
+      "status": "experimental_default_off",
+      "evidence": "backend/app/core/config.py:176-178; backend/app/services/layer3_analysis_product_inventory_projection.py"
+    },
+    {
+      "id": "ocr_external_engine",
+      "status": "experimental_default_off",
+      "evidence": "README.md:114; README.md:138; backend/app/services/nrc_aps_document_processing.py:342-348; backend/app/services/nrc_aps_document_processing.py:808-884; backend/app/services/nrc_aps_document_processing.py:1146-1242; tests/test_nrc_aps_document_processing.py"
+    },
+    {
+      "id": "sec_offline_replay_path",
+      "status": "simulation",
+      "evidence": "backend/app/services/layer3_sec_xbrl_offline_evidence_loader.py:23-62; backend/tests/test_layer3_sec_xbrl_companyfacts_stage_and_oracle.py"
+    },
+    {
+      "id": "nrc_aps_replay_corpus_gate",
+      "status": "simulation",
+      "evidence": "README.md:198; tests/test_nrc_aps_replay_gate.py; backend/app/services/nrc_aps_replay_gate.py"
+    },
+    {
+      "id": "offline_staged_redaction_value_store_resolution",
+      "status": "simulation",
+      "evidence": "backend/app/services/layer3_sec_xbrl_offline_evidence_loader.py:160-180; backend/app/models/models.py:1449-1536"
+    },
+    {
+      "id": "sec_live_network_egress",
+      "status": "unsupported",
+      "evidence": "backend/app/core/config.py:134-136; backend/.env.example:55; README.md:3"
+    },
+    {
+      "id": "real_provider_delivery",
+      "status": "unsupported",
+      "evidence": "README.md:3; backend/app/services/layer3_provider_public_url_fake_provider.py; backend/app/services/layer3_provider_private_signed_url_fake_provider.py"
+    },
+    {
+      "id": "model_agent_egress",
+      "status": "unsupported",
+      "evidence": "backend/app/core/config.py:180-187; README.md:3; backend/app/services/layer3_egress_policy.py"
+    },
+    {
+      "id": "nonlocal_multi_trust_multi_identity",
+      "status": "unsupported",
+      "evidence": "README.md:3; backend/app/core/config.py:25-26; backend/app/core/config.py:366-400"
+    },
+    {
+      "id": "high_availability",
+      "status": "unsupported",
+      "evidence": "backend/app/core/config.py:110-112; backend/app/services/nrc_aps_safeguards.py:402"
+    },
+    {
+      "id": "keyed_connectors",
+      "status": "unsupported",
+      "evidence": "backend/app/core/config.py:208-210; backend/.env.example:14; backend/.env.example:47-49"
+    },
+    {
+      "id": "signed_reference_export",
+      "status": "unsupported",
+      "evidence": "backend/app/api/layer3/_shared.py:286; backend/.env.production.example:143; backend/app/api/layer3/handoff.py:377-613"
+    }
+  ]
+}
