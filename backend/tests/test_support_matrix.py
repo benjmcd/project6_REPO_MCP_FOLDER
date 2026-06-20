@@ -22,9 +22,9 @@ STATUS_VOCABULARY = {
 
 EXPECTED_CAPABILITY_STATUSES = {
     "method_aware_analytics_vertical": "supported",
-    "sciencebase_public_connector_slice": "supported",
-    "senate_lda_anonymous_connector_slice": "supported",
-    "connector_run_observability": "supported",
+    "sciencebase_public_connector_slice": "experimental_default_off",
+    "senate_lda_anonymous_connector_slice": "experimental_default_off",
+    "connector_run_observability": "experimental_default_off",
     "layer3_workbench_ui": "supported",
     "health_readiness_openapi": "supported",
     "sec_value_reveal": "experimental_default_off",
@@ -68,6 +68,8 @@ def test_support_matrix_declares_local_expert_capability_boundary() -> None:
     assert matrix["overlays"] == "none"
     assert "single-operator local" in matrix["boundary_note"]
     assert "no auth boundary" in matrix["boundary_note"]
+    assert "analytics-only" in matrix["boundary_note"]
+    assert "connectors are deferred to RC2" in matrix["boundary_note"]
 
     capabilities = matrix["capabilities"]
     by_id = {item["id"]: item for item in capabilities}
@@ -81,6 +83,30 @@ def test_support_matrix_declares_local_expert_capability_boundary() -> None:
     assert by_id["sec_live_network_egress"]["status"] == "unsupported"
     assert by_id["model_agent_egress"]["status"] == "unsupported"
     assert "nrc_aps_document_processing.py" in by_id["ocr_external_engine"]["evidence"]
+    for connector_id in (
+        "sciencebase_public_connector_slice",
+        "senate_lda_anonymous_connector_slice",
+        "connector_run_observability",
+    ):
+        connector = by_id[connector_id]
+        assert connector["status"] == "experimental_default_off"
+        assert "RC2-targeted" in connector["evidence"]
+
+
+def test_support_matrix_connector_evidence_points_to_actual_config_aliases() -> None:
+    matrix = _load_json_compatible_yaml(MATRIX_PATH)
+    by_id = {item["id"]: item for item in matrix["capabilities"]}
+    config_lines = (REPO_ROOT / "backend" / "app" / "core" / "config.py").read_text(encoding="utf-8").splitlines()
+
+    sciencebase_line = config_lines[205]
+    senate_base_line = config_lines[208]
+    senate_key_line = config_lines[209]
+
+    assert "SCIENCEBASE_API_BASE_URL" in sciencebase_line
+    assert "backend/app/core/config.py:206" in by_id["sciencebase_public_connector_slice"]["evidence"]
+    assert "SENATE_LDA_API_BASE_URL" in senate_base_line
+    assert "SENATE_LDA_API_KEY" in senate_key_line
+    assert "backend/app/core/config.py:209-210" in by_id["senate_lda_anonymous_connector_slice"]["evidence"]
 
 
 def test_front_door_names_selected_local_expert_profile_without_old_unselected_claim() -> None:
@@ -135,6 +161,21 @@ def test_support_matrix_checker_passes_against_current_config_defaults() -> None
         "database": "sqlite",
     }
     assert report["pinned_false_flags_status"] == "pass"
+
+
+def test_support_matrix_checker_rejects_rc1_supported_public_connector_regression(tmp_path) -> None:
+    checker = _load_checker()
+    matrix = _load_json_compatible_yaml(MATRIX_PATH)
+    for item in matrix["capabilities"]:
+        if item["id"] == "sciencebase_public_connector_slice":
+            item["status"] = "supported"
+    mutated = tmp_path / "support_matrix.yaml"
+    mutated.write_text(json.dumps(matrix), encoding="utf-8")
+
+    report = checker.run_support_matrix_check(mutated, repo_root=REPO_ROOT)
+
+    assert report["status"] == "fail"
+    assert any("sciencebase_public_connector_slice" in error for error in report["errors"])
 
 
 def test_support_matrix_checker_uses_source_defaults_not_process_environment(tmp_path) -> None:

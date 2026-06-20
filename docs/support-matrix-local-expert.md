@@ -1,10 +1,12 @@
 # Local Expert Support Matrix
 
-This support matrix applies to the selected RC1 profile `base=local_expert` with `overlays=none`.
+This support matrix applies to the selected analytics-only RC1 profile `base=local_expert` with `overlays=none`.
 
 The profile is a single-operator local source-run posture: `DEPLOYMENT_MODE=local`, `AUTH_OWNER=none`, SQLite/local filesystem, and loopback/local trust. Under this posture there is no authentication boundary; the local principal is constant and identity or role enforcement is not a product claim.
 
 `config/release_readiness.yaml` remains profile-neutral. Its `owner_selected_profile_specific_gates` list must stay empty; selected-profile acceptance lives in `config/support_matrix.yaml` and `scripts/support_matrix_check.py`.
+
+The selected RC1 profile does not claim the public connectors overlay. ScienceBase, Senate LDA, and their run observability are RC2-targeted and remain outside the analytics-only RC1 supported claim.
 
 ## Status Legend
 
@@ -20,9 +22,9 @@ The profile is a single-operator local source-run posture: `DEPLOYMENT_MODE=loca
 | Capability | Status | Evidence |
 | --- | --- | --- |
 | Method-aware analytics vertical | `supported` | `README.md:41-46`; `tests/test_api.py:125-138`; `backend/app/services/analysis.py:44-100` |
-| ScienceBase public connector slice | `supported` | `README.md:48-51`; `backend/app/api/router.py:319-382`; `backend/app/core/config.py:206` |
-| Senate LDA anonymous connector slice | `supported` | `README.md:146-150`; `backend/app/api/router.py:426-452`; `backend/app/core/config.py:209-210` |
-| Connector run observability | `supported` | `README.md:54-60`; `backend/app/api/router.py:461-542`; `backend/app/services/connectors_sciencebase.py:3145-3164` |
+| ScienceBase public connector slice | `experimental_default_off` | RC2-targeted; not part of analytics-only RC1; `README.md:48-51`; `backend/app/api/router.py:319-382`; `backend/app/core/config.py:206` (`SCIENCEBASE_API_BASE_URL` alias) |
+| Senate LDA anonymous connector slice | `experimental_default_off` | RC2-targeted; not part of analytics-only RC1; `README.md:146-150`; `backend/app/api/router.py:426-452`; `backend/app/core/config.py:209-210` (`SENATE_LDA_API_BASE_URL` / `SENATE_LDA_API_KEY` aliases) |
+| Connector run observability | `experimental_default_off` | RC2-targeted; observes experimental connector runs, not analytics-only RC1; `README.md:54-60`; `backend/app/api/router.py:461-542`; `backend/app/services/connectors_sciencebase.py:3145-3164` |
 | Layer 3 workbench UI | `supported` | `backend/main.py:498-504`; `backend/app/review_ui/static/layer3.html`; `backend/app/review_ui/static/layer3.js` |
 | Health, readiness, OpenAPI | `supported` | `backend/main.py:53`; `backend/main.py:510-521`; `backend/main.py:526-536` |
 | SEC value reveal | `experimental_default_off` | `backend/app/core/config.py:164-166`; `backend/.env.example:68-69`; `README.md:3` |
@@ -58,6 +60,6 @@ The support-matrix checker pins the following flags false for this profile:
 | `SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED` |
 | `LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED` |
 
-The selected profile does not enable, advertise, or imply overlays. It does not select the nonlocal base.
+The selected profile does not enable, advertise, or imply overlays. It does not select the nonlocal base or the public connectors overlay.
 
 OCR note: NRC APS document-processing code can use an installed Tesseract runtime for image or low-text PDF handling. That path remains outside the canonical local expert analytics journey and is not part of the selected RC1 claim because the external engine is not bundled with this source-run profile.

@@ -34,6 +34,11 @@ REQUIRED_UNSUPPORTED = {
     "keyed_connectors",
     "signed_reference_export",
 }
+REQUIRED_EXPERIMENTAL_DEFAULT_OFF = {
+    "sciencebase_public_connector_slice",
+    "senate_lda_anonymous_connector_slice",
+    "connector_run_observability",
+}
 
 
 def default_repo_root() -> Path:
@@ -154,6 +159,13 @@ def _validate_matrix_shape(matrix: dict[str, Any], errors: list[str]) -> None:
     for capability_id in REQUIRED_UNSUPPORTED:
         if by_id.get(capability_id, {}).get("status") != "unsupported":
             errors.append(f"{capability_id} must be unsupported in local_expert")
+    for capability_id in REQUIRED_EXPERIMENTAL_DEFAULT_OFF:
+        item = by_id.get(capability_id, {})
+        if item.get("status") != "experimental_default_off":
+            errors.append(f"{capability_id} must be experimental_default_off in analytics-only local_expert")
+        evidence = str(item.get("evidence") or "")
+        if "RC2-targeted" not in evidence:
+            errors.append(f"{capability_id} evidence must note RC2-targeted connector deferral")
 
 
 def run_support_matrix_check(

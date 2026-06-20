@@ -2,7 +2,7 @@
   "schema_id": "project6.support_matrix.v1",
   "profile": "local_expert",
   "overlays": "none",
-  "boundary_note": "Selected RC1 profile is single-operator local source-run: DEPLOYMENT_MODE=local, AUTH_OWNER=none, SQLite/local filesystem, loopback/local trust, and no auth boundary. No overlay, nonlocal base, multi-trust, provider delivery, model/agent egress, keyed connector, live SEC network, value-reveal, controlled-submit, HA, or bundled OCR-engine claim is selected.",
+  "boundary_note": "Selected RC1 profile is analytics-only single-operator local source-run: DEPLOYMENT_MODE=local, AUTH_OWNER=none, SQLite/local filesystem, loopback/local trust, and no auth boundary. No overlay, nonlocal base, public_connectors overlay, multi-trust, provider delivery, model/agent egress, keyed connector, live SEC network, value-reveal, controlled-submit, HA, or bundled OCR-engine claim is selected; connectors are deferred to RC2.",
   "release_readiness_manifest": "profile-neutral; do not populate owner_selected_profile_specific_gates",
   "pinned_false_flags": [
     "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
@@ -22,18 +22,18 @@
     },
     {
       "id": "sciencebase_public_connector_slice",
-      "status": "supported",
-      "evidence": "README.md:48-51; backend/app/api/router.py:319-382; backend/app/core/config.py:206"
+      "status": "experimental_default_off",
+      "evidence": "README.md:48-51; backend/app/api/router.py:319-382; backend/app/core/config.py:206 (SCIENCEBASE_API_BASE_URL alias); RC2-targeted; not part of analytics-only RC1"
     },
     {
       "id": "senate_lda_anonymous_connector_slice",
-      "status": "supported",
-      "evidence": "README.md:146-150; backend/app/api/router.py:426-452; backend/app/core/config.py:209-210"
+      "status": "experimental_default_off",
+      "evidence": "README.md:146-150; backend/app/api/router.py:426-452; backend/app/core/config.py:209-210 (SENATE_LDA_API_BASE_URL/SENATE_LDA_API_KEY aliases); RC2-targeted; not part of analytics-only RC1"
     },
     {
       "id": "connector_run_observability",
-      "status": "supported",
-      "evidence": "README.md:54-60; backend/app/api/router.py:461-542; backend/app/services/connectors_sciencebase.py:3145-3164"
+      "status": "experimental_default_off",
+      "evidence": "README.md:54-60; backend/app/api/router.py:461-542; backend/app/services/connectors_sciencebase.py:3145-3164; RC2-targeted; observes experimental connector runs, not analytics-only RC1"
     },
     {
       "id": "layer3_workbench_ui",
