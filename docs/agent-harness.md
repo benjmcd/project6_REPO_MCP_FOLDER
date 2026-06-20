@@ -100,4 +100,4 @@ git status --short --branch
 gh pr view <number> --json state,isDraft,mergeStateStatus,statusCheckRollup,comments,reviews,url
 ```
 
-Do not merge until required checks pass and review/comment surfaces have no unresolved action items.
+Do not merge until CI checks pass and review/comment surfaces have no unresolved action items. `main` has no enforced required-status-check gate, so verify CI is green yourself rather than relying on a mechanical gate.

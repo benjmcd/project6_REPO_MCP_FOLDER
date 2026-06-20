@@ -223,7 +223,8 @@ Minimum local verification:
 CI must be green before merge. Independent review is recommended if the implementation
 widens beyond one additive workflow table and one owner service, changes redaction
 posture, adds a route/UI surface, or leaves authority ambiguous after audit. Under the
-softened policy, merge is blocked by failed required checks, unresolved
+softened policy, merge is blocked by failing CI checks (author-enforced; `main` has no
+branch-protection required-status-check gate), unresolved
 critical/blocking findings, missing rollback or containment notes, unclear authority, or
 an explicit operator instruction requiring review.
 

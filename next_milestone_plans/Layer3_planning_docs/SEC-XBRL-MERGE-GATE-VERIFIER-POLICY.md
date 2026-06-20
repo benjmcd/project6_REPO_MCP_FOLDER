@@ -63,7 +63,8 @@ Merge gate (Tier 1 requirements PLUS):
    destructive/irreversible migrations, broad operator workflow changes, or any change whose authority boundary remains
    ambiguous after audit. If independent review is not obtained, the executor records why self-verification is adequate
    and what would force a follow-up.
-7. Merge is blocked only by failed required checks, unresolved critical/blocking review findings, missing rollback or
+7. Merge is blocked only by failing CI checks (author-enforced; `main` has no branch-protection required-status-check
+   gate), unresolved critical/blocking review findings, missing rollback or
    containment notes for schema/persistence changes, unclear authority, or an operator instruction requiring review.
 
 ## Disposition recording

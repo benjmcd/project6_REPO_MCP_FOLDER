@@ -80,7 +80,7 @@ next_exact_posture: sec_edgar_pr_ci_closeout_v1
 1. Wait for or inspect PR #1920 CI to terminal state.
 2. If CI fails, fix only the failing requirement and rerun the relevant local and remote checks.
 3. If CI passes, decide whether to mark PR #1920 ready for review or keep it draft for another review pass.
-4. Merge only after the PR is no longer draft and live branch protection/CI requirements are satisfied.
+4. Merge only after the PR is no longer draft and after CI is green (author-verified; `main` has no branch-protection gate today).
 5. After merge, perform a current-main sync proof documenting the landed commit and re-running `python ./tools/l3-progress-check.py` plus `python ./tools/l3-target-selection-validate.py --expect frozen` from current main.
 6. Only after current-main sync proves the full objective should the active goal be eligible to mark complete.
 

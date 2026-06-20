@@ -240,7 +240,8 @@ Minimum local verification:
 CI must be green before merge. Independent review is recommended if the implementation
 widens beyond one additive decision table and one owner service, changes redaction
 posture, exposes an API/rendered submit control, admits raw notes, or leaves authority
-ambiguous after audit. Merge is blocked by failed required checks, unresolved
+ambiguous after audit. Merge is blocked by failing CI checks (author-enforced; `main` has
+no branch-protection required-status-check gate), unresolved
 critical/blocking findings, missing rollback or containment notes, unclear authority, or
 an explicit operator instruction requiring review.
 
