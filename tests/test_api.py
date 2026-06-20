@@ -225,7 +225,7 @@ def _nrc_manifest_entry(fixture_id: str) -> dict[str, object]:
     raise KeyError(fixture_id)
 
 
-def test_vertical_slice_csv_upload_profile_transform_analyze():
+def test_canonical_local_expert_journey_recovers_state_with_fresh_client():
     csv_bytes = (
         b"date,revenue,traffic,temperature\n"
         b"2024-01-01,100,200,50\n"
@@ -234,7 +234,9 @@ def test_vertical_slice_csv_upload_profile_transform_analyze():
         b"2024-01-04,110,220,52\n"
         b"2024-01-05,108,218,48\n"
         b"2024-01-06,112,225,47\n"
+        b",,,\n"
     )
+    expected_hash = hashlib.sha256(csv_bytes).hexdigest()
     response = client.post(
         '/api/v1/sources/upload',
         files={'file': ('demo.csv', io.BytesIO(csv_bytes), 'text/csv')},
@@ -245,6 +247,9 @@ def test_vertical_slice_csv_upload_profile_transform_analyze():
     dataset_id = payload['dataset_id']
     version_id = payload['dataset_version_id']
     assert payload['row_count'] == 6
+    assert payload['source_row_count'] == 7
+    assert payload['dropped_row_count'] == 1
+    assert payload['content_hash'] == expected_hash
 
     profile_response = client.post(
         f'/api/v1/datasets/{dataset_id}/versions/{version_id}/profile',
@@ -300,8 +305,57 @@ def test_vertical_slice_csv_upload_profile_transform_analyze():
     )
     assert analysis_response.status_code == 200, analysis_response.text
     analysis = analysis_response.json()
+    analysis_id = analysis['analysis_run_id']
     assert analysis['artifacts']
+    assert analysis['assumptions']
     assert analysis['caveats']
+
+    recovery_client = TestClient(app)
+    recovered_analysis = recovery_client.get(f'/api/v1/analysis-runs/{analysis_id}')
+    assert recovered_analysis.status_code == 200, recovered_analysis.text
+    recovered_payload = recovered_analysis.json()
+    assert recovered_payload['analysis_run_id'] == analysis_id
+    assert recovered_payload['artifacts'] == analysis['artifacts']
+    assert recovered_payload['assumptions'] == analysis['assumptions']
+    assert recovered_payload['caveats'] == analysis['caveats']
+
+    recovered_dataset = recovery_client.get(f'/api/v1/datasets/{dataset_id}')
+    assert recovered_dataset.status_code == 200, recovered_dataset.text
+    recovered_raw_version = next(
+        item for item in recovered_dataset.json()['versions']
+        if item['dataset_version_id'] == version_id
+    )
+    assert recovered_raw_version['row_count'] == 6
+    assert recovered_raw_version['source_row_count'] == 7
+    assert recovered_raw_version['dropped_row_count'] == 1
+    assert recovered_raw_version['content_hash'] == expected_hash
+
+    unsupported_response = recovery_client.post(
+        '/api/v1/analysis-runs',
+        json={
+            'dataset_version_id': transformed_version_id,
+            'method_name': 'unsupported_operator_method',
+            'goal_type': 'exploratory',
+            'parameters': {},
+            'annotation_window_id': annotation_id,
+        },
+    )
+    assert unsupported_response.status_code == 200, unsupported_response.text
+    unsupported_payload = unsupported_response.json()
+    assert unsupported_payload['status'] == 'completed'
+    assert unsupported_payload['artifacts'] == []
+    assert any(
+        item['caveat_type'] == 'unsupported_method'
+        and item['severity'] == 'high'
+        and all(method in item['message'] for method in SUPPORTED_ANALYSIS_METHOD_IDS)
+        for item in unsupported_payload['caveats']
+    )
+
+    recovered_unsupported = recovery_client.get(
+        f"/api/v1/analysis-runs/{unsupported_payload['analysis_run_id']}"
+    )
+    assert recovered_unsupported.status_code == 200, recovered_unsupported.text
+    assert recovered_unsupported.json()['caveats'] == unsupported_payload['caveats']
 
 
 def test_year_column_and_placeholders_are_handled():

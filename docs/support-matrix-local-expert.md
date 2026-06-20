@@ -8,6 +8,16 @@ The profile is a single-operator local source-run posture: `DEPLOYMENT_MODE=loca
 
 The selected RC1 profile does not claim the public connectors overlay. ScienceBase, Senate LDA, and their run observability are RC2-targeted and remain outside the analytics-only RC1 supported claim.
 
+## Canonical Operator Journey
+
+The canonical local_expert operator journey for analytics-only RC1 is the method-aware tabular analytics flow named by `config/support_matrix.yaml`.
+
+The supported path is: CSV upload, variable profiling, transform recommend/apply, annotation, analysis with `cross_correlation`, `decomposition`, or `structural_break`, inspection of result artifacts, assumptions, and caveats, then persisted recovery through `GET /api/v1/analysis-runs/{id}` and dataset detail reads. The path runs on local libraries, SQLite, and the local filesystem under the default local auth posture; it does not use connectors, SEC, OCR, model/agent egress, provider delivery, overlays, or a nonlocal base.
+
+Inspectable output includes method artifacts, method assumptions, caveats for limitations or degraded states, and source traceability from CSV ingest. The source-fidelity fields `content_hash`, `source_row_count`, and `dropped_row_count` make dropped all-empty source rows explicit while preserving the existing post-clean `row_count` used by analytics.
+
+The operator-workflow proof includes coherent state recovery through a fresh API client and fresh database session, plus a governed degraded state: an unsupported analysis method returns an `unsupported_method` caveat instead of blank output or an exception. Existing method-specific tests also cover decomposition short-series and structural-break no-breakpoint caveat paths.
+
 ## Status Legend
 
 | Status | Meaning |
