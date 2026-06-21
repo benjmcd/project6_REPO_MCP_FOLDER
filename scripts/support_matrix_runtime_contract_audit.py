@@ -471,7 +471,8 @@ def _probe_sec_live_network_unsupported() -> dict[str, Any]:
     try:
         live.acquire_sec_edgar_companyfacts_live_artifact({"operator_confirmation": True, "cik": "320193"})
     except Layer3WorkbenchError as exc:
-        if "live_network_disabled" not in exc.error_code:
+        disabled_codes = ("live_network_disabled", "ci_network_disabled")
+        if not any(code in exc.error_code for code in disabled_codes):
             raise MatrixContractError(f"expected live network disabled guard, got {exc.error_code}") from exc
         return {"error_code": exc.error_code, "http_status": exc.http_status, "status": exc.status}
     raise MatrixContractError("SEC live network acquisition unexpectedly succeeded")

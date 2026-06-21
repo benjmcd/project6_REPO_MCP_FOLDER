@@ -41,7 +41,7 @@ def test_support_matrix_runtime_contract_audit_reports_clean_pass() -> None:
     report = _report()
 
     assert report["schema_id"] == "project6.support_matrix_runtime_contract_audit.v1"
-    assert report["status"] == "pass"
+    assert report["status"] == "pass", report["errors"]
     assert report["capability_count"] == 28
     assert report["errors"] == []
     assert {item["status"] for item in report["pinned_false_flags"]} == {"pass"}
@@ -91,7 +91,7 @@ def test_support_matrix_runtime_contract_exhaustive_for_each_capability(capabili
     result_by_id = {item["id"]: item for item in report["capabilities"]}
     result = result_by_id[capability_id]
 
-    assert result["status"] == "pass"
+    assert result["status"] == "pass", result["errors"]
     assert result["declared_status"] == result["expected_status"]
     assert result["evidence"]["passed"] is True
     assert result["runtime_probe"] != {}
