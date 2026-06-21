@@ -15,6 +15,25 @@ Docs `199`/`200` stay byte-stable. The auth posture selected by `1352`
 reveal flag (`layer3_sec_edgar_arelle_value_reveal_enabled`) is a separate surface and is
 NOT changed by this freeze.
 
+## Current-Main Reconciliation (post-RC3)
+
+This document is retained as historical activation-planning context. It is not
+current runtime authority for default-on controlled value reveal. Current
+`project6-origin/main` at `6b83cd0b80e2f17f82f1c58c466e7163480be0d3` keeps:
+
+```yaml
+LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED: false
+config/support_matrix.yaml::sec_controlled_value_reveal_submit: experimental_default_off
+production_readiness_claimed: false
+```
+
+The current authoritative reconciliation is
+`1360-posture-reconcile.md`. Any future attempt to make this activation live must
+be a new Tier-2 pass that changes config defaults, support-matrix status,
+front-door docs, runtime tests, rollback evidence, and review/coherence evidence
+as one bounded surface. Until that happens, the default-on claims below are
+historical/non-authoritative.
+
 ## Repo-Confirmed Starting State (the capability is already built and proven)
 
 The controlled value-reveal path is fully implemented and proven end-to-end; it has only

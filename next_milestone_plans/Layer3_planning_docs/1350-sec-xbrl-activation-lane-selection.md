@@ -105,6 +105,25 @@ item 6 (in-app auth policy beyond the selected mode), and the arelle governed-si
 reveal flag `layer3_sec_edgar_arelle_value_reveal_enabled`. Live SEC network access and
 live arelle invocation remain separately gated.
 
+## Current-Main Reconciliation (post-RC3)
+
+The activation update above is historical activation-planning context, not current
+runtime authority. Current `project6-origin/main` at
+`6b83cd0b80e2f17f82f1c58c466e7163480be0d3` reasserts the RC3 support-matrix
+ceiling:
+
+- `backend/app/core/config.py` defaults
+  `LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED` to `false`;
+- `config/support_matrix.yaml` classifies `sec_controlled_value_reveal_submit`
+  as `experimental_default_off`;
+- `README.md` states that SEC-XBRL live network, value reveal, and controlled
+  reveal submit remain default-off in the selected local profile;
+- `1360-posture-reconcile.md` records this reconciliation.
+
+Therefore doc 1353's default-on activation language must not be used as current
+runtime truth unless a future Tier-2 activation pass explicitly changes config,
+support matrix, front-door docs, tests, and rollback evidence together.
+
 ## Evidence Ledger
 
 ```yaml

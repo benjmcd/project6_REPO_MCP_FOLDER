@@ -8,6 +8,33 @@ historical lineage/proof notes, not as live ancestry declarations, unless a
 later focused refresh explicitly revalidates that entry against
 `project6-origin/main`.
 
+## SEC XBRL Current Posture Reconciliation
+
+Milestone:
+`sec_xbrl_current_posture_reconciliation_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1360-posture-reconcile.md`.
+
+Status: branch-local docs/test honesty pass. It reconciles historical docs 1350
+and 1353 with current live-main authority at `6b83cd0b80e2f17f82f1c58c466e7163480be0d3`.
+
+Scope: controlled value reveal remains `experimental_default_off`; the config
+default for `LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED` remains
+`false`; README/support-matrix local RC3 posture remains authoritative; runtime
+posture tests now prove default gated behavior separately from explicit-enabled
+behavior.
+
+Boundary: no support-matrix status change, config default change, runtime
+behavior change, route/API change, model/migration, value-reveal activation,
+live SEC network access, Arelle invocation, redaction-posture change, or
+production-readiness claim.
+
+Next posture: select exactly one production-readiness activation surface, with
+live SEC source acquisition preferred before Arelle invocation, multi-filing
+authority, delivery/export/status, nonlocal auth hardening, or default-on/value
+reveal graduation.
+
 ## P24 Mixed-Source Product-Authority Checkpoint
 
 Milestone:

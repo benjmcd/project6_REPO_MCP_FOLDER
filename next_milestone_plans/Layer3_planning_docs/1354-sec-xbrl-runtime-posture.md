@@ -70,13 +70,18 @@ runtime_admission:
 ```yaml
 acceptance:
   - id: default_posture
-    check: default settings report controlled value reveal available, live SEC network gated,
+    check: default settings report controlled value reveal gated by
+      LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED, live SEC network gated,
       governed-sibling reveal gated, nonlocal Arelle cutover gated, and production readiness
       still blocked.
   - id: fail_closed_controlled_submit_flag
-    check: with controlled submit disabled, the posture changes to
+    check: with controlled submit disabled, the posture remains
       sec_xbrl_controlled_value_reveal_submit_blocked_by_feature_flag and lists the capability
       as gated.
+  - id: explicit_enabled_controlled_submit_flag
+    check: with controlled submit explicitly enabled, the posture changes to
+      sec_xbrl_controlled_value_reveal_available_with_runtime_gates without performing
+      value reveal or claiming production readiness.
   - id: runtime_flags_reflected
     check: enabling live/Arelle-related flags changes only the reported posture while side-effect
       booleans stay false and production readiness remains unclaimed.
@@ -101,3 +106,7 @@ the operator-facing readiness/status panel, or use the posture response as the p
 audit surface for a live SEC source-acquisition/Arelle invocation activation freeze. Do not
 claim full production readiness until live source acquisition, Arelle invocation, multi-filing
 gate enforcement, export/package/status delivery, and nonlocal operator auth are all proven.
+
+Current-main reconciliation is recorded in `1360-posture-reconcile.md`: controlled value
+reveal remains experimental/default-off by default, and explicit-enabled posture coverage is
+separate from the default posture.
