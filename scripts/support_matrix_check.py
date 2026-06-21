@@ -227,6 +227,11 @@ def _validate_matrix_shape(matrix: dict[str, Any], errors: list[str]) -> None:
             item = by_id.get(capability_id, {})
             if item.get("status") != "simulation":
                 errors.append(f"{capability_id} must be simulation when sec_xbrl_offline overlay is selected")
+    else:
+        for capability_id in SEC_XBRL_OFFLINE_SIMULATION_CAPABILITIES:
+            item = by_id.get(capability_id, {})
+            if item.get("status") == "simulation":
+                errors.append(f"{capability_id} cannot be simulation without sec_xbrl_offline overlay")
 
 
 def run_support_matrix_check(

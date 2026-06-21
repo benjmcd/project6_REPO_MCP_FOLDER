@@ -142,6 +142,37 @@ SEC_XBRL_TEST_FILES = [
     "./backend/tests/test_sec_xbrl_value_reveal_operator_exercise_runner.py",
 ]
 
+COMPANYFACTS_OFFLINE_TEST_FILES = [
+    "./backend/tests/test_layer3_sec_xbrl_companyfacts_stage_and_oracle.py",
+]
+
+RC2_PUBLIC_CONNECTOR_REGRESSION_TESTS = [
+    "./tests/test_api.py::test_sciencebase_download_429_retryable_sets_backoff",
+    "./tests/test_api.py::test_senate_lda_dedupes_duplicate_filings_and_records_provenance",
+    "./tests/test_api.py::test_l17_sciencebase_download_negatives_are_bounded_and_observable",
+    "./tests/test_api.py::test_l17_sciencebase_additive_schema_is_tolerated",
+    "./tests/test_api.py::test_l17_sciencebase_malformed_schema_is_rejected_explicitly",
+    "./tests/test_api.py::test_l17_sciencebase_partial_page_is_degraded_not_complete",
+    "./tests/test_api.py::test_l17_senate_lda_detail_errors_are_terminal_or_retryable",
+    "./tests/test_api.py::test_l17_senate_lda_missing_required_schema_is_rejected_explicitly",
+    "./tests/test_api.py::test_l17_senate_lda_partial_page_is_degraded_not_complete",
+    "./tests/test_api.py::test_connector_l20_terminal_resume_is_noop_for_public_connectors",
+    "./tests/test_api.py::test_connector_l20_expired_running_lease_resume_requeues_public_connectors",
+    "./tests/test_api.py::test_connector_l20_sciencebase_active_lease_records_conflict",
+    "./tests/test_api.py::test_connector_l20_sciencebase_cancel_mid_target_stops_before_partial_authority",
+    "./tests/test_api.py::test_connector_resume_reuses_discovery_checkpoint_cursor",
+    "./tests/test_api.py::test_connector_resume_target_cursor_keeps_retryable_prior_targets",
+    "./tests/test_api.py::test_senate_lda_connector_resume_uses_senate_executor",
+    "./tests/test_api.py::test_senate_lda_l20_active_lease_records_conflict",
+    "./tests/test_api.py::test_senate_lda_l20_cancel_mid_page_stops_before_partial_authority",
+    "./tests/test_api.py::test_senate_lda_l20_resume_after_target_creation_crash_does_not_duplicate_targets",
+    "./tests/test_api.py::test_sciencebase_csv_ingest_preserves_l11_source_fidelity",
+    "./tests/test_api.py::test_connector_cross_surface_dedupe_prefers_files",
+    "./tests/test_api.py::test_public_connector_operator_journey_bridges_sciencebase_target_to_analysis",
+    "./tests/test_api.py::test_public_connector_journey_network_unreachable_is_degraded",
+    "./tests/test_api.py::test_senate_lda_anonymous_metadata_path_is_no_key_secondary_journey",
+]
+
 COMMAND_CHECKS = [
     {
         "id": "build_identity_release_readiness_check",
@@ -184,28 +215,22 @@ COMMAND_CHECKS = [
         ],
     },
     {
+        "id": "companyfacts_stage_oracle_offline_honesty",
+        "title": "Companyfacts stage and oracle offline simulation tests stay green",
+        "evidence": COMPANYFACTS_OFFLINE_TEST_FILES,
+        "command": ["python", "-m", "pytest", *COMPANYFACTS_OFFLINE_TEST_FILES, "-q"],
+    },
+    {
         "id": "pr5_full_sec_xbrl_suite",
         "title": "Full SEC XBRL suite stays green",
         "evidence": SEC_XBRL_TEST_FILES,
         "command": ["python", "-m", "pytest", *SEC_XBRL_TEST_FILES, "-q"],
     },
     {
-        "id": "rc2_public_connector_journey_regression",
-        "title": "RC2 public connector journey still passes under RC3 profile",
-        "evidence": [
-            "tests/test_api.py::test_public_connector_operator_journey_bridges_sciencebase_target_to_analysis",
-            "tests/test_api.py::test_public_connector_journey_network_unreachable_is_degraded",
-            "tests/test_api.py::test_senate_lda_anonymous_metadata_path_is_no_key_secondary_journey",
-        ],
-        "command": [
-            "python",
-            "-m",
-            "pytest",
-            "./tests/test_api.py::test_public_connector_operator_journey_bridges_sciencebase_target_to_analysis",
-            "./tests/test_api.py::test_public_connector_journey_network_unreachable_is_degraded",
-            "./tests/test_api.py::test_senate_lda_anonymous_metadata_path_is_no_key_secondary_journey",
-            "-q",
-        ],
+        "id": "rc2_public_connector_acceptance_regression",
+        "title": "Full RC2 public connector acceptance checks still pass under RC3 profile",
+        "evidence": RC2_PUBLIC_CONNECTOR_REGRESSION_TESTS,
+        "command": ["python", "-m", "pytest", *RC2_PUBLIC_CONNECTOR_REGRESSION_TESTS, "-q"],
     },
 ]
 

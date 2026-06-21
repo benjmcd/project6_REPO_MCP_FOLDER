@@ -207,6 +207,23 @@ def test_support_matrix_checker_rejects_supported_public_connector_without_overl
     assert any("sciencebase_public_connector_slice" in error for error in report["errors"])
 
 
+def test_support_matrix_checker_rejects_sec_simulation_without_offline_overlay(tmp_path) -> None:
+    checker = _load_checker()
+    matrix = _load_json_compatible_yaml(MATRIX_PATH)
+    matrix["overlays"] = ["public_connectors"]
+    mutated = tmp_path / "support_matrix.yaml"
+    mutated.write_text(json.dumps(matrix), encoding="utf-8")
+
+    report = checker.run_support_matrix_check(mutated, repo_root=REPO_ROOT)
+
+    assert report["status"] == "fail"
+    assert any(
+        "layer3_sec_xbrl_offline_evidence_loader" in error
+        and "without sec_xbrl_offline overlay" in error
+        for error in report["errors"]
+    )
+
+
 def test_support_matrix_checker_uses_source_defaults_not_process_environment(tmp_path) -> None:
     env = os.environ.copy()
     env.update(

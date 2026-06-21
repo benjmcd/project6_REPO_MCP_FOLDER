@@ -87,8 +87,9 @@ def test_rc3_acceptance_runner_reports_pass_with_injected_checks() -> None:
         "support_matrix_rc3_offline_overlay_valid",
         "pr3_offline_loader_oracle_honesty",
         "pr4_offline_orchestrator_honesty",
+        "companyfacts_stage_oracle_offline_honesty",
         "pr5_full_sec_xbrl_suite",
-        "rc2_public_connector_journey_regression",
+        "rc2_public_connector_acceptance_regression",
         "forbidden_surface_boundary",
     ]:
         assert criteria[criterion_id]["status"] == "pass"
@@ -102,14 +103,26 @@ def test_rc3_acceptance_runner_reports_pass_with_injected_checks() -> None:
     assert len(full_suite_files) == 52
     assert not any("*" in part for part in full_suite_command)
 
+    connector_command = criteria["rc2_public_connector_acceptance_regression"]["command"]
+    connector_tests = [
+        part
+        for part in connector_command
+        if part.startswith("./tests/test_api.py::")
+    ]
+    assert len(connector_tests) == 24
+
     flat_calls = "\n".join(" ".join(command) for command in calls)
     for marker in [
         "release_readiness_check.py",
         "support_matrix_check.py",
+        "test_layer3_sec_xbrl_companyfacts_stage_and_oracle.py",
         "test_sec_xbrl_offline_evidence_loader.py",
         "test_sec_xbrl_offline_evidence_proof_capability.py",
         "test_sec_xbrl_e2e_offline_orchestrator.py",
         "test_sec_xbrl_value_reveal_operator_exercise_runner.py",
+        "test_l17_sciencebase_download_negatives_are_bounded_and_observable",
+        "test_connector_l20_sciencebase_active_lease_records_conflict",
+        "test_sciencebase_csv_ingest_preserves_l11_source_fidelity",
         "test_public_connector_operator_journey_bridges_sciencebase_target_to_analysis",
         "test_senate_lda_anonymous_metadata_path_is_no_key_secondary_journey",
     ]:

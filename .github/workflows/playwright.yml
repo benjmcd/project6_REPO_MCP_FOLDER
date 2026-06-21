@@ -628,6 +628,7 @@ jobs:
       - backend-layer3-api
       - backend-coverage
       - backend-migrations-postgres
+      - sec-xbrl-arelle-provisioning
     if: ${{ always() }}
     steps:
     - uses: actions/checkout@v6
@@ -648,7 +649,8 @@ jobs:
           "release-lock-install:${{ needs['release-lock-install'].result }}" \
           "backend-layer3-api:${{ needs['backend-layer3-api'].result }}" \
           "backend-coverage:${{ needs['backend-coverage'].result }}" \
-          "backend-migrations-postgres:${{ needs['backend-migrations-postgres'].result }}"
+          "backend-migrations-postgres:${{ needs['backend-migrations-postgres'].result }}" \
+          "sec-xbrl-arelle-provisioning:${{ needs['sec-xbrl-arelle-provisioning'].result }}"
         do
           job="${item%%:*}"
           result="${item#*:}"

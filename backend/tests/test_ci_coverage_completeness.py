@@ -85,6 +85,7 @@ RELEASE_GATE_AGGREGATED_JOBS = (
     "backend-layer3-api",
     "backend-coverage",
     "backend-migrations-postgres",
+    "sec-xbrl-arelle-provisioning",
 )
 
 
