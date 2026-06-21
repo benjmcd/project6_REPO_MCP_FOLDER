@@ -63,3 +63,10 @@ chatgpt_project6_repo_creation.json
 sessionhistory*.md
 .codesight/
 corpus_*.log
+
+# --- dual-agent IPC handoff channel (ephemeral I/O + local tooling; README/docs tracked) ---
+state/agent-inbox/for-codex.md
+state/agent-inbox/for-claude.md
+state/agent-inbox/*-source.md
+state/agent-inbox/*-followon.md
+state/ipc-tools/
