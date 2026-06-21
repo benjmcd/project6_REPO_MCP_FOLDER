@@ -2072,6 +2072,70 @@ def test_connector_l20_terminal_resume_is_noop_for_public_connectors(monkeypatch
         assert enqueue_calls == []
 
 
+def test_connector_l20_expired_running_lease_resume_requeues_public_connectors(monkeypatch):
+    from datetime import timedelta
+
+    from app.api import router
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRun
+    from app.services.connectors_sciencebase import _utcnow
+
+    cases = [
+        (
+            "/api/v1/connectors/sciencebase-public/runs",
+            {"q": "MCS", "page_size": 1},
+            "l20-expired-lease-resume-sciencebase",
+            "sciencebase_public",
+        ),
+        (
+            "/api/v1/connectors/senate-lda/runs",
+            {"client_name": "Meta", "filing_year": 2025},
+            "l20-expired-lease-resume-senate-lda",
+            "senate_lda",
+        ),
+    ]
+
+    for endpoint, payload, idempotency_key, connector_key in cases:
+        monkeypatch.setattr(router, "_enqueue_connector_run", lambda *args, **kwargs: None)
+        submit = client.post(endpoint, json=payload, headers={"Idempotency-Key": idempotency_key})
+        assert submit.status_code == 202, submit.text
+        run_id = submit.json()["connector_run_id"]
+
+        db = SessionLocal()
+        try:
+            run = db.get(ConnectorRun, run_id)
+            assert run is not None
+            run.status = "running"
+            run.execution_lease_owner = "pid:stale"
+            run.execution_lease_token = "stale-token"
+            run.execution_lease_expires_at = _utcnow() - timedelta(seconds=1)
+            run.resume_count = 0
+            db.commit()
+        finally:
+            db.close()
+
+        enqueue_calls = []
+        monkeypatch.setattr(router, "_enqueue_connector_run", lambda *args, **kwargs: enqueue_calls.append(args))
+        resume = client.post(f"/api/v1/connectors/runs/{run_id}/resume")
+        assert resume.status_code == 202, resume.text
+        assert resume.json()["status"] == "pending"
+        assert len(enqueue_calls) == 1
+        assert enqueue_calls[0][1:] == (connector_key, run_id)
+
+        db = SessionLocal()
+        try:
+            run = db.get(ConnectorRun, run_id)
+            assert run is not None
+            observed_status = run.status
+            observed_resume_count = run.resume_count
+            run.status = "failed"
+            db.commit()
+        finally:
+            db.close()
+        assert observed_status == "pending"
+        assert observed_resume_count == 1
+
+
 def test_connector_l20_sciencebase_active_lease_records_conflict(monkeypatch):
     from datetime import timedelta
 

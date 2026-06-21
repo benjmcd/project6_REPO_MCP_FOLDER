@@ -686,12 +686,19 @@ def request_resume_run(db: Session, connector_run_id: str) -> ConnectorRun:
     if run.status == "completed":
         return run
     if run.status == "running":
-        return run
+        now = _utcnow()
+        lease_expires_at = _to_utc_naive(run.execution_lease_expires_at)
+        if lease_expires_at and lease_expires_at > now and (run.execution_lease_owner or run.execution_lease_token):
+            return run
     if run.status == "cancelling":
         return run
     prior_status = run.status
     run.status = "pending"
     run.cancellation_requested_at = None
+    if prior_status == "running":
+        run.execution_lease_owner = None
+        run.execution_lease_token = None
+        run.execution_lease_expires_at = _utcnow()
     run.resume_count = (run.resume_count or 0) + 1
     _record_run_event(
         db,
