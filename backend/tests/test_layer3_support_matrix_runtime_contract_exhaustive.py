@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import importlib.util
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -116,3 +117,42 @@ def test_support_matrix_runtime_contract_cli_rejects_synthetic_status_drift(tmp_
         "status drift for method_aware_analytics_vertical" in error
         for error in report["errors"]
     )
+
+
+def test_support_matrix_runtime_contract_restores_db_init_env(monkeypatch) -> None:
+    monkeypatch.delenv("DB_INIT_MODE", raising=False)
+
+    report = _audit().build_report(MATRIX_PATH, repo_root=REPO_ROOT)
+
+    assert report["status"] == "pass", report["errors"]
+    assert "DB_INIT_MODE" not in os.environ
+
+
+def test_support_matrix_runtime_contract_redacts_keyed_connector_secret() -> None:
+    from app.core.config import settings
+
+    old_key = settings.senate_lda_api_key
+    settings.senate_lda_api_key = "runtime-secret"
+    try:
+        payload = _audit()._probe_keyed_connectors_unsupported()
+    finally:
+        settings.senate_lda_api_key = old_key
+
+    serialized = json.dumps(payload, sort_keys=True)
+    assert payload["senate_key_configured"] is True
+    assert "runtime-secret" not in serialized
+    assert "senate_key_default" not in payload
+
+
+def test_support_matrix_runtime_contract_sec_live_probe_forces_default_off_guard() -> None:
+    from app.core.config import settings
+
+    old_value = settings.layer3_sec_edgar_live_network_enabled
+    settings.layer3_sec_edgar_live_network_enabled = True
+    try:
+        payload = _audit()._probe_sec_live_network_unsupported()
+        assert settings.layer3_sec_edgar_live_network_enabled is True
+    finally:
+        settings.layer3_sec_edgar_live_network_enabled = old_value
+
+    assert "network_disabled" in payload["error_code"]

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import contextlib
 import functools
 import importlib.util
@@ -11,10 +12,9 @@ import tempfile
 from pathlib import Path
 from typing import Any, Callable, Iterator
 
-os.environ.setdefault("DB_INIT_MODE", "none")
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BACKEND_ROOT = REPO_ROOT / "backend"
+CONFIG_PATH = BACKEND_ROOT / "app" / "core" / "config.py"
 MATRIX_PATH = REPO_ROOT / "config" / "support_matrix.yaml"
 SEC_AUDIT_PATH = REPO_ROOT / "scripts" / "sec_xbrl_offline_honesty_audit.py"
 
@@ -183,6 +183,20 @@ def _load_json_compatible_yaml(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+@contextlib.contextmanager
+def _temporary_env(name: str, value: str) -> Iterator[None]:
+    old_value = os.environ.get(name)
+    had_value = name in os.environ
+    os.environ[name] = value
+    try:
+        yield
+    finally:
+        if had_value and old_value is not None:
+            os.environ[name] = old_value
+        else:
+            os.environ.pop(name, None)
+
+
 def _load_sec_audit() -> Any:
     spec = importlib.util.spec_from_file_location("sec_xbrl_offline_honesty_audit", SEC_AUDIT_PATH)
     if spec is None or spec.loader is None:
@@ -226,9 +240,34 @@ def _evidence_check(capability: dict[str, Any], *, repo_root: Path) -> dict[str,
 
 
 def _settings_default_by_alias() -> dict[str, Any]:
-    from app.core.config import Settings
+    def literal_or_none(node: ast.AST) -> Any:
+        try:
+            return ast.literal_eval(node)
+        except (TypeError, ValueError):
+            return None
 
-    return {str(field.alias): field.default for field in Settings.model_fields.values() if field.alias}
+    tree = ast.parse(CONFIG_PATH.read_text(encoding="utf-8"), filename=str(CONFIG_PATH))
+    defaults: dict[str, Any] = {}
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef) or node.name != "Settings":
+            continue
+        for statement in node.body:
+            if not isinstance(statement, ast.AnnAssign) or not isinstance(statement.value, ast.Call):
+                continue
+            call = statement.value
+            if not isinstance(call.func, ast.Name) or call.func.id != "Field":
+                continue
+            alias = None
+            default = None
+            for keyword in call.keywords:
+                if keyword.arg == "alias":
+                    alias = literal_or_none(keyword.value)
+                elif keyword.arg == "default":
+                    default = literal_or_none(keyword.value)
+            if alias:
+                defaults[str(alias)] = default
+        break
+    return defaults
 
 
 @contextlib.contextmanager
@@ -465,17 +504,23 @@ def _expect_workbench_error(fn: Callable[[], Any], code: str) -> dict[str, Any]:
 
 
 def _probe_sec_live_network_unsupported() -> dict[str, Any]:
+    from app.core.config import settings
     from app.services import layer3_sec_edgar_live_source_artifact as live
     from app.services.layer3_workbench_error import Layer3WorkbenchError
 
+    old_live_enabled = settings.layer3_sec_edgar_live_network_enabled
+    settings.layer3_sec_edgar_live_network_enabled = False
     try:
-        live.acquire_sec_edgar_companyfacts_live_artifact({"operator_confirmation": True, "cik": "320193"})
-    except Layer3WorkbenchError as exc:
-        disabled_codes = ("live_network_disabled", "ci_network_disabled")
-        if not any(code in exc.error_code for code in disabled_codes):
-            raise MatrixContractError(f"expected live network disabled guard, got {exc.error_code}") from exc
-        return {"error_code": exc.error_code, "http_status": exc.http_status, "status": exc.status}
-    raise MatrixContractError("SEC live network acquisition unexpectedly succeeded")
+        try:
+            live.acquire_sec_edgar_companyfacts_live_artifact({"operator_confirmation": True, "cik": "320193"})
+        except Layer3WorkbenchError as exc:
+            disabled_codes = ("live_network_disabled", "ci_network_disabled")
+            if not any(code in exc.error_code for code in disabled_codes):
+                raise MatrixContractError(f"expected live network disabled guard, got {exc.error_code}") from exc
+            return {"error_code": exc.error_code, "http_status": exc.http_status, "status": exc.status}
+        raise MatrixContractError("SEC live network acquisition unexpectedly succeeded")
+    finally:
+        settings.layer3_sec_edgar_live_network_enabled = old_live_enabled
 
 
 def _probe_real_provider_delivery_unsupported() -> dict[str, Any]:
@@ -536,7 +581,7 @@ def _probe_keyed_connectors_unsupported() -> dict[str, Any]:
         try:
             connectors_nrc_adams.get_nrc_adams_client({})
         except SubmissionConflictError as exc:
-            return {"blocked": True, "error": str(exc), "senate_key_default": settings.senate_lda_api_key}
+            return {"blocked": True, "error": str(exc), "senate_key_configured": bool(settings.senate_lda_api_key)}
     finally:
         settings.nrc_adams_subscription_key = old_key
     raise MatrixContractError("keyed NRC APS client was admitted without a subscription key")
@@ -611,6 +656,11 @@ def _capability_result(capability: dict[str, Any], *, repo_root: Path) -> dict[s
 
 
 def build_report(matrix_path: Path | str = MATRIX_PATH, *, repo_root: Path | str = REPO_ROOT) -> dict[str, Any]:
+    with _temporary_env("DB_INIT_MODE", "none"):
+        return _build_report_with_scoped_env(matrix_path, repo_root=repo_root)
+
+
+def _build_report_with_scoped_env(matrix_path: Path | str = MATRIX_PATH, *, repo_root: Path | str = REPO_ROOT) -> dict[str, Any]:
     repo = Path(repo_root).resolve()
     matrix_file = Path(matrix_path).resolve()
     matrix = _load_json_compatible_yaml(matrix_file)
