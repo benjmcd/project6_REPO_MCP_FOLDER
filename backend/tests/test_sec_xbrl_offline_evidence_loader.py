@@ -22,6 +22,19 @@ from app.services import (
 from app.services.layer3_utils import json_clone, stable_hash
 
 
+NON_PRODUCTION_CONTROL_EXPECTATIONS = {
+    "source_acquisition_performed": False,
+    "arelle_invoked": False,
+    "production_readiness_claimed": False,
+    "api_route_enabled": False,
+}
+
+
+def _assert_non_production_controls(controls: dict[str, Any]) -> None:
+    for key, expected in NON_PRODUCTION_CONTROL_EXPECTATIONS.items():
+        assert controls[key] is expected
+
+
 @pytest.fixture()
 def db_session():
     engine = create_engine("sqlite:///:memory:", future=True)
@@ -78,6 +91,7 @@ def test_loader_report_is_redacted_and_blocks_production_without_companyfacts(tm
     assert report["readiness"]["operator_review_creation_blocked_reason"] == "companyfacts_oracle_not_supplied"
     assert report["readiness"]["production_admission_ready"] is False
     assert report["readiness"]["production_admission_blocked_reason"] == "companyfacts_oracle_not_supplied"
+    _assert_non_production_controls(report["controls"])
     assert report["paths_redacted"] is True
     assert str(storage) not in text
     assert "rf-revenue-fy" not in text
@@ -296,8 +310,7 @@ def test_companyfacts_oracle_packet_reports_missing_oracle_without_overclaiming(
     assert report["blocked_reasons"][0]["reason"] == "companyfacts_oracle_packet_missing"
     assert report["readiness"]["operator_review_creation_ready"] is False
     assert report["readiness"]["production_admission_ready"] is False
-    assert report["controls"]["source_acquisition_performed"] is False
-    assert report["controls"]["arelle_invoked"] is False
+    _assert_non_production_controls(report["controls"])
     assert report["paths_redacted"] is True
     assert str(storage) not in text
     assert "rf-revenue-fy" not in text
@@ -321,6 +334,7 @@ def test_companyfacts_oracle_packet_validates_supplied_oracle_without_production
     assert report["readiness"]["production_admission_blocked_reason"] == "diagnostic_validate_only_not_production_admission"
     assert report["summary"]["companyfacts_observation_count"] == 6
     assert report["summary"]["projected_count"] > 0
+    _assert_non_production_controls(report["controls"])
     assert report["controls"]["db_persistence_performed"] is False
     assert "effective_value" not in text
     assert "rf-revenue-fy" not in text
@@ -855,8 +869,6 @@ def test_loader_staged_discovery_rejects_tampered_receipt_payload_hash(tmp_path)
     from app.services.layer3_sec_xbrl_offline_companyfacts_stage import (
         stage_sec_xbrl_companyfacts,
         COMPANYFACTS_RECEIPT_DIR,
-        COMPANYFACTS_RECEIPT_PREFIX,
-        SecXbrlCompanyfactsStageError,
     )
     from app.services.layer3_sec_xbrl_offline_evidence_loader import (
         SecXbrlOfflineEvidenceLoaderError,
