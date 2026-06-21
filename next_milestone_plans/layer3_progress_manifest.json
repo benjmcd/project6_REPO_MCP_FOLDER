@@ -48625,5 +48625,32 @@
     "next_posture": "merge_review_then_current_main_sync_before_selecting_durable_revocation_provider_connector_schema_or_production_readiness_surfaces"
   },
   "latest_p24_mixed_source_product_authority_checkpoint_summary": "Branch-local P24 renders a read-only mixed-source product-authority checkpoint over existing P17/P18/P19/P21/P22 authority, includes scoped overflow containment for long authority labels, and keeps backend routes, payload builders, submit handlers, signed-reference status/revocation, provider/public URL, connector/destination/local-outbox, schema, parser/source-shape, package rewrite, real export/dispatch, and production-readiness behavior blocked.",
+  "sec_xbrl_current_posture_reconciliation_tracking": {
+    "tracking_kind": "sec_xbrl_current_posture_reconciliation_tracking",
+    "milestone": "sec_xbrl_current_posture_reconciliation_v1",
+    "status": "branch_local_docs_test_honesty_pass",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1360-posture-reconcile.md",
+    "authoritative_main": "6b83cd0b80e2f17f82f1c58c466e7163480be0d3",
+    "runtime_behavior_changed_by_tracking": false,
+    "support_matrix_changed_by_tracking": false,
+    "config_default_changed_by_tracking": false,
+    "redaction_posture_changed_by_tracking": false,
+    "production_readiness_claimed_by_tracking": false,
+    "reconciled_historical_docs": [
+      "next_milestone_plans/Layer3_planning_docs/1350-sec-xbrl-activation-lane-selection.md",
+      "next_milestone_plans/Layer3_planning_docs/1353-sec-xbrl-value-reveal-activation.md",
+      "next_milestone_plans/Layer3_planning_docs/1354-sec-xbrl-runtime-posture.md"
+    ],
+    "current_authority": [
+      "backend/app/core/config.py",
+      "config/support_matrix.yaml",
+      "README.md",
+      "scripts/support_matrix_runtime_contract_audit.py",
+      "backend/tests/test_layer3_support_matrix_runtime_contract_exhaustive.py"
+    ],
+    "test_correction": "backend/tests/test_sec_xbrl_runtime_posture.py default fixture keeps controlled submit disabled and covers explicit-enabled posture separately",
+    "next_posture": "select_one_bounded_production_readiness_surface_with_live_sec_source_acquisition_preferred_before_arelle_multi_filing_delivery_nonlocal_auth_or_default_on_value_reveal"
+  },
+  "latest_sec_xbrl_current_posture_reconciliation_summary": "Branch-local SEC XBRL current-posture reconciliation records that current main keeps controlled value reveal experimental/default-off despite historical docs 1350/1353 default-on language, updates runtime posture tests to prove default gated behavior separately from explicit-enabled behavior, and leaves support matrix, config defaults, redaction posture, runtime behavior, and production readiness unchanged.",
   "latest_deployment_profile_sqlite_guard_typed_admission_flag_route_dependency_contract_summary": "Branch feat/prod-advance-0609 adds (1) a nonlocal+SQLite startup guard in backend/app/core/config.py that now fails at startup when DATABASE_URL points at SQLite and db_init_mode is not 'none' (live_behavior_change: true in this narrow misconfiguration path; default local unaffected), (2) a typed Settings field sec_xbrl_production_admission_evaluator_enabled (alias SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED, default False) read by production_admission_flag_enabled() as validate-only with no admission gate wired to live routes and no runtime default change, and (3) doc 1358-route-level-operator-identity-route-dependency-contract.md which was authored as planning-only (runtime_status not_implemented) on feat/prod-advance-0609 and has since been implemented on feat/prod-advance-0610: doc 1359 supersedes the not_implemented claim; runtime_status is now implemented; the route-dependency contract is wired across 19 handoff + 16 package + 83 source_ingestion POST handlers (118 total); identity seam is inert under AUTH_OWNER=none, fail-closed 409/401 under proxy; no new flags/models/migrations; production_readiness_claim false. Docs 199/200/266 entry_decision, selected_mode, and runtime_status fields are unchanged."
 }

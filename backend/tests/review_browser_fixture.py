@@ -642,6 +642,8 @@ def capture_review_browser_patch_state() -> dict[str, object]:
         "layer3_sec_edgar_client": layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT,
         "layer3_sec_edgar_sleep": layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP,
         "layer3_sec_edgar_enforce_rate_limit": layer3_sec_edgar_live_source_artifact._enforce_rate_limit,
+        "settings_layer3_sec_edgar_user_agent": settings.layer3_sec_edgar_user_agent,
+        "settings_layer3_sec_edgar_rate_limit_per_second": settings.layer3_sec_edgar_rate_limit_per_second,
     }
 
 
@@ -672,6 +674,10 @@ def restore_review_browser_patches(patch_state: dict[str, object]) -> None:
     layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP = patch_state["layer3_sec_edgar_sleep"]
     layer3_sec_edgar_live_source_artifact._enforce_rate_limit = patch_state[
         "layer3_sec_edgar_enforce_rate_limit"
+    ]
+    settings.layer3_sec_edgar_user_agent = patch_state["settings_layer3_sec_edgar_user_agent"]
+    settings.layer3_sec_edgar_rate_limit_per_second = patch_state[
+        "settings_layer3_sec_edgar_rate_limit_per_second"
     ]
     saved_env_storage_dir = patch_state["env_storage_dir"]
     if saved_env_storage_dir is _MISSING_MODULE:

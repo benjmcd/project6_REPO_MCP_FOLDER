@@ -30,7 +30,7 @@ def default_sec_xbrl_posture_flags(monkeypatch) -> None:
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_internal_value_store_enabled", False)
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_corpus_validation_enabled", False)
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_value_reveal_enabled", False)
-    monkeypatch.setattr(settings, "layer3_sec_xbrl_controlled_value_reveal_submit_enabled", True)
+    monkeypatch.setattr(settings, "layer3_sec_xbrl_controlled_value_reveal_submit_enabled", False)
     monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "")
     monkeypatch.setattr(settings, "auth_owner", "none")
     monkeypatch.setattr(settings, "trusted_proxy_mode", False)
@@ -49,24 +49,22 @@ def _surfaces(items: list[dict[str, object]]) -> dict[str, dict[str, object]]:
     return {str(item["surface_id"]): item for item in items}
 
 
-def test_runtime_posture_default_reports_controlled_reveal_available_and_live_paths_gated() -> None:
+def test_runtime_posture_default_reports_controlled_reveal_and_live_paths_gated() -> None:
     posture = build_sec_xbrl_runtime_posture()
 
     assert posture["schema_id"] == POSTURE_SCHEMA_ID
-    assert posture["posture_state"] == "sec_xbrl_controlled_value_reveal_available_with_runtime_gates"
+    assert posture["posture_state"] == "sec_xbrl_controlled_value_reveal_submit_blocked_by_feature_flag"
     assert len(posture["posture_basis_hash"]) == 64
 
     flags = posture["runtime_flags"]
-    assert flags["controlled_value_reveal_submit_enabled"] is True
+    assert flags["controlled_value_reveal_submit_enabled"] is False
     assert flags["arelle_fact_authority_cutover_enabled"] is True
     assert flags["arelle_fact_authority_nonlocal_authorized"] is False
     assert flags["live_sec_edgar_network_enabled"] is False
     assert flags["sec_edgar_user_agent_configured"] is False
 
     activated = _capabilities(posture["activated_capabilities"])
-    assert activated["controlled_value_reveal_submit"]["runtime_state"] == (
-        "server_authority_receipt_submit_available"
-    )
+    assert "controlled_value_reveal_submit" not in activated
     assert activated["arelle_fact_authority_cutover"]["runtime_state"] == (
         "local_cutover_enabled_nonlocal_requires_explicit_authorization"
     )
@@ -75,6 +73,9 @@ def test_runtime_posture_default_reports_controlled_reveal_available_and_live_pa
     assert "live_sec_edgar_network_source_acquisition" in gated
     assert "legacy_arelle_governed_sibling_value_reveal" in gated
     assert "nonlocal_arelle_fact_authority_cutover" in gated
+    assert gated["controlled_value_reveal_submit"]["runtime_state"] == (
+        "blocked_by_controlled_submit_feature_flag"
+    )
     assert "production_readiness_claim" in gated
     assert len(posture["activation_surface_hash"]) == 64
 
@@ -87,7 +88,10 @@ def test_runtime_posture_default_reports_controlled_reveal_available_and_live_pa
         "delivery_export_package_status",
         "nonlocal_operator_auth_hardening",
     }
-    assert surfaces["controlled_value_reveal_submit"]["runtime_enabled"] is True
+    assert surfaces["controlled_value_reveal_submit"]["runtime_enabled"] is False
+    assert surfaces["controlled_value_reveal_submit"]["required_flags"] == [
+        "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED"
+    ]
     assert surfaces["controlled_value_reveal_submit"]["rendered_panel_id"] == (
         "sec-xbrl-controlled-value-reveal-panel"
     )
@@ -127,6 +131,23 @@ def test_runtime_posture_default_reports_controlled_reveal_available_and_live_pa
     assert posture["raw_workspace_identity_exposed"] is False
     assert posture["raw_value_exposed"] is False
     assert posture["residual_magnitude_exposed"] is False
+
+
+def test_runtime_posture_controlled_submit_feature_flag_reports_available(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_xbrl_controlled_value_reveal_submit_enabled", True)
+
+    posture = build_sec_xbrl_runtime_posture()
+
+    assert posture["posture_state"] == "sec_xbrl_controlled_value_reveal_available_with_runtime_gates"
+    assert "controlled_value_reveal_submit" in _capabilities(posture["activated_capabilities"])
+    assert "controlled_value_reveal_submit" not in _capabilities(posture["gated_capabilities"])
+
+    surfaces = _surfaces(posture["activation_surfaces"])
+    assert surfaces["controlled_value_reveal_submit"]["runtime_enabled"] is True
+    assert surfaces["controlled_value_reveal_submit"]["required_flags"] == []
+    assert surfaces["controlled_value_reveal_submit"]["next_operator_action"] == (
+        "submit_controlled_value_reveal_from_authority_receipt"
+    )
 
 
 def test_runtime_posture_controlled_submit_feature_flag_fails_closed(monkeypatch) -> None:
@@ -179,6 +200,7 @@ def test_live_activation_surface_requires_user_agent_without_exposing_user_agent
 
 
 def test_runtime_posture_reflects_enabled_runtime_flags_without_side_effect_claims(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_xbrl_controlled_value_reveal_submit_enabled", True)
     monkeypatch.setattr(settings, "layer3_sec_edgar_live_network_enabled", True)
     monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_nonlocal_authorized", True)

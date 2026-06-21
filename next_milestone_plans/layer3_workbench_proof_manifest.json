@@ -46285,5 +46285,34 @@
     ],
     "next_posture": "merge_review_then_current_main_sync_before_selecting_durable_revocation_provider_connector_schema_or_production_readiness_surfaces"
   },
-  "latest_p24_mixed_source_product_authority_checkpoint_proof_summary": "Branch-local P24 proof verifies a read-only mixed-source product-authority checkpoint over existing P17/P18/P19/P21/P22 authority with scoped overflow containment, and keeps backend routes, payload builders, submit handlers, signed-reference status/revocation, provider/public URL, connector/destination/local-outbox, schema, parser/source-shape, package rewrite, real export/dispatch, and production-readiness behavior blocked."
+  "latest_p24_mixed_source_product_authority_checkpoint_proof_summary": "Branch-local P24 proof verifies a read-only mixed-source product-authority checkpoint over existing P17/P18/P19/P21/P22 authority with scoped overflow containment, and keeps backend routes, payload builders, submit handlers, signed-reference status/revocation, provider/public URL, connector/destination/local-outbox, schema, parser/source-shape, package rewrite, real export/dispatch, and production-readiness behavior blocked.",
+  "sec_xbrl_current_posture_reconciliation_proof": {
+    "proof_kind": "sec_xbrl_current_posture_reconciliation_proof",
+    "milestone": "sec_xbrl_current_posture_reconciliation_v1",
+    "status": "branch_local_docs_test_honesty_pass",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1360-posture-reconcile.md",
+    "authoritative_main": "6b83cd0b80e2f17f82f1c58c466e7163480be0d3",
+    "runtime_behavior_changed": false,
+    "support_matrix_changed": false,
+    "config_default_changed": false,
+    "redaction_posture_changed": false,
+    "production_readiness_claimed": false,
+    "positive_effects": [
+      "historical 1350 and 1353 default-on value-reveal language is explicitly subordinated to current config/support-matrix authority",
+      "runtime posture tests prove default controlled-submit gated posture",
+      "runtime posture tests retain explicit-enabled availability coverage"
+    ],
+    "negative_authority_flags": {
+      "value_reveal_activation": false,
+      "controlled_submit_activation": false,
+      "live_sec_network_access": false,
+      "arelle_invocation": false,
+      "multi_filing_gate_enforcement": false,
+      "delivery_export_provider_behavior": false,
+      "model_or_migration_change": false,
+      "production_readiness_claimed": false
+    },
+    "next_posture": "select_one_bounded_production_readiness_surface_with_live_sec_source_acquisition_preferred_before_arelle_multi_filing_delivery_nonlocal_auth_or_default_on_value_reveal"
+  },
+  "latest_sec_xbrl_current_posture_reconciliation_proof_summary": "Branch-local SEC XBRL posture proof reconciles historical docs with current default-off support-matrix truth and updates runtime posture tests so default controlled value reveal remains gated while explicit-enabled posture stays covered."
 }
