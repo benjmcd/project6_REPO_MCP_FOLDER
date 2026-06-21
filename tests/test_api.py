@@ -2116,6 +2116,187 @@ def test_sciencebase_csv_ingest_preserves_l11_source_fidelity(monkeypatch):
         db.close()
 
 
+def test_public_connector_operator_journey_bridges_sciencebase_target_to_analysis(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRun, ConnectorRunTarget, DatasetVersion
+    from app.services import connectors_sciencebase as sb
+
+    journey_item_id = f"journey-{uuid.uuid4().hex}"
+
+    class _JourneyAdapter(_FakeScienceBaseSourceFidelityAdapter):
+        csv_bytes = (
+            b"year,value,comparison\n"
+            b"2020,10,12\n"
+            b"2021,20,18\n"
+            b",,\n"
+            b"2022,30,27\n"
+        )
+
+        def search_page(self, *, q, filters, offset, page_size, sort, order):
+            page = super().search_page(q=q, filters=filters, offset=offset, page_size=page_size, sort=sort, order=order)
+            if offset == 0:
+                page.items = [{"id": journey_item_id}]
+            return page
+
+        def hydrate_item(self, item_id):
+            item = super().hydrate_item(item_id)
+            item["id"] = journey_item_id
+            item["files"][0]["name"] = f"{journey_item_id}.csv"
+            item["files"][0]["downloadUri"] = f"https://www.sciencebase.gov/catalog/file/{journey_item_id}.csv"
+            return item
+
+    adapter = _JourneyAdapter()
+    expected_hash = hashlib.sha256(adapter.csv_bytes).hexdigest()
+    monkeypatch.setattr(sb, "_resolve_host_ip", lambda _hostname: "8.8.8.8")
+    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: adapter)
+
+    submit = client.post(
+        "/api/v1/connectors/sciencebase-public/runs",
+        json={
+            "q": "MCS",
+            "run_mode": "one_shot_import",
+            "allowed_extensions": [".csv"],
+            "surface_policy": "files_only",
+            "detect_seasonality": False,
+            "detect_stationarity": False,
+        },
+        headers={"Idempotency-Key": f"sciencebase-operator-journey-bridge-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    detail_payload = detail.json()
+    assert detail_payload["connector_key"] == "sciencebase_public"
+    assert detail_payload["source_system"] == "sciencebase"
+    assert detail_payload["source_mode"] == "public_api"
+    assert detail_payload["status"] == "completed"
+    assert detail_payload["downloaded_count"] == 1
+    assert detail_payload["ingested_count"] == 1
+    assert detail_payload["profiled_count"] == 1
+    assert detail_payload["recommended_count"] == 1
+    assert detail_payload["fetch_policy_summary"]["mode"] == "strict_public_safe"
+    assert detail_payload["fetch_policy_summary"]["external_fetch_policy"] == "sciencebase_only"
+    assert {"sciencebase.gov", "www.sciencebase.gov"}.issubset(
+        set(detail_payload["fetch_policy_summary"]["allowed_hosts"])
+    )
+
+    targets = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert targets.status_code == 200, targets.text
+    target_rows = targets.json()["targets"]
+    assert len(target_rows) == 1
+    [target] = target_rows
+    assert target["status"] == "recommended"
+    assert target["artifact_surface"] == "files"
+    assert target["public_read_confirmed"] is True
+    assert target["dataset_id"]
+    assert target["dataset_version_id"]
+
+    recommendation = client.post(
+        f"/api/v1/datasets/{target['dataset_id']}/versions/{target['dataset_version_id']}/analysis/recommend",
+        json={"goal_type": "exploratory"},
+    )
+    assert recommendation.status_code == 200, recommendation.text
+    recommended_sequence = recommendation.json()["recommended_sequence"]
+    assert recommended_sequence[0] == "cross_correlation"
+    recommended_method = "cross_correlation"
+
+    analysis_response = client.post(
+        "/api/v1/analysis-runs",
+        json={
+            "dataset_version_id": target["dataset_version_id"],
+            "method_name": recommended_method,
+            "goal_type": "exploratory",
+            "parameters": {"max_lag": 2},
+            "annotation_window_id": None,
+        },
+    )
+    assert analysis_response.status_code == 200, analysis_response.text
+    analysis = analysis_response.json()
+    assert analysis["dataset_version_id"] == target["dataset_version_id"]
+    assert analysis["method_name"] == recommended_method
+    assert analysis["status"] == "completed"
+    assert analysis["assumptions"] or analysis["artifacts"] or analysis["caveats"]
+
+    recovery_client = TestClient(app)
+    recovered_run = recovery_client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert recovered_run.status_code == 200, recovered_run.text
+    assert recovered_run.json()["status"] == "completed"
+    recovered_targets = recovery_client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert recovered_targets.status_code == 200, recovered_targets.text
+    assert recovered_targets.json()["targets"][0]["dataset_version_id"] == target["dataset_version_id"]
+    recovered_analysis = recovery_client.get(f"/api/v1/analysis-runs/{analysis['analysis_run_id']}")
+    assert recovered_analysis.status_code == 200, recovered_analysis.text
+    assert recovered_analysis.json()["artifacts"] == analysis["artifacts"]
+
+    db = SessionLocal()
+    try:
+        run = db.get(ConnectorRun, run_id)
+        assert run is not None
+        request_config = run.request_config_json or {}
+        assert "api_key" not in request_config
+        assert "authorization" not in request_config
+        assert "token" not in request_config
+        target_row = (
+            db.query(ConnectorRunTarget)
+            .filter(ConnectorRunTarget.connector_run_id == run_id)
+            .one()
+        )
+        version = db.get(DatasetVersion, target_row.dataset_version_id)
+        assert version is not None
+        expected_summary = {
+            "content_hash": expected_hash,
+            "source_row_count": 4,
+            "dropped_row_count": 1,
+            "row_count": 3,
+        }
+        assert version.content_hash == expected_hash
+        assert version.source_row_count == expected_summary["source_row_count"]
+        assert version.dropped_row_count == expected_summary["dropped_row_count"]
+        assert version.row_count == expected_summary["row_count"]
+        assert target_row.source_reference_json["ingest_fidelity"] == expected_summary
+    finally:
+        db.close()
+
+
+def test_public_connector_journey_network_unreachable_is_degraded(monkeypatch):
+    from app.services import connectors_sciencebase as sb
+
+    class _NetworkUnreachableAdapter(_FakeScienceBaseSourceFidelityAdapter):
+        def download_artifact(self, *, url, timeout_seconds, max_redirects, headers=None):
+            raise requests.ConnectionError("simulated network unreachable")
+
+    monkeypatch.setattr(sb, "_resolve_host_ip", lambda _hostname: "8.8.8.8")
+    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: _NetworkUnreachableAdapter())
+
+    submit = client.post(
+        "/api/v1/connectors/sciencebase-public/runs",
+        json={"q": "MCS", "run_mode": "one_shot_import", "allowed_extensions": [".csv"]},
+        headers={"Idempotency-Key": f"sciencebase-network-unreachable-degraded-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    detail_payload = detail.json()
+    assert detail_payload["status"] == "completed_with_errors"
+    assert detail_payload["discovered_count"] == 1
+    assert detail_payload["downloaded_count"] == 0
+    assert detail_payload["failed_count"] == 1
+    assert detail_payload["retryable_target_count"] == 1
+    assert detail_payload["terminal_target_count"] == 0
+
+    targets = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert targets.status_code == 200, targets.text
+    [target] = targets.json()["targets"]
+    assert target["status"] == "download_failed"
+    assert target["last_error_class"] == "transport_timeout"
+    assert target["retry_eligible"] is True
+    assert target["dataset_version_id"] is None
+
+
 def test_connector_l20_lease_token_assertion_rejects_mismatch_and_expiry():
     from datetime import timedelta
 
@@ -7139,6 +7320,72 @@ def test_senate_lda_connector_happy_path_reports_and_detail_hydration(monkeypatc
         )
         assert len(provenance_rows) == 2
         assert all((row.source_reference_json or {}).get("detail_ref") for row in provenance_rows)
+    finally:
+        db.close()
+
+
+def test_senate_lda_anonymous_metadata_path_is_no_key_secondary_journey(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRun, DatasetSourceProvenance
+    from app.services import connectors_senate_lda as senate_lda
+
+    fake = _FakeSenateLdaClient()
+    monkeypatch.setattr(senate_lda, "get_senate_lda_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/senate-lda/runs",
+        json={
+            "client_name": "Meta",
+            "filing_year": 2025,
+            "page_size": 25,
+            "max_items": 2,
+            "include_filing_detail": False,
+            "run_mode": "metadata_only",
+        },
+        headers={"Idempotency-Key": f"senate-lda-anonymous-metadata-secondary-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    payload = detail.json()
+    assert payload["connector_key"] == "senate_lda"
+    assert payload["source_system"] == "senate_lda"
+    assert payload["status"] == "completed"
+    assert payload["run_mode"] == "metadata_only"
+    assert payload["fetch_policy_summary"] == {
+        "mode": "official_api_only",
+        "surface_policy": "metadata_only",
+        "external_fetch_policy": "senate_lda_official_only",
+        "allowed_hosts": ["lda.senate.gov"],
+    }
+
+    targets = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert targets.status_code == 200, targets.text
+    target_rows = targets.json()["targets"]
+    assert len(target_rows) == 2
+    assert {row["status"] for row in target_rows} == {"recommended"}
+    assert all(row["dataset_version_id"] for row in target_rows)
+    assert fake.detail_calls == []
+
+    db = SessionLocal()
+    try:
+        run = db.get(ConnectorRun, run_id)
+        assert run is not None
+        assert run.effective_search_params_json["auth_mode"] == "anonymous"
+        request_config = run.request_config_json or {}
+        assert "api_key" not in request_config
+        assert "authorization" not in request_config
+        assert "token" not in request_config
+        provenance_rows = (
+            db.query(DatasetSourceProvenance)
+            .filter(DatasetSourceProvenance.connector_run_id == run_id)
+            .filter(DatasetSourceProvenance.source_system == "senate_lda")
+            .all()
+        )
+        assert len(provenance_rows) == 2
+        assert {row.source_mode for row in provenance_rows} == {"metadata_only"}
     finally:
         db.close()
 
