@@ -805,6 +805,46 @@ class _FakeSurfaceAdapter:
         )()
 
 
+class _FakeScienceBaseSourceFidelityAdapter(_FakeSurfaceAdapter):
+    csv_bytes = (
+        b"year,value\n"
+        b"2020,10\n"
+        b"2021,20\n"
+        b",\n"
+        b"2022,30\n"
+    )
+
+    def hydrate_item(self, item_id):
+        return {
+            "id": item_id,
+            "title": "Item",
+            "identifiers": [{"type": "DOI", "value": "10.1234/example"}],
+            "files": [
+                {"name": "good.csv", "downloadUri": "https://www.sciencebase.gov/catalog/file/good.csv"},
+            ],
+            "webLinks": [],
+            "distributionLinks": [],
+        }
+
+    def download_artifact(self, *, url, timeout_seconds, max_redirects, headers=None):
+        return type(
+            "DownloadResult",
+            (),
+            {
+                "content": self.csv_bytes,
+                "status_code": 200,
+                "final_url": url,
+                "redirect_count": 0,
+                "etag": "etag-source-fidelity",
+                "last_modified": "Mon, 01 Jan 2024 00:00:00 GMT",
+                "content_type": "text/csv",
+                "sha256": hashlib.sha256(self.csv_bytes).hexdigest(),
+                "headers": {},
+                "resolved_ip": "8.8.8.8",
+            },
+        )()
+
+
 class _FakeDedupAdapter:
     def search_page(self, *, q, filters, offset, page_size, sort, order):
         if offset > 0:
@@ -1466,7 +1506,7 @@ def test_connector_cross_surface_dedupe_prefers_files(monkeypatch):
             "allowed_extensions": [".csv"],
             "run_mode": "one_shot_import",
         },
-        headers={"Idempotency-Key": "dedupe-run"},
+        headers={"Idempotency-Key": f"dedupe-run-{uuid.uuid4().hex}"},
     )
     assert response.status_code == 202, response.text
     run_id = response.json()["connector_run_id"]
@@ -1480,14 +1520,29 @@ def test_connector_cross_surface_dedupe_prefers_files(monkeypatch):
 
     db = SessionLocal()
     try:
-        winner_row = (
+        target_rows = (
             db.query(ConnectorRunTarget)
-            .filter(ConnectorRunTarget.connector_run_id == run_id, ConnectorRunTarget.status != "collapsed_duplicate")
-            .first()
+            .filter(ConnectorRunTarget.connector_run_id == run_id)
+            .order_by(ConnectorRunTarget.ordinal.asc())
+            .all()
         )
+        assert [target.ordinal for target in target_rows] == [1, 2]
+        assert [target.artifact_surface for target in target_rows] == ["files", "distributionLinks"]
+        assert [target.status for target in target_rows].count("collapsed_duplicate") == 1
+        winner_row = next(target for target in target_rows if target.status != "collapsed_duplicate")
+        collapsed_row = next(target for target in target_rows if target.status == "collapsed_duplicate")
         assert winner_row is not None
-        alias_count = db.query(ConnectorArtifactAlias).filter(ConnectorArtifactAlias.connector_run_target_id == winner_row.connector_run_target_id).count()
-        assert alias_count >= 1
+        assert winner_row.source_reference_json["surface"] == "files"
+        assert collapsed_row.source_reference_json["surface"] == "distributionLinks"
+        aliases = (
+            db.query(ConnectorArtifactAlias)
+            .filter(ConnectorArtifactAlias.connector_run_target_id == winner_row.connector_run_target_id)
+            .order_by(ConnectorArtifactAlias.alias_surface.asc())
+            .all()
+        )
+        assert len(aliases) == 1
+        assert aliases[0].alias_surface == "distributionLinks"
+        assert aliases[0].alias_json["surface"] == "distributionLinks"
     finally:
         db.close()
 
@@ -1994,6 +2049,71 @@ def test_connector_resume_target_cursor_keeps_retryable_prior_targets(monkeypatc
 
     assert adapter.download_attempts["first"] == 2
     assert adapter.download_attempts["second"] == 1
+
+
+def test_sciencebase_csv_ingest_preserves_l11_source_fidelity(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRunTarget, DatasetSourceProvenance, DatasetVersion
+    from app.services import connectors_sciencebase as sb
+    from app.services.dataframe_io import load_version_dataframe
+
+    adapter = _FakeScienceBaseSourceFidelityAdapter()
+    expected_hash = hashlib.sha256(adapter.csv_bytes).hexdigest()
+    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: adapter)
+
+    submit = client.post(
+        "/api/v1/connectors/sciencebase-public/runs",
+        json={
+            "q": "MCS",
+            "run_mode": "one_shot_import",
+            "allowed_extensions": [".csv"],
+            "surface_policy": "files_only",
+            "detect_seasonality": False,
+            "detect_stationarity": False,
+        },
+        headers={"Idempotency-Key": f"sciencebase-l11-source-fidelity-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    db = SessionLocal()
+    try:
+        target = (
+            db.query(ConnectorRunTarget)
+            .filter(ConnectorRunTarget.connector_run_id == run_id)
+            .one()
+        )
+        assert target.status == "recommended"
+        assert target.dataset_version_id
+        version = db.get(DatasetVersion, target.dataset_version_id)
+        assert version is not None
+        assert version.content_hash == expected_hash
+        assert version.source_row_count == 4
+        assert version.dropped_row_count == 1
+        assert version.row_count == 3
+
+        frame = load_version_dataframe(db, target.dataset_version_id)
+        assert frame["value"].astype(int).tolist() == [10, 20, 30]
+
+        expected_summary = {
+            "content_hash": expected_hash,
+            "source_row_count": 4,
+            "dropped_row_count": 1,
+            "row_count": 3,
+        }
+        assert target.source_reference_json["ingest_fidelity"] == expected_summary
+
+        provenance = (
+            db.query(DatasetSourceProvenance)
+            .filter(DatasetSourceProvenance.dataset_version_id == target.dataset_version_id)
+            .filter(DatasetSourceProvenance.connector_run_id == run_id)
+            .one()
+        )
+        assert provenance.source_artifact_key == target.source_artifact_key
+        assert provenance.downloaded_sha256 == expected_hash
+        assert provenance.source_reference_json["ingest_fidelity"] == expected_summary
+    finally:
+        db.close()
 
 
 def test_connector_l20_lease_token_assertion_rejects_mismatch_and_expiry():
@@ -7247,7 +7367,7 @@ def test_senate_lda_l20_resume_after_target_creation_crash_does_not_duplicate_ta
 
 def test_senate_lda_dedupes_duplicate_filings_and_records_provenance(monkeypatch):
     from app.db.session import SessionLocal
-    from app.models import ConnectorRun, ConnectorRunTarget, DatasetSourceProvenance
+    from app.models import ConnectorRun, ConnectorRunTarget, DatasetSourceProvenance, DatasetVersion
     from app.services import connectors_senate_lda as senate_lda
 
     class _DuplicateFilingSenateLdaClient(_FakeSenateLdaClient):
@@ -7303,7 +7423,7 @@ def test_senate_lda_dedupes_duplicate_filings_and_records_provenance(monkeypatch
     submit = client.post(
         "/api/v1/connectors/senate-lda/runs",
         json={"client_name": "Meta", "filing_year": 2025, "include_filing_detail": False},
-        headers={"Idempotency-Key": "senate-lda-duplicate-provenance"},
+        headers={"Idempotency-Key": f"senate-lda-duplicate-provenance-{uuid.uuid4().hex}"},
     )
     assert submit.status_code == 202, submit.text
     run_id = submit.json()["connector_run_id"]
@@ -7326,12 +7446,31 @@ def test_senate_lda_dedupes_duplicate_filings_and_records_provenance(monkeypatch
             .order_by(ConnectorRunTarget.ordinal.asc())
             .all()
         )
+        assert [target.ordinal for target in targets] == [1, 2, 3]
+        assert [target.sciencebase_item_id for target in targets] == ["filing-dup", "filing-dup", "filing-2"]
         recommended_targets = [target for target in targets if target.status == "recommended"]
         collapsed_targets = [target for target in targets if target.status == "collapsed_duplicate"]
         assert [target.sciencebase_item_id for target in recommended_targets] == ["filing-dup", "filing-2"]
+        assert [target.ordinal for target in recommended_targets] == [1, 3]
         assert all(target.dataset_version_id for target in recommended_targets)
         assert len(collapsed_targets) == 1
+        assert collapsed_targets[0].ordinal == 2
+        assert collapsed_targets[0].source_reference_json["deduped_with_ordinal"] == 1
         assert collapsed_targets[0].dataset_version_id is None
+        for target in recommended_targets:
+            version = db.get(DatasetVersion, target.dataset_version_id)
+            assert version is not None
+            assert version.row_count == 1
+            assert version.source_row_count == 1
+            assert version.dropped_row_count == 0
+            assert version.storage_ref == target.source_artifact_key
+            expected_payload = {
+                "source_system": "senate_lda",
+                "filing_uuid": target.sciencebase_item_id,
+                "source_artifact_key": target.source_artifact_key,
+                "source_reference_json": target.source_reference_json or {},
+            }
+            assert version.content_hash == senate_lda._stable_json_hash(expected_payload)
         provenance_rows = (
             db.query(DatasetSourceProvenance)
             .filter(DatasetSourceProvenance.connector_run_id == run_id)
@@ -7342,5 +7481,9 @@ def test_senate_lda_dedupes_duplicate_filings_and_records_provenance(monkeypatch
         assert len(provenance_rows) == 2
         assert {row.source_mode for row in provenance_rows} == {"metadata_only"}
         assert {row.sciencebase_item_id for row in provenance_rows} == {"filing-dup", "filing-2"}
+        for row in provenance_rows:
+            assert row.source_reference_json["source_system"] == "senate_lda"
+            assert row.source_reference_json["list_ref"]
+            assert row.source_reference_json["document_url"] == row.source_artifact_key
     finally:
         db.close()

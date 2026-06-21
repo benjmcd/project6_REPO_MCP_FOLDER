@@ -2363,6 +2363,16 @@ def _run_target_pipeline(
 
     dataset_id = str(ingest_result["dataset_id"])
     dataset_version_id = str(ingest_result["dataset_version_id"])
+    ingest_fidelity = {
+        "content_hash": ingest_result.get("content_hash"),
+        "source_row_count": int(ingest_result.get("source_row_count") or 0),
+        "dropped_row_count": int(ingest_result.get("dropped_row_count") or 0),
+        "row_count": int(ingest_result.get("row_count") or 0),
+    }
+    source_reference_json = {
+        **(target.source_reference_json or {}),
+        "ingest_fidelity": ingest_fidelity,
+    }
     _persist_dataset_identity(
         db,
         dataset_id=dataset_id,
@@ -2387,6 +2397,7 @@ def _run_target_pipeline(
         target_updates={
             "dataset_id": dataset_id,
             "dataset_version_id": dataset_version_id,
+            "source_reference_json": source_reference_json,
             "ingested_at": _utcnow(),
             "versioning_reason_code": "new_version_checksum_changed",
             "error_stage": None,
@@ -2531,7 +2542,7 @@ def _run_target_pipeline(
             downloaded_sha256=target.downloaded_sha256,
             raw_storage_ref=target.raw_storage_ref,
             source_query_fingerprint=run.source_query_fingerprint,
-            source_reference_json=target.source_reference_json or {},
+            source_reference_json=source_reference_json,
             fetch_policy_mode=target.fetch_policy_mode,
             resolved_ip=target.resolved_ip,
             redirect_count=target.redirect_count,
