@@ -1,4 +1,5 @@
 import os
+import logging
 import numpy as np
 import fitz
 from typing import Any, Dict, Optional
@@ -21,6 +22,9 @@ def _get_paddle_instance():
             if not os.path.exists(d):
                  raise FileNotFoundError(f"Specific PaddleOCR model component missing: {d}")
 
+        logging.getLogger("paddleocr").setLevel(logging.WARNING)
+        logging.getLogger("ppocr").setLevel(logging.WARNING)
+
         from paddleocr import PaddleOCR
         # Initialize without downloading
         _PADDLE_ENGINE = PaddleOCR(
@@ -29,8 +33,7 @@ def _get_paddle_instance():
             det_model_dir=nrc_aps_settings.PADDLE_DET_MODEL_DIR,
             rec_model_dir=nrc_aps_settings.PADDLE_REC_MODEL_DIR,
             cls_model_dir=nrc_aps_settings.PADDLE_CLS_MODEL_DIR,
-            show_log=False,
-            use_gpu=False # default to CPU as requirement stated
+            device="cpu",
         )
     return _PADDLE_ENGINE
 
@@ -53,7 +56,7 @@ def run_advanced_ocr(page: fitz.Page) -> Dict[str, Any]:
         # pix.samples are RGB, Paddle uses BGR or RGB depending on backend; usually RGB is fine if specified correctly
         # but standardized BGR is safer for many CV backends. PaddleOCR accepts numpy arrays.
         
-        results = engine.ocr(img, cls=True)
+        results = engine.ocr(img)
         
         if not results or not results[0]:
             return {"text": "", "average_confidence": None}
