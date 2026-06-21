@@ -19,6 +19,17 @@ from app.services import layer3_sec_xbrl_e2e_offline_orchestrator as orchestrato
 from app.services.layer3_utils import json_clone, stable_hash
 
 
+EXPECTED_OFFLINE_ORCHESTRATOR_CONTROLS = {
+    "offline_evidence_input_only": True,
+    "file_read_performed": False,
+    "source_acquisition_performed": False,
+    "arelle_invoked": False,
+    "value_reveal_performed": False,
+    "api_route_enabled": False,
+    "production_readiness_claimed": False,
+}
+
+
 @pytest.fixture()
 def db_session():
     engine = create_engine("sqlite:///:memory:", future=True)
@@ -45,15 +56,7 @@ def test_offline_orchestrator_opens_redacted_review_workflow_from_governed_evide
     assert response["status"] == "review_ready"
     assert response["summary"]["period_count"] == 2
     assert response["summary"]["row_count"] == 6
-    assert response["controls"] == {
-        "offline_evidence_input_only": True,
-        "file_read_performed": False,
-        "source_acquisition_performed": False,
-        "arelle_invoked": False,
-        "value_reveal_performed": False,
-        "api_route_enabled": False,
-        "production_readiness_claimed": False,
-    }
+    assert response["controls"] == EXPECTED_OFFLINE_ORCHESTRATOR_CONTROLS
     assert response["containment"]["single_transaction_claimed"] is False
     assert '"effective_value"' not in text
     assert set(_scalar_values(response)).isdisjoint(
@@ -90,6 +93,19 @@ def test_offline_orchestrator_opens_redacted_review_workflow_from_governed_evide
     assert db_session.query(L3SecXbrlProjectionSet).count() == 1
     assert db_session.query(L3SecXbrlStatementPacketSet).count() == 1
     assert db_session.query(L3SecXbrlOperatorReviewWorkflow).count() == 1
+
+
+def test_offline_orchestrator_single_transaction_preserves_complete_honesty_controls(db_session) -> None:
+    response = orchestrator.open_redacted_operator_review_from_offline_evidence(
+        db_session,
+        client_request_id="offline-orchestrator-atomic-honesty-controls",
+        evidence=_evidence(),
+        period_limit=2,
+        single_transaction=True,
+    )
+
+    assert response["status"] == "review_ready"
+    assert response["controls"] == EXPECTED_OFFLINE_ORCHESTRATOR_CONTROLS
 
 
 def test_offline_orchestrator_single_transaction_commits_complete_review_workflow(db_session) -> None:
