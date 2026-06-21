@@ -13,6 +13,17 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_REPORT = ROOT / "diagnostics" / "assessment" / "sec-xbrl-offline-evidence-proof-capability-report.json"
 CLI_PATH = ROOT / "diagnostics" / "assessment" / "sec-xbrl-offline-evidence-proof-capability.py"
 HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
+NON_PRODUCTION_CONTROL_EXPECTATIONS = {
+    "source_acquisition_performed": False,
+    "arelle_invoked": False,
+    "production_readiness_claimed": False,
+    "api_route_enabled": False,
+}
+
+
+def _assert_non_production_controls(controls: dict[str, Any]) -> None:
+    for key, expected in NON_PRODUCTION_CONTROL_EXPECTATIONS.items():
+        assert controls[key] is expected
 
 
 def test_proof_capability_blocks_without_operator_storage() -> None:
@@ -23,6 +34,7 @@ def test_proof_capability_blocks_without_operator_storage() -> None:
     assert report["blocked_reasons"][0]["reason"] == "offline_evidence_proof_operator_storage_missing"
     assert report["readiness"]["operator_review_creation_ready"] is False
     assert report["readiness"]["production_admission_ready"] is False
+    _assert_non_production_controls(report["controls"])
     assert report["controls"]["operator_evidence_files_read"] is False
     assert report["controls"]["isolated_db_persistence_performed"] is False
     assert "proof_source_report_hash" not in report["authority_refs"]
@@ -75,6 +87,7 @@ def test_cli_fails_closed_without_reflecting_exception_text(tmp_path, monkeypatc
     assert report["status"] == "offline_evidence_proof_capability_blocked"
     assert report["blocked_reasons"][0]["reason"] == "offline_evidence_proof_diagnostic_exception"
     assert report["blocked_reasons"][0]["details"] == {"exception_type": "ValueError"}
+    _assert_non_production_controls(report["controls"])
     assert report["controls"]["operator_evidence_files_read"] is False
     assert "proof_source_report_hash" not in report["authority_refs"]
     assert "proof_result_hash" not in report["authority_refs"]
@@ -113,6 +126,7 @@ def test_proof_capability_blocks_on_loader_report_without_running_oracle(monkeyp
     assert report["summary"]["loader_status"] == "offline_evidence_bundle_blocked"
     assert report["summary"]["oracle_status"] == "not_run"
     assert report["readiness"]["operator_review_creation_ready"] is False
+    _assert_non_production_controls(report["controls"])
     assert report["controls"]["operator_evidence_files_read"] is True
 
 
@@ -202,13 +216,10 @@ def test_proof_capability_reports_redacted_ready_path(monkeypatch) -> None:
     assert report["controls"]["operator_evidence_files_read"] is True
     assert report["controls"]["isolated_db_persistence_performed"] is True
     assert report["controls"]["offline_storage_read_only"] is True
-    assert report["controls"]["source_acquisition_performed"] is False
-    assert report["controls"]["arelle_invoked"] is False
+    _assert_non_production_controls(report["controls"])
     assert report["controls"]["network_performed"] is False
     assert report["controls"]["production_db_persistence_performed"] is False
     assert report["controls"]["value_reveal_performed"] is False
-    assert report["controls"]["api_route_enabled"] is False
-    assert report["controls"]["production_readiness_claimed"] is False
     assert report["containment"]["production_database_touched"] is False
     assert report["summary"]["oracle_projected_count"] == 2
     assert report["summary"]["isolated_persistence_operator_review_workflow_count"] == 1
