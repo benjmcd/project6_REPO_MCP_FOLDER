@@ -1215,6 +1215,84 @@ class _FakeResumeTargetCursorAdapter:
         )()
 
 
+class _UnexpectedScienceBaseAdapter:
+    def search_page(self, *, q, filters, offset, page_size, sort, order):
+        raise AssertionError("sciencebase adapter should not execute")
+
+
+class _FakeCancelDuringDownloadAdapter:
+    def __init__(self):
+        self.run_id = None
+        self.download_calls = 0
+
+    def search_page(self, *, q, filters, offset, page_size, sort, order):
+        return type(
+            "SearchPage",
+            (),
+            {
+                "items": [] if offset > 0 else [{"id": "item-cancel"}],
+                "offset": offset,
+                "page_size": page_size,
+                "total": 1,
+                "nextlink": None,
+                "prevlink": None,
+                "raw_query_metadata": {},
+            },
+        )()
+
+    def hydrate_item(self, item_id):
+        return {
+            "id": item_id,
+            "title": "Cancel target item",
+            "identifiers": [],
+            "files": [{"name": "cancel.csv", "downloadUri": "https://www.sciencebase.gov/catalog/file/cancel.csv"}],
+            "distributionLinks": [],
+            "webLinks": [],
+        }
+
+    def extract_artifacts(self, item):
+        return [
+            {
+                "surface": "files",
+                "name": "cancel.csv",
+                "url": "https://www.sciencebase.gov/catalog/file/cancel.csv",
+                "locator_type": "downloadUri",
+                "checksum_type": None,
+                "checksum_value": None,
+                "source_reference": {"surface": "files"},
+            }
+        ]
+
+    def download_artifact(self, *, url, timeout_seconds, max_redirects, headers=None):
+        assert self.run_id is not None
+        self.download_calls += 1
+        from app.db.session import SessionLocal
+        from app.services.connectors_sciencebase import request_cancel_run
+
+        db = SessionLocal()
+        try:
+            request_cancel_run(db, self.run_id)
+        finally:
+            db.close()
+        csv = b"year,value\n2020,1\n2021,2\n2022,3\n2023,4\n2024,5\n2025,6\n"
+        return type(
+            "DownloadResult",
+            (),
+            {
+                "content": csv,
+                "status_code": 200,
+                "final_url": url,
+                "redirect_count": 0,
+                "etag": None,
+                "last_modified": None,
+                "content_type": "text/csv",
+                "sha256": "sha-cancel",
+                "headers": {},
+                "resolved_ip": "8.8.8.8",
+            },
+        )()
+
+
 class _L17ScienceBaseAdapter:
     def __init__(self, *, download_case="timeout", empty_page_next=False, malformed_item=False):
         self.download_case = download_case
@@ -1916,6 +1994,246 @@ def test_connector_resume_target_cursor_keeps_retryable_prior_targets(monkeypatc
 
     assert adapter.download_attempts["first"] == 2
     assert adapter.download_attempts["second"] == 1
+
+
+def test_connector_l20_lease_token_assertion_rejects_mismatch_and_expiry():
+    from datetime import timedelta
+
+    from app.services.sciencebase_connector.contracts import LeaseConflictError
+    from app.services.sciencebase_connector.executor import assert_lease_token, utcnow
+
+    with pytest.raises(LeaseConflictError):
+        assert_lease_token(current_token="current-token", expected_token="other-token", expires_at=utcnow() + timedelta(seconds=60))
+
+    with pytest.raises(LeaseConflictError):
+        assert_lease_token(current_token="current-token", expected_token="current-token", expires_at=utcnow() - timedelta(seconds=1))
+
+
+def test_connector_l20_terminal_resume_is_noop_for_public_connectors(monkeypatch):
+    from app.api import router
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRun
+    from app.services.connectors_sciencebase import _utcnow
+
+    cases = [
+        (
+            "/api/v1/connectors/sciencebase-public/runs",
+            {"q": "MCS", "page_size": 1},
+            "l20-terminal-resume-sciencebase",
+        ),
+        (
+            "/api/v1/connectors/senate-lda/runs",
+            {"client_name": "Meta", "filing_year": 2025},
+            "l20-terminal-resume-senate-lda",
+        ),
+    ]
+
+    def _noop_enqueue(*args, **kwargs):
+        return None
+
+    for endpoint, payload, idempotency_key in cases:
+        monkeypatch.setattr(router, "_enqueue_connector_run", _noop_enqueue)
+        submit = client.post(endpoint, json=payload, headers={"Idempotency-Key": idempotency_key})
+        assert submit.status_code == 202, submit.text
+        run_id = submit.json()["connector_run_id"]
+
+        db = SessionLocal()
+        try:
+            run = db.get(ConnectorRun, run_id)
+            assert run is not None
+            run.status = "completed"
+            run.completed_at = _utcnow()
+            run.resume_count = 0
+            db.commit()
+        finally:
+            db.close()
+
+        enqueue_calls = []
+        monkeypatch.setattr(router, "_enqueue_connector_run", lambda *args, **kwargs: enqueue_calls.append(args))
+        resume = client.post(f"/api/v1/connectors/runs/{run_id}/resume")
+        assert resume.status_code == 202, resume.text
+        resume_payload = resume.json()
+
+        db = SessionLocal()
+        try:
+            run = db.get(ConnectorRun, run_id)
+            assert run is not None
+            observed_status = run.status
+            observed_resume_count = run.resume_count
+            run.status = "completed"
+            run.resume_count = 0
+            run.completed_at = run.completed_at or _utcnow()
+            db.commit()
+        finally:
+            db.close()
+        assert resume_payload["status"] == "completed"
+        assert observed_status == "completed"
+        assert observed_resume_count == 0
+        assert enqueue_calls == []
+
+
+def test_connector_l20_expired_running_lease_resume_requeues_public_connectors(monkeypatch):
+    from datetime import timedelta
+
+    from app.api import router
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRun
+    from app.services.connectors_sciencebase import _utcnow
+
+    cases = [
+        (
+            "/api/v1/connectors/sciencebase-public/runs",
+            {"q": "MCS", "page_size": 1},
+            "l20-expired-lease-resume-sciencebase",
+            "sciencebase_public",
+        ),
+        (
+            "/api/v1/connectors/senate-lda/runs",
+            {"client_name": "Meta", "filing_year": 2025},
+            "l20-expired-lease-resume-senate-lda",
+            "senate_lda",
+        ),
+    ]
+
+    for endpoint, payload, idempotency_key, connector_key in cases:
+        monkeypatch.setattr(router, "_enqueue_connector_run", lambda *args, **kwargs: None)
+        submit = client.post(endpoint, json=payload, headers={"Idempotency-Key": idempotency_key})
+        assert submit.status_code == 202, submit.text
+        run_id = submit.json()["connector_run_id"]
+
+        db = SessionLocal()
+        try:
+            run = db.get(ConnectorRun, run_id)
+            assert run is not None
+            run.status = "running"
+            run.execution_lease_owner = "pid:stale"
+            run.execution_lease_token = "stale-token"
+            run.execution_lease_expires_at = _utcnow() - timedelta(seconds=1)
+            run.resume_count = 0
+            db.commit()
+        finally:
+            db.close()
+
+        enqueue_calls = []
+        monkeypatch.setattr(router, "_enqueue_connector_run", lambda *args, **kwargs: enqueue_calls.append(args))
+        resume = client.post(f"/api/v1/connectors/runs/{run_id}/resume")
+        assert resume.status_code == 202, resume.text
+        assert resume.json()["status"] == "pending"
+        assert len(enqueue_calls) == 1
+        assert enqueue_calls[0][1:] == (connector_key, run_id)
+
+        db = SessionLocal()
+        try:
+            run = db.get(ConnectorRun, run_id)
+            assert run is not None
+            observed_status = run.status
+            observed_resume_count = run.resume_count
+            run.status = "failed"
+            db.commit()
+        finally:
+            db.close()
+        assert observed_status == "pending"
+        assert observed_resume_count == 1
+
+
+def test_connector_l20_sciencebase_active_lease_records_conflict(monkeypatch):
+    from datetime import timedelta
+
+    from app.api import router
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRun, ConnectorRunEvent, ConnectorRunTarget
+    from app.services import connectors_sciencebase as sb
+
+    monkeypatch.setattr(router, "_enqueue_connector_run", lambda *args, **kwargs: None)
+    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: _UnexpectedScienceBaseAdapter())
+
+    submit = client.post(
+        "/api/v1/connectors/sciencebase-public/runs",
+        json={"q": "MCS", "page_size": 1},
+        headers={"Idempotency-Key": "l20-sciencebase-lease-conflict"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    db = SessionLocal()
+    try:
+        run = db.get(ConnectorRun, run_id)
+        assert run is not None
+        run.status = "running"
+        run.execution_lease_owner = f"pid:{os.getpid()}"
+        run.execution_lease_token = "held-token"
+        run.execution_lease_expires_at = sb._utcnow() + timedelta(seconds=300)
+        db.commit()
+    finally:
+        db.close()
+
+    sb.execute_connector_run(run_id)
+
+    db = SessionLocal()
+    try:
+        run = db.get(ConnectorRun, run_id)
+        assert run is not None
+        observed_error_summary = run.error_summary
+        observed_lease_conflicts = (
+            db.query(ConnectorRunEvent)
+            .filter(ConnectorRunEvent.connector_run_id == run_id, ConnectorRunEvent.event_type == "lease_conflict")
+            .count()
+        )
+        observed_target_count = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run_id).count()
+        run.status = "failed"
+        db.commit()
+    finally:
+        db.close()
+    assert observed_error_summary == "lease_conflict"
+    assert observed_lease_conflicts == 1
+    assert observed_target_count == 0
+
+
+def test_connector_l20_sciencebase_cancel_mid_target_stops_before_partial_authority(monkeypatch):
+    from app.api import router
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRun, ConnectorRunEvent, ConnectorRunTarget, DatasetSourceProvenance
+    from app.services import connectors_sciencebase as sb
+
+    adapter = _FakeCancelDuringDownloadAdapter()
+    monkeypatch.setattr(router, "_enqueue_connector_run", lambda *args, **kwargs: None)
+    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: adapter)
+
+    submit = client.post(
+        "/api/v1/connectors/sciencebase-public/runs",
+        json={"q": "MCS", "page_size": 1, "allowed_extensions": [".csv"]},
+        headers={"Idempotency-Key": "l20-sciencebase-cancel-mid-target"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+    adapter.run_id = run_id
+
+    sb.execute_connector_run(run_id)
+
+    db = SessionLocal()
+    try:
+        run = db.get(ConnectorRun, run_id)
+        assert run is not None
+        assert run.status == "cancelled"
+        assert run.cancelled_at is not None
+        assert run.error_summary == "cancelled_by_operator"
+        assert run.execution_lease_owner is None
+        assert run.execution_lease_token is None
+        assert run.execution_lease_expires_at is not None
+        targets = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run_id).all()
+        assert len(targets) == 1
+        assert targets[0].status == "selected"
+        assert targets[0].raw_storage_ref is None
+        assert targets[0].dataset_version_id is None
+        assert db.query(DatasetSourceProvenance).filter(DatasetSourceProvenance.connector_run_id == run_id).count() == 0
+        event_types = {
+            row.event_type
+            for row in db.query(ConnectorRunEvent).filter(ConnectorRunEvent.connector_run_id == run_id).all()
+        }
+        assert "run_cancel_requested" in event_types
+        assert "run_finalized" in event_types
+    finally:
+        db.close()
 
 
 class _FakeExplicitScopeAdapter:
@@ -6453,6 +6771,60 @@ class _FakeSenateLdaClient:
         }
 
 
+class _UnexpectedSenateLdaClient:
+    def list_filings(
+        self,
+        *,
+        params,
+        timeout_seconds,
+        retry_max_attempts_per_request,
+        retry_base_backoff_seconds,
+        retry_max_backoff_seconds,
+        retry_respect_retry_after,
+        rate_limiter,
+        retry_counters,
+    ):
+        raise AssertionError("senate lda client should not execute")
+
+
+class _CancellingSenateLdaClient(_FakeSenateLdaClient):
+    def __init__(self):
+        super().__init__()
+        self.run_id = None
+
+    def list_filings(
+        self,
+        *,
+        params,
+        timeout_seconds,
+        retry_max_attempts_per_request,
+        retry_base_backoff_seconds,
+        retry_max_backoff_seconds,
+        retry_respect_retry_after,
+        rate_limiter,
+        retry_counters,
+    ):
+        assert self.run_id is not None
+        from app.db.session import SessionLocal
+        from app.services.connectors_sciencebase import request_cancel_run
+
+        db = SessionLocal()
+        try:
+            request_cancel_run(db, self.run_id)
+        finally:
+            db.close()
+        return super().list_filings(
+            params=params,
+            timeout_seconds=timeout_seconds,
+            retry_max_attempts_per_request=retry_max_attempts_per_request,
+            retry_base_backoff_seconds=retry_base_backoff_seconds,
+            retry_max_backoff_seconds=retry_max_backoff_seconds,
+            retry_respect_retry_after=retry_respect_retry_after,
+            rate_limiter=rate_limiter,
+            retry_counters=retry_counters,
+        )
+
+
 class _RetryingFakeSenateLdaClient(_FakeSenateLdaClient):
     def __init__(self):
         super().__init__()
@@ -6723,6 +7095,154 @@ def test_senate_lda_connector_resume_uses_senate_executor(monkeypatch):
     assert targets.status_code == 200, targets.text
     assert {row["status"] for row in targets.json()["targets"]} == {"recommended"}
     assert len(fake.list_calls) == 1
+
+
+def test_senate_lda_l20_active_lease_records_conflict(monkeypatch):
+    from datetime import timedelta
+
+    from app.api import router
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRun, ConnectorRunEvent, ConnectorRunTarget
+    from app.services import connectors_senate_lda as senate_lda
+
+    monkeypatch.setattr(router, "_enqueue_connector_run", lambda *args, **kwargs: None)
+    monkeypatch.setattr(senate_lda, "get_senate_lda_client", lambda config: _UnexpectedSenateLdaClient())
+
+    submit = client.post(
+        "/api/v1/connectors/senate-lda/runs",
+        json={"client_name": "Meta", "filing_year": 2025},
+        headers={"Idempotency-Key": "l20-senate-lda-lease-conflict"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    db = SessionLocal()
+    try:
+        run = db.get(ConnectorRun, run_id)
+        assert run is not None
+        run.status = "running"
+        run.execution_lease_owner = f"pid:{os.getpid()}"
+        run.execution_lease_token = "held-token"
+        run.execution_lease_expires_at = senate_lda._utcnow() + timedelta(seconds=300)
+        db.commit()
+    finally:
+        db.close()
+
+    senate_lda.execute_senate_lda_run(run_id)
+
+    db = SessionLocal()
+    try:
+        run = db.get(ConnectorRun, run_id)
+        assert run is not None
+        observed_error_summary = run.error_summary
+        observed_lease_conflicts = (
+            db.query(ConnectorRunEvent)
+            .filter(ConnectorRunEvent.connector_run_id == run_id, ConnectorRunEvent.event_type == "lease_conflict")
+            .count()
+        )
+        observed_target_count = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run_id).count()
+        run.status = "failed"
+        db.commit()
+    finally:
+        db.close()
+    assert observed_error_summary == "lease_conflict"
+    assert observed_lease_conflicts == 1
+    assert observed_target_count == 0
+
+
+def test_senate_lda_l20_cancel_mid_page_stops_before_partial_authority(monkeypatch):
+    from app.api import router
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRun, ConnectorRunEvent, ConnectorRunTarget, DatasetSourceProvenance
+    from app.services import connectors_senate_lda as senate_lda
+
+    fake = _CancellingSenateLdaClient()
+    monkeypatch.setattr(router, "_enqueue_connector_run", lambda *args, **kwargs: None)
+    monkeypatch.setattr(senate_lda, "get_senate_lda_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/senate-lda/runs",
+        json={"client_name": "Meta", "filing_year": 2025, "include_filing_detail": False},
+        headers={"Idempotency-Key": "l20-senate-lda-cancel-mid-page"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+    fake.run_id = run_id
+
+    senate_lda.execute_senate_lda_run(run_id)
+
+    db = SessionLocal()
+    try:
+        run = db.get(ConnectorRun, run_id)
+        assert run is not None
+        assert run.status == "cancelled"
+        assert run.cancelled_at is not None
+        assert run.error_summary == "cancelled_by_operator"
+        assert run.execution_lease_owner is None
+        assert run.execution_lease_token is None
+        assert run.execution_lease_expires_at is not None
+        assert db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run_id).count() == 0
+        assert db.query(DatasetSourceProvenance).filter(DatasetSourceProvenance.connector_run_id == run_id).count() == 0
+        event_types = {
+            row.event_type
+            for row in db.query(ConnectorRunEvent).filter(ConnectorRunEvent.connector_run_id == run_id).all()
+        }
+        assert "run_cancel_requested" in event_types
+        assert "run_finalized" in event_types
+    finally:
+        db.close()
+
+
+def test_senate_lda_l20_resume_after_target_creation_crash_does_not_duplicate_targets(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRunTarget
+    from app.services import connectors_senate_lda as senate_lda
+
+    fake = _FakeSenateLdaClient()
+    monkeypatch.setattr(senate_lda, "get_senate_lda_client", lambda config: fake)
+    real_create_targets = senate_lda._create_targets_from_discovery
+    crashed = {"done": False}
+
+    def _crash_after_targets(*args, **kwargs):
+        real_create_targets(*args, **kwargs)
+        if not crashed["done"]:
+            crashed["done"] = True
+            raise RuntimeError("simulated crash after persisted senate lda targets")
+
+    monkeypatch.setattr(senate_lda, "_create_targets_from_discovery", _crash_after_targets)
+
+    submit = client.post(
+        "/api/v1/connectors/senate-lda/runs",
+        json={"client_name": "Meta", "filing_year": 2025, "include_filing_detail": False, "max_items": 2},
+        headers={"Idempotency-Key": "l20-senate-lda-crash-resume"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    first_detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert first_detail.status_code == 200, first_detail.text
+    assert first_detail.json()["status"] == "failed"
+
+    monkeypatch.setattr(senate_lda, "_create_targets_from_discovery", real_create_targets)
+    resume = client.post(f"/api/v1/connectors/runs/{run_id}/resume")
+    assert resume.status_code == 202, resume.text
+
+    second_detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert second_detail.status_code == 200, second_detail.text
+    assert second_detail.json()["status"] == "completed"
+
+    db = SessionLocal()
+    try:
+        targets = (
+            db.query(ConnectorRunTarget)
+            .filter(ConnectorRunTarget.connector_run_id == run_id)
+            .order_by(ConnectorRunTarget.ordinal.asc())
+            .all()
+        )
+        assert [target.sciencebase_item_id for target in targets] == ["filing-1", "filing-2"]
+        assert len(fake.list_calls) == 1
+    finally:
+        db.close()
 
 
 def test_senate_lda_dedupes_duplicate_filings_and_records_provenance(monkeypatch):

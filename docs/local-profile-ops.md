@@ -13,6 +13,14 @@ This runbook covers the selected L05 operational subcontracts for the analytics-
 
 `config/release_readiness.yaml` remains profile-neutral. Its `owner_selected_profile_specific_gates` list stays empty.
 
+## RC2 Public Connector Lifecycle Posture
+
+This posture note is for the RC2-targeted public connector slice only: ScienceBase public/MCS and Senate LDA anonymous. It does not activate the selected analytics-only RC1 profile, and it does not change the empty owner-selected gates in `config/release_readiness.yaml`.
+
+Connector restart recovery is operator-resume-driven in RC2. After an executor crash or process loss, an operator rechecks run status and posts `POST /api/v1/connectors/runs/{connector_run_id}/resume`; RC2 does not run an automatic orphan-run or lease-expiry reaper. A run left `running` with an expired lease is detectable through the connector run status payload and persisted lease owner/token/expiry fields.
+
+The RC2 local posture is single worker and single process. Connector leases are single-process safe and prevent duplicate executor authority inside that posture. Multi-worker concurrent execution, cross-process atomic lease acquisition, and high availability are not RC2 claims.
+
 ## Artifact-Baked Build Identity
 
 Build the app image from the repo root with the scripted Docker build path:

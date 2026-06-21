@@ -25,6 +25,7 @@ from app.models import (
 )
 from app.services.connectors_sciencebase import (
     _acquire_lease,
+    _cooperate_with_cancel_request,
     _finalize_run,
     _record_run_event,
     _release_lease,
@@ -1020,6 +1021,8 @@ def execute_senate_lda_run(connector_run_id: str) -> None:
                         rate_limiter=rate_limiter,
                         retry_counters=retry_counters,
                     )
+                    if _cooperate_with_cancel_request(db, run, phase="discovery"):
+                        break
                     page_ref = _write_json(
                         _page_snapshot_path(run.connector_run_id, page_number),
                         {
@@ -1180,7 +1183,12 @@ def execute_senate_lda_run(connector_run_id: str) -> None:
             run = db.get(ConnectorRun, connector_run_id)
             if run:
                 run.status = "failed"
-                run.error_summary = f"orchestrator_internal_error: {exc}"
+                if "lease_conflict" in str(exc):
+                    run.error_summary = "lease_conflict"
+                    error_class = "lease_conflict"
+                else:
+                    run.error_summary = f"orchestrator_internal_error: {exc}"
+                    error_class = "orchestrator_internal_error"
                 run.completed_at = _utcnow()
                 _release_lease(run)
                 _record_run_event(
@@ -1189,7 +1197,7 @@ def execute_senate_lda_run(connector_run_id: str) -> None:
                     event_type="run_failed",
                     phase="finalizing",
                     status_after=run.status,
-                    error_class="orchestrator_internal_error",
+                    error_class=error_class,
                     message=str(exc),
                 )
                 db.commit()
