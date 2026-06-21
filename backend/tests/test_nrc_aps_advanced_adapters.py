@@ -102,12 +102,73 @@ class TestAdvancedAdapters(unittest.TestCase):
             result = nrc_aps_advanced_ocr.run_advanced_ocr(mock_page)
             self.assertAlmostEqual(result['average_confidence'], 85.0)
 
+    def test_ocr_adapter_calls_paddleocr_without_removed_cls_kwarg(self):
+        """PaddleOCR 3.x ocr() must not receive the removed cls kwarg."""
+        mock_page = MagicMock()
+        mock_pix = MagicMock()
+        mock_pix.samples = b'\x00' * (100 * 100 * 3)
+        mock_pix.height = 100
+        mock_pix.width = 100
+        mock_page.get_pixmap.return_value = mock_pix
+
+        class RecordingEngine:
+            def __init__(self):
+                self.call_kwargs = None
+
+            def ocr(self, image, **kwargs):
+                self.call_kwargs = kwargs
+                if "cls" in kwargs:
+                    raise TypeError("PaddleOCR 3.x ocr() got unexpected keyword argument 'cls'")
+                return [ [ [ [[0,0], [1,0], [1,1], [0,1]], ("test", 0.85) ] ] ]
+
+        engine = RecordingEngine()
+        with patch('app.services.nrc_aps_advanced_ocr._get_paddle_instance', return_value=engine):
+            result = nrc_aps_advanced_ocr.run_advanced_ocr(mock_page)
+
+        self.assertEqual(engine.call_kwargs, {})
+        self.assertAlmostEqual(result['average_confidence'], 85.0)
+
     def test_ocr_adapter_weights_missing_scoped_patch(self):
         """GOAL 4: Verify weights-missing logic using module-scoped patch."""
         nrc_aps_advanced_ocr._PADDLE_ENGINE = None
         with patch('app.services.nrc_aps_advanced_ocr.os.path.exists', return_value=False):
             with self.assertRaises(FileNotFoundError):
                 nrc_aps_advanced_ocr.run_advanced_ocr(MagicMock())
+
+    def test_ocr_adapter_constructs_paddleocr_with_3x_kwargs_only(self):
+        """PaddleOCR 3.x must not receive removed v2 constructor kwargs."""
+        nrc_aps_advanced_ocr._PADDLE_ENGINE = None
+        calls = []
+
+        class RecordingPaddleOCR:
+            def __init__(self, **kwargs):
+                calls.append(kwargs)
+                removed = {"show_log", "use_gpu"} & set(kwargs)
+                if removed:
+                    raise TypeError(f"unexpected PaddleOCR 2.x kwargs: {sorted(removed)}")
+
+        mock_paddle.PaddleOCR = RecordingPaddleOCR
+
+        with patch('app.services.nrc_aps_advanced_ocr.os.path.exists', return_value=True):
+            engine = nrc_aps_advanced_ocr._get_paddle_instance()
+
+        self.assertIsInstance(engine, RecordingPaddleOCR)
+        self.assertEqual(len(calls), 1)
+        kwargs = calls[0]
+        self.assertNotIn("show_log", kwargs)
+        self.assertNotIn("use_gpu", kwargs)
+        self.assertEqual(kwargs["device"], "cpu")
+        self.assertEqual(
+            set(kwargs),
+            {
+                "use_angle_cls",
+                "lang",
+                "det_model_dir",
+                "rec_model_dir",
+                "cls_model_dir",
+                "device",
+            },
+        )
 
 class TestProcessorSignals(unittest.TestCase):
     """GOAL 1: Exercise the REAL reachable processor path for signaling verification."""
