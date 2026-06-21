@@ -4,8 +4,8 @@ The README opening status note silently rotted for ~3 months (a 2026-03-25
 phase-closure note led the file long after it stopped being the current
 posture). These guards keep the front door honest: it must lead with the
 current support posture, must not present a dated historical phase note as the
-headline, and must name the selected local expert RC1 profile without upgrading
-that selection into a production-ready or nonlocal claim.
+headline, and must name the selected local expert RC3 profile without upgrading
+that selection into a production-ready, live SEC, or nonlocal claim.
 """
 from pathlib import Path
 
@@ -36,10 +36,13 @@ def test_readme_states_honest_selected_local_profile():
     assert "not a production-ready claim" in text, (
         "README dropped its not-production-ready honesty"
     )
-    assert "selected RC2 profile" in text
+    assert "selected RC3 profile" in text
     assert "base=local_expert" in text
-    assert 'overlays=["public_connectors"]' in text
+    assert 'overlays=["public_connectors","sec_xbrl_offline"]' in text
     assert "Public connector support is bounded to operator-workflow + local-deployment" in text
+    assert "SEC-XBRL support is simulation/offline-replay only" in text
+    assert "already-acquired operator-supplied evidence" in text
+    assert "SEC-XBRL live network / value reveal / controlled reveal submit remain default-off" in text
     assert "keyed connectors" in text
     assert "HA" in text
     assert "No release profile is selected yet" not in text

@@ -34,18 +34,41 @@ REQUIRED_UNSUPPORTED = {
     "keyed_connectors",
     "signed_reference_export",
 }
-REQUIRED_EXPERIMENTAL_DEFAULT_OFF = {
+VALUE_REVEAL_DEFAULT_OFF_CAPABILITIES = {
+    "sec_value_reveal",
+    "sec_controlled_value_reveal_submit",
+    "arelle_internal_value_store",
+    "arelle_corpus_validation",
+    "sec_xbrl_production_admission_evaluator",
+    "analysis_product_package_inventory",
+    "ocr_external_engine",
+}
+PUBLIC_CONNECTOR_DEFERRAL_CAPABILITIES = {
     "sciencebase_public_connector_slice",
     "senate_lda_anonymous_connector_slice",
     "connector_run_observability",
 }
 PUBLIC_CONNECTORS_OVERLAY = ["public_connectors"]
+RC3_SEC_XBRL_OFFLINE_OVERLAY = ["public_connectors", "sec_xbrl_offline"]
 PUBLIC_CONNECTOR_CAPABILITIES = {
     "sciencebase_public_connector_slice",
     "senate_lda_anonymous_connector_slice",
     "connector_run_observability",
 }
 PUBLIC_CONNECTORS_REQUIRED_EVIDENCE = ["PR-1", "PR-2", "PR-3", "PR-4", "PR-5"]
+SEC_XBRL_OFFLINE_SIMULATION_CAPABILITIES = {
+    "layer3_sec_xbrl_offline_evidence_loader",
+    "layer3_sec_xbrl_offline_companyfacts_stage",
+    "layer3_sec_xbrl_offline_companyfacts_oracle_packet",
+    "layer3_sec_xbrl_e2e_offline_orchestrator",
+    "layer3_sec_xbrl_offline_evidence_proof_capability",
+}
+RC3_BOUNDARY_TOKENS = {
+    "no live SEC egress",
+    "no value-reveal default-on",
+    "no agent egress",
+    "no nonlocal",
+}
 
 
 def default_repo_root() -> Path:
@@ -132,8 +155,12 @@ def _validate_matrix_shape(matrix: dict[str, Any], errors: list[str]) -> None:
     if matrix.get("profile") != "local_expert":
         errors.append("profile must be local_expert")
     overlays = matrix.get("overlays")
-    if overlays != "none" and overlays != PUBLIC_CONNECTORS_OVERLAY:
-        errors.append("overlays must be none or ['public_connectors']")
+    if (
+        overlays != "none"
+        and overlays != PUBLIC_CONNECTORS_OVERLAY
+        and overlays != RC3_SEC_XBRL_OFFLINE_OVERLAY
+    ):
+        errors.append("overlays must be none, ['public_connectors'], or ['public_connectors', 'sec_xbrl_offline']")
     if matrix.get("release_readiness_manifest") != "profile-neutral; do not populate owner_selected_profile_specific_gates":
         errors.append("release_readiness_manifest boundary statement is missing or changed")
     if matrix.get("pinned_false_flags") != PINNED_FALSE_FLAGS:
@@ -167,15 +194,18 @@ def _validate_matrix_shape(matrix: dict[str, Any], errors: list[str]) -> None:
     for capability_id in REQUIRED_UNSUPPORTED:
         if by_id.get(capability_id, {}).get("status") != "unsupported":
             errors.append(f"{capability_id} must be unsupported in local_expert")
+    for capability_id in VALUE_REVEAL_DEFAULT_OFF_CAPABILITIES:
+        if by_id.get(capability_id, {}).get("status") != "experimental_default_off":
+            errors.append(f"{capability_id} must remain experimental_default_off in local_expert")
     if overlays == "none":
-        for capability_id in REQUIRED_EXPERIMENTAL_DEFAULT_OFF:
+        for capability_id in PUBLIC_CONNECTOR_DEFERRAL_CAPABILITIES:
             item = by_id.get(capability_id, {})
             if item.get("status") != "experimental_default_off":
                 errors.append(f"{capability_id} must be experimental_default_off in analytics-only local_expert")
             evidence = str(item.get("evidence") or "")
             if "RC2-targeted" not in evidence:
                 errors.append(f"{capability_id} evidence must note RC2-targeted connector deferral")
-    elif overlays == PUBLIC_CONNECTORS_OVERLAY:
+    elif overlays == PUBLIC_CONNECTORS_OVERLAY or overlays == RC3_SEC_XBRL_OFFLINE_OVERLAY:
         for capability_id in PUBLIC_CONNECTOR_CAPABILITIES:
             item = by_id.get(capability_id, {})
             if item.get("status") != "supported":
@@ -188,6 +218,15 @@ def _validate_matrix_shape(matrix: dict[str, Any], errors: list[str]) -> None:
             ]
             if missing:
                 errors.append(f"{capability_id} evidence missing public connector PR markers: {', '.join(missing)}")
+    if overlays == RC3_SEC_XBRL_OFFLINE_OVERLAY:
+        boundary_note = str(matrix.get("boundary_note") or "")
+        for token in sorted(RC3_BOUNDARY_TOKENS):
+            if token not in boundary_note:
+                errors.append(f"boundary_note missing RC3 token {token!r}")
+        for capability_id in SEC_XBRL_OFFLINE_SIMULATION_CAPABILITIES:
+            item = by_id.get(capability_id, {})
+            if item.get("status") != "simulation":
+                errors.append(f"{capability_id} must be simulation when sec_xbrl_offline overlay is selected")
 
 
 def run_support_matrix_check(

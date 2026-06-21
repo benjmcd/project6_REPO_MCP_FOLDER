@@ -26,6 +26,27 @@ def _load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _write_historical_rc2_root(tmp_path: Path) -> Path:
+    root = tmp_path / "repo"
+    config = root / "config"
+    config.mkdir(parents=True)
+
+    matrix = _load_json(SUPPORT_MATRIX_PATH)
+    matrix["overlays"] = ["public_connectors"]
+    matrix["boundary_note"] = (
+        "Selected RC2 profile is single-operator local_expert with public_connectors overlay. "
+        "Public connector support is bounded to operator-workflow + local-deployment. "
+        "No SEC, OCR, model/agent egress, nonlocal, keyed connector, or HA claim is selected."
+    )
+    (config / "support_matrix.yaml").write_text(json.dumps(matrix), encoding="utf-8")
+
+    manifest = _load_json(RELEASE_READINESS_PATH)
+    manifest["release"]["milestone"] = "M-L02-RELEASE-ACCEPTANCE"
+    manifest["release"]["version"] = "0.2.0-rc1"
+    (config / "release_readiness.yaml").write_text(json.dumps(manifest), encoding="utf-8")
+    return root
+
+
 def test_rc2_public_connectors_doc_records_honest_acceptance_ceiling() -> None:
     text = DOC_PATH.read_text(encoding="utf-8")
 
@@ -55,27 +76,17 @@ def test_rc2_public_connectors_doc_records_honest_acceptance_ceiling() -> None:
         assert phrase in text
 
 
-def test_rc2_support_matrix_selects_public_connectors_overlay_only() -> None:
-    matrix = _load_json(SUPPORT_MATRIX_PATH)
-    by_id = {item["id"]: item for item in matrix["capabilities"]}
+def test_rc2_runner_preserves_public_connectors_overlay_only() -> None:
+    runner = _load_runner()
 
-    assert matrix["profile"] == "local_expert"
-    assert matrix["overlays"] == ["public_connectors"]
-    assert "public_connectors overlay" in matrix["boundary_note"]
-    assert "operator-workflow + local-deployment" in matrix["boundary_note"]
-    assert "No SEC" in matrix["boundary_note"]
-
-    for connector_id in (
-        "sciencebase_public_connector_slice",
-        "senate_lda_anonymous_connector_slice",
-        "connector_run_observability",
-    ):
-        assert by_id[connector_id]["status"] == "supported"
-        evidence = by_id[connector_id]["evidence"]
-        for marker in ("PR-1", "PR-2", "PR-3", "PR-4", "PR-5"):
-            assert marker in evidence
-
-    for excluded_id in (
+    assert runner.EXPECTED_VERSION == "0.2.0-rc1"
+    assert runner.PROFILE == {
+        "base": "local_expert",
+        "overlays": ["public_connectors"],
+        "scope": "public/anonymous connectors only",
+        "proof_level": "operator-workflow + local-deployment",
+    }
+    assert runner.FORBIDDEN_SUPPORTED_CAPABILITIES == {
         "sec_live_network_egress",
         "real_provider_delivery",
         "model_agent_egress",
@@ -83,22 +94,26 @@ def test_rc2_support_matrix_selects_public_connectors_overlay_only() -> None:
         "high_availability",
         "keyed_connectors",
         "signed_reference_export",
-    ):
-        assert by_id[excluded_id]["status"] == "unsupported"
+    }
 
 
-def test_rc2_version_bump_keeps_release_owner_gates_empty() -> None:
+def test_rc2_runner_is_historical_after_rc3_bump_and_owner_gates_stay_empty() -> None:
+    runner = _load_runner()
     version_text = VERSION_PATH.read_text(encoding="utf-8")
     release_manifest = _load_json(RELEASE_READINESS_PATH)
 
-    assert 'VERSION = "0.2.0-rc1"' in version_text
-    assert release_manifest["release"]["version"] == "0.2.0-rc1"
+    assert runner.EXPECTED_VERSION == "0.2.0-rc1"
+    assert 'VERSION = "0.3.0-rc1"' in version_text
+    assert release_manifest["release"]["version"] == "0.3.0-rc1"
     assert release_manifest["owner_selected_profile_specific_gates"] == []
     assert "profile-neutral" in release_manifest["release"]["scope"]
 
 
-def test_rc2_acceptance_runner_reports_public_connector_pass_with_injected_checks(monkeypatch) -> None:
+def test_rc2_acceptance_runner_reports_public_connector_pass_with_injected_checks(
+    monkeypatch, tmp_path
+) -> None:
     runner = _load_runner()
+    historical_root = _write_historical_rc2_root(tmp_path)
     calls: list[tuple[str, ...]] = []
     monkeypatch.setenv("PROJECT6_CI_BACKEND_LAYER3_API_RESULT", "success")
 
@@ -107,7 +122,7 @@ def test_rc2_acceptance_runner_reports_public_connector_pass_with_injected_check
         return runner.CommandResult(returncode=0, stdout="ok", stderr="")
 
     report = runner.run_rc2_acceptance(
-        repo_root=REPO_ROOT,
+        repo_root=historical_root,
         command_runner=fake_command_runner,
         build_info_provider=lambda _root: {
             "source": "/ready build_info",
@@ -154,11 +169,12 @@ def test_rc2_acceptance_runner_reports_public_connector_pass_with_injected_check
         assert test_name in flat_calls
 
 
-def test_rc2_acceptance_runner_fails_when_version_is_stale() -> None:
+def test_rc2_acceptance_runner_fails_when_version_is_stale(tmp_path) -> None:
     runner = _load_runner()
+    historical_root = _write_historical_rc2_root(tmp_path)
 
     report = runner.run_rc2_acceptance(
-        repo_root=REPO_ROOT,
+        repo_root=historical_root,
         command_runner=lambda _command, _cwd: runner.CommandResult(
             returncode=0,
             stdout="ok",

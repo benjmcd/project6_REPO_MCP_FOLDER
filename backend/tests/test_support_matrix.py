@@ -35,6 +35,11 @@ EXPECTED_CAPABILITY_STATUSES = {
     "analysis_product_package_inventory": "experimental_default_off",
     "ocr_external_engine": "experimental_default_off",
     "sec_offline_replay_path": "simulation",
+    "layer3_sec_xbrl_offline_evidence_loader": "simulation",
+    "layer3_sec_xbrl_offline_companyfacts_stage": "simulation",
+    "layer3_sec_xbrl_offline_companyfacts_oracle_packet": "simulation",
+    "layer3_sec_xbrl_e2e_offline_orchestrator": "simulation",
+    "layer3_sec_xbrl_offline_evidence_proof_capability": "simulation",
     "nrc_aps_replay_corpus_gate": "simulation",
     "offline_staged_redaction_value_store_resolution": "simulation",
     "sec_live_network_egress": "unsupported",
@@ -65,11 +70,19 @@ def test_support_matrix_declares_local_expert_capability_boundary() -> None:
 
     assert matrix["schema_id"] == "project6.support_matrix.v1"
     assert matrix["profile"] == "local_expert"
-    assert matrix["overlays"] == ["public_connectors"]
+    assert matrix["overlays"] == ["public_connectors", "sec_xbrl_offline"]
     assert "single-operator local" in matrix["boundary_note"]
     assert "no auth boundary" in matrix["boundary_note"]
-    assert "public_connectors overlay" in matrix["boundary_note"]
+    assert "public_connectors and sec_xbrl_offline overlays" in matrix["boundary_note"]
     assert "operator-workflow + local-deployment" in matrix["boundary_note"]
+    assert "simulation/offline-replay only" in matrix["boundary_note"]
+    for token in (
+        "no live SEC egress",
+        "no value-reveal default-on",
+        "no agent egress",
+        "no nonlocal",
+    ):
+        assert token in matrix["boundary_note"]
 
     capabilities = matrix["capabilities"]
     by_id = {item["id"]: item for item in capabilities}
@@ -82,6 +95,22 @@ def test_support_matrix_declares_local_expert_capability_boundary() -> None:
 
     assert by_id["sec_live_network_egress"]["status"] == "unsupported"
     assert by_id["model_agent_egress"]["status"] == "unsupported"
+    for capability_id in (
+        "sec_value_reveal",
+        "sec_controlled_value_reveal_submit",
+        "arelle_internal_value_store",
+        "arelle_corpus_validation",
+        "sec_xbrl_production_admission_evaluator",
+    ):
+        assert by_id[capability_id]["status"] == "experimental_default_off"
+    for capability_id in (
+        "layer3_sec_xbrl_offline_evidence_loader",
+        "layer3_sec_xbrl_offline_companyfacts_stage",
+        "layer3_sec_xbrl_offline_companyfacts_oracle_packet",
+        "layer3_sec_xbrl_e2e_offline_orchestrator",
+        "layer3_sec_xbrl_offline_evidence_proof_capability",
+    ):
+        assert by_id[capability_id]["status"] == "simulation"
     assert "nrc_aps_document_processing.py" in by_id["ocr_external_engine"]["evidence"]
     for connector_id in (
         "sciencebase_public_connector_slice",
@@ -114,7 +143,8 @@ def test_front_door_names_selected_local_expert_profile_without_old_unselected_c
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
 
     assert "base=local_expert" in readme
-    assert 'overlays=["public_connectors"]' in readme
+    assert 'overlays=["public_connectors","sec_xbrl_offline"]' in readme
+    assert "simulation/offline-replay only" in readme
     assert "No release profile is selected yet" not in readme
 
 
@@ -153,7 +183,7 @@ def test_support_matrix_checker_passes_against_current_config_defaults() -> None
     assert report["schema_id"] == "project6.support_matrix_check.v1"
     assert report["status"] == "pass"
     assert report["profile"] == "local_expert"
-    assert report["overlays"] == ["public_connectors"]
+    assert report["overlays"] == ["public_connectors", "sec_xbrl_offline"]
     assert report["release_readiness_owner_selected_profile_specific_gates"] == []
     assert report["default_profile"] == {
         "deployment_mode": "local",
