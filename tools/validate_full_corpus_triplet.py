@@ -75,6 +75,26 @@ def build_parser() -> argparse.ArgumentParser:
         default="",
         help="Optional explicit runtime root for the Candidate B OpenDataLoader full-corpus receipt.",
     )
+    parser.add_argument(
+        "--corpus-root",
+        default=os.environ.get("NRC_CORPUS_ROOT", ""),
+        help=(
+            "Override the admitted corpus root directory. "
+            f"Defaults to <checkout-root>/{ADMITTED_CORPUS_ROOT_RELATIVE} "
+            "(or NRC_CORPUS_ROOT env if set). The directory must exist. "
+            "Requires --allow-unadmitted-corpus when the path differs from the default."
+        ),
+    )
+    parser.add_argument(
+        "--allow-unadmitted-corpus",
+        action="store_true",
+        default=False,
+        help=(
+            "Permit validation against a non-admitted corpus root. "
+            "Required when --corpus-root (or NRC_CORPUS_ROOT) points to a path other than the "
+            f"default admitted corpus (<checkout-root>/{ADMITTED_CORPUS_ROOT_RELATIVE})."
+        ),
+    )
     return parser
 
 
@@ -148,17 +168,17 @@ def _extract_admitted_accession(stem: str, *, ordinal: int, seen: set[str]) -> s
     return accession
 
 
-def _admitted_accession_identities(checkout_root: Path) -> list[dict[str, Any]]:
-    corpus_root = _admitted_corpus_root(checkout_root)
-    if not corpus_root.is_dir():
+def _admitted_accession_identities(checkout_root: Path, *, corpus_root: Path | None = None) -> list[dict[str, Any]]:
+    resolved_corpus_root = corpus_root if corpus_root is not None else _admitted_corpus_root(checkout_root)
+    if not resolved_corpus_root.is_dir():
         raise ValidationError(
             "admitted_corpus_root_missing",
             "The admitted NRC APS full-corpus source directory is unavailable.",
-            context={"admitted_corpus_root": _repo_rel(checkout_root, corpus_root)},
+            context={"admitted_corpus_root": _repo_rel(checkout_root, resolved_corpus_root)},
         )
     grouped: dict[str, list[Path]] = {}
-    for pdf_path in _walk_admitted_corpus_pdfs(corpus_root.resolve()):
-        relative = pdf_path.relative_to(corpus_root.resolve())
+    for pdf_path in _walk_admitted_corpus_pdfs(resolved_corpus_root.resolve()):
+        relative = pdf_path.relative_to(resolved_corpus_root.resolve())
         group_name = relative.parts[0] if len(relative.parts) > 1 else "__corpus_root__"
         grouped.setdefault(group_name, []).append(pdf_path)
 
@@ -187,8 +207,8 @@ def _admitted_accession_identities(checkout_root: Path) -> list[dict[str, Any]]:
     return identities
 
 
-def _admitted_target_set_authority(checkout_root: Path) -> dict[str, Any]:
-    identities = _admitted_accession_identities(checkout_root)
+def _admitted_target_set_authority(checkout_root: Path, *, corpus_root: Path | None = None) -> dict[str, Any]:
+    identities = _admitted_accession_identities(checkout_root, corpus_root=corpus_root)
     return {
         "authority": ADMITTED_TARGET_SET_AUTHORITY,
         "target_count": EXPECTED_CORPUS_PDF_COUNT,
@@ -585,6 +605,7 @@ def validate_triplet(
     baseline_run_root: Path,
     candidate_a_run_root: Path,
     candidate_b_run_root: Path,
+    corpus_root: Path | None = None,
 ) -> dict[str, Any]:
     baseline = _validate_summary(
         baseline_run_root,
@@ -630,7 +651,7 @@ def validate_triplet(
             "Baseline, Candidate A, and Candidate B do not share the same full-corpus target set.",
             context={"mismatched": mismatched},
         )
-    admitted_target_set = _admitted_target_set_authority(checkout_root)
+    admitted_target_set = _admitted_target_set_authority(checkout_root, corpus_root=corpus_root)
     if baseline_hash != admitted_target_set["target_set_hash"]:
         raise ValidationError(
             "triplet_target_set_not_admitted",
@@ -760,11 +781,27 @@ def main(argv: list[str] | None = None) -> int:
             engine=CANDIDATE_B_ENGINE,
             visual_lane=CANDIDATE_B_VISUAL_LANE,
         )
+        _corpus_root_arg: str = args.corpus_root or ""
+        corpus_root_override: Path | None = Path(_corpus_root_arg).resolve() if _corpus_root_arg else None
+        effective_corpus_root = corpus_root_override if corpus_root_override is not None else _admitted_corpus_root(checkout_root)
+        if corpus_root_override is not None and corpus_root_override.resolve() != _admitted_corpus_root(checkout_root).resolve():
+            if not args.allow_unadmitted_corpus:
+                raise ValidationError(
+                    "unadmitted_corpus_root_requires_explicit_opt_in",
+                    "pass --allow-unadmitted-corpus to validate against a non-admitted corpus root",
+                    context={"effective_corpus_root": str(corpus_root_override), "admitted_corpus_root": str(_admitted_corpus_root(checkout_root))},
+                )
+            print(
+                f"[validate_full_corpus_triplet] WARNING: corpus root overridden to {corpus_root_override} "
+                f"(admitted default: {_admitted_corpus_root(checkout_root)})",
+                file=sys.stderr,
+            )
         payload = validate_triplet(
             checkout_root=checkout_root,
             baseline_run_root=baseline_root,
             candidate_a_run_root=candidate_a_root,
             candidate_b_run_root=candidate_b_root,
+            corpus_root=corpus_root_override,
         )
     except ValidationError as exc:
         payload = {

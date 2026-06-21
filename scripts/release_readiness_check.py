@@ -128,7 +128,7 @@ def _collect_ready_build_info(repo_root: Path) -> dict[str, Any]:
         git_sha = _current_git_sha(repo_root)
         if git_sha != "unknown":
             os.environ["PROJECT6_SOURCE_SHA"] = git_sha
-    os.environ.setdefault("DB_INIT_MODE", "none")
+    os.environ["DB_INIT_MODE"] = "none"
 
     backend_path = str(repo_root / "backend")
     if backend_path not in sys.path:
