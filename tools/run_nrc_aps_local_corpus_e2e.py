@@ -501,8 +501,9 @@ def _extract_accession_number(stem: str, *, ordinal: int, seen: set[str]) -> str
     return accession
 
 
-def _build_local_corpus_documents(corpus_root: Path) -> tuple[list[LocalCorpusDocument], dict[str, Any]]:
-    _assert(corpus_root.resolve() == DEFAULT_CORPUS_ROOT.resolve(), f"corpus root must be {DEFAULT_CORPUS_ROOT}")
+def _build_local_corpus_documents(corpus_root: Path, *, is_default: bool = True) -> tuple[list[LocalCorpusDocument], dict[str, Any]]:
+    if is_default:
+        _assert(corpus_root.resolve() == DEFAULT_CORPUS_ROOT.resolve(), f"corpus root must be {DEFAULT_CORPUS_ROOT}")
     _assert(corpus_root.exists(), f"corpus root not found: {corpus_root}")
 
     document_types_reference = _load_document_types_reference()
@@ -591,9 +592,16 @@ def _run_preflight(
     runtime_root: Path,
     *,
     document_processing_engine: str,
+    corpus_root: Path | None = None,
 ) -> tuple[list[LocalCorpusDocument], dict[str, Any], list[dict[str, Any]]]:
     document_processing_engine = _normalize_document_processing_engine(document_processing_engine)
-    docs, corpus_shape = _build_local_corpus_documents(DEFAULT_CORPUS_ROOT)
+    if corpus_root is None:
+        _nrc_env = os.environ.get("NRC_CORPUS_ROOT", "").strip()
+        _corpus_root = Path(_nrc_env).resolve() if _nrc_env else DEFAULT_CORPUS_ROOT
+    else:
+        _corpus_root = corpus_root
+    _is_default = _corpus_root.resolve() == DEFAULT_CORPUS_ROOT.resolve()
+    docs, corpus_shape = _build_local_corpus_documents(_corpus_root, is_default=_is_default)
 
     _assert(EXPECTED_INTERPRETER.exists(), f"expected Phase 7A interpreter missing: {EXPECTED_INTERPRETER}")
     _assert(Path(sys.executable).resolve() == EXPECTED_INTERPRETER.resolve(), f"tool must run with {EXPECTED_INTERPRETER}, got {Path(sys.executable).resolve()}")
@@ -1412,6 +1420,15 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"Optional empty runtime directory under {DEFAULT_RUNTIME_PARENT}. If omitted, the tool creates a fresh timestamped runtime.",
     )
     parser.add_argument(
+        "--corpus-root",
+        default=None,
+        help=(
+            f"Override the local corpus root directory. Defaults to {DEFAULT_CORPUS_ROOT}. "
+            "The directory must exist. NRC_CORPUS_ROOT env is honored internally by the tool "
+            "when this flag is not supplied."
+        ),
+    )
+    parser.add_argument(
         "--document-processing-engine",
         choices=DOCUMENT_PROCESSING_ENGINE_CHOICES,
         default=DOCUMENT_PROCESSING_ENGINE_BASELINE,
@@ -1439,6 +1456,15 @@ def main(argv: list[str] | None = None) -> int:
         visual_lane_mode=args.visual_lane_mode,
     )
     runtime_root = _resolve_runtime_root(args.runtime_root)
+    _corpus_root_arg: str = args.corpus_root or ""
+    corpus_root_override: Path | None = Path(_corpus_root_arg).resolve() if _corpus_root_arg else None
+    effective_corpus_root = corpus_root_override if corpus_root_override is not None else DEFAULT_CORPUS_ROOT
+    if corpus_root_override is not None and corpus_root_override.resolve() != DEFAULT_CORPUS_ROOT.resolve():
+        print(
+            f"[run_nrc_aps_local_corpus_e2e] WARNING: corpus root overridden to {corpus_root_override} "
+            f"(admitted default: {DEFAULT_CORPUS_ROOT})",
+            file=sys.stderr,
+        )
     summary_path = runtime_root / "local_corpus_e2e_summary.json"
     summary: dict[str, Any] = {
         "schema_id": SUMMARY_SCHEMA_ID,
@@ -1453,7 +1479,7 @@ def main(argv: list[str] | None = None) -> int:
         "document_processing_engine": document_processing_engine,
         "visual_lane_mode": visual_lane_mode,
         "run_id": None,
-        "corpus_root": str(DEFAULT_CORPUS_ROOT),
+        "corpus_root": str(effective_corpus_root),
         "corpus_pdf_count": 0,
         "preflight": {},
         "submission": {},
@@ -1470,10 +1496,10 @@ def main(argv: list[str] | None = None) -> int:
 
     exit_code = 1
     try:
-        docs, preflight, findings = _run_preflight(
-            runtime_root,
-            document_processing_engine=document_processing_engine,
-        )
+        _preflight_kwargs: dict[str, Any] = {"document_processing_engine": document_processing_engine}
+        if corpus_root_override is not None:
+            _preflight_kwargs["corpus_root"] = corpus_root_override
+        docs, preflight, findings = _run_preflight(runtime_root, **_preflight_kwargs)
         summary["preflight"] = preflight
         summary["corpus_pdf_count"] = len(docs)
         summary["observed_non_blocking_findings"] = findings

@@ -40,8 +40,7 @@ WORKDIR /app
 
 # Install Python dependencies first (layer-cached separately from app code).
 COPY backend/requirements.txt backend/requirements.lock.txt ./
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --require-hashes -r requirements.lock.txt
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock.txt
 
 ARG PROJECT6_SOURCE_SHA=unknown
 ENV PROJECT6_SOURCE_SHA=${PROJECT6_SOURCE_SHA}
