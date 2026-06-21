@@ -595,8 +595,13 @@ def _run_preflight(
     corpus_root: Path | None = None,
 ) -> tuple[list[LocalCorpusDocument], dict[str, Any], list[dict[str, Any]]]:
     document_processing_engine = _normalize_document_processing_engine(document_processing_engine)
-    _corpus_root = corpus_root if corpus_root is not None else DEFAULT_CORPUS_ROOT
-    docs, corpus_shape = _build_local_corpus_documents(_corpus_root, is_default=corpus_root is None)
+    if corpus_root is None:
+        _nrc_env = os.environ.get("NRC_CORPUS_ROOT", "").strip()
+        _corpus_root = Path(_nrc_env).resolve() if _nrc_env else DEFAULT_CORPUS_ROOT
+    else:
+        _corpus_root = corpus_root
+    _is_default = _corpus_root.resolve() == DEFAULT_CORPUS_ROOT.resolve()
+    docs, corpus_shape = _build_local_corpus_documents(_corpus_root, is_default=_is_default)
 
     _assert(EXPECTED_INTERPRETER.exists(), f"expected Phase 7A interpreter missing: {EXPECTED_INTERPRETER}")
     _assert(Path(sys.executable).resolve() == EXPECTED_INTERPRETER.resolve(), f"tool must run with {EXPECTED_INTERPRETER}, got {Path(sys.executable).resolve()}")
@@ -1416,10 +1421,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--corpus-root",
-        default=os.environ.get("NRC_CORPUS_ROOT", ""),
+        default=None,
         help=(
-            f"Override the local corpus root directory. Defaults to {DEFAULT_CORPUS_ROOT} "
-            "(or NRC_CORPUS_ROOT env if set). The directory must exist."
+            f"Override the local corpus root directory. Defaults to {DEFAULT_CORPUS_ROOT}. "
+            "The directory must exist. NRC_CORPUS_ROOT env is honored internally by the tool "
+            "when this flag is not supplied."
         ),
     )
     parser.add_argument(

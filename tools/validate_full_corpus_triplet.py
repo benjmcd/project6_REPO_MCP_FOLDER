@@ -77,12 +77,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--corpus-root",
-        default=os.environ.get("NRC_CORPUS_ROOT", ""),
+        default=None,
         help=(
             "Override the admitted corpus root directory. "
-            f"Defaults to <checkout-root>/{ADMITTED_CORPUS_ROOT_RELATIVE} "
-            "(or NRC_CORPUS_ROOT env if set). The directory must exist. "
-            "Requires --allow-unadmitted-corpus when the path differs from the default."
+            f"Defaults to <checkout-root>/{ADMITTED_CORPUS_ROOT_RELATIVE}. "
+            "The directory must exist. NRC_CORPUS_ROOT env is honored internally when this flag "
+            "is not supplied. Requires --allow-unadmitted-corpus when the path differs from the default."
         ),
     )
     parser.add_argument(
@@ -781,8 +781,13 @@ def main(argv: list[str] | None = None) -> int:
             engine=CANDIDATE_B_ENGINE,
             visual_lane=CANDIDATE_B_VISUAL_LANE,
         )
-        _corpus_root_arg: str = args.corpus_root or ""
-        corpus_root_override: Path | None = Path(_corpus_root_arg).resolve() if _corpus_root_arg else None
+        # Resolve corpus root: --corpus-root flag is the only supported override.
+        # NRC_CORPUS_ROOT is intentionally NOT read here; it was moved out of the argparse
+        # default so it cannot contaminate the no-flag path in CI environments where the var
+        # happens to be set. When no flag is supplied, corpus_root_override stays None and the
+        # admitted default (_admitted_corpus_root) is used.
+        _explicit_corpus_root_arg: str = args.corpus_root or ""
+        corpus_root_override: Path | None = Path(_explicit_corpus_root_arg).resolve() if _explicit_corpus_root_arg else None
         effective_corpus_root = corpus_root_override if corpus_root_override is not None else _admitted_corpus_root(checkout_root)
         if corpus_root_override is not None and corpus_root_override.resolve() != _admitted_corpus_root(checkout_root).resolve():
             if not args.allow_unadmitted_corpus:
