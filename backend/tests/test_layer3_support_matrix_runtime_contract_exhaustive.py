@@ -1,0 +1,118 @@
+from __future__ import annotations
+
+import functools
+import importlib.util
+import json
+from pathlib import Path
+
+import pytest
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+MATRIX_PATH = REPO_ROOT / "config" / "support_matrix.yaml"
+AUDIT_PATH = REPO_ROOT / "scripts" / "support_matrix_runtime_contract_audit.py"
+
+
+def _load_audit_module():
+    spec = importlib.util.spec_from_file_location("support_matrix_runtime_contract_audit", AUDIT_PATH)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@functools.lru_cache(maxsize=1)
+def _audit():
+    return _load_audit_module()
+
+
+@functools.lru_cache(maxsize=1)
+def _report() -> dict:
+    return _audit().build_report(MATRIX_PATH, repo_root=REPO_ROOT)
+
+
+def _matrix_capability_ids() -> list[str]:
+    matrix = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
+    return [str(item["id"]) for item in matrix["capabilities"]]
+
+
+def test_support_matrix_runtime_contract_audit_reports_clean_pass() -> None:
+    report = _report()
+
+    assert report["schema_id"] == "project6.support_matrix_runtime_contract_audit.v1"
+    assert report["status"] == "pass"
+    assert report["capability_count"] == 28
+    assert report["errors"] == []
+    assert {item["status"] for item in report["pinned_false_flags"]} == {"pass"}
+    assert report["coverage_by_status"] == {
+        "experimental_default_off": [
+            "analysis_product_package_inventory",
+            "arelle_corpus_validation",
+            "arelle_internal_value_store",
+            "ocr_external_engine",
+            "sec_controlled_value_reveal_submit",
+            "sec_value_reveal",
+            "sec_xbrl_production_admission_evaluator",
+        ],
+        "simulation": [
+            "layer3_sec_xbrl_e2e_offline_orchestrator",
+            "layer3_sec_xbrl_offline_companyfacts_oracle_packet",
+            "layer3_sec_xbrl_offline_companyfacts_stage",
+            "layer3_sec_xbrl_offline_evidence_loader",
+            "layer3_sec_xbrl_offline_evidence_proof_capability",
+            "nrc_aps_replay_corpus_gate",
+            "offline_staged_redaction_value_store_resolution",
+            "sec_offline_replay_path",
+        ],
+        "supported": [
+            "connector_run_observability",
+            "health_readiness_openapi",
+            "layer3_workbench_ui",
+            "method_aware_analytics_vertical",
+            "sciencebase_public_connector_slice",
+            "senate_lda_anonymous_connector_slice",
+        ],
+        "unsupported": [
+            "high_availability",
+            "keyed_connectors",
+            "model_agent_egress",
+            "nonlocal_multi_trust_multi_identity",
+            "real_provider_delivery",
+            "sec_live_network_egress",
+            "signed_reference_export",
+        ],
+    }
+
+
+@pytest.mark.parametrize("capability_id", _matrix_capability_ids())
+def test_support_matrix_runtime_contract_exhaustive_for_each_capability(capability_id: str) -> None:
+    report = _report()
+    result_by_id = {item["id"]: item for item in report["capabilities"]}
+    result = result_by_id[capability_id]
+
+    assert result["status"] == "pass"
+    assert result["declared_status"] == result["expected_status"]
+    assert result["evidence"]["passed"] is True
+    assert result["runtime_probe"] != {}
+
+
+def test_support_matrix_runtime_contract_cli_rejects_synthetic_status_drift(tmp_path, capsys) -> None:
+    matrix = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
+    for capability in matrix["capabilities"]:
+        if capability["id"] == "method_aware_analytics_vertical":
+            capability["status"] = "unsupported"
+            break
+    mutated = tmp_path / "support_matrix.json"
+    mutated.write_text(json.dumps(matrix), encoding="utf-8")
+
+    exit_code = _audit().main(["--matrix", str(mutated)])
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+
+    assert exit_code == 1
+    assert report["status"] == "fail"
+    assert any(
+        "status drift for method_aware_analytics_vertical" in error
+        for error in report["errors"]
+    )
