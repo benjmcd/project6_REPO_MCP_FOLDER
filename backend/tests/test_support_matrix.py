@@ -34,6 +34,7 @@ EXPECTED_CAPABILITY_STATUSES = {
     "sec_xbrl_production_admission_evaluator": "experimental_default_off",
     "analysis_product_package_inventory": "experimental_default_off",
     "ocr_external_engine": "experimental_default_off",
+    "sec_live_network_egress": "experimental_default_off",
     "sec_offline_replay_path": "simulation",
     "layer3_sec_xbrl_offline_evidence_loader": "simulation",
     "layer3_sec_xbrl_offline_companyfacts_stage": "simulation",
@@ -42,7 +43,6 @@ EXPECTED_CAPABILITY_STATUSES = {
     "layer3_sec_xbrl_offline_evidence_proof_capability": "simulation",
     "nrc_aps_replay_corpus_gate": "simulation",
     "offline_staged_redaction_value_store_resolution": "simulation",
-    "sec_live_network_egress": "unsupported",
     "real_provider_delivery": "unsupported",
     "model_agent_egress": "unsupported",
     "nonlocal_multi_trust_multi_identity": "unsupported",
@@ -77,7 +77,7 @@ def test_support_matrix_declares_local_expert_capability_boundary() -> None:
     assert "operator-workflow + local-deployment" in matrix["boundary_note"]
     assert "simulation/offline-replay only" in matrix["boundary_note"]
     for token in (
-        "no live SEC egress",
+        "live SEC egress explicit default-off",
         "no value-reveal default-on",
         "no agent egress",
         "no nonlocal",
@@ -93,7 +93,7 @@ def test_support_matrix_declares_local_expert_capability_boundary() -> None:
     assert all(isinstance(item["evidence"], str) and item["evidence"].strip() for item in capabilities)
     assert all(item["evidence"].startswith(("./", "README.md", "backend/", "tests/")) for item in capabilities)
 
-    assert by_id["sec_live_network_egress"]["status"] == "unsupported"
+    assert by_id["sec_live_network_egress"]["status"] == "experimental_default_off"
     assert by_id["model_agent_egress"]["status"] == "unsupported"
     for capability_id in (
         "sec_value_reveal",
@@ -101,6 +101,7 @@ def test_support_matrix_declares_local_expert_capability_boundary() -> None:
         "arelle_internal_value_store",
         "arelle_corpus_validation",
         "sec_xbrl_production_admission_evaluator",
+        "sec_live_network_egress",
     ):
         assert by_id[capability_id]["status"] == "experimental_default_off"
     for capability_id in (

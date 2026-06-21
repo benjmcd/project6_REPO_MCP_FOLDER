@@ -49,7 +49,10 @@ def test_sec_xbrl_offline_honesty_audit_fails_closed_on_synthetic_status_upgrade
 
     report = module.build_report(matrix_path=mutated, repo_root=ROOT)
     assert report["status"] == "fail"
-    assert any("sec_live_network_egress must be unsupported" in error for error in report["errors"])
+    assert any(
+        "sec_live_network_egress must be experimental_default_off" in error
+        for error in report["errors"]
+    )
 
     assert module.main(["--repo-root", str(ROOT), "--matrix", str(mutated)]) == 1
 

@@ -28,6 +28,12 @@ readme_front_door:
   production_ready_sec_value_reveal: false
 ```
 
+Supersession note: `1361-sec-live-source-matrix-transition.md` advances only
+`sec_live_network_egress` from `unsupported` to `experimental_default_off` after
+re-checking the already-landed live source-artifact acquisition runtime. The
+controlled value reveal/default-on conclusions in this document remain
+unchanged.
+
 Docs `1350-sec-xbrl-activation-lane-selection.md` and
 `1353-sec-xbrl-value-reveal-activation.md` contain historical activation/default-on
 language. That language is not current runtime authority. Current config, support

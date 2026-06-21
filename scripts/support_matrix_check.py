@@ -26,7 +26,6 @@ PINNED_FALSE_FLAGS = [
     "LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED",
 ]
 REQUIRED_UNSUPPORTED = {
-    "sec_live_network_egress",
     "real_provider_delivery",
     "model_agent_egress",
     "nonlocal_multi_trust_multi_identity",
@@ -34,7 +33,8 @@ REQUIRED_UNSUPPORTED = {
     "keyed_connectors",
     "signed_reference_export",
 }
-VALUE_REVEAL_DEFAULT_OFF_CAPABILITIES = {
+EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES = {
+    "sec_live_network_egress",
     "sec_value_reveal",
     "sec_controlled_value_reveal_submit",
     "arelle_internal_value_store",
@@ -64,7 +64,7 @@ SEC_XBRL_OFFLINE_SIMULATION_CAPABILITIES = {
     "layer3_sec_xbrl_offline_evidence_proof_capability",
 }
 RC3_BOUNDARY_TOKENS = {
-    "no live SEC egress",
+    "live SEC egress explicit default-off",
     "no value-reveal default-on",
     "no agent egress",
     "no nonlocal",
@@ -194,7 +194,7 @@ def _validate_matrix_shape(matrix: dict[str, Any], errors: list[str]) -> None:
     for capability_id in REQUIRED_UNSUPPORTED:
         if by_id.get(capability_id, {}).get("status") != "unsupported":
             errors.append(f"{capability_id} must be unsupported in local_expert")
-    for capability_id in VALUE_REVEAL_DEFAULT_OFF_CAPABILITIES:
+    for capability_id in EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES:
         if by_id.get(capability_id, {}).get("status") != "experimental_default_off":
             errors.append(f"{capability_id} must remain experimental_default_off in local_expert")
     if overlays == "none":

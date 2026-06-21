@@ -51,7 +51,7 @@ The operator-workflow proof includes coherent state recovery through a fresh API
 | SEC offline replay path | `simulation` | `backend/app/services/layer3_sec_xbrl_offline_evidence_loader.py:23-62`; `backend/tests/test_layer3_sec_xbrl_companyfacts_stage_and_oracle.py` |
 | NRC APS replay corpus gate | `simulation` | `README.md:198`; `tests/test_nrc_aps_replay_gate.py`; `backend/app/services/nrc_aps_replay_gate.py` |
 | Offline-staged redaction/value-store resolution | `simulation` | `backend/app/services/layer3_sec_xbrl_offline_evidence_loader.py:160-180`; `backend/app/models/models.py:1449-1536` |
-| SEC live network egress | `unsupported` | `backend/app/core/config.py:134-136`; `backend/.env.example:55`; `README.md:3` |
+| SEC live network egress | `experimental_default_off` | `backend/app/core/config.py:133-147`; `backend/app/services/layer3_sec_edgar_live_source_artifact.py`; `backend/tests/test_layer3_api.py::test_layer3_api_acquires_sec_edgar_text_table_live_source_artifact_with_fake_client`; `README.md:3` |
 | Real provider delivery | `unsupported` | `README.md:3`; `backend/app/services/layer3_provider_public_url_fake_provider.py`; `backend/app/services/layer3_provider_private_signed_url_fake_provider.py` |
 | Model/agent egress | `unsupported` | `backend/app/core/config.py:180-187`; `README.md:3`; `backend/app/services/layer3_egress_policy.py` |
 | Nonlocal, multi-trust, multi-identity | `unsupported` | `README.md:3`; `backend/app/core/config.py:25-26`; `backend/app/core/config.py:366-400` |
@@ -74,6 +74,6 @@ The support-matrix checker pins the following flags false for this profile:
 | `SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED` |
 | `LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED` |
 
-The selected profile enables only the `public_connectors` overlay. It does not select the nonlocal base, keyed connectors, SEC behavior, OCR, model/agent egress, provider delivery, HA, durable queues, automatic replay, or multi-executor operation.
+The selected profile enables only the `public_connectors` and `sec_xbrl_offline` overlays. Bounded SEC live source-artifact acquisition is present but remains explicit-default-off behind `LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED=false` plus server-configured User-Agent/rate-limit controls. The selected profile does not select the nonlocal base, keyed connectors, SEC value reveal, OCR, model/agent egress, provider delivery, HA, durable queues, automatic replay, or multi-executor operation.
 
 OCR note: NRC APS document-processing code can use an installed Tesseract runtime for image or low-text PDF handling. That path remains outside the canonical local expert RC2 public connectors journey and is not part of the selected public_connectors overlay because the external engine is not bundled with this source-run profile.
