@@ -35,6 +35,31 @@ live SEC source acquisition preferred before Arelle invocation, multi-filing
 authority, delivery/export/status, nonlocal auth hardening, or default-on/value
 reveal graduation.
 
+## SEC Live Source Matrix Transition
+
+Milestone:
+`sec_live_network_egress_experimental_default_off_transition_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1361-sec-live-source-matrix-transition.md`.
+
+Status: branch-local Tier-2 support-matrix classification transition. It moves
+only `sec_live_network_egress` from `unsupported` to `experimental_default_off`
+because current main already contains the bounded SEC EDGAR live source-artifact
+acquisition runtime, rendered control, fake-client tests, redirect guard, and
+redacted receipt/status proof.
+
+Boundary: no config default change, no default-on live network, no real-network
+CI proof, no value reveal, no controlled-submit change, no route/API behavior
+change, no model/migration, no redaction-posture change, and no production-ready
+claim. `LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED` remains pinned false for the
+selected profile.
+
+Next posture: run an operator-configured manual live SEC source-artifact smoke
+outside CI and record only redacted/hash receipt evidence before Arelle/fact
+authority, multi-filing, delivery/export/status, nonlocal auth, or value-reveal
+graduation.
+
 ## P24 Mixed-Source Product-Authority Checkpoint
 
 Milestone:

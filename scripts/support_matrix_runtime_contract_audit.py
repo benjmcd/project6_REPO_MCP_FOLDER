@@ -35,6 +35,7 @@ EXPECTED_STATUS_BY_ID = {
     "sec_xbrl_production_admission_evaluator": "experimental_default_off",
     "analysis_product_package_inventory": "experimental_default_off",
     "ocr_external_engine": "experimental_default_off",
+    "sec_live_network_egress": "experimental_default_off",
     "sec_offline_replay_path": "simulation",
     "layer3_sec_xbrl_offline_evidence_loader": "simulation",
     "layer3_sec_xbrl_offline_companyfacts_stage": "simulation",
@@ -43,7 +44,6 @@ EXPECTED_STATUS_BY_ID = {
     "layer3_sec_xbrl_offline_evidence_proof_capability": "simulation",
     "nrc_aps_replay_corpus_gate": "simulation",
     "offline_staged_redaction_value_store_resolution": "simulation",
-    "sec_live_network_egress": "unsupported",
     "real_provider_delivery": "unsupported",
     "model_agent_egress": "unsupported",
     "nonlocal_multi_trust_multi_identity": "unsupported",
@@ -503,24 +503,87 @@ def _expect_workbench_error(fn: Callable[[], Any], code: str) -> dict[str, Any]:
     raise MatrixContractError(f"expected Layer3WorkbenchError {code}")
 
 
-def _probe_sec_live_network_unsupported() -> dict[str, Any]:
+def _probe_sec_live_network_default_off() -> dict[str, Any]:
     from app.core.config import settings
     from app.services import layer3_sec_edgar_live_source_artifact as live
     from app.services.layer3_workbench_error import Layer3WorkbenchError
 
+    class _AuditFakeSecClient:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, Any]] = []
+
+        def fetch_complete_submission_text(self, **kwargs: Any) -> Any:
+            self.calls.append(dict(kwargs))
+            return live.SecEdgarFetchResult(
+                status_code=200,
+                content=b"<SEC-DOCUMENT>support matrix live source artifact proof</SEC-DOCUMENT>\n",
+                final_url=str(kwargs["url"]),
+            )
+
+    request = {
+        "client_request_id": "support-matrix-sec-live-source-artifact",
+        "acquisition_mode": "sec_edgar_text_table_live_source_artifact_acquisition_v1",
+        "operator_decision": "acquire_sec_edgar_text_table_live_source_artifact",
+        "cik_or_filer_ref": "0000320193",
+        "accession_or_submission_id": "0000320193-24-000123",
+        "form_type": "10-K",
+        "filing_date": "2024-11-01",
+        "operator_confirmation": True,
+    }
     old_live_enabled = settings.layer3_sec_edgar_live_network_enabled
-    settings.layer3_sec_edgar_live_network_enabled = False
-    try:
+    old_user_agent = settings.layer3_sec_edgar_user_agent
+    old_storage_dir = settings.storage_dir
+    old_client = live.SEC_EDGAR_CLIENT
+    old_sleep = live.SEC_EDGAR_SLEEP
+    old_enforce_rate_limit = live._enforce_rate_limit
+    fake_client = _AuditFakeSecClient()
+    with tempfile.TemporaryDirectory(prefix="sec_live_matrix_") as raw:
         try:
-            live.acquire_sec_edgar_companyfacts_live_artifact({"operator_confirmation": True, "cik": "320193"})
-        except Layer3WorkbenchError as exc:
-            disabled_codes = ("live_network_disabled", "ci_network_disabled")
-            if not any(code in exc.error_code for code in disabled_codes):
-                raise MatrixContractError(f"expected live network disabled guard, got {exc.error_code}") from exc
-            return {"error_code": exc.error_code, "http_status": exc.http_status, "status": exc.status}
-        raise MatrixContractError("SEC live network acquisition unexpectedly succeeded")
-    finally:
-        settings.layer3_sec_edgar_live_network_enabled = old_live_enabled
+            settings.storage_dir = str(Path(raw) / "storage")
+            settings.layer3_sec_edgar_live_network_enabled = False
+            settings.layer3_sec_edgar_user_agent = ""
+            live.SEC_EDGAR_CLIENT = fake_client
+            live.SEC_EDGAR_SLEEP = lambda _seconds: None
+            live._enforce_rate_limit = lambda: None
+            live._reset_live_request_count_for_tests()
+            try:
+                live.acquire_sec_edgar_text_table_live_source_artifact(request)
+            except Layer3WorkbenchError as exc:
+                disabled_codes = ("live_network_disabled", "ci_network_disabled")
+                if not any(code in exc.error_code for code in disabled_codes):
+                    raise MatrixContractError(f"expected live network disabled guard, got {exc.error_code}") from exc
+                default_off_error = exc
+            else:
+                raise MatrixContractError("SEC live network acquisition unexpectedly succeeded while default-off")
+            if fake_client.calls:
+                raise MatrixContractError("SEC live network default-off guard allowed a fetch call")
+
+            settings.layer3_sec_edgar_live_network_enabled = True
+            settings.layer3_sec_edgar_user_agent = "Project6 Support Matrix contact@example.com"
+            response = live.acquire_sec_edgar_text_table_live_source_artifact(request)
+            visible_status = response["operator_visible_live_source_artifact_status"]
+            return {
+                "default_off_error_code": default_off_error.error_code,
+                "default_off_http_status": default_off_error.http_status,
+                "default_off_status": default_off_error.status,
+                "default_off_fetch_calls": 0,
+                "explicit_enabled_status": response["live_source_artifact_receipt_status"],
+                "explicit_enabled_schema_id": response["schema_id"],
+                "explicit_enabled_network_request_made": response["cache"]["network_request_made"],
+                "explicit_enabled_fake_client_calls": len(fake_client.calls),
+                "explicit_enabled_raw_url_exposed": visible_status["raw_url_exposed"],
+                "explicit_enabled_raw_local_path_exposed": visible_status["raw_local_path_exposed"],
+                "explicit_enabled_artifact_bytes_exposed": visible_status["artifact_bytes_exposed"],
+                "production_readiness_claimed": False,
+            }
+        finally:
+            live._reset_live_request_count_for_tests()
+            live.SEC_EDGAR_CLIENT = old_client
+            live.SEC_EDGAR_SLEEP = old_sleep
+            live._enforce_rate_limit = old_enforce_rate_limit
+            settings.layer3_sec_edgar_live_network_enabled = old_live_enabled
+            settings.layer3_sec_edgar_user_agent = old_user_agent
+            settings.storage_dir = old_storage_dir
 
 
 def _probe_real_provider_delivery_unsupported() -> dict[str, Any]:
@@ -611,7 +674,7 @@ PROBES: dict[str, Callable[[], dict[str, Any]]] = {
     "analysis_product_package_inventory": _probe_analysis_inventory_off,
     "ocr_external_engine": _probe_ocr_off,
     "nrc_aps_replay_corpus_gate": _probe_nrc_replay,
-    "sec_live_network_egress": _probe_sec_live_network_unsupported,
+    "sec_live_network_egress": _probe_sec_live_network_default_off,
     "real_provider_delivery": _probe_real_provider_delivery_unsupported,
     "model_agent_egress": _probe_model_egress_unsupported,
     "nonlocal_multi_trust_multi_identity": _probe_nonlocal_unsupported,

@@ -46314,5 +46314,32 @@
     },
     "next_posture": "select_one_bounded_production_readiness_surface_with_live_sec_source_acquisition_preferred_before_arelle_multi_filing_delivery_nonlocal_auth_or_default_on_value_reveal"
   },
-  "latest_sec_xbrl_current_posture_reconciliation_proof_summary": "Branch-local SEC XBRL posture proof reconciles historical docs with current default-off support-matrix truth and updates runtime posture tests so default controlled value reveal remains gated while explicit-enabled posture stays covered."
+  "latest_sec_xbrl_current_posture_reconciliation_proof_summary": "Branch-local SEC XBRL posture proof reconciles historical docs with current default-off support-matrix truth and updates runtime posture tests so default controlled value reveal remains gated while explicit-enabled posture stays covered.",
+  "sec_live_network_egress_experimental_default_off_transition_proof": {
+    "proof_kind": "sec_live_network_egress_experimental_default_off_transition_proof",
+    "milestone": "sec_live_network_egress_experimental_default_off_transition_v1",
+    "status": "branch_local_tier2_support_matrix_status_transition",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1361-sec-live-source-matrix-transition.md",
+    "authoritative_main_before_pass": "39f1f5a3325de035b919b61ac666bc198a338bd6",
+    "capability": "sec_live_network_egress",
+    "old_status": "unsupported",
+    "new_status": "experimental_default_off",
+    "support_matrix_changed": true,
+    "config_default_changed": false,
+    "runtime_behavior_changed": false,
+    "redaction_posture_changed": false,
+    "production_readiness_claimed": false,
+    "proof_mode": "default_off_guard_plus_fake_sec_client_contract_double",
+    "negative_authority_flags": {
+      "live_network_default_on": false,
+      "real_network_ci_proof": false,
+      "value_reveal_activation": false,
+      "controlled_submit_activation": false,
+      "arelle_invocation": false,
+      "model_or_migration_change": false,
+      "raw_url_or_artifact_bytes_exposed": false
+    },
+    "next_posture": "operator_configured_manual_live_sec_source_artifact_smoke_outside_ci_before_arelle_multi_filing_delivery_nonlocal_auth_or_value_reveal"
+  },
+  "latest_sec_live_network_egress_experimental_default_off_transition_proof_summary": "Branch-local proof reclassifies SEC live network egress as experimental/default-off and expands the support-matrix runtime audit to prove default-off blocking plus explicit fake-client redacted receipt acquisition without enabling real network access by default."
 }

@@ -24,14 +24,13 @@ PINNED_FALSE_FLAGS = [
 
 RC3_OVERLAYS = ["public_connectors", "sec_xbrl_offline"]
 RC3_BOUNDARY_TOKENS = {
-    "no live SEC egress",
+    "live SEC egress explicit default-off",
     "no value-reveal default-on",
     "no agent egress",
     "no nonlocal",
 }
 
 UNSUPPORTED_CAPABILITIES = {
-    "sec_live_network_egress",
     "real_provider_delivery",
     "model_agent_egress",
     "nonlocal_multi_trust_multi_identity",
@@ -41,6 +40,7 @@ UNSUPPORTED_CAPABILITIES = {
 }
 
 SEC_EXPERIMENTAL_DEFAULT_OFF_FLAGS = {
+    "sec_live_network_egress": "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
     "sec_value_reveal": "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
     "sec_controlled_value_reveal_submit": "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
     "arelle_internal_value_store": "LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED",

@@ -51,14 +51,13 @@ PINNED_FALSE_FLAGS = [
 ]
 
 BOUNDARY_TOKENS = [
-    "no live SEC egress",
+    "live SEC egress explicit default-off",
     "no value-reveal default-on",
     "no agent egress",
     "no nonlocal",
 ]
 
 UNSUPPORTED_CAPABILITIES = {
-    "sec_live_network_egress",
     "real_provider_delivery",
     "model_agent_egress",
     "nonlocal_multi_trust_multi_identity",
@@ -67,7 +66,8 @@ UNSUPPORTED_CAPABILITIES = {
     "signed_reference_export",
 }
 
-VALUE_REVEAL_DEFAULT_OFF_CAPABILITIES = {
+EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES = {
+    "sec_live_network_egress",
     "sec_value_reveal",
     "sec_controlled_value_reveal_submit",
     "arelle_internal_value_store",
@@ -76,7 +76,7 @@ VALUE_REVEAL_DEFAULT_OFF_CAPABILITIES = {
 }
 
 FORBIDDEN_SUPPORTED_CAPABILITIES = (
-    UNSUPPORTED_CAPABILITIES | VALUE_REVEAL_DEFAULT_OFF_CAPABILITIES
+    UNSUPPORTED_CAPABILITIES | EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES
 )
 
 OFFLINE_SIMULATION_CAPABILITIES = {
@@ -346,7 +346,7 @@ def _forbidden_surface_boundary_criterion(repo_root: Path) -> dict[str, Any]:
         for capability_id in sorted(UNSUPPORTED_CAPABILITIES):
             if by_id.get(capability_id, {}).get("status") != "unsupported":
                 errors.append(f"{capability_id} must remain unsupported")
-        for capability_id in sorted(VALUE_REVEAL_DEFAULT_OFF_CAPABILITIES):
+        for capability_id in sorted(EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES):
             if by_id.get(capability_id, {}).get("status") != "experimental_default_off":
                 errors.append(f"{capability_id} must remain experimental_default_off")
         for capability_id in sorted(OFFLINE_SIMULATION_CAPABILITIES):

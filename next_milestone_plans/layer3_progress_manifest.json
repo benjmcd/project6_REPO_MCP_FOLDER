@@ -48652,5 +48652,25 @@
     "next_posture": "select_one_bounded_production_readiness_surface_with_live_sec_source_acquisition_preferred_before_arelle_multi_filing_delivery_nonlocal_auth_or_default_on_value_reveal"
   },
   "latest_sec_xbrl_current_posture_reconciliation_summary": "Branch-local SEC XBRL current-posture reconciliation records that current main keeps controlled value reveal experimental/default-off despite historical docs 1350/1353 default-on language, updates runtime posture tests to prove default gated behavior separately from explicit-enabled behavior, and leaves support matrix, config defaults, redaction posture, runtime behavior, and production readiness unchanged.",
+  "sec_live_network_egress_experimental_default_off_transition_tracking": {
+    "tracking_kind": "sec_live_network_egress_experimental_default_off_transition_tracking",
+    "milestone": "sec_live_network_egress_experimental_default_off_transition_v1",
+    "status": "branch_local_tier2_support_matrix_status_transition",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1361-sec-live-source-matrix-transition.md",
+    "authoritative_main_before_pass": "39f1f5a3325de035b919b61ac666bc198a338bd6",
+    "capability": "sec_live_network_egress",
+    "old_status": "unsupported",
+    "new_status": "experimental_default_off",
+    "support_matrix_changed_by_tracking": true,
+    "config_default_changed_by_tracking": false,
+    "runtime_behavior_changed_by_tracking": false,
+    "redaction_posture_changed_by_tracking": false,
+    "production_readiness_claimed_by_tracking": false,
+    "real_network_ci_proof_added": false,
+    "default_flag_remains_false": true,
+    "proof_mode": "default_off_guard_plus_fake_sec_client_contract_double",
+    "next_posture": "operator_configured_manual_live_sec_source_artifact_smoke_outside_ci_before_arelle_multi_filing_delivery_nonlocal_auth_or_value_reveal"
+  },
+  "latest_sec_live_network_egress_experimental_default_off_transition_summary": "Branch-local Tier-2 support-matrix transition moves only sec_live_network_egress from unsupported to experimental/default-off to match the already-landed bounded SEC EDGAR live source-artifact acquisition runtime, while preserving false defaults, no real-network CI proof, no value reveal, no redaction-posture change, and no production-readiness claim.",
   "latest_deployment_profile_sqlite_guard_typed_admission_flag_route_dependency_contract_summary": "Branch feat/prod-advance-0609 adds (1) a nonlocal+SQLite startup guard in backend/app/core/config.py that now fails at startup when DATABASE_URL points at SQLite and db_init_mode is not 'none' (live_behavior_change: true in this narrow misconfiguration path; default local unaffected), (2) a typed Settings field sec_xbrl_production_admission_evaluator_enabled (alias SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED, default False) read by production_admission_flag_enabled() as validate-only with no admission gate wired to live routes and no runtime default change, and (3) doc 1358-route-level-operator-identity-route-dependency-contract.md which was authored as planning-only (runtime_status not_implemented) on feat/prod-advance-0609 and has since been implemented on feat/prod-advance-0610: doc 1359 supersedes the not_implemented claim; runtime_status is now implemented; the route-dependency contract is wired across 19 handoff + 16 package + 83 source_ingestion POST handlers (118 total); identity seam is inert under AUTH_OWNER=none, fail-closed 409/401 under proxy; no new flags/models/migrations; production_readiness_claim false. Docs 199/200/266 entry_decision, selected_mode, and runtime_status fields are unchanged."
 }

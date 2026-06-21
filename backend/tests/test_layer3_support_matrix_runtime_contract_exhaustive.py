@@ -53,6 +53,7 @@ def test_support_matrix_runtime_contract_audit_reports_clean_pass() -> None:
             "arelle_internal_value_store",
             "ocr_external_engine",
             "sec_controlled_value_reveal_submit",
+            "sec_live_network_egress",
             "sec_value_reveal",
             "sec_xbrl_production_admission_evaluator",
         ],
@@ -80,7 +81,6 @@ def test_support_matrix_runtime_contract_audit_reports_clean_pass() -> None:
             "model_agent_egress",
             "nonlocal_multi_trust_multi_identity",
             "real_provider_delivery",
-            "sec_live_network_egress",
             "signed_reference_export",
         ],
     }
@@ -150,9 +150,13 @@ def test_support_matrix_runtime_contract_sec_live_probe_forces_default_off_guard
     old_value = settings.layer3_sec_edgar_live_network_enabled
     settings.layer3_sec_edgar_live_network_enabled = True
     try:
-        payload = _audit()._probe_sec_live_network_unsupported()
+        payload = _audit()._probe_sec_live_network_default_off()
         assert settings.layer3_sec_edgar_live_network_enabled is True
     finally:
         settings.layer3_sec_edgar_live_network_enabled = old_value
 
-    assert "network_disabled" in payload["error_code"]
+    assert "network_disabled" in payload["default_off_error_code"]
+    assert payload["explicit_enabled_status"] == "available"
+    assert payload["explicit_enabled_network_request_made"] is True
+    assert payload["explicit_enabled_raw_url_exposed"] is False
+    assert payload["explicit_enabled_artifact_bytes_exposed"] is False
