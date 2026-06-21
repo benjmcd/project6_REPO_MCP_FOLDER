@@ -39,6 +39,13 @@ REQUIRED_EXPERIMENTAL_DEFAULT_OFF = {
     "senate_lda_anonymous_connector_slice",
     "connector_run_observability",
 }
+PUBLIC_CONNECTORS_OVERLAY = ["public_connectors"]
+PUBLIC_CONNECTOR_CAPABILITIES = {
+    "sciencebase_public_connector_slice",
+    "senate_lda_anonymous_connector_slice",
+    "connector_run_observability",
+}
+PUBLIC_CONNECTORS_REQUIRED_EVIDENCE = ["PR-1", "PR-2", "PR-3", "PR-4", "PR-5"]
 
 
 def default_repo_root() -> Path:
@@ -124,8 +131,9 @@ def _validate_matrix_shape(matrix: dict[str, Any], errors: list[str]) -> None:
         errors.append(f"schema_id must be {SCHEMA_ID!r}")
     if matrix.get("profile") != "local_expert":
         errors.append("profile must be local_expert")
-    if matrix.get("overlays") != "none":
-        errors.append("overlays must be none")
+    overlays = matrix.get("overlays")
+    if overlays != "none" and overlays != PUBLIC_CONNECTORS_OVERLAY:
+        errors.append("overlays must be none or ['public_connectors']")
     if matrix.get("release_readiness_manifest") != "profile-neutral; do not populate owner_selected_profile_specific_gates":
         errors.append("release_readiness_manifest boundary statement is missing or changed")
     if matrix.get("pinned_false_flags") != PINNED_FALSE_FLAGS:
@@ -159,13 +167,27 @@ def _validate_matrix_shape(matrix: dict[str, Any], errors: list[str]) -> None:
     for capability_id in REQUIRED_UNSUPPORTED:
         if by_id.get(capability_id, {}).get("status") != "unsupported":
             errors.append(f"{capability_id} must be unsupported in local_expert")
-    for capability_id in REQUIRED_EXPERIMENTAL_DEFAULT_OFF:
-        item = by_id.get(capability_id, {})
-        if item.get("status") != "experimental_default_off":
-            errors.append(f"{capability_id} must be experimental_default_off in analytics-only local_expert")
-        evidence = str(item.get("evidence") or "")
-        if "RC2-targeted" not in evidence:
-            errors.append(f"{capability_id} evidence must note RC2-targeted connector deferral")
+    if overlays == "none":
+        for capability_id in REQUIRED_EXPERIMENTAL_DEFAULT_OFF:
+            item = by_id.get(capability_id, {})
+            if item.get("status") != "experimental_default_off":
+                errors.append(f"{capability_id} must be experimental_default_off in analytics-only local_expert")
+            evidence = str(item.get("evidence") or "")
+            if "RC2-targeted" not in evidence:
+                errors.append(f"{capability_id} evidence must note RC2-targeted connector deferral")
+    elif overlays == PUBLIC_CONNECTORS_OVERLAY:
+        for capability_id in PUBLIC_CONNECTOR_CAPABILITIES:
+            item = by_id.get(capability_id, {})
+            if item.get("status") != "supported":
+                errors.append(f"{capability_id} must be supported when public_connectors overlay is selected")
+            evidence = str(item.get("evidence") or "")
+            missing = [
+                marker
+                for marker in PUBLIC_CONNECTORS_REQUIRED_EVIDENCE
+                if marker not in evidence
+            ]
+            if missing:
+                errors.append(f"{capability_id} evidence missing public connector PR markers: {', '.join(missing)}")
 
 
 def run_support_matrix_check(

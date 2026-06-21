@@ -1,8 +1,10 @@
 {
   "schema_id": "project6.support_matrix.v1",
   "profile": "local_expert",
-  "overlays": "none",
-  "boundary_note": "Selected RC1 profile is analytics-only single-operator local source-run: DEPLOYMENT_MODE=local, AUTH_OWNER=none, SQLite/local filesystem, loopback/local trust, and no auth boundary. No overlay, nonlocal base, public_connectors overlay, multi-trust, provider delivery, model/agent egress, keyed connector, live SEC network, value-reveal, controlled-submit, HA, or bundled OCR-engine claim is selected; connectors are deferred to RC2.",
+  "overlays": [
+    "public_connectors"
+  ],
+  "boundary_note": "Selected RC2 profile is single-operator local_expert with public_connectors overlay: DEPLOYMENT_MODE=local, AUTH_OWNER=none, SQLite/local filesystem, loopback/local trust, and no auth boundary. Public connector support is bounded to operator-workflow + local-deployment for ScienceBase public/MCS and Senate LDA anonymous metadata only. No SEC, OCR, model/agent egress, nonlocal base, multi-trust, provider delivery, keyed connector, live SEC network, value-reveal, controlled-submit, HA, durable queue, automatic replay, or multi-executor claim is selected.",
   "release_readiness_manifest": "profile-neutral; do not populate owner_selected_profile_specific_gates",
   "pinned_false_flags": [
     "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
@@ -22,18 +24,18 @@
     },
     {
       "id": "sciencebase_public_connector_slice",
-      "status": "experimental_default_off",
-      "evidence": "README.md:48-51; backend/app/api/router.py:319-382; backend/app/core/config.py:206 (SCIENCEBASE_API_BASE_URL alias); RC2-targeted; not part of analytics-only RC1"
+      "status": "supported",
+      "evidence": "tests/test_api.py::test_sciencebase_download_429_retryable_sets_backoff; tests/test_api.py::test_l17_sciencebase_download_negatives_are_bounded_and_observable; tests/test_api.py::test_connector_l20_sciencebase_active_lease_records_conflict; tests/test_api.py::test_connector_l20_sciencebase_cancel_mid_target_stops_before_partial_authority; tests/test_api.py::test_sciencebase_csv_ingest_preserves_l11_source_fidelity; tests/test_api.py::test_public_connector_operator_journey_bridges_sciencebase_target_to_analysis; backend/app/core/config.py:206; docs/public-connectors-journey.md; PR-1 correctness, PR-2 L17, PR-3 L20, PR-4 L11, PR-5 journey"
     },
     {
       "id": "senate_lda_anonymous_connector_slice",
-      "status": "experimental_default_off",
-      "evidence": "README.md:146-150; backend/app/api/router.py:426-452; backend/app/core/config.py:209-210 (SENATE_LDA_API_BASE_URL/SENATE_LDA_API_KEY aliases); RC2-targeted; not part of analytics-only RC1"
+      "status": "supported",
+      "evidence": "tests/test_api.py::test_senate_lda_dedupes_duplicate_filings_and_records_provenance; tests/test_api.py::test_l17_senate_lda_detail_errors_are_terminal_or_retryable; tests/test_api.py::test_l17_senate_lda_missing_required_schema_is_rejected_explicitly; tests/test_api.py::test_senate_lda_connector_resume_uses_senate_executor; tests/test_api.py::test_senate_lda_l20_active_lease_records_conflict; tests/test_api.py::test_senate_lda_l20_resume_after_target_creation_crash_does_not_duplicate_targets; tests/test_api.py::test_senate_lda_anonymous_metadata_path_is_no_key_secondary_journey; backend/app/core/config.py:209-210; docs/public-connectors-journey.md; PR-1 correctness, PR-2 L17, PR-3 L20, PR-4 L11, PR-5 journey"
     },
     {
       "id": "connector_run_observability",
-      "status": "experimental_default_off",
-      "evidence": "README.md:54-60; backend/app/api/router.py:461-542; backend/app/services/connectors_sciencebase.py:3145-3164; RC2-targeted; observes experimental connector runs, not analytics-only RC1"
+      "status": "supported",
+      "evidence": "tests/test_api.py::test_connector_run_observability_contract_fields_present; tests/test_api.py::test_connector_events_and_reports_endpoints; tests/test_api.py::test_public_connector_journey_network_unreachable_is_degraded; tests/test_api.py::test_senate_lda_connector_happy_path_reports_and_detail_hydration; docs/public-connectors-journey.md; PR-1 correctness, PR-2 L17, PR-3 L20, PR-4 L11, PR-5 journey"
     },
     {
       "id": "layer3_workbench_ui",

@@ -36,10 +36,12 @@ def test_readme_states_honest_selected_local_profile():
     assert "not a production-ready claim" in text, (
         "README dropped its not-production-ready honesty"
     )
-    assert "analytics-only" in text
+    assert "selected RC2 profile" in text
     assert "base=local_expert" in text
-    assert "overlays=none" in text
-    assert "connectors are deferred to RC2" in text
+    assert 'overlays=["public_connectors"]' in text
+    assert "Public connector support is bounded to operator-workflow + local-deployment" in text
+    assert "keyed connectors" in text
+    assert "HA" in text
     assert "No release profile is selected yet" not in text
 
 
