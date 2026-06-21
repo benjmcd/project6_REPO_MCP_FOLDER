@@ -28,7 +28,15 @@ SCOPE_MODES = {"keyword_search", "folder_children", "folder_descendants", "expli
 RUN_MODES = {"one_shot_import", "recurring_sync", "dry_run"}
 ARTIFACT_DEDUP_POLICIES = {"by_checksum", "by_resolved_url", "by_name_plus_surface"}
 RECONCILIATION_STATUSES = {"missing_upstream", "removed_from_item", "superseded", "withdrawn", "out_of_scope"}
-SEARCH_EXHAUSTION_REASONS = {"no_more_pages", "max_items_cap", "max_files_cap", "budget_exhausted", "cancelled", "error"}
+SEARCH_EXHAUSTION_REASONS = {
+    "no_more_pages",
+    "max_items_cap",
+    "max_files_cap",
+    "budget_exhausted",
+    "cancelled",
+    "partial_page_empty_with_next",
+    "error",
+}
 
 ERROR_TAXONOMY = {
     "transport_timeout",
