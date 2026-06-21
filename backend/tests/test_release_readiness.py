@@ -41,7 +41,7 @@ def test_release_readiness_manifest_is_profile_neutral_and_maps_existing_gates()
 
     assert manifest["schema_id"] == "project6.release_readiness.v1"
     assert manifest["release"]["milestone"] == "M-L02-RELEASE-ACCEPTANCE"
-    assert manifest["release"]["version"] == "0.1.0-rc1-foundation"
+    assert manifest["release"]["version"] == "0.1.0-rc1"
     assert manifest["build_identity"]["source"] == "/ready build_info"
     assert manifest["owner_selected_profile_specific_gates"] == []
     assert "owner-selected profile-specific gates intentionally empty" in manifest[
@@ -82,7 +82,7 @@ def test_release_readiness_runner_reports_pass_and_fail_paths(tmp_path):
                     "schema_id": "project6.release_readiness.v1",
                     "release": {
                         "milestone": "M-L02-RELEASE-ACCEPTANCE",
-                        "version": "0.1.0-rc1-foundation",
+                        "version": "0.1.0-rc1",
                     },
                     "build_identity": {"source": "/ready build_info"},
                     "owner_selected_profile_specific_gates": [],
@@ -108,7 +108,7 @@ def test_release_readiness_runner_reports_pass_and_fail_paths(tmp_path):
         return runner.CommandResult(returncode=0, stdout="gate ok", stderr="")
 
     build_info_provider = lambda repo_root: {
-        "version": "0.1.0-rc1-foundation",
+        "version": "0.1.0-rc1",
         "source_sha": source_sha,
         "source": "/ready build_info",
     }
@@ -120,7 +120,7 @@ def test_release_readiness_runner_reports_pass_and_fail_paths(tmp_path):
         build_info_provider=build_info_provider,
     )
     assert pass_report["status"] == "pass"
-    assert pass_report["build_identity"]["version"] == "0.1.0-rc1-foundation"
+    assert pass_report["build_identity"]["version"] == "0.1.0-rc1"
     assert pass_report["build_identity"]["source_sha"] == source_sha
     assert pass_report["gates"][0]["status"] == "pass"
 

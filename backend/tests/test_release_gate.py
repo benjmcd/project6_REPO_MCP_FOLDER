@@ -32,7 +32,7 @@ def test_collect_ready_build_info_restores_temporary_environment(monkeypatch):
         payload = {
             "status": "ready",
             "build": {
-                "version": "0.1.0-rc1-foundation",
+                "version": "0.1.0-rc1",
                 "source_sha": os.environ.get("PROJECT6_SOURCE_SHA"),
             },
         }
