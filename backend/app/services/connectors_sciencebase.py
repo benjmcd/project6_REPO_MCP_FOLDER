@@ -11,6 +11,7 @@ import threading
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -205,10 +206,33 @@ def _classify_download_exception(exc: Exception) -> tuple[str, bool]:
         return "transport_timeout", True
     if isinstance(exc, requests.HTTPError):
         code = int(exc.response.status_code) if exc.response is not None else 0
+        if code == 429:
+            return "http_429", True
         if 500 <= code <= 599:
             return "http_5xx", code in RETRYABLE_HTTP_STATUSES
         return "http_4xx", False
     return "orchestrator_internal_error", False
+
+
+def _retry_after_seconds_from_exception(exc: Exception) -> float | None:
+    response = getattr(exc, "response", None)
+    headers = getattr(response, "headers", None)
+    if not headers:
+        return None
+    raw = str(headers.get("Retry-After") or headers.get("retry-after") or "").strip()
+    if not raw:
+        return None
+    try:
+        return max(0.0, float(raw))
+    except Exception:
+        pass
+    try:
+        parsed = parsedate_to_datetime(raw)
+    except Exception:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return max(0.0, (parsed.astimezone(timezone.utc) - datetime.now(timezone.utc)).total_seconds())
 
 
 def _classify_stage_exception(stage: str) -> tuple[str, bool]:
@@ -604,7 +628,7 @@ def submit_connector_run(db: Session, *, connector_key: str, payload: dict[str, 
         )
 
     retry_matrix = {
-        "retryable": ["transport_timeout", "http_5xx"],
+        "retryable": ["transport_timeout", "http_429", "http_5xx"],
         "terminal": ["http_4xx", "host_policy_violation", "redirect_policy_violation", "unsupported_artifact_surface", "parse_failed", "profile_failed", "recommend_failed"],
         "orchestrator_only": ["lease_conflict"],
     }
@@ -2065,6 +2089,16 @@ def _run_target_pipeline(
             reason_code = "transport_or_http_failure"
             retry = retryable
             event_type = "target_download_failed"
+        retry_after_seconds = _retry_after_seconds_from_exception(exc) if retry else None
+        target_updates = {
+            "error_stage": "downloading",
+            "error_message": str(exc),
+            "last_error_class": error_class,
+        }
+        stage_metrics = {"duration_ms": int((time.time() - stage_start) * 1000)}
+        if retry_after_seconds is not None:
+            target_updates["backoff_until"] = _utcnow() + timedelta(seconds=retry_after_seconds)
+            stage_metrics["retry_after_seconds"] = retry_after_seconds
         _transition_target_atomic(
             db,
             run=run,
@@ -2078,11 +2112,7 @@ def _run_target_pipeline(
             error_class=error_class,
             message=str(exc),
             retry_eligible=retry,
-            target_updates={
-                "error_stage": "downloading",
-                "error_message": str(exc),
-                "last_error_class": error_class,
-            },
+            target_updates=target_updates,
             stage_attempt={
                 "stage": "downloading",
                 "started_at": started,
@@ -2090,7 +2120,7 @@ def _run_target_pipeline(
                 "error_class": error_class,
                 "error_message": str(exc),
                 "retryable": retry,
-                "metrics_json": {"duration_ms": int((time.time() - stage_start) * 1000)},
+                "metrics_json": stage_metrics,
             },
         )
         _record_stage_checkpoint(db, run=run, target=target, config=config, phase="downloading")

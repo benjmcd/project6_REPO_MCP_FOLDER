@@ -13,7 +13,16 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.session import SessionLocal
-from app.models import ConnectorPolicySnapshot, ConnectorRun, ConnectorRunSubmission, ConnectorRunTarget
+from app.models import (
+    ConnectorPolicySnapshot,
+    ConnectorRun,
+    ConnectorRunSubmission,
+    ConnectorRunTarget,
+    Dataset,
+    DatasetExternalIdentity,
+    DatasetSourceProvenance,
+    DatasetVersion,
+)
 from app.services.connectors_sciencebase import (
     _acquire_lease,
     _finalize_run,
@@ -366,6 +375,157 @@ def _normalize_filing_record(item: dict[str, Any], *, page_ref: str | None = Non
     }
 
 
+def _senate_lda_dedupe_key(record: dict[str, Any], normalized: dict[str, Any]) -> str:
+    filing_uuid = _clean_string(record.get("filing_uuid")) or _clean_string(normalized.get("filing_uuid"))
+    if filing_uuid:
+        return f"filing_uuid:{filing_uuid.lower()}"
+    return f"source_artifact:{str(normalized.get('source_artifact_key') or '').strip().lower()}"
+
+
+def _resolve_senate_lda_dataset_id(db: Session, logical_dataset_key: str) -> str | None:
+    existing = (
+        db.query(DatasetExternalIdentity)
+        .filter(
+            and_(
+                DatasetExternalIdentity.source_system == "senate_lda",
+                DatasetExternalIdentity.logical_dataset_key == logical_dataset_key,
+            )
+        )
+        .first()
+    )
+    return existing.dataset_id if existing else None
+
+
+def _persist_senate_lda_dataset_identity(db: Session, dataset_id: str, logical_dataset_key: str, metadata_json: dict[str, Any]) -> None:
+    existing = (
+        db.query(DatasetExternalIdentity)
+        .filter(
+            and_(
+                DatasetExternalIdentity.source_system == "senate_lda",
+                DatasetExternalIdentity.logical_dataset_key == logical_dataset_key,
+            )
+        )
+        .first()
+    )
+    if existing:
+        return
+    db.add(
+        DatasetExternalIdentity(
+            dataset_id=dataset_id,
+            source_system="senate_lda",
+            logical_dataset_key=logical_dataset_key,
+            metadata_json=metadata_json,
+        )
+    )
+    db.flush()
+
+
+def _ensure_senate_lda_metadata_provenance(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    target: ConnectorRunTarget,
+    source_mode: str = "metadata_only",
+) -> None:
+    if target.status != "recommended":
+        return
+    logical_dataset_key = target.stable_release_key or f"senate_lda:filing:{target.sciencebase_item_id or target.connector_run_target_id}"
+    if not target.dataset_id:
+        dataset_id = _resolve_senate_lda_dataset_id(db, logical_dataset_key)
+        if not dataset_id:
+            dataset = Dataset(
+                name=target.sciencebase_file_name or f"Senate LDA filing {target.sciencebase_item_id or target.ordinal}",
+                description=target.sciencebase_item_url,
+                domain_pack="public_connectors",
+                frequency_hint=None,
+                time_column=None,
+            )
+            db.add(dataset)
+            db.flush()
+            dataset_id = dataset.dataset_id
+            _persist_senate_lda_dataset_identity(
+                db,
+                dataset_id=dataset_id,
+                logical_dataset_key=logical_dataset_key,
+                metadata_json={
+                    "filing_uuid": target.sciencebase_item_id,
+                    "stable_release_key": target.stable_release_key,
+                    "source_artifact_key": target.source_artifact_key,
+                },
+            )
+        target.dataset_id = dataset_id
+    if not target.dataset_version_id:
+        content_payload = {
+            "source_system": "senate_lda",
+            "filing_uuid": target.sciencebase_item_id,
+            "source_artifact_key": target.source_artifact_key,
+            "source_reference_json": target.source_reference_json or {},
+        }
+        version = DatasetVersion(
+            dataset_id=target.dataset_id,
+            version_label=f"senate_lda_{str(target.sciencebase_item_id or target.ordinal)[:80]}_{run.connector_run_id[:8]}",
+            version_type="source_metadata",
+            status="ready",
+            storage_ref=target.source_artifact_key,
+            row_count=1,
+            content_hash=_stable_json_hash(content_payload),
+            source_row_count=1,
+            dropped_row_count=0,
+            notes=f"connector_run_id={run.connector_run_id}; source_artifact_key={target.source_artifact_key}",
+        )
+        db.add(version)
+        db.flush()
+        target.dataset_version_id = version.dataset_version_id
+    existing_provenance = (
+        db.query(DatasetSourceProvenance)
+        .filter(
+            and_(
+                DatasetSourceProvenance.dataset_version_id == target.dataset_version_id,
+                DatasetSourceProvenance.connector_run_id == run.connector_run_id,
+                DatasetSourceProvenance.source_system == "senate_lda",
+            )
+        )
+        .first()
+    )
+    if existing_provenance:
+        return
+    db.add(
+        DatasetSourceProvenance(
+            dataset_version_id=target.dataset_version_id,
+            connector_run_id=run.connector_run_id,
+            source_system="senate_lda",
+            source_mode=source_mode,
+            source_artifact_key=target.source_artifact_key or target.sciencebase_item_url or target.stable_release_key or "",
+            sciencebase_item_id=target.sciencebase_item_id,
+            sciencebase_item_url=target.sciencebase_item_url,
+            sciencebase_file_name=target.sciencebase_file_name,
+            sciencebase_download_uri=target.sciencebase_download_uri,
+            artifact_surface=target.artifact_surface,
+            artifact_locator_type=target.artifact_locator_type,
+            remote_checksum_type=target.remote_checksum_type,
+            remote_checksum_value=target.remote_checksum_value,
+            downloaded_sha256=target.downloaded_sha256,
+            raw_storage_ref=target.raw_storage_ref,
+            source_query_fingerprint=run.source_query_fingerprint,
+            source_reference_json=target.source_reference_json or {},
+            fetch_policy_mode="senate_lda_official_only",
+            resolved_ip=target.resolved_ip,
+            redirect_count=target.redirect_count,
+            blocked_reason=target.blocked_reason,
+            etag=target.etag,
+            last_modified=target.last_modified,
+            retrieved_http_json={
+                "api_base_url": settings.senate_lda_api_base_url,
+                "list_ref": dict(target.source_reference_json or {}).get("list_ref"),
+                "detail_ref": dict(target.source_reference_json or {}).get("detail_ref"),
+            },
+            discovered_at=target.discovered_at,
+            downloaded_at=target.downloaded_at,
+        )
+    )
+    db.flush()
+
+
 def _build_list_params(config: dict[str, Any], *, page: int) -> dict[str, Any]:
     params: dict[str, Any] = {
         "page": page,
@@ -515,18 +675,30 @@ def _create_targets_from_discovery(
     include_filing_detail: bool,
 ) -> None:
     now = _utcnow()
+    winner_ordinal_by_key: dict[str, int] = {}
     for ordinal, record in enumerate(discovered_records, start=1):
         normalized = _normalize_filing_record(record, page_ref=record.get("_page_ref"))
+        dedupe_key = _senate_lda_dedupe_key(record, normalized)
+        duplicate_winner_ordinal = winner_ordinal_by_key.get(dedupe_key)
         target_status = "selected"
         operator_reason_code = "metadata_selected"
+        dedup_reason_code = None
         recommended_at = None
-        if run_mode == "dry_run":
+        source_reference_json = dict(normalized["source_reference_json"])
+        if duplicate_winner_ordinal is not None:
+            target_status = "collapsed_duplicate"
+            operator_reason_code = "deduped_same_filing_uuid"
+            dedup_reason_code = "deduped_same_filing_uuid"
+            source_reference_json["deduped_with_ordinal"] = duplicate_winner_ordinal
+        elif run_mode == "dry_run":
             target_status = "dry_run_skipped"
             operator_reason_code = "dry_run_metadata_only"
         elif not include_filing_detail:
             target_status = "recommended"
             operator_reason_code = "metadata_recorded"
             recommended_at = now
+        if duplicate_winner_ordinal is None:
+            winner_ordinal_by_key[dedupe_key] = ordinal
         target = ConnectorRunTarget(
             connector_run_id=run.connector_run_id,
             ordinal=ordinal,
@@ -544,19 +716,22 @@ def _create_targets_from_discovery(
             artifact_locator_type=normalized["artifact_locator_type"],
             source_artifact_key=normalized["source_artifact_key"],
             canonical_artifact_key=normalized["canonical_artifact_key"],
-            source_reference_json=normalized["source_reference_json"],
+            source_reference_json=source_reference_json,
             permission_snapshot_json={},
             access_level_summary="public_api",
             public_read_confirmed=True,
             status=target_status,
             retry_eligible=False,
             discovered_at=now,
-            selected_at=now,
+            selected_at=now if target_status != "collapsed_duplicate" else None,
             recommended_at=recommended_at,
             last_stage_transition_at=now,
             operator_reason_code=operator_reason_code,
+            dedup_reason_code=dedup_reason_code,
         )
         db.add(target)
+        db.flush()
+        _ensure_senate_lda_metadata_provenance(db, run=run, target=target)
         _record_run_event(
             db,
             run=run,
@@ -637,6 +812,7 @@ def _hydrate_detail_targets(
             target.recommended_at = _utcnow()
             target.last_stage_transition_at = _utcnow()
             target.operator_reason_code = "detail_hydrated"
+            _ensure_senate_lda_metadata_provenance(db, run=run, target=target)
             _record_run_event(
                 db,
                 run=run,
