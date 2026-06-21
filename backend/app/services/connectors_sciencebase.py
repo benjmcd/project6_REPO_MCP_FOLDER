@@ -1398,6 +1398,8 @@ def _discover_targets(db: Session, run: ConnectorRun, adapter: ScienceBaseAdapte
                 last_offset_committed = offset
                 next_page_available = bool(page.nextlink)
                 if not page.items:
+                    if page.nextlink:
+                        search_exhaustion_reason = "partial_page_empty_with_next"
                     _upsert_partition_cursor(
                         db,
                         run=run,
@@ -1459,7 +1461,7 @@ def _discover_targets(db: Session, run: ConnectorRun, adapter: ScienceBaseAdapte
                 offset += page_size
             partition_count_completed += 1
             resume_offset = 0
-            if search_exhaustion_reason in {"cancelled", "max_items_cap"}:
+            if search_exhaustion_reason in {"cancelled", "max_items_cap", "partial_page_empty_with_next"}:
                 break
 
     discovered_items = _order_discovered_items(discovered_items, ordering_strategy=ordering_strategy)
@@ -1478,6 +1480,8 @@ def _discover_targets(db: Session, run: ConnectorRun, adapter: ScienceBaseAdapte
     run.search_exhaustion_reason = (
         search_exhaustion_reason if search_exhaustion_reason in SEARCH_EXHAUSTION_REASONS else "error"
     )
+    if run.search_exhaustion_reason == "partial_page_empty_with_next":
+        run.error_summary = "partial_page_empty_with_next"
     run.page_count_completed = page_count_completed
     run.partition_count_completed = partition_count_completed
     run.next_page_available = bool(next_page_available)
@@ -2615,7 +2619,7 @@ def _finalize_run(db: Session, run: ConnectorRun) -> None:
         run.status = "cancelled"
         run.cancelled_at = now
         run.error_summary = "cancelled_by_operator"
-    elif run.failed_count > 0 or run.blocked_by_fetch_policy_count > 0 or run.budget_blocked_count > 0:
+    elif run.failed_count > 0 or run.blocked_by_fetch_policy_count > 0 or run.budget_blocked_count > 0 or run.error_summary:
         run.status = "completed_with_errors"
     else:
         run.status = "completed"

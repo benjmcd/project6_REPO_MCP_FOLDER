@@ -44,6 +44,10 @@ DISCOVERY_SCHEMA_ID = "senate_lda.discovery_snapshot.v1"
 SELECTION_SCHEMA_ID = "senate_lda.selection_manifest.v1"
 
 
+class SenateLdaSchemaValidationError(ValueError):
+    pass
+
+
 def _stable_json_hash(payload: dict[str, Any]) -> str:
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
@@ -157,6 +161,8 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
 
 
 def _classify_request_exception(exc: Exception) -> tuple[str, bool]:
+    if isinstance(exc, SenateLdaSchemaValidationError):
+        return "schema_validation_failed", False
     if isinstance(exc, requests.Timeout):
         return "transport_timeout", True
     if isinstance(exc, requests.ConnectionError):
@@ -338,7 +344,9 @@ def _build_target_display_name(item: dict[str, Any]) -> str:
 
 
 def _normalize_filing_record(item: dict[str, Any], *, page_ref: str | None = None, detail_ref: str | None = None) -> dict[str, Any]:
-    filing_uuid = _clean_string(item.get("filing_uuid")) or "unknown-filing"
+    filing_uuid = _clean_string(item.get("filing_uuid"))
+    if not filing_uuid:
+        raise SenateLdaSchemaValidationError("missing_required_field:filing_uuid")
     detail_url = _clean_string(item.get("url")) or f"{settings.senate_lda_api_base_url.rstrip('/')}/filings/{filing_uuid}/"
     document_url = _clean_string(item.get("filing_document_url"))
     return {
@@ -380,6 +388,22 @@ def _senate_lda_dedupe_key(record: dict[str, Any], normalized: dict[str, Any]) -
     if filing_uuid:
         return f"filing_uuid:{filing_uuid.lower()}"
     return f"source_artifact:{str(normalized.get('source_artifact_key') or '').strip().lower()}"
+
+
+def _validated_list_results(payload: dict[str, Any], *, page_number: int) -> list[dict[str, Any]]:
+    raw_results = payload.get("results")
+    if raw_results is None:
+        raise SenateLdaSchemaValidationError(f"page_{page_number}:missing_required_field:results")
+    if not isinstance(raw_results, list):
+        raise SenateLdaSchemaValidationError(f"page_{page_number}:malformed_field:results")
+    results: list[dict[str, Any]] = []
+    for index, item in enumerate(raw_results):
+        if not isinstance(item, dict):
+            raise SenateLdaSchemaValidationError(f"page_{page_number}:malformed_result:{index}")
+        if not _clean_string(item.get("filing_uuid")):
+            raise SenateLdaSchemaValidationError(f"page_{page_number}:missing_required_field:filing_uuid")
+        results.append(item)
+    return results
 
 
 def _resolve_senate_lda_dataset_id(db: Session, logical_dataset_key: str) -> str | None:
@@ -1008,7 +1032,7 @@ def execute_senate_lda_run(connector_run_id: str) -> None:
                         },
                     )
                     page_refs.append(page_ref)
-                    results = [item for item in (payload.get("results") or []) if isinstance(item, dict)]
+                    results = _validated_list_results(payload, page_number=page_number)
                     for item in results:
                         if max_items and len(discovered_records) >= max_items:
                             break
@@ -1020,7 +1044,11 @@ def execute_senate_lda_run(connector_run_id: str) -> None:
                     next_url = str(payload.get("next") or "").strip()
                     max_items_reached = bool(max_items and len(discovered_records) >= max_items)
                     run.next_page_available = bool(next_url) and not max_items_reached
-                    run.search_exhaustion_reason = "max_items_reached" if max_items_reached else ("next_page_absent" if not next_url else None)
+                    if bool(next_url) and not results and not max_items_reached:
+                        run.search_exhaustion_reason = "partial_page_empty_with_next"
+                        run.error_summary = "partial_page_empty_with_next"
+                    else:
+                        run.search_exhaustion_reason = "max_items_reached" if max_items_reached else ("next_page_absent" if not next_url else None)
                     db.commit()
                     _record_run_event(
                         db,
@@ -1130,6 +1158,24 @@ def execute_senate_lda_run(connector_run_id: str) -> None:
                 metrics_json={"completed_at": run.completed_at.isoformat() if run.completed_at else None},
                 commit=True,
             )
+        except SenateLdaSchemaValidationError as exc:
+            run = db.get(ConnectorRun, connector_run_id)
+            if run:
+                run.status = "failed"
+                run.search_exhaustion_reason = "schema_validation_failed"
+                run.error_summary = f"schema_validation_failed: {exc}"
+                run.completed_at = _utcnow()
+                _release_lease(run)
+                _record_run_event(
+                    db,
+                    run=run,
+                    event_type="run_failed",
+                    phase="discovery",
+                    status_after=run.status,
+                    error_class="schema_validation_failed",
+                    message=str(exc),
+                )
+                db.commit()
         except Exception as exc:
             run = db.get(ConnectorRun, connector_run_id)
             if run:

@@ -1215,6 +1215,108 @@ class _FakeResumeTargetCursorAdapter:
         )()
 
 
+class _L17ScienceBaseAdapter:
+    def __init__(self, *, download_case="timeout", empty_page_next=False, malformed_item=False):
+        self.download_case = download_case
+        self.empty_page_next = empty_page_next
+        self.malformed_item = malformed_item
+
+    def search_page(self, *, q, filters, offset, page_size, sort, order):
+        if self.empty_page_next and offset == 0:
+            items = []
+            nextlink = "https://www.sciencebase.gov/catalog/items?page=2"
+        elif offset == 0:
+            items = [{"id": "l17-item", "unexpected_additive_field": "kept-for-schema-drift"}]
+            nextlink = None
+        else:
+            items = []
+            nextlink = None
+        return type(
+            "SearchPage",
+            (),
+            {
+                "items": items,
+                "offset": offset,
+                "page_size": page_size,
+                "total": len(items),
+                "nextlink": nextlink,
+                "prevlink": None,
+                "raw_query_metadata": {"fixture": "l17"},
+            },
+        )()
+
+    def hydrate_item(self, item_id):
+        if self.malformed_item:
+            return {"title": "Missing required ScienceBase item id", "files": []}
+        return {
+            "id": item_id,
+            "title": "L17 ScienceBase item",
+            "identifiers": [],
+            "files": [{"name": "l17.csv", "downloadUri": "https://www.sciencebase.gov/catalog/file/l17.csv"}],
+            "distributionLinks": [],
+            "webLinks": [],
+            "unexpected_additive_field": "tolerated",
+        }
+
+    def extract_artifacts(self, item):
+        if not item.get("id"):
+            raise ValueError("missing_required_field:item_id")
+        return [
+            {
+                "surface": "files",
+                "name": "l17.csv",
+                "url": "https://www.sciencebase.gov/catalog/file/l17.csv",
+                "locator_type": "downloadUri",
+                "checksum_type": None,
+                "checksum_value": None,
+                "source_reference": {"surface": "files", "unexpected_additive_field": item.get("unexpected_additive_field")},
+            }
+        ]
+
+    def download_artifact(self, *, url, timeout_seconds, max_redirects, headers=None):
+        if self.download_case == "timeout":
+            raise requests.Timeout("simulated bounded timeout")
+        if self.download_case == "http_403":
+            response = requests.Response()
+            response.status_code = 403
+            response.url = url
+            error = requests.HTTPError("403 Forbidden", response=response)
+            raise error
+        if self.download_case == "redirect_private":
+            return type(
+                "DownloadResult",
+                (),
+                {
+                    "content": b"year,value\n2025,1\n",
+                    "status_code": 200,
+                    "final_url": "https://sciencebase.gov/private.csv",
+                    "redirect_count": 1,
+                    "etag": None,
+                    "last_modified": None,
+                    "content_type": "text/csv",
+                    "sha256": "sha-redirect-private",
+                    "headers": {},
+                    "resolved_ip": "127.0.0.1",
+                },
+            )()
+        return type(
+            "DownloadResult",
+            (),
+            {
+                "content": b"year,value\n2025,1\n",
+                "status_code": 200,
+                "final_url": url,
+                "redirect_count": 0,
+                "etag": None,
+                "last_modified": None,
+                "content_type": "text/csv",
+                "sha256": "sha-l17",
+                "headers": {},
+                "resolved_ip": "8.8.8.8",
+            },
+        )()
+
+
 def test_connector_submission_idempotency_key_behaviour(monkeypatch):
     from app.services import connectors_sciencebase as sb
 
@@ -2033,7 +2135,7 @@ def test_connector_scope_mode_folder_children_and_explicit_item_ids(monkeypatch)
 
 def test_sciencebase_download_429_retryable_sets_backoff(monkeypatch):
     from app.db.session import SessionLocal
-    from app.models import ConnectorRunTarget
+    from app.models import ConnectorPolicySnapshot, ConnectorRunTarget, ConnectorTargetStageAttempt
     from app.services import connectors_sciencebase as sb
 
     class _RateLimitedScienceBaseAdapter(_FakeSearchOnlyAdapter):
@@ -2106,8 +2208,400 @@ def test_sciencebase_download_429_retryable_sets_backoff(monkeypatch):
         assert target.backoff_until is not None
         assert target.last_attempt_at is not None
         assert target.backoff_until > target.last_attempt_at
+        stage_attempt = (
+            db.query(ConnectorTargetStageAttempt)
+            .filter(ConnectorTargetStageAttempt.connector_run_target_id == target.connector_run_target_id)
+            .order_by(ConnectorTargetStageAttempt.completed_at.desc())
+            .first()
+        )
+        assert stage_attempt is not None
+        assert stage_attempt.retryable is True
+        assert stage_attempt.metrics_json["retry_after_seconds"] == 120.0
+        policy = db.query(ConnectorPolicySnapshot).filter(ConnectorPolicySnapshot.connector_run_id == run_id).one()
+        assert "http_429" in policy.retry_matrix_json["retryable"]
     finally:
         db.close()
+
+
+@pytest.mark.parametrize(
+    ("detail_error_case", "expected_error_class", "expected_retryable"),
+    [
+        ("timeout", "transport_timeout", True),
+        ("http_403", "http_403", False),
+    ],
+)
+def test_l17_senate_lda_detail_errors_are_terminal_or_retryable(monkeypatch, detail_error_case, expected_error_class, expected_retryable):
+    from app.services import connectors_senate_lda as senate_lda
+
+    fake = _L17SenateLdaClient(detail_error_case=detail_error_case)
+    monkeypatch.setattr(senate_lda, "get_senate_lda_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/senate-lda/runs",
+        json={
+            "client_name": "Meta",
+            "filing_year": 2025,
+            "include_filing_detail": True,
+            "run_mode": "metadata_only",
+            "retry_max_attempts_per_request": 1,
+        },
+        headers={"Idempotency-Key": f"l17-senate-detail-{detail_error_case}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    payload = detail.json()
+    assert payload["status"] == "completed_with_errors"
+    assert payload["retryable_target_count"] == (2 if expected_retryable else 0)
+
+    targets = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert targets.status_code == 200, targets.text
+    rows = targets.json()["targets"]
+    assert {row["status"] for row in rows} == {"download_failed"}
+    assert {row["last_error_class"] for row in rows} == {expected_error_class}
+    assert {row["retry_eligible"] for row in rows} == {expected_retryable}
+
+
+def test_l17_senate_lda_detail_missing_required_schema_is_rejected(monkeypatch):
+    from app.services import connectors_senate_lda as senate_lda
+
+    fake = _L17SenateLdaClient(detail_error_case="missing_schema")
+    monkeypatch.setattr(senate_lda, "get_senate_lda_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/senate-lda/runs",
+        json={
+            "client_name": "Meta",
+            "filing_year": 2025,
+            "include_filing_detail": True,
+            "run_mode": "metadata_only",
+            "retry_max_attempts_per_request": 1,
+        },
+        headers={"Idempotency-Key": "l17-senate-detail-missing-schema"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["status"] == "completed_with_errors"
+
+    targets = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert targets.status_code == 200, targets.text
+    rows = targets.json()["targets"]
+    assert {row["status"] for row in rows} == {"download_failed"}
+    assert {row["last_error_class"] for row in rows} == {"schema_validation_failed"}
+    assert {row["retry_eligible"] for row in rows} == {False}
+
+
+def test_l17_senate_lda_retry_after_records_retry_telemetry(monkeypatch):
+    from app.services import connectors_senate_lda as senate_lda
+
+    payload = {
+        "count": 1,
+        "next": None,
+        "previous": None,
+        "results": [
+            {
+                "filing_uuid": "retry-after-filing",
+                "url": "https://lda.senate.gov/api/v1/filings/retry-after-filing/",
+                "filing_type": "LD-2",
+                "filing_year": 2025,
+                "filing_period": "mid_year",
+                "dt_posted": "2025-07-01",
+                "filing_document_url": "https://lda.senate.gov/retry-after-filing.pdf",
+                "filing_document_content_type": "application/pdf",
+                "registrant": {"name": "Registrant Retry"},
+                "client": {"name": "Client Retry"},
+            }
+        ],
+    }
+    session = _SequenceSession(
+        [
+            _SequenceJsonResponse(429, {"detail": "rate limited"}, headers={"Retry-After": "2"}),
+            _SequenceJsonResponse(200, payload),
+        ]
+    )
+    real_client = senate_lda.SenateLdaClient(base_url="https://lda.senate.gov/api/v1")
+    real_client.session = session
+    sleeps = []
+    monkeypatch.setattr(senate_lda, "get_senate_lda_client", lambda config: real_client)
+    monkeypatch.setattr(senate_lda._RateLimiter, "wait", lambda self: None)
+    monkeypatch.setattr(senate_lda.time, "sleep", lambda seconds: sleeps.append(seconds))
+
+    submit = client.post(
+        "/api/v1/connectors/senate-lda/runs",
+        json={
+            "client_name": "Meta",
+            "filing_year": 2025,
+            "run_mode": "metadata_only",
+            "retry_max_attempts_per_request": 2,
+            "retry_base_backoff_seconds": 0.1,
+            "retry_max_backoff_seconds": 5,
+        },
+        headers={"Idempotency-Key": "l17-senate-retry-after"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    assert len(session.calls) == 2
+    assert sleeps == [2.0]
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    summary_ref = detail.json()["report_refs"]["senate_lda_summary"]
+    summary = json.loads(Path(summary_ref).read_text(encoding="utf-8"))
+    assert summary["retry_summary"]["requests_total"] == 2
+    assert summary["retry_summary"]["retries_total"] == 1
+    assert summary["retry_summary"]["retry_sleep_seconds"] == 2.0
+
+
+def test_l17_senate_lda_additive_schema_and_policy_snapshot_are_bounded(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorPolicySnapshot
+    from app.services import connectors_senate_lda as senate_lda
+
+    payload = {
+        "count": 1,
+        "next": None,
+        "previous": None,
+        "results": [
+            {
+                "filing_uuid": "additive-filing",
+                "url": "https://lda.senate.gov/api/v1/filings/additive-filing/",
+                "filing_type": "LD-2",
+                "filing_year": 2025,
+                "filing_period": "mid_year",
+                "dt_posted": "2025-07-01",
+                "filing_document_url": "https://lda.senate.gov/additive-filing.pdf",
+                "filing_document_content_type": "application/pdf",
+                "registrant": {"name": "Registrant Additive"},
+                "client": {"name": "Client Additive"},
+                "new_optional_field": {"schema_drift": "tolerated"},
+            }
+        ],
+    }
+    monkeypatch.setattr(senate_lda, "get_senate_lda_client", lambda config: _L17SenateLdaClient(list_payload=payload))
+
+    submit = client.post(
+        "/api/v1/connectors/senate-lda/runs",
+        json={"client_name": "Meta", "filing_year": 2025, "run_mode": "metadata_only"},
+        headers={"Idempotency-Key": "l17-senate-additive-schema"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["status"] == "completed"
+
+    db = SessionLocal()
+    try:
+        policy = db.query(ConnectorPolicySnapshot).filter(ConnectorPolicySnapshot.connector_run_id == run_id).one()
+        assert policy.policy_json["fetch_policy_summary"]["allowed_hosts"] == ["lda.senate.gov"]
+        assert 429 in policy.retry_matrix_json["retryable_http_statuses"]
+    finally:
+        db.close()
+
+
+def test_l17_senate_lda_missing_required_schema_is_rejected_explicitly(monkeypatch):
+    from app.services import connectors_senate_lda as senate_lda
+
+    payload = {
+        "count": 1,
+        "next": None,
+        "previous": None,
+        "results": [
+            {
+                "url": "https://lda.senate.gov/api/v1/filings/missing-uuid/",
+                "filing_type": "LD-2",
+                "filing_year": 2025,
+                "filing_period": "mid_year",
+                "dt_posted": "2025-07-01",
+            }
+        ],
+    }
+    monkeypatch.setattr(senate_lda, "get_senate_lda_client", lambda config: _L17SenateLdaClient(list_payload=payload))
+
+    submit = client.post(
+        "/api/v1/connectors/senate-lda/runs",
+        json={"client_name": "Meta", "filing_year": 2025, "run_mode": "metadata_only"},
+        headers={"Idempotency-Key": "l17-senate-missing-schema"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    payload = detail.json()
+    assert payload["status"] == "failed"
+    assert payload["search_exhaustion_reason"] == "schema_validation_failed"
+    assert "missing_required_field:filing_uuid" in payload["error_summary"]
+
+
+def test_l17_senate_lda_partial_page_is_degraded_not_complete(monkeypatch):
+    from app.services import connectors_senate_lda as senate_lda
+
+    payload = {
+        "count": 2,
+        "next": "https://lda.senate.gov/api/v1/filings/?page=2",
+        "previous": None,
+        "results": [],
+    }
+    monkeypatch.setattr(senate_lda, "get_senate_lda_client", lambda config: _L17SenateLdaClient(list_payload=payload))
+
+    submit = client.post(
+        "/api/v1/connectors/senate-lda/runs",
+        json={"client_name": "Meta", "filing_year": 2025, "run_mode": "metadata_only"},
+        headers={"Idempotency-Key": "l17-senate-partial-page"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    payload = detail.json()
+    assert payload["status"] == "completed_with_errors"
+    assert payload["next_page_available"] is True
+    assert payload["search_exhaustion_reason"] == "partial_page_empty_with_next"
+    assert payload["error_summary"] == "partial_page_empty_with_next"
+
+
+@pytest.mark.parametrize(
+    ("download_case", "expected_status", "expected_error_class", "expected_retryable"),
+    [
+        ("timeout", "download_failed", "transport_timeout", True),
+        ("http_403", "download_failed", "http_4xx", False),
+        ("redirect_private", "blocked_by_fetch_policy", "host_policy_violation", False),
+    ],
+)
+def test_l17_sciencebase_download_negatives_are_bounded_and_observable(
+    monkeypatch,
+    download_case,
+    expected_status,
+    expected_error_class,
+    expected_retryable,
+):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorPolicySnapshot, ConnectorRunTarget, ConnectorTargetStageAttempt
+    from app.services import connectors_sciencebase as sb
+
+    adapter = _L17ScienceBaseAdapter(download_case=download_case)
+    if download_case == "redirect_private":
+        resolved_ips = iter(["8.8.8.8", "127.0.0.1"])
+        monkeypatch.setattr(sb, "_resolve_host_ip", lambda _hostname: next(resolved_ips))
+    else:
+        monkeypatch.setattr(sb, "_resolve_host_ip", lambda _hostname: "8.8.8.8")
+    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: adapter)
+
+    submit = client.post(
+        "/api/v1/connectors/sciencebase-public/runs",
+        json={"q": "MCS", "run_mode": "one_shot_import", "allowed_extensions": [".csv"]},
+        headers={"Idempotency-Key": f"l17-sciencebase-{download_case}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    detail_payload = detail.json()
+    assert detail_payload["status"] == "completed_with_errors"
+    assert detail_payload["retryable_target_count"] == (1 if expected_retryable else 0)
+    assert detail_payload["fetch_policy_summary"]["external_fetch_policy"] == "sciencebase_only"
+    assert {"sciencebase.gov", "www.sciencebase.gov"}.issubset(detail_payload["fetch_policy_summary"]["allowed_hosts"])
+
+    db = SessionLocal()
+    try:
+        target = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run_id).one()
+        assert target.status == expected_status
+        assert target.last_error_class == expected_error_class
+        assert target.retry_eligible is expected_retryable
+
+        stage_attempt = (
+            db.query(ConnectorTargetStageAttempt)
+            .filter(ConnectorTargetStageAttempt.connector_run_target_id == target.connector_run_target_id)
+            .order_by(ConnectorTargetStageAttempt.completed_at.desc())
+            .first()
+        )
+        assert stage_attempt is not None
+        assert stage_attempt.error_class == expected_error_class
+        assert stage_attempt.retryable is expected_retryable
+        assert "duration_ms" in stage_attempt.metrics_json
+
+        policy = db.query(ConnectorPolicySnapshot).filter(ConnectorPolicySnapshot.connector_run_id == run_id).one()
+        assert "transport_timeout" in policy.retry_matrix_json["retryable"]
+        assert "http_4xx" in policy.retry_matrix_json["terminal"]
+        assert "host_policy_violation" in policy.retry_matrix_json["terminal"]
+    finally:
+        db.close()
+
+
+def test_l17_sciencebase_additive_schema_is_tolerated(monkeypatch):
+    from app.services import connectors_sciencebase as sb
+
+    monkeypatch.setattr(sb, "_resolve_host_ip", lambda _hostname: "8.8.8.8")
+    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: _L17ScienceBaseAdapter(download_case="success"))
+
+    submit = client.post(
+        "/api/v1/connectors/sciencebase-public/runs",
+        json={"q": "MCS", "run_mode": "one_shot_import", "allowed_extensions": [".csv"]},
+        headers={"Idempotency-Key": "l17-sciencebase-additive-schema"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["status"] == "completed"
+
+    targets = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert targets.status_code == 200, targets.text
+    assert {row["status"] for row in targets.json()["targets"]} == {"recommended"}
+
+
+def test_l17_sciencebase_malformed_schema_is_rejected_explicitly(monkeypatch):
+    from app.services import connectors_sciencebase as sb
+
+    monkeypatch.setattr(sb, "_resolve_host_ip", lambda _hostname: "8.8.8.8")
+    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: _L17ScienceBaseAdapter(malformed_item=True))
+
+    submit = client.post(
+        "/api/v1/connectors/sciencebase-public/runs",
+        json={"q": "MCS", "run_mode": "one_shot_import", "allowed_extensions": [".csv"]},
+        headers={"Idempotency-Key": "l17-sciencebase-malformed-schema"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    payload = detail.json()
+    assert payload["status"] == "failed"
+    assert "missing_required_field:item_id" in payload["error_summary"]
+
+
+def test_l17_sciencebase_partial_page_is_degraded_not_complete(monkeypatch):
+    from app.services import connectors_sciencebase as sb
+
+    monkeypatch.setattr(sb, "_resolve_host_ip", lambda _hostname: "8.8.8.8")
+    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: _L17ScienceBaseAdapter(empty_page_next=True))
+
+    submit = client.post(
+        "/api/v1/connectors/sciencebase-public/runs",
+        json={"q": "MCS", "run_mode": "one_shot_import", "allowed_extensions": [".csv"]},
+        headers={"Idempotency-Key": "l17-sciencebase-partial-page"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    payload = detail.json()
+    assert payload["status"] == "completed_with_errors"
+    assert payload["next_page_available"] is True
+    assert payload["search_exhaustion_reason"] == "partial_page_empty_with_next"
+    assert payload["error_summary"] == "partial_page_empty_with_next"
 
 
 def test_connector_scope_mode_folder_children_applies_parent_filter(monkeypatch):
@@ -5964,6 +6458,107 @@ class _RetryingFakeSenateLdaClient(_FakeSenateLdaClient):
             rate_limiter=rate_limiter,
             retry_counters=retry_counters,
         )
+
+
+class _L17SenateLdaClient(_FakeSenateLdaClient):
+    def __init__(self, *, list_payload=None, detail_error_case=None):
+        super().__init__()
+        self.list_payload = list_payload
+        self.detail_error_case = detail_error_case
+
+    def list_filings(
+        self,
+        *,
+        params,
+        timeout_seconds,
+        retry_max_attempts_per_request,
+        retry_base_backoff_seconds,
+        retry_max_backoff_seconds,
+        retry_respect_retry_after,
+        rate_limiter,
+        retry_counters,
+    ):
+        self.list_calls.append(dict(params))
+        if self.list_payload is not None:
+            return self.list_payload
+        return super().list_filings(
+            params=params,
+            timeout_seconds=timeout_seconds,
+            retry_max_attempts_per_request=retry_max_attempts_per_request,
+            retry_base_backoff_seconds=retry_base_backoff_seconds,
+            retry_max_backoff_seconds=retry_max_backoff_seconds,
+            retry_respect_retry_after=retry_respect_retry_after,
+            rate_limiter=rate_limiter,
+            retry_counters=retry_counters,
+        )
+
+    def get_filing_detail(
+        self,
+        *,
+        filing_uuid,
+        timeout_seconds,
+        retry_max_attempts_per_request,
+        retry_base_backoff_seconds,
+        retry_max_backoff_seconds,
+        retry_respect_retry_after,
+        rate_limiter,
+        retry_counters,
+    ):
+        self.detail_calls.append(filing_uuid)
+        if self.detail_error_case == "timeout":
+            raise requests.Timeout("simulated senate detail timeout")
+        if self.detail_error_case == "http_403":
+            response = requests.Response()
+            response.status_code = 403
+            response.url = f"https://lda.senate.gov/api/v1/filings/{filing_uuid}/"
+            error = requests.HTTPError("403 Forbidden", response=response)
+            raise error
+        if self.detail_error_case == "missing_schema":
+            return {
+                "url": f"https://lda.senate.gov/api/v1/filings/{filing_uuid}/",
+                "filing_type": "LD-2",
+                "filing_year": 2025,
+                "filing_period": "mid_year",
+                "dt_posted": "2025-07-01",
+            }
+        return super().get_filing_detail(
+            filing_uuid=filing_uuid,
+            timeout_seconds=timeout_seconds,
+            retry_max_attempts_per_request=retry_max_attempts_per_request,
+            retry_base_backoff_seconds=retry_base_backoff_seconds,
+            retry_max_backoff_seconds=retry_max_backoff_seconds,
+            retry_respect_retry_after=retry_respect_retry_after,
+            rate_limiter=rate_limiter,
+            retry_counters=retry_counters,
+        )
+
+
+class _SequenceJsonResponse:
+    def __init__(self, status_code, payload, headers=None):
+        self.status_code = status_code
+        self._payload = payload
+        self.headers = headers or {}
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            error = requests.HTTPError(f"{self.status_code} error")
+            error.response = self
+            raise error
+
+    def json(self):
+        return self._payload
+
+
+class _SequenceSession:
+    def __init__(self, responses):
+        self.responses = list(responses)
+        self.calls = []
+
+    def get(self, url, params, headers, timeout):
+        self.calls.append({"url": url, "params": dict(params or {}), "headers": dict(headers or {}), "timeout": timeout})
+        if not self.responses:
+            raise AssertionError("unexpected Senate LDA request")
+        return self.responses.pop(0)
 
 
 def test_senate_lda_connector_happy_path_reports_and_detail_hydration(monkeypatch):
