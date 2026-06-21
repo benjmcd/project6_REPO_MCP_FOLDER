@@ -2,9 +2,10 @@
   "schema_id": "project6.support_matrix.v1",
   "profile": "local_expert",
   "overlays": [
-    "public_connectors"
+    "public_connectors",
+    "sec_xbrl_offline"
   ],
-  "boundary_note": "Selected RC2 profile is single-operator local_expert with public_connectors overlay: DEPLOYMENT_MODE=local, AUTH_OWNER=none, SQLite/local filesystem, loopback/local trust, and no auth boundary. Public connector support is bounded to operator-workflow + local-deployment for ScienceBase public/MCS and Senate LDA anonymous metadata only. No SEC, OCR, model/agent egress, nonlocal base, multi-trust, provider delivery, keyed connector, live SEC network, value-reveal, controlled-submit, HA, durable queue, automatic replay, or multi-executor claim is selected.",
+  "boundary_note": "Selected RC3 profile is single-operator local_expert with public_connectors and sec_xbrl_offline overlays: DEPLOYMENT_MODE=local, AUTH_OWNER=none, SQLite/local filesystem, loopback/local trust, and no auth boundary. Public connector support is bounded to operator-workflow + local-deployment for ScienceBase public/MCS and Senate LDA anonymous metadata only. SEC XBRL support is simulation/offline-replay only on already-acquired operator-supplied evidence with redacted/hash-only outputs. This selected profile encodes no live SEC egress, no value-reveal default-on, no agent egress, and no nonlocal capability. No production-ready SEC value reveal, Arelle network resolution, source acquisition, OCR, multi-trust, provider delivery, keyed connector, HA, durable queue, automatic replay, or multi-executor claim is selected.",
   "release_readiness_manifest": "profile-neutral; do not populate owner_selected_profile_specific_gates",
   "pinned_false_flags": [
     "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
@@ -86,6 +87,31 @@
       "id": "sec_offline_replay_path",
       "status": "simulation",
       "evidence": "backend/app/services/layer3_sec_xbrl_offline_evidence_loader.py:23-62; backend/tests/test_layer3_sec_xbrl_companyfacts_stage_and_oracle.py"
+    },
+    {
+      "id": "layer3_sec_xbrl_offline_evidence_loader",
+      "status": "simulation",
+      "evidence": "backend/app/services/layer3_sec_xbrl_offline_evidence_loader.py; backend/tests/test_sec_xbrl_offline_evidence_loader.py"
+    },
+    {
+      "id": "layer3_sec_xbrl_offline_companyfacts_stage",
+      "status": "simulation",
+      "evidence": "backend/app/services/layer3_sec_xbrl_offline_companyfacts_stage.py; backend/tests/test_layer3_sec_xbrl_companyfacts_stage_and_oracle.py"
+    },
+    {
+      "id": "layer3_sec_xbrl_offline_companyfacts_oracle_packet",
+      "status": "simulation",
+      "evidence": "backend/app/services/layer3_sec_xbrl_offline_companyfacts_oracle_packet.py; backend/tests/test_layer3_sec_xbrl_companyfacts_stage_and_oracle.py"
+    },
+    {
+      "id": "layer3_sec_xbrl_e2e_offline_orchestrator",
+      "status": "simulation",
+      "evidence": "backend/app/services/layer3_sec_xbrl_e2e_offline_orchestrator.py; backend/tests/test_sec_xbrl_e2e_offline_orchestrator.py"
+    },
+    {
+      "id": "layer3_sec_xbrl_offline_evidence_proof_capability",
+      "status": "simulation",
+      "evidence": "backend/app/services/layer3_sec_xbrl_offline_evidence_proof_capability.py; backend/tests/test_sec_xbrl_offline_evidence_proof_capability.py"
     },
     {
       "id": "nrc_aps_replay_corpus_gate",

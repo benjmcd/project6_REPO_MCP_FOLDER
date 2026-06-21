@@ -85,6 +85,7 @@ RELEASE_GATE_AGGREGATED_JOBS = (
     "backend-layer3-api",
     "backend-coverage",
     "backend-migrations-postgres",
+    "sec-xbrl-arelle-provisioning",
 )
 
 
@@ -211,9 +212,9 @@ def test_release_gate_job_runs_manifest_runner_after_manifest_ci_jobs() -> None:
     gate_block = _workflow_job_block("release-gate")
     assert "if: ${{ always() }}" in gate_block
     assert "python ./scripts/release_readiness_check.py" in gate_block
-    assert "python ./scripts/rc2_public_connectors_acceptance.py --json" in gate_block
+    assert "python ./scripts/rc3_sec_xbrl_offline_acceptance.py --json" in gate_block
     assert gate_block.index("python ./scripts/release_readiness_check.py") < gate_block.index(
-        "python ./scripts/rc2_public_connectors_acceptance.py --json"
+        "python ./scripts/rc3_sec_xbrl_offline_acceptance.py --json"
     )
     for job_id in RELEASE_GATE_AGGREGATED_JOBS:
         assert job_id in gate_block

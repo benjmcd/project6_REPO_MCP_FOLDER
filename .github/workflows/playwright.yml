@@ -628,6 +628,7 @@ jobs:
       - backend-layer3-api
       - backend-coverage
       - backend-migrations-postgres
+      - sec-xbrl-arelle-provisioning
     if: ${{ always() }}
     steps:
     - uses: actions/checkout@v6
@@ -648,7 +649,8 @@ jobs:
           "release-lock-install:${{ needs['release-lock-install'].result }}" \
           "backend-layer3-api:${{ needs['backend-layer3-api'].result }}" \
           "backend-coverage:${{ needs['backend-coverage'].result }}" \
-          "backend-migrations-postgres:${{ needs['backend-migrations-postgres'].result }}"
+          "backend-migrations-postgres:${{ needs['backend-migrations-postgres'].result }}" \
+          "sec-xbrl-arelle-provisioning:${{ needs['sec-xbrl-arelle-provisioning'].result }}"
         do
           job="${item%%:*}"
           result="${item#*:}"
@@ -664,13 +666,13 @@ jobs:
         PROJECT6_SOURCE_SHA: ${{ github.sha }}
       run: |
         python ./scripts/release_readiness_check.py
-    - name: Run RC2 public connectors acceptance capstone
+    - name: Run RC3 SEC XBRL offline acceptance capstone
       env:
         DB_INIT_MODE: none
         PROJECT6_SOURCE_SHA: ${{ github.sha }}
         PROJECT6_CI_BACKEND_LAYER3_API_RESULT: ${{ needs['backend-layer3-api'].result }}
       run: |
-        python ./scripts/rc2_public_connectors_acceptance.py --json
+        python ./scripts/rc3_sec_xbrl_offline_acceptance.py --json
 
   test:
     name: test
