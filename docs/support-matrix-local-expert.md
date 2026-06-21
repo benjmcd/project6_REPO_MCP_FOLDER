@@ -8,6 +8,8 @@ The profile is a single-operator local source-run posture: `DEPLOYMENT_MODE=loca
 
 The selected RC1 profile does not claim the public connectors overlay. ScienceBase, Senate LDA, and their run observability are RC2-targeted and remain outside the analytics-only RC1 supported claim.
 
+For the RC2-targeted public connector slice, restart recovery is operator-resume-driven: after a crash or process loss, the operator rechecks the run and posts `POST /api/v1/connectors/runs/{connector_run_id}/resume`. RC2 does not claim an automatic orphan-run or lease-expiry reaper. Runs left `running` with an expired lease are detectable through status and persisted lease fields. The local connector posture is single worker and single process; leases are single-process safe, while multi-worker concurrent execution, cross-process atomic leases, and high availability are not RC2 claims.
+
 ## Canonical Operator Journey
 
 The canonical local_expert operator journey for analytics-only RC1 is the documented composition of the `method_aware_analytics_vertical` capability selected by `config/support_matrix.yaml`.

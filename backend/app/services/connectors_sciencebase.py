@@ -683,6 +683,8 @@ def request_resume_run(db: Session, connector_run_id: str) -> ConnectorRun:
     run = db.get(ConnectorRun, connector_run_id)
     if not run:
         raise RunNotFoundError("connector run not found")
+    if run.status == "completed":
+        return run
     if run.status == "running":
         return run
     if run.status == "cancelling":
@@ -842,6 +844,24 @@ def _record_run_event(
         db.commit()
 
 
+def _cooperate_with_cancel_request(db: Session, run: ConnectorRun, *, phase: str) -> bool:
+    db.refresh(run)
+    if not run.cancellation_requested_at:
+        return False
+    prior_status = run.status
+    run.status = "cancelling"
+    _record_run_event(
+        db,
+        run=run,
+        event_type="run_cancelling",
+        phase=phase,
+        status_before=prior_status,
+        status_after="cancelling",
+    )
+    db.commit()
+    return True
+
+
 def _update_run_stage_aggregates(run: ConnectorRun, *, metrics_json: dict[str, Any] | None = None) -> None:
     metrics = dict(metrics_json or {})
     duration_ms_raw = metrics.get("duration_ms")
@@ -930,7 +950,11 @@ def _assert_active_lease(run: ConnectorRun, lease_token: str | None) -> None:
 def _acquire_lease(db: Session, run: ConnectorRun) -> bool:
     now = _utcnow()
     owner = f"pid:{os.getpid()}"
-    if run.execution_lease_expires_at and run.execution_lease_expires_at > now and run.execution_lease_owner not in (None, owner):
+    if (
+        run.execution_lease_expires_at
+        and run.execution_lease_expires_at > now
+        and (run.execution_lease_owner or run.execution_lease_token)
+    ):
         return False
     run.execution_lease_owner = owner
     run.execution_lease_token = uuid.uuid4().hex
@@ -952,6 +976,8 @@ def _renew_lease(db: Session, run: ConnectorRun) -> None:
 
 
 def _release_lease(run: ConnectorRun) -> None:
+    run.execution_lease_owner = None
+    run.execution_lease_token = None
     run.execution_lease_expires_at = _utcnow()
 
 
@@ -1394,6 +1420,9 @@ def _discover_targets(db: Session, run: ConnectorRun, adapter: ScienceBaseAdapte
                     sort=sort,
                     order=order,
                 )
+                if _cooperate_with_cancel_request(db, run, phase="discovery"):
+                    search_exhaustion_reason = "cancelled"
+                    break
                 page_count_completed += 1
                 last_offset_committed = offset
                 next_page_available = bool(page.nextlink)
@@ -2131,6 +2160,9 @@ def _run_target_pipeline(
         return
     finally:
         download_gate.release()
+
+    if _cooperate_with_cancel_request(db, run, phase="downloading"):
+        return
 
     if download.status_code == 304:
         _transition_target_atomic(
