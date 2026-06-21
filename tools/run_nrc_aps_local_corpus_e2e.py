@@ -1490,11 +1490,10 @@ def main(argv: list[str] | None = None) -> int:
 
     exit_code = 1
     try:
-        docs, preflight, findings = _run_preflight(
-            runtime_root,
-            document_processing_engine=document_processing_engine,
-            corpus_root=corpus_root_override,
-        )
+        _preflight_kwargs: dict[str, Any] = {"document_processing_engine": document_processing_engine}
+        if corpus_root_override is not None:
+            _preflight_kwargs["corpus_root"] = corpus_root_override
+        docs, preflight, findings = _run_preflight(runtime_root, **_preflight_kwargs)
         summary["preflight"] = preflight
         summary["corpus_pdf_count"] = len(docs)
         summary["observed_non_blocking_findings"] = findings
