@@ -37,7 +37,7 @@ def test_rc3_support_matrix_declares_offline_simulation_honesty_ceiling() -> Non
 
     for capability_id in runner.UNSUPPORTED_CAPABILITIES:
         assert by_id[capability_id]["status"] == "unsupported"
-    for capability_id in runner.VALUE_REVEAL_DEFAULT_OFF_CAPABILITIES:
+    for capability_id in runner.EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES:
         assert by_id[capability_id]["status"] == "experimental_default_off"
     for capability_id in runner.OFFLINE_SIMULATION_CAPABILITIES:
         assert by_id[capability_id]["status"] == "simulation"

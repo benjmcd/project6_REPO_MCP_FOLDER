@@ -40,9 +40,9 @@ def test_readme_states_honest_selected_local_profile():
     assert "base=local_expert" in text
     assert 'overlays=["public_connectors","sec_xbrl_offline"]' in text
     assert "Public connector support is bounded to operator-workflow + local-deployment" in text
-    assert "SEC-XBRL support is simulation/offline-replay only" in text
+    assert "SEC-XBRL value-bearing support is simulation/offline-replay only" in text
     assert "already-acquired operator-supplied evidence" in text
-    assert "SEC-XBRL live network / value reveal / controlled reveal submit remain default-off" in text
+    assert "Bounded SEC-XBRL live source-artifact acquisition is present but remains explicit-default-off" in text
     assert "keyed connectors" in text
     assert "HA" in text
     assert "No release profile is selected yet" not in text

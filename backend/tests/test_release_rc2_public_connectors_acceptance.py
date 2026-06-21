@@ -38,6 +38,12 @@ def _write_historical_rc2_root(tmp_path: Path) -> Path:
         "Public connector support is bounded to operator-workflow + local-deployment. "
         "No SEC, OCR, model/agent egress, nonlocal, keyed connector, or HA claim is selected."
     )
+    for capability in matrix["capabilities"]:
+        if capability["id"] == "sec_live_network_egress":
+            capability["status"] = "unsupported"
+            break
+    else:
+        raise AssertionError("sec_live_network_egress capability missing from support matrix")
     (config / "support_matrix.yaml").write_text(json.dumps(matrix), encoding="utf-8")
 
     manifest = _load_json(RELEASE_READINESS_PATH)
