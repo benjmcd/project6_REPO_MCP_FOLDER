@@ -2,7 +2,7 @@
   "schema_id": "project6.release_readiness.v1",
   "release": {
     "milestone": "M-L02-RELEASE-ACCEPTANCE",
-    "version": "0.1.0-rc1",
+    "version": "0.2.0-rc1",
     "scope": "profile-neutral release acceptance harness"
   },
   "build_identity": {

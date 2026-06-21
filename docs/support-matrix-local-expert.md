@@ -1,20 +1,22 @@
 # Local Expert Support Matrix
 
-This support matrix applies to the selected analytics-only RC1 profile `base=local_expert` with `overlays=none`.
+This support matrix applies to the selected RC2 profile `base=local_expert` with `overlays=["public_connectors"]`.
 
 The profile is a single-operator local source-run posture: `DEPLOYMENT_MODE=local`, `AUTH_OWNER=none`, SQLite/local filesystem, and loopback/local trust. Under this posture there is no authentication boundary; the local principal is constant and identity or role enforcement is not a product claim.
 
-`config/release_readiness.yaml` remains profile-neutral. Its `owner_selected_profile_specific_gates` list must stay empty; selected-profile acceptance lives in `config/support_matrix.yaml` and `scripts/support_matrix_check.py`.
+`config/release_readiness.yaml` remains profile-neutral. Its `owner_selected_profile_specific_gates` list must stay empty; selected-profile acceptance lives in `config/support_matrix.yaml`, `scripts/support_matrix_check.py`, and `scripts/rc2_public_connectors_acceptance.py`.
 
-The selected RC1 profile does not claim the public connectors overlay. ScienceBase, Senate LDA, and their run observability are RC2-targeted and remain outside the analytics-only RC1 supported claim.
+The selected RC2 profile claims the public_connectors overlay for public/anonymous connectors only. ScienceBase public/MCS, Senate LDA anonymous metadata, and connector run observability are supported for operator-workflow + local-deployment under the local_expert base.
 
 For the RC2-targeted public connector slice, restart recovery is operator-resume-driven: after a crash or process loss, the operator rechecks the run and posts `POST /api/v1/connectors/runs/{connector_run_id}/resume`. RC2 does not claim an automatic orphan-run or lease-expiry reaper. Runs left `running` with an expired lease are detectable through status and persisted lease fields. The local connector posture is single worker and single process; leases are single-process safe, while multi-worker concurrent execution, cross-process atomic leases, and high availability are not RC2 claims.
 
+Connector lifecycle support is bounded to a single local API/executor process with explicit operator action. Persisted checkpoints and run state support operator-triggered resume after restart; completed runs are resume no-ops; terminal runs clear public lease ownership; and an unexpired active lease fails closed as `lease_conflict`. This is not a durable queue, automatic replay, multi-executor, HA, keyed connector, real provider delivery, OCR, SEC, model/agent egress, or nonlocal trust claim.
+
 ## Canonical Operator Journey
 
-The canonical local_expert operator journey for analytics-only RC1 is the documented composition of the `method_aware_analytics_vertical` capability selected by `config/support_matrix.yaml`.
+The canonical local_expert operator journey for RC2 is the documented composition of the `method_aware_analytics_vertical`, `sciencebase_public_connector_slice`, `senate_lda_anonymous_connector_slice`, and `connector_run_observability` capabilities selected by `config/support_matrix.yaml`.
 
-The supported path is: CSV upload, variable profiling, transform recommend/apply, annotation, analysis with `cross_correlation`, `decomposition`, or `structural_break`, inspection of result artifacts, assumptions, and caveats, then persisted recovery through `GET /api/v1/analysis-runs/{id}` and dataset detail reads. The path runs on local libraries, SQLite, and the local filesystem under the default local auth posture; it does not use connectors, SEC, OCR, model/agent egress, provider delivery, overlays, or a nonlocal base.
+The supported analytics path is: CSV upload, variable profiling, transform recommend/apply, annotation, analysis with `cross_correlation`, `decomposition`, or `structural_break`, inspection of result artifacts, assumptions, and caveats, then persisted recovery through `GET /api/v1/analysis-runs/{id}` and dataset detail reads. The public connector path covers ScienceBase public/MCS discovery/download/CSV ingest into analysis, Senate LDA anonymous metadata query/detail handling, observable degraded states, checkpointed resume, lease conflict handling, and reports/events. Both paths run on local libraries, SQLite, and the local filesystem under the default local auth posture; they do not use SEC, OCR, model/agent egress, provider delivery, keyed connector secrets, HA, or a nonlocal base.
 
 Inspectable output includes method artifacts, method assumptions, caveats for limitations or degraded states, and source traceability from CSV ingest. The source-fidelity fields `content_hash`, `source_row_count`, and `dropped_row_count` make dropped all-empty source rows explicit while preserving the existing post-clean `row_count` used by analytics.
 
@@ -24,8 +26,8 @@ The operator-workflow proof includes coherent state recovery through a fresh API
 
 | Status | Meaning |
 | --- | --- |
-| `supported` | In scope for local expert RC1 under the default local posture. |
-| `experimental_default_off` | Present or partially wired, but not part of the selected local RC1 claim without an explicit future decision. This includes features guarded by false defaults and features that require an external engine that is not bundled with this profile. |
+| `supported` | In scope for local expert RC2 under the default local posture and selected public_connectors overlay. |
+| `experimental_default_off` | Present or partially wired, but not part of the selected local RC2 public_connectors claim without an explicit future decision. This includes features guarded by false defaults and features that require an external engine that is not bundled with this profile. |
 | `simulation` | Useful as offline/replay/staged proof only, not a live production capability. |
 | `unsupported` | Not armable or not claimed for this selected profile. |
 
@@ -34,9 +36,9 @@ The operator-workflow proof includes coherent state recovery through a fresh API
 | Capability | Status | Evidence |
 | --- | --- | --- |
 | Method-aware analytics vertical | `supported` | `README.md:41-46`; `tests/test_api.py:125-138`; `backend/app/services/analysis.py:44-100` |
-| ScienceBase public connector slice | `experimental_default_off` | RC2-targeted; not part of analytics-only RC1; `README.md:48-51`; `backend/app/api/router.py:319-382`; `backend/app/core/config.py:206` (`SCIENCEBASE_API_BASE_URL` alias) |
-| Senate LDA anonymous connector slice | `experimental_default_off` | RC2-targeted; not part of analytics-only RC1; `README.md:146-150`; `backend/app/api/router.py:426-452`; `backend/app/core/config.py:209-210` (`SENATE_LDA_API_BASE_URL` / `SENATE_LDA_API_KEY` aliases) |
-| Connector run observability | `experimental_default_off` | RC2-targeted; observes experimental connector runs, not analytics-only RC1; `README.md:54-60`; `backend/app/api/router.py:461-542`; `backend/app/services/connectors_sciencebase.py:3145-3164` |
+| ScienceBase public connector slice | `supported` | PR-1 correctness; PR-2 L17 negatives; PR-3 L20 lifecycle; PR-4 L11 source fidelity; PR-5 canonical journey; `tests/test_api.py::test_public_connector_operator_journey_bridges_sciencebase_target_to_analysis` |
+| Senate LDA anonymous connector slice | `supported` | PR-1 correctness; PR-2 L17 negatives; PR-3 L20 lifecycle; PR-4 L11 source fidelity; PR-5 anonymous journey; `tests/test_api.py::test_senate_lda_anonymous_metadata_path_is_no_key_secondary_journey` |
+| Connector run observability | `supported` | PR-1 correctness; PR-2 L17 negatives; PR-3 L20 lifecycle; PR-4 L11 source fidelity; PR-5 degraded-state journey; `tests/test_api.py::test_public_connector_journey_network_unreachable_is_degraded` |
 | Layer 3 workbench UI | `supported` | `backend/main.py:498-504`; `backend/app/review_ui/static/layer3.html`; `backend/app/review_ui/static/layer3.js` |
 | Health, readiness, OpenAPI | `supported` | `backend/main.py:53`; `backend/main.py:510-521`; `backend/main.py:526-536` |
 | SEC value reveal | `experimental_default_off` | `backend/app/core/config.py:164-166`; `backend/.env.example:68-69`; `README.md:3` |
@@ -72,6 +74,6 @@ The support-matrix checker pins the following flags false for this profile:
 | `SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED` |
 | `LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED` |
 
-The selected profile does not enable, advertise, or imply overlays. It does not select the nonlocal base or the public connectors overlay.
+The selected profile enables only the `public_connectors` overlay. It does not select the nonlocal base, keyed connectors, SEC behavior, OCR, model/agent egress, provider delivery, HA, durable queues, automatic replay, or multi-executor operation.
 
-OCR note: NRC APS document-processing code can use an installed Tesseract runtime for image or low-text PDF handling. That path remains outside the canonical local expert analytics journey and is not part of the selected RC1 claim because the external engine is not bundled with this source-run profile.
+OCR note: NRC APS document-processing code can use an installed Tesseract runtime for image or low-text PDF handling. That path remains outside the canonical local expert RC2 public connectors journey and is not part of the selected public_connectors overlay because the external engine is not bundled with this source-run profile.

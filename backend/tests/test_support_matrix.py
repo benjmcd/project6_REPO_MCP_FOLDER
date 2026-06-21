@@ -22,9 +22,9 @@ STATUS_VOCABULARY = {
 
 EXPECTED_CAPABILITY_STATUSES = {
     "method_aware_analytics_vertical": "supported",
-    "sciencebase_public_connector_slice": "experimental_default_off",
-    "senate_lda_anonymous_connector_slice": "experimental_default_off",
-    "connector_run_observability": "experimental_default_off",
+    "sciencebase_public_connector_slice": "supported",
+    "senate_lda_anonymous_connector_slice": "supported",
+    "connector_run_observability": "supported",
     "layer3_workbench_ui": "supported",
     "health_readiness_openapi": "supported",
     "sec_value_reveal": "experimental_default_off",
@@ -65,11 +65,11 @@ def test_support_matrix_declares_local_expert_capability_boundary() -> None:
 
     assert matrix["schema_id"] == "project6.support_matrix.v1"
     assert matrix["profile"] == "local_expert"
-    assert matrix["overlays"] == "none"
+    assert matrix["overlays"] == ["public_connectors"]
     assert "single-operator local" in matrix["boundary_note"]
     assert "no auth boundary" in matrix["boundary_note"]
-    assert "analytics-only" in matrix["boundary_note"]
-    assert "connectors are deferred to RC2" in matrix["boundary_note"]
+    assert "public_connectors overlay" in matrix["boundary_note"]
+    assert "operator-workflow + local-deployment" in matrix["boundary_note"]
 
     capabilities = matrix["capabilities"]
     by_id = {item["id"]: item for item in capabilities}
@@ -89,8 +89,9 @@ def test_support_matrix_declares_local_expert_capability_boundary() -> None:
         "connector_run_observability",
     ):
         connector = by_id[connector_id]
-        assert connector["status"] == "experimental_default_off"
-        assert "RC2-targeted" in connector["evidence"]
+        assert connector["status"] == "supported"
+        for marker in ("PR-1", "PR-2", "PR-3", "PR-4", "PR-5"):
+            assert marker in connector["evidence"]
 
 
 def test_support_matrix_connector_evidence_points_to_actual_config_aliases() -> None:
@@ -113,7 +114,7 @@ def test_front_door_names_selected_local_expert_profile_without_old_unselected_c
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
 
     assert "base=local_expert" in readme
-    assert "overlays=none" in readme
+    assert 'overlays=["public_connectors"]' in readme
     assert "No release profile is selected yet" not in readme
 
 
@@ -124,7 +125,7 @@ def test_ocr_support_matrix_doc_acknowledges_installed_tesseract_runtime() -> No
 
     assert by_id["ocr_external_engine"]["status"] == "experimental_default_off"
     assert "installed Tesseract" in doc
-    assert "not part of the selected RC1 claim" in doc
+    assert "not part of the selected public_connectors overlay" in doc
 
 
 def test_support_matrix_pins_local_expert_flags_without_release_manifest_profile_gates() -> None:
@@ -152,7 +153,7 @@ def test_support_matrix_checker_passes_against_current_config_defaults() -> None
     assert report["schema_id"] == "project6.support_matrix_check.v1"
     assert report["status"] == "pass"
     assert report["profile"] == "local_expert"
-    assert report["overlays"] == "none"
+    assert report["overlays"] == ["public_connectors"]
     assert report["release_readiness_owner_selected_profile_specific_gates"] == []
     assert report["default_profile"] == {
         "deployment_mode": "local",
@@ -163,12 +164,10 @@ def test_support_matrix_checker_passes_against_current_config_defaults() -> None
     assert report["pinned_false_flags_status"] == "pass"
 
 
-def test_support_matrix_checker_rejects_rc1_supported_public_connector_regression(tmp_path) -> None:
+def test_support_matrix_checker_rejects_supported_public_connector_without_overlay(tmp_path) -> None:
     checker = _load_checker()
     matrix = _load_json_compatible_yaml(MATRIX_PATH)
-    for item in matrix["capabilities"]:
-        if item["id"] == "sciencebase_public_connector_slice":
-            item["status"] = "supported"
+    matrix["overlays"] = "none"
     mutated = tmp_path / "support_matrix.yaml"
     mutated.write_text(json.dumps(matrix), encoding="utf-8")
 

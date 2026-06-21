@@ -664,13 +664,13 @@ jobs:
         PROJECT6_SOURCE_SHA: ${{ github.sha }}
       run: |
         python ./scripts/release_readiness_check.py
-    - name: Run RC1 local expert acceptance capstone
+    - name: Run RC2 public connectors acceptance capstone
       env:
         DB_INIT_MODE: none
         PROJECT6_SOURCE_SHA: ${{ github.sha }}
         PROJECT6_CI_BACKEND_LAYER3_API_RESULT: ${{ needs['backend-layer3-api'].result }}
       run: |
-        python ./scripts/rc1_local_expert_acceptance.py --json
+        python ./scripts/rc2_public_connectors_acceptance.py --json
 
   test:
     name: test
