@@ -2604,6 +2604,36 @@ def test_l17_sciencebase_partial_page_is_degraded_not_complete(monkeypatch):
     assert payload["error_summary"] == "partial_page_empty_with_next"
 
 
+def test_l17_finalize_ignores_stale_error_summary_after_current_success(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.services import connectors_sciencebase as sb
+
+    monkeypatch.setattr(sb, "_resolve_host_ip", lambda _hostname: "8.8.8.8")
+    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: _L17ScienceBaseAdapter(download_case="success"))
+
+    submit = client.post(
+        "/api/v1/connectors/sciencebase-public/runs",
+        json={"q": "MCS", "run_mode": "one_shot_import", "allowed_extensions": [".csv"]},
+        headers={"Idempotency-Key": "l17-stale-error-finalize"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    db = SessionLocal()
+    try:
+        run = db.get(sb.ConnectorRun, run_id)
+        assert run is not None
+        run.error_summary = "stale_prior_error"
+        db.commit()
+
+        sb._finalize_run(db, run)
+        db.refresh(run)
+        assert run.status == "completed"
+        assert run.error_summary == "stale_prior_error"
+    finally:
+        db.close()
+
+
 def test_connector_scope_mode_folder_children_applies_parent_filter(monkeypatch):
     from app.services import connectors_sciencebase as sb
 

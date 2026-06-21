@@ -2619,7 +2619,12 @@ def _finalize_run(db: Session, run: ConnectorRun) -> None:
         run.status = "cancelled"
         run.cancelled_at = now
         run.error_summary = "cancelled_by_operator"
-    elif run.failed_count > 0 or run.blocked_by_fetch_policy_count > 0 or run.budget_blocked_count > 0 or run.error_summary:
+    elif (
+        run.failed_count > 0
+        or run.blocked_by_fetch_policy_count > 0
+        or run.budget_blocked_count > 0
+        or run.search_exhaustion_reason == "partial_page_empty_with_next"
+    ):
         run.status = "completed_with_errors"
     else:
         run.status = "completed"
