@@ -2031,6 +2031,85 @@ def test_connector_scope_mode_folder_children_and_explicit_item_ids(monkeypatch)
         db.close()
 
 
+def test_sciencebase_download_429_retryable_sets_backoff(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRunTarget
+    from app.services import connectors_sciencebase as sb
+
+    class _RateLimitedScienceBaseAdapter(_FakeSearchOnlyAdapter):
+        def search_page(self, *, q, filters, offset, page_size, sort, order):
+            return type(
+                "SearchPage",
+                (),
+                {
+                    "items": [{"id": "rate-limited-item"}] if offset == 0 else [],
+                    "offset": offset,
+                    "page_size": page_size,
+                    "total": 1,
+                    "nextlink": None,
+                    "prevlink": None,
+                    "raw_query_metadata": {},
+                },
+            )()
+
+        def hydrate_item(self, item_id):
+            return {
+                "id": item_id,
+                "title": "Rate Limited Item",
+                "files": [
+                    {
+                        "name": "rate-limited.csv",
+                        "downloadUri": "https://www.sciencebase.gov/catalog/file/rate-limited.csv",
+                    }
+                ],
+                "distributionLinks": [],
+                "webLinks": [],
+            }
+
+        def extract_artifacts(self, item):
+            return [
+                {
+                    "surface": "files",
+                    "name": "rate-limited.csv",
+                    "url": "https://www.sciencebase.gov/catalog/file/rate-limited.csv",
+                    "locator_type": "downloadUri",
+                    "checksum_type": None,
+                    "checksum_value": None,
+                    "source_reference": {"name": "rate-limited.csv"},
+                }
+            ]
+
+        def download_artifact(self, *, url, timeout_seconds, max_redirects, headers=None):
+            response = requests.Response()
+            response.status_code = 429
+            response.url = url
+            response.headers["Retry-After"] = "120"
+            error = requests.HTTPError("429 Too Many Requests", response=response)
+            raise error
+
+    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: _RateLimitedScienceBaseAdapter())
+
+    submit = client.post(
+        "/api/v1/connectors/sciencebase-public/runs",
+        json={"q": "MCS", "run_mode": "one_shot_import", "allowed_extensions": [".csv"]},
+        headers={"Idempotency-Key": "sciencebase-429-retry-after"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    db = SessionLocal()
+    try:
+        target = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run_id).one()
+        assert target.status == "download_failed"
+        assert target.last_error_class == "http_429"
+        assert target.retry_eligible is True
+        assert target.backoff_until is not None
+        assert target.last_attempt_at is not None
+        assert target.backoff_until > target.last_attempt_at
+    finally:
+        db.close()
+
+
 def test_connector_scope_mode_folder_children_applies_parent_filter(monkeypatch):
     from app.services import connectors_sciencebase as sb
 
@@ -5888,6 +5967,8 @@ class _RetryingFakeSenateLdaClient(_FakeSenateLdaClient):
 
 
 def test_senate_lda_connector_happy_path_reports_and_detail_hydration(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import DatasetSourceProvenance
     from app.services import connectors_senate_lda as senate_lda
 
     fake = _FakeSenateLdaClient()
@@ -5930,6 +6011,19 @@ def test_senate_lda_connector_happy_path_reports_and_detail_hydration(monkeypatc
     assert target_payload["total"] == 2
     assert {row["status"] for row in target_payload["targets"]} == {"recommended"}
     assert fake.detail_calls == ["filing-1", "filing-2"]
+
+    db = SessionLocal()
+    try:
+        provenance_rows = (
+            db.query(DatasetSourceProvenance)
+            .filter(DatasetSourceProvenance.connector_run_id == run_id)
+            .filter(DatasetSourceProvenance.source_system == "senate_lda")
+            .all()
+        )
+        assert len(provenance_rows) == 2
+        assert all((row.source_reference_json or {}).get("detail_ref") for row in provenance_rows)
+    finally:
+        db.close()
 
 
 def test_senate_lda_connector_submission_idempotency_reuse_and_conflict(monkeypatch):
@@ -6004,3 +6098,104 @@ def test_senate_lda_connector_resume_uses_senate_executor(monkeypatch):
     assert targets.status_code == 200, targets.text
     assert {row["status"] for row in targets.json()["targets"]} == {"recommended"}
     assert len(fake.list_calls) == 1
+
+
+def test_senate_lda_dedupes_duplicate_filings_and_records_provenance(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRun, ConnectorRunTarget, DatasetSourceProvenance
+    from app.services import connectors_senate_lda as senate_lda
+
+    class _DuplicateFilingSenateLdaClient(_FakeSenateLdaClient):
+        def list_filings(
+            self,
+            *,
+            params,
+            timeout_seconds,
+            retry_max_attempts_per_request,
+            retry_base_backoff_seconds,
+            retry_max_backoff_seconds,
+            retry_respect_retry_after,
+            rate_limiter,
+            retry_counters,
+        ):
+            self.list_calls.append(dict(params))
+            page = int(params.get("page", 1))
+            filing = {
+                "filing_uuid": "filing-dup",
+                "url": "https://lda.senate.gov/api/v1/filings/filing-dup/",
+                "filing_type": "LD-2",
+                "filing_year": 2025,
+                "filing_period": "mid_year",
+                "dt_posted": "2025-07-01",
+                "filing_document_url": "https://lda.senate.gov/filing-dup.pdf",
+                "filing_document_content_type": "application/pdf",
+                "registrant": {"name": "Registrant Duplicate"},
+                "client": {"name": "Client Duplicate"},
+            }
+            if page == 1:
+                return {"count": 3, "next": "https://lda.senate.gov/api/v1/filings/?page=2", "previous": None, "results": [filing]}
+            if page == 2:
+                second = dict(filing)
+                second["url"] = "https://lda.senate.gov/api/v1/filings/filing-dup/?page=2"
+                distinct = {
+                    "filing_uuid": "filing-2",
+                    "url": "https://lda.senate.gov/api/v1/filings/filing-2/",
+                    "filing_type": "LD-203",
+                    "filing_year": 2025,
+                    "filing_period": "year_end",
+                    "dt_posted": "2025-12-31",
+                    "filing_document_url": "https://lda.senate.gov/filing-2.pdf",
+                    "filing_document_content_type": "application/pdf",
+                    "registrant": {"name": "Registrant Two"},
+                    "client": {"name": "Client Two"},
+                }
+                return {"count": 3, "next": None, "previous": None, "results": [second, distinct]}
+            return {"count": 3, "next": None, "previous": None, "results": []}
+
+    fake = _DuplicateFilingSenateLdaClient()
+    monkeypatch.setattr(senate_lda, "get_senate_lda_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/senate-lda/runs",
+        json={"client_name": "Meta", "filing_year": 2025, "include_filing_detail": False},
+        headers={"Idempotency-Key": "senate-lda-duplicate-provenance"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    targets_response = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert targets_response.status_code == 200, targets_response.text
+    target_rows = targets_response.json()["targets"]
+    assert targets_response.json()["total"] == 3
+    assert [row["status"] for row in target_rows].count("recommended") == 2
+    assert [row["status"] for row in target_rows].count("collapsed_duplicate") == 1
+
+    db = SessionLocal()
+    try:
+        run = db.get(ConnectorRun, run_id)
+        assert run is not None
+        assert run.collapsed_duplicate_count == 1
+        targets = (
+            db.query(ConnectorRunTarget)
+            .filter(ConnectorRunTarget.connector_run_id == run_id)
+            .order_by(ConnectorRunTarget.ordinal.asc())
+            .all()
+        )
+        recommended_targets = [target for target in targets if target.status == "recommended"]
+        collapsed_targets = [target for target in targets if target.status == "collapsed_duplicate"]
+        assert [target.sciencebase_item_id for target in recommended_targets] == ["filing-dup", "filing-2"]
+        assert all(target.dataset_version_id for target in recommended_targets)
+        assert len(collapsed_targets) == 1
+        assert collapsed_targets[0].dataset_version_id is None
+        provenance_rows = (
+            db.query(DatasetSourceProvenance)
+            .filter(DatasetSourceProvenance.connector_run_id == run_id)
+            .filter(DatasetSourceProvenance.source_system == "senate_lda")
+            .order_by(DatasetSourceProvenance.source_artifact_key.asc())
+            .all()
+        )
+        assert len(provenance_rows) == 2
+        assert {row.source_mode for row in provenance_rows} == {"metadata_only"}
+        assert {row.sciencebase_item_id for row in provenance_rows} == {"filing-dup", "filing-2"}
+    finally:
+        db.close()
