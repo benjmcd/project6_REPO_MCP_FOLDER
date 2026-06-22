@@ -46441,5 +46441,61 @@
     ],
     "next_posture": "run_one_filing_live_source_artifact_smoke_with_redacted_hash_only_evidence"
   },
-  "latest_sec_live_source_artifact_manual_smoke_preflight_proof_summary": "Branch-local proof adds a validate-only SEC live source-artifact smoke preflight that checks explicit operator environment readiness, runtime-normalized writable storage, safe database routing, bounded rate/request/size/timeout controls, calendar-valid filing date, cache-free source identity, and redaction boundaries without performing a SEC request, creating source artifacts or receipts, invoking Arelle, changing support/default/redaction posture, or claiming production readiness."
+  "latest_sec_live_source_artifact_manual_smoke_preflight_proof_summary": "Branch-local proof adds a validate-only SEC live source-artifact smoke preflight that checks explicit operator environment readiness, runtime-normalized writable storage, safe database routing, bounded rate/request/size/timeout controls, calendar-valid filing date, cache-free source identity, and redaction boundaries without performing a SEC request, creating source artifacts or receipts, invoking Arelle, changing support/default/redaction posture, or claiming production readiness.",
+  "sec_live_source_artifact_offline_replay_proof": {
+    "proof_kind": "sec_live_source_artifact_offline_replay_proof",
+    "milestone": "sec_live_source_artifact_offline_replay_v1",
+    "status": "branch_local_offline_mock_replay",
+    "runtime_branch": "codex/sec-live-replay",
+    "runtime_pr": "#2389",
+    "diagnostic_script": "diagnostics/assessment/sec-live-replay.py",
+    "fixture": "diagnostics/assessment/sec-live-fixture.txt",
+    "test_file": "backend/tests/test_layer3_sec_live_replay.py",
+    "diagnostic_decision": "sec_live_source_artifact_offline_replay_proven",
+    "proof_mode": "fake_sec_client_fixture_backed_full_acquire_redact_store_provenance_replay",
+    "runtime_behavior_changed": false,
+    "real_sec_network_request_performed": false,
+    "fake_transport_only": true,
+    "fixture_identity_bound_to_selected_filing": true,
+    "source_artifact_or_receipt_created": "isolated_offline_runtime_only",
+    "shared_runtime_artifact_created": false,
+    "config_default_changed": false,
+    "support_matrix_changed": false,
+    "redaction_posture_changed": false,
+    "production_readiness_claimed": false,
+    "proof_guards": [
+      "fresh_storage_directory_per_replay_run",
+      "prior_live_request_counter_restored",
+      "non_empty_fixture_required",
+      "fixture_identity_marker_required",
+      "fake_transport_called_once_for_initial_acquire",
+      "idempotent_cache_replay_proven",
+      "server_artifact_readback_hash_matches_fixture",
+      "raw_fixture_url_cik_accession_user_agent_storage_path_and_artifact_bytes_not_returned"
+    ],
+    "negative_authority_flags": {
+      "real_sec_network_request_performed": false,
+      "live_network_default_on": false,
+      "support_matrix_graduation": false,
+      "config_default_change": false,
+      "redaction_posture_change": false,
+      "arelle_invocation": false,
+      "multi_filing_enforcement": false,
+      "delivery_export_status": false,
+      "provider_delivery": false,
+      "nonlocal_auth_hardening": false,
+      "value_reveal": false,
+      "production_readiness_claim": false
+    },
+    "verification": [
+      "python -m pytest ./backend/tests/test_layer3_sec_live_replay.py -q",
+      "python -m pytest ./backend/tests/test_layer3_sec_live_replay.py ./backend/tests/test_layer3_sec_live_preflight.py ./backend/tests/test_ci_coverage_completeness.py -q",
+      "python -m py_compile ./diagnostics/assessment/sec-live-replay.py ./backend/tests/test_layer3_sec_live_replay.py",
+      "python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "git diff --check"
+    ],
+    "next_posture": "complete_sec_live_preflight_capstone_after_replay"
+  },
+  "latest_sec_live_source_artifact_offline_replay_proof_summary": "Branch-local proof adds a fixture-backed offline replay diagnostic that exercises SEC live source-artifact acquire -> redact -> hash-only store -> provenance with fake transport only, fresh isolated runtime storage per run, selected-filing fixture binding, restored process live-request counter state, and no raw URL/CIK/accession/User-Agent/path/artifact-byte report leakage while preserving default-off/status/redaction posture and making no production-readiness claim."
 }
