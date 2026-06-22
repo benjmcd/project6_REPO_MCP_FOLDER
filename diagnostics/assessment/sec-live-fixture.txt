@@ -1,0 +1,8 @@
+<SEC-DOCUMENT>
+SEC-LIVE-REPLAY-RAW-TEXT-MARKER
+SYNTHETIC OFFLINE SEC SOURCE ARTIFACT
+CIK: 0000320193
+ACCESSION: 0000320193-24-000123
+SOURCE URL: https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/0000320193-24-000123.txt
+This fixture is intentionally synthetic and must only be consumed through the fake SEC client replay harness.
+</SEC-DOCUMENT>
