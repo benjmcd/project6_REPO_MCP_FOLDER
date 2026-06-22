@@ -118638,6 +118638,67 @@ def _check_sec_edgar_period_unit_context_dimension_rendered_detail_ui(
                 )
 
 
+def _check_sec_live_source_manual_smoke_freeze(errors: list[str]) -> None:
+    doc_path = PLANNING_DOCS / "1362-sec-live-source-manual-smoke-freeze.md"
+    doc_rel = "next_milestone_plans/Layer3_planning_docs/1362-sec-live-source-manual-smoke-freeze.md"
+    milestone = "sec_live_source_manual_smoke_freeze_v1"
+    entry_key = "sec_live_source_manual_smoke_freeze_tracking"
+    proof_key = "sec_live_source_manual_smoke_freeze_proof"
+    next_posture = "execute_operator_configured_manual_live_sec_source_artifact_smoke"
+
+    doc_text = _read_required_text(doc_path, errors)
+    for term in (
+        "# 1362 SEC Live Source Manual Smoke Freeze",
+        f"Target: `{milestone}`.",
+        "Status: planning/control freeze only.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Real SEC network request performed by this freeze: `false`.",
+        "Manual smoke may run only outside CI",
+        "`LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED=true`",
+        "`LAYER3_SEC_EDGAR_USER_AGENT`",
+        "redacted/hash-only receipt evidence",
+        "No value reveal, controlled-submit, Arelle invocation, multi-filing enforcement, delivery/export, provider delivery, nonlocal auth, default-on behavior, model/migration/persistence change, or production-readiness claim is admitted.",
+        f"Next posture: `{next_posture}`.",
+    ):
+        if term not in doc_text:
+            errors.append(f"{doc_rel} missing manual live SEC source smoke freeze term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## SEC Live Source Manual Smoke Freeze",
+            milestone,
+            doc_rel,
+            "Status: planning/control freeze only.",
+            "Runtime behavior introduced by this freeze: `false`.",
+            "Real SEC network request performed by this freeze: `false`.",
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"milestone": "{milestone}"',
+            f'"planning_doc": "{doc_rel}"',
+            '"status": "branch_local_planning_control_freeze"',
+            '"runtime_behavior_changed_by_tracking": false',
+            '"real_sec_network_request_performed": false',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"{proof_key}"',
+            f'"milestone": "{milestone}"',
+            f'"planning_doc": "{doc_rel}"',
+            '"status": "branch_local_planning_control_freeze"',
+            '"runtime_behavior_changed": false',
+            '"real_sec_network_request_performed": false',
+            '"redacted_hash_only_evidence_required": true',
+            f'"next_posture": "{next_posture}"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing manual live SEC source smoke freeze term: {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -119965,6 +120026,7 @@ def main() -> int:
     _check_sec_edgar_durable_delivery_archive_status_surface(errors)
     _check_sec_edgar_durable_delivery_archive_status_rendered_ui(errors)
     _check_sec_edgar_period_unit_context_dimension_rendered_detail_ui(errors)
+    _check_sec_live_source_manual_smoke_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

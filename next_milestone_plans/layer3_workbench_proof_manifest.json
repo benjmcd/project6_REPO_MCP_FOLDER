@@ -46341,5 +46341,43 @@
     },
     "next_posture": "operator_configured_manual_live_sec_source_artifact_smoke_outside_ci_before_arelle_multi_filing_delivery_nonlocal_auth_or_value_reveal"
   },
-  "latest_sec_live_network_egress_experimental_default_off_transition_proof_summary": "Branch-local proof reclassifies SEC live network egress as experimental/default-off and expands the support-matrix runtime audit to prove default-off blocking plus explicit fake-client redacted receipt acquisition without enabling real network access by default."
+  "latest_sec_live_network_egress_experimental_default_off_transition_proof_summary": "Branch-local proof reclassifies SEC live network egress as experimental/default-off and expands the support-matrix runtime audit to prove default-off blocking plus explicit fake-client redacted receipt acquisition without enabling real network access by default.",
+  "sec_live_source_manual_smoke_freeze_proof": {
+    "proof_kind": "sec_live_source_manual_smoke_freeze_proof",
+    "milestone": "sec_live_source_manual_smoke_freeze_v1",
+    "status": "branch_local_planning_control_freeze",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1362-sec-live-source-manual-smoke-freeze.md",
+    "authoritative_main_before_pass": "4cefa8f2dbe5b2e96739e50e0516b18b84170bae",
+    "selected_surface": "operator_configured_manual_live_sec_source_artifact_smoke",
+    "runtime_behavior_changed": false,
+    "real_sec_network_request_performed": false,
+    "ci_real_network_access": false,
+    "config_default_changed": false,
+    "support_matrix_changed": false,
+    "redaction_posture_changed": false,
+    "production_readiness_claimed": false,
+    "redacted_hash_only_evidence_required": true,
+    "required_evidence": [
+      "current_main_sha",
+      "operator_approved_small_allowlisted_filing",
+      "route_and_request_id",
+      "receipt_id_and_receipt_hash",
+      "source_identity_hash",
+      "content_sha256",
+      "content_length",
+      "status_reread_by_receipt_id",
+      "raw_url_local_path_user_agent_and_artifact_bytes_not_projected"
+    ],
+    "negative_authority_flags": {
+      "arelle_invocation": false,
+      "multi_filing_enforcement": false,
+      "delivery_export_status": false,
+      "provider_delivery": false,
+      "nonlocal_auth_hardening": false,
+      "value_reveal": false,
+      "default_on_graduation": false
+    },
+    "next_posture": "execute_operator_configured_manual_live_sec_source_artifact_smoke"
+  },
+  "latest_sec_live_source_manual_smoke_freeze_proof_summary": "Branch-local proof records the manual live SEC source-artifact smoke freeze as planning/control only: no real SEC request, no runtime/default/status/redaction change, and redacted/hash-only evidence required before downstream Arelle, multi-filing, delivery/export, nonlocal auth, or value-reveal work."
 }
