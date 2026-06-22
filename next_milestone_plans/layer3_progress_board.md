@@ -60,6 +60,31 @@ outside CI and record only redacted/hash receipt evidence before Arelle/fact
 authority, multi-filing, delivery/export/status, nonlocal auth, or value-reveal
 graduation.
 
+## SEC Live Source Manual Smoke Freeze
+
+Milestone:
+`sec_live_source_manual_smoke_freeze_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1362-sec-live-source-manual-smoke-freeze.md`.
+
+Status: planning/control freeze only.
+
+Scope: selects one operator-configured manual live SEC source-artifact smoke as
+the next exact production-readiness proof surface. The smoke must run outside CI,
+use explicit server configuration and operator confirmation, target one small
+allowlisted complete-submission text filing, and record only redacted/hash-only
+receipt evidence.
+
+Boundary: Runtime behavior introduced by this freeze: `false`.
+Real SEC network request performed by this freeze: `false`.
+No config default, support-matrix status, route/API behavior, model/migration,
+persistence, redaction posture, Arelle invocation, multi-filing enforcement,
+delivery/export/provider behavior, nonlocal auth, value reveal, default-on
+behavior, or production-readiness claim is admitted.
+
+Next posture: `execute_operator_configured_manual_live_sec_source_artifact_smoke`.
+
 ## P24 Mixed-Source Product-Authority Checkpoint
 
 Milestone:
