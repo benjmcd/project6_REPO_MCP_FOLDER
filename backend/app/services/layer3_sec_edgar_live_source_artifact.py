@@ -48,6 +48,8 @@ REDACTION_POLICY_ID = "sec_edgar_text_table_live_source_artifact_acquisition_red
 RATE_POLICY_ID = "sec_edgar_text_table_live_source_artifact_default_1rps_max_10rps_v1"
 SEC_RATE_LIMIT_CEILING_PER_SECOND = 10
 SEC_LIVE_REQUEST_COUNT_CEILING_DEFAULT = 10
+SEC_LIVE_SOURCE_ARTIFACT_MAX_BYTES_CEILING = 25_000_000
+SEC_LIVE_SOURCE_ARTIFACT_TIMEOUT_SECONDS_CEILING = 120
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 _SEC_LIVE_REQUEST_COUNT = 0
 _SEC_LIVE_REQUEST_COUNT_LOCK = threading.Lock()
@@ -246,11 +248,13 @@ def acquire_sec_edgar_text_table_live_source_artifact(fields: Mapping[str, Any])
 
     url = _server_derived_complete_submission_text_url(request)
     url_hash = _sha256_text(url)
+    timeout_seconds = _source_artifact_timeout_seconds()
+    max_bytes = _source_artifact_max_bytes()
     fetch_result = _fetch_with_retry(
         url=url,
         user_agent=user_agent,
-        timeout_seconds=_timeout_seconds(),
-        max_bytes=_max_bytes(),
+        timeout_seconds=timeout_seconds,
+        max_bytes=max_bytes,
     )
     if fetch_result.final_url and not _is_allowed_sec_url(fetch_result.final_url):
         _blocked(
@@ -273,7 +277,7 @@ def acquire_sec_edgar_text_table_live_source_artifact(fields: Mapping[str, Any])
             blocked_fields=["content"],
         )
     content = bytes(fetch_result.content or b"")
-    if len(content) > _max_bytes():
+    if len(content) > max_bytes:
         _blocked(
             "sec_edgar_text_table_live_source_artifact_partial_download_blocked",
             "SEC EDGAR responses larger than the configured byte limit do not create source-artifact authority.",
@@ -989,7 +993,7 @@ def _reset_live_request_count_for_tests() -> None:
 
 
 def _max_bytes() -> int:
-    value = int(getattr(settings, "layer3_sec_edgar_max_bytes", 25_000_000) or 0)
+    value = int(getattr(settings, "layer3_sec_edgar_max_bytes", SEC_LIVE_SOURCE_ARTIFACT_MAX_BYTES_CEILING) or 0)
     if value <= 0:
         _blocked(
             "sec_edgar_text_table_live_source_artifact_max_bytes_missing",
@@ -1000,8 +1004,32 @@ def _max_bytes() -> int:
     return value
 
 
+def _source_artifact_max_bytes() -> int:
+    value = _max_bytes()
+    if value > SEC_LIVE_SOURCE_ARTIFACT_MAX_BYTES_CEILING:
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_max_bytes_not_admitted",
+            "SEC EDGAR text-table source-artifact acquisition requires max bytes between 1 and 25,000,000.",
+            http_status=409,
+            blocked_fields=["layer3_sec_edgar_max_bytes"],
+        )
+    return value
+
+
 def _timeout_seconds() -> int:
     return max(1, int(getattr(settings, "layer3_sec_edgar_timeout_seconds", 20) or 20))
+
+
+def _source_artifact_timeout_seconds() -> int:
+    value = int(getattr(settings, "layer3_sec_edgar_timeout_seconds", 20) or 0)
+    if value <= 0 or value > SEC_LIVE_SOURCE_ARTIFACT_TIMEOUT_SECONDS_CEILING:
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_timeout_seconds_not_admitted",
+            "SEC EDGAR text-table source-artifact acquisition requires timeout seconds between 1 and 120.",
+            http_status=409,
+            blocked_fields=["layer3_sec_edgar_timeout_seconds"],
+        )
+    return value
 
 
 def _root() -> Path:
