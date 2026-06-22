@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 import tempfile
 from typing import Any, Mapping
+from uuid import uuid4
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -41,6 +42,12 @@ FINAL_URL = (
     "000032019324000123/0000320193-24-000123.txt"
 )
 RAW_FIXTURE_MARKER = "SEC-LIVE-REPLAY-RAW-TEXT-MARKER"
+FIXTURE_IDENTITY_MARKERS = (
+    RAW_FIXTURE_MARKER,
+    f"CIK: {RAW_CIK}",
+    f"ACCESSION: {RAW_ACCESSION}",
+    f"SOURCE URL: {FINAL_URL}",
+)
 
 
 class _ReplayFakeSecClient:
@@ -112,7 +119,21 @@ def build_report(
     except OSError:
         content = b""
     if not content:
-        return _blocked_report(source_root=source_root, fixture=fixture)
+        return _blocked_report(
+            source_root=source_root,
+            fixture=fixture,
+            blocked_reason="sec_live_replay_fixture_missing_or_empty",
+            fixture_hash=None,
+            fixture_length=0,
+        )
+    if not _fixture_matches_selected_filing(content):
+        return _blocked_report(
+            source_root=source_root,
+            fixture=fixture,
+            blocked_reason="sec_live_replay_fixture_identity_mismatch",
+            fixture_hash=hashlib.sha256(content).hexdigest(),
+            fixture_length=len(content),
+        )
 
     if runtime_root is None:
         with tempfile.TemporaryDirectory(prefix="sec-live-replay-") as temp_root:
@@ -132,8 +153,7 @@ def build_report(
 
 def _run_replay(*, source_root: Path, runtime_root: Path, fixture: Path, content: bytes) -> dict[str, Any]:
     runtime_root.mkdir(parents=True, exist_ok=True)
-    storage = runtime_root / "storage"
-    storage.mkdir(parents=True, exist_ok=True)
+    storage = _new_run_storage(runtime_root)
     fake_client = _ReplayFakeSecClient(content)
     fixture_hash = hashlib.sha256(content).hexdigest()
     payload = _request_payload(expected_content_sha256=fixture_hash)
@@ -263,7 +283,14 @@ def _run_replay(*, source_root: Path, runtime_root: Path, fixture: Path, content
     )
 
 
-def _blocked_report(*, source_root: Path, fixture: Path) -> dict[str, Any]:
+def _blocked_report(
+    *,
+    source_root: Path,
+    fixture: Path,
+    blocked_reason: str,
+    fixture_hash: str | None,
+    fixture_length: int,
+) -> dict[str, Any]:
     redaction = {
         "raw_sec_url_returned": False,
         "raw_cik_returned": False,
@@ -275,13 +302,19 @@ def _blocked_report(*, source_root: Path, fixture: Path) -> dict[str, Any]:
     }
     criteria = [
         _criterion(
-            "fixture_present_nonempty",
+            (
+                "fixture_present_nonempty"
+                if blocked_reason == "sec_live_replay_fixture_missing_or_empty"
+                else "fixture_matches_selected_filing_identity"
+            ),
             False,
             {
                 "fixture_marker": _sha256_text(str(fixture.resolve(strict=False))),
                 "source_root_marker": _sha256_text(str(source_root.resolve(strict=False))),
+                "fixture_hash": fixture_hash,
+                "fixture_length": fixture_length,
             },
-            "sec_live_replay_fixture_missing_or_empty",
+            blocked_reason,
         )
     ]
     return _report_header(
@@ -292,9 +325,9 @@ def _blocked_report(*, source_root: Path, fixture: Path) -> dict[str, Any]:
         criteria=criteria,
         blocking_reasons=criteria,
         offline_replay={
-            "fixture_hash": None,
-            "fixture_length": 0,
-            "fake_transport_used": True,
+            "fixture_hash": fixture_hash,
+            "fixture_length": fixture_length,
+            "fake_transport_used": False,
             "transport_call_count": 0,
             "idempotent_replay": False,
             "status_reread_performed": False,
@@ -329,7 +362,27 @@ def _request_payload(*, expected_content_sha256: str) -> dict[str, Any]:
     }
 
 
+def _fixture_matches_selected_filing(content: bytes) -> bool:
+    text = content.decode("utf-8", errors="replace")
+    return all(marker in text for marker in FIXTURE_IDENTITY_MARKERS)
+
+
+def _new_run_storage(runtime_root: Path) -> Path:
+    parent = runtime_root / "storage"
+    parent.mkdir(parents=True, exist_ok=True)
+    for _attempt in range(10):
+        candidate = parent / f"run-{uuid4().hex[:12]}"
+        try:
+            candidate.mkdir(parents=True, exist_ok=False)
+        except FileExistsError:
+            continue
+        return candidate
+    raise RuntimeError("sec_live_replay_runtime_storage_collision")
+
+
 def _capture_runtime() -> dict[str, Any]:
+    with svc._SEC_LIVE_REQUEST_COUNT_LOCK:
+        live_request_count = svc._SEC_LIVE_REQUEST_COUNT
     return {
         "storage_dir": settings.storage_dir,
         "database_url": settings.database_url,
@@ -341,6 +394,7 @@ def _capture_runtime() -> dict[str, Any]:
         "timeout_seconds": settings.layer3_sec_edgar_timeout_seconds,
         "client": svc.SEC_EDGAR_CLIENT,
         "sleep": svc.SEC_EDGAR_SLEEP,
+        "live_request_count": live_request_count,
     }
 
 
@@ -355,7 +409,8 @@ def _install_offline_runtime(*, storage: Path, fake_client: _ReplayFakeSecClient
     settings.layer3_sec_edgar_timeout_seconds = 20
     svc.SEC_EDGAR_CLIENT = fake_client
     svc.SEC_EDGAR_SLEEP = lambda _seconds: None
-    svc._reset_live_request_count_for_tests()
+    with svc._SEC_LIVE_REQUEST_COUNT_LOCK:
+        svc._SEC_LIVE_REQUEST_COUNT = 0
 
 
 def _restore_runtime(previous: Mapping[str, Any]) -> None:
@@ -369,7 +424,8 @@ def _restore_runtime(previous: Mapping[str, Any]) -> None:
     settings.layer3_sec_edgar_timeout_seconds = int(previous["timeout_seconds"])
     svc.SEC_EDGAR_CLIENT = previous["client"]
     svc.SEC_EDGAR_SLEEP = previous["sleep"]
-    svc._reset_live_request_count_for_tests()
+    with svc._SEC_LIVE_REQUEST_COUNT_LOCK:
+        svc._SEC_LIVE_REQUEST_COUNT = int(previous["live_request_count"])
 
 
 def _receipt_texts(storage: Path) -> list[str]:
