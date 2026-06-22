@@ -33,14 +33,17 @@ REQUIRED_UNSUPPORTED = {
     "keyed_connectors",
     "signed_reference_export",
 }
-SUPPORTED_CAPABILITIES = {
+BASE_SUPPORTED_CAPABILITIES = {
     "method_aware_analytics_vertical",
-    "sciencebase_public_connector_slice",
-    "senate_lda_anonymous_connector_slice",
-    "connector_run_observability",
     "layer3_workbench_ui",
     "health_readiness_openapi",
 }
+PUBLIC_CONNECTOR_CAPABILITIES = {
+    "sciencebase_public_connector_slice",
+    "senate_lda_anonymous_connector_slice",
+    "connector_run_observability",
+}
+SUPPORTED_CAPABILITIES = BASE_SUPPORTED_CAPABILITIES | PUBLIC_CONNECTOR_CAPABILITIES
 EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES = {
     "sec_live_network_egress",
     "sec_value_reveal",
@@ -58,11 +61,6 @@ PUBLIC_CONNECTOR_DEFERRAL_CAPABILITIES = {
 }
 PUBLIC_CONNECTORS_OVERLAY = ["public_connectors"]
 RC3_SEC_XBRL_OFFLINE_OVERLAY = ["public_connectors", "sec_xbrl_offline"]
-PUBLIC_CONNECTOR_CAPABILITIES = {
-    "sciencebase_public_connector_slice",
-    "senate_lda_anonymous_connector_slice",
-    "connector_run_observability",
-}
 PUBLIC_CONNECTORS_REQUIRED_EVIDENCE = ["PR-1", "PR-2", "PR-3", "PR-4", "PR-5"]
 SEC_XBRL_OFFLINE_SIMULATION_CAPABILITIES = {
     "layer3_sec_xbrl_offline_evidence_loader",
@@ -212,7 +210,7 @@ def _validate_matrix_shape(matrix: dict[str, Any], errors: list[str]) -> None:
     for capability_id in REQUIRED_UNSUPPORTED:
         if by_id.get(capability_id, {}).get("status") != "unsupported":
             errors.append(f"{capability_id} must be unsupported in local_expert")
-    for capability_id in SUPPORTED_CAPABILITIES:
+    for capability_id in BASE_SUPPORTED_CAPABILITIES:
         if by_id.get(capability_id, {}).get("status") != "supported":
             errors.append(f"{capability_id} must be supported in local_expert")
     for capability_id in EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES:
