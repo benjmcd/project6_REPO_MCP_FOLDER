@@ -14,6 +14,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 import release_readiness_check
+from support_matrix_constants import UNSUPPORTED_CAPABILITIES
 
 
 SCHEMA_ID = "project6.rc2_public_connectors_acceptance.v1"
@@ -37,15 +38,7 @@ EXCLUDED_SURFACES = [
     "real provider delivery",
 ]
 
-FORBIDDEN_SUPPORTED_CAPABILITIES = {
-    "sec_live_network_egress",
-    "real_provider_delivery",
-    "model_agent_egress",
-    "nonlocal_multi_trust_multi_identity",
-    "high_availability",
-    "keyed_connectors",
-    "signed_reference_export",
-}
+FORBIDDEN_SUPPORTED_CAPABILITIES = UNSUPPORTED_CAPABILITIES | {"sec_live_network_egress"}
 
 COMMAND_CHECKS = [
     {

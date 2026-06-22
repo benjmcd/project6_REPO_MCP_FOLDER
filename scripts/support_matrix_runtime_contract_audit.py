@@ -13,55 +13,18 @@ from pathlib import Path
 from typing import Any, Callable, Iterator
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
 BACKEND_ROOT = REPO_ROOT / "backend"
 CONFIG_PATH = BACKEND_ROOT / "app" / "core" / "config.py"
 MATRIX_PATH = REPO_ROOT / "config" / "support_matrix.yaml"
 SEC_AUDIT_PATH = REPO_ROOT / "scripts" / "sec_xbrl_offline_honesty_audit.py"
 
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-EXPECTED_STATUS_BY_ID = {
-    "method_aware_analytics_vertical": "supported",
-    "sciencebase_public_connector_slice": "supported",
-    "senate_lda_anonymous_connector_slice": "supported",
-    "connector_run_observability": "supported",
-    "layer3_workbench_ui": "supported",
-    "health_readiness_openapi": "supported",
-    "sec_value_reveal": "experimental_default_off",
-    "sec_controlled_value_reveal_submit": "experimental_default_off",
-    "arelle_internal_value_store": "experimental_default_off",
-    "arelle_corpus_validation": "experimental_default_off",
-    "sec_xbrl_production_admission_evaluator": "experimental_default_off",
-    "analysis_product_package_inventory": "experimental_default_off",
-    "ocr_external_engine": "experimental_default_off",
-    "sec_live_network_egress": "experimental_default_off",
-    "sec_offline_replay_path": "simulation",
-    "layer3_sec_xbrl_offline_evidence_loader": "simulation",
-    "layer3_sec_xbrl_offline_companyfacts_stage": "simulation",
-    "layer3_sec_xbrl_offline_companyfacts_oracle_packet": "simulation",
-    "layer3_sec_xbrl_e2e_offline_orchestrator": "simulation",
-    "layer3_sec_xbrl_offline_evidence_proof_capability": "simulation",
-    "nrc_aps_replay_corpus_gate": "simulation",
-    "offline_staged_redaction_value_store_resolution": "simulation",
-    "real_provider_delivery": "unsupported",
-    "model_agent_egress": "unsupported",
-    "nonlocal_multi_trust_multi_identity": "unsupported",
-    "high_availability": "unsupported",
-    "keyed_connectors": "unsupported",
-    "signed_reference_export": "unsupported",
-}
-
-PINNED_FALSE_FLAGS = [
-    "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
-    "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
-    "LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED",
-    "LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED",
-    "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
-    "LAYER3_MODEL_EGRESS_ENABLED",
-    "SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED",
-    "LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED",
-]
+from support_matrix_constants import EXPECTED_STATUS_BY_ID, PINNED_FALSE_FLAGS
 
 SEC_DELEGATED_CAPABILITIES = {
     "sec_value_reveal",
