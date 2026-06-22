@@ -20,6 +20,7 @@ BACKEND_SHARD_PATTERNS = (
     "test_ci_coverage_completeness.py",
     "test_deployment_profile_*.py",
     "test_diagnostics_ref_*.py",
+    "test_honesty_*.py",
     "test_legacy_api_*.py",
     "test_layer3_*.py",
     "test_market_*.py",

@@ -66,12 +66,23 @@ UNSUPPORTED_CAPABILITIES = {
     "signed_reference_export",
 }
 
+SUPPORTED_CAPABILITIES = {
+    "method_aware_analytics_vertical",
+    "sciencebase_public_connector_slice",
+    "senate_lda_anonymous_connector_slice",
+    "connector_run_observability",
+    "layer3_workbench_ui",
+    "health_readiness_openapi",
+}
+
 EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES = {
+    "analysis_product_package_inventory",
     "sec_live_network_egress",
     "sec_value_reveal",
     "sec_controlled_value_reveal_submit",
     "arelle_internal_value_store",
     "arelle_corpus_validation",
+    "ocr_external_engine",
     "sec_xbrl_production_admission_evaluator",
 }
 
@@ -85,6 +96,9 @@ OFFLINE_SIMULATION_CAPABILITIES = {
     "layer3_sec_xbrl_offline_companyfacts_oracle_packet",
     "layer3_sec_xbrl_e2e_offline_orchestrator",
     "layer3_sec_xbrl_offline_evidence_proof_capability",
+    "nrc_aps_replay_corpus_gate",
+    "offline_staged_redaction_value_store_resolution",
+    "sec_offline_replay_path",
 }
 
 SEC_XBRL_TEST_FILES = [
