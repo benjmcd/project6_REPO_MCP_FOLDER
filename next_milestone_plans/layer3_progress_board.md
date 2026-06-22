@@ -85,6 +85,34 @@ behavior, or production-readiness claim is admitted.
 
 Next posture: `execute_operator_configured_manual_live_sec_source_artifact_smoke`.
 
+## SEC Live Source Smoke Preflight
+
+Milestone:
+`sec_live_source_artifact_manual_smoke_preflight_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1363-sec-live-preflight.md`.
+
+Status: validate-only preflight.
+
+Scope: adds `diagnostics/assessment/sec-live-preflight.py` and covered backend
+tests for the selected manual SEC live source-artifact smoke. The preflight
+checks explicit live-network enablement, server User-Agent presence, non-CI
+runtime, isolated storage/database containment, bounded rate/size controls, and
+one operator-approved smoke request identity while returning only markers and
+bounded metadata.
+
+Boundary: Runtime behavior introduced by this preflight: `false`.
+Real SEC network request performed by this preflight: `false`. Source artifact
+or receipt created by this preflight: `false`. No config default,
+support-matrix status, route/API behavior, model/migration, persistence,
+redaction posture, Arelle invocation, multi-filing enforcement,
+delivery/export/provider behavior, nonlocal auth, value reveal, default-on
+behavior, or production-readiness claim is admitted.
+
+Next posture:
+`run_one_filing_live_source_artifact_smoke_with_redacted_hash_only_evidence`.
+
 ## P24 Mixed-Source Product-Authority Checkpoint
 
 Milestone:
