@@ -160,3 +160,21 @@ def test_support_matrix_runtime_contract_sec_live_probe_forces_default_off_guard
     assert payload["explicit_enabled_network_request_made"] is True
     assert payload["explicit_enabled_raw_url_exposed"] is False
     assert payload["explicit_enabled_artifact_bytes_exposed"] is False
+
+
+def test_support_matrix_runtime_contract_sec_live_probe_restores_request_counter() -> None:
+    from app.services import layer3_sec_edgar_live_source_artifact as live
+
+    with live._SEC_LIVE_REQUEST_COUNT_LOCK:
+        old_count = live._SEC_LIVE_REQUEST_COUNT
+        live._SEC_LIVE_REQUEST_COUNT = 7
+    try:
+        payload = _audit()._probe_sec_live_network_default_off()
+        with live._SEC_LIVE_REQUEST_COUNT_LOCK:
+            restored_count = live._SEC_LIVE_REQUEST_COUNT
+    finally:
+        with live._SEC_LIVE_REQUEST_COUNT_LOCK:
+            live._SEC_LIVE_REQUEST_COUNT = old_count
+
+    assert payload["explicit_enabled_network_request_made"] is True
+    assert restored_count == 7

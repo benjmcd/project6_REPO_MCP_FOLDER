@@ -140,6 +140,34 @@ production-readiness claim is admitted.
 Next posture:
 `complete_sec_live_preflight_capstone_after_replay`.
 
+## SEC Live Source Preflight Capstone
+
+Milestone:
+`sec_live_source_artifact_smoke_preflight_capstone_v1`.
+
+Status: branch-local validate-only capstone hardening.
+
+Scope: tightens `diagnostics/assessment/sec-live-preflight.py` so the ready
+decision requires explicit rate/request/byte/timeout runtime bound variables to
+be present and admitted, in addition to the existing explicit live flag,
+User-Agent, non-CI runtime, runtime-normalized writable off-repo/off-OneDrive
+storage, `STORAGE_EXPOSURE=disabled`, admitted database, calendar-valid filing
+date, operator confirmation, and cache-free selected source identity. It also
+strengthens the `sec_live_network_egress` support-matrix runtime probe so the
+fake-client proof restores the prior process live-request counter and temporary
+SEC bound settings.
+
+Boundary: Real SEC network request performed by this capstone: `false`.
+Preflight source artifact or receipt creation: `false`. Config default,
+support-matrix status, and redaction posture changed by this capstone: `false`.
+No Arelle invocation, multi-filing enforcement, delivery/export/provider
+behavior, nonlocal auth, value reveal, default-on behavior, support-matrix
+graduation, or production-readiness claim is admitted. The remaining real smoke
+is still owner-gated.
+
+Next posture:
+`owner_runs_one_filing_live_source_artifact_smoke_with_redacted_hash_only_evidence`.
+
 ## P24 Mixed-Source Product-Authority Checkpoint
 
 Milestone:
