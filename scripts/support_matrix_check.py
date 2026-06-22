@@ -33,6 +33,17 @@ REQUIRED_UNSUPPORTED = {
     "keyed_connectors",
     "signed_reference_export",
 }
+BASE_SUPPORTED_CAPABILITIES = {
+    "method_aware_analytics_vertical",
+    "layer3_workbench_ui",
+    "health_readiness_openapi",
+}
+PUBLIC_CONNECTOR_CAPABILITIES = {
+    "sciencebase_public_connector_slice",
+    "senate_lda_anonymous_connector_slice",
+    "connector_run_observability",
+}
+SUPPORTED_CAPABILITIES = BASE_SUPPORTED_CAPABILITIES | PUBLIC_CONNECTOR_CAPABILITIES
 EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES = {
     "sec_live_network_egress",
     "sec_value_reveal",
@@ -50,11 +61,6 @@ PUBLIC_CONNECTOR_DEFERRAL_CAPABILITIES = {
 }
 PUBLIC_CONNECTORS_OVERLAY = ["public_connectors"]
 RC3_SEC_XBRL_OFFLINE_OVERLAY = ["public_connectors", "sec_xbrl_offline"]
-PUBLIC_CONNECTOR_CAPABILITIES = {
-    "sciencebase_public_connector_slice",
-    "senate_lda_anonymous_connector_slice",
-    "connector_run_observability",
-}
 PUBLIC_CONNECTORS_REQUIRED_EVIDENCE = ["PR-1", "PR-2", "PR-3", "PR-4", "PR-5"]
 SEC_XBRL_OFFLINE_SIMULATION_CAPABILITIES = {
     "layer3_sec_xbrl_offline_evidence_loader",
@@ -62,6 +68,16 @@ SEC_XBRL_OFFLINE_SIMULATION_CAPABILITIES = {
     "layer3_sec_xbrl_offline_companyfacts_oracle_packet",
     "layer3_sec_xbrl_e2e_offline_orchestrator",
     "layer3_sec_xbrl_offline_evidence_proof_capability",
+    "nrc_aps_replay_corpus_gate",
+    "offline_staged_redaction_value_store_resolution",
+    "sec_offline_replay_path",
+}
+SIMULATION_CAPABILITIES = SEC_XBRL_OFFLINE_SIMULATION_CAPABILITIES
+EXPECTED_STATUS_BY_ID = {
+    **{capability_id: "supported" for capability_id in SUPPORTED_CAPABILITIES},
+    **{capability_id: "experimental_default_off" for capability_id in EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES},
+    **{capability_id: "simulation" for capability_id in SIMULATION_CAPABILITIES},
+    **{capability_id: "unsupported" for capability_id in REQUIRED_UNSUPPORTED},
 }
 RC3_BOUNDARY_TOKENS = {
     "live SEC egress explicit default-off",
@@ -194,6 +210,9 @@ def _validate_matrix_shape(matrix: dict[str, Any], errors: list[str]) -> None:
     for capability_id in REQUIRED_UNSUPPORTED:
         if by_id.get(capability_id, {}).get("status") != "unsupported":
             errors.append(f"{capability_id} must be unsupported in local_expert")
+    for capability_id in BASE_SUPPORTED_CAPABILITIES:
+        if by_id.get(capability_id, {}).get("status") != "supported":
+            errors.append(f"{capability_id} must be supported in local_expert")
     for capability_id in EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES:
         if by_id.get(capability_id, {}).get("status") != "experimental_default_off":
             errors.append(f"{capability_id} must remain experimental_default_off in local_expert")
@@ -223,12 +242,12 @@ def _validate_matrix_shape(matrix: dict[str, Any], errors: list[str]) -> None:
         for token in sorted(RC3_BOUNDARY_TOKENS):
             if token not in boundary_note:
                 errors.append(f"boundary_note missing RC3 token {token!r}")
-        for capability_id in SEC_XBRL_OFFLINE_SIMULATION_CAPABILITIES:
+        for capability_id in SIMULATION_CAPABILITIES:
             item = by_id.get(capability_id, {})
             if item.get("status") != "simulation":
                 errors.append(f"{capability_id} must be simulation when sec_xbrl_offline overlay is selected")
     else:
-        for capability_id in SEC_XBRL_OFFLINE_SIMULATION_CAPABILITIES:
+        for capability_id in SIMULATION_CAPABILITIES:
             item = by_id.get(capability_id, {})
             if item.get("status") == "simulation":
                 errors.append(f"{capability_id} cannot be simulation without sec_xbrl_offline overlay")

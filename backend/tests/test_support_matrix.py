@@ -208,6 +208,33 @@ def test_support_matrix_checker_rejects_supported_public_connector_without_overl
     assert any("sciencebase_public_connector_slice" in error for error in report["errors"])
 
 
+def test_support_matrix_checker_accepts_analytics_only_connector_deferrals(tmp_path) -> None:
+    checker = _load_checker()
+    matrix = _load_json_compatible_yaml(MATRIX_PATH)
+    matrix["overlays"] = "none"
+    matrix["boundary_note"] = (
+        "Selected local_expert analytics-only profile with public connector capabilities "
+        "held as RC2-targeted connector deferral and no sec_xbrl_offline overlay."
+    )
+    by_id = {item["id"]: item for item in matrix["capabilities"]}
+    for capability_id in (
+        "sciencebase_public_connector_slice",
+        "senate_lda_anonymous_connector_slice",
+        "connector_run_observability",
+    ):
+        by_id[capability_id]["status"] = "experimental_default_off"
+        by_id[capability_id]["evidence"] += "; RC2-targeted connector deferral"
+    for capability_id in checker.SIMULATION_CAPABILITIES:
+        by_id[capability_id]["status"] = "experimental_default_off"
+        by_id[capability_id]["evidence"] += "; deferred without sec_xbrl_offline overlay"
+    mutated = tmp_path / "support_matrix.yaml"
+    mutated.write_text(json.dumps(matrix), encoding="utf-8")
+
+    report = checker.run_support_matrix_check(mutated, repo_root=REPO_ROOT)
+
+    assert report["status"] == "pass", report["errors"]
+
+
 def test_support_matrix_checker_rejects_sec_simulation_without_offline_overlay(tmp_path) -> None:
     checker = _load_checker()
     matrix = _load_json_compatible_yaml(MATRIX_PATH)
