@@ -114,6 +114,60 @@ behavior, or production-readiness claim is admitted.
 Next posture:
 `run_one_filing_live_source_artifact_smoke_with_redacted_hash_only_evidence`.
 
+## SEC Live Source Offline Replay
+
+Milestone:
+`sec_live_source_artifact_offline_replay_v1`.
+
+Status: branch-local offline/mock replay diagnostic and tests.
+
+Scope: adds `diagnostics/assessment/sec-live-replay.py`, the synthetic
+`diagnostics/assessment/sec-live-fixture.txt`, and covered backend tests for a
+full acquire -> redact -> hash-only-store -> provenance replay using only a fake
+SEC transport. The replay binds the fixture to the selected filing identity,
+uses a fresh isolated runtime storage directory per run, restores the prior
+process live-request counter, proves idempotent readback through the retained
+server artifact path, and reports only hashes/markers/bounded metadata.
+
+Boundary: Real SEC network request performed by this replay: `false`. Config
+default, support-matrix status, and redaction posture changed by this replay:
+`false`. Source artifact/receipt creation is confined to isolated offline
+runtime storage populated by fake transport bytes. No Arelle invocation,
+multi-filing enforcement, delivery/export/provider behavior, nonlocal auth,
+value reveal, default-on behavior, support-matrix graduation, or
+production-readiness claim is admitted.
+
+Next posture:
+`complete_sec_live_preflight_capstone_after_replay`.
+
+## SEC Live Source Preflight Capstone
+
+Milestone:
+`sec_live_source_artifact_smoke_preflight_capstone_v1`.
+
+Status: branch-local validate-only capstone hardening.
+
+Scope: tightens `diagnostics/assessment/sec-live-preflight.py` so the ready
+decision requires explicit rate/request/byte/timeout runtime bound variables to
+be present and admitted, in addition to the existing explicit live flag,
+User-Agent, non-CI runtime, runtime-normalized writable off-repo/off-OneDrive
+storage, `STORAGE_EXPOSURE=disabled`, admitted database, calendar-valid filing
+date, operator confirmation, and cache-free selected source identity. It also
+strengthens the `sec_live_network_egress` support-matrix runtime probe so the
+fake-client proof restores the prior process live-request counter and temporary
+SEC bound settings.
+
+Boundary: Real SEC network request performed by this capstone: `false`.
+Preflight source artifact or receipt creation: `false`. Config default,
+support-matrix status, and redaction posture changed by this capstone: `false`.
+No Arelle invocation, multi-filing enforcement, delivery/export/provider
+behavior, nonlocal auth, value reveal, default-on behavior, support-matrix
+graduation, or production-readiness claim is admitted. The remaining real smoke
+is still owner-gated.
+
+Next posture:
+`owner_runs_one_filing_live_source_artifact_smoke_with_redacted_hash_only_evidence`.
+
 ## P24 Mixed-Source Product-Authority Checkpoint
 
 Milestone:

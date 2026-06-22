@@ -135,7 +135,11 @@ def build_report(*, source_root: Path, env: Mapping[str, str] | None = None) -> 
         ),
         _criterion(
             "rate_and_size_controls_admitted",
-            runtime["limits"]["rate_limit_admitted"]
+            runtime["limits"]["rate_limit_present"]
+            and runtime["limits"]["max_live_requests_present"]
+            and runtime["limits"]["max_bytes_present"]
+            and runtime["limits"]["timeout_seconds_present"]
+            and runtime["limits"]["rate_limit_admitted"]
             and runtime["limits"]["max_live_requests_admitted"]
             and runtime["limits"]["max_bytes_admitted"]
             and runtime["limits"]["timeout_seconds_admitted"],
@@ -314,22 +318,30 @@ def _database(*, source_root: Path, env: Mapping[str, str]) -> dict[str, Any]:
 
 
 def _limits(env: Mapping[str, str]) -> dict[str, Any]:
-    rate = _int_or_default(env.get(RATE_ENV), 1)
-    max_requests = _int_or_default(env.get(MAX_REQUESTS_ENV), 10)
-    max_bytes = _int_or_default(env.get(MAX_BYTES_ENV), 25_000_000)
-    timeout_seconds = _int_or_default(env.get(TIMEOUT_ENV), 20)
+    rate_raw = str(env.get(RATE_ENV) or "").strip()
+    max_requests_raw = str(env.get(MAX_REQUESTS_ENV) or "").strip()
+    max_bytes_raw = str(env.get(MAX_BYTES_ENV) or "").strip()
+    timeout_seconds_raw = str(env.get(TIMEOUT_ENV) or "").strip()
+    rate = _int_or_default(rate_raw, 1)
+    max_requests = _int_or_default(max_requests_raw, 10)
+    max_bytes = _int_or_default(max_bytes_raw, 25_000_000)
+    timeout_seconds = _int_or_default(timeout_seconds_raw, 20)
     return {
         "rate_env_var": RATE_ENV,
+        "rate_limit_present": bool(rate_raw),
         "configured_requests_per_second": rate,
         "rate_limit_admitted": 1 <= rate <= 10,
         "max_live_requests_env_var": MAX_REQUESTS_ENV,
+        "max_live_requests_present": bool(max_requests_raw),
         "max_live_requests_per_process": max_requests,
         "max_live_requests_admitted": 1 <= max_requests <= 10,
         "max_bytes_env_var": MAX_BYTES_ENV,
+        "max_bytes_present": bool(max_bytes_raw),
         "max_bytes": max_bytes,
         "max_bytes_admitted": 1 <= max_bytes <= MAX_BYTES_CEILING,
         "max_bytes_ceiling": MAX_BYTES_CEILING,
         "timeout_seconds_env_var": TIMEOUT_ENV,
+        "timeout_seconds_present": bool(timeout_seconds_raw),
         "timeout_seconds": timeout_seconds,
         "timeout_seconds_admitted": 1 <= timeout_seconds <= TIMEOUT_SECONDS_CEILING,
         "timeout_seconds_ceiling": TIMEOUT_SECONDS_CEILING,

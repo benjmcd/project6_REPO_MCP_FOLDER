@@ -26,6 +26,10 @@ def _ready_env(tmp_path: Path) -> dict[str, str]:
         "STORAGE_EXPOSURE": "disabled",
         "STORAGE_DIR": str(storage),
         "DATABASE_URL": "sqlite:///:memory:",
+        "LAYER3_SEC_EDGAR_RATE_LIMIT_PER_SECOND": "1",
+        "LAYER3_SEC_EDGAR_MAX_LIVE_REQUESTS_PER_PROCESS": "10",
+        "LAYER3_SEC_EDGAR_MAX_BYTES": "25000000",
+        "LAYER3_SEC_EDGAR_TIMEOUT_SECONDS": "20",
         "LAYER3_SEC_EDGAR_SMOKE_CIK": "0000320193",
         "LAYER3_SEC_EDGAR_SMOKE_ACCESSION": "0000320193-24-000123",
         "LAYER3_SEC_EDGAR_SMOKE_FORM_TYPE": "10-K",
@@ -64,6 +68,10 @@ def test_sec_live_preflight_ready_with_redacted_isolated_environment(tmp_path: P
     assert report["runtime_preflight"]["storage"]["storage_dir_inside_repo_or_onedrive"] is False
     assert report["runtime_preflight"]["storage"]["storage_dir_writable_non_mutating_check"] is True
     assert report["runtime_preflight"]["database"]["sqlite_memory"] is True
+    assert report["runtime_preflight"]["limits"]["rate_limit_present"] is True
+    assert report["runtime_preflight"]["limits"]["max_live_requests_present"] is True
+    assert report["runtime_preflight"]["limits"]["max_bytes_present"] is True
+    assert report["runtime_preflight"]["limits"]["timeout_seconds_present"] is True
     assert report["runtime_preflight"]["limits"]["max_bytes_admitted"] is True
     assert report["runtime_preflight"]["limits"]["timeout_seconds_admitted"] is True
     assert report["smoke_request_preflight"]["request_ready"] is True
@@ -229,11 +237,46 @@ def test_sec_live_preflight_blocks_invalid_rate_controls(tmp_path: Path) -> None
     module = _preflight_module()
     env = _ready_env(tmp_path)
     env["LAYER3_SEC_EDGAR_RATE_LIMIT_PER_SECOND"] = "11"
+    env["LAYER3_SEC_EDGAR_MAX_LIVE_REQUESTS_PER_PROCESS"] = "0"
 
     report = module.build_report(source_root=ROOT, env=env)
 
     assert report["decision"] == "sec_live_source_artifact_smoke_preflight_blocked"
     assert report["runtime_preflight"]["limits"]["rate_limit_admitted"] is False
+    assert report["runtime_preflight"]["limits"]["max_live_requests_admitted"] is False
+    assert any(
+        item["blocked_reason"] == "sec_live_preflight_rate_or_size_controls_invalid"
+        for item in report["blocking_reasons"]
+    )
+
+
+def test_sec_live_preflight_blocks_missing_explicit_rate_size_timeout_controls(tmp_path: Path) -> None:
+    module = _preflight_module()
+    env = _ready_env(tmp_path)
+    for key in [
+        "LAYER3_SEC_EDGAR_RATE_LIMIT_PER_SECOND",
+        "LAYER3_SEC_EDGAR_MAX_LIVE_REQUESTS_PER_PROCESS",
+        "LAYER3_SEC_EDGAR_MAX_BYTES",
+        "LAYER3_SEC_EDGAR_TIMEOUT_SECONDS",
+    ]:
+        del env[key]
+
+    report = module.build_report(source_root=ROOT, env=env)
+
+    assert report["decision"] == "sec_live_source_artifact_smoke_preflight_blocked"
+    assert report["runtime_preflight"]["limits"]["rate_limit_present"] is False
+    assert report["runtime_preflight"]["limits"]["max_live_requests_present"] is False
+    assert report["runtime_preflight"]["limits"]["max_bytes_present"] is False
+    assert report["runtime_preflight"]["limits"]["timeout_seconds_present"] is False
+    assert all(
+        report["runtime_preflight"]["limits"][key] is True
+        for key in [
+            "rate_limit_admitted",
+            "max_live_requests_admitted",
+            "max_bytes_admitted",
+            "timeout_seconds_admitted",
+        ]
+    )
     assert any(
         item["blocked_reason"] == "sec_live_preflight_rate_or_size_controls_invalid"
         for item in report["blocking_reasons"]
