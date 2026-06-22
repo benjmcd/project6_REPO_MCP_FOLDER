@@ -98,9 +98,10 @@ Status: validate-only preflight.
 Scope: adds `diagnostics/assessment/sec-live-preflight.py` and covered backend
 tests for the selected manual SEC live source-artifact smoke. The preflight
 checks explicit live-network enablement, server User-Agent presence, non-CI
-runtime, isolated storage/database containment, bounded rate/size controls, and
-one operator-approved smoke request identity while returning only markers and
-bounded metadata.
+runtime, runtime-normalized writable isolated storage, safe database
+containment, bounded rate/size/timeout controls, valid calendar filing date,
+and one operator-approved cache-free smoke request identity while returning
+only markers and bounded metadata.
 
 Boundary: Runtime behavior introduced by this preflight: `false`.
 Real SEC network request performed by this preflight: `false`. Source artifact

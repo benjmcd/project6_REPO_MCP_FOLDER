@@ -36,17 +36,23 @@ The preflight is ready only when all of these are true:
 - `LAYER3_SEC_EDGAR_USER_AGENT` is present and reported only by marker/length.
 - CI runtime is not active.
 - `STORAGE_EXPOSURE=disabled`.
-- `STORAGE_DIR` exists outside the repo and outside OneDrive.
+- `STORAGE_DIR` is normalized like runtime settings, exists outside the repo
+  and outside OneDrive, and passes a non-mutating writability check.
 - `DATABASE_URL` is explicitly safe for this live SEC run, such as
-  `sqlite:///:memory:` or an external database URL; repo/OneDrive SQLite paths
-  are blocked.
-- Rate/max-request/max-byte controls are within the admitted bounded range.
+  `sqlite:///:memory:` or an admitted external PostgreSQL URL; relative SQLite
+  paths are normalized under `backend/`, repo/OneDrive SQLite paths are
+  blocked, and malformed non-SQLite values are blocked.
+- Rate/max-request/max-byte/timeout controls are within the admitted bounded
+  range.
 - One operator-approved smoke request identity is configured through
   `LAYER3_SEC_EDGAR_SMOKE_CIK`,
   `LAYER3_SEC_EDGAR_SMOKE_ACCESSION`,
   `LAYER3_SEC_EDGAR_SMOKE_FORM_TYPE`,
   `LAYER3_SEC_EDGAR_SMOKE_FILING_DATE`, and
   `LAYER3_SEC_EDGAR_SMOKE_OPERATOR_CONFIRMATION=true`.
+- The configured smoke identity has no matching retained live-source receipt in
+  the isolated storage root, so the next live smoke cannot pass as a cache-only
+  replay.
 
 The report returns only markers and bounded metadata for the User-Agent,
 storage/database paths, and CIK/accession identity. It does not return raw SEC

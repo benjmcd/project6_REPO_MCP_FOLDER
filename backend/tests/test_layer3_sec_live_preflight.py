@@ -62,8 +62,12 @@ def test_sec_live_preflight_ready_with_redacted_isolated_environment(tmp_path: P
     assert report["decision"] == "sec_live_source_artifact_smoke_preflight_ready"
     assert report["blocking_reasons"] == []
     assert report["runtime_preflight"]["storage"]["storage_dir_inside_repo_or_onedrive"] is False
+    assert report["runtime_preflight"]["storage"]["storage_dir_writable_non_mutating_check"] is True
     assert report["runtime_preflight"]["database"]["sqlite_memory"] is True
+    assert report["runtime_preflight"]["limits"]["max_bytes_admitted"] is True
+    assert report["runtime_preflight"]["limits"]["timeout_seconds_admitted"] is True
     assert report["smoke_request_preflight"]["request_ready"] is True
+    assert report["smoke_request_preflight"]["matching_existing_receipt_found"] is False
     assert report["smoke_request_preflight"]["source_identity_marker"]
     assert env["LAYER3_SEC_EDGAR_USER_AGENT"] not in serialized
     assert env["STORAGE_DIR"] not in serialized
@@ -72,6 +76,17 @@ def test_sec_live_preflight_ready_with_redacted_isolated_environment(tmp_path: P
     assert report["runtime_preflight"]["user_agent"]["raw_value_returned"] is False
     assert report["runtime_preflight"]["storage"]["raw_path_returned"] is False
     assert report["smoke_request_preflight"]["raw_identity_returned"] is False
+
+
+def test_sec_live_preflight_normalizes_relative_storage_and_sqlite_under_backend() -> None:
+    module = _preflight_module()
+
+    assert module._normalise_storage_dir(ROOT, "relative-storage") == (
+        ROOT / "backend" / "relative-storage"
+    ).resolve()
+    assert module._sqlite_database_path("sqlite:///relative.db", source_root=ROOT) == (
+        ROOT / "backend" / "relative.db"
+    ).resolve()
 
 
 def test_sec_live_preflight_blocks_repo_storage_and_exposed_storage_mount(tmp_path: Path) -> None:
@@ -85,6 +100,21 @@ def test_sec_live_preflight_blocks_repo_storage_and_exposed_storage_mount(tmp_pa
     assert report["decision"] == "sec_live_source_artifact_smoke_preflight_blocked"
     assert report["runtime_preflight"]["storage"]["storage_dir_inside_repo_or_onedrive"] is True
     assert report["runtime_preflight"]["storage"]["storage_exposure_disabled"] is False
+    assert any(
+        item["blocked_reason"] == "sec_live_preflight_storage_missing_or_unsafe"
+        for item in report["blocking_reasons"]
+    )
+
+
+def test_sec_live_preflight_blocks_unwritable_storage_check(tmp_path: Path, monkeypatch) -> None:
+    module = _preflight_module()
+    env = _ready_env(tmp_path)
+    monkeypatch.setattr(module.os, "access", lambda path, mode: False)
+
+    report = module.build_report(source_root=ROOT, env=env)
+
+    assert report["decision"] == "sec_live_source_artifact_smoke_preflight_blocked"
+    assert report["runtime_preflight"]["storage"]["storage_dir_writable_non_mutating_check"] is False
     assert any(
         item["blocked_reason"] == "sec_live_preflight_storage_missing_or_unsafe"
         for item in report["blocking_reasons"]
@@ -106,6 +136,23 @@ def test_sec_live_preflight_blocks_repo_sqlite_database(tmp_path: Path) -> None:
     )
 
 
+def test_sec_live_preflight_blocks_malformed_database_url(tmp_path: Path) -> None:
+    module = _preflight_module()
+    env = _ready_env(tmp_path)
+    env["DATABASE_URL"] = "not-a-database-url"
+
+    report = module.build_report(source_root=ROOT, env=env)
+
+    assert report["decision"] == "sec_live_source_artifact_smoke_preflight_blocked"
+    assert report["runtime_preflight"]["database"]["external_scheme_admitted"] is False
+    assert report["runtime_preflight"]["database"]["external_url_valid"] is False
+    assert report["runtime_preflight"]["database"]["database_safe_for_live_sec"] is False
+    assert any(
+        item["blocked_reason"] == "sec_live_preflight_database_missing_or_unsafe"
+        for item in report["blocking_reasons"]
+    )
+
+
 def test_sec_live_preflight_blocks_invalid_smoke_request_identity(tmp_path: Path) -> None:
     module = _preflight_module()
     env = _ready_env(tmp_path)
@@ -120,6 +167,47 @@ def test_sec_live_preflight_blocks_invalid_smoke_request_identity(tmp_path: Path
         for item in report["blocking_reasons"]
     )
     assert "not-an-accession" not in json.dumps(report, sort_keys=True)
+
+
+def test_sec_live_preflight_blocks_invalid_calendar_date(tmp_path: Path) -> None:
+    module = _preflight_module()
+    env = _ready_env(tmp_path)
+    env["LAYER3_SEC_EDGAR_SMOKE_FILING_DATE"] = "2024-99-99"
+
+    report = module.build_report(source_root=ROOT, env=env)
+
+    assert report["decision"] == "sec_live_source_artifact_smoke_preflight_blocked"
+    assert report["smoke_request_preflight"]["filing_date_shape_valid"] is False
+    assert report["smoke_request_preflight"]["request_ready"] is False
+    assert any(
+        item["blocked_reason"] == "sec_live_preflight_smoke_request_missing_or_invalid"
+        for item in report["blocking_reasons"]
+    )
+
+
+def test_sec_live_preflight_blocks_matching_existing_receipt(tmp_path: Path) -> None:
+    module = _preflight_module()
+    env = _ready_env(tmp_path)
+    source_identity_hash = module._source_identity_hash(
+        cik="320193",
+        accession=env["LAYER3_SEC_EDGAR_SMOKE_ACCESSION"],
+        form=env["LAYER3_SEC_EDGAR_SMOKE_FORM_TYPE"],
+        filing_date=env["LAYER3_SEC_EDGAR_SMOKE_FILING_DATE"],
+    )
+    receipt_dir = Path(env["STORAGE_DIR"]) / module.RECEIPT_DIR / "receipts"
+    receipt_dir.mkdir(parents=True)
+    receipt_path = receipt_dir / f"{module.RECEIPT_PREFIX}-{'a' * 24}-{'b' * 24}.json"
+    receipt_path.write_text(json.dumps({"source_identity_hash": source_identity_hash}), encoding="utf-8")
+
+    report = module.build_report(source_root=ROOT, env=env)
+
+    assert report["decision"] == "sec_live_source_artifact_smoke_preflight_blocked"
+    assert report["smoke_request_preflight"]["matching_existing_receipt_found"] is True
+    assert report["smoke_request_preflight"]["request_ready"] is False
+    assert any(
+        item["blocked_reason"] == "sec_live_preflight_smoke_request_missing_or_invalid"
+        for item in report["blocking_reasons"]
+    )
 
 
 def test_sec_live_preflight_blocks_ci_runtime(tmp_path: Path) -> None:
@@ -146,6 +234,23 @@ def test_sec_live_preflight_blocks_invalid_rate_controls(tmp_path: Path) -> None
 
     assert report["decision"] == "sec_live_source_artifact_smoke_preflight_blocked"
     assert report["runtime_preflight"]["limits"]["rate_limit_admitted"] is False
+    assert any(
+        item["blocked_reason"] == "sec_live_preflight_rate_or_size_controls_invalid"
+        for item in report["blocking_reasons"]
+    )
+
+
+def test_sec_live_preflight_blocks_invalid_size_or_timeout_controls(tmp_path: Path) -> None:
+    module = _preflight_module()
+    env = _ready_env(tmp_path)
+    env["LAYER3_SEC_EDGAR_MAX_BYTES"] = "25000001"
+    env["LAYER3_SEC_EDGAR_TIMEOUT_SECONDS"] = "121"
+
+    report = module.build_report(source_root=ROOT, env=env)
+
+    assert report["decision"] == "sec_live_source_artifact_smoke_preflight_blocked"
+    assert report["runtime_preflight"]["limits"]["max_bytes_admitted"] is False
+    assert report["runtime_preflight"]["limits"]["timeout_seconds_admitted"] is False
     assert any(
         item["blocked_reason"] == "sec_live_preflight_rate_or_size_controls_invalid"
         for item in report["blocking_reasons"]

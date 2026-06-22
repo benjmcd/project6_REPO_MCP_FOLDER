@@ -48726,11 +48726,24 @@
       "STORAGE_EXPOSURE",
       "STORAGE_DIR",
       "DATABASE_URL",
+      "LAYER3_SEC_EDGAR_RATE_LIMIT_PER_SECOND",
+      "LAYER3_SEC_EDGAR_MAX_LIVE_REQUESTS_PER_PROCESS",
+      "LAYER3_SEC_EDGAR_MAX_BYTES",
+      "LAYER3_SEC_EDGAR_TIMEOUT_SECONDS",
       "LAYER3_SEC_EDGAR_SMOKE_CIK",
       "LAYER3_SEC_EDGAR_SMOKE_ACCESSION",
       "LAYER3_SEC_EDGAR_SMOKE_FORM_TYPE",
       "LAYER3_SEC_EDGAR_SMOKE_FILING_DATE",
       "LAYER3_SEC_EDGAR_SMOKE_OPERATOR_CONFIRMATION"
+    ],
+    "readiness_guards": [
+      "runtime_normalized_storage_dir",
+      "non_mutating_storage_writable_check",
+      "runtime_normalized_sqlite_url",
+      "admitted_external_database_scheme",
+      "bounded_rate_request_size_and_timeout_controls",
+      "calendar_valid_filing_date",
+      "cache_free_source_identity"
     ],
     "redacted_marker_only_report": true,
     "blocked_downstream_surfaces": [
@@ -48744,6 +48757,6 @@
     ],
     "next_posture": "run_one_filing_live_source_artifact_smoke_with_redacted_hash_only_evidence"
   },
-  "latest_sec_live_source_artifact_manual_smoke_preflight_summary": "Branch-local validate-only preflight adds a redacted environment/readiness check for the selected manual live SEC source-artifact smoke, failing closed on missing live flag, User-Agent, safe storage/database containment, rate/size bounds, or operator-approved smoke identity while performing no SEC request, creating no artifact/receipt, and changing no defaults/support-matrix/redaction posture.",
+  "latest_sec_live_source_artifact_manual_smoke_preflight_summary": "Branch-local validate-only preflight adds a redacted environment/readiness check for the selected manual live SEC source-artifact smoke, failing closed on missing live flag, User-Agent, runtime-normalized writable storage, safe database containment, rate/request/size/timeout bounds, invalid calendar date, matching existing receipt cache hit, or operator-approved smoke identity while performing no SEC request, creating no artifact/receipt, and changing no defaults/support-matrix/redaction posture.",
   "latest_deployment_profile_sqlite_guard_typed_admission_flag_route_dependency_contract_summary": "Branch feat/prod-advance-0609 adds (1) a nonlocal+SQLite startup guard in backend/app/core/config.py that now fails at startup when DATABASE_URL points at SQLite and db_init_mode is not 'none' (live_behavior_change: true in this narrow misconfiguration path; default local unaffected), (2) a typed Settings field sec_xbrl_production_admission_evaluator_enabled (alias SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED, default False) read by production_admission_flag_enabled() as validate-only with no admission gate wired to live routes and no runtime default change, and (3) doc 1358-route-level-operator-identity-route-dependency-contract.md which was authored as planning-only (runtime_status not_implemented) on feat/prod-advance-0609 and has since been implemented on feat/prod-advance-0610: doc 1359 supersedes the not_implemented claim; runtime_status is now implemented; the route-dependency contract is wired across 19 handoff + 16 package + 83 source_ingestion POST handlers (118 total); identity seam is inert under AUTH_OWNER=none, fail-closed 409/401 under proxy; no new flags/models/migrations; production_readiness_claim false. Docs 199/200/266 entry_decision, selected_mode, and runtime_status fields are unchanged."
 }

@@ -46401,8 +46401,12 @@
       "missing_user_agent",
       "active_ci_runtime",
       "unsafe_storage_or_storage_mount",
+      "unwritable_storage_root",
       "unsafe_database_containment",
-      "invalid_rate_or_size_controls",
+      "malformed_database_url",
+      "invalid_rate_or_size_or_timeout_controls",
+      "invalid_calendar_filing_date",
+      "matching_existing_receipt_cache_hit",
       "missing_or_invalid_operator_smoke_identity"
     ],
     "redaction_proof": [
@@ -46437,5 +46441,5 @@
     ],
     "next_posture": "run_one_filing_live_source_artifact_smoke_with_redacted_hash_only_evidence"
   },
-  "latest_sec_live_source_artifact_manual_smoke_preflight_proof_summary": "Branch-local proof adds a validate-only SEC live source-artifact smoke preflight that checks explicit operator environment readiness and redaction boundaries without performing a SEC request, creating source artifacts or receipts, invoking Arelle, changing support/default/redaction posture, or claiming production readiness."
+  "latest_sec_live_source_artifact_manual_smoke_preflight_proof_summary": "Branch-local proof adds a validate-only SEC live source-artifact smoke preflight that checks explicit operator environment readiness, runtime-normalized writable storage, safe database routing, bounded rate/request/size/timeout controls, calendar-valid filing date, cache-free source identity, and redaction boundaries without performing a SEC request, creating source artifacts or receipts, invoking Arelle, changing support/default/redaction posture, or claiming production readiness."
 }
