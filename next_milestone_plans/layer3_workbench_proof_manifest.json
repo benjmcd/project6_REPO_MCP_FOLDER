@@ -46497,5 +46497,73 @@
     ],
     "next_posture": "complete_sec_live_preflight_capstone_after_replay"
   },
-  "latest_sec_live_source_artifact_offline_replay_proof_summary": "Branch-local proof adds a fixture-backed offline replay diagnostic that exercises SEC live source-artifact acquire -> redact -> hash-only store -> provenance with fake transport only, fresh isolated runtime storage per run, selected-filing fixture binding, restored process live-request counter state, and no raw URL/CIK/accession/User-Agent/path/artifact-byte report leakage while preserving default-off/status/redaction posture and making no production-readiness claim."
+  "latest_sec_live_source_artifact_offline_replay_proof_summary": "Branch-local proof adds a fixture-backed offline replay diagnostic that exercises SEC live source-artifact acquire -> redact -> hash-only store -> provenance with fake transport only, fresh isolated runtime storage per run, selected-filing fixture binding, restored process live-request counter state, and no raw URL/CIK/accession/User-Agent/path/artifact-byte report leakage while preserving default-off/status/redaction posture and making no production-readiness claim.",
+  "sec_live_source_artifact_smoke_preflight_capstone_proof": {
+    "proof_kind": "sec_live_source_artifact_smoke_preflight_capstone_proof",
+    "milestone": "sec_live_source_artifact_smoke_preflight_capstone_v1",
+    "status": "branch_local_validate_only_preflight_capstone",
+    "runtime_branch": "codex/sec-live-capstone",
+    "preflight_script": "diagnostics/assessment/sec-live-preflight.py",
+    "preflight_test_file": "backend/tests/test_layer3_sec_live_preflight.py",
+    "support_matrix_probe": "scripts/support_matrix_runtime_contract_audit.py sec_live_network_egress",
+    "support_matrix_probe_test_file": "backend/tests/test_layer3_support_matrix_runtime_contract_exhaustive.py",
+    "proof_mode": "preflight_ready_only_under_explicit_safe_runtime_config_plus_fake_probe_containment",
+    "runtime_behavior_changed": false,
+    "real_sec_network_request_performed": false,
+    "preflight_source_artifact_or_receipt_created": false,
+    "config_default_changed": false,
+    "support_matrix_status_changed": false,
+    "redaction_posture_changed": false,
+    "production_readiness_claimed": false,
+    "preflight_ready_requires": [
+      "explicit_live_network_enablement",
+      "server_user_agent_present",
+      "ci_runtime_inactive",
+      "runtime_normalized_writable_storage_dir",
+      "storage_outside_repo_or_onedrive",
+      "storage_exposure_disabled",
+      "admitted_database_containment",
+      "explicit_rate_limit_present_and_admitted",
+      "explicit_max_live_requests_present_and_admitted",
+      "explicit_max_bytes_present_and_admitted",
+      "explicit_timeout_seconds_present_and_admitted",
+      "calendar_valid_filing_date",
+      "operator_confirmed_selected_source_identity",
+      "cache_free_selected_source_identity"
+    ],
+    "support_matrix_probe_hardening": [
+      "fake_sec_client_only",
+      "default_off_guard_zero_fetch_calls",
+      "explicit_enabled_fake_client_receipt_redacted",
+      "prior_live_request_counter_restored",
+      "temporary_sec_bound_settings_restored"
+    ],
+    "negative_authority_flags": {
+      "real_sec_network_request_performed": false,
+      "source_artifact_created_by_preflight": false,
+      "receipt_created_by_preflight": false,
+      "live_network_default_on": false,
+      "support_matrix_graduation": false,
+      "config_default_change": false,
+      "redaction_posture_change": false,
+      "arelle_invocation": false,
+      "multi_filing_enforcement": false,
+      "delivery_export_status": false,
+      "provider_delivery": false,
+      "nonlocal_auth_hardening": false,
+      "value_reveal": false,
+      "production_readiness_claim": false
+    },
+    "verification": [
+      "python -m pytest ./backend/tests/test_layer3_sec_live_preflight.py ./backend/tests/test_layer3_support_matrix_runtime_contract_exhaustive.py -q",
+      "python -m pytest ./backend/tests/test_layer3_sec_live_replay.py ./backend/tests/test_layer3_sec_live_preflight.py ./backend/tests/test_ci_coverage_completeness.py -q",
+      "python -m py_compile ./diagnostics/assessment/sec-live-preflight.py ./scripts/support_matrix_runtime_contract_audit.py ./backend/tests/test_layer3_sec_live_preflight.py ./backend/tests/test_layer3_support_matrix_runtime_contract_exhaustive.py",
+      "python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "python ./tools/l3-progress-check.py",
+      "git diff --check"
+    ],
+    "next_posture": "owner_runs_one_filing_live_source_artifact_smoke_with_redacted_hash_only_evidence"
+  },
+  "latest_sec_live_source_artifact_smoke_preflight_capstone_proof_summary": "Branch-local validate-only preflight capstone proves sec_live_source_artifact_smoke_preflight_ready is reachable only with explicit safe SEC live runtime bounds plus the existing live flag/User-Agent/CI/storage/database/date/cache-free identity blockers, and hardens the sec_live_network_egress fake-client support-matrix probe to restore prior live-request counter and temporary SEC bound settings while preserving default-off/status/redaction posture and performing no real SEC network request."
 }

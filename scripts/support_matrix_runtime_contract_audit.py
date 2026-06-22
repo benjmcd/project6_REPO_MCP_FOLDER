@@ -533,19 +533,30 @@ def _probe_sec_live_network_default_off() -> dict[str, Any]:
     old_live_enabled = settings.layer3_sec_edgar_live_network_enabled
     old_user_agent = settings.layer3_sec_edgar_user_agent
     old_storage_dir = settings.storage_dir
+    old_rate_limit = settings.layer3_sec_edgar_rate_limit_per_second
+    old_max_live_requests = settings.layer3_sec_edgar_max_live_requests_per_process
+    old_max_bytes = settings.layer3_sec_edgar_max_bytes
+    old_timeout_seconds = settings.layer3_sec_edgar_timeout_seconds
     old_client = live.SEC_EDGAR_CLIENT
     old_sleep = live.SEC_EDGAR_SLEEP
     old_enforce_rate_limit = live._enforce_rate_limit
+    with live._SEC_LIVE_REQUEST_COUNT_LOCK:
+        old_live_request_count = live._SEC_LIVE_REQUEST_COUNT
     fake_client = _AuditFakeSecClient()
     with tempfile.TemporaryDirectory(prefix="sec_live_matrix_") as raw:
         try:
             settings.storage_dir = str(Path(raw) / "storage")
             settings.layer3_sec_edgar_live_network_enabled = False
             settings.layer3_sec_edgar_user_agent = ""
+            settings.layer3_sec_edgar_rate_limit_per_second = 1
+            settings.layer3_sec_edgar_max_live_requests_per_process = 10
+            settings.layer3_sec_edgar_max_bytes = 25_000_000
+            settings.layer3_sec_edgar_timeout_seconds = 20
             live.SEC_EDGAR_CLIENT = fake_client
             live.SEC_EDGAR_SLEEP = lambda _seconds: None
             live._enforce_rate_limit = lambda: None
-            live._reset_live_request_count_for_tests()
+            with live._SEC_LIVE_REQUEST_COUNT_LOCK:
+                live._SEC_LIVE_REQUEST_COUNT = 0
             try:
                 live.acquire_sec_edgar_text_table_live_source_artifact(request)
             except Layer3WorkbenchError as exc:
@@ -577,13 +588,18 @@ def _probe_sec_live_network_default_off() -> dict[str, Any]:
                 "production_readiness_claimed": False,
             }
         finally:
-            live._reset_live_request_count_for_tests()
+            with live._SEC_LIVE_REQUEST_COUNT_LOCK:
+                live._SEC_LIVE_REQUEST_COUNT = old_live_request_count
             live.SEC_EDGAR_CLIENT = old_client
             live.SEC_EDGAR_SLEEP = old_sleep
             live._enforce_rate_limit = old_enforce_rate_limit
             settings.layer3_sec_edgar_live_network_enabled = old_live_enabled
             settings.layer3_sec_edgar_user_agent = old_user_agent
             settings.storage_dir = old_storage_dir
+            settings.layer3_sec_edgar_rate_limit_per_second = old_rate_limit
+            settings.layer3_sec_edgar_max_live_requests_per_process = old_max_live_requests
+            settings.layer3_sec_edgar_max_bytes = old_max_bytes
+            settings.layer3_sec_edgar_timeout_seconds = old_timeout_seconds
 
 
 def _probe_real_provider_delivery_unsupported() -> dict[str, Any]:
