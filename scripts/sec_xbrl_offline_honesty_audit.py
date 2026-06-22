@@ -8,60 +8,21 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from support_matrix_constants import (
+    EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES as EXPERIMENTAL_DEFAULT_OFF_STATUS_CAPABILITIES,
+    PINNED_FALSE_FLAGS,
+    RC3_BOUNDARY_TOKENS,
+    RC3_OVERLAYS,
+    SEC_XBRL_ONLY_SIMULATION_CAPABILITIES as SEC_XBRL_SIMULATION_CAPABILITIES,
+    UNSUPPORTED_CAPABILITIES,
+)
+
 
 REPORT_SCHEMA_ID = "project6.sec_xbrl_offline_honesty_audit.v1"
-
-PINNED_FALSE_FLAGS = [
-    "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
-    "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
-    "LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED",
-    "LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED",
-    "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
-    "LAYER3_MODEL_EGRESS_ENABLED",
-    "SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED",
-    "LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED",
-]
-
-RC3_OVERLAYS = ["public_connectors", "sec_xbrl_offline"]
-RC3_BOUNDARY_TOKENS = {
-    "live SEC egress explicit default-off",
-    "no value-reveal default-on",
-    "no agent egress",
-    "no nonlocal",
-}
-
-UNSUPPORTED_CAPABILITIES = {
-    "real_provider_delivery",
-    "model_agent_egress",
-    "nonlocal_multi_trust_multi_identity",
-    "high_availability",
-    "keyed_connectors",
-    "signed_reference_export",
-}
-
-SEC_EXPERIMENTAL_DEFAULT_OFF_FLAGS = {
-    "sec_live_network_egress": "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
-    "sec_value_reveal": "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
-    "sec_controlled_value_reveal_submit": "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
-    "arelle_internal_value_store": "LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED",
-    "arelle_corpus_validation": "LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED",
-    "sec_xbrl_production_admission_evaluator": "SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED",
-    "analysis_product_package_inventory": "LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED",
-}
-
-EXPERIMENTAL_DEFAULT_OFF_STATUS_CAPABILITIES = set(SEC_EXPERIMENTAL_DEFAULT_OFF_FLAGS) | {
-    "ocr_external_engine",
-}
-
-SEC_XBRL_SIMULATION_CAPABILITIES = {
-    "sec_offline_replay_path",
-    "layer3_sec_xbrl_offline_evidence_loader",
-    "layer3_sec_xbrl_offline_companyfacts_stage",
-    "layer3_sec_xbrl_offline_companyfacts_oracle_packet",
-    "layer3_sec_xbrl_e2e_offline_orchestrator",
-    "layer3_sec_xbrl_offline_evidence_proof_capability",
-    "offline_staged_redaction_value_store_resolution",
-}
 
 OFFLINE_CONTROL_FALSE_KEYS = {
     "source_acquisition_performed",

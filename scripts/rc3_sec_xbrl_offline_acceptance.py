@@ -14,6 +14,15 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 import release_readiness_check
+from support_matrix_constants import (
+    EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES,
+    FORBIDDEN_SUPPORTED_CAPABILITIES,
+    PINNED_FALSE_FLAGS,
+    RC3_BOUNDARY_TOKENS as BOUNDARY_TOKENS,
+    SEC_XBRL_OFFLINE_SIMULATION_CAPABILITIES as OFFLINE_SIMULATION_CAPABILITIES,
+    SUPPORTED_CAPABILITIES,
+    UNSUPPORTED_CAPABILITIES,
+)
 
 
 SCHEMA_ID = "project6.rc3_sec_xbrl_offline_acceptance.v1"
@@ -38,68 +47,6 @@ EXCLUDED_SURFACES = [
     "high availability",
     "real provider delivery",
 ]
-
-PINNED_FALSE_FLAGS = [
-    "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
-    "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
-    "LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED",
-    "LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED",
-    "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
-    "LAYER3_MODEL_EGRESS_ENABLED",
-    "SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED",
-    "LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED",
-]
-
-BOUNDARY_TOKENS = [
-    "live SEC egress explicit default-off",
-    "no value-reveal default-on",
-    "no agent egress",
-    "no nonlocal",
-]
-
-UNSUPPORTED_CAPABILITIES = {
-    "real_provider_delivery",
-    "model_agent_egress",
-    "nonlocal_multi_trust_multi_identity",
-    "high_availability",
-    "keyed_connectors",
-    "signed_reference_export",
-}
-
-SUPPORTED_CAPABILITIES = {
-    "method_aware_analytics_vertical",
-    "sciencebase_public_connector_slice",
-    "senate_lda_anonymous_connector_slice",
-    "connector_run_observability",
-    "layer3_workbench_ui",
-    "health_readiness_openapi",
-}
-
-EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES = {
-    "analysis_product_package_inventory",
-    "sec_live_network_egress",
-    "sec_value_reveal",
-    "sec_controlled_value_reveal_submit",
-    "arelle_internal_value_store",
-    "arelle_corpus_validation",
-    "ocr_external_engine",
-    "sec_xbrl_production_admission_evaluator",
-}
-
-FORBIDDEN_SUPPORTED_CAPABILITIES = (
-    UNSUPPORTED_CAPABILITIES | EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES
-)
-
-OFFLINE_SIMULATION_CAPABILITIES = {
-    "layer3_sec_xbrl_offline_evidence_loader",
-    "layer3_sec_xbrl_offline_companyfacts_stage",
-    "layer3_sec_xbrl_offline_companyfacts_oracle_packet",
-    "layer3_sec_xbrl_e2e_offline_orchestrator",
-    "layer3_sec_xbrl_offline_evidence_proof_capability",
-    "nrc_aps_replay_corpus_gate",
-    "offline_staged_redaction_value_store_resolution",
-    "sec_offline_replay_path",
-}
 
 SEC_XBRL_TEST_FILES = [
     "./backend/tests/test_sec_xbrl_arelle_helper.py",

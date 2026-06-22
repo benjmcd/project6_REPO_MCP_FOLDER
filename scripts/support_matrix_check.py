@@ -3,88 +3,35 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import sys
 from pathlib import Path
 from typing import Any
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from support_matrix_constants import (
+    BASE_SUPPORTED_CAPABILITIES,
+    EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES,
+    EXPECTED_STATUS_BY_ID,
+    PINNED_FALSE_FLAGS,
+    PUBLIC_CONNECTOR_CAPABILITIES,
+    PUBLIC_CONNECTOR_DEFERRAL_CAPABILITIES,
+    PUBLIC_CONNECTORS_OVERLAY,
+    PUBLIC_CONNECTORS_REQUIRED_EVIDENCE,
+    RC3_BOUNDARY_TOKENS,
+    RC3_SEC_XBRL_OFFLINE_OVERLAY,
+    SEC_XBRL_OFFLINE_SIMULATION_CAPABILITIES,
+    SIMULATION_CAPABILITIES,
+    STATUS_VOCABULARY,
+    SUPPORTED_CAPABILITIES,
+    UNSUPPORTED_CAPABILITIES as REQUIRED_UNSUPPORTED,
+)
 
 
 SCHEMA_ID = "project6.support_matrix.v1"
 REPORT_SCHEMA_ID = "project6.support_matrix_check.v1"
-STATUS_VOCABULARY = {
-    "supported",
-    "experimental_default_off",
-    "simulation",
-    "unsupported",
-}
-PINNED_FALSE_FLAGS = [
-    "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
-    "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
-    "LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED",
-    "LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED",
-    "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
-    "LAYER3_MODEL_EGRESS_ENABLED",
-    "SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED",
-    "LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED",
-]
-REQUIRED_UNSUPPORTED = {
-    "real_provider_delivery",
-    "model_agent_egress",
-    "nonlocal_multi_trust_multi_identity",
-    "high_availability",
-    "keyed_connectors",
-    "signed_reference_export",
-}
-BASE_SUPPORTED_CAPABILITIES = {
-    "method_aware_analytics_vertical",
-    "layer3_workbench_ui",
-    "health_readiness_openapi",
-}
-PUBLIC_CONNECTOR_CAPABILITIES = {
-    "sciencebase_public_connector_slice",
-    "senate_lda_anonymous_connector_slice",
-    "connector_run_observability",
-}
-SUPPORTED_CAPABILITIES = BASE_SUPPORTED_CAPABILITIES | PUBLIC_CONNECTOR_CAPABILITIES
-EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES = {
-    "sec_live_network_egress",
-    "sec_value_reveal",
-    "sec_controlled_value_reveal_submit",
-    "arelle_internal_value_store",
-    "arelle_corpus_validation",
-    "sec_xbrl_production_admission_evaluator",
-    "analysis_product_package_inventory",
-    "ocr_external_engine",
-}
-PUBLIC_CONNECTOR_DEFERRAL_CAPABILITIES = {
-    "sciencebase_public_connector_slice",
-    "senate_lda_anonymous_connector_slice",
-    "connector_run_observability",
-}
-PUBLIC_CONNECTORS_OVERLAY = ["public_connectors"]
-RC3_SEC_XBRL_OFFLINE_OVERLAY = ["public_connectors", "sec_xbrl_offline"]
-PUBLIC_CONNECTORS_REQUIRED_EVIDENCE = ["PR-1", "PR-2", "PR-3", "PR-4", "PR-5"]
-SEC_XBRL_OFFLINE_SIMULATION_CAPABILITIES = {
-    "layer3_sec_xbrl_offline_evidence_loader",
-    "layer3_sec_xbrl_offline_companyfacts_stage",
-    "layer3_sec_xbrl_offline_companyfacts_oracle_packet",
-    "layer3_sec_xbrl_e2e_offline_orchestrator",
-    "layer3_sec_xbrl_offline_evidence_proof_capability",
-    "nrc_aps_replay_corpus_gate",
-    "offline_staged_redaction_value_store_resolution",
-    "sec_offline_replay_path",
-}
-SIMULATION_CAPABILITIES = SEC_XBRL_OFFLINE_SIMULATION_CAPABILITIES
-EXPECTED_STATUS_BY_ID = {
-    **{capability_id: "supported" for capability_id in SUPPORTED_CAPABILITIES},
-    **{capability_id: "experimental_default_off" for capability_id in EXPERIMENTAL_DEFAULT_OFF_CAPABILITIES},
-    **{capability_id: "simulation" for capability_id in SIMULATION_CAPABILITIES},
-    **{capability_id: "unsupported" for capability_id in REQUIRED_UNSUPPORTED},
-}
-RC3_BOUNDARY_TOKENS = {
-    "live SEC egress explicit default-off",
-    "no value-reveal default-on",
-    "no agent egress",
-    "no nonlocal",
-}
 
 
 def default_repo_root() -> Path:
