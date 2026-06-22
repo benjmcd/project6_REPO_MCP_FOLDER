@@ -46379,5 +46379,67 @@
     },
     "next_posture": "execute_operator_configured_manual_live_sec_source_artifact_smoke"
   },
-  "latest_sec_live_source_manual_smoke_freeze_proof_summary": "Branch-local proof records the manual live SEC source-artifact smoke freeze as planning/control only: no real SEC request, no runtime/default/status/redaction change, and redacted/hash-only evidence required before downstream Arelle, multi-filing, delivery/export, nonlocal auth, or value-reveal work."
+  "latest_sec_live_source_manual_smoke_freeze_proof_summary": "Branch-local proof records the manual live SEC source-artifact smoke freeze as planning/control only: no real SEC request, no runtime/default/status/redaction change, and redacted/hash-only evidence required before downstream Arelle, multi-filing, delivery/export, nonlocal auth, or value-reveal work.",
+  "sec_live_source_artifact_manual_smoke_preflight_proof": {
+    "proof_kind": "sec_live_source_artifact_manual_smoke_preflight_proof",
+    "milestone": "sec_live_source_artifact_manual_smoke_preflight_v1",
+    "status": "branch_local_validate_only_preflight",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1363-sec-live-preflight.md",
+    "authoritative_main_before_pass": "4eaf52e74b39b1d177e2f505e8a55c71a9dd8211",
+    "preflight_script": "diagnostics/assessment/sec-live-preflight.py",
+    "test_file": "backend/tests/test_layer3_sec_live_preflight.py",
+    "runtime_behavior_changed": false,
+    "real_sec_network_request_performed": false,
+    "source_artifact_or_receipt_created": false,
+    "ci_real_network_access": false,
+    "config_default_changed": false,
+    "support_matrix_changed": false,
+    "redaction_posture_changed": false,
+    "production_readiness_claimed": false,
+    "preflight_blocks": [
+      "missing_live_network_enablement",
+      "missing_user_agent",
+      "active_ci_runtime",
+      "unsafe_storage_or_storage_mount",
+      "unwritable_storage_root",
+      "unsafe_database_containment",
+      "malformed_database_url",
+      "invalid_rate_or_size_or_timeout_controls",
+      "invalid_calendar_filing_date",
+      "matching_existing_receipt_cache_hit",
+      "missing_or_invalid_operator_smoke_identity"
+    ],
+    "redaction_proof": [
+      "raw_user_agent_not_returned",
+      "raw_storage_path_not_returned",
+      "raw_database_url_not_returned",
+      "raw_cik_not_returned",
+      "raw_accession_not_returned",
+      "raw_sec_url_not_returned",
+      "artifact_bytes_not_returned"
+    ],
+    "negative_authority_flags": {
+      "sec_network_fetch_performed": false,
+      "source_artifact_created": false,
+      "receipt_created": false,
+      "status_reread_performed": false,
+      "arelle_invocation": false,
+      "multi_filing_enforcement": false,
+      "delivery_export_status": false,
+      "provider_delivery": false,
+      "nonlocal_auth_hardening": false,
+      "value_reveal": false,
+      "default_on_graduation": false
+    },
+    "verification": [
+      "python -m pytest ./backend/tests/test_layer3_sec_live_preflight.py -q",
+      "python -m py_compile ./diagnostics/assessment/sec-live-preflight.py ./backend/tests/test_layer3_sec_live_preflight.py",
+      "python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "python ./tools/l3-progress-check.py",
+      "git diff --check"
+    ],
+    "next_posture": "run_one_filing_live_source_artifact_smoke_with_redacted_hash_only_evidence"
+  },
+  "latest_sec_live_source_artifact_manual_smoke_preflight_proof_summary": "Branch-local proof adds a validate-only SEC live source-artifact smoke preflight that checks explicit operator environment readiness, runtime-normalized writable storage, safe database routing, bounded rate/request/size/timeout controls, calendar-valid filing date, cache-free source identity, and redaction boundaries without performing a SEC request, creating source artifacts or receipts, invoking Arelle, changing support/default/redaction posture, or claiming production readiness."
 }

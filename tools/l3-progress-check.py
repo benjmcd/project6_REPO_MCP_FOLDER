@@ -118699,6 +118699,137 @@ def _check_sec_live_source_manual_smoke_freeze(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing manual live SEC source smoke freeze term: {term}")
 
 
+def _check_sec_live_source_artifact_manual_smoke_preflight(errors: list[str]) -> None:
+    doc_path = PLANNING_DOCS / "1363-sec-live-preflight.md"
+    doc_rel = "next_milestone_plans/Layer3_planning_docs/1363-sec-live-preflight.md"
+    script_path = ROOT / "diagnostics" / "assessment" / "sec-live-preflight.py"
+    script_rel = "diagnostics/assessment/sec-live-preflight.py"
+    test_path = ROOT / "backend" / "tests" / "test_layer3_sec_live_preflight.py"
+    test_rel = "backend/tests/test_layer3_sec_live_preflight.py"
+    milestone = "sec_live_source_artifact_manual_smoke_preflight_v1"
+    entry_key = "sec_live_source_artifact_manual_smoke_preflight_tracking"
+    proof_key = "sec_live_source_artifact_manual_smoke_preflight_proof"
+    next_posture = "run_one_filing_live_source_artifact_smoke_with_redacted_hash_only_evidence"
+
+    doc_text = _read_required_text(doc_path, errors)
+    for term in (
+        "# 1363 SEC Live Source Smoke Preflight",
+        f"Target: `{milestone}`.",
+        "Status: validate-only preflight.",
+        "Runtime behavior introduced by this preflight: `false`.",
+        "Real SEC network request performed by this preflight: `false`.",
+        "Source artifact or receipt created by this preflight: `false`.",
+        "`diagnostics/assessment/sec-live-preflight.py`",
+        "`LAYER3_SEC_EDGAR_USER_AGENT` is present and reported only by marker/length.",
+        "`STORAGE_EXPOSURE=disabled`.",
+        "`STORAGE_DIR` is normalized like runtime settings",
+        "`DATABASE_URL` is explicitly safe for this live SEC run",
+        "Rate/max-request/max-byte/timeout controls are within the admitted bounded",
+        "cache-only",
+        "`LAYER3_SEC_EDGAR_SMOKE_OPERATOR_CONFIRMATION=true`",
+        "No SEC network fetch, source-artifact creation, receipt creation, status",
+        f"`{next_posture}`.",
+    ):
+        if term not in doc_text:
+            errors.append(f"{doc_rel} missing manual live SEC source smoke preflight term: {term}")
+
+    for path, terms in {
+        script_path: (
+            f'TARGET = "{milestone}"',
+            f'NEXT_SLICE = "execute_operator_configured_manual_live_sec_source_artifact_smoke"',
+            '"sec_live_source_artifact_smoke_preflight_ready"',
+            '"sec_live_source_artifact_smoke_preflight_blocked"',
+            '"sec_live_preflight_user_agent_missing"',
+            '"sec_live_preflight_storage_missing_or_unsafe"',
+            '"sec_live_preflight_database_missing_or_unsafe"',
+            '"sec_live_preflight_smoke_request_missing_or_invalid"',
+            "storage_dir_writable_non_mutating_check",
+            "timeout_seconds_admitted",
+            "matching_existing_receipt_found",
+            "ADMITTED_EXTERNAL_DB_SCHEMES",
+            "MAX_BYTES_CEILING",
+            "TIMEOUT_SECONDS_CEILING",
+            "def _valid_filing_date(",
+            "def _source_identity_hash(",
+            "def _normalise_storage_dir(",
+            "def _sqlite_database_path(database_url: str, *, source_root: Path)",
+            '"raw_user_agent_returned": False',
+            '"artifact_bytes_returned": False',
+            '"support_matrix_changed": False',
+        ),
+        test_path: (
+            "test_sec_live_preflight_blocks_without_operator_environment",
+            "test_sec_live_preflight_ready_with_redacted_isolated_environment",
+            "test_sec_live_preflight_normalizes_relative_storage_and_sqlite_under_backend",
+            "test_sec_live_preflight_blocks_repo_storage_and_exposed_storage_mount",
+            "test_sec_live_preflight_blocks_unwritable_storage_check",
+            "test_sec_live_preflight_blocks_repo_sqlite_database",
+            "test_sec_live_preflight_blocks_malformed_database_url",
+            "test_sec_live_preflight_blocks_invalid_smoke_request_identity",
+            "test_sec_live_preflight_blocks_invalid_calendar_date",
+            "test_sec_live_preflight_blocks_matching_existing_receipt",
+            "test_sec_live_preflight_blocks_ci_runtime",
+            "test_sec_live_preflight_blocks_invalid_rate_controls",
+            "test_sec_live_preflight_blocks_invalid_size_or_timeout_controls",
+        ),
+        BOARD: (
+            "## SEC Live Source Smoke Preflight",
+            milestone,
+            doc_rel,
+            "Status: validate-only preflight.",
+            script_rel,
+            "runtime-normalized writable isolated storage",
+            "bounded rate/size/timeout controls",
+            "cache-free smoke request identity",
+            "Runtime behavior introduced by this preflight: `false`.",
+            "Real SEC network request performed by this preflight: `false`.",
+            "Source artifact",
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"milestone": "{milestone}"',
+            f'"planning_doc": "{doc_rel}"',
+            f'"preflight_script": "{script_rel}"',
+            f'"test_file": "{test_rel}"',
+            '"status": "branch_local_validate_only_preflight"',
+            '"runtime_behavior_changed_by_tracking": false',
+            '"real_sec_network_request_performed": false',
+            '"source_artifact_or_receipt_created": false',
+            '"readiness_guards"',
+            '"non_mutating_storage_writable_check"',
+            '"runtime_normalized_sqlite_url"',
+            '"calendar_valid_filing_date"',
+            '"cache_free_source_identity"',
+            '"redacted_marker_only_report": true',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"{proof_key}"',
+            f'"milestone": "{milestone}"',
+            f'"planning_doc": "{doc_rel}"',
+            f'"preflight_script": "{script_rel}"',
+            f'"test_file": "{test_rel}"',
+            '"status": "branch_local_validate_only_preflight"',
+            '"runtime_behavior_changed": false',
+            '"real_sec_network_request_performed": false',
+            '"source_artifact_or_receipt_created": false',
+            '"unwritable_storage_root"',
+            '"malformed_database_url"',
+            '"invalid_rate_or_size_or_timeout_controls"',
+            '"invalid_calendar_filing_date"',
+            '"matching_existing_receipt_cache_hit"',
+            '"raw_user_agent_not_returned"',
+            '"raw_accession_not_returned"',
+            f'"next_posture": "{next_posture}"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing manual live SEC source smoke preflight term: {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -120027,6 +120158,7 @@ def main() -> int:
     _check_sec_edgar_durable_delivery_archive_status_rendered_ui(errors)
     _check_sec_edgar_period_unit_context_dimension_rendered_detail_ui(errors)
     _check_sec_live_source_manual_smoke_freeze(errors)
+    _check_sec_live_source_artifact_manual_smoke_preflight(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
