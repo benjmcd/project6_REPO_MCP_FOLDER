@@ -2,7 +2,47 @@
 
 How the backend's Python dependencies are pinned, why, and how to set up a
 reproducible local environment that matches CI. This reflects the state after the
-dependency-authority pin (Lane 5) landed.
+dependency-authority pin and release-lock reproducibility lanes landed.
+
+## Release install authority
+
+`backend/requirements.txt` remains the human-maintained input file with bounded
+ranges where the app intentionally permits them. The deterministic release install
+authority is `backend/requirements.lock.txt`.
+
+The lock is generated with Python 3.12 using:
+
+```
+pip-compile --allow-unsafe --generate-hashes --output-file=backend/requirements.lock.txt --strip-extras backend/requirements.txt
+```
+
+The checked-in lock declares `--require-hashes`, pins every resolved Python package
+with `==`, and carries SHA-256 hashes for the resolved artifacts. Do not update
+versions as part of a reproducibility check; regenerating or changing pins is a
+separate owner decision.
+
+CI and the production image both consume the lock in hash-checking mode:
+
+- `.github/workflows/playwright.yml` job `release-lock-install` runs on Python 3.12
+  and executes `pip install --require-hashes -r ./backend/requirements.lock.txt`.
+- `Dockerfile.app` uses a digest-pinned `python:3.12-slim` base image, copies
+  `backend/requirements.lock.txt`, and runs
+  `pip install --no-cache-dir --require-hashes -r requirements.lock.txt` before
+  copying application code.
+- `backend/tests/test_release_identity.py` guards the lock header, hash mode,
+  Dockerfile install order, source SHA build argument, and CI job wiring.
+
+For release/prod reproducibility, validate the lock path, not the range input:
+
+```
+python -m pytest backend/tests/test_release_identity.py backend/tests/test_release_readiness.py -q
+python ./scripts/release_readiness_check.py
+```
+
+The full wheel-install proof is the Python 3.12 Linux CI/prod path above. On
+Windows, use the static lock/Dockerfile tests locally or build `Dockerfile.app`;
+do not treat a Windows wheel-selection mismatch as release drift unless the Linux
+CI/prod lock install also fails.
 
 ## FastAPI is pinned to a single authority
 
@@ -46,7 +86,8 @@ Pick the requirements file for the task:
 
 | Purpose | Install |
 | --- | --- |
-| Base app runtime | `pip install -r backend/requirements.txt` |
+| Release/prod app runtime | `pip install --require-hashes -r backend/requirements.lock.txt` |
+| Editable local app development | `pip install -r backend/requirements.txt` |
 | Layer 3 API tests (what CI runs) | `pip install -r backend/tests/requirements-layer3-api.txt` |
 | Browser/Playwright harness | `pip install -r backend/tests/requirements-browser.txt` |
 | SEC/Arelle (optional, default-off) | `pip install -r backend/tests/requirements-layer3-arelle.txt` |
