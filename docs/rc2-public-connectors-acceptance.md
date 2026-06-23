@@ -1,5 +1,11 @@
 # RC2 Public Connectors Acceptance
 
+Historical note: this document records the RC2 public-connectors acceptance
+capstone. The current selected profile is the later RC3/0.3.0-rc1 matrix in
+`config/support_matrix.yaml`: `base=local_expert`,
+`overlays=["public_connectors","sec_xbrl_offline"]`. Use
+`docs/support-matrix-local-expert.md` for current selected-profile status.
+
 This is the explicit RC2 acceptance checklist for `base=local_expert`, `overlays=["public_connectors"]`, public/anonymous connectors only.
 
 RC2 proof level: operator-workflow + local-deployment. ScienceBase public/MCS and Senate LDA anonymous metadata are accepted only as local operator workflows with observable run state, bounded degraded states, source-fidelity evidence, and explicit resume/lease behavior.

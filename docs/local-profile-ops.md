@@ -1,6 +1,6 @@
 # Local Profile Ops
 
-This runbook covers the selected L05 operational subcontracts for the analytics-only RC1 `local_expert` profile.
+This runbook covers the base local operational subcontracts for `local_expert`. The current selected 0.3.0-rc1 profile also includes `public_connectors` and `sec_xbrl_offline` overlays; use `config/support_matrix.yaml` and `docs/support-matrix-local-expert.md` as the current capability-status authority.
 
 ## Profile
 
@@ -9,17 +9,17 @@ This runbook covers the selected L05 operational subcontracts for the analytics-
 - SQLite database
 - local filesystem storage
 - no proxy
-- no overlay, connector, SEC, OCR, model/agent, provider, or nonlocal activation
+- no OCR, model/agent, provider, HA, keyed connector, or nonlocal activation in the base local harness
 
 `config/release_readiness.yaml` remains profile-neutral. Its `owner_selected_profile_specific_gates` list stays empty.
 
-## RC2 Public Connector Lifecycle Posture
+## Public Connector Lifecycle Posture
 
-This posture note is for the RC2-targeted public connector slice only: ScienceBase public/MCS and Senate LDA anonymous. It does not activate the selected analytics-only RC1 profile, and it does not change the empty owner-selected gates in `config/release_readiness.yaml`.
+This posture note is for the public connector slice selected by the current local profile: ScienceBase public/MCS and Senate LDA anonymous. It does not change the empty owner-selected gates in `config/release_readiness.yaml`, and it does not broaden connector support into keyed connectors, HA, nonlocal deployment, real provider delivery, OCR, SEC value reveal, or default-on SEC live network behavior.
 
-Connector restart recovery is operator-resume-driven in RC2. After an executor crash or process loss, an operator rechecks run status and posts `POST /api/v1/connectors/runs/{connector_run_id}/resume`; RC2 does not run an automatic orphan-run or lease-expiry reaper. A run left `running` with an expired lease is detectable through the connector run status payload and persisted lease owner/token/expiry fields.
+Connector restart recovery is operator-resume-driven. After an executor crash or process loss, an operator rechecks run status and posts `POST /api/v1/connectors/runs/{connector_run_id}/resume`; the selected profile does not run an automatic orphan-run or lease-expiry reaper. A run left `running` with an expired lease is detectable through the connector run status payload and persisted lease owner/token/expiry fields.
 
-The RC2 local posture is single worker and single process. Connector leases are single-process safe and prevent duplicate executor authority inside that posture. Multi-worker concurrent execution, cross-process atomic lease acquisition, and high availability are not RC2 claims.
+The local connector posture is single worker and single process. Connector leases are single-process safe and prevent duplicate executor authority inside that posture. Multi-worker concurrent execution, cross-process atomic lease acquisition, and high availability are not current selected-profile claims.
 
 ## Artifact-Baked Build Identity
 

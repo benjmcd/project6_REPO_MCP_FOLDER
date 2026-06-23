@@ -50,6 +50,10 @@ def test_readme_states_honest_selected_local_profile():
 
 def test_local_expert_doc_names_canonical_operator_journey():
     text = LOCAL_EXPERT_SUPPORT.read_text(encoding="utf-8")
+    assert "selected RC3 profile" in text
+    assert 'overlays=["public_connectors","sec_xbrl_offline"]' in text
+    assert "SEC live network egress | `experimental_default_off`" in text
+    assert "default-on SEC live network" in text
     assert "canonical local_expert operator journey" in text
     assert "config/support_matrix.yaml" in text
     assert "method_aware_analytics_vertical" in text

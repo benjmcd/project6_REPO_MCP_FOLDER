@@ -15,24 +15,24 @@ operator workflow.
 Current live authority at this pass:
 
 ```yaml
-authoritative_main: 6b83cd0b80e2f17f82f1c58c466e7163480be0d3
+authoritative_main: 638c31797178eb0e6af2aca59f79bd16df03d578
 config_default:
   LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED: false
 support_matrix:
   sec_controlled_value_reveal_submit: experimental_default_off
   sec_value_reveal: experimental_default_off
-  sec_live_network_egress: unsupported
+  sec_live_network_egress: experimental_default_off
   real_provider_delivery: unsupported
 readme_front_door:
   selected_profile: local_expert + public_connectors + sec_xbrl_offline
   production_ready_sec_value_reveal: false
 ```
 
-Supersession note: `1361-sec-live-source-matrix-transition.md` advances only
-`sec_live_network_egress` from `unsupported` to `experimental_default_off` after
-re-checking the already-landed live source-artifact acquisition runtime. The
-controlled value reveal/default-on conclusions in this document remain
-unchanged.
+Supersession note: `1361-sec-live-source-matrix-transition.md` records the
+`sec_live_network_egress` transition history after re-checking the already-landed
+live source-artifact acquisition runtime. Current support-matrix truth is
+`experimental_default_off`; the controlled value reveal/default-on conclusions
+in this document remain unchanged.
 
 Docs `1350-sec-xbrl-activation-lane-selection.md` and
 `1353-sec-xbrl-value-reveal-activation.md` contain historical activation/default-on

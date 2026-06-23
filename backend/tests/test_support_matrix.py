@@ -159,6 +159,23 @@ def test_ocr_support_matrix_doc_acknowledges_installed_tesseract_runtime() -> No
     assert "not part of the selected public_connectors overlay" in doc
 
 
+def test_support_matrix_doc_lists_rc3_offline_simulation_capabilities() -> None:
+    matrix = _load_json_compatible_yaml(MATRIX_PATH)
+    doc = (REPO_ROOT / "docs" / "support-matrix-local-expert.md").read_text(encoding="utf-8")
+    by_id = {item["id"]: item for item in matrix["capabilities"]}
+    expected_rows = {
+        "layer3_sec_xbrl_offline_evidence_loader": "SEC XBRL offline evidence loader",
+        "layer3_sec_xbrl_offline_companyfacts_stage": "SEC XBRL offline companyfacts stage",
+        "layer3_sec_xbrl_offline_companyfacts_oracle_packet": "SEC XBRL offline companyfacts oracle packet",
+        "layer3_sec_xbrl_e2e_offline_orchestrator": "SEC XBRL offline E2E orchestrator",
+        "layer3_sec_xbrl_offline_evidence_proof_capability": "SEC XBRL offline evidence proof capability",
+    }
+
+    for capability_id, label in expected_rows.items():
+        assert by_id[capability_id]["status"] == "simulation"
+        assert f"| {label} | `simulation` |" in doc
+
+
 def test_support_matrix_pins_local_expert_flags_without_release_manifest_profile_gates() -> None:
     matrix = _load_json_compatible_yaml(MATRIX_PATH)
     release_manifest = _load_json_compatible_yaml(RELEASE_READINESS_PATH)
