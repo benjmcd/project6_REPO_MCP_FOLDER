@@ -45,10 +45,12 @@ def _in_memory_session():
     return Session()
 
 
-def _apply_corpus_ocr_mode(monkeypatch: pytest.MonkeyPatch) -> bool:
+def _apply_corpus_ocr_mode(monkeypatch: pytest.MonkeyPatch, entry: dict[str, object]) -> bool:
     ocr_available = corpus_ocr_available()
     if not ocr_available:
         monkeypatch.setattr(nrc_aps_document_processing.nrc_aps_ocr, "tesseract_available", lambda: False)
+        return ocr_available
+    if not bool(entry.get("requires_ocr", False)):
         return ocr_available
 
     def raise_fixture_advanced_ocr_failure(*_args, **_kwargs):
@@ -121,7 +123,7 @@ def test_manifest_entries_drive_document_processing_contract(
     entry: dict[str, object],
     monkeypatch: pytest.MonkeyPatch,
 ):
-    expectation = expected_behavior(entry, ocr_available=_apply_corpus_ocr_mode(monkeypatch))
+    expectation = expected_behavior(entry, ocr_available=_apply_corpus_ocr_mode(monkeypatch, entry))
     content = fixture_bytes(entry)
     if not expectation["expects_success"]:
         with pytest.raises(ValueError, match=str(expectation["expected_failure"])):
@@ -151,7 +153,7 @@ def test_manifest_entries_drive_content_index_searchability(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    expectation = expected_behavior(entry, ocr_available=_apply_corpus_ocr_mode(monkeypatch))
+    expectation = expected_behavior(entry, ocr_available=_apply_corpus_ocr_mode(monkeypatch, entry))
     blob_path = tmp_path / str(entry.get("path") or "fixture.bin")
     blob_path.write_bytes(fixture_bytes(entry))
 
