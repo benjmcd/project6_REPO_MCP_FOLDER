@@ -1,6 +1,6 @@
 [CmdletBinding(PositionalBinding = $false)]
 param(
-    [ValidateSet("setup", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-structure", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-deterministic-challenge-review-packet", "refresh-nrc-aps-review-gate-reports", "refresh-nrc-aps-validate-only-gates", "validate-nrc-aps-validate-only-gates", "validate-nrc-aps-promotion", "validate-nrc-aps-retrieval-cutover", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "compare-nrc-aps-candidate-b", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
+    [ValidateSet("setup", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-structure", "validate-sec-live-preflight", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-deterministic-challenge-review-packet", "refresh-nrc-aps-review-gate-reports", "refresh-nrc-aps-validate-only-gates", "validate-nrc-aps-validate-only-gates", "validate-nrc-aps-promotion", "validate-nrc-aps-retrieval-cutover", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "compare-nrc-aps-candidate-b", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
     [string]$Action = "status",
     [string]$BaseUrl = "http://127.0.0.1:8000",
     [int]$ConsecutiveRuns = 3,
@@ -56,6 +56,7 @@ $NrcApsValidateOnlyGatesGatePath = Join-Path $RepoRoot "tools\nrc_aps_validate_o
 $NrcApsPromotionGatePath = Join-Path $RepoRoot "tools\nrc_aps_promotion_gate.py"
 $NrcApsRetrievalCutoverGatePath = Join-Path $RepoRoot "tools\nrc_aps_retrieval_cutover_gate.py"
 $NrcApsPromotionTuningPath = Join-Path $RepoRoot "tools\nrc_aps_promotion_tuning.py"
+$SecLivePreflightPath = Join-Path $RepoRoot "diagnostics\assessment\sec-live-preflight.py"
 $NrcApsReplaySourceRoot = Join-Path $BackendDir "app\storage_test\connectors"
 $NrcApsLiveReportsDir = Join-Path $BackendDir "app\storage\connectors\reports"
 $NrcApsLiveBatchRoot = Join-Path $NrcApsLiveReportsDir "nrc_aps_live_batches"
@@ -372,6 +373,20 @@ switch ($Action) {
         }
         $structureArgs = @($ValidateStructurePath) + $ActionArgs
         Invoke-Py -Arguments $structureArgs -WorkingDirectory $RepoRoot
+    }
+    "validate-sec-live-preflight" {
+        if (-not (Test-Path $SecLivePreflightPath)) {
+            throw "SEC live preflight script not found: $SecLivePreflightPath"
+        }
+        $preflightArgs = @($SecLivePreflightPath, "--no-report") + $ActionArgs
+        Push-Location $RepoRoot
+        try {
+            & py "-$PythonVersion" @preflightArgs
+            exit $LASTEXITCODE
+        }
+        finally {
+            Pop-Location
+        }
     }
     "validate-sciencebase-live" {
         Invoke-Py -Arguments @($LiveValidatorPath, "--base-url", $BaseUrl, "--consecutive-runs", "$ConsecutiveRuns", "--timeout-seconds", "$TimeoutSeconds")

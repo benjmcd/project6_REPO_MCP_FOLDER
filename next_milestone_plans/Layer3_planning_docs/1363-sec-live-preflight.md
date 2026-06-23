@@ -25,6 +25,19 @@ The preflight script is:
 
 `diagnostics/assessment/sec-live-preflight.py`.
 
+For artifact-free operator rechecks, use the repo harness:
+
+`./project6.ps1 -Action validate-sec-live-preflight`
+
+The direct script equivalent is:
+
+`python ./diagnostics/assessment/sec-live-preflight.py --no-report`
+
+The CLI exits `0` only when the preflight is ready. A blocked preflight exits
+non-zero and should stop the lane before any live SEC network request. Omitting
+`--no-report` writes the JSON report to the selected `--output` path, which is
+not the default mode for artifact-free validate-only operator checks.
+
 It inspects only local environment/configuration and current source files. It
 does not import runtime settings in a way that can seed storage, does not call
 the SEC client, does not create source artifacts, and does not read retained

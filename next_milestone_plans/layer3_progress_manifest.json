@@ -48710,6 +48710,7 @@
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1363-sec-live-preflight.md",
     "authoritative_main_before_pass": "4eaf52e74b39b1d177e2f505e8a55c71a9dd8211",
     "preflight_script": "diagnostics/assessment/sec-live-preflight.py",
+    "preflight_wrapper": "./project6.ps1 -Action validate-sec-live-preflight",
     "test_file": "backend/tests/test_layer3_sec_live_preflight.py",
     "selected_surface": "manual_sec_live_source_artifact_smoke_environment_readiness",
     "runtime_behavior_changed_by_tracking": false,
@@ -48757,7 +48758,7 @@
     ],
     "next_posture": "run_one_filing_live_source_artifact_smoke_with_redacted_hash_only_evidence"
   },
-  "latest_sec_live_source_artifact_manual_smoke_preflight_summary": "Branch-local validate-only preflight adds a redacted environment/readiness check for the selected manual live SEC source-artifact smoke, failing closed on missing live flag, User-Agent, runtime-normalized writable storage, safe database containment, rate/request/size/timeout bounds, invalid calendar date, matching existing receipt cache hit, or operator-approved smoke identity while performing no SEC request, creating no artifact/receipt, and changing no defaults/support-matrix/redaction posture.",
+  "latest_sec_live_source_artifact_manual_smoke_preflight_summary": "Branch-local validate-only preflight adds a redacted environment/readiness check and artifact-free project6.ps1 wrapper for the selected manual live SEC source-artifact smoke, failing closed on missing live flag, User-Agent, runtime-normalized writable storage, safe database containment, rate/request/size/timeout bounds, invalid calendar date, matching existing receipt cache hit, or operator-approved smoke identity while performing no SEC request, creating no artifact/receipt, and changing no defaults/support-matrix/redaction posture.",
   "sec_live_source_artifact_offline_replay_tracking": {
     "tracking_kind": "sec_live_source_artifact_offline_replay_tracking",
     "milestone": "sec_live_source_artifact_offline_replay_v1",

@@ -75,6 +75,8 @@ For current `project6.ps1` action semantics, use `docs/harness-validate-inventor
 
 For artifact-free `validate-nrc-aps-validate-only-gates` checks, pass `-ActionArgs "--no-report"` so the gate exits from computed state without writing its JSON report.
 
+For artifact-free SEC live source-artifact smoke preflight checks, run `./project6.ps1 -Action validate-sec-live-preflight`; it delegates to `python ./diagnostics/assessment/sec-live-preflight.py --no-report`, exits non-zero while operator configuration is incomplete, and performs no SEC network request or report write.
+
 For root-surface and structural drift checks, use `docs/root-surface-policy.md` and `python ./tools/validate_structure.py`.
 
 The review browser test harness exposes `GET /__test/harness-info` for versioned, path-redacted test-only fixture metadata.

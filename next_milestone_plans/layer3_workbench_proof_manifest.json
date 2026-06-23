@@ -46387,6 +46387,7 @@
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1363-sec-live-preflight.md",
     "authoritative_main_before_pass": "4eaf52e74b39b1d177e2f505e8a55c71a9dd8211",
     "preflight_script": "diagnostics/assessment/sec-live-preflight.py",
+    "preflight_wrapper": "./project6.ps1 -Action validate-sec-live-preflight",
     "test_file": "backend/tests/test_layer3_sec_live_preflight.py",
     "runtime_behavior_changed": false,
     "real_sec_network_request_performed": false,
@@ -46434,6 +46435,7 @@
     "verification": [
       "python -m pytest ./backend/tests/test_layer3_sec_live_preflight.py -q",
       "python -m py_compile ./diagnostics/assessment/sec-live-preflight.py ./backend/tests/test_layer3_sec_live_preflight.py",
+      "./project6.ps1 -Action validate-sec-live-preflight --output <temp>",
       "python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json",
       "python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json",
       "python ./tools/l3-progress-check.py",
@@ -46441,7 +46443,7 @@
     ],
     "next_posture": "run_one_filing_live_source_artifact_smoke_with_redacted_hash_only_evidence"
   },
-  "latest_sec_live_source_artifact_manual_smoke_preflight_proof_summary": "Branch-local proof adds a validate-only SEC live source-artifact smoke preflight that checks explicit operator environment readiness, runtime-normalized writable storage, safe database routing, bounded rate/request/size/timeout controls, calendar-valid filing date, cache-free source identity, and redaction boundaries without performing a SEC request, creating source artifacts or receipts, invoking Arelle, changing support/default/redaction posture, or claiming production readiness.",
+  "latest_sec_live_source_artifact_manual_smoke_preflight_proof_summary": "Branch-local proof adds a validate-only SEC live source-artifact smoke preflight and artifact-free project6.ps1 wrapper that check explicit operator environment readiness, runtime-normalized writable storage, safe database routing, bounded rate/request/size/timeout controls, calendar-valid filing date, cache-free source identity, and redaction boundaries without performing a SEC request, creating source artifacts or receipts, invoking Arelle, changing support/default/redaction posture, or claiming production readiness.",
   "sec_live_source_artifact_offline_replay_proof": {
     "proof_kind": "sec_live_source_artifact_offline_replay_proof",
     "milestone": "sec_live_source_artifact_offline_replay_v1",

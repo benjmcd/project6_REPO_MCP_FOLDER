@@ -56,7 +56,7 @@ MAX_BYTES_CEILING = 25_000_000
 TIMEOUT_SECONDS_CEILING = 120
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
             "Validate-only preflight for the manual SEC live source-artifact smoke. "
@@ -65,15 +65,23 @@ def main() -> int:
         )
     )
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
-    args = parser.parse_args()
+    parser.add_argument(
+        "--no-report",
+        action="store_true",
+        help="Do not write an output report; print only the decision and return the readiness exit code.",
+    )
+    args = parser.parse_args(argv)
 
     report = build_report(source_root=ROOT)
-    output = _resolve_path(args.output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(f"wrote {_repo_display_path(output)}")
+    if bool(args.no_report):
+        print("report_write=skipped")
+    else:
+        output = _resolve_path(args.output)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print(f"wrote {_repo_display_path(output)}")
     print(f"decision={report['decision']}")
-    return 0
+    return 0 if report["decision"] == "sec_live_source_artifact_smoke_preflight_ready" else 1
 
 
 def build_report(*, source_root: Path, env: Mapping[str, str] | None = None) -> dict[str, Any]:
