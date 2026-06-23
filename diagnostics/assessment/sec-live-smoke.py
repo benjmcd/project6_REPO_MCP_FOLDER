@@ -32,6 +32,16 @@ DECISION_NOT_REQUESTED = "sec_live_source_artifact_smoke_execution_not_requested
 DECISION_BLOCKED = "sec_live_source_artifact_smoke_blocked"
 
 
+class _CountingSecClient:
+    def __init__(self, delegate: Any) -> None:
+        self.delegate = delegate
+        self.call_count = 0
+
+    def fetch_complete_submission_text(self, **kwargs: Any) -> Any:
+        self.call_count += 1
+        return self.delegate.fetch_complete_submission_text(**kwargs)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
@@ -40,7 +50,7 @@ def main(argv: list[str] | None = None) -> int:
             "may call the existing live acquisition service."
         )
     )
-    parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
+    parser.add_argument("--output", default=None)
     parser.add_argument(
         "--no-report",
         action="store_true",
@@ -56,11 +66,19 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    output = _resolve_path(args.output or DEFAULT_OUTPUT)
+    if bool(args.execute_live) and not bool(args.no_report):
+        if not args.output:
+            print("blocked=sec_live_smoke_execute_live_requires_explicit_private_output")
+            return 1
+        if _path_inside(output, ROOT):
+            print("blocked=sec_live_smoke_execute_live_output_must_be_outside_repo")
+            return 1
+
     report = build_report(source_root=ROOT, execute_live=bool(args.execute_live))
     if args.no_report:
         print("report_write=skipped")
     else:
-        output = _resolve_path(args.output)
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print(f"wrote {_repo_display_path(output)}")
@@ -108,7 +126,11 @@ def build_report(
             blocking_reasons=blockers,
             preflight=_preflight_summary(preflight),
             execution_plan=plan,
-            execution_effects=_execution_effects(network_request_made=False, source_artifact_created=False),
+            execution_effects=_execution_effects(
+                network_request_made=False,
+                source_artifact_created=False,
+                status_reread_performed=False,
+            ),
             redaction=_redaction_result(),
             required_next_action=(
                 "resolve_preflight_blockers_before_any_live_sec_smoke"
@@ -141,13 +163,14 @@ def _execute_smoke(
     previous = _capture_runtime(svc)
     request = _request_payload(preflight_module=preflight_module, env=env)
     transport_kind = "fake_client" if sec_client is not None else "live_http"
+    counting_client: _CountingSecClient | None = None
     acquire: dict[str, Any] | None = None
     status: dict[str, Any] | None = None
     error: dict[str, Any] | None = None
     try:
         _install_runtime_from_env(svc=svc, preflight_module=preflight_module, env=env)
-        if sec_client is not None:
-            svc.SEC_EDGAR_CLIENT = sec_client
+        counting_client = _CountingSecClient(sec_client if sec_client is not None else svc.SEC_EDGAR_CLIENT)
+        svc.SEC_EDGAR_CLIENT = counting_client
         if sleep is not None:
             svc.SEC_EDGAR_SLEEP = sleep
         acquire = svc.acquire_sec_edgar_text_table_live_source_artifact(request)
@@ -165,10 +188,17 @@ def _execute_smoke(
     finally:
         _restore_runtime(svc=svc, previous=previous)
 
-    evidence = _operator_evidence(acquire=acquire, status=status, transport_kind=transport_kind)
+    transport_call_count = counting_client.call_count if counting_client is not None else 0
+    evidence = _operator_evidence(
+        acquire=acquire,
+        status=status,
+        transport_kind=transport_kind,
+        transport_call_count=transport_call_count,
+    )
     execution_effects = _execution_effects(
         network_request_made=bool((acquire or {}).get("cache", {}).get("network_request_made")),
-        source_artifact_created=bool(acquire and not error),
+        source_artifact_created=bool(acquire),
+        status_reread_performed=bool(status),
         transport_kind=transport_kind,
     )
     redaction = _redaction_result(
@@ -207,6 +237,7 @@ def _execute_smoke(
                 acquire
                 and acquire.get("cache", {}).get("network_request_made") is True
                 and acquire.get("cache", {}).get("cache_status") == "miss"
+                and transport_call_count == 1
             ),
             evidence.get("cache", {}),
             "sec_live_smoke_not_a_fresh_network_miss",
@@ -303,14 +334,20 @@ def _operator_evidence(
     acquire: Mapping[str, Any] | None,
     status: Mapping[str, Any] | None,
     transport_kind: str,
+    transport_call_count: int,
 ) -> dict[str, Any]:
     if not acquire:
-        return {"transport_kind": transport_kind, "acquire_returned": False}
+        return {
+            "transport_kind": transport_kind,
+            "transport_call_count": transport_call_count,
+            "acquire_returned": False,
+        }
     source_receipt = acquire.get("source_artifact_receipt") or {}
     manifest = acquire.get("retained_source_artifact_manifest") or {}
     status_payload = dict(status or {})
     return {
         "transport_kind": transport_kind,
+        "transport_call_count": transport_call_count,
         "acquire_returned": True,
         "status_returned": bool(status),
         "live_source_artifact_receipt_id": acquire.get("live_source_artifact_receipt_id"),
@@ -324,7 +361,7 @@ def _operator_evidence(
         "server_derived_url_hash": (acquire.get("sec_request_policy") or {}).get("server_derived_url_hash"),
         "user_agent_hash": (acquire.get("sec_request_policy") or {}).get("server_configured_user_agent_hash"),
         "retained_source_artifact_available": manifest.get("retained_source_artifact_available"),
-        "cache": dict(acquire.get("cache") or {}),
+        "cache": {**dict(acquire.get("cache") or {}), "transport_call_count": transport_call_count},
         "idempotency": dict(acquire.get("idempotency") or {}),
         "status_schema_id": status_payload.get("schema_id"),
         "status_response_hash": _stable_hash(status_payload) if status else None,
@@ -353,6 +390,7 @@ def _execution_effects(
     *,
     network_request_made: bool,
     source_artifact_created: bool,
+    status_reread_performed: bool,
     transport_kind: str = "none",
 ) -> dict[str, Any]:
     return {
@@ -360,7 +398,7 @@ def _execution_effects(
         "network_request_made": bool(network_request_made),
         "real_sec_network_request_performed": bool(network_request_made and transport_kind == "live_http"),
         "source_artifact_or_receipt_created": bool(source_artifact_created),
-        "status_reread_performed": bool(source_artifact_created),
+        "status_reread_performed": bool(status_reread_performed),
         "arelle_subprocess_invoked": False,
         "multi_filing_enforcement_exercised": False,
         "delivery_export_status_exercised": False,
@@ -374,7 +412,9 @@ def _redaction_result(
     preflight_module: Any | None = None,
     env: Mapping[str, str] | None = None,
 ) -> dict[str, bool]:
+    report_parts = report_parts or []
     serialized = json.dumps(report_parts or [], sort_keys=True)
+    strings = list(_string_values(report_parts))
     forbidden: list[str] = []
     if preflight_module is not None and env is not None:
         raw_cik = str(env.get(preflight_module.SMOKE_CIK_ENV) or "").strip()
@@ -387,8 +427,8 @@ def _redaction_result(
             url = f"https://www.sec.gov/Archives/edgar/data/{normalized_cik}/{accession.replace('-', '')}/{accession}.txt"
         forbidden = [raw_cik, normalized_cik, accession, user_agent, storage, url]
     return {
-        "raw_cik_returned": _contains_any(serialized, forbidden[:2]),
-        "raw_accession_returned": _contains_any(serialized, forbidden[2:3]),
+        "raw_cik_returned": _contains_exact(strings, forbidden[:2]),
+        "raw_accession_returned": _contains_exact(strings, forbidden[2:3]),
         "raw_user_agent_returned": _contains_any(serialized, forbidden[3:4]),
         "raw_storage_path_returned": _contains_any(serialized, forbidden[4:5]),
         "raw_sec_url_returned": _contains_any(serialized, forbidden[5:6]),
@@ -518,6 +558,26 @@ def _contains_any(value: str, needles: list[str]) -> bool:
     return any(bool(needle) and needle in value for needle in needles)
 
 
+def _contains_exact(values: list[str], needles: list[str]) -> bool:
+    return any(bool(needle) and needle in values for needle in needles)
+
+
+def _string_values(value: Any) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, Mapping):
+        values: list[str] = []
+        for item in value.values():
+            values.extend(_string_values(item))
+        return values
+    if isinstance(value, list):
+        values = []
+        for item in value:
+            values.extend(_string_values(item))
+        return values
+    return []
+
+
 def _truthy(value: str | None) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
 
@@ -545,6 +605,14 @@ def _repo_display_path(path: Path) -> str:
         return path.resolve().relative_to(ROOT).as_posix()
     except ValueError:
         return path.as_posix()
+
+
+def _path_inside(path: Path, root: Path) -> bool:
+    try:
+        path.resolve(strict=False).relative_to(root.resolve(strict=False))
+        return True
+    except ValueError:
+        return False
 
 
 if __name__ == "__main__":

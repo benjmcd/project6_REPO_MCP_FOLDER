@@ -46588,13 +46588,16 @@
       "preflight_ready_required_before_service_call",
       "dry_run_no_network_no_write_default",
       "explicit_execute_live_required",
+      "explicit_non_repo_private_output_required_for_live_report_writes",
       "existing_service_response_is_canonical",
       "status_reread_required",
+      "actual_sec_transport_attempt_count_recorded",
       "selected_redacted_evidence_only",
       "raw_cik_accession_user_agent_storage_path_sec_url_and_artifact_bytes_fail_closed"
     ],
     "fake_transport_proof": [
       "one_fake_transport_fetch",
+      "multiple_fetch_attempts_block_fresh_smoke_claim",
       "network_miss_metadata_recorded",
       "status_reread_completed",
       "live_source_artifact_receipt_hash_recorded",

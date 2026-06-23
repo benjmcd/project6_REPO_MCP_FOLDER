@@ -37,6 +37,10 @@ Live execution requires the explicit flag:
 
 `python ./diagnostics/assessment/sec-live-smoke.py --execute-live --output <operator-private-report.json>`
 
+When `--execute-live` writes a report, the output path must be explicit and
+outside the repo checkout. `--execute-live --no-report` is admitted for an
+operator who intentionally wants no smoke report file from the runner.
+
 The live execution path first requires
 `sec_live_source_artifact_smoke_preflight_ready`. If the preflight is blocked,
 the runner stops before importing or calling the live acquisition service. When
