@@ -122,6 +122,34 @@ def override_get_db():
 
 app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
+API_APP_MODULES = {
+    name: module
+    for name, module in sys.modules.items()
+    if name == "main" or name.startswith("app.")
+}
+
+
+@pytest.fixture(autouse=True)
+def _restore_api_app_modules():
+    for module_name in list(sys.modules):
+        if module_name == "main" or module_name.startswith("app."):
+            if module_name not in API_APP_MODULES:
+                module = sys.modules.pop(module_name, None)
+                parent_name, _, child_name = module_name.rpartition(".")
+                parent_module = sys.modules.get(parent_name)
+                if (
+                    module is not None
+                    and parent_module is not None
+                    and vars(parent_module).get(child_name) is module
+                ):
+                    delattr(parent_module, child_name)
+    for module_name, module in API_APP_MODULES.items():
+        sys.modules[module_name] = module
+    for module_name, module in API_APP_MODULES.items():
+        parent_name, _, child_name = module_name.rpartition(".")
+        parent_module = API_APP_MODULES.get(parent_name)
+        if parent_module is not None:
+            setattr(parent_module, child_name, module)
 
 
 def test_analysis_method_registry_describes_current_methods_only() -> None:
@@ -723,11 +751,17 @@ class _FakeSearchOnlyAdapter:
 
 
 class _FakeSurfaceAdapter:
+    def __init__(self, namespace: str = ""):
+        self.namespace = namespace
+
+    def _name(self, stem: str) -> str:
+        return f"{stem}-{self.namespace}" if self.namespace else stem
+
     def search_page(self, *, q, filters, offset, page_size, sort, order):
         if offset > 0:
             items = []
         else:
-            items = [{"id": "item-1"}]
+            items = [{"id": self._name("item-1")}]
         return type(
             "SearchPage",
             (),
@@ -745,14 +779,25 @@ class _FakeSurfaceAdapter:
     def hydrate_item(self, item_id):
         return {
             "id": item_id,
-            "title": "Item",
-            "identifiers": [{"type": "DOI", "value": "10.1234/example"}],
+            "title": self._name("Item"),
+            "identifiers": [
+                {"type": "DOI", "value": self._name("10.1234/example")},
+            ],
             "files": [
-                {"name": "good.csv", "downloadUri": "https://www.sciencebase.gov/catalog/file/good.csv"},
-                {"name": "bad.csv", "downloadUri": "http://www.sciencebase.gov/catalog/file/bad.csv"},
+                {
+                    "name": f"{self._name('good')}.csv",
+                    "downloadUri": f"https://www.sciencebase.gov/catalog/file/{self._name('good')}.csv",
+                },
+                {
+                    "name": f"{self._name('bad')}.csv",
+                    "downloadUri": f"http://www.sciencebase.gov/catalog/file/{self._name('bad')}.csv",
+                },
             ],
             "webLinks": [
-                {"title": "external", "uri": "https://example.com/external.csv"},
+                {
+                    "title": self._name("external"),
+                    "uri": f"https://example.com/{self._name('external')}.csv",
+                },
             ],
             "distributionLinks": [],
         }
@@ -798,7 +843,7 @@ class _FakeSurfaceAdapter:
                 "etag": "etag-1",
                 "last_modified": "Mon, 01 Jan 2024 00:00:00 GMT",
                 "content_type": "text/csv",
-                "sha256": "fake_sha_surface",
+                "sha256": self._name("fake_sha_surface"),
                 "headers": {},
                 "resolved_ip": "8.8.8.8",
             },
@@ -1334,17 +1379,21 @@ class _FakeCancelDuringDownloadAdapter:
 
 
 class _L17ScienceBaseAdapter:
-    def __init__(self, *, download_case="timeout", empty_page_next=False, malformed_item=False):
+    def __init__(self, *, download_case="timeout", empty_page_next=False, malformed_item=False, namespace=""):
         self.download_case = download_case
         self.empty_page_next = empty_page_next
         self.malformed_item = malformed_item
+        self.namespace = namespace
+
+    def _name(self, stem):
+        return f"{stem}-{self.namespace}" if self.namespace else stem
 
     def search_page(self, *, q, filters, offset, page_size, sort, order):
         if self.empty_page_next and offset == 0:
             items = []
             nextlink = "https://www.sciencebase.gov/catalog/items?page=2"
         elif offset == 0:
-            items = [{"id": "l17-item", "unexpected_additive_field": "kept-for-schema-drift"}]
+            items = [{"id": self._name("l17-item"), "unexpected_additive_field": "kept-for-schema-drift"}]
             nextlink = None
         else:
             items = []
@@ -1370,7 +1419,12 @@ class _L17ScienceBaseAdapter:
             "id": item_id,
             "title": "L17 ScienceBase item",
             "identifiers": [],
-            "files": [{"name": "l17.csv", "downloadUri": "https://www.sciencebase.gov/catalog/file/l17.csv"}],
+            "files": [
+                {
+                    "name": f"{self._name('l17')}.csv",
+                    "downloadUri": f"https://www.sciencebase.gov/catalog/file/{self._name('l17')}.csv",
+                }
+            ],
             "distributionLinks": [],
             "webLinks": [],
             "unexpected_additive_field": "tolerated",
@@ -1382,8 +1436,8 @@ class _L17ScienceBaseAdapter:
         return [
             {
                 "surface": "files",
-                "name": "l17.csv",
-                "url": "https://www.sciencebase.gov/catalog/file/l17.csv",
+                "name": f"{self._name('l17')}.csv",
+                "url": f"https://www.sciencebase.gov/catalog/file/{self._name('l17')}.csv",
                 "locator_type": "downloadUri",
                 "checksum_type": None,
                 "checksum_value": None,
@@ -1428,7 +1482,7 @@ class _L17ScienceBaseAdapter:
                 "etag": None,
                 "last_modified": None,
                 "content_type": "text/csv",
-                "sha256": "sha-l17",
+                "sha256": self._name("sha-l17"),
                 "headers": {},
                 "resolved_ip": "8.8.8.8",
             },
@@ -1468,7 +1522,11 @@ def test_connector_submission_idempotency_key_behaviour(monkeypatch):
 def test_connector_fetch_policy_blocks_http_and_non_enabled_surfaces(monkeypatch):
     from app.services import connectors_sciencebase as sb
 
-    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: _FakeSurfaceAdapter())
+    monkeypatch.setattr(
+        sb,
+        "get_sciencebase_adapter",
+        lambda config: _FakeSurfaceAdapter("fetch-policy"),
+    )
 
     response = client.post(
         "/api/v1/connectors/sciencebase-public/runs",
@@ -1478,7 +1536,7 @@ def test_connector_fetch_policy_blocks_http_and_non_enabled_surfaces(monkeypatch
             "surface_policy": "files_only",
             "allowed_extensions": [".csv"],
         },
-        headers={"Idempotency-Key": "surface-policy-run"},
+        headers={"Idempotency-Key": f"surface-policy-run-{uuid.uuid4().hex}"},
     )
     assert response.status_code == 202, response.text
     run_id = response.json()["connector_run_id"]
@@ -3160,7 +3218,11 @@ def test_l17_sciencebase_additive_schema_is_tolerated(monkeypatch):
     from app.services import connectors_sciencebase as sb
 
     monkeypatch.setattr(sb, "_resolve_host_ip", lambda _hostname: "8.8.8.8")
-    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: _L17ScienceBaseAdapter(download_case="success"))
+    monkeypatch.setattr(
+        sb,
+        "get_sciencebase_adapter",
+        lambda config: _L17ScienceBaseAdapter(download_case="success", namespace="additive-schema"),
+    )
 
     submit = client.post(
         "/api/v1/connectors/sciencebase-public/runs",
@@ -3228,7 +3290,11 @@ def test_l17_finalize_ignores_stale_error_summary_after_current_success(monkeypa
     from app.services import connectors_sciencebase as sb
 
     monkeypatch.setattr(sb, "_resolve_host_ip", lambda _hostname: "8.8.8.8")
-    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: _L17ScienceBaseAdapter(download_case="success"))
+    monkeypatch.setattr(
+        sb,
+        "get_sciencebase_adapter",
+        lambda config: _L17ScienceBaseAdapter(download_case="success", namespace="finalize-success"),
+    )
 
     submit = client.post(
         "/api/v1/connectors/sciencebase-public/runs",
@@ -6796,6 +6862,10 @@ def test_nrc_auto_probe_prefers_persisted_capability(monkeypatch):
 
     db = SessionLocal()
     try:
+        db.query(ApsDialectCapability).filter(
+            ApsDialectCapability.subscription_key_hash == nrc._subscription_key_hash(),
+            ApsDialectCapability.api_host == nrc._aps_api_host(),
+        ).delete(synchronize_session=False)
         row = (
             db.query(ApsDialectCapability)
             .filter(

@@ -262,7 +262,7 @@ def _make_test_client(tmp_path: Path, monkeypatch: Any) -> tuple[TestClient, Pat
         finally:
             db.close()
 
-    app.dependency_overrides[get_db] = override_get_db
+    monkeypatch.setitem(app.dependency_overrides, get_db, override_get_db)
     client = TestClient(app)
     return client, storage_dir
 

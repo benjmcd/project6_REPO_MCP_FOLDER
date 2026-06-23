@@ -17,10 +17,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from app.schemas.review_nrc_aps import NrcApsReviewRunSelectorItemOut, NrcApsReviewRunSelectorOut
 from app.services.review_nrc_aps_runtime import ReviewRuntimeBinding
 import app.services.review_nrc_aps_workbench_compare as compare_service
-from review_nrc_aps_runtime_fixture import latest_document_trace_ready_runtime, make_session, resolve_target_for_accession
+from review_nrc_aps_runtime_fixture import (
+    bind_selected_runtime_storage_root,
+    latest_document_trace_ready_runtime,
+    make_session,
+    resolve_target_for_accession,
+)
 
 
 RUNTIME = latest_document_trace_ready_runtime()
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _bind_runtime_storage_root():
+    monkeypatch = pytest.MonkeyPatch()
+    bind_selected_runtime_storage_root(monkeypatch, RUNTIME)
+    yield
+    monkeypatch.undo()
 
 
 def _load_unique_manifest_entry() -> dict[str, str]:

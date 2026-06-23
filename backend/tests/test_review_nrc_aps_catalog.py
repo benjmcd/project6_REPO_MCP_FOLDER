@@ -5,15 +5,26 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.services.review_nrc_aps_catalog import discover_candidate_runs
 from app.services.review_nrc_aps_runtime import ReviewRuntimeBinding
-from review_nrc_aps_runtime_fixture import latest_passed_runtime
+from review_nrc_aps_runtime_fixture import bind_selected_runtime_storage_root, latest_passed_runtime
 
 
 RUNTIME = latest_passed_runtime()
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _bind_runtime_storage_root():
+    monkeypatch = pytest.MonkeyPatch()
+    bind_selected_runtime_storage_root(monkeypatch, RUNTIME)
+    yield
+    monkeypatch.undo()
+
 
 def test_discover_candidate_runs():
     db = MagicMock()

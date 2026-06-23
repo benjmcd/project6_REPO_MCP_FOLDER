@@ -25,11 +25,27 @@ from app.services.review_nrc_aps_document_trace import (
     resolve_visual_artifact_info,
 )
 from app.services.review_nrc_aps_runtime import find_review_root_for_run
-from review_nrc_aps_runtime_fixture import latest_passed_runtime, make_session, resolve_deduplicated_target_pair, resolve_target_for_accession
+from review_nrc_aps_runtime_fixture import (
+    bind_selected_runtime_storage_root,
+    latest_passed_runtime,
+    make_session,
+    resolve_deduplicated_target_pair,
+    resolve_target_for_accession,
+)
 
 RUNTIME = latest_passed_runtime()
 RUN_ID = RUNTIME.run_id
 DB_PATH = RUNTIME.db_path
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _bind_runtime_storage_root():
+    monkeypatch = pytest.MonkeyPatch()
+    bind_selected_runtime_storage_root(monkeypatch, RUNTIME)
+    yield
+    monkeypatch.undo()
+
+
 TEXT_LIKE_UNIT_KINDS = {
     "text_block",
     "paragraph",

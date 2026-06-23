@@ -200,6 +200,17 @@ def discover_baseline_visible_passed_runtimes() -> list[AuditedReviewRuntime]:
     return _prefer_localaps_runtimes(visible_runtimes)
 
 
+def selected_runtime_storage_root(selected_runtime: AuditedReviewRuntime) -> Path:
+    return selected_runtime.runtime_dir.parent.resolve()
+
+
+def bind_selected_runtime_storage_root(monkeypatch: pytest.MonkeyPatch, selected_runtime: AuditedReviewRuntime) -> Path:
+    selected_storage_root = selected_runtime_storage_root(selected_runtime)
+    monkeypatch.setenv("STORAGE_DIR", str(selected_storage_root))
+    monkeypatch.setattr(settings, "storage_dir", str(selected_storage_root))
+    return selected_storage_root
+
+
 def latest_baseline_visible_passed_runtime() -> AuditedReviewRuntime:
     runtimes = discover_baseline_visible_passed_runtimes()
     if not runtimes:
@@ -209,10 +220,6 @@ def latest_baseline_visible_passed_runtime() -> AuditedReviewRuntime:
             allow_module_level=True,
         )
     selected_runtime = runtimes[0]
-    if not INITIAL_STORAGE_DIR:
-        selected_storage_root = selected_runtime.runtime_dir.parent.resolve()
-        os.environ["STORAGE_DIR"] = str(selected_storage_root)
-        settings.storage_dir = str(selected_storage_root)
     return selected_runtime
 
 
@@ -225,10 +232,6 @@ def latest_passed_runtime() -> AuditedReviewRuntime:
             allow_module_level=True,
         )
     selected_runtime = runtimes[0]
-    if not INITIAL_STORAGE_DIR:
-        selected_storage_root = selected_runtime.runtime_dir.parent.resolve()
-        os.environ["STORAGE_DIR"] = str(selected_storage_root)
-        settings.storage_dir = str(selected_storage_root)
     return selected_runtime
 
 
@@ -266,10 +269,6 @@ def latest_document_trace_ready_runtime() -> AuditedReviewRuntime:
             allow_module_level=True,
         )
     selected_runtime = runtimes[0]
-    if not INITIAL_STORAGE_DIR:
-        selected_storage_root = selected_runtime.runtime_dir.parent.resolve()
-        os.environ["STORAGE_DIR"] = str(selected_storage_root)
-        settings.storage_dir = str(selected_storage_root)
     return selected_runtime
 
 

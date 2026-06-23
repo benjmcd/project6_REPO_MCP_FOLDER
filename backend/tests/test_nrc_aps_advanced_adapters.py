@@ -37,6 +37,11 @@ def tearDownModule():
 
 class TestAdvancedAdapters(unittest.TestCase):
 
+    def setUp(self):
+        sys.modules['camelot'] = mock_camelot
+        sys.modules['paddleocr'] = mock_paddle
+        nrc_aps_advanced_ocr._PADDLE_ENGINE = None
+
     @patch('app.services.nrc_aps_advanced_table_parser.camelot')
     def test_table_adapter_multiple_tables(self, patched_camelot):
         """Verify multiple tables per page, single-pass Camelot, and hull-based geometry."""

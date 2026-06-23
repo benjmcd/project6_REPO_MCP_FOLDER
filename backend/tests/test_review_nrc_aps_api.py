@@ -30,6 +30,14 @@ RUN_ID = RUNTIME.run_id
 MULTI_RUNTIME_RUN_IDS = {runtime.run_id for runtime in discover_baseline_visible_passed_runtimes()[:3]}
 
 
+@pytest.fixture(scope="module", autouse=True)
+def _bind_runtime_storage_root():
+    monkeypatch = pytest.MonkeyPatch()
+    runtime_fixture.bind_selected_runtime_storage_root(monkeypatch, RUNTIME)
+    yield
+    monkeypatch.undo()
+
+
 def override_get_db():
     from unittest.mock import MagicMock
 

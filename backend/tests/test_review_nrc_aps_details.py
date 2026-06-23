@@ -3,6 +3,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -10,11 +12,20 @@ from app.services.review_nrc_aps_details import get_node_details, get_file_detai
 from app.services.review_nrc_aps_runtime import find_review_root_for_run
 from app.services.review_nrc_aps_graph import build_run_projection, build_file_to_node_map
 from app.services.review_nrc_aps_tree import build_strict_filesystem_tree
-from review_nrc_aps_runtime_fixture import latest_passed_runtime
+from review_nrc_aps_runtime_fixture import bind_selected_runtime_storage_root, latest_passed_runtime
 
 
 RUNTIME = latest_passed_runtime()
 RUN_ID = RUNTIME.run_id
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _bind_runtime_storage_root():
+    monkeypatch = pytest.MonkeyPatch()
+    bind_selected_runtime_storage_root(monkeypatch, RUNTIME)
+    yield
+    monkeypatch.undo()
+
 
 def test_get_node_details():
     root = find_review_root_for_run(RUN_ID)

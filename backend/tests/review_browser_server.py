@@ -107,6 +107,7 @@ from app.services.layer3_source_directory_vector_index import (
 from app.services.layer3_typing_entry import materialize_typing_entry
 from app.services.dataframe_io import load_version_dataframe
 from review_browser_fixture import ReviewBrowserFixture, build_review_browser_fixture, install_review_browser_patches
+import test_layer3_candidate_b_default_readiness as candidate_b_readiness_helpers
 from test_layer3_candidate_b_default_readiness import (
     READY_REGRESSION,
     READY_SCOPE,
@@ -155,7 +156,17 @@ def _compute_aps_bundle_checksum(payload: dict[str, object]) -> str:
     return hashlib.sha256(_canonical_json_bytes(clean)).hexdigest()
 
 
+def _sync_candidate_b_readiness_helper_modules() -> None:
+    candidate_b_readiness_helpers.settings = settings
+    candidate_b_readiness_helpers.layer3_candidate_b_bundle_bridge = layer3_candidate_b_bundle_bridge
+    candidate_b_readiness_helpers.layer3_candidate_b_runtime_bridge = layer3_candidate_b_runtime_bridge
+    candidate_b_readiness_helpers.layer3_candidate_b_downstream_proof = layer3_candidate_b_downstream_proof
+    candidate_b_readiness_helpers.layer3_candidate_b_final_proof = layer3_candidate_b_final_proof
+    candidate_b_readiness_helpers.layer3_candidate_b_operator_status = layer3_candidate_b_operator_status
+
+
 def _prepare_candidate_b_readiness_audit_fixture() -> dict[str, object]:
+    _sync_candidate_b_readiness_helper_modules()
     bundle_receipt_id = _write_bundle_receipt()
     runtime_receipt_id = _write_runtime_receipt()
     bundle_proof = layer3_candidate_b_bundle_downstream_proof.candidate_b_bundle_downstream_proof(
