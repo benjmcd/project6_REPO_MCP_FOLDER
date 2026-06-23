@@ -15,7 +15,7 @@ operator workflow.
 Current live authority at this pass:
 
 ```yaml
-authoritative_main: 6b83cd0b80e2f17f82f1c58c466e7163480be0d3
+authoritative_main: 638c31797178eb0e6af2aca59f79bd16df03d578
 config_default:
   LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED: false
 support_matrix:
