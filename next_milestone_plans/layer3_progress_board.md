@@ -198,6 +198,38 @@ behavior, support-matrix graduation, or production-readiness claim is admitted.
 Next posture:
 `operator_runs_sec_live_source_artifact_smoke_with_private_redacted_report`.
 
+## SEC Live Source Smoke Evidence Verifier
+
+Milestone:
+`sec_live_source_artifact_smoke_evidence_verification_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1365-sec-live-smoke-evidence-verifier.md`.
+
+Status: branch-local validate-only evidence verifier.
+
+Scope: adds `diagnostics/assessment/sec-live-smoke-evidence.py`, the
+artifact-free `./project6.ps1 -Action validate-sec-live-smoke-evidence` wrapper,
+and focused backend tests for verifying an operator-private SEC live smoke
+report against retained server-owned source-artifact status in the current
+isolated `STORAGE_DIR`. The verifier requires the private smoke report to have
+executed successfully with `live_http` transport and real SEC network execution,
+remain redacted/hash-only, contain valid 64-hex hash fields, and match the
+retained live receipt/source artifact hashes, source identity hash, content
+hash, content length, and retained artifact availability.
+
+Boundary: Real SEC network request performed by committed validation: `false`.
+Source artifact or receipt created by this verifier: `false`. Runtime
+route/schema/model/default/support-matrix/redaction behavior changed: `false`.
+Committed proof uses fake-transport retained storage and live-report-shaped
+fixture data, and separately proves fake-transport reports block. No Arelle
+invocation, fact authority, multi-filing enforcement,
+delivery/export/provider behavior, nonlocal auth, value reveal, default-on
+behavior, support-matrix graduation, or production-readiness claim is admitted.
+
+Next posture:
+`bind_arelle_fact_authority_to_server_owned_live_source_artifact`.
+
 ## P24 Mixed-Source Product-Authority Checkpoint
 
 Milestone:

@@ -46631,5 +46631,62 @@
     ],
     "next_posture": "operator_runs_sec_live_source_artifact_smoke_with_private_redacted_report"
   },
-  "latest_sec_live_source_artifact_operator_smoke_proof_summary": "Branch-local proof adds an operator-gated SEC live source-artifact smoke runner that is dry-run/no-network/no-write by default, requires --execute-live and a ready preflight before calling the existing live acquisition/status service, and is covered by fake-transport tests proving one acquire/status execution with redacted receipt/source hashes, response hashes, isolated test storage, and raw authority leak checks while preserving default-off/support/redaction posture."
+  "latest_sec_live_source_artifact_operator_smoke_proof_summary": "Branch-local proof adds an operator-gated SEC live source-artifact smoke runner that is dry-run/no-network/no-write by default, requires --execute-live and a ready preflight before calling the existing live acquisition/status service, and is covered by fake-transport tests proving one acquire/status execution with redacted receipt/source hashes, response hashes, isolated test storage, and raw authority leak checks while preserving default-off/support/redaction posture.",
+  "sec_live_source_artifact_smoke_evidence_verification_proof": {
+    "proof_kind": "sec_live_source_artifact_smoke_evidence_verification_proof",
+    "milestone": "sec_live_source_artifact_smoke_evidence_verification_v1",
+    "status": "branch_local_validate_only_evidence_verifier",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1365-sec-live-smoke-evidence-verifier.md",
+    "evidence_script": "diagnostics/assessment/sec-live-smoke-evidence.py",
+    "evidence_wrapper": "./project6.ps1 -Action validate-sec-live-smoke-evidence -ActionArgs \"--report\", \"<operator-private-report.json>\"",
+    "evidence_test_file": "backend/tests/test_layer3_sec_live_smoke_evidence.py",
+    "source_smoke_script": "diagnostics/assessment/sec-live-smoke.py",
+    "proof_mode": "fake_transport_retained_storage_live_report_shape_then_validate_only_status_reread",
+    "validate_only": true,
+    "wrapper_report_write_suppressed": true,
+    "real_sec_network_request_performed_by_committed_validation": false,
+    "source_artifact_or_receipt_created_by_verifier": false,
+    "runtime_route_or_schema_changed": false,
+    "config_default_changed": false,
+    "support_matrix_status_changed": false,
+    "redaction_posture_changed": false,
+    "production_readiness_claimed": false,
+    "verifier_proof": [
+      "private_smoke_report_verified_against_retained_storage",
+      "fake_transport_smoke_report_blocks",
+      "missing_private_report_blocks",
+      "wrong_retained_storage_blocks",
+      "malformed_hash_shape_blocks",
+      "smoke_redaction_flag_leak_blocks",
+      "raw_cik_like_unexpected_value_blocks",
+      "cli_no_report_skips_output_write",
+      "project_wrapper_uses_no_report"
+    ],
+    "negative_authority_flags": {
+      "real_sec_network_request_performed_by_committed_validation": false,
+      "source_artifact_or_receipt_created_by_verifier": false,
+      "acquire_path_called_by_verifier": false,
+      "live_network_default_on": false,
+      "support_matrix_graduation": false,
+      "config_default_change": false,
+      "redaction_posture_change": false,
+      "runtime_route_or_schema_change": false,
+      "arelle_invocation": false,
+      "multi_filing_enforcement": false,
+      "delivery_export_status": false,
+      "provider_delivery": false,
+      "nonlocal_auth_hardening": false,
+      "value_reveal": false,
+      "production_readiness_claim": false
+    },
+    "verification": [
+      "python -m pytest ./backend/tests/test_layer3_sec_live_smoke_evidence.py -q",
+      "python -m py_compile ./diagnostics/assessment/sec-live-smoke-evidence.py ./backend/tests/test_layer3_sec_live_smoke_evidence.py",
+      "python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "git diff --check"
+    ],
+    "next_posture": "bind_arelle_fact_authority_to_server_owned_live_source_artifact"
+  },
+  "latest_sec_live_source_artifact_smoke_evidence_verification_proof_summary": "Branch-local proof adds a validate-only SEC live smoke evidence verifier that re-reads retained server-owned status for an operator-private smoke report, requires live_http transport with real SEC network execution plus redacted 64-hex hash evidence to match retained receipt/source/content metadata, and proves fake-transport report, missing report, wrong storage, malformed hash, redaction-leak, and raw CIK-like blockers without performing SEC network access, creating source artifacts or receipts, invoking Arelle, or changing default-off/support/redaction posture."
 }
