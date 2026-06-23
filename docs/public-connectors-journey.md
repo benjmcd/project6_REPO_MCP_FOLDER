@@ -1,6 +1,6 @@
 # Public Connectors Journey
 
-This RC2-targeted journey covers only the public connectors overlay candidate: ScienceBase public/MCS and Senate LDA anonymous metadata. It does not activate or claim SEC, OCR, model/agent egress, keyed connectors, nonlocal deployment, high availability, automatic replay, or real provider delivery. Until the gated capstone flips the support matrix, these connectors remain outside the selected RC1 analytics-only claim.
+This journey covers the public_connectors overlay in the current selected local profile: ScienceBase public/MCS and Senate LDA anonymous metadata. It does not activate or claim OCR, model/agent egress, keyed connectors, nonlocal deployment, high availability, automatic replay, real provider delivery, SEC value reveal, or default-on SEC live network behavior. The current support matrix, not the earlier RC1 analytics-only claim, is the authority for whether these connector slices are selected.
 
 ## Canonical ScienceBase Path
 

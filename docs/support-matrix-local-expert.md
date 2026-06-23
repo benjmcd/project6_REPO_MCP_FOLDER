@@ -1,22 +1,22 @@
 # Local Expert Support Matrix
 
-This support matrix applies to the selected RC2 profile `base=local_expert` with `overlays=["public_connectors"]`.
+This support matrix applies to the selected RC3 profile `base=local_expert` with `overlays=["public_connectors","sec_xbrl_offline"]`.
 
 The profile is a single-operator local source-run posture: `DEPLOYMENT_MODE=local`, `AUTH_OWNER=none`, SQLite/local filesystem, and loopback/local trust. Under this posture there is no authentication boundary; the local principal is constant and identity or role enforcement is not a product claim.
 
-`config/release_readiness.yaml` remains profile-neutral. Its `owner_selected_profile_specific_gates` list must stay empty; selected-profile acceptance lives in `config/support_matrix.yaml`, `scripts/support_matrix_check.py`, and `scripts/rc2_public_connectors_acceptance.py`.
+`config/release_readiness.yaml` remains profile-neutral. Its `owner_selected_profile_specific_gates` list must stay empty; selected-profile acceptance lives in `config/support_matrix.yaml`, `scripts/support_matrix_check.py`, and the RC capstone scripts, including `scripts/rc3_sec_xbrl_offline_acceptance.py` for the current 0.3.0-rc1 profile.
 
-The selected RC2 profile claims the public_connectors overlay for public/anonymous connectors only. ScienceBase public/MCS, Senate LDA anonymous metadata, and connector run observability are supported for operator-workflow + local-deployment under the local_expert base.
+The selected RC3 profile claims the public_connectors overlay for public/anonymous connectors and the sec_xbrl_offline overlay for offline/replay SEC XBRL proof only. ScienceBase public/MCS, Senate LDA anonymous metadata, and connector run observability are supported for operator-workflow + local-deployment under the local_expert base. SEC XBRL value-bearing support remains simulation/offline-replay on already-acquired operator-supplied evidence, and bounded SEC live source-artifact acquisition remains explicit-default-off.
 
-For the RC2-targeted public connector slice, restart recovery is operator-resume-driven: after a crash or process loss, the operator rechecks the run and posts `POST /api/v1/connectors/runs/{connector_run_id}/resume`. RC2 does not claim an automatic orphan-run or lease-expiry reaper. Runs left `running` with an expired lease are detectable through status and persisted lease fields. The local connector posture is single worker and single process; leases are single-process safe, while multi-worker concurrent execution, cross-process atomic leases, and high availability are not RC2 claims.
+For the public connector slice, restart recovery is operator-resume-driven: after a crash or process loss, the operator rechecks the run and posts `POST /api/v1/connectors/runs/{connector_run_id}/resume`. The selected profile does not claim an automatic orphan-run or lease-expiry reaper. Runs left `running` with an expired lease are detectable through status and persisted lease fields. The local connector posture is single worker and single process; leases are single-process safe, while multi-worker concurrent execution, cross-process atomic leases, and high availability are not current selected-profile claims.
 
-Connector lifecycle support is bounded to a single local API/executor process with explicit operator action. Persisted checkpoints and run state support operator-triggered resume after restart; completed runs are resume no-ops; terminal runs clear public lease ownership; and an unexpired active lease fails closed as `lease_conflict`. This is not a durable queue, automatic replay, multi-executor, HA, keyed connector, real provider delivery, OCR, SEC, model/agent egress, or nonlocal trust claim.
+Connector lifecycle support is bounded to a single local API/executor process with explicit operator action. Persisted checkpoints and run state support operator-triggered resume after restart; completed runs are resume no-ops; terminal runs clear public lease ownership; and an unexpired active lease fails closed as `lease_conflict`. This is not a durable queue, automatic replay, multi-executor, HA, keyed connector, real provider delivery, OCR, default-on SEC live network/value reveal, model/agent egress, or nonlocal trust claim.
 
 ## Canonical Operator Journey
 
-The canonical local_expert operator journey for RC2 is the documented composition of the `method_aware_analytics_vertical`, `sciencebase_public_connector_slice`, `senate_lda_anonymous_connector_slice`, and `connector_run_observability` capabilities selected by `config/support_matrix.yaml`.
+The canonical local_expert operator journey for the current RC3 selected profile is the documented composition of the `method_aware_analytics_vertical`, `sciencebase_public_connector_slice`, `senate_lda_anonymous_connector_slice`, `connector_run_observability`, `layer3_workbench_ui`, `health_readiness_openapi`, and offline SEC XBRL simulation capabilities selected by `config/support_matrix.yaml`.
 
-The supported analytics path is: CSV upload, variable profiling, transform recommend/apply, annotation, analysis with `cross_correlation`, `decomposition`, or `structural_break`, inspection of result artifacts, assumptions, and caveats, then persisted recovery through `GET /api/v1/analysis-runs/{id}` and dataset detail reads. The public connector path covers ScienceBase public/MCS discovery/download/CSV ingest into analysis, Senate LDA anonymous metadata query/detail handling, observable degraded states, checkpointed resume, lease conflict handling, and reports/events. Both paths run on local libraries, SQLite, and the local filesystem under the default local auth posture; they do not use SEC, OCR, model/agent egress, provider delivery, keyed connector secrets, HA, or a nonlocal base.
+The supported analytics path is: CSV upload, variable profiling, transform recommend/apply, annotation, analysis with `cross_correlation`, `decomposition`, or `structural_break`, inspection of result artifacts, assumptions, and caveats, then persisted recovery through `GET /api/v1/analysis-runs/{id}` and dataset detail reads. The public connector path covers ScienceBase public/MCS discovery/download/CSV ingest into analysis, Senate LDA anonymous metadata query/detail handling, observable degraded states, checkpointed resume, lease conflict handling, and reports/events. These operator paths run on local libraries, SQLite, and the local filesystem under the default local auth posture; they do not use OCR, model/agent egress, provider delivery, keyed connector secrets, HA, or a nonlocal base.
 
 Inspectable output includes method artifacts, method assumptions, caveats for limitations or degraded states, and source traceability from CSV ingest. The source-fidelity fields `content_hash`, `source_row_count`, and `dropped_row_count` make dropped all-empty source rows explicit while preserving the existing post-clean `row_count` used by analytics.
 
@@ -26,8 +26,8 @@ The operator-workflow proof includes coherent state recovery through a fresh API
 
 | Status | Meaning |
 | --- | --- |
-| `supported` | In scope for local expert RC2 under the default local posture and selected public_connectors overlay. |
-| `experimental_default_off` | Present or partially wired, but not part of the selected local RC2 public_connectors claim without an explicit future decision. This includes features guarded by false defaults and features that require an external engine that is not bundled with this profile. |
+| `supported` | In scope for local expert RC3 under the default local posture and selected `public_connectors` plus `sec_xbrl_offline` overlays. |
+| `experimental_default_off` | Present or partially wired, but not supported/default-on in the selected local RC3 profile without explicit future decision or runtime configuration. This includes features guarded by false defaults and features that require an external engine that is not bundled with this profile. |
 | `simulation` | Useful as offline/replay/staged proof only, not a live production capability. |
 | `unsupported` | Not armable or not claimed for this selected profile. |
 
@@ -76,4 +76,4 @@ The support-matrix checker pins the following flags false for this profile:
 
 The selected profile enables only the `public_connectors` and `sec_xbrl_offline` overlays. Bounded SEC live source-artifact acquisition is present but remains explicit-default-off behind `LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED=false` plus server-configured User-Agent/rate-limit controls. The selected profile does not select the nonlocal base, keyed connectors, SEC value reveal, OCR, model/agent egress, provider delivery, HA, durable queues, automatic replay, or multi-executor operation.
 
-OCR note: NRC APS document-processing code can use an installed Tesseract runtime for image or low-text PDF handling. That path remains outside the canonical local expert RC2 public connectors journey and is not part of the selected public_connectors overlay because the external engine is not bundled with this source-run profile.
+OCR note: NRC APS document-processing code can use an installed Tesseract runtime for image or low-text PDF handling. That path remains outside the canonical local expert RC3 selected profile because the external engine is not bundled with this source-run profile.

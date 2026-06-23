@@ -21,18 +21,18 @@ config_default:
 support_matrix:
   sec_controlled_value_reveal_submit: experimental_default_off
   sec_value_reveal: experimental_default_off
-  sec_live_network_egress: unsupported
+  sec_live_network_egress: experimental_default_off
   real_provider_delivery: unsupported
 readme_front_door:
   selected_profile: local_expert + public_connectors + sec_xbrl_offline
   production_ready_sec_value_reveal: false
 ```
 
-Supersession note: `1361-sec-live-source-matrix-transition.md` advances only
-`sec_live_network_egress` from `unsupported` to `experimental_default_off` after
-re-checking the already-landed live source-artifact acquisition runtime. The
-controlled value reveal/default-on conclusions in this document remain
-unchanged.
+Supersession note: `1361-sec-live-source-matrix-transition.md` records the
+`sec_live_network_egress` transition history after re-checking the already-landed
+live source-artifact acquisition runtime. Current support-matrix truth is
+`experimental_default_off`; the controlled value reveal/default-on conclusions
+in this document remain unchanged.
 
 Docs `1350-sec-xbrl-activation-lane-selection.md` and
 `1353-sec-xbrl-value-reveal-activation.md` contain historical activation/default-on
