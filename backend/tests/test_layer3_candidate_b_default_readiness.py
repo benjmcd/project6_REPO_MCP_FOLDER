@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib
 import json
 import os
 from pathlib import Path
@@ -75,12 +76,31 @@ INVALID_RUNTIME_STORAGE_IDS = [
 
 @pytest.fixture()
 def client(monkeypatch, tmp_path):
+    _sync_current_app_stack()
     monkeypatch.setattr(settings, "layer3_candidate_b_bundle_bridge_dir", str(tmp_path / "bundle-bridge"))
     monkeypatch.setattr(settings, "layer3_candidate_b_runtime_bridge_dir", str(tmp_path / "runtime-bridge"))
     app.openapi_schema = None
     with TestClient(app) as test_client:
         yield test_client
     app.openapi_schema = None
+
+
+def _sync_current_app_stack() -> None:
+    global app
+    global settings
+    global layer3_candidate_b_bundle_bridge
+    global layer3_candidate_b_downstream_proof
+    global layer3_candidate_b_final_proof
+    global layer3_candidate_b_operator_status
+    global layer3_candidate_b_runtime_bridge
+
+    settings = importlib.import_module("app.core.config").settings
+    layer3_candidate_b_bundle_bridge = importlib.import_module("app.services.layer3_candidate_b_bundle_bridge")
+    layer3_candidate_b_downstream_proof = importlib.import_module("app.services.layer3_candidate_b_downstream_proof")
+    layer3_candidate_b_final_proof = importlib.import_module("app.services.layer3_candidate_b_final_proof")
+    layer3_candidate_b_operator_status = importlib.import_module("app.services.layer3_candidate_b_operator_status")
+    layer3_candidate_b_runtime_bridge = importlib.import_module("app.services.layer3_candidate_b_runtime_bridge")
+    app = importlib.import_module("main").app
 
 
 def _stable_hash(value: Any) -> str:

@@ -34,6 +34,7 @@ from app.models.models import ApsContentLinkage, ApsContentDocument
 from app.schemas.review_nrc_aps import NrcApsReviewExtractedUnitsOut
 from main import app
 from review_nrc_aps_runtime_fixture import (
+    bind_selected_runtime_storage_root,
     discover_document_trace_ready_runtimes,
     latest_document_trace_ready_runtime,
     make_session,
@@ -48,6 +49,15 @@ RUNTIME = latest_document_trace_ready_runtime()
 RUN_ID = RUNTIME.run_id
 DB_PATH = RUNTIME.db_path
 MULTI_RUNTIME_RUN_IDS = [runtime.run_id for runtime in PASSED_RUNTIMES[:3]]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _bind_runtime_storage_root():
+    monkeypatch = pytest.MonkeyPatch()
+    bind_selected_runtime_storage_root(monkeypatch, RUNTIME)
+    yield
+    monkeypatch.undo()
+
 
 TEXT_LIKE_UNIT_KINDS = {
     "text_block",

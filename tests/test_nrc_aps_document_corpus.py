@@ -24,7 +24,14 @@ os.environ.setdefault("NRC_ADAMS_APS_API_BASE_URL", "https://adams-api.nrc.gov")
 from app.db.session import Base  # noqa: E402
 from app.services import nrc_aps_content_index  # noqa: E402
 from app.services import nrc_aps_document_processing  # noqa: E402
-from support_nrc_aps_doc_corpus import corpus_ocr_available, expected_behavior, fixture_bytes, fixture_path, manifest_entries  # noqa: E402
+from support_nrc_aps_doc_corpus import (  # noqa: E402
+    corpus_advanced_ocr_weights_available,
+    corpus_ocr_available,
+    expected_behavior,
+    fixture_bytes,
+    fixture_path,
+    manifest_entries,
+)
 
 
 def _entry_id(entry: dict[str, object]) -> str:
@@ -42,6 +49,18 @@ def _apply_corpus_ocr_mode(monkeypatch: pytest.MonkeyPatch) -> bool:
     ocr_available = corpus_ocr_available()
     if not ocr_available:
         monkeypatch.setattr(nrc_aps_document_processing.nrc_aps_ocr, "tesseract_available", lambda: False)
+        return ocr_available
+
+    def raise_fixture_advanced_ocr_failure(*_args, **_kwargs):
+        if corpus_advanced_ocr_weights_available():
+            raise RuntimeError("fixture_advanced_ocr_execution_failed")
+        raise FileNotFoundError("fixture_advanced_ocr_weights_missing")
+
+    monkeypatch.setattr(
+        nrc_aps_document_processing.nrc_aps_advanced_ocr,
+        "run_advanced_ocr",
+        raise_fixture_advanced_ocr_failure,
+    )
     return ocr_available
 
 

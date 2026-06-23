@@ -816,10 +816,10 @@ def test_replay_recompute_error(seeded_db, monkeypatch) -> None:
     def _boom(*args, **kwargs):
         raise RuntimeError("simulated method failure")
 
-    # Patch run_method as imported into the replay service module namespace.
-    monkeypatch.setattr(
-        "app.services.layer3_analysis_product_replay.run_method", _boom
-    )
+    # Patch the imported function's own module globals. Cross-file tests may
+    # reload app modules, making an import-string patch hit a different module
+    # object than the one this collected function closes over.
+    monkeypatch.setitem(verify_analysis_product_replay.__globals__, "run_method", _boom)
 
     result = verify_analysis_product_replay(
         db,

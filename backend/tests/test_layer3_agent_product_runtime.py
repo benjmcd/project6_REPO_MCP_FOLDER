@@ -41,6 +41,15 @@ from app.services.layer3_agent_product_runtime import (
 )
 from app.services.layer3_egress_policy import EgressPolicy, EgressPolicyError
 
+AGENT_RUNTIME_APP_MODULES = {
+    module_name: sys.modules[module_name]
+    for module_name in (
+        "app.services.layer3_agent_adapter_contract",
+        "app.services.layer3_agent_product_runtime",
+        "app.services.layer3_egress_policy",
+    )
+}
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -91,6 +100,12 @@ def db_session():
     finally:
         db.close()
         engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+def _restore_agent_runtime_modules():
+    for module_name, module in AGENT_RUNTIME_APP_MODULES.items():
+        sys.modules[module_name] = module
 
 
 # ---------------------------------------------------------------------------

@@ -22,6 +22,7 @@ os.environ["DB_INIT_MODE"] = "none"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from app.core.config import settings
 from app.services.review_nrc_aps_runtime import ReviewRuntimeBinding
 from app.services.review_nrc_aps_runtime_db import (
     REQUIRED_REVIEW_TABLES,
@@ -31,7 +32,12 @@ from app.services.review_nrc_aps_runtime_db import (
     runtime_db_session_for_run,
     get_runtime_binding_for_run,
 )
-from review_nrc_aps_runtime_fixture import discover_passed_runtimes, latest_passed_runtime
+from review_nrc_aps_runtime_fixture import (
+    bind_selected_runtime_storage_root,
+    discover_passed_runtimes,
+    latest_passed_runtime,
+    selected_runtime_storage_root,
+)
 
 
 RUNTIME = latest_passed_runtime()
@@ -39,11 +45,30 @@ RUN_ID = RUNTIME.run_id
 
 
 @pytest.fixture(autouse=True)
-def _clear_factory_cache():
+def _runtime_db_test_state(monkeypatch):
     """Ensure each test starts with a clean session factory cache."""
+    bind_selected_runtime_storage_root(monkeypatch, RUNTIME)
     _session_factory_for_database.cache_clear()
     yield
     _session_factory_for_database.cache_clear()
+
+
+def test_bind_selected_runtime_storage_root_rebinds_polluted_storage_root(monkeypatch, tmp_path):
+    polluted_storage_root = tmp_path / "storage_test_runtime"
+    monkeypatch.setenv("STORAGE_DIR", str(polluted_storage_root))
+    monkeypatch.setattr(settings, "storage_dir", str(polluted_storage_root))
+
+    selected_runtime = latest_passed_runtime()
+    expected_storage_root = selected_runtime_storage_root(selected_runtime)
+    bound_storage_root = bind_selected_runtime_storage_root(monkeypatch, selected_runtime)
+
+    assert bound_storage_root == expected_storage_root
+    assert Path(os.environ["STORAGE_DIR"]).resolve() == expected_storage_root
+    assert Path(settings.storage_dir).resolve() == expected_storage_root
+    assert (
+        get_runtime_binding_for_run(selected_runtime.run_id).review_root
+        == selected_runtime.runtime_dir
+    )
 
 
 # ---------------------------------------------------------------------------
