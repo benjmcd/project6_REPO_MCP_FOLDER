@@ -46565,5 +46565,68 @@
     ],
     "next_posture": "owner_runs_one_filing_live_source_artifact_smoke_with_redacted_hash_only_evidence"
   },
-  "latest_sec_live_source_artifact_smoke_preflight_capstone_proof_summary": "Branch-local validate-only preflight capstone proves sec_live_source_artifact_smoke_preflight_ready is reachable only with explicit safe SEC live runtime bounds plus the existing live flag/User-Agent/CI/storage/database/date/cache-free identity blockers, and hardens the sec_live_network_egress fake-client support-matrix probe to restore prior live-request counter and temporary SEC bound settings while preserving default-off/status/redaction posture and performing no real SEC network request."
+  "latest_sec_live_source_artifact_smoke_preflight_capstone_proof_summary": "Branch-local validate-only preflight capstone proves sec_live_source_artifact_smoke_preflight_ready is reachable only with explicit safe SEC live runtime bounds plus the existing live flag/User-Agent/CI/storage/database/date/cache-free identity blockers, and hardens the sec_live_network_egress fake-client support-matrix probe to restore prior live-request counter and temporary SEC bound settings while preserving default-off/status/redaction posture and performing no real SEC network request.",
+  "sec_live_source_artifact_operator_smoke_proof": {
+    "proof_kind": "sec_live_source_artifact_operator_smoke_proof",
+    "milestone": "sec_live_source_artifact_operator_smoke_v1",
+    "status": "branch_local_operator_gated_smoke_runner_fake_transport_proof",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1364-sec-live-smoke-operator-runner.md",
+    "smoke_script": "diagnostics/assessment/sec-live-smoke.py",
+    "smoke_test_file": "backend/tests/test_layer3_sec_live_smoke.py",
+    "preflight_script": "diagnostics/assessment/sec-live-preflight.py",
+    "proof_mode": "dry_run_default_plus_fake_transport_execute_live_contract",
+    "default_executes_live": false,
+    "execute_live_flag_required": "--execute-live",
+    "real_sec_network_request_performed_by_committed_validation": false,
+    "fake_transport_source_artifact_or_receipt_created_in_isolated_test_storage": true,
+    "runtime_route_or_schema_changed": false,
+    "config_default_changed": false,
+    "support_matrix_status_changed": false,
+    "redaction_posture_changed": false,
+    "production_readiness_claimed": false,
+    "runner_guards": [
+      "preflight_ready_required_before_service_call",
+      "dry_run_no_network_no_write_default",
+      "explicit_execute_live_required",
+      "existing_service_response_is_canonical",
+      "status_reread_required",
+      "selected_redacted_evidence_only",
+      "raw_cik_accession_user_agent_storage_path_sec_url_and_artifact_bytes_fail_closed"
+    ],
+    "fake_transport_proof": [
+      "one_fake_transport_fetch",
+      "network_miss_metadata_recorded",
+      "status_reread_completed",
+      "live_source_artifact_receipt_hash_recorded",
+      "source_artifact_receipt_hash_recorded",
+      "source_artifact_ref_hash_recorded",
+      "acquire_and_status_response_hashes_recorded",
+      "raw_authority_absent_from_report_and_receipt"
+    ],
+    "negative_authority_flags": {
+      "real_sec_network_request_performed_by_committed_validation": false,
+      "live_network_default_on": false,
+      "support_matrix_graduation": false,
+      "config_default_change": false,
+      "redaction_posture_change": false,
+      "runtime_route_or_schema_change": false,
+      "arelle_invocation": false,
+      "multi_filing_enforcement": false,
+      "delivery_export_status": false,
+      "provider_delivery": false,
+      "nonlocal_auth_hardening": false,
+      "value_reveal": false,
+      "production_readiness_claim": false
+    },
+    "verification": [
+      "python -m pytest ./backend/tests/test_layer3_sec_live_smoke.py -q",
+      "python -m pytest ./backend/tests/test_layer3_sec_live_smoke.py ./backend/tests/test_layer3_sec_live_preflight.py ./backend/tests/test_layer3_sec_live_replay.py -q",
+      "python -m py_compile ./diagnostics/assessment/sec-live-smoke.py ./backend/tests/test_layer3_sec_live_smoke.py",
+      "python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "git diff --check"
+    ],
+    "next_posture": "operator_runs_sec_live_source_artifact_smoke_with_private_redacted_report"
+  },
+  "latest_sec_live_source_artifact_operator_smoke_proof_summary": "Branch-local proof adds an operator-gated SEC live source-artifact smoke runner that is dry-run/no-network/no-write by default, requires --execute-live and a ready preflight before calling the existing live acquisition/status service, and is covered by fake-transport tests proving one acquire/status execution with redacted receipt/source hashes, response hashes, isolated test storage, and raw authority leak checks while preserving default-off/support/redaction posture."
 }

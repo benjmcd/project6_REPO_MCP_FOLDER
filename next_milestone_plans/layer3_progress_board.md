@@ -169,6 +169,35 @@ is still owner-gated.
 Next posture:
 `owner_runs_one_filing_live_source_artifact_smoke_with_redacted_hash_only_evidence`.
 
+## SEC Live Source Operator Smoke Runner
+
+Milestone:
+`sec_live_source_artifact_operator_smoke_v1`.
+
+Planning doc:
+`next_milestone_plans/Layer3_planning_docs/1364-sec-live-smoke-operator-runner.md`.
+
+Status: operator-gated smoke runner and fake-transport proof.
+
+Scope: adds `diagnostics/assessment/sec-live-smoke.py` and focused backend
+tests for the selected one-filing SEC live source-artifact smoke. The runner is
+dry-run/no-network/no-write by default, requires `--execute-live` before it may
+call the existing server-owned live acquisition service, first requires the
+existing preflight ready decision, then records only selected redacted
+receipt/source hashes, response hashes, cache metadata, and idempotency/status
+metadata. The committed execution proof uses a fake SEC client and isolated
+pytest storage only.
+
+Boundary: Real SEC network request performed by committed validation: `false`.
+Runtime route/schema/model/default/support-matrix/redaction behavior changed:
+`false`. Fake-transport source artifacts and receipts are confined to isolated
+test storage. No Arelle invocation, multi-filing enforcement,
+delivery/export/provider behavior, nonlocal auth, value reveal, default-on
+behavior, support-matrix graduation, or production-readiness claim is admitted.
+
+Next posture:
+`operator_runs_sec_live_source_artifact_smoke_with_private_redacted_report`.
+
 ## P24 Mixed-Source Product-Authority Checkpoint
 
 Milestone:
