@@ -72,17 +72,42 @@ INVALID_RUNTIME_STORAGE_IDS = [
     "cb-runtime-l3-C:receipt",
     "cb-bundle-l3-wrong-prefix",
 ]
+APP_STACK_GLOBAL_NAMES = (
+    "settings",
+    "app",
+    "layer3_candidate_b_bundle_bridge",
+    "layer3_candidate_b_downstream_proof",
+    "layer3_candidate_b_final_proof",
+    "layer3_candidate_b_operator_status",
+    "layer3_candidate_b_runtime_bridge",
+)
+
+
+def _snapshot_current_app_stack() -> dict[str, Any]:
+    return {
+        name: globals()[name]
+        for name in APP_STACK_GLOBAL_NAMES
+    }
+
+
+def _restore_current_app_stack(snapshot: dict[str, Any]) -> None:
+    for name, value in snapshot.items():
+        globals()[name] = value
 
 
 @pytest.fixture()
 def client(monkeypatch, tmp_path):
-    _sync_current_app_stack()
-    monkeypatch.setattr(settings, "layer3_candidate_b_bundle_bridge_dir", str(tmp_path / "bundle-bridge"))
-    monkeypatch.setattr(settings, "layer3_candidate_b_runtime_bridge_dir", str(tmp_path / "runtime-bridge"))
-    app.openapi_schema = None
-    with TestClient(app) as test_client:
-        yield test_client
-    app.openapi_schema = None
+    stack_snapshot = _snapshot_current_app_stack()
+    try:
+        _sync_current_app_stack()
+        monkeypatch.setattr(settings, "layer3_candidate_b_bundle_bridge_dir", str(tmp_path / "bundle-bridge"))
+        monkeypatch.setattr(settings, "layer3_candidate_b_runtime_bridge_dir", str(tmp_path / "runtime-bridge"))
+        app.openapi_schema = None
+        with TestClient(app) as test_client:
+            yield test_client
+    finally:
+        app.openapi_schema = None
+        _restore_current_app_stack(stack_snapshot)
 
 
 def _sync_current_app_stack() -> None:

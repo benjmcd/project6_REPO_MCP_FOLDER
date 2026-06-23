@@ -127,10 +127,68 @@ API_APP_MODULES = {
     for name, module in sys.modules.items()
     if name == "main" or name.startswith("app.")
 }
+API_APP_MODULE_ATTR_MISSING = object()
 
 
-@pytest.fixture(autouse=True)
-def _restore_api_app_modules():
+def _api_app_module_names():
+    return {
+        name
+        for name in sys.modules
+        if name == "main" or name.startswith("app.")
+    } | set(API_APP_MODULES)
+
+
+def _snapshot_api_app_modules():
+    module_names = _api_app_module_names()
+    parent_attrs = {}
+    for module_name in module_names:
+        parent_name, _, child_name = module_name.rpartition(".")
+        if not parent_name:
+            continue
+        parent_module = sys.modules.get(parent_name)
+        if parent_module is None:
+            continue
+        parent_attrs[(parent_name, child_name)] = vars(parent_module).get(
+            child_name,
+            API_APP_MODULE_ATTR_MISSING,
+        )
+    return {
+        "modules": {
+            name: sys.modules[name]
+            for name in module_names
+            if name in sys.modules
+        },
+        "parent_attrs": parent_attrs,
+    }
+
+
+def _restore_api_app_module_snapshot(snapshot):
+    modules = snapshot["modules"]
+    for module_name in list(sys.modules):
+        if (module_name == "main" or module_name.startswith("app.")) and module_name not in modules:
+            module = sys.modules.pop(module_name, None)
+            parent_name, _, child_name = module_name.rpartition(".")
+            parent_module = sys.modules.get(parent_name)
+            if (
+                module is not None
+                and parent_module is not None
+                and vars(parent_module).get(child_name) is module
+            ):
+                delattr(parent_module, child_name)
+    for module_name, module in modules.items():
+        sys.modules[module_name] = module
+    for (parent_name, child_name), value in snapshot["parent_attrs"].items():
+        parent_module = sys.modules.get(parent_name)
+        if parent_module is None:
+            continue
+        if value is API_APP_MODULE_ATTR_MISSING:
+            if hasattr(parent_module, child_name):
+                delattr(parent_module, child_name)
+        else:
+            setattr(parent_module, child_name, value)
+
+
+def _restore_api_app_module_baseline():
     for module_name in list(sys.modules):
         if module_name == "main" or module_name.startswith("app."):
             if module_name not in API_APP_MODULES:
@@ -150,6 +208,16 @@ def _restore_api_app_modules():
         parent_module = API_APP_MODULES.get(parent_name)
         if parent_module is not None:
             setattr(parent_module, child_name, module)
+
+
+@pytest.fixture(autouse=True)
+def _restore_api_app_modules():
+    _restore_api_app_module_baseline()
+    snapshot = _snapshot_api_app_modules()
+    try:
+        yield
+    finally:
+        _restore_api_app_module_snapshot(snapshot)
 
 
 def test_analysis_method_registry_describes_current_methods_only() -> None:
