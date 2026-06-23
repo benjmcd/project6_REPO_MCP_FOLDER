@@ -26,7 +26,7 @@ from support_matrix_constants import (
 
 
 SCHEMA_ID = "project6.rc3_sec_xbrl_offline_acceptance.v1"
-EXPECTED_VERSION = "0.3.0-rc1"
+EXPECTED_VERSION = "0.3.0"
 SOURCE_SHA_RE = re.compile(r"^[0-9a-f]{40}$|^[0-9a-f]{64}$", re.IGNORECASE)
 
 PROFILE = {
@@ -258,8 +258,8 @@ def _build_identity_status(build_identity: dict[str, Any]) -> str:
 def _version_criterion(build_identity: dict[str, Any]) -> dict[str, Any]:
     status = _build_identity_status(build_identity)
     return {
-        "id": "build_identity_bumped_to_rc3",
-        "title": "Release identity is bumped to RC3",
+        "id": "build_identity_final_030",
+        "title": "Release identity is final 0.3.0",
         "status": status,
         "execution": "inspected",
         "evidence": ["backend/app/_version.py", "config/release_readiness.yaml"],

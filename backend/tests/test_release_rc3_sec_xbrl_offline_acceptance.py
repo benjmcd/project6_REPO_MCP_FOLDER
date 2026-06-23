@@ -43,8 +43,8 @@ def test_rc3_support_matrix_declares_offline_simulation_honesty_ceiling() -> Non
         assert by_id[capability_id]["status"] == "simulation"
 
     release_manifest = _load_json(RELEASE_READINESS_PATH)
-    assert release_manifest["release"]["version"] == "0.3.0-rc1"
-    assert release_manifest["release"]["milestone"] == "M-RC3-SEC-XBRL-OFFLINE-ACCEPTANCE"
+    assert release_manifest["release"]["version"] == "0.3.0"
+    assert release_manifest["release"]["milestone"] == "M-FINAL-030-SEC-XBRL-OFFLINE-ACCEPTANCE"
     assert release_manifest["owner_selected_profile_specific_gates"] == []
 
 
@@ -63,7 +63,7 @@ def test_rc3_acceptance_runner_reports_pass_with_injected_checks() -> None:
             "source": "/ready build_info",
             "ready_status_code": 200,
             "status": "ready",
-            "version": "0.3.0-rc1",
+            "version": "0.3.0",
             "source_sha": "a" * 40,
         },
     )
@@ -76,13 +76,13 @@ def test_rc3_acceptance_runner_reports_pass_with_injected_checks() -> None:
         "scope": "sec_xbrl offline/simulation only",
         "proof_level": "operator-workflow + local-deployment",
     }
-    assert report["build_identity"]["version"] == "0.3.0-rc1"
+    assert report["build_identity"]["version"] == "0.3.0"
     assert report["release_readiness_owner_selected_profile_specific_gates"] == []
     assert report["owner_signoff_required_before_merge"] is True
 
     criteria = {item["id"]: item for item in report["criteria"]}
     for criterion_id in [
-        "build_identity_bumped_to_rc3",
+        "build_identity_final_030",
         "build_identity_release_readiness_check",
         "support_matrix_rc3_offline_overlay_valid",
         "pr3_offline_loader_oracle_honesty",
@@ -150,7 +150,7 @@ def test_rc3_acceptance_runner_fails_when_version_is_stale() -> None:
 
     assert report["verdict"] == "FAIL"
     assert any(
-        item["id"] == "build_identity_bumped_to_rc3" and item["status"] == "fail"
+        item["id"] == "build_identity_final_030" and item["status"] == "fail"
         for item in report["criteria"]
     )
 
@@ -174,7 +174,7 @@ def test_rc3_acceptance_runner_fails_closed_when_full_suite_command_fails() -> N
             "source": "/ready build_info",
             "ready_status_code": 200,
             "status": "ready",
-            "version": "0.3.0-rc1",
+            "version": "0.3.0",
             "source_sha": "c" * 40,
         },
     )

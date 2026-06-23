@@ -1,12 +1,12 @@
 # Local Expert Support Matrix
 
-This support matrix applies to the selected RC3 profile `base=local_expert` with `overlays=["public_connectors","sec_xbrl_offline"]`.
+This support matrix applies to the selected final 0.3.0 profile `base=local_expert` with `overlays=["public_connectors","sec_xbrl_offline"]`.
 
 The profile is a single-operator local source-run posture: `DEPLOYMENT_MODE=local`, `AUTH_OWNER=none`, SQLite/local filesystem, and loopback/local trust. Under this posture there is no authentication boundary; the local principal is constant and identity or role enforcement is not a product claim.
 
-`config/release_readiness.yaml` remains profile-neutral. Its `owner_selected_profile_specific_gates` list must stay empty; selected-profile acceptance lives in `config/support_matrix.yaml`, `scripts/support_matrix_check.py`, and the RC capstone scripts, including `scripts/rc3_sec_xbrl_offline_acceptance.py` for the current 0.3.0-rc1 profile.
+`config/release_readiness.yaml` remains profile-neutral. Its `owner_selected_profile_specific_gates` list must stay empty; selected-profile acceptance lives in `config/support_matrix.yaml`, `scripts/support_matrix_check.py`, and the RC capstone scripts, including `scripts/rc3_sec_xbrl_offline_acceptance.py` for the current final 0.3.0 profile.
 
-The selected RC3 profile claims the public_connectors overlay for public/anonymous connectors and the sec_xbrl_offline overlay for offline/replay SEC XBRL proof only. ScienceBase public/MCS, Senate LDA anonymous metadata, and connector run observability are supported for operator-workflow + local-deployment under the local_expert base. SEC XBRL value-bearing support remains simulation/offline-replay on already-acquired operator-supplied evidence, and bounded SEC live source-artifact acquisition remains explicit-default-off.
+The selected final 0.3.0 profile claims the public_connectors overlay for public/anonymous connectors and the sec_xbrl_offline overlay for offline/replay SEC XBRL proof only. ScienceBase public/MCS, Senate LDA anonymous metadata, and connector run observability are supported for operator-workflow + local-deployment under the local_expert base. SEC XBRL value-bearing support remains simulation/offline-replay on already-acquired operator-supplied evidence, and bounded SEC live source-artifact acquisition remains explicit-default-off.
 
 For the public connector slice, restart recovery is operator-resume-driven: after a crash or process loss, the operator rechecks the run and posts `POST /api/v1/connectors/runs/{connector_run_id}/resume`. The selected profile does not claim an automatic orphan-run or lease-expiry reaper. Runs left `running` with an expired lease are detectable through status and persisted lease fields. The local connector posture is single worker and single process; leases are single-process safe, while multi-worker concurrent execution, cross-process atomic leases, and high availability are not current selected-profile claims.
 

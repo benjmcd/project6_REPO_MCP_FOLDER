@@ -109,8 +109,8 @@ def test_rc2_runner_is_historical_after_rc3_bump_and_owner_gates_stay_empty() ->
     release_manifest = _load_json(RELEASE_READINESS_PATH)
 
     assert runner.EXPECTED_VERSION == "0.2.0-rc1"
-    assert 'VERSION = "0.3.0-rc1"' in version_text
-    assert release_manifest["release"]["version"] == "0.3.0-rc1"
+    assert 'VERSION = "0.3.0"' in version_text
+    assert release_manifest["release"]["version"] == "0.3.0"
     assert release_manifest["owner_selected_profile_specific_gates"] == []
     assert "profile-neutral" in release_manifest["release"]["scope"]
 
