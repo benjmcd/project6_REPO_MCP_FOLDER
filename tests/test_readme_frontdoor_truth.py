@@ -4,7 +4,7 @@ The README opening status note silently rotted for ~3 months (a 2026-03-25
 phase-closure note led the file long after it stopped being the current
 posture). These guards keep the front door honest: it must lead with the
 current support posture, must not present a dated historical phase note as the
-headline, and must name the selected local expert RC3 profile without upgrading
+headline, and must name the selected local expert final 0.3.0 profile without upgrading
 that selection into a production-ready, live SEC, or nonlocal claim.
 """
 from pathlib import Path
@@ -36,7 +36,7 @@ def test_readme_states_honest_selected_local_profile():
     assert "not a production-ready claim" in text, (
         "README dropped its not-production-ready honesty"
     )
-    assert "selected RC3 profile" in text
+    assert "selected final 0.3.0 profile" in text
     assert "base=local_expert" in text
     assert 'overlays=["public_connectors","sec_xbrl_offline"]' in text
     assert "Public connector support is bounded to operator-workflow + local-deployment" in text
@@ -50,7 +50,7 @@ def test_readme_states_honest_selected_local_profile():
 
 def test_local_expert_doc_names_canonical_operator_journey():
     text = LOCAL_EXPERT_SUPPORT.read_text(encoding="utf-8")
-    assert "selected RC3 profile" in text
+    assert "selected final 0.3.0 profile" in text
     assert 'overlays=["public_connectors","sec_xbrl_offline"]' in text
     assert "SEC live network egress | `experimental_default_off`" in text
     assert "default-on SEC live network" in text

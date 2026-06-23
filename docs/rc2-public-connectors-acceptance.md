@@ -1,7 +1,7 @@
 # RC2 Public Connectors Acceptance
 
 Historical note: this document records the RC2 public-connectors acceptance
-capstone. The current selected profile is the later RC3/0.3.0-rc1 matrix in
+capstone. The current selected profile is the later final 0.3.0 matrix in
 `config/support_matrix.yaml`: `base=local_expert`,
 `overlays=["public_connectors","sec_xbrl_offline"]`. Use
 `docs/support-matrix-local-expert.md` for current selected-profile status.

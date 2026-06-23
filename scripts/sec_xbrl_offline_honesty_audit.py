@@ -258,10 +258,10 @@ def _check_release_readiness(
     if not isinstance(release, dict):
         messages.append("release_readiness release must be an object")
     else:
-        if release.get("version") != "0.3.0-rc1":
-            messages.append("release_readiness version must be 0.3.0-rc1")
-        if release.get("milestone") != "M-RC3-SEC-XBRL-OFFLINE-ACCEPTANCE":
-            messages.append("release_readiness milestone must be M-RC3-SEC-XBRL-OFFLINE-ACCEPTANCE")
+        if release.get("version") != "0.3.0":
+            messages.append("release_readiness version must be 0.3.0")
+        if release.get("milestone") != "M-FINAL-030-SEC-XBRL-OFFLINE-ACCEPTANCE":
+            messages.append("release_readiness milestone must be M-FINAL-030-SEC-XBRL-OFFLINE-ACCEPTANCE")
     if release_readiness.get("owner_selected_profile_specific_gates") != []:
         messages.append("release_readiness owner_selected_profile_specific_gates must stay []")
     _add_criterion(

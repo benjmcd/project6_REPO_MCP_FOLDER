@@ -1,6 +1,6 @@
 # Local Profile Ops
 
-This runbook covers the base local operational subcontracts for `local_expert`. The current selected 0.3.0-rc1 profile also includes `public_connectors` and `sec_xbrl_offline` overlays; use `config/support_matrix.yaml` and `docs/support-matrix-local-expert.md` as the current capability-status authority.
+This runbook covers the base local operational subcontracts for `local_expert`. The current selected 0.3.0 final profile also includes `public_connectors` and `sec_xbrl_offline` overlays; use `config/support_matrix.yaml` and `docs/support-matrix-local-expert.md` as the current capability-status authority.
 
 ## Profile
 

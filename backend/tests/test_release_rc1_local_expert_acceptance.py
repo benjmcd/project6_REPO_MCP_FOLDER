@@ -185,20 +185,20 @@ def test_rc1_historical_acceptance_remains_profile_neutral_after_current_bump() 
     smoke_text = SMOKE_PATH.read_text(encoding="utf-8")
     old_version = "0.1.0-rc1-" + "foundation"
 
-    assert 'VERSION = "0.3.0-rc1"' in version_text
+    assert 'VERSION = "0.3.0"' in version_text
     assert old_version not in version_text
-    assert release_manifest["release"]["version"] == "0.3.0-rc1"
+    assert release_manifest["release"]["version"] == "0.3.0"
     assert release_manifest["owner_selected_profile_specific_gates"] == []
     assert "owner-selected profile-specific gates intentionally empty" in release_manifest[
         "profile_boundary_note"
     ]
     assert old_version not in smoke_text
-    assert '"0.3.0-rc1"' in smoke_text
+    assert '"0.3.0"' in smoke_text
 
 
 def test_rc1_acceptance_runner_is_preserved_but_not_current_release_gate_ci_hook() -> None:
     workflow_text = WORKFLOW_PATH.read_text(encoding="utf-8")
-    assert "Run RC3 SEC XBRL offline acceptance capstone" in workflow_text
+    assert "Run final 0.3.0 SEC XBRL offline acceptance capstone" in workflow_text
     assert "PROJECT6_CI_BACKEND_LAYER3_API_RESULT: ${{ needs['backend-layer3-api'].result }}" in workflow_text
     assert "python ./scripts/rc3_sec_xbrl_offline_acceptance.py --json" in workflow_text
     assert "python ./scripts/rc1_local_expert_acceptance.py --json" not in workflow_text

@@ -577,7 +577,7 @@ try {
             $ReadyBuildInfo = $ReadyPayload.build
             $ReadyIdentityPass = (
                 $ReadyIdentityResponse.StatusCode -eq 200 -and
-                $ReadyBuildInfo.version -eq "0.3.0-rc1" -and
+                $ReadyBuildInfo.version -eq "0.3.0" -and
                 $ReadyBuildInfo.source_sha -eq $ReleaseSourceSha
             )
         } catch {
