@@ -44,10 +44,6 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _compute_sha256(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
-
-
 def ensure_synthetic_run(db: Session, run_id: str) -> ConnectorRun:
     run = db.get(ConnectorRun, run_id)
     if not run:

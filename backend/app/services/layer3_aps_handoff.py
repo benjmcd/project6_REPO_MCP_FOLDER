@@ -304,13 +304,6 @@ def _canonical_inventory_or_none(canonical_payload: dict[str, Any]) -> list[dict
     return [dict(item) for item in inventory if isinstance(item, dict)]
 
 
-def _canonical_inventory_or_raise(canonical_payload: dict[str, Any]) -> list[dict[str, Any]]:
-    inventory = _canonical_inventory_or_none(canonical_payload)
-    if inventory is None:
-        raise Layer3ApsHandoffError(CANONICAL_INVENTORY_MISSING_MESSAGE)
-    return inventory
-
-
 def _workbench_package_source_gate(canonical_payload: dict[str, Any]) -> bool:
     header = canonical_payload.get("package_header")
     return (

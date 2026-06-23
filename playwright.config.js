@@ -19,7 +19,6 @@ const USE_SYSTEM_CHROME = process.env.PLAYWRIGHT_USE_SYSTEM_CHROME === '1';
  */
 export default defineConfig({
   testDir: './e2e',
-  testIgnore: ['**/example.spec.js'],
   /* Run tests in files in sequence because they share one isolated test harness. */
   fullyParallel: false,
   /* Fail the build on CI if you accidentally left test.only in the source code. */

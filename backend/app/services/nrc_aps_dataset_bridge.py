@@ -77,10 +77,6 @@ def table_parser_contract(extraction: dict[str, Any]) -> dict[str, Any] | None:
     return dict(parser_contract)
 
 
-def is_supported_table_unit_extraction(extraction: dict[str, Any]) -> bool:
-    return table_parser_contract(extraction) is not None
-
-
 def _stable_json(value: Any) -> str:
     return json.dumps(value, sort_keys=True, ensure_ascii=True, separators=(",", ":"))
 
