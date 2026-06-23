@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PREFLIGHT_PATH = ROOT / "diagnostics" / "assessment" / "sec-live-preflight.py"
+PROJECT_WRAPPER_PATH = ROOT / "project6.ps1"
 
 
 def _preflight_module():
@@ -36,6 +37,27 @@ def _ready_env(tmp_path: Path) -> dict[str, str]:
         "LAYER3_SEC_EDGAR_SMOKE_FILING_DATE": "2024-11-01",
         "LAYER3_SEC_EDGAR_SMOKE_OPERATOR_CONFIRMATION": "true",
     }
+
+
+def _clear_operator_env(module, monkeypatch) -> None:
+    for key in [
+        module.LIVE_ENABLED_ENV,
+        module.USER_AGENT_ENV,
+        module.RATE_ENV,
+        module.MAX_REQUESTS_ENV,
+        module.MAX_BYTES_ENV,
+        module.TIMEOUT_ENV,
+        module.STORAGE_ENV,
+        module.STORAGE_EXPOSURE_ENV,
+        module.DATABASE_ENV,
+        module.CI_ENV,
+        module.SMOKE_CIK_ENV,
+        module.SMOKE_ACCESSION_ENV,
+        module.SMOKE_FORM_ENV,
+        module.SMOKE_DATE_ENV,
+        module.SMOKE_CONFIRM_ENV,
+    ]:
+        monkeypatch.delenv(key, raising=False)
 
 
 def test_sec_live_preflight_blocks_without_operator_environment() -> None:
@@ -248,6 +270,59 @@ def test_sec_live_preflight_blocks_invalid_rate_controls(tmp_path: Path) -> None
         item["blocked_reason"] == "sec_live_preflight_rate_or_size_controls_invalid"
         for item in report["blocking_reasons"]
     )
+
+
+def test_sec_live_preflight_cli_no_report_skips_report_write_and_fails_closed(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    module = _preflight_module()
+    _clear_operator_env(module, monkeypatch)
+    output = tmp_path / "preflight-report.json"
+
+    assert module.main(["--output", str(output), "--no-report"]) == 1
+
+    assert not output.exists()
+
+
+def test_sec_live_preflight_cli_writes_report_when_not_suppressed(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    module = _preflight_module()
+    _clear_operator_env(module, monkeypatch)
+    output = tmp_path / "preflight-report.json"
+
+    assert module.main(["--output", str(output)]) == 1
+
+    assert output.exists()
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["decision"] == "sec_live_source_artifact_smoke_preflight_blocked"
+
+
+def test_sec_live_preflight_cli_ready_no_report_exits_zero_without_writing(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    module = _preflight_module()
+    _clear_operator_env(module, monkeypatch)
+    for key, value in _ready_env(tmp_path).items():
+        monkeypatch.setenv(key, value)
+    output = tmp_path / "preflight-report.json"
+
+    assert module.main(["--output", str(output), "--no-report"]) == 0
+
+    assert not output.exists()
+
+
+def test_sec_live_preflight_project_wrapper_uses_artifact_free_action() -> None:
+    wrapper = PROJECT_WRAPPER_PATH.read_text(encoding="utf-8")
+
+    assert '"validate-sec-live-preflight"' in wrapper
+    assert '$SecLivePreflightPath = Join-Path $RepoRoot "diagnostics\\assessment\\sec-live-preflight.py"' in wrapper
+    assert '@($SecLivePreflightPath, "--no-report") + $ActionArgs' in wrapper
+    assert '& py "-$PythonVersion" @preflightArgs' in wrapper
+    assert "exit $LASTEXITCODE" in wrapper
 
 
 def test_sec_live_preflight_blocks_missing_explicit_rate_size_timeout_controls(tmp_path: Path) -> None:

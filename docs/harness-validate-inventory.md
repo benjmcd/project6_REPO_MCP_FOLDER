@@ -7,7 +7,7 @@ Scope:
 - Authority is the current tracked `project6.ps1` in the focused worktree.
 - This is a wrapper-level inventory only. Script-internal behavior still requires direct audit of the target Python tool or test before behavior changes.
 - This file is not a status ledger and does not claim that a command is safe against shared runtime state unless the wrapper proves that property.
-- The current wrapper has 38 `ValidateSet` entries and 38 matching `switch` cases.
+- The current wrapper has 39 `ValidateSet` entries and 39 matching `switch` cases.
 
 ## Categories
 
@@ -16,6 +16,7 @@ Scope:
 | `setup-service` | Installs dependencies, migrates databases, starts services, or otherwise prepares operator/runtime state. |
 | `live-probe` | Talks to a running API, live service, or external source. It may be read-only from the repo's perspective, but it is not isolated. |
 | `report-gate` | Runs a validator or gate and passes an explicit report path, usually under `tests/reports`. Treat as report-producing unless the target script proves otherwise. |
+| `reportless-gate` | Runs a validator or gate without passing a report/output path and without intentionally generating artifacts. |
 | `artifact-build` | Builds, refreshes, compares, or writes derived corpus/proof/report artifacts. |
 | `runtime-proof` | Uses isolated runtime tiers to prove behavior and may create runtime state as part of the proof. |
 | `compare-eval` | Runs a comparison or evaluation helper whose write behavior is delegated to the target script and arguments. |
@@ -30,6 +31,8 @@ Scope:
 | `migrate-tier1-postgres` | `setup-service` | Runs SQLite-to-PostgreSQL migration and can pass `--truncate-target`. | Data migration; require explicit operator ownership. |
 | `start-api` | `setup-service` | Starts the API foreground under Tier 1 env. | Service process, not a validation command. |
 | `status` | `live-probe` | Calls `$BaseUrl/health`. | Read-only health probe against a running API. |
+| `validate-structure` | `reportless-gate` | Runs `tools/validate_structure.py` with pass-through args. | Artifact-free root structure validation. |
+| `validate-sec-live-preflight` | `reportless-gate` | Runs `diagnostics/assessment/sec-live-preflight.py` with `--no-report` and pass-through args. | Artifact-free fail-closed preflight for the owner-gated SEC live source-artifact smoke; performs no SEC network request. |
 | `validate-sciencebase-live` | `live-probe` | Runs the live validator against `$BaseUrl`. | Live/API dependent; not isolated by wrapper. |
 | `validate-live` | `live-probe` | Runs the live validator against `$BaseUrl`. | Live/API dependent; not isolated by wrapper. |
 | `validate-nrc-aps` | `live-probe` | Runs `run_nrc_aps_live_validation.py` under Tier 1 env. | Live/runtime dependent; audit target script before treating as pure validate-only. |

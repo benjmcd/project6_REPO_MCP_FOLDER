@@ -95,10 +95,11 @@ Planning doc:
 
 Status: validate-only preflight.
 
-Scope: adds `diagnostics/assessment/sec-live-preflight.py` and covered backend
-tests for the selected manual SEC live source-artifact smoke. The preflight
-checks explicit live-network enablement, server User-Agent presence, non-CI
-runtime, runtime-normalized writable isolated storage, safe database
+Scope: adds `diagnostics/assessment/sec-live-preflight.py`, the artifact-free
+`./project6.ps1 -Action validate-sec-live-preflight` wrapper, and covered
+backend tests for the selected manual SEC live source-artifact smoke. The
+preflight checks explicit live-network enablement, server User-Agent presence,
+non-CI runtime, runtime-normalized writable isolated storage, safe database
 containment, bounded rate/size/timeout controls, valid calendar filing date,
 and one operator-approved cache-free smoke request identity while returning
 only markers and bounded metadata.
