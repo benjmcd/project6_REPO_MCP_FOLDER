@@ -77,6 +77,8 @@ For artifact-free `validate-nrc-aps-validate-only-gates` checks, pass `-ActionAr
 
 For artifact-free SEC live source-artifact smoke preflight checks, run `./project6.ps1 -Action validate-sec-live-preflight`; it delegates to `python ./diagnostics/assessment/sec-live-preflight.py --no-report`, exits non-zero while operator configuration is incomplete, and performs no SEC network request or report write.
 
+For the owner-gated SEC live source-artifact smoke runner, use `python ./diagnostics/assessment/sec-live-smoke.py --no-report` for the dry-run/no-network/no-write plan check. A real one-filing smoke requires `--execute-live`, a ready preflight, and either `--no-report` or an explicit non-repo operator-private output path; committed validation covers this runner with fake SEC transport only.
+
 For root-surface and structural drift checks, use `docs/root-surface-policy.md` and `python ./tools/validate_structure.py`.
 
 The review browser test harness exposes `GET /__test/harness-info` for versioned, path-redacted test-only fixture metadata.
