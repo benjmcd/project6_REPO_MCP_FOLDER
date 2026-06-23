@@ -345,15 +345,6 @@ def compose_candidate_b_trace_manifest(
     )
 
 
-def candidate_b_trace_link(
-    *,
-    candidate_b_bundle_id: str,
-    fixture_id: str,
-    tab: str | None = None,
-) -> str:
-    return _candidate_b_trace_link(candidate_b_bundle_id, fixture_id, tab=tab)
-
-
 def resolve_candidate_b_trace_annotated_pdf_info(
     *,
     candidate_b_bundle_id: str,

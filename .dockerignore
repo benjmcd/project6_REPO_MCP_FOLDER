@@ -87,13 +87,9 @@ REPO_INDEX.md
 
 # Dev scripts
 project6.ps1
-corpus_diagnostics.py
 corpus_diagnostics*.log
 corpus_closure.log
 corpus_verify.log
-postreview_eval.py
-run_context_packet_single_export.py
-run_full_export.py
 
 # JSON session/export files
 *.json
