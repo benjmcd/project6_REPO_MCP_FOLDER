@@ -7,7 +7,7 @@ Scope:
 - Authority is the current tracked `project6.ps1` in the focused worktree.
 - This is a wrapper-level inventory only. Script-internal behavior still requires direct audit of the target Python tool or test before behavior changes.
 - This file is not a status ledger and does not claim that a command is safe against shared runtime state unless the wrapper proves that property.
-- The current wrapper has 39 `ValidateSet` entries and 39 matching `switch` cases.
+- The current wrapper has 41 `ValidateSet` entries and 41 matching `switch` cases.
 
 ## Categories
 
@@ -33,6 +33,7 @@ Scope:
 | `status` | `live-probe` | Calls `$BaseUrl/health`. | Read-only health probe against a running API. |
 | `validate-structure` | `reportless-gate` | Runs `tools/validate_structure.py` with pass-through args. | Artifact-free root structure validation. |
 | `validate-sec-live-preflight` | `reportless-gate` | Runs `diagnostics/assessment/sec-live-preflight.py` with `--no-report` and pass-through args. | Artifact-free fail-closed preflight for the owner-gated SEC live source-artifact smoke; performs no SEC network request. |
+| `validate-sec-live-smoke-evidence` | `reportless-gate` | Runs `diagnostics/assessment/sec-live-smoke-evidence.py` with `--no-report` and pass-through args. | Artifact-free fail-closed verification of an operator-private SEC live smoke report against retained isolated storage; performs no SEC network request and creates no source artifacts or receipts. |
 | `validate-sciencebase-live` | `live-probe` | Runs the live validator against `$BaseUrl`. | Live/API dependent; not isolated by wrapper. |
 | `validate-live` | `live-probe` | Runs the live validator against `$BaseUrl`. | Live/API dependent; not isolated by wrapper. |
 | `validate-nrc-aps` | `live-probe` | Runs `run_nrc_aps_live_validation.py` under Tier 1 env. | Live/runtime dependent; audit target script before treating as pure validate-only. |

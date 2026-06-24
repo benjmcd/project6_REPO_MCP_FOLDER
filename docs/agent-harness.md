@@ -79,6 +79,8 @@ For artifact-free SEC live source-artifact smoke preflight checks, run `./projec
 
 For the owner-gated SEC live source-artifact smoke runner, use `python ./diagnostics/assessment/sec-live-smoke.py --no-report` for the dry-run/no-network/no-write plan check. A real one-filing smoke requires `--execute-live`, a ready preflight, and either `--no-report` or an explicit non-repo operator-private output path; committed validation covers this runner with fake SEC transport only.
 
+After an operator-private smoke report exists, use `./project6.ps1 -Action validate-sec-live-smoke-evidence -ActionArgs "--report", "<operator-private-report.json>"` to re-read the retained server-owned source-artifact status from the current isolated `STORAGE_DIR`. The wrapper adds `--no-report`, performs no SEC network request, creates no source artifacts or receipts, and blocks before Arelle/fact authority unless the private report and retained storage evidence match.
+
 For root-surface and structural drift checks, use `docs/root-surface-policy.md` and `python ./tools/validate_structure.py`.
 
 The review browser test harness exposes `GET /__test/harness-info` for versioned, path-redacted test-only fixture metadata.

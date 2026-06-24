@@ -48904,5 +48904,52 @@
     "next_posture": "operator_runs_sec_live_source_artifact_smoke_with_private_redacted_report"
   },
   "latest_sec_live_source_artifact_operator_smoke_summary": "Branch-local operator-gated smoke runner composes the existing SEC live preflight with the existing server-owned live acquisition/status service, defaulting to dry-run/no-network/no-write and requiring --execute-live plus a ready preflight before one selected filing can be acquired. Committed proof uses fake SEC transport and isolated pytest storage to verify one acquire/status path, redacted receipt/source hashes, response hashes, and fail-closed raw authority scanning without changing defaults, support-matrix status, redaction posture, or claiming production readiness.",
+  "sec_live_source_artifact_smoke_evidence_verification_tracking": {
+    "tracking_kind": "sec_live_source_artifact_smoke_evidence_verification_tracking",
+    "milestone": "sec_live_source_artifact_smoke_evidence_verification_v1",
+    "status": "branch_local_validate_only_evidence_verifier",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1365-sec-live-smoke-evidence-verifier.md",
+    "authoritative_main_before_pass": "fdb08a7730bad24b39ae373a5b20f8c88b7c6370",
+    "evidence_script": "diagnostics/assessment/sec-live-smoke-evidence.py",
+    "evidence_wrapper": "./project6.ps1 -Action validate-sec-live-smoke-evidence -ActionArgs \"--report\", \"<operator-private-report.json>\"",
+    "evidence_test_file": "backend/tests/test_layer3_sec_live_smoke_evidence.py",
+    "source_smoke_script": "diagnostics/assessment/sec-live-smoke.py",
+    "selected_surface": "post_operator_smoke_retained_source_artifact_status_verification",
+    "validate_only": true,
+    "wrapper_report_write_suppressed": true,
+    "real_sec_network_request_performed_by_committed_validation": false,
+    "source_artifact_or_receipt_created_by_verifier": false,
+    "runtime_behavior_changed_by_tracking": false,
+    "config_default_changed_by_tracking": false,
+    "support_matrix_status_changed_by_tracking": false,
+    "redaction_posture_changed_by_tracking": false,
+    "production_readiness_claimed_by_tracking": false,
+    "verifier_guards": [
+      "operator_private_report_path_required",
+      "repo_or_onedrive_report_paths_blocked",
+      "successful_smoke_runner_schema_and_decision_required",
+      "live_http_transport_and_real_sec_network_execution_required",
+      "redacted_hash_only_report_required",
+      "raw_cik_like_values_blocked",
+      "hash_shape_required",
+      "isolated_storage_required",
+      "storage_exposure_disabled_required",
+      "retained_status_reread_required",
+      "retained_status_must_match_report_hashes_and_content_metadata",
+      "acquisition_path_not_called"
+    ],
+    "blocked_downstream_surfaces": [
+      "arelle_fact_authority",
+      "multi_filing_enforcement",
+      "delivery_export_status",
+      "provider_delivery",
+      "nonlocal_auth_hardening",
+      "value_reveal",
+      "default_on_graduation",
+      "support_matrix_graduation"
+    ],
+    "next_posture": "bind_arelle_fact_authority_to_server_owned_live_source_artifact"
+  },
+  "latest_sec_live_source_artifact_smoke_evidence_verification_summary": "Branch-local validate-only evidence verifier checks an operator-private SEC live smoke report against retained server-owned source-artifact status in the current isolated STORAGE_DIR, requiring successful smoke schema/decision, live_http transport with real SEC network execution, hash-only redacted report shape including raw CIK-like scanning, 64-hex hashes, and matching retained receipt/source/content evidence while performing no SEC network request, creating no source artifact or receipt, changing no defaults/support-matrix/redaction posture, and making no production-readiness claim.",
   "latest_deployment_profile_sqlite_guard_typed_admission_flag_route_dependency_contract_summary": "Branch feat/prod-advance-0609 adds (1) a nonlocal+SQLite startup guard in backend/app/core/config.py that now fails at startup when DATABASE_URL points at SQLite and db_init_mode is not 'none' (live_behavior_change: true in this narrow misconfiguration path; default local unaffected), (2) a typed Settings field sec_xbrl_production_admission_evaluator_enabled (alias SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED, default False) read by production_admission_flag_enabled() as validate-only with no admission gate wired to live routes and no runtime default change, and (3) doc 1358-route-level-operator-identity-route-dependency-contract.md which was authored as planning-only (runtime_status not_implemented) on feat/prod-advance-0609 and has since been implemented on feat/prod-advance-0610: doc 1359 supersedes the not_implemented claim; runtime_status is now implemented; the route-dependency contract is wired across 19 handoff + 16 package + 83 source_ingestion POST handlers (118 total); identity seam is inert under AUTH_OWNER=none, fail-closed 409/401 under proxy; no new flags/models/migrations; production_readiness_claim false. Docs 199/200/266 entry_decision, selected_mode, and runtime_status fields are unchanged."
 }
