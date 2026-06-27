@@ -224,7 +224,7 @@ Source-backed policy context: `docs/layer3-route-authorization.md:56-61` defines
 
 ## Regression Hardening
 
-New additive tests live in `backend/tests/test_auth_seam_nonsec_audit.py` and are intentionally limited to non-SEC route files plus NRC APS runtime probes:
+New additive tests live in `backend/tests/test_layer3_auth_seam_nonsec_audit.py` and are intentionally limited to non-SEC route files plus NRC APS runtime probes:
 
 - Static inventory guard: asserts the in-scope route count, per-file route/gated/public counts, public metadata exemptions, read/write access-class totals, and all 23 NRC APS routes as read-only GET seams.
 - Public metadata runtime guard: asserts `/api/v1/layer3/bootstrap`, `/api/v1/layer3/readiness`, and `/api/v1/layer3/authority-matrix` remain non-auth-blocked even under proxy `role_enforcing` mode.
@@ -244,6 +244,6 @@ No SEC-XBRL route/service/schema/migration files were modified. No SEC live diag
 
 ## Verification
 
-- `python -m pytest backend/tests/test_auth_seam_nonsec_audit.py -q` -> 7 passed, 3 warnings.
+- `python -m pytest backend/tests/test_layer3_auth_seam_nonsec_audit.py -q` -> 7 passed, 3 warnings.
 - `python -m pytest backend/tests/test_layer3_route_authorization_policy.py backend/tests/test_layer3_operator_identity_e2e.py backend/tests/test_layer3_operator_identity_drift_guard.py backend/tests/test_layer3_access_declaration_drift_guard.py backend/tests/test_layer3_post_route_operator_authorization_coverage.py -q` -> 74 passed, 3 warnings.
 - `git diff --check` -> passed.
