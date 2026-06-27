@@ -48,7 +48,6 @@ const TAB_SCOPE = {
     normalized_text: 'document',
     indexed_chunks: 'document',
     extracted_units: 'page',
-    downstream_usage: 'document',
 };
 
 const LARGE_DOC_RENDER_POLICY = Object.freeze({
@@ -76,46 +75,45 @@ const THEME_STORAGE_KEY = 'nrc_aps_review_theme';
 const systemThemeQuery = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 
 // --- API Helpers ---
+async function fetchJson(url, fallbackMessage = null) {
+    const res = await fetch(url);
+    if (!res.ok) {
+        const fallback = typeof fallbackMessage === 'function' ? fallbackMessage(res) : fallbackMessage;
+        throw await window.NrcApsAuthError.errorFromResponse(res, fallback || `HTTP ${res.status}`);
+    }
+    return await res.json();
+}
+
+function formatRequestError(error, fallbackMessage) {
+    return window.NrcApsAuthError.formatText(error, { fallbackMessage });
+}
+
 const API = {
     async fetchRuns() {
-        const res = await fetch('/api/v1/review/nrc-aps/runs');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
+        return await fetchJson('/api/v1/review/nrc-aps/runs');
     },
     async fetchDocuments(runId) {
-        const res = await fetch(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
+        return await fetchJson(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents`);
     },
     async fetchTrace(runId, targetId) {
-        const res = await fetch(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/trace`);
-        if (!res.ok) {
-            if (res.status === 404) throw new Error(`Document target not found in run.`);
-            throw new Error(`HTTP ${res.status}`);
-        }
-        return await res.json();
+        return await fetchJson(
+            `/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/trace`,
+            (res) => res.status === 404 ? 'Document target not found in run.' : `HTTP ${res.status}`,
+        );
     },
     async fetchDiagnostics(runId, targetId) {
-        const res = await fetch(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/diagnostics`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
+        return await fetchJson(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/diagnostics`);
     },
     async fetchNormalizedText(runId, targetId) {
-        const res = await fetch(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/normalized-text`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
+        return await fetchJson(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/normalized-text`);
     },
     async fetchIndexedChunks(runId, targetId) {
-        const res = await fetch(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/indexed-chunks`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
+        return await fetchJson(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/indexed-chunks`);
     },
     async fetchExtractedUnits(runId, targetId, pageNumber = null) {
         const url = new URL(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/extracted-units`, window.location.origin);
         if (pageNumber !== null) url.searchParams.set('page_number', String(pageNumber));
-        const res = await fetch(url.pathname + url.search);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
+        return await fetchJson(url.pathname + url.search);
     }
 };
 
@@ -231,6 +229,7 @@ function formatArtifactDimensions(artifact) {
 }
 
 function renderVisualArtifactCard(artifact) {
+    // DF8: visual-artifact retrieval remains API-owned; this UI renders only manifest-provided endpoints and retained metadata.
     const detailParts = [];
     if (artifact.page_number !== null && artifact.page_number !== undefined) detailParts.push(`p. ${artifact.page_number}`);
     if (artifact.status) detailParts.push(`status ${artifact.status}`);
@@ -1581,7 +1580,7 @@ async function loadActiveTab() {
         }
     } catch (err) {
         if (seq !== _actionSeq) return;
-        elements.tabContentArea.innerHTML = `<div class="placeholder" style="color:var(--danger-color)">Failed to load ${escapeHtml(tabId)} for ${escapeHtml(State.selectedTargetId)} in run ${escapeHtml(State.selectedRunId)}: ${escapeHtml(err.message)}</div>`;
+        elements.tabContentArea.innerHTML = `<div class="placeholder" style="color:var(--danger-color)">Failed to load ${escapeHtml(tabId)} for ${escapeHtml(State.selectedTargetId)} in run ${escapeHtml(State.selectedRunId)}: ${escapeHtml(formatRequestError(err, err.message))}</div>`;
     }
 }
 
@@ -1632,7 +1631,7 @@ async function loadTargetDoc(targetId, seq) {
         window.switchTab(State.activeTab, false);
     } catch (err) {
         if (seq !== _actionSeq) return;
-        renderShellError(`Failed to load trace for ${targetId} in run ${State.selectedRunId}: ${err.message}`, 'Error Loading Trace');
+        renderShellError(formatRequestError(err, `Failed to load trace for ${targetId} in run ${State.selectedRunId}.`), 'Error Loading Trace');
     }
 }
 
@@ -1686,7 +1685,7 @@ async function loadRun(runId, targetIdOverride, seq) {
     } catch (err) {
         if (seq !== _actionSeq) return;
         elements.docSelector.innerHTML = '<option value="">Error</option>';
-        renderShellError(`Failed to fetch documents for run ${runId}.`, 'Error Loading Documents');
+        renderShellError(formatRequestError(err, `Failed to fetch documents for run ${runId}.`), 'Error Loading Documents');
     }
 }
 
@@ -1755,7 +1754,7 @@ async function init() {
         }
     } catch (err) {
         if (seq !== _actionSeq) return;
-        renderShellError('Failed to load the run catalog.', 'Error');
+        renderShellError(formatRequestError(err, 'Failed to load the run catalog.'), 'Error');
     }
 }
 

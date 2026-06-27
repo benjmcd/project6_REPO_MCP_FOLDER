@@ -33,36 +33,36 @@ const systemThemeQuery = typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-color-scheme: dark)')
     : null;
 
+async function fetchJson(url) {
+    const res = await fetch(url);
+    if (!res.ok) {
+        throw await window.NrcApsAuthError.errorFromResponse(res, `HTTP error! status: ${res.status}`);
+    }
+    return await res.json();
+}
+
+function formatRequestError(error, fallbackMessage) {
+    return window.NrcApsAuthError.formatText(error, { fallbackMessage });
+}
+
 const API = {
     async fetchRuns() {
-        const res = await fetch('/api/v1/review/nrc-aps/runs');
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        return await res.json();
+        return await fetchJson('/api/v1/review/nrc-aps/runs');
     },
     async fetchOverview(runId) {
-        const res = await fetch(`/api/v1/review/nrc-aps/runs/${runId}/overview`);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        return await res.json();
+        return await fetchJson(`/api/v1/review/nrc-aps/runs/${runId}/overview`);
     },
     async fetchPipelineDefinition(runId) {
-        const res = await fetch(`/api/v1/review/nrc-aps/pipeline-definition?run_id=${encodeURIComponent(runId)}`);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        return await res.json();
+        return await fetchJson(`/api/v1/review/nrc-aps/pipeline-definition?run_id=${encodeURIComponent(runId)}`);
     },
     async fetchNodeDetails(runId, nodeId) {
-        const res = await fetch(`/api/v1/review/nrc-aps/runs/${runId}/nodes/${nodeId}`);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        return await res.json();
+        return await fetchJson(`/api/v1/review/nrc-aps/runs/${runId}/nodes/${nodeId}`);
     },
     async fetchFileDetails(runId, treeId) {
-        const res = await fetch(`/api/v1/review/nrc-aps/runs/${runId}/files/${encodeURIComponent(treeId)}`);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        return await res.json();
+        return await fetchJson(`/api/v1/review/nrc-aps/runs/${runId}/files/${encodeURIComponent(treeId)}`);
     },
     async fetchFilePreview(runId, treeId) {
-        const res = await fetch(`/api/v1/review/nrc-aps/runs/${runId}/files/${encodeURIComponent(treeId)}/preview`);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        return await res.json();
+        return await fetchJson(`/api/v1/review/nrc-aps/runs/${runId}/files/${encodeURIComponent(treeId)}/preview`);
     },
 };
 
@@ -567,7 +567,7 @@ async function loadDetails(type, id) {
         }
     } catch (error) {
         if (seq !== _detailsSeq) return;
-        elements.detailsContent.innerHTML = `<p class="warning">Error loading details: ${escapeHtml(error.message)}</p>`;
+        elements.detailsContent.innerHTML = `<p class="warning">Error loading details: ${escapeHtml(formatRequestError(error, error.message))}</p>`;
     }
 }
 
@@ -641,7 +641,7 @@ async function loadRun(runId) {
         if (seq !== _runSeq) return;
         elements.disabledOverlay.classList.remove('hidden');
         if (elements.disabledTitle) elements.disabledTitle.textContent = 'Error Loading Run';
-        elements.disabledReason.textContent = `Failed to load overview for run ${runId}.`;
+        elements.disabledReason.textContent = formatRequestError(error, `Failed to load overview for run ${runId}.`);
     }
 }
 
@@ -706,7 +706,7 @@ async function init() {
     } catch (error) {
         elements.disabledOverlay.classList.remove('hidden');
         if (elements.disabledTitle) elements.disabledTitle.textContent = 'Error';
-        elements.disabledReason.textContent = 'Failed to load the run catalog.';
+        elements.disabledReason.textContent = formatRequestError(error, 'Failed to load the run catalog.');
     }
 }
 

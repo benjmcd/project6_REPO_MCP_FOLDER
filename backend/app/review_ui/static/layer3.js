@@ -630,6 +630,8 @@ const CANDIDATE_B_BROADER_SCOPE_DEFAULT_PROMOTION_SELECTED_STATE = 'candidate_b_
 const CANDIDATE_B_BROADER_SCOPE_DEFAULT_PROMOTION_BLOCKED_STATE = 'candidate_b_broader_eligible_corpus_default_scope_default_promotion_blocked';
 const MOCKUP_ACTIVATION_READINESS_RENDERED_MODE = 'rendered_mockup_activation_readiness_dashboard';
 const MOCKUP_ACTIVATION_READINESS_RESPONSE_AUTHORITY = 'State.bootstrap.mockup_activation_readiness';
+const APPROVED_PLAN_CANCEL_REQUEST_SCHEMA_ID = 'layer3.approved_plan_cancel_request.v1';
+const APPROVED_PLAN_CANCEL_OPERATOR_DECISION = 'cancel_approved_plan_without_replacement';
 
 const State = {
     operatorIdentity: null,
@@ -655,6 +657,9 @@ const State = {
     planPreview: null,
     planApproval: null,
     planApprovalError: null,
+    planApprovalCancel: null,
+    planApprovalCancelError: null,
+    planApprovalCancelPending: false,
     planRevision: null,
     planRevisionError: null,
     planRevisionPending: false,
@@ -2605,7 +2610,6 @@ const OPERATOR_AUTH_ERROR_CODES = new Set([
     'sec_xbrl_in_app_auth_policy_untrusted_proxy_identity',
     'sec_xbrl_in_app_auth_policy_missing_workspace_authority',
     'sec_xbrl_in_app_auth_policy_missing_role_authority',
-    'sec_xbrl_in_app_auth_policy_insufficient_role',
 ]);
 
 async function fetchOperatorIdentity() {
@@ -8234,6 +8238,75 @@ function canRecoverPlanRevision() {
     );
 }
 
+function approvedPlanCancelAuthority() {
+    const approved = State.planApproval?.approved_plan || {};
+    const sessionSelection = State.sessionSummary?.execution_selection || {};
+    return {
+        sessionId: State.planApproval?.session_id || currentSessionId(),
+        analysisPlanId: State.planApproval?.analysis_plan_id || sessionSelection.analysis_plan_id || null,
+        sourcePreviewId: approved.source_preview_id
+            || State.planApproval?.source_preview_id
+            || State.planPreview?.preview_id
+            || sessionSelection.source_preview_id
+            || null,
+        sourcePreviewHash: approved.source_preview_hash
+            || State.planApproval?.source_preview_hash
+            || State.planPreview?.preview_hash
+            || sessionSelection.source_preview_hash
+            || null,
+    };
+}
+
+function canCancelApprovedPlan() {
+    const authority = approvedPlanCancelAuthority();
+    return Boolean(
+        State.planApproval
+        && authority.sessionId
+        && authority.analysisPlanId
+        && authority.sourcePreviewId
+        && authority.sourcePreviewHash
+        && State.planApproval.execution_started !== true
+        && !State.planApprovalCancel
+        && !State.planApprovalCancelPending
+    );
+}
+
+function approvedPlanCancelPayload() {
+    const authority = approvedPlanCancelAuthority();
+    return {
+        schema_id: APPROVED_PLAN_CANCEL_REQUEST_SCHEMA_ID,
+        schema_version: 1,
+        client_request_id: requestId(),
+        session_id: authority.sessionId,
+        analysis_plan_id: authority.analysisPlanId,
+        source_preview_id: authority.sourcePreviewId,
+        source_preview_hash: authority.sourcePreviewHash,
+        operator_decision: APPROVED_PLAN_CANCEL_OPERATOR_DECISION,
+    };
+}
+
+async function cancelApprovedPlan() {
+    if (!canCancelApprovedPlan()) return;
+    State.planApprovalCancelPending = true;
+    State.planApprovalCancelError = null;
+    renderPlanPanel();
+    setGateControls();
+    try {
+        State.planApprovalCancel = await postJson('/plan/approved/cancel', approvedPlanCancelPayload());
+        State.planApproval = null;
+        clearResultReviewState();
+        persistSessionRecoveryAnchor('plan_approval_cancel');
+        addEvent('Approved plan cancelled without replacement. Preview refresh is required before execution.');
+    } catch (error) {
+        State.planApprovalCancelError = error.payload || null;
+        addEvent(`Approved plan cancel blocked: ${error.message}`);
+    } finally {
+        State.planApprovalCancelPending = false;
+        renderAll();
+        setGateControls();
+    }
+}
+
 async function recoverPlanRevision() {
     if (!canRecoverPlanRevision()) return;
     State.planRevisionRecoverPending = true;
@@ -8350,6 +8423,7 @@ function renderPlanPanel() {
                 </li>
             `).join('')
             : '<li>No planned passes.</li>';
+        const canCancelApproved = canCancelApprovedPlan();
         elements.planPanel.innerHTML = `
             <div class="plan-summary-grid">
                 <div class="plan-summary-card"><strong>Approval</strong>approved</div>
@@ -8366,7 +8440,14 @@ function renderPlanPanel() {
                     <li>Owner mode: ${escapeHtml(approved.owner_service_basis?.mode)}</li>
                 </ul></section>
                 <section class="plan-list"><h3>Warnings</h3><ul class="warning-list">${warningRows}</ul></section>
+                <section class="plan-list"><h3>Cancel Control</h3><ul>
+                    <li>Decision: <code>${escapeHtml(APPROVED_PLAN_CANCEL_OPERATOR_DECISION)}</code></li>
+                    <li>Execution: ${escapeHtml(State.planApproval.execution_started ? 'started' : 'not started')}</li>
+                </ul>
+                    <button id="plan-approved-cancel" type="button" ${canCancelApproved ? '' : 'disabled'}>Cancel approved plan (no replacement)</button>
+                </section>
             </div>
+            ${renderErrorCard(State.planApprovalCancelError)}
         `;
         return;
     }
@@ -13032,6 +13113,15 @@ function canInspectSecXbrlRuntimePosture() {
     return !State.secXbrlRuntimePosturePending;
 }
 
+function secXbrlControlledValueRevealPostureEnabled() {
+    return State.secXbrlRuntimePosture?.runtime_flags?.controlled_value_reveal_submit_enabled === true;
+}
+
+function secXbrlControlledValueRevealPostureNotice() {
+    if (secXbrlControlledValueRevealPostureEnabled()) return '';
+    return '<div class="error-panel"><strong>Runtime Posture</strong><p>controlled_value_reveal_submit_enabled is not enabled.</p></div>';
+}
+
 function canInspectSecXbrlOperatorReviewWorkflowStatus() {
     const values = secXbrlOperatorReviewWorkflowStatusInputValues();
     return Boolean(
@@ -13048,6 +13138,7 @@ function canSubmitSecXbrlOperatorReviewDecision() {
         && values.decisionReasonCode
         && secXbrlOperatorReviewDecisionReasonAllowed(values.reviewDecision, values.decisionReasonCode)
         && (values.reviewDecision === 'approved' || values.decisionNotes)
+        && secXbrlControlledValueRevealPostureEnabled()
         && !State.secXbrlOperatorReviewDecisionSubmitPending
     );
 }
@@ -13087,6 +13178,7 @@ function canPrepareSecXbrlValueRevealAuthority() {
     return Boolean(
         values.decisionId
         && SEC_XBRL_LOWERCASE_SHA256_RE.test(values.decisionBasisHash)
+        && secXbrlControlledValueRevealPostureEnabled()
         && !State.secXbrlValueRevealAuthorityPreparePending
     );
 }
@@ -13098,6 +13190,7 @@ function canSubmitSecXbrlControlledValueReveal() {
         && SEC_XBRL_LOWERCASE_SHA256_RE.test(values.authorityBasisHash)
         && values.operatorRevealConfirmation
         && (!values.maxRecords || /^[1-9]\d{0,2}$|^1000$/.test(values.maxRecords))
+        && secXbrlControlledValueRevealPostureEnabled()
         && !State.secXbrlControlledValueRevealSubmitPending
     );
 }
@@ -20407,6 +20500,7 @@ function renderSecXbrlOperatorReviewDecisionSubmitPanel() {
     const statusState = secXbrlOperatorReviewDecisionStatusPanelState();
     const submitInputs = secXbrlOperatorReviewDecisionSubmitInputValues();
     const statusInputs = secXbrlOperatorReviewDecisionStatusInputValues();
+    const postureNotice = secXbrlControlledValueRevealPostureNotice();
     elements.secXbrlOperatorReviewDecisionSubmitPanel.dataset.frontendDurableAuthority = 'false';
     elements.secXbrlOperatorReviewDecisionSubmitPanel.dataset.operatorDecisionSubmit = 'true';
     elements.secXbrlOperatorReviewDecisionSubmitPanel.dataset.valueRevealEnabled = 'false';
@@ -20425,6 +20519,7 @@ function renderSecXbrlOperatorReviewDecisionSubmitPanel() {
         <div class="candidate-b-default-promotion-status-grid">
             <section class="result-review-card sec-xbrl-operator-review-decision-submit-card">
                 <strong>Submit Redacted Operator Decision</strong>
+                ${postureNotice}
                 <form id="sec-xbrl-operator-review-decision-submit-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_XBRL_OPERATOR_REVIEW_DECISION_SUBMIT_RENDERED_MODE)}" data-frontend-durable-authority="false" data-operator-decision-submit="true" data-value-reveal-enabled="false" data-delivery-export-enabled="false" data-source-acquisition-enabled="false" data-arelle-invocation-enabled="false" data-runtime-default-enabled="false">
                     <label>
                         <span>operator-review workflow id</span>
@@ -20569,6 +20664,7 @@ function renderSecXbrlControlledValueRevealPanel() {
     const authorityInputs = secXbrlValueRevealAuthorityPrepareInputValues();
     const submitInputs = secXbrlControlledValueRevealSubmitInputValues();
     const statusInputs = secXbrlControlledValueRevealStatusInputValues();
+    const postureNotice = secXbrlControlledValueRevealPostureNotice();
     elements.secXbrlControlledValueRevealPanel.dataset.frontendDurableAuthority = 'false';
     elements.secXbrlControlledValueRevealPanel.dataset.valueRevealEnabled = 'true';
     elements.secXbrlControlledValueRevealPanel.dataset.controlledValueRevealOnly = 'true';
@@ -20588,6 +20684,7 @@ function renderSecXbrlControlledValueRevealPanel() {
         <div class="candidate-b-default-promotion-status-grid">
             <section class="result-review-card sec-xbrl-value-reveal-authority-card">
                 <strong>Prepare Value-Reveal Authority</strong>
+                ${postureNotice}
                 <form id="sec-xbrl-value-reveal-authority-prepare-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_XBRL_CONTROLLED_VALUE_REVEAL_RENDERED_MODE)}" data-frontend-durable-authority="false" data-authority-prepare="true" data-delivery-export-enabled="false" data-source-acquisition-enabled="false" data-arelle-invocation-enabled="false" data-runtime-default-enabled="false">
                     <label>
                         <span>operator-review decision id</span>
@@ -31424,6 +31521,11 @@ elements.planPreview.addEventListener('click', previewPlan);
 elements.planReject.addEventListener('click', () => revisePlan('reject_current_preview'));
 elements.planRequestRevision.addEventListener('click', () => revisePlan('request_revision'));
 elements.planRevisionRecover.addEventListener('click', recoverPlanRevision);
+elements.planPanel.addEventListener('click', (event) => {
+    if (event.target?.id === 'plan-approved-cancel') {
+        cancelApprovedPlan();
+    }
+});
 elements.planApprove.addEventListener('click', approvePlan);
 elements.executionSelect.addEventListener('click', selectExecution);
 elements.executionStart.addEventListener('click', startExecution);

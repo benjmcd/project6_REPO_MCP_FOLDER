@@ -1,5 +1,6 @@
 (function () {
     const API = "/api/v1";
+    // DF8: /market-pipeline/* routes stay API aliases; this page uses analyst-insight aliases for the operator UI.
 
     const defaults = {
         integration: {
@@ -58,6 +59,12 @@
     }
 
     function formatErrorBody(data) {
+        const looksLikeAuthEnvelope = data && typeof data === "object" && (
+            data.error_code || data.message || data.next_allowed_actions || data.error
+        );
+        if (window.NrcApsAuthError && looksLikeAuthEnvelope) {
+            return window.NrcApsAuthError.formatText(data, { includeStatus: false });
+        }
         if (data && typeof data === "object" && data.detail !== undefined) {
             return typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail, null, 2);
         }
@@ -65,6 +72,40 @@
             return JSON.stringify(data, null, 2);
         }
         return String(data);
+    }
+
+    function numberOrFallback(value, fallback) {
+        const number = Number(value);
+        return Number.isFinite(number) ? number : fallback;
+    }
+
+    function buildValidationSummary(validated) {
+        const missingIssues = Array.isArray(validated.missing_field_issues) ? validated.missing_field_issues.length : 0;
+        const rowCount = numberOrFallback(validated.row_count, 0);
+        const invalidCount = numberOrFallback(validated.invalid_count, missingIssues);
+        const failedCount = numberOrFallback(validated.failed_count, 0);
+        const validCount = numberOrFallback(validated.valid_count, Math.max(rowCount - invalidCount - failedCount, 0));
+        const passRate = numberOrFallback(validated.pass_rate, rowCount > 0 ? validCount / rowCount : 0);
+        return {
+            valid_count: validCount,
+            invalid_count: invalidCount,
+            failed_count: failedCount,
+            pass_rate: passRate,
+        };
+    }
+
+    function buildSignalTrajectory(sourceCounts) {
+        const canonicalOrder = ["shipping", "bonds", "regulatory"];
+        const remaining = Object.keys(sourceCounts || {})
+            .filter(function (key) { return !canonicalOrder.includes(key); })
+            .sort();
+        let cumulative = 0;
+        return canonicalOrder.concat(remaining)
+            .filter(function (key) { return sourceCounts[key] !== undefined; })
+            .map(function (key) {
+                cumulative += numberOrFallback(sourceCounts[key], 0);
+                return cumulative;
+            });
     }
 
     async function postJson(path, body) {
@@ -181,20 +222,16 @@
                 },
             });
 
+            const sourceCounts = integrated.source_record_counts || {};
             const insightPayload = {
-                validation_summary: {
-                    valid_count: validated.row_count || 0,
-                    invalid_count: (validated.missing_field_issues || []).length,
-                    failed_count: 0,
-                    pass_rate: 0.95,
-                },
+                validation_summary: buildValidationSummary(validated),
                 integrated: {
                     signals_by_category: {
-                        shipping: (integrated.source_record_counts || {}).shipping || 0,
-                        bonds: (integrated.source_record_counts || {}).bonds || 0,
-                        regulatory: (integrated.source_record_counts || {}).regulatory || 0,
+                        shipping: sourceCounts.shipping || 0,
+                        bonds: sourceCounts.bonds || 0,
+                        regulatory: sourceCounts.regulatory || 0,
                     },
-                    signal_trajectory: [1.0, 1.1, 1.2, 1.5],
+                    signal_trajectory: buildSignalTrajectory(sourceCounts),
                 },
             };
 

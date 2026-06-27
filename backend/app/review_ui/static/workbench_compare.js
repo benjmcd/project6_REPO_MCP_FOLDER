@@ -93,18 +93,13 @@ async function fetchJson(path, params = null) {
     const url = params ? `${path}?${params.toString()}` : path;
     const response = await fetch(url, { headers: { Accept: 'application/json' } });
     if (!response.ok) {
-        let detail = `Request failed (${response.status})`;
-        try {
-            const payload = await response.json();
-            if (payload && payload.detail) {
-                detail = String(payload.detail);
-            }
-        } catch (error) {
-            // ignore
-        }
-        throw new Error(detail);
+        throw await window.NrcApsAuthError.errorFromResponse(response, `Request failed (${response.status})`);
     }
     return response.json();
+}
+
+function formatRequestError(error, fallbackMessage) {
+    return window.NrcApsAuthError.formatText(error, { fallbackMessage });
 }
 
 function setOverlay(title, message) {
@@ -309,6 +304,7 @@ function renderNoticeList(listEl, items, emptyMessage) {
 }
 
 function renderTraceLinks(manifest) {
+    // DF8: /runs/{id}/tree remains API-only; compare links use explicit trace routes from the manifest.
     const links = [];
     if (manifest.deep_links?.baseline_trace) {
         links.push(`<a href="${escapeHtml(manifest.deep_links.baseline_trace)}">Baseline Trace</a>`);
@@ -432,7 +428,7 @@ function renderListPanel(title, items, emptyMessage) {
 function renderColumn(column) {
     const warnings = column.warnings || [];
     const limitations = column.limitations || [];
-    const deepLink = column.deep_link ? `<a class="compare-column-link" href="${column.deep_link}">Open trace</a>` : '';
+    const deepLink = column.deep_link ? `<a class="compare-column-link" href="${escapeHtml(column.deep_link)}">Open trace</a>` : '';
     let dataHtml = renderObjectPanel('Data', column.data || {});
     if (state.tabId === 'normalized_text') {
         dataHtml = renderTextPanel(column.data || {});
@@ -570,7 +566,7 @@ async function refreshWorkspace() {
         syncQueryState();
         clearOverlay();
     } catch (error) {
-        setOverlay('Error Loading Compare', error instanceof Error ? error.message : 'Unknown compare workspace error.');
+        setOverlay('Error Loading Compare', formatRequestError(error, 'Unknown compare workspace error.'));
     }
 }
 
