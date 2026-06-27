@@ -248,3 +248,169 @@ def test_sec_h6_cli_defaults_to_dry_run_no_archive_creation(tmp_path, capsys) ->
     assert output["mode"] == "dry_run"
     assert output["mutation_performed"] is False
     assert all(path.exists() for path in paths.values())
+
+
+def test_sec_h6_execute_refuses_empty_inventory_without_moving(tmp_path) -> None:
+    tool = _load_tool()
+    run_id = "h6-empty"
+    report = tool.build_inventory(run_id=run_id, storage_root=tmp_path / "storage")
+
+    refused = tool.quarantine_files(
+        report,
+        run_id=run_id,
+        storage_root=tmp_path / "storage",
+        repo_root=tmp_path / "repo",
+        confirm_run_id=run_id,
+        confirm_quarantine=True,
+        ack_outside_repo_onedrive=True,
+    )
+
+    assert refused["status"] == "refused"
+    assert refused["mutation_performed"] is False
+    assert refused["moved_files"] == []
+    assert {item["code"] for item in refused["refusals"]} == {"empty_inventory_no_quarantine"}
+
+
+def test_sec_h6_execute_refuses_run_id_mismatch_without_moving(tmp_path) -> None:
+    tool = _load_tool()
+    run_id = "h6-mismatch"
+    paths = _seed_sidecar_run(tmp_path / "storage", run_id)
+    report = tool.build_inventory(run_id=run_id, storage_root=tmp_path / "storage")
+
+    refused = tool.quarantine_files(
+        report,
+        run_id=run_id,
+        storage_root=tmp_path / "storage",
+        repo_root=tmp_path / "repo",
+        confirm_run_id="wrong-run-id",
+        confirm_quarantine=True,
+        ack_outside_repo_onedrive=True,
+    )
+
+    assert refused["status"] == "refused"
+    assert refused["mutation_performed"] is False
+    assert {item["code"] for item in refused["refusals"]} == {"confirm_run_id_mismatch"}
+    assert all(path.exists() for path in paths.values())
+
+
+def test_sec_h6_execute_refuses_missing_quarantine_confirmation(tmp_path) -> None:
+    tool = _load_tool()
+    run_id = "h6-no-confirm"
+    paths = _seed_sidecar_run(tmp_path / "storage", run_id)
+    report = tool.build_inventory(run_id=run_id, storage_root=tmp_path / "storage")
+
+    refused = tool.quarantine_files(
+        report,
+        run_id=run_id,
+        storage_root=tmp_path / "storage",
+        repo_root=tmp_path / "repo",
+        confirm_run_id=run_id,
+        confirm_quarantine=False,
+        ack_outside_repo_onedrive=True,
+    )
+
+    assert refused["status"] == "refused"
+    assert refused["mutation_performed"] is False
+    assert {item["code"] for item in refused["refusals"]} == {"confirm_quarantine_missing"}
+    assert all(path.exists() for path in paths.values())
+
+
+def test_sec_h6_execute_refuses_candidate_outside_storage_root(tmp_path) -> None:
+    tool = _load_tool()
+    run_id = "h6-outside-storage"
+    outside_file = tmp_path / "outside" / "candidate.json"
+    _write_json(outside_file, {"run_id": run_id})
+    report = {
+        "schema_id": tool.SCHEMA_ID,
+        "mode": "dry_run",
+        "files": [
+            {
+                "kind": "sidecar_receipts",
+                "path": str(outside_file),
+                "storage_relative_path": "candidate.json",
+                "sha256": tool.file_sha256(outside_file),
+                "byte_count": outside_file.stat().st_size,
+                "matched_by": ["run_id"],
+            }
+        ],
+        "db_rows": [],
+    }
+
+    refused = tool.quarantine_files(
+        report,
+        run_id=run_id,
+        storage_root=tmp_path / "storage",
+        repo_root=tmp_path / "repo",
+        confirm_run_id=run_id,
+        confirm_quarantine=True,
+        ack_outside_repo_onedrive=True,
+    )
+
+    assert refused["status"] == "refused"
+    assert refused["mutation_performed"] is False
+    assert {item["code"] for item in refused["refusals"]} == {"candidate_outside_storage_root"}
+    assert outside_file.exists()
+
+
+def test_sec_h6_execute_refuses_archive_target_collision_without_moving(tmp_path) -> None:
+    tool = _load_tool()
+    run_id = "h6-target-collision"
+    paths = _seed_sidecar_run(tmp_path / "storage", run_id)
+    repo_root = tmp_path / "repo"
+    archive_dir = repo_root / "backend" / "app" / "storage_archive"
+    archive_dir.mkdir(parents=True)
+    report = tool.build_inventory(run_id=run_id, storage_root=tmp_path / "storage")
+    first_file = sorted(report["files"], key=lambda item: item["storage_relative_path"])[0]
+    relative = first_file["storage_relative_path"]
+    source_suffix = Path(first_file["path"]).suffix or ".bin"
+    target_name = (
+        f"sec-h6-{tool.sha256_text(run_id)[:12]}-"
+        f"{tool.sha256_text(relative)[:16]}{source_suffix.lower()}"
+    )
+    (archive_dir / target_name).write_text("existing-target\n", encoding="utf-8")
+
+    refused = tool.quarantine_files(
+        report,
+        run_id=run_id,
+        storage_root=tmp_path / "storage",
+        repo_root=repo_root,
+        confirm_run_id=run_id,
+        confirm_quarantine=True,
+        ack_outside_repo_onedrive=True,
+    )
+
+    assert refused["status"] == "refused"
+    assert refused["mutation_performed"] is False
+    assert {item["code"] for item in refused["refusals"]} == {"archive_target_exists"}
+    assert all(path.exists() for path in paths.values())
+
+
+def test_sec_h6_quarantine_is_move_only_not_secure_erasure(tmp_path) -> None:
+    tool = _load_tool()
+    run_id = "h6-move-only"
+    _seed_sidecar_run(tmp_path / "storage", run_id)
+    repo_root = tmp_path / "repo"
+    report = tool.build_inventory(run_id=run_id, storage_root=tmp_path / "storage")
+
+    quarantined = tool.quarantine_files(
+        report,
+        run_id=run_id,
+        storage_root=tmp_path / "storage",
+        repo_root=repo_root,
+        confirm_run_id=run_id,
+        confirm_quarantine=True,
+        ack_outside_repo_onedrive=True,
+    )
+
+    manifest = json.loads(Path(quarantined["archive_manifest"]).read_text(encoding="utf-8"))
+    moved_payloads = [
+        Path(item["archive_path"]).read_text(encoding="utf-8")
+        for item in quarantined["moved_files"]
+    ]
+    assert quarantined["status"] == "quarantined"
+    assert quarantined["mutation_performed"] is True
+    assert quarantined["db_mutation_performed"] is False
+    assert "secure_erasure_performed" not in quarantined
+    assert "erased_files" not in quarantined
+    assert "secure_erasure_performed" not in manifest
+    assert any("123.45" in payload for payload in moved_payloads)
