@@ -8,6 +8,7 @@ const THEME_KEY = 'nrc_aps_review_theme';
 const state = {
     manifest: null,
     cachedJson: null,
+    cachedJsonLoaded: false,
     cachedMarkdown: null,
     candidateBBundleId: '',
     fixtureId: '',
@@ -99,16 +100,7 @@ function setTheme(preference) {
 async function fetchJson(url) {
     const response = await fetch(url, { headers: { Accept: 'application/json' } });
     if (!response.ok) {
-        let detail = `Request failed (${response.status})`;
-        try {
-            const payload = await response.json();
-            if (payload && payload.detail) {
-                detail = String(payload.detail);
-            }
-        } catch (error) {
-            // ignore
-        }
-        throw new Error(detail);
+        throw await window.NrcApsAuthError.errorFromResponse(response, `Request failed (${response.status})`);
     }
     return response.json();
 }
@@ -116,18 +108,13 @@ async function fetchJson(url) {
 async function fetchText(url) {
     const response = await fetch(url, { headers: { Accept: 'text/plain' } });
     if (!response.ok) {
-        let detail = `Request failed (${response.status})`;
-        try {
-            const payload = await response.json();
-            if (payload && payload.detail) {
-                detail = String(payload.detail);
-            }
-        } catch (error) {
-            // ignore
-        }
-        throw new Error(detail);
+        throw await window.NrcApsAuthError.errorFromResponse(response, `Request failed (${response.status})`);
     }
     return response.text();
+}
+
+function formatRequestError(error, fallbackMessage) {
+    return window.NrcApsAuthError.formatText(error, { fallbackMessage });
 }
 
 function setOverlay(title, message) {
@@ -299,7 +286,7 @@ async function loadFixtureNavigation() {
         const payload = await fetchJson(buildWorkbenchTargetsUrl());
         renderFixtureNavigation(payload);
     } catch (error) {
-        const detail = error instanceof Error ? error.message : 'Unknown error';
+        const detail = formatRequestError(error, 'Unknown error');
         renderFixtureNavigation(null, `Fixture navigation could not load Workbench targets: ${detail}`);
     }
 }
@@ -433,13 +420,14 @@ async function renderRawJsonTab(manifest) {
         renderArtifactUnavailable('Raw JSON', 'No raw JSON endpoint is available in the validated Candidate B bundle manifest for this fixture.');
         return;
     }
-    if (state.cachedJson === null) {
+    if (!state.cachedJsonLoaded) {
         state.cachedJson = await fetchJson(manifest.artifacts.raw_json);
+        state.cachedJsonLoaded = true;
     }
     els.tabContentArea.innerHTML = `
         <div class="artifact-shell">
             <div class="artifact-actions">
-                <a class="artifact-link" href="${manifest.artifacts.raw_json}" target="_blank" rel="noopener noreferrer">Open raw JSON in new tab</a>
+                <a class="artifact-link" href="${escapeHtml(manifest.artifacts.raw_json)}" target="_blank" rel="noopener noreferrer">Open raw JSON in new tab</a>
             </div>
             <pre class="artifact-pre">${escapeHtml(JSON.stringify(state.cachedJson, null, 2))}</pre>
         </div>
@@ -457,7 +445,7 @@ async function renderRawMarkdownTab(manifest) {
     els.tabContentArea.innerHTML = `
         <div class="artifact-shell">
             <div class="artifact-actions">
-                <a class="artifact-link" href="${manifest.artifacts.raw_markdown}" target="_blank" rel="noopener noreferrer">Open raw Markdown in new tab</a>
+                <a class="artifact-link" href="${escapeHtml(manifest.artifacts.raw_markdown)}" target="_blank" rel="noopener noreferrer">Open raw Markdown in new tab</a>
             </div>
             <pre class="artifact-pre">${escapeHtml(state.cachedMarkdown)}</pre>
         </div>
@@ -505,6 +493,7 @@ async function loadManifest() {
         state.tabId = 'summary';
     }
     state.cachedJson = null;
+    state.cachedJsonLoaded = false;
     state.cachedMarkdown = null;
     syncQueryState();
     syncReturnLink();
@@ -550,7 +539,7 @@ async function init() {
     try {
         await loadManifest();
     } catch (error) {
-        setOverlay('Error Loading Candidate B Trace', error instanceof Error ? error.message : 'Unknown error');
+        setOverlay('Error Loading Candidate B Trace', formatRequestError(error, 'Unknown error'));
     }
 }
 

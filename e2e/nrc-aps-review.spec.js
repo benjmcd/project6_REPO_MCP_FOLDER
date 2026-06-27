@@ -76,6 +76,41 @@ test('NRC APS run selectors label admitted Candidate B runtime distinctly', asyn
   await expect(page.locator('#identity-summary')).toContainText('Candidate B / OpenDataLoader PDF');
 });
 
+test('NRC APS run-light non-composite projection nodes load live node details', async ({ page }) => {
+  const nodeDetailRequests = [];
+  page.on('request', (request) => {
+    if (request.url().includes('/api/v1/review/nrc-aps/runs/') && request.url().includes('/nodes/')) {
+      nodeDetailRequests.push(request.url());
+    }
+  });
+
+  await page.goto('/review/nrc-aps', { waitUntil: 'domcontentloaded' });
+  const runId = await page.locator('#run-selector').inputValue();
+  const overview = await page.evaluate(async (selectedRunId) => {
+    const response = await fetch(`/api/v1/review/nrc-aps/runs/${selectedRunId}/overview`);
+    if (!response.ok) throw new Error(`overview fetch failed: ${response.status}`);
+    return response.json();
+  }, runId);
+
+  const nonComposite = overview.run_projection.nodes.find((node) => !node.is_composite);
+  expect(nonComposite).toBeTruthy();
+
+  await page.locator('#view-run-light').dispatchEvent('click');
+  await expect(page.locator('#view-run-light')).toBeChecked();
+  await expect(page.locator('#mermaid-container svg')).toBeVisible();
+
+  const detailResponsePromise = page.waitForResponse(
+    (response) => response.url().includes(`/api/v1/review/nrc-aps/runs/${runId}/nodes/${nonComposite.projection_id}`),
+  );
+  await page.locator('#mermaid-container .node').filter({ hasText: nonComposite.title }).first().click();
+  const detailResponse = await detailResponsePromise;
+  expect(detailResponse.status()).toBe(200);
+  await expect(page.locator('#details-drawer')).toHaveClass(/open/);
+  await expect(page.locator('#details-content')).toContainText(nonComposite.projection_id);
+  await expect(page.locator('#details-content')).not.toContainText('Error loading details');
+  expect(nodeDetailRequests).toHaveLength(1);
+});
+
 test('NRC APS review identity renders effective Candidate B omitted-engine metadata', async ({ page }) => {
   await page.route('**/api/v1/review/nrc-aps/runs', async (route) => {
     await route.fulfill({

@@ -13111,6 +13111,18 @@ test('Layer 3 workbench inspects SEC XBRL runtime posture through rendered read-
   ]);
 });
 
+async function enableSecXbrlControlledValueRevealPosture(page) {
+  await page.evaluate(() => {
+    State.secXbrlRuntimePosture = {
+      posture_state: 'sec_xbrl_controlled_value_reveal_available_with_runtime_gates',
+      runtime_flags: { controlled_value_reveal_submit_enabled: true },
+    };
+    renderSecXbrlRuntimePosturePanel();
+    renderSecXbrlOperatorReviewDecisionSubmitPanel();
+    renderSecXbrlControlledValueRevealPanel();
+  });
+}
+
 test('Layer 3 workbench inspects SEC XBRL operator-review workflow status through rendered read-only control', async ({ page }) => {
   const apiRequests = trackLayer3ApiRequests(page);
   let workflowStatusPayload = null;
@@ -13215,6 +13227,7 @@ test('Layer 3 workbench inspects SEC XBRL operator-review workflow status throug
   });
 
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await enableSecXbrlControlledValueRevealPosture(page);
   const panel = page.locator('#sec-xbrl-operator-review-workflow-status-panel');
   const form = page.locator('#sec-xbrl-operator-review-workflow-status-form');
   const submit = page.locator('#sec-xbrl-operator-review-workflow-status-submit');
@@ -13446,6 +13459,7 @@ test('Layer 3 workbench submits and inspects SEC XBRL operator-review decision t
   });
 
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await enableSecXbrlControlledValueRevealPosture(page);
   const panel = page.locator('#sec-xbrl-operator-review-decision-submit-panel');
   const submitForm = page.locator('#sec-xbrl-operator-review-decision-submit-form');
   const statusForm = page.locator('#sec-xbrl-operator-review-decision-status-form');
@@ -13600,6 +13614,7 @@ test('Layer 3 workbench renders SEC XBRL decision submit blockers without fronte
   });
 
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await enableSecXbrlControlledValueRevealPosture(page);
   const panel = page.locator('#sec-xbrl-operator-review-decision-submit-panel');
   const submitButton = page.locator('#sec-xbrl-operator-review-decision-submit');
   const statusButton = page.locator('#sec-xbrl-operator-review-decision-status-submit');
@@ -13860,6 +13875,7 @@ test('Layer 3 workbench prepares and submits SEC XBRL controlled value reveal th
   });
 
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await enableSecXbrlControlledValueRevealPosture(page);
   const panel = page.locator('#sec-xbrl-controlled-value-reveal-panel');
   const prepareButton = page.locator('#sec-xbrl-value-reveal-authority-prepare-submit');
   const revealButton = page.locator('#sec-xbrl-controlled-value-reveal-submit');
