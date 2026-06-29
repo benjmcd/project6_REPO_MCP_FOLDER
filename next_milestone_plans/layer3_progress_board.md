@@ -13115,3 +13115,66 @@ Proof tests: `backend/tests/test_layer3_deterministic_methods.py`,
 
 No migration, ORM/schema change, new egress, value-reveal, default-on flip, payload
 URI/path/credential/body exposure, or Tier-2 surface is admitted by this tranche.
+
+## SEC EDGAR Arelle Fact-Authority Proof + A8 Value-Retention Design
+
+Milestone: `sec_xbrl_arelle_fact_authority_proof_and_a8_value_retention_design_v1`.
+
+Branches/PRs: A7 durable proof `a7-arelle-sidecar-proof` PR `2407` (merged). A8 retention design
+`codex/a8-lifecycle-design` PR `2406` (merged). A8 implementation spec in progress.
+
+Status: A7 Arelle fact-authority binding is PROVEN on real data. A8 operator value reveal is
+RETENTION-DESIGNED and remains owner-gated; no implementation, with reveal / internal-value-store /
+controlled-submit flags all default-off.
+
+A7 (Arelle fact authority over real server-owned source artifacts) -- PROVEN:
+
+1. **Operator run (off-CI; the live connector fetch cannot run in CI).** A real allowlisted SEC 10-Q
+   (Steel Dynamics, CIK 1022671) was driven through the existing chain `real-filing connector
+   (one live fetch) -> html-inline-XBRL parser -> regex fact-authority -> real Arelle sidecar ->
+   material bridge`, resolving 523 us-gaap financial facts and materializing a redacted
+   `DatasetVersion` (value_text empty, value_redacted=True; raw values withheld from the audit
+   surface). Earlier, five allowlisted filings were acquired through the live source-artifact smoke
+   (preflight -> execute -> evidence-verifier), all redacted/hash-only. Evidence is operator-local
+   (off-repo, off-OneDrive) and is NOT committed.
+
+2. **Durable CI proof (PR `2407`, merged), Tier-1 additive.** A synthetic self-contained DEI
+   inline-XBRL fixture plus `backend/tests/test_sec_xbrl_a7_real_arelle_resolution.py` run real
+   Arelle offline against the provisioned taxonomy in the `sec-xbrl-arelle-provisioning` CI job and
+   assert DTS-resolved facts. This closes the prior zero-coverage gap for real-Arelle resolution
+   (the existing Arelle tests exercised only pure helper functions with fakes; the sidecar tests
+   mock the runner).
+
+3. The Arelle fact-authority chain already existed on main (cutover default-on); A7 proved it works
+   end-to-end on real data, default-off elsewhere.
+
+A8 (operator value reveal) -- RETENTION-DESIGNED, owner-gated (PR `2406`, merged):
+
+1. **Posture (owner-set).** SEC EDGAR XBRL financial values are public-domain government
+   disclosures and are RETAINED durably, never erased. Redaction targets operator identity and
+   operational secrets, NOT the financial values. The prior secure-erasure framing was a category
+   error and was removed from the design.
+
+2. **Machinery largely already exists, flag-gated off.** The durable internal value store
+   (`backend/app/services/layer3_sec_xbrl_sidecar.py`; `layer3_sec_edgar_arelle_internal_value_store_enabled`,
+   default False) and the reveal service (`backend/app/services/layer3_sec_edgar_arelle_value_reveal.py`;
+   `layer3_sec_edgar_arelle_value_reveal_enabled`, default False; already redacts identity, not
+   values). The audit/store decoupling (material-bridge CSV stays hash-only; values live in the
+   store) is already correct.
+
+3. **Docs.** `next_milestone_plans/Layer3_planning_docs/a8-lifecycle-design.md` (seven-state
+   monotonic retention, no disposal states) and `a8-readiness-gate.md` (seven
+   retention/identity-redaction/verification/Tier-2 items). A `a8-implementation-spec.md` Tier-2
+   packet for owner authorization is in progress.
+
+4. **Open follow-up for the gated Tier-2 packet.** `retention_policy: "tied_to_sidecar_receipt_lifecycle"`
+   (`layer3_sec_xbrl_sidecar.py:826`, `:1140`) is currently a label only -- no value-store deletion
+   path exists -- and must become a durable/permanent policy with a no-deletion guard before reveal
+   is enabled.
+
+Runtime behavior introduced by this pass: `false`. The A7 durable proof is Tier-1 test-only; A8 is
+planning plus default-off, with implementation owner-gated.
+
+No migration, ORM/schema change, value-reveal enablement, internal-value-store / controlled-submit
+flag flip, default-on flip, or Tier-2 runtime surface is admitted. Live SEC egress remains explicit
+default-off; A7 operator-run evidence is off-repo / off-OneDrive and not committed.
