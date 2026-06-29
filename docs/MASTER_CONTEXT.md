@@ -1,0 +1,307 @@
+# Master Context — project6 Layer 3 / SEC-XBRL Campaign
+
+> Living context + decision record + forward plan. Maintained across sessions.
+> Authority: this is a narrative/state document, NOT runtime truth — verify any
+> file:line / SHA against current `project6-origin/main` before acting on it.
+> Last full pass: against `project6-origin/main` = `fd0cb72f` (after PRs #2404–#2408 merged).
+
+---
+
+## 0. How to read this
+
+Three things in one file: (A) **what's done** and why it was the right move, (B) the
+**decisions/posture** that govern everything, and (C) the **forward plan** with the gate
+that controls it. Each item carries its own justification — the "why this and not the
+alternative." Where a claim is operator-run evidence (not in the repo) or planning (not
+implemented), it says so. Honesty about what is *proven* vs *designed* vs *gated* is the
+spine of this document.
+
+---
+
+## 1. Executive summary (current state)
+
+The Layer 3 SEC-XBRL "fact authority → value reveal" frontier was advanced from
+"infrastructure exists, nothing proven on real data" to "**fact authority proven
+end-to-end on real filings; value reveal designed under a corrected retention posture and
+sitting at a single owner gate.**"
+
+- **A7 (Arelle fact authority on real SEC source artifacts): PROVEN.** A real 10-Q was
+  driven through the full chain to 523 resolved us-gaap facts, materialized redacted; and a
+  durable real-Arelle CI proof now guards the resolution capability.
+- **A8 (operator value reveal): RETENTION-DESIGNED, owner-gated.** Reframed from
+  secure-erasure to durable retention after the owner established that public SEC values are
+  retained, never erased. Implementation is a small, bounded, gated Tier-2 step.
+- **Five PRs merged this campaign:** #2404 (UI wave), #2405 (auth-seam audit), #2406 (A8
+  retention design), #2407 (A7 durable proof), #2408 (board reconciliation).
+- **Dual-agent model:** Claude = operator/runtime/verification lane; Codex (Desktop session
+  `019f0686-92b4-7ee1-ac6f-218dadfa897a`) = planning/design lane. Strict file/branch isolation.
+- **The one decision left is the owner's:** review `a8-readiness-gate.md` → authorize (or not)
+  the A8 retention implementation. No agent can pass that gate.
+
+---
+
+## 2. What's been accomplished (and why each was the right move)
+
+### 2.1 The 4-axis commit-pinned audit (foundation)
+A read-only, evidence-pinned audit across four authority axes (current impl / target / mockups /
+prototypes). **Why it mattered:** it produced the verified ground truth the rest of the campaign
+built on, and it was *multiply self-corrected* (e.g., the "run_analysis is stubbed" claim was
+false — the 3C golden path really executes; the "3C overlay absent" claim was false — the
+function exists under a different name). **Why the corrections matter:** they set the discipline
+for the whole campaign — agent claims are verified against source, never trusted.
+
+### 2.2 UI wave DF2–DF9 — PR #2404 (merged)
+Decision-free UI/cleanup across the NRC APS review surfaces + Layer 3 SPA: a shared structured
+auth-error helper (`nrc_aps_auth.js`) reading the response **body** (not hardcoded error-class
+matching), an approved-plan-cancel control, live-derived analyst metrics (replacing static
+values), href-escaping (XSS), a dead-code removal, and a SEC-XBRL client pre-gate.
+- **Why static-UI-only / Tier-1:** the whole wave touches only `review_ui/static/*` + e2e specs —
+  zero backend, config, model, or flag change. That kept it low-risk and independently mergeable.
+- **Why "read the body, not the error code":** an auth-class rename can't silently break the
+  banner — robustness over brittleness.
+- **Verification:** 18-agent adversarial review (every item upheld) + I executed the e2e specs
+  (9 passed). The durable proof, not the self-report, is what cleared it.
+
+### 2.3 SEC live source-artifact smoke — 5 real filings
+A4 preflight → A5 one real `sec.gov` GET per filing → A6 evidence verifier, for 5 allowlisted
+filings (MSFT/STLD/AAPL 8-K, SONY/CCJ 6-K). All `executed` + `evidence_verified`, redacted/hash-only,
+raw artifacts retained in an isolated store.
+- **Why those 5:** all are in the repo's hard CIK allowlist
+  (`layer3_sec_edgar_real_filing_acquisition_connector.py`); 4 are the `DEFAULT_REAL_COMPANY_MATRIX`;
+  the smallest forms (8-K/6-K) were chosen to stay under the 25 MB ceiling; accessions are **real**
+  (from SEC's submissions index), not the synthetic test fixtures (which would 404).
+- **Why this was the necessary first step:** it proved the live acquisition path works on real
+  data with zero raw leak — the precondition for A7.
+- **Pacing:** SEC-compliant rate (the connector's back-to-back GETs forced raising the file-backed
+  rate limiter to the 10 rps SEC max; the limiter fail-closes below the inter-request interval).
+
+### 2.4 A7 — Arelle fact authority over real source artifacts (the centerpiece): PROVEN
+The reconceptualization: **A7 is not a build, it's a proof.** The full chain
+(`live-source-artifact → parser → regex-fact → Arelle sidecar → cutover-aware material bridge`)
+**already existed** on main, with `arelle_fact_authority_cutover_enabled` defaulting **on** —
+verified. Every prior test mocked the Arelle runner. So the gap was: *no owner-authorized run had
+pushed a real retained artifact through the real chain with real Arelle.*
+
+- **A7-0 (capability):** real Arelle 2.41.3, offline, provisioned taxonomy, resolved facts from
+  3 retained 8-K artifacts — MSFT 28/28, STLD 22/22, AAPL 40/40 DTS-resolved; SONY 6-K had no
+  iXBRL (foreign — correctly handled). **Why 8-Ks resolved:** post-2021 cover-page iXBRL (DEI tags).
+- **A7-A (full runtime chain on real financials):** a real **STLD 10-Q** (one live connector
+  fetch) → parser → regex → real Arelle sidecar = `ready`, **523 us-gaap financial facts**,
+  `arelle_version_pinned=True`, internal value store NOT written (flag off).
+- **A7-B (material bridge persistence):** sidecar receipt → material bridge → `DatasetVersion` +
+  523-row CSV + materialization receipt + Gate-B manifest, persisted to a `create_all` sqlite.
+  **Redaction verified:** 0/523 value cells populated, `value_redacted=True` throughout —
+  structure/authority materialized, raw values withheld from the audit surface.
+- **Why this is operator-run, not committed:** the connector stage requires a live SEC fetch,
+  which cannot run in CI; evidence lives off-repo/off-OneDrive (`C:\Users\benny\Downloads\sandbox_nrc_aps\`,
+  see `A7_WORK_LOG.md`) and is intentionally not committed. This honesty (operator-proven, not
+  CI-proven) is stated everywhere it's claimed.
+- **Why it matters:** it converts "the chain should work" into "the chain provably resolves real
+  financial facts from real filings, redacted, default-off elsewhere."
+
+### 2.5 Durable A7 CI proof — PR #2407 (merged)
+A finding drove this: real-Arelle *resolution* had **zero CI coverage** — existing Arelle tests
+exercise only pure helper functions with fakes; sidecar tests mock the runner. So a synthetic,
+self-contained DEI inline-XBRL fixture (no real-filing data) + `test_sec_xbrl_a7_real_arelle_resolution.py`
+run real Arelle offline against the provisioned taxonomy in the `sec-xbrl-arelle-provisioning` CI
+job and assert DTS-resolved facts; it skips in the plain shards.
+- **Why a synthetic fixture, not a real filing:** avoids committing real-filing data + the
+  redaction-posture question; a DEI-only doc resolves against the standard taxonomy alone.
+- **The fix that made it work:** the schemaRef must be `https` (the cache is under
+  `cache/https/xbrl.sec.gov/dei/...`); `http` → 0 resolved.
+- **Why NOT a sidecar-level integration test:** the sidecar reconstructs Arelle input from the full
+  complete-submission SGML with cross-validated hashes + an independent-fact-tally check — a CI test
+  of that would be brittle, high-maintenance, and marginal over the helper-level proof. Skipping it
+  was the lazy-correct call (the full chain is operator-proven anyway).
+
+### 2.6 Auth-seam audit — PR #2405 (merged)
+Codex Tier-1 milestone: a coverage audit + fail-closed regression tests of route-level operator
+identity on the **non-SEC** Layer 3 + NRC APS surface (182 routes; 179 gated; 3 public exemptions).
+**No enforcement change** — it locks the current identity-gating/inert-default posture against
+regression.
+- **CI lesson captured:** it first failed CI because the new test matched no shard glob
+  (`test_ci_coverage_completeness`). Fix: rename to `test_layer3_*` to match the shard. This same
+  lesson is now pre-empted in every test-adding handoff.
+
+### 2.7 A8 retention design + the retention pivot — PR #2406 (merged)
+Originally Codex designed A8 as a **secure-erasure** lifecycle (raw-at-rest → quarantine → erase).
+The owner overturned the premise: **"there should never be a reason to erase raw financial values."**
+This was verified-correct and reframed everything (see §3.1). The redesign: a 7-state **monotonic
+retention** machine (no disposal states), durable value-store model, explicit retained-vs-redacted
+split (public values retained; only operator identity/secrets redacted), a 7-item readiness gate.
+- **Verification:** 5-agent adversarial workflow — all criteria PASS, erasure fully gone (incl. no
+  receipt-tied cleanup back-door in the *design*), values retained-not-redacted, 23 tests pass.
+
+### 2.8 Board reconciliation — PR #2408 (merged)
+A single honest current-posture entry on `layer3_progress_board.md` recording A7 (proven) + A8
+(retention-designed, gated) + the retention_policy follow-up. **Why board-only:** the
+`l3-progress-check.py` validator (4000+ lines) does not parse board content, so the append is
+validator-safe; touching the strict JSON manifests would have been a rabbit hole for marginal gain.
+
+---
+
+## 3. Decisions + posture (the "why," which governs everything)
+
+### 3.1 Retain, never erase — the campaign's defining correction
+**Decision:** SEC EDGAR XBRL financial values are public-domain government disclosures → **retained
+durably, never erased.** Redaction targets **operator identity + operational secrets** (identity,
+proxy headers, tenant values, paths, URLs, tokens, secrets, artifact bytes), **not the values**.
+- **Why it's correct (verified):** the codebase's redaction rules all target identity/secrets
+  (`1061-*.md:64`, `109_DURABLE_STATE.md:149`); SEC data is repeatedly "public SEC examples"; no
+  documented rationale to erase values exists. The "secure erasure" requirement imported a
+  sensitive-data destruction model onto public data — a category error.
+- **What it revealed:** the system was *already built for retention* — the durable internal value
+  store exists (`layer3_sec_xbrl_sidecar.py`, gated off) and the material-bridge CSV redaction is a
+  correct **decoupling** (values in the store, audit surface hash-only), not over-application. The
+  erasure layer was the only thing fighting the architecture.
+- **Why this is durable:** recorded in memory (`project_sec_value_retention_posture.md`) and the
+  17B plan's erasure premise is flagged superseded. The only conditional-future where erasure could
+  apply is a hypothetical **non-public/licensed** source — out of current scope.
+
+### 3.2 Dual-agent split (Claude operator + Codex planner)
+**Decision:** Claude runs the operator/runtime/verification lane (live SEC, Arelle, evidence,
+merges, adversarial verification); Codex runs the planning/design lane (the SEC-XBRL planning-doc
+corpus is its domain).
+- **Why:** plays to each agent's strengths and, critically, gives **clean isolation** — different
+  file surfaces, different branches/worktrees, no live-network for Codex, no planning-doc churn from
+  Claude. Every handoff specifies the exact write surface + hard FAIL conditions, so isolation holds
+  by construction (it has, across every landing).
+- **Why explicit acceptance criteria, not method prescription:** handoffs specify *outcomes/invariants*
+  (what defines pass/fail, the safety rails) and deliberately leave *how* to Codex's judgment.
+  Over-specifying method produces brittle, steered work; under-specifying invariants produces drift.
+
+### 3.3 Tier-1 / Tier-2 / default-off / owner-gate discipline
+**Decision:** anything touching migrations, models, durable persistence, value reveal, default-on,
+or redaction posture is **Tier-2** → owner-gated, independent review, rollback notes. Everything
+else (additive tests, docs, static UI) is **Tier-1** → self-verify + CI.
+- **Why:** it draws a bright, enforceable line between "safe to land on self-verification" and
+  "needs the owner." It's why A7 proofs and the auth-seam audit could merge freely while A8
+  *implementation* cannot. The flags (`value_reveal` / `internal_value_store` / `controlled_submit`)
+  stay default-off as the hard backstop.
+
+### 3.4 Worktree discipline
+**Decision (owner-directed):** work in the repo's `worktrees/` folder, short branch names.
+- **Why:** keeps work isolated + discoverable + co-located with the repo; avoids the scattered
+  drive-root worktrees (`C:\p6*`) and global/Downloads placements. Long paths are handled via
+  `core.longpaths`. Stray merged worktrees are left in place pending explicit cleanup authorization.
+
+### 3.5 Honesty rails (operator-run vs CI-durable; proven vs designed vs gated)
+**Decision:** never upgrade "operator-run proof" to "committed/CI'd truth," nor "designed" to
+"implemented." A7's full chain is operator-proven (live connector ≠ CI-able); only the resolution
+capability is CI-durable (#2407). A8 is designed, not implemented.
+- **Why:** the campaign's credibility rests on it. Every report, the board entry, and this doc make
+  the distinction explicit.
+
+### 3.6 What was *deliberately not done* (lazy-correct discipline)
+- **No sidecar↔Arelle CI test** (§2.5): brittle, marginal — over-engineering.
+- **No JSON-manifest reconciliation** (§2.8): 4000-line validator + strict schema, Codex's domain.
+- **No erasure machinery** (§3.1): solving a non-problem.
+- **Why surface these:** silent scope cuts read as "covered everything." Naming them is the rail.
+
+---
+
+## 4. SEC-XBRL technical map (deep context for the gated work)
+
+The pipeline, all default-off except cutover:
+
+`real-filing connector (live fetch, allowlisted CIK) → html-inline-XBRL parser (offline) →
+regex fact-authority (offline) → Arelle sidecar (real Arelle subprocess, offline) → material
+bridge (cutover-aware; DatasetVersion + redacted CSV)` → **[gated] value reveal**.
+
+- **The durable value store** already exists: `layer3_sec_xbrl_sidecar.py` `_write_internal_value_store`
+  (~:1129), schema `…internal_value_store.v1`, path `{storage_dir}/…/internal-value-stores/{receipt_id}.json`,
+  gated by `internal_value_store_enabled` (default False). It persists full plaintext values when on.
+- **The reveal service** exists: `layer3_sec_edgar_arelle_value_reveal.py`, gated by
+  `value_reveal_enabled` (default False); already redacts **identity** (registrant/ticker/email/URL),
+  **not** financial values; raw values go in the response but **not** the persisted audit receipt.
+- **The audit/store decoupling** is already correct: material-bridge CSV zeros `value_text` in
+  sidecar mode *because* the values live in the store — not over-redaction.
+- **The flags + their meaning** (all `config.py`, default-off): `value_reveal_enabled`,
+  `internal_value_store_enabled`, `controlled_value_reveal_submit_enabled`, plus the live-network and
+  corpus-validation flags. `arelle_fact_authority_cutover_enabled` is the one intentional default-on.
+- **The one back-door label:** `retention_policy: "tied_to_sidecar_receipt_lifecycle"`
+  (`layer3_sec_xbrl_sidecar.py:826`, `:1140`) — currently a **label only** (no value-store deletion
+  path exists in code, verified). Under retention it must become permanent/durable with a no-deletion
+  guard. Tracked for the gated Tier-2 packet.
+
+---
+
+## 5. Forward plan (with reasoning)
+
+### 5.1 A8 implementation-spec — IN PROGRESS (Codex, M-A8-IMPLEMENTATION-SPEC)
+Codex is producing `a8-implementation-spec.md`: every readiness-gate item → exact code change +
+test + rollback; the flag matrix; the migration question (filesystem store vs ORM); and the
+retention_policy fix. **Why now:** it converts the owner gate from "read a design" into a precise,
+turn-key authorization decision over a bounded Tier-2 packet. It is planning-only (no flag flip).
+
+### 5.2 The owner gate — the single decision that controls A8
+Reviewing `a8-readiness-gate.md` (7 items, each with acceptance criterion / evidence / fails-closed).
+In practice it is three things: (a) a **design-approval** read (low-stakes, reversible — done via
+#2406 + the spec); (b) the **owner's go/no-go authorization** (the governance call: operate a system
+that durably retains real public financial values — the irreversibility here is *enabling reveal*,
+not erasure, which doesn't exist); (c) **implementation-packet verification** of each item before
+merge. **Why it's genuinely the owner's:** it's a posture/risk decision, not a technical check — no
+agent can or should make it.
+
+### 5.3 A8 implementation — GATED (small, bounded, Tier-2)
+Under retention, the build is small: enable `internal_value_store` + `value_reveal` (+ optionally
+`controlled_submit`); set `retention_policy` → permanent + no-deletion guard; keep the audit/store
+decoupling; redact identity-not-values; Tier-2 tests + governance. **Why small:** the machinery
+exists (the pivot revealed it); A8 is mostly enabling + the policy fix.
+
+### 5.4 Conditional future (out of scope)
+If a **non-public/licensed/contractual** source is ever ingested, a separate source-class
+disposition policy (possibly including erasure) would be needed — explicitly out of SEC EDGAR A8.
+
+### 5.5 Open items / owner decisions
+- **Authorize A8 implementation?** (the gate). The only thing blocking the frontier.
+- **Stray worktree cleanup?** Merged/done worktrees I own (`C:\p6ui`, `C:\p6audit`, `C:\p6impl`) —
+  `git worktree remove` preserves branches; awaiting explicit go (standing no-remove rule).
+- **Whether to PR this master-context doc** to main, or maintain it on-branch only.
+
+---
+
+## 6. Governance + posture (the rails, in one place)
+
+1. **Retain, never erase** public financial values; redact identity/secrets only.
+2. **Default-off** for reveal/value-store/controlled-submit until the owner gate is cleared.
+3. **Tier-2 = owner-gated**; Tier-1 self-verifies + CI.
+4. **Verify before claiming** — agent self-reports are checked against source; adversarial passes
+   for anything load-bearing.
+5. **Proven ≠ designed ≠ gated** — never conflate them in any report.
+6. **Isolation** — dual-agent lanes never share a write surface, branch, or (for Codex) the network.
+7. **No AI/co-author attribution** on commits/PRs.
+
+---
+
+## 7. Reference map
+
+- **Merged PRs:** #2404 (UI), #2405 (auth-seam), #2406 (A8 retention design), #2407 (A7 durable
+  proof), #2408 (board reconciliation). Current main: `fd0cb72f`.
+- **A8 docs (on main):** `next_milestone_plans/Layer3_planning_docs/a8-lifecycle-design.md`,
+  `a8-readiness-gate.md`; spec in progress: `a8-implementation-spec.md`.
+- **A7 durable proof:** `backend/tests/test_sec_xbrl_a7_real_arelle_resolution.py` +
+  `backend/tests/fixtures/sec_xbrl_a7/minimal_dei_ixbrl.htm`; runs in `sec-xbrl-arelle-provisioning`.
+- **A7 operator-run evidence (off-repo):** `C:\Users\benny\Downloads\sandbox_nrc_aps\` —
+  `A7_WORK_LOG.md`, `sec_live_reports/`, `sec_live_store/`, `arelle_runtime/` (provisioned taxonomy).
+- **Key services:** `layer3_sec_xbrl_sidecar.py`, `layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.py`,
+  `layer3_sec_edgar_arelle_value_reveal.py`, `layer3_sec_edgar_live_source_artifact.py`,
+  `layer3_sec_edgar_real_filing_acquisition_connector.py`, `tools/sec-xbrl-arelle.py`.
+- **Codex Desktop session:** `019f0686-92b4-7ee1-ac6f-218dadfa897a` (planning lane).
+- **Memory:** `project_sec_value_retention_posture.md` (retain-never-erase), `project_sec_17b_plan.md`
+  (erasure premise superseded), `project_sec_xbrl_production_lane.md`.
+
+---
+
+## 8. Risks / honest unknowns
+
+- **A7's full chain is operator-proven, not CI-durable** — the live connector can't run in CI; only
+  the resolution capability is CI-guarded (#2407). A future change to the connector/parser/sidecar
+  could regress the full chain without CI catching it.
+- **The retention_policy back-door** is a label today (no deletion code), but if any future change
+  adds a value-store deletion path honoring that label, retention would silently break — hence the
+  explicit Tier-2 guard requirement.
+- **The progress manifests** (JSON) were not reconciled (only the board) — they may still carry stale
+  anchors; a full reconciliation is deferred (validator complexity, Codex's domain).
+- **A8 is owner-gated** — everything downstream waits on a human decision that is correctly outside
+  agent authority.
