@@ -136,10 +136,22 @@ from audit/status and request authority.
    - Evidence required: PR body and closeout report listing exact files,
      governance surfaces, risk triggers, rollback/containment notes, independent
      review status or owner-approved self-verification rationale, and CI status.
-   - Fails closed when: Tier-2 surfaces are ambiguous, owner/review posture is
-     missing, rollback/containment notes are absent, CI fails, or a planning PR
-     accidentally changes runtime value reveal, flags, persistence, redaction
-     posture, A7 proof surfaces, or workflows.
+    - Fails closed when: Tier-2 surfaces are ambiguous, owner/review posture is
+      missing, rollback/containment notes are absent, CI fails, or a planning PR
+      accidentally changes runtime value reveal, flags, persistence, redaction
+      posture, A7 proof surfaces, or workflows.
+
+## Tier-2 Implementation Guard Addendum
+
+1. Durable value-store retention policy cannot imply value-store deletion.
+   - Any future A8 implementation must replace the sidecar internal value-store
+     `tied_to_sidecar_receipt_lifecycle` label in diagnostics and persisted
+     store metadata with `sec_xbrl_public_financial_value_retention_v1`.
+   - The implementation must include a source/test guard that no value-store
+     deletion path is added to honor the old lifecycle-tied label.
+   - The allowed rollback posture is containment by default-off flags,
+     fail-closed readers, and commit revert; rollback must not remove retained
+     public SEC financial values from the durable store.
 
 ## Conditional Future Source-Class Caveat
 
