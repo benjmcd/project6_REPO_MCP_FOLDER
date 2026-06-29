@@ -345,6 +345,7 @@ jobs:
           ./backend/tests/test_sec_xbrl_sidecar.py \
           ./backend/tests/test_sec_xbrl_value_reveal_authority_provisioning_preflight.py \
           ./backend/tests/test_sec_xbrl_stratified_real_filing_validation_matrix_preflight.py \
+          ./backend/tests/test_sec_xbrl_a7_real_arelle_resolution.py \
           -q
 
   nrc-aps-ocr:
