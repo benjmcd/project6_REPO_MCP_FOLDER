@@ -136,10 +136,10 @@ from audit/status and request authority.
    - Evidence required: PR body and closeout report listing exact files,
      governance surfaces, risk triggers, rollback/containment notes, independent
      review status or owner-approved self-verification rationale, and CI status.
-    - Fails closed when: Tier-2 surfaces are ambiguous, owner/review posture is
-      missing, rollback/containment notes are absent, CI fails, or a planning PR
-      accidentally changes runtime value reveal, flags, persistence, redaction
-      posture, A7 proof surfaces, or workflows.
+   - Fails closed when: Tier-2 surfaces are ambiguous, owner/review posture is
+     missing, rollback/containment notes are absent, CI fails, or a planning PR
+     accidentally changes runtime value reveal, flags, persistence, redaction
+     posture, A7 proof surfaces, or workflows.
 
 ## Tier-2 Implementation Guard Addendum
 

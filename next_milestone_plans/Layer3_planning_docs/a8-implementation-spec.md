@@ -10,7 +10,17 @@ proof surfaces, or generate runtime artifacts.
 Base authority for this planning packet: `project6-origin/main` fetched at
 `80370c3fe4917df054f041851ee1aade1a838497`.
 
+Review-thread remediation refresh: `project6-origin/main` was fetched at
+`fd0cb72fdf7716113fcf61b5e5137acd3d304f91` before this Tier-1 ledger
+reconciliation. The pre-remediation branch ancestry was one commit ahead and
+one commit behind live main because PR `#2408` landed the A7/A8 board
+reconciliation after this PR was opened.
+
 ## Owner Decision Summary
+
+This packet uses `a8-lifecycle-design.md`, merged in PR `#2406` at
+`80370c3fe4917df054f041851ee1aade1a838497`, as the owner-approved A8 durable
+value-retention design authority.
 
 The future A8 implementation should enable the existing filesystem-backed
 internal value store as the first durable store for public SEC EDGAR financial
@@ -133,8 +143,10 @@ Future code changes:
   expose only a namespace hash in receipts/status, never the local path.
 
 Tests:
-- Add sidecar tests for accepted temp/off-repo roots and rejected repo,
+- Add sidecar tests for accepted durable off-repo roots and rejected repo,
   OneDrive, static, committed, missing, unreadable, and Downloads-like roots.
+- Temp roots are test fixtures only. Durable runtime roots must remain off-repo,
+  off-OneDrive/cloud-sync, non-static, non-git, and not Downloads-like.
 - Add response/status scans that fail if a raw storage root or local path is
   projected.
 
@@ -319,7 +331,8 @@ No flag is flipped in this PR.
 - No A7 proof-surface changes.
 - No nonlocal delivery, export, or provider delivery behavior.
 - No workflow or GitHub Actions changes.
-- No progress board or progress manifest changes.
+- No progress board, progress manifest, or proof manifest changes beyond Tier-1
+  ledger reconciliation for PR `#2409`.
 - No runtime, schema, migration, persistence, redaction-posture, route, or flag
   change in this planning PR.
 
