@@ -46688,5 +46688,84 @@
     ],
     "next_posture": "bind_arelle_fact_authority_to_server_owned_live_source_artifact"
   },
-  "latest_sec_live_source_artifact_smoke_evidence_verification_proof_summary": "Branch-local proof adds a validate-only SEC live smoke evidence verifier that re-reads retained server-owned status for an operator-private smoke report, requires live_http transport with real SEC network execution plus redacted 64-hex hash evidence to match retained receipt/source/content metadata, and proves fake-transport report, missing report, wrong storage, malformed hash, redaction-leak, and raw CIK-like blockers without performing SEC network access, creating source artifacts or receipts, invoking Arelle, or changing default-off/support/redaction posture."
+  "latest_sec_live_source_artifact_smoke_evidence_verification_proof_summary": "Branch-local proof adds a validate-only SEC live smoke evidence verifier that re-reads retained server-owned status for an operator-private smoke report, requires live_http transport with real SEC network execution plus redacted 64-hex hash evidence to match retained receipt/source/content metadata, and proves fake-transport report, missing report, wrong storage, malformed hash, redaction-leak, and raw CIK-like blockers without performing SEC network access, creating source artifacts or receipts, invoking Arelle, or changing default-off/support/redaction posture.",
+  "sec_xbrl_arelle_fact_authority_and_a8_value_retention_design_proof": {
+    "proof_kind": "sec_xbrl_arelle_fact_authority_and_a8_value_retention_design_proof",
+    "milestone": "sec_xbrl_arelle_fact_authority_proof_and_a8_value_retention_design_v1",
+    "status": "current_main_board_reconciled_manifest_backfill",
+    "source_prs": [
+      "#2407",
+      "#2406",
+      "#2408"
+    ],
+    "arelle_ci_proof_pr": "#2407",
+    "arelle_ci_proof_merge_commit": "c96ea5154dd13a0724d74f8979bb28651d667cb8",
+    "a8_design_pr": "#2406",
+    "a8_design_merge_commit": "80370c3fe4917df054f041851ee1aade1a838497",
+    "board_reconciliation_pr": "#2408",
+    "board_reconciliation_merge_commit": "fd0cb72fdf7716113fcf61b5e5137acd3d304f91",
+    "design_doc": "next_milestone_plans/Layer3_planning_docs/a8-lifecycle-design.md",
+    "readiness_gate_doc": "next_milestone_plans/Layer3_planning_docs/a8-readiness-gate.md",
+    "progress_board_section": "SEC EDGAR Arelle Fact-Authority Proof + A8 Value-Retention Design",
+    "negative_authority_flags": {
+      "runtime_behavior_change": false,
+      "value_reveal_enabled": false,
+      "internal_value_store_enabled": false,
+      "controlled_submit_enabled": false,
+      "schema_model_migration_change": false,
+      "redaction_posture_change": false,
+      "live_sec_egress": false,
+      "arelle_network_behavior_change": false,
+      "production_readiness_claim": false
+    },
+    "next_posture": "complete_a8_implementation_spec_preclearance"
+  },
+  "latest_sec_xbrl_arelle_fact_authority_and_a8_value_retention_design_proof_summary": "Proof manifest backfill records the current-main A7/A8 frontier from PR #2407 durable real-Arelle DTS-resolution CI proof, PR #2406 owner-approved A8 durable-retention design, and PR #2408 board reconciliation without admitting runtime behavior, value reveal, internal-value-store enablement, controlled submit, schema/model/migration, redaction-posture change, live SEC egress, Arelle network behavior, or production readiness.",
+  "sec_xbrl_a8_implementation_spec_proof": {
+    "proof_kind": "sec_xbrl_a8_implementation_spec_proof",
+    "milestone": "sec_xbrl_a8_implementation_spec_preclearance_v1",
+    "status": "branch_local_tier1_owner_authorization_packet_preclearance",
+    "branch": "codex/a8-implementation-spec",
+    "pr": "#2409",
+    "current_main_refreshed_at": "fd0cb72fdf7716113fcf61b5e5137acd3d304f91",
+    "design_authority_doc": "next_milestone_plans/Layer3_planning_docs/a8-lifecycle-design.md",
+    "design_authority_pr": "#2406",
+    "design_authority_merge_commit": "80370c3fe4917df054f041851ee1aade1a838497",
+    "prior_arelle_ci_proof_pr": "#2407",
+    "prior_arelle_ci_proof_merge_commit": "c96ea5154dd13a0724d74f8979bb28651d667cb8",
+    "prior_board_reconciliation_pr": "#2408",
+    "prior_board_reconciliation_merge_commit": "fd0cb72fdf7716113fcf61b5e5137acd3d304f91",
+    "implementation_spec_doc": "next_milestone_plans/Layer3_planning_docs/a8-implementation-spec.md",
+    "readiness_gate_doc": "next_milestone_plans/Layer3_planning_docs/a8-readiness-gate.md",
+    "test_file": "backend/tests/test_sec_xbrl_a8_implementation_spec.py",
+    "proof_terms": [
+      "a8-lifecycle-design.md / PR #2406 is design authority",
+      "temp roots are test fixtures only",
+      "durable runtime roots off-repo off-OneDrive non-static non-git",
+      "ledger reconciliation only",
+      "no runtime behavior"
+    ],
+    "verification": [
+      "python -m pytest ./backend/tests/test_sec_xbrl_a8_lifecycle_design.py ./backend/tests/test_sec_xbrl_a8_implementation_spec.py ./backend/tests/test_ci_coverage_completeness.py -q",
+      "python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "git diff --check"
+    ],
+    "negative_authority_flags": {
+      "runtime_behavior_change": false,
+      "flag_default_change": false,
+      "value_reveal_enabled": false,
+      "internal_value_store_enabled": false,
+      "controlled_submit_enabled": false,
+      "schema_model_migration_change": false,
+      "redaction_posture_change": false,
+      "a7_proof_surface_change": false,
+      "workflow_change": false,
+      "live_sec_egress": false,
+      "arelle_execution": false,
+      "production_readiness_claim": false
+    },
+    "next_posture": "merge_a8_implementation_spec_after_review_thread_resolution_and_green_ci"
+  },
+  "latest_sec_xbrl_a8_implementation_spec_proof_summary": "PR #2409 branch-local proof covers the A8 owner-authorization implementation spec: it cites a8-lifecycle-design.md / PR #2406 as design authority, keeps temp roots fixture-only, requires durable runtime roots to be off-repo/off-OneDrive/non-static/non-git, and reconciles progress/proof ledgers with the #2406/#2407/#2408 frontier while remaining Tier-1 planning/test/ledger only with no runtime behavior or Tier-2 surface admitted."
 }

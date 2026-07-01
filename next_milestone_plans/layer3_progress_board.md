@@ -13178,3 +13178,34 @@ planning plus default-off, with implementation owner-gated.
 No migration, ORM/schema change, value-reveal enablement, internal-value-store / controlled-submit
 flag flip, default-on flip, or Tier-2 runtime surface is admitted. Live SEC egress remains explicit
 default-off; A7 operator-run evidence is off-repo / off-OneDrive and not committed.
+
+## A8 Durable Value Retention Implementation Spec Preclearance
+
+Milestone: `sec_xbrl_a8_implementation_spec_preclearance_v1`.
+
+Branch/PR: `codex/a8-implementation-spec`, PR `#2409`.
+
+Source frontier: PR `#2407` merged durable real-Arelle DTS-resolution CI proof at
+`c96ea5154dd13a0724d74f8979bb28651d667cb8`; PR `#2406` merged the owner-approved
+`a8-lifecycle-design.md` durable-retention design at
+`80370c3fe4917df054f041851ee1aade1a838497`; PR `#2408` merged board
+reconciliation for A7 fact-authority proof plus A8 value-retention design at
+`fd0cb72fdf7716113fcf61b5e5137acd3d304f91`.
+
+Status: branch-local Tier-1 preclearance packet for owner authorization. The
+spec records `a8-lifecycle-design.md` / PR `#2406` as the design authority,
+keeps temp roots fixture-only, requires durable runtime roots to be off-repo,
+off-OneDrive/cloud-sync, non-static, non-git, and not Downloads-like, and keeps
+the future A8 implementation owner-gated.
+
+Ledger reconciliation: this PR adds only planning docs, tests, and progress/proof
+ledger metadata so the manifests and board reflect the #2406/#2407/#2408 A7/A8
+frontier plus the #2409 implementation-spec tranche.
+
+Runtime behavior introduced by this pass: `false`.
+
+No flag flip, default change, schema/model/migration, value-reveal enablement,
+internal-value-store enablement, controlled-submit enablement, route/API runtime
+behavior, redaction-posture change, A7 proof-surface change, live SEC egress,
+Arelle network behavior, workflow change, or production-readiness claim is
+admitted by this tranche.
