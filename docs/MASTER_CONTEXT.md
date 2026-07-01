@@ -7,6 +7,29 @@
 
 ---
 
+## 2026-07-01 Addendum - Post-PR #2409 State
+
+This branch predates PR #2409. Keep the historical campaign narrative below, but
+apply these current-main corrections before using it as an operator handoff:
+
+- PR #2409, `Specify A8 durable retention implementation packet`, is merged at
+  `54d616b365d658adb933482b2a867cb9bc2d8c39`.
+- `a8-implementation-spec.md` is no longer merely in progress; it is present on
+  current main as the Tier-1 owner-authorization implementation packet for A8.
+- The #2409 remediation explicitly cites `a8-lifecycle-design.md` / PR #2406 as
+  the owner-approved durable-retention design authority.
+- Temp roots are test fixtures only. Durable A8 runtime roots must be off-repo,
+  off-OneDrive/cloud-sync, non-static, non-git, and not Downloads-like.
+- The Layer 3 progress board, progress manifest, and proof manifest now include
+  the #2406/#2407/#2408 A7/A8 frontier plus the #2409 implementation-spec
+  preclearance. The later "progress manifests were not reconciled" risk note is
+  superseded for that A7/A8 frontier.
+- A8 runtime remains owner-gated. PR #2409 admits no runtime behavior, flag
+  default change, schema/model/migration, value reveal, internal-value-store
+  enablement, controlled-submit enablement, redaction-posture change, A7
+  proof-surface change, workflow change, live SEC egress, Arelle execution, or
+  production-readiness claim.
+
 ## 0. How to read this
 
 Three things in one file: (A) **what's done** and why it was the right move, (B) the
