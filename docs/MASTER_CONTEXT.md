@@ -3,7 +3,8 @@
 > Living context + decision record + forward plan. Maintained across sessions.
 > Authority: this is a narrative/state document, NOT runtime truth — verify any
 > file:line / SHA against current `project6-origin/main` before acting on it.
-> Last full pass: against `project6-origin/main` = `fd0cb72f` (after PRs #2404–#2408 merged).
+> Last full pass: historical branch pass against `project6-origin/main` = `fd0cb72f`;
+> addendum updates current-main state through PR #2409 at `54d616b365d658adb933482b2a867cb9bc2d8c39`.
 
 ---
 
@@ -54,10 +55,11 @@ sitting at a single owner gate.**"
 - **A8 (operator value reveal): RETENTION-DESIGNED, owner-gated.** Reframed from
   secure-erasure to durable retention after the owner established that public SEC values are
   retained, never erased. Implementation is a small, bounded, gated Tier-2 step.
-- **Five PRs merged this campaign:** #2404 (UI wave), #2405 (auth-seam audit), #2406 (A8
-  retention design), #2407 (A7 durable proof), #2408 (board reconciliation).
-- **Dual-agent model:** Claude = operator/runtime/verification lane; Codex (Desktop session
-  `019f0686-92b4-7ee1-ac6f-218dadfa897a`) = planning/design lane. Strict file/branch isolation.
+- **Six PRs merged this campaign:** #2404 (UI wave), #2405 (auth-seam audit), #2406 (A8
+  retention design), #2407 (A7 durable proof), #2408 (board reconciliation), and #2409
+  (A8 implementation-spec preclearance).
+- **Dual-lane model:** operator/runtime/verification lane plus planning/design lane. Strict
+  file/branch isolation.
 - **The one decision left is the owner's:** review `a8-readiness-gate.md` → authorize (or not)
   the A8 retention implementation. No agent can pass that gate.
 
@@ -116,9 +118,9 @@ pushed a real retained artifact through the real chain with real Arelle.*
   **Redaction verified:** 0/523 value cells populated, `value_redacted=True` throughout —
   structure/authority materialized, raw values withheld from the audit surface.
 - **Why this is operator-run, not committed:** the connector stage requires a live SEC fetch,
-  which cannot run in CI; evidence lives off-repo/off-OneDrive (`C:\Users\benny\Downloads\sandbox_nrc_aps\`,
-  see `A7_WORK_LOG.md`) and is intentionally not committed. This honesty (operator-proven, not
-  CI-proven) is stated everywhere it's claimed.
+  which cannot run in CI; evidence lives in an operator-private off-repo/off-cloud-sync root
+  (exact path intentionally omitted; see the local `A7_WORK_LOG.md`) and is intentionally not
+  committed. This honesty (operator-proven, not CI-proven) is stated everywhere it's claimed.
 - **Why it matters:** it converts "the chain should work" into "the chain provably resolves real
   financial facts from real filings, redacted, default-off elsewhere."
 
@@ -138,7 +140,7 @@ job and assert DTS-resolved facts; it skips in the plain shards.
   was the lazy-correct call (the full chain is operator-proven anyway).
 
 ### 2.6 Auth-seam audit — PR #2405 (merged)
-Codex Tier-1 milestone: a coverage audit + fail-closed regression tests of route-level operator
+A Tier-1 milestone: a coverage audit + fail-closed regression tests of route-level operator
 identity on the **non-SEC** Layer 3 + NRC APS surface (182 routes; 179 gated; 3 public exemptions).
 **No enforcement change** — it locks the current identity-gating/inert-default posture against
 regression.
@@ -147,7 +149,7 @@ regression.
   lesson is now pre-empted in every test-adding handoff.
 
 ### 2.7 A8 retention design + the retention pivot — PR #2406 (merged)
-Originally Codex designed A8 as a **secure-erasure** lifecycle (raw-at-rest → quarantine → erase).
+Originally A8 was designed as a **secure-erasure** lifecycle (raw-at-rest to quarantine to erase).
 The owner overturned the premise: **"there should never be a reason to erase raw financial values."**
 This was verified-correct and reframed everything (see §3.1). The redesign: a 7-state **monotonic
 retention** machine (no disposal states), durable value-store model, explicit retained-vs-redacted
@@ -181,16 +183,17 @@ proxy headers, tenant values, paths, URLs, tokens, secrets, artifact bytes), **n
   17B plan's erasure premise is flagged superseded. The only conditional-future where erasure could
   apply is a hypothetical **non-public/licensed** source — out of current scope.
 
-### 3.2 Dual-agent split (Claude operator + Codex planner)
-**Decision:** Claude runs the operator/runtime/verification lane (live SEC, Arelle, evidence,
-merges, adversarial verification); Codex runs the planning/design lane (the SEC-XBRL planning-doc
-corpus is its domain).
+### 3.2 Dual-lane split (operator + planner)
+**Decision:** one lane owns operator/runtime/verification work (live SEC, Arelle, evidence,
+merges, adversarial verification); a separate lane owns planning/design work (the SEC-XBRL
+planning-doc corpus is its domain).
 - **Why:** plays to each agent's strengths and, critically, gives **clean isolation** — different
-  file surfaces, different branches/worktrees, no live-network for Codex, no planning-doc churn from
-  Claude. Every handoff specifies the exact write surface + hard FAIL conditions, so isolation holds
+  file surfaces, different branches/worktrees, no live-network for the planning lane, no
+  planning-doc churn from the operator lane. Every handoff specifies the exact write surface +
+  hard FAIL conditions, so isolation holds
   by construction (it has, across every landing).
 - **Why explicit acceptance criteria, not method prescription:** handoffs specify *outcomes/invariants*
-  (what defines pass/fail, the safety rails) and deliberately leave *how* to Codex's judgment.
+  (what defines pass/fail, the safety rails) and deliberately leave *how* to the active executor's judgment.
   Over-specifying method produces brittle, steered work; under-specifying invariants produces drift.
 
 ### 3.3 Tier-1 / Tier-2 / default-off / owner-gate discipline
@@ -217,7 +220,7 @@ capability is CI-durable (#2407). A8 is designed, not implemented.
 
 ### 3.6 What was *deliberately not done* (lazy-correct discipline)
 - **No sidecar↔Arelle CI test** (§2.5): brittle, marginal — over-engineering.
-- **No JSON-manifest reconciliation** (§2.8): 4000-line validator + strict schema, Codex's domain.
+- **No JSON-manifest reconciliation** (§2.8): 4000-line validator + strict schema, planning-lane domain.
 - **No erasure machinery** (§3.1): solving a non-problem.
 - **Why surface these:** silent scope cuts read as "covered everything." Naming them is the rail.
 
@@ -251,10 +254,10 @@ bridge (cutover-aware; DatasetVersion + redacted CSV)` → **[gated] value revea
 
 ## 5. Forward plan (with reasoning)
 
-### 5.1 A8 implementation-spec — IN PROGRESS (Codex, M-A8-IMPLEMENTATION-SPEC)
-Codex is producing `a8-implementation-spec.md`: every readiness-gate item → exact code change +
-test + rollback; the flag matrix; the migration question (filesystem store vs ORM); and the
-retention_policy fix. **Why now:** it converts the owner gate from "read a design" into a precise,
+### 5.1 A8 implementation-spec - LANDED (PR #2409)
+`a8-implementation-spec.md` is now on main: every readiness-gate item maps to an exact code
+change, test, rollback, flag matrix, migration question, and retention_policy fix.
+**Why before implementation:** it converts the owner gate from "read a design" into a precise,
 turn-key authorization decision over a bounded Tier-2 packet. It is planning-only (no flag flip).
 
 ### 5.2 The owner gate — the single decision that controls A8
@@ -267,10 +270,11 @@ merge. **Why it's genuinely the owner's:** it's a posture/risk decision, not a t
 agent can or should make it.
 
 ### 5.3 A8 implementation — GATED (small, bounded, Tier-2)
-Under retention, the build is small: enable `internal_value_store` + `value_reveal` (+ optionally
-`controlled_submit`); set `retention_policy` → permanent + no-deletion guard; keep the audit/store
+Under retention, the build is small but governed: enable `internal_value_store`, `value_reveal`,
+and the server-bound `controlled_submit` path together; do not make the legacy source-SEC reveal
+route default-on; set `retention_policy` to permanent plus a no-deletion guard; keep the audit/store
 decoupling; redact identity-not-values; Tier-2 tests + governance. **Why small:** the machinery
-exists (the pivot revealed it); A8 is mostly enabling + the policy fix.
+exists (the pivot revealed it); A8 is mostly enabling plus the policy fix.
 
 ### 5.4 Conditional future (out of scope)
 If a **non-public/licensed/contractual** source is ever ingested, a separate source-class
@@ -292,25 +296,26 @@ disposition policy (possibly including erasure) would be needed — explicitly o
 4. **Verify before claiming** — agent self-reports are checked against source; adversarial passes
    for anything load-bearing.
 5. **Proven ≠ designed ≠ gated** — never conflate them in any report.
-6. **Isolation** — dual-agent lanes never share a write surface, branch, or (for Codex) the network.
-7. **No AI/co-author attribution** on commits/PRs.
+6. **Isolation** — dual-lane work never shares a write surface, branch, or live-network authority.
+7. **No co-author/tool attribution** on commits/PRs.
 
 ---
 
 ## 7. Reference map
 
 - **Merged PRs:** #2404 (UI), #2405 (auth-seam), #2406 (A8 retention design), #2407 (A7 durable
-  proof), #2408 (board reconciliation). Current main: `fd0cb72f`.
+  proof), #2408 (board reconciliation), #2409 (A8 implementation-spec preclearance).
+  Current main for this addendum: `54d616b365d658adb933482b2a867cb9bc2d8c39`.
 - **A8 docs (on main):** `next_milestone_plans/Layer3_planning_docs/a8-lifecycle-design.md`,
-  `a8-readiness-gate.md`; spec in progress: `a8-implementation-spec.md`.
+  `a8-readiness-gate.md`, and `a8-implementation-spec.md`.
 - **A7 durable proof:** `backend/tests/test_sec_xbrl_a7_real_arelle_resolution.py` +
   `backend/tests/fixtures/sec_xbrl_a7/minimal_dei_ixbrl.htm`; runs in `sec-xbrl-arelle-provisioning`.
-- **A7 operator-run evidence (off-repo):** `C:\Users\benny\Downloads\sandbox_nrc_aps\` —
-  `A7_WORK_LOG.md`, `sec_live_reports/`, `sec_live_store/`, `arelle_runtime/` (provisioned taxonomy).
+- **A7 operator-run evidence (off-repo):** operator-private off-repo/off-cloud-sync evidence root;
+  local `A7_WORK_LOG.md`, `sec_live_reports/`, `sec_live_store/`, and `arelle_runtime/`
+  (provisioned taxonomy). Exact path intentionally omitted.
 - **Key services:** `layer3_sec_xbrl_sidecar.py`, `layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.py`,
   `layer3_sec_edgar_arelle_value_reveal.py`, `layer3_sec_edgar_live_source_artifact.py`,
   `layer3_sec_edgar_real_filing_acquisition_connector.py`, `tools/sec-xbrl-arelle.py`.
-- **Codex Desktop session:** `019f0686-92b4-7ee1-ac6f-218dadfa897a` (planning lane).
 - **Memory:** `project_sec_value_retention_posture.md` (retain-never-erase), `project_sec_17b_plan.md`
   (erasure premise superseded), `project_sec_xbrl_production_lane.md`.
 
@@ -324,7 +329,8 @@ disposition policy (possibly including erasure) would be needed — explicitly o
 - **The retention_policy back-door** is a label today (no deletion code), but if any future change
   adds a value-store deletion path honoring that label, retention would silently break — hence the
   explicit Tier-2 guard requirement.
-- **The progress manifests** (JSON) were not reconciled (only the board) — they may still carry stale
-  anchors; a full reconciliation is deferred (validator complexity, Codex's domain).
+- **The progress manifests** (JSON) were historically unreconciled; PR #2409 reconciled the A7/A8
+  frontier anchors across the board, progress manifest, and proof manifest. Broader reconciliation
+  remains deferred where it exceeds that frontier.
 - **A8 is owner-gated** — everything downstream waits on a human decision that is correctly outside
   agent authority.
