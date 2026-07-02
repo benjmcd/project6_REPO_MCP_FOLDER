@@ -69,19 +69,63 @@ operator-facing consequences stay checkable.
 | `GO-PARTIAL` | Authorize durable internal value-store retention only; defer operator-visible reveal. | Implementation may retain public SEC values in the governed store behind `LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED`, but `LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED` and `LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED` stay false. A later owner decision is required for reveal. |
 | `HOLD` | Authorize no A8 runtime implementation. | All A8 flags remain false, no durable value store is armed, no reveal path is enabled, and current A7/A8 artifacts remain planning and proof surfaces only. |
 
+## Imported Audit Source List
+
+The `M-ADVERSARIAL-REVIEW-AUDIT` acceptance list is embedded here so this
+tracked brief is self-contained:
+
+- Exact selected reveal surface: preferred current SEC XBRL
+  authority/controlled-submit path vs legacy Arelle reveal path, with explicit
+  flags named.
+- Exact base SHA, branch ancestry, touched files, and current default-off flag
+  proof.
+- Durable storage-root requirements: off repo, off OneDrive/cloud sync,
+  non-static, non-git, durable runtime root; temp roots allowed only as test
+  fixtures.
+- Server-owned lineage: current authority hash, sidecar id/hash, dataset/value-
+  store hash/count, auth binding, and explicit operator confirmation.
+- Request binding: no client-supplied raw paths, URLs, storage roots, source
+  identity, Arelle fields, connector dispatch fields, credentials, proxy
+  headers, or operator contact fields; unknown extras rejected or proven
+  blocked.
+- Audit/status redaction: hashes/counts/policy/state/lineage only; public values
+  retained in governed store and returned only through authorized controlled
+  response.
+- Rollback/containment: flags off, fail-closed readers, commit revert; never
+  delete retained public SEC financial values as rollback.
+- Verification: focused tests for store hygiene, hash/count/lineage, request
+  binding, redaction, idempotency, failure states, `git diff --check`, CI links,
+  no SEC egress in validate-only steps.
+- Tier-2 posture: exact Tier-2 surfaces, rollback/containment notes, review
+  posture, and owner authorization before runtime merge.
+
+The source SHOULD-NOT list is also embedded:
+
+- No implicit authorization for live SEC egress, taxonomy download, Arelle
+  network execution, schema/model/migration work, flag default-on changes, or
+  legacy Arelle reveal route activation unless explicitly selected.
+- No temp directories as acceptable production or durable runtime roots.
+- No secure-erasure or retained-value deletion as rollback.
+- No H6/archive movement as part of A8 durable store behavior.
+- No broad implementation freedom beyond the selected reveal/storage/request-
+  binding surface.
+
 ## Authorization Acceptance Criteria
 
-These criteria import and tighten the `M-ADVERSARIAL-REVIEW-AUDIT` acceptance
-list. Every item is pass/fail checkable at implementation-verification time.
+These criteria tighten the embedded `M-ADVERSARIAL-REVIEW-AUDIT` list and the
+existing `a8-implementation-spec.md` gates. Every item is pass/fail checkable at
+implementation-verification time.
 
 | Criterion | Pass condition | Fails closed when |
 |---|---|---|
-| Selected reveal surface | Owner selects exactly one surface: recommended current SEC XBRL authority/controlled-submit path or the legacy Arelle reveal service. Exact flags are named in the PR body. | Both surfaces are authorized, no surface is selected, or a route is implied without exact flags. |
+| Decision and surface selection | For `GO`, owner selects exactly one reveal surface: recommended current SEC XBRL authority/controlled-submit path or the legacy Arelle reveal service. For `GO-PARTIAL`, owner selects no reveal surface and authorizes durable internal value-store retention only. For `HOLD`, owner authorizes no runtime surface. Exact flags are named in the PR body for any non-hold implementation. | Both reveal surfaces are authorized, a reveal route is implied without exact flags, `GO-PARTIAL` enables reveal, or `HOLD` requires runtime setup. |
 | Live authority | Implementation PR records fetched `project6-origin/main` SHA, branch `HEAD`, branch ancestry, touched files, and current default-off proof for all A8 flags. | Main was not freshly fetched, ancestry is unclear, touched surfaces are omitted, or any A8 flag defaults on in source. |
 | Durable storage root | Runtime storage root is durable, isolated, off repo, off OneDrive/cloud sync, non-static, non-git, not shared across authorities, not operator Downloads-like, and not projected as a raw path/root. Temp roots are test fixtures only. | Storage is repo-relative, cloud-synced, static-served, committed/generated, shared across authorities, missing/unreadable, Downloads-like, or exposed in audit/status. |
 | Server-owned lineage | Store and reveal bind to current authority hash, sidecar id/hash, dataset hash where applicable, value-store hash/count, auth binding, and explicit operator confirmation for display/submit. | Client-supplied authority replaces server resolution, lineage is stale or missing, confirmation is missing, or replay conflicts are accepted. |
 | Request binding | Browser/client cannot supply raw paths, raw URLs, storage roots, source identity, Arelle fields, connector dispatch fields, credentials, proxy headers, operator contact fields, or unknown extras. Unknown extras are rejected at the request model or proven blocked before service calls. | Any forbidden or unknown client field can influence source, storage, lineage, Arelle execution, reveal, or operator authority. |
 | Audit/status redaction | Audit/status surfaces expose only hashes, counts, policy ids, state, safe reason codes, timestamps, and lineage. Public values are retained in the governed store and returned only through the authorized controlled response. | Audit/status duplicate public values unnecessarily, expose operator identity, paths, roots, URLs, tokens, proxy headers, contact strings, provider/connector secrets, artifact bytes, or weaken durable retention into hash-only records. |
+| Material-bridge CSV decision | Sidecar-mode material-bridge CSV stays redacted: `value_text`, `effective_value_text`, and `lexical_value_text` remain empty, while retained values are read only from the governed store through the selected reveal path. | CSV or review/audit artifacts duplicate retained public values, or the implementation bypasses the store/reveal boundary by filling materialized value columns. |
+| Migration and storage-backend decision | First A8 implementation uses the existing filesystem-backed internal value store unless the owner separately authorizes a schema/model/migration or ORM-backed store with rollback/containment notes. | Schema/model/migration work, ORM storage, backup/restore semantics, or database retention policy is silently admitted by this owner brief. |
 | Rollback and containment | Rollback posture is flags off, fail-closed readers, and commit revert. Existing retained value stores remain intact as durable product data. | Rollback deletes retained SEC values, adds secure-erasure requirements, mutates stores destructively, or depends on H6/archive movement. |
 | Verification | Focused tests cover store hygiene, hash/count/lineage, request binding, redaction, idempotency, failure states, `git diff --check`, and CI links. Validate-only commands use isolated/offline runtime state and do not fetch SEC data, download taxonomy, run Arelle network resolution, reveal values, mutate shared operator stores, or generate artifacts. | Tests rely on shared seeded state, live SEC/taxonomy/Arelle/runtime network, generated artifacts, omitted changed surfaces, red CI, or unproven redaction/request boundaries. |
 | Tier-2 posture | PR body names exact Tier-2 surfaces, rollback/containment notes, owner authorization, and review posture before runtime merge. | Tier-2 surfaces are ambiguous, owner authorization is missing, rollback/containment is absent, review posture is unstated, or implementation silently grants schema/default-on/live-egress authority. |
@@ -107,8 +151,9 @@ The owner authorization packet should not contain:
 The owner must provide these inputs before implementation starts:
 
 1. Selected surface: recommended current SEC XBRL controlled-submit path, legacy
-   Arelle reveal service, or no reveal.
-2. Durable storage root location for retained public SEC values.
+   Arelle reveal service, or no reveal. `GO-PARTIAL` and `HOLD` use no reveal.
+2. Durable storage root location for retained public SEC values. This is
+   required for `GO` and `GO-PARTIAL`; it is not applicable for `HOLD`.
 3. Decision posture: `GO`, `GO-PARTIAL`, or `HOLD`.
 
 ## Prerequisites Satisfied
@@ -137,7 +182,7 @@ An adequate owner reply can be short but must contain all required inputs:
 ```text
 Decision: GO | GO-PARTIAL | HOLD
 Surface: current SEC XBRL controlled-submit | legacy Arelle reveal | no reveal
-Durable storage root: <absolute off-repo, off-cloud-sync, non-static, non-git root>
+Durable storage root: <absolute off-repo, off-cloud-sync, non-static, non-git root> | not applicable for HOLD
 ```
 
 If the owner chooses `GO` or `GO-PARTIAL`, the implementation PR must still pass

@@ -13209,3 +13209,33 @@ internal-value-store enablement, controlled-submit enablement, route/API runtime
 behavior, redaction-posture change, A7 proof-surface change, live SEC egress,
 Arelle network behavior, workflow change, or production-readiness claim is
 admitted by this tranche.
+
+## A8 Owner Decision Brief
+
+Milestone: `sec_xbrl_a8_owner_decision_brief_v1`.
+
+Branch/PR: `codex/a8-owner-decision-brief`, PR `#2413`.
+
+Source frontier: PR `#2409` merged the corrected A8 implementation spec and
+reconciled progress/proof ledgers at `54d616b365d658adb933482b2a867cb9bc2d8c39`;
+PR `#2412` merged A7 full-chain CI durability at
+`67bab0b010edeeecf8a91cca78bb463a6fb0f5ba`.
+
+Status: Tier-1 owner-decision brief for A8 go/no-go. The brief records `GO`,
+`GO-PARTIAL`, and `HOLD`; recommends the current SEC XBRL authority /
+controlled-submit path; keeps the legacy Arelle reveal service as a
+non-recommended alternative; embeds the `M-ADVERSARIAL-REVIEW-AUDIT`
+acceptance and SHOULD-NOT lists; and carries forward the material-bridge CSV
+and migration/storage-backend gates from the implementation spec.
+
+Ledger reconciliation: this PR adds the owner-decision document, doc-conformance
+tests, and progress/proof ledger metadata so the tracked Layer 3 surfaces expose
+the final A8 preclearance decision packet.
+
+Runtime behavior introduced by this pass: `false`.
+
+No flag flip, default change, schema/model/migration, value-reveal enablement,
+internal-value-store enablement, controlled-submit enablement, route/API runtime
+behavior, redaction-posture change, A7 proof-surface source change, live SEC
+egress, Arelle network behavior, workflow change, or production-readiness claim
+is admitted by this tranche.

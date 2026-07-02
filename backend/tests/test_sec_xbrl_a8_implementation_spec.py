@@ -152,6 +152,44 @@ def test_a8_implementation_spec_ledger_reconciliation_is_manifested() -> None:
     assert proof["negative_authority_flags"]["a7_proof_surface_change"] is False
 
 
+def test_a8_owner_decision_brief_ledger_reconciliation_is_manifested() -> None:
+    board = _squash_whitespace(_read(PROGRESS_BOARD))
+    progress_manifest = json.loads(_read(PROGRESS_MANIFEST))
+    proof_manifest = json.loads(_read(PROOF_MANIFEST))
+
+    board_markers = [
+        "A8 Owner Decision Brief",
+        "sec_xbrl_a8_owner_decision_brief_v1",
+        "PR `#2413`",
+        "PR `#2409` merged the corrected A8 implementation spec",
+        "PR `#2412` merged A7 full-chain CI durability",
+        "Runtime behavior introduced by this pass: `false`.",
+    ]
+    missing_board = [marker for marker in board_markers if marker not in board]
+    assert missing_board == []
+
+    progress_tracking = progress_manifest["sec_xbrl_a8_owner_decision_brief_tracking"]
+    assert progress_tracking["milestone"] == "sec_xbrl_a8_owner_decision_brief_v1"
+    assert progress_tracking["branch"] == "codex/a8-owner-decision-brief"
+    assert progress_tracking["pr"] == "#2413"
+    assert progress_tracking["implementation_spec_pr"] == "#2409"
+    assert progress_tracking["a7_chain_ci_durability_pr"] == "#2412"
+    assert progress_tracking["go_partial_reveal_surface_required"] is False
+    assert progress_tracking["hold_storage_root_required"] is False
+    assert progress_tracking["material_bridge_csv_redaction_gate_carried_forward"] is True
+    assert progress_tracking["migration_storage_backend_gate_carried_forward"] is True
+    assert progress_tracking["runtime_behavior_changed_by_tracking"] is False
+    assert progress_tracking["schema_model_migration_changed_by_tracking"] is False
+
+    proof = proof_manifest["sec_xbrl_a8_owner_decision_brief_proof"]
+    assert proof["milestone"] == "sec_xbrl_a8_owner_decision_brief_v1"
+    assert proof["pr"] == "#2413"
+    assert "GO-PARTIAL authorizes no reveal surface" in proof["proof_terms"]
+    assert "HOLD does not require durable storage root" in proof["proof_terms"]
+    assert proof["negative_authority_flags"]["runtime_behavior_change"] is False
+    assert proof["negative_authority_flags"]["schema_model_migration_change"] is False
+
+
 def test_a8_owner_decision_brief_covers_required_decision_surfaces() -> None:
     text = _squash_whitespace(_read(OWNER_BRIEF_DOC))
     required = [
@@ -161,6 +199,8 @@ def test_a8_owner_decision_brief_covers_required_decision_surfaces() -> None:
         "Recommended surface: current SEC XBRL authority plus controlled-submit path.",
         "Alternative surface: legacy Arelle value-reveal service.",
         "Choosing both surfaces is explicitly not recommended.",
+        "For `GO-PARTIAL`, owner selects no reveal surface and authorizes durable internal value-store retention only.",
+        "Durable storage root location for retained public SEC values. This is required for `GO` and `GO-PARTIAL`; it is not applicable for `HOLD`.",
         "LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED",
         "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
         "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
@@ -176,13 +216,16 @@ def test_a8_owner_decision_brief_covers_required_decision_surfaces() -> None:
 def test_a8_owner_decision_brief_imports_adversarial_acceptance_criteria() -> None:
     text = _squash_whitespace(_read(OWNER_BRIEF_DOC))
     required = [
-        "These criteria import and tighten the `M-ADVERSARIAL-REVIEW-AUDIT` acceptance list.",
-        "Selected reveal surface",
+        "The `M-ADVERSARIAL-REVIEW-AUDIT` acceptance list is embedded here so this tracked brief is self-contained:",
+        "These criteria tighten the embedded `M-ADVERSARIAL-REVIEW-AUDIT` list and the existing `a8-implementation-spec.md` gates.",
+        "Decision and surface selection",
         "Live authority",
         "Durable storage root",
         "Server-owned lineage",
         "Request binding",
         "Audit/status redaction",
+        "Material-bridge CSV decision",
+        "Migration and storage-backend decision",
         "Rollback and containment",
         "Verification",
         "Tier-2 posture",
@@ -203,6 +246,7 @@ def test_a8_owner_decision_brief_preserves_should_not_boundaries() -> None:
         "Secure-erasure, retained-value deletion, or value-store wiping as rollback.",
         "H6/archive movement as part of A8 durable store behavior.",
         "Broad implementation freedom beyond the selected reveal, storage, lineage, request-binding, redaction, and rollback surfaces.",
+        "No implicit authorization for live SEC egress, taxonomy download, Arelle network execution, schema/model/migration work, flag default-on changes, or legacy Arelle reveal route activation unless explicitly selected.",
         "This brief authorizes no runtime change by itself.",
     ]
 
@@ -225,4 +269,19 @@ def test_a8_owner_decision_brief_records_satisfied_prerequisites() -> None:
     ]
 
     missing = [marker for marker in required_prerequisites if marker not in text]
+    assert missing == []
+
+
+def test_a8_owner_decision_brief_covers_spec_gate_carryforwards() -> None:
+    text = _squash_whitespace(_read(OWNER_BRIEF_DOC))
+    required = [
+        "Sidecar-mode material-bridge CSV stays redacted",
+        "`value_text`, `effective_value_text`, and `lexical_value_text` remain empty",
+        "retained values are read only from the governed store through the selected reveal path",
+        "First A8 implementation uses the existing filesystem-backed internal value store",
+        "unless the owner separately authorizes a schema/model/migration or ORM-backed store",
+        "Schema/model/migration work, ORM storage, backup/restore semantics, or database retention policy is silently admitted by this owner brief.",
+    ]
+
+    missing = [marker for marker in required if marker not in text]
     assert missing == []

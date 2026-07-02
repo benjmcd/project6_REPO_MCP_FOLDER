@@ -49016,5 +49016,46 @@
     "production_readiness_claimed_by_tracking": false,
     "next_posture": "merge_a8_implementation_spec_after_review_thread_resolution_and_green_ci"
   },
-  "latest_sec_xbrl_a8_implementation_spec_summary": "Branch-local PR #2409 preclearance adds an owner-authorization implementation spec that cites a8-lifecycle-design.md / PR #2406 as A8 durable-retention design authority, keeps temp roots fixture-only, requires durable runtime roots to be off-repo/off-OneDrive/non-static/non-git, and reconciles the progress/proof ledgers with the #2406/#2407/#2408 frontier. It remains Tier-1 planning/test/ledger only and admits no runtime behavior, flag default change, value reveal, internal-value-store enablement, controlled submit, schema/model/migration, redaction-posture change, A7 proof-surface change, workflow change, live SEC egress, Arelle execution, or production-readiness claim."
+  "latest_sec_xbrl_a8_implementation_spec_summary": "Branch-local PR #2409 preclearance adds an owner-authorization implementation spec that cites a8-lifecycle-design.md / PR #2406 as A8 durable-retention design authority, keeps temp roots fixture-only, requires durable runtime roots to be off-repo/off-OneDrive/non-static/non-git, and reconciles the progress/proof ledgers with the #2406/#2407/#2408 frontier. It remains Tier-1 planning/test/ledger only and admits no runtime behavior, flag default change, value reveal, internal-value-store enablement, controlled submit, schema/model/migration, redaction-posture change, A7 proof-surface change, workflow change, live SEC egress, Arelle execution, or production-readiness claim.",
+  "sec_xbrl_a8_owner_decision_brief_tracking": {
+    "tracking_kind": "sec_xbrl_a8_owner_decision_brief_tracking",
+    "milestone": "sec_xbrl_a8_owner_decision_brief_v1",
+    "status": "branch_local_tier1_owner_decision_packet",
+    "branch": "codex/a8-owner-decision-brief",
+    "pr": "#2413",
+    "current_main_refreshed_at": "67bab0b010edeeecf8a91cca78bb463a6fb0f5ba",
+    "owner_decision_brief_doc": "next_milestone_plans/Layer3_planning_docs/a8-owner-decision-brief.md",
+    "implementation_spec_doc": "next_milestone_plans/Layer3_planning_docs/a8-implementation-spec.md",
+    "readiness_gate_doc": "next_milestone_plans/Layer3_planning_docs/a8-readiness-gate.md",
+    "test_file": "backend/tests/test_sec_xbrl_a8_implementation_spec.py",
+    "implementation_spec_pr": "#2409",
+    "implementation_spec_merge_commit": "54d616b365d658adb933482b2a867cb9bc2d8c39",
+    "a7_chain_ci_durability_pr": "#2412",
+    "a7_chain_ci_durability_merge_commit": "67bab0b010edeeecf8a91cca78bb463a6fb0f5ba",
+    "decision_options": [
+      "GO",
+      "GO-PARTIAL",
+      "HOLD"
+    ],
+    "recommended_surface": "current_sec_xbrl_authority_controlled_submit",
+    "legacy_surface_not_recommended": "legacy_arelle_value_reveal_service",
+    "go_partial_reveal_surface_required": false,
+    "hold_storage_root_required": false,
+    "material_bridge_csv_redaction_gate_carried_forward": true,
+    "migration_storage_backend_gate_carried_forward": true,
+    "runtime_behavior_changed_by_tracking": false,
+    "flag_default_changed_by_tracking": false,
+    "value_reveal_enabled_by_tracking": false,
+    "internal_value_store_enabled_by_tracking": false,
+    "controlled_submit_enabled_by_tracking": false,
+    "schema_model_migration_changed_by_tracking": false,
+    "redaction_posture_changed_by_tracking": false,
+    "a7_proof_surface_changed_by_tracking": false,
+    "workflow_changed_by_tracking": false,
+    "live_sec_egress_performed_by_tracking": false,
+    "arelle_execution_performed_by_tracking": false,
+    "production_readiness_claimed_by_tracking": false,
+    "next_posture": "owner_decision_required_before_a8_tier2_runtime_implementation"
+  },
+  "latest_sec_xbrl_a8_owner_decision_brief_summary": "Branch-local PR #2413 adds the final A8 owner-decision brief and doc-conformance tests after PR #2409 corrected implementation spec/ledger reconciliation and PR #2412 A7 full-chain CI durability. The brief records GO, GO-PARTIAL, and HOLD, recommends the current SEC XBRL authority/controlled-submit path, embeds the M-ADVERSARIAL-REVIEW-AUDIT acceptance and SHOULD-NOT lists, carries forward material-bridge CSV and migration/storage-backend gates, and admits no runtime behavior, flag default change, value reveal, internal-value-store enablement, controlled submit, schema/model/migration, redaction-posture change, A7 proof-surface source change, workflow change, live SEC egress, Arelle execution, or production-readiness claim."
 }
