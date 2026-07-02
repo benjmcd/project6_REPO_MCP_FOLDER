@@ -13331,7 +13331,7 @@ by this tranche.
 
 Milestone: `m_a8_record_truth_v1`.
 
-Branch/PR: `codex/a8-record-truth`, PR assigned by GitHub.
+Branch/PR: `codex/a8-record-truth`, PR `#2419`.
 
 Source frontier: current main `6a28d0a481e046e613ce1d7ef7932eb633ef2002`.
 

@@ -49200,7 +49200,7 @@
     "milestone": "m_a8_record_truth_v1",
     "status": "branch_local_tier1_record_reconciliation",
     "branch": "codex/a8-record-truth",
-    "pr": "assigned_by_github",
+    "pr": "#2419",
     "current_main_refreshed_at": "6a28d0a481e046e613ce1d7ef7932eb633ef2002",
     "progress_board_section": "M-A8-RECORD-TRUTH",
     "allowed_files": [
