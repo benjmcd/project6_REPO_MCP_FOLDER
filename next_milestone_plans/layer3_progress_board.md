@@ -13239,3 +13239,38 @@ internal-value-store enablement, controlled-submit enablement, route/API runtime
 behavior, redaction-posture change, A7 proof-surface source change, live SEC
 egress, Arelle network behavior, workflow change, or production-readiness claim
 is admitted by this tranche.
+
+## M-OPS-UTILIZATION-READY Closeout
+
+Milestone: `m_ops_utilization_ready_closeout_v1`.
+
+Lane/PR: `ops-ready-b5`, PR `#2417`.
+
+Source frontier: current main `5a3cc213fe3980d0b765394a0749047633f17bf3`.
+Lane A runtime PR `#2415` was still open and unmerged when this B5 tranche was
+based, so this closeout does not incorporate A8 runtime implementation claims.
+
+Status: Tier-1 operator-utilization readiness closeout. B1 merged RC3 SEC XBRL
+offline acceptance completeness in PR `#2414` at
+`c64ed4221fc909a33debaebc297c2e92bab2609b`; B3 merged the operator utilization
+index in PR `#2416` at `5a3cc213fe3980d0b765394a0749047633f17bf3`. B2 and B4
+were validation/report phases with no source delta: B2 found the
+`project6.ps1 -Action all` ScienceBase conditional-no-op gate still fails closed
+when the live public query returns zero eligible targets, while `status` passes
+and the sampled NRC APS validate-only surfaces fail closed on empty or missing
+local runtime state. B4 verified the SEC XBRL flag-off UI posture slices headless
+and headed.
+
+Ledger reconciliation: this PR adds only progress/proof ledger metadata for the
+completed M-OPS-UTILIZATION-READY lane. The B5 RC3 re-check found
+`SEC_XBRL_TEST_FILES` complete against tracked `backend/tests/test_sec_xbrl_*.py`
+files with 58 declared, 58 tracked, zero missing, and zero extra after path
+normalization.
+
+Runtime behavior introduced by this pass: `false`.
+
+No flag flip, default change, schema/model/migration, value-reveal enablement,
+internal-value-store enablement, controlled-submit enablement, route/API runtime
+behavior, redaction-posture change, A7/A8 proof-surface source change, live SEC
+egress, Arelle execution, workflow change, file removal/deletion, or
+production-readiness claim is admitted by this tranche.

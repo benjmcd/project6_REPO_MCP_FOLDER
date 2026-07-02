@@ -46809,5 +46809,44 @@
     },
     "next_posture": "owner_decision_required_before_a8_tier2_runtime_implementation"
   },
-  "latest_sec_xbrl_a8_owner_decision_brief_proof_summary": "PR #2413 branch-local proof covers the final A8 owner-decision brief and doc-conformance tests. It embeds the adversarial audit acceptance and SHOULD-NOT lists, records GO/GO-PARTIAL/HOLD, keeps GO-PARTIAL reveal-deferred and HOLD storage-root-free, carries forward material-bridge CSV and migration/storage-backend gates, and admits no runtime behavior or Tier-2 surface."
+  "latest_sec_xbrl_a8_owner_decision_brief_proof_summary": "PR #2413 branch-local proof covers the final A8 owner-decision brief and doc-conformance tests. It embeds the adversarial audit acceptance and SHOULD-NOT lists, records GO/GO-PARTIAL/HOLD, keeps GO-PARTIAL reveal-deferred and HOLD storage-root-free, carries forward material-bridge CSV and migration/storage-backend gates, and admits no runtime behavior or Tier-2 surface.",
+  "ops_utilization_ready_closeout_proof": {
+    "proof_kind": "ops_utilization_ready_closeout_proof",
+    "milestone": "m_ops_utilization_ready_closeout_v1",
+    "status": "branch_local_tier1_operator_utilization_closeout",
+    "lane": "ops-ready-b5",
+    "pr": "#2417",
+    "current_main_refreshed_at": "5a3cc213fe3980d0b765394a0749047633f17bf3",
+    "proof_terms": [
+      "RC3 SEC XBRL offline acceptance runner is exhaustive against tracked backend/tests/test_sec_xbrl_*.py after path normalization",
+      "operator utilization index is merged on current main",
+      "SEC XBRL flag-off UI posture is verified headless and headed",
+      "golden-path deviation is reported without backend, config, workflow, schema, or A8/A7 planning-doc edits",
+      "Lane A A8 runtime PR #2415 remains separate and unmerged at B5 tracking time"
+    ],
+    "verification": [
+      "RC3 AST completeness re-check: declared=58 tracked=58 missing=0 extra=0",
+      "python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "python ./tools/l3-progress-check.py",
+      "git diff --check"
+    ],
+    "negative_authority_flags": {
+      "runtime_behavior_change": false,
+      "flag_default_change": false,
+      "value_reveal_enabled": false,
+      "internal_value_store_enabled": false,
+      "controlled_submit_enabled": false,
+      "schema_model_migration_change": false,
+      "redaction_posture_change": false,
+      "a7_or_a8_proof_surface_source_change": false,
+      "workflow_change": false,
+      "live_sec_egress": false,
+      "arelle_execution": false,
+      "file_removal_or_deletion": false,
+      "production_readiness_claim": false
+    },
+    "next_posture": "owner_review_of_closeout_and_separate_a8_runtime_pr"
+  },
+  "latest_ops_utilization_ready_closeout_proof_summary": "PR #2417 B5 proof records M-OPS-UTILIZATION-READY as a Tier-1 closeout: RC3 completeness re-check is 58 declared / 58 tracked / zero missing / zero extra, the operator utilization index is already merged, the UI flag-off posture slices passed headless and headed, and the B2 ScienceBase golden-path deviation remains reported rather than patched across forbidden backend/config surfaces. No runtime behavior or Tier-2 surface is admitted."
 }
