@@ -44,14 +44,15 @@ to seed shared state.
 
 ## Acceptance Runners
 
-Run these from the repo root when validating the selected local profile and its
-accepted overlays.
+Run these from the repo root when validating release-profile acceptance. For
+the current selected 0.3.0 profile, use the RC3 and local-profile rows. RC1 and
+RC2 remain historical capstones for their earlier profile slices.
 
 | Surface | Command | Authority |
 | --- | --- | --- |
-| RC1 local expert | `python .\scripts\rc1_local_expert_acceptance.py --json` | [docs/rc1-local-expert-acceptance.md](rc1-local-expert-acceptance.md) |
-| RC2 public connectors | `python .\scripts\rc2_public_connectors_acceptance.py --json` | [docs/rc2-public-connectors-acceptance.md](rc2-public-connectors-acceptance.md) |
-| RC3 SEC XBRL offline | `python .\scripts\rc3_sec_xbrl_offline_acceptance.py --json` | [docs/rc3-sec-xbrl-offline-acceptance.md](rc3-sec-xbrl-offline-acceptance.md) |
+| Historical RC1 local-expert slice | `python .\scripts\rc1_local_expert_acceptance.py --json` | [docs/rc1-local-expert-acceptance.md](rc1-local-expert-acceptance.md) |
+| Historical RC2 public-connectors slice | `python .\scripts\rc2_public_connectors_acceptance.py --json` | [docs/rc2-public-connectors-acceptance.md](rc2-public-connectors-acceptance.md) |
+| Current RC3 SEC XBRL offline profile | `python .\scripts\rc3_sec_xbrl_offline_acceptance.py --json` | [docs/rc3-sec-xbrl-offline-acceptance.md](rc3-sec-xbrl-offline-acceptance.md) |
 | Local profile operational proof | `python .\scripts\local_profile_acceptance.py --work-dir .\tmp\local-profile-acceptance --json` | [docs/local-profile-ops.md](local-profile-ops.md) |
 
 RC3 is offline/simulation only. It does not authorize live SEC requests,
