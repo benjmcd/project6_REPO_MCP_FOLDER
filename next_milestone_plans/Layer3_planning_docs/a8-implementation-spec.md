@@ -150,6 +150,11 @@ Rollback:
 - Flip no runtime defaults. If the Tier-2 implementation must be backed out,
   revert the sidecar policy/idempotency changes and leave existing store files
   unread but not removed.
+- The no-deletion source guard is a regression canary for accidental direct
+  deletion APIs in the sidecar source (`unlink`, `rmdir`, `remove`, and
+  `rmtree`, including `os`/`shutil` aliases through string and AST checks). It
+  is not an adversarial sandbox and does not claim to catch `getattr` dispatch,
+  subprocess deletion, file truncation, or equivalent evasions.
 
 ### Gate 3 - Storage hygiene is implemented before retained values can be written
 
