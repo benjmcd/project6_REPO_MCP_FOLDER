@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
 import time
@@ -9,6 +10,11 @@ from dataclasses import dataclass
 from typing import Any
 
 import requests
+
+
+DEFAULT_MCS_RELEASE_YEAR = "2023"
+DEFAULT_MCS_RELEASE_QUERY = f"Mineral Commodity Summaries {DEFAULT_MCS_RELEASE_YEAR}"
+DEFAULT_MCS_SCOPE_ITEM_IDS = ("63d1a3c6d34e06fef15006be",)
 
 
 @dataclass
@@ -126,10 +132,24 @@ def _extract_conditional_noop_metrics(run_payload: dict[str, Any], targets_paylo
     }
 
 
+def _default_mcs_release_query() -> str:
+    raw = os.environ.get("SCIENCEBASE_MCS_RELEASE_QUERY", DEFAULT_MCS_RELEASE_QUERY)
+    return raw.strip() or DEFAULT_MCS_RELEASE_QUERY
+
+
+def _default_mcs_scope_values() -> list[str]:
+    raw = os.environ.get("SCIENCEBASE_MCS_SCOPE_ITEM_IDS")
+    if raw is None:
+        return list(DEFAULT_MCS_SCOPE_ITEM_IDS)
+    values = [value.strip() for value in raw.split(",") if value.strip()]
+    return values or list(DEFAULT_MCS_SCOPE_ITEM_IDS)
+
+
 def _annual_payload(*, run_mode: str) -> dict[str, Any]:
     return {
-        "q": "Mineral Commodity Summaries 2026",
-        "scope_mode": "keyword_search",
+        "q": _default_mcs_release_query(),
+        "scope_mode": "explicit_item_ids",
+        "scope_values": _default_mcs_scope_values(),
         "filters": ["systemType=Data Release"],
         "run_mode": run_mode,
         "surface_policy": "files_only",
