@@ -13284,7 +13284,7 @@ Branch/PR: `codex/a8-runtime`, PR `#2415`.
 Source frontier: current main `6a28d0a481e046e613ce1d7ef7932eb633ef2002`.
 
 Status: Tier-2 A8 runtime implementation merged in PR `#2415` at
-`6a28d0a481e046e613ce1d7ef7932eb633ef2002` after two Claude review rounds and
+`6a28d0a481e046e613ce1d7ef7932eb633ef2002` after two review rounds and
 the pre-merge metadata correction. The runtime guard packet remains behind
 default-off owner-local gates.
 
@@ -13331,7 +13331,7 @@ by this tranche.
 
 Milestone: `m_a8_record_truth_v1`.
 
-Branch/PR: `codex/a8-record-truth`, PR `#2419`.
+Record lane/PR: `record-truth`, PR `#2419`.
 
 Source frontier: current main `6a28d0a481e046e613ce1d7ef7932eb633ef2002`.
 

@@ -4,7 +4,7 @@
 > Authority: this is a narrative/state document, NOT runtime truth — verify any
 > file:line / SHA against current `project6-origin/main` before acting on it.
 > Last full pass: historical branch pass against `project6-origin/main` = `fd0cb72f`;
-> addendum updates current-main state through M-A8-RECORD-TRUTH at `6a28d0a481e046e613ce1d7ef7932eb633ef2002`.
+> addendum uses current-main source frontier `6a28d0a481e046e613ce1d7ef7932eb633ef2002` for M-A8-RECORD-TRUTH.
 
 ---
 
@@ -37,7 +37,7 @@ This addendum supersedes the older A8-pending statements below where they
 conflict with current main.
 
 - PR #2415, `Implement SEC XBRL A8 runtime guards`, merged at
-  `6a28d0a481e046e613ce1d7ef7932eb633ef2002` after two Claude Tier-2 review
+  `6a28d0a481e046e613ce1d7ef7932eb633ef2002` after two Tier-2 review
   rounds. It admitted the A8 runtime guard packet behind default-off
   owner-local gates; it did not flip any source default.
 - PR #2418, `Fix ScienceBase live pilot MCS default`, merged at

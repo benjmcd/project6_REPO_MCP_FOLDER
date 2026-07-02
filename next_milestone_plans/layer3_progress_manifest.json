@@ -49169,12 +49169,12 @@
       "boot_time_containment_guard": "Settings init fails closed when raw-bearing flag is armed with default storage exposure and unsafe database placement"
     }
   },
-  "latest_sec_xbrl_a8_runtime_implementation_summary": "PR #2415 merged at 6a28d0a4 after two Claude Tier-2 review rounds and a metadata honesty correction. It adds the default-off A8 runtime guard packet, storage-root hygiene, redacted retention metadata, route/request-binding guard coverage, support-matrix evidence, and review fixes without schema/model/migration, default-on posture, redaction-posture, A7 proof-source, workflow, live SEC egress, Arelle network, file deletion, or production-readiness changes. The 2026-07-02 owner-local operator proof is complete with redacted evidence only; source flags remain default-false and arming is per-run owner-local runtime configuration.",
+  "latest_sec_xbrl_a8_runtime_implementation_summary": "PR #2415 merged at 6a28d0a4 after two Tier-2 review rounds and a metadata honesty correction. It adds the default-off A8 runtime guard packet, storage-root hygiene, redacted retention metadata, route/request-binding guard coverage, support-matrix evidence, and review fixes without schema/model/migration, default-on posture, redaction-posture, A7 proof-source, workflow, live SEC egress, Arelle network, file deletion, or production-readiness changes. The 2026-07-02 owner-local operator proof is complete with redacted evidence only; source flags remain default-false and arming is per-run owner-local runtime configuration.",
   "ops_utilization_sciencebase_golden_path_fix_tracking": {
     "tracking_kind": "ops_utilization_sciencebase_golden_path_fix_tracking",
     "milestone": "m_ops_utilization_ready_b2_fix_v1",
     "status": "merged_tools_only_golden_path_fix",
-    "branch": "codex/ops-ready-b2-fix",
+    "branch": "ops-ready-b2-fix",
     "pr": "#2418",
     "merge_commit": "f2eb7f7f22c8e757d8d1417b6ec8cfede9534293",
     "progress_board_section": "M-A8-RECORD-TRUTH",
@@ -49199,7 +49199,7 @@
     "tracking_kind": "m_a8_record_truth_tracking",
     "milestone": "m_a8_record_truth_v1",
     "status": "branch_local_tier1_record_reconciliation",
-    "branch": "codex/a8-record-truth",
+    "branch": "record-truth",
     "pr": "#2419",
     "current_main_refreshed_at": "6a28d0a481e046e613ce1d7ef7932eb633ef2002",
     "progress_board_section": "M-A8-RECORD-TRUTH",

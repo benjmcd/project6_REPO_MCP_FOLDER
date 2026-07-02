@@ -46913,12 +46913,12 @@
       "boot_time_containment_guard": "Settings init fails closed when raw-bearing flag is armed with default storage exposure and unsafe database placement"
     }
   },
-  "latest_sec_xbrl_a8_runtime_implementation_proof_summary": "PR #2415 merged the Tier-2 A8 runtime guard packet at 6a28d0a4 after two Claude review rounds and a metadata correction. The proof record now includes the 2026-07-02 owner-local operator end-to-end proof as redacted evidence only: downloads_like override behavior, namespace hash, persisted retention policy, two synthetic value records, idempotent re-derive, cross-process durability, redaction sweep, reveal-record guard slice, B4 controlled-submit proof, and boot-time containment guard. Source flags remain default-false.",
+  "latest_sec_xbrl_a8_runtime_implementation_proof_summary": "PR #2415 merged the Tier-2 A8 runtime guard packet at 6a28d0a4 after two review rounds and a metadata correction. The proof record now includes the 2026-07-02 owner-local operator end-to-end proof as redacted evidence only: downloads_like override behavior, namespace hash, persisted retention policy, two synthetic value records, idempotent re-derive, cross-process durability, redaction sweep, reveal-record guard slice, B4 controlled-submit proof, and boot-time containment guard. Source flags remain default-false.",
   "ops_utilization_sciencebase_golden_path_fix_proof": {
     "proof_kind": "ops_utilization_sciencebase_golden_path_fix_proof",
     "milestone": "m_ops_utilization_ready_b2_fix_v1",
     "status": "merged_tools_only_golden_path_fix",
-    "branch": "codex/ops-ready-b2-fix",
+    "branch": "ops-ready-b2-fix",
     "pr": "#2418",
     "merge_commit": "f2eb7f7f22c8e757d8d1417b6ec8cfede9534293",
     "proof_terms": [
@@ -46940,7 +46940,7 @@
     "proof_kind": "m_a8_record_truth_proof",
     "milestone": "m_a8_record_truth_v1",
     "status": "branch_local_tier1_record_reconciliation",
-    "branch": "codex/a8-record-truth",
+    "branch": "record-truth",
     "pr": "#2419",
     "current_main_refreshed_at": "6a28d0a481e046e613ce1d7ef7932eb633ef2002",
     "allowed_files": [
