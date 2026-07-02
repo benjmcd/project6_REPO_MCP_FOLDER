@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
 import sys
 import time
@@ -15,6 +14,7 @@ import requests
 DEFAULT_MCS_RELEASE_YEAR = "2023"
 DEFAULT_MCS_RELEASE_QUERY = f"Mineral Commodity Summaries {DEFAULT_MCS_RELEASE_YEAR}"
 DEFAULT_MCS_SCOPE_ITEM_IDS = ("63d1a3c6d34e06fef15006be",)
+DEFAULT_MCS_BUDGET_SCOPE_ITEM_IDS = ("63d1a416d34e06fef15006eb",)
 
 
 @dataclass
@@ -27,6 +27,7 @@ class ScenarioResult:
     not_modified_count: int = 0
     conditional_revalidated_skip_count: int = 0
     conditional_noop_seen: bool = False
+    budget_blocked_count: int = 0
     nonterminal_target_count: int = 0
 
 
@@ -132,24 +133,11 @@ def _extract_conditional_noop_metrics(run_payload: dict[str, Any], targets_paylo
     }
 
 
-def _default_mcs_release_query() -> str:
-    raw = os.environ.get("SCIENCEBASE_MCS_RELEASE_QUERY", DEFAULT_MCS_RELEASE_QUERY)
-    return raw.strip() or DEFAULT_MCS_RELEASE_QUERY
-
-
-def _default_mcs_scope_values() -> list[str]:
-    raw = os.environ.get("SCIENCEBASE_MCS_SCOPE_ITEM_IDS")
-    if raw is None:
-        return list(DEFAULT_MCS_SCOPE_ITEM_IDS)
-    values = [value.strip() for value in raw.split(",") if value.strip()]
-    return values or list(DEFAULT_MCS_SCOPE_ITEM_IDS)
-
-
 def _annual_payload(*, run_mode: str) -> dict[str, Any]:
     return {
-        "q": _default_mcs_release_query(),
+        "q": DEFAULT_MCS_RELEASE_QUERY,
         "scope_mode": "explicit_item_ids",
-        "scope_values": _default_mcs_scope_values(),
+        "scope_values": list(DEFAULT_MCS_SCOPE_ITEM_IDS),
         "filters": ["systemType=Data Release"],
         "run_mode": run_mode,
         "surface_policy": "files_only",
@@ -159,6 +147,15 @@ def _annual_payload(*, run_mode: str) -> dict[str, Any]:
         "max_items": 20,
         "max_files": 20,
         "mcs_release_mode": "annual_release",
+    }
+
+
+def _budget_payload() -> dict[str, Any]:
+    return {
+        **_annual_payload(run_mode="one_shot_import"),
+        "scope_values": list(DEFAULT_MCS_BUDGET_SCOPE_ITEM_IDS),
+        "max_run_bytes": 6000,
+        "max_file_bytes": 6000,
     }
 
 
@@ -188,6 +185,10 @@ def _run_standard_scenario(base_url: str, *, name: str, payload: dict[str, Any],
         return ScenarioResult(name=name, run_id=run_id, status=status, ok=False, detail=str(final_run.get("error_summary")))
     surfaces_ok, detail, run_payload, targets_payload = _validate_operator_surfaces(base_url, run_id)
     conditional_metrics = _extract_conditional_noop_metrics(run_payload, targets_payload)
+    budget_blocked_count = int(run_payload.get("budget_blocked_count", 0) or 0)
+    if name == "budget_cap" and budget_blocked_count <= 0:
+        surfaces_ok = False
+        detail = "budget_cap scenario did not observe a budget-blocked target"
     return ScenarioResult(
         name=name,
         run_id=run_id,
@@ -197,6 +198,7 @@ def _run_standard_scenario(base_url: str, *, name: str, payload: dict[str, Any],
         not_modified_count=int(conditional_metrics["not_modified_count"]),
         conditional_revalidated_skip_count=int(conditional_metrics["conditional_revalidated_skip_count"]),
         conditional_noop_seen=bool(conditional_metrics["conditional_noop_seen"]),
+        budget_blocked_count=budget_blocked_count,
         nonterminal_target_count=int(run_payload.get("nonterminal_target_count", 0) or 0),
     )
 
@@ -283,7 +285,7 @@ def run_live_suite(base_url: str, *, timeout_seconds: int) -> list[ScenarioResul
     scenarios = [
         ("first_import", _annual_payload(run_mode="one_shot_import")),
         ("recurring_sync", _annual_payload(run_mode="recurring_sync")),
-        ("budget_cap", {**_annual_payload(run_mode="one_shot_import"), "max_run_bytes": 50000, "max_file_bytes": 2048}),
+        ("budget_cap", _budget_payload()),
     ]
     for idx, (name, payload) in enumerate(scenarios, start=1):
         results.append(_run_standard_scenario(base_url, name=name, payload=payload, timeout_seconds=timeout_seconds, idx=idx))
