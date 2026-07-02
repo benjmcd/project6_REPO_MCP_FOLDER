@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DOC_DIR = ROOT / "next_milestone_plans" / "Layer3_planning_docs"
 SPEC_DOC = DOC_DIR / "a8-implementation-spec.md"
 GATE_DOC = DOC_DIR / "a8-readiness-gate.md"
+OWNER_BRIEF_DOC = DOC_DIR / "a8-owner-decision-brief.md"
 PROGRESS_BOARD = ROOT / "next_milestone_plans" / "layer3_progress_board.md"
 PROGRESS_MANIFEST = ROOT / "next_milestone_plans" / "layer3_progress_manifest.json"
 PROOF_MANIFEST = (
@@ -149,3 +150,79 @@ def test_a8_implementation_spec_ledger_reconciliation_is_manifested() -> None:
     assert proof["pr"] == "#2409"
     assert proof["negative_authority_flags"]["runtime_behavior_change"] is False
     assert proof["negative_authority_flags"]["a7_proof_surface_change"] is False
+
+
+def test_a8_owner_decision_brief_covers_required_decision_surfaces() -> None:
+    text = _squash_whitespace(_read(OWNER_BRIEF_DOC))
+    required = [
+        "The owner decision is whether to authorize a bounded Tier-2 implementation",
+        "The irreversible operational step is enabling operator-visible reveal.",
+        "Rollback is never deletion of retained public SEC financial values.",
+        "Recommended surface: current SEC XBRL authority plus controlled-submit path.",
+        "Alternative surface: legacy Arelle value-reveal service.",
+        "Choosing both surfaces is explicitly not recommended.",
+        "LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED",
+        "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
+        "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
+        "`GO`",
+        "`GO-PARTIAL`",
+        "`HOLD`",
+    ]
+
+    missing = [marker for marker in required if marker not in text]
+    assert missing == []
+
+
+def test_a8_owner_decision_brief_imports_adversarial_acceptance_criteria() -> None:
+    text = _squash_whitespace(_read(OWNER_BRIEF_DOC))
+    required = [
+        "These criteria import and tighten the `M-ADVERSARIAL-REVIEW-AUDIT` acceptance list.",
+        "Selected reveal surface",
+        "Live authority",
+        "Durable storage root",
+        "Server-owned lineage",
+        "Request binding",
+        "Audit/status redaction",
+        "Rollback and containment",
+        "Verification",
+        "Tier-2 posture",
+        "Temp roots are test fixtures only.",
+        "Unknown extras are rejected at the request model or proven blocked before service calls.",
+        "Validate-only commands use isolated/offline runtime state",
+    ]
+
+    missing = [marker for marker in required if marker not in text]
+    assert missing == []
+
+
+def test_a8_owner_decision_brief_preserves_should_not_boundaries() -> None:
+    text = _squash_whitespace(_read(OWNER_BRIEF_DOC))
+    forbidden_authority_markers = [
+        "Any implicit authorization for live SEC egress, taxonomy download, Arelle network execution, schema/model/migration work, flag default-on changes, or legacy Arelle reveal route activation unless separately and explicitly selected.",
+        "Temp directories as acceptable production or durable runtime roots.",
+        "Secure-erasure, retained-value deletion, or value-store wiping as rollback.",
+        "H6/archive movement as part of A8 durable store behavior.",
+        "Broad implementation freedom beyond the selected reveal, storage, lineage, request-binding, redaction, and rollback surfaces.",
+        "This brief authorizes no runtime change by itself.",
+    ]
+
+    missing = [marker for marker in forbidden_authority_markers if marker not in text]
+    assert missing == []
+
+
+def test_a8_owner_decision_brief_records_satisfied_prerequisites() -> None:
+    text = _squash_whitespace(_read(OWNER_BRIEF_DOC))
+    required_prerequisites = [
+        "PR `#2406`, merge commit `80370c3fe4917df054f041851ee1aade1a838497`",
+        "PR `#2407`, merge commit `c96ea5154dd13a0724d74f8979bb28651d667cb8`",
+        "PR `#2408`, merge commit `fd0cb72fdf7716113fcf61b5e5137acd3d304f91`",
+        "PR `#2409`, merge commit `54d616b365d658adb933482b2a867cb9bc2d8c39`",
+        "progress board, progress manifest, and proof manifest were reconciled",
+        "PR `#2410`, merge commit `abd8c3f8ac2b2545fda8b88d46aa916a22b626e8`",
+        "PR `#2411`, merge commit `0290ff5bbbd5a4d6c52aa3a09eb994985c0ca39f`",
+        "PR `#2412`, merge commit `67bab0b010edeeecf8a91cca78bb463a6fb0f5ba`",
+        "connector -> parser -> regex-fact -> Arelle sidecar -> material bridge -> `DatasetVersion`",
+    ]
+
+    missing = [marker for marker in required_prerequisites if marker not in text]
+    assert missing == []
