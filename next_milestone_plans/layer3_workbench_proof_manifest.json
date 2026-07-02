@@ -46852,18 +46852,17 @@
   "sec_xbrl_a8_runtime_implementation_proof": {
     "proof_kind": "sec_xbrl_a8_runtime_implementation_proof",
     "milestone": "sec_xbrl_a8_runtime_implementation_v1",
-    "status": "branch_local_tier2_runtime_implementation_pending_owner_review",
+    "status": "merged_tier2_runtime_implementation_default_off",
     "branch": "codex/a8-runtime",
     "pr": "#2415",
-    "current_main_refreshed_at": "6b735721398754b445ee6f2b466394f374acf49e",
+    "current_main_refreshed_at": "6a28d0a481e046e613ce1d7ef7932eb633ef2002",
     "proof_terms": [
-      "A8 runtime remains owner-gated and default-off",
+      "A8 runtime guard packet is merged and remains default-off in source",
       "internal value-store storage-root hygiene rejects structural roots even with override acknowledgement",
       "downloads/temp name-class override records only namespace hash and override reason, not raw root path",
       "OneDrive/cloud-sync variants are structural and precede downloads/temp name classes",
       "no deletion path is admitted for the internal value store",
-      "ledger reconciliation included in the runtime PR after rebase onto current main",
-      "merge waits for renewed Claude owner approval of the updated PR head"
+      "operator end-to-end proof is complete with redacted evidence only"
     ],
     "verification": [
       "python -m pytest backend/tests/test_sec_xbrl_sidecar.py -q",
@@ -46894,7 +46893,95 @@
       "storage hygiene emits reason code, override boolean, and namespace hash without raw path disclosure",
       "route-level value-reveal extra-field rejection remains redacted instead of leaking raw invalid input"
     ],
-    "next_posture": "await_claude_owner_approval_of_rebased_a8_runtime_pr_head_before_merge"
+    "next_posture": "a8_arc_closed_current_record_flags_remain_default_false_owner_local_arming_only",
+    "merge_commit": "6a28d0a481e046e613ce1d7ef7932eb633ef2002",
+    "operator_e2e_proof_status": "complete_redacted_owner_local_2026_07_02",
+    "operator_e2e_redacted_evidence": {
+      "storage_hygiene_class": "downloads_like",
+      "without_override_ack": "rejected",
+      "with_override_ack": "accepted_recorded_override",
+      "override_reason_code": "storage_root_hygiene_downloads_like_override_ack",
+      "storage_namespace_hash": "6b61a9bbc6d25d2a38b2992b90bc190f2834742b4d34ddfa62b1be056ec289b3",
+      "store_state": "persisted",
+      "retention_policy": "sec_xbrl_public_financial_value_retention_v1",
+      "synthetic_value_records": 2,
+      "idempotent_rederive": "same_receipt_id_store_intact_create_only",
+      "cross_process_durability_reverification": "PASS",
+      "redaction_sweep": "PASS",
+      "reveal_record_guard_slice": "13 passed",
+      "controlled_submit_happy_path": "B4 e2e 8/8 headless and headed",
+      "boot_time_containment_guard": "Settings init fails closed when raw-bearing flag is armed with default storage exposure and unsafe database placement"
+    }
   },
-  "latest_sec_xbrl_a8_runtime_implementation_proof_summary": "PR #2415 branch-local proof covers the rebased Tier-2 A8 runtime packet and review remediation: default-off internal value-store storage-root hygiene, redacted storage metadata, OneDrive/cloud-sync structural precedence, full non-accepted hygiene-class coverage, AST no-deletion guard coverage, Windows broad-root detection, JSON ledger validation, progress-check validation, local pytest/py_compile verification, and CI watch before renewed owner review. The PR remains unmerged pending Claude approval of the updated head."
+  "latest_sec_xbrl_a8_runtime_implementation_proof_summary": "PR #2415 merged the Tier-2 A8 runtime guard packet at 6a28d0a4 after two Claude review rounds and a metadata correction. The proof record now includes the 2026-07-02 owner-local operator end-to-end proof as redacted evidence only: downloads_like override behavior, namespace hash, persisted retention policy, two synthetic value records, idempotent re-derive, cross-process durability, redaction sweep, reveal-record guard slice, B4 controlled-submit proof, and boot-time containment guard. Source flags remain default-false.",
+  "ops_utilization_sciencebase_golden_path_fix_proof": {
+    "proof_kind": "ops_utilization_sciencebase_golden_path_fix_proof",
+    "milestone": "m_ops_utilization_ready_b2_fix_v1",
+    "status": "merged_tools_only_golden_path_fix",
+    "branch": "codex/ops-ready-b2-fix",
+    "pr": "#2418",
+    "merge_commit": "f2eb7f7f22c8e757d8d1417b6ec8cfede9534293",
+    "proof_terms": [
+      "ScienceBase live pilot golden path re-pointed to a verified live 2023 dataset",
+      "strict conditional no-op gate preserved",
+      "project6.ps1 -Action all proven green over three consecutive runs"
+    ],
+    "negative_authority_flags": {
+      "backend_app_change": false,
+      "schema_model_migration_change": false,
+      "config_workflow_change": false,
+      "sec_egress_change": false,
+      "gate_weakening": false,
+      "docs_runbook_change_in_pr_2418": false
+    }
+  },
+  "latest_ops_utilization_sciencebase_golden_path_fix_proof_summary": "PR #2418 proof records a tools-only ScienceBase golden-path fix: verified live 2023 dataset target, strict conditional no-op gate preserved, and project6.ps1 -Action all green over three consecutive runs. This manifest entry records that omitted ledger tranche only.",
+  "m_a8_record_truth_proof": {
+    "proof_kind": "m_a8_record_truth_proof",
+    "milestone": "m_a8_record_truth_v1",
+    "status": "branch_local_tier1_record_reconciliation",
+    "branch": "codex/a8-record-truth",
+    "pr": "assigned_by_github",
+    "current_main_refreshed_at": "6a28d0a481e046e613ce1d7ef7932eb633ef2002",
+    "allowed_files": [
+      "docs/MASTER_CONTEXT.md",
+      "docs/OPERATOR_UTILIZATION_INDEX.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "proof_terms": [
+      "records PR #2418 B2-FIX golden-path tranche omitted from prior ledgers by scope",
+      "records A8 operator end-to-end proof complete using redacted evidence only",
+      "documents owner-local per-run arming recipe with generic placeholders only",
+      "preserves default-false source flags and admits no runtime/code/schema/workflow change"
+    ],
+    "verification": [
+      "python -m json.tool next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "python ./tools/l3-progress-check.py",
+      "git diff --check",
+      "relative-link check on docs/MASTER_CONTEXT.md and docs/OPERATOR_UTILIZATION_INDEX.md"
+    ],
+    "negative_authority_flags": {
+      "runtime_behavior_change": false,
+      "flag_default_change": false,
+      "value_reveal_default_enabled": false,
+      "internal_value_store_default_enabled": false,
+      "controlled_submit_default_enabled": false,
+      "schema_model_migration_change": false,
+      "redaction_posture_change": false,
+      "a7_proof_surface_source_change": false,
+      "workflow_change": false,
+      "live_sec_egress": false,
+      "arelle_execution": false,
+      "file_removal_or_deletion": false,
+      "raw_storage_root_disclosure": false,
+      "operator_identity_disclosure": false,
+      "local_path_disclosure": false,
+      "production_readiness_claim": false
+    },
+    "next_posture": "a8_arc_closed_for_current_sec_edgar_value_retention_record_flags_default_false_owner_local_arming_only"
+  },
+  "latest_m_a8_record_truth_proof_summary": "M-A8-RECORD-TRUTH proof is Tier-1 record reconciliation only. It updates two docs, the progress board, and both manifests to record PR #2418 and the completed A8 operator proof using redacted evidence only, with no runtime behavior, source default, schema/model/migration, redaction-posture, workflow, live SEC egress, Arelle execution, file deletion, raw root, operator identity, local path, or production-readiness admission."
 }

@@ -134,8 +134,32 @@ runtime configuration.
 A8 flags are default-off. Arming is owner-local runtime configuration, not a
 source default. The authoritative current decision reference is
 [next_milestone_plans/Layer3_planning_docs/a8-owner-decision-brief.md](../next_milestone_plans/Layer3_planning_docs/a8-owner-decision-brief.md).
-Once the A8 runtime PR lands, use that PR as the runtime implementation
-authority. Do not copy A8 implementation details into this index.
+PR #2415 is now the runtime implementation authority for the default-off A8
+guard packet. The implementation does not make reveal, internal value-store, or
+controlled submit default-on in source.
+
+For an owner-local A8 run, arm only the needed per-run environment:
+
+- Set `LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED=true` when the run
+  must persist retained public SEC financial values in the internal value store.
+- Also set `LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED=true` when
+  the run will exercise the controlled reveal-submit path.
+- Set `STORAGE_DIR=<durable-off-repo-off-cloud-sync-root>` to an isolated
+  operator-owned root. Use a generic placeholder in committed docs; do not
+  record the real root.
+- Set `LAYER3_SEC_XBRL_STORAGE_ROOT_HYGIENE_OVERRIDE_ACK=true` only for a
+  deliberate Downloads-like or temp-named root. The override is recorded in
+  receipts and does not bypass structural hygiene failures.
+- Keep `STORAGE_EXPOSURE=disabled` and set
+  `DATABASE_URL=<operator-database-outside-repo-and-cloud-sync>`. The
+  containment guard fails closed during Settings initialization when a
+  raw-bearing A8 flag is armed with default storage exposure or unsafe database
+  placement.
+
+Tracked authority: [backend/.env.example](../backend/.env.example),
+[a8-implementation-spec.md](../next_milestone_plans/Layer3_planning_docs/a8-implementation-spec.md),
+[a8-readiness-gate.md](../next_milestone_plans/Layer3_planning_docs/a8-readiness-gate.md), and
+[a8-owner-decision-brief.md](../next_milestone_plans/Layer3_planning_docs/a8-owner-decision-brief.md).
 
 ## Stop Conditions
 

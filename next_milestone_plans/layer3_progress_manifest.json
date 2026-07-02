@@ -49105,10 +49105,10 @@
   "sec_xbrl_a8_runtime_implementation_tracking": {
     "tracking_kind": "sec_xbrl_a8_runtime_implementation_tracking",
     "milestone": "sec_xbrl_a8_runtime_implementation_v1",
-    "status": "branch_local_tier2_runtime_implementation_pending_owner_review",
+    "status": "merged_tier2_runtime_implementation_default_off",
     "branch": "codex/a8-runtime",
     "pr": "#2415",
-    "current_main_refreshed_at": "6b735721398754b445ee6f2b466394f374acf49e",
+    "current_main_refreshed_at": "6a28d0a481e046e613ce1d7ef7932eb633ef2002",
     "owner_decision_brief_doc": "next_milestone_plans/Layer3_planning_docs/a8-owner-decision-brief.md",
     "implementation_spec_doc": "next_milestone_plans/Layer3_planning_docs/a8-implementation-spec.md",
     "readiness_gate_doc": "next_milestone_plans/Layer3_planning_docs/a8-readiness-gate.md",
@@ -49148,8 +49148,120 @@
     "arelle_execution_performed_by_tracking": false,
     "file_removal_or_deletion_performed_by_tracking": false,
     "production_readiness_claimed_by_tracking": false,
-    "merge_blocked_until_owner_approval": true,
-    "next_posture": "await_claude_owner_approval_of_rebased_a8_runtime_pr_head_before_merge"
+    "merge_blocked_until_owner_approval": false,
+    "next_posture": "a8_arc_closed_current_record_flags_remain_default_false_owner_local_arming_only",
+    "merge_commit": "6a28d0a481e046e613ce1d7ef7932eb633ef2002",
+    "operator_e2e_proof_status": "complete_redacted_owner_local_2026_07_02",
+    "operator_e2e_redacted_evidence": {
+      "storage_hygiene_class": "downloads_like",
+      "without_override_ack": "rejected",
+      "with_override_ack": "accepted_recorded_override",
+      "override_reason_code": "storage_root_hygiene_downloads_like_override_ack",
+      "storage_namespace_hash": "6b61a9bbc6d25d2a38b2992b90bc190f2834742b4d34ddfa62b1be056ec289b3",
+      "store_state": "persisted",
+      "retention_policy": "sec_xbrl_public_financial_value_retention_v1",
+      "synthetic_value_records": 2,
+      "idempotent_rederive": "same_receipt_id_store_intact_create_only",
+      "cross_process_durability_reverification": "PASS",
+      "redaction_sweep": "PASS",
+      "reveal_record_guard_slice": "13 passed",
+      "controlled_submit_happy_path": "B4 e2e 8/8 headless and headed",
+      "boot_time_containment_guard": "Settings init fails closed when raw-bearing flag is armed with default storage exposure and unsafe database placement"
+    }
   },
-  "latest_sec_xbrl_a8_runtime_implementation_summary": "PR #2415 branch-local Tier-2 A8 runtime implementation adds default-off internal value-store storage-root hygiene, redacted retention metadata, route/request-binding guard coverage, support-matrix evidence, and review fixes for OneDrive/cloud-sync prefix detection, per-class hygiene coverage, no-deletion source guards, and Windows broad-root detection. It is rebased onto current main 6b735721 and remains unmerged pending renewed Claude owner approval; it admits runtime behavior only behind default-off owner-local gates and does not change schema/model/migration, default-on posture, redaction posture, A7 proof source, workflow, live SEC egress, Arelle network behavior, file deletion, or production-readiness claim."
+  "latest_sec_xbrl_a8_runtime_implementation_summary": "PR #2415 merged at 6a28d0a4 after two Claude Tier-2 review rounds and a metadata honesty correction. It adds the default-off A8 runtime guard packet, storage-root hygiene, redacted retention metadata, route/request-binding guard coverage, support-matrix evidence, and review fixes without schema/model/migration, default-on posture, redaction-posture, A7 proof-source, workflow, live SEC egress, Arelle network, file deletion, or production-readiness changes. The 2026-07-02 owner-local operator proof is complete with redacted evidence only; source flags remain default-false and arming is per-run owner-local runtime configuration.",
+  "ops_utilization_sciencebase_golden_path_fix_tracking": {
+    "tracking_kind": "ops_utilization_sciencebase_golden_path_fix_tracking",
+    "milestone": "m_ops_utilization_ready_b2_fix_v1",
+    "status": "merged_tools_only_golden_path_fix",
+    "branch": "codex/ops-ready-b2-fix",
+    "pr": "#2418",
+    "merge_commit": "f2eb7f7f22c8e757d8d1417b6ec8cfede9534293",
+    "progress_board_section": "M-A8-RECORD-TRUTH",
+    "implementation_files": [
+      "tools/run_sciencebase_live_pilot_validation.py"
+    ],
+    "recorded_because": "PR #2418 was tools-only and intentionally excluded ledgers by its own scope; this Tier-1 record-truth lane reconciles that omitted tranche.",
+    "proof_terms": [
+      "ScienceBase live pilot golden path re-pointed to a verified live 2023 dataset",
+      "strict conditional no-op gate preserved",
+      "project6.ps1 -Action all proven green over three consecutive runs"
+    ],
+    "runtime_behavior_changed_by_tracking": false,
+    "flag_default_changed_by_tracking": false,
+    "schema_model_migration_changed_by_tracking": false,
+    "live_sec_egress_performed_by_tracking": false,
+    "file_removal_or_deletion_performed_by_tracking": false,
+    "production_readiness_claimed_by_tracking": false
+  },
+  "latest_ops_utilization_sciencebase_golden_path_fix_summary": "PR #2418 merged the tools-only B2-FIX golden-path tranche at f2eb7f7f: the ScienceBase live pilot default now targets a verified live 2023 dataset, the strict conditional no-op gate remains intact, and project6.ps1 -Action all was proven green over three consecutive runs. This record-truth entry adds ledger metadata only.",
+  "m_a8_record_truth_tracking": {
+    "tracking_kind": "m_a8_record_truth_tracking",
+    "milestone": "m_a8_record_truth_v1",
+    "status": "branch_local_tier1_record_reconciliation",
+    "branch": "codex/a8-record-truth",
+    "pr": "assigned_by_github",
+    "current_main_refreshed_at": "6a28d0a481e046e613ce1d7ef7932eb633ef2002",
+    "progress_board_section": "M-A8-RECORD-TRUTH",
+    "allowed_files": [
+      "docs/MASTER_CONTEXT.md",
+      "docs/OPERATOR_UTILIZATION_INDEX.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "records_pr_2418_b2_fix": true,
+    "records_a8_operator_e2e_complete": true,
+    "operator_e2e_redacted_evidence": {
+      "storage_hygiene_class": "downloads_like",
+      "without_override_ack": "rejected",
+      "with_override_ack": "accepted_recorded_override",
+      "override_reason_code": "storage_root_hygiene_downloads_like_override_ack",
+      "storage_namespace_hash": "6b61a9bbc6d25d2a38b2992b90bc190f2834742b4d34ddfa62b1be056ec289b3",
+      "store_state": "persisted",
+      "retention_policy": "sec_xbrl_public_financial_value_retention_v1",
+      "synthetic_value_records": 2,
+      "idempotent_rederive": "same_receipt_id_store_intact_create_only",
+      "cross_process_durability_reverification": "PASS",
+      "redaction_sweep": "PASS",
+      "reveal_record_guard_slice": "13 passed",
+      "controlled_submit_happy_path": "B4 e2e 8/8 headless and headed",
+      "boot_time_containment_guard": "Settings init fails closed when raw-bearing flag is armed with default storage exposure and unsafe database placement"
+    },
+    "docs_updated": [
+      "docs/MASTER_CONTEXT.md",
+      "docs/OPERATOR_UTILIZATION_INDEX.md"
+    ],
+    "manifests_updated": [
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "validation": [
+      "python -m json.tool next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "python ./tools/l3-progress-check.py",
+      "git diff --check",
+      "relative-link check on docs/MASTER_CONTEXT.md and docs/OPERATOR_UTILIZATION_INDEX.md"
+    ],
+    "negative_authority_flags": {
+      "runtime_behavior_change": false,
+      "flag_default_change": false,
+      "value_reveal_default_enabled": false,
+      "internal_value_store_default_enabled": false,
+      "controlled_submit_default_enabled": false,
+      "schema_model_migration_change": false,
+      "redaction_posture_change": false,
+      "a7_proof_surface_source_change": false,
+      "workflow_change": false,
+      "live_sec_egress": false,
+      "arelle_execution": false,
+      "file_removal_or_deletion": false,
+      "raw_storage_root_disclosure": false,
+      "operator_identity_disclosure": false,
+      "local_path_disclosure": false,
+      "production_readiness_claim": false
+    },
+    "next_posture": "a8_arc_closed_for_current_sec_edgar_value_retention_record_flags_default_false_owner_local_arming_only"
+  },
+  "latest_m_a8_record_truth_summary": "M-A8-RECORD-TRUTH is a Tier-1 docs/ledger reconciliation lane over exactly two docs, the progress board, and two manifests. It records PR #2418 B2-FIX, marks the A8 operator end-to-end proof complete with redacted evidence only, and closes the current SEC EDGAR A8 value-retention arc while preserving default-false source flags and owner-local per-run arming."
 }
