@@ -4,7 +4,7 @@
 > Authority: this is a narrative/state document, NOT runtime truth — verify any
 > file:line / SHA against current `project6-origin/main` before acting on it.
 > Last full pass: historical branch pass against `project6-origin/main` = `fd0cb72f`;
-> addendum updates current-main state through PR #2409 at `54d616b365d658adb933482b2a867cb9bc2d8c39`.
+> addendum uses current-main source frontier `6a28d0a481e046e613ce1d7ef7932eb633ef2002` for M-A8-RECORD-TRUTH.
 
 ---
 
@@ -30,6 +30,39 @@ apply these current-main corrections before using it as an operator handoff:
   enablement, controlled-submit enablement, redaction-posture change, A7
   proof-surface change, workflow change, live SEC egress, Arelle execution, or
   production-readiness claim.
+
+## 2026-07-02 Addendum - A8 Runtime Closure And Record Truth
+
+This addendum supersedes the older A8-pending statements below where they
+conflict with current main.
+
+- PR #2415, `Implement SEC XBRL A8 runtime guards`, merged at
+  `6a28d0a481e046e613ce1d7ef7932eb633ef2002` after two Tier-2 review
+  rounds. It admitted the A8 runtime guard packet behind default-off
+  owner-local gates; it did not flip any source default.
+- PR #2418, `Fix ScienceBase live pilot MCS default`, merged at
+  `f2eb7f7f22c8e757d8d1417b6ec8cfede9534293` as a tools-only B2-FIX
+  golden-path tranche. The ScienceBase golden path now targets a verified live
+  2023 dataset, preserves the strict conditional no-op gate, and was proven by
+  `project6.ps1 -Action all` over three consecutive runs.
+- The A8 operator end-to-end proof is complete as of the 2026-07-02
+  owner-local run. Redacted evidence recorded for repo history: hygiene class
+  `downloads_like` rejected without override acknowledgement and accepted only
+  with recorded override acknowledgement
+  (`storage_root_hygiene_downloads_like_override_ack`), namespace hash
+  `6b61a9bbc6d25d2a38b2992b90bc190f2834742b4d34ddfa62b1be056ec289b3`,
+  `store_state=persisted`,
+  `retention_policy=sec_xbrl_public_financial_value_retention_v1`, two
+  synthetic value records, idempotent re-derive with the same receipt id and
+  intact create-only store, cross-process durability re-verification PASS,
+  redaction sweep PASS, reveal-record guard slice `13 passed`, and the
+  previously proven B4 route-level controlled-submit happy path `8/8`.
+- The boot-time containment guard was demonstrated live: arming a raw-bearing
+  flag with default storage exposure and database placement fails closed during
+  Settings initialization.
+- A8 is closed for the current SEC EDGAR value-retention arc. Source flags
+  remain default-false; any arming is per-run owner-local runtime
+  configuration, not source posture.
 
 ## 0. How to read this
 

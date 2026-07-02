@@ -13281,11 +13281,12 @@ Milestone: `sec_xbrl_a8_runtime_implementation_v1`.
 
 Branch/PR: `codex/a8-runtime`, PR `#2415`.
 
-Source frontier: current main `6b735721398754b445ee6f2b466394f374acf49e`.
+Source frontier: current main `6a28d0a481e046e613ce1d7ef7932eb633ef2002`.
 
-Status: branch-local Tier-2 A8 runtime implementation pending renewed Claude owner
-approval of the rebased PR head. The implementation remains unmerged and must not
-be merged until that approval is recorded.
+Status: Tier-2 A8 runtime implementation merged in PR `#2415` at
+`6a28d0a481e046e613ce1d7ef7932eb633ef2002` after two review rounds and
+the pre-merge metadata correction. The runtime guard packet remains behind
+default-off owner-local gates.
 
 Runtime behavior introduced by this pass: `true`, behind default-off owner-local
 runtime gates.
@@ -13315,11 +13316,61 @@ Scope implemented:
    sidecar behavior, route-level redacted rejection coverage, support-matrix
    evidence, and focused A8 guard tests without changing schema/model/migrations.
 
-Ledger reconciliation: this PR adds progress/proof ledger metadata for the branch
-local A8 runtime tranche after rebasing over the M-OPS-UTILIZATION-READY merges.
+Ledger reconciliation: PR `#2415` added progress/proof ledger metadata for the
+A8 runtime tranche after rebasing over the M-OPS-UTILIZATION-READY merges. The
+M-A8-RECORD-TRUTH tranche below supersedes the prior pending-merge posture and
+records the later operator proof.
 
 No flag default change, default-on value reveal, default-on internal value store,
 default-on controlled submit, schema/model/migration change, redaction-posture
 change, A7 proof-surface source change, workflow change, live SEC egress, Arelle
 network behavior, file removal/deletion, or production-readiness claim is admitted
 by this tranche.
+
+## M-A8-RECORD-TRUTH
+
+Milestone: `m_a8_record_truth_v1`.
+
+Record lane/PR: `record-truth`, PR `#2419`.
+
+Source frontier: current main `6a28d0a481e046e613ce1d7ef7932eb633ef2002`.
+
+Status: Tier-1 record reconciliation for the closed A8 arc and the omitted B2-FIX
+golden-path tranche. This is docs/ledger metadata only.
+
+PR `#2418` B2-FIX tranche: tools-only golden-path repair merged at
+`f2eb7f7f22c8e757d8d1417b6ec8cfede9534293`. The ScienceBase live pilot default
+was re-pointed to a verified live 2023 dataset, the strict conditional no-op gate
+remained intact, and `project6.ps1 -Action all` was proven green over three
+consecutive runs. The earlier B5 ledger intentionally skipped this fix by scope;
+this tranche records it without changing runtime code.
+
+A8 operator proof: COMPLETE as of the 2026-07-02 owner-local run. Committed
+record is redacted: `downloads_like` hygiene rejected without override
+acknowledgement and accepted only with recorded override acknowledgement
+(`storage_root_hygiene_downloads_like_override_ack`); storage namespace hash
+`6b61a9bbc6d25d2a38b2992b90bc190f2834742b4d34ddfa62b1be056ec289b3`;
+`store_state=persisted`;
+`retention_policy=sec_xbrl_public_financial_value_retention_v1`; two synthetic
+value records; idempotent re-derive with same receipt id and intact create-only
+store; cross-process durability re-verification PASS; redaction sweep PASS;
+reveal-record guard slice `13 passed`; and the B4 route-level controlled-submit
+happy path remained proven `8/8` headless and headed.
+
+Containment guard: boot-time Settings initialization fails closed when a
+raw-bearing A8 flag is armed with default storage exposure and unsafe database
+placement.
+
+Ledger reconciliation: this PR updates `docs/MASTER_CONTEXT.md`,
+`docs/OPERATOR_UTILIZATION_INDEX.md`, this board, `layer3_progress_manifest.json`,
+and `layer3_workbench_proof_manifest.json` only.
+
+Runtime behavior introduced by this pass: `false`.
+
+No flag default change, default-on value reveal, default-on internal value store,
+default-on controlled submit, schema/model/migration change, redaction-posture
+change, A7 proof-surface source change, workflow change, live SEC egress, Arelle
+network behavior, file removal/deletion, raw storage-root disclosure, operator
+identity disclosure, local path disclosure, or production-readiness claim is
+admitted by this tranche. A8 source flags remain default-false; arming is
+per-run owner-local runtime configuration.
