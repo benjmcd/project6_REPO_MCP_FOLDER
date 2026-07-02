@@ -291,6 +291,69 @@ def test_sec_xbrl_sidecar_storage_hygiene_onedrive_variants_precede_downloads_ov
     assert result.reason_code == "storage_root_hygiene_onedrive_cloud_sync"
 
 
+@pytest.mark.parametrize("downloads_part", ["Downloads", "DOWNLOADS"])
+def test_sec_xbrl_sidecar_storage_hygiene_downloads_case_and_trailing_separator(
+    tmp_path,
+    downloads_part,
+):
+    storage_root = tmp_path / downloads_part
+    storage_root.mkdir()
+    storage_root_with_separator = Path(str(storage_root) + "/")
+
+    rejected = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        storage_root_with_separator,
+        override_ack=False,
+    )
+    accepted = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        storage_root_with_separator,
+        override_ack=True,
+    )
+
+    assert rejected.accepted is False
+    assert rejected.hygiene_class is _HYGIENE_CLASS.DOWNLOADS_LIKE
+    assert rejected.reason_code == "storage_root_hygiene_downloads_like"
+    assert accepted.accepted is True
+    assert accepted.override is True
+    assert accepted.hygiene_class is _HYGIENE_CLASS.DOWNLOADS_LIKE
+    assert accepted.reason_code == "storage_root_hygiene_downloads_like_override_ack"
+
+
+@pytest.mark.parametrize("onedrive_part", ["onedrive-contoso", "ONEDRIVE_CONTOSO"])
+def test_sec_xbrl_sidecar_storage_hygiene_onedrive_case_variants_precede_downloads_override(
+    tmp_path,
+    onedrive_part,
+):
+    storage_root = tmp_path / "Downloads" / onedrive_part / "storage"
+    storage_root.mkdir(parents=True)
+
+    result = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        storage_root,
+        override_ack=True,
+    )
+
+    assert result.accepted is False
+    assert result.hygiene_class is _HYGIENE_CLASS.ONEDRIVE_CLOUD_SYNC
+    assert result.reason_code == "storage_root_hygiene_onedrive_cloud_sync"
+
+
+def test_sec_xbrl_sidecar_storage_hygiene_rejects_symlink_into_repo_root(tmp_path):
+    repo_root = Path(__file__).resolve().parents[2]
+    storage_root = tmp_path / "linked-repo"
+    try:
+        storage_root.symlink_to(repo_root, target_is_directory=True)
+    except (NotImplementedError, OSError) as exc:
+        pytest.skip(f"directory symlink unavailable: {exc}")
+
+    result = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        storage_root,
+        override_ack=True,
+    )
+
+    assert result.accepted is False
+    assert result.hygiene_class is _HYGIENE_CLASS.REPO_RELATIVE
+    assert result.reason_code == "storage_root_hygiene_repo_relative"
+
+
 @pytest.mark.parametrize(
     "path_text",
     ["C:/Users", "C:/Program Files", "C:/Program Files (x86)", "C:/ProgramData"],
@@ -339,6 +402,7 @@ def test_sec_xbrl_sidecar_storage_hygiene_handles_missing_git(monkeypatch, tmp_p
 
 
 def test_sec_xbrl_sidecar_internal_value_store_source_has_no_deletion_path():
+    """Canary for accidental direct deletion APIs, not adversarial evasion."""
     source = Path(layer3_sec_xbrl_sidecar.__file__).read_text(encoding="utf-8")
     tree = ast.parse(source)
     imported_delete_call_names: set[str] = set()

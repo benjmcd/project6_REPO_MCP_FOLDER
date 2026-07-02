@@ -14,6 +14,11 @@
 4. `backend-migrations-postgres` - Alembic plus Layer 3 migration and 3C golden-path checks against PostgreSQL.
 5. `sec-xbrl-arelle-provisioning` - offline taxonomy provisioning, Arelle readiness, and targeted SEC-XBRL tests.
 
+`sec-xbrl-arelle-provisioning` is intentionally an A7, sidecar, and provisioning
+subset. It is not the exhaustive SEC-XBRL test inventory; the backend shards plus
+the RC3 exhaustive list cover the tracked `backend/tests/test_sec_xbrl_*.py`
+files.
+
 The deterministic Sublayer-3C analytical chain is therefore release-gate-blocking:
 `backend-migrations-postgres` runs `tests/test_layer3_3c_golden_path.py`, which imports
 and invokes `generate_analysis_product` and asserts provenance and output payload details.
