@@ -46767,5 +46767,47 @@
     },
     "next_posture": "merge_a8_implementation_spec_after_review_thread_resolution_and_green_ci"
   },
-  "latest_sec_xbrl_a8_implementation_spec_proof_summary": "PR #2409 branch-local proof covers the A8 owner-authorization implementation spec: it cites a8-lifecycle-design.md / PR #2406 as design authority, keeps temp roots fixture-only, requires durable runtime roots to be off-repo/off-OneDrive/non-static/non-git, and reconciles progress/proof ledgers with the #2406/#2407/#2408 frontier while remaining Tier-1 planning/test/ledger only with no runtime behavior or Tier-2 surface admitted."
+  "latest_sec_xbrl_a8_implementation_spec_proof_summary": "PR #2409 branch-local proof covers the A8 owner-authorization implementation spec: it cites a8-lifecycle-design.md / PR #2406 as design authority, keeps temp roots fixture-only, requires durable runtime roots to be off-repo/off-OneDrive/non-static/non-git, and reconciles progress/proof ledgers with the #2406/#2407/#2408 frontier while remaining Tier-1 planning/test/ledger only with no runtime behavior or Tier-2 surface admitted.",
+  "sec_xbrl_a8_owner_decision_brief_proof": {
+    "proof_kind": "sec_xbrl_a8_owner_decision_brief_proof",
+    "milestone": "sec_xbrl_a8_owner_decision_brief_v1",
+    "status": "branch_local_tier1_owner_decision_packet",
+    "branch": "codex/a8-owner-decision-brief",
+    "pr": "#2413",
+    "current_main_refreshed_at": "67bab0b010edeeecf8a91cca78bb463a6fb0f5ba",
+    "owner_decision_brief_doc": "next_milestone_plans/Layer3_planning_docs/a8-owner-decision-brief.md",
+    "test_file": "backend/tests/test_sec_xbrl_a8_implementation_spec.py",
+    "proof_terms": [
+      "GO GO-PARTIAL HOLD options are explicit",
+      "GO-PARTIAL authorizes no reveal surface",
+      "HOLD does not require durable storage root",
+      "M-ADVERSARIAL-REVIEW-AUDIT acceptance and SHOULD-NOT lists are embedded",
+      "material-bridge CSV redaction gate is carried forward",
+      "migration and storage-backend decision gate is carried forward",
+      "no runtime behavior"
+    ],
+    "verification": [
+      "python -m pytest ./backend/tests/test_sec_xbrl_a8_lifecycle_design.py ./backend/tests/test_sec_xbrl_a8_implementation_spec.py ./backend/tests/test_ci_coverage_completeness.py -q",
+      "python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "python ./tools/l3-progress-check.py",
+      "git diff --check"
+    ],
+    "negative_authority_flags": {
+      "runtime_behavior_change": false,
+      "flag_default_change": false,
+      "value_reveal_enabled": false,
+      "internal_value_store_enabled": false,
+      "controlled_submit_enabled": false,
+      "schema_model_migration_change": false,
+      "redaction_posture_change": false,
+      "a7_proof_surface_source_change": false,
+      "workflow_change": false,
+      "live_sec_egress": false,
+      "arelle_execution": false,
+      "production_readiness_claim": false
+    },
+    "next_posture": "owner_decision_required_before_a8_tier2_runtime_implementation"
+  },
+  "latest_sec_xbrl_a8_owner_decision_brief_proof_summary": "PR #2413 branch-local proof covers the final A8 owner-decision brief and doc-conformance tests. It embeds the adversarial audit acceptance and SHOULD-NOT lists, records GO/GO-PARTIAL/HOLD, keeps GO-PARTIAL reveal-deferred and HOLD storage-root-free, carries forward material-bridge CSV and migration/storage-backend gates, and admits no runtime behavior or Tier-2 surface."
 }
