@@ -49063,7 +49063,7 @@
     "milestone": "m_ops_utilization_ready_closeout_v1",
     "status": "branch_local_tier1_operator_utilization_closeout",
     "branch": "codex/ops-ready-b5",
-    "pr": "pending",
+    "pr": "#2417",
     "current_main_refreshed_at": "5a3cc213fe3980d0b765394a0749047633f17bf3",
     "progress_board_section": "M-OPS-UTILIZATION-READY Closeout",
     "phase_prs": {
@@ -49101,5 +49101,5 @@
     "production_readiness_claimed_by_tracking": false,
     "next_posture": "owner_review_of_closeout_and_separate_a8_runtime_pr"
   },
-  "latest_ops_utilization_ready_closeout_summary": "Branch-local B5 closeout records M-OPS-UTILIZATION-READY across B1-B5: PR #2414 merged RC3 SEC XBRL offline acceptance completeness, B2 produced a precise golden-path deviation report for the ScienceBase conditional-no-op gate while keeping backend/config untouched, PR #2416 merged the operator utilization index, B4 verified SEC XBRL flag-off UI posture headless and headed, and B5 re-checked RC3 completeness at 58 declared / 58 tracked / zero missing / zero extra. This ledger tranche is Tier-1 metadata only and admits no runtime behavior, flag/default change, value reveal, internal-value-store enablement, controlled submit, schema/model/migration, redaction-posture change, A7/A8 proof-surface source change, workflow change, live SEC egress, Arelle execution, file removal/deletion, or production-readiness claim."
+  "latest_ops_utilization_ready_closeout_summary": "PR #2417 branch-local B5 closeout records M-OPS-UTILIZATION-READY across B1-B5: PR #2414 merged RC3 SEC XBRL offline acceptance completeness, B2 produced a precise golden-path deviation report for the ScienceBase conditional-no-op gate while keeping backend/config untouched, PR #2416 merged the operator utilization index, B4 verified SEC XBRL flag-off UI posture headless and headed, and B5 re-checked RC3 completeness at 58 declared / 58 tracked / zero missing / zero extra. This ledger tranche is Tier-1 metadata only and admits no runtime behavior, flag/default change, value reveal, internal-value-store enablement, controlled submit, schema/model/migration, redaction-posture change, A7/A8 proof-surface source change, workflow change, live SEC egress, Arelle execution, file removal/deletion, or production-readiness claim."
 }

@@ -13244,7 +13244,7 @@ is admitted by this tranche.
 
 Milestone: `m_ops_utilization_ready_closeout_v1`.
 
-Branch/PR: `codex/ops-ready-b5`, PR pending assignment.
+Branch/PR: `codex/ops-ready-b5`, PR `#2417`.
 
 Source frontier: current main `5a3cc213fe3980d0b765394a0749047633f17bf3`.
 Lane A runtime PR `#2415` was still open and unmerged when this B5 tranche was
@@ -13258,8 +13258,8 @@ were validation/report phases with no source delta: B2 found the
 `project6.ps1 -Action all` ScienceBase conditional-no-op gate still fails closed
 when the live public query returns zero eligible targets, while `status` passes
 and the sampled NRC APS validate-only surfaces fail closed on empty or missing
-local runtime state;
-B4 verified the SEC XBRL flag-off UI posture slices headless and headed.
+local runtime state. B4 verified the SEC XBRL flag-off UI posture slices headless
+and headed.
 
 Ledger reconciliation: this PR adds only progress/proof ledger metadata for the
 completed M-OPS-UTILIZATION-READY lane. The B5 RC3 re-check found
