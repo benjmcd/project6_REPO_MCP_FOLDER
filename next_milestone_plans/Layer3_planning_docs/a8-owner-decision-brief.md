@@ -2,10 +2,29 @@
 
 Milestone: `M-A8-OWNER-DECISION-BRIEF`
 
+Status supersession (2026-07-02): owner GO is complete for the current SEC XBRL
+authority/controlled-submit surface; the historical packet status below remains
+for PR #2413 lineage and future-surface guidance.
+
 Status: Tier-1 owner decision packet. This document does not implement runtime
 behavior, flip flags, change defaults, add schema/model/migration work, change
 redaction posture, enable value reveal, fetch SEC data, run Arelle, touch A7
 proof-surface source, or generate runtime artifacts.
+
+## 2026-07-02 Status Supersession
+
+Owner GO was given on 2026-07-02 for the current SEC XBRL
+authority/controlled-submit surface. The default-off A8 runtime guard packet
+merged as PR `#2415` at
+`6a28d0a481e046e613ce1d7ef7932eb633ef2002`, and the redacted operator proof is
+recorded via PR `#2419` at
+`7fa72e745c7a2d6b72be37971e0e8768780dc5d5`.
+
+Flags remain default-false in source. Any arming remains owner-local per-run
+runtime configuration. The pre-implementation gate language below is retained
+as historical authority for the merged default-off A8 arc and as live guidance
+for future surfaces: live SEC smoke, Arelle live binding, nonlocal admission,
+and legacy Arelle reveal disposition.
 
 ## Decision To Make
 

@@ -10,9 +10,12 @@
     "snapshot_date": "2026-06-18",
     "snapshot_base_main_commit": "f679f64f08a595fe724158d46006be77a179c786",
     "snapshot_base_main_commit_source": "project6-origin/main at f679f64f08a595fe724158d46006be77a179c786 after PR #2334 SEC-XBRL CI family coverage; front-door truth re-anchor records identity-gated API surface, role-authz inert-default posture, 3C deterministic methods, gated agent runtime fail-closed posture, SEC-XBRL default-off posture, PostgreSQL 3C golden-path CI, and SEC-XBRL CI family coverage without enabling value reveal, provider delivery, live network, egress, or default-on behavior.",
+    "record_truth_2_current_main_refreshed_at": "7fa72e745c7a2d6b72be37971e0e8768780dc5d5",
+    "record_truth_2_current_main_refreshed_at_source": "project6-origin/main after PR #2419 record truth; snapshot_base_main_commit remains the historical 2026-06-18 PR #2334 re-anchor and is not a self-updating current-main claim.",
     "notes": [
       "FRONT-DOOR TRUTH RE-ANCHOR (2026-06-18): snapshot_base_main_commit now anchors to current project6-origin/main f679f64f08a595fe724158d46006be77a179c786 after PR #2334. Older PR #609/ad51b1c6 progress-sync entries are retained only as historical lineage, not as the current live-main base. Full detailed refresh for docs 868-929 (Layer 3 workbench) and 1115-1350 (SEC EDGAR + SEC XBRL) remains required.",
       "LEGACY SHA SEMANTICS (2026-06-18): this manifest is a mixed historical ledger. Only snapshot_base_main_commit/current_snapshot and explicitly refreshed current_main_tip fields are current live-main SHA claims for this front-door re-anchor. Older embedded merge/head/base/current-main hashes may be non-ancestors after the history rebuild and are archival lineage/proof notes unless a future focused refresh revalidates that entry against project6-origin/main.",
+      "RECORD TRUTH 2 (2026-07-02): project6-origin/main 7fa72e745c7a2d6b72be37971e0e8768780dc5d5 is the current A8 record-status reconciliation ref after PR #2419; f679f64f08a595fe724158d46006be77a179c786 remains only the historical PR #2334 front-door re-anchor.",
       "This artifact is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain.",
       "This artifact now includes the landed first shared-consumer freeze that selects the first downstream shared APS consumer beyond multisource on current `main`, plus the now-landed bounded export-package handoff implementation slice governed by that freeze and the exact-run export/export-package gate-hardening follow-up on current `main`.",
       "This artifact now also includes the landed read-only package-derived-context freeze on current `main`.",
@@ -49020,10 +49023,16 @@
   "sec_xbrl_a8_owner_decision_brief_tracking": {
     "tracking_kind": "sec_xbrl_a8_owner_decision_brief_tracking",
     "milestone": "sec_xbrl_a8_owner_decision_brief_v1",
-    "status": "branch_local_tier1_owner_decision_packet",
+    "status": "superseded_current_main_owner_go_recorded",
     "branch": "codex/a8-owner-decision-brief",
     "pr": "#2413",
     "current_main_refreshed_at": "67bab0b010edeeecf8a91cca78bb463a6fb0f5ba",
+    "owner_go_recorded_at": "2026-07-02",
+    "owner_go_recorded_surface": "current_sec_xbrl_authority_controlled_submit",
+    "owner_go_runtime_guard_pr": "#2415",
+    "owner_go_runtime_guard_merge_commit": "6a28d0a481e046e613ce1d7ef7932eb633ef2002",
+    "owner_go_record_truth_pr": "#2419",
+    "owner_go_record_truth_merge_commit": "7fa72e745c7a2d6b72be37971e0e8768780dc5d5",
     "owner_decision_brief_doc": "next_milestone_plans/Layer3_planning_docs/a8-owner-decision-brief.md",
     "implementation_spec_doc": "next_milestone_plans/Layer3_planning_docs/a8-implementation-spec.md",
     "readiness_gate_doc": "next_milestone_plans/Layer3_planning_docs/a8-readiness-gate.md",
@@ -49055,9 +49064,9 @@
     "live_sec_egress_performed_by_tracking": false,
     "arelle_execution_performed_by_tracking": false,
     "production_readiness_claimed_by_tracking": false,
-    "next_posture": "owner_decision_required_before_a8_tier2_runtime_implementation"
+    "next_posture": "owner_go_recorded_for_current_controlled_submit_surface_future_surfaces_remain_owner_decisions"
   },
-  "latest_sec_xbrl_a8_owner_decision_brief_summary": "Branch-local PR #2413 adds the final A8 owner-decision brief and doc-conformance tests after PR #2409 corrected implementation spec/ledger reconciliation and PR #2412 A7 full-chain CI durability. The brief records GO, GO-PARTIAL, and HOLD, recommends the current SEC XBRL authority/controlled-submit path, embeds the M-ADVERSARIAL-REVIEW-AUDIT acceptance and SHOULD-NOT lists, carries forward material-bridge CSV and migration/storage-backend gates, and admits no runtime behavior, flag default change, value reveal, internal-value-store enablement, controlled submit, schema/model/migration, redaction-posture change, A7 proof-surface source change, workflow change, live SEC egress, Arelle execution, or production-readiness claim.",
+  "latest_sec_xbrl_a8_owner_decision_brief_summary": "PR #2413 added the final A8 owner-decision brief and doc-conformance tests after PR #2409 corrected implementation spec/ledger reconciliation and PR #2412 A7 full-chain CI durability. That decision packet is now superseded for the current SEC XBRL authority/controlled-submit surface: owner GO was given on 2026-07-02, PR #2415 merged the default-off runtime guard packet at 6a28d0a481e046e613ce1d7ef7932eb633ef2002, and PR #2419 recorded the redacted operator proof at 7fa72e745c7a2d6b72be37971e0e8768780dc5d5. Future surfaces remain separate owner decisions. The historical brief still records GO, GO-PARTIAL, and HOLD, recommends the current SEC XBRL authority/controlled-submit path, embeds the M-ADVERSARIAL-REVIEW-AUDIT acceptance and SHOULD-NOT lists, carries forward material-bridge CSV and migration/storage-backend gates, and admits no runtime behavior, flag default change, value reveal, internal-value-store enablement, controlled submit, schema/model/migration, redaction-posture change, A7 proof-surface source change, workflow change, live SEC egress, Arelle execution, or production-readiness claim.",
   "ops_utilization_ready_closeout_tracking": {
     "tracking_kind": "ops_utilization_ready_closeout_tracking",
     "milestone": "m_ops_utilization_ready_closeout_v1",
@@ -49198,10 +49207,13 @@
   "m_a8_record_truth_tracking": {
     "tracking_kind": "m_a8_record_truth_tracking",
     "milestone": "m_a8_record_truth_v1",
-    "status": "branch_local_tier1_record_reconciliation",
+    "status": "merged_current_main_tier1_record_reconciliation",
     "branch": "record-truth",
     "pr": "#2419",
-    "current_main_refreshed_at": "6a28d0a481e046e613ce1d7ef7932eb633ef2002",
+    "pre_pr_base_refreshed_at": "6a28d0a481e046e613ce1d7ef7932eb633ef2002",
+    "current_main_refreshed_at": "7fa72e745c7a2d6b72be37971e0e8768780dc5d5",
+    "current_main_refreshed_at_source": "project6-origin/main after PR #2419 record truth",
+    "merge_commit": "7fa72e745c7a2d6b72be37971e0e8768780dc5d5",
     "progress_board_section": "M-A8-RECORD-TRUTH",
     "allowed_files": [
       "docs/MASTER_CONTEXT.md",
@@ -49263,5 +49275,5 @@
     },
     "next_posture": "a8_arc_closed_for_current_sec_edgar_value_retention_record_flags_default_false_owner_local_arming_only"
   },
-  "latest_m_a8_record_truth_summary": "M-A8-RECORD-TRUTH is a Tier-1 docs/ledger reconciliation lane over exactly two docs, the progress board, and two manifests. It records PR #2418 B2-FIX, marks the A8 operator end-to-end proof complete with redacted evidence only, and closes the current SEC EDGAR A8 value-retention arc while preserving default-false source flags and owner-local per-run arming."
+  "latest_m_a8_record_truth_summary": "M-A8-RECORD-TRUTH (#2419) is a merged current-main Tier-1 docs/ledger reconciliation lane over exactly two docs, the progress board, and two manifests. It records PR #2418 B2-FIX, marks the A8 operator end-to-end proof complete with redacted evidence only, and closes the current SEC EDGAR A8 value-retention arc while preserving default-false source flags and owner-local per-run arming. Its pre-PR base was 6a28d0a481e046e613ce1d7ef7932eb633ef2002 and its merged current-main record ref is 7fa72e745c7a2d6b72be37971e0e8768780dc5d5. M-A8-RECORD-TRUTH-2 (#2420) separately adds 2026-07-02 supersession notes to the three A8 planning docs and refreshes current-main record-status metadata without changing runtime behavior."
 }
