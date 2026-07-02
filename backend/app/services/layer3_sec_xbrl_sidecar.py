@@ -1468,7 +1468,7 @@ def _storage_root_hygiene_class(path: Path) -> StorageRootHygieneClass:
     lower_parts = tuple(part.lower() for part in path.parts)
     if _path_is_git_tracked(path):
         return StorageRootHygieneClass.GIT_TRACKED
-    if any(part == "onedrive" or part.startswith("onedrive -") for part in lower_parts):
+    if _path_has_onedrive_part(path):
         return StorageRootHygieneClass.ONEDRIVE_CLOUD_SYNC
     if any(part in {"static", "public", "wwwroot"} for part in lower_parts):
         return StorageRootHygieneClass.STATIC_PUBLIC_SERVED
@@ -1506,7 +1506,21 @@ def _path_is_permission_broad(path: Path) -> bool:
     resolved = path.resolve(strict=False)
     anchors = {Path(resolved.anchor).resolve(strict=False)} if resolved.anchor else set()
     home = Path.home().resolve(strict=False)
-    return resolved in anchors or resolved == home
+    return (
+        resolved in anchors
+        or resolved == home
+        or _windows_permission_broad_root(path)
+        or _windows_permission_broad_root(resolved)
+    )
+
+
+def _path_has_onedrive_part(path: Path) -> bool:
+    return any(part.lower().startswith("onedrive") for part in path.parts)
+
+
+def _windows_permission_broad_root(path: Path) -> bool:
+    normalized = str(path).replace("\\", "/").rstrip("/").lower()
+    return bool(re.fullmatch(r"[a-z]:/(users|program files|program files \(x86\)|programdata)", normalized))
 
 
 def _path_is_temp_like(path: Path, lower_parts: tuple[str, ...]) -> bool:
@@ -1585,7 +1599,7 @@ def _path_inside_repo_or_onedrive(path: Path) -> bool:
         resolved.relative_to(repo)
         return True
     except ValueError:
-        return any(part.lower() == "onedrive" for part in resolved.parts)
+        return _path_has_onedrive_part(resolved)
 
 
 def _timeout_seconds() -> int:
