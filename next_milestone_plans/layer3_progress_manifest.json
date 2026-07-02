@@ -49116,7 +49116,6 @@
     "implementation_files": [
       "backend/.env.example",
       "backend/app/core/config.py",
-      "backend/app/api/layer3/__init__.py",
       "backend/app/services/layer3_sec_xbrl_sidecar.py",
       "config/support_matrix.yaml"
     ],

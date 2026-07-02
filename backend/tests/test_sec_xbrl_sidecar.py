@@ -291,7 +291,10 @@ def test_sec_xbrl_sidecar_storage_hygiene_onedrive_variants_precede_downloads_ov
     assert result.reason_code == "storage_root_hygiene_onedrive_cloud_sync"
 
 
-@pytest.mark.parametrize("path_text", ["C:/Users", "C:/Program Files", "C:/ProgramData"])
+@pytest.mark.parametrize(
+    "path_text",
+    ["C:/Users", "C:/Program Files", "C:/Program Files (x86)", "C:/ProgramData"],
+)
 def test_sec_xbrl_sidecar_permission_broad_includes_windows_class_roots(path_text):
     assert layer3_sec_xbrl_sidecar._path_is_permission_broad(Path(path_text)) is True
 
