@@ -13244,7 +13244,7 @@ is admitted by this tranche.
 
 Milestone: `m_ops_utilization_ready_closeout_v1`.
 
-Branch/PR: `codex/ops-ready-b5`, PR `#2417`.
+Lane/PR: `ops-ready-b5`, PR `#2417`.
 
 Source frontier: current main `5a3cc213fe3980d0b765394a0749047633f17bf3`.
 Lane A runtime PR `#2415` was still open and unmerged when this B5 tranche was

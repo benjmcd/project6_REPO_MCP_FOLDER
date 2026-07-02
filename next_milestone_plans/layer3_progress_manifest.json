@@ -49062,7 +49062,7 @@
     "tracking_kind": "ops_utilization_ready_closeout_tracking",
     "milestone": "m_ops_utilization_ready_closeout_v1",
     "status": "branch_local_tier1_operator_utilization_closeout",
-    "branch": "codex/ops-ready-b5",
+    "lane": "ops-ready-b5",
     "pr": "#2417",
     "current_main_refreshed_at": "5a3cc213fe3980d0b765394a0749047633f17bf3",
     "progress_board_section": "M-OPS-UTILIZATION-READY Closeout",
