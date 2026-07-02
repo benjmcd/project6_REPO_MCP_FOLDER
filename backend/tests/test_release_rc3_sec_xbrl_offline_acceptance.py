@@ -100,7 +100,11 @@ def test_rc3_acceptance_runner_reports_pass_with_injected_checks() -> None:
         for part in full_suite_command
         if part.startswith("./backend/tests/test_sec_xbrl") and part.endswith(".py")
     ]
-    assert len(full_suite_files) == 52
+    tracked_sec_xbrl_files = [
+        "./" + path.relative_to(REPO_ROOT).as_posix()
+        for path in sorted((REPO_ROOT / "backend" / "tests").glob("test_sec_xbrl_*.py"))
+    ]
+    assert full_suite_files == tracked_sec_xbrl_files
     assert not any("*" in part for part in full_suite_command)
 
     connector_command = criteria["rc2_public_connector_acceptance_regression"]["command"]
