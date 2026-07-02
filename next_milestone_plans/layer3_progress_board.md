@@ -13274,3 +13274,52 @@ internal-value-store enablement, controlled-submit enablement, route/API runtime
 behavior, redaction-posture change, A7/A8 proof-surface source change, live SEC
 egress, Arelle execution, workflow change, file removal/deletion, or
 production-readiness claim is admitted by this tranche.
+
+## A8 Runtime Implementation
+
+Milestone: `sec_xbrl_a8_runtime_implementation_v1`.
+
+Branch/PR: `codex/a8-runtime`, PR `#2415`.
+
+Source frontier: current main `6b735721398754b445ee6f2b466394f374acf49e`.
+
+Status: branch-local Tier-2 A8 runtime implementation pending renewed Claude owner
+approval of the rebased PR head. The implementation remains unmerged and must not
+be merged until that approval is recorded.
+
+Runtime behavior introduced by this pass: `true`, behind default-off owner-local
+runtime gates.
+
+Scope implemented:
+
+1. **Default-off internal value-store storage-root hygiene.** The A8 internal value
+   store now performs a storage-root hygiene preflight when that explicitly gated
+   value store is enabled. Structural classes remain fail-closed, while only
+   Downloads-like and temp-like name classes can be acknowledged by the explicit
+   override.
+
+2. **Redacted storage metadata.** Receipts/value-store metadata record
+   `storage_root_hygiene_reason_code`, `storage_root_hygiene_override`, and a
+   `storage_namespace_hash`; raw storage roots are not emitted.
+
+3. **Review remediation.** Claude review findings were addressed after the first
+   PR head: OneDrive/cloud-sync detection is fail-closed for any path part starting
+   with `onedrive` and takes precedence over Downloads/temp classes; tests cover all
+   non-accepted hygiene classes, structural rejection with override, overrideable
+   name-class acceptance with no raw path, and OneDrive hyphen/underscore variants;
+   the no-deletion source guard now covers AST call/import patterns for
+   `unlink`/`rmdir`/`remove`/`rmtree`; Windows `C:/Users`, `C:/Program Files`,
+   `C:/Program Files (x86)`, and `C:/ProgramData` class roots are permission-broad.
+
+4. **A8 route/test/support-matrix packet.** The PR updates backend config, SEC XBRL
+   sidecar behavior, route-level redacted rejection coverage, support-matrix
+   evidence, and focused A8 guard tests without changing schema/model/migrations.
+
+Ledger reconciliation: this PR adds progress/proof ledger metadata for the branch
+local A8 runtime tranche after rebasing over the M-OPS-UTILIZATION-READY merges.
+
+No flag default change, default-on value reveal, default-on internal value store,
+default-on controlled submit, schema/model/migration change, redaction-posture
+change, A7 proof-surface source change, workflow change, live SEC egress, Arelle
+network behavior, file removal/deletion, or production-readiness claim is admitted
+by this tranche.
