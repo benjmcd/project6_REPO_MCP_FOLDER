@@ -4,7 +4,9 @@
 > Authority: this is a narrative/state document, NOT runtime truth — verify any
 > file:line / SHA against current `project6-origin/main` before acting on it.
 > Last full pass: historical branch pass against `project6-origin/main` = `fd0cb72f`;
-> addendum uses current-main source frontier `6a28d0a481e046e613ce1d7ef7932eb633ef2002` for M-A8-RECORD-TRUTH.
+> addendum uses current-main source frontier `6a28d0a481e046e613ce1d7ef7932eb633ef2002`
+> for PR #2415 and record-status reconciliation ref
+> `7fa72e745c7a2d6b72be37971e0e8768780dc5d5` for PR #2419.
 
 ---
 
@@ -63,6 +65,11 @@ conflict with current main.
 - A8 is closed for the current SEC EDGAR value-retention arc. Source flags
   remain default-false; any arming is per-run owner-local runtime
   configuration, not source posture.
+- Record-status reconciliation note: PR #2419 merged at
+  `7fa72e745c7a2d6b72be37971e0e8768780dc5d5`; older A8 owner-gate and
+  implementation-spec language below is historical for the merged default-off
+  A8 arc and remains guidance for future live SEC smoke, Arelle live binding,
+  nonlocal admission, and legacy reveal surfaces.
 
 ## 0. How to read this
 
@@ -314,7 +321,13 @@ If a **non-public/licensed/contractual** source is ever ingested, a separate sou
 disposition policy (possibly including erasure) would be needed — explicitly out of SEC EDGAR A8.
 
 ### 5.5 Open items / owner decisions
-- **Authorize A8 implementation?** (the gate). The only thing blocking the frontier.
+- **Authorize A8 implementation? RESOLVED.** Owner GO was given on 2026-07-02
+  for the current SEC XBRL controlled-submit surface; PR #2415 merged the
+  default-off runtime guard packet at
+  `6a28d0a481e046e613ce1d7ef7932eb633ef2002`, and PR #2419 records the
+  redacted operator proof at
+  `7fa72e745c7a2d6b72be37971e0e8768780dc5d5`. Future surfaces remain separate
+  owner decisions.
 - **Stray worktree cleanup?** Merged/done worktrees I own (`C:\p6ui`, `C:\p6audit`, `C:\p6impl`) —
   `git worktree remove` preserves branches; awaiting explicit go (standing no-remove rule).
 - **Whether to PR this master-context doc** to main, or maintain it on-branch only.

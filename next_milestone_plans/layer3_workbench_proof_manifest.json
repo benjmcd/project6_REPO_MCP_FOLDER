@@ -14,6 +14,8 @@
     "live_behavior_change_summary": "The top-level scope row now records the PR #2334 current-main front-door truth re-anchor and CI coverage sync. Later nested `latest_*` fields in this scope carry their own branch, PR, merge-commit, and live_behavior_change authority; those nested entries may record live behavior changes such as PR #798 without making this PR #2334 scope summary imply that every retained/proof entry is no-behavior-change. The older PR #609 APS source-family extraction record remains in the dedicated latest_aps_source_family_extraction fields as historical lineage. This re-anchor changes no route, DTO, model, migration, runtime behavior, connector/destination dispatch, provider/public URL support, source/schema/runtime widening, broad qualitative/hybrid/RAG behavior, frontend-only durable state, hidden LLM planning, full mockup activation, authentication/security hardening, value reveal, default-on behavior, package payload rewrite, or broad package mutation/reconstruction.",
     "scope_metadata_semantics": "Top-level scope fields describe the current live-main front-door truth anchor after PR #2334; nested latest_* fields are the authority for older branch/PR/merge/live_behavior_change facts and may record historical proof lineage.",
     "legacy_sha_semantics": "LEGACY SHA SEMANTICS (2026-06-18): this proof manifest is a mixed historical ledger. Only scope.merge_commit/base_commit/source_base_commit at f679f64f08a595fe724158d46006be77a179c786 and explicitly refreshed current_main_tip fields are current live-main SHA claims for this front-door re-anchor. Older embedded merge/head/base/current-main hashes may be non-ancestors after the history rebuild and are archival lineage/proof notes unless a future focused refresh revalidates that entry against project6-origin/main.",
+    "record_truth_2_current_main_refreshed_at": "7fa72e745c7a2d6b72be37971e0e8768780dc5d5",
+    "record_truth_2_current_main_refreshed_at_source": "project6-origin/main after PR #2419 record truth; scope.merge_commit/base_commit/source_base_commit remain the historical 2026-06-18 PR #2334 re-anchor and are not self-updating current-main claims.",
     "latest_pr798_review_debt_closeout_branch": "codex/l3-review-debt-source-claude",
     "latest_pr798_review_debt_closeout_pr": "#798",
     "latest_pr798_review_debt_closeout_merge_commit": "231755fef6d913bde4568c809e43b6fdd421465c",
@@ -46939,10 +46941,13 @@
   "m_a8_record_truth_proof": {
     "proof_kind": "m_a8_record_truth_proof",
     "milestone": "m_a8_record_truth_v1",
-    "status": "branch_local_tier1_record_reconciliation",
+    "status": "merged_current_main_tier1_record_reconciliation",
     "branch": "record-truth",
     "pr": "#2419",
-    "current_main_refreshed_at": "6a28d0a481e046e613ce1d7ef7932eb633ef2002",
+    "pre_pr_base_refreshed_at": "6a28d0a481e046e613ce1d7ef7932eb633ef2002",
+    "current_main_refreshed_at": "7fa72e745c7a2d6b72be37971e0e8768780dc5d5",
+    "current_main_refreshed_at_source": "project6-origin/main after PR #2419 record truth",
+    "merge_commit": "7fa72e745c7a2d6b72be37971e0e8768780dc5d5",
     "allowed_files": [
       "docs/MASTER_CONTEXT.md",
       "docs/OPERATOR_UTILIZATION_INDEX.md",
@@ -46983,5 +46988,5 @@
     },
     "next_posture": "a8_arc_closed_for_current_sec_edgar_value_retention_record_flags_default_false_owner_local_arming_only"
   },
-  "latest_m_a8_record_truth_proof_summary": "M-A8-RECORD-TRUTH proof is Tier-1 record reconciliation only. It updates two docs, the progress board, and both manifests to record PR #2418 and the completed A8 operator proof using redacted evidence only, with no runtime behavior, source default, schema/model/migration, redaction-posture, workflow, live SEC egress, Arelle execution, file deletion, raw root, operator identity, local path, or production-readiness admission."
+  "latest_m_a8_record_truth_proof_summary": "M-A8-RECORD-TRUTH proof is merged current-main Tier-1 record reconciliation only. It updates two docs, the progress board, and both manifests to record PR #2418 and the completed A8 operator proof using redacted evidence only, with no runtime behavior, source default, schema/model/migration, redaction-posture, workflow, live SEC egress, Arelle execution, file deletion, raw root, operator identity, local path, or production-readiness admission. Its pre-PR base was 6a28d0a481e046e613ce1d7ef7932eb633ef2002 and its merged current-main record ref is 7fa72e745c7a2d6b72be37971e0e8768780dc5d5."
 }

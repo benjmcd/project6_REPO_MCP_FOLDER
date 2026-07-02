@@ -5,6 +5,21 @@ Milestone: `M-A8-RETENTION-REDESIGN`
 Status: readiness-completeness owner gate for future A8 durable value retention.
 This document changes no runtime behavior and authorizes no reveal.
 
+## 2026-07-02 Status Supersession
+
+Owner GO was given on 2026-07-02 for the current SEC XBRL
+authority/controlled-submit surface. The default-off A8 runtime guard packet
+merged as PR `#2415` at
+`6a28d0a481e046e613ce1d7ef7932eb633ef2002`, and the redacted operator proof is
+recorded via PR `#2419` at
+`7fa72e745c7a2d6b72be37971e0e8768780dc5d5`.
+
+Flags remain default-false in source. Any arming remains owner-local per-run
+runtime configuration. The readiness gate language below is retained as
+historical authority for the merged default-off A8 arc and as live guidance for
+future surfaces: live SEC smoke, Arelle live binding, nonlocal admission, and
+legacy Arelle reveal disposition.
+
 Authority note: this redesign pass refreshed `project6-origin/main` to
 `c96ea5154dd13a0724d74f8979bb28651d667cb8` and rebased the A8 branch onto that
 authority. Any future implementation pass must refresh live authority again

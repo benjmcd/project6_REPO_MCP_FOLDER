@@ -1,9 +1,13 @@
 # Layer3 Progress Board
 
-Live-main SHA semantics (2026-06-18): this board is a mixed historical ledger.
-The current front-door anchor is `project6-origin/main`
-`f679f64f08a595fe724158d46006be77a179c786`. Older `Current-main` sections
-and embedded 40-character hashes before this re-anchor are retained as
+Live-main SHA semantics (2026-06-18), updated 2026-07-02: this board is a
+mixed historical ledger.
+The prior 2026-06-18 front-door anchor, `project6-origin/main`
+`f679f64f08a595fe724158d46006be77a179c786`, is retained as a historical
+PR `#2334` re-anchor, not as a self-updating current-main claim. The current A8
+record-status reconciliation is anchored to `project6-origin/main`
+`7fa72e745c7a2d6b72be37971e0e8768780dc5d5` after PR `#2419`. Older
+`Current-main` sections and embedded 40-character hashes are retained as
 historical lineage/proof notes, not as live ancestry declarations, unless a
 later focused refresh explicitly revalidates that entry against
 `project6-origin/main`.
@@ -13333,10 +13337,12 @@ Milestone: `m_a8_record_truth_v1`.
 
 Record lane/PR: `record-truth`, PR `#2419`.
 
-Source frontier: current main `6a28d0a481e046e613ce1d7ef7932eb633ef2002`.
+Source frontier: branch-local pre-PR base
+`6a28d0a481e046e613ce1d7ef7932eb633ef2002`; merged current-main record ref
+`7fa72e745c7a2d6b72be37971e0e8768780dc5d5`.
 
-Status: Tier-1 record reconciliation for the closed A8 arc and the omitted B2-FIX
-golden-path tranche. This is docs/ledger metadata only.
+Status: merged current-main Tier-1 record reconciliation for the closed A8 arc
+and the omitted B2-FIX golden-path tranche. This is docs/ledger metadata only.
 
 PR `#2418` B2-FIX tranche: tools-only golden-path repair merged at
 `f2eb7f7f22c8e757d8d1417b6ec8cfede9534293`. The ScienceBase live pilot default
