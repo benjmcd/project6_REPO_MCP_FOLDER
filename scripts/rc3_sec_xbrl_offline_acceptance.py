@@ -49,6 +49,10 @@ EXCLUDED_SURFACES = [
 ]
 
 SEC_XBRL_TEST_FILES = [
+    "./backend/tests/test_sec_xbrl_a7_chain_ci_durability.py",
+    "./backend/tests/test_sec_xbrl_a7_real_arelle_resolution.py",
+    "./backend/tests/test_sec_xbrl_a8_implementation_spec.py",
+    "./backend/tests/test_sec_xbrl_a8_lifecycle_design.py",
     "./backend/tests/test_sec_xbrl_arelle_helper.py",
     "./backend/tests/test_sec_xbrl_arelle_provisioning.py",
     "./backend/tests/test_sec_xbrl_auth_binding_receipt.py",
@@ -78,6 +82,8 @@ SEC_XBRL_TEST_FILES = [
     "./backend/tests/test_sec_xbrl_nonlocal_production_readiness_gate.py",
     "./backend/tests/test_sec_xbrl_offline_evidence_loader.py",
     "./backend/tests/test_sec_xbrl_offline_evidence_proof_capability.py",
+    "./backend/tests/test_sec_xbrl_offline_honesty_audit.py",
+    "./backend/tests/test_sec_xbrl_offline_honesty_ceiling_exhaustive.py",
     "./backend/tests/test_sec_xbrl_operator_review_workflow.py",
     "./backend/tests/test_sec_xbrl_operator_runbook_matrix_selection.py",
     "./backend/tests/test_sec_xbrl_projection_persistence.py",
