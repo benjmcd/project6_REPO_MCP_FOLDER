@@ -49057,5 +49057,49 @@
     "production_readiness_claimed_by_tracking": false,
     "next_posture": "owner_decision_required_before_a8_tier2_runtime_implementation"
   },
-  "latest_sec_xbrl_a8_owner_decision_brief_summary": "Branch-local PR #2413 adds the final A8 owner-decision brief and doc-conformance tests after PR #2409 corrected implementation spec/ledger reconciliation and PR #2412 A7 full-chain CI durability. The brief records GO, GO-PARTIAL, and HOLD, recommends the current SEC XBRL authority/controlled-submit path, embeds the M-ADVERSARIAL-REVIEW-AUDIT acceptance and SHOULD-NOT lists, carries forward material-bridge CSV and migration/storage-backend gates, and admits no runtime behavior, flag default change, value reveal, internal-value-store enablement, controlled submit, schema/model/migration, redaction-posture change, A7 proof-surface source change, workflow change, live SEC egress, Arelle execution, or production-readiness claim."
+  "latest_sec_xbrl_a8_owner_decision_brief_summary": "Branch-local PR #2413 adds the final A8 owner-decision brief and doc-conformance tests after PR #2409 corrected implementation spec/ledger reconciliation and PR #2412 A7 full-chain CI durability. The brief records GO, GO-PARTIAL, and HOLD, recommends the current SEC XBRL authority/controlled-submit path, embeds the M-ADVERSARIAL-REVIEW-AUDIT acceptance and SHOULD-NOT lists, carries forward material-bridge CSV and migration/storage-backend gates, and admits no runtime behavior, flag default change, value reveal, internal-value-store enablement, controlled submit, schema/model/migration, redaction-posture change, A7 proof-surface source change, workflow change, live SEC egress, Arelle execution, or production-readiness claim.",
+  "ops_utilization_ready_closeout_tracking": {
+    "tracking_kind": "ops_utilization_ready_closeout_tracking",
+    "milestone": "m_ops_utilization_ready_closeout_v1",
+    "status": "branch_local_tier1_operator_utilization_closeout",
+    "branch": "codex/ops-ready-b5",
+    "pr": "pending",
+    "current_main_refreshed_at": "5a3cc213fe3980d0b765394a0749047633f17bf3",
+    "progress_board_section": "M-OPS-UTILIZATION-READY Closeout",
+    "phase_prs": {
+      "b1_rc3_acceptance_completeness": "#2414",
+      "b3_operator_utilization_index": "#2416"
+    },
+    "phase_merge_commits": {
+      "b1_rc3_acceptance_completeness": "c64ed4221fc909a33debaebc297c2e92bab2609b",
+      "b3_operator_utilization_index": "5a3cc213fe3980d0b765394a0749047633f17bf3"
+    },
+    "phase_validation_outcomes": {
+      "b2_golden_path": "project6.ps1 all fails closed at the ScienceBase conditional-no-op gate when the live public query returns zero eligible targets; status passes; sampled NRC APS validate-only surfaces fail closed on empty or missing local runtime state",
+      "b4_ui_flag_off_posture": "SEC XBRL flag-off UI posture slices passed headless and headed with 8 tests each"
+    },
+    "rc3_sec_xbrl_declared_tests": 58,
+    "rc3_sec_xbrl_tracked_tests": 58,
+    "rc3_sec_xbrl_missing_tests": 0,
+    "rc3_sec_xbrl_extra_tests": 0,
+    "operator_utilization_index_doc": "docs/OPERATOR_UTILIZATION_INDEX.md",
+    "rc3_acceptance_doc": "docs/rc3-sec-xbrl-offline-acceptance.md",
+    "lane_a_runtime_pr_state_at_tracking": "#2415 open not merged",
+    "ledger_reconciliation_only": true,
+    "runtime_behavior_changed_by_tracking": false,
+    "flag_default_changed_by_tracking": false,
+    "value_reveal_enabled_by_tracking": false,
+    "internal_value_store_enabled_by_tracking": false,
+    "controlled_submit_enabled_by_tracking": false,
+    "schema_model_migration_changed_by_tracking": false,
+    "redaction_posture_changed_by_tracking": false,
+    "a7_or_a8_proof_surface_changed_by_tracking": false,
+    "workflow_changed_by_tracking": false,
+    "live_sec_egress_performed_by_tracking": false,
+    "arelle_execution_performed_by_tracking": false,
+    "file_removal_or_deletion_performed_by_tracking": false,
+    "production_readiness_claimed_by_tracking": false,
+    "next_posture": "owner_review_of_closeout_and_separate_a8_runtime_pr"
+  },
+  "latest_ops_utilization_ready_closeout_summary": "Branch-local B5 closeout records M-OPS-UTILIZATION-READY across B1-B5: PR #2414 merged RC3 SEC XBRL offline acceptance completeness, B2 produced a precise golden-path deviation report for the ScienceBase conditional-no-op gate while keeping backend/config untouched, PR #2416 merged the operator utilization index, B4 verified SEC XBRL flag-off UI posture headless and headed, and B5 re-checked RC3 completeness at 58 declared / 58 tracked / zero missing / zero extra. This ledger tranche is Tier-1 metadata only and admits no runtime behavior, flag/default change, value reveal, internal-value-store enablement, controlled submit, schema/model/migration, redaction-posture change, A7/A8 proof-surface source change, workflow change, live SEC egress, Arelle execution, file removal/deletion, or production-readiness claim."
 }
