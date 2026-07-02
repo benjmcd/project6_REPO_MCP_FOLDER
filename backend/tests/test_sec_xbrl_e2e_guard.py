@@ -270,6 +270,7 @@ def _install_offline_boundaries(
         ("layer3_sec_edgar_official_ticker_resolution_enabled", False, False),
         ("layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True, True),
         ("layer3_sec_edgar_arelle_internal_value_store_enabled", True, True),
+        ("layer3_sec_xbrl_storage_root_hygiene_override_ack", True, False),
         ("layer3_sec_edgar_arelle_corpus_validation_enabled", True, True),
         ("layer3_sec_edgar_arelle_value_reveal_enabled", True, True),
         ("layer3_sec_xbrl_controlled_value_reveal_submit_enabled", True, True),

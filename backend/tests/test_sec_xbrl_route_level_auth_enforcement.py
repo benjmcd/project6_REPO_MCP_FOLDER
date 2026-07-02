@@ -426,42 +426,44 @@ def test_route_decision_submit_rejects_forbidden_field_proxy_identity_header(cli
 
 def test_route_authority_prepare_rejects_forbidden_field_operator_email(client) -> None:
     """POST /sec-xbrl/value-reveal/authority/prepare rejects 'operator_email'
-    forbidden field with 400.
+    forbidden field with a redacted 400 workbench error.
 
-    Extra-field guard fires before (or in lieu of) the auth-policy forbidden-
-    fields check; both produce a 400 workbench error block."""
+    The route extra-field guard fires before service execution without echoing
+    raw caller input."""
     payload = {
         **_authority_prepare_payload(),
         "operator_email": "someone@example.invalid",
     }
     response = client.post(AUTHORITY_PREPARE_ROUTE, json=payload)
     assert response.status_code == 400, response.text
+    assert "someone@example.invalid" not in response.text
     body = response.json()
     assert body.get("schema_id") == "layer3.workbench_error.v1", body
     assert body.get("status") == "blocked", body
-    error_code = body.get("error_code", "")
-    assert "forbidden_request_fields" in error_code or "not_admitted" in error_code, body
+    assert body.get("error_code") == "sec_xbrl_value_reveal_authority_request_fields_not_admitted", body
+    assert body.get("blocked_fields") == ["operator_email"]
 
 
 def test_route_value_reveal_submit_rejects_forbidden_field_auth_policy_override(
     client,
 ) -> None:
     """POST /sec-xbrl/value-reveal/submit rejects 'auth_policy_override' forbidden
-    field with 400.
+    field with a redacted 400 workbench error.
 
-    Extra-field guard fires before (or in lieu of) the auth-policy forbidden-
-    fields check; both produce a 400 workbench error block."""
+    The route extra-field guard fires before service execution without echoing
+    raw caller input."""
     payload = {
         **_value_reveal_submit_payload(),
         "auth_policy_override": "bypass",
     }
     response = client.post(VALUE_REVEAL_SUBMIT_ROUTE, json=payload)
     assert response.status_code == 400, response.text
+    assert "bypass" not in response.text
     body = response.json()
     assert body.get("schema_id") == "layer3.workbench_error.v1", body
     assert body.get("status") == "blocked", body
-    error_code = body.get("error_code", "")
-    assert "forbidden_request_fields" in error_code or "not_admitted" in error_code, body
+    assert body.get("error_code") == "sec_xbrl_controlled_value_reveal_submit_request_fields_not_admitted", body
+    assert body.get("blocked_fields") == ["auth_policy_override"]
 
 
 # ---------------------------------------------------------------------------

@@ -4806,6 +4806,12 @@ def _prepare_sec_edgar_arelle_sidecar_authority(
         monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", enable_runtime_cutover)
     if enable_internal_value_store is not None:
         monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_internal_value_store_enabled", enable_internal_value_store)
+        monkeypatch.setattr(
+            settings,
+            "layer3_sec_xbrl_storage_root_hygiene_override_ack",
+            bool(enable_internal_value_store),
+            raising=False,
+        )
     response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
         {
             "client_request_id": f"sec-edgar-arelle-sidecar-{label}",

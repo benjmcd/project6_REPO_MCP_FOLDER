@@ -129,15 +129,18 @@ def test_support_matrix_connector_evidence_points_to_actual_config_aliases() -> 
     by_id = {item["id"]: item for item in matrix["capabilities"]}
     config_lines = (REPO_ROOT / "backend" / "app" / "core" / "config.py").read_text(encoding="utf-8").splitlines()
 
-    sciencebase_line = config_lines[205]
-    senate_base_line = config_lines[208]
-    senate_key_line = config_lines[209]
+    def line_number_for(alias: str) -> int:
+        return next(index for index, line in enumerate(config_lines, start=1) if alias in line)
 
-    assert "SCIENCEBASE_API_BASE_URL" in sciencebase_line
-    assert "backend/app/core/config.py:206" in by_id["sciencebase_public_connector_slice"]["evidence"]
-    assert "SENATE_LDA_API_BASE_URL" in senate_base_line
-    assert "SENATE_LDA_API_KEY" in senate_key_line
-    assert "backend/app/core/config.py:209-210" in by_id["senate_lda_anonymous_connector_slice"]["evidence"]
+    sciencebase_line = line_number_for("SCIENCEBASE_API_BASE_URL")
+    senate_base_line = line_number_for("SENATE_LDA_API_BASE_URL")
+    senate_key_line = line_number_for("SENATE_LDA_API_KEY")
+
+    assert f"backend/app/core/config.py:{sciencebase_line}" in by_id["sciencebase_public_connector_slice"]["evidence"]
+    assert (
+        f"backend/app/core/config.py:{senate_base_line}-{senate_key_line}"
+        in by_id["senate_lda_anonymous_connector_slice"]["evidence"]
+    )
 
 
 def test_front_door_names_selected_local_expert_profile_without_old_unselected_claim() -> None:

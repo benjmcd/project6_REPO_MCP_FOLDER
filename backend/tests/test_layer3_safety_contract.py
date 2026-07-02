@@ -113,6 +113,18 @@ class TestControlledValueRevealSubmitRefusedWhenFlagOff:
         assert raw_id not in str(exc.details)
 
 
+def test_sec_xbrl_storage_root_hygiene_override_ack_defaults_off_and_is_env_gated() -> None:
+    """The A8 storage-root hygiene override is a narrow explicit operator acknowledgement."""
+    default_settings = Settings(_env_file=None)
+    enabled_settings = Settings(
+        _env_file=None,
+        LAYER3_SEC_XBRL_STORAGE_ROOT_HYGIENE_OVERRIDE_ACK="true",
+    )
+
+    assert default_settings.layer3_sec_xbrl_storage_root_hygiene_override_ack is False
+    assert enabled_settings.layer3_sec_xbrl_storage_root_hygiene_override_ack is True
+
+
 # ---------------------------------------------------------------------------
 # (b) Nonlocal Settings rejects armed value-reveal flags (fail-closed validator)
 # ---------------------------------------------------------------------------

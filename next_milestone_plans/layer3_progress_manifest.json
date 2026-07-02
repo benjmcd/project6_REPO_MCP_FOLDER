@@ -49101,5 +49101,55 @@
     "production_readiness_claimed_by_tracking": false,
     "next_posture": "owner_review_of_closeout_and_separate_a8_runtime_pr"
   },
-  "latest_ops_utilization_ready_closeout_summary": "PR #2417 branch-local B5 closeout records M-OPS-UTILIZATION-READY across B1-B5: PR #2414 merged RC3 SEC XBRL offline acceptance completeness, B2 produced a precise golden-path deviation report for the ScienceBase conditional-no-op gate while keeping backend/config untouched, PR #2416 merged the operator utilization index, B4 verified SEC XBRL flag-off UI posture headless and headed, and B5 re-checked RC3 completeness at 58 declared / 58 tracked / zero missing / zero extra. This ledger tranche is Tier-1 metadata only and admits no runtime behavior, flag/default change, value reveal, internal-value-store enablement, controlled submit, schema/model/migration, redaction-posture change, A7/A8 proof-surface source change, workflow change, live SEC egress, Arelle execution, file removal/deletion, or production-readiness claim."
+  "latest_ops_utilization_ready_closeout_summary": "PR #2417 branch-local B5 closeout records M-OPS-UTILIZATION-READY across B1-B5: PR #2414 merged RC3 SEC XBRL offline acceptance completeness, B2 produced a precise golden-path deviation report for the ScienceBase conditional-no-op gate while keeping backend/config untouched, PR #2416 merged the operator utilization index, B4 verified SEC XBRL flag-off UI posture headless and headed, and B5 re-checked RC3 completeness at 58 declared / 58 tracked / zero missing / zero extra. This ledger tranche is Tier-1 metadata only and admits no runtime behavior, flag/default change, value reveal, internal-value-store enablement, controlled submit, schema/model/migration, redaction-posture change, A7/A8 proof-surface source change, workflow change, live SEC egress, Arelle execution, file removal/deletion, or production-readiness claim.",
+  "sec_xbrl_a8_runtime_implementation_tracking": {
+    "tracking_kind": "sec_xbrl_a8_runtime_implementation_tracking",
+    "milestone": "sec_xbrl_a8_runtime_implementation_v1",
+    "status": "branch_local_tier2_runtime_implementation_pending_owner_review",
+    "branch": "codex/a8-runtime",
+    "pr": "#2415",
+    "current_main_refreshed_at": "6b735721398754b445ee6f2b466394f374acf49e",
+    "owner_decision_brief_doc": "next_milestone_plans/Layer3_planning_docs/a8-owner-decision-brief.md",
+    "implementation_spec_doc": "next_milestone_plans/Layer3_planning_docs/a8-implementation-spec.md",
+    "readiness_gate_doc": "next_milestone_plans/Layer3_planning_docs/a8-readiness-gate.md",
+    "progress_board_section": "A8 Runtime Implementation",
+    "implementation_files": [
+      "backend/.env.example",
+      "backend/app/core/config.py",
+      "backend/app/services/layer3_sec_xbrl_sidecar.py",
+      "config/support_matrix.yaml"
+    ],
+    "test_files": [
+      "backend/tests/test_layer3_api.py",
+      "backend/tests/test_layer3_safety_contract.py",
+      "backend/tests/test_sec_xbrl_e2e_guard.py",
+      "backend/tests/test_sec_xbrl_operator_review_workflow.py",
+      "backend/tests/test_sec_xbrl_route_level_auth_enforcement.py",
+      "backend/tests/test_sec_xbrl_sidecar.py",
+      "backend/tests/test_sec_xbrl_value_reveal_guard_contracts.py",
+      "backend/tests/test_support_matrix.py"
+    ],
+    "review_findings_addressed": {
+      "f1_onedrive_cloud_sync_prefix_detection": "Any path part starting with onedrive is structural cloud-sync and wins over downloads/temp name classes.",
+      "f2_storage_hygiene_class_coverage": "All non-accepted hygiene classes are covered for ack=false; structural classes remain rejected with ack=true; only downloads/temp name classes accept override with namespace hash and no raw path.",
+      "f3_no_deletion_guard": "Source guard now uses AST call/import checks for unlink/rmdir/remove/rmtree including os/shutil aliases.",
+      "f4_permission_broad_roots": "Permission-broad detection includes Windows Users, Program Files, Program Files (x86), and ProgramData class roots."
+    },
+    "runtime_behavior_changed_by_tracking": true,
+    "flag_default_changed_by_tracking": false,
+    "value_reveal_default_enabled_by_tracking": false,
+    "internal_value_store_default_enabled_by_tracking": false,
+    "controlled_submit_default_enabled_by_tracking": false,
+    "schema_model_migration_changed_by_tracking": false,
+    "redaction_posture_changed_by_tracking": false,
+    "a7_proof_surface_source_changed_by_tracking": false,
+    "workflow_changed_by_tracking": false,
+    "live_sec_egress_performed_by_tracking": false,
+    "arelle_execution_performed_by_tracking": false,
+    "file_removal_or_deletion_performed_by_tracking": false,
+    "production_readiness_claimed_by_tracking": false,
+    "merge_blocked_until_owner_approval": true,
+    "next_posture": "await_claude_owner_approval_of_rebased_a8_runtime_pr_head_before_merge"
+  },
+  "latest_sec_xbrl_a8_runtime_implementation_summary": "PR #2415 branch-local Tier-2 A8 runtime implementation adds default-off internal value-store storage-root hygiene, redacted retention metadata, route/request-binding guard coverage, support-matrix evidence, and review fixes for OneDrive/cloud-sync prefix detection, per-class hygiene coverage, no-deletion source guards, and Windows broad-root detection. It is rebased onto current main 6b735721 and remains unmerged pending renewed Claude owner approval; it admits runtime behavior only behind default-off owner-local gates and does not change schema/model/migration, default-on posture, redaction posture, A7 proof source, workflow, live SEC egress, Arelle network behavior, file deletion, or production-readiness claim."
 }

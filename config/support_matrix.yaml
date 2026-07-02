@@ -26,12 +26,12 @@
     {
       "id": "sciencebase_public_connector_slice",
       "status": "supported",
-      "evidence": "tests/test_api.py::test_sciencebase_download_429_retryable_sets_backoff; tests/test_api.py::test_l17_sciencebase_download_negatives_are_bounded_and_observable; tests/test_api.py::test_connector_l20_sciencebase_active_lease_records_conflict; tests/test_api.py::test_connector_l20_sciencebase_cancel_mid_target_stops_before_partial_authority; tests/test_api.py::test_sciencebase_csv_ingest_preserves_l11_source_fidelity; tests/test_api.py::test_public_connector_operator_journey_bridges_sciencebase_target_to_analysis; backend/app/core/config.py:206; docs/public-connectors-journey.md; PR-1 correctness, PR-2 L17, PR-3 L20, PR-4 L11, PR-5 journey"
+      "evidence": "tests/test_api.py::test_sciencebase_download_429_retryable_sets_backoff; tests/test_api.py::test_l17_sciencebase_download_negatives_are_bounded_and_observable; tests/test_api.py::test_connector_l20_sciencebase_active_lease_records_conflict; tests/test_api.py::test_connector_l20_sciencebase_cancel_mid_target_stops_before_partial_authority; tests/test_api.py::test_sciencebase_csv_ingest_preserves_l11_source_fidelity; tests/test_api.py::test_public_connector_operator_journey_bridges_sciencebase_target_to_analysis; backend/app/core/config.py:210; docs/public-connectors-journey.md; PR-1 correctness, PR-2 L17, PR-3 L20, PR-4 L11, PR-5 journey"
     },
     {
       "id": "senate_lda_anonymous_connector_slice",
       "status": "supported",
-      "evidence": "tests/test_api.py::test_senate_lda_dedupes_duplicate_filings_and_records_provenance; tests/test_api.py::test_l17_senate_lda_detail_errors_are_terminal_or_retryable; tests/test_api.py::test_l17_senate_lda_missing_required_schema_is_rejected_explicitly; tests/test_api.py::test_senate_lda_connector_resume_uses_senate_executor; tests/test_api.py::test_senate_lda_l20_active_lease_records_conflict; tests/test_api.py::test_senate_lda_l20_resume_after_target_creation_crash_does_not_duplicate_targets; tests/test_api.py::test_senate_lda_anonymous_metadata_path_is_no_key_secondary_journey; backend/app/core/config.py:209-210; docs/public-connectors-journey.md; PR-1 correctness, PR-2 L17, PR-3 L20, PR-4 L11, PR-5 journey"
+      "evidence": "tests/test_api.py::test_senate_lda_dedupes_duplicate_filings_and_records_provenance; tests/test_api.py::test_l17_senate_lda_detail_errors_are_terminal_or_retryable; tests/test_api.py::test_l17_senate_lda_missing_required_schema_is_rejected_explicitly; tests/test_api.py::test_senate_lda_connector_resume_uses_senate_executor; tests/test_api.py::test_senate_lda_l20_active_lease_records_conflict; tests/test_api.py::test_senate_lda_l20_resume_after_target_creation_crash_does_not_duplicate_targets; tests/test_api.py::test_senate_lda_anonymous_metadata_path_is_no_key_secondary_journey; backend/app/core/config.py:213-214; docs/public-connectors-journey.md; PR-1 correctness, PR-2 L17, PR-3 L20, PR-4 L11, PR-5 journey"
     },
     {
       "id": "connector_run_observability",
@@ -71,12 +71,12 @@
     {
       "id": "sec_xbrl_production_admission_evaluator",
       "status": "experimental_default_off",
-      "evidence": "backend/app/core/config.py:190-192; backend/.env.example:93-96"
+      "evidence": "backend/app/core/config.py:194-196; backend/.env.example:95-99"
     },
     {
       "id": "analysis_product_package_inventory",
       "status": "experimental_default_off",
-      "evidence": "backend/app/core/config.py:176-178; backend/app/services/layer3_analysis_product_inventory_projection.py"
+      "evidence": "backend/app/core/config.py:180-182; backend/app/services/layer3_analysis_product_inventory_projection.py"
     },
     {
       "id": "ocr_external_engine",
@@ -136,12 +136,12 @@
     {
       "id": "model_agent_egress",
       "status": "unsupported",
-      "evidence": "backend/app/core/config.py:180-187; README.md:3; backend/app/services/layer3_egress_policy.py"
+      "evidence": "backend/app/core/config.py:184-193; README.md:3; backend/app/services/layer3_egress_policy.py"
     },
     {
       "id": "nonlocal_multi_trust_multi_identity",
       "status": "unsupported",
-      "evidence": "README.md:3; backend/app/core/config.py:25-26; backend/app/core/config.py:366-400"
+      "evidence": "README.md:3; backend/app/core/config.py:25-26; backend/app/core/config.py:370-404"
     },
     {
       "id": "high_availability",
@@ -151,7 +151,7 @@
     {
       "id": "keyed_connectors",
       "status": "unsupported",
-      "evidence": "backend/app/core/config.py:208-210; backend/.env.example:14; backend/.env.example:47-49"
+      "evidence": "backend/app/core/config.py:212-214; backend/.env.example:14; backend/.env.example:47-49"
     },
     {
       "id": "signed_reference_export",

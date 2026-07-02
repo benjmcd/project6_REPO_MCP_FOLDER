@@ -718,6 +718,12 @@ def test_value_reveal_authority_resolves_sidecar_and_internal_value_store(monkey
 def test_value_reveal_authority_accepts_real_sidecar_ready_state(tmp_path, monkeypatch) -> None:
     storage_dir = tmp_path / "storage"
     monkeypatch.setattr(authority_service.layer3_sec_xbrl_sidecar.settings, "storage_dir", str(storage_dir))
+    monkeypatch.setattr(
+        authority_service.layer3_sec_xbrl_sidecar.settings,
+        "layer3_sec_xbrl_storage_root_hygiene_override_ack",
+        True,
+        raising=False,
+    )
     sidecar_hash, value_store_hash = _write_ready_sidecar_fixture(storage_dir)
 
     response = authority_service._resolve_sidecar_authority(sidecar_hash, value_store_hash)
@@ -2249,6 +2255,7 @@ def test_value_reveal_authority_api_rejects_extra_fields(api_client) -> None:
     )
 
     assert response.status_code == 400
+    assert _hash("b") not in response.text
     body = response.json()
     assert body["error_code"] == "sec_xbrl_value_reveal_authority_request_fields_not_admitted"
     assert body["blocked_fields"] == ["sidecar_receipt_hash"]
@@ -2830,6 +2837,7 @@ def test_controlled_value_reveal_submit_api_rejects_client_sidecar_fields(api_cl
     )
 
     assert response.status_code == 400
+    assert _hash("b") not in response.text
     body = response.json()
     assert body["error_code"] == "sec_xbrl_controlled_value_reveal_submit_request_fields_not_admitted"
     assert body["blocked_fields"] == ["sidecar_receipt_hash"]

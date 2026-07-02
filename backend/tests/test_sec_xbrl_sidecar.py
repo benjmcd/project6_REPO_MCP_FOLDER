@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import runpy
@@ -18,6 +19,71 @@ from app.core.config import settings
 from app.services import layer3_sec_xbrl_sidecar
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
+
+
+_HYGIENE_CLASS = layer3_sec_xbrl_sidecar.StorageRootHygieneClass
+_STRUCTURAL_HYGIENE_CLASSES = [
+    _HYGIENE_CLASS.REPO_RELATIVE,
+    _HYGIENE_CLASS.GIT_TRACKED,
+    _HYGIENE_CLASS.ONEDRIVE_CLOUD_SYNC,
+    _HYGIENE_CLASS.STATIC_PUBLIC_SERVED,
+    _HYGIENE_CLASS.GENERATED_ARTIFACT,
+    _HYGIENE_CLASS.SHARED_AUTHORITY,
+    _HYGIENE_CLASS.MISSING_UNREADABLE,
+    _HYGIENE_CLASS.PERMISSION_BROAD,
+]
+_OVERRIDEABLE_HYGIENE_CLASSES = [
+    _HYGIENE_CLASS.DOWNLOADS_LIKE,
+    _HYGIENE_CLASS.TEMP_LIKE,
+]
+_NON_ACCEPTED_HYGIENE_CLASSES = _STRUCTURAL_HYGIENE_CLASSES + _OVERRIDEABLE_HYGIENE_CLASSES
+
+
+def _storage_root_for_hygiene_class(
+    tmp_path: Path,
+    hygiene_class: layer3_sec_xbrl_sidecar.StorageRootHygieneClass,
+) -> Path:
+    if hygiene_class is _HYGIENE_CLASS.REPO_RELATIVE:
+        return Path(__file__).resolve().parents[2]
+    if hygiene_class is _HYGIENE_CLASS.GIT_TRACKED:
+        try:
+            subprocess.run(["git", "--version"], capture_output=True, text=True, check=True)
+        except (OSError, subprocess.CalledProcessError):
+            pytest.skip("git executable is required for external worktree hygiene coverage")
+        external_repo = tmp_path / "external-repo"
+        storage_root = external_repo / "storage"
+        storage_root.mkdir(parents=True)
+        subprocess.run(["git", "-C", str(external_repo), "init"], capture_output=True, text=True, check=True)
+        return storage_root
+    if hygiene_class is _HYGIENE_CLASS.ONEDRIVE_CLOUD_SYNC:
+        storage_root = tmp_path / "Downloads" / "OneDrive_Tenant" / "storage"
+        storage_root.mkdir(parents=True)
+        return storage_root
+    if hygiene_class is _HYGIENE_CLASS.STATIC_PUBLIC_SERVED:
+        storage_root = tmp_path / "static" / "storage"
+        storage_root.mkdir(parents=True)
+        return storage_root
+    if hygiene_class is _HYGIENE_CLASS.GENERATED_ARTIFACT:
+        storage_root = tmp_path / "reports" / "storage"
+        storage_root.mkdir(parents=True)
+        return storage_root
+    if hygiene_class is _HYGIENE_CLASS.SHARED_AUTHORITY:
+        storage_root = tmp_path / "shared" / "storage"
+        storage_root.mkdir(parents=True)
+        return storage_root
+    if hygiene_class is _HYGIENE_CLASS.MISSING_UNREADABLE:
+        return tmp_path / "private-storage" / "missing"
+    if hygiene_class is _HYGIENE_CLASS.PERMISSION_BROAD:
+        return Path.home()
+    if hygiene_class is _HYGIENE_CLASS.DOWNLOADS_LIKE:
+        storage_root = tmp_path / "Downloads"
+        storage_root.mkdir()
+        return storage_root
+    if hygiene_class is _HYGIENE_CLASS.TEMP_LIKE:
+        storage_root = tmp_path / "private-storage"
+        storage_root.mkdir()
+        return storage_root
+    raise AssertionError(f"Unhandled hygiene class {hygiene_class!r}")
 
 
 def test_sec_xbrl_sidecar_emits_resolved_semantics_and_redacts_response(monkeypatch, tmp_path):
@@ -65,6 +131,7 @@ def test_sec_xbrl_sidecar_emits_resolved_semantics_and_redacts_response(monkeypa
 def test_sec_xbrl_sidecar_internal_value_store_requires_explicit_gate(monkeypatch, tmp_path):
     _install_receipt_fakes(monkeypatch, tmp_path, _ready_arelle_runner)
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_internal_value_store_enabled", True)
+    monkeypatch.setattr(settings, "layer3_sec_xbrl_storage_root_hygiene_override_ack", True, raising=False)
 
     response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
         _request(companyfacts_count=1)
@@ -75,15 +142,238 @@ def test_sec_xbrl_sidecar_internal_value_store_requires_explicit_gate(monkeypatc
         expected_sidecar_receipt_hash=response["sidecar_receipt_hash"],
     )
     assert receipt["internal_value_store"]["store_state"] == "persisted"
+    assert receipt["internal_value_store"]["retention_policy"] == "sec_xbrl_public_financial_value_retention_v1"
+    assert receipt["internal_value_store"]["storage_root_hygiene_override"] is True
+    assert receipt["internal_value_store"]["storage_root_hygiene_reason_code"] == (
+        "storage_root_hygiene_temp_like_override_ack"
+    )
+    assert len(receipt["internal_value_store"]["storage_namespace_hash"]) == 64
     value_store = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(receipt)
     assert value_store["value_records"][0]["effective_value"] == "987654321000000"
     assert value_store["value_records"][0]["lexical_value"] == "987654321"
+    assert value_store["retention_policy"] == "sec_xbrl_public_financial_value_retention_v1"
+    assert value_store["storage_root_hygiene_override"] is True
+    assert value_store["storage_root_hygiene_reason_code"] == "storage_root_hygiene_temp_like_override_ack"
+    assert value_store["storage_namespace_hash"] == receipt["internal_value_store"]["storage_namespace_hash"]
     assert receipt["diagnostics"]["raw_fact_values_retained_internal_value_store"] is True
+    assert receipt["diagnostics"]["internal_value_store_retention_policy"] == (
+        "sec_xbrl_public_financial_value_retention_v1"
+    )
+    projected = json.dumps({"receipt": receipt, "value_store": value_store}, sort_keys=True)
+    assert str(tmp_path) not in projected
+
+
+def test_sec_xbrl_sidecar_internal_value_store_rejects_temp_root_without_override_ack(
+    monkeypatch,
+    tmp_path,
+):
+    _install_receipt_fakes(monkeypatch, tmp_path, _ready_arelle_runner)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_internal_value_store_enabled", True)
+    monkeypatch.setattr(settings, "layer3_sec_xbrl_storage_root_hygiene_override_ack", False, raising=False)
+
+    with pytest.raises(Layer3WorkbenchError) as excinfo:
+        layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+            _request(companyfacts_count=1)
+        )
+
+    assert excinfo.value.error_code == "sec_edgar_arelle_sidecar_storage_root_hygiene_temp_like"
+    assert excinfo.value.blocked_fields == ["storage_root_hygiene"]
+
+
+def test_sec_xbrl_sidecar_value_store_path_rejects_repo_root_even_with_override_ack(
+    monkeypatch,
+):
+    repo_root = Path(__file__).resolve().parents[2]
+    monkeypatch.setattr(settings, "storage_dir", str(repo_root))
+    monkeypatch.setattr(settings, "layer3_sec_xbrl_storage_root_hygiene_override_ack", True, raising=False)
+
+    with pytest.raises(Layer3WorkbenchError) as excinfo:
+        layer3_sec_xbrl_sidecar._value_store_path("sec-edgar-arelle-resolved-fact-authority-" + "a" * 24)
+
+    assert excinfo.value.error_code == "sec_edgar_arelle_sidecar_storage_root_hygiene_repo_relative"
+    assert excinfo.value.blocked_fields == ["storage_root_hygiene"]
+
+
+def test_sec_xbrl_sidecar_downloads_like_storage_root_requires_override_ack(tmp_path):
+    downloads_root = tmp_path / "Downloads"
+    downloads_root.mkdir()
+
+    rejected = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        downloads_root,
+        override_ack=False,
+    )
+    accepted = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        downloads_root,
+        override_ack=True,
+    )
+
+    assert rejected.accepted is False
+    assert rejected.reason_code == "storage_root_hygiene_downloads_like"
+    assert accepted.accepted is True
+    assert accepted.override is True
+    assert accepted.reason_code == "storage_root_hygiene_downloads_like_override_ack"
+    assert len(accepted.namespace_hash) == 64
+
+
+@pytest.mark.parametrize("hygiene_class", _NON_ACCEPTED_HYGIENE_CLASSES)
+def test_sec_xbrl_sidecar_storage_hygiene_rejects_every_non_accepted_class_without_override_ack(
+    tmp_path,
+    hygiene_class,
+):
+    storage_root = _storage_root_for_hygiene_class(tmp_path, hygiene_class)
+
+    result = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        storage_root,
+        override_ack=False,
+    )
+
+    assert result.accepted is False
+    assert result.override is False
+    assert result.hygiene_class is hygiene_class
+    assert result.reason_code == f"storage_root_hygiene_{hygiene_class.value}"
+
+
+@pytest.mark.parametrize("hygiene_class", _STRUCTURAL_HYGIENE_CLASSES)
+def test_sec_xbrl_sidecar_storage_hygiene_structural_classes_ignore_override_ack(
+    tmp_path,
+    hygiene_class,
+):
+    storage_root = _storage_root_for_hygiene_class(tmp_path, hygiene_class)
+
+    result = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        storage_root,
+        override_ack=True,
+    )
+
+    assert result.accepted is False
+    assert result.override is False
+    assert result.hygiene_class is hygiene_class
+    assert result.reason_code == f"storage_root_hygiene_{hygiene_class.value}"
+
+
+@pytest.mark.parametrize("hygiene_class", _OVERRIDEABLE_HYGIENE_CLASSES)
+def test_sec_xbrl_sidecar_storage_hygiene_only_name_classes_accept_override_without_raw_path(
+    tmp_path,
+    hygiene_class,
+):
+    storage_root = _storage_root_for_hygiene_class(tmp_path, hygiene_class)
+
+    result = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        storage_root,
+        override_ack=True,
+    )
+    metadata = result.metadata()
+
+    assert result.accepted is True
+    assert result.override is True
+    assert result.hygiene_class is hygiene_class
+    assert result.reason_code == f"storage_root_hygiene_{hygiene_class.value}_override_ack"
+    assert metadata["storage_namespace_hash"] == result.namespace_hash
+    assert len(result.namespace_hash) == 64
+    assert str(storage_root) not in json.dumps(metadata, sort_keys=True)
+
+
+@pytest.mark.parametrize("onedrive_part", ["OneDrive-Tenant", "OneDrive_Tenant"])
+def test_sec_xbrl_sidecar_storage_hygiene_onedrive_variants_precede_downloads_override(
+    tmp_path,
+    onedrive_part,
+):
+    storage_root = tmp_path / "Downloads" / onedrive_part / "storage"
+    storage_root.mkdir(parents=True)
+
+    result = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        storage_root,
+        override_ack=True,
+    )
+
+    assert result.accepted is False
+    assert result.hygiene_class is _HYGIENE_CLASS.ONEDRIVE_CLOUD_SYNC
+    assert result.reason_code == "storage_root_hygiene_onedrive_cloud_sync"
+
+
+@pytest.mark.parametrize(
+    "path_text",
+    ["C:/Users", "C:/Program Files", "C:/Program Files (x86)", "C:/ProgramData"],
+)
+def test_sec_xbrl_sidecar_permission_broad_includes_windows_class_roots(path_text):
+    assert layer3_sec_xbrl_sidecar._path_is_permission_broad(Path(path_text)) is True
+
+
+def test_sec_xbrl_sidecar_rejects_external_git_worktree_storage_root(tmp_path):
+    try:
+        subprocess.run(["git", "--version"], capture_output=True, text=True, check=True)
+    except (OSError, subprocess.CalledProcessError):
+        pytest.skip("git executable is required for external worktree hygiene coverage")
+    external_repo = tmp_path / "external-repo"
+    storage_root = external_repo / "storage"
+    storage_root.mkdir(parents=True)
+    subprocess.run(["git", "-C", str(external_repo), "init"], capture_output=True, text=True, check=True)
+
+    rejected = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        storage_root,
+        override_ack=True,
+    )
+
+    assert rejected.accepted is False
+    assert rejected.hygiene_class == layer3_sec_xbrl_sidecar.StorageRootHygieneClass.GIT_TRACKED
+    assert rejected.reason_code == "storage_root_hygiene_git_tracked"
+
+
+def test_sec_xbrl_sidecar_storage_hygiene_handles_missing_git(monkeypatch, tmp_path):
+    storage_root = tmp_path / "storage"
+    storage_root.mkdir()
+
+    def missing_git(*_args, **_kwargs):
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar.subprocess, "run", missing_git)
+
+    accepted = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        storage_root,
+        override_ack=True,
+    )
+
+    assert accepted.accepted is True
+    assert accepted.hygiene_class == layer3_sec_xbrl_sidecar.StorageRootHygieneClass.TEMP_LIKE
+    assert accepted.reason_code == "storage_root_hygiene_temp_like_override_ack"
+
+
+def test_sec_xbrl_sidecar_internal_value_store_source_has_no_deletion_path():
+    source = Path(layer3_sec_xbrl_sidecar.__file__).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    imported_delete_call_names: set[str] = set()
+    imported_delete_modules: set[str] = set()
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name in {"os", "shutil"}:
+                    imported_delete_modules.add(alias.asname or alias.name)
+        elif isinstance(node, ast.ImportFrom) and node.module in {"os", "shutil"}:
+            for alias in node.names:
+                if alias.name in {"remove", "rmtree"}:
+                    imported_delete_call_names.add(alias.asname or alias.name)
+
+    assert "unlink(" not in source
+    assert "rmtree(" not in source
+    assert ".remove(" not in source
+    assert "os.remove(" not in source
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Attribute):
+            assert func.attr not in {"unlink", "rmdir", "remove", "rmtree"}
+            if isinstance(func.value, ast.Name) and func.value.id in imported_delete_modules:
+                assert func.attr not in {"remove", "rmtree"}
+        elif isinstance(func, ast.Name):
+            assert func.id not in imported_delete_call_names
 
 
 def test_sec_xbrl_sidecar_internal_value_store_missing_fails_closed(monkeypatch, tmp_path):
     _install_receipt_fakes(monkeypatch, tmp_path, _ready_arelle_runner)
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_internal_value_store_enabled", True)
+    monkeypatch.setattr(settings, "layer3_sec_xbrl_storage_root_hygiene_override_ack", True, raising=False)
     response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
         _request(companyfacts_count=1)
     )

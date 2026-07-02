@@ -46848,5 +46848,53 @@
     },
     "next_posture": "owner_review_of_closeout_and_separate_a8_runtime_pr"
   },
-  "latest_ops_utilization_ready_closeout_proof_summary": "PR #2417 B5 proof records M-OPS-UTILIZATION-READY as a Tier-1 closeout: RC3 completeness re-check is 58 declared / 58 tracked / zero missing / zero extra, the operator utilization index is already merged, the UI flag-off posture slices passed headless and headed, and the B2 ScienceBase golden-path deviation remains reported rather than patched across forbidden backend/config surfaces. No runtime behavior or Tier-2 surface is admitted."
+  "latest_ops_utilization_ready_closeout_proof_summary": "PR #2417 B5 proof records M-OPS-UTILIZATION-READY as a Tier-1 closeout: RC3 completeness re-check is 58 declared / 58 tracked / zero missing / zero extra, the operator utilization index is already merged, the UI flag-off posture slices passed headless and headed, and the B2 ScienceBase golden-path deviation remains reported rather than patched across forbidden backend/config surfaces. No runtime behavior or Tier-2 surface is admitted.",
+  "sec_xbrl_a8_runtime_implementation_proof": {
+    "proof_kind": "sec_xbrl_a8_runtime_implementation_proof",
+    "milestone": "sec_xbrl_a8_runtime_implementation_v1",
+    "status": "branch_local_tier2_runtime_implementation_pending_owner_review",
+    "branch": "codex/a8-runtime",
+    "pr": "#2415",
+    "current_main_refreshed_at": "6b735721398754b445ee6f2b466394f374acf49e",
+    "proof_terms": [
+      "A8 runtime remains owner-gated and default-off",
+      "internal value-store storage-root hygiene rejects structural roots even with override acknowledgement",
+      "downloads/temp name-class override records only namespace hash and override reason, not raw root path",
+      "OneDrive/cloud-sync variants are structural and precede downloads/temp name classes",
+      "no deletion path is admitted for the internal value store",
+      "ledger reconciliation included in the runtime PR after rebase onto current main",
+      "merge waits for renewed Claude owner approval of the updated PR head"
+    ],
+    "verification": [
+      "python -m pytest backend/tests/test_sec_xbrl_sidecar.py -q",
+      "python -m pytest <expanded A8 runtime bundle> -q",
+      "python -m py_compile backend/app/core/config.py backend/app/services/layer3_sec_xbrl_sidecar.py",
+      "python -m json.tool next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "python ./tools/l3-progress-check.py",
+      "git diff --check",
+      "gh pr checks 2415 --watch --interval 300"
+    ],
+    "negative_authority_flags": {
+      "flag_default_change": false,
+      "value_reveal_default_enabled": false,
+      "internal_value_store_default_enabled": false,
+      "controlled_submit_default_enabled": false,
+      "schema_model_migration_change": false,
+      "redaction_posture_change": false,
+      "a7_proof_surface_source_change": false,
+      "workflow_change": false,
+      "live_sec_egress": false,
+      "arelle_execution": false,
+      "file_removal_or_deletion": false,
+      "production_readiness_claim": false
+    },
+    "positive_runtime_effects": [
+      "default-off storage-root hygiene is enforced when the internal value store is explicitly enabled",
+      "storage hygiene emits reason code, override boolean, and namespace hash without raw path disclosure",
+      "route-level value-reveal extra-field rejection remains redacted instead of leaking raw invalid input"
+    ],
+    "next_posture": "await_claude_owner_approval_of_rebased_a8_runtime_pr_head_before_merge"
+  },
+  "latest_sec_xbrl_a8_runtime_implementation_proof_summary": "PR #2415 branch-local proof covers the rebased Tier-2 A8 runtime packet and review remediation: default-off internal value-store storage-root hygiene, redacted storage metadata, OneDrive/cloud-sync structural precedence, full non-accepted hygiene-class coverage, AST no-deletion guard coverage, Windows broad-root detection, JSON ledger validation, progress-check validation, local pytest/py_compile verification, and CI watch before renewed owner review. The PR remains unmerged pending Claude approval of the updated head."
 }

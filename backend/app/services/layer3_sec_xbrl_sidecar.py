@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
+from enum import Enum
 import hashlib
 import json
 import os
@@ -43,6 +45,7 @@ RECEIPT_PREFIX = "sec-edgar-arelle-resolved-fact-authority"
 RECEIPT_DIR = "layer3-sec-edgar-arelle-resolved-fact-authority"
 INTERNAL_VALUE_STORE_SCHEMA_ID = "layer3.sec_edgar_arelle_resolved_fact_authority_internal_value_store.v1"
 INTERNAL_VALUE_STORE_DIR = "internal-value-stores"
+VALUE_RETENTION_POLICY_ID = "sec_xbrl_public_financial_value_retention_v1"
 VALUE_SEMANTICS_ID = "arelle_effective_canonical_value_v1"
 REDACTION_POLICY_ID = "sec_edgar_arelle_resolved_fact_authority_sidecar_redaction_v1"
 AUTHORITY_HASH_VERSION = "sec_edgar_arelle_resolved_fact_authority_sidecar_hash_v1"
@@ -60,6 +63,44 @@ _ARELLE_CONNECTIVITY_FORCE_OFFLINE_FLAGS = (
 )
 
 ARELLE_SUBPROCESS_RUNNER: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run
+
+
+class StorageRootHygieneClass(str, Enum):
+    ACCEPTED = "accepted"
+    REPO_RELATIVE = "repo_relative"
+    GIT_TRACKED = "git_tracked"
+    ONEDRIVE_CLOUD_SYNC = "onedrive_cloud_sync"
+    STATIC_PUBLIC_SERVED = "static_public_served"
+    GENERATED_ARTIFACT = "generated_artifact"
+    SHARED_AUTHORITY = "shared_authority"
+    MISSING_UNREADABLE = "missing_unreadable"
+    PERMISSION_BROAD = "permission_broad"
+    DOWNLOADS_LIKE = "downloads_like"
+    TEMP_LIKE = "temp_like"
+
+
+@dataclass(frozen=True)
+class StorageRootHygieneResult:
+    hygiene_class: StorageRootHygieneClass
+    accepted: bool
+    override: bool
+    namespace_hash: str
+
+    @property
+    def reason_code(self) -> str:
+        if self.accepted and self.override:
+            return f"storage_root_hygiene_{self.hygiene_class.value}_override_ack"
+        if self.accepted:
+            return "storage_root_hygiene_accepted"
+        return f"storage_root_hygiene_{self.hygiene_class.value}"
+
+    def metadata(self) -> dict[str, Any]:
+        return {
+            "storage_root_hygiene_checked": True,
+            "storage_root_hygiene_override": self.override,
+            "storage_root_hygiene_reason_code": self.reason_code,
+            "storage_namespace_hash": self.namespace_hash,
+        }
 
 _ALLOWED_FIELDS = {
     "schema_id",
@@ -823,7 +864,7 @@ def _diagnostics(
         "raw_fact_values_retained_local_receipt": False,
         "raw_fact_values_retained_internal_value_store": internal_value_store_enabled,
         "internal_value_store_retention_policy": (
-            "tied_to_sidecar_receipt_lifecycle"
+            VALUE_RETENTION_POLICY_ID
             if internal_value_store_enabled
             else "not_created_without_internal_value_store_flag"
         ),
@@ -1137,7 +1178,11 @@ def _write_internal_value_store(receipt: Mapping[str, Any], value_records: list[
         "value_store_hash": expected_hash,
         "value_record_count": len(value_records),
         "value_semantics": VALUE_SEMANTICS_ID,
-        "retention_policy": "tied_to_sidecar_receipt_lifecycle",
+        "retention_policy": VALUE_RETENTION_POLICY_ID,
+        "storage_root_hygiene_checked": bool(metadata.get("storage_root_hygiene_checked")),
+        "storage_root_hygiene_override": bool(metadata.get("storage_root_hygiene_override")),
+        "storage_root_hygiene_reason_code": str(metadata.get("storage_root_hygiene_reason_code") or ""),
+        "storage_namespace_hash": str(metadata.get("storage_namespace_hash") or ""),
         "gitignored_local_storage": True,
         "operator_surface_exposure": False,
         "committed_artifact_exposure": False,
@@ -1177,6 +1222,7 @@ def _internal_value_store_metadata(
             "values_exposed_in_status_projection": False,
             "retention_policy": "not_created_without_internal_value_store_flag",
         }
+    hygiene = _require_value_store_storage_hygiene()
     return {
         "schema_id": INTERNAL_VALUE_STORE_SCHEMA_ID,
         "store_state": "persisted",
@@ -1185,7 +1231,8 @@ def _internal_value_store_metadata(
         "value_store_hash": value_store_hash,
         "value_record_count": value_record_count,
         "value_semantics": VALUE_SEMANTICS_ID,
-        "retention_policy": "tied_to_sidecar_receipt_lifecycle",
+        "retention_policy": VALUE_RETENTION_POLICY_ID,
+        **hygiene.metadata(),
         "gitignored_local_storage": True,
         "operator_surface_exposure": False,
         "committed_artifact_exposure": False,
@@ -1339,7 +1386,7 @@ def _receipt_path(receipt_id: str) -> Path:
 
 
 def _value_store_path(receipt_id: str) -> Path:
-    return _root() / INTERNAL_VALUE_STORE_DIR / f"{receipt_id}.json"
+    return _value_store_root() / f"{receipt_id}.json"
 
 
 def _request_bindings_dir() -> Path:
@@ -1347,10 +1394,143 @@ def _request_bindings_dir() -> Path:
 
 
 def _root() -> Path:
+    return _storage_root_path() / RECEIPT_DIR
+
+
+def _storage_root_path() -> Path:
     storage_dir = str(settings.storage_dir or "").strip()
     if not storage_dir:
         _blocked("sec_edgar_arelle_sidecar_storage_root_unavailable", "SEC EDGAR Arelle sidecar requires the existing Layer 3 storage root.", http_status=409)
-    return Path(storage_dir).resolve() / RECEIPT_DIR
+    return Path(storage_dir).resolve(strict=False)
+
+
+def _value_store_root() -> Path:
+    _require_value_store_storage_hygiene()
+    return _root() / INTERNAL_VALUE_STORE_DIR
+
+
+def _require_value_store_storage_hygiene() -> StorageRootHygieneResult:
+    hygiene = _classify_value_store_storage_root(
+        _storage_root_path(),
+        override_ack=bool(getattr(settings, "layer3_sec_xbrl_storage_root_hygiene_override_ack", False)),
+    )
+    if not hygiene.accepted:
+        _blocked(
+            f"sec_edgar_arelle_sidecar_storage_root_hygiene_{hygiene.hygiene_class.value}",
+            "SEC EDGAR Arelle sidecar internal value-store storage root failed hygiene preflight.",
+            http_status=409,
+            blocked_fields=["storage_root_hygiene"],
+        )
+    return hygiene
+
+
+def _classify_value_store_storage_root(storage_root: Path, *, override_ack: bool) -> StorageRootHygieneResult:
+    resolved = storage_root.resolve(strict=False)
+    namespace_hash = stable_hash(
+        {
+            "schema_id": "layer3.sec_xbrl.value_store_storage_namespace.v1",
+            "storage_root": str(resolved),
+            "sidecar_namespace": RECEIPT_DIR,
+            "value_store_namespace": INTERNAL_VALUE_STORE_DIR,
+        }
+    )
+    hygiene_class = _storage_root_hygiene_class(resolved)
+    if hygiene_class in {StorageRootHygieneClass.DOWNLOADS_LIKE, StorageRootHygieneClass.TEMP_LIKE} and override_ack:
+        return StorageRootHygieneResult(
+            hygiene_class=hygiene_class,
+            accepted=True,
+            override=True,
+            namespace_hash=namespace_hash,
+        )
+    if hygiene_class is StorageRootHygieneClass.ACCEPTED:
+        return StorageRootHygieneResult(
+            hygiene_class=hygiene_class,
+            accepted=True,
+            override=False,
+            namespace_hash=namespace_hash,
+        )
+    return StorageRootHygieneResult(
+        hygiene_class=hygiene_class,
+        accepted=False,
+        override=False,
+        namespace_hash=namespace_hash,
+    )
+
+
+def _storage_root_hygiene_class(path: Path) -> StorageRootHygieneClass:
+    repo = _repo_root().resolve(strict=False)
+    try:
+        path.relative_to(repo)
+        return StorageRootHygieneClass.REPO_RELATIVE
+    except ValueError:
+        pass
+
+    lower_parts = tuple(part.lower() for part in path.parts)
+    if _path_is_git_tracked(path):
+        return StorageRootHygieneClass.GIT_TRACKED
+    if _path_has_onedrive_part(path):
+        return StorageRootHygieneClass.ONEDRIVE_CLOUD_SYNC
+    if any(part in {"static", "public", "wwwroot"} for part in lower_parts):
+        return StorageRootHygieneClass.STATIC_PUBLIC_SERVED
+    if any(part in {"artifact", "artifacts", "generated", "output", "outputs", "report", "reports"} for part in lower_parts):
+        return StorageRootHygieneClass.GENERATED_ARTIFACT
+    if any(part in {"agent-inbox", "handoff", "shared", "share"} for part in lower_parts):
+        return StorageRootHygieneClass.SHARED_AUTHORITY
+    if not path.exists() or not path.is_dir() or not os.access(str(path), os.R_OK | os.W_OK):
+        return StorageRootHygieneClass.MISSING_UNREADABLE
+    if _path_is_permission_broad(path):
+        return StorageRootHygieneClass.PERMISSION_BROAD
+    if any("download" in part for part in lower_parts):
+        return StorageRootHygieneClass.DOWNLOADS_LIKE
+    if _path_is_temp_like(path, lower_parts):
+        return StorageRootHygieneClass.TEMP_LIKE
+    return StorageRootHygieneClass.ACCEPTED
+
+
+def _path_is_git_tracked(path: Path) -> bool:
+    if not path.exists():
+        return False
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(path), "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return False
+    return result.returncode == 0
+
+
+def _path_is_permission_broad(path: Path) -> bool:
+    resolved = path.resolve(strict=False)
+    anchors = {Path(resolved.anchor).resolve(strict=False)} if resolved.anchor else set()
+    home = Path.home().resolve(strict=False)
+    return (
+        resolved in anchors
+        or resolved == home
+        or _windows_permission_broad_root(path)
+        or _windows_permission_broad_root(resolved)
+    )
+
+
+def _path_has_onedrive_part(path: Path) -> bool:
+    return any(part.lower().startswith("onedrive") for part in path.parts)
+
+
+def _windows_permission_broad_root(path: Path) -> bool:
+    normalized = str(path).replace("\\", "/").rstrip("/").lower()
+    return bool(re.fullmatch(r"[a-z]:/(users|program files|program files \(x86\)|programdata)", normalized))
+
+
+def _path_is_temp_like(path: Path, lower_parts: tuple[str, ...]) -> bool:
+    temp_root = Path(tempfile.gettempdir()).resolve(strict=False)
+    try:
+        path.relative_to(temp_root)
+        return True
+    except ValueError:
+        pass
+    return any(part in {"temp", "tmp", ".tmp"} or part.startswith("pytest-") for part in lower_parts)
 
 
 def _repo_root() -> Path:
@@ -1419,7 +1599,7 @@ def _path_inside_repo_or_onedrive(path: Path) -> bool:
         resolved.relative_to(repo)
         return True
     except ValueError:
-        return any(part.lower() == "onedrive" for part in resolved.parts)
+        return _path_has_onedrive_part(resolved)
 
 
 def _timeout_seconds() -> int:
