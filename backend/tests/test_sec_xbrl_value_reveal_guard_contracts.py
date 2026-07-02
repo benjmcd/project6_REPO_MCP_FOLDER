@@ -1,9 +1,63 @@
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
+from app.api.layer3 import (
+    Layer3SecXbrlControlledValueRevealSubmitRequest,
+    Layer3SecXbrlValueRevealAuthorityPrepareRequest,
+)
 from app.services import layer3_sec_xbrl_controlled_value_reveal_submit as submit
 from app.services import layer3_sec_xbrl_value_reveal_authority as authority
+
+
+def test_value_reveal_authority_prepare_request_model_preserves_extras_for_redacted_route_guard() -> None:
+    payload = {
+        "client_request_id": "authority-prepare-test",
+        "authority_mode": "sec_xbrl_value_reveal_authority_receipt_v1",
+        "operator_decision": "prepare_sec_xbrl_value_reveal_authority",
+        "sec_xbrl_operator_review_decision_id": "decision-1",
+        "decision_basis_hash": "a" * 64,
+        "storage_root": "fixture-storage-root",
+    }
+
+    request = Layer3SecXbrlValueRevealAuthorityPrepareRequest.model_validate(payload)
+
+    assert request.model_extra == {"storage_root": "fixture-storage-root"}
+
+
+def test_controlled_value_reveal_submit_request_model_preserves_extras_for_redacted_route_guard() -> None:
+    payload = {
+        "client_request_id": "controlled-submit-test",
+        "submit_mode": "sec_xbrl_controlled_value_reveal_submit_v1",
+        "operator_decision": "submit_explicit_sec_xbrl_value_reveal_from_authority_receipt",
+        "sec_xbrl_value_reveal_authority_receipt_id": "authority-receipt-1",
+        "authority_basis_hash": "b" * 64,
+        "operator_reveal_confirmation": True,
+        "source_url": "fixture-source-reference",
+        "proxy_headers": {"Authorization": "fixture-secret"},
+    }
+
+    request = Layer3SecXbrlControlledValueRevealSubmitRequest.model_validate(payload)
+
+    assert request.model_extra == {
+        "source_url": "fixture-source-reference",
+        "proxy_headers": {"Authorization": "fixture-secret"},
+    }
+
+
+def test_controlled_value_reveal_submit_request_model_requires_true_confirmation() -> None:
+    payload = {
+        "client_request_id": "controlled-submit-test",
+        "submit_mode": "sec_xbrl_controlled_value_reveal_submit_v1",
+        "operator_decision": "submit_explicit_sec_xbrl_value_reveal_from_authority_receipt",
+        "sec_xbrl_value_reveal_authority_receipt_id": "authority-receipt-1",
+        "authority_basis_hash": "b" * 64,
+        "operator_reveal_confirmation": False,
+    }
+
+    with pytest.raises(ValidationError):
+        Layer3SecXbrlControlledValueRevealSubmitRequest.model_validate(payload)
 
 
 def test_value_reveal_authority_rejects_raw_authority_keys_with_service_contract() -> None:

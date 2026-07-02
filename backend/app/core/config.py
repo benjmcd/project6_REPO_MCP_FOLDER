@@ -173,6 +173,10 @@ class Settings(BaseSettings):
         default=False,
         alias="LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
     )
+    layer3_sec_xbrl_storage_root_hygiene_override_ack: bool = Field(
+        default=False,
+        alias="LAYER3_SEC_XBRL_STORAGE_ROOT_HYGIENE_OVERRIDE_ACK",
+    )
     layer3_analysis_product_package_inventory_enabled: bool = Field(
         default=False,
         alias="LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED",

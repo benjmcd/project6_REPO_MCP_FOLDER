@@ -65,6 +65,7 @@ def test_sec_xbrl_sidecar_emits_resolved_semantics_and_redacts_response(monkeypa
 def test_sec_xbrl_sidecar_internal_value_store_requires_explicit_gate(monkeypatch, tmp_path):
     _install_receipt_fakes(monkeypatch, tmp_path, _ready_arelle_runner)
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_internal_value_store_enabled", True)
+    monkeypatch.setattr(settings, "layer3_sec_xbrl_storage_root_hygiene_override_ack", True, raising=False)
 
     response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
         _request(companyfacts_count=1)
@@ -75,15 +76,131 @@ def test_sec_xbrl_sidecar_internal_value_store_requires_explicit_gate(monkeypatc
         expected_sidecar_receipt_hash=response["sidecar_receipt_hash"],
     )
     assert receipt["internal_value_store"]["store_state"] == "persisted"
+    assert receipt["internal_value_store"]["retention_policy"] == "sec_xbrl_public_financial_value_retention_v1"
+    assert receipt["internal_value_store"]["storage_root_hygiene_override"] is True
+    assert receipt["internal_value_store"]["storage_root_hygiene_reason_code"] == (
+        "storage_root_hygiene_temp_like_override_ack"
+    )
+    assert len(receipt["internal_value_store"]["storage_namespace_hash"]) == 64
     value_store = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(receipt)
     assert value_store["value_records"][0]["effective_value"] == "987654321000000"
     assert value_store["value_records"][0]["lexical_value"] == "987654321"
+    assert value_store["retention_policy"] == "sec_xbrl_public_financial_value_retention_v1"
+    assert value_store["storage_root_hygiene_override"] is True
+    assert value_store["storage_root_hygiene_reason_code"] == "storage_root_hygiene_temp_like_override_ack"
+    assert value_store["storage_namespace_hash"] == receipt["internal_value_store"]["storage_namespace_hash"]
     assert receipt["diagnostics"]["raw_fact_values_retained_internal_value_store"] is True
+    assert receipt["diagnostics"]["internal_value_store_retention_policy"] == (
+        "sec_xbrl_public_financial_value_retention_v1"
+    )
+    projected = json.dumps({"receipt": receipt, "value_store": value_store}, sort_keys=True)
+    assert str(tmp_path) not in projected
+
+
+def test_sec_xbrl_sidecar_internal_value_store_rejects_temp_root_without_override_ack(
+    monkeypatch,
+    tmp_path,
+):
+    _install_receipt_fakes(monkeypatch, tmp_path, _ready_arelle_runner)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_internal_value_store_enabled", True)
+    monkeypatch.setattr(settings, "layer3_sec_xbrl_storage_root_hygiene_override_ack", False, raising=False)
+
+    with pytest.raises(Layer3WorkbenchError) as excinfo:
+        layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+            _request(companyfacts_count=1)
+        )
+
+    assert excinfo.value.error_code == "sec_edgar_arelle_sidecar_storage_root_hygiene_temp_like"
+    assert excinfo.value.blocked_fields == ["storage_root_hygiene"]
+
+
+def test_sec_xbrl_sidecar_value_store_path_rejects_repo_root_even_with_override_ack(
+    monkeypatch,
+):
+    repo_root = Path(__file__).resolve().parents[2]
+    monkeypatch.setattr(settings, "storage_dir", str(repo_root))
+    monkeypatch.setattr(settings, "layer3_sec_xbrl_storage_root_hygiene_override_ack", True, raising=False)
+
+    with pytest.raises(Layer3WorkbenchError) as excinfo:
+        layer3_sec_xbrl_sidecar._value_store_path("sec-edgar-arelle-resolved-fact-authority-" + "a" * 24)
+
+    assert excinfo.value.error_code == "sec_edgar_arelle_sidecar_storage_root_hygiene_repo_relative"
+    assert excinfo.value.blocked_fields == ["storage_root_hygiene"]
+
+
+def test_sec_xbrl_sidecar_downloads_like_storage_root_requires_override_ack(tmp_path):
+    downloads_root = tmp_path / "Downloads"
+    downloads_root.mkdir()
+
+    rejected = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        downloads_root,
+        override_ack=False,
+    )
+    accepted = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        downloads_root,
+        override_ack=True,
+    )
+
+    assert rejected.accepted is False
+    assert rejected.reason_code == "storage_root_hygiene_downloads_like"
+    assert accepted.accepted is True
+    assert accepted.override is True
+    assert accepted.reason_code == "storage_root_hygiene_downloads_like_override_ack"
+    assert len(accepted.namespace_hash) == 64
+
+
+def test_sec_xbrl_sidecar_rejects_external_git_worktree_storage_root(tmp_path):
+    try:
+        subprocess.run(["git", "--version"], capture_output=True, text=True, check=True)
+    except (OSError, subprocess.CalledProcessError):
+        pytest.skip("git executable is required for external worktree hygiene coverage")
+    external_repo = tmp_path / "external-repo"
+    storage_root = external_repo / "storage"
+    storage_root.mkdir(parents=True)
+    subprocess.run(["git", "-C", str(external_repo), "init"], capture_output=True, text=True, check=True)
+
+    rejected = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        storage_root,
+        override_ack=True,
+    )
+
+    assert rejected.accepted is False
+    assert rejected.hygiene_class == layer3_sec_xbrl_sidecar.StorageRootHygieneClass.GIT_TRACKED
+    assert rejected.reason_code == "storage_root_hygiene_git_tracked"
+
+
+def test_sec_xbrl_sidecar_storage_hygiene_handles_missing_git(monkeypatch, tmp_path):
+    storage_root = tmp_path / "storage"
+    storage_root.mkdir()
+
+    def missing_git(*_args, **_kwargs):
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar.subprocess, "run", missing_git)
+
+    accepted = layer3_sec_xbrl_sidecar._classify_value_store_storage_root(
+        storage_root,
+        override_ack=True,
+    )
+
+    assert accepted.accepted is True
+    assert accepted.hygiene_class == layer3_sec_xbrl_sidecar.StorageRootHygieneClass.TEMP_LIKE
+    assert accepted.reason_code == "storage_root_hygiene_temp_like_override_ack"
+
+
+def test_sec_xbrl_sidecar_internal_value_store_source_has_no_deletion_path():
+    source = Path(layer3_sec_xbrl_sidecar.__file__).read_text(encoding="utf-8")
+
+    assert "unlink(" not in source
+    assert "rmtree(" not in source
+    assert ".remove(" not in source
+    assert "os.remove(" not in source
 
 
 def test_sec_xbrl_sidecar_internal_value_store_missing_fails_closed(monkeypatch, tmp_path):
     _install_receipt_fakes(monkeypatch, tmp_path, _ready_arelle_runner)
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_internal_value_store_enabled", True)
+    monkeypatch.setattr(settings, "layer3_sec_xbrl_storage_root_hygiene_override_ack", True, raising=False)
     response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
         _request(companyfacts_count=1)
     )
