@@ -4,9 +4,10 @@ Live-main SHA semantics (2026-06-18), updated 2026-07-02: this board is a
 mixed historical ledger.
 The prior 2026-06-18 front-door anchor, `project6-origin/main`
 `f679f64f08a595fe724158d46006be77a179c786`, is retained as a historical
-PR `#2334` re-anchor, not as a self-updating current-main claim. The current A8
-record-status reconciliation is anchored to `project6-origin/main`
-`7fa72e745c7a2d6b72be37971e0e8768780dc5d5` after PR `#2419`. Older
+PR `#2334` re-anchor, not as a self-updating current-main claim. The A8
+record-truth-3 source frontier is `project6-origin/main`
+`f566ddb14f62cd717f697f1d13b533ff434785ed` after PR `#2421`; the refresh
+itself is PR `#2422` and should be revalidated at the PR head or merge commit. Older
 `Current-main` sections and embedded 40-character hashes are retained as
 historical lineage/proof notes, not as live ancestry declarations, unless a
 later focused refresh explicitly revalidates that entry against
@@ -13380,3 +13381,65 @@ network behavior, file removal/deletion, raw storage-root disclosure, operator
 identity disclosure, local path disclosure, or production-readiness claim is
 admitted by this tranche. A8 source flags remain default-false; arming is
 per-run owner-local runtime configuration.
+
+## M-A8-RECORD-TRUTH-3
+
+Milestone: `m_a8_record_truth_3_v1`.
+
+Record lane/PR: `record-truth-3`, PR `#2422`.
+
+Source frontier: current main
+`f566ddb14f62cd717f697f1d13b533ff434785ed` after PR `#2421`.
+
+Status: owner-sanctioned Tier-1 record reconciliation for the later 2026-07-02
+real-data D1 -> O2 -> O3 operator proof and the O6 main-tip hardening tranche.
+This is docs/ledger metadata only.
+
+Real-data A8 operator proof: COMPLETE as owner-local/default-off evidence. The
+committed record is redacted and hash/count only: report SHA-256
+`790fbb8eaa7de4be447f6c401089cb3b6435ff86614f4f0f57e656fc287a39d8`;
+`revealed_fact_count=523`; `non_empty_value_count=497`;
+`value_reveal_performed=true`; `production_readiness_claimed=false`; internal
+value-store file SHA-256
+`3bc81d84fc75bde17d074eee610130efa2659e2b2d281e756402007243eef5a0`;
+`value_record_count=523`;
+`retention_policy=sec_xbrl_public_financial_value_retention_v1`;
+`value_store_hash=eb702c84d42e16200f9f07bbb5888b277b987bca028a51304e922ef2377ce285`;
+persisted sidecar receipt hash
+`7fe4c3da194396dbe11261eb6ec42942b4c23ce534c37e982f2c872cc4a50546`; earlier
+flag-off receipt hash
+`d5c3585e91397f778f7d0f0297ac05d168dd7410fdaea1e2db7d18cbd3d5036d`; storage
+namespace hash
+`6483a8de2d45e2f79150273cbb0fcdfcf21bf7769132f19ecf01e71b6de9b354`; and
+missing-confirmation fail-closed probe SHA-256
+`edfdf1ca3d68baacdef80c01cb6cbb0e60496dd59ea7b9102dfe9e90ca097819`.
+
+Receipt distinction: the `7fe4c3da...` persisted/internal-store receipt and the
+`d5c3585e...` earlier flag-off receipt are distinct evidence states and are not
+interchangeable.
+
+Storage posture: the proof used per-run owner-local arming and a recorded
+storage-hygiene override proof/replay case. It is not a durable-root endorsement;
+future durable A8 roots still require off-repo, off-cloud-sync, non-static,
+non-git, non-Downloads-like storage unless a separate owner decision says
+otherwise.
+
+O6/#2421 tranche: PR `#2421` merged at
+`f566ddb14f62cd717f697f1d13b533ff434785ed` and hardened O6 sidecar guard
+docs/support-matrix context and tests. It did not change A8 source defaults,
+runtime behavior, production posture, or nonlocal authority.
+
+Admission clarification: `layer3_sec_xbrl_production_admission.py` lines
+141-156 require `value_reveal_performed=false` in the evaluated admission
+evidence run. The real-data reveal proof above is A8 value-retention evidence,
+not production/nonlocal admission evidence.
+
+Runtime behavior introduced by this pass: `false`.
+
+No flag default change, default-on value reveal, default-on internal value store,
+default-on controlled submit, schema/model/migration change, redaction-posture
+change, A7 proof-surface source change, workflow change, live SEC egress, Arelle
+network behavior, file removal/deletion, raw value disclosure, raw storage-root
+disclosure, issuer/accession/URL disclosure, operator identity disclosure, local
+path disclosure, sandbox artifact import, support-matrix production wording, or
+production-readiness claim is admitted by this tranche.

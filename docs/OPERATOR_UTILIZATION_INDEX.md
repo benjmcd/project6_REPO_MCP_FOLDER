@@ -138,6 +138,43 @@ PR #2415 is now the runtime implementation authority for the default-off A8
 guard packet. The implementation does not make reveal, internal value-store, or
 controlled submit default-on in source.
 
+### Sanitized Real-Data Proof Record (2026-07-02)
+
+A later owner-local D1 -> O2 -> O3 proof exercised the current controlled-submit
+reveal path on real data after owner GO. The committed record is sanitized only:
+report SHA-256
+`790fbb8eaa7de4be447f6c401089cb3b6435ff86614f4f0f57e656fc287a39d8`;
+`revealed_fact_count=523`; `non_empty_value_count=497`;
+`value_reveal_performed=true`; `production_readiness_claimed=false`;
+internal value-store file SHA-256
+`3bc81d84fc75bde17d074eee610130efa2659e2b2d281e756402007243eef5a0`;
+`value_record_count=523`;
+`retention_policy=sec_xbrl_public_financial_value_retention_v1`;
+`value_store_hash=eb702c84d42e16200f9f07bbb5888b277b987bca028a51304e922ef2377ce285`;
+persisted sidecar receipt hash
+`7fe4c3da194396dbe11261eb6ec42942b4c23ce534c37e982f2c872cc4a50546`;
+prior flag-off receipt hash
+`d5c3585e91397f778f7d0f0297ac05d168dd7410fdaea1e2db7d18cbd3d5036d`;
+storage namespace hash
+`6483a8de2d45e2f79150273cbb0fcdfcf21bf7769132f19ecf01e71b6de9b354`;
+missing-confirmation fail-closed probe SHA-256
+`edfdf1ca3d68baacdef80c01cb6cbb0e60496dd59ea7b9102dfe9e90ca097819`.
+
+This was per-run owner-local arming, not a source-default change. The proof used
+a recorded storage-hygiene override case for proof replay; durable/production A8
+roots still must be off-repo, off-cloud-sync, non-static, non-git, and not
+Downloads-like or temp-like unless a separate operator decision explicitly
+accepts a replay-only override.
+
+PR #2421 (`f566ddb14f62cd717f697f1d13b533ff434785ed`) is the latest O6
+guard-doc/support-matrix hardening authority after PR #2415, PR #2419, and
+PR #2420. It did not change A8 source defaults or production posture.
+
+Admission note: production-admission evidence is evaluated by
+`layer3_sec_xbrl_production_admission.py`, whose containment check requires
+`value_reveal_performed=false` in the evaluated evidence run. This real-data
+reveal proof is A8 evidence only, not production/nonlocal admission evidence.
+
 For an owner-local A8 run, arm only the needed per-run environment:
 
 - Set `LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED=true` when the run

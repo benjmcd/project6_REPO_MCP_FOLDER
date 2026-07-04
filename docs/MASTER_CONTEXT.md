@@ -5,8 +5,9 @@
 > file:line / SHA against current `project6-origin/main` before acting on it.
 > Last full pass: historical branch pass against `project6-origin/main` = `fd0cb72f`;
 > addendum uses current-main source frontier `6a28d0a481e046e613ce1d7ef7932eb633ef2002`
-> for PR #2415 and record-status reconciliation ref
-> `7fa72e745c7a2d6b72be37971e0e8768780dc5d5` for PR #2419.
+> for PR #2415, record-status reconciliation ref
+> `7fa72e745c7a2d6b72be37971e0e8768780dc5d5` for PR #2419, and
+> latest O6 main-tip ref `f566ddb14f62cd717f697f1d13b533ff434785ed` for PR #2421.
 
 ---
 
@@ -47,6 +48,10 @@ conflict with current main.
   golden-path tranche. The ScienceBase golden path now targets a verified live
   2023 dataset, preserves the strict conditional no-op gate, and was proven by
   `project6.ps1 -Action all` over three consecutive runs.
+- PR #2421, `test: harden SEC XBRL O6 guard docs`, merged at
+  `f566ddb14f62cd717f697f1d13b533ff434785ed` after PR #2420. It hardened the
+  O6 sidecar guard docs/support-matrix context and tests without changing A8
+  source defaults, runtime behavior, production posture, or nonlocal authority.
 - The A8 operator end-to-end proof is complete as of the 2026-07-02
   owner-local run. Redacted evidence recorded for repo history: hygiene class
   `downloads_like` rejected without override acknowledgement and accepted only
@@ -62,6 +67,30 @@ conflict with current main.
 - The boot-time containment guard was demonstrated live: arming a raw-bearing
   flag with default storage exposure and database placement fails closed during
   Settings initialization.
+- A later 2026-07-02 owner-local real-data D1 -> O2 -> O3 proof supersedes the
+  record status for the current controlled-submit reveal exercise. Sanitized
+  evidence: report SHA-256
+  `790fbb8eaa7de4be447f6c401089cb3b6435ff86614f4f0f57e656fc287a39d8`,
+  `revealed_fact_count=523`, `non_empty_value_count=497`,
+  `value_reveal_performed=true`, `production_readiness_claimed=false`,
+  internal value-store file SHA-256
+  `3bc81d84fc75bde17d074eee610130efa2659e2b2d281e756402007243eef5a0`,
+  `value_record_count=523`,
+  `retention_policy=sec_xbrl_public_financial_value_retention_v1`,
+  `value_store_hash=eb702c84d42e16200f9f07bbb5888b277b987bca028a51304e922ef2377ce285`,
+  persisted sidecar receipt hash
+  `7fe4c3da194396dbe11261eb6ec42942b4c23ce534c37e982f2c872cc4a50546`,
+  prior flag-off receipt hash
+  `d5c3585e91397f778f7d0f0297ac05d168dd7410fdaea1e2db7d18cbd3d5036d`,
+  storage namespace hash
+  `6483a8de2d45e2f79150273cbb0fcdfcf21bf7769132f19ecf01e71b6de9b354`,
+  and missing-confirmation fail-closed probe SHA-256
+  `edfdf1ca3d68baacdef80c01cb6cbb0e60496dd59ea7b9102dfe9e90ca097819`.
+  This proof used per-run arming only; source defaults remain unchanged.
+- Production-admission clarification: `layer3_sec_xbrl_production_admission.py`
+  lines 141-156 require the evaluated admission evidence to include
+  `value_reveal_performed=false`. The real-data reveal proof above is A8
+  evidence, not production/nonlocal admission evidence.
 - A8 is closed for the current SEC EDGAR value-retention arc. Source flags
   remain default-false; any arming is per-run owner-local runtime
   configuration, not source posture.
@@ -355,7 +384,9 @@ disposition policy (possibly including erasure) would be needed — explicitly o
 - **2026-07-02 A8 closure refs:** PR #2415 merged the default-off runtime guard packet at
   `6a28d0a481e046e613ce1d7ef7932eb633ef2002`; PR #2419 recorded the redacted
   operator proof at `7fa72e745c7a2d6b72be37971e0e8768780dc5d5`.
-  Current main for the A8 record-status addendum: `7fa72e745c7a2d6b72be37971e0e8768780dc5d5`.
+  PR #2421 then landed O6 guard-doc/support-matrix hardening at
+  `f566ddb14f62cd717f697f1d13b533ff434785ed`. Current main for this record-truth
+  refresh is `f566ddb14f62cd717f697f1d13b533ff434785ed`.
 - **A8 docs (on main):** `next_milestone_plans/Layer3_planning_docs/a8-lifecycle-design.md`,
   `a8-readiness-gate.md`, `a8-implementation-spec.md`, and `a8-owner-decision-brief.md`.
 - **A7 durable proof:** `backend/tests/test_sec_xbrl_a7_real_arelle_resolution.py` +

@@ -12,6 +12,17 @@ reveal, flip feature flags, add routes, add schema/model/migration/persistence,
 change redaction posture, run Arelle, fetch SEC data, touch A7 proof surfaces, or
 change workflows.
 
+Status cross-reference (2026-07-02): the current controlled-submit A8 path has
+since been owner-run on real data after GO, with sanitized proof recorded in
+`docs/MASTER_CONTEXT.md`, `docs/OPERATOR_UTILIZATION_INDEX.md`, the progress
+board, and both manifests. The proof records 523 revealed facts, 497 non-empty
+values, report SHA-256
+`790fbb8eaa7de4be447f6c401089cb3b6435ff86614f4f0f57e656fc287a39d8`, value-store
+SHA-256 `3bc81d84fc75bde17d074eee610130efa2659e2b2d281e756402007243eef5a0`,
+`production_readiness_claimed=false`, and no A8 source-default or production
+posture change. This lifecycle design remains historical design authority and
+future-surface guidance, not a production-admission packet.
+
 ## Decision
 
 A8 is a durable-retention design. SEC EDGAR XBRL financial values are public

@@ -20,6 +20,25 @@ merged as PR `#2415` at
 recorded via PR `#2419` at
 `7fa72e745c7a2d6b72be37971e0e8768780dc5d5`.
 
+Later 2026-07-02 record-truth refresh: the current controlled-submit path was
+operator-proven on real data after GO with sanitized evidence only: report
+SHA-256 `790fbb8eaa7de4be447f6c401089cb3b6435ff86614f4f0f57e656fc287a39d8`,
+523 revealed facts, 497 non-empty values, value-store SHA-256
+`3bc81d84fc75bde17d074eee610130efa2659e2b2d281e756402007243eef5a0`,
+`value_store_hash=eb702c84d42e16200f9f07bbb5888b277b987bca028a51304e922ef2377ce285`,
+persisted receipt hash
+`7fe4c3da194396dbe11261eb6ec42942b4c23ce534c37e982f2c872cc4a50546`,
+prior flag-off receipt hash
+`d5c3585e91397f778f7d0f0297ac05d168dd7410fdaea1e2db7d18cbd3d5036d`, and
+`production_readiness_claimed=false`. PR `#2421` then landed O6
+guard-doc/support-matrix hardening at
+`f566ddb14f62cd717f697f1d13b533ff434785ed` without changing A8 source defaults
+or runtime posture.
+
+Admission note: `layer3_sec_xbrl_production_admission.py` lines 141-156 require
+`value_reveal_performed=false` in the evaluated production-admission evidence
+run. The real-data reveal proof is A8 evidence, not admission evidence.
+
 Flags remain default-false in source. Any arming remains owner-local per-run
 runtime configuration. The pre-implementation gate language below is retained
 as historical authority for the merged default-off A8 arc and as live guidance
