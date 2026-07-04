@@ -47177,7 +47177,7 @@
     "proof_kind": "m_program_context_proof",
     "milestone": "m_program_context_v1",
     "status": "owner_requested_tier1_program_context_landing",
-    "pr": "pending",
+    "pr": "#2424",
     "progress_board_section": "M-PROGRAM-CONTEXT",
     "source_frontier_refreshed_at": "e661e05ad0a9b18fab5797c26ee68604f8c92669",
     "source_frontier_refreshed_at_source": "project6-origin/main after PR #2423 durable-root provisioning",
@@ -47245,5 +47245,5 @@
       "preserves Tier-1 docs-only scope and negative authority boundaries"
     ]
   },
-  "latest_m_program_context_proof_summary": "M-PROGRAM-CONTEXT proof (PR pending) lands docs/program-context/ as the exhaustive SEC-XBRL program record from source frontier e661e05ad0a9b18fab5797c26ee68604f8c92669 after PR #2423, with MASTER_CONTEXT as executive summary. Verification re-derived PR/SHA ancestry, durable-root manifest/store/report hashes, RC3 58/58, nonlocal readiness 6/7, and the M-FWD3 historical worktree inventory hash, then corrected factual drift in the landed set. This proof is docs/ledger-only and admits no runtime, config, flag, SEC egress, sandbox, schema/model/migration, redaction-posture, production-readiness, raw-value, local-path beyond C:/p6store, issuer/accession/URL, operator-identity, or worktree-removal change."
+  "latest_m_program_context_proof_summary": "M-PROGRAM-CONTEXT proof (#2424) lands docs/program-context/ as the exhaustive SEC-XBRL program record from source frontier e661e05ad0a9b18fab5797c26ee68604f8c92669 after PR #2423, with MASTER_CONTEXT as executive summary. Verification re-derived PR/SHA ancestry, durable-root manifest/store/report hashes, RC3 58/58, nonlocal readiness 6/7, and the M-FWD3 historical worktree inventory hash, then corrected factual drift in the landed set. This proof is docs/ledger-only and admits no runtime, config, flag, SEC egress, sandbox, schema/model/migration, redaction-posture, production-readiness, raw-value, local-path beyond C:/p6store, issuer/accession/URL, operator-identity, or worktree-removal change."
 }

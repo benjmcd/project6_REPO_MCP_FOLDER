@@ -13494,7 +13494,7 @@ disclosure, or operator identity disclosure is admitted by this tranche.
 
 Milestone: `m_program_context_v1`.
 
-Record lane/PR: `program-context`, PR pending.
+Record lane/PR: `program-context`, PR `#2424`.
 
 Source frontier: current main
 `e661e05ad0a9b18fab5797c26ee68604f8c92669` after PR `#2423`.

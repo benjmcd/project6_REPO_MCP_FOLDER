@@ -49459,7 +49459,7 @@
     "tracking_kind": "m_program_context_tracking",
     "milestone": "m_program_context_v1",
     "status": "owner_requested_tier1_program_context_landing",
-    "pr": "pending",
+    "pr": "#2424",
     "progress_board_section": "M-PROGRAM-CONTEXT",
     "source_frontier_refreshed_at": "e661e05ad0a9b18fab5797c26ee68604f8c92669",
     "source_frontier_refreshed_at_source": "project6-origin/main after PR #2423 durable-root provisioning",
@@ -49521,5 +49521,5 @@
     },
     "next_posture": "program_context_updates_follow_index_protocol_after_each_merged_tranche"
   },
-  "latest_m_program_context_summary": "M-PROGRAM-CONTEXT (PR pending) lands docs/program-context/ as the exhaustive SEC-XBRL program record from source frontier e661e05ad0a9b18fab5797c26ee68604f8c92669 after PR #2423, with docs/MASTER_CONTEXT.md retained as the executive summary. Adversarial verification confirmed PR #2409-#2423 merge commits, durable-root manifest/store/report hashes, RC3 declared=58 tracked=58, the nonlocal readiness 6/7 blocker state, and the M-FWD3 historical worktree inventory hash. Corrected drift before landing includes Tier-2 policy wording, sidecar code-anchor ranges, PR #2423 provisioning wording, historical worktree-count wording, and the nonlocal blocker criterion/reason distinction. No backend/app source, config default, flag, SEC egress, sandbox, schema/model/migration, redaction posture, production readiness, raw value, local-path beyond C:/p6store, issuer/accession/URL, operator identity, or worktree-removal change is admitted."
+  "latest_m_program_context_summary": "M-PROGRAM-CONTEXT (#2424) lands docs/program-context/ as the exhaustive SEC-XBRL program record from source frontier e661e05ad0a9b18fab5797c26ee68604f8c92669 after PR #2423, with docs/MASTER_CONTEXT.md retained as the executive summary. Adversarial verification confirmed PR #2409-#2423 merge commits, durable-root manifest/store/report hashes, RC3 declared=58 tracked=58, the nonlocal readiness 6/7 blocker state, and the M-FWD3 historical worktree inventory hash. Corrected drift before landing includes Tier-2 policy wording, sidecar code-anchor ranges, PR #2423 provisioning wording, historical worktree-count wording, and the nonlocal blocker criterion/reason distinction. No backend/app source, config default, flag, SEC egress, sandbox, schema/model/migration, redaction posture, production readiness, raw value, local-path beyond C:/p6store, issuer/accession/URL, operator identity, or worktree-removal change is admitted."
 }
