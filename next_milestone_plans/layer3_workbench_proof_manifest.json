@@ -992,8 +992,8 @@
     "latest_p19_mixed_source_external_export_download_readiness_runtime_merge_commit": "9e4451cb710c0185a64f1788b9e0d848be7dbc8b",
     "latest_p19_mixed_source_external_export_download_readiness_current_main_sync_doc": "next_milestone_plans/multi-ingest/46-p19-current-main-sync.md",
     "latest_p19_mixed_source_external_export_download_readiness_current_main_sync_live_behavior_change": false,
-    "record_truth_3_current_main_refreshed_at": "f566ddb14f62cd717f697f1d13b533ff434785ed",
-    "record_truth_3_current_main_refreshed_at_source": "project6-origin/main after PR #2421 O6 guard-doc/support-matrix hardening; this Tier-1 proof refresh records the later real-data A8 proof without changing runtime behavior."
+    "record_truth_3_source_frontier_refreshed_at": "f566ddb14f62cd717f697f1d13b533ff434785ed",
+    "record_truth_3_source_frontier_refreshed_at_source": "project6-origin/main after PR #2421 O6 guard-doc/support-matrix hardening; PR #2422 carries the refresh itself, so revalidate the refresh at the PR head or merge commit; this Tier-1 proof refresh records the later real-data A8 proof without changing runtime behavior."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -47001,10 +47001,7 @@
     "proof_kind": "m_a8_record_truth_3_proof",
     "milestone": "m_a8_record_truth_3_v1",
     "status": "owner_sanctioned_tier1_record_truth_refresh",
-    "branch": "codex/record-truth-3",
     "pr": "#2422",
-    "current_main_refreshed_at": "f566ddb14f62cd717f697f1d13b533ff434785ed",
-    "current_main_refreshed_at_source": "project6-origin/main after PR #2421 O6 guard-doc/support-matrix hardening",
     "allowed_files": [
       "docs/MASTER_CONTEXT.md",
       "docs/OPERATOR_UTILIZATION_INDEX.md",
@@ -47091,7 +47088,10 @@
       "nonlocal_admission_claim": false,
       "legacy_reveal_activation": false
     },
-    "next_posture": "a8_real_data_record_truth_current_nonlocal_production_default_on_and_legacy_reveal_surfaces_remain_separate"
+    "next_posture": "a8_real_data_record_truth_current_nonlocal_production_default_on_and_legacy_reveal_surfaces_remain_separate",
+    "record_lane": "record-truth-3",
+    "source_frontier_refreshed_at": "f566ddb14f62cd717f697f1d13b533ff434785ed",
+    "source_frontier_refreshed_at_source": "project6-origin/main after PR #2421 O6 guard-doc/support-matrix hardening; PR #2422 carries the refresh itself"
   },
-  "latest_m_a8_record_truth_proof_summary": "M-A8-RECORD-TRUTH (#2419) and M-A8-RECORD-TRUTH-2 (#2420) remain historical proof/supersession lanes. M-A8-RECORD-TRUTH-3 (#2422) proof records the later 2026-07-02 owner-local real-data D1->O2->O3 controlled-submit reveal proof from current main f566ddb14f62cd717f697f1d13b533ff434785ed after PR #2421/O6. The proof is sanitized: report SHA-256 790fbb8eaa7de4be447f6c401089cb3b6435ff86614f4f0f57e656fc287a39d8, 523 revealed facts, 497 non-empty values, value_record_count 523, retention policy sec_xbrl_public_financial_value_retention_v1, value-store hash eb702c84d42e16200f9f07bbb5888b277b987bca028a51304e922ef2377ce285, persisted receipt 7fe4c3da194396dbe11261eb6ec42942b4c23ce534c37e982f2c872cc4a50546, prior flag-off receipt d5c3585e91397f778f7d0f0297ac05d168dd7410fdaea1e2db7d18cbd3d5036d, namespace hash 6483a8de2d45e2f79150273cbb0fcdfcf21bf7769132f19ecf01e71b6de9b354, missing-confirmation fail-closed probe edfdf1ca3d68baacdef80c01cb6cbb0e60496dd59ea7b9102dfe9e90ca097819, and production_readiness_claimed=false. The proof also records PR #2421 O6 guard-doc/support-matrix hardening and admits no runtime behavior, source-default, raw disclosure, production-readiness, nonlocal admission, or legacy reveal change."
+  "latest_m_a8_record_truth_proof_summary": "M-A8-RECORD-TRUTH (#2419) and M-A8-RECORD-TRUTH-2 (#2420) remain historical proof/supersession lanes. M-A8-RECORD-TRUTH-3 (#2422) proof records the later 2026-07-02 owner-local real-data D1->O2->O3 controlled-submit reveal proof from source frontier f566ddb14f62cd717f697f1d13b533ff434785ed after PR #2421/O6. The proof is sanitized: report SHA-256 790fbb8eaa7de4be447f6c401089cb3b6435ff86614f4f0f57e656fc287a39d8, 523 revealed facts, 497 non-empty values, value_record_count 523, retention policy sec_xbrl_public_financial_value_retention_v1, value-store hash eb702c84d42e16200f9f07bbb5888b277b987bca028a51304e922ef2377ce285, persisted receipt 7fe4c3da194396dbe11261eb6ec42942b4c23ce534c37e982f2c872cc4a50546, prior flag-off receipt d5c3585e91397f778f7d0f0297ac05d168dd7410fdaea1e2db7d18cbd3d5036d, namespace hash 6483a8de2d45e2f79150273cbb0fcdfcf21bf7769132f19ecf01e71b6de9b354, missing-confirmation fail-closed probe edfdf1ca3d68baacdef80c01cb6cbb0e60496dd59ea7b9102dfe9e90ca097819, and production_readiness_claimed=false. The proof also records PR #2421 O6 guard-doc/support-matrix hardening and admits no runtime behavior, source-default, raw disclosure, production-readiness, nonlocal admission, or legacy reveal change."
 }

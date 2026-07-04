@@ -4,10 +4,10 @@ Live-main SHA semantics (2026-06-18), updated 2026-07-02: this board is a
 mixed historical ledger.
 The prior 2026-06-18 front-door anchor, `project6-origin/main`
 `f679f64f08a595fe724158d46006be77a179c786`, is retained as a historical
-PR `#2334` re-anchor, not as a self-updating current-main claim. The current A8
-record-status reconciliation is anchored to `project6-origin/main`
-`f566ddb14f62cd717f697f1d13b533ff434785ed` after PR `#2421` and the
-M-A8-RECORD-TRUTH-3 refresh. Older
+PR `#2334` re-anchor, not as a self-updating current-main claim. The A8
+record-truth-3 source frontier is `project6-origin/main`
+`f566ddb14f62cd717f697f1d13b533ff434785ed` after PR `#2421`; the refresh
+itself is PR `#2422` and should be revalidated at the PR head or merge commit. Older
 `Current-main` sections and embedded 40-character hashes are retained as
 historical lineage/proof notes, not as live ancestry declarations, unless a
 later focused refresh explicitly revalidates that entry against
@@ -13386,7 +13386,7 @@ per-run owner-local runtime configuration.
 
 Milestone: `m_a8_record_truth_3_v1`.
 
-Record lane/PR: `codex/record-truth-3`, PR `#2422`.
+Record lane/PR: `record-truth-3`, PR `#2422`.
 
 Source frontier: current main
 `f566ddb14f62cd717f697f1d13b533ff434785ed` after PR `#2421`.
