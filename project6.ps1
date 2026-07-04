@@ -1,6 +1,6 @@
 [CmdletBinding(PositionalBinding = $false)]
 param(
-    [ValidateSet("setup", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-structure", "validate-sec-live-preflight", "validate-sec-live-smoke-evidence", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-deterministic-challenge-review-packet", "refresh-nrc-aps-review-gate-reports", "refresh-nrc-aps-validate-only-gates", "validate-nrc-aps-validate-only-gates", "validate-nrc-aps-promotion", "validate-nrc-aps-retrieval-cutover", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "compare-nrc-aps-candidate-b", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
+    [ValidateSet("setup", "provision-a8-root", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-structure", "validate-sec-live-preflight", "validate-sec-live-smoke-evidence", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-deterministic-challenge-review-packet", "refresh-nrc-aps-review-gate-reports", "refresh-nrc-aps-validate-only-gates", "validate-nrc-aps-validate-only-gates", "validate-nrc-aps-promotion", "validate-nrc-aps-retrieval-cutover", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "compare-nrc-aps-candidate-b", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
     [string]$Action = "status",
     [string]$BaseUrl = "http://127.0.0.1:8000",
     [int]$ConsecutiveRuns = 3,
@@ -29,6 +29,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $RepoRoot = [IO.Path]::GetFullPath((Split-Path -Parent $MyInvocation.MyCommand.Path))
+$A8DurableStorageRoot = "C:\p6store"
+$A8DurableStorageRootDisplay = "C:/p6store"
 $BackendDir = Join-Path $RepoRoot "backend"
 $BackendDirAbs = [IO.Path]::GetFullPath($BackendDir)
 $RequirementsPath = Join-Path $BackendDir "requirements.txt"
@@ -116,6 +118,33 @@ function Test-IsPostgresUrl {
         $candidate.StartsWith("postgresql+psycopg://") -or
         $candidate.StartsWith("postgres://")
     )
+}
+
+function Ensure-A8DurableStorageRoot {
+    param(
+        [switch]$WarnOnly
+    )
+
+    try {
+        if (Test-Path -LiteralPath $A8DurableStorageRoot -PathType Leaf) {
+            throw "A8 durable storage root target exists but is not a directory: $A8DurableStorageRootDisplay"
+        }
+
+        if (-not (Test-Path -LiteralPath $A8DurableStorageRoot -PathType Container)) {
+            [IO.Directory]::CreateDirectory($A8DurableStorageRoot) | Out-Null
+            Write-Host "Provisioned A8 durable storage root: $A8DurableStorageRootDisplay"
+            return
+        }
+
+        Write-Host "A8 durable storage root already exists: $A8DurableStorageRootDisplay"
+    }
+    catch {
+        if ($WarnOnly) {
+            Write-Warning "A8 durable storage root was not provisioned during setup: $($_.Exception.Message). Run '.\project6.ps1 -Action provision-a8-root' after resolving the root permission or occupancy issue."
+            return
+        }
+        throw
+    }
 }
 
 function Get-BackendConfiguredDatabaseUrl {
@@ -327,8 +356,12 @@ function Resolve-NrcApsBatchManifestPath {
 
 switch ($Action) {
     "setup" {
+        Ensure-A8DurableStorageRoot -WarnOnly
         Invoke-Py -Arguments @("-m", "pip", "install", "-r", $RequirementsPath)
         Write-Host "Setup complete."
+    }
+    "provision-a8-root" {
+        Ensure-A8DurableStorageRoot
     }
     "migrate" {
         Invoke-WithTier1 {
