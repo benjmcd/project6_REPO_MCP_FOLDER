@@ -13386,7 +13386,7 @@ per-run owner-local runtime configuration.
 
 Milestone: `m_a8_record_truth_3_v1`.
 
-Record lane/PR: `codex/record-truth-3` (Tier-1 record-truth PR).
+Record lane/PR: `codex/record-truth-3`, PR `#2422`.
 
 Source frontier: current main
 `f566ddb14f62cd717f697f1d13b533ff434785ed` after PR `#2421`.
