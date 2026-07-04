@@ -13443,3 +13443,47 @@ network behavior, file removal/deletion, raw value disclosure, raw storage-root
 disclosure, issuer/accession/URL disclosure, operator identity disclosure, local
 path disclosure, sandbox artifact import, support-matrix production wording, or
 production-readiness claim is admitted by this tranche.
+
+## M-P3-DURABLE-ROOT-REPO
+
+Milestone: `m_p3_durable_root_repo_v1`.
+
+Record lane/branch: `p3-repo`, branch `codex/p3-durable-root-repo`.
+
+Source frontier: current main
+`be6d9b1b5eebd3bee876d42410612603dc8e2476` after PR `#2422`.
+
+Status: owner-decided Tier-1 repo-side wiring for the P3 durable-root migration.
+The operator side is complete; this repo-side tranche auto-provisions the
+canonical root and records sanitized guidance/ledger metadata only.
+
+Canonical durable root: `C:/p6store`. `project6.ps1` now provisions this root
+during `setup` and exposes a dedicated `provision-a8-root` action. This is
+directory provisioning and operator guidance only; it does not set or change
+global `STORAGE_DIR` behavior for non-A8 flows.
+
+Sanitized migration proof: 43 files / 16.62 MB copied and verified; source
+retained untouched; storage hygiene under `C:/p6store` is `accepted` with no
+override; namespace hash
+`4502e1c70863a4bd0067e5f0de4325758d3542e05df223d702747c1886ee6ca9`;
+migration manifest SHA-256
+`845974f765dc8e7985105053b77e97d6983d94a02f0f015454e9f023e77384fb`;
+retained value records `523`; retention policy
+`sec_xbrl_public_financial_value_retention_v1`; value-store hash
+`eb702c84d42e16200f9f07bbb5888b277b987bca028a51304e922ef2377ce285`.
+
+Docs/guidance updates: `docs/OPERATOR_UTILIZATION_INDEX.md` now names
+`C:/p6store` as the canonical A8 root and keeps the hygiene override
+acknowledgement path limited to sandbox/replay roots. `backend/.env.example`
+adds comment-only guidance for A8 operator runs; it does not change the default
+`STORAGE_DIR=app/storage`.
+
+Runtime behavior introduced by this pass: `false` for backend app behavior and
+SEC/XBRL runtime defaults. The only executable repo change is root-script
+provisioning for an owner-selected directory.
+
+No backend/app source change, config.py default change, flag flip, SEC egress,
+sandbox modification, schema/model/migration change, value-reveal/default-on
+change, redaction-posture change, production-readiness claim, worktree removal,
+raw value disclosure, prior sandbox-root disclosure, issuer/accession/URL
+disclosure, or operator identity disclosure is admitted by this tranche.

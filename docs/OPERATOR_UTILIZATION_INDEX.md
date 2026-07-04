@@ -160,11 +160,28 @@ storage namespace hash
 missing-confirmation fail-closed probe SHA-256
 `edfdf1ca3d68baacdef80c01cb6cbb0e60496dd59ea7b9102dfe9e90ca097819`.
 
-This was per-run owner-local arming, not a source-default change. The proof used
-a recorded storage-hygiene override case for proof replay; durable/production A8
-roots still must be off-repo, off-cloud-sync, non-static, non-git, and not
-Downloads-like or temp-like unless a separate operator decision explicitly
-accepts a replay-only override.
+This was per-run owner-local arming, not a source-default change. The original
+proof used a recorded storage-hygiene override case for proof replay, not a
+durable-root endorsement.
+
+### Canonical Durable Root (2026-07-04)
+
+The owner-selected canonical durable root for A8 operator runs is `C:/p6store`.
+`project6.ps1` auto-provisions this directory during `setup`, and the dedicated
+`provision-a8-root` action can create it without changing global `STORAGE_DIR`
+behavior for non-A8 flows.
+
+Operator migration record: the durable-root migration copied and verified 43
+files (16.62 MB) from the prior proof store, retained the source untouched, and
+repointed A8 evidence to `C:/p6store`. The new root passed storage hygiene as
+`accepted` with no override. Sanitized migration proof: namespace hash
+`4502e1c70863a4bd0067e5f0de4325758d3542e05df223d702747c1886ee6ca9`;
+migration manifest SHA-256
+`845974f765dc8e7985105053b77e97d6983d94a02f0f015454e9f023e77384fb`;
+retained value records `523`; retention policy
+`sec_xbrl_public_financial_value_retention_v1`; value-store hash
+`eb702c84d42e16200f9f07bbb5888b277b987bca028a51304e922ef2377ce285`.
+Do not record the prior sandbox root in committed docs.
 
 PR #2421 (`f566ddb14f62cd717f697f1d13b533ff434785ed`) is the latest O6
 guard-doc/support-matrix hardening authority after PR #2415, PR #2419, and
@@ -181,9 +198,9 @@ For an owner-local A8 run, arm only the needed per-run environment:
   must persist retained public SEC financial values in the internal value store.
 - Also set `LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED=true` when
   the run will exercise the controlled reveal-submit path.
-- Set `STORAGE_DIR=<durable-off-repo-off-cloud-sync-root>` to an isolated
-  operator-owned root. Use a generic placeholder in committed docs; do not
-  record the real root.
+- Set `STORAGE_DIR=C:/p6store` for A8 operator runs that arm raw-bearing
+  SEC/XBRL flags. This is operator-local runtime configuration, not a source
+  default.
 - Keep durable A8 roots out of Downloads-like and temp-named locations. Set
   `LAYER3_SEC_XBRL_STORAGE_ROOT_HYGIENE_OVERRIDE_ACK=true` only when
   deliberately proving or replaying the recorded override path for a
@@ -195,7 +212,8 @@ For an owner-local A8 run, arm only the needed per-run environment:
   raw-bearing A8 flag is armed with default storage exposure or unsafe database
   placement.
 
-Tracked authority: [backend/.env.example](../backend/.env.example),
+Tracked authority: [project6.ps1](../project6.ps1),
+[backend/.env.example](../backend/.env.example),
 [a8-implementation-spec.md](../next_milestone_plans/Layer3_planning_docs/a8-implementation-spec.md),
 [a8-readiness-gate.md](../next_milestone_plans/Layer3_planning_docs/a8-readiness-gate.md), and
 [a8-owner-decision-brief.md](../next_milestone_plans/Layer3_planning_docs/a8-owner-decision-brief.md).
