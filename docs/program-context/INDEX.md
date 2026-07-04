@@ -38,9 +38,9 @@ recently dated entry governs and the older one must receive a supersession note.
 - Tier: updates to this set are Tier-1 docs lanes (self-merge on green CI with bot review
   threads resolved) unless a change re-states runtime/admission semantics, in which case the
   lane must stop and classify.
-- Verification duty: every factual claim added must carry an anchor (PR number, merge SHA,
-  file:line, report/store hash, or inbox-report marker) that a later agent can re-derive
-  without this set's author being present.
+- Verification duty: every factual claim added must carry a committed or re-derivable anchor
+  (PR number, merge SHA, file:line, report/store hash, or committed docs/manifests) that a
+  later agent can re-derive without this set's author being present.
 
 ## Reading order for a new agent/session
 

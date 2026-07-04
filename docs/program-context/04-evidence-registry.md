@@ -1,8 +1,8 @@
 # 04 — Evidence Registry
 
-Every load-bearing anchor. A claim elsewhere in this set that cites one of these is
-re-derivable from the anchor alone. Dates 2026. "Inbox" = `state/agent-inbox/for-claude.md`
-report markers (operator-lane coordination ledger, tracked in the root checkout).
+Every committed load-bearing anchor. A claim elsewhere in this set that cites one of these is
+re-derivable from committed source, GitHub PR state, or read-only hash/count artifacts.
+Operator coordination reports are supplementary evidence, not committed anchors.
 
 ## Merged PR / SHA table (all squash-merged to project6-origin/main)
 
@@ -29,7 +29,7 @@ report markers (operator-lane coordination ledger, tracked in the root checkout)
 | Artifact | Anchor | Meaning |
 |---|---|---|
 | Reveal proof report | sha256 `790fbb8eaa7de4be447f6c401089cb3b6435ff86614f4f0f57e656fc287a39d8` | CK1-3 outcome record (report file in operator sandbox reports dir) |
-| Revealed facts | 523 total / 497 non-empty | CK3 controlled-submit response (real STLD 10-Q values) |
+| Revealed facts | 523 total / 497 non-empty | CK3 controlled-submit response (one real filing, issuer/form redacted) |
 | Retained store records | 523 (513 non-empty at CK2) | Internal value store contents |
 | Internal value store file | sha256 `3bc81d84fc75bde17d074eee610130efa2659e2b2d281e756402007243eef5a0` | The durable store artifact |
 | Value-store hash | `eb702c84d42e16200f9f07bbb5888b277b987bca028a51304e922ef2377ce285` | Receipt↔store binding hash |
@@ -65,16 +65,6 @@ report markers (operator-lane coordination ledger, tracked in the root checkout)
 | No-deletion guard test | `backend/tests/test_sec_xbrl_sidecar.py` (AST+string; threat model in doc note) |
 | Merge-gate policy | `next_milestone_plans/Layer3_planning_docs/SEC-XBRL-MERGE-GATE-VERIFIER-POLICY.md` (Tier 1 / Tier 2 wording) |
 | Admission runbook (7 criteria) | `docs/layer3-admission-runbook.md` |
-
-## Inbox report markers (coordination ledger, chronological)
-
-M-ADVERSARIAL-REVIEW-AUDIT (~2002) · M-A8-PRECLEARANCE-PROGRAM PHASE 1-5 + CLOSEOUT
-(~2102-2295) · M-A8-RUNTIME-GO REPORT 1-3 (~2432, ~2556, ~2655) · M-OPS-UTILIZATION-READY
-REPORT 1-4 + CLOSEOUT + 2b (~2299-2605) · M-A8-RECORD-TRUTH (~2709) · M-ADV-STATE-AUDIT-A2/A1
-(~2770/~2871) · M-A8-RECORD-TRUTH-2 (~2997) · M-FWD-OPTIONS-2 (~3048) · M-O6-HARDENING-DOCS
-(~3223) · M-FWD3-CRITERIA (~3247) · M-FWD3-EVIDENCE (~3388) · M-A8-RECORD-TRUTH-3 (~3554) ·
-M-P3-DURABLE-ROOT-REPO (~3607). Line numbers are as-of this set's authoring; grep markers,
-don't trust offsets.
 
 ## Counts worth remembering
 

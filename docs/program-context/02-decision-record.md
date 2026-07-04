@@ -143,12 +143,12 @@ evidence → revisit-when. Dates 2026.
 
 ## D11. Delegation architecture (standing)
 
-- Context: two Codex Desktop threads + one orchestrator session; owner directive to delegate
+- Context: two repo-lane desktop threads + one orchestrator session; owner directive to delegate
   most execution.
-- Decision: Codex threads own repo/git lanes (fenced, one PR at a time); the orchestrator
+- Decision: repo-lane threads own repo/git lanes (fenced, one PR at a time); the orchestrator
   session owns operator-private lanes (proofs, migrations — where the authorization chain
   lives), independent Tier-2 review, cross-lane adjudication, and record dispatch.
 - Why optimal: subagents cannot verify in-band owner authorization (demonstrated by an
   executor's correct refusal of the proof task); git surfaces stay single-writer per lane;
-  and every Codex product gets adversarially reviewed by a party that didn't write it.
+  and every repo-lane product gets adversarially reviewed by a party that didn't write it.
 - Evidence: 15 PRs landed collision-free; the refusal incident; two-round #2415 review.

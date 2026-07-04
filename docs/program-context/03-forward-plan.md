@@ -2,7 +2,7 @@
 
 Every open pursuit: status, precise residual delta, acceptance criteria (pass), fail
 criteria, SHOULD-NOTs, gates, size/risk, sequencing. Criteria derive from the M-FWD3-CRITERIA
-report (inbox ~3247) as verified/adjudicated, grounded in repo authorities (merge-gate
+report as verified/adjudicated, grounded in repo authorities (merge-gate
 policy, admission runbook, A8 docs, support matrix). Nothing here is authorized by this
 document — it specifies what authorization would require.
 
@@ -22,7 +22,7 @@ document — it specifies what authorization would require.
   routes in `source_sec_edgar.py`); gated by BOTH
   `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED` (default true) AND
   `LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED` (default false). Current real-data
-  evidence = one filing (STLD 10-Q); breadth is the main confidence gap before any
+  evidence = one filing; breadth is the main confidence gap before any
   production conversation.
 - Residual delta: a bounded first corpus run — offline variant over already-retained /
   inherited evidence first; live acquisition matrix second if authorized.

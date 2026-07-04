@@ -1,16 +1,15 @@
 # 01 — Arc Ledger (chronological accomplishment record)
 
 Each entry: what landed, evidence anchor, and why it was the right move at that point.
-Dates 2026. All PRs merged to `project6-origin/main`; squash SHAs given. Inbox report
-markers refer to `state/agent-inbox/for-claude.md`.
+Dates 2026. All PRs merged to `project6-origin/main`; squash SHAs given.
 
 ## Phase 0 — Repo-state audit and course correction (07-01)
 
 - Multi-agent audit of two session exports + live main established the true frontier:
-  preclearance docs merged through #2408, Codex spec PR #2409 open. Why it mattered: prior
+  preclearance docs merged through #2408, repo-lane spec PR #2409 open. Why it mattered: prior
   session memory claimed states that had drifted; re-deriving from live main prevented
   building on stale anchors.
-- Independent adversarial review (Codex, M-ADVERSARIAL-REVIEW-AUDIT) REFUTED the initial
+- Independent adversarial review (M-ADVERSARIAL-REVIEW-AUDIT) REFUTED the initial
   "#2409 merge-ready" verdict: 3 unresolved bot review threads (P1 ledger alignment, P2
   design-authority reference, P2 temp-root blessing). Lesson institutionalized as I6/I8:
   merge-readiness includes GraphQL reviewThreads, not just CI+mergeable. Why optimal: the
@@ -38,9 +37,9 @@ markers refer to `state/agent-inbox/for-claude.md`.
 
 ## Phase 2 — Owner GO and the runtime (07-02)
 
-- Owner GO received (suggested_direction.txt; copied to inbox as
-  `a8-go-authorization-source.md`): surface = current SEC-XBRL controlled-submit; durable
-  root via local STORAGE_DIR only; explicit Not-Authorized list.
+- Owner GO received from the operator-supplied authorization source: surface = current
+  SEC-XBRL controlled-submit; durable root via local STORAGE_DIR only; explicit
+  Not-Authorized list.
 - #2414 `c64ed422` — RC3 acceptance completeness: 6 missing SEC-XBRL test files wired in +
   a drift guard so the list can never silently lag again (declared=58 tracked=58). Why:
   acceptance surfaces that silently omit tests are worse than none.
@@ -81,7 +80,7 @@ markers refer to `state/agent-inbox/for-claude.md`.
   documentation, no-deletion threat-model note, hygiene edge tests (case/separator/OneDrive
   variants, symlink rejection). Why wording-path: keeps the matrix's meaning crisp instead of
   growing an unbounded knob inventory.
-- M-FWD-OPTIONS-2 (inbox ~3048): evidence-anchored option analysis; determined the board's
+- M-FWD-OPTIONS-2: evidence-anchored option analysis; determined the board's
   "live smoke / Arelle binding next" language was HISTORICAL (superseded by the A7 PROVEN
   entry) and that retained June artifacts made a zero-egress replay possible. Adversarial
   verification then found the retained artifacts present on disk — collapsing the biggest
@@ -89,9 +88,9 @@ markers refer to `state/agent-inbox/for-claude.md`.
 
 ## Phase 5 — Real-data proof: the fused operator lane (07-02)
 
-- D1→O2→O3 executed in ONE checkpointed owner-local lane (Claude main session, worktree at
+- D1→O2→O3 executed in ONE checkpointed owner-local lane (orchestrator main session, worktree at
   then-tip `a1637393`, zero repo file changes, ZERO SEC egress):
-  - CK1: June STLD 10-Q chain replayed by receipt+hash under current main (523 facts,
+  - CK1: June one-filing chain replayed by receipt+hash under current main (523 facts,
     `network_request_made=false`, 7.07MB retained bytes sha-verified).
   - CK2: internal value store armed per-run → 523 real records retained durably
     (513 non-empty), policy v1, receipt projection still redacted.
@@ -110,7 +109,7 @@ markers refer to `state/agent-inbox/for-claude.md`.
 
 ## Phase 6 — FWD3 dual investigation + record/durability closure (07-03 → 07-04)
 
-- M-FWD3-EVIDENCE + M-FWD3-CRITERIA (blind lenses, inbox ~3388/~3247): both independently
+- M-FWD3-EVIDENCE + M-FWD3-CRITERIA (blind lenses): both independently
   hash-verified the real-data proof artifacts; unanimous P1 = record-truth PR. Orchestrator
   adjudications: 347 worktrees confirmed real (earlier counts were head-truncated views);
   corpus validation gated by BOTH cutover+corpus flags; I10 admission semantics settled from

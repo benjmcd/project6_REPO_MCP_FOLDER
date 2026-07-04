@@ -36,10 +36,11 @@ is which.)
 
 ## I3. Default-off, owner-armed
 
-- Requires: all raw-bearing/reveal flags default False in source AND in
-  `config/support_matrix.yaml`: internal value store, controlled-submit reveal, legacy Arelle
-  reveal, corpus validation, nonlocal authorization, live SEC network. Arming is per-run
-  owner-local env configuration only. Merging code never arms anything.
+- Requires: all raw-bearing/reveal flags default False in source. The selected support
+  matrix pins live SEC network, internal value store, controlled-submit reveal, legacy
+  Arelle reveal, corpus validation, and production admission evaluator false; the separate
+  nonlocal authorization gate is default-false in source and must be explicitly authorized.
+  Arming is per-run owner-local env configuration only. Merging code never arms anything.
 - Why optimal: separates capability from activation. Every capability can be reviewed,
   merged, and CI-proven while the dangerous transitions (egress, reveal) remain individually
   owner-controlled and per-run reversible. This is what allowed the entire A8 arc to merge on
@@ -132,10 +133,9 @@ is which.)
 ## I9. Dual-agent lane fencing
 
 - Requires: parallel agent lanes carry explicit file-surface fences, one open PR per lane,
-  fetch+rebase before merge, stop-and-report on any fence conflict. Handoff artifacts live in
-  the repo inbox (`state/agent-inbox/`), never global temp/Downloads. IPC sends to a second
-  thread wait for the first thread's pickup (the shared `for-codex.md` is overwritten per
-  send); pickup is verified by grepping the target's rollout for the lane source filename.
+  fetch+rebase before merge, stop-and-report on any fence conflict. Handoff artifacts stay
+  repo-local, never global temp/Downloads. Dispatch to a second thread waits for pickup, and
+  pickup is verified from session metadata where available.
 - Why optimal: every landing across 15+ PRs by two parallel agents merged without a single
   cross-lane conflict — the fences plus rebase rule made "avoid parallel git" (the old
   blanket rule) unnecessary while preserving its intent.
