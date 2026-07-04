@@ -11,6 +11,8 @@
 
 ---
 
+2026-07-04 pointer: `docs/program-context/` is the exhaustive SEC-XBRL program record; this file remains the executive summary under that set's INDEX authority order.
+
 ## 2026-07-01 Addendum - Post-PR #2409 State
 
 This branch predates PR #2409. Keep the historical campaign narrative below, but
