@@ -13448,7 +13448,8 @@ production-readiness claim is admitted by this tranche.
 
 Milestone: `m_p3_durable_root_repo_v1`.
 
-Record lane/branch: `p3-repo`, branch `codex/p3-durable-root-repo`.
+Record lane/PR: `p3-repo`, PR `#2423`, branch
+`codex/p3-durable-root-repo`.
 
 Source frontier: current main
 `be6d9b1b5eebd3bee876d42410612603dc8e2476` after PR `#2422`.
