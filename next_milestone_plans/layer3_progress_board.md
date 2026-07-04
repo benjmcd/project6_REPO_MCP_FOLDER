@@ -13489,3 +13489,54 @@ sandbox modification, schema/model/migration change, value-reveal/default-on
 change, redaction-posture change, production-readiness claim, worktree removal,
 raw value disclosure, prior sandbox-root disclosure, issuer/accession/URL
 disclosure, or operator identity disclosure is admitted by this tranche.
+
+## M-PROGRAM-CONTEXT
+
+Milestone: `m_program_context_v1`.
+
+Record lane/PR: `program-context`, PR `#2424`.
+
+Source frontier: current main
+`e661e05ad0a9b18fab5797c26ee68604f8c92669` after PR `#2423`.
+
+Status: owner-requested Tier-1 landing of the exhaustive SEC-XBRL program
+context set under `docs/program-context/`. `docs/MASTER_CONTEXT.md` now points
+to that set as the exhaustive program record while remaining the executive
+summary.
+
+Landed files: `docs/program-context/INDEX.md`,
+`docs/program-context/00-posture-and-invariants.md`,
+`docs/program-context/01-arc-ledger.md`,
+`docs/program-context/02-decision-record.md`,
+`docs/program-context/03-forward-plan.md`, and
+`docs/program-context/04-evidence-registry.md`.
+
+Adversarial verification corrections made before landing: Tier-2 merge-gate
+wording now matches the live policy's conditional independent-review triggers;
+sidecar read/write code-anchor line ranges now name the actual read helper and
+current line ranges; PR #2423 root availability wording now distinguishes
+machine-level root sharing from the warning-only `setup` provisioning hook; the
+worktree inventory count is recorded as the historical M-FWD3 inventory rather
+than a current live count; and the nonlocal readiness blocker distinguishes the
+blocked criterion from its blocked reason.
+
+Verification anchors confirmed: PR #2409-#2423 merge commits are all GitHub
+merged and ancestors of `project6-origin/main`; `C:/p6store/MIGRATION_MANIFEST.json`
+hashes to
+`845974f765dc8e7985105053b77e97d6983d94a02f0f015454e9f023e77384fb`; the
+operator reveal report hashes to
+`790fbb8eaa7de4be447f6c401089cb3b6435ff86614f4f0f57e656fc287a39d8`; the
+internal value-store file hashes to
+`3bc81d84fc75bde17d074eee610130efa2659e2b2d281e756402007243eef5a0`; RC3 is
+`declared=58 tracked=58 missing=0 extra=0`; and the nonlocal readiness report
+has `6/7` criteria passed with
+`final_nonlocal_production_admission_present` blocked.
+
+Runtime behavior introduced by this pass: `false`.
+
+No backend/app source change, config.py default change, flag flip, SEC egress,
+sandbox modification, schema/model/migration change, value-reveal/default-on
+change, redaction-posture change, production-readiness claim, worktree removal,
+raw value disclosure, local path disclosure beyond `C:/p6store`,
+issuer/accession/URL disclosure, or operator identity disclosure is admitted by
+this tranche.
