@@ -991,7 +991,9 @@
     "latest_p19_mixed_source_external_export_download_readiness_runtime_pr": "#2220",
     "latest_p19_mixed_source_external_export_download_readiness_runtime_merge_commit": "9e4451cb710c0185a64f1788b9e0d848be7dbc8b",
     "latest_p19_mixed_source_external_export_download_readiness_current_main_sync_doc": "next_milestone_plans/multi-ingest/46-p19-current-main-sync.md",
-    "latest_p19_mixed_source_external_export_download_readiness_current_main_sync_live_behavior_change": false
+    "latest_p19_mixed_source_external_export_download_readiness_current_main_sync_live_behavior_change": false,
+    "record_truth_3_current_main_refreshed_at": "f566ddb14f62cd717f697f1d13b533ff434785ed",
+    "record_truth_3_current_main_refreshed_at_source": "project6-origin/main after PR #2421 O6 guard-doc/support-matrix hardening; this Tier-1 proof refresh records the later real-data A8 proof without changing runtime behavior."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -2168,7 +2170,8 @@
   },
   "state_notes": [
     "Docs 82/83 are current-main planning/control governance for selected-pass associated-cohort result review after PR #432; PR #438 is the separate bounded backend/API implementation and docs 82/83 by themselves are not live behavior.",
-    "Theme synthesis pack 238 is planning/reference-only: it consolidates the admitted /review/layer3 themes and the static Claude prototype boundary, but it does not admit runtime behavior."
+    "Theme synthesis pack 238 is planning/reference-only: it consolidates the admitted /review/layer3 themes and the static Claude prototype boundary, but it does not admit runtime behavior.",
+    "RECORD TRUTH 3 (2026-07-02): current A8/O6 proof ref is project6-origin/main f566ddb14f62cd717f697f1d13b533ff434785ed after PR #2421; the real-data D1->O2->O3 reveal proof is recorded with sanitized hashes/counts only and production_readiness_claimed=false."
   ],
   "authoritative_file_refs": [
     "next_milestone_plans/Layer3_planning_docs/56_L3_WB_HANDOFF_EXPORT_UI_FREEZE.md",
@@ -46994,5 +46997,101 @@
     },
     "next_posture": "a8_arc_closed_for_current_sec_edgar_value_retention_record_flags_default_false_owner_local_arming_only"
   },
-  "latest_m_a8_record_truth_proof_summary": "M-A8-RECORD-TRUTH (#2419) proof is merged current-main Tier-1 record reconciliation only. It updates two docs, the progress board, and both manifests to record PR #2418 and the completed A8 operator proof using redacted evidence only, with no runtime behavior, source default, schema/model/migration, redaction-posture, workflow, live SEC egress, Arelle execution, file deletion, raw root, operator identity, local path, or production-readiness admission. Its pre-PR base was 6a28d0a481e046e613ce1d7ef7932eb633ef2002 and its merged current-main record ref is 7fa72e745c7a2d6b72be37971e0e8768780dc5d5. M-A8-RECORD-TRUTH-2 (#2420) separately adds 2026-07-02 supersession notes to the three A8 planning docs and refreshes current-main proof metadata without changing runtime behavior."
+  "m_a8_record_truth_3_proof": {
+    "proof_kind": "m_a8_record_truth_3_proof",
+    "milestone": "m_a8_record_truth_3_v1",
+    "status": "owner_sanctioned_tier1_record_truth_refresh",
+    "branch": "codex/record-truth-3",
+    "pr": "this_tier1_record_truth_pr",
+    "current_main_refreshed_at": "f566ddb14f62cd717f697f1d13b533ff434785ed",
+    "current_main_refreshed_at_source": "project6-origin/main after PR #2421 O6 guard-doc/support-matrix hardening",
+    "allowed_files": [
+      "docs/MASTER_CONTEXT.md",
+      "docs/OPERATOR_UTILIZATION_INDEX.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "next_milestone_plans/Layer3_planning_docs/a8-implementation-spec.md",
+      "next_milestone_plans/Layer3_planning_docs/a8-owner-decision-brief.md",
+      "next_milestone_plans/Layer3_planning_docs/a8-readiness-gate.md",
+      "next_milestone_plans/Layer3_planning_docs/a8-lifecycle-design.md"
+    ],
+    "proof_terms": [
+      "records later 2026-07-02 owner-local real-data D1->O2->O3 controlled-submit reveal proof using sanitized hashes/counts only",
+      "records distinct persisted/internal-store receipt and prior flag-off receipt",
+      "records missing-confirmation fail-closed probe hash and production_readiness_claimed=false",
+      "records PR #2421 O6 guard-doc/support-matrix hardening at f566ddb1",
+      "preserves source defaults, runtime behavior, redaction posture, and production/nonlocal/default-on boundaries"
+    ],
+    "operator_real_data_redacted_evidence": {
+      "operator_evidence_kind": "owner_local_real_data_controlled_submit_reveal",
+      "sanitization": "hash_count_policy_only_no_raw_values_no_paths_no_issuer_accession_url_payloads",
+      "report_sha256": "790fbb8eaa7de4be447f6c401089cb3b6435ff86614f4f0f57e656fc287a39d8",
+      "revealed_fact_count": 523,
+      "non_empty_value_count": 497,
+      "value_reveal_performed": true,
+      "production_readiness_claimed": false,
+      "internal_value_store_schema": "layer3.sec_edgar_arelle_resolved_fact_authority_internal_value_store.v1",
+      "internal_value_store_file_sha256": "3bc81d84fc75bde17d074eee610130efa2659e2b2d281e756402007243eef5a0",
+      "value_record_count": 523,
+      "retention_policy": "sec_xbrl_public_financial_value_retention_v1",
+      "value_store_hash": "eb702c84d42e16200f9f07bbb5888b277b987bca028a51304e922ef2377ce285",
+      "persisted_internal_store_sidecar_receipt_hash": "7fe4c3da194396dbe11261eb6ec42942b4c23ce534c37e982f2c872cc4a50546",
+      "prior_flag_off_sidecar_receipt_hash": "d5c3585e91397f778f7d0f0297ac05d168dd7410fdaea1e2db7d18cbd3d5036d",
+      "receipt_distinction": "persisted/internal-store receipt and prior flag-off receipt are distinct evidence states and are not interchangeable",
+      "storage_namespace_hash": "6483a8de2d45e2f79150273cbb0fcdfcf21bf7769132f19ecf01e71b6de9b354",
+      "missing_confirmation_fail_closed_probe_sha256": "edfdf1ca3d68baacdef80c01cb6cbb0e60496dd59ea7b9102dfe9e90ca097819",
+      "per_run_arming_only": true,
+      "source_defaults_unchanged": true,
+      "storage_posture_note": "recorded storage-hygiene override proof/replay case only; not a durable-root endorsement"
+    },
+    "o6_main_tip_tranche": {
+      "pr": "#2421",
+      "merge_commit": "f566ddb14f62cd717f697f1d13b533ff434785ed",
+      "title": "test: harden SEC XBRL O6 guard docs",
+      "scope": "O6 sidecar guard docs/support-matrix context and tests",
+      "runtime_behavior_changed": false,
+      "source_defaults_changed": false,
+      "production_posture_changed": false,
+      "nonlocal_authority_changed": false
+    },
+    "admission_clarification": {
+      "source": "backend/app/services/layer3_sec_xbrl_production_admission.py:141-156",
+      "evaluated_admission_requires_value_reveal_performed_false": true,
+      "real_data_reveal_proof_is_a8_evidence_not_admission_evidence": true
+    },
+    "verification": [
+      "python -m json.tool next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "python ./tools/l3-progress-check.py",
+      "git diff --check",
+      "relative-link check on changed Markdown files"
+    ],
+    "negative_authority_flags": {
+      "runtime_behavior_change": false,
+      "flag_default_change": false,
+      "value_reveal_default_enabled": false,
+      "internal_value_store_default_enabled": false,
+      "controlled_submit_default_enabled": false,
+      "schema_model_migration_change": false,
+      "redaction_posture_change": false,
+      "a7_proof_surface_source_change": false,
+      "workflow_change": false,
+      "live_sec_egress": false,
+      "arelle_execution": false,
+      "file_removal_or_deletion": false,
+      "raw_value_disclosure": false,
+      "raw_storage_root_disclosure": false,
+      "issuer_accession_url_disclosure": false,
+      "operator_identity_disclosure": false,
+      "local_path_disclosure": false,
+      "sandbox_artifact_import": false,
+      "support_matrix_production_wording": false,
+      "production_readiness_claim": false,
+      "nonlocal_admission_claim": false,
+      "legacy_reveal_activation": false
+    },
+    "next_posture": "a8_real_data_record_truth_current_nonlocal_production_default_on_and_legacy_reveal_surfaces_remain_separate"
+  },
+  "latest_m_a8_record_truth_proof_summary": "M-A8-RECORD-TRUTH (#2419) and M-A8-RECORD-TRUTH-2 (#2420) remain historical proof/supersession lanes. M-A8-RECORD-TRUTH-3 proof records the later 2026-07-02 owner-local real-data D1->O2->O3 controlled-submit reveal proof from current main f566ddb14f62cd717f697f1d13b533ff434785ed after PR #2421/O6. The proof is sanitized: report SHA-256 790fbb8eaa7de4be447f6c401089cb3b6435ff86614f4f0f57e656fc287a39d8, 523 revealed facts, 497 non-empty values, value_record_count 523, retention policy sec_xbrl_public_financial_value_retention_v1, value-store hash eb702c84d42e16200f9f07bbb5888b277b987bca028a51304e922ef2377ce285, persisted receipt 7fe4c3da194396dbe11261eb6ec42942b4c23ce534c37e982f2c872cc4a50546, prior flag-off receipt d5c3585e91397f778f7d0f0297ac05d168dd7410fdaea1e2db7d18cbd3d5036d, namespace hash 6483a8de2d45e2f79150273cbb0fcdfcf21bf7769132f19ecf01e71b6de9b354, missing-confirmation fail-closed probe edfdf1ca3d68baacdef80c01cb6cbb0e60496dd59ea7b9102dfe9e90ca097819, and production_readiness_claimed=false. The proof also records PR #2421 O6 guard-doc/support-matrix hardening and admits no runtime behavior, source-default, raw disclosure, production-readiness, nonlocal admission, or legacy reveal change."
 }
