@@ -121,17 +121,30 @@ function Test-IsPostgresUrl {
 }
 
 function Ensure-A8DurableStorageRoot {
-    if (Test-Path -LiteralPath $A8DurableStorageRoot -PathType Leaf) {
-        throw "A8 durable storage root target exists but is not a directory: $A8DurableStorageRootDisplay"
-    }
+    param(
+        [switch]$WarnOnly
+    )
 
-    if (-not (Test-Path -LiteralPath $A8DurableStorageRoot -PathType Container)) {
-        [IO.Directory]::CreateDirectory($A8DurableStorageRoot) | Out-Null
-        Write-Host "Provisioned A8 durable storage root: $A8DurableStorageRootDisplay"
-        return
-    }
+    try {
+        if (Test-Path -LiteralPath $A8DurableStorageRoot -PathType Leaf) {
+            throw "A8 durable storage root target exists but is not a directory: $A8DurableStorageRootDisplay"
+        }
 
-    Write-Host "A8 durable storage root already exists: $A8DurableStorageRootDisplay"
+        if (-not (Test-Path -LiteralPath $A8DurableStorageRoot -PathType Container)) {
+            [IO.Directory]::CreateDirectory($A8DurableStorageRoot) | Out-Null
+            Write-Host "Provisioned A8 durable storage root: $A8DurableStorageRootDisplay"
+            return
+        }
+
+        Write-Host "A8 durable storage root already exists: $A8DurableStorageRootDisplay"
+    }
+    catch {
+        if ($WarnOnly) {
+            Write-Warning "A8 durable storage root was not provisioned during setup: $($_.Exception.Message). Run '.\project6.ps1 -Action provision-a8-root' after resolving the root permission or occupancy issue."
+            return
+        }
+        throw
+    }
 }
 
 function Get-BackendConfiguredDatabaseUrl {
@@ -343,7 +356,7 @@ function Resolve-NrcApsBatchManifestPath {
 
 switch ($Action) {
     "setup" {
-        Ensure-A8DurableStorageRoot
+        Ensure-A8DurableStorageRoot -WarnOnly
         Invoke-Py -Arguments @("-m", "pip", "install", "-r", $RequirementsPath)
         Write-Host "Setup complete."
     }

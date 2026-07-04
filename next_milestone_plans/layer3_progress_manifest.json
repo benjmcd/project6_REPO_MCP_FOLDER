@@ -49394,6 +49394,7 @@
     "allowed_files": [
       "project6.ps1",
       "docs/OPERATOR_UTILIZATION_INDEX.md",
+      "docs/harness-validate-inventory.md",
       "backend/.env.example",
       "next_milestone_plans/layer3_progress_board.md",
       "next_milestone_plans/layer3_progress_manifest.json",
@@ -49415,12 +49416,13 @@
       "value_store_hash": "eb702c84d42e16200f9f07bbb5888b277b987bca028a51304e922ef2377ce285"
     },
     "repo_wiring": {
-      "setup_auto_provisions_canonical_root": true,
-      "dedicated_action": "provision-a8-root",
+      "setup_attempts_best_effort_nonfatal_provisioning": true,
+      "dedicated_strict_action": "provision-a8-root",
       "canonical_root": "C:/p6store",
       "global_storage_dir_default_changed": false,
       "backend_env_example_comment_only": true,
-      "operator_utilization_index_guidance_updated": true
+      "operator_utilization_index_guidance_updated": true,
+      "wrapper_inventory_updated": true
     },
     "validation": [
       "python -m json.tool next_milestone_plans/layer3_progress_manifest.json",
@@ -49451,6 +49453,6 @@
     },
     "next_posture": "a8_canonical_durable_root_c_p6store_provisioned_by_repo_setup_operator_still_arms_storage_dir_per_run"
   },
-  "latest_m_p3_durable_root_repo_summary": "M-P3-DURABLE-ROOT-REPO (#2423) records the owner-decided P3 durable-root migration and repo-side Tier-1 wiring from source frontier be6d9b1b5eebd3bee876d42410612603dc8e2476 after PR #2422. Canonical A8 durable root is C:/p6store; project6.ps1 provisions it during setup and via provision-a8-root without changing global STORAGE_DIR defaults. Sanitized migration evidence records 43 files / 16.62 MB copied and verified, source retained untouched, storage hygiene accepted with no override, namespace hash 4502e1c70863a4bd0067e5f0de4325758d3542e05df223d702747c1886ee6ca9, migration manifest SHA-256 845974f765dc8e7985105053b77e97d6983d94a02f0f015454e9f023e77384fb, value_record_count 523, retention policy sec_xbrl_public_financial_value_retention_v1, and value-store hash eb702c84d42e16200f9f07bbb5888b277b987bca028a51304e922ef2377ce285. This tranche admits no backend/app source change, config.py default change, flag flip, SEC egress, sandbox modification, schema/model/migration change, value-reveal/default-on change, redaction-posture change, production-readiness claim, prior sandbox-root disclosure, or raw value disclosure.",
+  "latest_m_p3_durable_root_repo_summary": "M-P3-DURABLE-ROOT-REPO (#2423) records the owner-decided P3 durable-root migration and repo-side Tier-1 wiring from source frontier be6d9b1b5eebd3bee876d42410612603dc8e2476 after PR #2422. Canonical A8 durable root is C:/p6store; project6.ps1 attempts best-effort non-fatal provisioning during setup and provides strict provisioning via provision-a8-root without changing global STORAGE_DIR defaults. Sanitized migration evidence records 43 files / 16.62 MB copied and verified, source retained untouched, storage hygiene accepted with no override, namespace hash 4502e1c70863a4bd0067e5f0de4325758d3542e05df223d702747c1886ee6ca9, migration manifest SHA-256 845974f765dc8e7985105053b77e97d6983d94a02f0f015454e9f023e77384fb, value_record_count 523, retention policy sec_xbrl_public_financial_value_retention_v1, and value-store hash eb702c84d42e16200f9f07bbb5888b277b987bca028a51304e922ef2377ce285. This tranche admits no backend/app source change, config.py default change, flag flip, SEC egress, sandbox modification, schema/model/migration change, value-reveal/default-on change, redaction-posture change, production-readiness claim, prior sandbox-root disclosure, or raw value disclosure.",
   "latest_m_a8_record_truth_summary": "M-A8-RECORD-TRUTH (#2419) and M-A8-RECORD-TRUTH-2 (#2420) remain historical record-truth/supersession lanes. M-A8-RECORD-TRUTH-3 (#2422) records the later 2026-07-02 owner-local real-data D1->O2->O3 controlled-submit reveal proof from source frontier f566ddb14f62cd717f697f1d13b533ff434785ed after PR #2421/O6. The record is sanitized: report SHA-256 790fbb8eaa7de4be447f6c401089cb3b6435ff86614f4f0f57e656fc287a39d8, 523 revealed facts, 497 non-empty values, value_record_count 523, retention policy sec_xbrl_public_financial_value_retention_v1, value-store hash eb702c84d42e16200f9f07bbb5888b277b987bca028a51304e922ef2377ce285, persisted receipt 7fe4c3da194396dbe11261eb6ec42942b4c23ce534c37e982f2c872cc4a50546, prior flag-off receipt d5c3585e91397f778f7d0f0297ac05d168dd7410fdaea1e2db7d18cbd3d5036d, namespace hash 6483a8de2d45e2f79150273cbb0fcdfcf21bf7769132f19ecf01e71b6de9b354, missing-confirmation fail-closed probe edfdf1ca3d68baacdef80c01cb6cbb0e60496dd59ea7b9102dfe9e90ca097819, and production_readiness_claimed=false. This Tier-1 refresh also records PR #2421 O6 guard-doc/support-matrix hardening and admits no runtime behavior, source-default, raw disclosure, production-readiness, nonlocal admission, or legacy reveal change."
 }

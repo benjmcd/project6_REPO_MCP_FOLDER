@@ -13448,8 +13448,7 @@ production-readiness claim is admitted by this tranche.
 
 Milestone: `m_p3_durable_root_repo_v1`.
 
-Record lane/PR: `p3-repo`, PR `#2423`, branch
-`codex/p3-durable-root-repo`.
+Record lane/PR: `p3-repo`, PR `#2423`.
 
 Source frontier: current main
 `be6d9b1b5eebd3bee876d42410612603dc8e2476` after PR `#2422`.
@@ -13458,10 +13457,11 @@ Status: owner-decided Tier-1 repo-side wiring for the P3 durable-root migration.
 The operator side is complete; this repo-side tranche auto-provisions the
 canonical root and records sanitized guidance/ledger metadata only.
 
-Canonical durable root: `C:/p6store`. `project6.ps1` now provisions this root
-during `setup` and exposes a dedicated `provision-a8-root` action. This is
-directory provisioning and operator guidance only; it does not set or change
-global `STORAGE_DIR` behavior for non-A8 flows.
+Canonical durable root: `C:/p6store`. `project6.ps1` now attempts best-effort,
+non-fatal provisioning during `setup` and exposes a dedicated
+`provision-a8-root` action for strict provisioning. This is directory
+provisioning and operator guidance only; it does not set or change global
+`STORAGE_DIR` behavior for non-A8 flows.
 
 Sanitized migration proof: 43 files / 16.62 MB copied and verified; source
 retained untouched; storage hygiene under `C:/p6store` is `accepted` with no
@@ -13477,7 +13477,8 @@ Docs/guidance updates: `docs/OPERATOR_UTILIZATION_INDEX.md` now names
 `C:/p6store` as the canonical A8 root and keeps the hygiene override
 acknowledgement path limited to sandbox/replay roots. `backend/.env.example`
 adds comment-only guidance for A8 operator runs; it does not change the default
-`STORAGE_DIR=app/storage`.
+`STORAGE_DIR=app/storage`. `docs/harness-validate-inventory.md` classifies the
+new state-mutating wrapper action and updates the wrapper action count.
 
 Runtime behavior introduced by this pass: `false` for backend app behavior and
 SEC/XBRL runtime defaults. The only executable repo change is root-script

@@ -7,7 +7,7 @@ Scope:
 - Authority is the current tracked `project6.ps1` in the focused worktree.
 - This is a wrapper-level inventory only. Script-internal behavior still requires direct audit of the target Python tool or test before behavior changes.
 - This file is not a status ledger and does not claim that a command is safe against shared runtime state unless the wrapper proves that property.
-- The current wrapper has 41 `ValidateSet` entries and 41 matching `switch` cases.
+- The current wrapper has 42 `ValidateSet` entries and 42 matching `switch` cases.
 
 ## Categories
 
@@ -26,7 +26,8 @@ Scope:
 
 | Action | Category | Wrapper evidence | Handling posture |
 | --- | --- | --- | --- |
-| `setup` | `setup-service` | Runs `python -m pip install -r requirements.txt`. | Dependency setup, not validation-only. |
+| `setup` | `setup-service` | Attempts non-fatal A8 durable-root provisioning, then runs `python -m pip install -r requirements.txt`. | Dependency setup, not validation-only; A8 root provisioning warnings do not block requirements installation. |
+| `provision-a8-root` | `setup-service` | Ensures the owner-selected A8 durable root `C:/p6store` exists, and fails if the path is occupied by a file or cannot be created. | State-mutating A8 root provisioning; operator-owned, not validation-only. |
 | `migrate` | `setup-service` | Runs Alembic upgrade against Tier 1 database. | Database-mutating migration. |
 | `migrate-tier1-postgres` | `setup-service` | Runs SQLite-to-PostgreSQL migration and can pass `--truncate-target`. | Data migration; require explicit operator ownership. |
 | `start-api` | `setup-service` | Starts the API foreground under Tier 1 env. | Service process, not a validation command. |

@@ -167,9 +167,9 @@ durable-root endorsement.
 ### Canonical Durable Root (2026-07-04)
 
 The owner-selected canonical durable root for A8 operator runs is `C:/p6store`.
-`project6.ps1` auto-provisions this directory during `setup`, and the dedicated
-`provision-a8-root` action can create it without changing global `STORAGE_DIR`
-behavior for non-A8 flows.
+`project6.ps1` attempts best-effort, non-fatal provisioning during `setup`, and
+the dedicated `provision-a8-root` action strictly provisions it without changing
+global `STORAGE_DIR` behavior for non-A8 flows.
 
 Operator migration record: the durable-root migration copied and verified 43
 files (16.62 MB) from the prior proof store, retained the source untouched, and
