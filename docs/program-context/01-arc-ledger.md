@@ -127,9 +127,42 @@ Dates 2026. All PRs merged to `project6-origin/main`; squash SHAs given.
   non-fatal provisioning and the dedicated action is strict), guidance-only env comment,
   migration recorded in ledgers by manifest sha. Main tip at ledger time.
 
-## Net state at ledger time
+## Phase 7 - Corpus-go domestic breadth closure (07-05)
+
+- #2427 `99efa28d` - hardening tranche for corpus admission gates. Why: before
+  broadening evidence, empty/ambiguous corpus outcomes needed to fail closed
+  instead of becoming soft operator interpretation.
+- #2428 `154b8a38`, #2429 `4ad672f3`, and #2430 `24502721` - historical SEC
+  taxonomy pins, bare cache layout handling, and 2026 SEC taxonomy pins. Why:
+  the corpus runner needed year-aware taxonomy resolution before broad
+  multi-filing evidence could be trusted.
+- #2431 `92b069b9` - explicit corpus form selection. Why: the owner matrix had
+  public form intent, and the runner needed to prefer the requested 10-K/10-Q
+  path before discovery fallback.
+- #2432 `2d6fdbde` - SEC inline transforms plugin. Why: the operator probe proved
+  that the `ixt-sec` registry was absent from Arelle core; the plugin fixed the
+  root cause and re-proved the previously blocked filing with
+  `model_error_count=0`.
+- 2026-07-05 corpus-go run - owner-authorized 30-ticker matrix plus TSM
+  supplemental, per-ticker isolated two-pass handling, 39 supported filings and
+  21 supported issuers, with run-plan minimums 30/15 exceeded and all run-level
+  gates passing. The committed record is hash/count/disposition only:
+  aggregate report SHA-256
+  `113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10` at
+  durable-root relative `corpus_run/CORPUS_GO_RUN_REPORT.json`.
+- Named residuals are honest follow-ups, not unnamed failures: foreign IFRS
+  annuals for `SONY`, `CCJ`, `DNN`, `NXE`, `MT`, and `TSM` remain blocked with
+  admitted reason code `taxonomy_year_unprovisioned` after the operator symptom
+  `arelle_model_errors_present`; `6-K` filings block as pre-inline-era/no-iXBRL
+  by design; `KAP`, `PDN`, and `YCA` map to
+  `official_ticker_resolution_missing`; and `TSMC-as-written` maps to
+  `ticker_alias_resolution_required`.
+
+## Net state after Phase 7
 
 Local SEC-XBRL pipeline proven end-to-end ON REAL DATA: live-acquired filing → parsed →
 Arelle-resolved → durably retained values → controlled governed reveal; every layer
 fail-closed, redaction-verified, CI-guarded where CI can reach, recorded in the repo, and
-durable across all worktrees. Source defaults all False. Nothing production-claimed.
+durable across all worktrees. The domestic corpus breadth lane is now executed
+for the SEC inline scope with 39 supported filings across 21 supported issuers.
+Source defaults all False. Nothing production-claimed.
