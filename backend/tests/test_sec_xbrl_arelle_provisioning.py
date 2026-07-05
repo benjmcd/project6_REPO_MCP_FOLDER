@@ -88,23 +88,39 @@ def test_sec_xbrl_arelle_provisioning_reports_2019_2020_sec_cache_as_partial(tmp
     assert "taxonomy_year_partial_coverage" in report["blocked_reasons"]
 
 
-def test_sec_xbrl_arelle_provisioning_uses_requested_sec_cache_year(tmp_path: Path) -> None:
+def test_sec_xbrl_arelle_provisioning_extracts_supported_sec_cache_layouts(tmp_path: Path) -> None:
     module = _helper_module()
-    archive_path = tmp_path / "sec-2021.zip"
+    bare_archive_path = tmp_path / "sec-2022.zip"
+    prefixed_archive_path = tmp_path / "sec-2025.zip"
     cache_dir = tmp_path / "cache"
 
-    with ZipFile(archive_path, "w") as archive:
-        archive.writestr("2021/xbrl.sec.gov/dei/2021/dei-2021.xsd", "<schema/>")
-        archive.writestr("2025/xbrl.sec.gov/dei/2025/dei-2025.xsd", "<schema/>")
+    with ZipFile(bare_archive_path, "w") as archive:
+        archive.writestr("xbrl.sec.gov/dei/2022/dei-2022.xsd", "<schema/>")
+        archive.writestr("not-sec/dei/2022/dei-2022.txt", "ignore")
 
-    assert module._extract_sec_archive_to_cache(archive_path, cache_dir, year="2021") == 1
-    assert (cache_dir / "https" / "xbrl.sec.gov" / "dei" / "2021" / "dei-2021.xsd").is_file()
-    assert not (cache_dir / "https" / "xbrl.sec.gov" / "dei" / "2025" / "dei-2025.xsd").exists()
-    assert module._sec_entrypoint_urls("2021") == [
-        "https://xbrl.sec.gov/dei/2021/dei-2021.xsd",
-        "https://xbrl.sec.gov/country/2021/country-2021.xsd",
-        "https://xbrl.sec.gov/currency/2021/currency-2021.xsd",
-        "https://xbrl.sec.gov/exch/2021/exch-2021.xsd",
+    with ZipFile(prefixed_archive_path, "w") as archive:
+        archive.writestr("2025/xbrl.sec.gov/dei/2025/dei-2025.xsd", "<schema/>")
+        archive.writestr("2024/xbrl.sec.gov/dei/2025/dei-2025-wrong-prefix.xsd", "<schema/>")
+
+    assert module._extract_sec_archive_to_cache(bare_archive_path, cache_dir, year="2022") == 1
+    assert module._extract_sec_archive_to_cache(prefixed_archive_path, cache_dir, year="2025") == 1
+
+    assert (cache_dir / "https" / "xbrl.sec.gov" / "dei" / "2022" / "dei-2022.xsd").is_file()
+    assert (cache_dir / "https" / "xbrl.sec.gov" / "dei" / "2025" / "dei-2025.xsd").is_file()
+    assert not (cache_dir / "https" / "2022" / "xbrl.sec.gov").exists()
+    assert not (cache_dir / "https" / "2025" / "xbrl.sec.gov").exists()
+    assert not (cache_dir / "https" / "xbrl.sec.gov" / "dei" / "2025" / "dei-2025-wrong-prefix.xsd").exists()
+    assert module._sec_entrypoint_urls("2022") == [
+        "https://xbrl.sec.gov/dei/2022/dei-2022.xsd",
+        "https://xbrl.sec.gov/country/2022/country-2022.xsd",
+        "https://xbrl.sec.gov/currency/2022/currency-2022.xsd",
+        "https://xbrl.sec.gov/exch/2022/exch-2022.xsd",
+    ]
+    assert module._sec_entrypoint_urls("2025") == [
+        "https://xbrl.sec.gov/dei/2025/dei-2025.xsd",
+        "https://xbrl.sec.gov/country/2025/country-2025.xsd",
+        "https://xbrl.sec.gov/currency/2025/currency-2025.xsd",
+        "https://xbrl.sec.gov/exch/2025/exch-2025.xsd",
     ]
 
 
