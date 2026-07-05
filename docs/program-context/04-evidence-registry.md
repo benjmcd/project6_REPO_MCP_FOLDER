@@ -23,6 +23,15 @@ Operator coordination reports are supplementary evidence, not committed anchors.
 | #2421 | f566ddb1 | O6 hardening docs + hygiene edge tests |
 | #2422 | be6d9b1b | Record truth v3 (real-data proof + O6 tranche + I10 note) |
 | #2423 | e661e05a | Durable-root provisioning + migration record |
+| #2424 | eefc2acc | Program-context docs landed |
+| #2425 | 9d44e79b | Controlled reveal pagination gap coverage |
+| #2426 | f0f32413 | Corpus run plan |
+| #2427 | 99efa28d | Corpus admission gate hardening |
+| #2428 | 154b8a38 | Historical SEC taxonomy pins |
+| #2429 | 4ad672f3 | Bare SEC taxonomy cache layout |
+| #2430 | 24502721 | 2026 SEC taxonomy pins |
+| #2431 | 92b069b9 | Explicit corpus form selection |
+| #2432 | 2d6fdbde | SEC inline transform plugin |
 
 ## Real-data proof artifacts (operator-local; verified independently by two blind auditors)
 
@@ -50,6 +59,21 @@ Operator coordination reports are supplementary evidence, not committed anchors.
 | Copy stats | 43 files / 16.62MB, zero failures, source retained |
 | Provisioning | `project6.ps1 -Action provision-a8-root` (strict) + `setup` warning-only hook; verified live from fresh worktree |
 
+## Corpus-go run proof artifacts (07-05)
+
+| Artifact | Anchor | Meaning |
+|---|---|---|
+| Record lane | PR `#2433`, section `M-CORPUS-RECORD-TRUTH` | Hash/count/disposition-only record lane for the owner-authorized corpus-go run |
+| Source frontier | `2d6fdbde0f82a836663f7e06923d1dd05cc48f3d` | Current main after PR #2432 SEC inline transform plugin |
+| Aggregate report | sha256 `113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10` at durable-root relative `corpus_run/CORPUS_GO_RUN_REPORT.json` | Operator aggregate report; path is relative to the durable root, not an absolute local path |
+| Supported breadth | 39 supported filings / 21 supported issuers | Exceeds run minimums of 30 filings / 15 issuers |
+| Run-level gates | `every-ticker-dispositioned=PASS`; `zero-unnamed-failures=PASS`; `min-filings=PASS`; `min-issuers=PASS` | Four owner-handoff completion gates for the completed run |
+| Supported input group | `NVDA`, `AMD`, `MSFT`, `GOOG`, `AMZN`, `META`, `AAPL`, `DIS`, `HOOD`, `NFLX`, `AMCX`, `UUUU`, `LEU`, `GEV`, `NUE`, `CLF`, `STLD`, `TRLV`, `GTBIF`, `CURLF`, `CRLBF` | Final disposition `supported`; includes all major domestic 10-K+10-Q pairs plus supported foreign/OTC inline filings |
+| IFRS follow-up group | `SONY`, `CCJ`, `DNN`, `NXE`, `MT`, `TSM` | Acquired and retained; admitted reason code `taxonomy_year_unprovisioned`; operator symptom `arelle_model_errors_present`; follow-up `ifrs-taxonomy-pins` |
+| 6-K form slots | `6-K` | Admitted reason code `no_inline_facts_pre_inline_era`; no iXBRL by design |
+| Unknown/alias group | `KAP`, `PDN`, `YCA`, `TSMC-as-written` | Operator status `company_matrix_unknown`; admitted reason codes `official_ticker_resolution_missing` for `KAP`/`PDN`/`YCA` and `ticker_alias_resolution_required` for `TSMC-as-written` |
+| Enabling fix chain | PRs `#2427` through `#2432` | Hardening, SEC taxonomy pins/cache layout/2026 pins, explicit forms, and SEC inline transforms plugin; fixed absent `ixt-sec` registry and re-proved `model_error_count=0` on the previously blocked filing |
+
 ## Key code anchors (verify against live main; line numbers drift)
 
 | Surface | Location |
@@ -68,8 +92,8 @@ Operator coordination reports are supplementary evidence, not committed anchors.
 
 ## Counts worth remembering
 
-- 15 PRs merged in the campaign (#2409-#2423), zero cross-lane collisions, every bot review
-  thread resolved pre-merge.
+- 24 PRs merged in the campaign through #2432 before this corpus record lane, zero
+  cross-lane collisions, every bot review thread resolved pre-merge.
 - M-FWD3-EVIDENCE recorded 347 git worktrees and 11 mechanically-safe cleanup candidates;
   inventory sha `6bcb7fe11ab6410155d175682c43791af3b2b84cdff903c15632b6f27418788a`.
   Refresh live counts before any cleanup lane because later worktrees change the total.

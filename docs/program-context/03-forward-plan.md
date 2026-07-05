@@ -32,10 +32,12 @@ document — it specifies what authorization would require.
 - Supported domestic scope: all major domestic 10-K+10-Q pairs, plus CURLF and
   CRLBF 40-F through US-GAAP inline handling.
 - Named residuals: foreign IFRS annuals for `SONY`, `CCJ`, `DNN`, `NXE`, `MT`,
-  and `TSM` were acquired and retained but blocked on
+  and `TSM` were acquired and retained but blocked with admitted reason
+  code `taxonomy_year_unprovisioned` after the operator symptom
   `arelle_model_errors_present`; `6-K` filings blocked on
-  `no_inline_facts_pre_inline_era`; `KAP`, `PDN`, `YCA`, and
-  `TSMC-as-written` blocked as `company_matrix_unknown`.
+  `no_inline_facts_pre_inline_era`; `KAP`, `PDN`, and `YCA` map to
+  `official_ticker_resolution_missing`; and `TSMC-as-written` maps to
+  `ticker_alias_resolution_required`.
 - Residual delta: `ifrs-taxonomy-pins` only, scoped to the blocked foreign IFRS
   annuals. Acceptance criteria: pinned `ifrs-YYYY` packages fetched and hashed
   by operator action; year-aware admission extended to the IFRS taxonomy family;

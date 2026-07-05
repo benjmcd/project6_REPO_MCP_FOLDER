@@ -1,9 +1,13 @@
 # SEC XBRL Corpus Run Plan
 
-Status: Tier-1 planning doc for an owner-authorized future operator run. This
-document does not authorize live SEC egress, source changes, runtime-default
-changes, durable schema changes, persistence changes, redaction-posture changes,
-value reveal, or production-readiness claims.
+Status: superseded for the completed 2026-07-05 owner-authorized corpus-go
+operator run. The current record authority is `M-CORPUS-RECORD-TRUTH` in
+`next_milestone_plans/layer3_progress_board.md`, the paired progress/proof
+manifests, and `docs/program-context/04-evidence-registry.md`. Historical text
+below remains the pre-run planning/schema context and does not authorize a new
+run. This document does not authorize live SEC egress, source changes,
+runtime-default changes, durable schema changes, persistence changes,
+redaction-posture changes, value reveal, or production-readiness claims.
 
 The static ticker list below is public ticker metadata supplied by the owner for
 planning. The source list file is not committed. Live CIK resolution, filing
@@ -328,9 +332,20 @@ Rate decision:
 
 ## Run-Level Gates
 
-The current operator proof is complete only when all runner gates are satisfied.
-Named shortfalls may be recorded as diagnostic evidence for a future importer,
-but they do not satisfy the current pass gate:
+2026-07-05 supersession: the completed corpus-go record closes on four
+owner-handoff run-level gates, all PASS:
+
+1. Every matrix input is dispositioned.
+2. There are zero unnamed failures.
+3. Supported filings meet the run minimum.
+4. Supported issuers meet the run minimum.
+
+The ten-point list below remains the historical pre-run safeguard checklist for
+a future proof-importer or expanded schema lane. It is not an additional
+completion gate for `M-CORPUS-RECORD-TRUTH`, whose committed proof surface is
+hash/count/disposition-only.
+
+Historical pre-run checklist:
 
 1. All 30 public tickers have a named final disposition.
 2. Every selected filing slot is `supported`, `degraded`, or `blocked`; no null

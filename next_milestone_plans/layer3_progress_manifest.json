@@ -49526,7 +49526,7 @@
     "tracking_kind": "m_corpus_record_truth_tracking",
     "milestone": "m_corpus_record_truth_v1",
     "status": "owner_authorized_tier1_corpus_go_record_truth",
-    "branch": "codex/corpus-record",
+    "branch": "corpus-record",
     "pr": "#2433",
     "progress_board_section": "M-CORPUS-RECORD-TRUTH",
     "source_frontier_refreshed_at": "2d6fdbde0f82a836663f7e06923d1dd05cc48f3d",
@@ -49535,6 +49535,8 @@
       "docs/MASTER_CONTEXT.md",
       "docs/program-context/01-arc-ledger.md",
       "docs/program-context/03-forward-plan.md",
+      "docs/program-context/04-evidence-registry.md",
+      "next_milestone_plans/Layer3_planning_docs/corpus-run-plan.md",
       "next_milestone_plans/layer3_progress_board.md",
       "next_milestone_plans/layer3_progress_manifest.json",
       "next_milestone_plans/layer3_workbench_proof_manifest.json"
@@ -49561,8 +49563,35 @@
       "aggregate_report_durable_root_relative_path": "corpus_run/CORPUS_GO_RUN_REPORT.json",
       "supported_scope_note": "all major domestic 10-K+10-Q pairs plus CURLF/CRLBF 40-F via US-GAAP inline handling",
       "named_dispositions": {
+        "supported": {
+          "inputs": [
+            "NVDA",
+            "AMD",
+            "MSFT",
+            "GOOG",
+            "AMZN",
+            "META",
+            "AAPL",
+            "DIS",
+            "HOOD",
+            "NFLX",
+            "AMCX",
+            "UUUU",
+            "LEU",
+            "GEV",
+            "NUE",
+            "CLF",
+            "STLD",
+            "TRLV",
+            "GTBIF",
+            "CURLF",
+            "CRLBF"
+          ],
+          "final_disposition": "supported",
+          "reason_code": "supported_inline_xbrl_sidecar_selected"
+        },
         "foreign_ifrs_annuals_blocked_pending_ifrs_taxonomy_provisioning": {
-          "tickers": [
+          "inputs": [
             "SONY",
             "CCJ",
             "DNN",
@@ -49570,26 +49599,92 @@
             "MT",
             "TSM"
           ],
-          "status": "acquired_retained_blocked",
-          "blocked_reason": "arelle_model_errors_present",
+          "final_disposition": "blocked",
+          "admitted_reason_code": "taxonomy_year_unprovisioned",
+          "operator_observed_status": "arelle_model_errors_present",
           "follow_up_lane": "ifrs-taxonomy-pins"
         },
         "six_k_pre_inline_era": {
           "forms": [
             "6-K"
           ],
-          "blocked_reason": "no_inline_facts_pre_inline_era",
+          "final_disposition": "blocked",
+          "admitted_reason_code": "no_inline_facts_pre_inline_era",
           "design_note": "no iXBRL by design"
         },
-        "company_matrix_unknown": {
-          "inputs": [
+        "company_matrix_unknown_mapped_to_admitted_reason_codes": {
+          "official_ticker_resolution_missing": [
             "KAP",
             "PDN",
-            "YCA",
+            "YCA"
+          ],
+          "ticker_alias_resolution_required": [
             "TSMC-as-written"
           ],
-          "blocked_reason": "company_matrix_unknown",
-          "design_note": "not SEC tickers as written"
+          "operator_observed_status": "company_matrix_unknown"
+        }
+      },
+      "run_level_gate_scope": "four owner-handoff completion gates; corpus-run-plan ten-point list superseded as historical pre-run safeguard checklist for this record",
+      "per_input_disposition_groups": {
+        "supported": {
+          "inputs": [
+            "NVDA",
+            "AMD",
+            "MSFT",
+            "GOOG",
+            "AMZN",
+            "META",
+            "AAPL",
+            "DIS",
+            "HOOD",
+            "NFLX",
+            "AMCX",
+            "UUUU",
+            "LEU",
+            "GEV",
+            "NUE",
+            "CLF",
+            "STLD",
+            "TRLV",
+            "GTBIF",
+            "CURLF",
+            "CRLBF"
+          ],
+          "final_disposition": "supported",
+          "reason_code": "supported_inline_xbrl_sidecar_selected"
+        },
+        "foreign_ifrs_annuals_blocked_pending_ifrs_taxonomy_provisioning": {
+          "inputs": [
+            "SONY",
+            "CCJ",
+            "DNN",
+            "NXE",
+            "MT",
+            "TSM"
+          ],
+          "final_disposition": "blocked",
+          "admitted_reason_code": "taxonomy_year_unprovisioned",
+          "operator_observed_status": "arelle_model_errors_present",
+          "follow_up_lane": "ifrs-taxonomy-pins"
+        },
+        "six_k_pre_inline_era": {
+          "forms": [
+            "6-K"
+          ],
+          "final_disposition": "blocked",
+          "admitted_reason_code": "no_inline_facts_pre_inline_era",
+          "design_note": "no iXBRL by design"
+        },
+        "company_matrix_unknown_mapped_to_admitted_reason_codes": {
+          "official_ticker_resolution_missing": [
+            "KAP",
+            "PDN",
+            "YCA"
+          ],
+          "ticker_alias_resolution_required": [
+            "TSMC-as-written"
+          ],
+          "operator_observed_status": "company_matrix_unknown"
         }
       }
     },
@@ -49639,6 +49734,8 @@
       "docs/MASTER_CONTEXT.md",
       "docs/program-context/01-arc-ledger.md",
       "docs/program-context/03-forward-plan.md",
+      "docs/program-context/04-evidence-registry.md",
+      "next_milestone_plans/Layer3_planning_docs/corpus-run-plan.md",
       "next_milestone_plans/layer3_progress_board.md"
     ],
     "manifests_updated": [
@@ -49678,7 +49775,30 @@
       "default_on_expansion": false,
       "unsupported_ifrs_readiness_claim": false
     },
-    "next_posture": "p2_domestic_corpus_executed_ifrs_taxonomy_pins_named_follow_up"
+    "next_posture": "p2_domestic_corpus_executed_ifrs_taxonomy_pins_named_follow_up",
+    "run_plan_supersession": {
+      "doc": "next_milestone_plans/Layer3_planning_docs/corpus-run-plan.md",
+      "status": "superseded_for_completed_2026_07_05_corpus_go_run",
+      "current_record_authority": "M-CORPUS-RECORD-TRUTH",
+      "completed_run_level_gates": [
+        "every-ticker-dispositioned",
+        "zero-unnamed-failures",
+        "min-filings",
+        "min-issuers"
+      ],
+      "historical_ten_point_gate_list": "pre-run safeguard checklist for future proof-importer or expanded schema lane, not an additional completion gate for this record"
+    },
+    "evidence_registry_update": {
+      "doc": "docs/program-context/04-evidence-registry.md",
+      "anchors_added": [
+        "PR #2424 through #2432 merged SHA rows",
+        "corpus-go aggregate report SHA and durable-root-relative path",
+        "39 supported filings / 21 supported issuers",
+        "four owner-handoff run-level PASS gates",
+        "per-input disposition groups and admitted reason-code mappings",
+        "fix-chain PR #2427 through #2432"
+      ]
+    }
   },
-  "latest_m_corpus_record_truth_summary": "M-CORPUS-RECORD-TRUTH records the owner-authorized 2026-07-05 corpus-go run from source frontier 2d6fdbde0f82a836663f7e06923d1dd05cc48f3d after PR #2432: 30-ticker owner matrix plus TSM supplemental, per-ticker isolated explicit 10-K/10-Q then discovery fallback, 39 supported filings / 21 supported issuers, 30/15 minimums exceeded, and all four run-level gates PASS. The aggregate report is recorded only as SHA-256 113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10 at durable-root relative corpus_run/CORPUS_GO_RUN_REPORT.json. Supported scope includes all major domestic 10-K+10-Q pairs plus CURLF/CRLBF 40-F via US-GAAP inline handling; named residuals are IFRS annuals pending ifrs-taxonomy-pins, 6-K pre-inline-era/no-iXBRL, and company-matrix unknown inputs. The enabling fix chain is PR #2427 through #2432, with ixt-sec registry absence fixed and re-proven by model_error_count 0. This record admits no runtime/config/flag/schema change, sandbox or p6store mutation, raw values/paths/user-agent/identity, production-readiness, nonlocal admission, or default-on expansion."
+  "latest_m_corpus_record_truth_summary": "M-CORPUS-RECORD-TRUTH records the owner-authorized 2026-07-05 corpus-go run from source frontier 2d6fdbde0f82a836663f7e06923d1dd05cc48f3d after PR #2432: 30-ticker owner matrix plus TSM supplemental, per-ticker isolated explicit 10-K/10-Q then discovery fallback, 39 supported filings / 21 supported issuers, 30/15 minimums exceeded, and all four owner-handoff run-level gates PASS. The aggregate report is recorded only as SHA-256 113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10 at durable-root relative corpus_run/CORPUS_GO_RUN_REPORT.json. Per-input disposition groups name all supported inputs, the IFRS follow-up group with admitted reason code taxonomy_year_unprovisioned, 6-K no_inline_facts_pre_inline_era, and unknown/alias inputs mapped to official_ticker_resolution_missing or ticker_alias_resolution_required. PR #2427 through #2432 fixed the run blockers, including the absent ixt-sec registry re-proven by model_error_count 0. The corpus run plan is superseded for this completed run, and the evidence registry carries the proof anchors. This record admits no runtime/config/flag/schema change, sandbox or p6store mutation, raw values/paths/user-agent/identity, production-readiness, nonlocal admission, or default-on expansion."
 }

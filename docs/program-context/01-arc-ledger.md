@@ -151,10 +151,12 @@ Dates 2026. All PRs merged to `project6-origin/main`; squash SHAs given.
   `113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10` at
   durable-root relative `corpus_run/CORPUS_GO_RUN_REPORT.json`.
 - Named residuals are honest follow-ups, not unnamed failures: foreign IFRS
-  annuals for `SONY`, `CCJ`, `DNN`, `NXE`, `MT`, and `TSM` remain blocked on
-  `arelle_model_errors_present` pending IFRS taxonomy provisioning; `6-K`
-  filings block as pre-inline-era/no-iXBRL by design; `KAP`, `PDN`, `YCA`, and
-  `TSMC-as-written` are not SEC tickers as written.
+  annuals for `SONY`, `CCJ`, `DNN`, `NXE`, `MT`, and `TSM` remain blocked with
+  admitted reason code `taxonomy_year_unprovisioned` after the operator symptom
+  `arelle_model_errors_present`; `6-K` filings block as pre-inline-era/no-iXBRL
+  by design; `KAP`, `PDN`, and `YCA` map to
+  `official_ticker_resolution_missing`; and `TSMC-as-written` maps to
+  `ticker_alias_resolution_required`.
 
 ## Net state after Phase 7
 

@@ -32,10 +32,13 @@ all major domestic 10-K+10-Q pairs plus CURLF/CRLBF 40-F through US-GAAP inline
 handling.
 
 Named blocked dispositions stay explicit: `SONY`, `CCJ`, `DNN`, `NXE`, `MT`,
-and `TSM` foreign IFRS annuals were acquired and retained but blocked on
-`arelle_model_errors_present` pending IFRS taxonomy provisioning; `6-K` filings
-blocked on `no_inline_facts_pre_inline_era`; and `KAP`, `PDN`, `YCA`, and
-`TSMC-as-written` blocked as `company_matrix_unknown`.
+and `TSM` foreign IFRS annuals were acquired and retained but blocked with
+admitted reason code `taxonomy_year_unprovisioned` after the operator symptom
+`arelle_model_errors_present`; `6-K` filings blocked on
+`no_inline_facts_pre_inline_era`; `KAP`, `PDN`, and `YCA` map from operator
+status `company_matrix_unknown` to admitted reason code
+`official_ticker_resolution_missing`; and `TSMC-as-written` maps to
+`ticker_alias_resolution_required`.
 
 The enabling fix chain is current-main PR #2427 through #2432: admission gate
 hardening, historical taxonomy pins, bare SEC taxonomy cache layout handling,

@@ -13570,13 +13570,18 @@ root relative `corpus_run/CORPUS_GO_RUN_REPORT.json`.
 Supported scope: all major domestic 10-K+10-Q pairs are supported; CURLF and
 CRLBF 40-F filings are supported through US-GAAP inline handling.
 
-Named dispositions: `SONY`, `CCJ`, `DNN`, `NXE`, `MT`, and `TSM` foreign IFRS
-annuals were acquired and retained but blocked with
-`arelle_model_errors_present`, pending IFRS taxonomy provisioning. Forms `6-K`
-blocked as `no_inline_facts_pre_inline_era`, which is expected because the
-filings have no iXBRL by design. `KAP`, `PDN`, `YCA`, and `TSMC-as-written`
-blocked as `company_matrix_unknown` because those written inputs are not SEC
-tickers.
+Per-input disposition groups for the 30 owner tickers plus TSM supplemental:
+supported inputs are `NVDA`, `AMD`, `MSFT`, `GOOG`, `AMZN`, `META`, `AAPL`,
+`DIS`, `HOOD`, `NFLX`, `AMCX`, `UUUU`, `LEU`, `GEV`, `NUE`, `CLF`, `STLD`,
+`TRLV`, `GTBIF`, `CURLF`, and `CRLBF`. Foreign IFRS annuals for `SONY`, `CCJ`,
+`DNN`, `NXE`, `MT`, and `TSM` were acquired and retained but blocked with
+admitted reason code `taxonomy_year_unprovisioned` after the operator symptom
+`arelle_model_errors_present`; this is the `ifrs-taxonomy-pins` follow-up. Form
+`6-K` slots blocked as `no_inline_facts_pre_inline_era`, which is expected
+because the filings have no iXBRL by design. `KAP`, `PDN`, and `YCA` map from
+operator status `company_matrix_unknown` to admitted reason code
+`official_ticker_resolution_missing`; `TSMC-as-written` maps from
+`company_matrix_unknown` to admitted reason code `ticker_alias_resolution_required`.
 
 Fix chain enabling this run: PR `#2427` hardening; PR `#2428`, `#2429`, and
 `#2430` taxonomy pins, bare cache layout handling, and 2026 pins; PR `#2431`
