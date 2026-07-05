@@ -48,7 +48,7 @@ REDACTION_POLICY_ID = "sec_edgar_text_table_live_source_artifact_acquisition_red
 RATE_POLICY_ID = "sec_edgar_text_table_live_source_artifact_default_1rps_max_10rps_v1"
 SEC_RATE_LIMIT_CEILING_PER_SECOND = 10
 SEC_LIVE_REQUEST_COUNT_CEILING_DEFAULT = 10
-SEC_LIVE_SOURCE_ARTIFACT_MAX_BYTES_CEILING = 25_000_000
+SEC_LIVE_SOURCE_ARTIFACT_MAX_BYTES_CEILING = 200_000_000
 SEC_LIVE_SOURCE_ARTIFACT_TIMEOUT_SECONDS_CEILING = 120
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 _SEC_LIVE_REQUEST_COUNT = 0
@@ -1009,7 +1009,7 @@ def _source_artifact_max_bytes() -> int:
     if value > SEC_LIVE_SOURCE_ARTIFACT_MAX_BYTES_CEILING:
         _blocked(
             "sec_edgar_text_table_live_source_artifact_max_bytes_not_admitted",
-            "SEC EDGAR text-table source-artifact acquisition requires max bytes between 1 and 25,000,000.",
+            "SEC EDGAR text-table source-artifact acquisition requires max bytes between 1 and 200,000,000.",
             http_status=409,
             blocked_fields=["layer3_sec_edgar_max_bytes"],
         )

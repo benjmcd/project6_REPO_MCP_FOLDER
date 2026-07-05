@@ -64,6 +64,7 @@ SEC_XBRL_TEST_FILES = [
     "./backend/tests/test_sec_xbrl_canonical_retained_coherence.py",
     "./backend/tests/test_sec_xbrl_canonical_statement_organization.py",
     "./backend/tests/test_sec_xbrl_committed_report_redaction.py",
+    "./backend/tests/test_sec_xbrl_corpus_hardening.py",
     "./backend/tests/test_sec_xbrl_default_on_admission_restatement.py",
     "./backend/tests/test_sec_xbrl_default_on_admission_review.py",
     "./backend/tests/test_sec_xbrl_default_on_gate.py",

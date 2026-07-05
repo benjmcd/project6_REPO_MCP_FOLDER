@@ -95,6 +95,7 @@ def test_sec_live_preflight_ready_with_redacted_isolated_environment(tmp_path: P
     assert report["runtime_preflight"]["limits"]["max_bytes_present"] is True
     assert report["runtime_preflight"]["limits"]["timeout_seconds_present"] is True
     assert report["runtime_preflight"]["limits"]["max_bytes_admitted"] is True
+    assert report["runtime_preflight"]["limits"]["max_live_requests_ceiling"] == 40
     assert report["runtime_preflight"]["limits"]["timeout_seconds_admitted"] is True
     assert report["smoke_request_preflight"]["request_ready"] is True
     assert report["smoke_request_preflight"]["matching_existing_receipt_found"] is False
@@ -106,6 +107,27 @@ def test_sec_live_preflight_ready_with_redacted_isolated_environment(tmp_path: P
     assert report["runtime_preflight"]["user_agent"]["raw_value_returned"] is False
     assert report["runtime_preflight"]["storage"]["raw_path_returned"] is False
     assert report["smoke_request_preflight"]["raw_identity_returned"] is False
+
+
+def test_sec_live_preflight_admits_30_ticker_matrix_request_budget(tmp_path: Path) -> None:
+    module = _preflight_module()
+    env = _ready_env(tmp_path)
+    env["LAYER3_SEC_EDGAR_MAX_LIVE_REQUESTS_PER_PROCESS"] = "38"
+
+    report = module.build_report(source_root=ROOT, env=env)
+
+    assert report["decision"] == "sec_live_source_artifact_smoke_preflight_ready"
+    assert report["runtime_preflight"]["limits"]["max_live_requests_admitted"] is True
+
+    env["LAYER3_SEC_EDGAR_MAX_LIVE_REQUESTS_PER_PROCESS"] = "41"
+    blocked = module.build_report(source_root=ROOT, env=env)
+
+    assert blocked["decision"] == "sec_live_source_artifact_smoke_preflight_blocked"
+    assert blocked["runtime_preflight"]["limits"]["max_live_requests_admitted"] is False
+    assert any(
+        item["blocked_reason"] == "sec_live_preflight_rate_or_size_controls_invalid"
+        for item in blocked["blocking_reasons"]
+    )
 
 
 def test_sec_live_preflight_normalizes_relative_storage_and_sqlite_under_backend() -> None:
@@ -361,7 +383,7 @@ def test_sec_live_preflight_blocks_missing_explicit_rate_size_timeout_controls(t
 def test_sec_live_preflight_blocks_invalid_size_or_timeout_controls(tmp_path: Path) -> None:
     module = _preflight_module()
     env = _ready_env(tmp_path)
-    env["LAYER3_SEC_EDGAR_MAX_BYTES"] = "25000001"
+    env["LAYER3_SEC_EDGAR_MAX_BYTES"] = "200000001"
     env["LAYER3_SEC_EDGAR_TIMEOUT_SECONDS"] = "121"
 
     report = module.build_report(source_root=ROOT, env=env)

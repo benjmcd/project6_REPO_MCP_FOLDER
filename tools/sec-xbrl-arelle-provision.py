@@ -14,6 +14,8 @@ SCHEMA_ID = "tools.sec_xbrl_arelle_provision.v1"
 ARELLE_PACKAGE = "arelle-release"
 ARELLE_VERSION = "2.41.3"
 READ_TIMEOUT_SECONDS = 120
+DEFAULT_TAXONOMY_YEARS = ("2025",)
+ADMITTED_TAXONOMY_YEARS = tuple(str(year) for year in range(2019, 2026))
 
 _TAXONOMY_SPECS: tuple[dict[str, Any], ...] = (
     {
@@ -25,6 +27,8 @@ _TAXONOMY_SPECS: tuple[dict[str, Any], ...] = (
         "sha256": "a3b835925ad74030eb5be865a26d7dfe44013081c4ab7204b6122316a685fff4",
         "bytes": 7_101_405,
         "source": "FASB 2025 GAAP Financial Reporting Taxonomy package",
+        "pinned": True,
+        "download_ready": True,
     },
     {
         "id": "fasb-srt-2025",
@@ -35,6 +39,8 @@ _TAXONOMY_SPECS: tuple[dict[str, Any], ...] = (
         "sha256": "aad1daeb4bdfe3057f4ed81482c06130f873a59fa7fce5193c5731f93b1fef88",
         "bytes": 191_908,
         "source": "FASB 2025 SEC Reporting Taxonomy package",
+        "pinned": True,
+        "download_ready": True,
     },
     {
         "id": "sec-2025",
@@ -45,6 +51,8 @@ _TAXONOMY_SPECS: tuple[dict[str, Any], ...] = (
         "sha256": "6a963051af02ff458e02669549bd55f9d547281724f3b4e053cb0157be8121e4",
         "bytes": 1_201_089,
         "source": "SEC 2025 taxonomy package archive",
+        "pinned": True,
+        "download_ready": True,
     },
 )
 
@@ -60,12 +68,14 @@ def main() -> int:
     parser.add_argument("--cache-dir", required=True)
     parser.add_argument("--report", required=True)
     parser.add_argument("--no-download", action="store_true")
+    parser.add_argument("--years", default=",".join(DEFAULT_TAXONOMY_YEARS))
     args = parser.parse_args()
 
     report = build_report(
         taxonomy_dir=Path(args.taxonomy_dir),
         cache_dir=Path(args.cache_dir),
         download=not args.no_download,
+        years=_parse_years(args.years),
     )
     report_path = Path(args.report)
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -74,8 +84,70 @@ def main() -> int:
     return 0 if report["ready"] else 2
 
 
-def taxonomy_specs() -> list[dict[str, Any]]:
-    return [dict(spec) for spec in _TAXONOMY_SPECS]
+def taxonomy_specs(*, years: list[str] | tuple[str, ...] | None = None) -> list[dict[str, Any]]:
+    specs: list[dict[str, Any]] = []
+    for year in _normalise_years(years):
+        if year == "2025":
+            specs.extend(dict(spec) for spec in _TAXONOMY_SPECS)
+        else:
+            specs.extend(_planned_taxonomy_specs(year))
+    return specs
+
+
+def _parse_years(value: str) -> tuple[str, ...]:
+    return _normalise_years([item.strip() for item in str(value or "").split(",") if item.strip()])
+
+
+def _normalise_years(years: list[str] | tuple[str, ...] | None) -> tuple[str, ...]:
+    raw_years = years or DEFAULT_TAXONOMY_YEARS
+    requested = tuple(dict.fromkeys(str(year).strip() for year in raw_years if str(year).strip()))
+    if not requested:
+        return DEFAULT_TAXONOMY_YEARS
+    unsupported = [year for year in requested if year not in ADMITTED_TAXONOMY_YEARS]
+    if unsupported:
+        raise ValueError(f"Unsupported taxonomy year(s): {', '.join(unsupported)}")
+    return requested
+
+
+def _planned_taxonomy_specs(year: str) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": f"fasb-us-gaap-{year}",
+            "kind": "arelle_taxonomy_package",
+            "name": f"us-gaap-{year}.zip",
+            "version": year,
+            "url": f"https://xbrl.fasb.org/us-gaap/{year}/us-gaap-{year}.zip",
+            "sha256": None,
+            "bytes": None,
+            "source": f"FASB {year} GAAP Financial Reporting Taxonomy package",
+            "pinned": False,
+            "download_ready": False,
+        },
+        {
+            "id": f"fasb-srt-{year}",
+            "kind": "arelle_taxonomy_package",
+            "name": f"srt-{year}.zip",
+            "version": year,
+            "url": f"https://xbrl.fasb.org/srt/{year}/srt-{year}.zip",
+            "sha256": None,
+            "bytes": None,
+            "source": f"FASB {year} SEC Reporting Taxonomy package",
+            "pinned": False,
+            "download_ready": False,
+        },
+        {
+            "id": f"sec-{year}",
+            "kind": "offline_cache_archive",
+            "name": f"sec-{year}.zip",
+            "version": year,
+            "url": f"https://xbrl.sec.gov/{year}.zip",
+            "sha256": None,
+            "bytes": None,
+            "source": f"SEC {year} taxonomy package archive",
+            "pinned": False,
+            "download_ready": False,
+        },
+    ]
 
 
 def build_report(
@@ -84,11 +156,13 @@ def build_report(
     cache_dir: Path,
     download: bool,
     load_with_arelle: bool = True,
+    years: list[str] | tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
+    requested_years = _normalise_years(years)
     taxonomy_dir.mkdir(parents=True, exist_ok=True)
     cache_dir.mkdir(parents=True, exist_ok=True)
     arelle = _arelle_status()
-    packages = [_ensure_taxonomy_package(taxonomy_dir, spec, download=download) for spec in taxonomy_specs()]
+    packages = [_ensure_taxonomy_package(taxonomy_dir, spec, download=download) for spec in taxonomy_specs(years=requested_years)]
     blocked = _blocked_reasons(arelle=arelle, packages=packages)
     arelle_packages = [pkg for pkg in packages if pkg["kind"] == "arelle_taxonomy_package"]
     cache_archives = [pkg for pkg in packages if pkg["kind"] == "offline_cache_archive"]
@@ -124,6 +198,8 @@ def build_report(
         "ready": not blocked,
         "blocked_reasons": blocked,
         "arelle": arelle,
+        "requested_taxonomy_years": list(requested_years),
+        "taxonomy_year_coverage": _taxonomy_year_coverage(packages),
         "taxonomy_packages": packages,
         "taxonomy_artifact_count": len(packages),
         "taxonomy_package_count": len(arelle_packages),
@@ -178,21 +254,27 @@ def _arelle_status() -> dict[str, Any]:
 def _ensure_taxonomy_package(taxonomy_dir: Path, spec: dict[str, Any], *, download: bool) -> dict[str, Any]:
     path = taxonomy_dir / spec["name"]
     downloaded = False
-    if not path.exists() and download:
+    pinned = bool(spec.get("pinned"))
+    download_ready = bool(spec.get("download_ready"))
+    download_blocked = bool(download and not path.exists() and not (pinned and download_ready))
+    if not path.exists() and download and pinned and download_ready:
         path.write_bytes(_download(spec["url"]))
         downloaded = True
     exists = path.is_file()
     observed_hash = _sha256(path) if exists else None
     observed_bytes = path.stat().st_size if exists else None
+    expected_hash = spec.get("sha256")
+    expected_bytes = spec.get("bytes")
     return {
         **spec,
         "path": str(path),
         "downloaded": downloaded,
+        "download_blocked": download_blocked,
         "exists": exists,
         "observed_sha256": observed_hash,
-        "sha256_matches": observed_hash == spec["sha256"],
+        "sha256_matches": observed_hash == expected_hash if expected_hash else False,
         "observed_bytes": observed_bytes,
-        "bytes_match": observed_bytes == spec["bytes"],
+        "bytes_match": observed_bytes == expected_bytes if expected_bytes else False,
     }
 
 
@@ -306,11 +388,33 @@ def _blocked_reasons(*, arelle: dict[str, Any], packages: list[dict[str, Any]]) 
         reasons.append("arelle_import_failed")
     if any(not pkg["exists"] for pkg in packages):
         reasons.append("taxonomy_package_missing")
-    if any(pkg["exists"] and not pkg["sha256_matches"] for pkg in packages):
+    if any(pkg.get("download_blocked") for pkg in packages) or any(pkg["exists"] and not pkg.get("pinned") for pkg in packages):
+        reasons.append("taxonomy_package_unpinned")
+    if any(pkg["exists"] and pkg.get("pinned") and not pkg["sha256_matches"] for pkg in packages):
         reasons.append("taxonomy_package_hash_mismatch")
-    if any(pkg["exists"] and not pkg["bytes_match"] for pkg in packages):
+    if any(pkg["exists"] and pkg.get("pinned") and not pkg["bytes_match"] for pkg in packages):
         reasons.append("taxonomy_package_size_mismatch")
     return reasons
+
+
+def _taxonomy_year_coverage(packages: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
+    coverage: dict[str, dict[str, int]] = {}
+    for package in packages:
+        year = str(package.get("version") or "")
+        if year not in coverage:
+            coverage[year] = {
+                "planned_artifact_count": 0,
+                "pinned_artifact_count": 0,
+                "present_artifact_count": 0,
+                "missing_artifact_count": 0,
+                "download_ready_artifact_count": 0,
+            }
+        coverage[year]["planned_artifact_count"] += 1
+        coverage[year]["pinned_artifact_count"] += 1 if package.get("pinned") else 0
+        coverage[year]["present_artifact_count"] += 1 if package.get("exists") else 0
+        coverage[year]["missing_artifact_count"] += 0 if package.get("exists") else 1
+        coverage[year]["download_ready_artifact_count"] += 1 if package.get("download_ready") else 0
+    return coverage
 
 
 def _download(url: str) -> bytes:
@@ -332,6 +436,7 @@ def _summary(report: dict[str, Any]) -> dict[str, Any]:
         "ready": report["ready"],
         "blocked_reasons": report["blocked_reasons"],
         "arelle_version": report["arelle"]["version"],
+        "requested_taxonomy_years": report["requested_taxonomy_years"],
         "taxonomy_package_loaded_count": report["taxonomy_package_loaded_count"],
     }
 
