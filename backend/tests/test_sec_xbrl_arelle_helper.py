@@ -118,6 +118,25 @@ def test_sec_xbrl_arelle_helper_loads_sec_transform_plugin_before_model_load(tmp
     assert cntlr.modelManager.custom_transforms_loaded is True
 
 
+def test_sec_xbrl_arelle_helper_fails_closed_when_sec_transform_registry_is_empty(tmp_path: Path) -> None:
+    module = _helper_module()
+    plugin_path = tmp_path / "arelle_sec_transforms"
+    plugin_path.mkdir()
+    (plugin_path / "__init__.py").write_text("", encoding="utf-8")
+    cntlr = _FakeCntlr(registered_transforms={})
+    plugin_manager = _FakePluginManager(
+        plugin_info={
+            "name": "SEC Inline Transforms",
+            "classMethods": ["ModelManager.LoadCustomTransforms"],
+        }
+    )
+
+    with pytest.raises(RuntimeError, match="sec_transform_plugin_load_failed"):
+        module._load_sec_transform_plugin(cntlr, plugin_manager, plugin_path=plugin_path)
+
+    assert cntlr.modelManager.custom_transforms_loaded is True
+
+
 def test_sec_xbrl_arelle_helper_reports_bounded_model_error_codes_without_messages() -> None:
     module = _helper_module()
     codes = ["ix11.11.1.2:invalidTransformation", "IOerror", "IOerror", "x" * 90]
@@ -182,16 +201,30 @@ class _FakePackageManager:
 
 
 class _FakeCntlr:
-    def __init__(self) -> None:
-        self.modelManager = _FakeModelManager()
+    def __init__(self, *, registered_transforms=None) -> None:
+        self.modelManager = _FakeModelManager(registered_transforms=registered_transforms)
 
 
 class _FakeModelManager:
-    def __init__(self) -> None:
+    def __init__(self, *, registered_transforms=None) -> None:
         self.custom_transforms_loaded = False
+        self.registered_transforms = registered_transforms
+        self.customTransforms = {}
 
     def loadCustomTransforms(self) -> None:
         self.custom_transforms_loaded = True
+        if self.registered_transforms is None:
+            self.customTransforms = {
+                _FakeQName("http://www.sec.gov/inlineXBRL/transformation/2015-08-31", "duryear"): object()
+            }
+        else:
+            self.customTransforms = self.registered_transforms
+
+
+class _FakeQName:
+    def __init__(self, namespace: str, local_name: str) -> None:
+        self.namespaceURI = namespace
+        self.localName = local_name
 
 
 class _FakePluginManager:

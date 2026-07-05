@@ -17,6 +17,7 @@ ARELLE_VERSION = "2.41.3"
 MIN_MAX_FACTS = 100_000
 MODEL_ERROR_CODE_LIMIT = 20
 MODEL_ERROR_CODE_MAX_LENGTH = 80
+SEC_TRANSFORM_NAMESPACE = "http://www.sec.gov/inlineXBRL/transformation/2015-08-31"
 SEC_TRANSFORM_PLUGIN_PATH = Path(__file__).resolve().parent / "arelle_sec_transforms"
 
 
@@ -214,6 +215,18 @@ def _load_sec_transform_plugin(
     if "ModelManager.LoadCustomTransforms" not in class_methods:
         raise RuntimeError("sec_transform_plugin_load_failed")
     cntlr.modelManager.loadCustomTransforms()
+    if not _has_sec_transform_registration(getattr(cntlr.modelManager, "customTransforms", {}) or {}):
+        raise RuntimeError("sec_transform_plugin_load_failed")
+
+
+def _has_sec_transform_registration(custom_transforms: Any) -> bool:
+    keys = custom_transforms.keys() if hasattr(custom_transforms, "keys") else []
+    for transform_qname in keys:
+        namespace = str(getattr(transform_qname, "namespaceURI", "") or "")
+        local_name = str(getattr(transform_qname, "localName", "") or "")
+        if namespace == SEC_TRANSFORM_NAMESPACE and local_name:
+            return True
+    return False
 
 
 def _fact_payload(
