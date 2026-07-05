@@ -64,6 +64,36 @@ def test_sec_xbrl_arelle_provisioning_declares_operator_verified_historical_pins
     assert all(spec["pinned"] and spec["download_ready"] for spec in specs if not spec.get("unavailable_reason"))
 
 
+def test_sec_xbrl_arelle_provisioning_declares_operator_verified_2026_pins_without_default_bump() -> None:
+    module = _helper_module()
+
+    assert module.DEFAULT_TAXONOMY_YEARS == ("2025",)
+    specs = module.taxonomy_specs(years=["2026"])
+    by_name = {spec["name"]: spec for spec in specs}
+
+    assert [spec["id"] for spec in specs] == [
+        "fasb-us-gaap-2026",
+        "fasb-srt-2026",
+        "sec-2026",
+    ]
+    assert by_name["us-gaap-2026.zip"]["url"] == "https://xbrl.fasb.org/us-gaap/2026/us-gaap-2026.zip"
+    assert by_name["us-gaap-2026.zip"]["sha256"] == "f4c8b8b5697ba7d825a8614b159611cd25a46640e98a9737cda1e4a672bd4c81"
+    assert by_name["us-gaap-2026.zip"]["bytes"] == 7_387_980
+    assert by_name["srt-2026.zip"]["url"] == "https://xbrl.fasb.org/srt/2026/srt-2026.zip"
+    assert by_name["srt-2026.zip"]["sha256"] == "34dab1ee7a10b9991fee1e17437c278908599ff2258ea3270ef718cab265be05"
+    assert by_name["srt-2026.zip"]["bytes"] == 195_234
+    assert by_name["sec-2026.zip"]["url"] == "https://xbrl.sec.gov/2026.zip"
+    assert by_name["sec-2026.zip"]["sha256"] == "16243a0713f10fb7bebd020cb0da505e2bf4ef180af3e19b8e4cd4ad2a75a6a0"
+    assert by_name["sec-2026.zip"]["bytes"] == 1_175_887
+    assert all(spec["pinned"] and spec["download_ready"] for spec in specs)
+    assert module._sec_entrypoint_urls("2026") == [
+        "https://xbrl.sec.gov/dei/2026/dei-2026.xsd",
+        "https://xbrl.sec.gov/country/2026/country-2026.xsd",
+        "https://xbrl.sec.gov/currency/2026/currency-2026.xsd",
+        "https://xbrl.sec.gov/exch/2026/exch-2026.xsd",
+    ]
+
+
 def test_sec_xbrl_arelle_provisioning_reports_2019_2020_sec_cache_as_partial(tmp_path: Path) -> None:
     module = _helper_module()
 

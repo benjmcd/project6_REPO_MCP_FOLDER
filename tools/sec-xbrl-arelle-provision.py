@@ -15,7 +15,7 @@ ARELLE_PACKAGE = "arelle-release"
 ARELLE_VERSION = "2.41.3"
 READ_TIMEOUT_SECONDS = 120
 DEFAULT_TAXONOMY_YEARS = ("2025",)
-ADMITTED_TAXONOMY_YEARS = tuple(str(year) for year in range(2019, 2026))
+ADMITTED_TAXONOMY_YEARS = tuple(str(year) for year in range(2019, 2027))
 
 
 def _taxonomy_spec(
@@ -265,6 +265,36 @@ _TAXONOMY_SPECS: tuple[dict[str, Any], ...] = (
         sha256="6a963051af02ff458e02669549bd55f9d547281724f3b4e053cb0157be8121e4",
         bytes=1_201_089,
         source="SEC 2025 taxonomy package archive",
+    ),
+    _taxonomy_spec(
+        id="fasb-us-gaap-2026",
+        kind="arelle_taxonomy_package",
+        name="us-gaap-2026.zip",
+        version="2026",
+        url="https://xbrl.fasb.org/us-gaap/2026/us-gaap-2026.zip",
+        sha256="f4c8b8b5697ba7d825a8614b159611cd25a46640e98a9737cda1e4a672bd4c81",
+        bytes=7_387_980,
+        source="FASB 2026 GAAP Financial Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="fasb-srt-2026",
+        kind="arelle_taxonomy_package",
+        name="srt-2026.zip",
+        version="2026",
+        url="https://xbrl.fasb.org/srt/2026/srt-2026.zip",
+        sha256="34dab1ee7a10b9991fee1e17437c278908599ff2258ea3270ef718cab265be05",
+        bytes=195_234,
+        source="FASB 2026 SEC Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="sec-2026",
+        kind="offline_cache_archive",
+        name="sec-2026.zip",
+        version="2026",
+        url="https://xbrl.sec.gov/2026.zip",
+        sha256="16243a0713f10fb7bebd020cb0da505e2bf4ef180af3e19b8e4cd4ad2a75a6a0",
+        bytes=1_175_887,
+        source="SEC 2026 taxonomy package archive",
     ),
 )
 
