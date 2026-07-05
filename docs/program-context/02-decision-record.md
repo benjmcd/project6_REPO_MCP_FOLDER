@@ -152,3 +152,169 @@ evidence → revisit-when. Dates 2026.
   executor's correct refusal of the proof task); git surfaces stay single-writer per lane;
   and every repo-lane product gets adversarially reviewed by a party that didn't write it.
 - Evidence: 15 PRs landed collision-free; the refusal incident; two-round #2415 review.
+
+## 2026-07-05 Corpus-Go Decision Addendum (M-PROGRAM-CONTEXT-2)
+
+This section appends D12-D18 for the corpus-go arc. M-PROGRAM-CONTEXT-2
+verified PR/SHA pairs, code anchors, the durable `C:/p6store/corpus_run`
+report hashes, and the #2433 count surface before appending.
+
+Corrections applied to the source addendum:
+
+- The aggregate report currently hashes to
+  `52385f07a1a4dc29871708602bacadb159da44499bb950fd887665abd3879e91`,
+  not the earlier payload hash `113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10`.
+- The storage/integrity supplement currently hashes to
+  `bce4d7800db4742577fcfe1214618ab7730057e46a4e6bd374b7d8848f6eb1e3`,
+  not the earlier payload hash `22cda8340cef3ae68cd08d1a09748e384feefc8a82700ddfb4b8304294be0141`.
+- The verified supported distribution is 18 full domestic 10-K/10-Q pairs,
+  MSFT with a supported 10-Q and a named 10-K `arelle_model_errors_present`
+  block, plus CURLF/CRLBF supported 40-F filings. The 39 supported filings /
+  21 supported issuers totals still match the completed #2433 count surface.
+- The source payload named `provision_report_2021_2026.json`; this lane did
+  not locate that report under `C:/p6store`, so runtime-provisioning report
+  details below are carried as operator-authored context unless separately
+  anchored. The committed PR/code/test provisioning anchors were verified.
+
+## D12. Per-ticker isolation over connector-ceiling chunking (07-05)
+
+- Context: the run plan batched by connector ceilings (4 or fewer CIK
+  references per request). Live pilot chunks 03-09 all failed as whole chunks:
+  one issuer lacking a requested form (`required_form_missing`) or one
+  unresolvable ticker (`company_matrix_unknown`) rejected the entire connector
+  request. That connector behavior is correct for invalid requests, but
+  chunk-level blast radius violated the run's per-filing-isolation intent.
+- Alternatives: (a) keep four-ticker chunks and pre-sort tickers into
+  domestic/foreign/unknown groups; (b) per-ticker calls.
+- Decision: (b) - one corpus call per ticker, fresh process each.
+- Why optimal: (a) requires knowing each ticker's filer class in advance, which
+  is exactly what the run discovers; misclassification recreates the failure.
+  (b) makes every failure class a named per-ticker disposition by construction,
+  at negligible request-count cost because submissions metadata is per-issuer
+  either way. The wall cost was about 8 seconds pacing per ticker, irrelevant
+  next to Arelle time.
+- Evidence: chunks 03-09 chunk-level failures vs 22 subsequent per-ticker runs,
+  every one dispositioned; run gates 4/4 PASS.
+- Revisit when: the connector grows per-row partial-result semantics for
+  multi-ticker requests.
+
+## D13. Two-pass form strategy: explicit 10-K/10-Q, then discovery fallback (07-05)
+
+- Context: the owner mandate names 10-Ks and 10-Qs; the corpus service
+  originally hardcoded a discovery policy whose interim slot often selects
+  8-Ks. After #2431 added explicit form passthrough, pure-explicit requests
+  fail closed for foreign private issuers that have no 10-K to find.
+- Alternatives: (a) discovery-only, which loses the 10-Q guarantee; (b)
+  explicit-only, which blocks foreign issuers; (c) per-ticker two-pass -
+  explicit `10-K`/`10-Q` first, discovery fallback on named failure.
+- Decision: (c).
+- Why optimal: maximizes the mandated form pair where it exists, degrades to
+  other applicable forms exactly where domestic forms cannot exist, and records
+  which pass served each ticker for provenance.
+- Evidence, verified/corrected by M-PROGRAM-CONTEXT-2: the current aggregate
+  report records 39 supported filings / 21 supported issuers: 18 full domestic
+  10-K/10-Q pairs, MSFT with a supported 10-Q and named 10-K block, and
+  CURLF/CRLBF supported 40-F filings. SONY/CCJ/DNN/NXE/MT/TSM annuals remain
+  retained but blocked as the IFRS follow-up group.
+- Revisit when: an owner mandate wants per-form-family targeting, such as all
+  10-Qs of a fiscal year; explicit passthrough now supports that directly.
+
+## D14. Vendored SEC inline-transforms plugin over Arelle upgrade or reimplementation (07-05)
+
+- Context: the pilot produced a uniform 8-model-error block. The operator probe
+  chain provisioned and refuted the 2026-taxonomy hypothesis, then isolated the
+  errors to `ix11.11.1.2:invalidTransformation` on the SEC transformation
+  registry namespace for cover-page dei facts. The registry was absent from the
+  pinned Arelle 2.41.3 core and from a fresh latest-version probe.
+- Alternatives: (a) upgrade Arelle; (b) whitelist that error class in the H3
+  blocker; (c) reimplement the transforms from spec; (d) vendor the canonical
+  Arelle/EDGAR implementation as an in-repo plugin loaded by the helper.
+- Decision: (d).
+- Why optimal: (a) was verified as a dead end; (b) silently drops typed values
+  and reintroduces the degradation class H3 exists to kill; (c) adds fidelity
+  and maintenance risk; (d) keeps the offline/pinned posture with no new runtime
+  network dependency and fails closed if the plugin cannot load.
+- Evidence: #2432; plugin and pinning under `tools/arelle_sec_transforms/`;
+  helper load and model-error-code diagnostics in `tools/sec-xbrl-arelle.py`;
+  tests in `backend/tests/test_sec_xbrl_arelle_helper.py`. The #2433 record
+  carries the operator re-probe claim that the previously blocked filing reached
+  `model_error_count=0`.
+- Retro-explanation locked in: June's STLD 523-fact success was never
+  contradictory; financial facts use standard ixt transforms, while cover-page
+  facts use ixt-sec.
+- Revisit when: SEC publishes a new transformation registry version, or
+  arelle-release absorbs the registry into core.
+
+## D15. Size-cap: ceiling-only raise, default untouched (07-04, owner-authorized)
+
+- Context: the owner authorized raising the filing size cap with justification.
+  Large-cap 10-K complete-submission texts routinely run 50-150 MB; the prior
+  25 MB ceiling would have blocked much of the authorized matrix.
+- Alternatives: (a) raise the default limit; (b) raise only the ceiling from
+  25 MB to 200 MB and keep the default at 25 MB, arming larger limits per-run
+  through env.
+- Decision: (b).
+- Why optimal: preserves the default fail-closed posture for every non-corpus
+  consumer; the corpus run arms 150 MB per-run under the new ceiling, while
+  200 MB covers realistic large filings and bounds single-artifact memory/disk.
+- Evidence: #2427 H5 and tests proving default-limit behavior unchanged.
+
+## D16. Taxonomy provisioning: operator-fetch-then-pin, fail-closed on unpinned (07-04 to 07-05)
+
+- Context: multi-year provisioning needed pins that did not exist; archives live
+  across two hosting eras, with FASB dated names pre-2022 and SEC suite zips
+  using different internal layouts across years.
+- Decision: the operator fetches official archives, computes sha256 and bytes,
+  and a repo lane commits pinned specs. The tool refuses unpinned/partial years
+  fail-closed. 2019/2020 SEC suites are recorded as explicitly partial rather
+  than masqueraded as complete.
+- Why optimal: pins make provisioning reproducible and tamper-evident without
+  granting agent lanes network access; explicit-partial beats silent-partial.
+- Evidence: #2428 historical pins, #2429 dual-layout extraction, #2430 2026
+  pins; `tools/sec-xbrl-arelle-provision.py`; and
+  `backend/tests/test_sec_xbrl_arelle_provisioning.py`. The source payload also
+  reported a runtime provisioning state of 12/12 packages and 24/24 entrypoints,
+  but M-PROGRAM-CONTEXT-2 did not locate the named runtime report under
+  `C:/p6store`.
+
+## D17. Owner inputs run as-given; corrections run as supplements (07-05)
+
+- Context: the owner ticker list contained TSMC, while Taiwan Semi's SEC ticker
+  is TSM, and three non-SEC listings: KAP, PDN, YCA.
+- Decision: run every row exactly as written as named `company_matrix_unknown`
+  dispositions, and run the obvious correction TSM as a clearly labeled
+  supplemental row.
+- Why optimal: silently rewriting owner input corrupts the authorization trail;
+  dropping the correction wastes an obviously intended issuer. Both facts belong
+  in the record.
+- Evidence: the aggregate report has per-ticker entries for TSMC as written and
+  `TSM(supplemental)`.
+
+## D18. IFRS taxonomy family: deferred as a named follow-up, not silently absorbed (07-05)
+
+- Context: six foreign issuers' annuals (SONY/CCJ/DNN/NXE/MT/TSM) were acquired
+  and retained but blocked with `arelle_model_errors_present`; the IFRS taxonomy
+  family was not provisioned.
+- Alternatives: (a) block corpus close on IFRS provisioning; (b) whitelist the
+  error class for foreign filings; (c) close the corpus with named dispositions
+  and queue an IFRS-pins lane with concrete acceptance criteria.
+- Decision: (c).
+- Why optimal: the owner mandate centers 10-K/10-Q with foreign forms as
+  applicable/feasible; the filings are banked and replayable at zero egress cost
+  once pins land.
+- Acceptance criteria for the follow-up: operator-fetched and hashed
+  `ifrs-YYYY` packages pinned; year/family admission extended to the IFRS
+  family; previously blocked annuals rerun to supported-or-named-block with
+  zero new SEC egress.
+
+## Operational Lessons Register (07-05)
+
+- Request bindings replay blocked results for a reused `client_request_id`;
+  every rerun mints fresh ids.
+- `Base.metadata.create_all` requires model modules imported first; import
+  services/models, then run `create_all`.
+- Shell backgrounding dies with the tool session; long operator runs use
+  harness-managed background execution, and per-ticker isolation makes batch
+  splits cheap.
+- The helper now exports model error codes, never values, so diagnosis no longer
+  requires an operator API probe (#2432 observability fix).

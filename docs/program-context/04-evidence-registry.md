@@ -101,3 +101,74 @@ Operator coordination reports are supplementary evidence, not committed anchors.
   `final_nonlocal_production_admission_present`, with blocked reason
   `nonlocal_production_readiness_final_admission_missing`.
 - RC3 acceptance list: declared=58, tracked=58, drift-guarded.
+
+## Corpus-Go Arc Evidence Registry Extension (M-PROGRAM-CONTEXT-2, 2026-07-05)
+
+M-PROGRAM-CONTEXT-2 verified this extension against live GitHub PR state, live
+`project6-origin/main`, committed code paths, the read-only
+`C:/p6store/corpus_run` durable root, and the #2433 count surface.
+
+## Merged PR / SHA Table Extension
+
+| PR | Merge SHA | Title / tranche | Verification |
+|---|---|---|---|
+| #2425 | `9d44e79b` | `test(sec-xbrl): cover controlled reveal pagination gaps` | merged; ancestor of `project6-origin/main` |
+| #2426 | `f0f32413` | `docs: add SEC XBRL corpus run plan` | merged; ancestor of `project6-origin/main` |
+| #2427 | `99efa28d` | `Harden SEC XBRL corpus admission gates` | merged; ancestor of `project6-origin/main` |
+| #2428 | `154b8a38` | `Add historical SEC taxonomy pins` | merged; ancestor of `project6-origin/main` |
+| #2429 | `4ad672f3` | `Handle bare SEC taxonomy cache layout` | merged; ancestor of `project6-origin/main` |
+| #2430 | `24502721` | `Add 2026 SEC taxonomy pins` | merged; ancestor of `project6-origin/main` |
+| #2431 | `92b069b9` | `fix(sec-xbrl): admit explicit corpus form selection` | merged; ancestor of `project6-origin/main` |
+| #2432 | `2d6fdbde` | `Load SEC inline transform plugin` | merged; ancestor of `project6-origin/main` |
+| #2433 | `889f8707` | `docs: record corpus-go run truth` | record lane; merged; ancestor of `project6-origin/main` |
+
+## Corpus-Go Run Artifacts (Operator-Local Durable Root)
+
+| Artifact | Anchor | Meaning |
+|---|---|---|
+| Aggregate run report | sha256 `52385f07a1a4dc29871708602bacadb159da44499bb950fd887665abd3879e91` at `C:/p6store/corpus_run/CORPUS_GO_RUN_REPORT.json` | Per-ticker outcomes, run gates, and notes. The source payload hash `113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10` is stale for the file currently present at this path. |
+| Supported filings | `39` | Verified from `supported_filing_count`. |
+| Supported issuers | `21` | Verified from `supported_issuer_count`. Distribution: 18 full domestic 10-K/10-Q pairs, MSFT supported 10-Q with named 10-K block, plus CURLF/CRLBF supported 40-F filings. |
+| Run gates | 4/4 PASS | `every_ticker_dispositioned`, `zero_unnamed_failures`, `min_30_supported_filings`, and `min_15_supported_issuers` are all `true`. |
+| Named blocks | IFRS annuals x6; 6-K no-inline slots; unknown/alias rows x4; MSFT 10-K named model-error block | All named by ticker/form/reason in the aggregate report; no unnamed failure was found. |
+| Per-chunk/ticker summaries | 37 JSON summaries under `C:/p6store/corpus_run` | One per attempt/supplement family, preserving fresh-id discipline. |
+| Preserved chunk DBs | 35 DB files under `C:/p6store/corpus_run/db` | Verifies the storage supplement's DB preservation count. |
+| Storage/integrity supplement | sha256 `bce4d7800db4742577fcfe1214618ab7730057e46a4e6bd374b7d8848f6eb1e3` at `C:/p6store/corpus_run/STORAGE_INTEGRITY_SUPPLEMENT.json` | H6 PASS; 1,660 artifacts; 1,822,365,176 bytes; 861,740,326,912 free bytes; `validate_only=true`; `mutation_performed=false`. The source payload hash `22cda8340cef3ae68cd08d1a09748e384feefc8a82700ddfb4b8304294be0141` is stale for the file currently present at this path. |
+| Gate correction | v1 gates = 4/4 of a 5-gate plan | The run-plan's storage-preflight gate was omitted from the v1 set and is satisfied by the storage/integrity supplement; all five plan gates now have evidence. |
+
+## Root-Cause Probe Evidence (Transforms Diagnosis)
+
+| Step | Anchor |
+|---|---|
+| Pilot uniform block | Payload-authored operator evidence: 8 filings with `arelle_model_errors_present` and `model_error_count=8` per filing. |
+| Hypothesis refuted | Payload-authored operator evidence: 2026 provisioning did not change the 8-error count. |
+| Error class isolated | Payload-authored operator evidence: direct Arelle-API probe isolated `ix11.11.1.2:invalidTransformation` for the SEC transformation registry namespace. |
+| Canonical source | `tools/arelle_sec_transforms/PINNING.md` and `tools/arelle_sec_transforms/` exist on live main; `text2num.py` is present with its MIT helper provenance. |
+| Helper load and diagnostics | `tools/sec-xbrl-arelle.py` loads `tools/arelle_sec_transforms`; `backend/tests/test_sec_xbrl_arelle_helper.py` covers plugin load failure and model-error-code redaction. |
+| Fix re-proven | The #2433/#2432 record carries the operator re-probe claim that the previously blocked filing reached `model_error_count=0`; code/test anchors for the fix are present on live main. |
+
+## Provisioning State (Arelle Runtime)
+
+- Committed provisioning anchors verified: PR #2428, #2429, and #2430 are
+  merged into `project6-origin/main`; `tools/sec-xbrl-arelle-provision.py`
+  exists; `backend/tests/test_sec_xbrl_arelle_provisioning.py` verifies 2026
+  pin admission, partial 2019/2020 SEC cache handling, admitted years, and the
+  default-year posture.
+- Payload-authored runtime claim not re-hashed here: the named
+  `provision_report_2021_2026.json` was not found under `C:/p6store` during
+  this lane's read-only search, so the 12/12 package and 24/24 entrypoint
+  details remain operator-context rather than a re-derived durable file hash in
+  this registry extension.
+- IFRS family remains not provisioned and is the named follow-up in D18.
+
+## Key Code Anchors Added This Arc
+
+| Surface | Verified location |
+|---|---|
+| SEC transforms plugin + pinning | `tools/arelle_sec_transforms/` and `tools/arelle_sec_transforms/PINNING.md` |
+| Plugin load + error-code diagnostics | `tools/sec-xbrl-arelle.py` |
+| Year/family admission + provisioning pins | `tools/sec-xbrl-arelle-provision.py` |
+| Explicit corpus forms passthrough | `backend/app/services/layer3_sec_edgar_real_company_corpus_validation.py` and `backend/app/api/layer3/__init__.py` |
+| Pre-inline / XML / semantic blockers / decode parity | `backend/app/services/layer3_sec_xbrl_sidecar.py` |
+| 200 MB ceiling constant | `backend/app/services/layer3_sec_edgar_live_source_artifact.py` |
+| Corpus hardening tests | `backend/tests/test_sec_xbrl_corpus_hardening.py` |
