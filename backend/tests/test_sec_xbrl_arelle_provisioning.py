@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+from zipfile import ZipFile
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -85,6 +86,26 @@ def test_sec_xbrl_arelle_provisioning_reports_2019_2020_sec_cache_as_partial(tmp
     assert report["taxonomy_year_coverage"]["2019"]["pinned_artifact_count"] == 2
     assert report["taxonomy_year_coverage"]["2020"]["partial_coverage"] is True
     assert "taxonomy_year_partial_coverage" in report["blocked_reasons"]
+
+
+def test_sec_xbrl_arelle_provisioning_uses_requested_sec_cache_year(tmp_path: Path) -> None:
+    module = _helper_module()
+    archive_path = tmp_path / "sec-2021.zip"
+    cache_dir = tmp_path / "cache"
+
+    with ZipFile(archive_path, "w") as archive:
+        archive.writestr("2021/xbrl.sec.gov/dei/2021/dei-2021.xsd", "<schema/>")
+        archive.writestr("2025/xbrl.sec.gov/dei/2025/dei-2025.xsd", "<schema/>")
+
+    assert module._extract_sec_archive_to_cache(archive_path, cache_dir, year="2021") == 1
+    assert (cache_dir / "https" / "xbrl.sec.gov" / "dei" / "2021" / "dei-2021.xsd").is_file()
+    assert not (cache_dir / "https" / "xbrl.sec.gov" / "dei" / "2025" / "dei-2025.xsd").exists()
+    assert module._sec_entrypoint_urls("2021") == [
+        "https://xbrl.sec.gov/dei/2021/dei-2021.xsd",
+        "https://xbrl.sec.gov/country/2021/country-2021.xsd",
+        "https://xbrl.sec.gov/currency/2021/currency-2021.xsd",
+        "https://xbrl.sec.gov/exch/2021/exch-2021.xsd",
+    ]
 
 
 def test_sec_xbrl_arelle_provisioning_fails_closed_without_downloaded_taxonomies(tmp_path: Path) -> None:

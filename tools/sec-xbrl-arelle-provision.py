@@ -531,20 +531,27 @@ def _seed_and_verify_sec_taxonomy_cache(cache_dir: Path, archives: list[dict[str
     }
     try:
         for archive in archives:
-            status["extracted_file_count"] += _extract_sec_archive_to_cache(Path(archive["path"]), cache_dir)
-        status["offline_entrypoints"] = _load_sec_entrypoints_offline(cache_dir)
+            year = str(archive["version"])
+            status["extracted_file_count"] += _extract_sec_archive_to_cache(
+                Path(archive["path"]),
+                cache_dir,
+                year=year,
+            )
+            status["offline_entrypoints"].extend(_load_sec_entrypoints_offline(cache_dir, year=year))
     except Exception as exc:
         status["error"] = exc.__class__.__name__
     return status
 
 
-def _extract_sec_archive_to_cache(archive_path: Path, cache_dir: Path) -> int:
+def _extract_sec_archive_to_cache(archive_path: Path, cache_dir: Path, *, year: str) -> int:
+    year = str(year)
+    archive_prefix = f"{year}/xbrl.sec.gov/"
     extracted = 0
     with ZipFile(archive_path) as zip_file:
         for name in zip_file.namelist():
-            if name.endswith("/") or not name.startswith("2025/xbrl.sec.gov/"):
+            if name.endswith("/") or not name.startswith(archive_prefix):
                 continue
-            relative = name.removeprefix("2025/")
+            relative = name.removeprefix(f"{year}/")
             target = cache_dir / "https" / Path(*relative.split("/"))
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(zip_file.read(name))
@@ -552,29 +559,43 @@ def _extract_sec_archive_to_cache(archive_path: Path, cache_dir: Path) -> int:
     return extracted
 
 
-def _load_sec_entrypoints_offline(cache_dir: Path) -> list[dict[str, Any]]:
+def _sec_entrypoint_urls(year: str) -> list[str]:
+    year = str(year)
+    return [
+        f"https://xbrl.sec.gov/dei/{year}/dei-{year}.xsd",
+        f"https://xbrl.sec.gov/country/{year}/country-{year}.xsd",
+        f"https://xbrl.sec.gov/currency/{year}/currency-{year}.xsd",
+        f"https://xbrl.sec.gov/exch/{year}/exch-{year}.xsd",
+    ]
+
+
+def _load_sec_entrypoints_offline(cache_dir: Path, *, year: str) -> list[dict[str, Any]]:
+    year = str(year)
     try:
         from arelle import Cntlr
     except Exception as exc:
-        return [{"url": "arelle_import", "loaded": False, "error": exc.__class__.__name__, "model_errors": []}]
-    urls = [
-        "https://xbrl.sec.gov/dei/2025/dei-2025.xsd",
-        "https://xbrl.sec.gov/country/2025/country-2025.xsd",
-        "https://xbrl.sec.gov/currency/2025/currency-2025.xsd",
-        "https://xbrl.sec.gov/exch/2025/exch-2025.xsd",
-    ]
+        return [
+            {
+                "year": year,
+                "url": "arelle_import",
+                "loaded": False,
+                "error": exc.__class__.__name__,
+                "model_errors": [],
+            }
+        ]
     cntlr = Cntlr.Cntlr(logFileName="logToBuffer")
     cntlr.webCache.cacheDir = str(cache_dir)
     cntlr.webCache.workOffline = True
     results: list[dict[str, Any]] = []
     try:
-        for url in urls:
+        for url in _sec_entrypoint_urls(year):
             model = None
             try:
                 model = cntlr.modelManager.load(url)
                 model_errors = list(getattr(model, "errors", []) or []) if model is not None else []
                 results.append(
                     {
+                        "year": year,
                         "url": url,
                         "loaded": model is not None and not model_errors,
                         "error": None,
@@ -582,7 +603,15 @@ def _load_sec_entrypoints_offline(cache_dir: Path) -> list[dict[str, Any]]:
                     }
                 )
             except Exception as exc:
-                results.append({"url": url, "loaded": False, "error": exc.__class__.__name__, "model_errors": []})
+                results.append(
+                    {
+                        "year": year,
+                        "url": url,
+                        "loaded": False,
+                        "error": exc.__class__.__name__,
+                        "model_errors": [],
+                    }
+                )
             finally:
                 if model is not None:
                     model.close()
