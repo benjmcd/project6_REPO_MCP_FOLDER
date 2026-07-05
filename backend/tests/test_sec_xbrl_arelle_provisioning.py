@@ -47,6 +47,46 @@ def test_sec_xbrl_arelle_provisioning_declares_pinned_packages_with_provenance()
     assert all(spec["source"] for spec in specs)
 
 
+def test_sec_xbrl_arelle_provisioning_declares_operator_verified_historical_pins() -> None:
+    module = _helper_module()
+
+    specs = module.taxonomy_specs(years=["2019", "2020", "2021", "2022", "2023", "2024"])
+    by_name = {spec["name"]: spec for spec in specs}
+
+    assert by_name["us-gaap-2019.zip"]["url"].endswith("/us-gaap/2019/us-gaap-2019-01-31.zip")
+    assert by_name["srt-2021.zip"]["url"].endswith("/srt/2021/srt-2021-01-31.zip")
+    assert by_name["us-gaap-2019.zip"]["sha256"] == "16ea8c9f25e61a3d2e824ab917067f787683c9eeff2147cbe3b0463508d1d667"
+    assert by_name["us-gaap-2024.zip"]["bytes"] == 7_115_653
+    assert by_name["srt-2024.zip"]["sha256"] == "136d16f1bf62ca1966300231b2b399f90631ba703381aeec467e9bec4f3867eb"
+    assert by_name["sec-2021.zip"]["url"] == "https://xbrl.sec.gov/2021.zip"
+    assert by_name["sec-2024.zip"]["sha256"] == "418477e806d5a2d6b21376a26c01fc373d549dae8d18f223a6ebddf80680bdf0"
+    assert all(spec["pinned"] and spec["download_ready"] for spec in specs if not spec.get("unavailable_reason"))
+
+
+def test_sec_xbrl_arelle_provisioning_reports_2019_2020_sec_cache_as_partial(tmp_path: Path) -> None:
+    module = _helper_module()
+
+    specs = module.taxonomy_specs(years=["2019", "2020"])
+    report = module.build_report(
+        taxonomy_dir=tmp_path / "taxonomy",
+        cache_dir=tmp_path / "cache",
+        download=False,
+        load_with_arelle=False,
+        years=["2019", "2020"],
+    )
+
+    assert [spec["id"] for spec in specs if spec["kind"] == "offline_cache_archive"] == [
+        "sec-2019-unavailable",
+        "sec-2020-unavailable",
+    ]
+    assert all(spec["download_ready"] is False for spec in specs if spec["kind"] == "offline_cache_archive")
+    assert report["taxonomy_year_coverage"]["2019"]["partial_coverage"] is True
+    assert report["taxonomy_year_coverage"]["2019"]["unavailable_artifact_count"] == 1
+    assert report["taxonomy_year_coverage"]["2019"]["pinned_artifact_count"] == 2
+    assert report["taxonomy_year_coverage"]["2020"]["partial_coverage"] is True
+    assert "taxonomy_year_partial_coverage" in report["blocked_reasons"]
+
+
 def test_sec_xbrl_arelle_provisioning_fails_closed_without_downloaded_taxonomies(tmp_path: Path) -> None:
     module = _helper_module()
 
@@ -82,4 +122,5 @@ def test_sec_xbrl_arelle_provisioning_dry_lists_requested_years_without_download
     assert report["taxonomy_year_coverage"]["2019"]["planned_artifact_count"] == 3
     assert report["taxonomy_year_coverage"]["2025"]["planned_artifact_count"] == 3
     assert report["taxonomy_year_coverage"]["2025"]["pinned_artifact_count"] == 3
+    assert report["taxonomy_year_coverage"]["2019"]["partial_coverage"] is True
     assert report["non_goals_preserved"]["sec_network_fetch_performed"] is False

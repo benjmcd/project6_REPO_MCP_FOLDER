@@ -17,43 +17,255 @@ READ_TIMEOUT_SECONDS = 120
 DEFAULT_TAXONOMY_YEARS = ("2025",)
 ADMITTED_TAXONOMY_YEARS = tuple(str(year) for year in range(2019, 2026))
 
+
+def _taxonomy_spec(
+    *,
+    id: str,
+    kind: str,
+    name: str,
+    version: str,
+    url: str,
+    sha256: str | None,
+    bytes: int | None,
+    source: str,
+    pinned: bool = True,
+    download_ready: bool = True,
+    unavailable_reason: str | None = None,
+) -> dict[str, Any]:
+    spec: dict[str, Any] = {
+        "id": id,
+        "kind": kind,
+        "name": name,
+        "version": version,
+        "url": url,
+        "sha256": sha256,
+        "bytes": bytes,
+        "source": source,
+        "pinned": pinned,
+        "download_ready": download_ready,
+    }
+    if unavailable_reason:
+        spec["unavailable_reason"] = unavailable_reason
+    return spec
+
+
 _TAXONOMY_SPECS: tuple[dict[str, Any], ...] = (
-    {
-        "id": "fasb-us-gaap-2025",
-        "kind": "arelle_taxonomy_package",
-        "name": "us-gaap-2025.zip",
-        "version": "2025",
-        "url": "https://xbrl.fasb.org/us-gaap/2025/us-gaap-2025.zip",
-        "sha256": "a3b835925ad74030eb5be865a26d7dfe44013081c4ab7204b6122316a685fff4",
-        "bytes": 7_101_405,
-        "source": "FASB 2025 GAAP Financial Reporting Taxonomy package",
-        "pinned": True,
-        "download_ready": True,
-    },
-    {
-        "id": "fasb-srt-2025",
-        "kind": "arelle_taxonomy_package",
-        "name": "srt-2025.zip",
-        "version": "2025",
-        "url": "https://xbrl.fasb.org/srt/2025/srt-2025.zip",
-        "sha256": "aad1daeb4bdfe3057f4ed81482c06130f873a59fa7fce5193c5731f93b1fef88",
-        "bytes": 191_908,
-        "source": "FASB 2025 SEC Reporting Taxonomy package",
-        "pinned": True,
-        "download_ready": True,
-    },
-    {
-        "id": "sec-2025",
-        "kind": "offline_cache_archive",
-        "name": "sec-2025.zip",
-        "version": "2025",
-        "url": "https://xbrl.sec.gov/2025.zip",
-        "sha256": "6a963051af02ff458e02669549bd55f9d547281724f3b4e053cb0157be8121e4",
-        "bytes": 1_201_089,
-        "source": "SEC 2025 taxonomy package archive",
-        "pinned": True,
-        "download_ready": True,
-    },
+    _taxonomy_spec(
+        id="fasb-us-gaap-2019",
+        kind="arelle_taxonomy_package",
+        name="us-gaap-2019.zip",
+        version="2019",
+        url="https://xbrl.fasb.org/us-gaap/2019/us-gaap-2019-01-31.zip",
+        sha256="16ea8c9f25e61a3d2e824ab917067f787683c9eeff2147cbe3b0463508d1d667",
+        bytes=5_728_252,
+        source="FASB 2019 GAAP Financial Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="fasb-srt-2019",
+        kind="arelle_taxonomy_package",
+        name="srt-2019.zip",
+        version="2019",
+        url="https://xbrl.fasb.org/srt/2019/srt-2019-01-31.zip",
+        sha256="947af75fd03cd08915430b7b4200e9c037d0d14e4f86a12632adb16eedbf73f7",
+        bytes=161_358,
+        source="FASB 2019 SEC Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="sec-2019-unavailable",
+        kind="offline_cache_archive",
+        name="sec-2019.zip",
+        version="2019",
+        url="https://xbrl.sec.gov/2019.zip",
+        sha256=None,
+        bytes=None,
+        source="SEC 2019 taxonomy package archive unavailable; DEI-only archive is not equivalent to the full SEC suite",
+        pinned=False,
+        download_ready=False,
+        unavailable_reason="sec_suite_archive_unavailable",
+    ),
+    _taxonomy_spec(
+        id="fasb-us-gaap-2020",
+        kind="arelle_taxonomy_package",
+        name="us-gaap-2020.zip",
+        version="2020",
+        url="https://xbrl.fasb.org/us-gaap/2020/us-gaap-2020-01-31.zip",
+        sha256="043d45481d7baacb2f04ebd97dbcfecdc6706b74e38fe002c4b4703ef7a0a4d2",
+        bytes=6_345_468,
+        source="FASB 2020 GAAP Financial Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="fasb-srt-2020",
+        kind="arelle_taxonomy_package",
+        name="srt-2020.zip",
+        version="2020",
+        url="https://xbrl.fasb.org/srt/2020/srt-2020-01-31.zip",
+        sha256="57168b52f9e8da5bc9aa593f6a6aacc581c83877b59fe8d43291730da1bc840c",
+        bytes=158_794,
+        source="FASB 2020 SEC Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="sec-2020-unavailable",
+        kind="offline_cache_archive",
+        name="sec-2020.zip",
+        version="2020",
+        url="https://xbrl.sec.gov/2020.zip",
+        sha256=None,
+        bytes=None,
+        source="SEC 2020 taxonomy package archive unavailable; DEI-only archive is not equivalent to the full SEC suite",
+        pinned=False,
+        download_ready=False,
+        unavailable_reason="sec_suite_archive_unavailable",
+    ),
+    _taxonomy_spec(
+        id="fasb-us-gaap-2021",
+        kind="arelle_taxonomy_package",
+        name="us-gaap-2021.zip",
+        version="2021",
+        url="https://xbrl.fasb.org/us-gaap/2021/us-gaap-2021-01-31.zip",
+        sha256="2e4309134cf62ff7ad61a371333fe52c6002279706bba244b63b4e64b8274843",
+        bytes=6_526_936,
+        source="FASB 2021 GAAP Financial Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="fasb-srt-2021",
+        kind="arelle_taxonomy_package",
+        name="srt-2021.zip",
+        version="2021",
+        url="https://xbrl.fasb.org/srt/2021/srt-2021-01-31.zip",
+        sha256="096cc522a9b7424d07459df76ffd4462dd74b910e702901a4f587960009c4327",
+        bytes=186_168,
+        source="FASB 2021 SEC Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="sec-2021",
+        kind="offline_cache_archive",
+        name="sec-2021.zip",
+        version="2021",
+        url="https://xbrl.sec.gov/2021.zip",
+        sha256="0b834bdf26f5880a2ccfe7fe973940ee41ad746d8f8a782d3649f0dfdad5b53b",
+        bytes=598_328,
+        source="SEC 2021 taxonomy package archive",
+    ),
+    _taxonomy_spec(
+        id="fasb-us-gaap-2022",
+        kind="arelle_taxonomy_package",
+        name="us-gaap-2022.zip",
+        version="2022",
+        url="https://xbrl.fasb.org/us-gaap/2022/us-gaap-2022.zip",
+        sha256="8af6fbbcec3818cd372f391cece9e62018e115b7b65ea75a6a38b9709af3ab37",
+        bytes=6_485_888,
+        source="FASB 2022 GAAP Financial Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="fasb-srt-2022",
+        kind="arelle_taxonomy_package",
+        name="srt-2022.zip",
+        version="2022",
+        url="https://xbrl.fasb.org/srt/2022/srt-2022.zip",
+        sha256="37d0156ccc5ee77594a84109eb475ca3fe75a56ff25069e261e943d451451c9f",
+        bytes=182_036,
+        source="FASB 2022 SEC Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="sec-2022",
+        kind="offline_cache_archive",
+        name="sec-2022.zip",
+        version="2022",
+        url="https://xbrl.sec.gov/2022.zip",
+        sha256="b9f01a19df2e286f016e89239f616c0dd1012c3477947a7374d02c84ebd06568",
+        bytes=576_613,
+        source="SEC 2022 taxonomy package archive",
+    ),
+    _taxonomy_spec(
+        id="fasb-us-gaap-2023",
+        kind="arelle_taxonomy_package",
+        name="us-gaap-2023.zip",
+        version="2023",
+        url="https://xbrl.fasb.org/us-gaap/2023/us-gaap-2023.zip",
+        sha256="b48fbb7be5cbaef5532ebff51394176ca6e7241ffce5fc88812485b8e6f9d6fd",
+        bytes=6_607_657,
+        source="FASB 2023 GAAP Financial Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="fasb-srt-2023",
+        kind="arelle_taxonomy_package",
+        name="srt-2023.zip",
+        version="2023",
+        url="https://xbrl.fasb.org/srt/2023/srt-2023.zip",
+        sha256="e1a667a56cde32af35fcf5a1936691bd4d22e52a29ce2af7218c5ef4c23810de",
+        bytes=188_585,
+        source="FASB 2023 SEC Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="sec-2023",
+        kind="offline_cache_archive",
+        name="sec-2023.zip",
+        version="2023",
+        url="https://xbrl.sec.gov/2023.zip",
+        sha256="0b5cd8689d9b2fdda525b15603b459171c624e175079d90a917ca1e518c592e4",
+        bytes=954_681,
+        source="SEC 2023 taxonomy package archive",
+    ),
+    _taxonomy_spec(
+        id="fasb-us-gaap-2024",
+        kind="arelle_taxonomy_package",
+        name="us-gaap-2024.zip",
+        version="2024",
+        url="https://xbrl.fasb.org/us-gaap/2024/us-gaap-2024.zip",
+        sha256="decdd417d86ff7bfb5ca166c0ca1001017aea873673544a8d7f91c34bf5d82df",
+        bytes=7_115_653,
+        source="FASB 2024 GAAP Financial Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="fasb-srt-2024",
+        kind="arelle_taxonomy_package",
+        name="srt-2024.zip",
+        version="2024",
+        url="https://xbrl.fasb.org/srt/2024/srt-2024.zip",
+        sha256="136d16f1bf62ca1966300231b2b399f90631ba703381aeec467e9bec4f3867eb",
+        bytes=188_150,
+        source="FASB 2024 SEC Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="sec-2024",
+        kind="offline_cache_archive",
+        name="sec-2024.zip",
+        version="2024",
+        url="https://xbrl.sec.gov/2024.zip",
+        sha256="418477e806d5a2d6b21376a26c01fc373d549dae8d18f223a6ebddf80680bdf0",
+        bytes=1_084_829,
+        source="SEC 2024 taxonomy package archive",
+    ),
+    _taxonomy_spec(
+        id="fasb-us-gaap-2025",
+        kind="arelle_taxonomy_package",
+        name="us-gaap-2025.zip",
+        version="2025",
+        url="https://xbrl.fasb.org/us-gaap/2025/us-gaap-2025.zip",
+        sha256="a3b835925ad74030eb5be865a26d7dfe44013081c4ab7204b6122316a685fff4",
+        bytes=7_101_405,
+        source="FASB 2025 GAAP Financial Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="fasb-srt-2025",
+        kind="arelle_taxonomy_package",
+        name="srt-2025.zip",
+        version="2025",
+        url="https://xbrl.fasb.org/srt/2025/srt-2025.zip",
+        sha256="aad1daeb4bdfe3057f4ed81482c06130f873a59fa7fce5193c5731f93b1fef88",
+        bytes=191_908,
+        source="FASB 2025 SEC Reporting Taxonomy package",
+    ),
+    _taxonomy_spec(
+        id="sec-2025",
+        kind="offline_cache_archive",
+        name="sec-2025.zip",
+        version="2025",
+        url="https://xbrl.sec.gov/2025.zip",
+        sha256="6a963051af02ff458e02669549bd55f9d547281724f3b4e053cb0157be8121e4",
+        bytes=1_201_089,
+        source="SEC 2025 taxonomy package archive",
+    ),
 )
 
 
@@ -87,8 +299,9 @@ def main() -> int:
 def taxonomy_specs(*, years: list[str] | tuple[str, ...] | None = None) -> list[dict[str, Any]]:
     specs: list[dict[str, Any]] = []
     for year in _normalise_years(years):
-        if year == "2025":
-            specs.extend(dict(spec) for spec in _TAXONOMY_SPECS)
+        pinned_specs = [spec for spec in _TAXONOMY_SPECS if spec["version"] == year]
+        if pinned_specs:
+            specs.extend(dict(spec) for spec in pinned_specs)
         else:
             specs.extend(_planned_taxonomy_specs(year))
     return specs
@@ -388,6 +601,8 @@ def _blocked_reasons(*, arelle: dict[str, Any], packages: list[dict[str, Any]]) 
         reasons.append("arelle_import_failed")
     if any(not pkg["exists"] for pkg in packages):
         reasons.append("taxonomy_package_missing")
+    if any(pkg.get("unavailable_reason") for pkg in packages):
+        reasons.append("taxonomy_year_partial_coverage")
     if any(pkg.get("download_blocked") for pkg in packages) or any(pkg["exists"] and not pkg.get("pinned") for pkg in packages):
         reasons.append("taxonomy_package_unpinned")
     if any(pkg["exists"] and pkg.get("pinned") and not pkg["sha256_matches"] for pkg in packages):
@@ -397,8 +612,8 @@ def _blocked_reasons(*, arelle: dict[str, Any], packages: list[dict[str, Any]]) 
     return reasons
 
 
-def _taxonomy_year_coverage(packages: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
-    coverage: dict[str, dict[str, int]] = {}
+def _taxonomy_year_coverage(packages: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    coverage: dict[str, dict[str, Any]] = {}
     for package in packages:
         year = str(package.get("version") or "")
         if year not in coverage:
@@ -408,12 +623,16 @@ def _taxonomy_year_coverage(packages: list[dict[str, Any]]) -> dict[str, dict[st
                 "present_artifact_count": 0,
                 "missing_artifact_count": 0,
                 "download_ready_artifact_count": 0,
+                "unavailable_artifact_count": 0,
+                "partial_coverage": False,
             }
         coverage[year]["planned_artifact_count"] += 1
         coverage[year]["pinned_artifact_count"] += 1 if package.get("pinned") else 0
         coverage[year]["present_artifact_count"] += 1 if package.get("exists") else 0
         coverage[year]["missing_artifact_count"] += 0 if package.get("exists") else 1
         coverage[year]["download_ready_artifact_count"] += 1 if package.get("download_ready") else 0
+        coverage[year]["unavailable_artifact_count"] += 1 if package.get("unavailable_reason") else 0
+        coverage[year]["partial_coverage"] = coverage[year]["unavailable_artifact_count"] > 0
     return coverage
 
 
