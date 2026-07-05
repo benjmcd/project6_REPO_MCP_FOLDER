@@ -52,43 +52,53 @@ operator-phase actions behind the existing preflight and default-off gates.
 
 ## Static Ticker Matrix
 
-This table is a predeclared plan, not resolved issuer truth. The operator phase
-must resolve every ticker through the admitted static allow-list or the official
-ticker resolver when that resolver is explicitly enabled. A failed resolution is
-a named disposition, not a silent failure.
+This table is a predeclared plan, not resolved issuer truth. Current main's
+external matrix runner accepts only tickers already present in
+`REAL_COMPANY_CIK_REFS`; it does not use the official resolver in that external
+matrix path. Therefore the declared 30-ticker run has a prerequisite: either the
+matrix gate must be changed to admit resolver-backed off-list tickers, or the
+static allow-list must be expanded before execution. Without one of those
+prerequisites, off-list rows below are planning targets only and must be recorded
+as blocked dispositions, not acquired filings.
+
+For domestic issuers, the current discovery policy selects the first annual
+filing and the first interim/current filing. The second slot is therefore a
+10-Q target when the selected current metadata makes a 10-Q the first admitted
+interim/current filing; otherwise it may be an 8-K/current filing unless a
+separate 10-Q-specific selection path lands first.
 
 | # | Ticker | Static SEC posture | Planned form request | Required disposition rule |
 |---:|---|---|---|---|
-| 1 | NVDA | Domestic issuer expected; already in static allow-list. | Latest 10-K and 10-Q if available. | Supported if inline facts and Arelle sidecar succeed; otherwise named degraded/blocked reason. |
-| 2 | AMD | Domestic issuer expected; resolver likely required unless allow-list expands before run. | Latest 10-K and 10-Q if available. | Resolve live or record `official_ticker_resolution_missing`. |
-| 3 | TSMC | Owner ticker is an alias-like token; SEC-listed ADR symbol may differ. | Annual foreign form and 6-K only after official resolution. | Record `ticker_alias_resolution_required` unless the operator supplies admitted public resolution. |
-| 4 | MSFT | Domestic issuer expected; already in static allow-list. | Latest 10-K and 10-Q if available. | Supported if current machinery admits the filing. |
-| 5 | GOOG | Domestic issuer expected; resolver likely required unless allow-list expands before run. | Latest 10-K and 10-Q if available. | Resolve live or record `official_ticker_resolution_missing`. |
-| 6 | AMZN | Domestic issuer expected; already in static allow-list. | Latest 10-K and 10-Q if available. | Supported if current machinery admits the filing. |
-| 7 | META | Domestic issuer expected; resolver likely required unless allow-list expands before run. | Latest 10-K and 10-Q if available. | Resolve live or record `official_ticker_resolution_missing`. |
-| 8 | AAPL | Domestic issuer expected; already in static allow-list. | Latest 10-K and 10-Q if available. | Supported if current machinery admits the filing. |
-| 9 | DIS | Domestic issuer expected; resolver likely required unless allow-list expands before run. | Latest 10-K and 10-Q if available. | Resolve live or record `official_ticker_resolution_missing`. |
-| 10 | HOOD | Domestic issuer expected; resolver likely required unless allow-list expands before run. | Latest 10-K and 10-Q if available. | Resolve live or record `official_ticker_resolution_missing`. |
-| 11 | NFLX | Domestic issuer expected; resolver likely required unless allow-list expands before run. | Latest 10-K and 10-Q if available. | Resolve live or record `official_ticker_resolution_missing`. |
+| 1 | NVDA | Domestic issuer expected; already in static allow-list. | Latest 10-K plus first interim/current filing; 10-Q if selected by current metadata. | Supported if inline facts and Arelle sidecar succeed; otherwise named degraded/blocked reason. |
+| 2 | AMD | Domestic issuer expected; resolver or allow-list prerequisite required before run. | Latest 10-K plus first interim/current filing after prerequisite; 10-Q if selected by current metadata. | Resolve only after prerequisite; otherwise record `off_list_matrix_prerequisite_missing`. |
+| 3 | TSMC | Owner ticker is an alias-like token; SEC-listed ADR symbol may differ. | Annual foreign form and 6-K only after prerequisite and official resolution. | Record `ticker_alias_resolution_required` or `off_list_matrix_prerequisite_missing` unless admitted public resolution lands. |
+| 4 | MSFT | Domestic issuer expected; already in static allow-list. | Latest 10-K plus first interim/current filing; 10-Q if selected by current metadata. | Supported if current machinery admits the filing. |
+| 5 | GOOG | Domestic issuer expected; resolver or allow-list prerequisite required before run. | Latest 10-K plus first interim/current filing after prerequisite; 10-Q if selected by current metadata. | Resolve only after prerequisite; otherwise record `off_list_matrix_prerequisite_missing`. |
+| 6 | AMZN | Domestic issuer expected; already in static allow-list. | Latest 10-K plus first interim/current filing; 10-Q if selected by current metadata. | Supported if current machinery admits the filing. |
+| 7 | META | Domestic issuer expected; resolver or allow-list prerequisite required before run. | Latest 10-K plus first interim/current filing after prerequisite; 10-Q if selected by current metadata. | Resolve only after prerequisite; otherwise record `off_list_matrix_prerequisite_missing`. |
+| 8 | AAPL | Domestic issuer expected; already in static allow-list. | Latest 10-K plus first interim/current filing; 10-Q if selected by current metadata. | Supported if current machinery admits the filing. |
+| 9 | DIS | Domestic issuer expected; resolver or allow-list prerequisite required before run. | Latest 10-K plus first interim/current filing after prerequisite; 10-Q if selected by current metadata. | Resolve only after prerequisite; otherwise record `off_list_matrix_prerequisite_missing`. |
+| 10 | HOOD | Domestic issuer expected; resolver or allow-list prerequisite required before run. | Latest 10-K plus first interim/current filing after prerequisite; 10-Q if selected by current metadata. | Resolve only after prerequisite; otherwise record `off_list_matrix_prerequisite_missing`. |
+| 11 | NFLX | Domestic issuer expected; resolver or allow-list prerequisite required before run. | Latest 10-K plus first interim/current filing after prerequisite; 10-Q if selected by current metadata. | Resolve only after prerequisite; otherwise record `off_list_matrix_prerequisite_missing`. |
 | 12 | SONY | Foreign private issuer expected; already in static allow-list. | Latest 20-F plus 6-K/current report when applicable. | Supported annual, sparse/diagnostic 6-K if no inline facts. |
-| 13 | AMCX | Domestic issuer expected; resolver likely required unless allow-list expands before run. | Latest 10-K and 10-Q if available. | Resolve live or record `official_ticker_resolution_missing`. |
+| 13 | AMCX | Domestic issuer expected; resolver or allow-list prerequisite required before run. | Latest 10-K plus first interim/current filing after prerequisite; 10-Q if selected by current metadata. | Resolve only after prerequisite; otherwise record `off_list_matrix_prerequisite_missing`. |
 | 14 | CCJ | Canadian/foreign private issuer expected; already in static allow-list. | Latest 40-F or 20-F plus 6-K when applicable. | Supported annual, sparse/diagnostic 6-K if no inline facts. |
-| 15 | UUUU | Domestic issuer expected; resolver likely required unless allow-list expands before run. | Latest 10-K and 10-Q if available. | Resolve live or record `official_ticker_resolution_missing`. |
-| 16 | DNN | Canadian issuer expected; resolver may be required. | Latest 40-F or 20-F plus 6-K when applicable. | Resolve live or record named no-resolution/no-filing disposition. |
-| 17 | KAP | Public ticker token, but SEC company-filing availability is uncertain. | Attempt only after official resolution. | Likely `likely_no_sec_company_filings` unless resolver proves otherwise. |
-| 18 | LEU | Domestic issuer expected; resolver likely required unless allow-list expands before run. | Latest 10-K and 10-Q if available. | Resolve live or record `official_ticker_resolution_missing`. |
-| 19 | PDN | Public foreign ticker token; SEC company-filing availability is uncertain. | Attempt only after official resolution. | Likely `likely_no_sec_company_filings` unless resolver proves otherwise. |
-| 20 | YCA | Public foreign ticker token; SEC company-filing availability is uncertain. | Attempt only after official resolution. | Likely `likely_no_sec_company_filings` unless resolver proves otherwise. |
-| 21 | NXE | Canadian issuer expected; resolver may be required. | Latest 40-F or 20-F plus 6-K when applicable. | Resolve live or record named no-resolution/no-filing disposition. |
-| 22 | GEV | Domestic issuer expected; resolver likely required unless allow-list expands before run. | Latest 10-K and 10-Q if available. | Resolve live or record `official_ticker_resolution_missing`. |
-| 23 | NUE | Domestic issuer expected; resolver likely required unless allow-list expands before run. | Latest 10-K and 10-Q if available. | Resolve live or record `official_ticker_resolution_missing`. |
-| 24 | MT | Foreign private issuer expected; resolver may be required. | Latest 20-F plus 6-K when applicable. | Supported annual, sparse/diagnostic 6-K if no inline facts. |
-| 25 | CLF | Domestic issuer expected; resolver likely required unless allow-list expands before run. | Latest 10-K and 10-Q if available. | Resolve live or record `official_ticker_resolution_missing`. |
-| 26 | STLD | Domestic issuer expected; already in static allow-list. | Latest 10-K and 10-Q if available. | Supported if current machinery admits the filing. |
-| 27 | TRLV | Public ticker token; may not be the SEC company ticker. | Attempt only after official resolution. | Likely `ticker_alias_resolution_required` or `likely_no_sec_company_filings`. |
-| 28 | GTBIF | OTC/foreign reporting posture uncertain. | Attempt only after official resolution. | Likely `likely_no_sec_company_filings` unless resolver proves otherwise. |
-| 29 | CURLF | OTC/foreign reporting posture uncertain. | Attempt only after official resolution. | Likely `likely_no_sec_company_filings` unless resolver proves otherwise. |
-| 30 | CRLBF | OTC/foreign reporting posture uncertain. | Attempt only after official resolution. | Likely `likely_no_sec_company_filings` unless resolver proves otherwise. |
+| 15 | UUUU | Domestic issuer expected; resolver or allow-list prerequisite required before run. | Latest 10-K plus first interim/current filing after prerequisite; 10-Q if selected by current metadata. | Resolve only after prerequisite; otherwise record `off_list_matrix_prerequisite_missing`. |
+| 16 | DNN | Canadian issuer expected; resolver or allow-list prerequisite required before run. | Latest 40-F or 20-F plus 6-K after prerequisite when applicable. | Resolve only after prerequisite; otherwise record `off_list_matrix_prerequisite_missing`. |
+| 17 | KAP | Public ticker token, but SEC company-filing availability is uncertain. | Attempt only after prerequisite and official resolution. | Likely `likely_no_sec_company_filings` or `off_list_matrix_prerequisite_missing` unless resolver proves otherwise. |
+| 18 | LEU | Domestic issuer expected; resolver or allow-list prerequisite required before run. | Latest 10-K plus first interim/current filing after prerequisite; 10-Q if selected by current metadata. | Resolve only after prerequisite; otherwise record `off_list_matrix_prerequisite_missing`. |
+| 19 | PDN | Public foreign ticker token; SEC company-filing availability is uncertain. | Attempt only after prerequisite and official resolution. | Likely `likely_no_sec_company_filings` or `off_list_matrix_prerequisite_missing` unless resolver proves otherwise. |
+| 20 | YCA | Public foreign ticker token; SEC company-filing availability is uncertain. | Attempt only after prerequisite and official resolution. | Likely `likely_no_sec_company_filings` or `off_list_matrix_prerequisite_missing` unless resolver proves otherwise. |
+| 21 | NXE | Canadian issuer expected; resolver or allow-list prerequisite required before run. | Latest 40-F or 20-F plus 6-K after prerequisite when applicable. | Resolve only after prerequisite; otherwise record `off_list_matrix_prerequisite_missing`. |
+| 22 | GEV | Domestic issuer expected; resolver or allow-list prerequisite required before run. | Latest 10-K plus first interim/current filing after prerequisite; 10-Q if selected by current metadata. | Resolve only after prerequisite; otherwise record `off_list_matrix_prerequisite_missing`. |
+| 23 | NUE | Domestic issuer expected; resolver or allow-list prerequisite required before run. | Latest 10-K plus first interim/current filing after prerequisite; 10-Q if selected by current metadata. | Resolve only after prerequisite; otherwise record `off_list_matrix_prerequisite_missing`. |
+| 24 | MT | Foreign private issuer expected; resolver or allow-list prerequisite required before run. | Latest 20-F plus 6-K after prerequisite when applicable. | Supported annual after prerequisite, sparse/diagnostic 6-K if no inline facts; otherwise record `off_list_matrix_prerequisite_missing`. |
+| 25 | CLF | Domestic issuer expected; resolver or allow-list prerequisite required before run. | Latest 10-K plus first interim/current filing after prerequisite; 10-Q if selected by current metadata. | Resolve only after prerequisite; otherwise record `off_list_matrix_prerequisite_missing`. |
+| 26 | STLD | Domestic issuer expected; already in static allow-list. | Latest 10-K plus first interim/current filing; 10-Q if selected by current metadata. | Supported if current machinery admits the filing. |
+| 27 | TRLV | Public ticker token; may not be the SEC company ticker. | Attempt only after prerequisite and official resolution. | Likely `ticker_alias_resolution_required`, `likely_no_sec_company_filings`, or `off_list_matrix_prerequisite_missing`. |
+| 28 | GTBIF | OTC/foreign reporting posture uncertain. | Attempt only after prerequisite and official resolution. | Likely `likely_no_sec_company_filings` or `off_list_matrix_prerequisite_missing` unless resolver proves otherwise. |
+| 29 | CURLF | OTC/foreign reporting posture uncertain. | Attempt only after prerequisite and official resolution. | Likely `likely_no_sec_company_filings` or `off_list_matrix_prerequisite_missing` unless resolver proves otherwise. |
+| 30 | CRLBF | OTC/foreign reporting posture uncertain. | Attempt only after prerequisite and official resolution. | Likely `likely_no_sec_company_filings` or `off_list_matrix_prerequisite_missing` unless resolver proves otherwise. |
 
 ## Operator Run Design
 
@@ -102,8 +112,11 @@ a named disposition, not a silent failure.
    accession, URL, path, User-Agent, contact, raw filing bytes, or raw fact
    values.
 4. Resolve ticker identities only in the operator phase. Existing static
-   allow-list entries may be used. Off-list tickers require the official resolver
-   flag and live preflight; unknown resolver results become named dispositions.
+   allow-list entries may be used immediately. The current external matrix
+   runner cannot execute off-list rows through the official resolver, so
+   off-list rows require a prior matrix-gate change or static allow-list
+   expansion. Without that prerequisite, unknown/off-list rows become named
+   blocked dispositions.
 5. Batch by current connector ceilings: at most four CIK refs, six form types,
    and eight examples per connector request. Use deterministic chunk ids such as
    `corpus-go-static-01`, not raw accessions.
@@ -136,6 +149,14 @@ Approximate request budget for the 30-ticker plan:
 - Up to 30 CompanyFacts/oracle requests for resolved issuer checks.
 - 20 percent retry/headroom reserve.
 
+The same run also needs an explicit request-count ceiling strategy. Current main
+defaults `LAYER3_SEC_EDGAR_MAX_LIVE_REQUESTS_PER_PROCESS` to 10 and blocks after
+the configured per-process live request ceiling is exhausted. The operator phase
+must either configure an admitted ceiling that covers the planned request budget,
+or split the run into deterministic chunks whose process-local request counts
+stay within the configured ceiling. A default ceiling of 10 is not sufficient for
+the full 30-ticker matrix.
+
 Planning estimate: about 120 to 150 SEC requests if every ticker resolves and
 both filing slots are available. Wire-time minimum is about 60 to 75 seconds at
 two requests per second, or 120 to 150 seconds at one request per second. Real
@@ -144,13 +165,12 @@ sidecar verification, and proof generation dominate the request minimum.
 
 ## Storage Budget
 
-The current live source-artifact default max bytes is 25 MB. For 60 filing
-artifacts, the raw source-artifact ceiling is therefore about 1.5 GB before
-sidecars, value stores, receipts, proof files, and retry residue. If the operator
-raises the filing cap for genuinely larger filings, use a per-filing written
-justification and preserve the 120-second timeout ceiling. A conservative 120 MB
-large-filing cap over 60 filings implies about 7.2 GB of source-artifact headroom
-before derived artifacts.
+The current live source-artifact default and hard admitted max bytes are 25 MB.
+For 60 filing artifacts, the current source-artifact ceiling is therefore about
+1.5 GB before sidecars, value stores, receipts, proof files, and retry residue.
+Filings larger than the current 25 MB ceiling must be named blocked/degraded
+cases unless a separate prerequisite code and gate change lands first. This
+docs-only plan does not authorize a larger source-artifact cap.
 
 Gate the run on storage preflight:
 
@@ -198,6 +218,7 @@ proof-import schema even if current main does not yet emit them:
 - `supported_inline_xbrl_sidecar_selected`
 - `foreign_private_issuer_sparse_6k_diagnostic`
 - `official_ticker_resolution_missing`
+- `off_list_matrix_prerequisite_missing`
 - `ticker_alias_resolution_required`
 - `likely_no_sec_company_filings`
 - `storage_preflight_failed`
@@ -276,7 +297,7 @@ Forbidden fields in committed proof import:
 - raw CIK in v1, even though it is public, because the current generic guard
   treats CIK as raw authority unless a schema-specific exception is created and
   tested;
-- accession numbers and accession-like strings;
+- accession identifiers and accession-like strings;
 - SEC URLs, source URLs, local paths, storage directories, and artifact bytes;
 - company names, issuer names, registrant names, operator contacts, User-Agent
   values, credentials, browser/model state, raw SEC submissions payloads, raw
@@ -298,16 +319,18 @@ Rate decision:
 - Position A: Use the existing one-request-per-second posture because it is the
   current runner baseline.
 - Position B: Plan for approximately two requests per second because the service
-  policy admits 1 to 10 and the corpus run is bounded.
+  policy admits 1 to 10 and the corpus run is bounded, provided the request-count
+  ceiling is also raised or chunked to cover the request budget.
 - Ruling: the operator plan selects about two requests per second when the entry
-  point honors configuration; otherwise, one request per second remains the
-  compliant fallback. The proof report must log the actual configured and
-  observed pacing.
+  point honors configuration and the request-count ceiling strategy is admitted;
+  otherwise, one request per second remains the compliant fallback. The proof
+  report must log the actual configured and observed pacing.
 
 ## Run-Level Gates
 
-The operator proof is complete only when all gates are satisfied or a named
-shortfall is explicitly justified:
+The current operator proof is complete only when all runner gates are satisfied.
+Named shortfalls may be recorded as diagnostic evidence for a future importer,
+but they do not satisfy the current pass gate:
 
 1. All 30 public tickers have a named final disposition.
 2. Every selected filing slot is `supported`, `degraded`, or `blocked`; no null
@@ -317,9 +340,12 @@ shortfall is explicitly justified:
    evidence.
 5. Rate compliance is logged: policy id, configured rate, observed request
    count, pacing log hash, and any fail-closed deferrals.
-6. Supported records meet or exceed the current in-repo minimums of 30 filings
-   and 15 issuer hashes, or the proof records an explicit justified shortfall
-   caused by named no-resolution/no-filing/unsupported dispositions.
+6. For the current real-corpus runner gate to pass, supported records meet or
+   exceed the current in-repo minimums of 30 filings and 15 issuer hashes, with
+   required forms present. A future sanitized proof importer may also record
+   named no-resolution/no-filing/unsupported shortfalls, but such a shortfall
+   record is not a PASS under the current runner gate unless a separate gate
+   change lands first.
 7. Required form-family coverage is recorded. A shortfall must name whether the
    matrix lacked annual, interim/current, foreign private issuer, sparse 6-K,
    current-report, amendment, or no-inline/zero-fact diagnostic coverage.
