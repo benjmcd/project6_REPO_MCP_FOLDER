@@ -51,6 +51,8 @@ ALLOWED_FIELDS = {
     "validation_mode",
     "operator_decision",
     "company_matrix",
+    "form_types",
+    "filing_selection_policy",
     "operator_confirmation",
     "actor",
 }
@@ -116,19 +118,23 @@ def validate_sec_edgar_real_company_corpus_product_path(
     if request.get("operator_confirmation") is not True:
         return _blocked_response(request_id, reasons=[_reason("missing_operator_confirmation")])
 
-    company_matrix = _company_matrix(request.get("company_matrix"))
+    company_matrix, resolved_cik_map = _company_matrix_basis(request.get("company_matrix"))
+    filing_selection_policy = _filing_selection_policy(request)
+    connector_request: dict[str, Any] = {
+        "client_request_id": f"{request_id}-connector",
+        "connector_mode": layer3_sec_edgar_real_filing_acquisition_connector.CONNECTOR_MODE,
+        "operator_decision": layer3_sec_edgar_real_filing_acquisition_connector.OPERATOR_DECISION,
+        "example_set_mode": layer3_sec_edgar_real_filing_acquisition_connector.EXAMPLE_SET_MODE,
+        "company_matrix": list(company_matrix),
+        "filing_selection_policy": filing_selection_policy,
+        "operator_confirmation": True,
+    }
+    if filing_selection_policy != layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_DISCOVERY_POLICY:
+        connector_request["cik_refs"] = _cik_refs_for_company_matrix(company_matrix, resolved_cik_map)
+        if "form_types" in request:
+            connector_request["form_types"] = request["form_types"]
     connector = layer3_sec_edgar_real_filing_acquisition_connector.acquire_sec_edgar_real_filing_validation_corpus(
-        {
-            "client_request_id": f"{request_id}-connector",
-            "connector_mode": layer3_sec_edgar_real_filing_acquisition_connector.CONNECTOR_MODE,
-            "operator_decision": layer3_sec_edgar_real_filing_acquisition_connector.OPERATOR_DECISION,
-            "example_set_mode": layer3_sec_edgar_real_filing_acquisition_connector.EXAMPLE_SET_MODE,
-            "company_matrix": list(company_matrix),
-            "filing_selection_policy": (
-                layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_DISCOVERY_POLICY
-            ),
-            "operator_confirmation": True,
-        }
+        connector_request
     )
     records = _filing_validation_records(connector, request_id=request_id, db=db, evidence_owner=evidence_owner)
     matrix = _product_utility_matrix(records)
@@ -172,7 +178,7 @@ def validate_sec_edgar_real_company_corpus_product_path(
         "connector_receipt_id": connector["connector_receipt_id"],
         "connector_receipt_hash": connector["connector_receipt_hash"],
         "company_matrix": list(company_matrix),
-        "filing_selection_policy": layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_DISCOVERY_POLICY,
+        "filing_selection_policy": filing_selection_policy,
         "filing_validation_records": records,
         "product_utility_matrix": matrix,
         "product_quality_matrix": quality_matrix,
@@ -1371,13 +1377,38 @@ def _normalise_request(fields: Mapping[str, Any]) -> dict[str, Any]:
     return request
 
 
-def _company_matrix(value: Any) -> tuple[str, ...]:
-    tickers, _resolved_cik_map, _provenance = (
+def _filing_selection_policy(request: Mapping[str, Any]) -> str:
+    explicit = str(request.get("filing_selection_policy") or "").strip()
+    if explicit:
+        return explicit
+    if "form_types" in request:
+        return layer3_sec_edgar_real_filing_acquisition_connector.DEFAULT_FILING_SELECTION_POLICY
+    return layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_DISCOVERY_POLICY
+
+
+def _company_matrix_basis(value: Any) -> tuple[tuple[str, ...], dict[str, str]]:
+    tickers, resolved_cik_map, _provenance = (
         layer3_sec_edgar_real_filing_acquisition_connector._normalise_company_matrix(
             value or layer3_sec_edgar_real_filing_acquisition_connector.DEFAULT_REAL_COMPANY_MATRIX
         )
     )
+    return tickers, resolved_cik_map
+
+
+def _company_matrix(value: Any) -> tuple[str, ...]:
+    tickers, _resolved_cik_map = _company_matrix_basis(value)
     return tickers
+
+
+def _cik_refs_for_company_matrix(
+    company_matrix: tuple[str, ...],
+    resolved_cik_map: Mapping[str, str],
+) -> list[str]:
+    return [
+        resolved_cik_map.get(ticker)
+        or layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_CIK_REFS[ticker]
+        for ticker in company_matrix
+    ]
 
 
 def _read_receipt_by_hash(receipt_hash: str) -> dict[str, Any] | None:

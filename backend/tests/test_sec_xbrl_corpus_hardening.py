@@ -159,3 +159,134 @@ def test_sec_corpus_pre_inline_block_counts_only_inline_fact_markers() -> None:
 
     parser["inline_xbrl_marker_inventory"].append({"marker_name_hash": module._sha256_text("ix:nonfraction")})
     assert module._inline_xbrl_fact_marker_count(parser) == 1
+
+
+def _minimal_connector_response(payload: dict) -> dict:
+    return {
+        "connector_receipt_id": "connector-explicit-forms-test",
+        "connector_receipt_hash": "c" * 64,
+        "example_set": {
+            "company_matrix": list(payload.get("company_matrix") or []),
+        },
+        "corpus_manifest": {
+            "example_records": [],
+        },
+        "acquisition_receipts": [],
+    }
+
+
+def _validation_request(request_id: str, **overrides: object) -> dict:
+    request = {
+        "client_request_id": request_id,
+        "validation_mode": layer3_sec_edgar_real_company_corpus_validation.VALIDATION_MODE,
+        "operator_decision": layer3_sec_edgar_real_company_corpus_validation.OPERATOR_DECISION,
+        "company_matrix": ["MSFT", "STLD", "SONY", "CCJ"],
+        "operator_confirmation": True,
+    }
+    request.update(overrides)
+    return request
+
+
+def test_sec_corpus_default_connector_payload_keeps_discovery_policy(tmp_path: Path, monkeypatch) -> None:
+    captured: dict[str, dict] = {}
+
+    def fake_acquire(payload: dict) -> dict:
+        captured["payload"] = dict(payload)
+        return _minimal_connector_response(payload)
+
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+    monkeypatch.setattr(
+        layer3_sec_edgar_real_filing_acquisition_connector,
+        "acquire_sec_edgar_real_filing_validation_corpus",
+        fake_acquire,
+    )
+
+    layer3_sec_edgar_real_company_corpus_validation.validate_sec_edgar_real_company_corpus_product_path(
+        _validation_request("explicit-forms-default"),
+        db=None,
+    )
+
+    assert captured["payload"] == {
+        "client_request_id": "explicit-forms-default-connector",
+        "connector_mode": layer3_sec_edgar_real_filing_acquisition_connector.CONNECTOR_MODE,
+        "operator_decision": layer3_sec_edgar_real_filing_acquisition_connector.OPERATOR_DECISION,
+        "example_set_mode": layer3_sec_edgar_real_filing_acquisition_connector.EXAMPLE_SET_MODE,
+        "company_matrix": ["MSFT", "STLD", "SONY", "CCJ"],
+        "filing_selection_policy": (
+            layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_DISCOVERY_POLICY
+        ),
+        "operator_confirmation": True,
+    }
+
+
+def test_sec_corpus_explicit_form_types_forward_to_connector_with_owner_ciks(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    captured: dict[str, dict] = {}
+
+    def fake_acquire(payload: dict) -> dict:
+        captured["payload"] = dict(payload)
+        return _minimal_connector_response(payload)
+
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+    monkeypatch.setattr(
+        layer3_sec_edgar_real_filing_acquisition_connector,
+        "acquire_sec_edgar_real_filing_validation_corpus",
+        fake_acquire,
+    )
+
+    response = layer3_sec_edgar_real_company_corpus_validation.validate_sec_edgar_real_company_corpus_product_path(
+        _validation_request(
+            "explicit-forms-10k-10q",
+            form_types=["10-K", "10-Q"],
+        ),
+        db=None,
+    )
+
+    assert captured["payload"]["filing_selection_policy"] == (
+        layer3_sec_edgar_real_filing_acquisition_connector.DEFAULT_FILING_SELECTION_POLICY
+    )
+    assert captured["payload"]["form_types"] == ["10-K", "10-Q"]
+    assert captured["payload"]["company_matrix"] == ["MSFT", "STLD", "SONY", "CCJ"]
+    assert captured["payload"]["cik_refs"] == ["789019", "1022671", "313838", "1009001"]
+    assert response["filing_selection_policy"] == (
+        layer3_sec_edgar_real_filing_acquisition_connector.DEFAULT_FILING_SELECTION_POLICY
+    )
+
+
+def test_sec_corpus_invalid_explicit_form_type_uses_connector_rejection(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+
+    with pytest.raises(Layer3WorkbenchError) as excinfo:
+        layer3_sec_edgar_real_company_corpus_validation.validate_sec_edgar_real_company_corpus_product_path(
+            _validation_request(
+                "explicit-forms-invalid",
+                form_types=["10 K"],
+            ),
+            db=None,
+        )
+
+    assert excinfo.value.error_code == "sec_edgar_real_filing_acquisition_connector_form_type_invalid"
+    assert excinfo.value.blocked_fields == ["form_types"]
+
+
+def test_sec_corpus_form_selection_fields_are_admitted_but_forbidden_fields_still_block() -> None:
+    allowed = layer3_sec_edgar_real_company_corpus_validation.ALLOWED_FIELDS
+    assert "form_types" in allowed
+    assert "filing_selection_policy" in allowed
+
+    with pytest.raises(Layer3WorkbenchError) as excinfo:
+        layer3_sec_edgar_real_company_corpus_validation._normalise_request(
+            _validation_request(
+                "explicit-forms-forbidden",
+                form_types=["10-K", "10-Q"],
+                filing_selection_policy=(
+                    layer3_sec_edgar_real_filing_acquisition_connector.DEFAULT_FILING_SELECTION_POLICY
+                ),
+                path="C:/not-admitted",
+            )
+        )
+
+    assert excinfo.value.error_code == "sec_edgar_real_company_corpus_validation_forbidden_request_fields"
+    assert sorted(set(excinfo.value.blocked_fields)) == ["path"]
