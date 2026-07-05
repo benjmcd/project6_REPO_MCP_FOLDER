@@ -128,15 +128,46 @@ def _request_hash(value: str) -> str:
     return hashlib.sha256(str(value or "").encode("utf-8")).hexdigest()
 
 
-def _projection_rows() -> list[dict[str, Any]]:
+def _projection_rows(
+    *,
+    sidecar_receipt_hash: str = _hash("b"),
+    value_store_hash: str = _hash("c"),
+    dataset_version_id: str = "dv-redacted-1",
+) -> list[dict[str, Any]]:
     return [
-        _projection_row("Revenue", "income"),
-        _projection_row("TotalAssets", "balance"),
-        _projection_row("OperatingCashFlow", "cashflow"),
+        _projection_row(
+            "Revenue",
+            "income",
+            sidecar_receipt_hash=sidecar_receipt_hash,
+            value_store_hash=value_store_hash,
+            dataset_version_id=dataset_version_id,
+        ),
+        _projection_row(
+            "TotalAssets",
+            "balance",
+            sidecar_receipt_hash=sidecar_receipt_hash,
+            value_store_hash=value_store_hash,
+            dataset_version_id=dataset_version_id,
+        ),
+        _projection_row(
+            "OperatingCashFlow",
+            "cashflow",
+            sidecar_receipt_hash=sidecar_receipt_hash,
+            value_store_hash=value_store_hash,
+            dataset_version_id=dataset_version_id,
+        ),
     ]
 
 
-def _projection_row(canonical_id: str, statement: str, *, family: str = "universal") -> dict[str, Any]:
+def _projection_row(
+    canonical_id: str,
+    statement: str,
+    *,
+    family: str = "universal",
+    sidecar_receipt_hash: str = _hash("b"),
+    value_store_hash: str = _hash("c"),
+    dataset_version_id: str = "dv-redacted-1",
+) -> dict[str, Any]:
     return {
         "canonical_id": canonical_id,
         "basis": "total",
@@ -152,9 +183,9 @@ def _projection_row(canonical_id: str, statement: str, *, family: str = "univers
         "provenance_complete": True,
         "value_redacted": True,
         "resolved_fact_provenance_present": True,
-        "sidecar_receipt_hash": _hash("b"),
-        "value_store_hash": _hash("c"),
-        "dataset_version_id": "dv-redacted-1",
+        "sidecar_receipt_hash": sidecar_receipt_hash,
+        "value_store_hash": value_store_hash,
+        "dataset_version_id": dataset_version_id,
     }
 
 
@@ -189,8 +220,11 @@ def _persisted_projection(
     *,
     request_id: str = "projection-1",
     source_report_hash: str = _hash("a"),
+    sidecar_receipt_hash: str = _hash("b"),
+    value_store_hash: str = _hash("c"),
+    dataset_version_id: str = "dv-redacted-1",
 ) -> dict[str, Any]:
-    _seed_dataset_version(db_session)
+    _seed_dataset_version(db_session, dataset_version_id=dataset_version_id)
     return projection_persistence.materialize_redacted_projection_set(
         db_session,
         client_request_id=request_id,
@@ -203,10 +237,14 @@ def _persisted_projection(
                     "period_index": 1,
                     "projection": {
                         "status": "canonical_projection_ready",
-                        "dataset_version_id": "dv-redacted-1",
-                        "sidecar_receipt_hash": _hash("b"),
-                        "value_store_hash": _hash("c"),
-                        "concepts": _projection_rows(),
+                        "dataset_version_id": dataset_version_id,
+                        "sidecar_receipt_hash": sidecar_receipt_hash,
+                        "value_store_hash": value_store_hash,
+                        "concepts": _projection_rows(
+                            sidecar_receipt_hash=sidecar_receipt_hash,
+                            value_store_hash=value_store_hash,
+                            dataset_version_id=dataset_version_id,
+                        ),
                     },
                 }
             ],
@@ -265,11 +303,17 @@ def _materialized_packet(
     projection_request_id: str = "projection-1",
     projection_source_report_hash: str = _hash("a"),
     packet: dict[str, Any] | None = None,
+    sidecar_receipt_hash: str = _hash("b"),
+    value_store_hash: str = _hash("c"),
+    dataset_version_id: str = "dv-redacted-1",
 ) -> dict[str, Any]:
     projection = _persisted_projection(
         db_session,
         request_id=projection_request_id,
         source_report_hash=projection_source_report_hash,
+        sidecar_receipt_hash=sidecar_receipt_hash,
+        value_store_hash=value_store_hash,
+        dataset_version_id=dataset_version_id,
     )
     return packet_persistence.materialize_redacted_statement_packet(
         db_session,
@@ -287,6 +331,9 @@ def _open_workflow(
     packet_request_id: str = "packet-1",
     projection_request_id: str = "projection-1",
     projection_source_report_hash: str = _hash("a"),
+    sidecar_receipt_hash: str = _hash("b"),
+    value_store_hash: str = _hash("c"),
+    dataset_version_id: str = "dv-redacted-1",
 ) -> dict[str, Any]:
     packet_response = _materialized_packet(
         db_session,
@@ -294,6 +341,9 @@ def _open_workflow(
         projection_request_id=projection_request_id,
         projection_source_report_hash=projection_source_report_hash,
         packet=packet,
+        sidecar_receipt_hash=sidecar_receipt_hash,
+        value_store_hash=value_store_hash,
+        dataset_version_id=dataset_version_id,
     )
     return workflow_service.open_redacted_operator_review_workflow(
         db_session,
@@ -538,15 +588,22 @@ def _paginated_submit_sidecar_and_value_store(
     count: int,
     *,
     redacted_indices: set[int] | None = None,
+    sidecar_receipt_id: str = "sec-edgar-arelle-resolved-fact-authority-server-owned",
+    sidecar_receipt_hash: str = _hash("b"),
+    value_store_hash: str = _hash("c"),
+    record_prefix: str = "resolved-fact",
+    concept_prefix: str = "PaginatedFact",
+    value_hash_prefix: str = "value",
+    value_base: int = 1000,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     redacted_indices = redacted_indices or set()
     sidecar_records: list[dict[str, Any]] = []
     value_records: list[dict[str, Any]] = []
     for index in range(count):
-        resolved_fact_id = f"resolved-fact-{index:04d}"
-        value_hash = _request_hash(f"value-{index}")
+        resolved_fact_id = f"{record_prefix}-{index:04d}"
+        value_hash = _request_hash(f"{value_hash_prefix}-{index}")
         source_order = count - index
-        value = "0000123456-26-000001" if index in redacted_indices else f"{1000 + index}.01"
+        value = "0000123456-26-000001" if index in redacted_indices else f"{value_base + index}.01"
         sidecar_records.append(
             {
                 "resolved_fact_id": resolved_fact_id,
@@ -554,8 +611,8 @@ def _paginated_submit_sidecar_and_value_store(
                 "entry_document_index": index % 3,
                 "value_hash": value_hash,
                 "concept": {
-                    "qname": f"us-gaap:PaginatedFact{index:04d}",
-                    "local_name": f"PaginatedFact{index:04d}",
+                    "qname": f"us-gaap:{concept_prefix}{index:04d}",
+                    "local_name": f"{concept_prefix}{index:04d}",
                     "standard": True,
                     "extension": False,
                 },
@@ -578,13 +635,13 @@ def _paginated_submit_sidecar_and_value_store(
         )
     return (
         {
-            "sidecar_receipt_id": "sec-edgar-arelle-resolved-fact-authority-server-owned",
-            "sidecar_receipt_hash": _hash("b"),
+            "sidecar_receipt_id": sidecar_receipt_id,
+            "sidecar_receipt_hash": sidecar_receipt_hash,
             "sidecar_state": "sec_edgar_arelle_resolved_fact_authority_sidecar_ready",
             "resolved_fact_records": sidecar_records,
         },
         {
-            "value_store_hash": _hash("c"),
+            "value_store_hash": value_store_hash,
             "value_records": value_records,
         },
     )
@@ -657,6 +714,133 @@ def _prepare_authority_receipt(db_session, monkeypatch, *, request_id: str = "co
         client_request_id=request_id,
         sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
         decision_basis_hash=decision["decision_basis_hash"],
+    )
+
+
+def _sidecar_receipt_id_for_hash(sidecar_receipt_hash: str) -> str:
+    return f"{authority_service.layer3_sec_xbrl_sidecar.RECEIPT_PREFIX}-{sidecar_receipt_hash[:24]}"
+
+
+def _sidecar_authority_for(sidecar_receipt_hash: str, value_store_hash: str) -> dict[str, str]:
+    sidecar_receipt_id = _sidecar_receipt_id_for_hash(sidecar_receipt_hash)
+    return {
+        "sidecar_receipt_id_hash": authority_service.stable_hash(
+            {
+                "hash_version": "sec_xbrl_value_reveal_authority_sidecar_receipt_id_hash_v1",
+                "sidecar_receipt_id": sidecar_receipt_id,
+            }
+        ),
+        "sidecar_receipt_hash": sidecar_receipt_hash,
+        "value_store_hash": value_store_hash,
+    }
+
+
+def _prepare_authority_receipt_with_projection(
+    db_session,
+    *,
+    request_id: str,
+    sidecar_receipt_hash: str,
+    value_store_hash: str,
+    dataset_version_id: str = "dv-redacted-1",
+) -> dict[str, Any]:
+    workflow = _open_workflow(
+        db_session,
+        request_id=f"{request_id}-workflow",
+        packet_request_id=f"{request_id}-packet",
+        projection_request_id=f"{request_id}-projection",
+        projection_source_report_hash=_request_hash(f"{request_id}-source-report"),
+        sidecar_receipt_hash=sidecar_receipt_hash,
+        value_store_hash=value_store_hash,
+        dataset_version_id=dataset_version_id,
+    )
+    decision = _record_decision(
+        db_session,
+        workflow=workflow,
+        request_id=f"{request_id}-decision",
+        decision_notes=f"approved synthetic reveal authority {request_id}",
+    )
+    return authority_service.prepare_value_reveal_authority_receipt(
+        db_session,
+        client_request_id=request_id,
+        sec_xbrl_operator_review_decision_id=decision["sec_xbrl_operator_review_decision_id"],
+        decision_basis_hash=decision["decision_basis_hash"],
+    )
+
+
+def _multi_authority_paginated_cases(
+    db_session,
+    monkeypatch,
+    *,
+    authority_count: int,
+    records_per_authority: int,
+) -> list[dict[str, Any]]:
+    monkeypatch.setattr(
+        authority_service,
+        "_resolve_sidecar_authority",
+        lambda sidecar_hash, value_hash: _sidecar_authority_for(sidecar_hash, value_hash),
+    )
+    payloads_by_authority_id: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
+    cases: list[dict[str, Any]] = []
+    for authority_index in range(authority_count):
+        prefix = f"controlled-submit-isolation-{authority_index:02d}"
+        sidecar_receipt_hash = _request_hash(f"{prefix}-sidecar")
+        value_store_hash = _request_hash(f"{prefix}-value-store")
+        authority = _prepare_authority_receipt_with_projection(
+            db_session,
+            request_id=f"{prefix}-authority",
+            sidecar_receipt_hash=sidecar_receipt_hash,
+            value_store_hash=value_store_hash,
+            dataset_version_id=f"dv-redacted-isolation-{authority_index:02d}",
+        )
+        value_base = 10000 + (authority_index * 100)
+        sidecar, value_store = _paginated_submit_sidecar_and_value_store(
+            records_per_authority,
+            sidecar_receipt_id=_sidecar_receipt_id_for_hash(sidecar_receipt_hash),
+            sidecar_receipt_hash=sidecar_receipt_hash,
+            value_store_hash=value_store_hash,
+            record_prefix=f"isolation-{authority_index:02d}-fact",
+            concept_prefix=f"Isolation{authority_index:02d}Fact",
+            value_hash_prefix=f"isolation-{authority_index:02d}-value",
+            value_base=value_base,
+        )
+        authority_id = authority["sec_xbrl_value_reveal_authority_receipt_id"]
+        payloads_by_authority_id[authority_id] = (sidecar, value_store)
+        cases.append(
+            {
+                "authority": authority,
+                "sidecar_receipt_hash": sidecar_receipt_hash,
+                "value_store_hash": value_store_hash,
+                "value_texts": {f"{value_base + index}.01" for index in range(records_per_authority)},
+            }
+        )
+
+    def resolve_sidecar_and_value_store(row):
+        return payloads_by_authority_id[row.sec_xbrl_value_reveal_authority_receipt_id]
+
+    monkeypatch.setattr(submit_service, "_resolve_sidecar_and_value_store", resolve_sidecar_and_value_store)
+    return cases
+
+
+def _submit_paginated_case_page(
+    db_session,
+    case: dict[str, Any],
+    *,
+    client_request_id: str,
+    max_records: int,
+    page_cursor: str | None = None,
+) -> dict[str, Any]:
+    authority = case["authority"]
+    kwargs: dict[str, Any] = {}
+    if page_cursor is not None:
+        kwargs["page_cursor"] = page_cursor
+    return submit_service.submit_controlled_value_reveal(
+        db_session,
+        client_request_id=client_request_id,
+        sec_xbrl_value_reveal_authority_receipt_id=authority["sec_xbrl_value_reveal_authority_receipt_id"],
+        authority_basis_hash=authority["authority_basis_hash"],
+        operator_reveal_confirmation=True,
+        max_records=max_records,
+        **kwargs,
     )
 
 
@@ -2459,6 +2643,66 @@ def test_controlled_value_reveal_submit_paginates_large_result_set_without_dup_g
     assert status["next_page_cursor"] is None
 
 
+def test_controlled_value_reveal_submit_exact_cap_is_single_page_hash_only_and_replay(
+    db_session,
+    monkeypatch,
+) -> None:
+    _enable_controlled_submit(monkeypatch)
+    authority = _prepare_authority_receipt(db_session, monkeypatch, request_id="controlled-submit-exact-cap")
+    sidecar, value_store = _paginated_submit_sidecar_and_value_store(submit_service.MAX_REVEAL_RECORDS)
+    monkeypatch.setattr(submit_service, "_resolve_sidecar_and_value_store", lambda *_args: (sidecar, value_store))
+    client_request_id = "controlled-submit-exact-cap-page"
+
+    first = submit_service.submit_controlled_value_reveal(
+        db_session,
+        client_request_id=client_request_id,
+        sec_xbrl_value_reveal_authority_receipt_id=authority["sec_xbrl_value_reveal_authority_receipt_id"],
+        authority_basis_hash=authority["authority_basis_hash"],
+        operator_reveal_confirmation=True,
+    )
+    replay = submit_service.submit_controlled_value_reveal(
+        db_session,
+        client_request_id=client_request_id,
+        sec_xbrl_value_reveal_authority_receipt_id=authority["sec_xbrl_value_reveal_authority_receipt_id"],
+        authority_basis_hash=authority["authority_basis_hash"],
+        operator_reveal_confirmation=True,
+    )
+
+    assert first["idempotent_replay"] is False
+    assert first["total_record_count"] == submit_service.MAX_REVEAL_RECORDS
+    assert first["page_record_count"] == submit_service.MAX_REVEAL_RECORDS
+    assert first["revealed_fact_count"] == submit_service.MAX_REVEAL_RECORDS
+    assert len(first["revealed_facts"]) == submit_service.MAX_REVEAL_RECORDS
+    assert first["page_index"] == 1
+    assert first["next_page_cursor"] is None
+    assert replay["idempotent_replay"] is True
+    assert replay["sec_xbrl_controlled_value_reveal_submit_receipt_id"] == (
+        first["sec_xbrl_controlled_value_reveal_submit_receipt_id"]
+    )
+    assert replay["submit_basis_hash"] == first["submit_basis_hash"]
+    assert replay["page_record_count"] == first["page_record_count"]
+    assert db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 1
+
+    status = submit_service.inspect_controlled_value_reveal_submit_status(
+        db_session,
+        sec_xbrl_controlled_value_reveal_submit_receipt_id=(
+            first["sec_xbrl_controlled_value_reveal_submit_receipt_id"]
+        ),
+    )
+    assert status["total_record_count"] == submit_service.MAX_REVEAL_RECORDS
+    assert status["page_record_count"] == submit_service.MAX_REVEAL_RECORDS
+    assert status["page_index"] == 1
+    assert status["next_page_cursor"] is None
+    assert status["revealed_facts"] == []
+    assert status["transient_values_returned"] is False
+    assert "1000.01" not in json.dumps(status, sort_keys=True)
+
+    row = db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).one()
+    assert row.submit_basis_hash == first["submit_basis_hash"]
+    assert row.submit_summary_json["page_record_count"] == submit_service.MAX_REVEAL_RECORDS
+    assert "1000.01" not in json.dumps(row.submit_summary_json, sort_keys=True)
+
+
 def test_controlled_value_reveal_submit_rejects_tampered_page_cursor(db_session, monkeypatch) -> None:
     _enable_controlled_submit(monkeypatch)
     authority = _prepare_authority_receipt(db_session, monkeypatch, request_id="controlled-submit-cursor-tamper")
@@ -2549,6 +2793,182 @@ def test_controlled_value_reveal_submit_rejects_cross_authority_page_cursor(db_s
     assert exc.value.http_status == 400
     assert exc.value.code == "sec_xbrl_controlled_value_reveal_submit_page_cursor_authority_mismatch"
     assert db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == 1
+
+
+def test_controlled_value_reveal_submit_isolates_interleaved_multi_authority_pages(
+    db_session,
+    monkeypatch,
+) -> None:
+    _enable_controlled_submit(monkeypatch)
+    cases = _multi_authority_paginated_cases(
+        db_session,
+        monkeypatch,
+        authority_count=3,
+        records_per_authority=4,
+    )
+
+    first_pages = [
+        _submit_paginated_case_page(
+            db_session,
+            case,
+            client_request_id=f"controlled-submit-isolation-{index:02d}-page-1",
+            max_records=2,
+        )
+        for index, case in enumerate(cases)
+    ]
+    assert all(page["page_record_count"] == 2 for page in first_pages)
+    assert all(page["next_page_cursor"] for page in first_pages)
+
+    with pytest.raises(submit_service.SecXbrlControlledValueRevealSubmitError) as exc:
+        _submit_paginated_case_page(
+            db_session,
+            cases[1],
+            client_request_id="controlled-submit-isolation-cross-authority-cursor",
+            max_records=2,
+            page_cursor=first_pages[0]["next_page_cursor"],
+        )
+    assert exc.value.code == "sec_xbrl_controlled_value_reveal_submit_page_cursor_authority_mismatch"
+
+    second_pages = [
+        _submit_paginated_case_page(
+            db_session,
+            case,
+            client_request_id=f"controlled-submit-isolation-{index:02d}-page-2",
+            max_records=2,
+            page_cursor=first_pages[index]["next_page_cursor"],
+        )
+        for index, case in enumerate(cases)
+    ]
+    assert all(page["page_record_count"] == 2 for page in second_pages)
+    assert all(page["next_page_cursor"] is None for page in second_pages)
+
+    all_pages = first_pages + second_pages
+    assert len({page["sec_xbrl_controlled_value_reveal_submit_receipt_id"] for page in all_pages}) == len(all_pages)
+    assert len({page["submit_basis_hash"] for page in all_pages}) == len(all_pages)
+    assert db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == len(all_pages)
+
+    authority_rows = db_session.query(L3SecXbrlValueRevealAuthorityReceipt).all()
+    assert len(authority_rows) == len(cases)
+    assert len({row.sidecar_receipt_hash for row in authority_rows}) == len(cases)
+    assert len({row.value_store_hash for row in authority_rows}) == len(cases)
+
+    fact_hashes_by_authority: list[set[str]] = []
+    all_value_sets = [case["value_texts"] for case in cases]
+    for index, case in enumerate(cases):
+        pages = [first_pages[index], second_pages[index]]
+        revealed_values = {
+            record["effective_value"]
+            for page in pages
+            for record in page["revealed_facts"]
+        }
+        fact_hashes = {
+            record["fact_identity_hash"]
+            for page in pages
+            for record in page["revealed_facts"]
+        }
+        fact_hashes_by_authority.append(fact_hashes)
+        assert revealed_values == case["value_texts"]
+        other_values = set().union(*(values for pos, values in enumerate(all_value_sets) if pos != index))
+        assert not (revealed_values & other_values)
+        page_json = json.dumps(pages, sort_keys=True)
+        assert not any(value in page_json for value in other_values)
+        for page in pages:
+            status = submit_service.inspect_controlled_value_reveal_submit_status(
+                db_session,
+                sec_xbrl_controlled_value_reveal_submit_receipt_id=(
+                    page["sec_xbrl_controlled_value_reveal_submit_receipt_id"]
+                ),
+            )
+            status_json = json.dumps(status, sort_keys=True)
+            assert status["revealed_facts"] == []
+            assert status["transient_values_returned"] is False
+            assert not any(value in status_json for value in case["value_texts"])
+
+    for index, fact_hashes in enumerate(fact_hashes_by_authority):
+        other_fact_hashes = set().union(
+            *(hashes for pos, hashes in enumerate(fact_hashes_by_authority) if pos != index)
+        )
+        assert fact_hashes.isdisjoint(other_fact_hashes)
+
+
+def test_controlled_value_reveal_submit_scales_isolation_across_60_authorities(
+    db_session,
+    monkeypatch,
+) -> None:
+    _enable_controlled_submit(monkeypatch)
+    authority_count = 60
+    cases = _multi_authority_paginated_cases(
+        db_session,
+        monkeypatch,
+        authority_count=authority_count,
+        records_per_authority=3,
+    )
+
+    first_pages = [
+        _submit_paginated_case_page(
+            db_session,
+            case,
+            client_request_id=f"controlled-submit-scale-{index:02d}-page-1",
+            max_records=2,
+        )
+        for index, case in enumerate(cases)
+    ]
+    second_pages = [
+        _submit_paginated_case_page(
+            db_session,
+            case,
+            client_request_id=f"controlled-submit-scale-{index:02d}-page-2",
+            max_records=2,
+            page_cursor=first_pages[index]["next_page_cursor"],
+        )
+        for index, case in enumerate(cases)
+    ]
+
+    all_pages = first_pages + second_pages
+    assert len(all_pages) == authority_count * 2
+    assert len({page["sec_xbrl_controlled_value_reveal_submit_receipt_id"] for page in all_pages}) == len(all_pages)
+    assert len({page["submit_basis_hash"] for page in all_pages}) == len(all_pages)
+    assert db_session.query(L3SecXbrlControlledValueRevealSubmitReceipt).count() == len(all_pages)
+
+    authority_rows = db_session.query(L3SecXbrlValueRevealAuthorityReceipt).all()
+    assert len(authority_rows) == authority_count
+    assert len({row.sec_xbrl_value_reveal_authority_receipt_id for row in authority_rows}) == authority_count
+    assert len({row.sidecar_receipt_hash for row in authority_rows}) == authority_count
+    assert len({row.value_store_hash for row in authority_rows}) == authority_count
+
+    seen_fact_hashes: set[str] = set()
+    for index, case in enumerate(cases):
+        pages = [first_pages[index], second_pages[index]]
+        assert pages[0]["page_record_count"] == 2
+        assert pages[0]["next_page_cursor"]
+        assert pages[1]["page_record_count"] == 1
+        assert pages[1]["next_page_cursor"] is None
+        revealed_values = {
+            record["effective_value"]
+            for page in pages
+            for record in page["revealed_facts"]
+        }
+        fact_hashes = {
+            record["fact_identity_hash"]
+            for page in pages
+            for record in page["revealed_facts"]
+        }
+        assert revealed_values == case["value_texts"]
+        assert fact_hashes.isdisjoint(seen_fact_hashes)
+        seen_fact_hashes.update(fact_hashes)
+        for page in pages:
+            status = submit_service.inspect_controlled_value_reveal_submit_status(
+                db_session,
+                sec_xbrl_controlled_value_reveal_submit_receipt_id=(
+                    page["sec_xbrl_controlled_value_reveal_submit_receipt_id"]
+                ),
+            )
+            status_json = json.dumps(status, sort_keys=True)
+            assert status["revealed_facts"] == []
+            assert status["transient_values_returned"] is False
+            assert not any(value in status_json for value in case["value_texts"])
+
+    assert len(seen_fact_hashes) == authority_count * 3
 
 
 def test_controlled_value_reveal_submit_redacts_each_paginated_page(db_session, monkeypatch) -> None:
