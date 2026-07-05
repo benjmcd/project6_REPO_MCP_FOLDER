@@ -604,6 +604,11 @@ class Layer3SecEdgarRealCompanyCorpusValidationRequest(BaseModel):
     validation_mode: Literal["sec_edgar_real_company_corpus_validation_v1"]
     operator_decision: Literal["validate_sec_edgar_real_company_corpus_product_path"]
     company_matrix: list[str] | None = None
+    form_types: list[str] | None = None
+    filing_selection_policy: Literal[
+        "explicit_form_types_v1",
+        "real_company_recent_annual_and_interim_or_current_v1",
+    ] | None = None
     operator_confirmation: bool
     actor: str | None = None
 
