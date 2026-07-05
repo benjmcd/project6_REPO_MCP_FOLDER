@@ -545,18 +545,34 @@ def _seed_and_verify_sec_taxonomy_cache(cache_dir: Path, archives: list[dict[str
 
 def _extract_sec_archive_to_cache(archive_path: Path, cache_dir: Path, *, year: str) -> int:
     year = str(year)
-    archive_prefix = f"{year}/xbrl.sec.gov/"
     extracted = 0
     with ZipFile(archive_path) as zip_file:
         for name in zip_file.namelist():
-            if name.endswith("/") or not name.startswith(archive_prefix):
+            relative_path = _sec_archive_cache_relative_path(name, year=year)
+            if relative_path is None:
                 continue
-            relative = name.removeprefix(f"{year}/")
-            target = cache_dir / "https" / Path(*relative.split("/"))
+            target = cache_dir / "https" / relative_path
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(zip_file.read(name))
             extracted += 1
     return extracted
+
+
+def _sec_archive_cache_relative_path(name: str, *, year: str) -> Path | None:
+    bare_prefix = "xbrl.sec.gov/"
+    prefixed_prefix = f"{year}/{bare_prefix}"
+    if name.endswith("/"):
+        return None
+    if name.startswith(prefixed_prefix):
+        relative = name.removeprefix(f"{year}/")
+    elif name.startswith(bare_prefix):
+        relative = name
+    else:
+        return None
+    parts = relative.split("/")
+    if any(part in {"", ".", ".."} for part in parts):
+        return None
+    return Path(*parts)
 
 
 def _sec_entrypoint_urls(year: str) -> list[str]:
