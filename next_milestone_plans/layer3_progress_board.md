@@ -13545,7 +13545,7 @@ this tranche.
 
 Milestone: `m_corpus_record_truth_v1`.
 
-Record lane/PR: `corpus-record`, PR `pending`.
+Record lane/PR: `corpus-record`, PR `#2433`.
 
 Source frontier: current main
 `2d6fdbde0f82a836663f7e06923d1dd05cc48f3d` after PR `#2432`.

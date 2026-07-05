@@ -47251,7 +47251,7 @@
     "milestone": "m_corpus_record_truth_v1",
     "status": "owner_authorized_tier1_corpus_go_record_truth",
     "branch": "codex/corpus-record",
-    "pr": "pending",
+    "pr": "#2433",
     "progress_board_section": "M-CORPUS-RECORD-TRUTH",
     "source_frontier_refreshed_at": "2d6fdbde0f82a836663f7e06923d1dd05cc48f3d",
     "source_frontier_refreshed_at_source": "project6-origin/main after PR #2432 SEC inline transforms plugin",
