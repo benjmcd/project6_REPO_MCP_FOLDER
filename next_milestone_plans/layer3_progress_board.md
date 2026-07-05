@@ -13540,3 +13540,60 @@ change, redaction-posture change, production-readiness claim, worktree removal,
 raw value disclosure, local path disclosure beyond `C:/p6store`,
 issuer/accession/URL disclosure, or operator identity disclosure is admitted by
 this tranche.
+
+## M-CORPUS-RECORD-TRUTH
+
+Milestone: `m_corpus_record_truth_v1`.
+
+Record lane/PR: `corpus-record`, PR `pending`.
+
+Source frontier: current main
+`2d6fdbde0f82a836663f7e06923d1dd05cc48f3d` after PR `#2432`.
+
+Status: owner-authorized Tier-1 corpus-go record lane for the 2026-07-05
+operator run. This is docs/ledger metadata only and records sanitized
+hashes/counts/public tickers/forms/dates under the run-plan schema.
+
+Corpus-go operator run: COMPLETE for the domestic SEC inline scope. The run used
+the 30-ticker owner matrix plus the TSM supplemental, with per-ticker isolated
+two-pass handling: explicit 10-K/10-Q first, then discovery fallback. Results:
+39 supported filings and 21 supported issuers, exceeding the run-plan minimums
+of 30 filings and 15 issuers.
+
+Run-level gates: PASS for `every-ticker-dispositioned`,
+`zero-unnamed-failures`, `min-filings`, and `min-issuers`.
+
+Sanitized aggregate report: SHA-256
+`113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10` at durable
+root relative `corpus_run/CORPUS_GO_RUN_REPORT.json`.
+
+Supported scope: all major domestic 10-K+10-Q pairs are supported; CURLF and
+CRLBF 40-F filings are supported through US-GAAP inline handling.
+
+Named dispositions: `SONY`, `CCJ`, `DNN`, `NXE`, `MT`, and `TSM` foreign IFRS
+annuals were acquired and retained but blocked with
+`arelle_model_errors_present`, pending IFRS taxonomy provisioning. Forms `6-K`
+blocked as `no_inline_facts_pre_inline_era`, which is expected because the
+filings have no iXBRL by design. `KAP`, `PDN`, `YCA`, and `TSMC-as-written`
+blocked as `company_matrix_unknown` because those written inputs are not SEC
+tickers.
+
+Fix chain enabling this run: PR `#2427` hardening; PR `#2428`, `#2429`, and
+`#2430` taxonomy pins, bare cache layout handling, and 2026 pins; PR `#2431`
+explicit form selection; PR `#2432` SEC inline transforms plugin. Root cause:
+the `ixt-sec` registry was absent from Arelle core. The operator probe proved
+the root cause, the plugin fixed it, and the previously blocked filing was
+re-proven with `model_error_count=0`.
+
+Forward posture: P2 corpus is `EXECUTED` for the domestic SEC inline scope.
+`ifrs-taxonomy-pins` is the named follow-up pursuit for the blocked foreign IFRS
+annuals, with acceptance criteria recorded in
+`docs/program-context/03-forward-plan.md`.
+
+Runtime behavior introduced by this pass: `false`.
+
+No raw tickers-file import, runtime/flag/schema change, sandbox or p6store
+mutation, SEC egress by this record tranche, raw value disclosure, raw path
+disclosure, user-agent/identity disclosure, production-readiness claim, nonlocal
+admission claim, default-on expansion, or unsupported IFRS readiness claim is
+admitted by this tranche.

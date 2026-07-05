@@ -8,7 +8,9 @@ document — it specifies what authorization would require.
 
 ## Sequencing map (dependencies, not conventions)
 
-- P2 offline variant: unblocked now. P2 live variant: owner authorization only.
+- P2 domestic SEC inline corpus scope: EXECUTED by the owner-authorized
+  2026-07-05 corpus-go run. Foreign IFRS annuals remain a named
+  `ifrs-taxonomy-pins` follow-up.
 - P4: unblocked now (independent).
 - P5: depends on the human final-admission packet + P7b-settled semantics (settled: I10) +
   durable posture (done) + record truth (done). Corpus breadth (P2) strengthens but does not
@@ -16,33 +18,44 @@ document — it specifies what authorization would require.
 - P6: owner authorization only.
 - Horizon items sequence AFTER their prerequisites, never bundled.
 
-## P2 — Corpus / multi-filing broadening
+## P2 - Corpus / multi-filing broadening
 
-- Status: machinery exists end-to-end (`layer3_sec_edgar_real_company_corpus_validation.py`,
-  routes in `source_sec_edgar.py`); gated by BOTH
-  `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED` (default true) AND
-  `LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED` (default false). Current real-data
-  evidence = one filing; breadth is the main confidence gap before any
-  production conversation.
-- Residual delta: a bounded first corpus run — offline variant over already-retained /
-  inherited evidence first; live acquisition matrix second if authorized.
-- Pass criteria: corpus matrix predeclared before work (issuer/form scope); authority states
-  offline-import vs new-live per filing; explicit operator confirmation for any egress;
-  companyfacts oracle/quorum thresholds predeclared; per-filing receipts + ownership marker;
-  redaction guard blocks raw CIK/accession/URL/value/path in committed text; sanitized
-  report (counts/hashes/blockers per filing) is the only committed artifact; corpus flag
-  armed per-run only.
+- Status: EXECUTED for the domestic SEC inline scope. The owner-authorized
+  2026-07-05 corpus-go run used the 30-ticker owner matrix plus TSM
+  supplemental, isolated each ticker, tried explicit 10-K/10-Q first, and used
+  discovery fallback second. Results: 39 supported filings / 21 supported
+  issuers, exceeding the 30/15 run-plan minimums. All run-level gates passed:
+  every-ticker-dispositioned, zero-unnamed-failures, min-filings, and
+  min-issuers. Aggregate report SHA-256:
+  `113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10` at
+  durable-root relative `corpus_run/CORPUS_GO_RUN_REPORT.json`.
+- Supported domestic scope: all major domestic 10-K+10-Q pairs, plus CURLF and
+  CRLBF 40-F through US-GAAP inline handling.
+- Named residuals: foreign IFRS annuals for `SONY`, `CCJ`, `DNN`, `NXE`, `MT`,
+  and `TSM` were acquired and retained but blocked on
+  `arelle_model_errors_present`; `6-K` filings blocked on
+  `no_inline_facts_pre_inline_era`; `KAP`, `PDN`, `YCA`, and
+  `TSMC-as-written` blocked as `company_matrix_unknown`.
+- Residual delta: `ifrs-taxonomy-pins` only, scoped to the blocked foreign IFRS
+  annuals. Acceptance criteria: pinned `ifrs-YYYY` packages fetched and hashed
+  by operator action; year-aware admission extended to the IFRS taxonomy family;
+  the previously blocked foreign annuals rerun to supported-or-named-block.
+- Pass criteria for future IFRS follow-up: no raw values/paths/user-agent or
+  operator identity in committed text; public tickers/forms/dates only where
+  needed for named disposition; hash/count/disposition-only aggregate report;
+  explicit named block for any still-unsupported annual; corpus flag armed
+  per-run only.
 - Fail criteria: any egress without owner authorization; CI or automatic egress; raw
   evidence committed; corpus results represented as production coverage; inherited evidence
   represented as a current run.
 - SHOULD-NOT: combine with P3-class storage changes, P5 admission, or legacy reveal in one
-  lane; treat a focused matrix as broad product coverage.
-- Gates: OWNER — live matrix + egress authorization. Agent-executable: offline/report-only
-  variant now.
-- Size/risk: medium offline / large live. Tier-1 if validate-only diagnostics; Tier-2 if
+  lane; treat the executed domestic scope as production coverage or as IFRS readiness.
+- Gates: OWNER for any additional live acquisition. Agent-executable:
+  report-only/record-only lanes over already authorized retained evidence.
+- Size/risk: small-medium for IFRS taxonomy pins if report-only; Tier-2 only if
   runtime/persistence behavior changes.
-- Why this next (if product confidence is the goal): it is the only remaining item that
-  changes evidence BREADTH; everything else changes posture or record.
+- Why this changed state: the domestic breadth confidence gap is closed for the
+  SEC inline scope; the remaining breadth question is narrower and taxonomy-family-specific.
 
 ## P4 — Legacy Arelle reveal disposition
 

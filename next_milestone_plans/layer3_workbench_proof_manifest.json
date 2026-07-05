@@ -47245,5 +47245,162 @@
       "preserves Tier-1 docs-only scope and negative authority boundaries"
     ]
   },
-  "latest_m_program_context_proof_summary": "M-PROGRAM-CONTEXT proof (#2424) lands docs/program-context/ as the exhaustive SEC-XBRL program record from source frontier e661e05ad0a9b18fab5797c26ee68604f8c92669 after PR #2423, with MASTER_CONTEXT as executive summary. Verification re-derived PR/SHA ancestry, durable-root manifest/store/report hashes, RC3 58/58, nonlocal readiness 6/7, and the M-FWD3 historical worktree inventory hash, then corrected factual drift in the landed set. This proof is docs/ledger-only and admits no runtime, config, flag, SEC egress, sandbox, schema/model/migration, redaction-posture, production-readiness, raw-value, local-path beyond C:/p6store, issuer/accession/URL, operator-identity, or worktree-removal change."
+  "latest_m_program_context_proof_summary": "M-PROGRAM-CONTEXT proof (#2424) lands docs/program-context/ as the exhaustive SEC-XBRL program record from source frontier e661e05ad0a9b18fab5797c26ee68604f8c92669 after PR #2423, with MASTER_CONTEXT as executive summary. Verification re-derived PR/SHA ancestry, durable-root manifest/store/report hashes, RC3 58/58, nonlocal readiness 6/7, and the M-FWD3 historical worktree inventory hash, then corrected factual drift in the landed set. This proof is docs/ledger-only and admits no runtime, config, flag, SEC egress, sandbox, schema/model/migration, redaction-posture, production-readiness, raw-value, local-path beyond C:/p6store, issuer/accession/URL, operator-identity, or worktree-removal change.",
+  "m_corpus_record_truth_proof": {
+    "proof_kind": "m_corpus_record_truth_proof",
+    "milestone": "m_corpus_record_truth_v1",
+    "status": "owner_authorized_tier1_corpus_go_record_truth",
+    "branch": "codex/corpus-record",
+    "pr": "pending",
+    "progress_board_section": "M-CORPUS-RECORD-TRUTH",
+    "source_frontier_refreshed_at": "2d6fdbde0f82a836663f7e06923d1dd05cc48f3d",
+    "source_frontier_refreshed_at_source": "project6-origin/main after PR #2432 SEC inline transforms plugin",
+    "allowed_files": [
+      "docs/MASTER_CONTEXT.md",
+      "docs/program-context/01-arc-ledger.md",
+      "docs/program-context/03-forward-plan.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "proof_terms": [
+      "records the 2026-07-05 owner-authorized corpus-go run using sanitized hashes/counts/public tickers/forms/dates only",
+      "records 39 supported filings / 21 supported issuers and all four run-level gates PASS",
+      "records named dispositions for blocked IFRS annuals, 6-K pre-inline-era filings, and unknown matrix inputs",
+      "records fix chain PR #2427 through PR #2432 and the ixt-sec root-cause proof/re-proof",
+      "marks P2 domestic SEC inline corpus scope EXECUTED and creates ifrs-taxonomy-pins as the named follow-up",
+      "preserves runtime/config/flag/schema, sandbox/p6store, raw disclosure, production, nonlocal, and default-on boundaries"
+    ],
+    "operator_corpus_go_redacted_evidence": {
+      "operator_evidence_kind": "owner_authorized_corpus_go_run",
+      "run_date": "2026-07-05",
+      "sanitization": "hash_count_public_ticker_form_date_disposition_only_no_values_paths_user_agent_identity",
+      "matrix_scope": "30-ticker owner matrix plus TSM supplemental",
+      "per_ticker_execution": "isolated two-pass explicit 10-K/10-Q then discovery fallback",
+      "supported_filing_count": 39,
+      "supported_issuer_count": 21,
+      "run_plan_minimums": {
+        "filings": 30,
+        "issuers": 15
+      },
+      "run_level_gates": {
+        "every_ticker_dispositioned": "PASS",
+        "zero_unnamed_failures": "PASS",
+        "min_filings": "PASS",
+        "min_issuers": "PASS"
+      },
+      "aggregate_report_sha256": "113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10",
+      "aggregate_report_durable_root_relative_path": "corpus_run/CORPUS_GO_RUN_REPORT.json",
+      "supported_scope_note": "all major domestic 10-K+10-Q pairs plus CURLF/CRLBF 40-F via US-GAAP inline handling",
+      "named_dispositions": {
+        "foreign_ifrs_annuals_blocked_pending_ifrs_taxonomy_provisioning": {
+          "tickers": [
+            "SONY",
+            "CCJ",
+            "DNN",
+            "NXE",
+            "MT",
+            "TSM"
+          ],
+          "status": "acquired_retained_blocked",
+          "blocked_reason": "arelle_model_errors_present",
+          "follow_up_lane": "ifrs-taxonomy-pins"
+        },
+        "six_k_pre_inline_era": {
+          "forms": [
+            "6-K"
+          ],
+          "blocked_reason": "no_inline_facts_pre_inline_era",
+          "design_note": "no iXBRL by design"
+        },
+        "company_matrix_unknown": {
+          "inputs": [
+            "KAP",
+            "PDN",
+            "YCA",
+            "TSMC-as-written"
+          ],
+          "blocked_reason": "company_matrix_unknown",
+          "design_note": "not SEC tickers as written"
+        }
+      }
+    },
+    "fix_chain": {
+      "root_cause": "ixt-sec registry absent from Arelle core",
+      "operator_probe": "root cause proven before fix and re-proven with model_error_count 0 on the previously blocked filing after PR #2432",
+      "prs": [
+        {
+          "pr": "#2427",
+          "merge_commit": "99efa28d9ce165a446912b21d98b7fdb6621d7c0",
+          "title": "Harden SEC XBRL corpus admission gates",
+          "role": "hardening"
+        },
+        {
+          "pr": "#2428",
+          "merge_commit": "154b8a38b21a8ffa96792a248e38cb2ac8440105",
+          "title": "Add historical SEC taxonomy pins",
+          "role": "taxonomy pins"
+        },
+        {
+          "pr": "#2429",
+          "merge_commit": "4ad672f3f91be6f7f35a971d8854fcfb8ea27291",
+          "title": "Handle bare SEC taxonomy cache layout",
+          "role": "taxonomy cache layout"
+        },
+        {
+          "pr": "#2430",
+          "merge_commit": "2450272149f04e280788516af2e4679769ba61f8",
+          "title": "Add 2026 SEC taxonomy pins",
+          "role": "taxonomy pins 2026"
+        },
+        {
+          "pr": "#2431",
+          "merge_commit": "92b069b9bb3414160b4c72d3763dadcecff3ab07",
+          "title": "fix(sec-xbrl): admit explicit corpus form selection",
+          "role": "explicit forms"
+        },
+        {
+          "pr": "#2432",
+          "merge_commit": "2d6fdbde0f82a836663f7e06923d1dd05cc48f3d",
+          "title": "Load SEC inline transform plugin",
+          "role": "SEC inline transforms plugin"
+        }
+      ]
+    },
+    "forward_posture": {
+      "p2_domestic_sec_inline_scope": "EXECUTED",
+      "named_follow_up": "ifrs-taxonomy-pins",
+      "ifrs_follow_up_acceptance_criteria": [
+        "pinned ifrs-YYYY packages fetched and hashed by operator",
+        "year-aware admission extended to the IFRS taxonomy family",
+        "previously blocked foreign annuals rerun to supported-or-named-block"
+      ]
+    },
+    "verification": [
+      "python -m json.tool next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "python ./tools/l3-progress-check.py",
+      "git diff --check",
+      "relative-link check on changed Markdown files"
+    ],
+    "negative_authority_flags": {
+      "runtime_behavior_change_by_record_tranche": false,
+      "config_default_change": false,
+      "flag_default_change": false,
+      "schema_model_migration_change": false,
+      "sandbox_mutation": false,
+      "p6store_mutation": false,
+      "raw_tickers_file_import": false,
+      "raw_value_disclosure": false,
+      "raw_path_disclosure": false,
+      "user_agent_disclosure": false,
+      "operator_identity_disclosure": false,
+      "production_readiness_claim": false,
+      "nonlocal_admission_claim": false,
+      "default_on_expansion": false,
+      "unsupported_ifrs_readiness_claim": false
+    },
+    "next_posture": "p2_domestic_corpus_executed_ifrs_taxonomy_pins_named_follow_up"
+  },
+  "latest_m_corpus_record_truth_proof_summary": "M-CORPUS-RECORD-TRUTH proof records the owner-authorized 2026-07-05 corpus-go run from source frontier 2d6fdbde0f82a836663f7e06923d1dd05cc48f3d after PR #2432: 30-ticker owner matrix plus TSM supplemental, per-ticker isolated explicit 10-K/10-Q then discovery fallback, 39 supported filings / 21 supported issuers, 30/15 minimums exceeded, and all four run-level gates PASS. The aggregate report is recorded only as SHA-256 113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10 at durable-root relative corpus_run/CORPUS_GO_RUN_REPORT.json. Supported scope includes all major domestic 10-K+10-Q pairs plus CURLF/CRLBF 40-F via US-GAAP inline handling; named residuals are IFRS annuals pending ifrs-taxonomy-pins, 6-K pre-inline-era/no-iXBRL, and company-matrix unknown inputs. The enabling fix chain is PR #2427 through #2432, with ixt-sec registry absence fixed and re-proven by model_error_count 0. This record admits no runtime/config/flag/schema change, sandbox or p6store mutation, raw values/paths/user-agent/identity, production-readiness, nonlocal admission, or default-on expansion."
 }

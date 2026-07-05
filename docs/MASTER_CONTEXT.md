@@ -7,11 +7,47 @@
 > addendum uses current-main source frontier `6a28d0a481e046e613ce1d7ef7932eb633ef2002`
 > for PR #2415, record-status reconciliation ref
 > `7fa72e745c7a2d6b72be37971e0e8768780dc5d5` for PR #2419, and
-> latest O6 main-tip ref `f566ddb14f62cd717f697f1d13b533ff434785ed` for PR #2421.
+> latest O6 main-tip ref `f566ddb14f62cd717f697f1d13b533ff434785ed` for PR #2421,
+> plus corpus-go source frontier `2d6fdbde0f82a836663f7e06923d1dd05cc48f3d`
+> for PR #2432.
 
 ---
 
 2026-07-04 pointer: `docs/program-context/` is the exhaustive SEC-XBRL program record; this file remains the executive summary under that set's INDEX authority order.
+
+## 2026-07-05 Addendum - Corpus-Go Domestic Breadth Record
+
+This addendum records the owner-authorized 2026-07-05 corpus-go operator run as
+sanitized metadata only. The run used the 30-ticker owner matrix plus the TSM
+supplemental, isolated each ticker, tried explicit 10-K/10-Q first, and used
+discovery fallback second. It produced 39 supported filings across 21 supported
+issuers, exceeding the run-plan minimums of 30 filings and 15 issuers. The four
+run-level gates all passed: every ticker dispositioned, zero unnamed failures,
+minimum filings, and minimum issuers.
+
+The committed aggregate report reference is hash/path only: SHA-256
+`113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10` at durable
+root relative `corpus_run/CORPUS_GO_RUN_REPORT.json`. Supported issuers include
+all major domestic 10-K+10-Q pairs plus CURLF/CRLBF 40-F through US-GAAP inline
+handling.
+
+Named blocked dispositions stay explicit: `SONY`, `CCJ`, `DNN`, `NXE`, `MT`,
+and `TSM` foreign IFRS annuals were acquired and retained but blocked on
+`arelle_model_errors_present` pending IFRS taxonomy provisioning; `6-K` filings
+blocked on `no_inline_facts_pre_inline_era`; and `KAP`, `PDN`, `YCA`, and
+`TSMC-as-written` blocked as `company_matrix_unknown`.
+
+The enabling fix chain is current-main PR #2427 through #2432: admission gate
+hardening, historical taxonomy pins, bare SEC taxonomy cache layout handling,
+2026 taxonomy pins, explicit form selection, and the SEC inline transforms
+plugin. The root cause was the absent `ixt-sec` registry in Arelle core; the
+operator probe proved it, and the post-fix probe re-proved the previously
+blocked filing with `model_error_count=0`.
+
+P2 corpus is now executed for the domestic SEC inline scope. The remaining named
+follow-up is `ifrs-taxonomy-pins`: fetch and hash pinned `ifrs-YYYY` packages
+by operator action, extend year-aware admission to the IFRS family, and rerun
+the blocked foreign annuals to supported-or-named-block.
 
 ## 2026-07-01 Addendum - Post-PR #2409 State
 
