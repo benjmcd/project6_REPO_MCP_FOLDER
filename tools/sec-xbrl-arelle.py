@@ -15,6 +15,10 @@ SCHEMA_ID = "tools.sec_xbrl_arelle_extract.v1"
 ARELLE_PACKAGE = "arelle-release"
 ARELLE_VERSION = "2.41.3"
 MIN_MAX_FACTS = 100_000
+MODEL_ERROR_CODE_LIMIT = 20
+MODEL_ERROR_CODE_MAX_LENGTH = 80
+SEC_TRANSFORM_NAMESPACE = "http://www.sec.gov/inlineXBRL/transformation/2015-08-31"
+SEC_TRANSFORM_PLUGIN_PATH = Path(__file__).resolve().parent / "arelle_sec_transforms"
 
 
 def main() -> int:
@@ -39,6 +43,7 @@ def main() -> int:
     try:
         from arelle import Cntlr  # type: ignore
         from arelle import PackageManager  # type: ignore
+        from arelle import PluginManager  # type: ignore
     except Exception as exc:
         _emit_error("arelle_import_failed", error_class=exc.__class__.__name__)
         return 2
@@ -48,6 +53,12 @@ def main() -> int:
     if args.cache_dir:
         cntlr.webCache.cacheDir = str(Path(args.cache_dir).resolve())
     cntlr.webCache.workOffline = args.internet_connectivity == "offline"
+    try:
+        _load_sec_transform_plugin(cntlr, PluginManager)
+    except Exception as exc:
+        _emit_error("sec_transform_plugin_load_failed", error_class=exc.__class__.__name__)
+        cntlr.close()
+        return 2
     ixds_surrogate = ""
     ixds_doc_separator = ""
     if len(entries) > 1:
@@ -55,7 +66,6 @@ def main() -> int:
         # referenced by facts in another. Load multi-document filings as one
         # IXDS model so those cross-document references resolve.
         try:
-            from arelle import PluginManager  # type: ignore
             from arelle.UrlUtil import IXDS_DOC_SEPARATOR, IXDS_SURROGATE  # type: ignore
 
             PluginManager.addPluginModule("inlineXbrlDocumentSet")
@@ -113,7 +123,11 @@ def main() -> int:
         loaded_basenames = {Path(str(uri)).name for uri in loaded_url_docs}
         entry_documents_loaded = sum(1 for entry in entries if entry.name in loaded_basenames)
         model_error_count = len(list(getattr(model, "errors", []) or []))
-        diagnostics = _diagnostics(model_error_count=model_error_count, facts=facts)
+        diagnostics = _diagnostics(
+            model_error_count=model_error_count,
+            model_error_codes=_model_error_codes(model),
+            facts=facts,
+        )
         print(
             json.dumps(
                 {
@@ -182,6 +196,37 @@ def _load_packages(cntlr: Any, package_manager: Any, package_paths: list[str]) -
         raise RuntimeError("taxonomy_package_valid_package_missing")
     package_manager.rebuildRemappings(cntlr)
     return {"loaded_hashes": package_hashes, "invalid_hashes": invalid_hashes}
+
+
+def _load_sec_transform_plugin(
+    cntlr: Any,
+    plugin_manager: Any,
+    *,
+    plugin_path: Path = SEC_TRANSFORM_PLUGIN_PATH,
+) -> None:
+    resolved_plugin_path = plugin_path.resolve()
+    if not resolved_plugin_path.is_dir() or not (resolved_plugin_path / "__init__.py").is_file():
+        raise RuntimeError("sec_transform_plugin_load_failed")
+    plugin_manager.init(cntlr, loadPluginConfig=False)
+    plugin_info = plugin_manager.addPluginModule(str(resolved_plugin_path))
+    if not isinstance(plugin_info, dict):
+        raise RuntimeError("sec_transform_plugin_load_failed")
+    class_methods = set(plugin_info.get("classMethods") or [])
+    if "ModelManager.LoadCustomTransforms" not in class_methods:
+        raise RuntimeError("sec_transform_plugin_load_failed")
+    cntlr.modelManager.loadCustomTransforms()
+    if not _has_sec_transform_registration(getattr(cntlr.modelManager, "customTransforms", {}) or {}):
+        raise RuntimeError("sec_transform_plugin_load_failed")
+
+
+def _has_sec_transform_registration(custom_transforms: Any) -> bool:
+    keys = custom_transforms.keys() if hasattr(custom_transforms, "keys") else []
+    for transform_qname in keys:
+        namespace = str(getattr(transform_qname, "namespaceURI", "") or "")
+        local_name = str(getattr(transform_qname, "localName", "") or "")
+        if namespace == SEC_TRANSFORM_NAMESPACE and local_name:
+            return True
+    return False
 
 
 def _fact_payload(
@@ -309,9 +354,37 @@ def _dimensions_payload(context: Any) -> dict[str, Any]:
     return {"explicit": explicit, "typed": typed, "resolved": context is not None}
 
 
-def _diagnostics(*, model_error_count: int, facts: list[dict[str, Any]]) -> dict[str, Any]:
+def _model_error_codes(model: Any) -> list[str]:
+    return _bounded_model_error_codes(list(getattr(model, "errors", []) or []))
+
+
+def _bounded_model_error_codes(model_error_codes: list[Any] | tuple[Any, ...]) -> list[str]:
+    codes: list[str] = []
+    seen: set[str] = set()
+    for raw_code in model_error_codes:
+        code = str(raw_code or "").strip()
+        if not code or len(code) > MODEL_ERROR_CODE_MAX_LENGTH or any(char.isspace() for char in code):
+            continue
+        if code in seen:
+            continue
+        seen.add(code)
+        codes.append(code)
+        if len(codes) >= MODEL_ERROR_CODE_LIMIT:
+            break
+    return codes
+
+
+def _diagnostics(
+    *,
+    model_error_count: int,
+    facts: list[dict[str, Any]],
+    model_error_codes: list[Any] | tuple[Any, ...] | None = None,
+) -> dict[str, Any]:
+    bounded_model_error_codes = _bounded_model_error_codes(model_error_codes or [])
     return {
         "model_error_count": model_error_count,
+        "model_error_codes": bounded_model_error_codes,
+        "model_error_code_count": len(bounded_model_error_codes),
         "concept_resolved_from_dts_count": sum(1 for fact in facts if fact["concept"]["resolved_from_dts"]),
         "concept_dts_unresolved_count": sum(1 for fact in facts if not fact["concept"]["resolved_from_dts"]),
         "period_unresolved_count": sum(1 for fact in facts if not fact["period"]["resolved"]),
