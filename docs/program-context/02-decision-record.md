@@ -156,7 +156,7 @@ evidence → revisit-when. Dates 2026.
 ## 2026-07-05 Corpus-Go Decision Addendum (M-PROGRAM-CONTEXT-2)
 
 This section appends D12-D18 for the corpus-go arc. M-PROGRAM-CONTEXT-2
-verified PR/SHA pairs, code anchors, the durable `C:/p6store/corpus_run`
+verified PR/SHA pairs, code anchors, durable-root files under `C:/p6store`,
 report hashes, and the #2433 count surface before appending.
 
 Corrections applied to the source addendum:
@@ -217,15 +217,16 @@ Corrections applied to the source addendum:
   CURLF/CRLBF supported 40-F filings. SONY/CCJ/DNN/NXE/MT/TSM annuals remain
   retained but blocked as the IFRS follow-up group.
 - Revisit when: an owner mandate wants per-form-family targeting, such as all
-  10-Qs of a fiscal year; explicit passthrough now supports that directly.
+  10-Qs of a fiscal year. Explicit passthrough supports form-family selection;
+  fiscal-year filters and all-matches selection remain future selection work.
 
 ## D14. Vendored SEC inline-transforms plugin over Arelle upgrade or reimplementation (07-05)
 
-- Context: the pilot produced a uniform 8-model-error block. The operator probe
-  chain provisioned and refuted the 2026-taxonomy hypothesis, then isolated the
-  errors to `ix11.11.1.2:invalidTransformation` on the SEC transformation
-  registry namespace for cover-page dei facts. The registry was absent from the
-  pinned Arelle 2.41.3 core and from a fresh latest-version probe.
+- Context: payload-authored operator context reported a uniform 8-model-error
+  pilot block, a refuted 2026-taxonomy hypothesis, and isolation of the errors
+  to `ix11.11.1.2:invalidTransformation` on the SEC transformation registry
+  namespace for cover-page dei facts. The committed fix lane then vendored the
+  SEC transform plugin and loaded it through the helper.
 - Alternatives: (a) upgrade Arelle; (b) whitelist that error class in the H3
   blocker; (c) reimplement the transforms from spec; (d) vendor the canonical
   Arelle/EDGAR implementation as an in-repo plugin loaded by the helper.

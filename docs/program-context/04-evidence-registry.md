@@ -105,8 +105,17 @@ Operator coordination reports are supplementary evidence, not committed anchors.
 ## Corpus-Go Arc Evidence Registry Extension (M-PROGRAM-CONTEXT-2, 2026-07-05)
 
 M-PROGRAM-CONTEXT-2 verified this extension against live GitHub PR state, live
-`project6-origin/main`, committed code paths, the read-only
-`C:/p6store/corpus_run` durable root, and the #2433 count surface.
+`project6-origin/main`, committed code paths, the read-only canonical durable
+root `C:/p6store`, and the #2433 count surface.
+
+Supersession boundary: for the aggregate report hash and the supported-scope
+distribution, this dated extension is the current evidence authority over older
+corpus evidence summaries in `docs/MASTER_CONTEXT.md`,
+`docs/program-context/01-arc-ledger.md`, `docs/program-context/03-forward-plan.md`,
+the Layer 3 progress board, and the Layer 3 progress/proof manifests. Those
+older surfaces remain historical until a broader alignment lane is explicitly
+authorized; do not use their stale hash or "all major domestic 10-K+10-Q pairs"
+wording as current evidence.
 
 ## Merged PR / SHA Table Extension
 
@@ -126,23 +135,21 @@ M-PROGRAM-CONTEXT-2 verified this extension against live GitHub PR state, live
 
 | Artifact | Anchor | Meaning |
 |---|---|---|
-| Aggregate run report | sha256 `52385f07a1a4dc29871708602bacadb159da44499bb950fd887665abd3879e91` at `C:/p6store/corpus_run/CORPUS_GO_RUN_REPORT.json` | Per-ticker outcomes, run gates, and notes. The source payload hash `113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10` is stale for the file currently present at this path. |
+| Aggregate run report | sha256 `52385f07a1a4dc29871708602bacadb159da44499bb950fd887665abd3879e91` at durable-root relative `corpus_run/CORPUS_GO_RUN_REPORT.json` under canonical root `C:/p6store` | Per-ticker outcomes, run gates, and notes. The source payload hash `113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10` is stale for the file currently present at this path. |
 | Supported filings | `39` | Verified from `supported_filing_count`. |
 | Supported issuers | `21` | Verified from `supported_issuer_count`. Distribution: 18 full domestic 10-K/10-Q pairs, MSFT supported 10-Q with named 10-K block, plus CURLF/CRLBF supported 40-F filings. |
 | Run gates | 4/4 PASS | `every_ticker_dispositioned`, `zero_unnamed_failures`, `min_30_supported_filings`, and `min_15_supported_issuers` are all `true`. |
 | Named blocks | IFRS annuals x6; 6-K no-inline slots; unknown/alias rows x4; MSFT 10-K named model-error block | All named by ticker/form/reason in the aggregate report; no unnamed failure was found. |
-| Per-chunk/ticker summaries | 37 JSON summaries under `C:/p6store/corpus_run` | One per attempt/supplement family, preserving fresh-id discipline. |
-| Preserved chunk DBs | 35 DB files under `C:/p6store/corpus_run/db` | Verifies the storage supplement's DB preservation count. |
-| Storage/integrity supplement | sha256 `bce4d7800db4742577fcfe1214618ab7730057e46a4e6bd374b7d8848f6eb1e3` at `C:/p6store/corpus_run/STORAGE_INTEGRITY_SUPPLEMENT.json` | H6 PASS; 1,660 artifacts; 1,822,365,176 bytes; 861,740,326,912 free bytes; `validate_only=true`; `mutation_performed=false`. The source payload hash `22cda8340cef3ae68cd08d1a09748e384feefc8a82700ddfb4b8304294be0141` is stale for the file currently present at this path. |
-| Gate correction | v1 gates = 4/4 of a 5-gate plan | The run-plan's storage-preflight gate was omitted from the v1 set and is satisfied by the storage/integrity supplement; all five plan gates now have evidence. |
+| Per-chunk/ticker summaries | 37 JSON summaries at durable-root relative `corpus_run/*.json` | One per attempt/supplement family, preserving fresh-id discipline. |
+| Preserved chunk DBs | 35 DB files at durable-root relative `corpus_run/db` | Verifies the storage supplement's DB preservation count. |
+| Storage/integrity supplement | sha256 `bce4d7800db4742577fcfe1214618ab7730057e46a4e6bd374b7d8848f6eb1e3` at durable-root relative `corpus_run/STORAGE_INTEGRITY_SUPPLEMENT.json` under canonical root `C:/p6store` | H6 PASS; 1,660 artifacts; 1,822,365,176 bytes; 861,740,326,912 free bytes; `validate_only=true`; `mutation_performed=false`. The source payload hash `22cda8340cef3ae68cd08d1a09748e384feefc8a82700ddfb4b8304294be0141` is stale for the file currently present at this path. |
+| Supplemental storage evidence | The owner-handoff completion gates remain the four #2433 run-level gates | The storage/integrity supplement provides additional storage-preflight evidence for the historical run-plan checklist; it is not a fifth completion gate for the completed corpus record. |
 
-## Root-Cause Probe Evidence (Transforms Diagnosis)
+## Root-Cause Probe Context and Committed Anchors
 
 | Step | Anchor |
 |---|---|
-| Pilot uniform block | Payload-authored operator evidence: 8 filings with `arelle_model_errors_present` and `model_error_count=8` per filing. |
-| Hypothesis refuted | Payload-authored operator evidence: 2026 provisioning did not change the 8-error count. |
-| Error class isolated | Payload-authored operator evidence: direct Arelle-API probe isolated `ix11.11.1.2:invalidTransformation` for the SEC transformation registry namespace. |
+| Pilot/probe facts | Payload-authored operator context only in this lane; not admitted here as registry evidence because no durable probe report hash or committed artifact path was located. |
 | Canonical source | `tools/arelle_sec_transforms/PINNING.md` and `tools/arelle_sec_transforms/` exist on live main; `text2num.py` is present with its MIT helper provenance. |
 | Helper load and diagnostics | `tools/sec-xbrl-arelle.py` loads `tools/arelle_sec_transforms`; `backend/tests/test_sec_xbrl_arelle_helper.py` covers plugin load failure and model-error-code redaction. |
 | Fix re-proven | The #2433/#2432 record carries the operator re-probe claim that the previously blocked filing reached `model_error_count=0`; code/test anchors for the fix are present on live main. |
