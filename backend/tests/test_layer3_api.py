@@ -4575,6 +4575,9 @@ def _ready_arelle_sidecar_runner(*_args, **_kwargs) -> subprocess.CompletedProce
         "taxonomy_network_resolution_enabled": False,
         "document_set": {"input_document_count": 1, "fact_bearing_document_count": 1},
         "diagnostics": {
+            "model_error_count": 0,
+            "concept_resolved_from_dts_count": 2,
+            "concept_dts_unresolved_count": 0,
             "period_unresolved_with_context_ref_count": 0,
             "unit_unresolved_with_unit_ref_count": 0,
         },
@@ -4682,6 +4685,9 @@ def _standard_numeric_arelle_sidecar_runner(*_args, **_kwargs) -> subprocess.Com
         "taxonomy_network_resolution_enabled": False,
         "document_set": {"input_document_count": 1, "fact_bearing_document_count": 1},
         "diagnostics": {
+            "model_error_count": 0,
+            "concept_resolved_from_dts_count": 1,
+            "concept_dts_unresolved_count": 0,
             "period_unresolved_with_context_ref_count": 0,
             "unit_unresolved_with_unit_ref_count": 0,
         },
@@ -4738,6 +4744,7 @@ def _identity_redaction_arelle_sidecar_runner(*_args, **_kwargs) -> subprocess.C
     payload = json.loads(_standard_numeric_arelle_sidecar_runner().stdout)
     identity_value = " ".join(("identity", "value", "sentinel"))
     payload["fact_count"] = 2
+    payload["diagnostics"]["concept_resolved_from_dts_count"] = 2
     payload["facts"].append(
         {
             "source_order": 2,
@@ -4798,7 +4805,7 @@ def _prepare_sec_edgar_arelle_sidecar_authority(
 ) -> dict[str, object]:
     parser = prepared["parser"]
     fact_authority = prepared["fact_authority"]
-    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_package_files", lambda: [Path(__file__)])
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_package_files", lambda: [tmp_path / "us-gaap-2025.zip"])
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_cache_dir", lambda: tmp_path / "arelle-cache")
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_arelle_python", lambda: sys.executable)
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", runner or _ready_arelle_sidecar_runner)
@@ -4833,13 +4840,13 @@ def _prepare_sec_edgar_arelle_sidecar_authority(
             "operator_confirmation": True,
         }
     )
-    assert response["sidecar_state"] == "sec_edgar_arelle_resolved_fact_authority_sidecar_ready"
+    assert response["sidecar_state"] == "sec_edgar_arelle_resolved_fact_authority_sidecar_ready", response
     assert response["resolved_fact_count"] == expected_resolved_fact_count
     return response
 
 
 def _enable_sec_edgar_arelle_sidecar_for_corpus_validation(tmp_path, monkeypatch) -> None:
-    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_package_files", lambda: [Path(__file__)])
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_package_files", lambda: [tmp_path / "us-gaap-2025.zip"])
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_cache_dir", lambda: tmp_path / "arelle-cache")
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_arelle_python", lambda: sys.executable)
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", _ready_arelle_sidecar_runner)

@@ -172,6 +172,9 @@ _SEC_XBRL_WRAPPER_RE = re.compile(r"^\s*<XBRL>\s*(?P<text>.*?)(?:\s*</XBRL>\s*)?
 _XMLNS_RE = re.compile(r"xmlns:([A-Za-z_][\w.-]*)\s*=\s*['\"]([^'\"]+)['\"]", re.IGNORECASE)
 _INLINE_XBRL_NAMESPACES = frozenset({"http://www.xbrl.org/2013/inlineXBRL", "http://www.xbrl.org/2008/inlineXBRL"})
 _SAFE_ARELLE_ERROR_RE = re.compile(r"^[A-Za-z0-9_.-]{1,96}$")
+_SCHEMA_REF_RE = re.compile(r"<\s*[^>\s:]*:?schemaRef\b(?P<attrs>[^>]*)>", re.IGNORECASE | re.DOTALL)
+_SCHEMA_REF_HREF_RE = re.compile(r"(?:xlink:)?href\s*=\s*['\"](?P<href>[^'\"]+)['\"]", re.IGNORECASE)
+_TAXONOMY_YEAR_RE = re.compile(r"(?<!\d)(20\d{2})(?!\d)")
 
 
 def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str, Any]) -> dict[str, Any]:
@@ -221,6 +224,20 @@ def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str,
     regex_fact = _optional_regex_fact_authority(request)
     submission_documents = _submission_documents(content, primary_document_hash=expected_hashes["primary_document_hash"])
     independent_inline_facts = _independent_inline_fact_tally(submission_documents)
+    independent_count = int(independent_inline_facts.get("inline_fact_count") or 0)
+    if independent_count <= 0:
+        return _blocked_response(
+            request_id=request_id,
+            parser_receipt_hash=parser_receipt_hash,
+            reasons=[
+                _reason(
+                    "no_inline_facts_pre_inline_era",
+                    independent_inline_fact_count=independent_count,
+                    independent_inline_fact_scanned_document_count=int(independent_inline_facts.get("scanned_document_count") or 0),
+                    independent_inline_fact_tally_hash=stable_hash(independent_inline_facts.get("document_tally") or []),
+                )
+            ],
+        )
     arelle = _run_arelle(primary_document=primary_document, max_facts=max_facts, submission_documents=submission_documents)
     if arelle.get("status") != "ready":
         return _blocked_response(
@@ -228,7 +245,6 @@ def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str,
             parser_receipt_hash=parser_receipt_hash,
             reasons=list(arelle.get("reasons") or [_reason("arelle_unavailable")]),
         )
-    independent_count = int(independent_inline_facts.get("inline_fact_count") or 0)
     arelle_count = int(arelle.get("fact_count") or 0)
     if independent_count > arelle_count:
         return _blocked_response(
@@ -464,6 +480,22 @@ def _run_arelle(*, primary_document: str, max_facts: int, submission_documents: 
     cache_dir = _taxonomy_cache_dir()
     if cache_dir is None:
         return {"status": "blocked", "reasons": [_reason("taxonomy_cache_unavailable")]}
+    detected_years = _submission_taxonomy_years(primary_document=primary_document, submission_documents=submission_documents)
+    if detected_years:
+        provisioned_years = _taxonomy_package_years(taxonomy_packages)
+        unprovisioned_years = sorted(detected_years - provisioned_years)
+        if unprovisioned_years:
+            return {
+                "status": "blocked",
+                "reasons": [
+                    _reason(
+                        "taxonomy_year_unprovisioned",
+                        detected_taxonomy_years=sorted(detected_years),
+                        provisioned_taxonomy_years=sorted(provisioned_years),
+                        unprovisioned_taxonomy_years=unprovisioned_years,
+                    )
+                ],
+            }
     with tempfile.TemporaryDirectory(prefix="sec-xbrl-sidecar-") as temp_dir_name:
         temp_dir = Path(temp_dir_name)
         entry, inline_entries = _write_submission_documents(
@@ -553,22 +585,55 @@ def _semantic_resolution_blockers(payload: Mapping[str, Any]) -> list[dict[str, 
         return [_reason("arelle_semantic_resolution_diagnostics_missing")]
     checks = [
         (
+            "model_error_count",
+            "arelle_model_errors_present",
+            "model_error_count",
+        ),
+        (
+            "concept_dts_unresolved_count",
+            "arelle_concept_dts_unresolved",
+            "unresolved_count",
+        ),
+        (
             "period_unresolved_with_context_ref_count",
             "arelle_context_period_unresolved",
+            "unresolved_count",
         ),
         (
             "unit_unresolved_with_unit_ref_count",
             "arelle_unit_ref_unresolved",
+            "unresolved_count",
         ),
     ]
     reasons: list[dict[str, Any]] = []
-    for field, reason in checks:
+    for field, reason, detail_key in checks:
         count = diagnostics.get(field)
         if not isinstance(count, int):
             reasons.append(_reason("arelle_semantic_resolution_diagnostics_missing", missing_field=field))
         elif count > 0:
-            reasons.append(_reason(reason, unresolved_count=count))
+            reasons.append(_reason(reason, **{detail_key: count}))
     return reasons
+
+
+def _submission_taxonomy_years(*, primary_document: str, submission_documents: list[dict[str, str]]) -> set[str]:
+    years: set[str] = set()
+    texts = [str(document.get("text") or "") for document in submission_documents]
+    if primary_document:
+        texts.append(str(primary_document))
+    for text in texts:
+        for match in _SCHEMA_REF_RE.finditer(text):
+            attrs = match.group("attrs") or ""
+            href_match = _SCHEMA_REF_HREF_RE.search(attrs)
+            target = href_match.group("href") if href_match else attrs
+            years.update(_TAXONOMY_YEAR_RE.findall(target))
+    return years
+
+
+def _taxonomy_package_years(taxonomy_packages: list[Path] | tuple[Path, ...]) -> set[str]:
+    years: set[str] = set()
+    for package in taxonomy_packages:
+        years.update(_TAXONOMY_YEAR_RE.findall(Path(str(package)).name))
+    return years
 
 
 def _write_submission_documents(
@@ -608,7 +673,7 @@ def _write_submission_documents(
 
 
 def _submission_documents(content: bytes, *, primary_document_hash: str) -> list[dict[str, str]]:
-    text = content.decode("utf-8", errors="ignore")
+    text, _encoding = _decode_submission_content(content)
     documents: list[dict[str, str]] = []
     for match in _DOCUMENT_RE.finditer(text):
         metadata, doc_text = _document_metadata(match.group("body"))
@@ -622,6 +687,22 @@ def _submission_documents(content: bytes, *, primary_document_hash: str) -> list
             }
         )
     return documents
+
+
+def _decode_submission_content(content: bytes) -> tuple[str, str]:
+    try:
+        return content.decode("utf-8-sig"), "utf-8-sig"
+    except UnicodeDecodeError:
+        try:
+            return content.decode("cp1252"), "cp1252"
+        except UnicodeDecodeError as exc:
+            _blocked(
+                "sec_edgar_arelle_sidecar_submission_decode_failed",
+                "SEC EDGAR Arelle sidecar retained artifact could not be decoded as supported filing text.",
+                http_status=409,
+                blocked_fields=[exc.__class__.__name__],
+            )
+    return "", ""
 
 
 def _document_matches_primary(*, filename: str, text: str, primary_document_hash: str) -> bool:

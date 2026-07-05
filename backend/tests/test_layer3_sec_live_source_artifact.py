@@ -230,7 +230,7 @@ def test_acquire_timeout_result_retries_then_fails_closed(monkeypatch) -> None:
 def test_acquire_rejects_max_bytes_above_source_artifact_ceiling_before_transport(monkeypatch) -> None:
     fake_client = _FakeSecEdgarClient([_success_result()])
     monkeypatch.setattr(svc, "SEC_EDGAR_CLIENT", fake_client)
-    monkeypatch.setattr(settings, "layer3_sec_edgar_max_bytes", 25_000_001)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_max_bytes", 200_000_001)
     monkeypatch.setattr(svc, "_enforce_rate_limit", lambda: None)
 
     with pytest.raises(Layer3WorkbenchError) as exc_info:

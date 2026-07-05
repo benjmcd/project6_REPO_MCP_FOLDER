@@ -517,6 +517,88 @@ def test_sec_xbrl_sidecar_fails_closed_on_unresolved_arelle_semantic_references(
     assert reasons == {"arelle_context_period_unresolved", "arelle_unit_ref_unresolved"}
 
 
+def test_sec_xbrl_sidecar_blocks_model_errors_from_arelle_payload(monkeypatch, tmp_path):
+    _install_receipt_fakes(monkeypatch, tmp_path, _model_error_arelle_runner)
+
+    response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+        _request(companyfacts_count=1)
+    )
+
+    assert response["status"] == "blocked"
+    assert response["status_projection"]["blocked_reasons"][0]["reason"] == "arelle_model_errors_present"
+
+
+def test_sec_xbrl_sidecar_blocks_unresolved_concepts_but_allows_resolved_extensions(monkeypatch, tmp_path):
+    _install_receipt_fakes(monkeypatch, tmp_path, _concept_unresolved_arelle_runner)
+
+    response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+        _request(companyfacts_count=1)
+    )
+
+    assert response["status"] == "blocked"
+    assert response["status_projection"]["blocked_reasons"][0]["reason"] == "arelle_concept_dts_unresolved"
+
+    _install_receipt_fakes(monkeypatch, tmp_path, _ready_arelle_runner)
+    ready = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+        {**_request(companyfacts_count=1), "client_request_id": "sidecar-extension-ready"}
+    )
+    assert ready["status"] == "ready"
+    assert ready["diagnostics"]["resolved_structural_semantics"]["extension_concept_count"] == 1
+
+
+@pytest.mark.parametrize("taxonomy_year", ["2024", "2026"])
+def test_sec_xbrl_sidecar_blocks_unprovisioned_taxonomy_year_before_arelle(monkeypatch, tmp_path, taxonomy_year):
+    def unexpected_runner(*_args, **_kwargs):
+        raise AssertionError("unprovisioned taxonomy year must block before Arelle")
+
+    inline_document = (
+        '<html xmlns:ix="http://www.xbrl.org/2013/inlineXBRL">'
+        f'<link:schemaRef xlink:href="https://xbrl.fasb.org/us-gaap/{taxonomy_year}/elts/us-gaap-{taxonomy_year}.xsd" />'
+        '<ix:nonFraction name="us-gaap:Assets" contextRef="c" unitRef="u">1</ix:nonFraction>'
+        "</html>"
+    )
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", unexpected_runner)
+    monkeypatch.setattr(
+        layer3_sec_xbrl_sidecar,
+        "_taxonomy_package_files",
+        lambda: [tmp_path / "us-gaap-2025.zip", tmp_path / "srt-2025.zip", tmp_path / "sec-2025.zip"],
+    )
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_cache_dir", lambda: tmp_path / "cache")
+
+    result = layer3_sec_xbrl_sidecar._run_arelle(
+        primary_document=inline_document,
+        max_facts=layer3_sec_xbrl_sidecar.MIN_MAX_FACTS,
+        submission_documents=[{"filename": "primary.htm", "type": "10-K", "text": inline_document, "primary": "true"}],
+    )
+
+    assert result["status"] == "blocked"
+    assert result["reasons"][0]["reason"] == "taxonomy_year_unprovisioned"
+    assert result["reasons"][0]["detected_taxonomy_years"] == [taxonomy_year]
+    assert result["reasons"][0]["provisioned_taxonomy_years"] == ["2025"]
+
+
+def test_sec_xbrl_sidecar_blocks_no_inline_submission_before_arelle(monkeypatch, tmp_path):
+    def unexpected_runner(*_args, **_kwargs):
+        raise AssertionError("no-inline submissions must block before Arelle")
+
+    _install_receipt_fakes(monkeypatch, tmp_path, unexpected_runner, content=b"""
+<SEC-DOCUMENT>
+<DOCUMENT>
+<TYPE>10-K
+<FILENAME>primary.htm
+<TEXT><html><body>ordinary pre-inline filing</body></html></TEXT>
+</DOCUMENT>
+</SEC-DOCUMENT>
+""")
+
+    response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+        _request(companyfacts_count=1)
+    )
+
+    assert response["status"] == "blocked"
+    assert response["status_projection"]["blocked_reasons"][0]["reason"] == "no_inline_facts_pre_inline_era"
+
+
 def test_sec_xbrl_sidecar_stages_submission_documents_for_dts_loading():
     primary = "<html><head></head><body>inline</body></html>"
     wrapped_schema = "\r\n<XBRL>\r\n<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<schema />\r\n</XBRL>\r\n"
@@ -561,6 +643,46 @@ def test_sec_xbrl_sidecar_stages_submission_documents_for_dts_loading():
     assert tally["inline_document_count"] == 2
     assert tally["document_tally"][0]["document_type"] == "EX-101.INS"
     assert tally["document_tally"][1]["document_type"] == "EX-99.2"
+
+
+def test_sec_xbrl_sidecar_submission_documents_use_parser_decode_parity():
+    primary = "<html><body>caf\xe9</body></html>"
+    content = f"""
+<SEC-DOCUMENT>
+<DOCUMENT>
+<TYPE>10-K
+<FILENAME>primary.htm
+<TEXT>{primary}</TEXT>
+</DOCUMENT>
+</SEC-DOCUMENT>
+""".encode("cp1252")
+
+    documents = layer3_sec_xbrl_sidecar._submission_documents(
+        content,
+        primary_document_hash=_hash(primary),
+    )
+
+    assert documents[0]["text"] == primary
+
+
+def test_sec_xbrl_sidecar_submission_documents_fail_closed_on_unsupported_encoding():
+    content = b"""
+<SEC-DOCUMENT>
+<DOCUMENT>
+<TYPE>10-K
+<FILENAME>primary.htm
+<TEXT><html>\x81</html></TEXT>
+</DOCUMENT>
+</SEC-DOCUMENT>
+"""
+
+    with pytest.raises(Layer3WorkbenchError) as excinfo:
+        layer3_sec_xbrl_sidecar._submission_documents(
+            content,
+            primary_document_hash=_hash("<html></html>"),
+        )
+
+    assert excinfo.value.error_code == "sec_edgar_arelle_sidecar_submission_decode_failed"
 
 
 def test_sec_xbrl_arelle_tool_prefers_context_dates_and_corrects_adjusted_end_datetimes():
@@ -664,8 +786,17 @@ def _clear_arelle_connectivity_guard_flags(monkeypatch) -> None:
         monkeypatch.setattr(settings, settings_attr, False)
 
 
-def _install_receipt_fakes(monkeypatch, tmp_path, runner):
-    content = b"retained complete submission text"
+def _install_receipt_fakes(monkeypatch, tmp_path, runner, *, content: bytes | None = None):
+    if content is None:
+        content = b"""
+<SEC-DOCUMENT>
+<DOCUMENT>
+<TYPE>10-K
+<FILENAME>primary.htm
+<TEXT><html xmlns:ix="http://www.xbrl.org/2013/inlineXBRL"><body><ix:nonFraction name="us-gaap:Assets" contextRef="c" unitRef="u">1</ix:nonFraction></body></html></TEXT>
+</DOCUMENT>
+</SEC-DOCUMENT>
+"""
     parsed = {
         "primary_document_hash": _hash("primary-doc"),
         "document_inventory": [{"document_index": 1}],
@@ -814,6 +945,22 @@ def _semantic_unresolved_arelle_runner(*_args, **_kwargs):
     payload = json.loads(completed.stdout.strip())
     payload["diagnostics"]["period_unresolved_with_context_ref_count"] = 1
     payload["diagnostics"]["unit_unresolved_with_unit_ref_count"] = 1
+    return subprocess.CompletedProcess(args=["fake"], returncode=0, stdout=json.dumps(payload) + "\n", stderr="")
+
+
+def _model_error_arelle_runner(*_args, **_kwargs):
+    completed = _ready_arelle_runner()
+    payload = json.loads(completed.stdout.strip())
+    payload["diagnostics"]["model_error_count"] = 1
+    return subprocess.CompletedProcess(args=["fake"], returncode=0, stdout=json.dumps(payload) + "\n", stderr="")
+
+
+def _concept_unresolved_arelle_runner(*_args, **_kwargs):
+    completed = _ready_arelle_runner()
+    payload = json.loads(completed.stdout.strip())
+    payload["diagnostics"]["concept_resolved_from_dts_count"] = 1
+    payload["diagnostics"]["concept_dts_unresolved_count"] = 1
+    payload["facts"][1]["concept"]["resolved_from_dts"] = False
     return subprocess.CompletedProcess(args=["fake"], returncode=0, stdout=json.dumps(payload) + "\n", stderr="")
 
 

@@ -85,6 +85,7 @@ INTERIM_OR_CURRENT_FORM_TYPES = {"10-Q", "10-Q/A", "8-K", "8-K/A", "6-K", "6-K/A
 MAX_CIK_REFS = 4
 MAX_FORM_TYPES = 6
 MAX_EXAMPLES = 8
+MAX_EXPLICIT_OWNER_COMPANY_MATRIX = 30
 
 ALLOWED_FIELDS = {
     "schema_id",
@@ -625,27 +626,35 @@ def _normalise_company_matrix(
     - official_resolution_provenance: dict with source-hash/cik-hash entries for the
       resolved tickers, or None when no official resolution was performed
 
-    Flag-OFF (default): behaves byte-identically to the original implementation —
-    any ticker not in REAL_COMPANY_CIK_REFS raises a governed blocked error.
-    Flag-ON: off-list tickers are resolved via resolve_sec_ticker_to_cik(); unknown
-    tickers (resolver returns None) still raise a governed blocked error.
+    Flag-OFF (default): the four-company default bound remains enforced, and
+    off-list tickers raise a governed blocked error.
+    Flag-ON: explicit owner matrices up to 30 tickers are admitted; off-list
+    tickers are resolved via resolve_sec_ticker_to_cik(), and unknown tickers
+    (resolver returns None) still raise a governed blocked error.
     """
     if value in (None, "", ()):
         return (), {}, None
     values = tuple(dict.fromkeys(str(item or "").strip().upper() for item in _as_list(value)))
-    if not values or len(values) > len(DEFAULT_REAL_COMPANY_MATRIX):
+    if not values or len(values) > MAX_EXPLICIT_OWNER_COMPANY_MATRIX:
         _blocked(
             "sec_edgar_real_filing_acquisition_connector_company_matrix_not_admitted",
             "SEC EDGAR real-company validation admits only the selected bounded company matrix.",
             blocked_fields=["company_matrix"],
         )
     unknown = [item for item in values if item not in REAL_COMPANY_CIK_REFS]
+    official_resolution_enabled = bool(getattr(settings, "layer3_sec_edgar_official_ticker_resolution_enabled", False))
     if not unknown:
-        # Fast path: all tickers are on the static allow-list — flag-off behavior unchanged.
+        if len(values) > len(DEFAULT_REAL_COMPANY_MATRIX) and not official_resolution_enabled:
+            _blocked(
+                "sec_edgar_real_filing_acquisition_connector_company_matrix_not_admitted",
+                "SEC EDGAR real-company validation admits only the selected bounded company matrix.",
+                blocked_fields=["company_matrix"],
+            )
+        # Fast path: all tickers are on the static allow-list.
         return values, {}, None
 
     # There are off-list tickers. Without the flag, block immediately (flag-OFF behavior).
-    if not bool(getattr(settings, "layer3_sec_edgar_official_ticker_resolution_enabled", False)):
+    if not official_resolution_enabled:
         _blocked(
             "sec_edgar_real_filing_acquisition_connector_company_matrix_unknown",
             "SEC EDGAR real-company validation company matrix contains an unadmitted ticker.",

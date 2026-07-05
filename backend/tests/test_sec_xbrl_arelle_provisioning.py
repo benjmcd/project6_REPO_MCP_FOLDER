@@ -63,3 +63,23 @@ def test_sec_xbrl_arelle_provisioning_fails_closed_without_downloaded_taxonomies
     assert report["non_goals_preserved"]["sec_network_fetch_performed"] is False
     assert report["non_goals_preserved"]["sidecar_invoked"] is False
     assert report["non_goals_preserved"]["runtime_defaults_changed"] is False
+
+
+def test_sec_xbrl_arelle_provisioning_dry_lists_requested_years_without_downloads(tmp_path: Path) -> None:
+    module = _helper_module()
+
+    specs = module.taxonomy_specs(years=["2019", "2025"])
+    report = module.build_report(
+        taxonomy_dir=tmp_path / "taxonomy",
+        cache_dir=tmp_path / "cache",
+        download=False,
+        load_with_arelle=False,
+        years=["2019", "2025"],
+    )
+
+    assert sorted({spec["version"] for spec in specs}) == ["2019", "2025"]
+    assert report["requested_taxonomy_years"] == ["2019", "2025"]
+    assert report["taxonomy_year_coverage"]["2019"]["planned_artifact_count"] == 3
+    assert report["taxonomy_year_coverage"]["2025"]["planned_artifact_count"] == 3
+    assert report["taxonomy_year_coverage"]["2025"]["pinned_artifact_count"] == 3
+    assert report["non_goals_preserved"]["sec_network_fetch_performed"] is False

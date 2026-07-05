@@ -305,12 +305,11 @@ def test_connector_flag_on_unresolvable_ticker_still_blocked(
     assert exc_info.value.error_code == "sec_edgar_real_filing_acquisition_connector_company_matrix_unknown"
 
 
-def test_connector_flag_on_bounds_still_enforced(monkeypatch, live_network_on):
-    """Flag ON: >4 tickers still rejected by the size bounds check before any resolution."""
+def test_connector_flag_on_owner_matrix_hard_cap_still_enforced(monkeypatch, live_network_on):
+    """Flag ON: >30 tickers are still rejected by the owner-matrix hard cap."""
     monkeypatch.setattr(settings, "layer3_sec_edgar_official_ticker_resolution_enabled", True)
-    # DEFAULT_REAL_COMPANY_MATRIX has 4 tickers; 5 exceeds len(DEFAULT_REAL_COMPANY_MATRIX)
     with pytest.raises(Layer3WorkbenchError) as exc_info:
-        _normalise_company_matrix(["MSFT", "STLD", "SONY", "CCJ", "KO"])
+        _normalise_company_matrix([f"ZZ{i:02d}" for i in range(31)])
     assert exc_info.value.error_code == "sec_edgar_real_filing_acquisition_connector_company_matrix_not_admitted"
 
 

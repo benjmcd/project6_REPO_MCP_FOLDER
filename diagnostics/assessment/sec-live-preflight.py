@@ -52,7 +52,8 @@ FILING_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 RECEIPT_DIR = "layer3-sec-edgar-live-source-artifact-acquisition"
 RECEIPT_PREFIX = "sec-edgar-text-table-live-source-artifact"
 ADMITTED_EXTERNAL_DB_SCHEMES = {"postgresql", "postgresql+psycopg", "postgresql+psycopg2"}
-MAX_BYTES_CEILING = 25_000_000
+MAX_BYTES_CEILING = 200_000_000
+MAX_LIVE_REQUESTS_CEILING = 40
 TIMEOUT_SECONDS_CEILING = 120
 
 
@@ -342,7 +343,8 @@ def _limits(env: Mapping[str, str]) -> dict[str, Any]:
         "max_live_requests_env_var": MAX_REQUESTS_ENV,
         "max_live_requests_present": bool(max_requests_raw),
         "max_live_requests_per_process": max_requests,
-        "max_live_requests_admitted": 1 <= max_requests <= 10,
+        "max_live_requests_admitted": 1 <= max_requests <= MAX_LIVE_REQUESTS_CEILING,
+        "max_live_requests_ceiling": MAX_LIVE_REQUESTS_CEILING,
         "max_bytes_env_var": MAX_BYTES_ENV,
         "max_bytes_present": bool(max_bytes_raw),
         "max_bytes": max_bytes,

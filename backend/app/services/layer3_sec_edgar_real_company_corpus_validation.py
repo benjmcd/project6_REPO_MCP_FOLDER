@@ -39,6 +39,10 @@ BLOCKED_STATE = "sec_edgar_real_company_corpus_validation_blocked"
 RECEIPT_PREFIX = "sec-edgar-real-company-corpus-validation"
 RECEIPT_DIR = "layer3-sec-edgar-real-company-corpus-validation"
 REDACTION_POLICY_ID = "sec_edgar_real_company_corpus_validation_redaction_v1"
+_INLINE_XBRL_FACT_MARKER_NAME_HASHES = frozenset(
+    hashlib.sha256(name.encode("utf-8")).hexdigest()
+    for name in ("ix:nonfraction", "ix:nonnumeric", "ix:fraction")
+)
 
 ALLOWED_FIELDS = {
     "schema_id",
@@ -317,8 +321,18 @@ def _filing_validation_records(
         example_id = str(acquisition.get("example_id") or "")
         example = examples.get(example_id, {})
         record = _base_record(index=index, example=example, acquisition=acquisition)
-        if "html_inline_xbrl_classified_not_parsed" in list(example.get("source_family_roles") or []):
+        roles = list(example.get("source_family_roles") or [])
+        if "html_inline_xbrl_classified_not_parsed" in roles:
             record.update(_run_html_inline_xbrl_path(connector, example, acquisition, request_id=request_id, db=db, evidence_owner=evidence_owner))
+        elif "xml_xbrl_classified_not_parsed" in roles or str(example.get("primary_document_family") or "") == "xml_xbrl":
+            record["supported_degraded_blocked"] = "blocked"
+            record["failure_classification"] = "source_routing"
+            record["gaps_found"].append("standalone_xml_xbrl_unsupported")
+            record["operator_usefulness"] = "diagnostic_block_recorded"
+            record["quality_evidence"] = _quality_not_evaluated(
+                "source_family_not_admitted_for_quality_assessment",
+                quality_gaps=["standalone_xml_xbrl_unsupported"],
+            )
         else:
             record["supported_degraded_blocked"] = "degraded_or_blocked"
             record["failure_classification"] = "parser_family"
@@ -359,6 +373,23 @@ def _run_html_inline_xbrl_path(
                 "operator_confirmation": True,
             }
         )
+        if _inline_xbrl_fact_marker_count(parser) <= 0:
+            return {
+                **outputs,
+                "outputs_produced": ["parser"],
+                "authority_hashes": {
+                    "parser_receipt_hash": parser["parser_receipt_hash"],
+                    "inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
+                },
+                "supported_degraded_blocked": "blocked",
+                "failure_classification": "parser_family",
+                "gaps_found": ["no_inline_facts_pre_inline_era"],
+                "operator_usefulness": "diagnostic_block_recorded",
+                "quality_evidence": _quality_not_evaluated(
+                    "blocked_before_product_quality_assessment",
+                    quality_gaps=["no_inline_facts_pre_inline_era"],
+                ),
+            }
         fact = layer3_sec_edgar_html_inline_xbrl_fact_authority.derive_sec_edgar_html_inline_xbrl_fact_authority(
             _fact_authority_payload(request_id, example, parser)
         )
@@ -1493,6 +1524,19 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
     if isinstance(value, str):
         return contains_forbidden_ref(value)
     return False
+
+
+def _inline_xbrl_fact_marker_count(parser: Mapping[str, Any]) -> int:
+    inventory = parser.get("inline_xbrl_marker_inventory") or []
+    if not isinstance(inventory, list):
+        return 0
+    count = 0
+    for marker in inventory:
+        if not isinstance(marker, Mapping):
+            continue
+        if str(marker.get("marker_name_hash") or "") in _INLINE_XBRL_FACT_MARKER_NAME_HASHES:
+            count += 1
+    return count
 
 
 def _receipt_path(receipt_id: str) -> Path:
