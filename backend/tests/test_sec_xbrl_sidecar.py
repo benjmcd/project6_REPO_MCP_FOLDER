@@ -546,7 +546,7 @@ def test_sec_xbrl_sidecar_blocks_unresolved_concepts_but_allows_resolved_extensi
     assert ready["diagnostics"]["resolved_structural_semantics"]["extension_concept_count"] == 1
 
 
-@pytest.mark.parametrize("taxonomy_year", ["2024", "2026"])
+@pytest.mark.parametrize("taxonomy_year", ["2024"])
 def test_sec_xbrl_sidecar_blocks_unprovisioned_taxonomy_year_before_arelle(monkeypatch, tmp_path, taxonomy_year):
     def unexpected_runner(*_args, **_kwargs):
         raise AssertionError("unprovisioned taxonomy year must block before Arelle")
@@ -575,6 +575,43 @@ def test_sec_xbrl_sidecar_blocks_unprovisioned_taxonomy_year_before_arelle(monke
     assert result["reasons"][0]["reason"] == "taxonomy_year_unprovisioned"
     assert result["reasons"][0]["detected_taxonomy_years"] == [taxonomy_year]
     assert result["reasons"][0]["provisioned_taxonomy_years"] == ["2025"]
+
+
+def test_sec_xbrl_sidecar_allows_provisioned_2026_taxonomy_year_before_arelle(monkeypatch, tmp_path):
+    captured: dict[str, list[str]] = {}
+
+    def ready_runner(command, *_args, **_kwargs):
+        captured["command"] = list(command)
+        return _ready_arelle_runner()
+
+    inline_document = (
+        '<html xmlns:ix="http://www.xbrl.org/2013/inlineXBRL">'
+        '<link:schemaRef xlink:href="https://xbrl.fasb.org/us-gaap/2026/elts/us-gaap-2026.xsd" />'
+        '<ix:nonFraction name="us-gaap:Assets" contextRef="c" unitRef="u">1</ix:nonFraction>'
+        "</html>"
+    )
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", ready_runner)
+    monkeypatch.setattr(
+        layer3_sec_xbrl_sidecar,
+        "_taxonomy_package_files",
+        lambda: [tmp_path / "us-gaap-2026.zip", tmp_path / "srt-2026.zip", tmp_path / "sec-2026.zip"],
+    )
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_cache_dir", lambda: tmp_path / "cache")
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_internet_connectivity", lambda: "offline")
+
+    result = layer3_sec_xbrl_sidecar._run_arelle(
+        primary_document=inline_document,
+        max_facts=layer3_sec_xbrl_sidecar.MIN_MAX_FACTS,
+        submission_documents=[{"filename": "primary.htm", "type": "10-K", "text": inline_document, "primary": "true"}],
+    )
+
+    taxonomy_args = [
+        Path(captured["command"][index + 1]).name
+        for index, value in enumerate(captured["command"])
+        if value == "--taxonomy-package"
+    ]
+    assert result["status"] == "ready"
+    assert taxonomy_args == ["us-gaap-2026.zip", "srt-2026.zip", "sec-2026.zip"]
 
 
 def test_sec_xbrl_sidecar_blocks_no_inline_submission_before_arelle(monkeypatch, tmp_path):
