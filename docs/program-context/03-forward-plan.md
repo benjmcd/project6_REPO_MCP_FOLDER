@@ -23,6 +23,13 @@ of protected local work.
   sha256 `0c87d88f0a6efb7bf056cbf82c12b649979b2cb522639d7db01a9a279bf2c3a0`,
   189,380 bytes, records the per-item evidence, critic corrections, and
   snapshot-first disposition plan for the 139 protected worktrees.
+- I12 archive anchor: operator-local archive folder `2026-07-06-adj`
+  retains the raw adjudication JSON and companion inbox/source artifacts under
+  the record-lane archive policy; aggregate sha256
+  `9291ee34af6c510329818488b2bfe834559308def95bd3cfdb58b537a1a392ea`
+  and manifest sha256
+  `170ebdcba03a4e05e1830ea5e090d54eb6036f5e330266c0eecffdbc477e3614`
+  cover 41 files and 6,516,906 bytes.
 - Adjusted tally: 115 `TOOL-STATE-ONLY`, 8 `SUPERSEDED`, 11
   `UNIQUE-CONTENT`, and 5 `AMBIGUOUS` after applying the two critic
   corrections.
