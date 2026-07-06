@@ -1,4 +1,6 @@
 pytest>=8.0
+pytest-cov==7.1.0
+pytest-xdist==3.8.0
 httpx>=0.27
 # Python runtime: 3.12. Keep this FastAPI pin mirrored in
 # backend/requirements.txt; browser/Arelle test requirement files include this
