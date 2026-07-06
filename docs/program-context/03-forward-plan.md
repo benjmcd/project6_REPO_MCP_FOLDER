@@ -6,6 +6,51 @@ report as verified/adjudicated, grounded in repo authorities (merge-gate
 policy, admission runbook, A8 docs, support matrix). Nothing here is authorized by this
 document — it specifies what authorization would require.
 
+## 2026-07-06 Forward Program Refresh (M-WORKTREE-CLEANUP-EXEC)
+
+Supersession boundary: this block is the current F6 pointer after the
+owner-authorized local worktree cleanup execution. It supersedes only the
+operational worktree-count/disk-pressure state for P6/F6. It does not authorize
+mass remote branch deletion, deletion of protected local work, or cleanup of
+worktrees that still carry modified tracked files or non-adjudicated ignored
+content.
+
+### F6 - Worktree cleanup: EXECUTED FOR ADJUDICATED LOCAL CLASS
+
+- Status: EXECUTED for the mechanically-safe and Phase-2-adjudicated local
+  worktree classes. Phase 1 correctly stopped on the ignored-content threshold
+  after surfacing the pattern. Phase 2 then re-ran all remaining repo-local
+  candidates with refined safe matching, protected `.claude/`, used
+  `--ignore-submodules=none`, and allowed `git worktree remove --force` only
+  when all status entries were safe untracked paths, all ignored entries were
+  safe, and the immediate pre-removal rescan matched.
+- Counts: the cleanup began from 353 registered worktrees, including 331
+  repo-local registrations and 329 Phase-1 candidates. Phase 1 removed 14 and
+  stopped with 125 recorded skips plus 190 unevaluated candidates. Phase 2
+  re-evaluated 315 repo-local candidates, removed 176, and left 139 protected.
+  The final registry after prune is 163 total registrations: 141 repo-local,
+  21 external, and the root checkout.
+- Force-gated removals: 164 of the Phase-2 removals used `--force`; each is
+  recorded in `state/agent-inbox/worktree-cleanup-exec-manifest.json` with
+  the full pre-removal status lines, ignored scan, and force justification.
+  There were zero unjustified force removals and zero branch deletions.
+- Disk impact: `worktrees/` moved from 246,075,642,767 bytes at the Phase-1
+  baseline to 160,990,819,317 bytes after Phase 2 and prune, reclaiming
+  85,084,823,450 bytes cumulatively. Phase 2 alone reclaimed 83,172,282,072
+  bytes.
+- Remaining local worktree state: 76 repo-local worktrees remain protected for
+  non-safe ignored content under the refined matcher, and 63 remain protected
+  for tracked or unsafe untracked dirty status. These are an owner/session
+  review list, not mechanically-safe cleanup candidates.
+- Remote branches: the remote `codex/*` census remains report-only at 1,726
+  heads. The eight sampled leftovers (`codex/a8-runtime`,
+  `codex/ops-ready-b1`, `codex/ops-ready-b2-fix`, `codex/ops-ready-b3`,
+  `codex/ops-ready-b5`, `codex/p3-durable-root-repo`,
+  `codex/program-context`, and `codex/record-truth-3`) each map to merged PRs.
+  Mass remote branch deletion remains a separate owner-gated decision.
+- Anomaly: `/tmp/audit-wt/p6main` remains an external locked registration
+  (`locked initializing`) and is outside this local repo-worktree cleanup class.
+
 ## 2026-07-06 Forward Program Refresh (M-CORPUS-46-RECORD)
 
 Supersession boundary: this block is the current pointer after the retained
@@ -395,6 +440,10 @@ default-on, live-egress, or value-reveal claim.
 - Status: 347 worktrees inventoried (hash-anchored inventory in M-FWD3-EVIDENCE §4e):
   11 mechanically-safe candidates (merged/stale), 1 active-parallel, 334 requiring
   owner/session-specific review; standing no-remove rail (I11).
+- Superseded current-state pointer: see the 2026-07-06
+  M-WORKTREE-CLEANUP-EXEC refresh above for the executed local worktree cleanup
+  record, remaining owner-review local worktrees, and report-only remote branch
+  posture.
 - Residual delta: owner per-class authorization → removal of safe candidates (worktree
   remove preserves branches/commits), then staged review of the 334.
 - Pass criteria: fresh inventory at execution time; no active/dirty/preserved lane removed;
