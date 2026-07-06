@@ -175,7 +175,33 @@ Dates 2026. All PRs merged to `project6-origin/main`; squash SHAs given.
   issuers, and 19 full domestic 10-K/10-Q pairs. IFRS annuals and `cyd-2025`
   loose-file packaging remain explicit follow-ups.
 
-## Net state after Phase 8
+## Phase 9 - Gate registry, program hygiene, and coverage critical path (07-06)
+
+- #2435 `fab89ced` - corpus-run gate registry. Why: the executed corpus arc
+  revealed gate-count drift and unclear applicability between live-run controls
+  and zero-egress replay/report-only controls. The registry now names G1-G10,
+  classifies ACTIVE-NOW versus LIVE-RUN-ONLY gates, and requires independent
+  regrade before run-level "gates passed" claims.
+- #2437 `c6bb87f8` - corpus-40 record addendum. Why: after #2436 and the
+  governed zero-egress MSFT replay, the current record needed a dated
+  supersession that preserved #2433/#2434 as historical while recording the
+  current 40 supported-equivalent filings / 21 issuers / 19 full domestic
+  pairs distribution. The addendum kept the replay operator-attested +
+  independently regraded (`PASS_WITH_ATTESTED_FIELDS`) instead of overstating
+  it as an unqualified live-run result.
+- #2438 `be8efadb` - backend-coverage xdist Option A. Why: backend-coverage
+  was the release-gate critical path; in-job pytest-xdist reduced the
+  post-merge main backend-coverage job to 494 seconds while preserving the job
+  id, test target, coverage targets, and `--cov-fail-under=90` semantics. The
+  proof preserved line-set parity, collect parity, floor-trip failure, and
+  hardware-capped soak evidence.
+- Program hygiene decisions from the same arc: enumerate taxonomy families
+  before fetch, build `cyd-2025` as a deterministic operator-provenance zip if
+  owner-authorized, treat cleanup manifests as stale until recomputed, serialize
+  heavy local Python/Arelle work per machine, and refresh current-pointer fields
+  whenever they quote superseded facts.
+
+## Net state after Phase 9
 
 Local SEC-XBRL pipeline proven end-to-end ON REAL DATA: live-acquired filing → parsed →
 Arelle-resolved → durably retained values → controlled governed reveal; every layer

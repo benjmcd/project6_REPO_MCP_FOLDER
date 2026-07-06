@@ -9,11 +9,29 @@
 > `7fa72e745c7a2d6b72be37971e0e8768780dc5d5` for PR #2419, and
 > latest O6 main-tip ref `f566ddb14f62cd717f697f1d13b533ff434785ed` for PR #2421,
 > plus corpus-go source frontier `2d6fdbde0f82a836663f7e06923d1dd05cc48f3d`
-> for PR #2432.
+> for PR #2432, and latest program-context frontier
+> `be8efadbc810ee78867ab6de4ba3ed6a11082c4e` for PR #2438.
 
 ---
 
 2026-07-04 pointer: `docs/program-context/` is the exhaustive SEC-XBRL program record; this file remains the executive summary under that set's INDEX authority order.
+
+2026-07-06 pointer: `docs/program-context/` is current through PR #2438
+(`be8efadbc810ee78867ab6de4ba3ed6a11082c4e`). The 2026-07-05 corpus-go
+addendum below is historical where it conflicts with later dated entries:
+the current aggregate report hash is
+`52385f07a1a4dc29871708602bacadb159da44499bb950fd887665abd3879e91`, the
+current corpus record is 40 supported-equivalent filings / 21 issuers / 19 full
+domestic 10-K/10-Q pairs after the zero-egress MSFT replay recorded by #2437,
+and the replay is operator-attested + independently regraded
+(`PASS_WITH_ATTESTED_FIELDS`) rather than an unqualified live-run result.
+Coverage Option A is DONE via #2438: `backend-coverage` was parallelized
+without changing its job id, coverage targets, or `--cov-fail-under=90`; the
+post-merge main run `28776807974` recorded `backend-coverage` success in
+494 seconds. Remaining executable corpus work is owner-sign-off-gated IFRS
+2025-03-27 plus deterministic `cyd-2025` provisioning for the retained foreign
+annuals. No production-readiness, default-on, live-egress, or new value-reveal
+claim is made by this pointer.
 
 ## 2026-07-05 Addendum - Corpus-Go Domestic Breadth Record
 
