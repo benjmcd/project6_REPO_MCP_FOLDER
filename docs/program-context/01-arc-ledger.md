@@ -255,6 +255,9 @@ Dates 2026. All PRs merged to `project6-origin/main`; squash SHAs given.
   #2437 40-filing addendum remain historical. Current corpus evidence records
   46 supported filings, with zero remaining resolvable retained-annual replay
   blocks. `6-K` no-inline and non-SEC/alias dispositions remain by design.
+  #2443 records the current 27 supported issuers, derived from the prior 21
+  supported issuers plus the six named distinct retained IFRS issuers (`SONY`,
+  `CCJ`, `DNN`, `NXE`, `MT`, and `TSM`).
 
 ## Net state after Phase 11
 
