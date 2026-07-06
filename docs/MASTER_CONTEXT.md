@@ -9,8 +9,10 @@
 > `7fa72e745c7a2d6b72be37971e0e8768780dc5d5` for PR #2419, and
 > latest O6 main-tip ref `f566ddb14f62cd717f697f1d13b533ff434785ed` for PR #2421,
 > plus corpus-go source frontier `2d6fdbde0f82a836663f7e06923d1dd05cc48f3d`
-> for PR #2432, and latest program-context frontier
-> `e7e9e8675fa6bbe8ec75172162c0cebba3bdfc2a` for PR #2442.
+> for PR #2432, latest program-context frontier
+> `098e96eafd799d3a322d754b88058e5bd3ea7650` for PR #2441, and latest
+> corpus replay record frontier `098e96eafd799d3a322d754b88058e5bd3ea7650`
+> for M-CORPUS-46-RECORD / PR #2443.
 
 ---
 
@@ -50,6 +52,29 @@ replay/result recording for the retained foreign annuals, not package
 pinning. This pointer admits no production-readiness, default-on, new live
 egress, value-reveal, raw-value, or foreign-annual replay/result claim.
 
+2026-07-06 pointer: `docs/program-context/` is refreshed by
+M-CORPUS-46-RECORD / PR #2443, grounded on current main through PR #2441
+(`098e96eafd799d3a322d754b88058e5bd3ea7650`) and predecessor pin PRs
+#2440/#2442. This record appends D28 for budget-constrained new-host fetch
+strategy and records the retained IFRS annual replay closeout: 6/6 zero-egress
+annual replays `READY`, stores persisted, fact/value counts 4693 / 886 / 1582 /
+7335 / 2670 / 3565 (20,731 total), results hash
+`7d691b6ac96fe31e40797b9e1ef582274e4792fb331c0071f821250c9189bbc7`,
+evidence bundle hash
+`a49b9c5553fd21788307b2dae9407b36582a97b467780aeeceda7772c44c40ff`, and
+independent regrade hash
+`6e755725e65c11fb7fd1ddc926911804aebf924b79da9fc553f56a88b2bce2e3`
+with verdict `PASS_WITH_ATTESTED_FIELDS`. The current corpus record is now 46
+supported filings / 27 supported issuers, with the issuer count derived from
+the prior 21 supported issuers plus the six named distinct retained IFRS
+issuers. The historical 39/40 records remain true in time; this
+pointer supersedes only the previous claim that retained foreign-annual
+replay/result recording remained open. `6-K` no-inline dispositions remain by
+design, and `KAP`, `PDN`, `YCA`, and `TSMC-as-written` remain non-SEC or alias
+resolution dispositions. No production-readiness, default-on, new live SEC
+EDGAR egress, value-reveal, raw-value, nonlocal admission, or broader taxonomy
+host authority claim is made by this pointer.
+
 ## 2026-07-05 Addendum - Corpus-Go Domestic Breadth Record
 
 This addendum records the owner-authorized 2026-07-05 corpus-go operator run as
@@ -82,10 +107,10 @@ plugin. The root cause was the absent `ixt-sec` registry in Arelle core; the
 operator probe proved it, and the post-fix probe re-proved the previously
 blocked filing with `model_error_count=0`.
 
-P2 corpus is now executed for the domestic SEC inline scope. That addendum's
-named `ifrs-taxonomy-pins` follow-up is superseded by #2440/#2442 package
-prep; the remaining named follow-up is retained foreign-annual zero-egress
-replay/result recording to supported-or-named-block.
+P2 corpus is now executed for the domestic SEC inline scope in this historical
+addendum. Its named `ifrs-taxonomy-pins` follow-up was later superseded by
+#2440/#2442 package prep, and M-CORPUS-46-RECORD later closes retained
+foreign-annual zero-egress replay/result recording at 46 supported filings.
 
 ## 2026-07-01 Addendum - Post-PR #2409 State
 

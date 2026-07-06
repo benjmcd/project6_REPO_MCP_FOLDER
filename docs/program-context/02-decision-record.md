@@ -573,3 +573,51 @@ or new live-egress claim.
 - Revisit when: an owner grant explicitly names a new host class and request
   budget, or when the project adds a durable authorization registry that can
   classify egress classes mechanically.
+
+## 2026-07-06 Corpus 46 Decision Addendum (M-CORPUS-46-RECORD)
+
+This section appends D28 after the owner-named IFRS grant, PR #2442, and the
+retained foreign-annual replay closeout. This lane re-verified the owner grant
+record, request ledger, retained IFRS package hash, r3 provisioning report,
+six replay result rows, evidence bundle, independent regrade, and PR states for
+#2437, #2440, #2441, and #2442 before admitting this decision. Machine-local
+evidence remains hash-only. This addendum admits no production-readiness,
+default-on, value-reveal, raw-value, live SEC EDGAR egress, new unbounded
+taxonomy egress, or local path claim beyond the established `C:/p6store` root.
+
+## D28. Budget-constrained fetch strategy for named new-host grants (07-06)
+
+- Context: D27 required a named host-and-budget grant before first-use IFRS
+  taxonomy egress. The owner then granted an IFRS Accounting Taxonomy fetch
+  from the IFRS host class with a request budget of 5 or fewer requests. The
+  grant was enough to acquire the needed retained package, but only if the
+  lane avoided speculative browsing and recorded budget use before the first
+  request.
+- Alternatives: (a) use the grant as broad host-class permission; (b) refuse
+  until every candidate URL is known; (c) write an arming record before any
+  request, order attempts by expected information per request, interleave
+  zero-cost research, use metadata-only checks before content fetches where
+  uncertain, keep a per-request ledger, and stop at the budget ceiling.
+- Decision: (c). A named new-host grant must be translated into a concrete
+  arming record before egress, then executed as a finite request ledger. The
+  ledger, not intent, is the admissible authority for later pinning and replay
+  records.
+- Why optimal: it preserves D27's explicit-owner boundary while letting a
+  narrow taxonomy fetch complete without pretending the host class is now open
+  ended. It also makes failure clean: if the budget is exhausted, the exact
+  unresolved candidate set is reported rather than silently expanding the
+  authority.
+- Evidence: `IFRS2025_FETCH_ARMING.json` hash
+  `cb275a03cbbadfcdb55a8eedc3d585f8dd5eb6cb4c9a8b45bac986ceb080b8f6`
+  records `written_before_first_request=true`, the owner grant text, allowed
+  IFRS host class, and request budget 5. The PINNING note hash
+  `20dfec68cccba35eb9969763ec056ac568824dd0df5f5b9c43151ac854945c07`
+  records the 5/5 request ledger. `IFRSAT-2025.zip` hashes to
+  `302afc7f69c5f92697ab8d87a6f584406f4addaf7f905468052c280c2fe16d19`
+  at 2,103,003 bytes; PR #2442 pins/adopts it. The r3 provisioning report
+  hash `6ff72308060a5769ff708b556bc3e9a6269ac867b1f06eaa6d0291f4a8a9708c`
+  reports `ready=true`, 13/13 packages loaded, 26/26 SEC entrypoints intact,
+  and IFRS 2025 offline entrypoints loaded.
+- Revisit when: the project adds a durable authorization registry, or when a
+  future taxonomy family requires repeated host-class fetches rather than one
+  bounded package acquisition.
