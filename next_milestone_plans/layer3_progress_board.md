@@ -13647,9 +13647,9 @@ embeds machine-local paths.
 
 CYD decision: PR `#2436` pins `cyd-2024` and adds
 `taxonomy_family_vintage_unprovisioned`. Filed-year does not equal taxonomy-year:
-MSFT FY2025 filed in 2025 imported 2024 taxonomy families. `cyd-2025` remains a
-loose-file follow-up for the IFRS phase, to be packaged deterministically with
-per-file provenance before admission.
+MSFT FY2025 filed in 2025 imported 2024 taxonomy families. PR `#2440` now pins
+`cyd-2025` as an operator-built deterministic archive with per-file provenance;
+the remaining taxonomy follow-up is the named IFRS family grant/admission lane.
 
 Gate framing: single-filing zero-egress replay lane. G1 disposition taxonomy is
 addressed by the MSFT supported-equivalent disposition and registry-by-reference

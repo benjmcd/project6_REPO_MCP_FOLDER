@@ -300,7 +300,7 @@ source, or hash-only durable artifacts.
 
 | Artifact | SHA-256 / Anchor | Meaning |
 |---|---|---|
-| CYD 2025 fetch arming record | `af704db4bf1b171bd1a8bea7a6b03fcf7bbd57e8f1a92cdadc02256ef5f490f6` for `corpus_run/CYD2025_FETCH_ARMING.json` under `C:/p6store` | Structured read: `written_before_first_request=true`, host list exactly `xbrl.sec.gov`, request budget 10, and `xbrl.ifrs.org` explicitly not authorized. |
+| CYD 2025 fetch arming record | `af704db4bf1b171bd1a8bea7a6b03fcf7bbd57e8f1a92cdadc02256ef5f490f6` for `corpus_run/CYD2025_FETCH_ARMING.json` under `C:/p6store` | Structured read: `written_before_first_request=true`, host list exactly `xbrl.sec.gov`, request budget 10, grant basis is the owner 2026-07-06 generic proceed directive class-scoped by D27, and `xbrl.ifrs.org` explicitly not authorized. |
 | Operator-built `cyd-2025.zip` | `ad7b166a3913778a4fabb15f3a4431d80eb1930d9cc1e271c318f7b4cffdfc33`, 208,667 bytes | Machine-local taxonomy archive, admitted by hash/size only. Re-read zip has 7 root-level members; all member hashes match the PINNING note; zip metadata is deterministic: 1980-01-01 timestamps, `create_system=0`, stored compression, `0o644` external attrs. |
 | `PINNING-cyd-2025.md` | `9cb98156f2780efd44e8a9954881331e96b00b6b86c726b77bf9e0211bec2e8e`, 2,347 bytes | Machine-local provenance note, admitted by hash/size only. The note records 7 SEC loose-file member hashes and the deterministic zip recipe. |
 | Post-#2440 provisioning report | `7d5f719c274b2c64275498b52832913d6ad0914847bc4abde54e2842063527ee` for `provision_report_2021_2026_r2.json` under `C:/p6store` | Structured read: `ready=true`, 12/12 taxonomy packages loaded, 26/26 offline entrypoints OK, no blocked reasons, and both `cyd/2024` and `cyd/2025` entrypoints loaded. Content is not committed because it embeds machine-local paths. |
@@ -309,7 +309,7 @@ source, or hash-only durable artifacts.
 
 | Surface | Verification |
 |---|---|
-| `sec-cyd-2025` pin | `tools/sec-xbrl-arelle-provision.py` declares `sec-cyd-2025` with URL `https://xbrl.sec.gov/cyd/2025/`, operator-built flag, archive hash `ad7b166a...fc33`, 208,667 bytes, and 7 member hashes. |
+| `sec-cyd-2025` pin | `tools/sec-xbrl-arelle-provision.py` declares `sec-cyd-2025` with the SEC CYD 2025 loose-file base host class, operator-built flag, archive hash `ad7b166a...fc33`, 208,667 bytes, and 7 member hashes. |
 | Operator-built archive construction | `tools/sec-xbrl-arelle-provision.py` contains `_download_operator_built_archive` and deterministic `_build_flat_zip_archive`; tests assert fixed timestamp, `create_system=0`, stored compression, and deterministic byte equality. |
 | CYD 2025 extraction/admission | `backend/tests/test_sec_xbrl_arelle_provisioning.py` verifies `cyd/2025` flat extraction and 2025 SEC entrypoint URLs; `backend/tests/test_sec_xbrl_sidecar.py` verifies sidecar readiness when the provisioner package set includes `cyd-2025.zip`. |
 | PR #2440 validation record | PR body records focused suite `86 passed, 1 skipped`, deterministic archive rebuild matching `ad7b166a...fc33`, `py_compile`, and `git diff --check`; final CI run green including `sec-xbrl-arelle-provisioning`, `backend-coverage`, and `release-gate`. |
