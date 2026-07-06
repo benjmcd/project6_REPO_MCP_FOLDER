@@ -554,8 +554,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install -r ./backend/tests/requirements-layer3-api.txt
-        python -m pip install pytest-cov
-    - name: Run Layer 3 coverage (non-sharded)
+    - name: Run Layer 3 coverage (xdist)
       # Targets: backend/app/api/layer3 package and the sec-xbrl in-app auth
       # policy service. Coverage floor is set to 90%, matching the enforced
       # --cov-fail-under=90 release threshold below.
@@ -563,7 +562,7 @@ jobs:
         DB_INIT_MODE: none
       run: |
         cd backend
-        python -m pytest tests/test_layer3_*.py -q \
+        python -m pytest tests/test_layer3_*.py -q -n auto \
           --cov=app.api.layer3 \
           --cov=app.services.layer3_sec_xbrl_in_app_auth_policy \
           --cov-report=term \
