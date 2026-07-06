@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import importlib.util
+from io import BytesIO
 from pathlib import Path
-from zipfile import ZipFile
+from zipfile import ZIP_STORED, ZipFile
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -28,23 +29,33 @@ def test_sec_xbrl_arelle_provisioning_declares_pinned_packages_with_provenance()
         "fasb-us-gaap-2025",
         "fasb-srt-2025",
         "sec-2025",
+        "sec-cyd-2025",
     ]
     assert [spec["kind"] for spec in specs] == [
         "arelle_taxonomy_package",
         "arelle_taxonomy_package",
         "offline_cache_archive",
+        "offline_cache_archive",
     ]
+    by_name = {spec["name"]: spec for spec in specs}
     assert all(spec["version"] == "2025" for spec in specs)
     assert {spec["sha256"] for spec in specs} == {
         "a3b835925ad74030eb5be865a26d7dfe44013081c4ab7204b6122316a685fff4",
         "aad1daeb4bdfe3057f4ed81482c06130f873a59fa7fce5193c5731f93b1fef88",
         "6a963051af02ff458e02669549bd55f9d547281724f3b4e053cb0157be8121e4",
+        "ad7b166a3913778a4fabb15f3a4431d80eb1930d9cc1e271c318f7b4cffdfc33",
     }
     assert {Path(spec["url"]).name for spec in specs} == {
         "us-gaap-2025.zip",
         "srt-2025.zip",
         "2025.zip",
+        "2025",
     }
+    assert by_name["cyd-2025.zip"]["url"] == "https://xbrl.sec.gov/cyd/2025/"
+    assert by_name["cyd-2025.zip"]["bytes"] == 208_667
+    assert by_name["cyd-2025.zip"]["operator_built_archive"] is True
+    assert "operator-built deterministic archive" in by_name["cyd-2025.zip"]["source"]
+    assert "loose files" in by_name["cyd-2025.zip"]["source"]
     assert all(spec["source"] for spec in specs)
 
 
@@ -94,12 +105,14 @@ def test_sec_xbrl_arelle_provisioning_declares_operator_verified_2026_pins_witho
     ]
 
 
-def test_sec_xbrl_arelle_provisioning_declares_operator_verified_cyd_2024_pin_only() -> None:
+def test_sec_xbrl_arelle_provisioning_declares_operator_verified_cyd_pins_only() -> None:
     module = _helper_module()
 
     specs = module.taxonomy_specs(years=["2024"])
+    cyd_2025_specs = module.taxonomy_specs(years=["2025"])
     by_name = {spec["name"]: spec for spec in specs}
-    absent_vintage_names = {spec["name"] for spec in module.taxonomy_specs(years=["2023", "2025", "2026"])}
+    cyd_2025_by_name = {spec["name"]: spec for spec in cyd_2025_specs}
+    absent_vintage_names = {spec["name"] for spec in module.taxonomy_specs(years=["2023", "2026"])}
 
     assert "cyd-2024.zip" in by_name
     assert by_name["cyd-2024.zip"]["id"] == "sec-cyd-2024"
@@ -110,7 +123,20 @@ def test_sec_xbrl_arelle_provisioning_declares_operator_verified_cyd_2024_pin_on
     assert by_name["cyd-2024.zip"]["bytes"] == 16_356
     assert by_name["cyd-2024.zip"]["pinned"] is True
     assert by_name["cyd-2024.zip"]["download_ready"] is True
+    assert cyd_2025_by_name["cyd-2025.zip"]["id"] == "sec-cyd-2025"
+    assert cyd_2025_by_name["cyd-2025.zip"]["kind"] == "offline_cache_archive"
+    assert cyd_2025_by_name["cyd-2025.zip"]["version"] == "2025"
+    assert cyd_2025_by_name["cyd-2025.zip"]["url"] == "https://xbrl.sec.gov/cyd/2025/"
+    assert (
+        cyd_2025_by_name["cyd-2025.zip"]["sha256"]
+        == "ad7b166a3913778a4fabb15f3a4431d80eb1930d9cc1e271c318f7b4cffdfc33"
+    )
+    assert cyd_2025_by_name["cyd-2025.zip"]["bytes"] == 208_667
+    assert cyd_2025_by_name["cyd-2025.zip"]["pinned"] is True
+    assert cyd_2025_by_name["cyd-2025.zip"]["download_ready"] is True
+    assert cyd_2025_by_name["cyd-2025.zip"]["operator_built_archive"] is True
     assert "https://xbrl.sec.gov/cyd/2024/cyd-2024.xsd" in module._sec_entrypoint_urls("2024")
+    assert "https://xbrl.sec.gov/cyd/2025/cyd-2025.xsd" in module._sec_entrypoint_urls("2025")
     assert not any(name.startswith("cyd-") for name in absent_vintage_names)
 
 
@@ -143,6 +169,7 @@ def test_sec_xbrl_arelle_provisioning_extracts_supported_sec_cache_layouts(tmp_p
     bare_archive_path = tmp_path / "sec-2022.zip"
     prefixed_archive_path = tmp_path / "sec-2025.zip"
     flat_cyd_archive_path = tmp_path / "cyd-2024.zip"
+    flat_cyd_2025_archive_path = tmp_path / "cyd-2025.zip"
     cache_dir = tmp_path / "cache"
     cyd_members = [
         "cyd-2024.xsd",
@@ -153,6 +180,7 @@ def test_sec_xbrl_arelle_provisioning_extracts_supported_sec_cache_layouts(tmp_p
         "cyd-cr-2024.xsd",
         "cyd-entire-2024.xsd",
     ]
+    cyd_2025_members = [member.replace("2024", "2025") for member in cyd_members]
 
     with ZipFile(bare_archive_path, "w") as archive:
         archive.writestr("xbrl.sec.gov/dei/2022/dei-2022.xsd", "<schema/>")
@@ -169,18 +197,31 @@ def test_sec_xbrl_arelle_provisioning_extracts_supported_sec_cache_layouts(tmp_p
         archive.writestr("nested/cyd-2024.xsd", "ignore")
         archive.writestr("cyd-2025.xsd", "ignore")
 
+    with ZipFile(flat_cyd_2025_archive_path, "w") as archive:
+        for member in cyd_2025_members:
+            archive.writestr(member, "<schema/>")
+        archive.writestr("../cyd-2025.xsd", "ignore")
+        archive.writestr("nested/cyd-2025.xsd", "ignore")
+        archive.writestr("cyd-2024.xsd", "ignore")
+
     assert module._extract_sec_archive_to_cache(bare_archive_path, cache_dir, year="2022") == 1
     assert module._extract_sec_archive_to_cache(prefixed_archive_path, cache_dir, year="2025") == 1
     assert module._extract_sec_archive_to_cache(flat_cyd_archive_path, cache_dir, year="2024") == len(cyd_members)
+    assert module._extract_sec_archive_to_cache(flat_cyd_2025_archive_path, cache_dir, year="2025") == len(
+        cyd_2025_members
+    )
 
     assert (cache_dir / "https" / "xbrl.sec.gov" / "dei" / "2022" / "dei-2022.xsd").is_file()
     assert (cache_dir / "https" / "xbrl.sec.gov" / "dei" / "2025" / "dei-2025.xsd").is_file()
     assert (cache_dir / "https" / "xbrl.sec.gov" / "cyd" / "2024" / "cyd-2024.xsd").is_file()
     assert (cache_dir / "https" / "xbrl.sec.gov" / "cyd" / "2024" / "cyd-entire-2024.xsd").is_file()
+    assert (cache_dir / "https" / "xbrl.sec.gov" / "cyd" / "2025" / "cyd-2025.xsd").is_file()
+    assert (cache_dir / "https" / "xbrl.sec.gov" / "cyd" / "2025" / "cyd-entire-2025.xsd").is_file()
     assert not (cache_dir / "https" / "2022" / "xbrl.sec.gov").exists()
     assert not (cache_dir / "https" / "2025" / "xbrl.sec.gov").exists()
     assert not (cache_dir / "https" / "xbrl.sec.gov" / "dei" / "2025" / "dei-2025-wrong-prefix.xsd").exists()
     assert not (cache_dir / "https" / "xbrl.sec.gov" / "cyd" / "2024" / "cyd-2025.xsd").exists()
+    assert not (cache_dir / "https" / "xbrl.sec.gov" / "cyd" / "2025" / "cyd-2024.xsd").exists()
     assert module._sec_entrypoint_urls("2022") == [
         "https://xbrl.sec.gov/dei/2022/dei-2022.xsd",
         "https://xbrl.sec.gov/country/2022/country-2022.xsd",
@@ -192,7 +233,63 @@ def test_sec_xbrl_arelle_provisioning_extracts_supported_sec_cache_layouts(tmp_p
         "https://xbrl.sec.gov/country/2025/country-2025.xsd",
         "https://xbrl.sec.gov/currency/2025/currency-2025.xsd",
         "https://xbrl.sec.gov/exch/2025/exch-2025.xsd",
+        "https://xbrl.sec.gov/cyd/2025/cyd-2025.xsd",
     ]
+
+
+def test_sec_xbrl_arelle_provisioning_builds_deterministic_operator_archive() -> None:
+    module = _helper_module()
+
+    first = module._build_flat_zip_archive({"b.xsd": b"b", "a.xsd": b"a"})
+    second = module._build_flat_zip_archive({"a.xsd": b"a", "b.xsd": b"b"})
+
+    assert first == second
+    with ZipFile(BytesIO(first)) as archive:
+        assert archive.namelist() == ["a.xsd", "b.xsd"]
+        for info in archive.infolist():
+            assert info.date_time == (1980, 1, 1, 0, 0, 0)
+            assert info.create_system == 0
+            assert info.compress_type == ZIP_STORED
+            assert info.external_attr == 0o644 << 16
+
+
+def test_sec_xbrl_arelle_provisioning_downloads_operator_archive_from_loose_files(monkeypatch, tmp_path: Path) -> None:
+    module = _helper_module()
+    member_bytes = {"b.xsd": b"b", "a.xsd": b"a"}
+    archive_bytes = module._build_flat_zip_archive(member_bytes)
+    requested_urls: list[str] = []
+
+    def fake_download(url: str) -> bytes:
+        requested_urls.append(url)
+        return member_bytes[Path(url).name]
+
+    monkeypatch.setattr(module, "_download", fake_download)
+    spec = {
+        "id": "sec-cyd-test",
+        "kind": "offline_cache_archive",
+        "name": "cyd-test.zip",
+        "version": "2099",
+        "url": "https://xbrl.sec.gov/cyd/2099/",
+        "sha256": module._sha256_bytes(archive_bytes),
+        "bytes": len(archive_bytes),
+        "source": "operator-built deterministic archive from SEC loose files",
+        "pinned": True,
+        "download_ready": True,
+        "operator_built_archive": True,
+        "operator_built_members": [
+            {"name": "a.xsd", "sha256": module._sha256_bytes(b"a"), "bytes": 1},
+            {"name": "b.xsd", "sha256": module._sha256_bytes(b"b"), "bytes": 1},
+        ],
+    }
+
+    package = module._ensure_taxonomy_package(tmp_path, spec, download=True)
+
+    assert requested_urls == ["https://xbrl.sec.gov/cyd/2099/a.xsd", "https://xbrl.sec.gov/cyd/2099/b.xsd"]
+    assert package["exists"] is True
+    assert package["downloaded"] is True
+    assert package["sha256_matches"] is True
+    assert package["bytes_match"] is True
+    assert (tmp_path / "cyd-test.zip").read_bytes() == archive_bytes
 
 
 def test_sec_xbrl_arelle_provisioning_verifies_sec_entrypoints_after_all_archives(monkeypatch, tmp_path: Path) -> None:
@@ -261,7 +358,7 @@ def test_sec_xbrl_arelle_provisioning_dry_lists_requested_years_without_download
     assert sorted({spec["version"] for spec in specs}) == ["2019", "2025"]
     assert report["requested_taxonomy_years"] == ["2019", "2025"]
     assert report["taxonomy_year_coverage"]["2019"]["planned_artifact_count"] == 3
-    assert report["taxonomy_year_coverage"]["2025"]["planned_artifact_count"] == 3
-    assert report["taxonomy_year_coverage"]["2025"]["pinned_artifact_count"] == 3
+    assert report["taxonomy_year_coverage"]["2025"]["planned_artifact_count"] == 4
+    assert report["taxonomy_year_coverage"]["2025"]["pinned_artifact_count"] == 4
     assert report["taxonomy_year_coverage"]["2019"]["partial_coverage"] is True
     assert report["non_goals_preserved"]["sec_network_fetch_performed"] is False
