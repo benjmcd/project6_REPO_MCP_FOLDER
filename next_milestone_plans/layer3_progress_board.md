@@ -13576,10 +13576,11 @@ supported inputs are `NVDA`, `AMD`, `MSFT`, `GOOG`, `AMZN`, `META`, `AAPL`,
 `TRLV`, `GTBIF`, `CURLF`, and `CRLBF`. Foreign IFRS annuals for `SONY`, `CCJ`,
 `DNN`, `NXE`, `MT`, and `TSM` were acquired and retained but blocked with
 admitted reason code `taxonomy_year_unprovisioned` after the operator symptom
-`arelle_model_errors_present`; this is the `ifrs-taxonomy-pins` follow-up. Form
-`6-K` slots blocked as `no_inline_facts_pre_inline_era`, which is expected
-because the filings have no iXBRL by design. `KAP`, `PDN`, and `YCA` map from
-operator status `company_matrix_unknown` to admitted reason code
+`arelle_model_errors_present`; package prep for that follow-up is superseded by
+#2440 and #2442, while retained foreign-annual replay/result recording remains
+open. Form `6-K` slots blocked as `no_inline_facts_pre_inline_era`, which is
+expected because the filings have no iXBRL by design. `KAP`, `PDN`, and `YCA`
+map from operator status `company_matrix_unknown` to admitted reason code
 `official_ticker_resolution_missing`; `TSMC-as-written` maps from
 `company_matrix_unknown` to admitted reason code `ticker_alias_resolution_required`.
 
@@ -13591,8 +13592,8 @@ the root cause, the plugin fixed it, and the previously blocked filing was
 re-proven with `model_error_count=0`.
 
 Forward posture: P2 corpus is `EXECUTED` for the domestic SEC inline scope.
-`ifrs-taxonomy-pins` is the named follow-up pursuit for the blocked foreign IFRS
-annuals, with acceptance criteria recorded in
+Retained foreign-annual replay/result recording is the named follow-up after
+#2440/#2442 package prep, with acceptance criteria recorded in
 `docs/program-context/03-forward-plan.md`.
 
 Runtime behavior introduced by this pass: `false`.
@@ -13645,11 +13646,13 @@ hash only, SHA-256
 the #2434 not-found evidence gap. The report content is not committed because it
 embeds machine-local paths.
 
-CYD decision: PR `#2436` pins `cyd-2024` and adds
+CYD/IFRS decision: PR `#2436` pins `cyd-2024` and adds
 `taxonomy_family_vintage_unprovisioned`. Filed-year does not equal taxonomy-year:
-MSFT FY2025 filed in 2025 imported 2024 taxonomy families. `cyd-2025` remains a
-loose-file follow-up for the IFRS phase, to be packaged deterministically with
-per-file provenance before admission.
+MSFT FY2025 filed in 2025 imported 2024 taxonomy families. PR `#2440` now pins
+`cyd-2025` as an operator-built deterministic archive with per-file provenance;
+PR `#2442` now pins `IFRSAT-2025.zip` for IFRS 2025 package admission. The
+remaining follow-up is zero-egress replay/result recording for the retained
+foreign annuals.
 
 Gate framing: single-filing zero-egress replay lane. G1 disposition taxonomy is
 addressed by the MSFT supported-equivalent disposition and registry-by-reference

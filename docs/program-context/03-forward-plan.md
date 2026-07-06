@@ -6,6 +6,103 @@ report as verified/adjudicated, grounded in repo authorities (merge-gate
 policy, admission runbook, A8 docs, support matrix). Nothing here is authorized by this
 document — it specifies what authorization would require.
 
+## 2026-07-06 Forward Program Refresh (M-PROGRAM-CONTEXT-4)
+
+Supersession boundary: this block is the current pointer after #2442. The
+M-PROGRAM-CONTEXT-3 refresh and older P-number sections remain historical and
+still govern where not superseded here. This refresh admits no
+production-readiness, default-on, new live-egress, foreign-annual replay/result,
+or value-reveal claim.
+
+### F1 - M-COVERAGE-XDIST: DONE (#2438)
+
+- Status: DONE. PR #2438 remains the current coverage Option A record:
+  `backend-coverage` uses pytest-xdist while preserving job id, target globs,
+  coverage targets, and `--cov-fail-under=90`.
+- Current relevance: no further action unless optional F4 becomes material.
+
+### F2 - Program-context payload 3 landing: DONE (#2439)
+
+- Status: DONE. PR #2439 merged to `project6-origin/main` at
+  `2edcd37dbb52478a20147e842d43d900fc9e6ed3`.
+- Current relevance: future operators should not treat the D20-D26 landing
+  lane as open; it is historical authority for D27 and the F3a/F3b split.
+
+### F3a - cyd-2025 provisioning prep: EXECUTED (#2440)
+
+- Status: EXECUTED. PR #2440 merged to `project6-origin/main` at
+  `6d962b248ffdaaf35adc8467dbaad171fb873537` on 2026-07-06.
+- Scope landed: `sec-cyd-2025` is pinned as an operator-built deterministic
+  archive from the SEC loose-file base URL; `cyd/2025` flat extraction and SEC
+  entrypoint verification are covered; the sidecar admits provisioned
+  `cyd-2025.zip` through the provisioner package set.
+- Operator evidence re-verified by this lane: `CYD2025_FETCH_ARMING.json`
+  was written before first request, armed only `xbrl.sec.gov`, budgeted 10
+  requests, and explicitly did not authorize `xbrl.ifrs.org`; `cyd-2025.zip`
+  hashes to
+  `ad7b166a3913778a4fabb15f3a4431d80eb1930d9cc1e271c318f7b4cffdfc33`
+  at 208,667 bytes; the PINNING note hashes to
+  `9cb98156f2780efd44e8a9954881331e96b00b6b86c726b77bf9e0211bec2e8e`;
+  all 7 zip members match the PINNING hashes and deterministic metadata.
+- Post-#2440 provisioning evidence: `provision_report_2021_2026_r2.json`
+  hashes to
+  `7d5f719c274b2c64275498b52832913d6ad0914847bc4abde54e2842063527ee`;
+  structured read reports `ready=true`, 12/12 packages loaded, 26/26 offline
+  entrypoints OK, and both `cyd/2024` and `cyd/2025` entrypoints loaded.
+- Remaining delta for CYD: none for the SEC `cyd-2025` pin/admission prep
+  surface.
+
+### F3b - IFRS 2025 package prep: EXECUTED (#2442)
+
+- Status: EXECUTED for package pin/admission prep. PR #2442 merged to
+  `project6-origin/main` at `e7e9e8675fa6bbe8ec75172162c0cebba3bdfc2a` on
+  2026-07-06.
+- Scope landed: retained local `IFRSAT-2025.zip` is pinned as the IFRS 2025
+  taxonomy package with sha256
+  `302afc7f69c5f92697ab8d87a6f584406f4addaf7f905468052c280c2fe16d19`
+  at 2,103,003 bytes; the provisioner package set and sidecar admission now
+  cover the IFRS 2025 package.
+- Remaining F3 delta: replay the retained foreign annuals at zero SEC EDGAR
+  egress and record supported-equivalent or exact named-block outcomes.
+- D27 boundary still applies: a future first-use host class, new live taxonomy
+  vintage, or broader request budget still requires a named owner grant before
+  the first request. #2442 does not make generic directives blanket egress
+  authority.
+
+### F4 - Coverage Option B (optional)
+
+- Status: OPTIONAL. Only proceed if #2438's residual still materially slows the
+  release gate.
+- Guardrail: this remains a coverage-enforcement semantics change, not merely
+  a speed patch; exact line-set union proof and fail-closed floor-trip evidence
+  are required before any release-gate change.
+
+### F5 - Release-gate needs gap and orphaned workflow registration
+
+- Status: OWNER DECISION. The release-gate dependency and orphaned workflow
+  registration questions remain unchanged by #2440.
+
+### F6 - Worktree cleanup
+
+- Status: OWNER GO REQUIRED for broad cleanup. This lane's own worktree cleanup
+  is ordinary lane closeout only; it does not authorize deleting or removing
+  unrelated worktrees.
+
+### F7 - Owner-keyed decisions remain parked
+
+- P4 legacy Arelle reveal disposition remains a one-line owner posture choice.
+- P5 nonlocal production admission remains blocked solely on the human final
+  admission packet. Reveal proofs and taxonomy pinning are not admission
+  evidence.
+
+### F8 - Standing rails
+
+- Enumerate before fetch; source-default raw/reveal/network flags stay false by
+  default; no live egress outside an established host class without named owner
+  grant; current-pointer fields get supersession pointers; heavy local
+  Python/Arelle work serializes by machine; docs updates append and supersede
+  instead of rewriting history.
+
 ## 2026-07-06 Forward Program Refresh (M-PROGRAM-CONTEXT-3)
 
 Supersession boundary: this block is the current pointer for the open program
@@ -121,8 +218,8 @@ default-on, live-egress, or value-reveal claim.
 ## Sequencing map (dependencies, not conventions)
 
 - P2 domestic SEC inline corpus scope: EXECUTED by the owner-authorized
-  2026-07-05 corpus-go run. Foreign IFRS annuals remain a named
-  `ifrs-taxonomy-pins` follow-up.
+  2026-07-05 corpus-go run. After #2440/#2442 package prep, foreign IFRS
+  annuals remain a named zero-egress replay/result follow-up.
 - P4: unblocked now (independent).
 - P5: depends on the human final-admission packet + P7b-settled semantics (settled: I10) +
   durable posture (done) + record truth (done). Corpus breadth (P2) strengthens but does not
@@ -143,18 +240,14 @@ default-on, live-egress, or value-reveal claim.
 - Supported domestic scope: 19 full domestic 10-K/10-Q pairs, plus CURLF and
   CRLBF 40-F through US-GAAP inline handling.
 - Named residuals: foreign IFRS annuals for `SONY`, `CCJ`, `DNN`, `NXE`, `MT`,
-  and `TSM` remain the open `ifrs-taxonomy-pins` follow-up. The IFRS follow-up
-  now also includes `cyd-2025` loose-file package construction where those
-  annuals require CYD 2025 family refs. `6-K` filings remain
+  and `TSM` remain open only for zero-egress replay/result recording after
+  the current F3a/F3b package prep entries. `6-K` filings remain
   `no_inline_facts_pre_inline_era`; `KAP`, `PDN`, and `YCA` map to
   `official_ticker_resolution_missing`; and `TSMC-as-written` maps to
   `ticker_alias_resolution_required`.
-- Residual delta: `ifrs-taxonomy-pins` plus deterministic `cyd-2025` loose-file
-  packaging for the blocked foreign IFRS annuals. Acceptance criteria: pinned
-  `ifrs-2025-03-27` package and deterministic `cyd-2025` package fetched/built
-  and hashed by operator action with per-file provenance; year-aware admission
-  extended to the IFRS and needed CYD family vintages; the previously blocked
-  foreign annuals rerun to supported-equivalent or named-block.
+- Residual delta: replay the previously blocked foreign annuals to
+  supported-equivalent or named-block, using the package prep now recorded in
+  F3a/F3b.
 - Pass criteria for future IFRS follow-up: no raw values/paths/user-agent or
   operator identity in committed text; public tickers/forms/dates only where
   needed for named disposition; hash/count/disposition-only aggregate report;
