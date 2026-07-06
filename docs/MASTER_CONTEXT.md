@@ -382,6 +382,15 @@ else (additive tests, docs, static UI) is **Tier-1** → self-verify + CI.
 - **Why:** keeps work isolated + discoverable + co-located with the repo; avoids the scattered
   drive-root worktrees (`C:\p6*`) and global/Downloads placements. Long paths are handled via
   `core.longpaths`. Stray merged worktrees are left in place pending explicit cleanup authorization.
+  (Superseded 2026-07-06: owner-authorized local cleanup executed - see
+  `docs/program-context/03-forward-plan.md`, M-WORKTREE-CLEANUP-EXEC refresh;
+  registrations 353 -> 163, 190 worktrees removed across two phases, about
+  85 GB reclaimed. Still owner-gated: 139 protected local worktrees [76
+  non-safe ignored content, 63 dirty - the dirty class may hold unlanded work;
+  per-item evidence hash `bed6ccfc908f4d321c139075bd0111f66a0a1bff44d61bd49740d49947ae630f`
+  in the untracked cleanup manifest], mass remote-branch deletion [about 1,726
+  agent-prefixed refs], and the external temp-placement anomaly awaiting owner
+  unlock.)
 
 ### 3.5 Honesty rails (operator-run vs CI-durable; proven vs designed vs gated)
 **Decision:** never upgrade "operator-run proof" to "committed/CI'd truth," nor "designed" to
@@ -462,6 +471,14 @@ disposition policy (possibly including erasure) would be needed — explicitly o
   owner decisions.
 - **Stray worktree cleanup?** Merged/done worktrees I own (`C:\p6ui`, `C:\p6audit`, `C:\p6impl`) —
   `git worktree remove` preserves branches; awaiting explicit go (standing no-remove rule).
+  Superseded 2026-07-06: owner-authorized local cleanup executed for the
+  adjudicated class; 353 -> 163 registrations, 190 worktrees removed, and about
+  85 GB reclaimed. Remaining owner-gated items are 139 protected local worktrees
+  (including 63 dirty worktrees that may hold unlanded work; per-item evidence
+  hash `bed6ccfc908f4d321c139075bd0111f66a0a1bff44d61bd49740d49947ae630f`
+  in the untracked cleanup manifest), the separate mass remote-branch deletion
+  decision for about 1,726 agent-prefixed refs, and the external temp-placement
+  anomaly.
 - **Whether to PR this master-context doc** to main, or maintain it on-branch only.
 
 ---

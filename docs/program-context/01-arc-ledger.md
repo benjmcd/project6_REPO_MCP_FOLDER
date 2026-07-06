@@ -259,6 +259,17 @@ Dates 2026. All PRs merged to `project6-origin/main`; squash SHAs given.
   supported issuers plus the six named distinct retained IFRS issuers (`SONY`,
   `CCJ`, `DNN`, `NXE`, `MT`, and `TSM`).
 
+## Post-Phase-11 hardening addendum (07-06)
+
+- #2445 `2c4f160d` - post-build fail-closed `verify_zip_determinism` guard
+  on operator-built taxonomy archives. The guard checks five mismatch reason
+  classes (`member_order`, `date_time`, `create_system`, `compress_type`, and
+  `external_attr`) and keeps the temp-sibling verify-then-promote flow from
+  landing rejected archives at the final taxonomy path; code and tests only.
+  Why: a platform-metadata drift in a future operator-built pin would otherwise
+  be caught only by Linux CI after the fact, the same incident class as the
+  `cyd-2025` `create_system` mismatch.
+
 ## Net state after Phase 11
 
 Local SEC-XBRL pipeline proven end-to-end ON REAL DATA: live-acquired filing → parsed →
