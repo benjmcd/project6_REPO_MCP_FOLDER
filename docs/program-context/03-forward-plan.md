@@ -54,6 +54,8 @@ document — it specifies what authorization would require.
   lane; treat the executed domestic scope as production coverage or as IFRS readiness.
 - Gates: OWNER for any additional live acquisition. Agent-executable:
   report-only/record-only lanes over already authorized retained evidence.
+- Future SEC corpus runs use the canonical pre-registered run gate registry in
+  `next_milestone_plans/Layer3_planning_docs/corpus-run-gate-spec.md`.
 - Size/risk: small-medium for IFRS taxonomy pins if report-only; Tier-2 only if
   runtime/persistence behavior changes.
 - Why this changed state: the domestic breadth confidence gap is closed for the
