@@ -62,7 +62,10 @@ At minimum, the bundle records:
 
 - `spec_id`: `sec_xbrl_corpus_run_gate_spec.v1`.
 - `spec_file`: `next_milestone_plans/Layer3_planning_docs/corpus-run-gate-spec.md`.
-- `run_namespace` and fresh `client_request_id` namespace.
+- `run_namespace` and `client_request_id` namespace. New acquisition runs use a
+  fresh namespace. Exact replay or resume bundles may reuse request ids only
+  when the bundle carries a fresh regrade/export namespace plus a request-id
+  ledger proving that each reused id binds to the same basis hash.
 - `repo_main_sha` and PR/SHA anchors used for code authority.
 - `gate_results`: one object per gate below, including `id`, `status_tag`,
   `timing`, `artifact_ref`, `artifact_sha256`, `grader`, `pass`, and
@@ -126,7 +129,10 @@ where this spec requires one, or it fails closed.
 - Status tag: `LIVE-RUN-ONLY`.
 - Timing: pre-run threshold registration and post-run grading.
 - Statement: a live corpus run must pre-register supported-filing and
-  supported-issuer minimums, plus the named owner shortfall adjudicator.
+  supported-issuer minimums, plus the named owner shortfall adjudicator. This
+  gate is dormant for pure planning or record-only lanes that make no corpus-run
+  gate-pass claim; it applies to any zero-egress regrade or report-only bundle
+  that evaluates a previously acquired live corpus run.
 - Required artifact: machine-readable aggregate counts for supported filings,
   supported issuers, input count, attempted filing count, named block count, and
   shortfall adjudicator identity/decision reference when thresholds are not met.
@@ -203,8 +209,10 @@ where this spec requires one, or it fails closed.
 - Named command: for redacted product-runner reports, the current anchored
   command is
   `python diagnostics/assessment/sec-xbrl-real-corpus-product-runner.py --redacted-product-runner-report <report> --storage-dir <operator-root> --matrix-plan <matrix-plan> --output <scan-report>`.
-  Any supplemental scan for committed docs, receipts, or regrade reports must
-  name its script/module and include its source hash in the artifact.
+  That command proves only the runner's offline redacted-product report import
+  scan. It is not, by itself, a complete G6 artifact. A G6 pass also requires a
+  supplemental scan for committed docs, receipts, and regrade reports; that scan
+  must name its script/module and include its source hash in the artifact.
 - Forbidden classes: operator identity/contact, local paths other than the
   intentional `C:/p6store` root marker, User-Agent contents, raw fact values,
   raw CIK/accession/SEC URL authority, source artifact bytes, raw SEC payloads,
@@ -228,10 +236,13 @@ where this spec requires one, or it fails closed.
   SEC EDGAR and taxonomy-host egress are distinct entries.
 - Required artifact: pre-run arming record with run namespace, grant reference,
   host allowlist, SEC EDGAR request budget, taxonomy-host request budget,
-  User-Agent presence marker, live-network flags, and arming timestamp hash.
+  User-Agent presence marker, live-network flags, arming timestamp hash, and a
+  redacted orderable timestamp or monotonic sequence marker.
 - Pass condition: arming record exists before the first request timestamp; every
   request host appears in the arming record; taxonomy-package egress is not
-  smuggled under the SEC EDGAR budget.
+  smuggled under the SEC EDGAR budget; the exported order marker proves the
+  arming record predates the first request without exposing operator-local raw
+  details.
 - Grader: independent regrader over arming record and timestamp log; owner grant
   reference is operator-attested when the full grant cannot be public.
 - Repo anchors: live-source config/service anchors and
@@ -306,6 +317,10 @@ A future closeout may say "gates passed" only when:
 3. the independent regrade report is complete; and
 4. the redaction scan is clean.
 
-If any artifact is missing, empty, operator-only without exported evidence, or
-retroactively amended after the action it controls, the correct claim is
-`gate_failed_closed`, not `passed_with_context`.
+If any applicable gate artifact is missing, empty, operator-only without
+exported evidence, or retroactively amended after the action it controls, the
+correct claim is `gate_failed_closed`, not `passed_with_context`. A
+`LIVE-RUN-ONLY` gate marked dormant for a zero-egress planning, replay, or
+record-only lane is exempt from its live-egress artifact requirement only when
+the bundle records the dormant reason and makes no claim that the dormant live
+control passed.
