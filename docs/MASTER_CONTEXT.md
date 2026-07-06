@@ -35,6 +35,7 @@ post-merge main run `28776807974` recorded `backend-coverage` success in
 2025-03-27 plus deterministic `cyd-2025` provisioning for the retained foreign
 annuals. No production-readiness, default-on, live-egress, or new value-reveal
 claim is made by this pointer.
+(Superseded within 2026-07-06 by the later #2443 pointer below: current record is 46 supported filings / 27 supported issuers.)
 
 2026-07-06 pointer: `docs/program-context/` is refreshed again by
 M-PROGRAM-CONTEXT-4 / PR #2441, grounded on current main through PR #2442
@@ -51,6 +52,7 @@ need named host-and-budget grants. The remaining F3 work is zero-egress
 replay/result recording for the retained foreign annuals, not package
 pinning. This pointer admits no production-readiness, default-on, new live
 egress, value-reveal, raw-value, or foreign-annual replay/result claim.
+(Superseded within 2026-07-06 by the later #2443 pointer below: current record is 46 supported filings / 27 supported issuers.)
 
 2026-07-06 pointer: `docs/program-context/` is refreshed by
 M-CORPUS-46-RECORD / PR #2443, grounded on current main through PR #2441
