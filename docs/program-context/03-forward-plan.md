@@ -42,6 +42,9 @@ content.
   non-safe ignored content under the refined matcher, and 63 remain protected
   for tracked or unsafe untracked dirty status. These are an owner/session
   review list, not mechanically-safe cleanup candidates.
+  The 63 dirty-status worktrees in particular may carry unlanded or in-flight
+  work and must be reviewed per item before any removal; per-entry SKIPPED-DIRTY
+  evidence is in `state/agent-inbox/worktree-cleanup-exec-manifest.json`.
 - Remote branches: the remote `codex/*` census remains report-only at 1,726
   heads. The eight sampled leftovers (`codex/a8-runtime`,
   `codex/ops-ready-b1`, `codex/ops-ready-b2-fix`, `codex/ops-ready-b3`,
@@ -50,6 +53,9 @@ content.
   Mass remote branch deletion remains a separate owner-gated decision.
 - Anomaly: `/tmp/audit-wt/p6main` remains an external locked registration
   (`locked initializing`) and is outside this local repo-worktree cleanup class.
+  It is also a placement violation, a registration outside the owning repo's
+  `worktrees/` folder, and remains locked; resolving it requires an owner
+  unlock/decision.
 
 ## 2026-07-06 Forward Program Refresh (M-CORPUS-46-RECORD)
 

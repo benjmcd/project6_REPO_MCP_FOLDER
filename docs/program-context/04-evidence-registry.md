@@ -313,6 +313,7 @@ source, or hash-only durable artifacts.
 |---|---|
 | `sec-cyd-2025` pin | `tools/sec-xbrl-arelle-provision.py` declares `sec-cyd-2025` with the SEC CYD 2025 loose-file base host class, operator-built flag, archive hash `ad7b166a...fc33`, 208,667 bytes, and 7 member hashes. |
 | Operator-built archive construction | `tools/sec-xbrl-arelle-provision.py` contains `_download_operator_built_archive` and deterministic `_build_flat_zip_archive`; tests assert fixed timestamp, `create_system=0`, stored compression, and deterministic byte equality. |
+| Operator-built zip determinism guard | `tools/sec-xbrl-arelle-provision.py` defines `verify_zip_determinism`, invoked post-build for `operator_built_archive` specs only; it fails closed with machine-readable reason codes for member order, `date_time`, `create_system`, `compress_type`, and `external_attr`; rejected archives never land at the final taxonomy path because the flow verifies a temp sibling before promotion; asserted by `backend/tests/test_sec_xbrl_arelle_provisioning.py` and landed by PR #2445 (`2c4f160d`). |
 | CYD 2025 extraction/admission | `backend/tests/test_sec_xbrl_arelle_provisioning.py` verifies `cyd/2025` flat extraction and 2025 SEC entrypoint URLs; `backend/tests/test_sec_xbrl_sidecar.py` verifies sidecar readiness when the provisioner package set includes `cyd-2025.zip`. |
 | PR #2440 validation record | PR body records focused suite `86 passed, 1 skipped`, deterministic archive rebuild matching `ad7b166a...fc33`, `py_compile`, and `git diff --check`; final CI run green including `sec-xbrl-arelle-provisioning`, `backend-coverage`, and `release-gate`. |
 | Review-thread state | GraphQL `reviewThreads(first:100)` for PR #2440 returned `totalCount=1` and `isResolved=true`. |
@@ -400,3 +401,11 @@ host-class authority for future taxonomy fetches.
 | Artifact | sha256 anchor | Meaning |
 |---|---|---|
 | Inbox archive manifest | aggregate sha256 `42cd507ba527597fa5ab4128889ac5cf7caef3d213debd6cab65a19b4fb3a337`; archived primary inbox-log sha256 `861b55ec3ceb1a9bffd4faaf3e985f6d9d14ad800daafc63ec48f18a5597c1b7`; `ARCHIVE_MANIFEST.json` under `C:/p6store/inbox-archive/2026-07-06/` | Point-in-time off-repo archive of the dual-agent inbox logs, source mandates, JSON manifests, and program-context payload dirs; 50 copied files / 2,140,077 bytes; raw logs are not committed. |
+
+### Merged PR / SHA Table Extension
+
+| PR | Merge SHA | Title / tranche | Verification |
+|---|---|---|---|
+| #2445 | `2c4f160d` | `Guard operator-built zip determinism` (`tools/sec-xbrl-arelle-provision.py` + `backend/tests/test_sec_xbrl_arelle_provisioning.py`, +166/-6) | CI run 28814395628 green; 1 review thread resolved; detached merged-main proof with targeted slice 16 passed |
+| #2446 | `4e9001ee` | `docs: anchor governance record archive` (D29 + I12 + registry archive row, +54) | CI run 28815380142 green; 3 threads resolved; leak scan pass |
+| #2447 | `63f7f92d` | `docs: record worktree cleanup execution` (`03-forward-plan.md` only, +49) | PR CI run 28823637387 and post-merge main run 28824285087 green; 0 threads |
