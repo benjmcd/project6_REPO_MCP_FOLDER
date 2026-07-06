@@ -106,3 +106,12 @@ If analyst-insight work continues, the next reasonable lanes are:
 2. **Deprecation / rename strategy**: Establish a timeline and mechanism for retiring the legacy `market-pipeline` route prefix, normalizing internal module naming, and cleaning up the mixed OpenAPI tag surface. This has high blast radius and should be a distinct slice.
 
 Until one of those lanes is intentionally opened, the current analyst-insight state should be treated as stable and complete for its current scope.
+
+## 8. Correction note (2026-07-06)
+
+The review-shell discoverability links described above are not on current main.
+The implementation and its test assertions exist only as uncommitted work
+preserved in a local worktree; see the dirty-class adjudication record in
+`docs/program-context/03-forward-plan.md`. This doc previously read as if the
+links were live; treat the review-shell discoverability rows as target-state
+until the slice lands.

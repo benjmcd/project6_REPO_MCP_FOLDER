@@ -6,6 +6,43 @@ report as verified/adjudicated, grounded in repo authorities (merge-gate
 policy, admission runbook, A8 docs, support matrix). Nothing here is authorized by this
 document — it specifies what authorization would require.
 
+## 2026-07-06 Forward Program Refresh (M-DIRTY-ADJUDICATION)
+
+Supersession boundary: this block is the current F6 pointer after the
+read-only dirty-class worktree adjudication. It supersedes only the protected
+worktree classification and disposition plan; it does not authorize removals,
+mass remote-branch deletion, external locked-registration cleanup, or deletion
+of protected local work.
+
+### F6 - Worktree cleanup: ADJUDICATED REMAINDER, OWNER-GATED EXECUTION
+
+- Method: read-only, per-item dirty-class adjudication plus ignored-class
+  review and consistency critique. Registry count stayed 163 before and after;
+  zero worktrees, branches, files, or registrations were mutated.
+- Evidence: `state/agent-inbox/worktree-dirty-adjudication-2026-07-06.json`,
+  sha256 `0c87d88f0a6efb7bf056cbf82c12b649979b2cb522639d7db01a9a279bf2c3a0`,
+  189,380 bytes, records the per-item evidence, critic corrections, and
+  snapshot-first disposition plan for the 139 protected worktrees.
+- Adjusted tally: 115 `TOOL-STATE-ONLY`, 8 `SUPERSEDED`, 11
+  `UNIQUE-CONTENT`, and 5 `AMBIGUOUS` after applying the two critic
+  corrections.
+- Critic correction: `worktrees/l3-package-life` moved from
+  `UNIQUE-CONTENT` to `SUPERSEDED`; P22 runtime and both P22 docs are on main,
+  while the original verdict checked a stale pre-refactor path.
+- Critic correction: `worktrees/sec-family-res` moved from `UNIQUE-CONTENT` to
+  `AMBIGUOUS`; the models, migration, and service concept landed under renamed
+  paths, while the `.v1` schema-id variant and one doc still need owner review.
+- Preserve headlines: `worktrees/analyst-insight-layer-slice4` holds unlanded
+  review-shell discoverability implementation and tests; `worktrees/onlook-proof-settle`
+  has nested repositories with four unpushed commits; `worktrees/p6xbrl` holds
+  the 17A evidence bundle and `worktrees/p6xbrl17b` holds the 17B driver, both
+  retained under the value-retention posture.
+- Disposition: 123 of 139 protected worktrees are mechanically clearable after
+  snapshot-first archives, but execution remains owner-gated. The remaining 16
+  need per-item owner decisions before preserve-or-remove action.
+- Unchanged gates: mass remote-branch deletion remains a separate owner-gated
+  decision, and the external locked placement anomaly remains unresolved.
+
 ## 2026-07-06 Forward Program Refresh (M-WORKTREE-CLEANUP-EXEC)
 
 Supersession boundary: this block is the current F6 pointer after the
