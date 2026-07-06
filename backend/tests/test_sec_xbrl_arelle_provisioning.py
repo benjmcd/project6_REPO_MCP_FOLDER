@@ -248,6 +248,7 @@ def test_sec_xbrl_arelle_provisioning_builds_deterministic_operator_archive() ->
         assert archive.namelist() == ["a.xsd", "b.xsd"]
         for info in archive.infolist():
             assert info.date_time == (1980, 1, 1, 0, 0, 0)
+            assert info.create_system == 0
             assert info.compress_type == ZIP_STORED
             assert info.external_attr == 0o644 << 16
 

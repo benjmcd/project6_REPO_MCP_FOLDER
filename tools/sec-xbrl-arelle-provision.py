@@ -853,6 +853,7 @@ def _build_flat_zip_archive(members: dict[str, bytes]) -> bytes:
         for name in sorted(members):
             _validate_flat_member_name(name)
             info = ZipInfo(filename=name, date_time=(1980, 1, 1, 0, 0, 0))
+            info.create_system = 0
             info.compress_type = ZIP_STORED
             info.external_attr = 0o644 << 16
             archive.writestr(info, members[name])
