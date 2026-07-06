@@ -4,10 +4,11 @@ import argparse
 import hashlib
 import importlib.metadata
 import json
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 from urllib.request import urlopen
-from zipfile import ZipFile
+from zipfile import ZIP_STORED, ZipFile, ZipInfo
 
 
 SCHEMA_ID = "tools.sec_xbrl_arelle_provision.v1"
@@ -27,7 +28,58 @@ _CYD_2024_FLAT_ARCHIVE_MEMBERS = frozenset(
         "cyd-entire-2024.xsd",
     }
 )
-_SEC_FLAT_ARCHIVE_MEMBERS_BY_YEAR = {"2024": _CYD_2024_FLAT_ARCHIVE_MEMBERS}
+_CYD_2025_FLAT_ARCHIVE_MEMBERS = frozenset(
+    {
+        "cyd-2025.xsd",
+        "cyd-6k-sub-2025.xsd",
+        "cyd-8k-sub-2025.xsd",
+        "cyd-af-2025.xsd",
+        "cyd-af-sub-2025.xsd",
+        "cyd-cr-2025.xsd",
+        "cyd-entire-2025.xsd",
+    }
+)
+_CYD_2025_OPERATOR_BUILT_MEMBERS: tuple[dict[str, Any], ...] = (
+    {
+        "name": "cyd-2025.xsd",
+        "sha256": "da7e6f4447191c4e62f07ffef156348bf7683fb717743b29316ef2f09688e57e",
+        "bytes": 52_366,
+    },
+    {
+        "name": "cyd-6k-sub-2025.xsd",
+        "sha256": "6ae880e18f03b8a4d6048fa445ba7da219d8eeac6d6ed72479b5f50bbc77a3bc",
+        "bytes": 26_130,
+    },
+    {
+        "name": "cyd-8k-sub-2025.xsd",
+        "sha256": "6cd008fa9bdab4e0eed8ebcc4dcfd3c52580a1cff806dd24d42d990dab15e5af",
+        "bytes": 26_130,
+    },
+    {
+        "name": "cyd-af-2025.xsd",
+        "sha256": "456e41cd3e86fb8a9f497f9175945c2260a52c5bc2829d8c4eeda95673c85ff4",
+        "bytes": 11_802,
+    },
+    {
+        "name": "cyd-af-sub-2025.xsd",
+        "sha256": "b8255b4f6224dc9c523908ca014c4839b5c633a5478132cb7d81474d7113a0db",
+        "bytes": 31_457,
+    },
+    {
+        "name": "cyd-cr-2025.xsd",
+        "sha256": "8a05e855611bfbe57486f086e78aaebd00567ff50dcfa5a40b6a0defed435651",
+        "bytes": 7_666,
+    },
+    {
+        "name": "cyd-entire-2025.xsd",
+        "sha256": "49d2dd9dad441ee137fbad06c17f225c94755134234b1d7db1b409b9d544a40f",
+        "bytes": 52_326,
+    },
+)
+_SEC_FLAT_ARCHIVE_MEMBERS_BY_YEAR = {
+    "2024": _CYD_2024_FLAT_ARCHIVE_MEMBERS,
+    "2025": _CYD_2025_FLAT_ARCHIVE_MEMBERS,
+}
 
 
 def _taxonomy_spec(
@@ -43,6 +95,8 @@ def _taxonomy_spec(
     pinned: bool = True,
     download_ready: bool = True,
     unavailable_reason: str | None = None,
+    operator_built_archive: bool = False,
+    operator_built_members: tuple[dict[str, Any], ...] | None = None,
 ) -> dict[str, Any]:
     spec: dict[str, Any] = {
         "id": id,
@@ -58,6 +112,9 @@ def _taxonomy_spec(
     }
     if unavailable_reason:
         spec["unavailable_reason"] = unavailable_reason
+    if operator_built_archive:
+        spec["operator_built_archive"] = True
+        spec["operator_built_members"] = list(operator_built_members or ())
     return spec
 
 
@@ -287,6 +344,21 @@ _TAXONOMY_SPECS: tuple[dict[str, Any], ...] = (
         sha256="6a963051af02ff458e02669549bd55f9d547281724f3b4e053cb0157be8121e4",
         bytes=1_201_089,
         source="SEC 2025 taxonomy package archive",
+    ),
+    _taxonomy_spec(
+        id="sec-cyd-2025",
+        kind="offline_cache_archive",
+        name="cyd-2025.zip",
+        version="2025",
+        url="https://xbrl.sec.gov/cyd/2025/",
+        sha256="ad7b166a3913778a4fabb15f3a4431d80eb1930d9cc1e271c318f7b4cffdfc33",
+        bytes=208_667,
+        source=(
+            "SEC 2025 Cybersecurity Disclosure taxonomy loose files; "
+            "operator-built deterministic archive 2026-07-06; SEC does not publish cyd-2025.zip"
+        ),
+        operator_built_archive=True,
+        operator_built_members=_CYD_2025_OPERATOR_BUILT_MEMBERS,
     ),
     _taxonomy_spec(
         id="fasb-us-gaap-2026",
@@ -523,7 +595,10 @@ def _ensure_taxonomy_package(taxonomy_dir: Path, spec: dict[str, Any], *, downlo
     download_ready = bool(spec.get("download_ready"))
     download_blocked = bool(download and not path.exists() and not (pinned and download_ready))
     if not path.exists() and download and pinned and download_ready:
-        path.write_bytes(_download(spec["url"]))
+        if spec.get("operator_built_archive"):
+            path.write_bytes(_download_operator_built_archive(spec))
+        else:
+            path.write_bytes(_download(spec["url"]))
         downloaded = True
     exists = path.is_file()
     observed_hash = _sha256(path) if exists else None
@@ -748,12 +823,57 @@ def _download(url: str) -> bytes:
         return response.read()
 
 
+def _download_operator_built_archive(spec: dict[str, Any]) -> bytes:
+    base_url = str(spec["url"]).rstrip("/") + "/"
+    member_payloads: dict[str, bytes] = {}
+    for member in sorted(spec.get("operator_built_members") or [], key=lambda item: str(item["name"])):
+        name = str(member["name"])
+        _validate_flat_member_name(name)
+        payload = _download(base_url + name)
+        expected_hash = str(member.get("sha256") or "")
+        expected_bytes = int(member.get("bytes") or -1)
+        if _sha256_bytes(payload) != expected_hash:
+            raise RuntimeError("operator_built_member_hash_mismatch")
+        if len(payload) != expected_bytes:
+            raise RuntimeError("operator_built_member_size_mismatch")
+        member_payloads[name] = payload
+    archive_payload = _build_flat_zip_archive(member_payloads)
+    expected_archive_hash = spec.get("sha256")
+    expected_archive_bytes = spec.get("bytes")
+    if expected_archive_hash and _sha256_bytes(archive_payload) != expected_archive_hash:
+        raise RuntimeError("operator_built_archive_hash_mismatch")
+    if expected_archive_bytes and len(archive_payload) != int(expected_archive_bytes):
+        raise RuntimeError("operator_built_archive_size_mismatch")
+    return archive_payload
+
+
+def _build_flat_zip_archive(members: dict[str, bytes]) -> bytes:
+    buffer = BytesIO()
+    with ZipFile(buffer, "w") as archive:
+        for name in sorted(members):
+            _validate_flat_member_name(name)
+            info = ZipInfo(filename=name, date_time=(1980, 1, 1, 0, 0, 0))
+            info.compress_type = ZIP_STORED
+            info.external_attr = 0o644 << 16
+            archive.writestr(info, members[name])
+    return buffer.getvalue()
+
+
+def _validate_flat_member_name(name: str) -> None:
+    if not name or "/" in name or "\\" in name or name in {".", ".."}:
+        raise ValueError("invalid_flat_archive_member")
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
 
 
 def _summary(report: dict[str, Any]) -> dict[str, Any]:

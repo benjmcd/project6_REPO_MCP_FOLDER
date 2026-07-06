@@ -655,6 +655,45 @@ def test_sec_xbrl_sidecar_allows_provisioned_cyd_family_vintage_before_arelle(mo
     assert taxonomy_args == ["us-gaap-2024.zip", "srt-2024.zip", "sec-2024.zip", "cyd-2024.zip"]
 
 
+def test_sec_xbrl_sidecar_allows_provisioned_cyd_2025_from_provisioner_package_set(monkeypatch, tmp_path):
+    captured: dict[str, list[str]] = {}
+    provisioner = runpy.run_path(str(Path(__file__).resolve().parents[2] / "tools" / "sec-xbrl-arelle-provision.py"))
+    package_names = [spec["name"] for spec in provisioner["taxonomy_specs"](years=["2025"])]
+
+    def ready_runner(command, *_args, **_kwargs):
+        captured["command"] = list(command)
+        return _ready_arelle_runner()
+
+    inline_document = (
+        '<html xmlns:ix="http://www.xbrl.org/2013/inlineXBRL">'
+        '<link:schemaRef xlink:href="https://xbrl.sec.gov/cyd/2025/cyd-2025.xsd" />'
+        '<ix:nonFraction name="us-gaap:Assets" contextRef="c" unitRef="u">1</ix:nonFraction>'
+        "</html>"
+    )
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", ready_runner)
+    monkeypatch.setattr(
+        layer3_sec_xbrl_sidecar,
+        "_taxonomy_package_files",
+        lambda: [tmp_path / name for name in package_names],
+    )
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_cache_dir", lambda: tmp_path / "cache")
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_internet_connectivity", lambda: "offline")
+
+    result = layer3_sec_xbrl_sidecar._run_arelle(
+        primary_document=inline_document,
+        max_facts=layer3_sec_xbrl_sidecar.MIN_MAX_FACTS,
+        submission_documents=[{"filename": "primary.htm", "type": "10-K", "text": inline_document, "primary": "true"}],
+    )
+
+    taxonomy_args = [
+        Path(captured["command"][index + 1]).name
+        for index, value in enumerate(captured["command"])
+        if value == "--taxonomy-package"
+    ]
+    assert result["status"] == "ready"
+    assert taxonomy_args == ["us-gaap-2025.zip", "srt-2025.zip", "sec-2025.zip", "cyd-2025.zip"]
+
+
 def test_sec_xbrl_sidecar_allows_provisioned_2026_taxonomy_year_before_arelle(monkeypatch, tmp_path):
     captured: dict[str, list[str]] = {}
 
