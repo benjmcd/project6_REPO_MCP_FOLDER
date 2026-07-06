@@ -167,12 +167,13 @@ is which.)
 ## I12. Record-lane inbox archive refresh
 
 - Requires: at each record-lane closeout, refresh the off-repo inbox archive in
-  a new dated folder under `C:/p6store/inbox-archive/`, write an
-  `ARCHIVE_MANIFEST.json` with copied-file hashes and an aggregate sha256, and
-  cite that aggregate hash in the lane's durable record entry.
+  a new lane-unique folder under `C:/p6store/inbox-archive/` (for example, a
+  date folder plus lane slug or timestamp), write an `ARCHIVE_MANIFEST.json`
+  with copied-file hashes and an aggregate sha256, and cite that aggregate hash
+  in the lane's durable record entry.
 - Why optimal: agent-inbox logs and lane-source payloads are mutable
   coordination state. A dated off-repo hash archive preserves provenance
   without committing raw logs or treating single-copy OneDrive state as the
   durable record.
-- Enforced: record-lane closeout convention, beginning with the 2026-07-06
+- Enforced: record-lane closeout convention, beginning with the 2026-07-06 seed
   archive recorded in D29 and the evidence registry.

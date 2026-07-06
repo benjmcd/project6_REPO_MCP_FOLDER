@@ -399,4 +399,4 @@ host-class authority for future taxonomy fetches.
 
 | Artifact | sha256 anchor | Meaning |
 |---|---|---|
-| Inbox archive manifest | aggregate sha256 `42cd507ba527597fa5ab4128889ac5cf7caef3d213debd6cab65a19b4fb3a337`; archived `for-claude.md` sha256 `861b55ec3ceb1a9bffd4faaf3e985f6d9d14ad800daafc63ec48f18a5597c1b7`; `ARCHIVE_MANIFEST.json` under `C:/p6store/inbox-archive/2026-07-06/` | Point-in-time off-repo archive of the dual-agent inbox logs, source mandates, JSON manifests, and program-context payload dirs; 50 copied files / 2,140,077 bytes; raw logs are not committed. |
+| Inbox archive manifest | aggregate sha256 `42cd507ba527597fa5ab4128889ac5cf7caef3d213debd6cab65a19b4fb3a337`; archived primary inbox-log sha256 `861b55ec3ceb1a9bffd4faaf3e985f6d9d14ad800daafc63ec48f18a5597c1b7`; `ARCHIVE_MANIFEST.json` under `C:/p6store/inbox-archive/2026-07-06/` | Point-in-time off-repo archive of the dual-agent inbox logs, source mandates, JSON manifests, and program-context payload dirs; 50 copied files / 2,140,077 bytes; raw logs are not committed. |
