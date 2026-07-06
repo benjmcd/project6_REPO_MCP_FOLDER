@@ -621,3 +621,37 @@ taxonomy egress, or local path claim beyond the established `C:/p6store` root.
 - Revisit when: the project adds a durable authorization registry, or when a
   future taxonomy family requires repeated host-class fetches rather than one
   bounded package acquisition.
+
+## D29. Coordination-record provenance is archived by hash, not raw-log commits (07-06)
+
+- Context: D5 uses PR #2415 as the campaign's Tier-2 merge-gate evidence, but
+  the mutable dual-agent inbox substrate that carried the implementer narrative
+  and closeout record was not itself durably anchored.
+- Alternatives: (a) commit raw inbox logs; (b) summarize without an integrity
+  anchor; (c) copy the inbox coordination set to
+  `C:/p6store/inbox-archive/2026-07-06/`, then commit only hash and section
+  pointers.
+- Decision: (c). The primary PR #2415 narrative lives in archived primary
+  inbox-log sections `M-A8-RUNTIME-GO REPORT 1`,
+  `M-A8-RUNTIME-GO REPORT 2`, and `M-A8-RUNTIME-GO REPORT 3`; this record
+  cites those markers by name and does not quote or commit the log.
+- Why optimal: the archive preserves point-in-time review provenance while I2
+  still keeps raw logs, local coordination chatter, and machine-specific
+  details out of git history. Hash-only admission makes the snapshot
+  re-checkable without converting agent inbox files into durable source files.
+- Evidence: archived primary inbox-log sha256
+  `861b55ec3ceb1a9bffd4faaf3e985f6d9d14ad800daafc63ec48f18a5597c1b7`
+  under `C:/p6store/inbox-archive/2026-07-06/`; archive manifest aggregate
+  sha256 `42cd507ba527597fa5ab4128889ac5cf7caef3d213debd6cab65a19b4fb3a337`
+  for 50 copied files / 2,140,077 bytes. The archived inbox shows
+  `M-A8-RUNTIME-GO REPORT 2` records the implementer's paraphrase of the
+  independent round-1 `NEEDS-CHANGES` findings (F1-F6); it contains no
+  independent bracketed-reviewer `APPROVED` verdict block for PR #2415. The
+  archived dispatch inbox log contains this durability-lane dispatch reference
+  to PR #2415 but no A8 report narrative or independent verdict block. Live
+  GitHub state for PR #2415 is `MERGED`, with one `COMMENTED` bot review, zero
+  PR comments, and four resolved review threads. PR #2415 closure is therefore
+  anchored by the merge action plus `M-A8-RUNTIME-GO REPORT 3`, not by a
+  separate inbox approval verdict.
+- Revisit when: the repo gains a signed coordination-log export, or when
+  inbox/source-payload archival becomes automated at lane closeout.
