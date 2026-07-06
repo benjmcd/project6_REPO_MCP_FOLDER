@@ -228,13 +228,42 @@ Dates 2026. All PRs merged to `project6-origin/main`; squash SHAs given.
   verifies package-set/sidecar admission without publishing a foreign-annual
   replay result.
 
-## Net state after Phase 10
+## Phase 11 - Corpus 46 retained foreign-annual replay record (07-06)
+
+- Owner-named IFRS grant executed within its 5-request budget. The arming
+  record hash
+  `cb275a03cbbadfcdb55a8eedc3d585f8dd5eb6cb4c9a8b45bac986ceb080b8f6`
+  records `written_before_first_request=true`; the PINNING note hash
+  `20dfec68cccba35eb9969763ec056ac568824dd0df5f5b9c43151ac854945c07`
+  records the 5/5 request ledger; `IFRSAT-2025.zip` hashes to
+  `302afc7f69c5f92697ab8d87a6f584406f4addaf7f905468052c280c2fe16d19`.
+- Post-#2442 r3 provisioning report
+  `6ff72308060a5769ff708b556bc3e9a6269ac867b1f06eaa6d0291f4a8a9708c`
+  reports `ready=true`, 13/13 packages loaded, 26/26 SEC entrypoints intact,
+  and IFRS 2025 offline entrypoints loaded.
+- Six retained IFRS annuals replayed with zero SEC EDGAR egress and fresh
+  client_request_ids `ifrs-replay-01-r1` through `ifrs-replay-06-r1`: 6/6
+  `READY`, stores persisted, zero named blocks, fact/value counts 4693 / 886 /
+  1582 / 7335 / 2670 / 3565, total 20,731 records. Results hash
+  `7d691b6ac96fe31e40797b9e1ef582274e4792fb331c0071f821250c9189bbc7`;
+  evidence bundle hash
+  `a49b9c5553fd21788307b2dae9407b36582a97b467780aeeceda7772c44c40ff`;
+  independent regrade hash
+  `6e755725e65c11fb7fd1ddc926911804aebf924b79da9fc553f56a88b2bce2e3`,
+  verdict `PASS_WITH_ATTESTED_FIELDS`.
+- Corpus distribution supersession: the #2433/#2434 39-filing record and
+  #2437 40-filing addendum remain historical. Current corpus evidence records
+  46 supported filings, with zero remaining resolvable retained-annual replay
+  blocks. `6-K` no-inline and non-SEC/alias dispositions remain by design.
+
+## Net state after Phase 11
 
 Local SEC-XBRL pipeline proven end-to-end ON REAL DATA: live-acquired filing → parsed →
 Arelle-resolved → durably retained values → controlled governed reveal; every layer
 fail-closed, redaction-verified, CI-guarded where CI can reach, recorded in the repo, and
 durable across all worktrees. The domestic corpus breadth lane is now executed
-for the SEC inline scope with 40 supported filings across 21 supported issuers.
-SEC `cyd-2025` provisioning prep and IFRS 2025 package prep are executed and
-pinned. Retained foreign-annual zero-egress replay/result recording remains
-open. Source defaults all False. Nothing production-claimed.
+for the SEC inline scope and the retained foreign-annual replay follow-up is
+closed at 46 supported filings. SEC `cyd-2025` provisioning prep and IFRS 2025
+package prep are executed and pinned; the six retained IFRS annual replays are
+hash-recorded, zero-egress, store-persisted, and independently regraded with
+attested-field boundaries. Source defaults all False. Nothing production-claimed.

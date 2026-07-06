@@ -13670,3 +13670,67 @@ p6store mutation by this record lane, raw value disclosure, accession/CIK
 disclosure, local path disclosure beyond `C:/p6store`, production-readiness
 claim, value-reveal claim, nonlocal admission claim, default-on expansion, or
 unsupported IFRS readiness claim is admitted by this tranche.
+
+## M-CORPUS-46-RECORD
+
+Milestone: `m_corpus_46_record_v1`.
+
+Record lane/PR: `corpus-46`, PR `#2443`.
+
+Source frontier: current main
+`098e96eafd799d3a322d754b88058e5bd3ea7650` after PR `#2441`; includes PR
+`#2440` merge `6d962b248ffdaaf35adc8467dbaad171fb873537` and PR `#2442`
+merge `e7e9e8675fa6bbe8ec75172162c0cebba3bdfc2a`.
+
+Status: owner-authorized Tier-1 docs-only corpus record lane. This is
+hash/count/receipt-id record metadata only. It extends the #2433/#2434 corpus
+record and #2437 corpus-40 addendum without rewriting their historical states.
+
+Corpus delta: 40 -> 46 supported filings and 21 -> 27 supported issuers. The
+issuer count is derived from the prior 21 supported issuers plus the six named
+distinct retained IFRS issuers. Six retained IFRS annuals replayed at zero SEC
+EDGAR egress using the pinned CYD 2025 and IFRS 2025 package prep from
+#2440/#2442. All 6/6 replay rows reached `READY`, stores persisted, named
+blocks were zero, and counts were 4693 / 886 / 1582 / 7335 / 2670 / 3565
+(20,731 total records). Operator-attested fields are independently regraded
+under `PASS_WITH_ATTESTED_FIELDS`.
+
+IFRS grant and provisioning anchors: `IFRS2025_FETCH_ARMING.json` hash
+`cb275a03cbbadfcdb55a8eedc3d585f8dd5eb6cb4c9a8b45bac986ceb080b8f6`
+records `written_before_first_request=true` and request budget 5; the IFRS
+PINNING note hash
+`20dfec68cccba35eb9969763ec056ac568824dd0df5f5b9c43151ac854945c07`
+records the 5/5 request ledger; `IFRSAT-2025.zip` hashes to
+`302afc7f69c5f92697ab8d87a6f584406f4addaf7f905468052c280c2fe16d19`;
+r3 provisioning report hash
+`6ff72308060a5769ff708b556bc3e9a6269ac867b1f06eaa6d0291f4a8a9708c`
+reports `ready=true`, 13/13 packages loaded, 26/26 SEC entrypoints intact, and
+IFRS 2025 offline entrypoints loaded.
+
+Replay anchors: `IFRS_REPLAY_RESULTS.json` SHA-256
+`7d691b6ac96fe31e40797b9e1ef582274e4792fb331c0071f821250c9189bbc7`;
+evidence bundle SHA-256
+`a49b9c5553fd21788307b2dae9407b36582a97b467780aeeceda7772c44c40ff`;
+independent regrade SHA-256
+`6e755725e65c11fb7fd1ddc926911804aebf924b79da9fc553f56a88b2bce2e3`,
+verdict `PASS_WITH_ATTESTED_FIELDS`, mismatches NONE.
+
+Residual dispositions: zero remaining resolvable retained-annual replay blocks.
+Form `6-K` slots remain `no_inline_facts_pre_inline_era` by design. `KAP`,
+`PDN`, and `YCA` remain `official_ticker_resolution_missing`;
+`TSMC-as-written` remains `ticker_alias_resolution_required`.
+
+Gate framing: retained-annual zero-egress replay record. G1/G2/G3 are addressed
+by supported replay outcomes, zero unnamed replay failures, and 46 supported
+filings. G4/H6 storage preflight PASS validate-only, G6 redaction scan clean,
+G9 independent regrade complete, and G10 no deviations. Live-egress-only
+controls remain dormant for this zero-SEC-egress replay.
+
+Runtime behavior introduced by this pass: `false`.
+
+No backend/tool/test edit, network egress by this record lane, runtime/flag/schema
+change, sandbox or p6store mutation by this record lane, raw value disclosure,
+accession/CIK disclosure, local path disclosure beyond `C:/p6store`,
+production-readiness claim, value-reveal claim, nonlocal admission claim,
+default-on expansion, unsupported IFRS readiness claim, or broader host-class
+authority for future taxonomy fetches is admitted by this tranche.

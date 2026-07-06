@@ -325,3 +325,72 @@ live egress, no foreign-annual replay/result publication, no production
 readiness, no default-on change, no value reveal, no raw retained values, no
 accession/CIK, and no machine-local path beyond the established `C:/p6store`
 root convention.
+
+## Corpus 46 Evidence Registry Extension (M-CORPUS-46-RECORD, 2026-07-06)
+
+This extension records the verified anchors used by M-CORPUS-46-RECORD /
+PR #2443 to append D28, refresh the forward/P2 current pointers, and record the
+retained foreign IFRS annual replay closeout. Payload files were read in full
+and hash-verified during landing, but they are not committed or re-derivable
+from repo history, so they are not admitted as registry evidence. Every
+load-bearing claim below was re-derived from live GitHub state, current
+`project6-origin/main`, committed source, or hash-only durable artifacts.
+
+### Merged PR / SHA Table Extension
+
+| PR | Merge SHA | Title / tranche | Verification |
+|---|---|---|---|
+| #2437 | `c6bb87f8` | `docs: record corpus 40 addendum` | merged; ancestor of `project6-origin/main`; 4/4 review threads resolved; CI green including `backend-coverage` |
+| #2440 | `6d962b24` | `Pin SEC CYD 2025 taxonomy archive` | merged; ancestor of `project6-origin/main`; 1/1 review thread resolved; CI green including `backend-coverage` |
+| #2441 | `098e96ea` | `docs: land program context payload 4` | merged; current base for this lane; 3/3 review threads resolved; CI green including `backend-coverage` |
+| #2442 | `e7e9e867` | `Pin IFRS 2025 taxonomy package` | merged; ancestor of `project6-origin/main`; 0 review threads; CI green including `backend-coverage` |
+
+### Durable Artifact Hashes Re-Verified For This Extension
+
+| Artifact | SHA-256 / Anchor | Meaning |
+|---|---|---|
+| IFRS fetch arming record | `cb275a03cbbadfcdb55a8eedc3d585f8dd5eb6cb4c9a8b45bac986ceb080b8f6` for `corpus_run/IFRS2025_FETCH_ARMING.json` under `C:/p6store` | Structured read: `written_before_first_request=true`, owner grant text present, IFRS host class allowed, request budget 5, and non-authorized classes include SEC EDGAR filing egress, default flips, value reveal, and production claims. |
+| IFRS 2025 PINNING note | `20dfec68cccba35eb9969763ec056ac568824dd0df5f5b9c43151ac854945c07`, 1,957 bytes | Records the 5/5 budget-constrained request ledger and package verification by hash/size only. Raw request URLs are not copied into committed docs. |
+| Retained IFRS 2025 package | `302afc7f69c5f92697ab8d87a6f584406f4addaf7f905468052c280c2fe16d19`, 2,103,003 bytes | Retained taxonomy package admitted by hash/size and PR #2442 source/test evidence. |
+| Post-#2442 r3 provisioning report | `6ff72308060a5769ff708b556bc3e9a6269ac867b1f06eaa6d0291f4a8a9708c` for `provision_report_2021_2026_r3.json` under `C:/p6store` | Structured read: `ready=true`, 13/13 taxonomy packages loaded, 26/26 SEC entrypoints intact, IFRS 2025 offline entrypoints loaded, no blocked reasons, and raw/default/value-reveal non-goals preserved. Content is not committed because it embeds machine-local paths. |
+| IFRS replay results | `7d691b6ac96fe31e40797b9e1ef582274e4792fb331c0071f821250c9189bbc7` for `corpus_run/IFRS_REPLAY_RESULTS.json` under `C:/p6store` | Six rows: all `ready`, stores persisted, counts 4693 / 886 / 1582 / 7335 / 2670 / 3565, total 20,731 records. |
+| IFRS phase-3 replay evidence bundle | `a49b9c5553fd21788307b2dae9407b36582a97b467780aeeceda7772c44c40ff` for `corpus_run/IFRS_PHASE3_REPLAY_EVIDENCE.json` under `C:/p6store` | Structured read: 6/6 retained annual replays `READY`, zero named blocks, stores persisted, corpus delta 40 -> 46, #2440/#2442 pins merged, G4/H6 storage preflight validate-only, and no production/default/value-reveal/SEC-egress claim. |
+| IFRS phase-3 independent regrade | `6e755725e65c11fb7fd1ddc926911804aebf924b79da9fc553f56a88b2bce2e3` for `corpus_run/IFRS_PHASE3_REGRADE.md` under `C:/p6store` | Verdict `PASS_WITH_ATTESTED_FIELDS`; mismatches NONE; row-1 and row-4 sidecar receipts re-derived for counts, persisted store state, retention policy, hygiene accepted/no override, sidecar receipt hash, and value_store_hash. |
+
+### Replay Result Rows
+
+| Client request id | Status | Resolved/value records | Sidecar receipt hash | Value-store hash |
+|---|---|---:|---|---|
+| `ifrs-replay-01-r1` | `ready` | 4693 | `5885118dc204f47c98c09dd6a7cceaca276bb3846e262a799806199d43d85fec` | `6790e8868a0db8dd366fbc1cb161a6a4bdc141c3f41ec2ec7542697b6655eda8` |
+| `ifrs-replay-02-r1` | `ready` | 886 | `d6730fa69ad957a992d9f680b693d7650f95c4b31d56bfcf7329c11dfd80cb03` | `007ed5424a0286ccae8880882905e2d8922fc5786c908f9a4f35082dad06627a` |
+| `ifrs-replay-03-r1` | `ready` | 1582 | `5d86cd123b42bf693e75255c94a1c739cdba02a343e272e93b945292a647df27` | `6d5ec3b23cf8290158799d58d14edeeb8eaa4b7ea70a99b0a3cd25cd119a2caf` |
+| `ifrs-replay-04-r1` | `ready` | 7335 | `396d0dd06fcced5812bb2059f7e2192da7412175ff4256550db14f80249e0f41` | `ac1a17738c9116d706f8196fbe3ad1301e15417418264cb72a00488ba11e150c` |
+| `ifrs-replay-05-r1` | `ready` | 2670 | `e59cb5e8f826b4a938fce7e070111569bd7858f29fd3151721aadf228aee5c77` | `68ea993d2f1b4c689075ac9cd8af2da26d0a23a3798fb1a695066ced561e96be` |
+| `ifrs-replay-06-r1` | `ready` | 3565 | `e3c86ef81c6fa5f5f784a665cba7ee47f916a54b2c389586f35e0e953fc47798` | `7d68a925173a1190fcb6a81acdce897efd171e366e84ab41d7c44e553e8a6565` |
+
+### Corpus Delta And Gate Framing
+
+| Field | Current record |
+|---|---|
+| Supported filings / issuers | `46` supported filings / `27` supported issuers. The issuer count is derived from the prior 21 supported issuers plus the six named distinct retained IFRS issuers moved to supported-equivalent replay outcomes after #2440/#2442 package prep. |
+| Historical preservation | The #2433/#2434 39-filing record and #2437 40-filing addendum remain historical; this extension supersedes only the current open-F3 residual. |
+| Replay totals | 6/6 `READY`; stores persisted; zero named blocks; 20,731 total resolved/value records. |
+| Non-replay dispositions | `6-K` no-inline dispositions remain by design; `KAP`, `PDN`, `YCA`, and `TSMC-as-written` remain non-SEC or alias-resolution dispositions. |
+| Gate status | G1/G2/G3 addressed by supported replay outcomes, zero unnamed replay failures, and 46 supported filings; G4/H6 storage preflight PASS validate-only; G6 redaction scan clean in regrade; G9 independent regrade complete; G10 no deviations. Live-egress-only controls remain dormant for this zero-SEC-egress replay record. |
+
+### Current Source / Workflow Anchors Re-Verified
+
+| Surface | Verification |
+|---|---|
+| Source base | Worktree based on `project6-origin/main` at `098e96eafd799d3a322d754b88058e5bd3ea7650`, the PR #2441 merge commit. |
+| PR review-thread state | GraphQL `reviewThreads(first:100)` returned zero unresolved threads for #2437, #2440, #2441, and #2442 before this lane edited docs. |
+| Provisioner/package source | PR #2440 and #2442 source/test anchors remain merged; this lane changes docs/manifests only and does not edit backend/tool/test source. |
+| Sample sidecar receipts | Re-derived row-1 and row-4 sidecar receipt fields match the replay results for sidecar receipt hash, value_store_hash, resolved/value counts, persisted store state, retention `sec_xbrl_public_financial_value_retention_v1`, and hygiene accepted/no override. Raw receipt file hashes are intentionally not used as substitutes for embedded sidecar receipt hashes. |
+
+This extension admits no backend/tool/test change, no network egress by this
+record lane, no runtime/flag/schema/model/migration change, no sandbox or
+`C:/p6store` mutation by this record lane, no raw value disclosure, no
+accession/CIK disclosure, no local path disclosure beyond `C:/p6store`, no
+production-readiness claim, no value-reveal claim, no nonlocal admission claim,
+no default-on expansion, no unsupported IFRS readiness claim, and no broader
+host-class authority for future taxonomy fetches.

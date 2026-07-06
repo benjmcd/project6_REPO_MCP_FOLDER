@@ -6,6 +6,85 @@ report as verified/adjudicated, grounded in repo authorities (merge-gate
 policy, admission runbook, A8 docs, support matrix). Nothing here is authorized by this
 document — it specifies what authorization would require.
 
+## 2026-07-06 Forward Program Refresh (M-CORPUS-46-RECORD)
+
+Supersession boundary: this block is the current pointer after the retained
+foreign IFRS annual replay closeout. The M-PROGRAM-CONTEXT-4 refresh and older
+P-number sections remain historical and still govern where not superseded here.
+This refresh admits no production-readiness, default-on, new live SEC EDGAR
+egress, value reveal, raw-value disclosure, nonlocal admission, or broader
+taxonomy-host authority.
+
+### F1 - M-COVERAGE-XDIST: DONE (#2438)
+
+- Status: DONE. No change from the M-PROGRAM-CONTEXT-4 pointer.
+
+### F2 - Program-context payload landings: DONE (#2439, #2441)
+
+- Status: DONE. PR #2439 landed D20-D26. PR #2441 landed D27 and the F3a/F3b
+  split after PR #2440 and PR #2442.
+
+### F3a - cyd-2025 provisioning prep: EXECUTED (#2440)
+
+- Status: EXECUTED. No remaining CYD prep delta for the retained foreign
+  annual replay set.
+
+### F3b - IFRS package prep and retained annual replay: EXECUTED (#2442, M-CORPUS-46-RECORD)
+
+- Status: EXECUTED. PR #2442 pinned/admitted retained `IFRSAT-2025.zip` with
+  sha256 `302afc7f69c5f92697ab8d87a6f584406f4addaf7f905468052c280c2fe16d19`
+  at 2,103,003 bytes. The owner-named IFRS grant then executed within a 5/5
+  request ledger recorded by PINNING hash
+  `20dfec68cccba35eb9969763ec056ac568824dd0df5f5b9c43151ac854945c07`.
+- Replay closeout: six retained IFRS annuals replayed at zero SEC EDGAR egress
+  using fresh client_request_ids `ifrs-replay-01-r1` through
+  `ifrs-replay-06-r1`. All 6/6 reached `READY`, stores persisted, named blocks
+  were zero, and resolved/value record counts were 4693 / 886 / 1582 / 7335 /
+  2670 / 3565, totaling 20,731.
+- Record anchors: `IFRS_REPLAY_RESULTS.json` hashes to
+  `7d691b6ac96fe31e40797b9e1ef582274e4792fb331c0071f821250c9189bbc7`;
+  evidence bundle hash
+  `a49b9c5553fd21788307b2dae9407b36582a97b467780aeeceda7772c44c40ff`;
+  independent regrade hash
+  `6e755725e65c11fb7fd1ddc926911804aebf924b79da9fc553f56a88b2bce2e3`
+  with verdict `PASS_WITH_ATTESTED_FIELDS`; r3 provisioning hash
+  `6ff72308060a5769ff708b556bc3e9a6269ac867b1f06eaa6d0291f4a8a9708c`
+  reports `ready=true`, 13/13 packages loaded, 26/26 SEC entrypoints intact,
+  and IFRS 2025 offline entrypoints loaded.
+- Corpus state: current supported count is 46 filings. The historical
+  39-filing and 40-filing records remain true in time and are not rewritten;
+  this block supersedes only the current P2/F3 residual that retained
+  foreign-annual replay/result recording remained open.
+- Remaining resolvable F3 delta: none. `6-K` no-inline dispositions remain by
+  design, and `KAP`, `PDN`, `YCA`, and `TSMC-as-written` remain non-SEC or
+  alias-resolution dispositions rather than taxonomy replay blocks.
+
+### F4 - Coverage Option B (optional)
+
+- Status: OPTIONAL. No change from the M-PROGRAM-CONTEXT-4 pointer.
+
+### F5 - Release-gate needs gap and orphaned workflow registration
+
+- Status: OWNER DECISION. No change from the M-PROGRAM-CONTEXT-4 pointer.
+
+### F6 - Worktree cleanup
+
+- Status: OWNER GO REQUIRED for broad cleanup. This lane's own worktree cleanup
+  remains ordinary lane closeout only.
+
+### F7 - Owner-keyed decisions remain parked
+
+- P4 legacy Arelle reveal disposition remains a one-line owner posture choice.
+- P5 nonlocal production admission remains blocked solely on the human final
+  admission packet. Corpus breadth and replay proofs are not nonlocal
+  production admission evidence.
+
+### F8 - Standing rails
+
+- D27/D28 still govern future egress: established host classes and named
+  grants do not become blanket authority for future first-use host classes,
+  new live taxonomy vintages, or broader request budgets.
+
 ## 2026-07-06 Forward Program Refresh (M-PROGRAM-CONTEXT-4)
 
 Supersession boundary: this block is the current pointer after #2442. The
@@ -217,9 +296,10 @@ default-on, live-egress, or value-reveal claim.
 
 ## Sequencing map (dependencies, not conventions)
 
-- P2 domestic SEC inline corpus scope: EXECUTED by the owner-authorized
-  2026-07-05 corpus-go run. After #2440/#2442 package prep, foreign IFRS
-  annuals remain a named zero-egress replay/result follow-up.
+- P2 corpus scope: EXECUTED by the owner-authorized 2026-07-05 corpus-go run
+  and supersession addenda. After #2440/#2442 package prep and
+  M-CORPUS-46-RECORD replay closeout, the retained foreign IFRS annual replay
+  follow-up is closed at 46 supported filings.
 - P4: unblocked now (independent).
 - P5: depends on the human final-admission packet + P7b-settled semantics (settled: I10) +
   durable posture (done) + record truth (done). Corpus breadth (P2) strengthens but does not
@@ -229,27 +309,30 @@ default-on, live-egress, or value-reveal claim.
 
 ## P2 - Corpus / multi-filing broadening
 
-- Status: EXECUTED for the domestic SEC inline scope, with the MSFT/CYD named
-  follow-up CLOSED by the 2026-07-05 zero-egress governed replay addendum. The
-  owner-authorized corpus-go run remains historical at 39 supported filings; the
-  supersession addendum records 40 supported filings / 21 supported issuers after
-  MSFT FY2025 10-K moved from named block to supported-equivalent via governed
-  receipt-bound replay. All original run-level gates passed:
+- Status: EXECUTED for the current retained corpus scope through
+  M-CORPUS-46-RECORD. The owner-authorized corpus-go run remains historical at
+  39 supported filings; the MSFT/CYD supersession addendum records 40 supported
+  filings / 21 supported issuers after MSFT FY2025 10-K moved from named block
+  to supported-equivalent via governed receipt-bound replay; and
+  M-CORPUS-46-RECORD records the retained IFRS annual replay closeout at 46
+  supported filings. All original run-level gates passed:
   every-ticker-dispositioned, zero-unnamed-failures, min-filings, and
-  min-issuers. The addendum regrade verdict is `PASS_WITH_ATTESTED_FIELDS`.
-- Supported domestic scope: 19 full domestic 10-K/10-Q pairs, plus CURLF and
-  CRLBF 40-F through US-GAAP inline handling.
-- Named residuals: foreign IFRS annuals for `SONY`, `CCJ`, `DNN`, `NXE`, `MT`,
-  and `TSM` remain open only for zero-egress replay/result recording after
-  the current F3a/F3b package prep entries. `6-K` filings remain
-  `no_inline_facts_pre_inline_era`; `KAP`, `PDN`, and `YCA` map to
-  `official_ticker_resolution_missing`; and `TSMC-as-written` maps to
-  `ticker_alias_resolution_required`.
-- Residual delta: replay the previously blocked foreign annuals to
-  supported-equivalent or named-block, using the package prep now recorded in
-  F3a/F3b.
-- Pass criteria for future IFRS follow-up: no raw values/paths/user-agent or
-  operator identity in committed text; public tickers/forms/dates only where
+  min-issuers. The corpus-40 and corpus-46 addenda both use the
+  `PASS_WITH_ATTESTED_FIELDS` regrade boundary rather than unqualified claims.
+- Supported scope: 46 supported filings / 27 supported issuers. The issuer
+  count is derived from the prior 21 supported issuers plus the six named
+  distinct retained IFRS issuers. This includes 19 full domestic 10-K/10-Q
+  pairs, CURLF/CRLBF 40-F through US-GAAP inline handling, and six retained
+  IFRS annuals now replayed to `READY` with persisted stores.
+- Named residuals: zero remaining resolvable taxonomy replay blocks for the
+  retained annual set. `6-K` filings remain `no_inline_facts_pre_inline_era`;
+  `KAP`, `PDN`, and `YCA` map to `official_ticker_resolution_missing`; and
+  `TSMC-as-written` maps to `ticker_alias_resolution_required`.
+- Residual delta: none for retained foreign-annual replay/result recording.
+  Future live acquisition, new vintages, or broader host classes require a new
+  owner grant and a separate record.
+- Pass criteria for any future corpus addendum: no raw values/paths/user-agent
+  or operator identity in committed text; public tickers/forms/dates only where
   needed for named disposition; hash/count/disposition-only aggregate report;
   explicit named block for any still-unsupported annual; corpus flag armed
   per-run only.
@@ -262,10 +345,12 @@ default-on, live-egress, or value-reveal claim.
   report-only/record-only lanes over already authorized retained evidence.
 - Future SEC corpus runs use the canonical pre-registered run gate registry in
   `next_milestone_plans/Layer3_planning_docs/corpus-run-gate-spec.md`.
-- Size/risk: small-medium for IFRS taxonomy pins if report-only; Tier-2 only if
+- Size/risk: small-medium for future report-only corpus addenda; Tier-2 only if
   runtime/persistence behavior changes.
-- Why this changed state: the domestic breadth confidence gap is closed for the
-  SEC inline scope; the remaining breadth question is narrower and taxonomy-family-specific.
+- Why this changed state: the domestic breadth confidence gap was already
+  closed for the SEC inline scope, and the retained IFRS annual taxonomy-family
+  follow-up is now closed by zero-egress replay evidence. Remaining gaps are
+  not resolvable by replaying retained annuals.
 
 ## P4 — Legacy Arelle reveal disposition
 
