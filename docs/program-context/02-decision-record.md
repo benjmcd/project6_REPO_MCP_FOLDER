@@ -531,8 +531,8 @@ and operator-attested framing.
 
 ## 2026-07-06 Program-Context Decision Addendum (M-PROGRAM-CONTEXT-4)
 
-This section appends D27 after the #2440 `cyd-2025` pin lane. The landing
-lane re-verified #2440 state, code/test anchors, operator-local artifact
+This section appends D27 after the #2440 `cyd-2025` pin lane. PR #2441
+re-verified #2440 state, code/test anchors, operator-local artifact
 hashes, archive member hashes, and the post-#2440 provisioning report before
 admitting this addendum. Machine-local evidence remains hash-only, and this
 addendum admits no production-readiness, default-on, value-reveal, raw-value,

@@ -35,7 +35,7 @@ annuals. No production-readiness, default-on, live-egress, or new value-reveal
 claim is made by this pointer.
 
 2026-07-06 pointer: `docs/program-context/` is refreshed again by
-M-PROGRAM-CONTEXT-4, grounded on current main through PR #2440
+M-PROGRAM-CONTEXT-4 / PR #2441, grounded on current main through PR #2440
 (`6d962b248ffdaaf35adc8467dbaad171fb873537`). The #2440 `cyd-2025`
 pin/admission lane executed the F3a SEC CYD prep side: `sec-cyd-2025`
 is pinned as an operator-built deterministic archive, post-#2440 provisioning

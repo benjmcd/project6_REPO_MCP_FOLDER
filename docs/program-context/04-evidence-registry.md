@@ -282,8 +282,8 @@ no machine-local path beyond the established `C:/p6store` root convention.
 
 ## Program-Context 4 Evidence Registry Extension (M-PROGRAM-CONTEXT-4, 2026-07-06)
 
-This extension records the verified anchors used by the M-PROGRAM-CONTEXT-4
-landing lane to add D27, split F3 into F3a/F3b, and refresh current pointers
+This extension records the verified anchors used by M-PROGRAM-CONTEXT-4 /
+PR #2441 to add D27, split F3 into F3a/F3b, and refresh current pointers
 after #2440. Handoff payload files were read in full and hash-verified during
 landing, but they are not committed or re-derivable from repo history, so they
 are not admitted as registry evidence. Every load-bearing claim below was
