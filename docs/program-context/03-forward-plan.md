@@ -8,10 +8,11 @@ document — it specifies what authorization would require.
 
 ## 2026-07-06 Forward Program Refresh (M-PROGRAM-CONTEXT-4)
 
-Supersession boundary: this block is the current pointer after #2440. The
+Supersession boundary: this block is the current pointer after #2442. The
 M-PROGRAM-CONTEXT-3 refresh and older P-number sections remain historical and
 still govern where not superseded here. This refresh admits no
-production-readiness, default-on, live-egress, or value-reveal claim.
+production-readiness, default-on, new live-egress, foreign-annual replay/result,
+or value-reveal claim.
 
 ### F1 - M-COVERAGE-XDIST: DONE (#2438)
 
@@ -49,27 +50,24 @@ production-readiness, default-on, live-egress, or value-reveal claim.
   structured read reports `ready=true`, 12/12 packages loaded, 26/26 offline
   entrypoints OK, and both `cyd/2024` and `cyd/2025` entrypoints loaded.
 - Remaining delta for CYD: none for the SEC `cyd-2025` pin/admission prep
-  surface. This does not by itself unblock the foreign annuals because IFRS
-  remains unresolved.
+  surface.
 
-### F3b - IFRS family: still gated on named owner grant
+### F3b - IFRS 2025 package prep: EXECUTED (#2442)
 
-- Status: OWNER SIGN-OFF REQUIRED. The required grant must name
-  `ifrs.org` / `xbrl.ifrs.org` and a request budget before any IFRS taxonomy
-  egress. Generic "proceed" directives do not authorize this new host class
-  under D27.
-- Scope after grant: operator fetches and hashes IFRS Accounting Taxonomy
-  2025-03-27; a repo lane admits the IFRS family mechanism with explicit
-  resolution semantics; then the retained foreign annuals are replayed at zero
-  SEC EDGAR egress to supported-equivalent or exact named-block outcomes.
-- Expected intermediate state after F3a: the three `cyd-2025`-referencing
-  retained annuals no longer need to be blocked on the SEC CYD family vintage,
-  but they remain blocked on IFRS resolution until F3b lands.
-- Acceptance: pinned IFRS package hashes and provenance are re-derivable;
-  admission is year/family aware; each retained foreign annual resolves to
-  supported-equivalent or a specific named block; committed surfaces contain no
-  raw values, no accession/CIK, no operator identity, and no local path beyond
-  the `C:/p6store` root convention.
+- Status: EXECUTED for package pin/admission prep. PR #2442 merged to
+  `project6-origin/main` at `e7e9e8675fa6bbe8ec75172162c0cebba3bdfc2a` on
+  2026-07-06.
+- Scope landed: retained local `IFRSAT-2025.zip` is pinned as the IFRS 2025
+  taxonomy package with sha256
+  `302afc7f69c5f92697ab8d87a6f584406f4addaf7f905468052c280c2fe16d19`
+  at 2,103,003 bytes; the provisioner package set and sidecar admission now
+  cover the IFRS 2025 package.
+- Remaining F3 delta: replay the retained foreign annuals at zero SEC EDGAR
+  egress and record supported-equivalent or exact named-block outcomes.
+- D27 boundary still applies: a future first-use host class, new live taxonomy
+  vintage, or broader request budget still requires a named owner grant before
+  the first request. #2442 does not make generic directives blanket egress
+  authority.
 
 ### F4 - Coverage Option B (optional)
 
@@ -220,8 +218,8 @@ default-on, live-egress, or value-reveal claim.
 ## Sequencing map (dependencies, not conventions)
 
 - P2 domestic SEC inline corpus scope: EXECUTED by the owner-authorized
-  2026-07-05 corpus-go run. Foreign IFRS annuals remain a named
-  `ifrs-taxonomy-pins` follow-up.
+  2026-07-05 corpus-go run. After #2440/#2442 package prep, foreign IFRS
+  annuals remain a named zero-egress replay/result follow-up.
 - P4: unblocked now (independent).
 - P5: depends on the human final-admission packet + P7b-settled semantics (settled: I10) +
   durable posture (done) + record truth (done). Corpus breadth (P2) strengthens but does not
@@ -242,18 +240,14 @@ default-on, live-egress, or value-reveal claim.
 - Supported domestic scope: 19 full domestic 10-K/10-Q pairs, plus CURLF and
   CRLBF 40-F through US-GAAP inline handling.
 - Named residuals: foreign IFRS annuals for `SONY`, `CCJ`, `DNN`, `NXE`, `MT`,
-  and `TSM` remain the open `ifrs-taxonomy-pins` follow-up. The IFRS follow-up
-  now also includes `cyd-2025` loose-file package construction where those
-  annuals require CYD 2025 family refs. `6-K` filings remain
+  and `TSM` remain open only for zero-egress replay/result recording after
+  the current F3a/F3b package prep entries. `6-K` filings remain
   `no_inline_facts_pre_inline_era`; `KAP`, `PDN`, and `YCA` map to
   `official_ticker_resolution_missing`; and `TSMC-as-written` maps to
   `ticker_alias_resolution_required`.
-- Residual delta: `ifrs-taxonomy-pins` plus deterministic `cyd-2025` loose-file
-  packaging for the blocked foreign IFRS annuals. Acceptance criteria: pinned
-  `ifrs-2025-03-27` package and deterministic `cyd-2025` package fetched/built
-  and hashed by operator action with per-file provenance; year-aware admission
-  extended to the IFRS and needed CYD family vintages; the previously blocked
-  foreign annuals rerun to supported-equivalent or named-block.
+- Residual delta: replay the previously blocked foreign annuals to
+  supported-equivalent or named-block, using the package prep now recorded in
+  F3a/F3b.
 - Pass criteria for future IFRS follow-up: no raw values/paths/user-agent or
   operator identity in committed text; public tickers/forms/dates only where
   needed for named disposition; hash/count/disposition-only aggregate report;

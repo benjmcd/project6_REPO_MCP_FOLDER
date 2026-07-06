@@ -219,8 +219,14 @@ Dates 2026. All PRs merged to `project6-origin/main`; squash SHAs given.
   `7d5f719c274b2c64275498b52832913d6ad0914847bc4abde54e2842063527ee`
   reports 12/12 packages loaded and 26/26 offline entrypoints OK, including
   both `cyd/2024` and `cyd/2025`. This closes the CYD prep side of F3, but
-  does not execute the IFRS side: IFRS 2025-03-27 remains gated on a named
-  owner grant for its new host class.
+  did not itself execute the IFRS side.
+- #2442 `e7e9e867` - IFRS 2025 taxonomy package pin. Why: after the IFRS
+  package grant/admission lane landed, the repo needed the program-context
+  frontier to stop describing IFRS package prep as blocked. The lane pins
+  retained `IFRSAT-2025.zip` hash
+  `302afc7f69c5f92697ab8d87a6f584406f4addaf7f905468052c280c2fe16d19` and
+  verifies package-set/sidecar admission without publishing a foreign-annual
+  replay result.
 
 ## Net state after Phase 10
 
@@ -229,5 +235,6 @@ Arelle-resolved → durably retained values → controlled governed reveal; ever
 fail-closed, redaction-verified, CI-guarded where CI can reach, recorded in the repo, and
 durable across all worktrees. The domestic corpus breadth lane is now executed
 for the SEC inline scope with 40 supported filings across 21 supported issuers.
-SEC `cyd-2025` provisioning prep is executed and pinned; IFRS remains named-grant
-gated. Source defaults all False. Nothing production-claimed.
+SEC `cyd-2025` provisioning prep and IFRS 2025 package prep are executed and
+pinned. Retained foreign-annual zero-egress replay/result recording remains
+open. Source defaults all False. Nothing production-claimed.

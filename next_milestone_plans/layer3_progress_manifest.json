@@ -49602,7 +49602,7 @@
           "final_disposition": "blocked",
           "admitted_reason_code": "taxonomy_year_unprovisioned",
           "operator_observed_status": "arelle_model_errors_present",
-          "follow_up_lane": "ifrs-taxonomy-pins"
+          "follow_up_lane": "retained-foreign-annual-replay-result-recording"
         },
         "six_k_pre_inline_era": {
           "forms": [
@@ -49665,7 +49665,7 @@
           "final_disposition": "blocked",
           "admitted_reason_code": "taxonomy_year_unprovisioned",
           "operator_observed_status": "arelle_model_errors_present",
-          "follow_up_lane": "ifrs-taxonomy-pins"
+          "follow_up_lane": "retained-foreign-annual-replay-result-recording"
         },
         "six_k_pre_inline_era": {
           "forms": [
@@ -49744,11 +49744,11 @@
     ],
     "forward_posture": {
       "p2_domestic_sec_inline_scope": "EXECUTED",
-      "named_follow_up": "ifrs-taxonomy-pins",
+      "named_follow_up": "retained-foreign-annual-replay-result-recording",
       "ifrs_follow_up_acceptance_criteria": [
-        "pinned ifrs-YYYY packages fetched and hashed by operator",
-        "year-aware admission extended to the IFRS taxonomy family",
-        "previously blocked foreign annuals rerun to supported-or-named-block"
+        "use pinned CYD 2025 and IFRS 2025 package prep from PR #2440 and PR #2442",
+        "rerun retained foreign annuals with zero SEC EDGAR egress",
+        "record supported-equivalent or exact named-block outcomes without raw values or local paths"
       ]
     },
     "validation": [
@@ -49869,7 +49869,8 @@
       "admitted_reason_code": "taxonomy_family_vintage_unprovisioned",
       "filed_year_lesson": "filed-year does not equal taxonomy-year",
       "cyd_2024_status": "pinned by PR #2436",
-      "cyd_2025_status": "pinned by PR #2440; IFRS family grant/admission remains open",
+      "cyd_2025_status": "pinned by PR #2440",
+      "ifrs_2025_status": "pinned by PR #2442; retained foreign-annual replay/result record remains open",
       "local_enumeration_artifact": "ifrs-cyd-vintage-enumeration.md",
       "local_enumeration_sha256": "72391c5da90bb3e3439979fcf23106f0b664617e6a091b5a153bf3978ca896e4"
     },
@@ -49913,7 +49914,7 @@
       "default_on_expansion": false,
       "unsupported_ifrs_readiness_claim": false
     },
-    "next_posture": "domestic_corpus_40_supported_cyd_2025_pinned_ifrs_followup_open"
+    "next_posture": "domestic_corpus_40_supported_cyd_2025_and_ifrs_2025_pinned_replays_open"
   },
-  "latest_m_corpus_40_addendum_summary": "M-CORPUS-40-ADDENDUM records the owner-authorized 2026-07-05 zero-egress MSFT/CYD addendum from source frontier fab89ced6df76654488a486d8388f9466f5d3a96 after PR #2435 and PR #2436. It keeps the #2433/#2434 39-supported-filing record historical, then supersedes the current distribution to 40 supported filings / 21 supported issuers / 19 full domestic 10-K/10-Q pairs after MSFT FY2025 10-K moved from named block to supported-equivalent via governed receipt-bound replay; operator-attested + independently regraded (PASS_WITH_ATTESTED_FIELDS). The replay is recorded by client_request_id cyd-replay-msft-10k-r1, parser receipt hash 4bf632ece7dc4a0c23661d954b8f4475c7f4e0e26303eb6a20b68469ad8ba911, value_store_hash bb76a9cd074f6f16446f1ce33638c12607675efaaa9d2e430f16f747265b98dd, evidence bundle hash e1b15bd206ee271fbd4131f7cb083f71f04573a4bbc318bb51b4f531dbd00199, and independent regrade hash 214f2f1014d3ecc06f7e49fd6ce1fc2d17a1811ce53452966d5381329aadff6d with verdict PASS_WITH_ATTESTED_FIELDS. The provisioning report hash 04b3e9354cf92ffd6221d2859b64d2e60c698df323938e5e4614cf9b861ff159 closes the #2434 not-found gap by hash only; PR #2440 later pins the CYD 2025 loose-file package, leaving IFRS as the named taxonomy follow-up. This addendum admits no backend/tool/test edit, network egress, runtime/config/flag/schema change, sandbox or p6store mutation by this record lane, raw values, accession/CIK, local path beyond C:/p6store, production-readiness, value-reveal, nonlocal admission, default-on expansion, or unsupported IFRS readiness claim."
+  "latest_m_corpus_40_addendum_summary": "M-CORPUS-40-ADDENDUM records the owner-authorized 2026-07-05 zero-egress MSFT/CYD addendum from source frontier fab89ced6df76654488a486d8388f9466f5d3a96 after PR #2435 and PR #2436. It keeps the #2433/#2434 39-supported-filing record historical, then supersedes the current distribution to 40 supported filings / 21 supported issuers / 19 full domestic 10-K/10-Q pairs after MSFT FY2025 10-K moved from named block to supported-equivalent via governed receipt-bound replay; operator-attested + independently regraded (PASS_WITH_ATTESTED_FIELDS). The replay is recorded by client_request_id cyd-replay-msft-10k-r1, parser receipt hash 4bf632ece7dc4a0c23661d954b8f4475c7f4e0e26303eb6a20b68469ad8ba911, value_store_hash bb76a9cd074f6f16446f1ce33638c12607675efaaa9d2e430f16f747265b98dd, evidence bundle hash e1b15bd206ee271fbd4131f7cb083f71f04573a4bbc318bb51b4f531dbd00199, and independent regrade hash 214f2f1014d3ecc06f7e49fd6ce1fc2d17a1811ce53452966d5381329aadff6d with verdict PASS_WITH_ATTESTED_FIELDS. The provisioning report hash 04b3e9354cf92ffd6221d2859b64d2e60c698df323938e5e4614cf9b861ff159 closes the #2434 not-found gap by hash only; PR #2440 later pins the CYD 2025 loose-file package and PR #2442 later pins the IFRS 2025 package, leaving retained foreign-annual replay/result recording as the named follow-up. This addendum admits no backend/tool/test edit, network egress, runtime/config/flag/schema change, sandbox or p6store mutation by this record lane, raw values, accession/CIK, local path beyond C:/p6store, production-readiness, value-reveal, nonlocal admission, default-on expansion, unsupported IFRS readiness, or foreign-annual replay/result claim."
 }

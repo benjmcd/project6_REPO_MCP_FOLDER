@@ -69,7 +69,7 @@ Operator coordination reports are supplementary evidence, not committed anchors.
 | Supported breadth | 39 supported filings / 21 supported issuers | Exceeds run minimums of 30 filings / 15 issuers |
 | Run-level gates | `every-ticker-dispositioned=PASS`; `zero-unnamed-failures=PASS`; `min-filings=PASS`; `min-issuers=PASS` | Four owner-handoff completion gates for the completed run |
 | Supported input group | `NVDA`, `AMD`, `MSFT`, `GOOG`, `AMZN`, `META`, `AAPL`, `DIS`, `HOOD`, `NFLX`, `AMCX`, `UUUU`, `LEU`, `GEV`, `NUE`, `CLF`, `STLD`, `TRLV`, `GTBIF`, `CURLF`, `CRLBF` | Final disposition `supported`; includes all major domestic 10-K+10-Q pairs plus supported foreign/OTC inline filings |
-| IFRS follow-up group | `SONY`, `CCJ`, `DNN`, `NXE`, `MT`, `TSM` | Acquired and retained; admitted reason code `taxonomy_year_unprovisioned`; operator symptom `arelle_model_errors_present`; follow-up `ifrs-taxonomy-pins` |
+| IFRS follow-up group | `SONY`, `CCJ`, `DNN`, `NXE`, `MT`, `TSM` | Acquired and retained; admitted reason code `taxonomy_year_unprovisioned`; operator symptom `arelle_model_errors_present`; package prep superseded by #2440/#2442; current follow-up is retained foreign-annual replay/result recording |
 | 6-K form slots | `6-K` | Admitted reason code `no_inline_facts_pre_inline_era`; no iXBRL by design |
 | Unknown/alias group | `KAP`, `PDN`, `YCA`, `TSMC-as-written` | Operator status `company_matrix_unknown`; admitted reason codes `official_ticker_resolution_missing` for `KAP`/`PDN`/`YCA` and `ticker_alias_resolution_required` for `TSMC-as-written` |
 | Enabling fix chain | PRs `#2427` through `#2432` | Hardening, SEC taxonomy pins/cache layout/2026 pins, explicit forms, and SEC inline transforms plugin; fixed absent `ixt-sec` registry and re-proved `model_error_count=0` on the previously blocked filing |
@@ -284,7 +284,7 @@ no machine-local path beyond the established `C:/p6store` root convention.
 
 This extension records the verified anchors used by M-PROGRAM-CONTEXT-4 /
 PR #2441 to add D27, split F3 into F3a/F3b, and refresh current pointers
-after #2440. Handoff payload files were read in full and hash-verified during
+after #2442. Handoff payload files were read in full and hash-verified during
 landing, but they are not committed or re-derivable from repo history, so they
 are not admitted as registry evidence. Every load-bearing claim below was
 re-derived from live GitHub state, current `project6-origin/main`, committed
@@ -295,6 +295,7 @@ source, or hash-only durable artifacts.
 | PR | Merge SHA | Title / tranche | Verification |
 |---|---|---|---|
 | #2440 | `6d962b24` | `Pin SEC CYD 2025 taxonomy archive` | merged; ancestor of `project6-origin/main`; changed `tools/sec-xbrl-arelle-provision.py`, `backend/tests/test_sec_xbrl_arelle_provisioning.py`, and `backend/tests/test_sec_xbrl_sidecar.py`; 1/1 review thread resolved; CI green |
+| #2442 | `e7e9e867` | `Pin IFRS 2025 taxonomy package` | merged; ancestor of `project6-origin/main`; changed the same provisioner/sidecar test surfaces; 0 review threads; CI green |
 
 ### Durable Artifact Hashes Re-Verified For This Extension
 
@@ -304,6 +305,7 @@ source, or hash-only durable artifacts.
 | Operator-built `cyd-2025.zip` | `ad7b166a3913778a4fabb15f3a4431d80eb1930d9cc1e271c318f7b4cffdfc33`, 208,667 bytes | Machine-local taxonomy archive, admitted by hash/size only. Re-read zip has 7 root-level members; all member hashes match the PINNING note; zip metadata is deterministic: 1980-01-01 timestamps, `create_system=0`, stored compression, `0o644` external attrs. |
 | `PINNING-cyd-2025.md` | `9cb98156f2780efd44e8a9954881331e96b00b6b86c726b77bf9e0211bec2e8e`, 2,347 bytes | Machine-local provenance note, admitted by hash/size only. The note records 7 SEC loose-file member hashes and the deterministic zip recipe. |
 | Post-#2440 provisioning report | `7d5f719c274b2c64275498b52832913d6ad0914847bc4abde54e2842063527ee` for `provision_report_2021_2026_r2.json` under `C:/p6store` | Structured read: `ready=true`, 12/12 taxonomy packages loaded, 26/26 offline entrypoints OK, no blocked reasons, and both `cyd/2024` and `cyd/2025` entrypoints loaded. Content is not committed because it embeds machine-local paths. |
+| Retained IFRS 2025 package | `302afc7f69c5f92697ab8d87a6f584406f4addaf7f905468052c280c2fe16d19`, 2,103,003 bytes | Machine-local taxonomy archive admitted by hash/size and PR #2442 source/test evidence only. It is not committed into program-context docs and does not by itself publish retained foreign-annual replay results. |
 
 ### Current Source / Workflow Anchors Re-Verified
 
@@ -314,9 +316,12 @@ source, or hash-only durable artifacts.
 | CYD 2025 extraction/admission | `backend/tests/test_sec_xbrl_arelle_provisioning.py` verifies `cyd/2025` flat extraction and 2025 SEC entrypoint URLs; `backend/tests/test_sec_xbrl_sidecar.py` verifies sidecar readiness when the provisioner package set includes `cyd-2025.zip`. |
 | PR #2440 validation record | PR body records focused suite `86 passed, 1 skipped`, deterministic archive rebuild matching `ad7b166a...fc33`, `py_compile`, and `git diff --check`; final CI run green including `sec-xbrl-arelle-provisioning`, `backend-coverage`, and `release-gate`. |
 | Review-thread state | GraphQL `reviewThreads(first:100)` for PR #2440 returned `totalCount=1` and `isResolved=true`. |
+| IFRS 2025 package/admission | Current source declares the retained IFRS 2025 package pin, and PR #2442 validation records package-set/sidecar admission for the IFRS 2025 taxonomy package. |
+| PR #2442 validation record | PR body records red expected failures, focused suite `89 passed, 1 skipped`, retained package hash `302afc7f...d19`, `py_compile`, and `git diff --check`; final CI run green including `sec-xbrl-arelle-provisioning`, `backend-coverage`, and `release-gate`. |
 | 12 default-false boolean gates | AST/source-aware check over `backend/app/core/config.py` found the same 12 false defaults for live network, corpus validation, nonlocal authority, value reveal, official ticker resolution, controlled submit, storage-root override ack, model egress, production admission evaluator, trusted proxy, and related inventory/internal-store gates. |
 
 This extension admits no backend/tool/test change by this docs lane, no new
-live egress, no IFRS fetch, no production readiness, no default-on change, no
-value reveal, no raw retained values, no accession/CIK, and no machine-local
-path beyond the established `C:/p6store` root convention.
+live egress, no foreign-annual replay/result publication, no production
+readiness, no default-on change, no value reveal, no raw retained values, no
+accession/CIK, and no machine-local path beyond the established `C:/p6store`
+root convention.

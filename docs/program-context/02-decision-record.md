@@ -565,6 +565,11 @@ or new live-egress claim.
   records `xbrl.sec.gov` only, budget 10, written-before-first-request, and
   explicitly does not authorize `xbrl.ifrs.org`; #2440
   `6d962b24` merged the `cyd-2025` pin lane under the established class.
+- Subsequent frontier: #2442 `e7e9e867` pins the retained local IFRS 2025
+  package and verifies package-set/sidecar admission. That narrows F3, but
+  it does not convert generic owner directives into blanket authorization for
+  future first-use host classes or new live vintages, and it does not publish
+  foreign-annual replay/result outcomes.
 - Revisit when: an owner grant explicitly names a new host class and request
   budget, or when the project adds a durable authorization registry that can
   classify egress classes mechanically.

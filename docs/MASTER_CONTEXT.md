@@ -10,7 +10,7 @@
 > latest O6 main-tip ref `f566ddb14f62cd717f697f1d13b533ff434785ed` for PR #2421,
 > plus corpus-go source frontier `2d6fdbde0f82a836663f7e06923d1dd05cc48f3d`
 > for PR #2432, and latest program-context frontier
-> `6d962b248ffdaaf35adc8467dbaad171fb873537` for PR #2440.
+> `e7e9e8675fa6bbe8ec75172162c0cebba3bdfc2a` for PR #2442.
 
 ---
 
@@ -35,17 +35,20 @@ annuals. No production-readiness, default-on, live-egress, or new value-reveal
 claim is made by this pointer.
 
 2026-07-06 pointer: `docs/program-context/` is refreshed again by
-M-PROGRAM-CONTEXT-4 / PR #2441, grounded on current main through PR #2440
-(`6d962b248ffdaaf35adc8467dbaad171fb873537`). The #2440 `cyd-2025`
-pin/admission lane executed the F3a SEC CYD prep side: `sec-cyd-2025`
-is pinned as an operator-built deterministic archive, post-#2440 provisioning
-evidence reports 12/12 packages loaded and 26/26 offline entrypoints OK
-including both `cyd/2024` and `cyd/2025`, and D27 records that generic owner
-directives authorize only established egress classes. F3b remains gated:
-IFRS 2025-03-27 requires a named owner grant for the new `ifrs.org` /
-`xbrl.ifrs.org` host class and request budget. This pointer admits no
-production-readiness, default-on, IFRS fetch, value-reveal, raw-value, or
-new live-egress claim.
+M-PROGRAM-CONTEXT-4 / PR #2441, grounded on current main through PR #2442
+(`e7e9e8675fa6bbe8ec75172162c0cebba3bdfc2a`). PR #2440 executed the F3a
+SEC CYD prep side: `sec-cyd-2025` is pinned as an operator-built
+deterministic archive, and post-#2440 provisioning evidence reports 12/12
+packages loaded and 26/26 offline entrypoints OK including both `cyd/2024`
+and `cyd/2025`. PR #2442 executed the IFRS 2025 package pin/admission prep
+side with retained package hash
+`302afc7f69c5f92697ab8d87a6f584406f4addaf7f905468052c280c2fe16d19`.
+D27 still records that generic owner directives authorize only established
+egress classes, so future first-use host classes or new live vintages still
+need named host-and-budget grants. The remaining F3 work is zero-egress
+replay/result recording for the retained foreign annuals, not package
+pinning. This pointer admits no production-readiness, default-on, new live
+egress, value-reveal, raw-value, or foreign-annual replay/result claim.
 
 ## 2026-07-05 Addendum - Corpus-Go Domestic Breadth Record
 
@@ -79,10 +82,10 @@ plugin. The root cause was the absent `ixt-sec` registry in Arelle core; the
 operator probe proved it, and the post-fix probe re-proved the previously
 blocked filing with `model_error_count=0`.
 
-P2 corpus is now executed for the domestic SEC inline scope. The remaining named
-follow-up is `ifrs-taxonomy-pins`: fetch and hash pinned `ifrs-YYYY` packages
-by operator action, extend year-aware admission to the IFRS family, and rerun
-the blocked foreign annuals to supported-or-named-block.
+P2 corpus is now executed for the domestic SEC inline scope. That addendum's
+named `ifrs-taxonomy-pins` follow-up is superseded by #2440/#2442 package
+prep; the remaining named follow-up is retained foreign-annual zero-egress
+replay/result recording to supported-or-named-block.
 
 ## 2026-07-01 Addendum - Post-PR #2409 State
 
