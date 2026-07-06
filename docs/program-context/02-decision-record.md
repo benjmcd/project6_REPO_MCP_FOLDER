@@ -362,3 +362,169 @@ Corrections applied to the source addendum:
 - Revisit when: the IFRS follow-up pins `ifrs-2025-03-27` and a governed
   deterministic `cyd-2025` package, then reruns the remaining annuals to
   supported-equivalent or named-block outcomes.
+
+## 2026-07-06 Program-Context Decision Addendum (M-PROGRAM-CONTEXT-3)
+
+This section appends D20-D26 from the 2026-07-05/06 program arc. The
+landing lane re-verified PR states and merge SHAs for #2435, #2436, #2437,
+and #2438; re-hashed the durable files named below; and re-checked the
+source/default and workflow anchors before admitting these decisions. Where
+evidence is operator-local, this record admits only hashes, counts, policy ids,
+and operator-attested framing.
+
+## D20. cyd-2025 provisioning uses a deterministic operator-built zip (07-06)
+
+- Context: the remaining IFRS annual follow-up references two taxonomy-family
+  gaps: IFRS 2025-03-27 and, for three retained annuals, SEC `cyd-2025`.
+  The earlier CYD closeout proved `cyd-2024` is available as a zip and can be
+  pinned through the existing archive machinery, but the local enumeration
+  artifact shows `cyd-2025` exists upstream as loose files rather than a zip.
+- Alternatives: (a) extend the provisioner to support loose-file pin specs;
+  (b) skip `cyd-2025` and leave the annuals blocked; (c) have the operator
+  fetch the enumerated loose files, record per-file provenance, build a
+  deterministic zip, and pin that zip through the existing archive path.
+- Decision: (c). The operator builds a deterministic local `cyd-2025` zip with
+  sorted entries and fixed metadata after recording per-file source URL, fetch
+  date, and sha256 evidence.
+- Why optimal: it reuses the already proven archive/extraction machinery from
+  #2436, avoids a schema and verification-loop code change for a single known
+  vintage, remains reversible, and makes the resulting zip hash re-derivable
+  from the recorded per-file hashes.
+- Evidence: #2436 `fc141039` for CYD family pinning and flat archive handling;
+  `ifrs-cyd-vintage-enumeration.md` hash
+  `72391c5da90bb3e3439979fcf23106f0b664617e6a091b5a153bf3978ca896e4`;
+  current source has `sec-cyd-2024` pin/test coverage and no admitted
+  `cyd-2025` zip.
+- Revisit when: a second loose-file taxonomy family appears. At that point,
+  general loose-file pin support may be justified.
+
+## D21. Enumeration-before-fetch governs IFRS/CYD taxonomy egress (07-06)
+
+- Context: receipt-level enumeration showed all six blocked foreign annuals
+  reference exactly IFRS 2025-03-27, while the CYD lesson showed family
+  vintages can be required without matching a filing fiscal-year label.
+- Alternatives: (a) fetch a broad multi-year IFRS span; (b) defer all IFRS
+  work; (c) enumerate retained artifacts first, then request only the exact
+  taxonomy vintages needed.
+- Decision: (c). Before any taxonomy egress, enumerate required families and
+  vintages from retained artifacts, record that enumeration as the grant input,
+  and fetch only the named set under owner authorization.
+- Why optimal: it minimizes egress, keeps the authorization surface concrete,
+  and prevents replay cycles from discovering new taxonomy gaps only after
+  fetch approval has already been spent.
+- Evidence: `ifrs-cyd-vintage-enumeration.md` hash
+  `72391c5da90bb3e3439979fcf23106f0b664617e6a091b5a153bf3978ca896e4`; #2437
+  D19 lesson that filed-year and taxonomy-year are not equivalent.
+- Revisit when: retained artifacts are insufficient and a live acquisition
+  grant is separately authorized.
+
+## D22. Orchestrated delegation uses ack-gated dispatch and scoped independent verification (07-06)
+
+- Context: the 2026-07-05/06 arc used an orchestrator, repo-lane workers, and
+  independent reviewer/regrader agents. The failing classes were not
+  implementation failures alone; they were lost mandates, stale hashes, wrong
+  distribution summaries, and self-graded operator claims.
+- Alternatives: (a) trust worker self-verification; (b) review only after
+  merge; (c) require mandate-specific dispatch acknowledgment, blocking
+  independent verification, and pre-merge review threads while CI runs.
+- Decision: (c). In orchestrated multi-lane programs, a lane is dispatched only
+  after the worker rollout acknowledges the specific source mandate. A lane is
+  marked program-PASS only after the orchestrator re-verifies fence, source
+  defaults, review-thread state, and decisive operational evidence where those
+  checks are relevant to the lane. This is a program-pass discipline, not a
+  universal GitHub merge blocker: Tier-1 docs/report lanes still follow the
+  canonical merge policy of self-verification plus CI and resolved threads,
+  with independent pre-merge review required only for the policy's concrete
+  risk triggers or when ambiguity remains. Operator-only evidence is exported
+  as hash-anchored bundles and regraded separately, with non-re-derivable fields
+  labeled operator-attested.
+- Why optimal: it binds assurance to the exact failure points observed in this
+  program and makes review blocking before merge instead of advisory after the
+  fact.
+- Evidence: #2437 review caught the stale-hash current-pointer trap before
+  merge; `CYD_PHASE2_REGRADE.md` hash
+  `214f2f1014d3ecc06f7e49fd6ce1fc2d17a1811ce53452966d5381329aadff6d`
+  records `PASS_WITH_ATTESTED_FIELDS` with zero hash mismatches and named
+  attested-only fields.
+- Revisit when: an automated dispatcher can prove source-mandate delivery and
+  review-thread state without relying on transcript inspection.
+
+## D23. Heavy local Python/Arelle work serializes per machine (07-06)
+
+- Context: one Windows machine can host the orchestrator and multiple worker
+  lanes. Repeated local pytest, xdist, and Arelle runs compete for CPU, memory,
+  and filesystem handles.
+- Alternatives: (a) let each agent choose concurrency independently; (b) ban
+  local heavy checks; (c) serialize heavy local processes per machine, cap
+  worker counts locally, and shift soak/repeat iterations to isolated CI when
+  possible.
+- Decision: (c). Local heavy runs serialize by machine, not by agent; repeated
+  local xdist runs must state an explicit cap such as `-n 4`; soak loops should
+  move to CI or run strictly one process at a time under contention.
+- Why optimal: it preserves validation quality without turning local hardware
+  contention into flaky evidence or locked worktrees.
+- Evidence: #2438 recorded local proof under `-n 4`, ten strictly serial soak
+  runs, and CI `-n auto` only on isolated GitHub-hosted runners.
+- Revisit when: local agents run on isolated machines or a machine-level
+  scheduler exists.
+
+## D24. Coverage speedup roadmap is A-first, B-gated, and semantics-aware (07-06)
+
+- Context: investigation found `backend-coverage` was the release-gate critical
+  path, with a serial pytest step rerunning the Layer 3 API suite already run
+  in shards. The correctness risk was not speed; it was preserving the
+  coverage threshold over the same covered line set.
+- Alternatives: (a) in-job pytest-xdist while preserving job id, targets, glob,
+  and `--cov-fail-under=90`; (b) shard-combine redesign that removes the
+  duplicate job; (c) hotspot pruning; (d) broaden release-gate needs.
+- Decision: land (a) first. Consider (b) only if the post-A residual matters;
+  do (c) only after A's real numbers; surface (d) as an owner governance
+  decision, not an engineering default.
+- Why optimal: pytest-cov's native xdist combine preserves one threshold
+  evaluation over complete coverage data, while shard-combine redesign is the
+  place incomplete coverage can silently pass due to path aliasing or missing
+  data.
+- Evidence: #2438 `be8efadb` changed only `.github/workflows/playwright.yml`
+  and `backend/tests/requirements-layer3-api.txt`; PR proof records exact
+  covered-line-set parity, 2659/2659 collect parity, floor-trip failure at
+  88.86%, and 10/10 capped soak runs; post-merge main run `28776807974`
+  recorded `backend-coverage` success in 494 seconds.
+- Revisit when: `backend-coverage` remains the dominant release-gate delay
+  after #2438, or the owner wants a release-gate dependency change.
+
+## D25. Lane completion is detected by bounded polling, not persistent watchers (07-06)
+
+- Context: long-lived watcher processes died with parent sessions during the
+  arc and masked state transitions. Completion evidence ultimately lived in
+  explicit inbox reports, PR state, CI checks, and post-merge proof.
+- Alternatives: (a) trust persistent watcher processes; (b) require manual
+  status checks only; (c) use short-lived polling plus explicit source-of-truth
+  rechecks.
+- Decision: (c). Use restart-safe polling for handoff/report discovery, then
+  re-check PR state, review threads, CI, main SHA, and local proof surfaces from
+  authority before declaring a lane passed.
+- Why optimal: each observation is cheap, stateless, and re-grounded in current
+  authority; no resident process becomes an implicit source of truth.
+- Evidence: this program's closeout lanes already require PR/CI/thread
+  re-query and inbox report verification before done.
+- Revisit when: a durable monitor writes signed, replayable state transitions.
+
+## D26. Current-pointer fields must carry supersession pointers (07-06)
+
+- Context: #2437 review found that `latest_*`/current summary fields could
+  still quote superseded aggregate hashes while the historical record was
+  otherwise correctly preserved.
+- Alternatives: (a) rewrite historical entries; (b) leave current-pointer
+  fields stale; (c) preserve history and add one-line corrected-value pointers
+  wherever a current pointer would otherwise resolve to a known-superseded
+  fact.
+- Decision: (c). Historical entries remain intact, but current-pointer
+  surfaces such as `MASTER_CONTEXT`, `latest_*` status fields, and forward-plan
+  summaries get dated supersession notes when they quote a superseded hash,
+  distribution, or status.
+- Why optimal: it preserves provenance while removing the reader trap that a
+  "current" field can point to a known-wrong value.
+- Evidence: #2437 `c6bb87f8` corrected the corpus-40 current-pointer class;
+  this lane refreshes `docs/MASTER_CONTEXT.md` under explicit authorization.
+- Revisit when: current-pointer fields are replaced by generated pointers from
+  the evidence registry.

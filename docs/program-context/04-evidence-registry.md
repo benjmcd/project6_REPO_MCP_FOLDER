@@ -224,3 +224,58 @@ This addendum admits no backend/tool/test change, no network egress by this
 record lane, no production-readiness/default-on/value-reveal claim, no raw
 values, no accession/CIK, and no local path beyond the established `C:/p6store`
 root convention.
+
+## Program-Context 3 Evidence Registry Extension (M-PROGRAM-CONTEXT-3, 2026-07-06)
+
+This extension records the verified anchors used by the M-PROGRAM-CONTEXT-3
+landing PR #2439 to land D20-D26, the forward program refresh, and the
+MASTER_CONTEXT current-pointer refresh. Handoff payload files were read in full
+and hash-verified during landing, but they are not committed or re-derivable
+from repo history, so they are not admitted as registry evidence here. Every
+load-bearing claim below was re-derived from live GitHub state, current
+`project6-origin/main`, or hash-only durable artifacts.
+
+### Merged PR / SHA Table Extension
+
+| PR | Merge SHA | Title / tranche | Verification |
+|---|---|---|---|
+| #2435 | `fab89ced` | `docs: add SEC corpus run gate spec` | merged; ancestor of `project6-origin/main`; `corpus-run-gate-spec.md` records ACTIVE-NOW and LIVE-RUN-ONLY gate classes |
+| #2436 | `fc141039` | `Pin SEC CYD taxonomy family` | merged; ancestor of `project6-origin/main`; current source contains `sec-cyd-2024` pin, flat CYD archive extraction, and `taxonomy_family_vintage_unprovisioned` |
+| #2437 | `c6bb87f8` | `docs: record corpus 40 addendum` | merged; ancestor of `project6-origin/main`; records 40 supported filings, 21 issuers, 19 full domestic pairs, and operator-attested + independently regraded MSFT replay framing |
+| #2438 | `be8efadb` | `ci: parallelize backend coverage job` | merged; ancestor of `project6-origin/main`; changed only `.github/workflows/playwright.yml` and `backend/tests/requirements-layer3-api.txt` |
+
+### Durable Artifact Hashes Re-Verified For This Extension
+
+| Artifact | SHA-256 / Anchor | Meaning |
+|---|---|---|
+| Provisioning rerun report | `04b3e9354cf92ffd6221d2859b64d2e60c698df323938e5e4614cf9b861ff159` for `provision_report_2021_2026.json` under `C:/p6store` | Structured read: `ready=true`, 12 taxonomy packages, 12 loaded packages, 25 offline entrypoints, years 2021-2026. Content remains hash-only because it contains machine-local paths. |
+| Governed replay evidence bundle | `e1b15bd206ee271fbd4131f7cb083f71f04573a4bbc318bb51b4f531dbd00199` for `corpus_run/CYD_PHASE2_REPLAY_EVIDENCE.json` under `C:/p6store` | Structured read: `client_request_id=cyd-replay-msft-10k-r1`, status `ready`, 1829 resolved facts, model_error_count 0, `network_request_made=false` as operator-attested bundle/receipt invariant. |
+| Governed replay value-store binding | value_store_hash `bb76a9cd074f6f16446f1ce33638c12607675efaaa9d2e430f16f747265b98dd`; namespace `4502e1c70863a4bd0067e5f0de4325758d3542e05df223d702747c1886ee6ca9`; retention `sec_xbrl_public_financial_value_retention_v1` | Structured read: value store persisted 1829 records; hygiene accepted with no override. |
+| Independent regrade | `214f2f1014d3ecc06f7e49fd6ce1fc2d17a1811ce53452966d5381329aadff6d` for `corpus_run/CYD_PHASE2_REGRADE.md` under `C:/p6store` | Verdict `PASS_WITH_ATTESTED_FIELDS`; mismatches NONE; operator-attested-only fields named explicitly. |
+| IFRS/CYD vintage enumeration | `72391c5da90bb3e3439979fcf23106f0b664617e6a091b5a153bf3978ca896e4` for `ifrs-cyd-vintage-enumeration.md` | Handoff-local enumeration artifact; admitted by name and hash only. |
+| Worktree cleanup manifest | `9b98fab6ade7ff21fa95e1c66855378f4d5f0ee2365586716e7d0621a8a5c943` for `worktree-cleanup-manifest.json` | Stale sign-off artifact computed as of main `873d8883`; not a live deletion list. Fresh recompute required before any cleanup. |
+
+### Coverage-Xdist Evidence (#2438)
+
+| Evidence | Anchor |
+|---|---|
+| Scope fence | PR #2438 changed `.github/workflows/playwright.yml` and `backend/tests/requirements-layer3-api.txt` only; no backend app/test source edits and no release-gate `needs` edit. |
+| Coverage parity | PR #2438 body records serial and capped `-n 4` coverage at 95.18%, XML lines-covered 12063 / lines-valid 12674, exact covered-line-set and executable-line-set parity for `app.api.layer3` and `app.services.layer3_sec_xbrl_in_app_auth_policy`. |
+| Collect parity | PR #2438 body records 2659 tests collected serial and 2659 under capped xdist. |
+| Floor-trip | PR #2438 body records scratch-only proof exit 1 at 88.86% with exactly one required-coverage failure. |
+| Soak | PR #2438 body records 10/10 strictly serial capped `-n 4` local runs, all exit 0, min/mean/max 209.57s / 222.77s / 234.42s. |
+| Post-merge CI | Main run `28776807974` on `be8efadb` succeeded; `backend-coverage` job `85322639931` ran 08:01:32-08:09:46 UTC (494 seconds / 8m14s); `release-gate` job `85324062233` succeeded. |
+
+### Current Source / Workflow Anchors Re-Verified
+
+| Surface | Verification |
+|---|---|
+| 12 default-false boolean gates | AST count over `backend/app/core/config.py`: 12 `bool` settings default false, including live network, corpus validation, nonlocal authorization, value reveal, official ticker resolution, controlled value reveal submit, storage-root override ack, model egress, production admission evaluator, and trusted proxy mode. |
+| CYD family pin and reason code | `tools/sec-xbrl-arelle-provision.py` declares `sec-cyd-2024`; `backend/tests/test_sec_xbrl_arelle_provisioning.py` covers the pin and flat archive extraction; `backend/app/services/layer3_sec_xbrl_sidecar.py` contains `taxonomy_family_vintage_unprovisioned`. |
+| Corpus-run gate registry | `next_milestone_plans/Layer3_planning_docs/corpus-run-gate-spec.md` classifies G1, G2, G4, G6, G9, and G10 as ACTIVE-NOW, G3/G5/G7/G8 as LIVE-RUN-ONLY where applicable or dormant for zero-egress lanes. |
+| Release-gate needs gap | `.github/workflows/playwright.yml` release-gate needs are `release-lock-install`, `backend-layer3-api`, `backend-coverage`, `backend-migrations-postgres`, and `sec-xbrl-arelle-provisioning`; it does not need `root-tests`, `nrc-aps-ocr`, or the Playwright `test` aggregator. |
+| Orphaned workflow registration | GitHub lists an active `SEC XBRL Tier-2 review gate` workflow, while current main has no `.github/workflows/sec-xbrl-tier2-gate.yml`. |
+
+This extension admits no backend/tool/test change, no live egress, no production
+readiness, no default-on change, no raw retained values, no accession/CIK, and
+no machine-local path beyond the established `C:/p6store` root convention.
