@@ -387,10 +387,10 @@ else (additive tests, docs, static UI) is **Tier-1** → self-verify + CI.
   registrations 353 -> 163, 190 worktrees removed across two phases, about
   85 GB reclaimed. Still owner-gated: 139 protected local worktrees [76
   non-safe ignored content, 63 dirty - the dirty class may hold unlanded work;
-  per-item evidence in the untracked
-  `state/agent-inbox/worktree-cleanup-exec-manifest.json`], mass remote-branch
-  deletion [about 1,726 `codex/*` refs], and the `/tmp/audit-wt/p6main` locked
-  placement anomaly awaiting owner unlock.)
+  per-item evidence hash `bed6ccfc908f4d321c139075bd0111f66a0a1bff44d61bd49740d49947ae630f`
+  in the untracked cleanup manifest], mass remote-branch deletion [about 1,726
+  agent-prefixed refs], and the external temp-placement anomaly awaiting owner
+  unlock.)
 
 ### 3.5 Honesty rails (operator-run vs CI-durable; proven vs designed vs gated)
 **Decision:** never upgrade "operator-run proof" to "committed/CI'd truth," nor "designed" to
@@ -475,9 +475,10 @@ disposition policy (possibly including erasure) would be needed — explicitly o
   adjudicated class; 353 -> 163 registrations, 190 worktrees removed, and about
   85 GB reclaimed. Remaining owner-gated items are 139 protected local worktrees
   (including 63 dirty worktrees that may hold unlanded work; per-item evidence
-  in `state/agent-inbox/worktree-cleanup-exec-manifest.json`), the separate
-  mass remote-branch deletion decision for about 1,726 `codex/*` refs, and the
-  locked `/tmp/audit-wt/p6main` placement anomaly.
+  hash `bed6ccfc908f4d321c139075bd0111f66a0a1bff44d61bd49740d49947ae630f`
+  in the untracked cleanup manifest), the separate mass remote-branch deletion
+  decision for about 1,726 agent-prefixed refs, and the external temp-placement
+  anomaly.
 - **Whether to PR this master-context doc** to main, or maintain it on-branch only.
 
 ---
