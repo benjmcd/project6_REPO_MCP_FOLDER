@@ -80,6 +80,9 @@ _SEC_FLAT_ARCHIVE_MEMBERS_BY_YEAR = {
     "2024": _CYD_2024_FLAT_ARCHIVE_MEMBERS,
     "2025": _CYD_2025_FLAT_ARCHIVE_MEMBERS,
 }
+_IFRS_2025_OFFLINE_ENTRYPOINTS = (
+    "https://xbrl.ifrs.org/taxonomy/2025-03-27/full_ifrs/full_ifrs-cor_2025-03-27.xsd",
+)
 
 
 def _taxonomy_spec(
@@ -97,6 +100,7 @@ def _taxonomy_spec(
     unavailable_reason: str | None = None,
     operator_built_archive: bool = False,
     operator_built_members: tuple[dict[str, Any], ...] | None = None,
+    offline_entrypoints: tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
     spec: dict[str, Any] = {
         "id": id,
@@ -115,6 +119,8 @@ def _taxonomy_spec(
     if operator_built_archive:
         spec["operator_built_archive"] = True
         spec["operator_built_members"] = list(operator_built_members or ())
+    if offline_entrypoints:
+        spec["offline_entrypoints"] = list(offline_entrypoints)
     return spec
 
 
@@ -336,6 +342,17 @@ _TAXONOMY_SPECS: tuple[dict[str, Any], ...] = (
         source="FASB 2025 SEC Reporting Taxonomy package",
     ),
     _taxonomy_spec(
+        id="ifrs-2025",
+        kind="arelle_taxonomy_package",
+        name="IFRSAT-2025.zip",
+        version="2025",
+        url="https://www.ifrs.org/content/dam/ifrs/standards/taxonomy/ifrs-taxonomies/IFRSAT-2025.zip",
+        sha256="302afc7f69c5f92697ab8d87a6f584406f4addaf7f905468052c280c2fe16d19",
+        bytes=2_103_003,
+        source="IFRS Foundation 2025 IFRS Accounting Taxonomy package, operator-fetched 2026-07-06",
+        offline_entrypoints=_IFRS_2025_OFFLINE_ENTRYPOINTS,
+    ),
+    _taxonomy_spec(
         id="sec-2025",
         kind="offline_cache_archive",
         name="sec-2025.zip",
@@ -507,6 +524,7 @@ def build_report(
         "attempted": False,
         "loaded_hashes": [],
         "invalid_hashes": [],
+        "offline_entrypoints": [],
         "error": None,
     }
     sec_cache = {
@@ -517,13 +535,18 @@ def build_report(
         "error": None,
     }
     if not blocked and load_with_arelle:
-        arelle_load = _load_taxonomy_packages_with_arelle([Path(pkg["path"]) for pkg in arelle_packages])
+        arelle_load = _load_taxonomy_packages_with_arelle(
+            [Path(pkg["path"]) for pkg in arelle_packages],
+            entrypoints=_taxonomy_package_offline_entrypoints(arelle_packages),
+        )
         if arelle_load["error"]:
             blocked.append("arelle_taxonomy_package_load_failed")
         elif len(arelle_load["loaded_hashes"]) != len(arelle_packages):
             blocked.append("arelle_taxonomy_package_load_incomplete")
         elif arelle_load["invalid_hashes"]:
             blocked.append("arelle_taxonomy_package_invalid")
+        elif any(not item["loaded"] for item in arelle_load["offline_entrypoints"]):
+            blocked.append("arelle_taxonomy_package_entrypoint_load_failed")
         sec_cache = _seed_and_verify_sec_taxonomy_cache(cache_dir, cache_archives)
         if sec_cache["error"]:
             blocked.append("sec_taxonomy_cache_unavailable")
@@ -618,14 +641,39 @@ def _ensure_taxonomy_package(taxonomy_dir: Path, spec: dict[str, Any], *, downlo
     }
 
 
-def _load_taxonomy_packages_with_arelle(paths: list[Path]) -> dict[str, Any]:
+def _taxonomy_package_offline_entrypoints(packages: list[dict[str, Any]]) -> list[dict[str, str]]:
+    entrypoints: list[dict[str, str]] = []
+    for package in packages:
+        for url in package.get("offline_entrypoints") or []:
+            entrypoints.append(
+                {
+                    "package_id": str(package["id"]),
+                    "year": str(package["version"]),
+                    "url": str(url),
+                }
+            )
+    return entrypoints
+
+
+def _load_taxonomy_packages_with_arelle(
+    paths: list[Path],
+    *,
+    entrypoints: list[dict[str, str]] | tuple[dict[str, str], ...] = (),
+) -> dict[str, Any]:
     try:
         from arelle import Cntlr
         from arelle import PackageManager
     except Exception as exc:
-        return {"attempted": False, "loaded_hashes": [], "invalid_hashes": [], "error": exc.__class__.__name__}
+        return {
+            "attempted": False,
+            "loaded_hashes": [],
+            "invalid_hashes": [],
+            "offline_entrypoints": [],
+            "error": exc.__class__.__name__,
+        }
     cntlr = Cntlr.Cntlr(logFileName="logToBuffer")
     try:
+        cntlr.webCache.workOffline = True
         PackageManager.init(cntlr, loadPackagesConfig=False)
         loaded_hashes: list[str] = []
         invalid_hashes: list[str] = []
@@ -641,11 +689,48 @@ def _load_taxonomy_packages_with_arelle(paths: list[Path]) -> dict[str, Any]:
                 loaded_hashes.append(package_hash)
         if loaded_hashes:
             PackageManager.rebuildRemappings(cntlr)
-        return {"attempted": True, "loaded_hashes": loaded_hashes, "invalid_hashes": invalid_hashes, "error": None}
+        offline_entrypoints = _load_arelle_offline_entrypoints(cntlr, entrypoints)
+        return {
+            "attempted": True,
+            "loaded_hashes": loaded_hashes,
+            "invalid_hashes": invalid_hashes,
+            "offline_entrypoints": offline_entrypoints,
+            "error": None,
+        }
     except Exception as exc:
-        return {"attempted": True, "loaded_hashes": [], "invalid_hashes": [], "error": exc.__class__.__name__}
+        return {
+            "attempted": True,
+            "loaded_hashes": [],
+            "invalid_hashes": [],
+            "offline_entrypoints": [],
+            "error": exc.__class__.__name__,
+        }
     finally:
         cntlr.close()
+
+
+def _load_arelle_offline_entrypoints(cntlr: Any, entrypoints: list[dict[str, str]] | tuple[dict[str, str], ...]) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for entrypoint in entrypoints:
+        model = None
+        result: dict[str, Any] = dict(entrypoint)
+        try:
+            model = cntlr.modelManager.load(str(entrypoint["url"]))
+            model_errors = list(getattr(model, "errors", []) or []) if model is not None else []
+            result.update(
+                {
+                    "loaded": model is not None and not model_errors,
+                    "error": None,
+                    "model_errors": [str(item) for item in model_errors],
+                }
+            )
+        except Exception as exc:
+            result.update({"loaded": False, "error": exc.__class__.__name__, "model_errors": []})
+        finally:
+            if model is not None:
+                model.close()
+        results.append(result)
+    return results
 
 
 def _seed_and_verify_sec_taxonomy_cache(cache_dir: Path, archives: list[dict[str, Any]]) -> dict[str, Any]:

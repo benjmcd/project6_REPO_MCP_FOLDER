@@ -28,10 +28,12 @@ def test_sec_xbrl_arelle_provisioning_declares_pinned_packages_with_provenance()
     assert [spec["id"] for spec in specs] == [
         "fasb-us-gaap-2025",
         "fasb-srt-2025",
+        "ifrs-2025",
         "sec-2025",
         "sec-cyd-2025",
     ]
     assert [spec["kind"] for spec in specs] == [
+        "arelle_taxonomy_package",
         "arelle_taxonomy_package",
         "arelle_taxonomy_package",
         "offline_cache_archive",
@@ -42,15 +44,27 @@ def test_sec_xbrl_arelle_provisioning_declares_pinned_packages_with_provenance()
     assert {spec["sha256"] for spec in specs} == {
         "a3b835925ad74030eb5be865a26d7dfe44013081c4ab7204b6122316a685fff4",
         "aad1daeb4bdfe3057f4ed81482c06130f873a59fa7fce5193c5731f93b1fef88",
+        "302afc7f69c5f92697ab8d87a6f584406f4addaf7f905468052c280c2fe16d19",
         "6a963051af02ff458e02669549bd55f9d547281724f3b4e053cb0157be8121e4",
         "ad7b166a3913778a4fabb15f3a4431d80eb1930d9cc1e271c318f7b4cffdfc33",
     }
     assert {Path(spec["url"]).name for spec in specs} == {
         "us-gaap-2025.zip",
         "srt-2025.zip",
+        "IFRSAT-2025.zip",
         "2025.zip",
         "2025",
     }
+    assert by_name["IFRSAT-2025.zip"]["id"] == "ifrs-2025"
+    assert by_name["IFRSAT-2025.zip"]["kind"] == "arelle_taxonomy_package"
+    assert by_name["IFRSAT-2025.zip"]["url"] == (
+        "https://www.ifrs.org/content/dam/ifrs/standards/taxonomy/ifrs-taxonomies/IFRSAT-2025.zip"
+    )
+    assert by_name["IFRSAT-2025.zip"]["bytes"] == 2_103_003
+    assert by_name["IFRSAT-2025.zip"]["offline_entrypoints"] == [
+        "https://xbrl.ifrs.org/taxonomy/2025-03-27/full_ifrs/full_ifrs-cor_2025-03-27.xsd"
+    ]
+    assert "IFRS Foundation 2025 IFRS Accounting Taxonomy package" in by_name["IFRSAT-2025.zip"]["source"]
     assert by_name["cyd-2025.zip"]["url"] == "https://xbrl.sec.gov/cyd/2025/"
     assert by_name["cyd-2025.zip"]["bytes"] == 208_667
     assert by_name["cyd-2025.zip"]["operator_built_archive"] is True
@@ -325,6 +339,122 @@ def test_sec_xbrl_arelle_provisioning_verifies_sec_entrypoints_after_all_archive
     ]
 
 
+def test_sec_xbrl_arelle_provisioning_verifies_ifrs_entrypoint_after_package_load(
+    monkeypatch, tmp_path: Path
+) -> None:
+    module = _helper_module()
+    captured: dict[str, object] = {}
+    expected_url = "https://xbrl.ifrs.org/taxonomy/2025-03-27/full_ifrs/full_ifrs-cor_2025-03-27.xsd"
+
+    def fake_arelle_status() -> dict[str, object]:
+        return {
+            "package": module.ARELLE_PACKAGE,
+            "expected_version": module.ARELLE_VERSION,
+            "installed": True,
+            "version": module.ARELLE_VERSION,
+            "version_matches": True,
+            "importable": True,
+            "import_error": None,
+        }
+
+    def fake_ensure(taxonomy_dir: Path, spec: dict[str, object], *, download: bool) -> dict[str, object]:
+        return {
+            **spec,
+            "path": str(taxonomy_dir / str(spec["name"])),
+            "downloaded": False,
+            "download_blocked": False,
+            "exists": True,
+            "observed_sha256": spec["sha256"],
+            "sha256_matches": True,
+            "observed_bytes": spec["bytes"],
+            "bytes_match": True,
+        }
+
+    def fake_load(paths: list[Path], *, entrypoints=()) -> dict[str, object]:
+        captured["package_names"] = [path.name for path in paths]
+        captured["entrypoints"] = list(entrypoints)
+        return {
+            "attempted": True,
+            "loaded_hashes": [f"hash-{index}" for index, _path in enumerate(paths)],
+            "invalid_hashes": [],
+            "offline_entrypoints": [
+                {**entrypoint, "loaded": True, "error": None, "model_errors": []} for entrypoint in entrypoints
+            ],
+            "error": None,
+        }
+
+    monkeypatch.setattr(module, "_arelle_status", fake_arelle_status)
+    monkeypatch.setattr(module, "_ensure_taxonomy_package", fake_ensure)
+    monkeypatch.setattr(module, "_load_taxonomy_packages_with_arelle", fake_load)
+    monkeypatch.setattr(
+        module,
+        "_seed_and_verify_sec_taxonomy_cache",
+        lambda _cache_dir, _archives: {"attempted": True, "archive_ids": [], "extracted_file_count": 0, "offline_entrypoints": [], "error": None},
+    )
+
+    report = module.build_report(taxonomy_dir=tmp_path / "taxonomy", cache_dir=tmp_path / "cache", download=False)
+
+    assert report["ready"] is True
+    assert captured["package_names"] == ["us-gaap-2025.zip", "srt-2025.zip", "IFRSAT-2025.zip"]
+    assert captured["entrypoints"] == [{"package_id": "ifrs-2025", "year": "2025", "url": expected_url}]
+    assert report["arelle_load"]["offline_entrypoints"] == [
+        {"package_id": "ifrs-2025", "year": "2025", "url": expected_url, "loaded": True, "error": None, "model_errors": []}
+    ]
+
+
+def test_sec_xbrl_arelle_provisioning_blocks_ifrs_entrypoint_load_failure(monkeypatch, tmp_path: Path) -> None:
+    module = _helper_module()
+
+    def fake_arelle_status() -> dict[str, object]:
+        return {
+            "package": module.ARELLE_PACKAGE,
+            "expected_version": module.ARELLE_VERSION,
+            "installed": True,
+            "version": module.ARELLE_VERSION,
+            "version_matches": True,
+            "importable": True,
+            "import_error": None,
+        }
+
+    def fake_ensure(taxonomy_dir: Path, spec: dict[str, object], *, download: bool) -> dict[str, object]:
+        return {
+            **spec,
+            "path": str(taxonomy_dir / str(spec["name"])),
+            "downloaded": False,
+            "download_blocked": False,
+            "exists": True,
+            "observed_sha256": spec["sha256"],
+            "sha256_matches": True,
+            "observed_bytes": spec["bytes"],
+            "bytes_match": True,
+        }
+
+    def fake_load(paths: list[Path], *, entrypoints=()) -> dict[str, object]:
+        return {
+            "attempted": True,
+            "loaded_hashes": [f"hash-{index}" for index, _path in enumerate(paths)],
+            "invalid_hashes": [],
+            "offline_entrypoints": [
+                {**entrypoint, "loaded": False, "error": "OSError", "model_errors": []} for entrypoint in entrypoints
+            ],
+            "error": None,
+        }
+
+    monkeypatch.setattr(module, "_arelle_status", fake_arelle_status)
+    monkeypatch.setattr(module, "_ensure_taxonomy_package", fake_ensure)
+    monkeypatch.setattr(module, "_load_taxonomy_packages_with_arelle", fake_load)
+    monkeypatch.setattr(
+        module,
+        "_seed_and_verify_sec_taxonomy_cache",
+        lambda _cache_dir, _archives: {"attempted": True, "archive_ids": [], "extracted_file_count": 0, "offline_entrypoints": [], "error": None},
+    )
+
+    report = module.build_report(taxonomy_dir=tmp_path / "taxonomy", cache_dir=tmp_path / "cache", download=False)
+
+    assert report["ready"] is False
+    assert "arelle_taxonomy_package_entrypoint_load_failed" in report["blocked_reasons"]
+
+
 def test_sec_xbrl_arelle_provisioning_fails_closed_without_downloaded_taxonomies(tmp_path: Path) -> None:
     module = _helper_module()
 
@@ -358,7 +488,7 @@ def test_sec_xbrl_arelle_provisioning_dry_lists_requested_years_without_download
     assert sorted({spec["version"] for spec in specs}) == ["2019", "2025"]
     assert report["requested_taxonomy_years"] == ["2019", "2025"]
     assert report["taxonomy_year_coverage"]["2019"]["planned_artifact_count"] == 3
-    assert report["taxonomy_year_coverage"]["2025"]["planned_artifact_count"] == 4
-    assert report["taxonomy_year_coverage"]["2025"]["pinned_artifact_count"] == 4
+    assert report["taxonomy_year_coverage"]["2025"]["planned_artifact_count"] == 5
+    assert report["taxonomy_year_coverage"]["2025"]["pinned_artifact_count"] == 5
     assert report["taxonomy_year_coverage"]["2019"]["partial_coverage"] is True
     assert report["non_goals_preserved"]["sec_network_fetch_performed"] is False
