@@ -356,7 +356,7 @@ Corrections applied to the source addendum:
   reachable while a zip archive is not available. The IFRS phase will need an
   operator-built deterministic zip with per-file provenance before admitting
   `cyd-2025` for the three affected IFRS annuals. The local enumeration artifact
-  is `state/agent-inbox/ifrs-cyd-vintage-enumeration.md`, sha256
+  is `ifrs-cyd-vintage-enumeration.md`, sha256
   `72391c5da90bb3e3439979fcf23106f0b664617e6a091b5a153bf3978ca896e4`;
   it is cited by name and hash only, not committed.
 - Revisit when: the IFRS follow-up pins `ifrs-2025-03-27` and a governed

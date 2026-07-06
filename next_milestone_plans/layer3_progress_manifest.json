@@ -49870,13 +49870,17 @@
       "filed_year_lesson": "filed-year does not equal taxonomy-year",
       "cyd_2024_status": "pinned by PR #2436",
       "cyd_2025_status": "loose-file deterministic package remains open for IFRS phase",
-      "local_enumeration_artifact": "state/agent-inbox/ifrs-cyd-vintage-enumeration.md",
+      "local_enumeration_artifact": "ifrs-cyd-vintage-enumeration.md",
       "local_enumeration_sha256": "72391c5da90bb3e3439979fcf23106f0b664617e6a091b5a153bf3978ca896e4"
     },
+    "aggregate_report_hash_correction": "Per the #2434 evidence-registry correction, the corpus-go aggregate report's corrected SHA-256 is 52385f07a1a4dc29871708602bacadb159da44499bb950fd887665abd3879e91; this supersedes the 113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10 value quoted in the preserved historical summaries.",
     "gate_framing": {
       "lane_type": "single_filing_zero_egress_replay",
-      "live_run_only_gates": "dormant",
+      "live_egress_only_controls": "dormant",
       "active_now_gates": {
+        "G1": "disposition taxonomy addressed by MSFT supported-equivalent disposition and registry-by-reference reason-code posture",
+        "G2": "zero unnamed/silent failures addressed by receipt hashes, disposition, and regrade",
+        "G3": "volume threshold addressed by 40 supported filings / 21 supported issuers against the 30/15 historical thresholds",
         "G4": "preflight PASS validate-only with 863.9GB free",
         "G6": "regrade redaction scan clean",
         "G9": "independent regrade complete",

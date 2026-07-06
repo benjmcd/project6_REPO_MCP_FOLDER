@@ -13651,10 +13651,14 @@ MSFT FY2025 filed in 2025 imported 2024 taxonomy families. `cyd-2025` remains a
 loose-file follow-up for the IFRS phase, to be packaged deterministically with
 per-file provenance before admission.
 
-Gate framing: single-filing zero-egress replay lane. `LIVE-RUN-ONLY` gates are
-dormant; `ACTIVE-NOW` gates are addressed: G4 preflight PASS validate-only with
-863.9GB free, G6 regrade redaction scan clean, G9 independent regrade complete,
-and G10 no deviations.
+Gate framing: single-filing zero-egress replay lane. G1 disposition taxonomy is
+addressed by the MSFT supported-equivalent disposition and registry-by-reference
+reason-code posture. G2 zero unnamed/silent failures is addressed by receipt
+hashes, disposition, and regrade. G3 volume threshold is addressed by 40
+supported filings / 21 supported issuers against the 30/15 historical
+thresholds. G4 preflight PASS validate-only with 863.9GB free, G6 regrade
+redaction scan clean, G9 independent regrade complete, and G10 no deviations.
+Live-egress-only controls remain dormant for this zero-egress replay.
 
 Runtime behavior introduced by this pass: `false`.
 

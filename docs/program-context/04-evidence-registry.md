@@ -218,7 +218,7 @@ verification.
 | Foreign/OTC scope | CURLF/CRLBF 40-Fs unchanged |
 | MSFT disposition | Previous named 10-K block superseded by governed replay; MSFT is no longer the domestic pair exception |
 | Historical 72-vs-16 divergence | Reconciled: 72 = 16 genuine CYD errors plus 56 probe-local `ixt` invalidTransformation results from a direct-API probe that loaded the plugin without `loadCustomTransforms`; the governed helper count of 16 was correct. |
-| Gate status | Single-filing zero-egress replay lane: `LIVE-RUN-ONLY` gates dormant; `ACTIVE-NOW` gates addressed. G4 storage preflight PASS validate-only with 863.9GB free; G6 regrade redaction scan clean; G9 independent regrade complete; G10 no deviations. |
+| Gate status | Single-filing zero-egress replay lane: G1 disposition taxonomy addressed by the MSFT supported-equivalent disposition and registry-by-reference reason-code posture; G2 zero unnamed/silent failures addressed by receipt hashes, disposition, and regrade; G3 volume threshold addressed by 40 supported filings / 21 supported issuers against the 30/15 historical thresholds; G4 storage preflight PASS validate-only with 863.9GB free; G6 regrade redaction scan clean; G9 independent regrade complete; G10 no deviations. Live-egress-only controls remain dormant for this zero-egress replay. |
 
 This addendum admits no backend/tool/test change, no network egress by this
 record lane, no production-readiness/default-on/value-reveal claim, no raw
