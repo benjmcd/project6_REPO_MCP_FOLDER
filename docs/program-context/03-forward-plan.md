@@ -25,16 +25,20 @@ default-on, live-egress, or value-reveal claim.
   threshold failure, and 10/10 capped local soak runs. Post-merge main Actions
   run `28776807974` completed green; `backend-coverage` ran from 08:01:32 to
   08:09:46 UTC (494 seconds / 8m14s).
+- Scope note: this is a CI-operations/program-context completion record, not a
+  Layer 3 progress-manifest tranche. It changes no Layer 3 runtime, proof
+  manifest, progress-board entry, or workbench proof claim; those surfaces are
+  intentionally unchanged by PR #2439.
 - Remaining delta: none for Option A. Optional F4 below is the only path to
   further coverage-wall reduction if the residual still matters.
 
 ### F2 - Program-context payload 3 landing
 
-- Status: LANDING AS PR #2439. Scope is docs-only: append D20-D26, refresh
-  this forward pointer, extend the evidence registry, refresh
-  `docs/MASTER_CONTEXT.md`, and append a narrow arc-ledger tranche for already
-  merged work. Once PR #2439 is merged, this record-refresh item has no
-  remaining docs residual.
+- Status: LANDING AS PR #2439; complete once that PR is merged. Scope is
+  docs-only: append D20-D26, refresh this forward pointer, extend the evidence
+  registry, refresh `docs/MASTER_CONTEXT.md`, and append a narrow arc-ledger
+  tranche for already merged work. After PR #2439 merges, future operators
+  should not treat F2 as an open lane.
 - Acceptance: re-verify every anchor before admission; preserve
   operator-attested wording for bundle-only fields; keep machine-local artifacts
   hash-only; run `l3-progress-check`, link check, `git diff --check`, CI, review

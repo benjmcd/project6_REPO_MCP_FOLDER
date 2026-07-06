@@ -230,18 +230,10 @@ root convention.
 This extension records the verified anchors used by the M-PROGRAM-CONTEXT-3
 landing PR #2439 to land D20-D26, the forward program refresh, and the
 MASTER_CONTEXT current-pointer refresh. Handoff payload files were read in full
-and hash-verified, but they are source context, not implementation truth; every
+and hash-verified during landing, but they are not committed or re-derivable
+from repo history, so they are not admitted as registry evidence here. Every
 load-bearing claim below was re-derived from live GitHub state, current
 `project6-origin/main`, or hash-only durable artifacts.
-
-### Payload Source Hashes (Handoff-Local)
-
-| Payload file | SHA-256 |
-|---|---|
-| `00-PAYLOAD-COVER.md` | `6bc9949535ce9cab10cb6d9c541b3f292abc73b8ba02a68737d6b7c4e3fe5b88` |
-| `01-STATE-SYNTHESIS.md` | `32e56e6a29c26f35df627f5a1899e2f44e4cab2d7e30d094c58ce0fcb3eaf16e` |
-| `02-DECISION-ADDENDA.md` | `597c7c20b8affcea2ea40abb29f87222982828115df0e1b52189262765ece064` |
-| `03-FORWARD-PROGRAM.md` | `2947808bfa0bd8936d56b49d3ae65c60f192ece48bcf5a9d90ccaa37078e5ba6` |
 
 ### Merged PR / SHA Table Extension
 

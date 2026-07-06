@@ -418,21 +418,26 @@ and operator-attested framing.
 - Revisit when: retained artifacts are insufficient and a live acquisition
   grant is separately authorized.
 
-## D22. Delegation passes only after ack-gated dispatch and independent verification (07-06)
+## D22. Orchestrated delegation uses ack-gated dispatch and scoped independent verification (07-06)
 
-- Context: the 2026-07-05/06 arc used a Claude orchestrator, Codex repo lanes,
-  and independent reviewer/regrader agents. The failing classes were not
+- Context: the 2026-07-05/06 arc used an orchestrator, repo-lane workers, and
+  independent reviewer/regrader agents. The failing classes were not
   implementation failures alone; they were lost mandates, stale hashes, wrong
   distribution summaries, and self-graded operator claims.
 - Alternatives: (a) trust worker self-verification; (b) review only after
   merge; (c) require mandate-specific dispatch acknowledgment, blocking
   independent verification, and pre-merge review threads while CI runs.
-- Decision: (c). A lane is dispatched only after the worker rollout
-  acknowledges the specific source mandate. A lane passes only after
-  independent verification of fence, source defaults, review-thread state, and
-  decisive operational evidence where applicable. Operator-only evidence is
-  exported as hash-anchored bundles and regraded separately, with non
-  re-derivable fields labeled operator-attested.
+- Decision: (c). In orchestrated multi-lane programs, a lane is dispatched only
+  after the worker rollout acknowledges the specific source mandate. A lane is
+  marked program-PASS only after the orchestrator re-verifies fence, source
+  defaults, review-thread state, and decisive operational evidence where those
+  checks are relevant to the lane. This is a program-pass discipline, not a
+  universal GitHub merge blocker: Tier-1 docs/report lanes still follow the
+  canonical merge policy of self-verification plus CI and resolved threads,
+  with independent pre-merge review required only for the policy's concrete
+  risk triggers or when ambiguity remains. Operator-only evidence is exported
+  as hash-anchored bundles and regraded separately, with non-re-derivable fields
+  labeled operator-attested.
 - Why optimal: it binds assurance to the exact failure points observed in this
   program and makes review blocking before merge instead of advisory after the
   fact.
