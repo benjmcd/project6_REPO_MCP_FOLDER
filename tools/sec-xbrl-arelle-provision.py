@@ -16,6 +16,18 @@ ARELLE_VERSION = "2.41.3"
 READ_TIMEOUT_SECONDS = 120
 DEFAULT_TAXONOMY_YEARS = ("2025",)
 ADMITTED_TAXONOMY_YEARS = tuple(str(year) for year in range(2019, 2027))
+_CYD_2024_FLAT_ARCHIVE_MEMBERS = frozenset(
+    {
+        "cyd-2024.xsd",
+        "cyd-6k-sub-2024.xsd",
+        "cyd-8k-sub-2024.xsd",
+        "cyd-af-2024.xsd",
+        "cyd-af-sub-2024.xsd",
+        "cyd-cr-2024.xsd",
+        "cyd-entire-2024.xsd",
+    }
+)
+_SEC_FLAT_ARCHIVE_MEMBERS_BY_YEAR = {"2024": _CYD_2024_FLAT_ARCHIVE_MEMBERS}
 
 
 def _taxonomy_spec(
@@ -235,6 +247,16 @@ _TAXONOMY_SPECS: tuple[dict[str, Any], ...] = (
         sha256="418477e806d5a2d6b21376a26c01fc373d549dae8d18f223a6ebddf80680bdf0",
         bytes=1_084_829,
         source="SEC 2024 taxonomy package archive",
+    ),
+    _taxonomy_spec(
+        id="sec-cyd-2024",
+        kind="offline_cache_archive",
+        name="cyd-2024.zip",
+        version="2024",
+        url="https://xbrl.sec.gov/cyd/2024/cyd-2024.zip",
+        sha256="a52a1ab486257a5497a8ca4573a5d81a558c1fabcc1e858fabb769de658c3719",
+        bytes=16_356,
+        source="SEC 2024 Cybersecurity Disclosure taxonomy archive, operator-fetched 2026-07-05",
     ),
     _taxonomy_spec(
         id="fasb-us-gaap-2025",
@@ -560,6 +582,7 @@ def _seed_and_verify_sec_taxonomy_cache(cache_dir: Path, archives: list[dict[str
         "error": None,
     }
     try:
+        extracted_years: set[str] = set()
         for archive in archives:
             year = str(archive["version"])
             status["extracted_file_count"] += _extract_sec_archive_to_cache(
@@ -567,6 +590,8 @@ def _seed_and_verify_sec_taxonomy_cache(cache_dir: Path, archives: list[dict[str
                 cache_dir,
                 year=year,
             )
+            extracted_years.add(year)
+        for year in sorted(extracted_years):
             status["offline_entrypoints"].extend(_load_sec_entrypoints_offline(cache_dir, year=year))
     except Exception as exc:
         status["error"] = exc.__class__.__name__
@@ -589,11 +614,15 @@ def _extract_sec_archive_to_cache(archive_path: Path, cache_dir: Path, *, year: 
 
 
 def _sec_archive_cache_relative_path(name: str, *, year: str) -> Path | None:
+    name = name.replace("\\", "/")
     bare_prefix = "xbrl.sec.gov/"
     prefixed_prefix = f"{year}/{bare_prefix}"
     if name.endswith("/"):
         return None
-    if name.startswith(prefixed_prefix):
+    flat_members = _SEC_FLAT_ARCHIVE_MEMBERS_BY_YEAR.get(year, frozenset())
+    if "/" not in name and name in flat_members:
+        relative = f"xbrl.sec.gov/cyd/{year}/{name}"
+    elif name.startswith(prefixed_prefix):
         relative = name.removeprefix(f"{year}/")
     elif name.startswith(bare_prefix):
         relative = name
@@ -607,12 +636,15 @@ def _sec_archive_cache_relative_path(name: str, *, year: str) -> Path | None:
 
 def _sec_entrypoint_urls(year: str) -> list[str]:
     year = str(year)
-    return [
+    urls = [
         f"https://xbrl.sec.gov/dei/{year}/dei-{year}.xsd",
         f"https://xbrl.sec.gov/country/{year}/country-{year}.xsd",
         f"https://xbrl.sec.gov/currency/{year}/currency-{year}.xsd",
         f"https://xbrl.sec.gov/exch/{year}/exch-{year}.xsd",
     ]
+    if year in _SEC_FLAT_ARCHIVE_MEMBERS_BY_YEAR:
+        urls.append(f"https://xbrl.sec.gov/cyd/{year}/cyd-{year}.xsd")
+    return urls
 
 
 def _load_sec_entrypoints_offline(cache_dir: Path, *, year: str) -> list[dict[str, Any]]:

@@ -577,6 +577,84 @@ def test_sec_xbrl_sidecar_blocks_unprovisioned_taxonomy_year_before_arelle(monke
     assert result["reasons"][0]["provisioned_taxonomy_years"] == ["2025"]
 
 
+def test_sec_xbrl_sidecar_blocks_unprovisioned_sec_family_vintage_before_arelle(monkeypatch, tmp_path):
+    def unexpected_runner(*_args, **_kwargs):
+        raise AssertionError("unprovisioned SEC family vintage must block before Arelle")
+
+    inline_document = (
+        '<html xmlns:ix="http://www.xbrl.org/2013/inlineXBRL">'
+        '<link:schemaRef xlink:href="https://xbrl.sec.gov/cyd/2025/cyd-2025.xsd" />'
+        '<ix:nonFraction name="us-gaap:Assets" contextRef="c" unitRef="u">1</ix:nonFraction>'
+        "</html>"
+    )
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", unexpected_runner)
+    monkeypatch.setattr(
+        layer3_sec_xbrl_sidecar,
+        "_taxonomy_package_files",
+        lambda: [
+            tmp_path / "us-gaap-2025.zip",
+            tmp_path / "srt-2025.zip",
+            tmp_path / "sec-2025.zip",
+            tmp_path / "cyd-2024.zip",
+        ],
+    )
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_cache_dir", lambda: tmp_path / "cache")
+
+    result = layer3_sec_xbrl_sidecar._run_arelle(
+        primary_document=inline_document,
+        max_facts=layer3_sec_xbrl_sidecar.MIN_MAX_FACTS,
+        submission_documents=[{"filename": "primary.htm", "type": "10-K", "text": inline_document, "primary": "true"}],
+    )
+
+    assert result["status"] == "blocked"
+    assert result["reasons"][0]["reason"] == "taxonomy_family_vintage_unprovisioned"
+    assert result["reasons"][0]["detected_taxonomy_family_vintages"] == ["cyd/2025"]
+    assert result["reasons"][0]["provisioned_taxonomy_family_vintages"] == ["cyd/2024"]
+    assert result["reasons"][0]["unprovisioned_taxonomy_family_vintages"] == ["cyd/2025"]
+
+
+def test_sec_xbrl_sidecar_allows_provisioned_cyd_family_vintage_before_arelle(monkeypatch, tmp_path):
+    captured: dict[str, list[str]] = {}
+
+    def ready_runner(command, *_args, **_kwargs):
+        captured["command"] = list(command)
+        return _ready_arelle_runner()
+
+    inline_document = (
+        '<html xmlns:ix="http://www.xbrl.org/2013/inlineXBRL">'
+        '<link:schemaRef xlink:href="https://xbrl.sec.gov/cyd/2024/cyd-2024.xsd" />'
+        '<ix:nonFraction name="us-gaap:Assets" contextRef="c" unitRef="u">1</ix:nonFraction>'
+        "</html>"
+    )
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", ready_runner)
+    monkeypatch.setattr(
+        layer3_sec_xbrl_sidecar,
+        "_taxonomy_package_files",
+        lambda: [
+            tmp_path / "us-gaap-2024.zip",
+            tmp_path / "srt-2024.zip",
+            tmp_path / "sec-2024.zip",
+            tmp_path / "cyd-2024.zip",
+        ],
+    )
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_cache_dir", lambda: tmp_path / "cache")
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_internet_connectivity", lambda: "offline")
+
+    result = layer3_sec_xbrl_sidecar._run_arelle(
+        primary_document=inline_document,
+        max_facts=layer3_sec_xbrl_sidecar.MIN_MAX_FACTS,
+        submission_documents=[{"filename": "primary.htm", "type": "10-K", "text": inline_document, "primary": "true"}],
+    )
+
+    taxonomy_args = [
+        Path(captured["command"][index + 1]).name
+        for index, value in enumerate(captured["command"])
+        if value == "--taxonomy-package"
+    ]
+    assert result["status"] == "ready"
+    assert taxonomy_args == ["us-gaap-2024.zip", "srt-2024.zip", "sec-2024.zip", "cyd-2024.zip"]
+
+
 def test_sec_xbrl_sidecar_allows_provisioned_2026_taxonomy_year_before_arelle(monkeypatch, tmp_path):
     captured: dict[str, list[str]] = {}
 
