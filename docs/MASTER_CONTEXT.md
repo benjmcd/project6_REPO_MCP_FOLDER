@@ -10,7 +10,7 @@
 > latest O6 main-tip ref `f566ddb14f62cd717f697f1d13b533ff434785ed` for PR #2421,
 > plus corpus-go source frontier `2d6fdbde0f82a836663f7e06923d1dd05cc48f3d`
 > for PR #2432, and latest program-context frontier
-> `be8efadbc810ee78867ab6de4ba3ed6a11082c4e` for PR #2438.
+> `6d962b248ffdaaf35adc8467dbaad171fb873537` for PR #2440.
 
 ---
 
@@ -33,6 +33,19 @@ post-merge main run `28776807974` recorded `backend-coverage` success in
 2025-03-27 plus deterministic `cyd-2025` provisioning for the retained foreign
 annuals. No production-readiness, default-on, live-egress, or new value-reveal
 claim is made by this pointer.
+
+2026-07-06 pointer: `docs/program-context/` is refreshed again by
+M-PROGRAM-CONTEXT-4, grounded on current main through PR #2440
+(`6d962b248ffdaaf35adc8467dbaad171fb873537`). The #2440 `cyd-2025`
+pin/admission lane executed the F3a SEC CYD prep side: `sec-cyd-2025`
+is pinned as an operator-built deterministic archive, post-#2440 provisioning
+evidence reports 12/12 packages loaded and 26/26 offline entrypoints OK
+including both `cyd/2024` and `cyd/2025`, and D27 records that generic owner
+directives authorize only established egress classes. F3b remains gated:
+IFRS 2025-03-27 requires a named owner grant for the new `ifrs.org` /
+`xbrl.ifrs.org` host class and request budget. This pointer admits no
+production-readiness, default-on, IFRS fetch, value-reveal, raw-value, or
+new live-egress claim.
 
 ## 2026-07-05 Addendum - Corpus-Go Domestic Breadth Record
 

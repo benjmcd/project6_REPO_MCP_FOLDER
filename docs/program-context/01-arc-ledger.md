@@ -201,11 +201,33 @@ Dates 2026. All PRs merged to `project6-origin/main`; squash SHAs given.
   heavy local Python/Arelle work per machine, and refresh current-pointer fields
   whenever they quote superseded facts.
 
-## Net state after Phase 9
+## Phase 10 - CYD 2025 pin and egress-class boundary (07-06)
+
+- #2440 `6d962b24` - SEC `cyd-2025` taxonomy archive pin. Why: after D20
+  selected a deterministic operator-built zip for the loose-file CYD 2025
+  vintage, the repo needed the actual pin, extraction, entrypoint, and sidecar
+  admission surface. The lane landed `sec-cyd-2025` as an operator-built archive
+  with 7 member hashes, deterministic zip construction, flat extraction, and
+  sidecar readiness when `cyd-2025.zip` is in the provisioner package set.
+- Operator arming discipline now has a dated record: `CYD2025_FETCH_ARMING.json`
+  hash `af704db4bf1b171bd1a8bea7a6b03fcf7bbd57e8f1a92cdadc02256ef5f490f6`
+  armed only the established `xbrl.sec.gov` taxonomy host class and explicitly
+  did not arm `xbrl.ifrs.org`. That record forced D27: generic owner directives
+  apply only inside established egress classes; new host classes still require a
+  named grant with host and request budget.
+- Post-#2440 provisioning report
+  `7d5f719c274b2c64275498b52832913d6ad0914847bc4abde54e2842063527ee`
+  reports 12/12 packages loaded and 26/26 offline entrypoints OK, including
+  both `cyd/2024` and `cyd/2025`. This closes the CYD prep side of F3, but
+  does not execute the IFRS side: IFRS 2025-03-27 remains gated on a named
+  owner grant for its new host class.
+
+## Net state after Phase 10
 
 Local SEC-XBRL pipeline proven end-to-end ON REAL DATA: live-acquired filing → parsed →
 Arelle-resolved → durably retained values → controlled governed reveal; every layer
 fail-closed, redaction-verified, CI-guarded where CI can reach, recorded in the repo, and
 durable across all worktrees. The domestic corpus breadth lane is now executed
 for the SEC inline scope with 40 supported filings across 21 supported issuers.
-Source defaults all False. Nothing production-claimed.
+SEC `cyd-2025` provisioning prep is executed and pinned; IFRS remains named-grant
+gated. Source defaults all False. Nothing production-claimed.

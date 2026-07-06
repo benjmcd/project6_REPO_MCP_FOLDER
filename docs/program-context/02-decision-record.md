@@ -528,3 +528,43 @@ and operator-attested framing.
   this lane refreshes `docs/MASTER_CONTEXT.md` under explicit authorization.
 - Revisit when: current-pointer fields are replaced by generated pointers from
   the evidence registry.
+
+## 2026-07-06 Program-Context Decision Addendum (M-PROGRAM-CONTEXT-4)
+
+This section appends D27 after the #2440 `cyd-2025` pin lane. The landing
+lane re-verified #2440 state, code/test anchors, operator-local artifact
+hashes, archive member hashes, and the post-#2440 provisioning report before
+admitting this addendum. Machine-local evidence remains hash-only, and this
+addendum admits no production-readiness, default-on, value-reveal, raw-value,
+or new live-egress claim.
+
+## D27. Generic owner directives authorize only established egress classes (07-06)
+
+- Context: after the owner's 2026-07-06 generic "proceed as you see fit"
+  directive, two taxonomy actions were queued: `cyd-2025` under the established
+  `xbrl.sec.gov` taxonomy host class, and IFRS 2025-03-27 under a new host
+  class involving `ifrs.org` / `xbrl.ifrs.org`. D21 and the G7 live-egress
+  rule were created to prevent generic prompts from becoming blanket authority
+  for new irreversible egress classes.
+- Alternatives: (a) treat generic proceed as blanket egress authorization; (b)
+  require a named grant for every egress action including established classes;
+  (c) apply generic directives only inside host/request classes already
+  established by prior named grants and sustained operator precedent, while
+  freezing at any new host class until a named grant states host and budget.
+- Decision: (c). Generic owner directives flow through established egress
+  classes, currently including bounded `xbrl.sec.gov` taxonomy-host fetches
+  and SEC EDGAR filing fetches only under an active corpus grant. A new host
+  class requires a named owner grant that identifies the host class and request
+  budget before the first request.
+- Why optimal: it preserves velocity where the owner has already accepted the
+  egress class while keeping the first use of a new host class objective,
+  auditable, and explicitly owner-controlled. The boundary is simple: a host
+  class with no prior named grant or sustained accepted precedent is new.
+- Evidence: `CYD2025_FETCH_ARMING.json` hash
+  `af704db4bf1b171bd1a8bea7a6b03fcf7bbd57e8f1a92cdadc02256ef5f490f6`
+  records `xbrl.sec.gov` only, budget 10, written-before-first-request, and
+  explicitly does not authorize `xbrl.ifrs.org`; #2440
+  `6d962b24` merged the `cyd-2025` pin lane under the established class.
+- Revisit when: an owner grant explicitly names a new host class and request
+  budget, or when the project adds a durable authorization registry that can
+  classify egress classes mechanically.
