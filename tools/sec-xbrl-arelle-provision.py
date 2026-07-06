@@ -623,8 +623,10 @@ def _ensure_taxonomy_package(taxonomy_dir: Path, spec: dict[str, Any], *, downlo
     download_blocked = bool(download and not path.exists() and not (pinned and download_ready))
     if not path.exists() and download and pinned and download_ready:
         if spec.get("operator_built_archive"):
-            path.write_bytes(_download_operator_built_archive(spec))
-            verify_zip_determinism(path)
+            temp_path = path.with_name(f"{path.name}.tmp")
+            temp_path.write_bytes(_download_operator_built_archive(spec))
+            verify_zip_determinism(temp_path)
+            temp_path.replace(path)
         else:
             path.write_bytes(_download(spec["url"]))
         downloaded = True

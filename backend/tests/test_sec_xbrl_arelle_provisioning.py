@@ -349,6 +349,7 @@ def test_sec_xbrl_arelle_provisioning_fails_closed_on_operator_archive_metadata_
         "expected": 0,
         "actual": 3,
     }
+    assert not (tmp_path / "cyd-test.zip").exists()
 
 
 def test_sec_xbrl_arelle_provisioning_downloads_operator_archive_from_loose_files(monkeypatch, tmp_path: Path) -> None:
