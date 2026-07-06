@@ -158,11 +158,28 @@ Dates 2026. All PRs merged to `project6-origin/main`; squash SHAs given.
   `official_ticker_resolution_missing`; and `TSMC-as-written` maps to
   `ticker_alias_resolution_required`.
 
-## Net state after Phase 7
+## Phase 8 - Corpus 40 addendum (07-05)
+
+- #2436 `fc141039` - SEC CYD family pin and family-vintage reason code. Why:
+  MSFT FY2025 10-K imported CYD 2024 despite the fiscal-year label, so the
+  helper needed pinned CYD family-vintage awareness and a named fail-closed
+  disposition for future unprovisioned family vintages.
+- Phase-2 operator replay - zero-egress governed receipt-bound MSFT FY2025 10-K
+  replay using `cyd-replay-msft-10k-r1`: 1829/1829 facts resolved,
+  model_error_count 0, value store persisted 1829 records, and independent
+  regrade verdict `PASS_WITH_ATTESTED_FIELDS` with zero hash mismatches. Why:
+  retained evidence plus the CYD pin closed the only domestic named 10-K block
+  without adding live egress.
+- Corpus distribution supersession: the #2433/#2434 39-filing record remains
+  historical; current corpus evidence records 40 supported filings, 21 supported
+  issuers, and 19 full domestic 10-K/10-Q pairs. IFRS annuals and `cyd-2025`
+  loose-file packaging remain explicit follow-ups.
+
+## Net state after Phase 8
 
 Local SEC-XBRL pipeline proven end-to-end ON REAL DATA: live-acquired filing → parsed →
 Arelle-resolved → durably retained values → controlled governed reveal; every layer
 fail-closed, redaction-verified, CI-guarded where CI can reach, recorded in the repo, and
 durable across all worktrees. The domestic corpus breadth lane is now executed
-for the SEC inline scope with 39 supported filings across 21 supported issuers.
+for the SEC inline scope with 40 supported filings across 21 supported issuers.
 Source defaults all False. Nothing production-claimed.

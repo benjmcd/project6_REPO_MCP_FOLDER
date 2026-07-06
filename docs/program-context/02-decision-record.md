@@ -319,3 +319,46 @@ Corrections applied to the source addendum:
   splits cheap.
 - The helper now exports model error codes, never values, so diagnosis no longer
   requires an operator API probe (#2432 observability fix).
+
+## D19. CYD family-vintage admission by reason-code registry, not history rewrite (07-05)
+
+- Context: the 2026-07-05 corpus-go record left MSFT with a supported 10-Q and
+  a named 10-K block. PR #2436 then pinned the SEC CYD 2024 family and added
+  `taxonomy_family_vintage_unprovisioned` for family-specific taxonomy gaps.
+  The Phase-2 operator replay used retained receipts and zero egress to rerun
+  the MSFT FY2025 10-K against the governed helper path.
+- Alternatives: (a) rewrite the original #2433/#2434 39-filing record; (b)
+  leave MSFT as an open named block until another live corpus run; (c) append a
+  hash-only supersession addendum for the governed replay.
+- Decision: (c). The prior 39-filing record remains the historical record; the
+  current addendum records the later MSFT 10-K supported-equivalent outcome and
+  updates the current corpus distribution to 40 supported filings and 19 full
+  domestic 10-K/10-Q pairs.
+- Why optimal: the replay was receipt-bound, zero-egress, hash-anchored, and
+  independently regraded. Rewriting the old record would blur provenance, while
+  waiting for a fresh live run would add egress to prove a retained-evidence
+  delta. A supersession addendum keeps both states true in time.
+- Evidence: PR #2436 (`fc141039`) for the CYD family pin and reason code; PR
+  #2435 (`fab89ced`) for the gate registry; provisioning report hash
+  `04b3e9354cf92ffd6221d2859b64d2e60c698df323938e5e4614cf9b861ff159`;
+  governed replay parser receipt
+  `4bf632ece7dc4a0c23661d954b8f4475c7f4e0e26303eb6a20b68469ad8ba911`;
+  evidence bundle hash
+  `e1b15bd206ee271fbd4131f7cb083f71f04573a4bbc318bb51b4f531dbd00199`;
+  independent regrade hash
+  `214f2f1014d3ecc06f7e49fd6ce1fc2d17a1811ce53452966d5381329aadff6d`;
+  verdict `PASS_WITH_ATTESTED_FIELDS`.
+- Operator lesson: filed-year and taxonomy-year are not equivalent. MSFT FY2025
+  filed in 2025 can import `us-gaap-2024` and `cyd-2024`; family-vintage
+  detection must follow schema references and the pinned package registry, not
+  the filing fiscal year label.
+- Registry lesson: `cyd-2025` exists upstream as loose files only; the XSDs are
+  reachable while a zip archive is not available. The IFRS phase will need an
+  operator-built deterministic zip with per-file provenance before admitting
+  `cyd-2025` for the three affected IFRS annuals. The local enumeration artifact
+  is `ifrs-cyd-vintage-enumeration.md`, sha256
+  `72391c5da90bb3e3439979fcf23106f0b664617e6a091b5a153bf3978ca896e4`;
+  it is cited by name and hash only, not committed.
+- Revisit when: the IFRS follow-up pins `ifrs-2025-03-27` and a governed
+  deterministic `cyd-2025` package, then reruns the remaining annuals to
+  supported-equivalent or named-block outcomes.
