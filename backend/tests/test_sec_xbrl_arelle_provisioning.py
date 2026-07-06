@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from io import BytesIO
 from pathlib import Path
-from zipfile import ZIP_STORED, ZipFile
+from zipfile import ZIP_STORED, ZipFile, ZipInfo
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -16,6 +19,21 @@ def _helper_module():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def _runtime_error_payload(excinfo) -> dict[str, object]:
+    return json.loads(str(excinfo.value))
+
+
+def _metadata_drifted_zip_bytes() -> bytes:
+    buffer = BytesIO()
+    with ZipFile(buffer, "w") as archive:
+        info = ZipInfo(filename="a.xsd", date_time=(1980, 1, 1, 0, 0, 0))
+        info.create_system = 3
+        info.compress_type = ZIP_STORED
+        info.external_attr = 0o644 << 16
+        archive.writestr(info, b"a")
+    return buffer.getvalue()
 
 
 def test_sec_xbrl_arelle_provisioning_declares_pinned_packages_with_provenance() -> None:
@@ -265,6 +283,72 @@ def test_sec_xbrl_arelle_provisioning_builds_deterministic_operator_archive() ->
             assert info.create_system == 0
             assert info.compress_type == ZIP_STORED
             assert info.external_attr == 0o644 << 16
+
+
+def test_sec_xbrl_arelle_provisioning_rejects_default_zip_metadata(tmp_path: Path) -> None:
+    module = _helper_module()
+    archive_path = tmp_path / "default.zip"
+    with ZipFile(archive_path, "w") as archive:
+        archive.writestr("a.xsd", b"a")
+
+    with pytest.raises(RuntimeError) as excinfo:
+        module.verify_zip_determinism(archive_path)
+
+    payload = _runtime_error_payload(excinfo)
+    assert payload["reason"] == "zip_determinism_date_time_mismatch"
+    assert payload["entry"] == "a.xsd"
+    assert payload["field"] == "date_time"
+    assert payload["expected"] == [1980, 1, 1, 0, 0, 0]
+
+
+def test_sec_xbrl_arelle_provisioning_accepts_normalized_operator_archive(tmp_path: Path) -> None:
+    module = _helper_module()
+    archive_path = tmp_path / "normalized.zip"
+    archive_path.write_bytes(module._build_flat_zip_archive({"b.xsd": b"b", "a.xsd": b"a"}))
+
+    assert module.verify_zip_determinism(archive_path) is None
+
+
+def test_sec_xbrl_arelle_provisioning_fails_closed_on_operator_archive_metadata_drift(
+    monkeypatch, tmp_path: Path
+) -> None:
+    module = _helper_module()
+    drifted_archive = _metadata_drifted_zip_bytes()
+    requested_urls: list[str] = []
+
+    def fake_download(url: str) -> bytes:
+        requested_urls.append(url)
+        return b"a"
+
+    monkeypatch.setattr(module, "_download", fake_download)
+    monkeypatch.setattr(module, "_build_flat_zip_archive", lambda _members: drifted_archive)
+    spec = {
+        "id": "sec-cyd-test",
+        "kind": "offline_cache_archive",
+        "name": "cyd-test.zip",
+        "version": "2099",
+        "url": "https://xbrl.sec.gov/cyd/2099/",
+        "sha256": module._sha256_bytes(drifted_archive),
+        "bytes": len(drifted_archive),
+        "source": "operator-built archive with drifted metadata",
+        "pinned": True,
+        "download_ready": True,
+        "operator_built_archive": True,
+        "operator_built_members": [{"name": "a.xsd", "sha256": module._sha256_bytes(b"a"), "bytes": 1}],
+    }
+
+    with pytest.raises(RuntimeError) as excinfo:
+        module._ensure_taxonomy_package(tmp_path, spec, download=True)
+
+    payload = _runtime_error_payload(excinfo)
+    assert requested_urls == ["https://xbrl.sec.gov/cyd/2099/a.xsd"]
+    assert payload == {
+        "reason": "zip_determinism_create_system_mismatch",
+        "entry": "a.xsd",
+        "field": "create_system",
+        "expected": 0,
+        "actual": 3,
+    }
 
 
 def test_sec_xbrl_arelle_provisioning_downloads_operator_archive_from_loose_files(monkeypatch, tmp_path: Path) -> None:

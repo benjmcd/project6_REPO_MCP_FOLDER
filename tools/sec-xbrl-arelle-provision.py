@@ -17,6 +17,10 @@ ARELLE_VERSION = "2.41.3"
 READ_TIMEOUT_SECONDS = 120
 DEFAULT_TAXONOMY_YEARS = ("2025",)
 ADMITTED_TAXONOMY_YEARS = tuple(str(year) for year in range(2019, 2027))
+_DETERMINISTIC_ZIP_DATE_TIME = (1980, 1, 1, 0, 0, 0)
+_DETERMINISTIC_ZIP_CREATE_SYSTEM = 0
+_DETERMINISTIC_ZIP_COMPRESS_TYPE = ZIP_STORED
+_DETERMINISTIC_ZIP_EXTERNAL_ATTR = 0o644 << 16
 _CYD_2024_FLAT_ARCHIVE_MEMBERS = frozenset(
     {
         "cyd-2024.xsd",
@@ -620,6 +624,7 @@ def _ensure_taxonomy_package(taxonomy_dir: Path, spec: dict[str, Any], *, downlo
     if not path.exists() and download and pinned and download_ready:
         if spec.get("operator_built_archive"):
             path.write_bytes(_download_operator_built_archive(spec))
+            verify_zip_determinism(path)
         else:
             path.write_bytes(_download(spec["url"]))
         downloaded = True
@@ -937,12 +942,80 @@ def _build_flat_zip_archive(members: dict[str, bytes]) -> bytes:
     with ZipFile(buffer, "w") as archive:
         for name in sorted(members):
             _validate_flat_member_name(name)
-            info = ZipInfo(filename=name, date_time=(1980, 1, 1, 0, 0, 0))
-            info.create_system = 0
-            info.compress_type = ZIP_STORED
-            info.external_attr = 0o644 << 16
+            info = ZipInfo(filename=name, date_time=_DETERMINISTIC_ZIP_DATE_TIME)
+            info.create_system = _DETERMINISTIC_ZIP_CREATE_SYSTEM
+            info.compress_type = _DETERMINISTIC_ZIP_COMPRESS_TYPE
+            info.external_attr = _DETERMINISTIC_ZIP_EXTERNAL_ATTR
             archive.writestr(info, members[name])
     return buffer.getvalue()
+
+
+def verify_zip_determinism(path: Path) -> None:
+    with ZipFile(path) as archive:
+        names = archive.namelist()
+        sorted_names = sorted(names)
+        if names != sorted_names:
+            first_mismatch = next(
+                (index for index, (actual, expected) in enumerate(zip(names, sorted_names)) if actual != expected),
+                0,
+            )
+            _raise_zip_determinism_error(
+                "zip_determinism_member_order_mismatch",
+                entry=names[first_mismatch] if names else "",
+                field="member_names",
+                expected=sorted_names,
+                actual=names,
+            )
+        for info in archive.infolist():
+            if info.date_time != _DETERMINISTIC_ZIP_DATE_TIME:
+                _raise_zip_determinism_error(
+                    "zip_determinism_date_time_mismatch",
+                    entry=info.filename,
+                    field="date_time",
+                    expected=_DETERMINISTIC_ZIP_DATE_TIME,
+                    actual=info.date_time,
+                )
+            if info.create_system != _DETERMINISTIC_ZIP_CREATE_SYSTEM:
+                _raise_zip_determinism_error(
+                    "zip_determinism_create_system_mismatch",
+                    entry=info.filename,
+                    field="create_system",
+                    expected=_DETERMINISTIC_ZIP_CREATE_SYSTEM,
+                    actual=info.create_system,
+                )
+            if info.compress_type != _DETERMINISTIC_ZIP_COMPRESS_TYPE:
+                _raise_zip_determinism_error(
+                    "zip_determinism_compress_type_mismatch",
+                    entry=info.filename,
+                    field="compress_type",
+                    expected=_DETERMINISTIC_ZIP_COMPRESS_TYPE,
+                    actual=info.compress_type,
+                )
+            if info.external_attr != _DETERMINISTIC_ZIP_EXTERNAL_ATTR:
+                _raise_zip_determinism_error(
+                    "zip_determinism_external_attr_mismatch",
+                    entry=info.filename,
+                    field="external_attr",
+                    expected=_DETERMINISTIC_ZIP_EXTERNAL_ATTR,
+                    actual=info.external_attr,
+                )
+
+
+def _raise_zip_determinism_error(
+    reason: str, *, entry: str, field: str, expected: object, actual: object
+) -> None:
+    raise RuntimeError(
+        json.dumps(
+            {
+                "reason": reason,
+                "entry": entry,
+                "field": field,
+                "expected": expected,
+                "actual": actual,
+            },
+            sort_keys=True,
+        )
+    )
 
 
 def _validate_flat_member_name(name: str) -> None:
