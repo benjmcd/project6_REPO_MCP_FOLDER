@@ -13602,3 +13602,64 @@ mutation, SEC egress by this record tranche, raw value disclosure, raw path
 disclosure, user-agent/identity disclosure, production-readiness claim, nonlocal
 admission claim, default-on expansion, or unsupported IFRS readiness claim is
 admitted by this tranche.
+
+## M-CORPUS-40-ADDENDUM
+
+Milestone: `m_corpus_40_addendum_v1`.
+
+Record lane/PR: `corpus-40`, PR `TBD`.
+
+Source frontier: current main
+`fab89ced6df76654488a486d8388f9466f5d3a96` after PR `#2435`; includes PR
+`#2436` merge `fc1410395562addd67487d5eabe150637e499e42`.
+
+Status: owner-authorized Tier-1 docs-only corpus addendum lane. This is
+hash/count/receipt-id record metadata only. It extends the #2433/#2434 corpus
+record and does not rewrite the original 39-supported-filing historical record.
+
+Corpus delta: 39 -> 40 supported filings. MSFT FY2025 10-K moves from named
+block to supported-equivalent via governed receipt-bound replay;
+operator-attested + independently regraded (`PASS_WITH_ATTESTED_FIELDS`).
+Supported issuers remain 21; full domestic 10-K/10-Q pairs are now 19. CURLF
+and CRLBF 40-F support is unchanged.
+
+Governed replay anchors: `client_request_id` `cyd-replay-msft-10k-r1`, parser
+receipt hash `4bf632ece7dc4a0c23661d954b8f4475c7f4e0e26303eb6a20b68469ad8ba911`,
+sidecar self-declared hash
+`dc3f38132db62b331d469d0307f62e805ad164580253d455ea65103e462edd87`,
+1829/1829 facts resolved, model_error_count 0, and value store persisted 1829
+records with value_store_hash
+`bb76a9cd074f6f16446f1ce33638c12607675efaaa9d2e430f16f747265b98dd`.
+
+Evidence bundle: SHA-256
+`e1b15bd206ee271fbd4131f7cb083f71f04573a4bbc318bb51b4f531dbd00199`.
+Independent regrade: SHA-256
+`214f2f1014d3ecc06f7e49fd6ce1fc2d17a1811ce53452966d5381329aadff6d`,
+verdict `PASS_WITH_ATTESTED_FIELDS`, zero hash mismatches. Attested-only fields
+are the sidecar self-reported zero-network invariants, PR-verification metadata,
+and arming narrative.
+
+Provisioning gap closure: `provision_report_2021_2026.json` is admitted by
+hash only, SHA-256
+`04b3e9354cf92ffd6221d2859b64d2e60c698df323938e5e4614cf9b861ff159`, closing
+the #2434 not-found evidence gap. The report content is not committed because it
+embeds machine-local paths.
+
+CYD decision: PR `#2436` pins `cyd-2024` and adds
+`taxonomy_family_vintage_unprovisioned`. Filed-year does not equal taxonomy-year:
+MSFT FY2025 filed in 2025 imported 2024 taxonomy families. `cyd-2025` remains a
+loose-file follow-up for the IFRS phase, to be packaged deterministically with
+per-file provenance before admission.
+
+Gate framing: single-filing zero-egress replay lane. `LIVE-RUN-ONLY` gates are
+dormant; `ACTIVE-NOW` gates are addressed: G4 preflight PASS validate-only with
+863.9GB free, G6 regrade redaction scan clean, G9 independent regrade complete,
+and G10 no deviations.
+
+Runtime behavior introduced by this pass: `false`.
+
+No backend/tool/test edit, network egress, runtime/flag/schema change, sandbox or
+p6store mutation by this record lane, raw value disclosure, accession/CIK
+disclosure, local path disclosure beyond `C:/p6store`, production-readiness
+claim, value-reveal claim, nonlocal admission claim, default-on expansion, or
+unsupported IFRS readiness claim is admitted by this tranche.

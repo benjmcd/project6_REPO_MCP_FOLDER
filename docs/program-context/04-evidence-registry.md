@@ -179,3 +179,48 @@ wording as current evidence.
 | Pre-inline / XML / semantic blockers / decode parity | `backend/app/services/layer3_sec_xbrl_sidecar.py` |
 | 200 MB ceiling constant | `backend/app/services/layer3_sec_edgar_live_source_artifact.py` |
 | Corpus hardening tests | `backend/tests/test_sec_xbrl_corpus_hardening.py` |
+
+## Corpus-Go 39 -> 40 Addendum (M-CORPUS-40-ADDENDUM, 2026-07-05)
+
+This addendum supersedes only the MSFT 10-K disposition and supported-filing
+distribution recorded by #2433/#2434. The 39-filing record remains historical:
+this lane records the later zero-egress governed replay that moved the MSFT
+FY2025 10-K from named block to supported-equivalent via governed receipt-bound
+replay; operator-attested + independently regraded
+(`PASS_WITH_ATTESTED_FIELDS`). Attested fields are not treated as unqualified
+verification.
+
+### Addendum PR / SHA Anchors
+
+| PR | Merge SHA | Title / tranche | Verification |
+|---|---|---|---|
+| #2434 | `873d8883` | `docs: append corpus-go program context addenda` | merged; ancestor of `project6-origin/main` |
+| #2436 | `fc141039` | `Pin SEC CYD taxonomy family` | merged; ancestor of `project6-origin/main`; adds `cyd-2024` family pin and the `taxonomy_family_vintage_unprovisioned` reason code |
+| #2435 | `fab89ced` | `docs: add SEC corpus run gate spec` | merged; ancestor of `project6-origin/main`; records the G1/G4/G6/G9/G10 gate framing used by this addendum |
+
+### Addendum Artifacts (Hash-Only Admission)
+
+| Artifact | Anchor | Meaning |
+|---|---|---|
+| Provisioning rerun report | sha256 `04b3e9354cf92ffd6221d2859b64d2e60c698df323938e5e4614cf9b861ff159` for `provision_report_2021_2026.json` under canonical root `C:/p6store` | Operator rerun reported `ready=true`, 12 packages, and 25/25 offline entrypoints including `cyd-2024`; closes the #2434 evidence gap where this report was previously not found. Content is not committed because it embeds machine-local paths. |
+| Governed MSFT FY2025 10-K replay | `client_request_id` `cyd-replay-msft-10k-r1`; parser receipt hash `4bf632ece7dc4a0c23661d954b8f4475c7f4e0e26303eb6a20b68469ad8ba911`; sidecar self-declared hash `dc3f38132db62b331d469d0307f62e805ad164580253d455ea65103e462edd87` | Status `READY`; 1829/1829 facts resolved; model_error_count 0; value store persisted 1829 records. |
+| Replay value-store binding | value_store_hash `bb76a9cd074f6f16446f1ce33638c12607675efaaa9d2e430f16f747265b98dd`; namespace `4502e1c70863a4bd0067e5f0de4325758d3542e05df223d702747c1886ee6ca9`; retention `sec_xbrl_public_financial_value_retention_v1` | Hygiene accepted with no override; records hash/count/policy evidence only, with no raw values. |
+| Evidence bundle | sha256 `e1b15bd206ee271fbd4131f7cb083f71f04573a4bbc318bb51b4f531dbd00199` for `corpus_run/CYD_PHASE2_REPLAY_EVIDENCE.json` under canonical root `C:/p6store` | Hash-anchored zero-egress replay bundle; content is not committed. |
+| Independent regrade | sha256 `214f2f1014d3ecc06f7e49fd6ce1fc2d17a1811ce53452966d5381329aadff6d` for `corpus_run/CYD_PHASE2_REGRADE.md` under canonical root `C:/p6store` | Verdict `PASS_WITH_ATTESTED_FIELDS`; zero hash mismatches. Attested-only fields are the sidecar self-reported zero-network invariants, PR-verification metadata, and arming narrative. |
+
+### Corpus Delta And Gate Framing
+
+| Field | Addendum record |
+|---|---|
+| Supported filings | `40`, with MSFT FY2025 10-K supported-equivalent via governed receipt-bound replay |
+| Supported issuers | `21`, unchanged |
+| Domestic pairs | `19` full domestic 10-K/10-Q pairs |
+| Foreign/OTC scope | CURLF/CRLBF 40-Fs unchanged |
+| MSFT disposition | Previous named 10-K block superseded by governed replay; MSFT is no longer the domestic pair exception |
+| Historical 72-vs-16 divergence | Reconciled: 72 = 16 genuine CYD errors plus 56 probe-local `ixt` invalidTransformation results from a direct-API probe that loaded the plugin without `loadCustomTransforms`; the governed helper count of 16 was correct. |
+| Gate status | Single-filing zero-egress replay lane: `LIVE-RUN-ONLY` gates dormant; `ACTIVE-NOW` gates addressed. G4 storage preflight PASS validate-only with 863.9GB free; G6 regrade redaction scan clean; G9 independent regrade complete; G10 no deviations. |
+
+This addendum admits no backend/tool/test change, no network egress by this
+record lane, no production-readiness/default-on/value-reveal claim, no raw
+values, no accession/CIK, and no local path beyond the established `C:/p6store`
+root convention.

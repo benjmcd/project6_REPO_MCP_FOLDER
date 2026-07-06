@@ -49800,5 +49800,116 @@
       ]
     }
   },
-  "latest_m_corpus_record_truth_summary": "M-CORPUS-RECORD-TRUTH records the owner-authorized 2026-07-05 corpus-go run from source frontier 2d6fdbde0f82a836663f7e06923d1dd05cc48f3d after PR #2432: 30-ticker owner matrix plus TSM supplemental, per-ticker isolated explicit 10-K/10-Q then discovery fallback, 39 supported filings / 21 supported issuers, 30/15 minimums exceeded, and all four owner-handoff run-level gates PASS. The aggregate report is recorded only as SHA-256 113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10 at durable-root relative corpus_run/CORPUS_GO_RUN_REPORT.json. Per-input disposition groups name all supported inputs, the IFRS follow-up group with admitted reason code taxonomy_year_unprovisioned, 6-K no_inline_facts_pre_inline_era, and unknown/alias inputs mapped to official_ticker_resolution_missing or ticker_alias_resolution_required. PR #2427 through #2432 fixed the run blockers, including the absent ixt-sec registry re-proven by model_error_count 0. The corpus run plan is superseded for this completed run, and the evidence registry carries the proof anchors. This record admits no runtime/config/flag/schema change, sandbox or p6store mutation, raw values/paths/user-agent/identity, production-readiness, nonlocal admission, or default-on expansion."
+  "latest_m_corpus_record_truth_summary": "M-CORPUS-RECORD-TRUTH records the owner-authorized 2026-07-05 corpus-go run from source frontier 2d6fdbde0f82a836663f7e06923d1dd05cc48f3d after PR #2432: 30-ticker owner matrix plus TSM supplemental, per-ticker isolated explicit 10-K/10-Q then discovery fallback, 39 supported filings / 21 supported issuers, 30/15 minimums exceeded, and all four owner-handoff run-level gates PASS. The aggregate report is recorded only as SHA-256 113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10 at durable-root relative corpus_run/CORPUS_GO_RUN_REPORT.json. Per-input disposition groups name all supported inputs, the IFRS follow-up group with admitted reason code taxonomy_year_unprovisioned, 6-K no_inline_facts_pre_inline_era, and unknown/alias inputs mapped to official_ticker_resolution_missing or ticker_alias_resolution_required. PR #2427 through #2432 fixed the run blockers, including the absent ixt-sec registry re-proven by model_error_count 0. The corpus run plan is superseded for this completed run, and the evidence registry carries the proof anchors. This record admits no runtime/config/flag/schema change, sandbox or p6store mutation, raw values/paths/user-agent/identity, production-readiness, nonlocal admission, or default-on expansion.",
+  "m_corpus_40_addendum_tracking": {
+    "tracking_kind": "m_corpus_40_addendum_tracking",
+    "milestone": "m_corpus_40_addendum_v1",
+    "status": "owner_authorized_tier1_docs_only_corpus_addendum",
+    "branch": "corpus-40",
+    "pr": "TBD",
+    "progress_board_section": "M-CORPUS-40-ADDENDUM",
+    "source_frontier_refreshed_at": "fab89ced6df76654488a486d8388f9466f5d3a96",
+    "source_frontier_refreshed_at_source": "project6-origin/main after PR #2435 SEC corpus run gate spec",
+    "included_recent_prs": [
+      {
+        "pr": "#2436",
+        "merge_commit": "fc1410395562addd67487d5eabe150637e499e42",
+        "title": "Pin SEC CYD taxonomy family"
+      },
+      {
+        "pr": "#2435",
+        "merge_commit": "fab89ced6df76654488a486d8388f9466f5d3a96",
+        "title": "docs: add SEC corpus run gate spec"
+      }
+    ],
+    "allowed_files": [
+      "docs/program-context/01-arc-ledger.md",
+      "docs/program-context/02-decision-record.md",
+      "docs/program-context/03-forward-plan.md",
+      "docs/program-context/04-evidence-registry.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "supersession_boundary": "Extends the #2433/#2434 corpus record; old 39-supported-filing record remains historical and only the MSFT 10-K disposition/current distribution are superseded.",
+    "corpus_delta": {
+      "supported_filing_count": 40,
+      "supported_issuer_count": 21,
+      "full_domestic_10k_10q_pairs": 19,
+      "changed_disposition": "MSFT FY2025 10-K moved from named block to supported-equivalent via governed receipt-bound replay; operator-attested + independently regraded (PASS_WITH_ATTESTED_FIELDS)",
+      "foreign_otc_scope": "CURLF/CRLBF 40-F support unchanged"
+    },
+    "governed_replay_evidence": {
+      "client_request_id": "cyd-replay-msft-10k-r1",
+      "parser_receipt_hash": "4bf632ece7dc4a0c23661d954b8f4475c7f4e0e26303eb6a20b68469ad8ba911",
+      "sidecar_self_declared_hash": "dc3f38132db62b331d469d0307f62e805ad164580253d455ea65103e462edd87",
+      "facts_resolved": "1829/1829",
+      "model_error_count": 0,
+      "value_store_records": 1829,
+      "value_store_hash": "bb76a9cd074f6f16446f1ce33638c12607675efaaa9d2e430f16f747265b98dd",
+      "namespace": "4502e1c70863a4bd0067e5f0de4325758d3542e05df223d702747c1886ee6ca9",
+      "retention": "sec_xbrl_public_financial_value_retention_v1",
+      "hygiene": "accepted_no_override",
+      "evidence_bundle_sha256": "e1b15bd206ee271fbd4131f7cb083f71f04573a4bbc318bb51b4f531dbd00199",
+      "independent_regrade_sha256": "214f2f1014d3ecc06f7e49fd6ce1fc2d17a1811ce53452966d5381329aadff6d",
+      "independent_regrade_verdict": "PASS_WITH_ATTESTED_FIELDS",
+      "attested_only_fields": [
+        "sidecar self-reported zero-network invariants",
+        "PR-verification metadata",
+        "arming narrative"
+      ]
+    },
+    "provisioning_gap_closure": {
+      "report_name": "provision_report_2021_2026.json",
+      "report_sha256": "04b3e9354cf92ffd6221d2859b64d2e60c698df323938e5e4614cf9b861ff159",
+      "hash_only_reason": "content embeds machine-local paths",
+      "closes_prior_gap": "#2434 provision report not found"
+    },
+    "family_vintage_decision": {
+      "admitted_reason_code": "taxonomy_family_vintage_unprovisioned",
+      "filed_year_lesson": "filed-year does not equal taxonomy-year",
+      "cyd_2024_status": "pinned by PR #2436",
+      "cyd_2025_status": "loose-file deterministic package remains open for IFRS phase",
+      "local_enumeration_artifact": "state/agent-inbox/ifrs-cyd-vintage-enumeration.md",
+      "local_enumeration_sha256": "72391c5da90bb3e3439979fcf23106f0b664617e6a091b5a153bf3978ca896e4"
+    },
+    "gate_framing": {
+      "lane_type": "single_filing_zero_egress_replay",
+      "live_run_only_gates": "dormant",
+      "active_now_gates": {
+        "G4": "preflight PASS validate-only with 863.9GB free",
+        "G6": "regrade redaction scan clean",
+        "G9": "independent regrade complete",
+        "G10": "no deviations"
+      }
+    },
+    "validation": [
+      "python -m json.tool next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "python ./tools/l3-progress-check.py",
+      "git diff --check",
+      "relative-link check on changed Markdown files",
+      "path/leak and fence scan on changed files"
+    ],
+    "negative_authority_flags": {
+      "backend_tool_test_edit": false,
+      "network_egress_by_record_lane": false,
+      "runtime_behavior_change_by_record_tranche": false,
+      "config_default_change": false,
+      "flag_default_change": false,
+      "schema_model_migration_change": false,
+      "sandbox_mutation": false,
+      "p6store_mutation_by_record_lane": false,
+      "raw_value_disclosure": false,
+      "accession_cik_disclosure": false,
+      "local_path_disclosure_beyond_c_p6store": false,
+      "production_readiness_claim": false,
+      "value_reveal_claim": false,
+      "nonlocal_admission_claim": false,
+      "default_on_expansion": false,
+      "unsupported_ifrs_readiness_claim": false
+    },
+    "next_posture": "domestic_corpus_40_supported_ifrs_and_cyd_2025_followups_open"
+  },
+  "latest_m_corpus_40_addendum_summary": "M-CORPUS-40-ADDENDUM records the owner-authorized 2026-07-05 zero-egress MSFT/CYD addendum from source frontier fab89ced6df76654488a486d8388f9466f5d3a96 after PR #2435 and PR #2436. It keeps the #2433/#2434 39-supported-filing record historical, then supersedes the current distribution to 40 supported filings / 21 supported issuers / 19 full domestic 10-K/10-Q pairs after MSFT FY2025 10-K moved from named block to supported-equivalent via governed receipt-bound replay; operator-attested + independently regraded (PASS_WITH_ATTESTED_FIELDS). The replay is recorded by client_request_id cyd-replay-msft-10k-r1, parser receipt hash 4bf632ece7dc4a0c23661d954b8f4475c7f4e0e26303eb6a20b68469ad8ba911, value_store_hash bb76a9cd074f6f16446f1ce33638c12607675efaaa9d2e430f16f747265b98dd, evidence bundle hash e1b15bd206ee271fbd4131f7cb083f71f04573a4bbc318bb51b4f531dbd00199, and independent regrade hash 214f2f1014d3ecc06f7e49fd6ce1fc2d17a1811ce53452966d5381329aadff6d with verdict PASS_WITH_ATTESTED_FIELDS. The provisioning report hash 04b3e9354cf92ffd6221d2859b64d2e60c698df323938e5e4614cf9b861ff159 closes the #2434 not-found gap by hash only. This addendum admits no backend/tool/test edit, network egress, runtime/config/flag/schema change, sandbox or p6store mutation by this record lane, raw values, accession/CIK, local path beyond C:/p6store, production-readiness, value-reveal, nonlocal admission, default-on expansion, or unsupported IFRS readiness claim."
 }

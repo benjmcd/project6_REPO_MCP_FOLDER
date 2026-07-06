@@ -20,28 +20,29 @@ document — it specifies what authorization would require.
 
 ## P2 - Corpus / multi-filing broadening
 
-- Status: EXECUTED for the domestic SEC inline scope. The owner-authorized
-  2026-07-05 corpus-go run used the 30-ticker owner matrix plus TSM
-  supplemental, isolated each ticker, tried explicit 10-K/10-Q first, and used
-  discovery fallback second. Results: 39 supported filings / 21 supported
-  issuers, exceeding the 30/15 run-plan minimums. All run-level gates passed:
+- Status: EXECUTED for the domestic SEC inline scope, with the MSFT/CYD named
+  follow-up CLOSED by the 2026-07-05 zero-egress governed replay addendum. The
+  owner-authorized corpus-go run remains historical at 39 supported filings; the
+  supersession addendum records 40 supported filings / 21 supported issuers after
+  MSFT FY2025 10-K moved from named block to supported-equivalent via governed
+  receipt-bound replay. All original run-level gates passed:
   every-ticker-dispositioned, zero-unnamed-failures, min-filings, and
-  min-issuers. Aggregate report SHA-256:
-  `113ce73679547f5d202cb273ebca9d2373f90fab9ae688e9159cc7894c3cee10` at
-  durable-root relative `corpus_run/CORPUS_GO_RUN_REPORT.json`.
-- Supported domestic scope: all major domestic 10-K+10-Q pairs, plus CURLF and
+  min-issuers. The addendum regrade verdict is `PASS_WITH_ATTESTED_FIELDS`.
+- Supported domestic scope: 19 full domestic 10-K/10-Q pairs, plus CURLF and
   CRLBF 40-F through US-GAAP inline handling.
 - Named residuals: foreign IFRS annuals for `SONY`, `CCJ`, `DNN`, `NXE`, `MT`,
-  and `TSM` were acquired and retained but blocked with admitted reason
-  code `taxonomy_year_unprovisioned` after the operator symptom
-  `arelle_model_errors_present`; `6-K` filings blocked on
+  and `TSM` remain the open `ifrs-taxonomy-pins` follow-up. The IFRS follow-up
+  now also includes `cyd-2025` loose-file package construction where those
+  annuals require CYD 2025 family refs. `6-K` filings remain
   `no_inline_facts_pre_inline_era`; `KAP`, `PDN`, and `YCA` map to
   `official_ticker_resolution_missing`; and `TSMC-as-written` maps to
   `ticker_alias_resolution_required`.
-- Residual delta: `ifrs-taxonomy-pins` only, scoped to the blocked foreign IFRS
-  annuals. Acceptance criteria: pinned `ifrs-YYYY` packages fetched and hashed
-  by operator action; year-aware admission extended to the IFRS taxonomy family;
-  the previously blocked foreign annuals rerun to supported-or-named-block.
+- Residual delta: `ifrs-taxonomy-pins` plus deterministic `cyd-2025` loose-file
+  packaging for the blocked foreign IFRS annuals. Acceptance criteria: pinned
+  `ifrs-2025-03-27` package and deterministic `cyd-2025` package fetched/built
+  and hashed by operator action with per-file provenance; year-aware admission
+  extended to the IFRS and needed CYD family vintages; the previously blocked
+  foreign annuals rerun to supported-equivalent or named-block.
 - Pass criteria for future IFRS follow-up: no raw values/paths/user-agent or
   operator identity in committed text; public tickers/forms/dates only where
   needed for named disposition; hash/count/disposition-only aggregate report;
