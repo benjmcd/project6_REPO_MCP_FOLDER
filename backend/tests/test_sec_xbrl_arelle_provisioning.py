@@ -94,6 +94,26 @@ def test_sec_xbrl_arelle_provisioning_declares_operator_verified_2026_pins_witho
     ]
 
 
+def test_sec_xbrl_arelle_provisioning_declares_operator_verified_cyd_2024_pin_only() -> None:
+    module = _helper_module()
+
+    specs = module.taxonomy_specs(years=["2024"])
+    by_name = {spec["name"]: spec for spec in specs}
+    absent_vintage_names = {spec["name"] for spec in module.taxonomy_specs(years=["2023", "2025", "2026"])}
+
+    assert "cyd-2024.zip" in by_name
+    assert by_name["cyd-2024.zip"]["id"] == "sec-cyd-2024"
+    assert by_name["cyd-2024.zip"]["kind"] == "offline_cache_archive"
+    assert by_name["cyd-2024.zip"]["version"] == "2024"
+    assert by_name["cyd-2024.zip"]["url"] == "https://xbrl.sec.gov/cyd/2024/cyd-2024.zip"
+    assert by_name["cyd-2024.zip"]["sha256"] == "a52a1ab486257a5497a8ca4573a5d81a558c1fabcc1e858fabb769de658c3719"
+    assert by_name["cyd-2024.zip"]["bytes"] == 16_356
+    assert by_name["cyd-2024.zip"]["pinned"] is True
+    assert by_name["cyd-2024.zip"]["download_ready"] is True
+    assert "https://xbrl.sec.gov/cyd/2024/cyd-2024.xsd" in module._sec_entrypoint_urls("2024")
+    assert not any(name.startswith("cyd-") for name in absent_vintage_names)
+
+
 def test_sec_xbrl_arelle_provisioning_reports_2019_2020_sec_cache_as_partial(tmp_path: Path) -> None:
     module = _helper_module()
 
@@ -122,7 +142,17 @@ def test_sec_xbrl_arelle_provisioning_extracts_supported_sec_cache_layouts(tmp_p
     module = _helper_module()
     bare_archive_path = tmp_path / "sec-2022.zip"
     prefixed_archive_path = tmp_path / "sec-2025.zip"
+    flat_cyd_archive_path = tmp_path / "cyd-2024.zip"
     cache_dir = tmp_path / "cache"
+    cyd_members = [
+        "cyd-2024.xsd",
+        "cyd-6k-sub-2024.xsd",
+        "cyd-8k-sub-2024.xsd",
+        "cyd-af-2024.xsd",
+        "cyd-af-sub-2024.xsd",
+        "cyd-cr-2024.xsd",
+        "cyd-entire-2024.xsd",
+    ]
 
     with ZipFile(bare_archive_path, "w") as archive:
         archive.writestr("xbrl.sec.gov/dei/2022/dei-2022.xsd", "<schema/>")
@@ -132,14 +162,25 @@ def test_sec_xbrl_arelle_provisioning_extracts_supported_sec_cache_layouts(tmp_p
         archive.writestr("2025/xbrl.sec.gov/dei/2025/dei-2025.xsd", "<schema/>")
         archive.writestr("2024/xbrl.sec.gov/dei/2025/dei-2025-wrong-prefix.xsd", "<schema/>")
 
+    with ZipFile(flat_cyd_archive_path, "w") as archive:
+        for member in cyd_members:
+            archive.writestr(member, "<schema/>")
+        archive.writestr("../cyd-2024.xsd", "ignore")
+        archive.writestr("nested/cyd-2024.xsd", "ignore")
+        archive.writestr("cyd-2025.xsd", "ignore")
+
     assert module._extract_sec_archive_to_cache(bare_archive_path, cache_dir, year="2022") == 1
     assert module._extract_sec_archive_to_cache(prefixed_archive_path, cache_dir, year="2025") == 1
+    assert module._extract_sec_archive_to_cache(flat_cyd_archive_path, cache_dir, year="2024") == len(cyd_members)
 
     assert (cache_dir / "https" / "xbrl.sec.gov" / "dei" / "2022" / "dei-2022.xsd").is_file()
     assert (cache_dir / "https" / "xbrl.sec.gov" / "dei" / "2025" / "dei-2025.xsd").is_file()
+    assert (cache_dir / "https" / "xbrl.sec.gov" / "cyd" / "2024" / "cyd-2024.xsd").is_file()
+    assert (cache_dir / "https" / "xbrl.sec.gov" / "cyd" / "2024" / "cyd-entire-2024.xsd").is_file()
     assert not (cache_dir / "https" / "2022" / "xbrl.sec.gov").exists()
     assert not (cache_dir / "https" / "2025" / "xbrl.sec.gov").exists()
     assert not (cache_dir / "https" / "xbrl.sec.gov" / "dei" / "2025" / "dei-2025-wrong-prefix.xsd").exists()
+    assert not (cache_dir / "https" / "xbrl.sec.gov" / "cyd" / "2024" / "cyd-2025.xsd").exists()
     assert module._sec_entrypoint_urls("2022") == [
         "https://xbrl.sec.gov/dei/2022/dei-2022.xsd",
         "https://xbrl.sec.gov/country/2022/country-2022.xsd",
@@ -151,6 +192,39 @@ def test_sec_xbrl_arelle_provisioning_extracts_supported_sec_cache_layouts(tmp_p
         "https://xbrl.sec.gov/country/2025/country-2025.xsd",
         "https://xbrl.sec.gov/currency/2025/currency-2025.xsd",
         "https://xbrl.sec.gov/exch/2025/exch-2025.xsd",
+    ]
+
+
+def test_sec_xbrl_arelle_provisioning_verifies_sec_entrypoints_after_all_archives(monkeypatch, tmp_path: Path) -> None:
+    module = _helper_module()
+    extracted: list[str] = []
+
+    def fake_extract(archive_path: Path, _cache_dir: Path, *, year: str) -> int:
+        assert year == "2024"
+        extracted.append(Path(archive_path).name)
+        return 1
+
+    def fake_load(_cache_dir: Path, *, year: str) -> list[dict[str, object]]:
+        assert year == "2024"
+        assert extracted == ["sec-2024.zip", "cyd-2024.zip"]
+        return [{"year": year, "url": "https://xbrl.sec.gov/cyd/2024/cyd-2024.xsd", "loaded": True}]
+
+    monkeypatch.setattr(module, "_extract_sec_archive_to_cache", fake_extract)
+    monkeypatch.setattr(module, "_load_sec_entrypoints_offline", fake_load)
+
+    status = module._seed_and_verify_sec_taxonomy_cache(
+        tmp_path / "cache",
+        [
+            {"id": "sec-2024", "version": "2024", "path": str(tmp_path / "sec-2024.zip")},
+            {"id": "sec-cyd-2024", "version": "2024", "path": str(tmp_path / "cyd-2024.zip")},
+        ],
+    )
+
+    assert status["error"] is None
+    assert status["archive_ids"] == ["sec-2024", "sec-cyd-2024"]
+    assert status["extracted_file_count"] == 2
+    assert status["offline_entrypoints"] == [
+        {"year": "2024", "url": "https://xbrl.sec.gov/cyd/2024/cyd-2024.xsd", "loaded": True}
     ]
 
 

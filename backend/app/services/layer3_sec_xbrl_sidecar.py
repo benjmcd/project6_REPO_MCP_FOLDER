@@ -11,7 +11,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Iterator, Mapping
 
 from app.core.config import settings
 from app.services import (
@@ -175,6 +175,15 @@ _SAFE_ARELLE_ERROR_RE = re.compile(r"^[A-Za-z0-9_.-]{1,96}$")
 _SCHEMA_REF_RE = re.compile(r"<\s*[^>\s:]*:?schemaRef\b(?P<attrs>[^>]*)>", re.IGNORECASE | re.DOTALL)
 _SCHEMA_REF_HREF_RE = re.compile(r"(?:xlink:)?href\s*=\s*['\"](?P<href>[^'\"]+)['\"]", re.IGNORECASE)
 _TAXONOMY_YEAR_RE = re.compile(r"(?<!\d)(20\d{2})(?!\d)")
+_SEC_TAXONOMY_FAMILY_VINTAGE_RE = re.compile(
+    r"(?:https?://)?xbrl\.sec\.gov/(?P<family>[a-z][a-z0-9-]*)/(?P<year>20\d{2})/",
+    re.IGNORECASE,
+)
+_TAXONOMY_PACKAGE_FAMILY_VINTAGE_RE = re.compile(
+    r"^(?P<family>[a-z][a-z0-9-]*)-(?P<year>20\d{2})\.zip$",
+    re.IGNORECASE,
+)
+_SEPARATELY_PINNED_SEC_TAXONOMY_FAMILIES = frozenset({"cyd"})
 
 
 def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str, Any]) -> dict[str, Any]:
@@ -496,6 +505,25 @@ def _run_arelle(*, primary_document: str, max_facts: int, submission_documents: 
                     )
                 ],
             }
+    detected_family_vintages = _submission_sec_taxonomy_family_vintages(
+        primary_document=primary_document,
+        submission_documents=submission_documents,
+    )
+    if detected_family_vintages:
+        provisioned_family_vintages = _taxonomy_package_sec_family_vintages(taxonomy_packages)
+        unprovisioned_family_vintages = sorted(detected_family_vintages - provisioned_family_vintages)
+        if unprovisioned_family_vintages:
+            return {
+                "status": "blocked",
+                "reasons": [
+                    _reason(
+                        "taxonomy_family_vintage_unprovisioned",
+                        detected_taxonomy_family_vintages=sorted(detected_family_vintages),
+                        provisioned_taxonomy_family_vintages=sorted(provisioned_family_vintages),
+                        unprovisioned_taxonomy_family_vintages=unprovisioned_family_vintages,
+                    )
+                ],
+            }
     with tempfile.TemporaryDirectory(prefix="sec-xbrl-sidecar-") as temp_dir_name:
         temp_dir = Path(temp_dir_name)
         entry, inline_entries = _write_submission_documents(
@@ -617,6 +645,36 @@ def _semantic_resolution_blockers(payload: Mapping[str, Any]) -> list[dict[str, 
 
 def _submission_taxonomy_years(*, primary_document: str, submission_documents: list[dict[str, str]]) -> set[str]:
     years: set[str] = set()
+    for target in _submission_schema_ref_targets(
+        primary_document=primary_document,
+        submission_documents=submission_documents,
+    ):
+        years.update(_TAXONOMY_YEAR_RE.findall(target))
+    return years
+
+
+def _submission_sec_taxonomy_family_vintages(
+    *,
+    primary_document: str,
+    submission_documents: list[dict[str, str]],
+) -> set[str]:
+    vintages: set[str] = set()
+    for target in _submission_schema_ref_targets(
+        primary_document=primary_document,
+        submission_documents=submission_documents,
+    ):
+        for match in _SEC_TAXONOMY_FAMILY_VINTAGE_RE.finditer(target):
+            family = match.group("family").lower()
+            if family in _SEPARATELY_PINNED_SEC_TAXONOMY_FAMILIES:
+                vintages.add(f"{family}/{match.group('year')}")
+    return vintages
+
+
+def _submission_schema_ref_targets(
+    *,
+    primary_document: str,
+    submission_documents: list[dict[str, str]],
+) -> Iterator[str]:
     texts = [str(document.get("text") or "") for document in submission_documents]
     if primary_document:
         texts.append(str(primary_document))
@@ -624,9 +682,7 @@ def _submission_taxonomy_years(*, primary_document: str, submission_documents: l
         for match in _SCHEMA_REF_RE.finditer(text):
             attrs = match.group("attrs") or ""
             href_match = _SCHEMA_REF_HREF_RE.search(attrs)
-            target = href_match.group("href") if href_match else attrs
-            years.update(_TAXONOMY_YEAR_RE.findall(target))
-    return years
+            yield href_match.group("href") if href_match else attrs
 
 
 def _taxonomy_package_years(taxonomy_packages: list[Path] | tuple[Path, ...]) -> set[str]:
@@ -634,6 +690,18 @@ def _taxonomy_package_years(taxonomy_packages: list[Path] | tuple[Path, ...]) ->
     for package in taxonomy_packages:
         years.update(_TAXONOMY_YEAR_RE.findall(Path(str(package)).name))
     return years
+
+
+def _taxonomy_package_sec_family_vintages(taxonomy_packages: list[Path] | tuple[Path, ...]) -> set[str]:
+    vintages: set[str] = set()
+    for package in taxonomy_packages:
+        match = _TAXONOMY_PACKAGE_FAMILY_VINTAGE_RE.fullmatch(Path(str(package)).name)
+        if not match:
+            continue
+        family = match.group("family").lower()
+        if family in _SEPARATELY_PINNED_SEC_TAXONOMY_FAMILIES:
+            vintages.add(f"{family}/{match.group('year')}")
+    return vintages
 
 
 def _write_submission_documents(
