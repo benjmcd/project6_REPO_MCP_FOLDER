@@ -227,11 +227,12 @@ root convention.
 
 ## Program-Context 3 Evidence Registry Extension (M-PROGRAM-CONTEXT-3, 2026-07-06)
 
-This extension records the verified anchors used to land D20-D26, the forward
-program refresh, and the MASTER_CONTEXT current-pointer refresh. Handoff payload
-files were read in full and hash-verified, but they are source context, not
-implementation truth; every load-bearing claim below was re-derived from live
-GitHub state, current `project6-origin/main`, or hash-only durable artifacts.
+This extension records the verified anchors used by the M-PROGRAM-CONTEXT-3
+landing PR #2439 to land D20-D26, the forward program refresh, and the
+MASTER_CONTEXT current-pointer refresh. Handoff payload files were read in full
+and hash-verified, but they are source context, not implementation truth; every
+load-bearing claim below was re-derived from live GitHub state, current
+`project6-origin/main`, or hash-only durable artifacts.
 
 ### Payload Source Hashes (Handoff-Local)
 

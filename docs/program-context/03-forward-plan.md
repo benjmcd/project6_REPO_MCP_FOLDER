@@ -30,9 +30,11 @@ default-on, live-egress, or value-reveal claim.
 
 ### F2 - Program-context payload 3 landing
 
-- Status: THIS LANE. Scope is docs-only: append D20-D26, refresh this forward
-  pointer, extend the evidence registry, refresh `docs/MASTER_CONTEXT.md`, and
-  optionally append a narrow arc-ledger tranche for already merged work.
+- Status: LANDING AS PR #2439. Scope is docs-only: append D20-D26, refresh
+  this forward pointer, extend the evidence registry, refresh
+  `docs/MASTER_CONTEXT.md`, and append a narrow arc-ledger tranche for already
+  merged work. Once PR #2439 is merged, this record-refresh item has no
+  remaining docs residual.
 - Acceptance: re-verify every anchor before admission; preserve
   operator-attested wording for bundle-only fields; keep machine-local artifacts
   hash-only; run `l3-progress-check`, link check, `git diff --check`, CI, review

@@ -16,9 +16,10 @@
 
 2026-07-04 pointer: `docs/program-context/` is the exhaustive SEC-XBRL program record; this file remains the executive summary under that set's INDEX authority order.
 
-2026-07-06 pointer: `docs/program-context/` is current through PR #2438
+2026-07-06 pointer: `docs/program-context/` is refreshed by
+M-PROGRAM-CONTEXT-3 / PR #2439, grounded on current main through PR #2438
 (`be8efadbc810ee78867ab6de4ba3ed6a11082c4e`). The 2026-07-05 corpus-go
-addendum below is historical where it conflicts with later dated entries:
+addendum below is historical where it conflicts with this or later dated entries:
 the current aggregate report hash is
 `52385f07a1a4dc29871708602bacadb159da44499bb950fd887665abd3879e91`, the
 current corpus record is 40 supported-equivalent filings / 21 issuers / 19 full
