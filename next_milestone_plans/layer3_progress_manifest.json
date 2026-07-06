@@ -49806,7 +49806,7 @@
     "milestone": "m_corpus_40_addendum_v1",
     "status": "owner_authorized_tier1_docs_only_corpus_addendum",
     "branch": "corpus-40",
-    "pr": "TBD",
+    "pr": "#2437",
     "progress_board_section": "M-CORPUS-40-ADDENDUM",
     "source_frontier_refreshed_at": "fab89ced6df76654488a486d8388f9466f5d3a96",
     "source_frontier_refreshed_at_source": "project6-origin/main after PR #2435 SEC corpus run gate spec",

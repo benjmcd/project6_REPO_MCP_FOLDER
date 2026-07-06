@@ -13607,7 +13607,7 @@ admitted by this tranche.
 
 Milestone: `m_corpus_40_addendum_v1`.
 
-Record lane/PR: `corpus-40`, PR `TBD`.
+Record lane/PR: `corpus-40`, PR `#2437`.
 
 Source frontier: current main
 `fab89ced6df76654488a486d8388f9466f5d3a96` after PR `#2435`; includes PR
