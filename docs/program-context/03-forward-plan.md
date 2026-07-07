@@ -61,6 +61,40 @@ contribution work, or removal of failed-preserve / failed-loose-gate leftovers.
   deletion, and no upstream Onlook push/PR occurred. The upstream contribution
   question remains owner-only.
 
+#### P2 addendum - fail-closed hold remediation
+
+- Status: P2 executed for the 10 failed/protected preserve targets and the 14
+  never-adjudicated unregistered directories found by the parent census. The
+  updated preserve aggregate at
+  `C:/p6store/worktree-preserve-archive/2026-07-06/PRESERVE_ARCHIVE_AGGREGATE.json`
+  hashes to
+  `1ae49356c7154446c0e03d65812cf804c7d3a76510d40c4f221b6b42ddb2f67b`.
+- Completed parent holds: `worktrees/p6xbrl`,
+  `worktrees/candidate-b-preflight-envelope-workbench-only`, and
+  `worktrees/candidate-b-second-iteration-workbench-only` were corrected,
+  fully re-verified, and removed. The p6xbrl failure was a source-path miss
+  under `17a-aapl-2024-10k/`; the candidate-b failures were missing archive
+  destinations that were copied and hash-verified.
+- Re-held parent holds: the seven unregistered `worktrees/onlook-*` directories
+  were retried with selective loose top-level tars and 300-second bounds. Each
+  hit a second tar-create timeout, so each remains held rather than forced past
+  a failed preservation gate.
+- Newly adjudicated unregistered directories: five empty tool-state directories
+  (`p2-ops`, `p3-ops`, `sec-transforms`, `tax-cache-fix`, `tax-pins`) and four
+  small preserved directories (`csb-r18`, `csb-r19`, `csb-w16`,
+  `l3-snapshot-index`) passed their P2 gates and were removed.
+- Newly held unregistered directories: `cb-live-server-scan` and
+  `wb-compare-prep` remain held after real tar missing-path failures; `mainline-lane`,
+  `pr83-audit`, and `w3` remain held as large ambiguous project snapshots, with
+  `w3` carrying nested git metadata. They require a later owner decision before
+  any destructive cleanup.
+- P2 census: the repo-local worktree registry now has zero registered entries
+  under `worktrees/`; 12 unregistered directories remain held. The final
+  `worktrees/` measurement was 82,091,968,899 bytes. The aggregate now covers
+  44 snapshot manifests: 32 verified and 12 failed/held.
+- Unchanged owner-only questions: no branch deletion, no remote branch deletion,
+  and no upstream Onlook contribution work occurred in P2.
+
 ## 2026-07-06 Forward Program Refresh (M-DIRTY-ADJUDICATION)
 
 Supersession boundary: this block is the current F6 pointer after the
