@@ -25,6 +25,7 @@ EXPECTED_CAPABILITY_STATUSES = {
     "sciencebase_public_connector_slice": "supported",
     "senate_lda_anonymous_connector_slice": "supported",
     "worldbank_indicators_anonymous_connector_slice": "supported",
+    "cftc_cot_anonymous_connector_slice": "supported",
     "connector_run_observability": "supported",
     "layer3_workbench_ui": "supported",
     "health_readiness_openapi": "supported",
@@ -118,6 +119,7 @@ def test_support_matrix_declares_local_expert_capability_boundary() -> None:
         "sciencebase_public_connector_slice",
         "senate_lda_anonymous_connector_slice",
         "worldbank_indicators_anonymous_connector_slice",
+        "cftc_cot_anonymous_connector_slice",
         "connector_run_observability",
     ):
         connector = by_id[connector_id]
@@ -138,6 +140,7 @@ def test_support_matrix_connector_evidence_points_to_actual_config_aliases() -> 
     senate_base_line = line_number_for("SENATE_LDA_API_BASE_URL")
     senate_key_line = line_number_for("SENATE_LDA_API_KEY")
     worldbank_line = line_number_for("WORLDBANK_API_BASE_URL")
+    cftc_cot_line = line_number_for("CFTC_COT_API_BASE_URL")
 
     assert f"backend/app/core/config.py:{sciencebase_line}" in by_id["sciencebase_public_connector_slice"]["evidence"]
     assert (
@@ -145,6 +148,7 @@ def test_support_matrix_connector_evidence_points_to_actual_config_aliases() -> 
         in by_id["senate_lda_anonymous_connector_slice"]["evidence"]
     )
     assert f"backend/app/core/config.py:{worldbank_line}" in by_id["worldbank_indicators_anonymous_connector_slice"]["evidence"]
+    assert f"backend/app/core/config.py:{cftc_cot_line}" in by_id["cftc_cot_anonymous_connector_slice"]["evidence"]
 
 
 def test_front_door_names_selected_local_expert_profile_without_old_unselected_claim() -> None:
@@ -245,6 +249,7 @@ def test_support_matrix_checker_accepts_analytics_only_connector_deferrals(tmp_p
         "sciencebase_public_connector_slice",
         "senate_lda_anonymous_connector_slice",
         "worldbank_indicators_anonymous_connector_slice",
+        "cftc_cot_anonymous_connector_slice",
         "connector_run_observability",
     ):
         by_id[capability_id]["status"] = "experimental_default_off"

@@ -1,6 +1,6 @@
 # Public Connectors Journey
 
-This journey covers the public_connectors overlay in the current selected local profile: ScienceBase public/MCS, Senate LDA anonymous metadata, and World Bank Indicators anonymous metadata. It does not activate or claim OCR, model/agent egress, keyed connectors, nonlocal deployment, high availability, automatic replay, real provider delivery, SEC value reveal, or default-on SEC live network behavior. The current support matrix, not the earlier RC1 analytics-only claim, is the authority for whether these connector slices are selected.
+This journey covers the public_connectors overlay in the current selected local profile: ScienceBase public/MCS, Senate LDA anonymous metadata, World Bank Indicators anonymous metadata, and CFTC COT anonymous public report rows. It does not activate or claim OCR, model/agent egress, keyed connectors, nonlocal deployment, high availability, automatic replay, real provider delivery, SEC value reveal, or default-on SEC live network behavior. The current support matrix, not the earlier RC1 analytics-only claim, is the authority for whether these connector slices are selected.
 
 ## Canonical ScienceBase Path
 
@@ -39,6 +39,16 @@ The World Bank Indicators path is secondary and metadata-only:
 
 The anonymous posture is explicit: the connector has no API key setting, its effective search params record `auth_mode=anonymous`, and the stored provenance carries World Bank attribution, `CC BY 4.0`, and the World Bank summary terms-of-use URL.
 
+## CFTC COT Secondary Path
+
+The CFTC COT path is secondary and report-row-only:
+
+1. Submit `POST /api/v1/connectors/cftc-cot/runs` with `run_mode=metadata_only` and `report_variant=legacy_futures_only` or `legacy_combined`.
+2. Inspect `GET /api/v1/connectors/runs/{run_id}` for official file-only fetch policy scoped to `www.cftc.gov`, `auth_mode=anonymous`, and a `cftc_cot_summary` report ref.
+3. Read the summary/selection report JSON for parsed public COT rows. The database stores metadata-only dataset/version/provenance records; row values are retained in connector reports, not raw blob tables.
+
+The anonymous posture is explicit: the connector has no API key setting, the base URL is server-configured as `CFTC_COT_API_BASE_URL`, and the selected current file variants are constrained to CFTC's legacy current Futures-only and Futures-and-Options-Combined text files.
+
 ## Proof
 
 Focused proof lives in `tests/test_api.py`:
@@ -51,3 +61,11 @@ Focused proof lives in `tests/test_api.py`:
 - `test_worldbank_connector_malformed_observations_fail_closed`
 - `test_worldbank_connector_resume_continues_unmanifested_partial_discovery`
 - `test_worldbank_connector_rejects_non_worldbank_base_url`
+- `test_cftc_cot_connector_happy_path_reports_rows_and_attribution`
+- `test_cftc_cot_connector_accepts_headerless_current_report_rows`
+- `test_cftc_cot_connector_unrecognized_format_fails_closed`
+- `test_cftc_cot_connector_empty_and_all_null_reports_fail_closed`
+- `test_cftc_cot_client_enforces_byte_cap_while_streaming`
+- `test_cftc_cot_connector_resume_retries_existing_retryable_failed_target`
+- `test_cftc_cot_connector_pre_target_cancel_finalizes_without_target`
+- `test_cftc_cot_connector_precheck_rejects_non_cftc_and_blocked_ip`

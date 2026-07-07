@@ -319,6 +319,23 @@ class WorldBankConnectorRunIn(BaseModel):
     client_request_id: str | None = None
 
 
+class CftcCotConnectorRunIn(BaseModel):
+    report_variant: Literal["legacy_futures_only", "legacy_combined"] = "legacy_futures_only"
+    market_name_contains: str | None = None
+    exchange_name_contains: str | None = None
+    max_rows: int = Field(default=1000, ge=1, le=5000)
+    max_file_bytes: int = Field(default=8 * 1024 * 1024, ge=1, le=8 * 1024 * 1024)
+    run_mode: Literal["metadata_only", "dry_run"] = "metadata_only"
+    request_timeout_seconds: int = 30
+    retry_max_attempts_per_request: int = 4
+    retry_base_backoff_seconds: float = 0.4
+    retry_max_backoff_seconds: float = 3.0
+    retry_respect_retry_after: bool = True
+    max_rps: float = Field(default=2.0, le=2.0)
+    report_verbosity: Literal["summary", "standard", "debug"] = "standard"
+    client_request_id: str | None = None
+
+
 class ConnectorRunSubmitOut(BaseModel):
     connector_run_id: str
     status: str
