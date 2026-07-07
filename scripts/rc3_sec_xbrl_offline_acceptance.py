@@ -149,6 +149,17 @@ RC2_PUBLIC_CONNECTOR_REGRESSION_TESTS = [
     "./tests/test_api.py::test_worldbank_connector_resume_stops_when_existing_targets_reach_max_items",
     "./tests/test_api.py::test_worldbank_connector_retryable_failures_remain_retry_eligible",
     "./tests/test_api.py::test_worldbank_connector_rejects_non_worldbank_base_url",
+    "./tests/test_api.py::test_cftc_cot_connector_happy_path_reports_rows_and_attribution",
+    "./tests/test_api.py::test_cftc_cot_connector_variant_selection_uses_combined_file",
+    "./tests/test_api.py::test_cftc_cot_connector_unrecognized_format_fails_closed",
+    "./tests/test_api.py::test_cftc_cot_connector_empty_and_all_null_reports_fail_closed",
+    "./tests/test_api.py::test_cftc_cot_connector_row_cap_and_byte_cap",
+    "./tests/test_api.py::test_cftc_cot_connector_rate_limiter_and_backoff_use_monkeypatched_clock",
+    "./tests/test_api.py::test_cftc_cot_connector_idempotency_conflict_and_post_enum_cross_check",
+    "./tests/test_api.py::test_cftc_cot_connector_precheck_rejects_non_cftc_and_blocked_ip",
+    "./tests/test_api.py::test_cftc_cot_connector_redirect_posture_rechecks_final_url",
+    "./tests/test_api.py::test_cftc_cot_connector_rejects_non_cftc_base_url",
+    "./tests/test_api.py::test_cftc_cot_support_matrix_mirror_and_runtime_probe",
 ]
 
 COMMAND_CHECKS = [

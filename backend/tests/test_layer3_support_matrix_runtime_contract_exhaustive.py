@@ -43,7 +43,7 @@ def test_support_matrix_runtime_contract_audit_reports_clean_pass() -> None:
 
     assert report["schema_id"] == "project6.support_matrix_runtime_contract_audit.v1"
     assert report["status"] == "pass", report["errors"]
-    assert report["capability_count"] == 29
+    assert report["capability_count"] == 30
     assert report["errors"] == []
     assert {item["status"] for item in report["pinned_false_flags"]} == {"pass"}
     assert report["coverage_by_status"] == {
@@ -68,6 +68,7 @@ def test_support_matrix_runtime_contract_audit_reports_clean_pass() -> None:
             "sec_offline_replay_path",
         ],
         "supported": [
+            "cftc_cot_anonymous_connector_slice",
             "connector_run_observability",
             "health_readiness_openapi",
             "layer3_workbench_ui",

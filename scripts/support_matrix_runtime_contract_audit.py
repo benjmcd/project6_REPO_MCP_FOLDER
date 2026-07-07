@@ -177,6 +177,38 @@ class _FakeWorldBankClient:
         ]
 
 
+class _FakeCftcCotClient:
+    auth_mode = "anonymous"
+
+    def download_artifact(self, *, url: str, timeout_seconds: int, max_redirects: int, headers: dict[str, str] | None = None, rate_limiter: Any = None, retry_counters: dict[str, Any] | None = None, **_kwargs: Any) -> Any:
+        if retry_counters is not None:
+            retry_counters["requests_total"] = int(retry_counters.get("requests_total", 0)) + 1
+        content = (
+            "Market_and_Exchange_Names,As_of_Date_In_Form_YYMMDD,As_of_Date_Form_YYYY-MM-DD,"
+            "CFTC_Contract_Market_Code,CFTC_Market_Code,CFTC_Region_Code,CFTC_Commodity_Code,"
+            "Open_Interest_All,Noncommercial_Positions_Long_All,Noncommercial_Positions_Short_All,"
+            "Noncommercial_Positions_Spreading_All,Commercial_Positions_Long_All,Commercial_Positions_Short_All,"
+            "Total_Reportable_Positions_Long_All,Total_Reportable_Positions_Short_All,"
+            "Nonreportable_Positions_Long_All,Nonreportable_Positions_Short_All\n"
+            "RUNTIME WHEAT - CHICAGO BOARD OF TRADE,240625,2024-06-25,001602,001,0,001,"
+            "400000,100000,50000,25000,150000,175000,275000,250000,125000,150000\n"
+        ).encode("utf-8")
+        from app.services.sciencebase_connector.contracts import DownloadResult
+
+        return DownloadResult(
+            content=content,
+            status_code=200,
+            final_url=url,
+            redirect_count=0,
+            etag="runtime-cftc-etag",
+            last_modified="Mon, 01 Jul 2024 00:00:00 GMT",
+            content_type="text/plain; charset=utf-8",
+            sha256="runtime_cftc_cot_sha",
+            headers={},
+            resolved_ip="8.8.8.8",
+        )
+
+
 def _load_json_compatible_yaml(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -436,6 +468,53 @@ def _worldbank_runtime() -> dict[str, Any]:
             db.close()
 
 
+@functools.lru_cache(maxsize=1)
+def _cftc_cot_runtime() -> dict[str, Any]:
+    from app.models import ConnectorRunTarget
+    from app.services import connectors_cftc_cot as cftc
+    from app.services import connectors_sciencebase as sb
+
+    with _runtime_db() as (session_factory, _storage):
+        db = session_factory()
+        old_session_local = cftc.SessionLocal
+        old_client = cftc.get_cftc_cot_client
+        old_resolve_host = cftc._resolve_host_ip
+        old_sleep = cftc.time.sleep
+        old_wait = cftc._RateLimiter.wait
+        try:
+            cftc.SessionLocal = session_factory
+            cftc.get_cftc_cot_client = lambda config: _FakeCftcCotClient()
+            cftc._resolve_host_ip = lambda hostname: "8.8.8.8"
+            cftc.time.sleep = lambda seconds: None
+            cftc._RateLimiter.wait = lambda self: None
+            run, _created = cftc.submit_cftc_cot_run(
+                db,
+                payload={"report_variant": "legacy_futures_only", "max_rows": 1},
+                idempotency_key="support-matrix-cftc-cot-runtime",
+            )
+            db.commit()
+            run_id = run.connector_run_id
+            db.close()
+            cftc.execute_cftc_cot_run(run_id)
+            db = session_factory()
+            run = db.get(type(run), run_id)
+            if run is None:
+                raise MatrixContractError("cftc cot run missing after execution")
+            detail = sb.serialize_connector_run(db, run)
+            targets = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run_id).all()
+            auth_mode = dict(run.effective_search_params_json or {}).get("auth_mode")
+            if detail.get("status") != "completed" or auth_mode != "anonymous" or not targets:
+                raise MatrixContractError(f"cftc cot run did not complete anonymously: {detail}")
+            return {"detail": detail, "target_statuses": sorted({t.status for t in targets}), "auth_mode": auth_mode}
+        finally:
+            cftc.SessionLocal = old_session_local
+            cftc.get_cftc_cot_client = old_client
+            cftc._resolve_host_ip = old_resolve_host
+            cftc.time.sleep = old_sleep
+            cftc._RateLimiter.wait = old_wait
+            db.close()
+
+
 def _probe_sciencebase() -> dict[str, Any]:
     result = _sciencebase_runtime()
     return {"status": result["detail"]["status"], "target_statuses": result["target_statuses"]}
@@ -448,6 +527,11 @@ def _probe_senate() -> dict[str, Any]:
 
 def _probe_worldbank() -> dict[str, Any]:
     result = _worldbank_runtime()
+    return {"status": result["detail"]["status"], "auth_mode": result["auth_mode"], "target_statuses": result["target_statuses"]}
+
+
+def _probe_cftc_cot() -> dict[str, Any]:
+    result = _cftc_cot_runtime()
     return {"status": result["detail"]["status"], "auth_mode": result["auth_mode"], "target_statuses": result["target_statuses"]}
 
 
@@ -732,6 +816,7 @@ PROBES: dict[str, Callable[[], dict[str, Any]]] = {
     "sciencebase_public_connector_slice": _probe_sciencebase,
     "senate_lda_anonymous_connector_slice": _probe_senate,
     "worldbank_indicators_anonymous_connector_slice": _probe_worldbank,
+    "cftc_cot_anonymous_connector_slice": _probe_cftc_cot,
     "connector_run_observability": _probe_connector_observability,
     "layer3_workbench_ui": _probe_layer3_ui,
     "health_readiness_openapi": _probe_health_openapi,

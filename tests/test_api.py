@@ -8347,3 +8347,365 @@ def test_worldbank_connector_rejects_non_worldbank_base_url():
 
     with pytest.raises(wb.WorldBankSchemaValidationError, match="inadmissible_worldbank_base_url"):
         wb.WorldBankIndicatorsClient(base_url="https://example.test/v2")
+
+
+# CFTC Phase 0 pinned the current legacy long-form comma-delimited variable order:
+# Market_and_Exchange_Names, As_of_Date_In_Form_YYMMDD, As_of_Date_Form_YYYY-MM-DD,
+# CFTC_Contract_Market_Code, CFTC_Market_Code, CFTC_Region_Code, CFTC_Commodity_Code.
+_CFTC_COT_LEGACY_HEADER = ",".join(
+    [
+        "Market_and_Exchange_Names",
+        "As_of_Date_In_Form_YYMMDD",
+        "As_of_Date_Form_YYYY-MM-DD",
+        "CFTC_Contract_Market_Code",
+        "CFTC_Market_Code",
+        "CFTC_Region_Code",
+        "CFTC_Commodity_Code",
+        "Open_Interest_All",
+        "Noncommercial_Positions_Long_All",
+        "Noncommercial_Positions_Short_All",
+        "Noncommercial_Positions_Spreading_All",
+        "Commercial_Positions_Long_All",
+        "Commercial_Positions_Short_All",
+        "Total_Reportable_Positions_Long_All",
+        "Total_Reportable_Positions_Short_All",
+        "Nonreportable_Positions_Long_All",
+        "Nonreportable_Positions_Short_All",
+    ]
+)
+
+
+def _cftc_cot_csv(rows: list[str]) -> bytes:
+    return (_CFTC_COT_LEGACY_HEADER + "\n" + "\n".join(rows) + "\n").encode("utf-8")
+
+
+_CFTC_COT_WHEAT_ROW = (
+    "CHICAGO WHEAT SRW - CHICAGO BOARD OF TRADE,240625,2024-06-25,001602,001,0,001,"
+    "400000,100000,50000,25000,150000,175000,275000,250000,125000,150000"
+)
+_CFTC_COT_CORN_ROW = (
+    "CORN - CHICAGO BOARD OF TRADE,240625,2024-06-25,002602,002,0,002,"
+    "500000,120000,70000,30000,180000,190000,330000,290000,170000,210000"
+)
+
+
+class _FakeCftcCotClient:
+    auth_mode = "anonymous"
+
+    def __init__(self, content: bytes | None = None, *, final_url: str | None = None):
+        self.content = content if content is not None else _cftc_cot_csv([_CFTC_COT_WHEAT_ROW, _CFTC_COT_CORN_ROW])
+        self.final_url = final_url
+        self.calls: list[dict[str, object]] = []
+
+    def download_artifact(
+        self,
+        *,
+        url,
+        timeout_seconds,
+        max_redirects,
+        headers=None,
+        rate_limiter=None,
+        retry_counters=None,
+        **_kwargs,
+    ):
+        from app.services.sciencebase_connector.contracts import DownloadResult
+
+        self.calls.append({"url": url, "timeout_seconds": timeout_seconds, "max_redirects": max_redirects})
+        if rate_limiter is not None:
+            rate_limiter.wait()
+        if retry_counters is not None:
+            retry_counters["requests_total"] = int(retry_counters.get("requests_total", 0)) + 1
+        return DownloadResult(
+            content=self.content,
+            status_code=200,
+            final_url=self.final_url or url,
+            redirect_count=0,
+            etag="cftc-etag",
+            last_modified="Mon, 01 Jul 2024 00:00:00 GMT",
+            content_type="text/plain; charset=utf-8",
+            sha256=hashlib.sha256(self.content).hexdigest(),
+            headers={},
+            resolved_ip="8.8.8.8",
+        )
+
+
+def _install_fake_cftc(monkeypatch, fake: _FakeCftcCotClient):
+    from app.services import connectors_cftc_cot as cftc
+
+    monkeypatch.setattr(cftc, "get_cftc_cot_client", lambda config: fake)
+    monkeypatch.setattr(cftc, "_resolve_host_ip", lambda hostname: "8.8.8.8")
+    return cftc
+
+
+def test_cftc_cot_connector_happy_path_reports_rows_and_attribution(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import DatasetSourceProvenance
+
+    fake = _FakeCftcCotClient()
+    _install_fake_cftc(monkeypatch, fake)
+
+    submit = client.post(
+        "/api/v1/connectors/cftc-cot/runs",
+        json={"report_variant": "legacy_futures_only", "max_rows": 2},
+        headers={"Idempotency-Key": f"cftc-cot-happy-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    payload = detail.json()
+    assert payload["connector_key"] == "cftc_cot"
+    assert payload["status"] == "completed"
+    assert payload["run_mode"] == "metadata_only"
+    assert payload["fetch_policy_summary"] == {
+        "mode": "official_file_only",
+        "surface_policy": "public_report_rows",
+        "external_fetch_policy": "cftc_cot_official_only",
+        "allowed_hosts": ["www.cftc.gov"],
+    }
+    assert payload["report_refs"]["cftc_cot_summary"]
+    assert fake.calls[0]["url"] == "https://www.cftc.gov/dea/newcot/deafut.txt"
+
+    summary = json.loads(Path(payload["report_refs"]["cftc_cot_summary"]).read_text(encoding="utf-8"))
+    assert summary["report_variant"] == "legacy_futures_only"
+    assert [row["commodity_code"] for row in summary["rows"]] == ["001", "002"]
+    assert summary["rows"][0]["market_and_exchange"] == "CHICAGO WHEAT SRW - CHICAGO BOARD OF TRADE"
+
+    db = SessionLocal()
+    try:
+        provenance_rows = (
+            db.query(DatasetSourceProvenance)
+            .filter(DatasetSourceProvenance.connector_run_id == run_id)
+            .filter(DatasetSourceProvenance.source_system == "cftc_cot")
+            .all()
+        )
+        assert len(provenance_rows) == 1
+        assert provenance_rows[0].source_mode == "metadata_only"
+        assert provenance_rows[0].source_reference_json["phase0_format_pin"] == "official_cftc_doc_pages"
+        assert provenance_rows[0].retrieved_http_json["api_base_url"] == "https://www.cftc.gov/dea/newcot"
+    finally:
+        db.close()
+
+
+def test_cftc_cot_connector_variant_selection_uses_combined_file(monkeypatch):
+    fake = _FakeCftcCotClient()
+    _install_fake_cftc(monkeypatch, fake)
+
+    submit = client.post(
+        "/api/v1/connectors/cftc-cot/runs",
+        json={"report_variant": "legacy_combined", "max_rows": 1},
+        headers={"Idempotency-Key": f"cftc-cot-combined-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    assert fake.calls[0]["url"] == "https://www.cftc.gov/dea/newcot/deacom.txt"
+
+
+def test_cftc_cot_connector_unrecognized_format_fails_closed(monkeypatch):
+    fake = _FakeCftcCotClient(b"Unexpected,Header\nx,y\n")
+    _install_fake_cftc(monkeypatch, fake)
+
+    submit = client.post(
+        "/api/v1/connectors/cftc-cot/runs",
+        json={"report_variant": "legacy_futures_only"},
+        headers={"Idempotency-Key": f"cftc-cot-malformed-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+
+    targets = client.get(f"/api/v1/connectors/runs/{submit.json()['connector_run_id']}/targets")
+    assert targets.status_code == 200, targets.text
+    target = targets.json()["targets"][0]
+    assert target["status"] == "download_failed"
+    assert target["last_error_class"] == "unrecognized_cot_header"
+
+
+def test_cftc_cot_connector_empty_and_all_null_reports_fail_closed(monkeypatch):
+    fake_empty = _FakeCftcCotClient(_cftc_cot_csv([]))
+    _install_fake_cftc(monkeypatch, fake_empty)
+    empty = client.post(
+        "/api/v1/connectors/cftc-cot/runs",
+        json={"report_variant": "legacy_futures_only"},
+        headers={"Idempotency-Key": f"cftc-cot-empty-{uuid.uuid4().hex}"},
+    )
+    assert empty.status_code == 202, empty.text
+    empty_target = client.get(f"/api/v1/connectors/runs/{empty.json()['connector_run_id']}/targets").json()["targets"][0]
+    assert empty_target["last_error_class"] == "empty_report"
+
+    null_row = "EMPTY MARKET - TEST EXCHANGE,240625,2024-06-25,009999,009,0,009,,,,,,,,,,"
+    fake_null = _FakeCftcCotClient(_cftc_cot_csv([null_row]))
+    _install_fake_cftc(monkeypatch, fake_null)
+    nulls = client.post(
+        "/api/v1/connectors/cftc-cot/runs",
+        json={"report_variant": "legacy_futures_only"},
+        headers={"Idempotency-Key": f"cftc-cot-null-{uuid.uuid4().hex}"},
+    )
+    assert nulls.status_code == 202, nulls.text
+    null_target = client.get(f"/api/v1/connectors/runs/{nulls.json()['connector_run_id']}/targets").json()["targets"][0]
+    assert null_target["last_error_class"] == "empty_after_normalization"
+
+
+def test_cftc_cot_connector_row_cap_and_byte_cap(monkeypatch):
+    fake = _FakeCftcCotClient()
+    _install_fake_cftc(monkeypatch, fake)
+
+    capped = client.post(
+        "/api/v1/connectors/cftc-cot/runs",
+        json={"report_variant": "legacy_futures_only", "max_rows": 1},
+        headers={"Idempotency-Key": f"cftc-cot-row-cap-{uuid.uuid4().hex}"},
+    )
+    assert capped.status_code == 202, capped.text
+    detail = client.get(f"/api/v1/connectors/runs/{capped.json()['connector_run_id']}").json()
+    summary = json.loads(Path(detail["report_refs"]["cftc_cot_summary"]).read_text(encoding="utf-8"))
+    assert len(summary["rows"]) == 1
+
+    too_small = _FakeCftcCotClient()
+    _install_fake_cftc(monkeypatch, too_small)
+    blocked = client.post(
+        "/api/v1/connectors/cftc-cot/runs",
+        json={"report_variant": "legacy_futures_only", "max_file_bytes": 10},
+        headers={"Idempotency-Key": f"cftc-cot-byte-cap-{uuid.uuid4().hex}"},
+    )
+    assert blocked.status_code == 202, blocked.text
+    target = client.get(f"/api/v1/connectors/runs/{blocked.json()['connector_run_id']}/targets").json()["targets"][0]
+    assert target["status"] == "blocked_by_fetch_policy"
+    assert target["last_error_class"] == "file_size_limit_exceeded"
+
+
+def test_cftc_cot_connector_rate_limiter_and_backoff_use_monkeypatched_clock(monkeypatch):
+    from app.services import connectors_cftc_cot as cftc
+
+    sleeps: list[float] = []
+    clock = {"now": 10.0}
+    monkeypatch.setattr(cftc.time, "monotonic", lambda: clock["now"])
+    monkeypatch.setattr(cftc.time, "sleep", lambda seconds: sleeps.append(seconds))
+
+    limiter = cftc._RateLimiter(2.0)
+    limiter.wait()
+    clock["now"] = 10.1
+    limiter.wait()
+
+    assert sleeps == [pytest.approx(0.4)]
+    assert limiter.total_sleep_seconds == pytest.approx(0.4)
+
+    class _Response:
+        def __init__(self, status_code: int, content: bytes):
+            self.status_code = status_code
+            self._content = content
+            self.url = "https://www.cftc.gov/dea/newcot/deafut.txt"
+            self.history = []
+            self.headers = {}
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                error = requests.HTTPError(f"http {self.status_code}")
+                error.response = self
+                raise error
+
+        def iter_content(self, chunk_size):
+            yield self._content
+
+    responses = [_Response(503, b""), _Response(200, _cftc_cot_csv([_CFTC_COT_WHEAT_ROW]))]
+    real_client = cftc.CftcCotClient(base_url="https://www.cftc.gov/dea/newcot")
+    monkeypatch.setattr(cftc, "_resolve_host_ip", lambda hostname: "8.8.8.8")
+    monkeypatch.setattr(real_client.session, "get", lambda *args, **kwargs: responses.pop(0))
+    retry_counters: dict[str, object] = {}
+
+    result = real_client.download_artifact(
+        url="https://www.cftc.gov/dea/newcot/deafut.txt",
+        timeout_seconds=30,
+        max_redirects=3,
+        retry_max_attempts_per_request=2,
+        retry_base_backoff_seconds=0.25,
+        retry_max_backoff_seconds=1.0,
+        retry_counters=retry_counters,
+    )
+
+    assert result.status_code == 200
+    assert retry_counters["requests_total"] == 2
+    assert retry_counters["retries_total"] == 1
+    assert sleeps[-1] == pytest.approx(0.25)
+
+
+def test_cftc_cot_connector_idempotency_conflict_and_post_enum_cross_check(monkeypatch):
+    fake = _FakeCftcCotClient()
+    _install_fake_cftc(monkeypatch, fake)
+
+    key = f"cftc-cot-idempotency-{uuid.uuid4().hex}"
+    first = client.post(
+        "/api/v1/connectors/cftc-cot/runs",
+        json={"report_variant": "legacy_futures_only", "max_rows": 1},
+        headers={"Idempotency-Key": key},
+    )
+    assert first.status_code == 202, first.text
+    conflict = client.post(
+        "/api/v1/connectors/cftc-cot/runs",
+        json={"report_variant": "legacy_combined", "max_rows": 1},
+        headers={"Idempotency-Key": key},
+    )
+    assert conflict.status_code == 409, conflict.text
+
+    invalid = client.post(
+        "/api/v1/connectors/cftc-cot/runs",
+        json={"report_variant": "historical_legacy_zip"},
+        headers={"Idempotency-Key": f"cftc-cot-invalid-{uuid.uuid4().hex}"},
+    )
+    assert invalid.status_code == 422, invalid.text
+
+
+def test_cftc_cot_connector_precheck_rejects_non_cftc_and_blocked_ip(monkeypatch):
+    from app.services import connectors_cftc_cot as cftc
+
+    monkeypatch.setattr(cftc, "_resolve_host_ip", lambda hostname: "8.8.8.8")
+    _ip, reason = cftc._precheck_cftc_download_url("https://example.test/deafut.txt", cftc._cftc_fetch_policy({}))
+    assert reason == "host_not_allowed"
+
+    monkeypatch.setattr(cftc, "_resolve_host_ip", lambda hostname: "127.0.0.1")
+    ip, reason = cftc._precheck_cftc_download_url(
+        "https://www.cftc.gov/dea/newcot/deafut.txt",
+        cftc._cftc_fetch_policy({}),
+    )
+    assert ip == "127.0.0.1"
+    assert reason == "resolved_private_or_blocked_ip"
+
+
+def test_cftc_cot_connector_redirect_posture_rechecks_final_url(monkeypatch):
+    fake = _FakeCftcCotClient(final_url="https://example.test/deafut.txt")
+    _install_fake_cftc(monkeypatch, fake)
+
+    submit = client.post(
+        "/api/v1/connectors/cftc-cot/runs",
+        json={"report_variant": "legacy_futures_only"},
+        headers={"Idempotency-Key": f"cftc-cot-redirect-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    target = client.get(f"/api/v1/connectors/runs/{submit.json()['connector_run_id']}/targets").json()["targets"][0]
+    assert target["status"] == "blocked_by_fetch_policy"
+    assert target["last_error_class"] == "host_not_allowed"
+
+
+def test_cftc_cot_connector_rejects_non_cftc_base_url():
+    from app.services import connectors_cftc_cot as cftc
+
+    with pytest.raises(cftc.CftcCotSchemaValidationError, match="inadmissible_cftc_cot_base_url"):
+        cftc.CftcCotClient(base_url="https://example.test/dea/newcot")
+
+
+def test_cftc_cot_support_matrix_mirror_and_runtime_probe():
+    import importlib.util
+
+    matrix = json.loads((ROOT / "config" / "support_matrix.yaml").read_text(encoding="utf-8"))
+    by_id = {item["id"]: item for item in matrix["capabilities"]}
+    assert by_id["cftc_cot_anonymous_connector_slice"]["status"] == "supported"
+    assert "CFTC COT anonymous public report rows only" in matrix["boundary_note"]
+
+    spec = importlib.util.spec_from_file_location(
+        "support_matrix_runtime_contract_audit",
+        ROOT / "scripts" / "support_matrix_runtime_contract_audit.py",
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    audit = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(audit)
+    payload = audit.PROBES["cftc_cot_anonymous_connector_slice"]()
+    assert payload["status"] == "completed"
+    assert payload["auth_mode"] == "anonymous"
