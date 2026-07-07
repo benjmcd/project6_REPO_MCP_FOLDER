@@ -25,6 +25,7 @@ def test_page_loads():
     assert ">Light<" in response.text
     assert ">Dark<" in response.text
     assert 'aria-label="Close details"' in response.text
+    assert 'href="/review/analyst-insight"' in response.text
     assert 'href="/review/nrc-aps/workbench-compare"' in response.text
     assert 'id="launch-layer3"' in response.text
     assert 'href="/review/layer3"' in response.text

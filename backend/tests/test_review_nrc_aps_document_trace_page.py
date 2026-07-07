@@ -34,6 +34,7 @@ def test_document_trace_page_shell_content() -> None:
     # Layer3 Workbench affordance
     assert 'href="/review/layer3"' in html
     assert ">Layer3</a>" in html
+    assert 'href="/review/analyst-insight"' in html
 
     # Panes
     assert 'class="pane source-pane"' in html
