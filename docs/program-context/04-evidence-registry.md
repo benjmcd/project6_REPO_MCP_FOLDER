@@ -395,6 +395,14 @@ production-readiness claim, no value-reveal claim, no nonlocal admission claim,
 no default-on expansion, no unsupported IFRS readiness claim, and no broader
 host-class authority for future taxonomy fetches.
 
+## Preserve Sweep Archive (M-PRESERVE-SWEEP, 2026-07-06)
+
+| Artifact | sha256 anchor | Meaning |
+|---|---|---|
+| Worktree disposition plan v2 | `ca5b06307ac2a6c3fdcdea932fae97ad49264677c82b361eb84555b9e7984afa`; 8,169 bytes; archived as `_authority/worktree-disposition-plan-v2.md` under `C:/p6store/worktree-preserve-archive/2026-07-06/` | Owner-authorized preserve-then-sweep plan used as the per-item disposition authority for the registered worktree cleanup execution. |
+| Unlanded-content deep-dive and adversarial verification | `03f50a85e452121ddc65af4cecf3ba8f7cf98fb6e84f1dd1c9c3398a5c46c5fd`; 132,716 bytes; archived as `_authority/worktree-unlanded-deepdive-2026-07-06.json` under `C:/p6store/worktree-preserve-archive/2026-07-06/` | Evidence sibling for unique-content, ambiguous-content, nested Onlook, and unregistered-directory hardening corrections. |
+| Preserve archive aggregate | `b45fcb611af657ed0edd925bd13cfe6bd3edc0206b45c08b11c2897efc2539b3`; `PRESERVE_ARCHIVE_AGGREGATE.json` under `C:/p6store/worktree-preserve-archive/2026-07-06/` | Aggregate over the three durable authority copies plus 30 snapshot manifests: 20 verified preserve snapshots and 10 failed/protected snapshots. This closes the previously deferred out-of-fence preserve-archive row by recording hash/count/disposition only. |
+
 ## Governance Record Durability Archive (M-GOV-RECORD-DURABILITY, 2026-07-06)
 
 | Artifact | sha256 anchor | Meaning |

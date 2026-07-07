@@ -391,6 +391,14 @@ else (additive tests, docs, static UI) is **Tier-1** → self-verify + CI.
   in the untracked cleanup manifest], mass remote-branch deletion [about 1,726
   agent-prefixed refs], and the external temp-placement anomaly awaiting owner
   unlock.)
+  Further superseded 2026-07-06: owner-authorized preserve-sweep execution
+  removed the verified/adjudicated registered class after `C:/p6store`
+  snapshot gates; registrations are now 25 total, with three repo-local
+  failed-preserve holds, 21 unregistered local directories, external and
+  `.cursor/**` registrations, and the locked external temp-placement
+  registration still outside the completed sweep. Preserve archive aggregate
+  sha256:
+  `b45fcb611af657ed0edd925bd13cfe6bd3edc0206b45c08b11c2897efc2539b3`.
 
 ### 3.5 Honesty rails (operator-run vs CI-durable; proven vs designed vs gated)
 **Decision:** never upgrade "operator-run proof" to "committed/CI'd truth," nor "designed" to
@@ -484,6 +492,11 @@ disposition policy (possibly including erasure) would be needed — explicitly o
   unique-content, 5 ambiguous; snapshot-first disposition plan recorded;
   removal execution remains owner-gated. See
   `docs/program-context/03-forward-plan.md` M-DIRTY-ADJUDICATION refresh.
+  Preserve-swept later 2026-07-06: v2 verified/adjudicated registered
+  worktrees were snapshot-gated and swept; post-sweep registry is 25 total, with
+  three repo-local failed-preserve holds and 21 unregistered local directories
+  still protected. See `docs/program-context/03-forward-plan.md`
+  M-PRESERVE-SWEEP refresh.
 - **Whether to PR this master-context doc** to main, or maintain it on-branch only.
 
 ---
