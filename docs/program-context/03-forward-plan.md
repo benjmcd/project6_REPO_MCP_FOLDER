@@ -50,6 +50,38 @@ of protected local work.
 - Unchanged gates: mass remote-branch deletion remains a separate owner-gated
   decision, and the external locked placement anomaly remains unresolved.
 
+### Deep-dive verification addendum (same day, later)
+
+- A later six-investigator plus two-adversarial-verifier pass extended the
+  same M-DIRTY-ADJUDICATION record. Units 1 and 2 remain HOLD/owner-review,
+  while Units 3, 4, 5, and 6 had completeness failures that produced 14
+  corrected dispositions.
+- New operational facts: seven unregistered `worktrees/onlook-*` plain
+  directories are invisible to `git worktree list`, and six contain nested
+  repositories with unpushed commits that were verified equivalent to
+  on-main patch archives; the shared `.git/info/exclude` `/archive/` line
+  hides archive payloads in every worktree from plain status enumeration;
+  main's tracked onlook proof surfaces reference runtime clone `641c3a85`,
+  which survives nowhere on disk, so that gate provenance is already
+  unreproducible on this machine; `worktrees/p6xbrl/.lane4a/17a_driver.py`
+  and `worktrees/cb-runtime-audit-p1` were reclassified as real preserved
+  content/owner-decision items rather than disposable tool state.
+- Execution spec pointer: `state/agent-inbox/worktree-disposition-plan-v2.md`
+  names the `C:/p6store/worktree-preserve-archive/2026-07-06/` destination,
+  requires `git status --porcelain --ignored --ignore-submodules=none`,
+  serial and bounded execution, hash-gated acceptance before any removal, and
+  a containment relocation obligation for the 17A bundle.
+- Evidence pointer: `state/agent-inbox/worktree-unlanded-deepdive-2026-07-06.json`
+  hashes to
+  `03f50a85e452121ddc65af4cecf3ba8f7cf98fb6e84f1dd1c9c3398a5c46c5fd`
+  at 132,716 bytes; `state/agent-inbox/worktree-disposition-plan-v2.md`
+  hashes to
+  `ca5b06307ac2a6c3fdcdea932fae97ad49264677c82b361eb84555b9e7984afa`
+  at 8,169 bytes.
+- OWNER-DECISION queue headline: sweep GO; slice-4 landing;
+  `sec-family-res`; onlook canonical-remnant tar; `cb-runtime-audit-p1`;
+  onlook upstream contribution.
+
 ## 2026-07-06 Forward Program Refresh (M-WORKTREE-CLEANUP-EXEC)
 
 Supersession boundary: this block is the current F6 pointer after the
