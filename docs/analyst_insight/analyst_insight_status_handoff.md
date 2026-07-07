@@ -115,3 +115,5 @@ preserved in a local worktree; see the dirty-class adjudication record in
 `docs/program-context/03-forward-plan.md`. This doc previously read as if the
 links were live; treat the review-shell discoverability rows as target-state
 until the slice lands.
+
+Landing note (2026-07-07): this supersedes the 2026-07-06 correction note above, which is now historical -- the review-shell discoverability links landed on main via PR #2451; the discoverability rows above are current-state again.
