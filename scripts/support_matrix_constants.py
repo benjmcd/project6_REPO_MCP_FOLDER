@@ -22,6 +22,7 @@ EXPECTED_STATUS_BY_ID = {
     "method_aware_analytics_vertical": "supported",
     "sciencebase_public_connector_slice": "supported",
     "senate_lda_anonymous_connector_slice": "supported",
+    "worldbank_indicators_anonymous_connector_slice": "supported",
     "connector_run_observability": "supported",
     "layer3_workbench_ui": "supported",
     "health_readiness_openapi": "supported",

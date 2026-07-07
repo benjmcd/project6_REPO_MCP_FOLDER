@@ -7872,3 +7872,478 @@ def test_senate_lda_dedupes_duplicate_filings_and_records_provenance(monkeypatch
             assert row.source_reference_json["document_url"] == row.source_artifact_key
     finally:
         db.close()
+
+
+class _FakeWorldBankClient:
+    auth_mode = "anonymous"
+
+    def __init__(self):
+        self.source_calls = []
+        self.indicator_calls = []
+        self.country_calls = []
+        self.observation_calls = []
+
+    def list_sources(self, *, timeout_seconds, retry_max_attempts_per_request, retry_base_backoff_seconds, retry_max_backoff_seconds, retry_respect_retry_after, rate_limiter, retry_counters):
+        self.source_calls.append({"timeout_seconds": timeout_seconds})
+        return [
+            {
+                "id": "2",
+                "name": "World Development Indicators",
+                "description": "Official World Bank development indicator metadata.",
+                "url": "https://api.worldbank.org/v2/source/2",
+            }
+        ]
+
+    def list_indicators(self, *, source_id, timeout_seconds, retry_max_attempts_per_request, retry_base_backoff_seconds, retry_max_backoff_seconds, retry_respect_retry_after, rate_limiter, retry_counters):
+        self.indicator_calls.append({"source_id": source_id})
+        return [
+            {
+                "id": "SP.POP.TOTL",
+                "name": "Population, total",
+                "source": {"id": source_id, "value": "World Development Indicators"},
+                "sourceNote": "Total population is based on the de facto definition of population.",
+                "sourceOrganization": "The World Bank",
+            }
+        ]
+
+    def list_countries(self, *, countries, timeout_seconds, retry_max_attempts_per_request, retry_base_backoff_seconds, retry_max_backoff_seconds, retry_respect_retry_after, rate_limiter, retry_counters):
+        self.country_calls.append({"countries": list(countries)})
+        return [
+            {"id": "USA", "iso2Code": "US", "name": "United States", "region": {"value": "North America"}},
+            {"id": "CAN", "iso2Code": "CA", "name": "Canada", "region": {"value": "North America"}},
+        ]
+
+    def list_indicator_observations(self, *, source_id, country, indicator, date_range, per_page, timeout_seconds, retry_max_attempts_per_request, retry_base_backoff_seconds, retry_max_backoff_seconds, retry_respect_retry_after, rate_limiter, retry_counters):
+        self.observation_calls.append({"source_id": source_id, "country": country, "indicator": indicator, "date_range": date_range, "per_page": per_page})
+        return [
+            {
+                "countryiso3code": country,
+                "date": "2022",
+                "value": 333287557 if country == "USA" else 38929902,
+                "unit": "",
+                "obs_status": "",
+                "decimal": 0,
+                "indicator": {"id": indicator, "value": "Population, total"},
+                "country": {"id": country[:2], "value": "United States" if country == "USA" else "Canada"},
+            }
+        ]
+
+
+class _PagingWorldBankClient(_FakeWorldBankClient):
+    def __init__(self):
+        super().__init__()
+        self.pages = [
+            [{"countryiso3code": "USA", "date": "2021", "value": 332031554, "indicator": {"id": "SP.POP.TOTL", "value": "Population, total"}, "country": {"id": "US", "value": "United States"}}],
+            [{"countryiso3code": "USA", "date": "2022", "value": 333287557, "indicator": {"id": "SP.POP.TOTL", "value": "Population, total"}, "country": {"id": "US", "value": "United States"}}],
+        ]
+
+    def list_indicator_observations(self, **kwargs):
+        self.observation_calls.append(dict(kwargs))
+        return self.pages.pop(0) if self.pages else []
+
+
+class _EmptyWorldBankClient(_FakeWorldBankClient):
+    def list_indicator_observations(self, **kwargs):
+        self.observation_calls.append(dict(kwargs))
+        return []
+
+
+class _MalformedWorldBankClient(_FakeWorldBankClient):
+    def list_indicator_observations(self, **kwargs):
+        self.observation_calls.append(dict(kwargs))
+        return [{"countryiso3code": "USA", "value": 123}]
+
+
+class _NullValueWorldBankClient(_FakeWorldBankClient):
+    def __init__(self):
+        super().__init__()
+        self._served = False
+
+    def list_indicator_observations(self, **kwargs):
+        self.observation_calls.append(dict(kwargs))
+        if self._served:
+            return []
+        self._served = True
+        indicator = kwargs["indicator"]
+        return [
+            {
+                "countryiso3code": "USA",
+                "date": "2021",
+                "value": None,
+                "indicator": {"id": indicator, "value": "Population, total"},
+                "country": {"id": "US", "value": "United States"},
+            },
+            {
+                "countryiso3code": "USA",
+                "date": "2022",
+                "value": 333287557,
+                "indicator": {"id": indicator, "value": "Population, total"},
+                "country": {"id": "US", "value": "United States"},
+            },
+        ]
+
+
+class _TimeoutWorldBankClient(_FakeWorldBankClient):
+    def list_indicator_observations(self, **kwargs):
+        self.observation_calls.append(dict(kwargs))
+        raise requests.Timeout("temporary World Bank timeout")
+
+
+def test_worldbank_connector_happy_path_reports_and_attribution(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRun, DatasetSourceProvenance
+    from app.services import connectors_worldbank as wb
+
+    fake = _FakeWorldBankClient()
+    monkeypatch.setattr(wb, "get_worldbank_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/worldbank/runs",
+        json={
+            "source_id": "2",
+            "indicators": ["SP.POP.TOTL"],
+            "countries": ["USA", "CAN"],
+            "date_range": "2022:2022",
+            "max_items": 2,
+        },
+        headers={"Idempotency-Key": f"worldbank-happy-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    payload = detail.json()
+    assert payload["connector_key"] == "worldbank_indicators"
+    assert payload["status"] == "completed"
+    assert payload["run_mode"] == "metadata_only"
+    assert payload["fetch_policy_summary"] == {
+        "mode": "official_api_only",
+        "surface_policy": "metadata_only",
+        "external_fetch_policy": "worldbank_indicators_official_only",
+        "allowed_hosts": ["api.worldbank.org"],
+    }
+    assert Path(payload["report_refs"]["worldbank_summary"]).exists()
+    assert fake.source_calls and fake.indicator_calls and fake.country_calls
+    assert len(fake.observation_calls) == 2
+    assert {call["source_id"] for call in fake.observation_calls} == {"2"}
+
+    targets = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert targets.status_code == 200, targets.text
+    target_rows = targets.json()["targets"]
+    assert len(target_rows) == 2
+    assert {row["status"] for row in target_rows} == {"recommended"}
+
+    db = SessionLocal()
+    try:
+        run = db.get(ConnectorRun, run_id)
+        assert run is not None
+        assert run.effective_search_params_json["auth_mode"] == "anonymous"
+        assert run.effective_search_params_json["base_url"] == "https://api.worldbank.org/v2"
+        provenance_rows = (
+            db.query(DatasetSourceProvenance)
+            .filter(DatasetSourceProvenance.connector_run_id == run_id)
+            .filter(DatasetSourceProvenance.source_system == "worldbank_indicators")
+            .all()
+        )
+        assert len(provenance_rows) == 2
+        for row in provenance_rows:
+            assert row.source_mode == "metadata_only"
+            assert row.source_reference_json["license"] == "CC BY 4.0"
+            assert row.source_reference_json["attribution"] == "The World Bank: World Development Indicators: Data source"
+            assert row.retrieved_http_json["terms_of_use_url"] == "https://data.worldbank.org/summary-terms-of-use"
+    finally:
+        db.close()
+
+
+def test_worldbank_connector_source_id_flows_to_observations_and_keys(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRunTarget
+    from app.services import connectors_worldbank as wb
+
+    fake = _FakeWorldBankClient()
+    monkeypatch.setattr(wb, "get_worldbank_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/worldbank/runs",
+        json={"source_id": "57", "indicators": ["SP.POP.TOTL"], "countries": ["USA"], "date_range": "2022:2022"},
+        headers={"Idempotency-Key": f"worldbank-source-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    assert fake.indicator_calls == [{"source_id": "57"}]
+    assert fake.observation_calls and fake.observation_calls[0]["source_id"] == "57"
+
+    db = SessionLocal()
+    try:
+        target = (
+            db.query(ConnectorRunTarget)
+            .filter(ConnectorRunTarget.connector_run_id == run_id)
+            .one()
+        )
+        assert target.stable_release_key.startswith("worldbank:57:USA:SP.POP.TOTL:")
+        assert target.source_reference_json["source_id"] == "57"
+        assert target.dataset_id is not None
+    finally:
+        db.close()
+
+
+def test_worldbank_connector_pagination_continues_until_max_items(monkeypatch):
+    from app.services import connectors_worldbank as wb
+
+    fake = _PagingWorldBankClient()
+    monkeypatch.setattr(wb, "get_worldbank_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/worldbank/runs",
+        json={"indicators": ["SP.POP.TOTL"], "countries": ["USA"], "date_range": "2021:2022", "max_items": 2},
+        headers={"Idempotency-Key": f"worldbank-paging-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["status"] == "completed"
+    assert len(fake.observation_calls) == 2
+    assert [call["per_page"] for call in fake.observation_calls] == [1000, 1000]
+
+
+def test_worldbank_connector_empty_observations_fail_closed(monkeypatch):
+    from app.services import connectors_worldbank as wb
+
+    fake = _EmptyWorldBankClient()
+    monkeypatch.setattr(wb, "get_worldbank_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/worldbank/runs",
+        json={"indicators": ["SP.POP.TOTL"], "countries": ["USA"], "date_range": "2022:2022"},
+        headers={"Idempotency-Key": f"worldbank-empty-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["status"] == "completed_with_errors"
+    assert detail.json()["failed_count"] == 1
+
+    targets = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert targets.status_code == 200, targets.text
+    target_rows = targets.json()["targets"]
+    assert len(target_rows) == 1
+    assert target_rows[0]["status"] == "download_failed"
+    assert target_rows[0]["last_error_class"] == "empty_result"
+
+
+def test_worldbank_connector_malformed_observations_fail_closed(monkeypatch):
+    from app.services import connectors_worldbank as wb
+
+    fake = _MalformedWorldBankClient()
+    monkeypatch.setattr(wb, "get_worldbank_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/worldbank/runs",
+        json={"indicators": ["SP.POP.TOTL"], "countries": ["USA"], "date_range": "2022:2022"},
+        headers={"Idempotency-Key": f"worldbank-malformed-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["status"] == "completed_with_errors"
+    assert detail.json()["failed_count"] == 1
+
+    targets = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert targets.status_code == 200, targets.text
+    target_rows = targets.json()["targets"]
+    assert len(target_rows) == 1
+    assert target_rows[0]["status"] == "download_failed"
+    assert target_rows[0]["last_error_class"] == "schema_validation_failed"
+
+
+def test_worldbank_connector_null_values_are_skipped_not_failed(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRunTarget
+    from app.services import connectors_worldbank as wb
+
+    fake = _NullValueWorldBankClient()
+    monkeypatch.setattr(wb, "get_worldbank_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/worldbank/runs",
+        json={"indicators": ["SP.POP.TOTL"], "countries": ["USA"], "date_range": "2021:2022"},
+        headers={"Idempotency-Key": f"worldbank-null-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["status"] == "completed"
+
+    db = SessionLocal()
+    try:
+        target = (
+            db.query(ConnectorRunTarget)
+            .filter(ConnectorRunTarget.connector_run_id == run_id)
+            .one()
+        )
+        assert target.status == "recommended"
+        assert target.source_reference_json["observations_count"] == 1
+    finally:
+        db.close()
+
+
+def test_worldbank_connector_resume_continues_unmanifested_partial_discovery(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRunTarget
+    from app.services import connectors_worldbank as wb
+
+    fake = _FakeWorldBankClient()
+    monkeypatch.setattr(wb, "get_worldbank_client", lambda config: fake)
+
+    db = SessionLocal()
+    try:
+        run, _created = wb.submit_worldbank_run(
+            db,
+            payload={"indicators": ["SP.POP.TOTL"], "countries": ["USA", "CAN"], "date_range": "2022:2022", "max_items": 2},
+            idempotency_key=f"worldbank-partial-{uuid.uuid4().hex}",
+        )
+        partial = wb._target_from_observations(
+            run=run,
+            ordinal=1,
+            country="USA",
+            indicator="SP.POP.TOTL",
+            observations=[
+                {
+                    "countryiso3code": "USA",
+                    "date": "2022",
+                    "value": 333287557,
+                    "indicator_id": "SP.POP.TOTL",
+                    "indicator_name": "Population, total",
+                }
+            ],
+            source_ref={
+                "source_system": "worldbank_indicators",
+                "source_id": "2",
+                "country": "USA",
+                "indicator": "SP.POP.TOTL",
+                "date_range": "2022:2022",
+                "observations_count": 1,
+            },
+            run_mode="metadata_only",
+        )
+        db.add(partial)
+        db.commit()
+        run_id = run.connector_run_id
+    finally:
+        db.close()
+
+    wb.execute_worldbank_run(run_id)
+
+    db = SessionLocal()
+    try:
+        rows = (
+            db.query(ConnectorRunTarget)
+            .filter(ConnectorRunTarget.connector_run_id == run_id)
+            .order_by(ConnectorRunTarget.ordinal.asc())
+            .all()
+        )
+        assert [row.sciencebase_item_id for row in rows] == ["USA:SP.POP.TOTL", "CAN:SP.POP.TOTL"]
+        assert {row.status for row in rows} == {"recommended"}
+    finally:
+        db.close()
+    assert [call["country"] for call in fake.observation_calls] == ["CAN"]
+
+
+def test_worldbank_connector_resume_stops_when_existing_targets_reach_max_items(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRunTarget
+    from app.services import connectors_worldbank as wb
+
+    fake = _FakeWorldBankClient()
+    monkeypatch.setattr(wb, "get_worldbank_client", lambda config: fake)
+
+    db = SessionLocal()
+    try:
+        run, _created = wb.submit_worldbank_run(
+            db,
+            payload={"indicators": ["SP.POP.TOTL"], "countries": ["USA", "CAN"], "date_range": "2021:2022", "max_items": 2},
+            idempotency_key=f"worldbank-max-resume-{uuid.uuid4().hex}",
+        )
+        partial = wb._target_from_observations(
+            run=run,
+            ordinal=1,
+            country="USA",
+            indicator="SP.POP.TOTL",
+            observations=[
+                {"countryiso3code": "USA", "date": "2021", "value": 332031554, "indicator_id": "SP.POP.TOTL"},
+                {"countryiso3code": "USA", "date": "2022", "value": 333287557, "indicator_id": "SP.POP.TOTL"},
+            ],
+            source_ref={
+                "source_system": "worldbank_indicators",
+                "source_id": "2",
+                "country": "USA",
+                "indicator": "SP.POP.TOTL",
+                "date_range": "2021:2022",
+                "observations_count": 2,
+            },
+            run_mode="metadata_only",
+        )
+        db.add(partial)
+        db.commit()
+        run_id = run.connector_run_id
+    finally:
+        db.close()
+
+    wb.execute_worldbank_run(run_id)
+
+    db = SessionLocal()
+    try:
+        rows = (
+            db.query(ConnectorRunTarget)
+            .filter(ConnectorRunTarget.connector_run_id == run_id)
+            .order_by(ConnectorRunTarget.ordinal.asc())
+            .all()
+        )
+        assert len(rows) == 1
+        assert rows[0].sciencebase_item_id == "USA:SP.POP.TOTL"
+        assert fake.observation_calls == []
+    finally:
+        db.close()
+
+
+def test_worldbank_connector_retryable_failures_remain_retry_eligible(monkeypatch):
+    from app.services import connectors_worldbank as wb
+
+    fake = _TimeoutWorldBankClient()
+    monkeypatch.setattr(wb, "get_worldbank_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/worldbank/runs",
+        json={"indicators": ["SP.POP.TOTL"], "countries": ["USA"], "date_range": "2022:2022"},
+        headers={"Idempotency-Key": f"worldbank-timeout-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["status"] == "completed_with_errors"
+
+    targets = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert targets.status_code == 200, targets.text
+    target = targets.json()["targets"][0]
+    assert target["status"] == "download_failed"
+    assert target["last_error_class"] == "transport_timeout"
+    assert target["retry_eligible"] is True
+
+
+def test_worldbank_connector_rejects_non_worldbank_base_url():
+    from app.services import connectors_worldbank as wb
+
+    with pytest.raises(wb.WorldBankSchemaValidationError, match="inadmissible_worldbank_base_url"):
+        wb.WorldBankIndicatorsClient(base_url="https://example.test/v2")

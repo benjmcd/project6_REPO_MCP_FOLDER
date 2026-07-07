@@ -113,7 +113,7 @@ def test_rc3_acceptance_runner_reports_pass_with_injected_checks() -> None:
         for part in connector_command
         if part.startswith("./tests/test_api.py::")
     ]
-    assert len(connector_tests) == 24
+    assert len(connector_tests) == 34
 
     flat_calls = "\n".join(" ".join(command) for command in calls)
     for marker in [

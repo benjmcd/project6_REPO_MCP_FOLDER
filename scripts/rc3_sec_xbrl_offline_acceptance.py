@@ -139,6 +139,16 @@ RC2_PUBLIC_CONNECTOR_REGRESSION_TESTS = [
     "./tests/test_api.py::test_public_connector_operator_journey_bridges_sciencebase_target_to_analysis",
     "./tests/test_api.py::test_public_connector_journey_network_unreachable_is_degraded",
     "./tests/test_api.py::test_senate_lda_anonymous_metadata_path_is_no_key_secondary_journey",
+    "./tests/test_api.py::test_worldbank_connector_happy_path_reports_and_attribution",
+    "./tests/test_api.py::test_worldbank_connector_source_id_flows_to_observations_and_keys",
+    "./tests/test_api.py::test_worldbank_connector_pagination_continues_until_max_items",
+    "./tests/test_api.py::test_worldbank_connector_empty_observations_fail_closed",
+    "./tests/test_api.py::test_worldbank_connector_malformed_observations_fail_closed",
+    "./tests/test_api.py::test_worldbank_connector_null_values_are_skipped_not_failed",
+    "./tests/test_api.py::test_worldbank_connector_resume_continues_unmanifested_partial_discovery",
+    "./tests/test_api.py::test_worldbank_connector_resume_stops_when_existing_targets_reach_max_items",
+    "./tests/test_api.py::test_worldbank_connector_retryable_failures_remain_retry_eligible",
+    "./tests/test_api.py::test_worldbank_connector_rejects_non_worldbank_base_url",
 ]
 
 COMMAND_CHECKS = [

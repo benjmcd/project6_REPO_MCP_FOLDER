@@ -1,6 +1,6 @@
 # Public Connectors Journey
 
-This journey covers the public_connectors overlay in the current selected local profile: ScienceBase public/MCS and Senate LDA anonymous metadata. It does not activate or claim OCR, model/agent egress, keyed connectors, nonlocal deployment, high availability, automatic replay, real provider delivery, SEC value reveal, or default-on SEC live network behavior. The current support matrix, not the earlier RC1 analytics-only claim, is the authority for whether these connector slices are selected.
+This journey covers the public_connectors overlay in the current selected local profile: ScienceBase public/MCS, Senate LDA anonymous metadata, and World Bank Indicators anonymous metadata. It does not activate or claim OCR, model/agent egress, keyed connectors, nonlocal deployment, high availability, automatic replay, real provider delivery, SEC value reveal, or default-on SEC live network behavior. The current support matrix, not the earlier RC1 analytics-only claim, is the authority for whether these connector slices are selected.
 
 ## Canonical ScienceBase Path
 
@@ -29,6 +29,16 @@ The Senate LDA path is secondary and metadata-only:
 
 The anonymous posture is explicit: the effective search params record `auth_mode=anonymous`, filing-detail hydration is not called in the metadata-only secondary proof, and no API key, authorization header, or token is stored in run request config.
 
+## World Bank Indicators Secondary Path
+
+The World Bank Indicators path is secondary and metadata-only:
+
+1. Submit `POST /api/v1/connectors/worldbank/runs` with `run_mode=metadata_only`, one or more `indicators`, one or more `countries`, and an optional `date_range`.
+2. Inspect `GET /api/v1/connectors/runs/{run_id}` for official API-only fetch policy scoped to `api.worldbank.org`, `auth_mode=anonymous`, and a `worldbank_summary` report ref.
+3. Read `GET /api/v1/connectors/runs/{run_id}/targets` for recommended country/indicator targets with metadata-only dataset versions.
+
+The anonymous posture is explicit: the connector has no API key setting, its effective search params record `auth_mode=anonymous`, and the stored provenance carries World Bank attribution, `CC BY 4.0`, and the World Bank summary terms-of-use URL.
+
 ## Proof
 
 Focused proof lives in `tests/test_api.py`:
@@ -36,3 +46,8 @@ Focused proof lives in `tests/test_api.py`:
 - `test_public_connector_operator_journey_bridges_sciencebase_target_to_analysis`
 - `test_public_connector_journey_network_unreachable_is_degraded`
 - `test_senate_lda_anonymous_metadata_path_is_no_key_secondary_journey`
+- `test_worldbank_connector_happy_path_reports_and_attribution`
+- `test_worldbank_connector_empty_observations_fail_closed`
+- `test_worldbank_connector_malformed_observations_fail_closed`
+- `test_worldbank_connector_resume_continues_unmanifested_partial_discovery`
+- `test_worldbank_connector_rejects_non_worldbank_base_url`

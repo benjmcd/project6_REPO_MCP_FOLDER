@@ -153,6 +153,30 @@ class _FakeSenateLdaClient:
         }
 
 
+class _FakeWorldBankClient:
+    auth_mode = "anonymous"
+
+    def list_sources(self, **kwargs: Any) -> list[dict[str, Any]]:
+        return [{"id": "2", "name": "World Development Indicators"}]
+
+    def list_indicators(self, *, source_id: str, **kwargs: Any) -> list[dict[str, Any]]:
+        return [{"id": "SP.POP.TOTL", "name": "Population, total", "source": {"id": source_id}}]
+
+    def list_countries(self, *, countries: list[str], **kwargs: Any) -> list[dict[str, Any]]:
+        return [{"id": country, "name": country} for country in countries]
+
+    def list_indicator_observations(self, *, country: str, indicator: str, **kwargs: Any) -> list[dict[str, Any]]:
+        return [
+            {
+                "countryiso3code": country,
+                "date": "2022",
+                "value": 333287557,
+                "indicator": {"id": indicator, "value": "Population, total"},
+                "country": {"id": country[:2], "value": country},
+            }
+        ]
+
+
 def _load_json_compatible_yaml(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -368,6 +392,50 @@ def _senate_runtime() -> dict[str, Any]:
             db.close()
 
 
+@functools.lru_cache(maxsize=1)
+def _worldbank_runtime() -> dict[str, Any]:
+    from app.models import ConnectorRunTarget
+    from app.services import connectors_sciencebase as sb
+    from app.services import connectors_worldbank as wb
+
+    with _runtime_db() as (session_factory, _storage):
+        db = session_factory()
+        old_session_local = wb.SessionLocal
+        old_client = wb.get_worldbank_client
+        old_sleep = wb.time.sleep
+        old_wait = wb._RateLimiter.wait
+        try:
+            wb.SessionLocal = session_factory
+            wb.get_worldbank_client = lambda config: _FakeWorldBankClient()
+            wb.time.sleep = lambda seconds: None
+            wb._RateLimiter.wait = lambda self: None
+            run, _created = wb.submit_worldbank_run(
+                db,
+                payload={"indicators": ["SP.POP.TOTL"], "countries": ["USA"], "date_range": "2022:2022", "max_items": 1},
+                idempotency_key="support-matrix-worldbank-runtime",
+            )
+            db.commit()
+            run_id = run.connector_run_id
+            db.close()
+            wb.execute_worldbank_run(run_id)
+            db = session_factory()
+            run = db.get(type(run), run_id)
+            if run is None:
+                raise MatrixContractError("worldbank run missing after execution")
+            detail = sb.serialize_connector_run(db, run)
+            targets = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run_id).all()
+            auth_mode = dict(run.effective_search_params_json or {}).get("auth_mode")
+            if detail.get("status") != "completed" or auth_mode != "anonymous" or not targets:
+                raise MatrixContractError(f"worldbank run did not complete anonymously: {detail}")
+            return {"detail": detail, "target_statuses": sorted({t.status for t in targets}), "auth_mode": auth_mode}
+        finally:
+            wb.SessionLocal = old_session_local
+            wb.get_worldbank_client = old_client
+            wb.time.sleep = old_sleep
+            wb._RateLimiter.wait = old_wait
+            db.close()
+
+
 def _probe_sciencebase() -> dict[str, Any]:
     result = _sciencebase_runtime()
     return {"status": result["detail"]["status"], "target_statuses": result["target_statuses"]}
@@ -376,6 +444,11 @@ def _probe_sciencebase() -> dict[str, Any]:
 def _probe_senate() -> dict[str, Any]:
     result = _senate_runtime()
     return {"status": result["detail"]["status"], "auth_mode": result["auth_mode"]}
+
+
+def _probe_worldbank() -> dict[str, Any]:
+    result = _worldbank_runtime()
+    return {"status": result["detail"]["status"], "auth_mode": result["auth_mode"], "target_statuses": result["target_statuses"]}
 
 
 def _probe_connector_observability() -> dict[str, Any]:
@@ -658,6 +731,7 @@ PROBES: dict[str, Callable[[], dict[str, Any]]] = {
     "method_aware_analytics_vertical": _probe_method_analytics,
     "sciencebase_public_connector_slice": _probe_sciencebase,
     "senate_lda_anonymous_connector_slice": _probe_senate,
+    "worldbank_indicators_anonymous_connector_slice": _probe_worldbank,
     "connector_run_observability": _probe_connector_observability,
     "layer3_workbench_ui": _probe_layer3_ui,
     "health_readiness_openapi": _probe_health_openapi,
