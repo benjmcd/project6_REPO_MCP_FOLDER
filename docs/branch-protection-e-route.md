@@ -2,6 +2,39 @@
 
 Status: preparation artifact. The enabling step is a GitHub repository-settings/admin action reserved to the owner; this doc supplies the exact, verified command and rationale. Nothing here changes repository behavior until the owner runs the command.
 
+## 2026-07-07 supersession note (M-RELEASE-GATE-F5)
+
+Live branch protection for `main` is now active. The verified rule requires
+the exact contexts `release-gate`, `test`, and `root-tests`, with
+`strict=false` and `enforce_admins=true`. The historical "no branch
+protection" and fail-open premise below is therefore retained only as prior
+context.
+
+Current reapply command, if the owner needs to restore the live rule:
+
+```bash
+gh api -X PUT repos/benjmcd/project6_REPO_MCP_FOLDER/branches/main/protection --input - <<'EOF'
+{
+  "required_status_checks": { "strict": false, "contexts": ["release-gate", "test", "root-tests"] },
+  "enforce_admins": true,
+  "required_pull_request_reviews": null,
+  "restrictions": null
+}
+EOF
+```
+
+The older owner command and verification steps below remain historical. They
+must not be used as the current reapply command because they omit `root-tests`
+and set `strict=true`.
+
+The F5 lane also promotes release-gate from a five-family aggregate to an
+eight-family aggregate: `release-lock-install`, `backend-layer3-api`,
+`backend-coverage`, `backend-migrations-postgres`,
+`sec-xbrl-arelle-provisioning`, `root-tests`, `nrc-aps-ocr`, and `test`.
+Because `test` and `root-tests` are already branch-protection contexts, their
+release-gate membership is coverage-coherence rather than new platform
+enforcement. `nrc-aps-ocr` is the net-new release-gate-blocking CI family.
+
 ## Current state (the fail-open)
 `main` has **no branch protection**: `gh api repos/benjmcd/project6_REPO_MCP_FOLDER/branches/main/protection` returns `404 Branch not protected`. CI runs on every PR and push to `main`, but green CI is **author-enforced** — nothing at the platform level blocks a merge while checks are failing or pending. Closing this gap is the "E-route" referenced in prior governance discussion.
 
