@@ -10,6 +10,23 @@ the exact contexts `release-gate`, `test`, and `root-tests`, with
 protection" and fail-open premise below is therefore retained only as prior
 context.
 
+Current reapply command, if the owner needs to restore the live rule:
+
+```bash
+gh api -X PUT repos/benjmcd/project6_REPO_MCP_FOLDER/branches/main/protection --input - <<'EOF'
+{
+  "required_status_checks": { "strict": false, "contexts": ["release-gate", "test", "root-tests"] },
+  "enforce_admins": true,
+  "required_pull_request_reviews": null,
+  "restrictions": null
+}
+EOF
+```
+
+The older owner command and verification steps below remain historical. They
+must not be used as the current reapply command because they omit `root-tests`
+and set `strict=true`.
+
 The F5 lane also promotes release-gate from a five-family aggregate to an
 eight-family aggregate: `release-lock-install`, `backend-layer3-api`,
 `backend-coverage`, `backend-migrations-postgres`,
