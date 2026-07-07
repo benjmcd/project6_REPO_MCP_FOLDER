@@ -393,12 +393,13 @@ else (additive tests, docs, static UI) is **Tier-1** → self-verify + CI.
   unlock.)
   Further superseded 2026-07-06: owner-authorized preserve-sweep execution
   removed the verified/adjudicated registered class after `C:/p6store`
-  snapshot gates; registrations are now 25 total, with three repo-local
-  failed-preserve holds, 21 unregistered local directories, external and
-  `.cursor/**` registrations, and the locked external temp-placement
-  registration still outside the completed sweep. Preserve archive aggregate
-  sha256:
-  `b45fcb611af657ed0edd925bd13cfe6bd3edc0206b45c08b11c2897efc2539b3`.
+  snapshot gates. P2 then cleared the three repo-local failed-preserve holds
+  and adjudicated the remaining unregistered directories: repo-local
+  registered entries under `worktrees/` are now zero, and 12 unregistered
+  local directories remain held. External and `.cursor/**` registrations, plus
+  the locked external temp-placement registration, remain outside the completed
+  sweep. Post-P2 preserve archive aggregate sha256:
+  `1ae49356c7154446c0e03d65812cf804c7d3a76510d40c4f221b6b42ddb2f67b`.
 
 ### 3.5 Honesty rails (operator-run vs CI-durable; proven vs designed vs gated)
 **Decision:** never upgrade "operator-run proof" to "committed/CI'd truth," nor "designed" to
@@ -493,10 +494,11 @@ disposition policy (possibly including erasure) would be needed — explicitly o
   removal execution remains owner-gated. See
   `docs/program-context/03-forward-plan.md` M-DIRTY-ADJUDICATION refresh.
   Preserve-swept later 2026-07-06: v2 verified/adjudicated registered
-  worktrees were snapshot-gated and swept; post-sweep registry is 25 total, with
-  three repo-local failed-preserve holds and 21 unregistered local directories
-  still protected. See `docs/program-context/03-forward-plan.md`
-  M-PRESERVE-SWEEP refresh.
+  worktrees were snapshot-gated and swept. P2 then remediated and removed the
+  three repo-local failed-preserve holds, removed nine newly adjudicated
+  unregistered directories after empty or preserve gates, and left 12
+  unregistered local directories held. See `docs/program-context/03-forward-plan.md`
+  M-PRESERVE-SWEEP refresh and P2 addendum.
 - **Whether to PR this master-context doc** to main, or maintain it on-branch only.
 
 ---
