@@ -46,6 +46,7 @@ deploy/proxy/roles.map
 /temp_session.json
 
 # --- large data / runtime artifacts (untracked; kept on disk) ---
+/.p6store-replica/
 .venvs/
 data_demo/
 app/storage/
