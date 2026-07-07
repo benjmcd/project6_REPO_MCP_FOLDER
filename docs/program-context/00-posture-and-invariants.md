@@ -164,6 +164,12 @@ is which.)
   authorizes a cleanup lane with an inventory (which exists, hash-anchored, in the
   M-FWD3-EVIDENCE report).
 
+  (Superseded 2026-07-06: owner-authorized cleanup executed - registry
+  353 -> 163, 190 removed, about 85 GB reclaimed; the 139 protected
+  worktrees were then individually adjudicated read-only. Rail intent
+  unchanged for everything still protected. See 03-forward-plan.md F6 plus
+  M-DIRTY-ADJUDICATION refreshes.)
+
 ## I12. Record-lane inbox archive refresh
 
 - Requires: at each record-lane closeout, refresh the off-repo inbox archive in

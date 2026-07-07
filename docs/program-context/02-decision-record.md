@@ -655,3 +655,48 @@ taxonomy egress, or local path claim beyond the established `C:/p6store` root.
   separate inbox approval verdict.
 - Revisit when: the repo gains a signed coordination-log export, or when
   inbox/source-payload archival becomes automated at lane closeout.
+
+## D30. Content-uniqueness verdicts must grep the current refactored layout, not pre-refactor paths (07-06)
+
+- Context: the 2026-07-06 dirty-worktree adjudication and its later
+  deep-dive verification corrected two path-sensitive verdicts.
+  `worktrees/l3-package-life` was a false `UNIQUE-CONTENT` result because
+  the check grepped stale pre-refactor `backend/app/api/layer3.py` paths after
+  current main had moved the live surface into a `layer3/` package.
+  `worktrees/sec-family-res` also showed that landed SEC XBRL feature concepts
+  can move under renamed files while a divergent `.v1` variant remains an
+  owner-review item.
+- Alternatives: (a) adjudicate preserved content by original worktree paths or
+  branch ancestry alone; (b) require manual file-by-file proof for every
+  dirty worktree without reusable mechanical checks; (c) require repo-wide
+  symbol greps against current main, tree-identity checks where an old commit
+  can be compared to its merge (`git diff <sha> <merge> --numstat` empty means
+  fully landed), enumeration with `git status --porcelain --ignored
+  --untracked-files=all --ignore-submodules=none` or an equivalent recursive
+  ignored-directory hash inventory, and a directory inventory outside
+  `git worktree list`.
+- Decision: (c). Any future content-uniqueness verdict against rebuilt main
+  must search the current layout, not just the path shape that existed when
+  the old worktree was authored. A clean status or clean worktree list is not
+  sufficient evidence when ignored `archive/` payloads or unregistered plain
+  directories may exist.
+- Why optimal: this preserves the owner-gated cleanup posture without turning
+  stale paths into false retention or false discard decisions. It also makes
+  the proof portable across refactors: symbols, tree identity, ignored-content
+  enumeration, and plain-directory discovery each check a different failure
+  mode.
+- Evidence: `state/agent-inbox/worktree-unlanded-deepdive-2026-07-06.json`
+  hashes to
+  `03f50a85e452121ddc65af4cecf3ba8f7cf98fb6e84f1dd1c9c3398a5c46c5fd`
+  at 132,716 bytes and records the corrected dispositions plus the
+  path-refactor and enumeration failures. `state/agent-inbox/worktree-disposition-plan-v2.md`
+  hashes to
+  `ca5b06307ac2a6c3fdcdea932fae97ad49264677c82b361eb84555b9e7984afa`
+  at 8,169 bytes and translates the corrections into the cleanup execution
+  discipline. The I12 archive aggregate
+  `9291ee34af6c510329818488b2bfe834559308def95bd3cfdb58b537a1a392ea`
+  anchors the same-day adjudication record set without committing raw local
+  logs.
+- Revisit when: the worktree cleanup tool mechanically enforces ignored
+  enumeration, unregistered-directory inventory, and refactor-aware
+  symbol/tree checks before proposing any discard or uniqueness verdict.
