@@ -631,6 +631,9 @@ jobs:
       - backend-coverage
       - backend-migrations-postgres
       - sec-xbrl-arelle-provisioning
+      - root-tests
+      - nrc-aps-ocr
+      - test
     if: ${{ always() }}
     steps:
     - uses: actions/checkout@v6
@@ -652,7 +655,10 @@ jobs:
           "backend-layer3-api:${{ needs['backend-layer3-api'].result }}" \
           "backend-coverage:${{ needs['backend-coverage'].result }}" \
           "backend-migrations-postgres:${{ needs['backend-migrations-postgres'].result }}" \
-          "sec-xbrl-arelle-provisioning:${{ needs['sec-xbrl-arelle-provisioning'].result }}"
+          "sec-xbrl-arelle-provisioning:${{ needs['sec-xbrl-arelle-provisioning'].result }}" \
+          "root-tests:${{ needs['root-tests'].result }}" \
+          "nrc-aps-ocr:${{ needs['nrc-aps-ocr'].result }}" \
+          "test:${{ needs['test'].result }}"
         do
           job="${item%%:*}"
           result="${item#*:}"

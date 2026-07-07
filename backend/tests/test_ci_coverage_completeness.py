@@ -87,6 +87,9 @@ RELEASE_GATE_AGGREGATED_JOBS = (
     "backend-coverage",
     "backend-migrations-postgres",
     "sec-xbrl-arelle-provisioning",
+    "root-tests",
+    "nrc-aps-ocr",
+    "test",
 )
 
 
@@ -123,6 +126,19 @@ def _workflow_job_block(job_id: str) -> str:
     )
     assert match is not None, f"Could not locate workflow job {job_id!r}"
     return match.group("body")
+
+
+def _workflow_job_needs(job_id: str) -> tuple[str, ...]:
+    job_block = _workflow_job_block(job_id)
+    match = re.search(
+        r"^    needs:\s*\n(?P<body>(?:      - [A-Za-z0-9_-]+\s*\n)+)",
+        job_block,
+        flags=re.MULTILINE,
+    )
+    assert match is not None, f"Could not locate workflow needs for job {job_id!r}"
+    return tuple(
+        re.findall(r"^      - ([A-Za-z0-9_-]+)\s*$", match.group("body"), flags=re.MULTILINE)
+    )
 
 
 def _release_readiness_manifest() -> dict:
@@ -214,6 +230,7 @@ def test_release_gate_job_runs_manifest_runner_after_manifest_ci_jobs() -> None:
     assert "if: ${{ always() }}" in gate_block
     assert "python ./scripts/release_readiness_check.py" in gate_block
     assert "python ./scripts/rc3_sec_xbrl_offline_acceptance.py --json" in gate_block
+    assert set(_workflow_job_needs("release-gate")) == set(RELEASE_GATE_AGGREGATED_JOBS)
     assert gate_block.index("python ./scripts/release_readiness_check.py") < gate_block.index(
         "python ./scripts/rc3_sec_xbrl_offline_acceptance.py --json"
     )

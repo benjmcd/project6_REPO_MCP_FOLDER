@@ -4,6 +4,26 @@
 > `abd8c3f8ac2b2545fda8b88d46aa916a22b626e8`.
 > Verify against the live workflow before relying on job inventory or line numbers.
 
+## 2026-07-07 supersession note (M-RELEASE-GATE-F5)
+
+`release-gate` now depends on eight jobs:
+
+1. `release-lock-install`
+2. `backend-layer3-api`
+3. `backend-coverage`
+4. `backend-migrations-postgres`
+5. `sec-xbrl-arelle-provisioning`
+6. `root-tests`
+7. `nrc-aps-ocr`
+8. `test`
+
+The policy's requested strict guard now exists in
+`backend/tests/test_ci_coverage_completeness.py`:
+`test_release_gate_job_runs_manifest_runner_after_manifest_ci_jobs` asserts that
+the workflow `release-gate.needs` exact set equals
+`RELEASE_GATE_AGGREGATED_JOBS`, and the existing loop continues to require each
+job's `needs['<job>'].result` check in the shell gate.
+
 ## Release-Gate Blocking Jobs
 
 `release-gate` currently depends on five jobs:

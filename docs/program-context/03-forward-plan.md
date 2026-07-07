@@ -6,6 +6,46 @@ report as verified/adjudicated, grounded in repo authorities (merge-gate
 policy, admission runbook, A8 docs, support matrix). Nothing here is authorized by this
 document — it specifies what authorization would require.
 
+## 2026-07-07 Forward Program Refresh (M-RELEASE-GATE-F5)
+
+Supersession boundary: this block is the current F5 pointer. It supersedes the
+older F5 release-gate planning sections only for the live branch-protection
+state, release-gate aggregate membership, orphan workflow disposition, and the
+scoped item-3 adjudication recorded here. Historical F5 sections remain prior
+context, not current authority.
+
+### F5 - release-gate hardening and orphan workflow cleanup: EIGHT-FAMILY GATE RECORD
+
+- Decision basis: under the owner's standing delegation, release-gate should
+  aggregate all meaningful CI families. Live branch protection for `main` is
+  active with required contexts `release-gate`, `test`, and `root-tests`;
+  `strict=false`; and `enforce_admins=true`.
+- True delta: adding `test` and `root-tests` to release-gate is
+  coverage-coherence because both contexts are already independently
+  merge-blocking. The net-new release-gate-blocking family is `nrc-aps-ocr`.
+- Release-gate membership after this lane: `release-lock-install`,
+  `backend-layer3-api`, `backend-coverage`, `backend-migrations-postgres`,
+  `sec-xbrl-arelle-provisioning`, `root-tests`, `nrc-aps-ocr`, and `test`.
+- Test guard: `backend/tests/test_ci_coverage_completeness.py` now treats
+  `RELEASE_GATE_AGGREGATED_JOBS` as the enforced tuple and asserts that
+  `release-gate.needs` is the exact same set, while the shell loop continues to
+  check every `needs['<job>'].result`.
+- Scoped-out item 3: `config/release_readiness.yaml` remains untouched. Its
+  `required_gates` list is a curated profile-neutral subset, and broadening it
+  would cascade into unrelated exact-equality assertions in
+  `backend/tests/test_release_readiness.py` and the
+  `EXPECTED_RELEASE_GATE_COVERAGE` map. Those lists are intentionally not part
+  of this F5 change.
+- Orphan workflow cleanup: workflow registration `286330393` (`SEC XBRL Tier-2
+  review gate`) was active while its workflow file was absent on `main`. This
+  lane disables, but does not delete, the registration. Re-enable is the exact
+  inverse GitHub workflow enable action.
+- Acceptance evidence pointers: the lane closes only after its PR's own CI run
+  proves the eight-dependency release-gate wiring, the targeted local pytest
+  slice remains green, the orphan workflow re-query reports `disabled_manually`,
+  review threads are resolved, and detached post-merge proof confirms the
+  eight-job gate and exact-set assertion on `project6-origin/main`.
+
 ## 2026-07-06 Forward Program Refresh (M-PRESERVE-SWEEP)
 
 Supersession boundary: this block is the current F6 pointer after the
