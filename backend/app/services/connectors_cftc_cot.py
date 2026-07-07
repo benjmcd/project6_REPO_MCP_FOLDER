@@ -240,6 +240,7 @@ class CftcCotClient:
         url: str,
         timeout_seconds: int,
         max_redirects: int,
+        max_file_bytes: int | None = None,
         headers: dict[str, str] | None = None,
         rate_limiter: _RateLimiter | None = None,
         retry_counters: dict[str, Any] | None = None,
@@ -275,9 +276,13 @@ class CftcCotClient:
                 response.raise_for_status()
                 hasher = hashlib.sha256()
                 chunks: list[bytes] = []
+                bytes_read = 0
                 for chunk in response.iter_content(chunk_size=1024 * 64):
                     if not chunk:
                         continue
+                    bytes_read += len(chunk)
+                    if max_file_bytes is not None and bytes_read > int(max_file_bytes):
+                        raise FetchPolicyBlockedError("file_size_limit_exceeded")
                     chunks.append(chunk)
                     hasher.update(chunk)
                 body = b"".join(chunks)
@@ -331,6 +336,7 @@ def _download_cftc_file(
             url=target.sciencebase_download_uri or "",
             timeout_seconds=int(config.get("request_timeout_seconds", 30)),
             max_redirects=int(config.get("max_redirects", settings.connector_max_redirects)),
+            max_file_bytes=int(config.get("max_file_bytes", 8 * 1024 * 1024)),
             headers=None,
             rate_limiter=rate_limiter,
             retry_counters=retry_counters,
@@ -406,13 +412,24 @@ def _parse_legacy_cot_rows(content: bytes, config: dict[str, Any]) -> tuple[list
         text = content.decode("utf-8-sig")
     except UnicodeDecodeError as exc:
         raise CftcCotSchemaValidationError("cot_decode_failed") from exc
-    reader = csv.DictReader(StringIO(text))
-    header = [str(name or "").strip() for name in (reader.fieldnames or [])]
-    if header[: len(LEGACY_COT_FIELDS)] != LEGACY_COT_FIELDS:
+    raw_rows = [row for row in csv.reader(StringIO(text)) if any(_clean_string(value) for value in row)]
+    if not raw_rows:
+        raise CftcCotSchemaValidationError("empty_report")
+    first_row = [str(name or "").strip() for name in raw_rows[0]]
+    if first_row[: len(LEGACY_COT_FIELDS)] == LEGACY_COT_FIELDS:
+        data_rows = raw_rows[1:]
+    elif len(raw_rows[0]) >= len(LEGACY_COT_FIELDS):
+        data_rows = raw_rows
+    else:
         raise CftcCotSchemaValidationError("unrecognized_cot_header")
+    if not data_rows:
+        raise CftcCotSchemaValidationError("empty_report")
     rows: list[dict[str, Any]] = []
     source_row_count = 0
-    for raw in reader:
+    for values in data_rows:
+        if len(values) < len(LEGACY_COT_FIELDS):
+            raise CftcCotSchemaValidationError("row_shape_mismatch")
+        raw = dict(zip(LEGACY_COT_FIELDS, values[: len(LEGACY_COT_FIELDS)]))
         source_row_count += 1
         normalized = _normalize_row(raw, config)
         if normalized is None:
@@ -812,6 +829,14 @@ def _write_summary(
     db.commit()
 
 
+def _target_needs_processing(target: ConnectorRunTarget) -> bool:
+    if target.status == "selected":
+        return True
+    if target.status == "download_failed" and bool(target.retry_eligible):
+        return True
+    return False
+
+
 def execute_cftc_cot_run(connector_run_id: str) -> None:
     db = SessionLocal()
     try:
@@ -843,19 +868,38 @@ def execute_cftc_cot_run(connector_run_id: str) -> None:
             retry_counters: dict[str, Any] = {}
             rows_by_target: dict[str, list[dict[str, Any]]] = {}
             rate_limiter = _RateLimiter(float(config.get("max_rps", 2.0)))
-            target_count = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run.connector_run_id).count()
-            if target_count == 0 or not run.selection_manifest_ref:
+            targets = (
+                db.query(ConnectorRunTarget)
+                .filter(ConnectorRunTarget.connector_run_id == run.connector_run_id)
+                .order_by(ConnectorRunTarget.ordinal.asc())
+                .all()
+            )
+            processed_any = False
+            cancelled = False
+            if not targets:
                 if _cooperate_with_cancel_request(db, run, phase="discovery"):
-                    return
-                target = _target_for_report(run=run, config=config, report_url=report_url)
-                db.add(target)
-                db.flush()
-                _record_run_event(db, run=run, target=target, event_type="target_created", phase="selection", status_after=target.status, reason_code=target.operator_reason_code)
-                db.commit()
-                rows = _process_current_report(db, run=run, target=target, client=client, config=config, rate_limiter=rate_limiter, retry_counters=retry_counters)
-                if rows:
-                    rows_by_target[target.connector_run_target_id] = rows
-                _renew_lease(db, run)
+                    cancelled = True
+                else:
+                    target = _target_for_report(run=run, config=config, report_url=report_url)
+                    db.add(target)
+                    db.flush()
+                    _record_run_event(db, run=run, target=target, event_type="target_created", phase="selection", status_after=target.status, reason_code=target.operator_reason_code)
+                    db.commit()
+                    targets = [target]
+
+            if not cancelled:
+                for target in targets:
+                    if not _target_needs_processing(target):
+                        continue
+                    if _cooperate_with_cancel_request(db, run, phase="selection"):
+                        cancelled = True
+                        break
+                    rows = _process_current_report(db, run=run, target=target, client=client, config=config, rate_limiter=rate_limiter, retry_counters=retry_counters)
+                    processed_any = True
+                    if rows:
+                        rows_by_target[target.connector_run_target_id] = rows
+                    _renew_lease(db, run)
+            if processed_any or not run.selection_manifest_ref:
                 _write_selection_manifest(db, run=run, rows_by_target=rows_by_target)
 
             retry_counters["rate_limiter_sleep_seconds"] = rate_limiter.total_sleep_seconds

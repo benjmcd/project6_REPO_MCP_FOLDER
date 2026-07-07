@@ -62,6 +62,10 @@ Focused proof lives in `tests/test_api.py`:
 - `test_worldbank_connector_resume_continues_unmanifested_partial_discovery`
 - `test_worldbank_connector_rejects_non_worldbank_base_url`
 - `test_cftc_cot_connector_happy_path_reports_rows_and_attribution`
+- `test_cftc_cot_connector_accepts_headerless_current_report_rows`
 - `test_cftc_cot_connector_unrecognized_format_fails_closed`
 - `test_cftc_cot_connector_empty_and_all_null_reports_fail_closed`
+- `test_cftc_cot_client_enforces_byte_cap_while_streaming`
+- `test_cftc_cot_connector_resume_retries_existing_retryable_failed_target`
+- `test_cftc_cot_connector_pre_target_cancel_finalizes_without_target`
 - `test_cftc_cot_connector_precheck_rejects_non_cftc_and_blocked_ip`

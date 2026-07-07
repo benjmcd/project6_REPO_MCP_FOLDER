@@ -113,7 +113,7 @@ def test_rc3_acceptance_runner_reports_pass_with_injected_checks() -> None:
         for part in connector_command
         if part.startswith("./tests/test_api.py::")
     ]
-    assert len(connector_tests) == 45
+    assert len(connector_tests) == 49
 
     flat_calls = "\n".join(" ".join(command) for command in calls)
     for marker in [
@@ -130,6 +130,8 @@ def test_rc3_acceptance_runner_reports_pass_with_injected_checks() -> None:
         "test_public_connector_operator_journey_bridges_sciencebase_target_to_analysis",
         "test_senate_lda_anonymous_metadata_path_is_no_key_secondary_journey",
         "test_cftc_cot_connector_happy_path_reports_rows_and_attribution",
+        "test_cftc_cot_connector_accepts_headerless_current_report_rows",
+        "test_cftc_cot_connector_resume_retries_existing_retryable_failed_target",
         "test_cftc_cot_connector_precheck_rejects_non_cftc_and_blocked_ip",
     ]:
         assert marker in flat_calls
