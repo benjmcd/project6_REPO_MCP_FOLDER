@@ -92,6 +92,8 @@ Operator coordination reports are supplementary evidence, not committed anchors.
 
 ## Counts worth remembering
 
+(Base counts below are as-of their original authoring; for live values see the dated extension sections and the current-pointer docs — MASTER_CONTEXT and 03-forward-plan.)
+
 - 24 PRs merged in the campaign through #2432 before this corpus record lane, zero
   cross-lane collisions, every bot review thread resolved pre-merge.
 - M-FWD3-EVIDENCE recorded 347 git worktrees and 11 mechanically-safe cleanup candidates;
@@ -409,6 +411,7 @@ host-class authority for future taxonomy fetches.
 | Artifact | sha256 anchor | Meaning |
 |---|---|---|
 | Inbox archive manifest | aggregate sha256 `42cd507ba527597fa5ab4128889ac5cf7caef3d213debd6cab65a19b4fb3a337`; archived primary inbox-log sha256 `861b55ec3ceb1a9bffd4faaf3e985f6d9d14ad800daafc63ec48f18a5597c1b7`; `ARCHIVE_MANIFEST.json` under `C:/p6store/inbox-archive/2026-07-06/` | Point-in-time off-repo archive of the dual-agent inbox logs, source mandates, JSON manifests, and program-context payload dirs; 50 copied files / 2,140,077 bytes; raw logs are not committed. |
+| Campaign closeout record and inbox archive | Landed campaign record path `docs/campaign-records/2026-07-06-repo-ops-campaign.md`; source dossier sha256 `72ec9abdff999c7a346c2bde26549159d4e0d6d5c93fb15269b578d5bab62efc`; close archive aggregate sha256 `9691b2fa29f3eccff132ce4aba963bef154602d030a1f4fc889b09db32397ee`; `ARCHIVE_MANIFEST.json` under `C:/p6store/inbox-archive/2026-07-07-close/` | Dated campaign record subordinate to `docs/MASTER_CONTEXT.md` and `docs/program-context/`; closing point-in-time archive of inbox logs, lane sources after banner backfill, inbox JSON manifests, worktree disposition plan v2, and the source campaign dossier; 48 copied files / 8,257,809 bytes; raw logs remain off-repo. |
 | Dirty-class worktree adjudication artifact | sha256 `0c87d88f0a6efb7bf056cbf82c12b649979b2cb522639d7db01a9a279bf2c3a0`; 189,380 bytes; dated 2026-07-06; `state/agent-inbox/worktree-dirty-adjudication-2026-07-06.json` | Read-only per-item adjudication and snapshot-first disposition plan for the 139 protected worktrees; records adjusted tally 115 tool-state-only, 8 superseded, 11 unique-content, 5 ambiguous, with zero mutations during adjudication. |
 
 ### Merged PR / SHA Table Extension
