@@ -479,6 +479,11 @@ disposition policy (possibly including erasure) would be needed — explicitly o
   in the untracked cleanup manifest), the separate mass remote-branch deletion
   decision for about 1,726 agent-prefixed refs, and the external temp-placement
   anomaly.
+  Adjudicated later 2026-07-06: the 139 protected worktrees were individually
+  adjudicated read-only - 115 tool-state-only, 8 superseded-on-main, 11
+  unique-content, 5 ambiguous; snapshot-first disposition plan recorded;
+  removal execution remains owner-gated. See
+  `docs/program-context/03-forward-plan.md` M-DIRTY-ADJUDICATION refresh.
 - **Whether to PR this master-context doc** to main, or maintain it on-branch only.
 
 ---

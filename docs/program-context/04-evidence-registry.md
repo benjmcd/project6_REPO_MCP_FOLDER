@@ -400,6 +400,7 @@ host-class authority for future taxonomy fetches.
 | Artifact | sha256 anchor | Meaning |
 |---|---|---|
 | Inbox archive manifest | aggregate sha256 `42cd507ba527597fa5ab4128889ac5cf7caef3d213debd6cab65a19b4fb3a337`; archived primary inbox-log sha256 `861b55ec3ceb1a9bffd4faaf3e985f6d9d14ad800daafc63ec48f18a5597c1b7`; `ARCHIVE_MANIFEST.json` under `C:/p6store/inbox-archive/2026-07-06/` | Point-in-time off-repo archive of the dual-agent inbox logs, source mandates, JSON manifests, and program-context payload dirs; 50 copied files / 2,140,077 bytes; raw logs are not committed. |
+| Dirty-class worktree adjudication artifact | sha256 `0c87d88f0a6efb7bf056cbf82c12b649979b2cb522639d7db01a9a279bf2c3a0`; 189,380 bytes; dated 2026-07-06; `state/agent-inbox/worktree-dirty-adjudication-2026-07-06.json` | Read-only per-item adjudication and snapshot-first disposition plan for the 139 protected worktrees; records adjusted tally 115 tool-state-only, 8 superseded, 11 unique-content, 5 ambiguous, with zero mutations during adjudication. |
 
 ### Merged PR / SHA Table Extension
 
