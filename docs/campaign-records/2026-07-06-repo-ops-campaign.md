@@ -1,8 +1,8 @@
-> Tracked campaign record, frozen at PR #2454 (campaign end state = main 254e2f81 / #2453). Source: the untracked living dossier at state/agent-inbox/CAMPAIGN_DOSSIER_2026-07-06.md, sha256 72ec9abdff999c7a346c2bde26549159d4e0d6d5c93fb15269b578d5bab62efc at landing. This is a dated CAMPAIGN record subordinate to docs/MASTER_CONTEXT.md and docs/program-context/ (D10: it is not a second master context; its own §preamble states the authority order). Future campaign records land as siblings in this folder.
+> Tracked campaign record, frozen at PR #2454 (campaign end state = main 254e2f81 / #2453). Source: the untracked living dossier at state/agent-inbox/CAMPAIGN_DOSSIER_2026-07-06.md, sha256 72ec9abdff999c7a346c2bde26549159d4e0d6d5c93fb15269b578d5bab62efc at landing; this tracked copy publication-normalizes role labels while preserving the campaign claims. This is a dated CAMPAIGN record subordinate to docs/MASTER_CONTEXT.md and docs/program-context/ (D10: it is not a second master context; its own §preamble states the authority order). Future campaign records land as siblings in this folder.
 
 # Campaign Dossier — Repo-Operations / Governance / Hygiene Arc, 2026-07-06 → 2026-07-07
 
-Living synthesis document. Maintained by the orchestrating Claude session; updated at each
+Living synthesis document. Maintained by the orchestrating verification session; updated at each
 milestone closeout. This is the ONE place the whole campaign is contextualized end-to-end with
 per-decision reasoning; the canonical program record remains `docs/program-context/` (per D10
 there is no second master-context — this dossier is a CAMPAIGN synthesis that cites the
@@ -41,13 +41,13 @@ else's auditability depends on. All other candidate work was either owner-gated 
 
 ## 2. Operating model used throughout (and why it is the right fit)
 
-- Claude (this session) = orchestrator/verifier: plans, adversarially reviews plans BEFORE
+- Orchestrator/verifier session: plans, adversarially reviews plans BEFORE
   dispatch, verifies every closeout independently (never trusts reports), maintains records.
-- Codex threads (p6_agent1/2/3) = executors: one lane per dispatch, isolated fresh worktrees
+- Executor threads (p6_agent1/2/3): one lane per dispatch, isolated fresh worktrees
   off live main, self-verification mandated, closeout reports appended to the shared inbox log.
-- Opus workflows = exploration/verification fan-outs; Fable agents reserved for the highest-
-  stakes adversarial verification (they independently re-derive rather than sample).
-Justification: separation of author/verifier is the standing rail; parallel Codex lanes with
+- Exploration/verification fan-outs support broad enumeration; highest-stakes adversarial
+  verification independently re-derives rather than samples.
+Justification: separation of author/verifier is the standing rail; parallel executor lanes with
 disjoint file fences preserve isolation on one shared machine; adversarial pre-dispatch review
 is empirically load-bearing here — EVERY pass found real defects (8, then 6, then 3, then 3;
 including two genuine data-loss vectors). The loop is: draft mandate → adversarial critique
@@ -104,15 +104,15 @@ Why the two-phase shape was correct: Phase 1 ran with git's native protections p
 ignored-content guard and a >20% same-cause STOP; it halted at 47% skips — surfacing that most
 "dirty" content was machine artifacts (playwright reports, generated .codesight) while ~25
 worktrees held modified tracked files (possible unlanded work). Phase 2 encoded the ANALYZED
-response: expanded regenerable-safe list (deliberately excluding .claude/ — agent-authored
-settings), exact/segment-boundary matching (a substring matcher would have swallowed
+response: expanded regenerable-safe list (deliberately excluding local agent-authored settings
+dirs), exact/segment-boundary matching (a substring matcher would have swallowed
 storage_test_runtime under storage/), --ignore-submodules=none, and the three-gate force rule
 (every status line ??+safe-listed, every !! safe-listed, immediate pre-removal re-scan).
 The stop-then-analyze-then-refine sequence is the model for all deletion-class work here:
 never push through a surprising pattern; make the pattern the next mandate's evidence.
 Verification: force audit clean (zero unsafe tokens, all-?? justifications, commits/branches
 preserved on sampled removals), drive free space independently corroborated (+79GB).
-Operational lesson recorded: a Codex turn died silently mid-generation (renderer eviction);
+Operational lesson recorded: an executor turn died silently mid-generation (renderer eviction);
 detection = frozen rollout + no pending tool call; response = idempotent resume nudge with
 materialization verification.
 
@@ -150,12 +150,12 @@ thread 2 (rewrite rows in place) resolved by supersession-not-rewrite posture. W
 both resolutions apply standing conventions instead of inventing one-off exceptions; the
 archive refresh strengthened durability MORE than committing the file would have.
 
-### 3.8 Unlanded-content deep-dive (artifact 03f50a85…, 132,716B) + Fable verification
-What: 6 Opus investigators (one per content unit, full lane-context reconstruction) + 2 Fable
+### 3.8 Unlanded-content deep-dive (artifact 03f50a85…, 132,716B) + adversarial verification
+What: 6 investigator sessions (one per content unit, full lane-context reconstruction) + 2
 adversarial verifiers who independently re-derived the highest-stakes claims. Units 1
 (analyst-insight) and 2 (sec-family-res) HELD at byte level; units 3/4/5/6 had completeness
-failures → 14 corrected dispositions. Why Fable here: the preserve/discard boundary is where
-an error is unrecoverable; redundant same-class verification would repeat the same blind spots,
+failures → 14 corrected dispositions. Why this level of review here: the preserve/discard
+boundary is where an error is unrecoverable; redundant same-class verification would repeat the same blind spots,
 so the verifiers were tasked to re-enumerate, not re-read. Material new facts they produced:
 7 unregistered onlook dirs invisible to `git worktree list` (6 nested repos w/ unpushed
 commits); the shared `.git/info/exclude` `/archive/` line blinds plain status in EVERY
@@ -179,7 +179,7 @@ the canonical root, not under an OneDrive-synced repo tree).
 ### 3.10 PR #2450 — M-ADJUDICATION-RECORD-2 (merge bc4dabb2)
 What: I11 supersession note; D30 ("uniqueness verdicts grep the current refactored layout");
 deep-dive addendum inside the adjudication refresh (+90/−0). Review threads improved two
-specifics (require `--untracked-files=all` in inventory rules; mark the pre-Fable 123/16 tally
+specifics (require `--untracked-files=all` in inventory rules; mark the pre-adversarial-review 123/16 tally
 superseded pending recount) and one out-of-fence deferral later closed by #2452's registry rows.
 
 ### 3.11 Execution round (owner "proceed as you see fit", round 3)
@@ -289,25 +289,23 @@ post-merge main; 2/2 threads resolved; detached proof PASS; leak scan clean (my 
       pushing is identity-bearing on a third-party repo. Recommendation when taken up: fresh
       re-derivation from the patch archives against current upstream, not a raw push of stale
       branches.
-   b. Mass remote-branch deletion (~1,726 codex/* refs) — cosmetic; PR refs preserve heads;
+   b. Mass remote-branch deletion (~1,726 automation-owned refs) — cosmetic; PR refs preserve heads;
       recommend a batched GraphQL classification (merged-PR-backed only) if/when authorized.
    c. `/tmp/audit-wt/p6main` locked registration — needs owner unlock; placement violation
       recorded; nothing depends on it.
    d. A8 O3 real-data controlled reveal + P4/P5 — the SEC-XBRL program's own gates; out of this
       campaign's scope by design (this campaign deliberately touched no runtime posture).
-3. Deferred-optional (agent-executable when convenient; low value-density, so batched):
-   banner backfill for ~22 pre-convention lane sources; evidence-registry dating smell (base
-   "Counts worth remembering" section lacks the dated-extension convention — either date it
-   retroactively or add a see-current-pointers banner); v2→v3 adjudication schema fields
-   (disposition/snapshot_dest/sweep_precondition/verification as structured fields — spec
-   already written into the v2 plan's §4 lessons).
-4. Sibling repo (observatory): unchanged this campaign; its frontier (INC-09 chunk pick,
+3. Closed by PR #2454: banner backfill for pre-convention lane sources and the
+   evidence-registry dating banner for the base "Counts worth remembering" section.
+4. Deferred-optional (agent-executable when convenient; low value-density, so batched):
+   v2→v3 adjudication schema fields (disposition/snapshot_dest/sweep_precondition/verification
+   as structured fields — spec already written into the v2 plan's §4 lessons).
+5. Sibling repo (observatory): unchanged this campaign; its frontier (INC-09 chunk pick,
    INC-06 CAP-007 doc) awaits owner steer in ITS OWN session context — cross-repo work from
    this session was deliberately avoided (different memory/authority context).
-5. This dossier: on P2 closeout, update §3.14→outcome + §5 snapshot; include in the next I12
-   archive refresh; OPTIONAL owner decision — land it as a tracked doc (it is leak-clean and
-   repo-relative by construction; landing would put the campaign synthesis under the same
-   durability as the program record; cost = one Tier-1 docs lane).
+6. This dossier: CLOSED by PR #2454 as the tracked campaign record at
+   `docs/campaign-records/2026-07-06-repo-ops-campaign.md`; included in the 2026-07-07 close
+   archive and registered in the evidence registry.
 
 ## 7. Risk register (residual, post-campaign)
 
@@ -317,7 +315,7 @@ post-merge main; 2/2 threads resolved; detached proof PASS; leak scan clean (my 
 | Held dirs (12) | Fail-closed; content intact; git-valuable material already bundled/archived; per-item reasons in manifest | optional (see §6.1) |
 | Governance durability | I12 protocol + 3 archives + D29/D30 tracked; 17A containment obligation CLOSED | keep I12 cadence |
 | Zip determinism class | Fail-closed guard on build path, CI-exercised | none |
-| Coordination substrate (inbox) mutability | Archives at each record-lane closeout; [From Claude] precedent set | none |
+| Coordination substrate (inbox) mutability | Archives at each record-lane closeout; append-only report precedent set | none |
 | Onlook proof provenance | Already unreproducible (predates campaign); canonical-remnant material inside held dir (intact) | decide re-proof vs remnant tar |
 | OneDrive sync hazards | All value/evidence material relocated to C:/p6store; nested .git population mostly bundled+removed | none |
 
