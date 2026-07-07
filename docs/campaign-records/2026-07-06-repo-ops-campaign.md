@@ -1,4 +1,4 @@
-> Tracked campaign record, frozen at PR #TBD (campaign end state = main 254e2f81 / #2453). Source: the untracked living dossier at state/agent-inbox/CAMPAIGN_DOSSIER_2026-07-06.md, sha256 72ec9abdff999c7a346c2bde26549159d4e0d6d5c93fb15269b578d5bab62efc at landing. This is a dated CAMPAIGN record subordinate to docs/MASTER_CONTEXT.md and docs/program-context/ (D10: it is not a second master context; its own §preamble states the authority order). Future campaign records land as siblings in this folder.
+> Tracked campaign record, frozen at PR #2454 (campaign end state = main 254e2f81 / #2453). Source: the untracked living dossier at state/agent-inbox/CAMPAIGN_DOSSIER_2026-07-06.md, sha256 72ec9abdff999c7a346c2bde26549159d4e0d6d5c93fb15269b578d5bab62efc at landing. This is a dated CAMPAIGN record subordinate to docs/MASTER_CONTEXT.md and docs/program-context/ (D10: it is not a second master context; its own §preamble states the authority order). Future campaign records land as siblings in this folder.
 
 # Campaign Dossier — Repo-Operations / Governance / Hygiene Arc, 2026-07-06 → 2026-07-07
 
