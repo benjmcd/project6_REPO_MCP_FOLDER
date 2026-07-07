@@ -301,6 +301,24 @@ class SenateLdaConnectorRunIn(BaseModel):
     client_request_id: str | None = None
 
 
+class WorldBankConnectorRunIn(BaseModel):
+    source_id: str = "2"
+    indicators: list[str] = Field(default_factory=lambda: ["SP.POP.TOTL"])
+    countries: list[str] = Field(default_factory=lambda: ["USA"])
+    date_range: str | None = None
+    per_page: int = 1000
+    max_items: int = 0
+    run_mode: Literal["metadata_only", "dry_run"] = "metadata_only"
+    request_timeout_seconds: int = 30
+    retry_max_attempts_per_request: int = 4
+    retry_base_backoff_seconds: float = 0.4
+    retry_max_backoff_seconds: float = 3.0
+    retry_respect_retry_after: bool = True
+    max_rps: float = Field(default=2.0, le=2.0)
+    report_verbosity: Literal["summary", "standard", "debug"] = "standard"
+    client_request_id: str | None = None
+
+
 class ConnectorRunSubmitOut(BaseModel):
     connector_run_id: str
     status: str

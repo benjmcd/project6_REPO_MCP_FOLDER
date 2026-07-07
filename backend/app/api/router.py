@@ -55,6 +55,7 @@ from app.schemas.api import (
     TransformationApplyRequest,
     UploadResponse,
     VariableProfileOut,
+    WorldBankConnectorRunIn,
 )
 from app.services.analysis import recommend_analysis, run_analysis
 from app.services.connectors_sciencebase import (
@@ -71,6 +72,7 @@ from app.services.connectors_sciencebase import (
 )
 from app.services.connectors_nrc_adams import execute_nrc_adams_run, submit_nrc_adams_run
 from app.services.connectors_senate_lda import execute_senate_lda_run, submit_senate_lda_run
+from app.services.connectors_worldbank import execute_worldbank_run, submit_worldbank_run
 from app.services import aps_retrieval_plane_read
 from app.services import nrc_aps_content_index
 from app.services import nrc_aps_context_dossier
@@ -157,6 +159,7 @@ def _connector_executor(connector_key: str):
         "sciencebase_mcs": execute_connector_run,
         "nrc_adams_aps": execute_nrc_adams_run,
         "senate_lda": execute_senate_lda_run,
+        "worldbank_indicators": execute_worldbank_run,
     }
     return executors.get(connector_key)
 
@@ -455,6 +458,41 @@ def create_senate_lda_run(
         _route_level_operator_identity(request, access="write")
         try:
             run, created = submit_senate_lda_run(
+                db,
+                payload=payload.model_dump(),
+                idempotency_key=idempotency_key,
+            )
+        except SubmissionConflictError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        if created and run.status == "pending":
+            _enqueue_connector_run(background_tasks, run.connector_key, run.connector_run_id)
+        return ConnectorRunSubmitOut.model_validate(
+            {
+                "connector_run_id": run.connector_run_id,
+                "status": run.status,
+                "created": created,
+                "submitted_at": run.submitted_at,
+                "poll_url": f"/api/v1/connectors/runs/{run.connector_run_id}",
+                "submission_idempotency_key": run.submission_idempotency_key,
+                "request_fingerprint": run.request_fingerprint,
+            }
+        )
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _legacy_api_auth_policy_error_response(exc)
+
+
+@api_router.post("/connectors/worldbank/runs", status_code=status.HTTP_202_ACCEPTED, response_model=ConnectorRunSubmitOut)
+def create_worldbank_run(
+    payload: WorldBankConnectorRunIn,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: Session = Depends(get_db),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> ConnectorRunSubmitOut:
+    try:
+        _route_level_operator_identity(request, access="write")
+        try:
+            run, created = submit_worldbank_run(
                 db,
                 payload=payload.model_dump(),
                 idempotency_key=idempotency_key,

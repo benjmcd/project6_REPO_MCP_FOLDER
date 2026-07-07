@@ -212,6 +212,7 @@ class Settings(BaseSettings):
     nrc_adams_subscription_key: str = Field(default="", alias="NRC_ADAMS_APS_SUBSCRIPTION_KEY")
     senate_lda_api_base_url: str = Field(default="https://lda.senate.gov/api/v1", alias="SENATE_LDA_API_BASE_URL")
     senate_lda_api_key: str = Field(default="", alias="SENATE_LDA_API_KEY")
+    worldbank_api_base_url: str = Field(default="https://api.worldbank.org/v2", alias="WORLDBANK_API_BASE_URL")
     connector_lease_ttl_seconds: int = Field(default=120, alias="CONNECTOR_LEASE_TTL_SECONDS")
     connector_submission_ttl_hours: int = Field(default=24, alias="CONNECTOR_SUBMISSION_TTL_HOURS")
     connector_max_redirects: int = Field(default=3, alias="CONNECTOR_MAX_REDIRECTS")

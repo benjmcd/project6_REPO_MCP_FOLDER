@@ -1,6 +1,6 @@
 # Project6: Method-Aware Framework + Connector Stack
 
-> **Current status** (tracked on `project6-origin/main`): the selected final 0.3.0 profile is `base=local_expert`, `overlays=["public_connectors","sec_xbrl_offline"]`. The FastAPI/SQLAlchemy surface defaults to a single-operator local profile (`AUTH_OWNER=none`, `LAYER3_ROUTE_AUTHORIZATION_MODE=identity_presence`): under this local default there is **no authentication boundary** - the server derives a constant local-operator principal without inspecting request headers and treats the caller as owner, so identity/role gating is inert. Identity and role become an actual auth boundary only under the nonlocal/proxy posture (`AUTH_OWNER=proxy` with `TRUSTED_PROXY_MODE=true` behind an authenticating reverse proxy). Sublayer 3C deterministic method/product flows, ScienceBase public/MCS and Senate LDA anonymous metadata connector workflows, connector run observability, and the default-deny model/agent egress policy are present. Public connector support is bounded to operator-workflow + local-deployment for public/anonymous connector use; SEC-XBRL value-bearing support is simulation/offline-replay only for already-acquired operator-supplied evidence with redacted/hash-only outputs. Bounded SEC-XBRL live source-artifact acquisition is present but remains explicit-default-off behind `LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED=false` and server-configured User-Agent/rate-limit controls; value reveal / controlled reveal submit remain default-off; and CI covers the PostgreSQL 3C golden path plus the SEC-XBRL test families. This selected local profile is not a production-ready claim for SEC value reveal, real provider delivery, live SEC network, model egress, OCR, keyed connectors, HA, or any nonlocal/default-on behavior.
+> **Current status** (tracked on `project6-origin/main`): the selected final 0.3.0 profile is `base=local_expert`, `overlays=["public_connectors","sec_xbrl_offline"]`. The FastAPI/SQLAlchemy surface defaults to a single-operator local profile (`AUTH_OWNER=none`, `LAYER3_ROUTE_AUTHORIZATION_MODE=identity_presence`): under this local default there is **no authentication boundary** - the server derives a constant local-operator principal without inspecting request headers and treats the caller as owner, so identity/role gating is inert. Identity and role become an actual auth boundary only under the nonlocal/proxy posture (`AUTH_OWNER=proxy` with `TRUSTED_PROXY_MODE=true` behind an authenticating reverse proxy). Sublayer 3C deterministic method/product flows, ScienceBase public/MCS, Senate LDA anonymous metadata, and World Bank Indicators anonymous metadata connector workflows, connector run observability, and the default-deny model/agent egress policy are present. Public connector support is bounded to operator-workflow + local-deployment for public/anonymous connector use; SEC-XBRL value-bearing support is simulation/offline-replay only for already-acquired operator-supplied evidence with redacted/hash-only outputs. Bounded SEC-XBRL live source-artifact acquisition is present but remains explicit-default-off behind `LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED=false` and server-configured User-Agent/rate-limit controls; value reveal / controlled reveal submit remain default-off; and CI covers the PostgreSQL 3C golden path plus the SEC-XBRL test families. This selected local profile is not a production-ready claim for SEC value reveal, real provider delivery, live SEC network, model egress, OCR, keyed connectors, HA, or any nonlocal/default-on behavior.
 >
 > Agent/operator harness entry point: [docs/agent-harness.md](docs/agent-harness.md).
 
@@ -29,8 +29,10 @@ This repository has three active tracks in one backend:
    submit run -> discover/hydrate/select -> download -> ingest/profile/recommend -> reports/events.
 3. Senate LDA metadata connector flow:
    submit run -> query official filings API -> persist filing targets -> optional detail hydrate -> reports/events.
+4. World Bank Indicators metadata connector flow:
+   submit run -> query official indicators API -> persist country/indicator targets -> reports/events.
 
-The connector runtime is in-process and currently includes ScienceBase public/MCS, NRC ADAMS APS, and Senate LDA metadata slices with lease safety, resume/cancel, policy controls, and operator observability endpoints.
+The connector runtime is in-process and currently includes ScienceBase public/MCS, NRC ADAMS APS, Senate LDA metadata, and World Bank Indicators metadata slices with lease safety, resume/cancel, policy controls, and operator observability endpoints.
 
 ## Current capabilities
 
@@ -51,6 +53,7 @@ The connector runtime is in-process and currently includes ScienceBase public/MC
   - `POST /api/v1/connectors/sciencebase-mcs/runs`
   - `POST /api/v1/connectors/nrc-adams-aps/runs`
   - `POST /api/v1/connectors/senate-lda/runs`
+  - `POST /api/v1/connectors/worldbank/runs`
   - `GET /api/v1/connectors/runs/{id}`
   - `GET /api/v1/connectors/runs/{id}/targets`
   - `GET /api/v1/connectors/runs/{id}/events`

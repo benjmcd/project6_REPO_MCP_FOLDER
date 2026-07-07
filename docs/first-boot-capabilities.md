@@ -22,9 +22,10 @@ Status legend: **[verified]** = exercised end-to-end against a running server in
 | Layer 3 workbench UI | `GET /review/layer3` (+ `/review/nrc-aps`, `/review/analyst-insight`, document-trace, workbench-compare, candidate-b-trace) | [verified: layer3 page serves] |
 | ScienceBase public connector | `POST /api/v1/connectors/sciencebase-public/runs` (+ `sciencebase-mcs`) — no API key; public access | [code: `config.py:144`, `get_sciencebase_adapter`] |
 | Senate LDA connector (anonymous) | `POST /api/v1/connectors/senate-lda/runs` — works with no key in anonymous mode | [code: `connectors_senate_lda.py:481`] |
+| World Bank Indicators connector (anonymous) | `POST /api/v1/connectors/worldbank/runs` - works with no key in anonymous metadata mode | [code: `connectors_worldbank.py`] |
 | Connector run observability | `GET /api/v1/connectors/runs/{id}` + `/targets` `/events` `/reports` `/content-units` | [code] |
 
-The analytics vertical and the ScienceBase/Senate-anonymous connectors are the realistic "usable in full" core for a fresh boot.
+The analytics vertical and the ScienceBase/Senate/World Bank anonymous connectors are the realistic "usable in full" core for a fresh boot.
 
 ## Needs an API key or secret (otherwise blocked)
 

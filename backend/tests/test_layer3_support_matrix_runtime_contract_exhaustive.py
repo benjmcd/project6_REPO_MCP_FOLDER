@@ -43,7 +43,7 @@ def test_support_matrix_runtime_contract_audit_reports_clean_pass() -> None:
 
     assert report["schema_id"] == "project6.support_matrix_runtime_contract_audit.v1"
     assert report["status"] == "pass", report["errors"]
-    assert report["capability_count"] == 28
+    assert report["capability_count"] == 29
     assert report["errors"] == []
     assert {item["status"] for item in report["pinned_false_flags"]} == {"pass"}
     assert report["coverage_by_status"] == {
@@ -74,6 +74,7 @@ def test_support_matrix_runtime_contract_audit_reports_clean_pass() -> None:
             "method_aware_analytics_vertical",
             "sciencebase_public_connector_slice",
             "senate_lda_anonymous_connector_slice",
+            "worldbank_indicators_anonymous_connector_slice",
         ],
         "unsupported": [
             "high_availability",

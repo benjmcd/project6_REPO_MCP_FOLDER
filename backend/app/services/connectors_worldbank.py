@@ -1,0 +1,851 @@
+from __future__ import annotations
+
+import hashlib
+import inspect
+import json
+import time
+from datetime import timedelta
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
+
+import requests
+from sqlalchemy import and_
+from sqlalchemy.orm import Session
+
+from app.core.config import settings
+from app.db.session import SessionLocal
+from app.models import (
+    ConnectorPolicySnapshot,
+    ConnectorRun,
+    ConnectorRunSubmission,
+    ConnectorRunTarget,
+    Dataset,
+    DatasetExternalIdentity,
+    DatasetSourceProvenance,
+    DatasetVersion,
+)
+from app.services.connectors_sciencebase import (
+    _acquire_lease,
+    _cooperate_with_cancel_request,
+    _finalize_run,
+    _record_run_event,
+    _release_lease,
+    _renew_lease,
+    _to_utc_naive,
+    _utcnow,
+    _write_json,
+)
+from app.services.sciencebase_connector.contracts import RUN_TERMINAL_STATUSES, SubmissionConflictError
+from app.services.sciencebase_connector.executor import ExecutorGuards
+
+
+CONNECTOR_KEY = "worldbank_indicators"
+SOURCE_SYSTEM = "worldbank_indicators"
+ALLOWED_HOST = "api.worldbank.org"
+ATTRIBUTION = "The World Bank: World Development Indicators: Data source"
+LICENSE = "CC BY 4.0"
+TERMS_OF_USE_URL = "https://data.worldbank.org/summary-terms-of-use"
+RETRYABLE_HTTP_STATUSES = {429, 500, 502, 503, 504}
+SUMMARY_SCHEMA_ID = "worldbank_indicators.summary.v1"
+DISCOVERY_SCHEMA_ID = "worldbank_indicators.discovery_snapshot.v1"
+SELECTION_SCHEMA_ID = "worldbank_indicators.selection_manifest.v1"
+WORLDBANK_EXECUTOR_GUARDS = ExecutorGuards(max_concurrent_runs=settings.connector_max_concurrent_runs)
+
+
+class WorldBankSchemaValidationError(ValueError):
+    pass
+
+
+def _stable_json_hash(payload: dict[str, Any]) -> str:
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _clean_string(value: Any) -> str | None:
+    text = str(value or "").strip()
+    return text or None
+
+
+def _coerce_int(value: Any, default: int, *, minimum: int | None = None, maximum: int | None = None) -> int:
+    try:
+        out = int(value)
+    except Exception:
+        out = int(default)
+    if minimum is not None:
+        out = max(minimum, out)
+    if maximum is not None:
+        out = min(maximum, out)
+    return out
+
+
+def _coerce_float(value: Any, default: float, *, minimum: float | None = None, maximum: float | None = None) -> float:
+    try:
+        out = float(value)
+    except Exception:
+        out = float(default)
+    if minimum is not None:
+        out = max(minimum, out)
+    if maximum is not None:
+        out = min(maximum, out)
+    return out
+
+
+def _clean_list(value: Any, default: list[str]) -> list[str]:
+    raw = value if isinstance(value, list) else ([value] if value not in (None, "") else default)
+    out = []
+    for item in raw:
+        text = _clean_string(item)
+        if text:
+            out.append(text.upper())
+    return list(dict.fromkeys(out)) or list(default)
+
+
+def _logical_query_from_config(config: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "source_id": config.get("source_id"),
+        "indicators": list(config.get("indicators") or []),
+        "countries": list(config.get("countries") or []),
+        "date_range": config.get("date_range"),
+    }
+
+
+def _normalize_request_config(payload: dict[str, Any], submission_idempotency_key: str | None) -> dict[str, Any]:
+    config = dict(payload)
+    config["source_id"] = _clean_string(config.get("source_id")) or "2"
+    config["indicators"] = _clean_list(config.get("indicators"), ["SP.POP.TOTL"])
+    config["countries"] = _clean_list(config.get("countries"), ["USA"])
+    config["date_range"] = _clean_string(config.get("date_range"))
+    config["per_page"] = _coerce_int(config.get("per_page"), 1000, minimum=1, maximum=20000)
+    config["max_items"] = _coerce_int(config.get("max_items"), 0, minimum=0)
+    config["run_mode"] = str(config.get("run_mode", "metadata_only")).strip().lower()
+    if config["run_mode"] not in {"metadata_only", "dry_run"}:
+        config["run_mode"] = "metadata_only"
+    config["request_timeout_seconds"] = _coerce_int(config.get("request_timeout_seconds"), 30, minimum=5, maximum=120)
+    config["retry_max_attempts_per_request"] = _coerce_int(config.get("retry_max_attempts_per_request"), 4, minimum=1, maximum=8)
+    config["retry_base_backoff_seconds"] = _coerce_float(config.get("retry_base_backoff_seconds"), 0.4, minimum=0.0, maximum=10.0)
+    config["retry_max_backoff_seconds"] = _coerce_float(
+        config.get("retry_max_backoff_seconds"),
+        3.0,
+        minimum=float(config["retry_base_backoff_seconds"]),
+        maximum=60.0,
+    )
+    config["retry_respect_retry_after"] = bool(config.get("retry_respect_retry_after", True))
+    config["max_rps"] = _coerce_float(config.get("max_rps"), 2.0, minimum=0.1, maximum=2.0)
+    config["report_verbosity"] = str(config.get("report_verbosity", "standard")).strip().lower()
+    if config["report_verbosity"] not in {"summary", "standard", "debug"}:
+        config["report_verbosity"] = "standard"
+    config["client_request_id"] = _clean_string(config.get("client_request_id"))
+    config["submission_idempotency_key"] = submission_idempotency_key or config["client_request_id"]
+    config["allowed_hosts"] = [ALLOWED_HOST]
+    config["fetch_policy_summary"] = {
+        "mode": "official_api_only",
+        "surface_policy": "metadata_only",
+        "external_fetch_policy": "worldbank_indicators_official_only",
+        "allowed_hosts": [ALLOWED_HOST],
+    }
+    config["source_query_fingerprint"] = _stable_json_hash(_logical_query_from_config(config))
+    return config
+
+
+def _classify_request_exception(exc: Exception) -> tuple[str, bool]:
+    if isinstance(exc, WorldBankSchemaValidationError):
+        return "schema_validation_failed", False
+    if isinstance(exc, requests.Timeout):
+        return "transport_timeout", True
+    if isinstance(exc, requests.ConnectionError):
+        return "transport_connection_error", True
+    if isinstance(exc, requests.HTTPError):
+        response = getattr(exc, "response", None)
+        status_code = int(response.status_code) if response is not None else 0
+        return (f"http_{status_code}", status_code in RETRYABLE_HTTP_STATUSES)
+    return exc.__class__.__name__.lower(), False
+
+
+class _RateLimiter:
+    def __init__(self, max_rps: float):
+        self._interval = 0.0 if max_rps <= 0 else 1.0 / max_rps
+        self._last_call = 0.0
+        self.total_sleep_seconds = 0.0
+
+    def wait(self) -> None:
+        if self._interval <= 0:
+            return
+        now = time.monotonic()
+        wait_seconds = self._interval - (now - self._last_call)
+        if wait_seconds > 0:
+            time.sleep(wait_seconds)
+            self.total_sleep_seconds += wait_seconds
+        self._last_call = time.monotonic()
+
+
+class WorldBankIndicatorsClient:
+    def __init__(self, *, base_url: str):
+        self.base_url = base_url.rstrip("/")
+        parsed = urlparse(self.base_url)
+        if parsed.scheme != "https" or (parsed.hostname or "").lower() != ALLOWED_HOST:
+            raise WorldBankSchemaValidationError("inadmissible_worldbank_base_url")
+        self.session = requests.Session()
+
+    @property
+    def auth_mode(self) -> str:
+        return "anonymous"
+
+    def _request_json(
+        self,
+        *,
+        path: str,
+        params: dict[str, Any] | None,
+        timeout_seconds: int,
+        retry_max_attempts_per_request: int,
+        retry_base_backoff_seconds: float,
+        retry_max_backoff_seconds: float,
+        retry_respect_retry_after: bool,
+        rate_limiter: _RateLimiter,
+        retry_counters: dict[str, Any],
+    ) -> Any:
+        url = f"{self.base_url}{path}"
+        last_exc: Exception | None = None
+        for attempt in range(1, retry_max_attempts_per_request + 1):
+            rate_limiter.wait()
+            retry_counters["requests_total"] = int(retry_counters.get("requests_total", 0)) + 1
+            try:
+                response = self.session.get(url, params=params, timeout=timeout_seconds)
+                if response.status_code in RETRYABLE_HTTP_STATUSES and attempt < retry_max_attempts_per_request:
+                    retry_counters["retries_total"] = int(retry_counters.get("retries_total", 0)) + 1
+                    wait_seconds = min(retry_max_backoff_seconds, retry_base_backoff_seconds * (2 ** (attempt - 1)))
+                    if retry_respect_retry_after:
+                        try:
+                            wait_seconds = min(retry_max_backoff_seconds, max(wait_seconds, float(response.headers.get("Retry-After") or "")))
+                        except Exception:
+                            pass
+                    time.sleep(wait_seconds)
+                    retry_counters["retry_sleep_seconds"] = float(retry_counters.get("retry_sleep_seconds", 0.0)) + float(wait_seconds)
+                    continue
+                response.raise_for_status()
+                return response.json()
+            except Exception as exc:
+                last_exc = exc
+                error_class, retryable = _classify_request_exception(exc)
+                if retryable and attempt < retry_max_attempts_per_request:
+                    retry_counters["retries_total"] = int(retry_counters.get("retries_total", 0)) + 1
+                    wait_seconds = min(retry_max_backoff_seconds, retry_base_backoff_seconds * (2 ** (attempt - 1)))
+                    time.sleep(wait_seconds)
+                    retry_counters["retry_sleep_seconds"] = float(retry_counters.get("retry_sleep_seconds", 0.0)) + float(wait_seconds)
+                    continue
+                retry_counters["last_error_class"] = error_class
+                raise
+        raise last_exc or RuntimeError("worldbank_request_failed_without_exception")
+
+    def _envelope_rows(self, payload: Any, *, path: str) -> list[dict[str, Any]]:
+        if not isinstance(payload, list) or len(payload) < 2 or not isinstance(payload[1], list):
+            raise WorldBankSchemaValidationError(f"{path}:malformed_worldbank_envelope")
+        return [item for item in payload[1] if isinstance(item, dict)]
+
+    def list_sources(self, **kwargs: Any) -> list[dict[str, Any]]:
+        return self._envelope_rows(self._request_json(path="/source", params={"format": "json", "per_page": 1000}, **kwargs), path="/source")
+
+    def list_indicators(self, *, source_id: str, **kwargs: Any) -> list[dict[str, Any]]:
+        return self._envelope_rows(
+            self._request_json(path=f"/source/{source_id}/indicator", params={"format": "json", "per_page": 1000}, **kwargs),
+            path="/source/{source_id}/indicator",
+        )
+
+    def list_countries(self, *, countries: list[str], **kwargs: Any) -> list[dict[str, Any]]:
+        return self._envelope_rows(
+            self._request_json(path=f"/country/{';'.join(countries)}", params={"format": "json", "per_page": 1000}, **kwargs),
+            path="/country",
+        )
+
+    def list_indicator_observations(self, *, source_id: str, country: str, indicator: str, date_range: str | None, per_page: int, page: int = 1, **kwargs: Any) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {"format": "json", "per_page": per_page, "page": page, "source": source_id}
+        if date_range:
+            params["date"] = date_range
+        return self._envelope_rows(
+            self._request_json(path=f"/country/{country}/indicator/{indicator}", params=params, **kwargs),
+            path="/country/{country}/indicator/{indicator}",
+        )
+
+
+def get_worldbank_client(config: dict[str, Any]) -> WorldBankIndicatorsClient:
+    return WorldBankIndicatorsClient(base_url=settings.worldbank_api_base_url)
+
+
+def _client_auth_mode(client: Any) -> str:
+    return str(getattr(client, "auth_mode", "anonymous") or "anonymous")
+
+
+def _common_request_kwargs(config: dict[str, Any], rate_limiter: _RateLimiter, retry_counters: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "timeout_seconds": int(config.get("request_timeout_seconds", 30)),
+        "retry_max_attempts_per_request": int(config.get("retry_max_attempts_per_request", 4)),
+        "retry_base_backoff_seconds": float(config.get("retry_base_backoff_seconds", 0.4)),
+        "retry_max_backoff_seconds": float(config.get("retry_max_backoff_seconds", 3.0)),
+        "retry_respect_retry_after": bool(config.get("retry_respect_retry_after", True)),
+        "rate_limiter": rate_limiter,
+        "retry_counters": retry_counters,
+    }
+
+
+def _summary_report_path(run_id: str) -> Path:
+    return Path(settings.connector_reports_dir) / f"{run_id}_worldbank_summary_v1.json"
+
+
+def _discovery_snapshot_path(run_id: str) -> Path:
+    return Path(settings.connector_snapshots_dir) / f"{run_id}_worldbank_discovery_snapshot_v1.json"
+
+
+def _selection_manifest_path(run_id: str) -> Path:
+    return Path(settings.connector_manifests_dir) / f"{run_id}_worldbank_selection_manifest_v1.json"
+
+
+def submit_worldbank_run(db: Session, *, payload: dict[str, Any], idempotency_key: str | None) -> tuple[ConnectorRun, bool]:
+    submitted_key = (idempotency_key or payload.get("client_request_id") or "").strip() or None
+    config = _normalize_request_config(payload, submitted_key)
+    request_fingerprint = _stable_json_hash(config)
+    source_query_fingerprint = str(config.get("source_query_fingerprint") or "")
+    now = _utcnow()
+
+    if submitted_key:
+        existing_submission = (
+            db.query(ConnectorRunSubmission)
+            .filter(and_(ConnectorRunSubmission.connector_key == CONNECTOR_KEY, ConnectorRunSubmission.submission_idempotency_key == submitted_key))
+            .first()
+        )
+        expires_at = _to_utc_naive(existing_submission.expires_at) if existing_submission else None
+        now_naive = _to_utc_naive(now)
+        if existing_submission and (expires_at is None or (now_naive is not None and expires_at > now_naive)):
+            if existing_submission.request_fingerprint != request_fingerprint:
+                raise SubmissionConflictError("idempotency key reused with different payload")
+            existing_run = db.get(ConnectorRun, existing_submission.connector_run_id)
+            if existing_run:
+                return existing_run, False
+
+    active_run_count = db.query(ConnectorRun).filter(ConnectorRun.status.in_(["pending", "running", "cancelling"])).count()
+    if active_run_count >= int(settings.connector_max_concurrent_runs):
+        raise SubmissionConflictError("active run concurrency limit reached")
+
+    run = ConnectorRun(
+        connector_key=CONNECTOR_KEY,
+        source_system=SOURCE_SYSTEM,
+        source_mode="public_api",
+        status="pending",
+        request_config_json=config,
+        source_query_fingerprint=source_query_fingerprint,
+        request_fingerprint=request_fingerprint,
+        effective_search_params_json={},
+        effective_filters_json=[],
+        effective_sort="country_indicator_date",
+        effective_order="asc",
+        effective_page_size=int(config.get("per_page", 1000)),
+        search_exhaustion_reason=None,
+        submission_idempotency_key=submitted_key,
+        adapter_dialect="worldbank_indicators_rest_v2",
+        api_generation="v2",
+        sciencebase_normalization_version="n/a",
+        submitted_at=now,
+    )
+    db.add(run)
+    db.flush()
+
+    if submitted_key:
+        db.add(
+            ConnectorRunSubmission(
+                connector_key=CONNECTOR_KEY,
+                submission_idempotency_key=submitted_key,
+                request_fingerprint=request_fingerprint,
+                connector_run_id=run.connector_run_id,
+                expires_at=now + timedelta(hours=settings.connector_submission_ttl_hours),
+            )
+        )
+    db.add(
+        ConnectorPolicySnapshot(
+            connector_run_id=run.connector_run_id,
+            policy_json=config,
+            retry_matrix_json={"retryable_http_statuses": sorted(RETRYABLE_HTTP_STATUSES), "retry_max_attempts_per_request": int(config.get("retry_max_attempts_per_request", 4))},
+        )
+    )
+    _record_run_event(db, run=run, event_type="run_submitted", phase="planning", status_after="pending", metrics_json={"connector_key": CONNECTOR_KEY, "auth_mode": "anonymous"})
+    db.commit()
+    db.refresh(run)
+    return run, True
+
+
+def _normalize_observation(raw: dict[str, Any], *, country: str, indicator: str) -> dict[str, Any] | None:
+    date = _clean_string(raw.get("date"))
+    raw_indicator = raw.get("indicator") if isinstance(raw.get("indicator"), dict) else {}
+    raw_country = raw.get("country") if isinstance(raw.get("country"), dict) else {}
+    indicator_id = _clean_string(raw_indicator.get("id")) or _clean_string(raw.get("indicator_id"))
+    country_code = _clean_string(raw.get("countryiso3code")) or country
+    if raw.get("value") is None:
+        return None
+    if not date or not indicator_id:
+        raise WorldBankSchemaValidationError("missing_required_observation_field")
+    if indicator_id.upper() != indicator.upper():
+        raise WorldBankSchemaValidationError("observation_indicator_mismatch")
+    return {
+        "countryiso3code": country_code,
+        "country_name": _clean_string(raw_country.get("value")) or country,
+        "indicator_id": indicator_id,
+        "indicator_name": _clean_string(raw_indicator.get("value")) or indicator,
+        "date": date,
+        "value": raw.get("value"),
+        "unit": _clean_string(raw.get("unit")),
+        "obs_status": _clean_string(raw.get("obs_status")),
+        "decimal": raw.get("decimal"),
+    }
+
+
+def _target_from_observations(*, run: ConnectorRun, ordinal: int, country: str, indicator: str, observations: list[dict[str, Any]], source_ref: dict[str, Any], run_mode: str) -> ConnectorRunTarget:
+    now = _utcnow()
+    source_id = str(source_ref.get("source_id") or "2")
+    artifact_key = f"worldbank:{source_id}:{country}:{indicator}:{source_ref.get('date_range') or 'all'}"
+    target_status = "dry_run_skipped" if run_mode == "dry_run" else "recommended"
+    return ConnectorRunTarget(
+        connector_run_id=run.connector_run_id,
+        ordinal=ordinal,
+        stable_release_key=artifact_key,
+        stable_release_identifier=artifact_key,
+        identifiers_json=[{"type": "worldbank_indicator", "value": indicator}, {"type": "worldbank_country", "value": country}],
+        sciencebase_item_id=f"{country}:{indicator}",
+        sciencebase_item_url=f"{settings.worldbank_api_base_url.rstrip('/')}/country/{country}/indicator/{indicator}",
+        sciencebase_file_name=f"World Bank {country} {indicator}",
+        artifact_surface="indicator_observations",
+        selection_source="worldbank_indicators",
+        selection_scope="metadata_query",
+        selection_match_basis="country_indicator_date",
+        artifact_locator_type="api_url",
+        source_artifact_key=artifact_key,
+        canonical_artifact_key=artifact_key,
+        source_reference_json={**source_ref, "observations_count": len(observations), "license": LICENSE, "attribution": ATTRIBUTION, "terms_of_use_url": TERMS_OF_USE_URL},
+        permission_snapshot_json={"license": LICENSE, "attribution": ATTRIBUTION, "terms_of_use_url": TERMS_OF_USE_URL},
+        access_level_summary="public_api",
+        public_read_confirmed=True,
+        status=target_status,
+        retry_eligible=False,
+        discovered_at=now,
+        selected_at=now,
+        recommended_at=now if target_status == "recommended" else None,
+        last_stage_transition_at=now,
+        operator_reason_code="metadata_recorded" if target_status == "recommended" else "dry_run_metadata_only",
+    )
+
+
+def _failed_target(*, run: ConnectorRun, ordinal: int, source_id: str, country: str, indicator: str, error_class: str, message: str, retry_eligible: bool = False) -> ConnectorRunTarget:
+    now = _utcnow()
+    artifact_key = f"worldbank:{source_id}:{country}:{indicator}:failed"
+    return ConnectorRunTarget(
+        connector_run_id=run.connector_run_id,
+        ordinal=ordinal,
+        stable_release_key=artifact_key,
+        stable_release_identifier=artifact_key,
+        identifiers_json=[{"type": "worldbank_indicator", "value": indicator}, {"type": "worldbank_country", "value": country}],
+        sciencebase_item_id=f"{country}:{indicator}",
+        sciencebase_file_name=f"World Bank {country} {indicator}",
+        artifact_surface="indicator_observations",
+        selection_source="worldbank_indicators",
+        selection_scope="metadata_query",
+        selection_match_basis="country_indicator_date",
+        artifact_locator_type="api_url",
+        source_artifact_key=artifact_key,
+        canonical_artifact_key=artifact_key,
+        source_reference_json={"source_system": SOURCE_SYSTEM, "source_id": source_id, "country": country, "indicator": indicator, "license": LICENSE, "attribution": ATTRIBUTION, "terms_of_use_url": TERMS_OF_USE_URL},
+        permission_snapshot_json={"license": LICENSE, "attribution": ATTRIBUTION, "terms_of_use_url": TERMS_OF_USE_URL},
+        access_level_summary="public_api",
+        public_read_confirmed=True,
+        status="download_failed",
+        error_stage="metadata_validation",
+        error_message=message,
+        last_error_class=error_class,
+        retry_eligible=retry_eligible,
+        discovered_at=now,
+        selected_at=now,
+        last_stage_transition_at=now,
+        operator_reason_code=error_class,
+    )
+
+
+def _resolve_dataset_id(db: Session, logical_dataset_key: str) -> str | None:
+    existing = db.query(DatasetExternalIdentity).filter(and_(DatasetExternalIdentity.source_system == SOURCE_SYSTEM, DatasetExternalIdentity.logical_dataset_key == logical_dataset_key)).first()
+    return existing.dataset_id if existing else None
+
+
+def _persist_dataset_identity(db: Session, dataset_id: str, logical_dataset_key: str, metadata_json: dict[str, Any]) -> None:
+    existing = db.query(DatasetExternalIdentity).filter(and_(DatasetExternalIdentity.source_system == SOURCE_SYSTEM, DatasetExternalIdentity.logical_dataset_key == logical_dataset_key)).first()
+    if existing:
+        return
+    db.add(DatasetExternalIdentity(dataset_id=dataset_id, source_system=SOURCE_SYSTEM, logical_dataset_key=logical_dataset_key, metadata_json=metadata_json))
+    db.flush()
+
+
+def _ensure_metadata_provenance(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    target: ConnectorRunTarget,
+    observations: list[dict[str, Any]],
+    source_mode: str = "metadata_only",
+) -> None:
+    if target.status != "recommended":
+        return
+    logical_dataset_key = target.stable_release_key or f"worldbank:{target.sciencebase_item_id or target.connector_run_target_id}"
+    if not target.dataset_id:
+        dataset_id = _resolve_dataset_id(db, logical_dataset_key)
+        if not dataset_id:
+            dataset = Dataset(
+                name=target.sciencebase_file_name or f"World Bank indicator {target.sciencebase_item_id or target.ordinal}",
+                description=f"{ATTRIBUTION}; {TERMS_OF_USE_URL}",
+                domain_pack="public_connectors",
+                frequency_hint="annual",
+                time_column="date",
+            )
+            db.add(dataset)
+            db.flush()
+            dataset_id = dataset.dataset_id
+            _persist_dataset_identity(
+                db,
+                dataset_id=dataset_id,
+                logical_dataset_key=logical_dataset_key,
+                metadata_json={
+                    "source_system": SOURCE_SYSTEM,
+                    "stable_release_key": target.stable_release_key,
+                    "source_artifact_key": target.source_artifact_key,
+                    "identifiers": target.identifiers_json or [],
+                },
+            )
+        target.dataset_id = dataset_id
+    if not target.dataset_version_id:
+        content_payload = {
+            "source_system": SOURCE_SYSTEM,
+            "source_artifact_key": target.source_artifact_key,
+            "source_reference_json": target.source_reference_json or {},
+            "observations": observations,
+        }
+        version = DatasetVersion(
+            dataset_id=target.dataset_id,
+            version_label=f"worldbank_{str(target.sciencebase_item_id or target.ordinal).replace(':', '_')[:80]}_{run.connector_run_id[:8]}",
+            version_type="source_metadata",
+            status="ready",
+            storage_ref=target.source_artifact_key,
+            row_count=len(observations),
+            content_hash=_stable_json_hash(content_payload),
+            source_row_count=len(observations),
+            dropped_row_count=0,
+            notes=f"connector_run_id={run.connector_run_id}; source_artifact_key={target.source_artifact_key}",
+        )
+        db.add(version)
+        db.flush()
+        target.dataset_version_id = version.dataset_version_id
+    existing_provenance = (
+        db.query(DatasetSourceProvenance)
+        .filter(
+            and_(
+                DatasetSourceProvenance.dataset_version_id == target.dataset_version_id,
+                DatasetSourceProvenance.connector_run_id == run.connector_run_id,
+                DatasetSourceProvenance.source_system == SOURCE_SYSTEM,
+            )
+        )
+        .first()
+    )
+    if existing_provenance:
+        return
+    db.add(
+        DatasetSourceProvenance(
+            dataset_version_id=target.dataset_version_id,
+            connector_run_id=run.connector_run_id,
+            source_system=SOURCE_SYSTEM,
+            source_mode=source_mode,
+            source_artifact_key=target.source_artifact_key or target.stable_release_key or "",
+            sciencebase_item_id=target.sciencebase_item_id,
+            sciencebase_item_url=target.sciencebase_item_url,
+            sciencebase_file_name=target.sciencebase_file_name,
+            artifact_surface=target.artifact_surface,
+            artifact_locator_type=target.artifact_locator_type,
+            source_query_fingerprint=run.source_query_fingerprint,
+            source_reference_json=target.source_reference_json or {},
+            fetch_policy_mode="worldbank_indicators_official_only",
+            retrieved_http_json={
+                "api_base_url": settings.worldbank_api_base_url,
+                "allowed_hosts": [ALLOWED_HOST],
+                "terms_of_use_url": TERMS_OF_USE_URL,
+            },
+            discovered_at=target.discovered_at,
+            downloaded_at=target.downloaded_at,
+        )
+    )
+    db.flush()
+
+
+def _write_summary(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    config: dict[str, Any],
+    client: Any,
+    retry_counters: dict[str, Any],
+) -> None:
+    targets = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run.connector_run_id).order_by(ConnectorRunTarget.ordinal.asc()).all()
+    summary = {
+        "schema_id": SUMMARY_SCHEMA_ID,
+        "schema_version": 1,
+        "generated_at_utc": _utcnow().isoformat(),
+        "connector_run_id": run.connector_run_id,
+        "connector_key": run.connector_key,
+        "status": run.status,
+        "api_base_url": settings.worldbank_api_base_url,
+        "auth_mode": _client_auth_mode(client),
+        "request": {
+            "logical_query": _logical_query_from_config(config),
+            "per_page": int(config.get("per_page", 1000)),
+            "max_items": int(config.get("max_items", 0)),
+            "run_mode": str(config.get("run_mode", "metadata_only")),
+        },
+        "totals": {
+            "discovered_count": int(run.discovered_count or 0),
+            "recommended_count": int(run.recommended_count or 0),
+            "failed_count": int(run.failed_count or 0),
+        },
+        "targets": [
+            {
+                "ordinal": int(target.ordinal or 0),
+                "worldbank_key": target.sciencebase_item_id,
+                "status": target.status,
+                "last_error_class": target.last_error_class,
+                "source_artifact_key": target.source_artifact_key,
+            }
+            for target in targets
+        ],
+        "license": LICENSE,
+        "attribution": ATTRIBUTION,
+        "terms_of_use_url": TERMS_OF_USE_URL,
+        "retry_summary": {
+            "requests_total": int(retry_counters.get("requests_total", 0)),
+            "retries_total": int(retry_counters.get("retries_total", 0)),
+            "retry_sleep_seconds": round(float(retry_counters.get("retry_sleep_seconds", 0.0)), 4),
+            "rate_limiter_sleep_seconds": round(float(retry_counters.get("rate_limiter_sleep_seconds", 0.0)), 4),
+            "last_error_class": retry_counters.get("last_error_class"),
+        },
+    }
+    summary_ref = _write_json(_summary_report_path(run.connector_run_id), summary)
+    run.query_plan_json = {**(run.query_plan_json or {}), "connector_report_refs": {"worldbank_summary": summary_ref}}
+    db.commit()
+
+
+def _accepts_keyword(callable_obj: Any, keyword: str) -> bool:
+    try:
+        signature = inspect.signature(callable_obj)
+    except (TypeError, ValueError):
+        return False
+    return keyword in signature.parameters or any(param.kind == inspect.Parameter.VAR_KEYWORD for param in signature.parameters.values())
+
+
+def _list_observation_page(
+    client: Any,
+    *,
+    source_id: str,
+    country: str,
+    indicator: str,
+    date_range: str | None,
+    per_page: int,
+    page_number: int,
+    kwargs: dict[str, Any],
+) -> list[dict[str, Any]]:
+    call_kwargs = {
+        "source_id": source_id,
+        "country": country,
+        "indicator": indicator,
+        "date_range": date_range,
+        "per_page": per_page,
+        **kwargs,
+    }
+    if _accepts_keyword(client.list_indicator_observations, "page"):
+        call_kwargs["page"] = page_number
+    return client.list_indicator_observations(**call_kwargs)
+
+
+def _discover_targets(db: Session, *, run: ConnectorRun, client: Any, config: dict[str, Any], rate_limiter: _RateLimiter, retry_counters: dict[str, Any]) -> None:
+    kwargs = _common_request_kwargs(config, rate_limiter, retry_counters)
+    source_id = str(config.get("source_id", "2"))
+    sources = client.list_sources(**kwargs)
+    indicators_catalog = client.list_indicators(source_id=source_id, **kwargs)
+    countries_catalog = client.list_countries(countries=list(config.get("countries") or []), **kwargs)
+    discovery_ref = _write_json(
+        _discovery_snapshot_path(run.connector_run_id),
+        {
+            "schema_id": DISCOVERY_SCHEMA_ID,
+            "schema_version": 1,
+            "connector_run_id": run.connector_run_id,
+            "logical_query": _logical_query_from_config(config),
+            "sources": sources,
+            "indicators": indicators_catalog,
+            "countries": countries_catalog,
+        },
+    )
+    run.discovery_snapshot_ref = discovery_ref
+    db.commit()
+
+    existing_targets = (
+        db.query(ConnectorRunTarget)
+        .filter(ConnectorRunTarget.connector_run_id == run.connector_run_id)
+        .order_by(ConnectorRunTarget.ordinal.asc())
+        .all()
+    )
+    target_payloads: list[dict[str, Any]] = [
+        {"target_id": target.connector_run_target_id, "status": target.status, "resumed": True}
+        for target in existing_targets
+    ]
+    processed_pairs = {
+        tuple(str(target.sciencebase_item_id or "").split(":", 1))
+        for target in existing_targets
+        if ":" in str(target.sciencebase_item_id or "")
+    }
+    ordinal = max([int(target.ordinal or 0) for target in existing_targets] or [0])
+    max_items = int(config.get("max_items", 0))
+    countries = list(config.get("countries") or [])
+    indicators = list(config.get("indicators") or [])
+    total_observations = sum(
+        int((target.source_reference_json or {}).get("observations_count") or 0)
+        for target in existing_targets
+    )
+    stop = bool(max_items and total_observations >= max_items)
+    for country in countries:
+        for indicator in indicators:
+            if stop:
+                break
+            if (country, indicator) in processed_pairs:
+                continue
+            if _cooperate_with_cancel_request(db, run, phase="discovery"):
+                return
+            page_number = 1
+            observations: list[dict[str, Any]] = []
+            try:
+                while True:
+                    raw_observations = _list_observation_page(
+                        client,
+                        country=country,
+                        indicator=indicator,
+                        source_id=source_id,
+                        date_range=config.get("date_range"),
+                        per_page=int(config.get("per_page", 1000)),
+                        page_number=page_number,
+                        kwargs=kwargs,
+                    )
+                    if not raw_observations:
+                        if page_number == 1:
+                            raise WorldBankSchemaValidationError("empty_result")
+                        break
+                    for raw in raw_observations:
+                        normalized = _normalize_observation(raw, country=country, indicator=indicator)
+                        if normalized is None:
+                            continue
+                        observations.append(normalized)
+                        total_observations += 1
+                        if max_items and total_observations >= max_items:
+                            stop = True
+                            break
+                    if stop or not _accepts_keyword(client.list_indicator_observations, "page"):
+                        break
+                    page_number += 1
+                    _renew_lease(db, run)
+                if not observations:
+                    continue
+                ordinal += 1
+                source_ref = {
+                    "source_system": SOURCE_SYSTEM,
+                    "source_id": source_id,
+                    "country": country,
+                    "indicator": indicator,
+                    "date_range": config.get("date_range"),
+                    "api_base_url": settings.worldbank_api_base_url,
+                    "discovery_ref": discovery_ref,
+                    "page_count": page_number,
+                }
+                target = _target_from_observations(run=run, ordinal=ordinal, country=country, indicator=indicator, observations=observations, source_ref=source_ref, run_mode=str(config.get("run_mode", "metadata_only")))
+                db.add(target)
+                db.flush()
+                _ensure_metadata_provenance(db, run=run, target=target, observations=observations)
+                target_payloads.append({"target_id": target.connector_run_target_id, "status": target.status, "observations": observations})
+                _record_run_event(db, run=run, target=target, event_type="target_created", phase="selection", status_after=target.status, reason_code=target.operator_reason_code)
+            except Exception as exc:
+                error_class, retryable = _classify_request_exception(exc)
+                if isinstance(exc, WorldBankSchemaValidationError) and str(exc) == "empty_result":
+                    error_class = "empty_result"
+                ordinal += 1
+                target = _failed_target(run=run, ordinal=ordinal, source_id=source_id, country=country, indicator=indicator, error_class=error_class, message=str(exc), retry_eligible=retryable)
+                db.add(target)
+                db.flush()
+                target_payloads.append({"target_id": target.connector_run_target_id, "status": target.status, "last_error_class": error_class})
+                _record_run_event(db, run=run, target=target, event_type="target_failed_closed", phase="selection", status_after=target.status, error_class=error_class, message=str(exc), reason_code=error_class)
+            db.commit()
+            _renew_lease(db, run)
+        if stop:
+            break
+    run.page_count_completed = len([item for item in target_payloads if item.get("status") != "failed"])
+    run.last_offset_committed = ordinal
+    run.search_exhaustion_reason = "max_items_reached" if stop else "query_exhausted"
+    run.selection_manifest_ref = _write_json(
+        _selection_manifest_path(run.connector_run_id),
+        {
+            "schema_id": SELECTION_SCHEMA_ID,
+            "schema_version": 1,
+            "connector_run_id": run.connector_run_id,
+            "targets": target_payloads,
+        },
+    )
+    db.commit()
+
+
+def execute_worldbank_run(connector_run_id: str) -> None:
+    db = SessionLocal()
+    try:
+        WORLDBANK_EXECUTOR_GUARDS.acquire_run_slot()
+        try:
+            run = db.get(ConnectorRun, connector_run_id)
+            if not run or run.status in RUN_TERMINAL_STATUSES:
+                return
+            if not _acquire_lease(db, run):
+                run.error_summary = "lease_conflict"
+                _record_run_event(db, run=run, event_type="lease_conflict", phase="planning", status_after=run.status, error_class="lease_conflict")
+                db.commit()
+                return
+            config = dict(run.request_config_json or {})
+            client = get_worldbank_client(config)
+            run.effective_search_params_json = {
+                "base_url": settings.worldbank_api_base_url,
+                "auth_mode": _client_auth_mode(client),
+                "logical_query": _logical_query_from_config(config),
+            }
+            run.effective_filters_json = [{"field": key, "value": value} for key, value in _logical_query_from_config(config).items()]
+            run.effective_sort = "country_indicator_date"
+            run.effective_order = "asc"
+            run.effective_page_size = int(config.get("per_page", 1000))
+            db.commit()
+
+            retry_counters: dict[str, Any] = {}
+            rate_limiter = _RateLimiter(float(config.get("max_rps", 2.0)))
+            target_count = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run.connector_run_id).count()
+            if target_count == 0 or not run.selection_manifest_ref:
+                _record_run_event(db, run=run, event_type="discovery_started", phase="discovery", status_after=run.status)
+                _discover_targets(db, run=run, client=client, config=config, rate_limiter=rate_limiter, retry_counters=retry_counters)
+
+            retry_counters["rate_limiter_sleep_seconds"] = rate_limiter.total_sleep_seconds
+            _finalize_run(db, run)
+            _write_summary(db, run=run, config=config, client=client, retry_counters=retry_counters)
+            _record_run_event(db, run=run, event_type="run_finalized", phase="finalizing", status_after=run.status, metrics_json={"connector_key": CONNECTOR_KEY}, commit=True)
+        finally:
+            WORLDBANK_EXECUTOR_GUARDS.release_run_slot()
+    except Exception as exc:
+        run = db.get(ConnectorRun, connector_run_id)
+        if run:
+            error_class, _retryable = _classify_request_exception(exc)
+            run.status = "failed"
+            run.search_exhaustion_reason = error_class
+            run.error_summary = f"{error_class}: {exc}"
+            run.completed_at = _utcnow()
+            _release_lease(run)
+            _record_run_event(db, run=run, event_type="run_failed", phase="failed", status_after="failed", error_class=error_class, message=str(exc))
+            db.commit()
+        else:
+            raise
+    finally:
+        db.close()
