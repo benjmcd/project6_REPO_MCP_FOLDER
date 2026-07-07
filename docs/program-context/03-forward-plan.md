@@ -6,6 +6,61 @@ report as verified/adjudicated, grounded in repo authorities (merge-gate
 policy, admission runbook, A8 docs, support matrix). Nothing here is authorized by this
 document — it specifies what authorization would require.
 
+## 2026-07-06 Forward Program Refresh (M-PRESERVE-SWEEP)
+
+Supersession boundary: this block is the current F6 pointer after the
+owner-authorized preserve-then-sweep execution. It supersedes the prior protected
+worktree disposition state only for the classes actually preserved and swept
+here. It does not authorize mass remote branch deletion, upstream third-party
+contribution work, or removal of failed-preserve / failed-loose-gate leftovers.
+
+### F6 - Worktree cleanup: PRESERVE-SWEEP EXECUTED WITH PROTECTED HOLDS
+
+- Status: EXECUTED for v2-dispositioned registered worktrees whose preservation
+  gate passed or whose v2 class required no file copy. The lane re-hashed the v2
+  plan (`ca5b06307ac2a6c3fdcdea932fae97ad49264677c82b361eb84555b9e7984afa`),
+  the dirty adjudication artifact, and the unlanded deep-dive artifact before
+  mutating worktree state.
+- Phase-0 census: 164 registered worktrees, including 142 repo-local registered
+  worktrees, plus 21 unregistered directories under `worktrees/`. The fresh
+  `worktrees/` byte baseline was 172,834,879,088 bytes.
+- Preserve archive: snapshot manifests were written under
+  `C:/p6store/worktree-preserve-archive/2026-07-06/`. The archive aggregate is
+  `PRESERVE_ARCHIVE_AGGREGATE.json` with sha256
+  `b45fcb611af657ed0edd925bd13cfe6bd3edc0206b45c08b11c2897efc2539b3`.
+  It includes verified durable copies of the authority artifacts and covers
+  30 snapshot manifests: 20 verified and 10 failed/protected.
+- Registered sweep: 142 repo-local registered worktrees were processed; 135 were
+  removed by `git worktree remove`, and 3 additional deregistered residual
+  directories were removed after exact path-boundary checks and verified
+  snapshots. Four registered worktrees were not removed by this lane: three
+  failed-preserve holds and one allowlisted concurrent/owner lane that was not
+  swept here. By the post-sweep registry, that allowlisted lane was no longer
+  registered outside this lane's sweep, so the current repo-local registered
+  remainder is the three failed-preserve holds.
+- Remaining registered local holds: `worktrees/p6xbrl` is protected because the
+  widened-scope preserve gate found two expected source files absent live;
+  `worktrees/candidate-b-preflight-envelope-workbench-only` and
+  `worktrees/candidate-b-second-iteration-workbench-only` are protected because
+  their raw-report preserve copies did not fully verify.
+- Unregistered directory holds: the seven onlook unregistered directories had
+  nested bundles preserved where present, but their loose top-level content did
+  not complete the two-part deletion gate. They were therefore not deleted. The
+  other fourteen unregistered directories found in Phase 0 remain out of this
+  onlook-specific deletion class.
+- Post-sweep census: 25 total registered worktrees remain. The only repo-local
+  registered entries are the three failed-preserve holds above; external,
+  `.cursor/**`, and the locked external temp-placement registration remain
+  outside this cleanup class. The final `worktrees/` byte measurement was
+  83,841,051,452 bytes, reclaiming 88,993,827,636 bytes from the Phase-0
+  baseline.
+- Slice4 update: the prior `analyst-insight-layer-slice4` unlanded headline is
+  superseded by PR #2451 on current main. That implementation is no longer an
+  unlanded worktree-preservation reason in this record.
+- Remote branches and upstream work: no local branch deletion, no remote branch
+  deletion, and no upstream Onlook push/PR occurred. The upstream contribution
+  question remains owner-only.
+
 ## 2026-07-06 Forward Program Refresh (M-DIRTY-ADJUDICATION)
 
 Supersession boundary: this block is the current F6 pointer after the
@@ -39,8 +94,8 @@ of protected local work.
 - Critic correction: `worktrees/sec-family-res` moved from `UNIQUE-CONTENT` to
   `AMBIGUOUS`; the models, migration, and service concept landed under renamed
   paths, while the `.v1` schema-id variant and one doc still need owner review.
-- Preserve headlines: `worktrees/analyst-insight-layer-slice4` holds unlanded
-  review-shell discoverability implementation and tests; `worktrees/onlook-proof-settle`
+- Preserve headlines: superseded by M-PRESERVE-SWEEP and PR #2451 for
+  `worktrees/analyst-insight-layer-slice4`; `worktrees/onlook-proof-settle`
   has nested repositories with four unpushed commits; `worktrees/p6xbrl` holds
   the 17A evidence bundle and `worktrees/p6xbrl17b` holds the 17B driver, both
   retained under the value-retention posture.
