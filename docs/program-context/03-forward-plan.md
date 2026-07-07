@@ -68,9 +68,10 @@ of protected local work.
   content/owner-decision items rather than disposable tool state.
 - Execution spec pointer: `state/agent-inbox/worktree-disposition-plan-v2.md`
   names the `C:/p6store/worktree-preserve-archive/2026-07-06/` destination,
-  requires `git status --porcelain --ignored --ignore-submodules=none`,
-  serial and bounded execution, hash-gated acceptance before any removal, and
-  a containment relocation obligation for the 17A bundle.
+  requires `git status --porcelain --ignored --untracked-files=all
+  --ignore-submodules=none` or an equivalent recursive ignored-directory hash
+  inventory, serial and bounded execution, hash-gated acceptance before any
+  removal, and a containment relocation obligation for the 17A bundle.
 - Evidence pointer: `state/agent-inbox/worktree-unlanded-deepdive-2026-07-06.json`
   hashes to
   `03f50a85e452121ddc65af4cecf3ba8f7cf98fb6e84f1dd1c9c3398a5c46c5fd`
@@ -81,6 +82,12 @@ of protected local work.
 - OWNER-DECISION queue headline: sweep GO; slice-4 landing;
   `sec-family-res`; onlook canonical-remnant tar; `cb-runtime-audit-p1`;
   onlook upstream contribution.
+- Count authority: this addendum supersedes the immediately preceding
+  `123 of 139` mechanically clearable / `16` owner-decision tally for
+  execution. Until a fresh v2 count is computed from
+  `worktree-disposition-plan-v2.md`, operators must treat the six-item
+  owner-decision queue above and the v2 plan as controlling, not the older
+  count pair alone.
 
 ## 2026-07-06 Forward Program Refresh (M-WORKTREE-CLEANUP-EXEC)
 

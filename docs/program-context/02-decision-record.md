@@ -672,7 +672,8 @@ taxonomy egress, or local path claim beyond the established `C:/p6store` root.
   symbol greps against current main, tree-identity checks where an old commit
   can be compared to its merge (`git diff <sha> <merge> --numstat` empty means
   fully landed), enumeration with `git status --porcelain --ignored
-  --ignore-submodules=none`, and a directory inventory outside
+  --untracked-files=all --ignore-submodules=none` or an equivalent recursive
+  ignored-directory hash inventory, and a directory inventory outside
   `git worktree list`.
 - Decision: (c). Any future content-uniqueness verdict against rebuilt main
   must search the current layout, not just the path shape that existed when
