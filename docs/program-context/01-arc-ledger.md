@@ -295,7 +295,7 @@ Dates 2026. All PRs merged to `project6-origin/main`; squash SHAs given.
   closed the safe anonymous connector set while preserving IMF as an explicit
   owner-gated/deferred fork rather than working around the 403.
 
-## Net state after Phase 11
+## Net state after Phase 12
 
 Local SEC-XBRL pipeline proven end-to-end ON REAL DATA: live-acquired filing → parsed →
 Arelle-resolved → durably retained values → controlled governed reveal; every layer
@@ -306,3 +306,11 @@ closed at 46 supported filings. SEC `cyd-2025` provisioning prep and IFRS 2025
 package prep are executed and pinned; the six retained IFRS annual replays are
 hash-recorded, zero-egress, store-persisted, and independently regraded with
 attested-field boundaries. Source defaults all False. Nothing production-claimed.
+Connector breadth is now closed for the safe anonymous/public set: World Bank,
+CFTC COT, USGS MCS, BLS v1, and OECD SDMX landed offline-proven in PRs
+#2459-#2464, moving support-matrix capability count 29 -> 32. The execution
+record and connector-program archive landed in #2465-#2467. IMF DataMapper
+envelope grant was exercised and stopped hard on HTTP 403 (`GET 1/4`, zero
+contingency spent), leaving IMF owner-gated with the unlock fork recorded in
+F9/D31. FAO and BTS remain defer-final. Live pilots still require per-connector
+D27 owner grants, and all connector source defaults remain default-off/local.

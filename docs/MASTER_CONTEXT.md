@@ -16,6 +16,14 @@
 
 ---
 
+2026-07-08 pointer: `docs/program-context/` latest program-context frontier
+is now PR #2467 (`a0bc9f0a183afe5fd1bd92e14ca21ea30703ce3e`), covering
+program-context Phase 12 / D31 / F9 refresh and the connector-program archive.
+This supersedes the older header-block current-pointer through PR #2441 only
+for current frontier selection; the historical PR #2441 / #2443 lines above
+remain true in time. No production-readiness, default-on, nonlocal admission,
+live-pilot, or connector-source-default expansion is claimed by this pointer.
+
 2026-07-04 pointer: `docs/program-context/` is the exhaustive SEC-XBRL program record; this file remains the executive summary under that set's INDEX authority order.
 
 2026-07-06 pointer: `docs/program-context/` is refreshed by
