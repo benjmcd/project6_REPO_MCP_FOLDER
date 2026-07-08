@@ -7,7 +7,7 @@ import time
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import requests
 from sqlalchemy import and_
@@ -36,7 +36,11 @@ from app.services.connectors_sciencebase import (
     _utcnow,
     _write_json,
 )
-from app.services.sciencebase_connector.contracts import RUN_TERMINAL_STATUSES, SubmissionConflictError
+from app.services.sciencebase_connector.contracts import (
+    FetchPolicyBlockedError,
+    RUN_TERMINAL_STATUSES,
+    SubmissionConflictError,
+)
 from app.services.sciencebase_connector.executor import ExecutorGuards
 
 
@@ -151,6 +155,8 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
 def _classify_request_exception(exc: Exception) -> tuple[str, bool]:
     if isinstance(exc, WorldBankSchemaValidationError):
         return "schema_validation_failed", False
+    if isinstance(exc, FetchPolicyBlockedError):
+        return exc.reason or "fetch_policy_blocked", False
     if isinstance(exc, requests.Timeout):
         return "transport_timeout", True
     if isinstance(exc, requests.ConnectionError):
@@ -207,10 +213,37 @@ class WorldBankIndicatorsClient:
         url = f"{self.base_url}{path}"
         last_exc: Exception | None = None
         for attempt in range(1, retry_max_attempts_per_request + 1):
-            rate_limiter.wait()
-            retry_counters["requests_total"] = int(retry_counters.get("requests_total", 0)) + 1
             try:
-                response = self.session.get(url, params=params, timeout=timeout_seconds)
+                current_url = url
+                current_params = params
+                redirects_followed = 0
+                while True:
+                    rate_limiter.wait()
+                    retry_counters["requests_total"] = int(retry_counters.get("requests_total", 0)) + 1
+                    response = self.session.get(
+                        current_url,
+                        params=current_params,
+                        timeout=timeout_seconds,
+                        allow_redirects=False,
+                    )
+                    response_url = str(getattr(response, "url", current_url) or current_url)
+                    response_parsed = urlparse(response_url)
+                    if response_parsed.scheme != "https" or (response_parsed.hostname or "").lower() != ALLOWED_HOST:
+                        raise FetchPolicyBlockedError("redirect_policy_violation")
+                    if int(response.status_code) not in {301, 302, 303, 307, 308}:
+                        break
+                    if redirects_followed >= int(settings.connector_max_redirects):
+                        raise FetchPolicyBlockedError("redirect_policy_violation")
+                    location = str(response.headers.get("Location") or "").strip()
+                    if not location:
+                        raise FetchPolicyBlockedError("redirect_policy_violation")
+                    next_url = urljoin(response_url, location)
+                    next_parsed = urlparse(next_url)
+                    if next_parsed.scheme != "https" or (next_parsed.hostname or "").lower() != ALLOWED_HOST:
+                        raise FetchPolicyBlockedError("redirect_policy_violation")
+                    current_url = next_url
+                    current_params = None
+                    redirects_followed += 1
                 if response.status_code in RETRYABLE_HTTP_STATUSES and attempt < retry_max_attempts_per_request:
                     retry_counters["retries_total"] = int(retry_counters.get("retries_total", 0)) + 1
                     wait_seconds = min(retry_max_backoff_seconds, retry_base_backoff_seconds * (2 ** (attempt - 1)))
@@ -431,7 +464,19 @@ def _target_from_observations(*, run: ConnectorRun, ordinal: int, country: str, 
     )
 
 
-def _failed_target(*, run: ConnectorRun, ordinal: int, source_id: str, country: str, indicator: str, error_class: str, message: str, retry_eligible: bool = False) -> ConnectorRunTarget:
+def _failed_target(
+    *,
+    run: ConnectorRun,
+    ordinal: int,
+    source_id: str,
+    country: str,
+    indicator: str,
+    error_class: str,
+    message: str,
+    retry_eligible: bool = False,
+    status: str = "download_failed",
+    error_stage: str = "metadata_validation",
+) -> ConnectorRunTarget:
     now = _utcnow()
     artifact_key = f"worldbank:{source_id}:{country}:{indicator}:failed"
     return ConnectorRunTarget(
@@ -453,8 +498,8 @@ def _failed_target(*, run: ConnectorRun, ordinal: int, source_id: str, country: 
         permission_snapshot_json={"license": LICENSE, "attribution": ATTRIBUTION, "terms_of_use_url": TERMS_OF_USE_URL},
         access_level_summary="public_api",
         public_read_confirmed=True,
-        status="download_failed",
-        error_stage="metadata_validation",
+        status=status,
+        error_stage=error_stage,
         error_message=message,
         last_error_class=error_class,
         retry_eligible=retry_eligible,
@@ -718,6 +763,7 @@ def _discover_targets(db: Session, *, run: ConnectorRun, client: Any, config: di
                 return
             page_number = 1
             observations: list[dict[str, Any]] = []
+            saw_raw_observations = False
             try:
                 while True:
                     raw_observations = _list_observation_page(
@@ -734,6 +780,7 @@ def _discover_targets(db: Session, *, run: ConnectorRun, client: Any, config: di
                         if page_number == 1:
                             raise WorldBankSchemaValidationError("empty_result")
                         break
+                    saw_raw_observations = True
                     for raw in raw_observations:
                         normalized = _normalize_observation(raw, country=country, indicator=indicator)
                         if normalized is None:
@@ -748,6 +795,8 @@ def _discover_targets(db: Session, *, run: ConnectorRun, client: Any, config: di
                     page_number += 1
                     _renew_lease(db, run)
                 if not observations:
+                    if saw_raw_observations:
+                        raise WorldBankSchemaValidationError("empty_after_normalization")
                     continue
                 ordinal += 1
                 source_ref = {
@@ -768,19 +817,48 @@ def _discover_targets(db: Session, *, run: ConnectorRun, client: Any, config: di
                 _record_run_event(db, run=run, target=target, event_type="target_created", phase="selection", status_after=target.status, reason_code=target.operator_reason_code)
             except Exception as exc:
                 error_class, retryable = _classify_request_exception(exc)
-                if isinstance(exc, WorldBankSchemaValidationError) and str(exc) == "empty_result":
-                    error_class = "empty_result"
+                if isinstance(exc, WorldBankSchemaValidationError) and str(exc) in {
+                    "empty_result",
+                    "empty_after_normalization",
+                }:
+                    error_class = str(exc)
+                blocked = isinstance(exc, FetchPolicyBlockedError)
                 ordinal += 1
-                target = _failed_target(run=run, ordinal=ordinal, source_id=source_id, country=country, indicator=indicator, error_class=error_class, message=str(exc), retry_eligible=retryable)
+                target = _failed_target(
+                    run=run,
+                    ordinal=ordinal,
+                    source_id=source_id,
+                    country=country,
+                    indicator=indicator,
+                    error_class=error_class,
+                    message=str(exc),
+                    retry_eligible=retryable,
+                    status="blocked_by_fetch_policy" if blocked else "download_failed",
+                    error_stage="requesting" if blocked else "metadata_validation",
+                )
                 db.add(target)
                 db.flush()
                 target_payloads.append({"target_id": target.connector_run_target_id, "status": target.status, "last_error_class": error_class})
-                _record_run_event(db, run=run, target=target, event_type="target_failed_closed", phase="selection", status_after=target.status, error_class=error_class, message=str(exc), reason_code=error_class)
+                _record_run_event(
+                    db,
+                    run=run,
+                    target=target,
+                    event_type="target_blocked_by_fetch_policy" if blocked else "target_failed_closed",
+                    phase="selection",
+                    status_after=target.status,
+                    error_class=error_class,
+                    message=str(exc),
+                    reason_code=error_class,
+                )
             db.commit()
             _renew_lease(db, run)
         if stop:
             break
-    run.page_count_completed = len([item for item in target_payloads if item.get("status") != "failed"])
+    run.page_count_completed = sum(
+        1
+        for item in target_payloads
+        if item.get("status") in {"recommended", "dry_run_skipped"}
+    )
     run.last_offset_committed = ordinal
     run.search_exhaustion_reason = "max_items_reached" if stop else "query_exhausted"
     run.selection_manifest_ref = _write_json(
