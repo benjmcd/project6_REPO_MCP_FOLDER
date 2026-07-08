@@ -729,3 +729,50 @@ taxonomy egress, or local path claim beyond the established `C:/p6store` root.
   manual browser-captured envelope sufficient for a zero-egress rebuild. Future
   automated WAF, account-gated, SDMX/portal, or retry-workaround paths remain
   refused unless a separate owner decision changes the source class.
+
+## 2026-07-08 Admission-Spine Decision Addendum (M-ADMISSION-MAP)
+
+Verification preamble: this addendum was written against live
+`project6-origin/main` tip `ee87e5765427c9cbd9d3f4609fd8379afd47b0a7`,
+with line anchors re-derived in the execution worktree and no D-numbering
+renumbered or backfilled.
+
+## D32. Source-artifact admission map becomes the local-depth program spine (07-08)
+
+- Context: the owner admission-spine brief at
+  `state/agent-inbox/decision-brief-2026-07-08.txt` and the owner "proceed"
+  authorization select the next program as a shared source-artifact admission
+  spine for connector-produced material that claims downstream Layer 3 use.
+  The connector-breadth wave expanded the anonymous/public acquisition surface;
+  the next gap is not more connector breadth, but a common proof contract for
+  source artifacts, processor profiles, material preview, Gate B/C, 3C, and
+  package/handoff state.
+- Alternatives: (a) continue outward connector acquisition before fixing the
+  local admission proof axis; (b) treat connector `supported` status as
+  sufficient Layer 3 material admission; (c) publish a docs-only admission map
+  first, park OD-6 and the outward arm without foreclosing them, and declare
+  the first migration-forcing pilot as Tier-2 in advance.
+- Decision: (c). Publish planning doc 1366 as the Phase 0+1
+  source-artifact admission-map contract, record the posture ladder as a
+  documentation/proof axis rather than support-matrix statuses, and use it as
+  the current local-depth admission-spine program pointer. OD-6 and the
+  outward connector arm remain parked, not rejected. Phase 3, the ScienceBase
+  direct-envelope pilot, is declared Tier-2 in advance because
+  `L3SourceIntakeRecord` CheckConstraints in `backend/app/models/models.py`
+  force a migration.
+- Why optimal: the map separates acquisition/provenance adapters from the
+  downstream authority surfaces they must not own. It preserves current
+  behavior as evidence, documents seams before refactor, avoids smuggling new
+  support-matrix states into the selected profile, and makes the first
+  migration-bearing pilot explicit before implementation pressure appears.
+- Evidence: owner brief
+  `state/agent-inbox/decision-brief-2026-07-08.txt` hashes to
+  `ec81e1ca25edb4621fe62146a0de1662f79452be457b08fee8356e5cdbf590b9`;
+  planning doc 1366 records the live anchor map and the Phase 0-7 sequence;
+  this D32 addendum records the owner "proceed" authorization and the
+  Tier-2 declaration for the ScienceBase direct-envelope pilot.
+- Revisit when: a Phase 2 neutral NRC APS facade, a Phase 3 ScienceBase
+  direct-envelope pilot, or the first Phase 4 shape pilot is ready to move
+  from documentation/proof posture into code. Any support-matrix, schema,
+  migration, live-pilot, nonlocal-admission, connector-source-default, or
+  production-readiness expansion requires its own explicit lane and proof.

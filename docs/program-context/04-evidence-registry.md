@@ -433,3 +433,9 @@ host-class authority for future taxonomy fetches.
 | Surface | Verification |
 |---|---|
 | Operator-built zip determinism guard | `tools/sec-xbrl-arelle-provision.py` defines `verify_zip_determinism`, invoked post-build for `operator_built_archive` specs only; it fails closed with machine-readable reason codes for member order, `date_time`, `create_system`, `compress_type`, and `external_attr`; rejected archives never land at the final taxonomy path because the flow verifies a temp sibling before promotion; asserted by `backend/tests/test_sec_xbrl_arelle_provisioning.py` and landed by PR #2445 (`2c4f160d`). |
+
+## Admission-Spine Contract Anchor (M-ADMISSION-MAP, 2026-07-08)
+
+| Artifact | sha256 anchor | Meaning |
+|---|---|---|
+| `state/agent-inbox/decision-brief-2026-07-08.txt` | `ec81e1ca25edb4621fe62146a0de1662f79452be457b08fee8356e5cdbf590b9` | Owner authorization for the Phase-1 shared admission-map contract (planning doc 1366) recorded as D32. |

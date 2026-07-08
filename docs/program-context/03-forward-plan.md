@@ -6,6 +6,10 @@ report as verified/adjudicated, grounded in repo authorities (merge-gate
 policy, admission runbook, A8 docs, support matrix). Nothing here is authorized by this
 document — it specifies what authorization would require.
 
+## 2026-07-08 Forward Program Refresh (M-ADMISSION-MAP)
+
+Supersession boundary: this block is the current admission-spine program pointer. It supersedes older program-frontier planning only for the local-depth source-artifact admission-spine program selection and the Phase 0-7 sequencing recorded here. Historical F-sections and prior refresh blocks remain prior context where not explicitly superseded.
+
 ## 2026-07-08 Forward Program Refresh (M-PROGRAM-SYNC)
 
 Supersession boundary: this block is the current connector-breadth pointer. It
