@@ -270,6 +270,31 @@ Dates 2026. All PRs merged to `project6-origin/main`; squash SHAs given.
   be caught only by Linux CI after the fact, the same incident class as the
   `cyd-2025` `create_system` mismatch.
 
+## Phase 12 - Governance durability, forward frontier, and connector breadth (07-06 -> 07-08)
+
+- #2446 through #2455 compressed the repo-ops and release-governance record:
+  governance inbox durability, worktree cleanup execution records, dirty
+  adjudication records, preserve-sweep records, campaign closeout, and the
+  eight-family release-gate/orphan-workflow record. The durable pointer is
+  `docs/campaign-records/2026-07-06-repo-ops-campaign.md`. Why: the program
+  had accumulated operational facts that needed hash/count/disposition records
+  instead of relying on mutable inbox state or stale worktree narratives.
+- #2456 through #2458 closed the forward-frontier and connector-source decision
+  chain: the forward-frontier dossier, replica-cadence fence, and
+  source-candidates record established the connector-breadth / local-depth
+  fork and classified FAO/BTS/IMF boundaries. Why: build mandates needed a
+  source-owned, bounded authority trail before individual connector lanes could
+  proceed without reopening broad web research.
+- #2459 through #2466 executed and closed the connector-breadth program:
+  World Bank, CFTC COT, USGS MCS, BLS v1, and OECD SDMX landed as bounded
+  anonymous/public connector slices, World Bank polish landed, and the IMF
+  DataMapper owner grant was exercised to a grant-hard STOP (`GET 1/4` returned
+  HTTP 403, zero contingency spent, no build). Capability count moved 29 -> 32.
+  The durable execution pointer is
+  `docs/campaign-records/2026-07-08-connector-program.md`. Why: the program
+  closed the safe anonymous connector set while preserving IMF as an explicit
+  owner-gated/deferred fork rather than working around the 403.
+
 ## Net state after Phase 11
 
 Local SEC-XBRL pipeline proven end-to-end ON REAL DATA: live-acquired filing → parsed →
