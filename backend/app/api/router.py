@@ -48,6 +48,7 @@ from app.schemas.api import (
     NrcApsEvidenceBundleAssembleIn,
     NrcApsEvidenceBundleOut,
     NrcAdamsApsConnectorRunIn,
+    OecdSdmxConnectorRunIn,
     ProfileRequest,
     SenateLdaConnectorRunIn,
     ScienceBaseConnectorRunIn,
@@ -77,6 +78,7 @@ from app.services.connectors_senate_lda import execute_senate_lda_run, submit_se
 from app.services.connectors_worldbank import execute_worldbank_run, submit_worldbank_run
 from app.services.connectors_cftc_cot import execute_cftc_cot_run, submit_cftc_cot_run
 from app.services.connectors_bls import execute_bls_run, submit_bls_run
+from app.services.connectors_oecd import execute_oecd_sdmx_run, submit_oecd_sdmx_run
 from app.services import aps_retrieval_plane_read
 from app.services import nrc_aps_content_index
 from app.services import nrc_aps_context_dossier
@@ -166,6 +168,7 @@ def _connector_executor(connector_key: str):
         "worldbank_indicators": execute_worldbank_run,
         "cftc_cot": execute_cftc_cot_run,
         "bls_v1": execute_bls_run,
+        "oecd_sdmx": execute_oecd_sdmx_run,
     }
     return executors.get(connector_key)
 
@@ -569,6 +572,41 @@ def create_bls_run(
         _route_level_operator_identity(request, access="write")
         try:
             run, created = submit_bls_run(
+                db,
+                payload=payload.model_dump(),
+                idempotency_key=idempotency_key,
+            )
+        except SubmissionConflictError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        if created and run.status == "pending":
+            _enqueue_connector_run(background_tasks, run.connector_key, run.connector_run_id)
+        return ConnectorRunSubmitOut.model_validate(
+            {
+                "connector_run_id": run.connector_run_id,
+                "status": run.status,
+                "created": created,
+                "submitted_at": run.submitted_at,
+                "poll_url": f"/api/v1/connectors/runs/{run.connector_run_id}",
+                "submission_idempotency_key": run.submission_idempotency_key,
+                "request_fingerprint": run.request_fingerprint,
+            }
+        )
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _legacy_api_auth_policy_error_response(exc)
+
+
+@api_router.post("/connectors/oecd-sdmx/runs", status_code=status.HTTP_202_ACCEPTED, response_model=ConnectorRunSubmitOut)
+def create_oecd_sdmx_run(
+    payload: OecdSdmxConnectorRunIn,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: Session = Depends(get_db),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> ConnectorRunSubmitOut:
+    try:
+        _route_level_operator_identity(request, access="write")
+        try:
+            run, created = submit_oecd_sdmx_run(
                 db,
                 payload=payload.model_dump(),
                 idempotency_key=idempotency_key,

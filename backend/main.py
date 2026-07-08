@@ -293,6 +293,7 @@ def _build_static_pre_body_routes(
         (f"{p}/connectors/worldbank/runs", "write"),
         (f"{p}/connectors/cftc-cot/runs", "write"),
         (f"{p}/connectors/bls/runs", "write"),
+        (f"{p}/connectors/oecd-sdmx/runs", "write"),
         (f"{p}/connectors/nrc-adams-aps/content-search", "read"),
         (f"{p}/connectors/nrc-adams-aps/_operator/retrieval-content-search", "read"),
         (f"{p}/connectors/nrc-adams-aps/evidence-bundles", "write"),

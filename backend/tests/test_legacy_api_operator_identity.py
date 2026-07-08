@@ -118,6 +118,7 @@ _POST_JSON_ROUTES: list[tuple[str, dict]] = [
     (f"{_API}/connectors/worldbank/runs", {}),
     (f"{_API}/connectors/cftc-cot/runs", {}),
     (f"{_API}/connectors/bls/runs", {}),
+    (f"{_API}/connectors/oecd-sdmx/runs", {}),
     (f"{_API}/connectors/nrc-adams-aps/content-search", {"query": "test"}),
     (f"{_API}/connectors/nrc-adams-aps/_operator/retrieval-content-search", {"query": "test"}),
     (f"{_API}/connectors/nrc-adams-aps/evidence-bundles", {"run_id": _CRUN}),
@@ -140,7 +141,7 @@ _POST_MULTIPART_ROUTES = [
 ]
 
 assert len(_GET_ROUTES) == 20, f"Expected 20 GET routes, got {len(_GET_ROUTES)}"
-assert len(_POST_JSON_ROUTES) == 27, f"Expected 27 POST JSON routes, got {len(_POST_JSON_ROUTES)}"
+assert len(_POST_JSON_ROUTES) == 28, f"Expected 28 POST JSON routes, got {len(_POST_JSON_ROUTES)}"
 assert len(_POST_MULTIPART_ROUTES) == 1, f"Expected 1 multipart POST route, got {len(_POST_MULTIPART_ROUTES)}"
 
 
