@@ -438,4 +438,4 @@ host-class authority for future taxonomy fetches.
 
 | Artifact | sha256 anchor | Meaning |
 |---|---|---|
-| `state/agent-inbox/decision-brief-2026-07-08.txt` | `ec81e1ca25edb4621fe62146a0de1662f79452be457b08fee8356e5cdbf590b9` | Owner authorization for the Phase-1 shared admission-map contract (planning doc 1366) recorded as D32. |
+| `state/agent-inbox/decision-brief-2026-07-08.txt` | `ec81e1ca25edb4621fe62146a0de1662f79452be457b08fee8356e5cdbf590b9` | Owner authorization for the Phase-1 shared admission-map contract (planning doc 1366) recorded as D32. The brief itself is inbox-local; the committed digest is D32 plus planning doc 1366's authority, non-goals, and Phase 0-7 sequence. |

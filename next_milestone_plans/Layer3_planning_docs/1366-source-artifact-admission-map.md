@@ -6,7 +6,7 @@
 
 Define a single **admission spine** - the proof axis by which any source family's artifacts become Layer-3 material - and map each of the 9 source families onto it. Connectors are acquisition/provenance adapters only; they may not own downstream normalization, Layer-3 preview, Gate B/C, 3C, or package/handoff state. This map records the current posture (what is provable today), the target posture (proposed per-family program pass/fail), the known seams, and the phased program to close the gap.
 
-**Authority:** the owner admission-spine decision brief (preserved at `state/agent-inbox/decision-brief-2026-07-08.txt`, sha256 recorded in D32) plus the owner "proceed" authorization, recorded as decision D32 in `docs/program-context/02-decision-record.md`. This map is a documentation/proof instrument, **not** a support-matrix change: the ladder rungs below are never `config/support_matrix.yaml` statuses (the checker enforces exactly `{supported, experimental_default_off, simulation, unsupported}`).
+**Authority:** the owner admission-spine decision brief (preserved at `state/agent-inbox/decision-brief-2026-07-08.txt`, sha256 recorded in D32) plus the owner "proceed" authorization, recorded as decision D32 in `docs/program-context/02-decision-record.md`. The durable digest of that inbox-local brief is committed here and in D32: connectors are acquisition/provenance adapters, downstream admission must run through a shared source-artifact/content spine, IMF remains owner-gated, FAO/BTS remain deferred, and Phases 0-7 define the authorized sequencing. This map is a documentation/proof instrument, **not** a support-matrix change: the ladder rungs below are never `config/support_matrix.yaml` statuses (the checker enforces exactly `{supported, experimental_default_off, simulation, unsupported}`).
 
 ## 2. Glossary (disambiguation of overloaded vocabulary)
 
@@ -72,11 +72,11 @@ Nine rungs. Each is a proof position on the spine, evidenced by an existing rout
 | `normalized_content_admitted` | NONE-YET (target) | - | - |
 | `layer3_preview_admitted` | `POST /material-preview` `backend/app/api/layer3/__init__.py:11276` | `material_preview` `backend/app/services/layer3_workbench.py:2034`, gated by `_is_admitted_dataset_version_provenance` `:1147` | read-projection over `DatasetVersion` / `DatasetSourceProvenance` |
 | `gate_b_admitted` | `POST /gate-b/decision` `backend/app/api/layer3/__init__.py:11342` | `gate_b_decision` `backend/app/services/layer3_workbench.py:2177` -> `layer3_gate_b_state.py` | `L3GateBIdempotencyKey`, `L3SelectionManifest` |
-| `gate_c_admitted` | `POST /gate-c/preview` `backend/app/api/layer3/__init__.py:11360` | `gate_c_preview` `backend/app/services/layer3_workbench.py:2693` -> `materialize_typing_entry` `:2704` / `backend/app/services/layer3_typing_entry.py:430` | `L3TypingRecord` (write), `L3MaterialSnapshot` (read) |
+| `gate_c_admitted` | `POST /gate-c/preview` `backend/app/api/layer3/__init__.py:11360` | `gate_c_preview` `backend/app/services/layer3_workbench.py:2693` writes only when `commit_typing=true` (`:2701-2704`) -> `materialize_typing_entry` / `backend/app/services/layer3_typing_entry.py:430` | `L3TypingRecord` (write), `L3MaterialSnapshot` (read) |
 | `3c_admitted` | `POST /analysis-product/generate` `backend/app/api/layer3/__init__.py:11827` | `layer3_analysis_product_generation.generate_analysis_product` (imported `backend/app/api/layer3/__init__.py:11843`, called `:11853`) | `L3AnalysisProduct`, `L3AnalysisProductEvidenceLink` |
-| `package_handoff_admitted` | none (session-completion side effect) | `backend/app/services/layer3_aps_context_packet_package_handoff.py`, `backend/app/services/layer3_aps_report_export_package_handoff.py` | `L3OutputPackage`, `L3ReconciliationRecord` |
+| `package_handoff_admitted` | split package/handoff route modules exist (`backend/app/api/layer3/__init__.py:12214-12215`; `handoff.py:68`; `package.py:58`) | service-level session-completion side effect in `backend/app/services/layer3_aps_context_packet_package_handoff.py` and `backend/app/services/layer3_aps_report_export_package_handoff.py` | `L3OutputPackage`, `L3ReconciliationRecord` |
 
-`dataset_version_materialized_legacy` is a **pre-existing** plane (public connectors -> `Dataset`/`DatasetVersion` consumed at `backend/app/services/analysis.py:208`). It is documented, not endorsed: **prohibited as a NEW target** for any family. `package_handoff_admitted` is a **service-level** surface - no HTTP route exists (confirmed: no `/package`, `/handoff`, `/dossier`, `/export` path in `backend/app/api/layer3/__init__.py`).
+`dataset_version_materialized_legacy` is a **pre-existing** plane (public connectors -> `Dataset`/`DatasetVersion` consumed at `backend/app/services/analysis.py:208`). It is documented, not endorsed: **prohibited as a NEW target** for any family. `package_handoff_admitted` is a **service-level** surface: split package/handoff HTTP modules are registered, but this rung tracks the session-completion package/handoff side effect rather than a single generic admission route.
 
 ## 6. Current posture (only rungs provable today)
 
@@ -90,9 +90,10 @@ Nine rungs. Each is a proof position on the spine, evidenced by an existing rout
 | OECD SDMX | `oecd_sdmx_anonymous_connector_slice` - supported | `DatasetVersion`, `DatasetExternalIdentity` (`backend/app/services/connectors_oecd.py:661`) plus dataset/version construction (`:680`, `:689`) | `dataset_version_materialized_legacy` |
 | CFTC COT | `cftc_cot_anonymous_connector_slice` - supported | `Dataset`/`DatasetVersion` (`backend/app/services/connectors_cftc_cot.py:592-634`) | `dataset_version_materialized_legacy` |
 | SEC/XBRL | many ids, **none** supported (exp-off + sim); production/egress pinned false | offline staged-redaction value store (`backend/app/services/layer3_sec_xbrl_offline_evidence_loader.py:160-180`), companyfacts acquire-and-stage (`backend/app/api/layer3/source_sec_edgar.py:234`) | `layer3_preview_admitted` -> `gate_c_admitted` **only in simulation/offline** form |
-| source-directory | **no** capability id | `L3SourceDirectoryIngestionBatch`/`File` (`backend/app/models/models.py:2288`/`:2323`) - L3-native, no legacy bridge | `layer3_preview_admitted` (never touches legacy plane) |
+| raw-mixed server-owned materialization | no dedicated capability id; workbench-internal admitted family | `raw_mixed_materialized` provenance is admitted by `_is_admitted_dataset_version_provenance` (`backend/app/services/layer3_workbench.py:1148-1153`) and proved by `test_dataset_version_candidates_include_server_owned_raw_mixed_materialization` (`backend/tests/test_layer3_workbench.py:2156`) | `layer3_preview_admitted` |
+| source-directory | **no** capability id | `L3SourceDirectoryIngestionBatch`/`File` (`backend/app/models/models.py:2288`/`:2323`) - L3-native, no legacy bridge; dedicated material preview route at `backend/app/api/layer3/source_ingestion.py:1590-1605` | `gate_b_admitted` via `SOURCE_DIRECTORY_FILE_SOURCE_CLASS` validation in `gate_b_decision` (`backend/app/services/layer3_workbench.py:2239-2241`) |
 
-Key asymmetry: the 6 public connectors are **hard-refused** at `/material-preview` (Section 7, seam basis) and therefore sit at `dataset_version_materialized_legacy`; only NRC APS (and, in offline form, SEC/XBRL) reach `layer3_preview_admitted` today.
+Key asymmetry: the 6 public connectors are **hard-refused** at `/material-preview` (Section 7, seam basis) and therefore sit at `dataset_version_materialized_legacy`; NRC APS, raw-mixed server-owned materialization, source-directory, and offline SEC/XBRL already reach admitted Layer 3 material surfaces today.
 
 ## 7. Target posture (proposed per-family program pass/fail)
 
@@ -106,7 +107,7 @@ Key asymmetry: the 6 public connectors are **hard-refused** at `/material-previe
 | **CFTC COT** | Pilot -> PASS | `artifact_enveloped` + `layer3_preview_admitted` |
 | **ScienceBase/MCS** | Pilot -> PASS (deepest agent-executable) | `gate_b_admitted` |
 | **Senate LDA** | **Optional** pilot | `artifact_enveloped` (if pursued) |
-| **source-directory** | **Already-admitted reference** - no target | `layer3_preview_admitted` (as-is) |
+| **source-directory** | **Already-admitted reference** - no target | `gate_b_admitted` (as-is) |
 | IMF | Owner-gated (D31); no target | - |
 | FAO / BTS | Deferred; keyed sources and OPEC excluded | - |
 
