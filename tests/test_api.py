@@ -8310,6 +8310,43 @@ class _NullValueWorldBankClient(_FakeWorldBankClient):
         ]
 
 
+class _AllNullWorldBankClient(_FakeWorldBankClient):
+    def list_indicator_observations(
+        self,
+        *,
+        source_id,
+        country,
+        indicator,
+        date_range,
+        per_page,
+        timeout_seconds,
+        retry_max_attempts_per_request,
+        retry_base_backoff_seconds,
+        retry_max_backoff_seconds,
+        retry_respect_retry_after,
+        rate_limiter,
+        retry_counters,
+    ):
+        self.observation_calls.append(
+            {
+                "source_id": source_id,
+                "country": country,
+                "indicator": indicator,
+                "date_range": date_range,
+                "per_page": per_page,
+            }
+        )
+        return [
+            {
+                "countryiso3code": country,
+                "date": "2022",
+                "value": None,
+                "indicator": {"id": indicator, "value": "Population, total"},
+                "country": {"id": country[:2], "value": "United States"},
+            }
+        ]
+
+
 class _TimeoutWorldBankClient(_FakeWorldBankClient):
     def list_indicator_observations(self, **kwargs):
         self.observation_calls.append(dict(kwargs))
@@ -8344,6 +8381,7 @@ def test_worldbank_connector_happy_path_reports_and_attribution(monkeypatch):
     assert payload["connector_key"] == "worldbank_indicators"
     assert payload["status"] == "completed"
     assert payload["run_mode"] == "metadata_only"
+    assert payload["page_count_completed"] == 2
     assert payload["fetch_policy_summary"] == {
         "mode": "official_api_only",
         "surface_policy": "metadata_only",
@@ -8453,8 +8491,10 @@ def test_worldbank_connector_empty_observations_fail_closed(monkeypatch):
 
     detail = client.get(f"/api/v1/connectors/runs/{run_id}")
     assert detail.status_code == 200, detail.text
-    assert detail.json()["status"] == "completed_with_errors"
-    assert detail.json()["failed_count"] == 1
+    detail_payload = detail.json()
+    assert detail_payload["status"] == "completed_with_errors"
+    assert detail_payload["failed_count"] == 1
+    assert detail_payload["page_count_completed"] == 0
 
     targets = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
     assert targets.status_code == 200, targets.text
@@ -8522,6 +8562,34 @@ def test_worldbank_connector_null_values_are_skipped_not_failed(monkeypatch):
         assert target.source_reference_json["observations_count"] == 1
     finally:
         db.close()
+
+
+def test_worldbank_connector_all_null_page_fails_empty_after_normalization(monkeypatch):
+    from app.services import connectors_worldbank as wb
+
+    fake = _AllNullWorldBankClient()
+    monkeypatch.setattr(wb, "get_worldbank_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/worldbank/runs",
+        json={"indicators": ["SP.POP.TOTL"], "countries": ["USA"], "date_range": "2022:2022"},
+        headers={"Idempotency-Key": f"worldbank-all-null-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    detail_payload = detail.json()
+    assert detail_payload["status"] == "completed_with_errors"
+    assert detail_payload["failed_count"] == 1
+    assert detail_payload["page_count_completed"] == 0
+
+    targets = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert targets.status_code == 200, targets.text
+    [target] = targets.json()["targets"]
+    assert target["status"] == "download_failed"
+    assert target["last_error_class"] == "empty_after_normalization"
 
 
 def test_worldbank_connector_resume_continues_unmanifested_partial_discovery(monkeypatch):
@@ -8674,6 +8742,60 @@ def test_worldbank_connector_rejects_non_worldbank_base_url():
 
     with pytest.raises(wb.WorldBankSchemaValidationError, match="inadmissible_worldbank_base_url"):
         wb.WorldBankIndicatorsClient(base_url="https://example.test/v2")
+
+
+def test_worldbank_client_redirect_policy_rejects_redirect_over_cap_and_final_host():
+    from app.services import connectors_worldbank as wb
+    from app.services.sciencebase_connector.contracts import FetchPolicyBlockedError
+
+    class _Response:
+        status_code = 200
+        headers = {}
+
+        def __init__(self, *, url: str, history_count: int):
+            self.url = url
+            self.history = [object()] * history_count
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return [{}, []]
+
+    class _Session:
+        def __init__(self, response):
+            self.response = response
+
+        def get(self, url, params=None, timeout=None, allow_redirects=True):
+            return self.response
+
+    request_kwargs = {
+        "path": "/source",
+        "params": {"format": "json"},
+        "timeout_seconds": 30,
+        "retry_max_attempts_per_request": 1,
+        "retry_base_backoff_seconds": 0.0,
+        "retry_max_backoff_seconds": 0.0,
+        "retry_respect_retry_after": False,
+        "rate_limiter": wb._RateLimiter(0),
+        "retry_counters": {},
+    }
+
+    real_client = wb.WorldBankIndicatorsClient(base_url="https://api.worldbank.org/v2")
+    real_client.session = _Session(
+        _Response(
+            url="https://api.worldbank.org/v2/source",
+            history_count=int(wb.settings.connector_max_redirects) + 1,
+        )
+    )
+    with pytest.raises(FetchPolicyBlockedError, match="redirect_policy_violation"):
+        real_client._request_json(**request_kwargs)
+
+    real_client.session = _Session(
+        _Response(url="https://example.test/v2/source", history_count=1)
+    )
+    with pytest.raises(FetchPolicyBlockedError, match="redirect_policy_violation"):
+        real_client._request_json(**request_kwargs)
 
 
 def _bls_payload(series_ids: list[str], *, value: str | None = "123.4", data: list[dict] | None = None) -> dict:
