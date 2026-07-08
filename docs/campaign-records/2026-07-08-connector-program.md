@@ -1146,3 +1146,15 @@ state/agent-inbox/wb-landing-adversarial-report.md + closeout append to the inbo
 state/agent-inbox/wb-landing-adversarial-report.md: verdict, severity-tagged findings
 (CRITICAL/MATERIAL/MINOR/NON-ISSUE), evidence per finding (file:line / test output), template
 lessons. Closeout append "## [From lane executor] M-WB-LANDING-ADVERSARIAL REPORT" + IPC reply.
+
+## Addendum (2026-07-08): IMF Envelope Grant Exercised - Hard STOP, Returned Owner-Gated
+
+This addendum supersedes the pending-owner-decision framing in Section 2 for IMF DataMapper. The narrow named D27 grant was received and armed for envelope pinning only, bounded to host `www.imf.org`, path family `/external/datamapper/api/v2`, and at most four counted GETs: two planned requests plus two contingency requests. The arming record and per-request D28 ledger were kept in the coordination inbox.
+
+Request 1 of 4 was `GET /external/datamapper/api/v2/indicators`. It returned HTTP 403 with `text/html`, 418 bytes, no redirect, and no retry. Under the grant, HTTP 403 was a hard STOP. No contingency request was spent because contingency covered non-auth and non-policy repairs only. No further request was made, no build was started, and the working tree was verified clean.
+
+The observed 403 is consistent with the WAF or bot-block class previously seen on other agency documentation hosts for automated clients, while the endpoint remains publicly documented as keyless. The distinction does not change the grant outcome: 403 means STOP.
+
+Disposition: IMF DataMapper returns to owner-gated and deferred status under the grant's no-escalation rule. The recorded unlock paths are: accept deferred-final, or provide owner-supplied envelope evidence captured through ordinary human browser access so the build lane can re-run fully offline with zero agent egress. Automated transport-posture workarounds are explicitly not pursued.
+
+Program tally after this outcome: five connectors landed and verified; IMF remains owner-gated, grant-exercised, and fail-closed; FAO and BTS remain deferred-final.
