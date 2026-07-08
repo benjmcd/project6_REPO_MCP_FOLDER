@@ -6,6 +6,29 @@ report as verified/adjudicated, grounded in repo authorities (merge-gate
 policy, admission runbook, A8 docs, support matrix). Nothing here is authorized by this
 document — it specifies what authorization would require.
 
+## 2026-07-08 Forward Program Refresh (M-ADMISSION-MAP)
+
+Supersession boundary: this block is the current admission-spine program pointer. It supersedes older program-frontier planning only for the local-depth source-artifact admission-spine program selection and the Phase 0-7 sequencing recorded here. Historical F-sections and prior refresh blocks remain prior context where not explicitly superseded.
+
+### F10 - admission spine: PHASE 0+1 CONTRACT, PHASE 2-7 PROGRAM SEQUENCE
+
+- Current pointer: `next_milestone_plans/Layer3_planning_docs/1366-source-artifact-admission-map.md`
+  is the Phase 0+1 source-artifact admission-map contract and the durable
+  program sequence for this lane.
+- Phase 2: add a neutral NRC APS facade with behavior-neutral pinning coverage.
+- Phase 3: run the ScienceBase direct-envelope pilot as Tier-2 because
+  `L3SourceIntakeRecord` CheckConstraints force a migration.
+- Phase 4: run shape pilots for World Bank, BLS v1, OECD SDMX, CFTC COT, and
+  optional Senate LDA, each relinquishing connector-owned downstream
+  admission state.
+- Phase 5: reconstruct proofs by claimed posture; Phase 6 proves one named
+  operator workflow through 3C/package-handoff; Phase 7 lands a static/CI
+  guard with the first pilot, not after the program is over.
+- Progress manifest/board artifacts are intentionally unchanged by this
+  Phase-1 five-file fence; `tools/l3-progress-check.py` remains the guard for
+  this docs-only publication. A later lane must widen the fence explicitly if
+  those progress surfaces become part of admission-spine publication.
+
 ## 2026-07-08 Forward Program Refresh (M-PROGRAM-SYNC)
 
 Supersession boundary: this block is the current connector-breadth pointer. It

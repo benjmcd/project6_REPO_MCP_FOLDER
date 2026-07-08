@@ -27,6 +27,14 @@ frontier selection; the historical PR #2441 / #2443 lines above remain true in
 time. No production-readiness, default-on, nonlocal admission, live-pilot, or
 connector-source-default expansion is claimed by this pointer.
 
+2026-07-08 pointer: `docs/program-context/` current frontier selection is now
+lane M-ADMISSION-MAP, the Phase 0+1 admission-spine docs PR for planning doc
+1366 and D32. This supersedes the prior 2026-07-08 pointer only for current
+frontier selection: the local-depth source-artifact admission-spine is now the
+selected program spine, while the PR #2467/#2468 connector-program history
+remains true in time. No production-readiness, default-on, nonlocal-admission,
+live-pilot, or connector-source-default expansion is claimed by this pointer.
+
 2026-07-04 pointer: `docs/program-context/` is the exhaustive SEC-XBRL program record; this file remains the executive summary under that set's INDEX authority order.
 
 2026-07-06 pointer: `docs/program-context/` is refreshed by
