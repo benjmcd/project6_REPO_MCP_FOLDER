@@ -240,6 +240,18 @@ class _FakeCftcCotClient:
         )
 
 
+class _FakeOecdSdmxClient:
+    auth_mode = "anonymous"
+
+    def fetch_csv(self, *, retry_counters: dict[str, Any] | None = None, **_kwargs: Any) -> str:
+        if retry_counters is not None:
+            retry_counters["requests_total"] = int(retry_counters.get("requests_total", 0)) + 1
+        return (
+            "DATAFLOW,FREQ,MEASURE,ADJUSTMENT,REF_AREA,TIME_PERIOD,OBS_VALUE,UNIT_MEASURE,UNIT_MULT,OBS_STATUS,Reference area\n"
+            "OECD.SDD.STES:DSD_STES@DF_CLI,M,LI,AA,USA,2023-02,100.1,IX,0,A,United States\n"
+        )
+
+
 def _load_json_compatible_yaml(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -590,6 +602,64 @@ def _cftc_cot_runtime() -> dict[str, Any]:
             db.close()
 
 
+@functools.lru_cache(maxsize=1)
+def _oecd_sdmx_runtime() -> dict[str, Any]:
+    from app.models import ConnectorRunTarget
+    from app.services import connectors_oecd as oecd
+    from app.services import connectors_sciencebase as sb
+
+    with _runtime_db() as (session_factory, _storage):
+        db = session_factory()
+        old_session_local = oecd.SessionLocal
+        old_client = oecd.get_oecd_client
+        old_resolve_host = oecd._resolve_host_ip
+        old_sleep = oecd.time.sleep
+        old_wait = oecd._RateLimiter.wait
+        try:
+            oecd.SessionLocal = session_factory
+            oecd.get_oecd_client = lambda config: _FakeOecdSdmxClient()
+            oecd._resolve_host_ip = lambda hostname: "8.8.8.8"
+            oecd.time.sleep = lambda seconds: None
+            oecd._RateLimiter.wait = lambda self: None
+            run, _created = oecd.submit_oecd_sdmx_run(
+                db,
+                payload={
+                    "agency": "OECD.SDD.STES",
+                    "dataflow": "DSD_STES@DF_CLI",
+                    "dimension_key": ".M.LI...AA...H",
+                    "max_requests": 1,
+                },
+                idempotency_key="support-matrix-oecd-sdmx-runtime",
+            )
+            db.commit()
+            run_id = run.connector_run_id
+            db.close()
+            oecd.execute_oecd_sdmx_run(run_id)
+            db = session_factory()
+            run = db.get(type(run), run_id)
+            if run is None:
+                raise MatrixContractError("oecd sdmx run missing after execution")
+            detail = sb.serialize_connector_run(db, run)
+            targets = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run_id).all()
+            auth_mode = dict(run.effective_search_params_json or {}).get("auth_mode")
+            runtime_host = dict(run.effective_search_params_json or {}).get("runtime_host")
+            if detail.get("status") != "completed" or auth_mode != "anonymous" or runtime_host != "sdmx.oecd.org" or not targets:
+                raise MatrixContractError(f"oecd sdmx run did not complete anonymously: {detail}")
+            return {
+                "detail": detail,
+                "target_statuses": sorted({t.status for t in targets}),
+                "auth_mode": auth_mode,
+                "runtime_host": runtime_host,
+            }
+        finally:
+            oecd.SessionLocal = old_session_local
+            oecd.get_oecd_client = old_client
+            oecd._resolve_host_ip = old_resolve_host
+            oecd.time.sleep = old_sleep
+            oecd._RateLimiter.wait = old_wait
+            db.close()
+
+
 def _probe_sciencebase() -> dict[str, Any]:
     result = _sciencebase_runtime()
     return {"status": result["detail"]["status"], "target_statuses": result["target_statuses"]}
@@ -613,6 +683,16 @@ def _probe_bls() -> dict[str, Any]:
 def _probe_cftc_cot() -> dict[str, Any]:
     result = _cftc_cot_runtime()
     return {"status": result["detail"]["status"], "auth_mode": result["auth_mode"], "target_statuses": result["target_statuses"]}
+
+
+def _probe_oecd_sdmx() -> dict[str, Any]:
+    result = _oecd_sdmx_runtime()
+    return {
+        "status": result["detail"]["status"],
+        "auth_mode": result["auth_mode"],
+        "runtime_host": result["runtime_host"],
+        "target_statuses": result["target_statuses"],
+    }
 
 
 def _probe_connector_observability() -> dict[str, Any]:
@@ -894,6 +974,7 @@ def _probe_signed_reference_unsupported() -> dict[str, Any]:
 PROBES: dict[str, Callable[[], dict[str, Any]]] = {
     "method_aware_analytics_vertical": _probe_method_analytics,
     "bls_v1_anonymous_connector_slice": _probe_bls,
+    "oecd_sdmx_anonymous_connector_slice": _probe_oecd_sdmx,
     "sciencebase_public_connector_slice": _probe_sciencebase,
     "senate_lda_anonymous_connector_slice": _probe_senate,
     "worldbank_indicators_anonymous_connector_slice": _probe_worldbank,

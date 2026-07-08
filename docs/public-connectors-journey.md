@@ -1,6 +1,6 @@
 # Public Connectors Journey
 
-This journey covers the public_connectors overlay in the current selected local profile: ScienceBase public/MCS, Senate LDA anonymous metadata, World Bank Indicators anonymous metadata, BLS Public Data API v1 anonymous metadata, and CFTC COT anonymous public report rows. It does not activate or claim OCR, model/agent egress, keyed connectors, nonlocal deployment, high availability, automatic replay, real provider delivery, SEC value reveal, or default-on SEC live network behavior. The current support matrix, not the earlier RC1 analytics-only claim, is the authority for whether these connector slices are selected.
+This journey covers the public_connectors overlay in the current selected local profile: ScienceBase public/MCS, Senate LDA anonymous metadata, World Bank Indicators anonymous metadata, BLS Public Data API v1 anonymous metadata, OECD SDMX anonymous metadata, and CFTC COT anonymous public report rows. It does not activate or claim OCR, model/agent egress, keyed connectors, nonlocal deployment, high availability, automatic replay, real provider delivery, SEC value reveal, or default-on SEC live network behavior. The current support matrix, not the earlier RC1 analytics-only claim, is the authority for whether these connector slices are selected.
 
 ## Canonical ScienceBase Path
 
@@ -49,6 +49,16 @@ The BLS path is secondary and metadata-only:
 
 The anonymous posture is explicit: the connector has no API key setting, the runtime base URL is server-configured as `BLS_API_BASE_URL`, and no `registrationkey` parameter is sent. The connector enforces 25 series/query, a 10-year inclusive span, `max_rps <= 2`, and `max_requests <= 25` per run. The BLS v1 25-queries/day cap across runs remains operator responsibility because this lane does not add durable cross-run quota state.
 
+## OECD SDMX Secondary Path
+
+The OECD SDMX path is secondary and metadata-only:
+
+1. Submit `POST /api/v1/connectors/oecd-sdmx/runs` with `run_mode=metadata_only`, `agency`, `dataflow`, `dimension_key`, optional period bounds, optional `lastNObservations`, and an optional `max_requests` per-run budget.
+2. Inspect `GET /api/v1/connectors/runs/{run_id}` for official SDMX API-only fetch policy scoped to `sdmx.oecd.org`, `auth_mode=anonymous`, and an `oecd_sdmx_summary` report ref.
+3. Read the summary/selection report JSON for normalized SDMX-CSV rows. The database stores metadata-only dataset/version/provenance records; observation rows are retained in connector reports.
+
+The anonymous posture is explicit: the connector has no API key setting, the runtime base URL is server-configured as `OECD_SDMX_API_BASE_URL`, and no registration credential is sent. The connector uses documented SDMX-CSV `format=csvfilewithlabels`, enforces `max_rps <= 2` and `max_requests <= 30` per run, treats HTTP 413 as terminal `restricted_parameter_413`, and never falls back to JSON. The OECD 60 data downloads/hour limit and non-VPN/non-anonymized source egress posture remain operator responsibility because this lane does not add durable cross-run quota or network-origin controls.
+
 ## CFTC COT Secondary Path
 
 The CFTC COT path is secondary and report-row-only:
@@ -75,6 +85,16 @@ Focused proof lives in `tests/test_api.py`:
 - `test_bls_connector_happy_multi_post_with_years`
 - `test_bls_connector_no_key_negative_single_and_multi`
 - `test_bls_support_matrix_mirror_and_runtime_probe`
+- `test_oecd_sdmx_connector_happy_dataflow_query_reports_and_attribution`
+- `test_oecd_sdmx_connector_rejects_budget_over_30`
+- `test_oecd_sdmx_connector_413_restricted_parameter_terminal_with_last_n`
+- `test_oecd_sdmx_connector_empty_all_null_and_malformed_fail_closed`
+- `test_oecd_sdmx_connector_rate_limiter_and_backoff_use_monkeypatched_clock`
+- `test_oecd_sdmx_connector_get_redirect_cap_and_final_host`
+- `test_oecd_sdmx_connector_unauthorized_terminal`
+- `test_oecd_sdmx_connector_idempotency_conflict_and_resume`
+- `test_oecd_sdmx_connector_rejects_non_oecd_base_url`
+- `test_oecd_sdmx_support_matrix_mirror_and_runtime_probe`
 - `test_cftc_cot_connector_happy_path_reports_rows_and_attribution`
 - `test_cftc_cot_connector_accepts_headerless_current_report_rows`
 - `test_cftc_cot_connector_unrecognized_format_fails_closed`

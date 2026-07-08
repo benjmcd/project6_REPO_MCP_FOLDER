@@ -3736,7 +3736,7 @@ def test_sciencebase_mcs_support_matrix_evidence_pins_current_data_release():
     by_id = {item["id"]: item for item in matrix["capabilities"]}
     sciencebase = by_id["sciencebase_public_connector_slice"]
 
-    assert len(matrix["capabilities"]) == 31
+    assert len(matrix["capabilities"]) == 32
     assert sciencebase["status"] == "supported"
     assert "ScienceBase public/MCS" in matrix["boundary_note"]
     assert "sciencebase_mcs_2026_data_release_slice" not in by_id
@@ -9175,6 +9175,501 @@ def test_bls_support_matrix_mirror_and_runtime_probe():
     audit = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(audit)
     payload = audit.PROBES["bls_v1_anonymous_connector_slice"]()
+    assert payload["status"] == "completed"
+    assert payload["auth_mode"] == "anonymous"
+
+
+# Phase 0 provenance: OECD API docs pre-commit SDMX-CSV via
+# format=csvfilewithlabels and describe SDMX-CSV as a flattened table.
+_OECD_SDMX_CSV = (
+    "DATAFLOW,FREQ,MEASURE,ADJUSTMENT,REF_AREA,TIME_PERIOD,OBS_VALUE,UNIT_MEASURE,UNIT_MULT,OBS_STATUS,Reference area\n"
+    "OECD.SDD.STES:DSD_STES@DF_CLI,M,LI,AA,USA,2023-02,100.1,IX,0,A,United States\n"
+    "OECD.SDD.STES:DSD_STES@DF_CLI,M,LI,AA,USA,2023-03,,IX,0,A,United States\n"
+)
+
+
+class _FakeOecdSdmxClient:
+    auth_mode = "anonymous"
+
+    def __init__(self, csv_text: str = _OECD_SDMX_CSV, *, error: Exception | None = None):
+        self.csv_text = csv_text
+        self.error = error
+        self.calls: list[dict[str, object]] = []
+
+    def fetch_csv(
+        self,
+        *,
+        agency: str,
+        dataflow: str,
+        dimension_key: str,
+        start_period: str | None,
+        end_period: str | None,
+        last_n_observations: int | None,
+        rate_limiter=None,
+        retry_counters=None,
+        **kwargs,
+    ) -> str:
+        url = f"https://sdmx.oecd.org/public/rest/data/{agency},{dataflow}/{dimension_key}"
+        self.calls.append(
+            {
+                "agency": agency,
+                "dataflow": dataflow,
+                "dimension_key": dimension_key,
+                "start_period": start_period,
+                "end_period": end_period,
+                "last_n_observations": last_n_observations,
+                "url": url,
+                "kwargs": dict(kwargs),
+            }
+        )
+        if rate_limiter is not None:
+            rate_limiter.wait()
+        if retry_counters is not None:
+            retry_counters["requests_total"] = int(retry_counters.get("requests_total", 0)) + 1
+        if self.error is not None:
+            raise self.error
+        return self.csv_text
+
+
+def _oecd_http_error(status_code: int) -> requests.HTTPError:
+    response = requests.Response()
+    response.status_code = status_code
+    response.url = "https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_CLI/.M.LI...AA...H"
+    error = requests.HTTPError(f"{status_code} error")
+    error.response = response
+    return error
+
+
+def _install_fake_oecd(monkeypatch, fake: _FakeOecdSdmxClient):
+    from app.services import connectors_oecd as oecd
+
+    monkeypatch.setattr(oecd, "get_oecd_client", lambda config: fake)
+    monkeypatch.setattr(oecd, "_resolve_host_ip", lambda hostname: "8.8.8.8")
+    return oecd
+
+
+def test_oecd_sdmx_connector_happy_dataflow_query_reports_and_attribution(monkeypatch):
+    from app.core.config import settings
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRun, ConnectorRunTarget, DatasetSourceProvenance, DatasetVersion
+    from app.services import connectors_oecd as oecd
+
+    fake = _FakeOecdSdmxClient()
+    _install_fake_oecd(monkeypatch, fake)
+    assert oecd.ALLOWED_HOST == "sdmx.oecd.org"
+    assert settings.oecd_sdmx_api_base_url == "https://sdmx.oecd.org/public/rest/data"
+    assert "data-explorer.oecd.org" not in {oecd.ALLOWED_HOST, settings.oecd_sdmx_api_base_url}
+
+    submit = client.post(
+        "/api/v1/connectors/oecd-sdmx/runs",
+        json={
+            "agency": "OECD.SDD.STES",
+            "dataflow": "DSD_STES@DF_CLI",
+            "dimension_key": ".M.LI...AA...H",
+            "start_period": "2023-02",
+        },
+        headers={"Idempotency-Key": f"oecd-happy-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    payload = detail.json()
+    assert payload["connector_key"] == "oecd_sdmx"
+    assert payload["status"] == "completed"
+    assert payload["fetch_policy_summary"] == {
+        "mode": "official_api_only",
+        "surface_policy": "metadata_only",
+        "external_fetch_policy": "oecd_sdmx_official_only",
+        "allowed_hosts": ["sdmx.oecd.org"],
+    }
+    assert fake.calls[0]["url"].endswith("/OECD.SDD.STES,DSD_STES@DF_CLI/.M.LI...AA...H")
+    assert fake.calls[0]["kwargs"]["format"] == "csvfilewithlabels"
+    assert "jsondata" not in json.dumps(fake.calls, sort_keys=True).lower()
+
+    summary = json.loads(Path(payload["report_refs"]["oecd_sdmx_summary"]).read_text(encoding="utf-8"))
+    assert summary["request"]["format"] == "csvfilewithlabels"
+    assert summary["rows"][0]["dataflow"] == "OECD.SDD.STES:DSD_STES@DF_CLI"
+    assert summary["rows"][0]["time_period"] == "2023-02"
+    assert summary["rows"][0]["obs_value"] == 100.1
+    assert summary["attribution"] == "Organisation for Economic Co-operation and Development SDMX API"
+    assert summary["terms_url"] == "https://www.oecd.org/en/about/terms-conditions.html"
+    assert "60 data downloads per hour" in summary["operator_residuals"]
+    assert "VPNs or anonymized sources" in summary["operator_residuals"]
+    assert "Registration in no way impacts the application of these Terms" in summary["anonymous_tier_basis"]
+
+    db = SessionLocal()
+    try:
+        run = db.get(ConnectorRun, run_id)
+        assert run.effective_search_params_json["base_url"] == "https://sdmx.oecd.org/public/rest/data"
+        assert run.effective_search_params_json["runtime_host"] == "sdmx.oecd.org"
+        target = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run_id).one()
+        assert "startPeriod=2023-02" in target.sciencebase_item_url
+        assert "dimensionAtObservation=AllDimensions" in target.sciencebase_item_url
+        assert "format=csvfilewithlabels" in target.sciencebase_item_url
+        provenance_rows = (
+            db.query(DatasetSourceProvenance)
+            .filter(DatasetSourceProvenance.connector_run_id == run_id)
+            .filter(DatasetSourceProvenance.source_system == "oecd_sdmx")
+            .all()
+        )
+        assert len(provenance_rows) == 1
+        row = provenance_rows[0]
+        assert row.source_mode == "metadata_only"
+        assert row.source_reference_json["runtime_host"] == "sdmx.oecd.org"
+        assert row.retrieved_http_json["api_base_url"] == "https://sdmx.oecd.org/public/rest/data"
+        assert row.retrieved_http_json["format"] == "csvfilewithlabels"
+        assert "60 data downloads per hour" in row.retrieved_http_json["operator_residuals"]
+        version = db.get(DatasetVersion, row.dataset_version_id)
+        assert version.row_count == 1
+        assert version.source_row_count == 2
+        assert version.dropped_row_count == 1
+        assert row.retrieved_http_json["source_row_count"] == 2
+        assert row.retrieved_http_json["dropped_row_count"] == 1
+    finally:
+        db.close()
+
+
+def test_oecd_sdmx_connector_rejects_budget_over_30(monkeypatch):
+    _install_fake_oecd(monkeypatch, _FakeOecdSdmxClient())
+    response = client.post(
+        "/api/v1/connectors/oecd-sdmx/runs",
+        json={"max_requests": 31},
+        headers={"Idempotency-Key": f"oecd-budget-{uuid.uuid4().hex}"},
+    )
+    assert response.status_code == 422, response.text
+    invalid_identifier = client.post(
+        "/api/v1/connectors/oecd-sdmx/runs",
+        json={"agency": "OECD/SDD"},
+        headers={"Idempotency-Key": f"oecd-invalid-{uuid.uuid4().hex}"},
+    )
+    assert invalid_identifier.status_code == 422, invalid_identifier.text
+    assert invalid_identifier.json()["detail"]["error_code"] == "invalid_agency"
+
+
+def test_oecd_sdmx_connector_413_restricted_parameter_terminal_with_last_n(monkeypatch):
+    fake = _FakeOecdSdmxClient(error=_oecd_http_error(413))
+    _install_fake_oecd(monkeypatch, fake)
+
+    submit = client.post(
+        "/api/v1/connectors/oecd-sdmx/runs",
+        json={"lastNObservations": 1, "max_requests": 3, "retry_max_attempts_per_request": 4},
+        headers={"Idempotency-Key": f"oecd-413-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    assert fake.calls[0]["last_n_observations"] == 1
+    assert len(fake.calls) == 1
+    target = client.get(f"/api/v1/connectors/runs/{submit.json()['connector_run_id']}/targets").json()["targets"][0]
+    assert target["status"] == "download_failed"
+    assert target["last_error_class"] == "restricted_parameter_413"
+    assert target["retry_eligible"] is False
+
+
+def test_oecd_sdmx_connector_empty_all_null_and_malformed_fail_closed(monkeypatch):
+    cases = [
+        ("", "empty_dataset", {}),
+        ("DATAFLOW,FREQ,TIME_PERIOD,OBS_VALUE\n", "empty_dataset", {}),
+        ("DATAFLOW,FREQ,TIME_PERIOD,OBS_VALUE\nOECD.SDD.STES:DSD_STES@DF_CLI,M,2023-02,\n", "empty_after_normalization", {}),
+        ("not_a_dataflow,not_time,not_value\nx,y,z\n", "schema_validation_failed", {}),
+        (
+            "DATAFLOW,FREQ,TIME_PERIOD,OBS_VALUE\n"
+            "OECD.SDD.STES:DSD_STES@DF_CLI,M,2023-02,1\n"
+            "OECD.SDD.STES:DSD_STES@DF_CLI,M,2023-03,2\n",
+            "row_limit_exceeded",
+            {"max_rows": 1},
+        ),
+    ]
+    for csv_text, error_class, extra_payload in cases:
+        fake = _FakeOecdSdmxClient(csv_text)
+        _install_fake_oecd(monkeypatch, fake)
+        submit = client.post(
+            "/api/v1/connectors/oecd-sdmx/runs",
+            json={"dimension_key": ".M.LI...AA...H", **extra_payload},
+            headers={"Idempotency-Key": f"oecd-fail-closed-{error_class}-{uuid.uuid4().hex}"},
+        )
+        assert submit.status_code == 202, submit.text
+        target = client.get(f"/api/v1/connectors/runs/{submit.json()['connector_run_id']}/targets").json()["targets"][0]
+        assert target["status"] == "download_failed"
+        assert target["last_error_class"] == error_class
+
+
+def test_oecd_sdmx_connector_rate_limiter_and_backoff_use_monkeypatched_clock(monkeypatch):
+    from app.services import connectors_oecd as oecd
+
+    sleeps: list[float] = []
+    clock = {"now": 10.0}
+    monkeypatch.setattr(oecd.time, "monotonic", lambda: clock["now"])
+    monkeypatch.setattr(oecd.time, "sleep", lambda seconds: sleeps.append(seconds))
+
+    limiter = oecd._RateLimiter(2.0)
+    limiter.wait()
+    clock["now"] = 10.1
+    limiter.wait()
+    assert sleeps == [pytest.approx(0.4)]
+
+    class _Response:
+        def __init__(self, status_code: int, text: str = ""):
+            self.status_code = status_code
+            self.text = text
+            self.content = text.encode("utf-8")
+            self.url = "https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_CLI/.M.LI...AA...H"
+            self.history = []
+            self.headers = {}
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                error = requests.HTTPError(f"http {self.status_code}")
+                error.response = self
+                raise error
+
+    responses = [_Response(503), _Response(200, _OECD_SDMX_CSV)]
+    real_client = oecd.OecdSdmxClient(base_url="https://sdmx.oecd.org/public/rest/data")
+    monkeypatch.setattr(oecd, "_resolve_host_ip", lambda hostname: "8.8.8.8")
+    monkeypatch.setattr(real_client.session, "get", lambda *args, **kwargs: responses.pop(0))
+    retry_counters: dict[str, object] = {}
+    payload = real_client.fetch_csv(
+        agency="OECD.SDD.STES",
+        dataflow="DSD_STES@DF_CLI",
+        dimension_key=".M.LI...AA...H",
+        start_period="2023-02",
+        end_period=None,
+        last_n_observations=None,
+        timeout_seconds=30,
+        max_redirects=3,
+        max_requests_budget=2,
+        retry_max_attempts_per_request=2,
+        retry_base_backoff_seconds=0.25,
+        retry_max_backoff_seconds=1.0,
+        retry_respect_retry_after=True,
+        rate_limiter=oecd._RateLimiter(0),
+        retry_counters=retry_counters,
+        format="csvfilewithlabels",
+    )
+    assert "OBS_VALUE" in payload
+    assert retry_counters["requests_total"] == 2
+    assert retry_counters["retries_total"] == 1
+    assert sleeps[-1] == pytest.approx(0.25)
+
+
+def test_oecd_sdmx_connector_get_redirect_cap_and_final_host(monkeypatch):
+    from app.services import connectors_oecd as oecd
+    from app.services.sciencebase_connector.contracts import FetchPolicyBlockedError
+
+    class _ManualRedirectResponse:
+        def __init__(self, status_code: int, *, url: str, text: str = "", headers: dict[str, str] | None = None, content: bytes | None = None):
+            self.status_code = status_code
+            self.url = url
+            self.text = text
+            self.content = content if content is not None else text.encode("utf-8")
+            self.headers = headers or {}
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                error = requests.HTTPError(f"http {self.status_code}")
+                error.response = self
+                raise error
+
+    real_client = oecd.OecdSdmxClient(base_url="https://sdmx.oecd.org/public/rest/data")
+    calls: list[dict[str, object]] = []
+    monkeypatch.setattr(oecd, "_resolve_host_ip", lambda hostname: "8.8.8.8")
+
+    def _get(*args, **kwargs):
+        calls.append({"args": args, "kwargs": kwargs})
+        return _ManualRedirectResponse(
+            302,
+            url="https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_CLI/.M.LI...AA...H",
+            headers={"Location": "https://example.test/outside.csv"},
+        )
+
+    monkeypatch.setattr(real_client.session, "get", _get)
+    with pytest.raises(FetchPolicyBlockedError, match="host_not_allowed"):
+        real_client.fetch_csv(
+            agency="OECD.SDD.STES",
+            dataflow="DSD_STES@DF_CLI",
+            dimension_key=".M.LI...AA...H",
+            start_period=None,
+            end_period=None,
+            last_n_observations=None,
+            timeout_seconds=30,
+            max_redirects=3,
+            max_requests_budget=1,
+            retry_max_attempts_per_request=1,
+            retry_base_backoff_seconds=0.25,
+            retry_max_backoff_seconds=1.0,
+            retry_respect_retry_after=True,
+            rate_limiter=oecd._RateLimiter(0),
+            retry_counters={},
+            format="csvfilewithlabels",
+        )
+    assert len(calls) == 1
+    assert calls[0]["kwargs"]["allow_redirects"] is False
+
+    monkeypatch.setattr(
+        real_client.session,
+        "get",
+        lambda *args, **kwargs: _ManualRedirectResponse(
+            200,
+            url="https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_CLI/.M.LI...AA...H",
+            text="DATAFLOW,TIME_PERIOD,OBS_VALUE\nOECD.SDD.STES:DSD_STES@DF_CLI,2023-02,1\n",
+            content=b"x" * 128,
+        ),
+    )
+    with pytest.raises(oecd.OecdSdmxSchemaValidationError, match="response_too_large"):
+        real_client.fetch_csv(
+            agency="OECD.SDD.STES",
+            dataflow="DSD_STES@DF_CLI",
+            dimension_key=".M.LI...AA...H",
+            start_period=None,
+            end_period=None,
+            last_n_observations=None,
+            timeout_seconds=30,
+            max_redirects=3,
+            max_requests_budget=1,
+            retry_max_attempts_per_request=1,
+            retry_base_backoff_seconds=0.25,
+            retry_max_backoff_seconds=1.0,
+            retry_respect_retry_after=True,
+            rate_limiter=oecd._RateLimiter(0),
+            retry_counters={"max_response_bytes": 16},
+            format="csvfilewithlabels",
+        )
+
+    monkeypatch.setattr(
+        real_client.session,
+        "get",
+        lambda *args, **kwargs: _ManualRedirectResponse(
+            302,
+            url="https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_CLI/.M.LI...AA...H",
+            headers={"Location": "https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_CLI/.M.LI...AA...H"},
+        ),
+    )
+    with pytest.raises(FetchPolicyBlockedError, match="redirect_policy_violation"):
+        real_client.fetch_csv(
+            agency="OECD.SDD.STES",
+            dataflow="DSD_STES@DF_CLI",
+            dimension_key=".M.LI...AA...H",
+            start_period=None,
+            end_period=None,
+            last_n_observations=None,
+            timeout_seconds=30,
+            max_redirects=0,
+            max_requests_budget=1,
+            retry_max_attempts_per_request=1,
+            retry_base_backoff_seconds=0.25,
+            retry_max_backoff_seconds=1.0,
+            retry_respect_retry_after=True,
+            rate_limiter=oecd._RateLimiter(0),
+            retry_counters={},
+            format="csvfilewithlabels",
+        )
+
+
+def test_oecd_sdmx_connector_unauthorized_terminal(monkeypatch):
+    fake = _FakeOecdSdmxClient(error=_oecd_http_error(401))
+    _install_fake_oecd(monkeypatch, fake)
+    submit = client.post(
+        "/api/v1/connectors/oecd-sdmx/runs",
+        json={"dimension_key": ".M.LI...AA...H"},
+        headers={"Idempotency-Key": f"oecd-401-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    target = client.get(f"/api/v1/connectors/runs/{submit.json()['connector_run_id']}/targets").json()["targets"][0]
+    assert target["status"] == "download_failed"
+    assert target["last_error_class"] == "http_4xx"
+    assert target["retry_eligible"] is False
+
+
+def test_oecd_sdmx_connector_idempotency_conflict_and_resume(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRunTarget
+
+    class _RetryThenSuccessOecdClient(_FakeOecdSdmxClient):
+        def fetch_csv(self, **kwargs):
+            self.attempts = int(getattr(self, "attempts", 0)) + 1
+            if self.attempts == 1:
+                raise requests.Timeout("temporary oecd timeout")
+            return super().fetch_csv(**kwargs)
+
+    fake = _RetryThenSuccessOecdClient()
+    _install_fake_oecd(monkeypatch, fake)
+    key = f"oecd-idempotency-{uuid.uuid4().hex}"
+    first = client.post(
+        "/api/v1/connectors/oecd-sdmx/runs",
+        json={"dimension_key": ".M.LI...AA...H", "retry_max_attempts_per_request": 1},
+        headers={"Idempotency-Key": key},
+    )
+    assert first.status_code == 202, first.text
+    conflict = client.post(
+        "/api/v1/connectors/oecd-sdmx/runs",
+        json={"dimension_key": ".Q.LI...AA...H", "retry_max_attempts_per_request": 1},
+        headers={"Idempotency-Key": key},
+    )
+    assert conflict.status_code == 409, conflict.text
+    run_id = first.json()["connector_run_id"]
+    first_target = client.get(f"/api/v1/connectors/runs/{run_id}/targets").json()["targets"][0]
+    assert first_target["status"] == "download_failed"
+    assert first_target["retry_eligible"] is True
+
+    resume = client.post(f"/api/v1/connectors/runs/{run_id}/resume")
+    assert resume.status_code == 202, resume.text
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}").json()
+    assert detail["status"] == "completed"
+    summary = json.loads(Path(detail["report_refs"]["oecd_sdmx_summary"]).read_text(encoding="utf-8"))
+    assert summary["rows"][0]["time_period"] == "2023-02"
+
+    second = client.post(
+        "/api/v1/connectors/oecd-sdmx/runs",
+        json={"dimension_key": ".M.LI...AA...H", "max_requests": 2},
+        headers={"Idempotency-Key": f"oecd-identity-budget-{uuid.uuid4().hex}"},
+    )
+    assert second.status_code == 202, second.text
+    second_run_id = second.json()["connector_run_id"]
+    second_detail = client.get(f"/api/v1/connectors/runs/{second_run_id}").json()
+    assert second_detail["status"] == "completed"
+
+    db = SessionLocal()
+    try:
+        targets = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run_id).all()
+        assert len(targets) == 1
+        assert targets[0].attempt_count == 2
+        assert targets[0].retry_eligible is False
+        second_targets = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == second_run_id).all()
+        assert len(second_targets) == 1
+        assert second_targets[0].stable_release_key == targets[0].stable_release_key
+        assert second_targets[0].dataset_id == targets[0].dataset_id
+    finally:
+        db.close()
+
+
+def test_oecd_sdmx_connector_rejects_non_oecd_base_url():
+    from app.services import connectors_oecd as oecd
+
+    with pytest.raises(oecd.OecdSdmxSchemaValidationError, match="inadmissible_oecd_sdmx_base_url"):
+        oecd.OecdSdmxClient(base_url="https://example.test/public/rest/data")
+    with pytest.raises(oecd.OecdSdmxSchemaValidationError, match="inadmissible_oecd_sdmx_base_url"):
+        oecd.OecdSdmxClient(base_url="https://sdmx.oecd.org/public/rest/data?format=jsondata")
+
+
+def test_oecd_sdmx_support_matrix_mirror_and_runtime_probe():
+    import importlib.util
+
+    matrix = json.loads((ROOT / "config" / "support_matrix.yaml").read_text(encoding="utf-8"))
+    by_id = {item["id"]: item for item in matrix["capabilities"]}
+    assert by_id["oecd_sdmx_anonymous_connector_slice"]["status"] == "supported"
+    assert "OECD SDMX anonymous metadata only" in matrix["boundary_note"]
+    assert "operator-responsible OECD 60 data downloads/hour compliance across runs" in matrix["boundary_note"]
+    assert "VPNs or anonymized sources" in matrix["boundary_note"]
+
+    spec = importlib.util.spec_from_file_location(
+        "support_matrix_runtime_contract_audit",
+        ROOT / "scripts" / "support_matrix_runtime_contract_audit.py",
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    audit = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(audit)
+    payload = audit.PROBES["oecd_sdmx_anonymous_connector_slice"]()
     assert payload["status"] == "completed"
     assert payload["auth_mode"] == "anonymous"
 

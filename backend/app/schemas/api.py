@@ -378,6 +378,27 @@ class BlsConnectorRunIn(BaseModel):
         return self
 
 
+class OecdSdmxConnectorRunIn(BaseModel):
+    agency: str = "OECD.SDD.STES"
+    dataflow: str = "DSD_STES@DF_CLI"
+    dimension_key: str = ".M.LI...AA...H"
+    start_period: str | None = None
+    end_period: str | None = None
+    lastNObservations: int | None = Field(default=None, ge=1)
+    max_requests: int = Field(default=6, ge=1, le=30)
+    max_rows: int = Field(default=5000, ge=1, le=10000)
+    max_response_bytes: int = Field(default=2_000_000, ge=1, le=5_000_000)
+    run_mode: Literal["metadata_only", "dry_run"] = "metadata_only"
+    request_timeout_seconds: int = 30
+    retry_max_attempts_per_request: int = 4
+    retry_base_backoff_seconds: float = 0.4
+    retry_max_backoff_seconds: float = 3.0
+    retry_respect_retry_after: bool = True
+    max_rps: float = Field(default=2.0, ge=0.1, le=2.0)
+    report_verbosity: Literal["summary", "standard", "debug"] = "standard"
+    client_request_id: str | None = None
+
+
 class ConnectorRunSubmitOut(BaseModel):
     connector_run_id: str
     status: str
