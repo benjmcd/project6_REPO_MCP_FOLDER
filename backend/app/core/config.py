@@ -214,6 +214,7 @@ class Settings(BaseSettings):
     senate_lda_api_key: str = Field(default="", alias="SENATE_LDA_API_KEY")
     worldbank_api_base_url: str = Field(default="https://api.worldbank.org/v2", alias="WORLDBANK_API_BASE_URL")
     cftc_cot_api_base_url: str = Field(default="https://www.cftc.gov/dea/newcot", alias="CFTC_COT_API_BASE_URL")
+    bls_api_base_url: str = Field(default="https://api.bls.gov/publicAPI/v1/timeseries/data", alias="BLS_API_BASE_URL")
     connector_lease_ttl_seconds: int = Field(default=120, alias="CONNECTOR_LEASE_TTL_SECONDS")
     connector_submission_ttl_hours: int = Field(default=24, alias="CONNECTOR_SUBMISSION_TTL_HOURS")
     connector_max_redirects: int = Field(default=3, alias="CONNECTOR_MAX_REDIRECTS")

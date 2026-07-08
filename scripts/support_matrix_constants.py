@@ -20,6 +20,7 @@ PINNED_FALSE_FLAGS = [
 
 EXPECTED_STATUS_BY_ID = {
     "method_aware_analytics_vertical": "supported",
+    "bls_v1_anonymous_connector_slice": "supported",
     "sciencebase_public_connector_slice": "supported",
     "senate_lda_anonymous_connector_slice": "supported",
     "worldbank_indicators_anonymous_connector_slice": "supported",
