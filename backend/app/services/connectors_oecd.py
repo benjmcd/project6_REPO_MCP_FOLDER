@@ -8,7 +8,7 @@ import time
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urljoin, urlparse
 
 import requests
 from sqlalchemy import and_
@@ -53,6 +53,10 @@ CONNECTOR_KEY = "oecd_sdmx"
 SOURCE_SYSTEM = "oecd_sdmx"
 ALLOWED_HOST = "sdmx.oecd.org"
 FORMAT = "csvfilewithlabels"
+DEFAULT_MAX_ROWS = 5000
+MAX_MAX_ROWS = 10000
+DEFAULT_MAX_RESPONSE_BYTES = 2_000_000
+MAX_RESPONSE_BYTES = 5_000_000
 API_ACCESS_DATE = "2026-07-08"
 ATTRIBUTION = "Organisation for Economic Co-operation and Development SDMX API"
 TERMS_URL = "https://www.oecd.org/en/about/terms-conditions.html"
@@ -137,7 +141,6 @@ def _logical_query_from_config(config: dict[str, Any]) -> dict[str, Any]:
         "start_period": config.get("start_period"),
         "end_period": config.get("end_period"),
         "lastNObservations": config.get("lastNObservations"),
-        "max_requests": int(config.get("max_requests", 6)),
     }
 
 
@@ -153,6 +156,13 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
     config["max_requests"] = _coerce_int(config.get("max_requests"), 6)
     if int(config["max_requests"]) < 1 or int(config["max_requests"]) > 30:
         raise OecdSdmxSchemaValidationError("oecd_request_budget_out_of_range")
+    config["max_rows"] = _coerce_int(config.get("max_rows"), DEFAULT_MAX_ROWS, minimum=1, maximum=MAX_MAX_ROWS)
+    config["max_response_bytes"] = _coerce_int(
+        config.get("max_response_bytes"),
+        DEFAULT_MAX_RESPONSE_BYTES,
+        minimum=1,
+        maximum=MAX_RESPONSE_BYTES,
+    )
     config["run_mode"] = str(config.get("run_mode", "metadata_only")).strip().lower()
     if config["run_mode"] not in {"metadata_only", "dry_run"}:
         config["run_mode"] = "metadata_only"
@@ -276,10 +286,6 @@ class OecdSdmxClient:
         if format != FORMAT:
             raise OecdSdmxSchemaValidationError("unsupported_oecd_sdmx_format")
         url = f"{self.base_url}/{agency},{dataflow}/{dimension_key}"
-        resolved_ip, reason = _precheck_oecd_url(url, _oecd_fetch_policy({"max_redirects": max_redirects}))
-        retry_counters["resolved_ip"] = resolved_ip
-        if reason:
-            raise FetchPolicyBlockedError(reason)
         params: dict[str, Any] = {"dimensionAtObservation": "AllDimensions", "format": FORMAT}
         if start_period:
             params["startPeriod"] = start_period
@@ -291,12 +297,17 @@ class OecdSdmxClient:
         for attempt in range(1, retry_max_attempts_per_request + 1):
             if int(retry_counters.get("requests_total", 0)) >= max_requests_budget:
                 raise OecdSdmxSchemaValidationError("request_budget_exhausted")
-            rate_limiter.wait()
-            retry_counters["requests_total"] = int(retry_counters.get("requests_total", 0)) + 1
             try:
-                response = self.session.get(url, params=params, timeout=timeout_seconds, allow_redirects=True)
-                if len(response.history) > max_redirects:
-                    raise FetchPolicyBlockedError("redirect_policy_violation")
+                response = self._get_with_validated_redirects(
+                    url=url,
+                    params=params,
+                    timeout_seconds=timeout_seconds,
+                    max_redirects=max_redirects,
+                    max_requests_budget=max_requests_budget,
+                    max_response_bytes=int(retry_counters.get("max_response_bytes", DEFAULT_MAX_RESPONSE_BYTES)),
+                    rate_limiter=rate_limiter,
+                    retry_counters=retry_counters,
+                )
                 final_host = (urlparse(str(response.url)).hostname or "").lower()
                 if final_host != ALLOWED_HOST:
                     raise FetchPolicyBlockedError("host_not_allowed")
@@ -315,6 +326,8 @@ class OecdSdmxClient:
                     retry_counters["retry_sleep_seconds"] = float(retry_counters.get("retry_sleep_seconds", 0.0)) + wait_seconds
                     continue
                 response.raise_for_status()
+                if len(getattr(response, "content", b"") or b"") > int(retry_counters.get("max_response_bytes", DEFAULT_MAX_RESPONSE_BYTES)):
+                    raise OecdSdmxSchemaValidationError("response_too_large")
                 return response.text
             except Exception as exc:
                 last_exc = exc
@@ -331,6 +344,52 @@ class OecdSdmxClient:
             raise last_exc
         raise OecdSdmxSchemaValidationError("request_failed")
 
+    def _get_with_validated_redirects(
+        self,
+        *,
+        url: str,
+        params: dict[str, Any],
+        timeout_seconds: int,
+        max_redirects: int,
+        max_requests_budget: int,
+        max_response_bytes: int,
+        rate_limiter: _RateLimiter,
+        retry_counters: dict[str, Any],
+    ) -> requests.Response:
+        policy = _oecd_fetch_policy({"max_redirects": max_redirects})
+        current_url = url
+        current_params: dict[str, Any] | None = params
+        redirects_followed = 0
+        while True:
+            if int(retry_counters.get("requests_total", 0)) >= max_requests_budget:
+                raise OecdSdmxSchemaValidationError("request_budget_exhausted")
+            resolved_ip, reason = _precheck_oecd_url(current_url, policy)
+            retry_counters["resolved_ip"] = resolved_ip
+            if reason:
+                raise FetchPolicyBlockedError(reason)
+            rate_limiter.wait()
+            retry_counters["requests_total"] = int(retry_counters.get("requests_total", 0)) + 1
+            response = self.session.get(current_url, params=current_params, timeout=timeout_seconds, allow_redirects=False)
+            if len(getattr(response, "content", b"") or b"") > max_response_bytes:
+                raise OecdSdmxSchemaValidationError("response_too_large")
+            if int(getattr(response, "status_code", 0)) not in {301, 302, 303, 307, 308}:
+                return response
+            if redirects_followed >= max_redirects:
+                raise FetchPolicyBlockedError("redirect_policy_violation")
+            location = str(response.headers.get("Location") or "").strip()
+            if not location:
+                raise FetchPolicyBlockedError("redirect_policy_violation")
+            next_url = urljoin(str(getattr(response, "url", current_url) or current_url), location)
+            _resolved_ip, next_reason = _precheck_oecd_url(next_url, policy)
+            if next_reason:
+                raise FetchPolicyBlockedError(next_reason)
+            if (urlparse(next_url).hostname or "").lower() != ALLOWED_HOST:
+                raise FetchPolicyBlockedError("host_not_allowed")
+            current_url = next_url
+            current_params = None
+            redirects_followed += 1
+            retry_counters["redirects_total"] = int(retry_counters.get("redirects_total", 0)) + 1
+
 
 def get_oecd_client(config: dict[str, Any]) -> OecdSdmxClient:
     return OecdSdmxClient(base_url=settings.oecd_sdmx_api_base_url)
@@ -341,6 +400,7 @@ def _client_auth_mode(client: Any) -> str:
 
 
 def _common_request_kwargs(config: dict[str, Any], rate_limiter: _RateLimiter, retry_counters: dict[str, Any]) -> dict[str, Any]:
+    retry_counters["max_response_bytes"] = int(config.get("max_response_bytes", DEFAULT_MAX_RESPONSE_BYTES))
     return {
         "timeout_seconds": int(config.get("request_timeout_seconds", 30)),
         "max_redirects": int(config.get("max_redirects", settings.connector_max_redirects)),
@@ -461,7 +521,17 @@ def _rows_for_target(target: ConnectorRunTarget, rows_by_target: dict[str, list[
 
 
 def _query_url(config: dict[str, Any]) -> str:
-    return f"{settings.oecd_sdmx_api_base_url.rstrip('/')}/{config['agency']},{config['dataflow']}/{config['dimension_key']}"
+    params: dict[str, Any] = {"dimensionAtObservation": "AllDimensions", "format": FORMAT}
+    if config.get("start_period"):
+        params["startPeriod"] = config["start_period"]
+    if config.get("end_period"):
+        params["endPeriod"] = config["end_period"]
+    if config.get("lastNObservations") is not None:
+        params["lastNObservations"] = int(config["lastNObservations"])
+    return (
+        f"{settings.oecd_sdmx_api_base_url.rstrip('/')}/{config['agency']},{config['dataflow']}/{config['dimension_key']}"
+        f"?{urlencode(params)}"
+    )
 
 
 def _target_for_request(*, run: ConnectorRun, config: dict[str, Any]) -> ConnectorRunTarget:
@@ -527,7 +597,7 @@ def _parse_float(value: str | None) -> float | None:
         raise OecdSdmxSchemaValidationError("schema_validation_failed") from exc
 
 
-def _parse_sdmx_csv(payload: str) -> tuple[list[dict[str, Any]], int]:
+def _parse_sdmx_csv(payload: str, *, max_rows: int) -> tuple[list[dict[str, Any]], int]:
     text = payload.strip()
     if not text:
         raise OecdSdmxSchemaValidationError("empty_dataset")
@@ -550,6 +620,8 @@ def _parse_sdmx_csv(payload: str) -> tuple[list[dict[str, Any]], int]:
             time_period = _clean_string(raw.get("TIME_PERIOD"))
             if not dataflow or not time_period:
                 raise OecdSdmxSchemaValidationError("schema_validation_failed")
+            if len(rows) >= max_rows:
+                raise OecdSdmxSchemaValidationError("row_limit_exceeded")
             rows.append(
                 {
                     "dataflow": dataflow,
@@ -590,7 +662,15 @@ def _persist_dataset_identity(db: Session, dataset_id: str, logical_dataset_key:
     db.flush()
 
 
-def _ensure_metadata_provenance(db: Session, *, run: ConnectorRun, target: ConnectorRunTarget, rows: list[dict[str, Any]], retry_counters: dict[str, Any]) -> None:
+def _ensure_metadata_provenance(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    target: ConnectorRunTarget,
+    rows: list[dict[str, Any]],
+    source_row_count: int,
+    retry_counters: dict[str, Any],
+) -> None:
     if target.status != "recommended":
         return
     logical_dataset_key = target.stable_release_key or f"oecd_sdmx:{target.connector_run_target_id}"
@@ -604,8 +684,9 @@ def _ensure_metadata_provenance(db: Session, *, run: ConnectorRun, target: Conne
             _persist_dataset_identity(db, dataset_id=dataset_id, logical_dataset_key=logical_dataset_key, metadata_json={"source_system": SOURCE_SYSTEM, "stable_release_key": target.stable_release_key, "source_artifact_key": target.source_artifact_key, "identifiers": target.identifiers_json or []})
         target.dataset_id = dataset_id
     if not target.dataset_version_id:
-        content_payload = {"source_system": SOURCE_SYSTEM, "source_artifact_key": target.source_artifact_key, "row_count": len(rows), "row_hashes": [_stable_json_hash({"row": row}) for row in rows]}
-        version = DatasetVersion(dataset_id=target.dataset_id, version_label=f"oecd_sdmx_{str(target.sciencebase_item_id or target.ordinal).replace(':', '_')[:80]}_{run.connector_run_id[:8]}", version_type="source_metadata", status="ready", storage_ref=target.source_artifact_key, row_count=len(rows), content_hash=_stable_json_hash(content_payload), source_row_count=len(rows), dropped_row_count=0, notes=f"connector_run_id={run.connector_run_id}; source_artifact_key={target.source_artifact_key}")
+        dropped_row_count = max(source_row_count - len(rows), 0)
+        content_payload = {"source_system": SOURCE_SYSTEM, "source_artifact_key": target.source_artifact_key, "row_count": len(rows), "source_row_count": source_row_count, "dropped_row_count": dropped_row_count, "row_hashes": [_stable_json_hash({"row": row}) for row in rows]}
+        version = DatasetVersion(dataset_id=target.dataset_id, version_label=f"oecd_sdmx_{str(target.sciencebase_item_id or target.ordinal).replace(':', '_')[:80]}_{run.connector_run_id[:8]}", version_type="source_metadata", status="ready", storage_ref=target.source_artifact_key, row_count=len(rows), content_hash=_stable_json_hash(content_payload), source_row_count=source_row_count, dropped_row_count=dropped_row_count, notes=f"connector_run_id={run.connector_run_id}; source_artifact_key={target.source_artifact_key}")
         db.add(version)
         db.flush()
         target.dataset_version_id = version.dataset_version_id
@@ -627,7 +708,7 @@ def _ensure_metadata_provenance(db: Session, *, run: ConnectorRun, target: Conne
             source_query_fingerprint=run.source_query_fingerprint,
             source_reference_json=target.source_reference_json or {},
             fetch_policy_mode="oecd_sdmx_official_only",
-            retrieved_http_json={"api_base_url": settings.oecd_sdmx_api_base_url, "allowed_hosts": [ALLOWED_HOST], "format": FORMAT, "phase0_doc_urls": PHASE0_DOC_URLS, "api_access_date": API_ACCESS_DATE, "terms_url": TERMS_URL, "restricted_parameter_url": RESTRICTED_PARAMETER_URL, "anonymous_tier_basis": ANONYMOUS_TIER_BASIS, "operator_residuals": OPERATOR_RESIDUALS, "requests_total": int(retry_counters.get("requests_total", 0)), "resolved_ip": retry_counters.get("resolved_ip")},
+            retrieved_http_json={"api_base_url": settings.oecd_sdmx_api_base_url, "allowed_hosts": [ALLOWED_HOST], "format": FORMAT, "phase0_doc_urls": PHASE0_DOC_URLS, "api_access_date": API_ACCESS_DATE, "terms_url": TERMS_URL, "restricted_parameter_url": RESTRICTED_PARAMETER_URL, "anonymous_tier_basis": ANONYMOUS_TIER_BASIS, "operator_residuals": OPERATOR_RESIDUALS, "requests_total": int(retry_counters.get("requests_total", 0)), "resolved_ip": retry_counters.get("resolved_ip"), "source_row_count": source_row_count, "normalized_row_count": len(rows), "dropped_row_count": max(source_row_count - len(rows), 0)},
             discovered_at=target.discovered_at,
             downloaded_at=target.downloaded_at,
         )
@@ -646,7 +727,7 @@ def _process_target(db: Session, *, run: ConnectorRun, target: ConnectorRunTarge
         if int(retry_counters.get("requests_total", 0)) >= int(config.get("max_requests", 6)):
             raise OecdSdmxSchemaValidationError("request_budget_exhausted")
         payload = client.fetch_csv(agency=str(config.get("agency")), dataflow=str(config.get("dataflow")), dimension_key=str(config.get("dimension_key")), start_period=config.get("start_period"), end_period=config.get("end_period"), last_n_observations=config.get("lastNObservations"), **_common_request_kwargs(config, rate_limiter, retry_counters))
-        rows, source_row_count = _parse_sdmx_csv(payload)
+        rows, source_row_count = _parse_sdmx_csv(payload, max_rows=int(config.get("max_rows", DEFAULT_MAX_ROWS)))
         row_artifact_ref = _write_rows_artifact(run, target, rows)
         target.status = "recommended"
         target.recommended_at = _utcnow()
@@ -661,7 +742,7 @@ def _process_target(db: Session, *, run: ConnectorRun, target: ConnectorRunTarge
         source_ref.update({"source_row_count": source_row_count, "normalized_row_count": len(rows), "format": FORMAT, "row_artifact_ref": row_artifact_ref})
         target.source_reference_json = source_ref
         _record_request_accounting(run, retry_counters)
-        _ensure_metadata_provenance(db, run=run, target=target, rows=rows, retry_counters=retry_counters)
+        _ensure_metadata_provenance(db, run=run, target=target, rows=rows, source_row_count=source_row_count, retry_counters=retry_counters)
         _record_run_event(db, run=run, target=target, event_type="target_rows_recorded", phase="selection", status_after="recommended", reason_code="observations_recorded")
         db.commit()
         return rows

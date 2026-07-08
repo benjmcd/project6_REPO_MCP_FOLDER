@@ -78,7 +78,7 @@ from app.services.connectors_senate_lda import execute_senate_lda_run, submit_se
 from app.services.connectors_worldbank import execute_worldbank_run, submit_worldbank_run
 from app.services.connectors_cftc_cot import execute_cftc_cot_run, submit_cftc_cot_run
 from app.services.connectors_bls import execute_bls_run, submit_bls_run
-from app.services.connectors_oecd import execute_oecd_sdmx_run, submit_oecd_sdmx_run
+from app.services.connectors_oecd import OecdSdmxSchemaValidationError, execute_oecd_sdmx_run, submit_oecd_sdmx_run
 from app.services import aps_retrieval_plane_read
 from app.services import nrc_aps_content_index
 from app.services import nrc_aps_context_dossier
@@ -613,6 +613,8 @@ def create_oecd_sdmx_run(
             )
         except SubmissionConflictError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except OecdSdmxSchemaValidationError as exc:
+            raise HTTPException(status_code=422, detail={"error_code": str(exc), "message": str(exc)}) from exc
         if created and run.status == "pending":
             _enqueue_connector_run(background_tasks, run.connector_key, run.connector_run_id)
         return ConnectorRunSubmitOut.model_validate(
