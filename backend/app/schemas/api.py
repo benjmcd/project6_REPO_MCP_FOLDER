@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class ProfileRequest(BaseModel):
@@ -334,6 +334,48 @@ class CftcCotConnectorRunIn(BaseModel):
     max_rps: float = Field(default=2.0, le=2.0)
     report_verbosity: Literal["summary", "standard", "debug"] = "standard"
     client_request_id: str | None = None
+
+
+class BlsConnectorRunIn(BaseModel):
+    series_ids: list[str] = Field(default_factory=lambda: ["LAUCN040010000000005"], min_length=1, max_length=25)
+    start_year: int | None = Field(default=None, ge=1900, le=9999)
+    end_year: int | None = Field(default=None, ge=1900, le=9999)
+    max_requests: int = Field(default=10, ge=1, le=25)
+    run_mode: Literal["metadata_only", "dry_run"] = "metadata_only"
+    request_timeout_seconds: int = 30
+    retry_max_attempts_per_request: int = 4
+    retry_base_backoff_seconds: float = 0.4
+    retry_max_backoff_seconds: float = 3.0
+    retry_respect_retry_after: bool = True
+    max_rps: float = Field(default=2.0, ge=0.1, le=2.0)
+    report_verbosity: Literal["summary", "standard", "debug"] = "standard"
+    client_request_id: str | None = None
+
+    @field_validator("series_ids")
+    @classmethod
+    def _normalize_series_ids(cls, value: list[str]) -> list[str]:
+        normalized = []
+        for item in value:
+            text = str(item or "").strip().upper()
+            if text and (len(text) > 64 or not text.isalnum()):
+                raise ValueError("BLS series ids must be alphanumeric")
+            if text:
+                normalized.append(text)
+        deduped = list(dict.fromkeys(normalized))
+        if not deduped:
+            raise ValueError("at least one BLS series id is required")
+        return deduped
+
+    @model_validator(mode="after")
+    def _validate_year_span(self) -> "BlsConnectorRunIn":
+        if (self.start_year is None) != (self.end_year is None):
+            raise ValueError("start_year and end_year must be supplied together")
+        if self.start_year is not None and self.end_year is not None:
+            if self.start_year > self.end_year:
+                raise ValueError("start_year must be before or equal to end_year")
+            if self.end_year - self.start_year > 9:
+                raise ValueError("BLS API v1 year range must be 10 years or less")
+        return self
 
 
 class ConnectorRunSubmitOut(BaseModel):

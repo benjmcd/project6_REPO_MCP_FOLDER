@@ -1,6 +1,6 @@
 # Public Connectors Journey
 
-This journey covers the public_connectors overlay in the current selected local profile: ScienceBase public/MCS, Senate LDA anonymous metadata, World Bank Indicators anonymous metadata, and CFTC COT anonymous public report rows. It does not activate or claim OCR, model/agent egress, keyed connectors, nonlocal deployment, high availability, automatic replay, real provider delivery, SEC value reveal, or default-on SEC live network behavior. The current support matrix, not the earlier RC1 analytics-only claim, is the authority for whether these connector slices are selected.
+This journey covers the public_connectors overlay in the current selected local profile: ScienceBase public/MCS, Senate LDA anonymous metadata, World Bank Indicators anonymous metadata, BLS Public Data API v1 anonymous metadata, and CFTC COT anonymous public report rows. It does not activate or claim OCR, model/agent egress, keyed connectors, nonlocal deployment, high availability, automatic replay, real provider delivery, SEC value reveal, or default-on SEC live network behavior. The current support matrix, not the earlier RC1 analytics-only claim, is the authority for whether these connector slices are selected.
 
 ## Canonical ScienceBase Path
 
@@ -39,6 +39,16 @@ The World Bank Indicators path is secondary and metadata-only:
 
 The anonymous posture is explicit: the connector has no API key setting, its effective search params record `auth_mode=anonymous`, and the stored provenance carries World Bank attribution, `CC BY 4.0`, and the World Bank summary terms-of-use URL.
 
+## BLS Public Data API v1 Secondary Path
+
+The BLS path is secondary and metadata-only:
+
+1. Submit `POST /api/v1/connectors/bls/runs` with `run_mode=metadata_only`, one or more `series_ids`, optional `start_year`/`end_year`, and an optional `max_requests` per-run budget.
+2. Inspect `GET /api/v1/connectors/runs/{run_id}` for official API-only fetch policy scoped to `api.bls.gov`, `auth_mode=anonymous`, and a `bls_summary` report ref.
+3. Read the summary/selection report JSON for normalized time-series observations. The database stores metadata-only dataset/version/provenance records; observation values are retained in connector reports.
+
+The anonymous posture is explicit: the connector has no API key setting, the runtime base URL is server-configured as `BLS_API_BASE_URL`, and no `registrationkey` parameter is sent. The connector enforces 25 series/query, a 10-year inclusive span, `max_rps <= 2`, and `max_requests <= 25` per run. The BLS v1 25-queries/day cap across runs remains operator responsibility because this lane does not add durable cross-run quota state.
+
 ## CFTC COT Secondary Path
 
 The CFTC COT path is secondary and report-row-only:
@@ -61,6 +71,10 @@ Focused proof lives in `tests/test_api.py`:
 - `test_worldbank_connector_malformed_observations_fail_closed`
 - `test_worldbank_connector_resume_continues_unmanifested_partial_discovery`
 - `test_worldbank_connector_rejects_non_worldbank_base_url`
+- `test_bls_connector_happy_single_get_reports_and_attribution`
+- `test_bls_connector_happy_multi_post_with_years`
+- `test_bls_connector_no_key_negative_single_and_multi`
+- `test_bls_support_matrix_mirror_and_runtime_probe`
 - `test_cftc_cot_connector_happy_path_reports_rows_and_attribution`
 - `test_cftc_cot_connector_accepts_headerless_current_report_rows`
 - `test_cftc_cot_connector_unrecognized_format_fails_closed`

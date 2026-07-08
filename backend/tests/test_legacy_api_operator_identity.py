@@ -5,7 +5,7 @@ Proves, at the HTTP route layer, that:
 2. proxy mode + trusted proxy + valid identity headers → not auth-gate rejected
 3. local default mode (auth_owner=none) → behaviour unchanged (inert seam, no auth rejection)
 
-All 45 routes are covered via parametrize.  Auth check fires before any service lookup,
+All 48 routes are covered via parametrize.  Auth check fires before any service lookup,
 so the auth-gate 401/409 proves gating independent of whether the resource exists.
 
 POST routes with JSON bodies: the gate fires as the FIRST statement, before Pydantic
@@ -117,6 +117,7 @@ _POST_JSON_ROUTES: list[tuple[str, dict]] = [
     (f"{_API}/connectors/senate-lda/runs", {}),
     (f"{_API}/connectors/worldbank/runs", {}),
     (f"{_API}/connectors/cftc-cot/runs", {}),
+    (f"{_API}/connectors/bls/runs", {}),
     (f"{_API}/connectors/nrc-adams-aps/content-search", {"query": "test"}),
     (f"{_API}/connectors/nrc-adams-aps/_operator/retrieval-content-search", {"query": "test"}),
     (f"{_API}/connectors/nrc-adams-aps/evidence-bundles", {"run_id": _CRUN}),
@@ -139,7 +140,7 @@ _POST_MULTIPART_ROUTES = [
 ]
 
 assert len(_GET_ROUTES) == 20, f"Expected 20 GET routes, got {len(_GET_ROUTES)}"
-assert len(_POST_JSON_ROUTES) == 26, f"Expected 26 POST JSON routes, got {len(_POST_JSON_ROUTES)}"
+assert len(_POST_JSON_ROUTES) == 27, f"Expected 27 POST JSON routes, got {len(_POST_JSON_ROUTES)}"
 assert len(_POST_MULTIPART_ROUTES) == 1, f"Expected 1 multipart POST route, got {len(_POST_MULTIPART_ROUTES)}"
 
 

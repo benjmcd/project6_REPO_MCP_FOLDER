@@ -22,6 +22,7 @@ STATUS_VOCABULARY = {
 
 EXPECTED_CAPABILITY_STATUSES = {
     "method_aware_analytics_vertical": "supported",
+    "bls_v1_anonymous_connector_slice": "supported",
     "sciencebase_public_connector_slice": "supported",
     "senate_lda_anonymous_connector_slice": "supported",
     "worldbank_indicators_anonymous_connector_slice": "supported",
@@ -116,6 +117,7 @@ def test_support_matrix_declares_local_expert_capability_boundary() -> None:
         assert by_id[capability_id]["status"] == "simulation"
     assert "nrc_aps_document_processing.py" in by_id["ocr_external_engine"]["evidence"]
     for connector_id in (
+        "bls_v1_anonymous_connector_slice",
         "sciencebase_public_connector_slice",
         "senate_lda_anonymous_connector_slice",
         "worldbank_indicators_anonymous_connector_slice",
@@ -141,6 +143,7 @@ def test_support_matrix_connector_evidence_points_to_actual_config_aliases() -> 
     senate_key_line = line_number_for("SENATE_LDA_API_KEY")
     worldbank_line = line_number_for("WORLDBANK_API_BASE_URL")
     cftc_cot_line = line_number_for("CFTC_COT_API_BASE_URL")
+    bls_line = line_number_for("BLS_API_BASE_URL")
 
     assert f"backend/app/core/config.py:{sciencebase_line}" in by_id["sciencebase_public_connector_slice"]["evidence"]
     assert (
@@ -149,6 +152,7 @@ def test_support_matrix_connector_evidence_points_to_actual_config_aliases() -> 
     )
     assert f"backend/app/core/config.py:{worldbank_line}" in by_id["worldbank_indicators_anonymous_connector_slice"]["evidence"]
     assert f"backend/app/core/config.py:{cftc_cot_line}" in by_id["cftc_cot_anonymous_connector_slice"]["evidence"]
+    assert f"backend/app/core/config.py:{bls_line}" in by_id["bls_v1_anonymous_connector_slice"]["evidence"]
 
 
 def test_front_door_names_selected_local_expert_profile_without_old_unselected_claim() -> None:
@@ -246,6 +250,7 @@ def test_support_matrix_checker_accepts_analytics_only_connector_deferrals(tmp_p
     )
     by_id = {item["id"]: item for item in matrix["capabilities"]}
     for capability_id in (
+        "bls_v1_anonymous_connector_slice",
         "sciencebase_public_connector_slice",
         "senate_lda_anonymous_connector_slice",
         "worldbank_indicators_anonymous_connector_slice",

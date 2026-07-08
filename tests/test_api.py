@@ -3736,7 +3736,7 @@ def test_sciencebase_mcs_support_matrix_evidence_pins_current_data_release():
     by_id = {item["id"]: item for item in matrix["capabilities"]}
     sciencebase = by_id["sciencebase_public_connector_slice"]
 
-    assert len(matrix["capabilities"]) == 30
+    assert len(matrix["capabilities"]) == 31
     assert sciencebase["status"] == "supported"
     assert "ScienceBase public/MCS" in matrix["boundary_note"]
     assert "sciencebase_mcs_2026_data_release_slice" not in by_id
@@ -8674,6 +8674,509 @@ def test_worldbank_connector_rejects_non_worldbank_base_url():
 
     with pytest.raises(wb.WorldBankSchemaValidationError, match="inadmissible_worldbank_base_url"):
         wb.WorldBankIndicatorsClient(base_url="https://example.test/v2")
+
+
+def _bls_payload(series_ids: list[str], *, value: str | None = "123.4", data: list[dict] | None = None) -> dict:
+    series = []
+    for index, series_id in enumerate(series_ids):
+        rows = data if data is not None else [
+            {
+                "year": "2024",
+                "period": f"M0{index + 1}",
+                "periodName": "January" if index == 0 else "February",
+                "value": value,
+                "footnotes": [{"code": "P", "text": "Preliminary."}],
+            }
+        ]
+        series.append({"seriesID": series_id, "data": rows})
+    return {"status": "REQUEST_SUCCEEDED", "responseTime": 5, "message": [], "Results": [{"series": series}]}
+
+
+class _FakeBlsClient:
+    auth_mode = "anonymous"
+
+    def __init__(self, payload: dict | None = None, *, error: Exception | None = None):
+        self.payload = payload
+        self.error = error
+        self.calls: list[dict[str, object]] = []
+
+    def fetch_series(self, *, series_ids, start_year, end_year, rate_limiter=None, retry_counters=None, **kwargs):
+        method = "GET" if len(series_ids) == 1 and start_year is None and end_year is None else "POST"
+        body = None
+        if method == "POST":
+            body = {"seriesid": list(series_ids)}
+            if start_year is not None and end_year is not None:
+                body.update({"startyear": str(start_year), "endyear": str(end_year)})
+        url = "https://api.bls.gov/publicAPI/v1/timeseries/data"
+        if method == "GET":
+            url = f"{url}/{series_ids[0]}"
+        self.calls.append({"method": method, "url": url, "body": body, "kwargs": dict(kwargs)})
+        if rate_limiter is not None:
+            rate_limiter.wait()
+        if retry_counters is not None:
+            retry_counters["requests_total"] = int(retry_counters.get("requests_total", 0)) + 1
+        if self.error is not None:
+            raise self.error
+        return self.payload or _bls_payload(list(series_ids))
+
+
+def _http_error(status_code: int) -> requests.HTTPError:
+    response = requests.Response()
+    response.status_code = status_code
+    response.url = "https://api.bls.gov/publicAPI/v1/timeseries/data"
+    error = requests.HTTPError(f"{status_code} error")
+    error.response = response
+    return error
+
+
+def _install_fake_bls(monkeypatch, fake: _FakeBlsClient):
+    from app.services import connectors_bls as bls
+
+    monkeypatch.setattr(bls, "get_bls_client", lambda config: fake)
+    monkeypatch.setattr(bls, "_resolve_host_ip", lambda hostname: "8.8.8.8")
+    return bls
+
+
+def test_bls_connector_happy_single_get_reports_and_attribution(monkeypatch):
+    from app.core.config import settings
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRun, ConnectorRunTarget, DatasetSourceProvenance
+    from app.services import connectors_bls as bls
+
+    fake = _FakeBlsClient()
+    _install_fake_bls(monkeypatch, fake)
+    assert bls.ALLOWED_HOST == "api.bls.gov"
+    assert settings.bls_api_base_url.startswith("https://api.bls.gov/")
+    assert "www.bls.gov" not in {bls.ALLOWED_HOST, settings.bls_api_base_url}
+
+    submit = client.post(
+        "/api/v1/connectors/bls/runs",
+        json={"series_ids": ["LAUCN040010000000005"]},
+        headers={"Idempotency-Key": f"bls-happy-get-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    payload = detail.json()
+    assert payload["connector_key"] == "bls_v1"
+    assert payload["status"] == "completed"
+    assert payload["run_mode"] == "metadata_only"
+    assert payload["fetch_policy_summary"] == {
+        "mode": "official_api_only",
+        "surface_policy": "metadata_only",
+        "external_fetch_policy": "bls_v1_official_only",
+        "allowed_hosts": ["api.bls.gov"],
+    }
+    assert fake.calls[0]["method"] == "GET"
+    assert fake.calls[0]["url"].endswith("/LAUCN040010000000005")
+
+    summary = json.loads(Path(payload["report_refs"]["bls_summary"]).read_text(encoding="utf-8"))
+    assert summary["request"]["method"] == "GET"
+    assert summary["rows"][0]["series_id"] == "LAUCN040010000000005"
+    assert summary["terms_of_service_url"] == "https://www.bls.gov/developers/termsOfService.htm"
+    assert "cannot vouch" in summary["no_vouch_disclaimer"]
+    assert summary["api_access_date"] == "2026-07-08"
+
+    db = SessionLocal()
+    try:
+        run = db.get(ConnectorRun, run_id)
+        assert run.effective_search_params_json["base_url"] == "https://api.bls.gov/publicAPI/v1/timeseries/data"
+        assert run.effective_search_params_json["runtime_host"] == "api.bls.gov"
+        provenance_rows = (
+            db.query(DatasetSourceProvenance)
+            .filter(DatasetSourceProvenance.connector_run_id == run_id)
+            .filter(DatasetSourceProvenance.source_system == "bls_v1")
+            .all()
+        )
+        assert len(provenance_rows) == 1
+        row = provenance_rows[0]
+        assert row.source_mode == "metadata_only"
+        assert row.source_reference_json["runtime_host"] == "api.bls.gov"
+        assert row.retrieved_http_json["api_base_url"] == "https://api.bls.gov/publicAPI/v1/timeseries/data"
+        assert row.retrieved_http_json["terms_of_service_url"] == "https://www.bls.gov/developers/termsOfService.htm"
+        target = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run_id).one()
+        row_artifact_ref = target.source_reference_json["row_artifact_ref"]
+        row_artifact = json.loads(Path(row_artifact_ref).read_text(encoding="utf-8"))
+        assert row_artifact["rows"][0]["series_id"] == "LAUCN040010000000005"
+        bls._write_selection_manifest(db, run=run, rows_by_target={})
+        recovered_manifest = json.loads(Path(run.selection_manifest_ref).read_text(encoding="utf-8"))
+        assert recovered_manifest["targets"][0]["rows"][0]["series_id"] == "LAUCN040010000000005"
+    finally:
+        db.close()
+
+
+def test_bls_connector_happy_multi_post_with_years(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRunTarget
+
+    fake = _FakeBlsClient()
+    _install_fake_bls(monkeypatch, fake)
+
+    submit = client.post(
+        "/api/v1/connectors/bls/runs",
+        json={"series_ids": ["LAUCN040010000000005", "LAUCN040010000000006"], "start_year": 2022, "end_year": 2022},
+        headers={"Idempotency-Key": f"bls-happy-post-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    detail = client.get(f"/api/v1/connectors/runs/{submit.json()['connector_run_id']}").json()
+    summary = json.loads(Path(detail["report_refs"]["bls_summary"]).read_text(encoding="utf-8"))
+
+    assert fake.calls[0]["method"] == "POST"
+    assert fake.calls[0]["url"] == "https://api.bls.gov/publicAPI/v1/timeseries/data"
+    assert fake.calls[0]["body"] == {
+        "seriesid": ["LAUCN040010000000005", "LAUCN040010000000006"],
+        "startyear": "2022",
+        "endyear": "2022",
+    }
+    assert summary["request"]["method"] == "POST"
+    assert {row["series_id"] for row in summary["rows"]} == {"LAUCN040010000000005", "LAUCN040010000000006"}
+
+    long_series_ids = [f"BLS{i:017d}" for i in range(25)]
+    wide_fake = _FakeBlsClient()
+    _install_fake_bls(monkeypatch, wide_fake)
+    wide_submit = client.post(
+        "/api/v1/connectors/bls/runs",
+        json={"series_ids": long_series_ids, "start_year": 2022, "end_year": 2022},
+        headers={"Idempotency-Key": f"bls-wide-post-{uuid.uuid4().hex}"},
+    )
+    assert wide_submit.status_code == 202, wide_submit.text
+    wide_run_id = wide_submit.json()["connector_run_id"]
+    db = SessionLocal()
+    try:
+        target = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == wide_run_id).one()
+        assert "25series-" in target.stable_release_key
+        for value in (
+            target.stable_release_key,
+            target.stable_release_identifier,
+            target.sciencebase_item_id,
+            target.source_artifact_key,
+            target.canonical_artifact_key,
+        ):
+            assert len(value) <= 255
+        assert target.source_reference_json["series_ids"] == long_series_ids
+    finally:
+        db.close()
+
+
+def test_bls_connector_rejects_26_series(monkeypatch):
+    _install_fake_bls(monkeypatch, _FakeBlsClient())
+    response = client.post(
+        "/api/v1/connectors/bls/runs",
+        json={"series_ids": [f"SERIES{i:02d}" for i in range(26)]},
+        headers={"Idempotency-Key": f"bls-too-many-series-{uuid.uuid4().hex}"},
+    )
+    assert response.status_code == 422, response.text
+    invalid = client.post(
+        "/api/v1/connectors/bls/runs",
+        json={"series_ids": ["LAUCN040010000000005/../x"]},
+        headers={"Idempotency-Key": f"bls-invalid-series-{uuid.uuid4().hex}"},
+    )
+    assert invalid.status_code == 422, invalid.text
+
+
+def test_bls_connector_rejects_11_year_span(monkeypatch):
+    _install_fake_bls(monkeypatch, _FakeBlsClient())
+    response = client.post(
+        "/api/v1/connectors/bls/runs",
+        json={"series_ids": ["LAUCN040010000000005"], "start_year": 2010, "end_year": 2020},
+        headers={"Idempotency-Key": f"bls-year-span-{uuid.uuid4().hex}"},
+    )
+    assert response.status_code == 422, response.text
+
+
+def test_bls_connector_rejects_budget_over_25(monkeypatch):
+    _install_fake_bls(monkeypatch, _FakeBlsClient())
+    response = client.post(
+        "/api/v1/connectors/bls/runs",
+        json={"series_ids": ["LAUCN040010000000005"], "max_requests": 26},
+        headers={"Idempotency-Key": f"bls-budget-{uuid.uuid4().hex}"},
+    )
+    assert response.status_code == 422, response.text
+
+
+def test_bls_connector_429_fail_closed_after_budget(monkeypatch):
+    fake = _FakeBlsClient(error=_http_error(429))
+    _install_fake_bls(monkeypatch, fake)
+
+    submit = client.post(
+        "/api/v1/connectors/bls/runs",
+        json={"series_ids": ["LAUCN040010000000005"], "max_requests": 1, "retry_max_attempts_per_request": 1},
+        headers={"Idempotency-Key": f"bls-429-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    target = client.get(f"/api/v1/connectors/runs/{submit.json()['connector_run_id']}/targets").json()["targets"][0]
+    assert target["status"] == "download_failed"
+    assert target["last_error_class"] == "http_429"
+    assert target["retry_eligible"] is True
+
+
+def test_bls_connector_empty_all_null_and_malformed_fail_closed(monkeypatch):
+    cases = [
+        (_bls_payload(["LAUCN040010000000005"], data=[]), "empty_series"),
+        (_bls_payload(["LAUCN040010000000005"], value=None), "empty_after_normalization"),
+        ({"status": "REQUEST_SUCCEEDED", "Results": []}, "malformed_bls_results"),
+    ]
+    for payload, error_class in cases:
+        fake = _FakeBlsClient(payload)
+        _install_fake_bls(monkeypatch, fake)
+        submit = client.post(
+            "/api/v1/connectors/bls/runs",
+            json={"series_ids": ["LAUCN040010000000005"]},
+            headers={"Idempotency-Key": f"bls-fail-closed-{error_class}-{uuid.uuid4().hex}"},
+        )
+        assert submit.status_code == 202, submit.text
+        target = client.get(f"/api/v1/connectors/runs/{submit.json()['connector_run_id']}/targets").json()["targets"][0]
+        assert target["status"] == "download_failed"
+        assert target["last_error_class"] == error_class
+
+
+def test_bls_connector_rate_limiter_and_backoff_use_monkeypatched_clock(monkeypatch):
+    from app.services import connectors_bls as bls
+
+    sleeps: list[float] = []
+    clock = {"now": 10.0}
+    monkeypatch.setattr(bls.time, "monotonic", lambda: clock["now"])
+    monkeypatch.setattr(bls.time, "sleep", lambda seconds: sleeps.append(seconds))
+
+    limiter = bls._RateLimiter(2.0)
+    limiter.wait()
+    clock["now"] = 10.1
+    limiter.wait()
+    assert sleeps == [pytest.approx(0.4)]
+    assert limiter.total_sleep_seconds == pytest.approx(0.4)
+
+    class _Response:
+        def __init__(self, status_code: int):
+            self.status_code = status_code
+            self.url = "https://api.bls.gov/publicAPI/v1/timeseries/data/LAUCN040010000000005"
+            self.history = []
+            self.headers = {}
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                error = requests.HTTPError(f"http {self.status_code}")
+                error.response = self
+                raise error
+
+        def json(self):
+            return _bls_payload(["LAUCN040010000000005"])
+
+    responses = [_Response(503), _Response(200)]
+    real_client = bls.BlsV1Client(base_url="https://api.bls.gov/publicAPI/v1/timeseries/data")
+    monkeypatch.setattr(bls, "_resolve_host_ip", lambda hostname: "8.8.8.8")
+    monkeypatch.setattr(real_client.session, "get", lambda *args, **kwargs: responses.pop(0))
+    retry_counters: dict[str, object] = {}
+    payload = real_client.fetch_series(
+        series_ids=["LAUCN040010000000005"],
+        start_year=None,
+        end_year=None,
+        timeout_seconds=30,
+        max_redirects=3,
+        max_requests_budget=2,
+        retry_max_attempts_per_request=2,
+        retry_base_backoff_seconds=0.25,
+        retry_max_backoff_seconds=1.0,
+        retry_respect_retry_after=True,
+        rate_limiter=bls._RateLimiter(0),
+        retry_counters=retry_counters,
+    )
+    assert payload["status"] == "REQUEST_SUCCEEDED"
+    assert retry_counters["requests_total"] == 2
+    assert retry_counters["retries_total"] == 1
+    assert sleeps[-1] == pytest.approx(0.25)
+
+
+def test_bls_connector_post_redirect_is_terminal(monkeypatch):
+    from app.services import connectors_bls as bls
+    from app.services.sciencebase_connector.contracts import FetchPolicyBlockedError
+
+    class _RedirectResponse:
+        status_code = 302
+        url = "https://api.bls.gov/publicAPI/v1/timeseries/data"
+        history: list[object] = []
+        headers = {"Location": "https://api.bls.gov/redirected"}
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {}
+
+    real_client = bls.BlsV1Client(base_url="https://api.bls.gov/publicAPI/v1/timeseries/data")
+    captured = {}
+    monkeypatch.setattr(bls, "_resolve_host_ip", lambda hostname: "8.8.8.8")
+
+    def _post(*args, **kwargs):
+        captured["kwargs"] = kwargs
+        return _RedirectResponse()
+
+    monkeypatch.setattr(real_client.session, "post", _post)
+
+    with pytest.raises(FetchPolicyBlockedError, match="redirect_policy_violation"):
+        real_client.fetch_series(
+            series_ids=["LAUCN040010000000005", "LAUCN040010000000006"],
+            start_year=2022,
+            end_year=2022,
+            timeout_seconds=30,
+            max_redirects=3,
+            max_requests_budget=1,
+            retry_max_attempts_per_request=1,
+            retry_base_backoff_seconds=0.25,
+            retry_max_backoff_seconds=1.0,
+            retry_respect_retry_after=True,
+            rate_limiter=bls._RateLimiter(0),
+            retry_counters={},
+        )
+    assert captured["kwargs"]["allow_redirects"] is False
+
+
+def test_bls_connector_no_key_negative_single_and_multi(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRun
+    from app.services import connectors_bls as bls
+
+    fake = _FakeBlsClient()
+    _install_fake_bls(monkeypatch, fake)
+    single = client.post(
+        "/api/v1/connectors/bls/runs",
+        json={"series_ids": ["LAUCN040010000000005"]},
+        headers={"Idempotency-Key": f"bls-no-key-single-{uuid.uuid4().hex}"},
+    )
+    assert single.status_code == 202, single.text
+    multi = client.post(
+        "/api/v1/connectors/bls/runs",
+        json={"series_ids": ["LAUCN040010000000005", "LAUCN040010000000006"], "start_year": 2022, "end_year": 2022},
+        headers={"Idempotency-Key": f"bls-no-key-multi-{uuid.uuid4().hex}"},
+    )
+    assert multi.status_code == 202, multi.text
+
+    serialized_calls = json.dumps(fake.calls, sort_keys=True).lower()
+    assert "registrationkey" not in serialized_calls
+    assert fake.auth_mode == "anonymous"
+    db = SessionLocal()
+    try:
+        for run_id in [single.json()["connector_run_id"], multi.json()["connector_run_id"]]:
+            run = db.get(ConnectorRun, run_id)
+            request_config = json.dumps(run.request_config_json, sort_keys=True).lower()
+            assert "registrationkey" not in request_config
+            assert "api_key" not in request_config
+            assert "authorization" not in request_config
+            assert "token" not in request_config
+    finally:
+        db.close()
+    with pytest.raises(bls.BlsSchemaValidationError, match="inadmissible_bls_base_url"):
+        bls.BlsV1Client(base_url="https://api.bls.gov/publicAPI/v1/timeseries/data?registrationkey=secret")
+
+
+def test_bls_connector_unauthorized_terminal(monkeypatch):
+    fake = _FakeBlsClient(error=_http_error(401))
+    _install_fake_bls(monkeypatch, fake)
+    submit = client.post(
+        "/api/v1/connectors/bls/runs",
+        json={"series_ids": ["LAUCN040010000000005"]},
+        headers={"Idempotency-Key": f"bls-401-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    target = client.get(f"/api/v1/connectors/runs/{submit.json()['connector_run_id']}/targets").json()["targets"][0]
+    assert target["status"] == "download_failed"
+    assert target["last_error_class"] == "http_4xx"
+    assert target["retry_eligible"] is False
+
+
+def test_bls_connector_idempotency_conflict_and_resume(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRun, ConnectorRunTarget
+
+    class _RetryThenSuccessBlsClient(_FakeBlsClient):
+        def fetch_series(self, **kwargs):
+            self.attempts = int(getattr(self, "attempts", 0)) + 1
+            if self.attempts == 1:
+                raise requests.Timeout("temporary bls timeout")
+            return super().fetch_series(**kwargs)
+
+    fake = _RetryThenSuccessBlsClient()
+    _install_fake_bls(monkeypatch, fake)
+    key = f"bls-idempotency-{uuid.uuid4().hex}"
+    first = client.post(
+        "/api/v1/connectors/bls/runs",
+        json={"series_ids": ["LAUCN040010000000005"], "retry_max_attempts_per_request": 1},
+        headers={"Idempotency-Key": key},
+    )
+    assert first.status_code == 202, first.text
+    conflict = client.post(
+        "/api/v1/connectors/bls/runs",
+        json={"series_ids": ["LAUCN040010000000006"], "retry_max_attempts_per_request": 1},
+        headers={"Idempotency-Key": key},
+    )
+    assert conflict.status_code == 409, conflict.text
+    run_id = first.json()["connector_run_id"]
+    first_target = client.get(f"/api/v1/connectors/runs/{run_id}/targets").json()["targets"][0]
+    assert first_target["status"] == "download_failed"
+    assert first_target["retry_eligible"] is True
+
+    resume = client.post(f"/api/v1/connectors/runs/{run_id}/resume")
+    assert resume.status_code == 202, resume.text
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}").json()
+    assert detail["status"] == "completed"
+    summary = json.loads(Path(detail["report_refs"]["bls_summary"]).read_text(encoding="utf-8"))
+    assert summary["rows"][0]["series_id"] == "LAUCN040010000000005"
+
+    db = SessionLocal()
+    try:
+        targets = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run_id).all()
+        assert len(targets) == 1
+        assert targets[0].attempt_count == 2
+        assert targets[0].retry_eligible is False
+    finally:
+        db.close()
+
+    budget_fake = _FakeBlsClient(error=_http_error(429))
+    _install_fake_bls(monkeypatch, budget_fake)
+    budget_first = client.post(
+        "/api/v1/connectors/bls/runs",
+        json={"series_ids": ["LAUCN040010000000005"], "max_requests": 1, "retry_max_attempts_per_request": 1},
+        headers={"Idempotency-Key": f"bls-budget-resume-{uuid.uuid4().hex}"},
+    )
+    assert budget_first.status_code == 202, budget_first.text
+    budget_run_id = budget_first.json()["connector_run_id"]
+    db = SessionLocal()
+    try:
+        run = db.get(ConnectorRun, budget_run_id)
+        assert run.query_plan_json["bls_request_accounting"]["requests_total"] == 1
+    finally:
+        db.close()
+    budget_fake.error = None
+    budget_resume = client.post(f"/api/v1/connectors/runs/{budget_run_id}/resume")
+    assert budget_resume.status_code == 202, budget_resume.text
+    assert len(budget_fake.calls) == 1
+    budget_target = client.get(f"/api/v1/connectors/runs/{budget_run_id}/targets").json()["targets"][0]
+    assert budget_target["status"] == "download_failed"
+    assert budget_target["last_error_class"] == "request_budget_exhausted"
+    assert budget_target["retry_eligible"] is False
+
+
+def test_bls_support_matrix_mirror_and_runtime_probe():
+    import importlib.util
+
+    matrix = json.loads((ROOT / "config" / "support_matrix.yaml").read_text(encoding="utf-8"))
+    by_id = {item["id"]: item for item in matrix["capabilities"]}
+    assert by_id["bls_v1_anonymous_connector_slice"]["status"] == "supported"
+    assert "BLS Public Data API v1 anonymous metadata only" in matrix["boundary_note"]
+    assert "operator-responsible BLS 25-queries/day compliance across runs" in matrix["boundary_note"]
+
+    spec = importlib.util.spec_from_file_location(
+        "support_matrix_runtime_contract_audit",
+        ROOT / "scripts" / "support_matrix_runtime_contract_audit.py",
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    audit = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(audit)
+    payload = audit.PROBES["bls_v1_anonymous_connector_slice"]()
+    assert payload["status"] == "completed"
+    assert payload["auth_mode"] == "anonymous"
 
 
 # CFTC Phase 0 pinned the current legacy long-form comma-delimited variable order:

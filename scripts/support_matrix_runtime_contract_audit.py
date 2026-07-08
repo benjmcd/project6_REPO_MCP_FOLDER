@@ -177,6 +177,37 @@ class _FakeWorldBankClient:
         ]
 
 
+class _FakeBlsClient:
+    auth_mode = "anonymous"
+
+    def fetch_series(self, *, series_ids: list[str], start_year: int | None, end_year: int | None, retry_counters: dict[str, Any] | None = None, **_kwargs: Any) -> dict[str, Any]:
+        if retry_counters is not None:
+            retry_counters["requests_total"] = int(retry_counters.get("requests_total", 0)) + 1
+        return {
+            "status": "REQUEST_SUCCEEDED",
+            "responseTime": 4,
+            "message": [],
+            "Results": [
+                {
+                    "series": [
+                        {
+                            "seriesID": series_ids[0],
+                            "data": [
+                                {
+                                    "year": str(end_year or 2024),
+                                    "period": "M01",
+                                    "periodName": "January",
+                                    "value": "123.4",
+                                    "footnotes": [{}],
+                                }
+                            ],
+                        }
+                    ]
+                }
+            ],
+        }
+
+
 class _FakeCftcCotClient:
     auth_mode = "anonymous"
 
@@ -469,6 +500,50 @@ def _worldbank_runtime() -> dict[str, Any]:
 
 
 @functools.lru_cache(maxsize=1)
+def _bls_runtime() -> dict[str, Any]:
+    from app.models import ConnectorRunTarget
+    from app.services import connectors_bls as bls
+    from app.services import connectors_sciencebase as sb
+
+    with _runtime_db() as (session_factory, _storage):
+        db = session_factory()
+        old_session_local = bls.SessionLocal
+        old_client = bls.get_bls_client
+        old_sleep = bls.time.sleep
+        old_wait = bls._RateLimiter.wait
+        try:
+            bls.SessionLocal = session_factory
+            bls.get_bls_client = lambda config: _FakeBlsClient()
+            bls.time.sleep = lambda seconds: None
+            bls._RateLimiter.wait = lambda self: None
+            run, _created = bls.submit_bls_run(
+                db,
+                payload={"series_ids": ["LAUCN040010000000005"], "start_year": 2022, "end_year": 2022, "max_requests": 1},
+                idempotency_key="support-matrix-bls-runtime",
+            )
+            db.commit()
+            run_id = run.connector_run_id
+            db.close()
+            bls.execute_bls_run(run_id)
+            db = session_factory()
+            run = db.get(type(run), run_id)
+            if run is None:
+                raise MatrixContractError("bls run missing after execution")
+            detail = sb.serialize_connector_run(db, run)
+            targets = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run_id).all()
+            auth_mode = dict(run.effective_search_params_json or {}).get("auth_mode")
+            if detail.get("status") != "completed" or auth_mode != "anonymous" or not targets:
+                raise MatrixContractError(f"bls run did not complete anonymously: {detail}")
+            return {"detail": detail, "target_statuses": sorted({t.status for t in targets}), "auth_mode": auth_mode}
+        finally:
+            bls.SessionLocal = old_session_local
+            bls.get_bls_client = old_client
+            bls.time.sleep = old_sleep
+            bls._RateLimiter.wait = old_wait
+            db.close()
+
+
+@functools.lru_cache(maxsize=1)
 def _cftc_cot_runtime() -> dict[str, Any]:
     from app.models import ConnectorRunTarget
     from app.services import connectors_cftc_cot as cftc
@@ -527,6 +602,11 @@ def _probe_senate() -> dict[str, Any]:
 
 def _probe_worldbank() -> dict[str, Any]:
     result = _worldbank_runtime()
+    return {"status": result["detail"]["status"], "auth_mode": result["auth_mode"], "target_statuses": result["target_statuses"]}
+
+
+def _probe_bls() -> dict[str, Any]:
+    result = _bls_runtime()
     return {"status": result["detail"]["status"], "auth_mode": result["auth_mode"], "target_statuses": result["target_statuses"]}
 
 
@@ -813,6 +893,7 @@ def _probe_signed_reference_unsupported() -> dict[str, Any]:
 
 PROBES: dict[str, Callable[[], dict[str, Any]]] = {
     "method_aware_analytics_vertical": _probe_method_analytics,
+    "bls_v1_anonymous_connector_slice": _probe_bls,
     "sciencebase_public_connector_slice": _probe_sciencebase,
     "senate_lda_anonymous_connector_slice": _probe_senate,
     "worldbank_indicators_anonymous_connector_slice": _probe_worldbank,
