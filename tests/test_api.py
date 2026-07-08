@@ -3736,7 +3736,7 @@ def test_sciencebase_mcs_support_matrix_evidence_pins_current_data_release():
     by_id = {item["id"]: item for item in matrix["capabilities"]}
     sciencebase = by_id["sciencebase_public_connector_slice"]
 
-    assert len(matrix["capabilities"]) == 31
+    assert len(matrix["capabilities"]) == 32
     assert sciencebase["status"] == "supported"
     assert "ScienceBase public/MCS" in matrix["boundary_note"]
     assert "sciencebase_mcs_2026_data_release_slice" not in by_id
