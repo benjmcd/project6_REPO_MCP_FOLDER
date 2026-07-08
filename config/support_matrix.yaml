@@ -26,7 +26,7 @@
     {
       "id": "sciencebase_public_connector_slice",
       "status": "supported",
-      "evidence": "tests/test_api.py::test_sciencebase_download_429_retryable_sets_backoff; tests/test_api.py::test_l17_sciencebase_download_negatives_are_bounded_and_observable; tests/test_api.py::test_connector_l20_sciencebase_active_lease_records_conflict; tests/test_api.py::test_connector_l20_sciencebase_cancel_mid_target_stops_before_partial_authority; tests/test_api.py::test_sciencebase_csv_ingest_preserves_l11_source_fidelity; tests/test_api.py::test_public_connector_operator_journey_bridges_sciencebase_target_to_analysis; backend/app/core/config.py:210; docs/public-connectors-journey.md; PR-1 correctness, PR-2 L17, PR-3 L20, PR-4 L11, PR-5 journey"
+      "evidence": "tests/test_api.py::test_sciencebase_download_429_retryable_sets_backoff; tests/test_api.py::test_l17_sciencebase_download_negatives_are_bounded_and_observable; tests/test_api.py::test_connector_l20_sciencebase_active_lease_records_conflict; tests/test_api.py::test_connector_l20_sciencebase_cancel_mid_target_stops_before_partial_authority; tests/test_api.py::test_sciencebase_csv_ingest_preserves_l11_source_fidelity; tests/test_api.py::test_public_connector_operator_journey_bridges_sciencebase_target_to_analysis; backend/app/core/config.py:210; docs/public-connectors-journey.md; tests/test_api.py::test_sciencebase_mcs_explicit_2026_item_ids_skip_search_and_dry_run; tests/test_api.py::test_sciencebase_mcs_2026_commodity_csv_ingests_offline; tests/test_api.py::test_sciencebase_mcs_default_policy_blocks_data_usgs_artifact_urls; PR-1 correctness, PR-2 L17, PR-3 L20, PR-4 L11, PR-5 journey"
     },
     {
       "id": "senate_lda_anonymous_connector_slice",

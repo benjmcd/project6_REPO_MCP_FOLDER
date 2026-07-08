@@ -958,6 +958,151 @@ class _FakeScienceBaseSourceFidelityAdapter(_FakeSurfaceAdapter):
         )()
 
 
+MCS_2026_PARENT_ITEM_ID = "696a75d5d4be0228872d3bf8"
+MCS_2026_COMMODITIES_ITEM_ID = "69837e43b66b01367d7ec7c7"
+MCS_2026_TRENDS_ITEM_ID = "69837ec8b66b01367d7ec7d9"
+MCS_2026_COMMODITIES_DOWNLOAD_URI = (
+    f"https://www.sciencebase.gov/catalog/file/get/{MCS_2026_COMMODITIES_ITEM_ID}?f=MCS2026_Commodities_Data.csv"
+)
+MCS_2026_TRENDS_DOWNLOAD_URI = (
+    f"https://www.sciencebase.gov/catalog/file/get/{MCS_2026_TRENDS_ITEM_ID}?f=MCS2026_T1_Mineral_Industry_Trends.csv"
+)
+
+
+class _FakeMcs2026ScienceBaseAdapter:
+    # Phase 0 provenance: official ScienceBase metadata lists the 2026 MCS
+    # release as a parent item with two child Data Release items and CSV files.
+    commodity_csv_bytes = (
+        b"year,commodity,us_production,apparent_consumption,net_import_reliance\n"
+        b"2021,Aluminum,880,3900,44\n"
+        b"2022,Aluminum,860,3800,45\n"
+        b"2023,Aluminum,750,3700,46\n"
+        b"2024,Aluminum,670,3600,47\n"
+        b"2025,Aluminum,700,3650,48\n"
+    )
+    trends_csv_bytes = (
+        b"year,table,value\n"
+        b"2021,T1_Mineral_Industry_Trends,100\n"
+        b"2022,T1_Mineral_Industry_Trends,105\n"
+        b"2023,T1_Mineral_Industry_Trends,111\n"
+        b"2024,T1_Mineral_Industry_Trends,116\n"
+        b"2025,T1_Mineral_Industry_Trends,121\n"
+    )
+
+    def __init__(self, *, external_download_url: str | None = None):
+        self.external_download_url = external_download_url
+        self.search_calls = []
+        self.hydrate_calls = []
+        self.download_calls = []
+
+    def search_page(self, *, q, filters, offset, page_size, sort, order):
+        self.search_calls.append(
+            {
+                "q": q,
+                "filters": list(filters),
+                "offset": offset,
+                "page_size": page_size,
+                "sort": sort,
+                "order": order,
+            }
+        )
+        return type(
+            "SearchPage",
+            (),
+            {
+                "items": [],
+                "offset": offset,
+                "page_size": page_size,
+                "total": 0,
+                "nextlink": None,
+                "prevlink": None,
+                "raw_query_metadata": {},
+            },
+        )()
+
+    def hydrate_item(self, item_id):
+        self.hydrate_calls.append(item_id)
+        if item_id == MCS_2026_PARENT_ITEM_ID:
+            return {
+                "id": MCS_2026_PARENT_ITEM_ID,
+                "title": "Mineral Commodity Summaries 2026 Data Release",
+                "identifiers": [{"type": "DOI", "value": "10.5066/P1WKQ63T"}],
+                "files": [],
+                "webLinks": [],
+                "distributionLinks": [],
+            }
+        if item_id == MCS_2026_COMMODITIES_ITEM_ID:
+            return {
+                "id": MCS_2026_COMMODITIES_ITEM_ID,
+                "title": "Mineral Commodity Summaries 2026 Data Release - Commodity Salient U.S. and World Statistics",
+                "identifiers": [{"type": "DOI", "value": "10.5066/P1WKQ63T"}],
+                "files": [
+                    {
+                        "name": "MCS2026_Commodities_Data.csv",
+                        "downloadUri": self.external_download_url or MCS_2026_COMMODITIES_DOWNLOAD_URI,
+                    }
+                ],
+                "webLinks": [],
+                "distributionLinks": [],
+            }
+        if item_id == MCS_2026_TRENDS_ITEM_ID:
+            return {
+                "id": MCS_2026_TRENDS_ITEM_ID,
+                "title": "Mineral Commodity Summaries 2026 Data Release - Mineral Industry Trends and Salient Statistics",
+                "identifiers": [{"type": "DOI", "value": "10.5066/P1WKQ63T"}],
+                "files": [
+                    {
+                        "name": "MCS2026_T1_Mineral_Industry_Trends.csv",
+                        "downloadUri": MCS_2026_TRENDS_DOWNLOAD_URI,
+                    }
+                ],
+                "webLinks": [],
+                "distributionLinks": [],
+            }
+        raise AssertionError(f"unexpected MCS 2026 item id: {item_id}")
+
+    def extract_artifacts(self, item):
+        return [
+            {
+                "surface": "files",
+                "name": raw["name"],
+                "url": raw["downloadUri"],
+                "locator_type": "downloadUri",
+                "checksum_type": None,
+                "checksum_value": None,
+                "source_reference": raw,
+            }
+            for raw in item.get("files") or []
+        ]
+
+    def download_artifact(self, *, url, timeout_seconds, max_redirects, headers=None):
+        self.download_calls.append(url)
+        if url == MCS_2026_COMMODITIES_DOWNLOAD_URI:
+            content = self.commodity_csv_bytes
+            etag = "mcs-2026-commodities-etag"
+        elif url == MCS_2026_TRENDS_DOWNLOAD_URI:
+            content = self.trends_csv_bytes
+            etag = "mcs-2026-trends-etag"
+        else:
+            raise AssertionError(f"unexpected MCS 2026 artifact URL: {url}")
+        return type(
+            "DownloadResult",
+            (),
+            {
+                "content": content,
+                "status_code": 200,
+                "final_url": url,
+                "redirect_count": 0,
+                "etag": etag,
+                "last_modified": "Fri, 06 Feb 2026 00:00:00 GMT",
+                "content_type": "text/csv",
+                "sha256": hashlib.sha256(content).hexdigest(),
+                "headers": {},
+                "resolved_ip": "8.8.8.8",
+            },
+        )()
+
+
 class _FakeDedupAdapter:
     def search_page(self, *, q, filters, offset, page_size, sort, order):
         if offset > 0:
@@ -3420,6 +3565,188 @@ def test_connector_mcs_release_mode_requires_commodity_keywords():
         headers={"Idempotency-Key": "mcs-commodity-invalid"},
     )
     assert invalid.status_code == 409, invalid.text
+
+
+def test_sciencebase_mcs_explicit_2026_item_ids_skip_search_and_dry_run(monkeypatch):
+    from app.services import connectors_sciencebase as sb
+
+    adapter = _FakeMcs2026ScienceBaseAdapter()
+    monkeypatch.setattr(sb, "_resolve_host_ip", lambda _hostname: "8.8.8.8")
+    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: adapter)
+
+    response = client.post(
+        "/api/v1/connectors/sciencebase-mcs/runs",
+        json={
+            "q": "Mineral Commodity Summaries",
+            "years": [2026],
+            "scope_mode": "explicit_item_ids",
+            "scope_values": [MCS_2026_COMMODITIES_ITEM_ID, MCS_2026_TRENDS_ITEM_ID],
+            "run_mode": "dry_run",
+            "allowed_extensions": [".csv"],
+            "surface_policy": "files_only",
+        },
+        headers={"Idempotency-Key": f"sciencebase-mcs-2026-dry-run-{uuid.uuid4().hex}"},
+    )
+    assert response.status_code == 202, response.text
+    run_id = response.json()["connector_run_id"]
+
+    assert adapter.search_calls == []
+    assert adapter.hydrate_calls == [MCS_2026_COMMODITIES_ITEM_ID, MCS_2026_TRENDS_ITEM_ID]
+    assert adapter.download_calls == []
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    detail_payload = detail.json()
+    assert detail_payload["connector_key"] == "sciencebase_mcs"
+    assert detail_payload["run_mode"] == "dry_run"
+    assert detail_payload["fetch_policy_summary"]["external_fetch_policy"] == "sciencebase_only"
+    assert detail_payload["effective_search_envelope"]["params"]["scope_mode"] == "explicit_item_ids"
+    assert detail_payload["effective_search_envelope"]["params"]["scope_values"] == [
+        MCS_2026_COMMODITIES_ITEM_ID,
+        MCS_2026_TRENDS_ITEM_ID,
+    ]
+    assert detail_payload["effective_search_envelope"]["filters"] == ["systemType=Data Release"]
+
+    targets = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert targets.status_code == 200, targets.text
+    target_rows = targets.json()["targets"]
+    assert len(target_rows) == 2
+    assert {target["sciencebase_item_id"] for target in target_rows} == {
+        MCS_2026_COMMODITIES_ITEM_ID,
+        MCS_2026_TRENDS_ITEM_ID,
+    }
+    assert {target["status"] for target in target_rows} == {"dry_run_skipped"}
+    assert {target["artifact_surface"] for target in target_rows} == {"files"}
+    assert {target["selection_scope"] for target in target_rows} == {"explicit_item"}
+    assert {target["selection_match_basis"] for target in target_rows} == {"content_type"}
+
+
+def test_sciencebase_mcs_2026_commodity_csv_ingests_offline(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRunTarget, DatasetSourceProvenance, DatasetVersion
+    from app.services import connectors_sciencebase as sb
+    from app.services.dataframe_io import load_version_dataframe
+
+    adapter = _FakeMcs2026ScienceBaseAdapter()
+    expected_hash = hashlib.sha256(adapter.commodity_csv_bytes).hexdigest()
+    monkeypatch.setattr(sb, "_resolve_host_ip", lambda _hostname: "8.8.8.8")
+    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: adapter)
+
+    response = client.post(
+        "/api/v1/connectors/sciencebase-mcs/runs",
+        json={
+            "years": [2026],
+            "scope_mode": "explicit_item_ids",
+            "scope_values": [MCS_2026_COMMODITIES_ITEM_ID],
+            "run_mode": "one_shot_import",
+            "allowed_extensions": [".csv"],
+            "surface_policy": "files_only",
+            "detect_seasonality": False,
+            "detect_stationarity": False,
+        },
+        headers={"Idempotency-Key": f"sciencebase-mcs-2026-ingest-{uuid.uuid4().hex}"},
+    )
+    assert response.status_code == 202, response.text
+    run_id = response.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    detail_payload = detail.json()
+    assert detail_payload["connector_key"] == "sciencebase_mcs"
+    assert detail_payload["status"] == "completed"
+    assert detail_payload["downloaded_count"] == 1
+    assert detail_payload["ingested_count"] == 1
+    assert detail_payload["profiled_count"] == 1
+    assert adapter.search_calls == []
+    assert adapter.download_calls == [MCS_2026_COMMODITIES_DOWNLOAD_URI]
+
+    db = SessionLocal()
+    try:
+        target = (
+            db.query(ConnectorRunTarget)
+            .filter(ConnectorRunTarget.connector_run_id == run_id)
+            .one()
+        )
+        assert target.sciencebase_item_id == MCS_2026_COMMODITIES_ITEM_ID
+        assert target.sciencebase_file_name == "MCS2026_Commodities_Data.csv"
+        assert target.sciencebase_download_uri == MCS_2026_COMMODITIES_DOWNLOAD_URI
+        assert target.dataset_version_id
+        assert target.source_artifact_key
+
+        version = db.get(DatasetVersion, target.dataset_version_id)
+        assert version is not None
+        assert version.content_hash == expected_hash
+        assert version.source_row_count == 5
+        assert version.dropped_row_count == 0
+        assert version.row_count == 5
+
+        frame = load_version_dataframe(db, target.dataset_version_id)
+        assert frame["commodity"].tolist() == ["Aluminum"] * 5
+        assert frame["net_import_reliance"].astype(int).tolist() == [44, 45, 46, 47, 48]
+
+        provenance = (
+            db.query(DatasetSourceProvenance)
+            .filter(DatasetSourceProvenance.dataset_version_id == target.dataset_version_id)
+            .filter(DatasetSourceProvenance.connector_run_id == run_id)
+            .one()
+        )
+        assert provenance.sciencebase_item_id == MCS_2026_COMMODITIES_ITEM_ID
+        assert provenance.sciencebase_file_name == "MCS2026_Commodities_Data.csv"
+        assert provenance.downloaded_sha256 == expected_hash
+    finally:
+        db.close()
+
+
+def test_sciencebase_mcs_default_policy_blocks_data_usgs_artifact_urls(monkeypatch):
+    from app.services import connectors_sciencebase as sb
+
+    adapter = _FakeMcs2026ScienceBaseAdapter(
+        external_download_url="https://data.usgs.gov/datacatalog/file/MCS2026_Commodities_Data.csv"
+    )
+    monkeypatch.setattr(sb, "_resolve_host_ip", lambda _hostname: "8.8.8.8")
+    monkeypatch.setattr(sb, "get_sciencebase_adapter", lambda config: adapter)
+
+    response = client.post(
+        "/api/v1/connectors/sciencebase-mcs/runs",
+        json={
+            "years": [2026],
+            "scope_mode": "explicit_item_ids",
+            "scope_values": [MCS_2026_COMMODITIES_ITEM_ID],
+            "run_mode": "one_shot_import",
+            "allowed_extensions": [".csv"],
+            "surface_policy": "files_only",
+            "external_fetch_policy": "sciencebase_only",
+        },
+        headers={"Idempotency-Key": f"sciencebase-mcs-2026-host-block-{uuid.uuid4().hex}"},
+    )
+    assert response.status_code == 202, response.text
+    run_id = response.json()["connector_run_id"]
+
+    targets = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert targets.status_code == 200, targets.text
+    [target] = targets.json()["targets"]
+    assert target["sciencebase_item_id"] == MCS_2026_COMMODITIES_ITEM_ID
+    assert target["status"] == "blocked_by_fetch_policy"
+    assert target["blocked_reason"] == "host_not_allowed"
+    assert adapter.download_calls == []
+
+
+def test_sciencebase_mcs_support_matrix_evidence_pins_current_data_release():
+    matrix = json.loads((ROOT / "config" / "support_matrix.yaml").read_text(encoding="utf-8"))
+    by_id = {item["id"]: item for item in matrix["capabilities"]}
+    sciencebase = by_id["sciencebase_public_connector_slice"]
+
+    assert len(matrix["capabilities"]) == 30
+    assert sciencebase["status"] == "supported"
+    assert "ScienceBase public/MCS" in matrix["boundary_note"]
+    assert "sciencebase_mcs_2026_data_release_slice" not in by_id
+    for test_name in [
+        "test_sciencebase_mcs_explicit_2026_item_ids_skip_search_and_dry_run",
+        "test_sciencebase_mcs_2026_commodity_csv_ingests_offline",
+        "test_sciencebase_mcs_default_policy_blocks_data_usgs_artifact_urls",
+    ]:
+        assert f"tests/test_api.py::{test_name}" in sciencebase["evidence"]
+    assert "tests/test_api.py::test_sciencebase_mcs_support_matrix_evidence_pins_current_data_release" not in sciencebase["evidence"]
 
 
 def test_connector_dry_run_never_downloads(monkeypatch):
