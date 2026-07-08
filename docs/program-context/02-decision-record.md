@@ -700,3 +700,32 @@ taxonomy egress, or local path claim beyond the established `C:/p6store` root.
 - Revisit when: the worktree cleanup tool mechanically enforces ignored
   enumeration, unregistered-directory inventory, and refactor-aware
   symbol/tree checks before proposing any discard or uniqueness verdict.
+
+## D31. IMF envelope-grant execution stops on policy signals, not workarounds (07-08)
+
+- Context: the IMF DataMapper build lane remained blocked after the official
+  help page failed to publish a response-envelope example. The owner then
+  granted a narrow D27 envelope-pin authorization: `www.imf.org` only,
+  `/external/datamapper/api/v2` only, four counted GETs total, envelope pin
+  only, and no pilot, sweep, bulk download, production ingest, SDMX/portal
+  probing, or workaround behavior.
+- Alternatives: (a) leave IMF deferred-final; (b) treat the grant as license
+  for retries, browser/WAF evasion, or broader DataMapper probing; (c) arm a
+  D27 record before egress, make only the minimal planned request, and stop on
+  any grant hard-STOP signal.
+- Decision: (c), executed. The arming record was written before live egress.
+  `GET 1/4` to the v2 indicators family returned HTTP 403, which the grant
+  defined as a hard STOP. No contingency request was used, no envelope was
+  pinned, and no connector build started. IMF remains owner-gated/deferred.
+- Why optimal: a 403 is source behavior, not an engineering puzzle to bypass.
+  Stopping preserved the anti-bulk and no-workaround posture, converted the
+  failed pin into durable evidence, and avoided spending contingency requests
+  on a condition the owner explicitly classified as terminal.
+- Evidence: PR #2466 `d8f7b6df` records the addendum; the D27/D28 arming
+  record `state/agent-inbox/imf-envelope-arming-record.md` records request
+  `1/4`, HTTP 403, 418 bytes, no redirect, no retry, and zero contingency
+  spent.
+- Revisit when: the owner either accepts IMF as deferred-final, or supplies a
+  manual browser-captured envelope sufficient for a zero-egress rebuild. Future
+  automated WAF, account-gated, SDMX/portal, or retry-workaround paths remain
+  refused unless a separate owner decision changes the source class.

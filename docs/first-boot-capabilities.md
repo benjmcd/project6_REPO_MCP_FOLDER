@@ -24,10 +24,11 @@ Status legend: **[verified]** = exercised end-to-end against a running server in
 | Senate LDA connector (anonymous) | `POST /api/v1/connectors/senate-lda/runs` — works with no key in anonymous mode | [code: `connectors_senate_lda.py:481`] |
 | World Bank Indicators connector (anonymous) | `POST /api/v1/connectors/worldbank/runs` - works with no key in anonymous metadata mode | [code: `connectors_worldbank.py`] |
 | BLS Public Data API v1 connector (anonymous) | `POST /api/v1/connectors/bls/runs` - works with no key in anonymous metadata mode; per-run caps are enforced locally | [code: `connectors_bls.py`] |
+| OECD SDMX connector (anonymous) | `POST /api/v1/connectors/oecd-sdmx/runs` - works with no key in anonymous SDMX-CSV mode; per-run budget <=30 is enforced locally, while 60 downloads/hour and no-VPN/no-anonymized-traffic compliance remain operator residuals | [code: `connectors_oecd.py`] |
 | CFTC COT connector (anonymous) | `POST /api/v1/connectors/cftc-cot/runs` - works with no key for current public COT report rows | [code: `connectors_cftc_cot.py`] |
 | Connector run observability | `GET /api/v1/connectors/runs/{id}` + `/targets` `/events` `/reports` `/content-units` | [code] |
 
-The analytics vertical and the ScienceBase/Senate/World Bank/BLS/CFTC anonymous connectors are the realistic "usable in full" core for a fresh boot.
+The analytics vertical and the ScienceBase/Senate/World Bank/BLS/OECD/CFTC anonymous connectors are the realistic "usable in full" core for a fresh boot.
 
 ## Needs an API key or secret (otherwise blocked)
 

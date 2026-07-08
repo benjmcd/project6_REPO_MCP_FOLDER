@@ -6,6 +6,38 @@ report as verified/adjudicated, grounded in repo authorities (merge-gate
 policy, admission runbook, A8 docs, support matrix). Nothing here is authorized by this
 document — it specifies what authorization would require.
 
+## 2026-07-08 Forward Program Refresh (M-PROGRAM-SYNC)
+
+Supersession boundary: this block is the current connector-breadth pointer. It
+supersedes older connector-breadth planning only for the executed Wave 1-6
+public-connector program, the IMF grant outcome, and the remaining connector
+forks recorded here. Historical F-sections remain prior context where not
+explicitly superseded.
+
+### F9 - connector breadth: EXECUTED PROGRAM, REMAINING FORKS
+
+- Status: EXECUTED and closed for the safe anonymous connector set. The durable
+  execution record is `docs/campaign-records/2026-07-08-connector-program.md`:
+  World Bank, CFTC COT, USGS MCS, BLS v1, and OECD SDMX landed; World Bank
+  polish landed; support-matrix capability count moved 29 -> 32; FAO/BTS
+  remain defer-final.
+- IMF fork: the owner-granted DataMapper envelope pin was exercised on
+  2026-07-08 and stopped on `GET 1/4` HTTP 403, with zero contingency spent and
+  no build. Remaining owner choices are exactly: keep IMF deferred-final, or
+  provide a manual browser-captured envelope sufficient for a zero-egress
+  rebuild. Automated WAF workarounds, broader probing, SDMX/portal paths, and
+  account-gated exploration remain refused.
+- Per-connector live-pilot grants: the connector-program record's D27 sketch
+  table is only a forward gate. Any live pilot still needs a separate named
+  owner grant with host class, request budget, fixture model, and STOP rules.
+- Defer-candidate from WB landing review: a netblock/socket-block CI-invariant
+  plugin remains a small Tier-1 candidate, derived from the World Bank landing
+  adversarial review and not required for the already landed connector slices.
+- OD-6 analytics-method lane: tracked by the source-candidates record as the
+  separate local-depth direction; it is not bundled with connector breadth.
+- FAO and BTS: remain defer-final until source-owned host/auth/rate and terms
+  conditions are pinned enough to create a bounded build mandate.
+
 ## 2026-07-07 Forward Program Refresh (M-RELEASE-GATE-F5)
 
 Supersession boundary: this block is the current F5 pointer. It supersedes the
