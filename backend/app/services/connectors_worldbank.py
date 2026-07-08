@@ -7,7 +7,7 @@ import time
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import requests
 from sqlalchemy import and_
@@ -213,15 +213,37 @@ class WorldBankIndicatorsClient:
         url = f"{self.base_url}{path}"
         last_exc: Exception | None = None
         for attempt in range(1, retry_max_attempts_per_request + 1):
-            rate_limiter.wait()
-            retry_counters["requests_total"] = int(retry_counters.get("requests_total", 0)) + 1
             try:
-                response = self.session.get(url, params=params, timeout=timeout_seconds, allow_redirects=True)
-                if len(getattr(response, "history", []) or []) > int(settings.connector_max_redirects):
-                    raise FetchPolicyBlockedError("redirect_policy_violation")
-                final_host = (urlparse(str(getattr(response, "url", url) or url)).hostname or "").lower()
-                if final_host != ALLOWED_HOST:
-                    raise FetchPolicyBlockedError("redirect_policy_violation")
+                current_url = url
+                current_params = params
+                redirects_followed = 0
+                while True:
+                    rate_limiter.wait()
+                    retry_counters["requests_total"] = int(retry_counters.get("requests_total", 0)) + 1
+                    response = self.session.get(
+                        current_url,
+                        params=current_params,
+                        timeout=timeout_seconds,
+                        allow_redirects=False,
+                    )
+                    response_url = str(getattr(response, "url", current_url) or current_url)
+                    response_parsed = urlparse(response_url)
+                    if response_parsed.scheme != "https" or (response_parsed.hostname or "").lower() != ALLOWED_HOST:
+                        raise FetchPolicyBlockedError("redirect_policy_violation")
+                    if int(response.status_code) not in {301, 302, 303, 307, 308}:
+                        break
+                    if redirects_followed >= int(settings.connector_max_redirects):
+                        raise FetchPolicyBlockedError("redirect_policy_violation")
+                    location = str(response.headers.get("Location") or "").strip()
+                    if not location:
+                        raise FetchPolicyBlockedError("redirect_policy_violation")
+                    next_url = urljoin(response_url, location)
+                    next_parsed = urlparse(next_url)
+                    if next_parsed.scheme != "https" or (next_parsed.hostname or "").lower() != ALLOWED_HOST:
+                        raise FetchPolicyBlockedError("redirect_policy_violation")
+                    current_url = next_url
+                    current_params = None
+                    redirects_followed += 1
                 if response.status_code in RETRYABLE_HTTP_STATUSES and attempt < retry_max_attempts_per_request:
                     retry_counters["retries_total"] = int(retry_counters.get("retries_total", 0)) + 1
                     wait_seconds = min(retry_max_backoff_seconds, retry_base_backoff_seconds * (2 ** (attempt - 1)))
@@ -442,7 +464,19 @@ def _target_from_observations(*, run: ConnectorRun, ordinal: int, country: str, 
     )
 
 
-def _failed_target(*, run: ConnectorRun, ordinal: int, source_id: str, country: str, indicator: str, error_class: str, message: str, retry_eligible: bool = False) -> ConnectorRunTarget:
+def _failed_target(
+    *,
+    run: ConnectorRun,
+    ordinal: int,
+    source_id: str,
+    country: str,
+    indicator: str,
+    error_class: str,
+    message: str,
+    retry_eligible: bool = False,
+    status: str = "download_failed",
+    error_stage: str = "metadata_validation",
+) -> ConnectorRunTarget:
     now = _utcnow()
     artifact_key = f"worldbank:{source_id}:{country}:{indicator}:failed"
     return ConnectorRunTarget(
@@ -464,8 +498,8 @@ def _failed_target(*, run: ConnectorRun, ordinal: int, source_id: str, country: 
         permission_snapshot_json={"license": LICENSE, "attribution": ATTRIBUTION, "terms_of_use_url": TERMS_OF_USE_URL},
         access_level_summary="public_api",
         public_read_confirmed=True,
-        status="download_failed",
-        error_stage="metadata_validation",
+        status=status,
+        error_stage=error_stage,
         error_message=message,
         last_error_class=error_class,
         retry_eligible=retry_eligible,
@@ -788,12 +822,34 @@ def _discover_targets(db: Session, *, run: ConnectorRun, client: Any, config: di
                     "empty_after_normalization",
                 }:
                     error_class = str(exc)
+                blocked = isinstance(exc, FetchPolicyBlockedError)
                 ordinal += 1
-                target = _failed_target(run=run, ordinal=ordinal, source_id=source_id, country=country, indicator=indicator, error_class=error_class, message=str(exc), retry_eligible=retryable)
+                target = _failed_target(
+                    run=run,
+                    ordinal=ordinal,
+                    source_id=source_id,
+                    country=country,
+                    indicator=indicator,
+                    error_class=error_class,
+                    message=str(exc),
+                    retry_eligible=retryable,
+                    status="blocked_by_fetch_policy" if blocked else "download_failed",
+                    error_stage="requesting" if blocked else "metadata_validation",
+                )
                 db.add(target)
                 db.flush()
                 target_payloads.append({"target_id": target.connector_run_target_id, "status": target.status, "last_error_class": error_class})
-                _record_run_event(db, run=run, target=target, event_type="target_failed_closed", phase="selection", status_after=target.status, error_class=error_class, message=str(exc), reason_code=error_class)
+                _record_run_event(
+                    db,
+                    run=run,
+                    target=target,
+                    event_type="target_blocked_by_fetch_policy" if blocked else "target_failed_closed",
+                    phase="selection",
+                    status_after=target.status,
+                    error_class=error_class,
+                    message=str(exc),
+                    reason_code=error_class,
+                )
             db.commit()
             _renew_lease(db, run)
         if stop:

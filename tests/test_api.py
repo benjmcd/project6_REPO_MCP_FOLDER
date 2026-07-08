@@ -8353,6 +8353,14 @@ class _TimeoutWorldBankClient(_FakeWorldBankClient):
         raise requests.Timeout("temporary World Bank timeout")
 
 
+class _PolicyBlockedWorldBankClient(_FakeWorldBankClient):
+    def list_indicator_observations(self, **kwargs):
+        from app.services.sciencebase_connector.contracts import FetchPolicyBlockedError
+
+        self.observation_calls.append(dict(kwargs))
+        raise FetchPolicyBlockedError("redirect_policy_violation")
+
+
 def test_worldbank_connector_happy_path_reports_and_attribution(monkeypatch):
     from app.db.session import SessionLocal
     from app.models import ConnectorRun, DatasetSourceProvenance
@@ -8737,6 +8745,34 @@ def test_worldbank_connector_retryable_failures_remain_retry_eligible(monkeypatc
     assert target["retry_eligible"] is True
 
 
+def test_worldbank_connector_redirect_policy_blocks_are_policy_visible(monkeypatch):
+    from app.services import connectors_worldbank as wb
+
+    fake = _PolicyBlockedWorldBankClient()
+    monkeypatch.setattr(wb, "get_worldbank_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/worldbank/runs",
+        json={"indicators": ["SP.POP.TOTL"], "countries": ["USA"], "date_range": "2022:2022"},
+        headers={"Idempotency-Key": f"worldbank-policy-block-{uuid.uuid4().hex}"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    detail_payload = detail.json()
+    assert detail_payload["status"] == "completed_with_errors"
+    assert detail_payload["blocked_by_fetch_policy_count"] == 1
+    assert detail_payload["failed_count"] == 0
+
+    targets = client.get(f"/api/v1/connectors/runs/{run_id}/targets")
+    assert targets.status_code == 200, targets.text
+    [target] = targets.json()["targets"]
+    assert target["status"] == "blocked_by_fetch_policy"
+    assert target["last_error_class"] == "redirect_policy_violation"
+
+
 def test_worldbank_connector_rejects_non_worldbank_base_url():
     from app.services import connectors_worldbank as wb
 
@@ -8749,25 +8785,29 @@ def test_worldbank_client_redirect_policy_rejects_redirect_over_cap_and_final_ho
     from app.services.sciencebase_connector.contracts import FetchPolicyBlockedError
 
     class _Response:
-        status_code = 200
-        headers = {}
-
-        def __init__(self, *, url: str, history_count: int):
+        def __init__(self, *, url: str, status_code: int = 200, headers: dict[str, str] | None = None):
             self.url = url
-            self.history = [object()] * history_count
+            self.status_code = status_code
+            self.headers = headers or {}
+            self.history = []
 
         def raise_for_status(self):
-            return None
+            if self.status_code >= 400:
+                error = requests.HTTPError(f"http {self.status_code}")
+                error.response = self
+                raise error
 
         def json(self):
             return [{}, []]
 
     class _Session:
-        def __init__(self, response):
-            self.response = response
+        def __init__(self, responses):
+            self.responses = list(responses)
+            self.calls = []
 
         def get(self, url, params=None, timeout=None, allow_redirects=True):
-            return self.response
+            self.calls.append({"url": url, "allow_redirects": allow_redirects})
+            return self.responses.pop(0)
 
     request_kwargs = {
         "path": "/source",
@@ -8782,20 +8822,51 @@ def test_worldbank_client_redirect_policy_rejects_redirect_over_cap_and_final_ho
     }
 
     real_client = wb.WorldBankIndicatorsClient(base_url="https://api.worldbank.org/v2")
-    real_client.session = _Session(
+    over_cap_responses = [
         _Response(
-            url="https://api.worldbank.org/v2/source",
-            history_count=int(wb.settings.connector_max_redirects) + 1,
+            url=f"https://api.worldbank.org/v2/redirect-{index}",
+            status_code=302,
+            headers={"Location": f"/v2/redirect-{index + 1}"},
         )
+        for index in range(int(wb.settings.connector_max_redirects) + 1)
+    ]
+    real_client.session = _Session(over_cap_responses)
+    with pytest.raises(FetchPolicyBlockedError, match="redirect_policy_violation"):
+        real_client._request_json(**request_kwargs)
+
+    cross_host_session = _Session(
+        [
+            _Response(
+                url="https://api.worldbank.org/v2/source",
+                status_code=302,
+                headers={"Location": "https://example.test/v2/source"},
+            )
+        ]
+    )
+    real_client.session = cross_host_session
+    with pytest.raises(FetchPolicyBlockedError, match="redirect_policy_violation"):
+        real_client._request_json(**request_kwargs)
+    assert [call["url"] for call in cross_host_session.calls] == ["https://api.worldbank.org/v2/source"]
+
+    real_client.session = _Session(
+        [_Response(url="http://api.worldbank.org/v2/source")]
     )
     with pytest.raises(FetchPolicyBlockedError, match="redirect_policy_violation"):
         real_client._request_json(**request_kwargs)
 
-    real_client.session = _Session(
-        _Response(url="https://example.test/v2/source", history_count=1)
+    success_session = _Session(
+        [
+            _Response(
+                url="https://api.worldbank.org/v2/source",
+                status_code=302,
+                headers={"Location": "/v2/source?page=2"},
+            ),
+            _Response(url="https://api.worldbank.org/v2/source?page=2"),
+        ]
     )
-    with pytest.raises(FetchPolicyBlockedError, match="redirect_policy_violation"):
-        real_client._request_json(**request_kwargs)
+    real_client.session = success_session
+    assert real_client._request_json(**request_kwargs) == [{}, []]
+    assert [call["allow_redirects"] for call in success_session.calls] == [False, False]
 
 
 def _bls_payload(series_ids: list[str], *, value: str | None = "123.4", data: list[dict] | None = None) -> dict:
