@@ -1,4 +1,7 @@
 from app.services.layer3_source_boundary import (
+    CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX,
+    CONNECTOR_SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_MODE,
+    CONNECTOR_SOURCE_INTAKE_GATE_B_SOURCE_CLASS,
     SUPPORTED_SOURCE_CLASSES,
     UNSUPPORTED_SOURCE_CLASSES,
     requested_source_classes,
@@ -52,6 +55,12 @@ def test_source_boundary_candidate_id_parsing_is_limited_to_admitted_classes() -
         source_class_from_material_candidate_id("mat-server_configured_directory_file-file123")
         == "server_configured_directory_file"
     )
+    assert (
+        source_class_from_material_candidate_id(
+            f"{CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX}record123"
+        )
+        == CONNECTOR_SOURCE_INTAKE_GATE_B_SOURCE_CLASS
+    )
     assert source_class_from_material_candidate_id("mat-web_connector-material123") is None
 
 
@@ -98,6 +107,7 @@ def test_source_boundary_contract_keeps_deferred_source_expansion_fail_closed() 
         "source_intake_gate_b_material_admission",
         "server_configured_operator_directory_text_table_ingestion",
         "source_directory_ingestion_gate_b_material_admission",
+        CONNECTOR_SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_MODE,
     ]
     assert contract["source_intake_upload_enabled"] is True
     assert contract["source_intake_record_enabled"] is True

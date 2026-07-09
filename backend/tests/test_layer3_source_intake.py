@@ -92,6 +92,7 @@ def test_layer3_source_boundary_admits_operator_upload_intake_without_broad_sour
         "source_intake_gate_b_material_admission",
         "server_configured_operator_directory_text_table_ingestion",
         "source_directory_ingestion_gate_b_material_admission",
+        "connector_source_intake_gate_b_material_admission",
     ]
     assert contract["source_upload_enabled"] is False
     assert contract["source_intake_upload_enabled"] is True
