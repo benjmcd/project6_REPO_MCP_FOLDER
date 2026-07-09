@@ -2155,6 +2155,18 @@ def _gate_b_response_from_session(
             for item in decisions
         ]
     )
+    approved_source_classes = sorted(
+        {item["source_class"] for item in decisions if item["decision"] == "approved"}
+    )
+    connector_only_gate_b_admission = approved_source_classes == [
+        CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
+    ]
+    next_state = (
+        "connector_source_intake_gate_b_admitted"
+        if connector_only_gate_b_admission
+        else "gate_c_preview_ready"
+    )
+    current_gate = "gate_b" if connector_only_gate_b_admission else "gate_c"
     return {
         **_base_response("layer3.gate_b_decision_result.v1", request_id=request_id),
         "status": status,
@@ -2166,14 +2178,14 @@ def _gate_b_response_from_session(
         "denied_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "denied"],
         "isolated_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "isolated"],
         "flagged_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "flagged"],
-        "next_state": "gate_c_preview_ready",
+        "next_state": next_state,
         "authority_rail": _authority_rail(
             session_id=session.session_id,
             preflight_id=str(hints.get("preflight_id") or "none"),
             source_set_id=str(hints.get("source_set_id") or "none"),
-            current_gate="gate_c",
+            current_gate=current_gate,
             persistence_mode="durable_layer3_control",
-            source_classes=sorted({item["source_class"] for item in decisions if item["decision"] == "approved"}),
+            source_classes=approved_source_classes,
             counts=counts,
         ),
     }

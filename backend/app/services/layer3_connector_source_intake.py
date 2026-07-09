@@ -60,6 +60,9 @@ _CONNECTOR_SOURCE_INTAKE_GATE_B_FORBIDDEN_FIELDS = {
     "provider_url",
     "public_url",
     "rag_index",
+    "raw_storage_ref",
+    "storage_ref",
+    "blob_ref",
     "vector_index",
     "web_connector",
 }
@@ -128,7 +131,13 @@ def record_connector_produced_source_intake(
             "source_description must be 2000 characters or fewer.",
             details={"source_description_length": len(description)},
         )
-    effective_media_type = str(media_type or "text/csv").strip() or "text/csv"
+    if media_type is None or not str(media_type).strip():
+        raise ConnectorSourceIntakeError(
+            "connector_source_intake_media_type_required",
+            "Connector source intake requires an explicit text/csv media_type.",
+            details={"media_type": media_type},
+        )
+    effective_media_type = str(media_type).strip()
     if len(effective_media_type) > 128:
         raise ConnectorSourceIntakeError(
             "connector_source_intake_media_type_too_long",
@@ -166,6 +175,16 @@ def record_connector_produced_source_intake(
             http_status=409,
             details={"connector_run_target_id": target_id, "status": target.status},
         )
+    if target.public_read_confirmed is not True:
+        raise ConnectorSourceIntakeError(
+            "connector_source_intake_public_read_not_confirmed",
+            "Connector source intake requires public_read_confirmed before raw blob persistence.",
+            http_status=409,
+            details={
+                "connector_run_target_id": target_id,
+                "public_read_confirmed": bool(target.public_read_confirmed),
+            },
+        )
 
     original_filename = str(target.sciencebase_file_name or "").strip()
     if not original_filename or len(original_filename) > 255:
@@ -195,6 +214,13 @@ def record_connector_produced_source_intake(
             details={"connector_run_target_id": target_id},
         )
     content_size_bytes, content_sha256 = _hash_file(storage_path)
+    if content_size_bytes <= 0:
+        raise ConnectorSourceIntakeError(
+            "connector_source_intake_raw_blob_empty",
+            "Connector source intake rejects zero-byte raw blobs before persistence.",
+            http_status=409,
+            details={"connector_run_target_id": target_id, "content_size_bytes": content_size_bytes},
+        )
     if content_sha256 != target.downloaded_sha256:
         raise ConnectorSourceIntakeError(
             "connector_source_intake_hash_mismatch",
@@ -612,6 +638,9 @@ def validate_connector_intake_gate_b_decision_basis(
             "content_sha256": record.content_sha256,
             "metadata_hash": record.metadata_hash,
             "authority_basis_hash": record.authority_basis_hash,
+            "connector_key": record.connector_key,
+            "connector_run_id": record.connector_run_id,
+            "connector_run_target_id": record.connector_run_target_id,
         },
         field_prefix="candidate_decisions.decision_basis.payload",
         code="connector_source_intake_gate_b_payload_mismatch",

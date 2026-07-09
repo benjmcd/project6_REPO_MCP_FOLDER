@@ -80,8 +80,13 @@ def _write_raw_blob(run_id: str, target_id: str, file_name: str, content: bytes)
     return str(out)
 
 
-def _seed_downloaded_sciencebase_target(db) -> tuple[ConnectorRun, ConnectorRunTarget, bytes]:
-    content = b"site_id,value\nSB-001,42\nSB-002,43\n"
+def _seed_downloaded_sciencebase_target(
+    db,
+    *,
+    content: bytes | None = None,
+    public_read_confirmed: bool = True,
+) -> tuple[ConnectorRun, ConnectorRunTarget, bytes]:
+    blob = content if content is not None else b"site_id,value\nSB-001,42\nSB-002,43\n"
     run = ConnectorRun(
         connector_run_id="run-sciencebase-envelope",
         connector_key="sciencebase-public",
@@ -100,19 +105,20 @@ def _seed_downloaded_sciencebase_target(db) -> tuple[ConnectorRun, ConnectorRunT
         artifact_surface="files",
         artifact_locator_type="download_uri",
         source_artifact_key="sciencebase://sb-item-001/water-quality.csv",
-        downloaded_sha256=hashlib.sha256(content).hexdigest(),
+        downloaded_sha256=hashlib.sha256(blob).hexdigest(),
         raw_storage_ref=_write_raw_blob(
             run.connector_run_id,
             "target-sciencebase-envelope",
             "water-quality.csv",
-            content,
+            blob,
         ),
+        public_read_confirmed=public_read_confirmed,
         status="downloaded",
     )
     db.add(run)
     db.add(target)
     db.commit()
-    return run, target, content
+    return run, target, blob
 
 
 def _decision_basis(candidate: dict, *, include_connector_target: bool = False) -> dict:
@@ -201,9 +207,9 @@ def test_sciencebase_csv_connector_intake_reaches_gate_b_through_existing_route(
         assert response.status_code == 200, response.text
         body = response.json()
         assert body["status"] == "ok"
-        assert body["next_state"] == "gate_c_preview_ready"
+        assert body["next_state"] == "connector_source_intake_gate_b_admitted"
         assert body["approved_candidate_ids"] == [candidate["candidate_id"]]
-        assert body["authority_rail"]["current_gate"] == "gate_c"
+        assert body["authority_rail"]["current_gate"] == "gate_b"
         assert body["authority_rail"]["source_authority"]["source_classes"] == [
             CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
         ]
@@ -301,5 +307,160 @@ def test_connector_intake_rejects_media_type_widening(client):
             )
         assert excinfo.value.code == "connector_source_intake_media_type_not_admitted"
         assert db.query(L3ConnectorSourceIntakeRecord).count() == 0
+    finally:
+        db.close()
+
+
+def test_connector_intake_requires_explicit_media_type(client):
+    db = client.layer3_session_factory()
+    try:
+        run, target, _ = _seed_downloaded_sciencebase_target(db)
+
+        with pytest.raises(ConnectorSourceIntakeError) as excinfo:
+            record_connector_produced_source_intake(
+                db,
+                client_request_id="sciencebase-envelope-record-005",
+                connector_key=run.connector_key,
+                connector_run_id=run.connector_run_id,
+                connector_run_target_id=target.connector_run_target_id,
+                source_label="ScienceBase missing media type",
+                source_description="Downloaded public ScienceBase CSV raw blob.",
+                media_type=None,
+            )
+        assert excinfo.value.code == "connector_source_intake_media_type_required"
+        assert db.query(L3ConnectorSourceIntakeRecord).count() == 0
+    finally:
+        db.close()
+
+
+def test_connector_intake_requires_public_read_confirmed(client):
+    db = client.layer3_session_factory()
+    try:
+        run, target, _ = _seed_downloaded_sciencebase_target(
+            db,
+            public_read_confirmed=False,
+        )
+
+        with pytest.raises(ConnectorSourceIntakeError) as excinfo:
+            record_connector_produced_source_intake(
+                db,
+                client_request_id="sciencebase-envelope-record-006",
+                connector_key=run.connector_key,
+                connector_run_id=run.connector_run_id,
+                connector_run_target_id=target.connector_run_target_id,
+                source_label="ScienceBase private-read CSV",
+                source_description="Downloaded ScienceBase CSV raw blob without public-read proof.",
+                media_type="text/csv",
+            )
+        assert excinfo.value.code == "connector_source_intake_public_read_not_confirmed"
+        assert db.query(L3ConnectorSourceIntakeRecord).count() == 0
+    finally:
+        db.close()
+
+
+def test_connector_intake_rejects_zero_byte_raw_blob(client):
+    db = client.layer3_session_factory()
+    try:
+        run, target, _ = _seed_downloaded_sciencebase_target(db, content=b"")
+
+        with pytest.raises(ConnectorSourceIntakeError) as excinfo:
+            record_connector_produced_source_intake(
+                db,
+                client_request_id="sciencebase-envelope-record-007",
+                connector_key=run.connector_key,
+                connector_run_id=run.connector_run_id,
+                connector_run_target_id=target.connector_run_target_id,
+                source_label="ScienceBase empty CSV",
+                source_description="Downloaded public ScienceBase zero-byte raw blob.",
+                media_type="text/csv",
+            )
+        assert excinfo.value.code == "connector_source_intake_raw_blob_empty"
+        assert db.query(L3ConnectorSourceIntakeRecord).count() == 0
+    finally:
+        db.close()
+
+
+def test_connector_gate_b_rejects_raw_storage_reference_aliases(client):
+    db = client.layer3_session_factory()
+    try:
+        run, target, _ = _seed_downloaded_sciencebase_target(db)
+        record = record_connector_produced_source_intake(
+            db,
+            client_request_id="sciencebase-envelope-record-008",
+            connector_key=run.connector_key,
+            connector_run_id=run.connector_run_id,
+            connector_run_target_id=target.connector_run_target_id,
+            source_label="ScienceBase storage alias CSV",
+            source_description="Downloaded public ScienceBase CSV raw blob.",
+            media_type="text/csv",
+        )
+        preview = connector_source_intake_material_preview(
+            db,
+            connector_source_intake_record_id=record["connector_source_intake_record_id"],
+        )
+        candidate = preview["material_candidate"]
+        decision_basis = _decision_basis(candidate)
+        decision_basis["payload"] = {
+            **decision_basis["payload"],
+            "raw_storage_ref": target.raw_storage_ref,
+            "storage_ref": target.raw_storage_ref,
+            "blob_ref": target.raw_storage_ref,
+        }
+
+        with pytest.raises(ConnectorSourceIntakeError) as excinfo:
+            validate_connector_intake_gate_b_decision_basis(
+                db,
+                candidate_id=candidate["candidate_id"],
+                decision_basis=decision_basis,
+            )
+        assert excinfo.value.code == "connector_source_intake_gate_b_forbidden_field_not_admitted"
+        assert excinfo.value.details["blocked_fields"] == [
+            "candidate_decisions.decision_basis.payload.blob_ref",
+            "candidate_decisions.decision_basis.payload.raw_storage_ref",
+            "candidate_decisions.decision_basis.payload.storage_ref",
+        ]
+    finally:
+        db.close()
+
+
+def test_connector_gate_b_rejects_payload_connector_identity_tampering(client):
+    db = client.layer3_session_factory()
+    try:
+        run, target, _ = _seed_downloaded_sciencebase_target(db)
+        record = record_connector_produced_source_intake(
+            db,
+            client_request_id="sciencebase-envelope-record-009",
+            connector_key=run.connector_key,
+            connector_run_id=run.connector_run_id,
+            connector_run_target_id=target.connector_run_target_id,
+            source_label="ScienceBase tampered identity CSV",
+            source_description="Downloaded public ScienceBase CSV raw blob.",
+            media_type="text/csv",
+        )
+        preview = connector_source_intake_material_preview(
+            db,
+            connector_source_intake_record_id=record["connector_source_intake_record_id"],
+        )
+        candidate = preview["material_candidate"]
+        decision_basis = _decision_basis(candidate)
+        decision_basis["payload"] = {
+            **decision_basis["payload"],
+            "connector_key": "different-connector",
+            "connector_run_id": "different-run",
+            "connector_run_target_id": "different-target",
+        }
+
+        with pytest.raises(ConnectorSourceIntakeError) as excinfo:
+            validate_connector_intake_gate_b_decision_basis(
+                db,
+                candidate_id=candidate["candidate_id"],
+                decision_basis=decision_basis,
+            )
+        assert excinfo.value.code == "connector_source_intake_gate_b_payload_mismatch"
+        assert excinfo.value.details["blocked_fields"] == [
+            "candidate_decisions.decision_basis.payload.connector_key",
+            "candidate_decisions.decision_basis.payload.connector_run_id",
+            "candidate_decisions.decision_basis.payload.connector_run_target_id",
+        ]
     finally:
         db.close()
