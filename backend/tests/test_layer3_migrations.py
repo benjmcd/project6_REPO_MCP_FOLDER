@@ -480,6 +480,163 @@ def test_dataset_version_source_fidelity_migration_up_down_sqlite(tmp_path):
     assert downgraded_row_count == 2
 
 
+def test_connector_source_intake_record_migration_up_down_sqlite(tmp_path):
+    """0056 creates the connector source-intake table and cleanly rolls it back."""
+    db_url = f"sqlite:///{tmp_path / 'connector_source_intake_record.db'}"
+    previous_revision = "0055_dataset_version_source_fidelity"
+    connector_revision = "0056_layer3_connector_source_intake_record"
+
+    _run_upgrade_to(db_url, previous_revision)
+    engine = create_engine(db_url, future=True)
+    inspector = sa_inspect(engine)
+    assert not inspector.has_table("l3_connector_source_intake_record")
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO connector_run (
+                    connector_run_id,
+                    connector_key,
+                    source_system,
+                    source_mode,
+                    status,
+                    submitted_at,
+                    created_at
+                )
+                VALUES (
+                    'run-0056-proof',
+                    'sciencebase-public',
+                    'sciencebase',
+                    'public_api',
+                    'running',
+                    '2026-07-09T00:00:00Z',
+                    '2026-07-09T00:00:00Z'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO connector_run_target (
+                    connector_run_target_id,
+                    connector_run_id,
+                    ordinal,
+                    artifact_surface,
+                    public_read_confirmed,
+                    status,
+                    retry_eligible,
+                    attempt_count,
+                    created_at
+                )
+                VALUES (
+                    'target-0056-proof',
+                    'run-0056-proof',
+                    1,
+                    'files',
+                    1,
+                    'downloaded',
+                    0,
+                    0,
+                    '2026-07-09T00:00:00Z'
+                )
+                """
+            )
+        )
+    engine.dispose()
+
+    _run_upgrade_to(db_url, connector_revision)
+    engine = create_engine(db_url, future=True)
+    inspector = sa_inspect(engine)
+    assert inspector.has_table("l3_connector_source_intake_record")
+    columns = {
+        column["name"]: column
+        for column in inspector.get_columns("l3_connector_source_intake_record")
+    }
+    assert {
+        "connector_source_intake_record_id",
+        "client_request_id",
+        "operator_decision",
+        "source_family",
+        "source_label",
+        "source_description",
+        "original_filename",
+        "media_type",
+        "content_size_bytes",
+        "content_sha256",
+        "metadata_hash",
+        "authority_basis_hash",
+        "storage_ref",
+        "freshness_timestamp",
+        "provenance_json",
+        "downstream_eligibility_json",
+        "summary_json",
+        "status",
+        "created_at",
+        "updated_at",
+        "connector_key",
+        "connector_run_id",
+        "connector_run_target_id",
+    }.issubset(columns)
+    assert columns["connector_key"]["nullable"] is False
+    assert columns["connector_run_id"]["nullable"] is False
+    assert columns["connector_run_target_id"]["nullable"] is False
+    checks = {
+        constraint["name"]: constraint["sqltext"]
+        for constraint in inspector.get_check_constraints("l3_connector_source_intake_record")
+    }
+    assert (
+        checks["ck_l3_connector_source_intake_operator_decision"]
+        == "operator_decision = 'record_connector_produced_source'"
+    )
+    assert (
+        checks["ck_l3_connector_source_intake_status"]
+        == "status IN ('recorded', 'already_recorded')"
+    )
+    uniques = {
+        constraint["name"]
+        for constraint in inspector.get_unique_constraints("l3_connector_source_intake_record")
+    }
+    assert {
+        "uq_l3_connector_source_intake_client_request",
+        "uq_l3_connector_source_intake_authority_basis",
+    }.issubset(uniques)
+    indexes = {
+        index["name"]
+        for index in inspector.get_indexes("l3_connector_source_intake_record")
+    }
+    assert {
+        "ix_l3_connector_source_intake_content_sha256",
+        "ix_l3_connector_source_intake_source_family",
+        "ix_l3_connector_source_intake_status",
+        "ix_l3_connector_source_intake_run_target",
+    }.issubset(indexes)
+    engine.dispose()
+
+    _run_downgrade_to(db_url, previous_revision)
+    engine = create_engine(db_url, future=True)
+    inspector = sa_inspect(engine)
+    assert not inspector.has_table("l3_connector_source_intake_record")
+    with engine.connect() as conn:
+        target_status = conn.execute(
+            text(
+                """
+                SELECT status
+                FROM connector_run_target
+                WHERE connector_run_target_id = 'target-0056-proof'
+                """
+            )
+        ).scalar_one()
+    engine.dispose()
+    assert target_status == "downloaded"
+
+    _run_upgrade_to(db_url, connector_revision)
+    engine = create_engine(db_url, future=True)
+    inspector = sa_inspect(engine)
+    assert inspector.has_table("l3_connector_source_intake_record")
+    engine.dispose()
+
+
 # ---------------------------------------------------------------------------
 # Postgres tests (skipped when driver or URL absent)
 # ---------------------------------------------------------------------------
