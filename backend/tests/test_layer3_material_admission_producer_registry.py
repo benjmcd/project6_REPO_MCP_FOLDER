@@ -25,8 +25,12 @@ KNOWN_WRAPPERS = frozenset(
     }
 )
 
+FunctionNode = ast.FunctionDef | ast.AsyncFunctionDef
+FUNCTION_NODE_TYPES = (ast.FunctionDef, ast.AsyncFunctionDef)
 
-def _service_modules(extra_modules: tuple[ModuleType, ...] = ()) -> list[ModuleType]:
+
+def _guard_modules(extra_modules: tuple[ModuleType, ...] = ()) -> list[ModuleType]:
+    import app.api.layer3
     import app.services
 
     modules = []
@@ -34,24 +38,53 @@ def _service_modules(extra_modules: tuple[ModuleType, ...] = ()) -> list[ModuleT
         if not module_info.name.rsplit(".", 1)[-1].startswith("layer3_"):
             continue
         modules.append(importlib.import_module(module_info.name))
+    modules.append(app.api.layer3)
+    for module_info in pkgutil.iter_modules(app.api.layer3.__path__, prefix="app.api.layer3."):
+        modules.append(importlib.import_module(module_info.name))
     modules.extend(extra_modules)
     return modules
 
 
-def _called_names(function_node: ast.FunctionDef) -> set[str]:
+def _import_aliases(function_node: ast.AST) -> dict[str, str]:
+    aliases: dict[str, str] = {}
+    for node in ast.walk(function_node):
+        if isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = alias.name
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = alias.name.rsplit(".", 1)[-1]
+    return aliases
+
+
+def _top_level_import_aliases(module_node: ast.Module) -> dict[str, str]:
+    aliases: dict[str, str] = {}
+    for node in module_node.body:
+        if isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = alias.name
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = alias.name.rsplit(".", 1)[-1]
+    return aliases
+
+
+def _called_names(function_node: FunctionNode, aliases: dict[str, str] | None = None) -> set[str]:
+    resolved_aliases = dict(aliases or {})
+    resolved_aliases.update(_import_aliases(function_node))
     names: set[str] = set()
     for node in ast.walk(function_node):
         if not isinstance(node, ast.Call):
             continue
         func = node.func
         if isinstance(func, ast.Name):
-            names.add(func.id)
+            names.add(resolved_aliases.get(func.id, func.id))
         elif isinstance(func, ast.Attribute):
             names.add(func.attr)
     return names
 
 
-def _keyword_names(function_node: ast.FunctionDef) -> set[str]:
+def _keyword_names(function_node: FunctionNode) -> set[str]:
     names: set[str] = set()
     for node in ast.walk(function_node):
         if isinstance(node, ast.Call):
@@ -59,7 +92,7 @@ def _keyword_names(function_node: ast.FunctionDef) -> set[str]:
     return names
 
 
-def _string_literals(function_node: ast.FunctionDef) -> set[str]:
+def _string_literals(function_node: FunctionNode) -> set[str]:
     values: set[str] = set()
     for node in ast.walk(function_node):
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
@@ -98,8 +131,8 @@ def _module_source_has_keyworded_call(source: str, name: str, keyword: str) -> b
     return False
 
 
-def _is_preview_or_bridge_site(function_node: ast.FunctionDef) -> bool:
-    called = _called_names(function_node)
+def _is_preview_or_bridge_site(function_node: FunctionNode, aliases: dict[str, str] | None = None) -> bool:
+    called = _called_names(function_node, aliases)
     strings = _string_literals(function_node)
     computes_hash = {
         "material_preview_hash",
@@ -115,10 +148,14 @@ def _is_preview_or_bridge_site(function_node: ast.FunctionDef) -> bool:
     return bool((computes_hash and (preview_name or bridge_name or has_material_candidate)) or (bridge_name and forwards_hash))
 
 
-def _is_hash_persisting_site(module_name: str, function_node: ast.FunctionDef) -> bool:
+def _is_hash_persisting_site(
+    module_name: str,
+    function_node: FunctionNode,
+    aliases: dict[str, str] | None = None,
+) -> bool:
     if module_name in {"app.services.layer3_gate_b_state", "app.services.layer3_workbench"}:
         return False
-    called = _called_names(function_node)
+    called = _called_names(function_node, aliases)
     keywords = _keyword_names(function_node)
     persists_hash = {
         "claim_gate_b_idempotency",
@@ -158,7 +195,12 @@ def _discover_material_preview_sites(
     extra_modules: tuple[ModuleType, ...] = (),
 ) -> set[str]:
     sites: set[str] = set()
-    for module in _service_modules(extra_modules):
+    for module in _guard_modules(extra_modules):
+        module_aliases: dict[str, str] = {}
+        try:
+            module_aliases = _top_level_import_aliases(ast.parse(inspect.getsource(module)))
+        except (OSError, TypeError):
+            module_aliases = {}
         for name, obj in inspect.getmembers(module, inspect.isfunction):
             if obj.__module__ != module.__name__:
                 continue
@@ -168,11 +210,19 @@ def _discover_material_preview_sites(
                 continue
             parsed = ast.parse(source)
             function_node = next(
-                node for node in parsed.body if isinstance(node, ast.FunctionDef)
+                (
+                    node
+                    for node in ast.walk(parsed)
+                    if isinstance(node, FUNCTION_NODE_TYPES) and node.name == obj.__name__
+                ),
+                None,
             )
-            if _is_preview_or_bridge_site(function_node) or _is_hash_persisting_site(
+            if function_node is None:
+                continue
+            if _is_preview_or_bridge_site(function_node, module_aliases) or _is_hash_persisting_site(
                 module.__name__,
                 function_node,
+                module_aliases,
             ):
                 sites.add(f"{module.__name__}:{name}")
     return sites
@@ -217,11 +267,78 @@ def _rogue_hash_persisting_producer(db):
     )
 
 
+def _rogue_split_api_material_preview(db, payload):
+    from app.services.layer3_gate_b_state import material_preview_hash
+
+    candidate = {
+        "candidate_id": "mat-rogue-split-api-1",
+        "source_class": "rogue_split_api_connector",
+        "source_ref": "rogue-split-api:1",
+        "query_basis": "rogue_split_api",
+        "provenance_ref": "rogue-split-api:1",
+        "source_identity": {},
+        "source_provenance": {},
+        "payload": {},
+        "load_summary": {},
+    }
+    return {
+        "material_candidate": candidate,
+        "material_preview_hash": material_preview_hash([candidate]),
+    }
+
+
+def _rogue_alias_api_material_preview(db, payload):
+    from app.services.layer3_gate_b_state import material_preview_hash as preview_hash_alias
+
+    candidate = {
+        "candidate_id": "mat-rogue-alias-api-1",
+        "source_class": "rogue_alias_api_connector",
+        "source_ref": "rogue-alias-api:1",
+        "query_basis": "rogue_alias_api",
+        "provenance_ref": "rogue-alias-api:1",
+        "source_identity": {},
+        "source_provenance": {},
+        "payload": {},
+        "load_summary": {},
+    }
+    return {
+        "material_candidate": candidate,
+        "material_preview_hash": preview_hash_alias([candidate]),
+    }
+
+
+async def post_async_material_preview(db, payload):
+    from app.services.layer3_gate_b_state import material_preview_hash
+
+    candidate = {
+        "candidate_id": "mat-rogue-async-api-1",
+        "source_class": "rogue_async_api_connector",
+        "source_ref": "rogue-async-api:1",
+        "query_basis": "rogue_async_api",
+        "provenance_ref": "rogue-async-api:1",
+        "source_identity": {},
+        "source_provenance": {},
+        "payload": {},
+        "load_summary": {},
+    }
+    return {
+        "material_candidate": candidate,
+        "material_preview_hash": material_preview_hash([candidate]),
+    }
+
+
 def test_material_preview_producer_registry_is_exact() -> None:
     discovered = _discover_material_preview_sites()
 
     assert _classify_producers(discovered) == PRODUCERS
     assert discovered == PRODUCERS | KNOWN_WRAPPERS
+
+
+def test_material_preview_guard_scans_split_layer3_api_modules() -> None:
+    scanned = {module.__name__ for module in _guard_modules()}
+
+    assert "app.api.layer3" in scanned
+    assert "app.api.layer3.source_ingestion" in scanned
 
 
 def test_gate_b_decision_reads_production_boundary_not_test_helper() -> None:
@@ -271,4 +388,40 @@ def test_guard_detects_rogue_hash_persisting_producer() -> None:
         "app.services.layer3_rogue_hash_persisting_producer:rogue_hash_persisting_producer"
         in discovered
     )
+    assert discovered != PRODUCERS | KNOWN_WRAPPERS
+
+
+def test_guard_detects_rogue_split_api_material_preview_producer() -> None:
+    module = ModuleType("app.api.layer3.source_ingestion_rogue")
+    _rogue_split_api_material_preview.__module__ = module.__name__
+    module.post_source_ingestion_rogue_material_preview = _rogue_split_api_material_preview
+
+    discovered = _discover_material_preview_sites((module,))
+
+    assert (
+        "app.api.layer3.source_ingestion_rogue:post_source_ingestion_rogue_material_preview"
+        in discovered
+    )
+    assert discovered != PRODUCERS | KNOWN_WRAPPERS
+
+
+def test_guard_detects_rogue_async_split_api_material_preview_producer() -> None:
+    module = ModuleType("app.api.layer3.async_rogue")
+    post_async_material_preview.__module__ = module.__name__
+    module.post_async_material_preview = post_async_material_preview
+
+    discovered = _discover_material_preview_sites((module,))
+
+    assert "app.api.layer3.async_rogue:post_async_material_preview" in discovered
+    assert discovered != PRODUCERS | KNOWN_WRAPPERS
+
+
+def test_guard_detects_alias_import_material_preview_hash() -> None:
+    module = ModuleType("app.api.layer3.alias_route")
+    _rogue_alias_api_material_preview.__module__ = module.__name__
+    module.post_alias_rogue_material_preview = _rogue_alias_api_material_preview
+
+    discovered = _discover_material_preview_sites((module,))
+
+    assert "app.api.layer3.alias_route:post_alias_rogue_material_preview" in discovered
     assert discovered != PRODUCERS | KNOWN_WRAPPERS

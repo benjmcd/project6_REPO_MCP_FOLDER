@@ -68,6 +68,19 @@ _CONNECTOR_SOURCE_INTAKE_GATE_B_FORBIDDEN_FIELDS = {
 }
 
 
+def _normalise_gate_b_decision_basis_key(key: str) -> str:
+    value = str(key).strip()
+    value = re.sub(r"(?<=[A-Z])(?=[A-Z][a-z])", "_", value)
+    value = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", value)
+    return value.replace("-", "_").casefold()
+
+
+_CONNECTOR_SOURCE_INTAKE_GATE_B_FORBIDDEN_KEYS = {
+    _normalise_gate_b_decision_basis_key(field)
+    for field in _CONNECTOR_SOURCE_INTAKE_GATE_B_FORBIDDEN_FIELDS
+}
+
+
 class ConnectorSourceIntakeError(Exception):
     def __init__(
         self,
@@ -107,6 +120,13 @@ def record_connector_produced_source_intake(
     media_type: str | None = None,
     freshness_timestamp: datetime | str | None = None,
 ) -> dict[str, Any]:
+    """Record connector-produced source intake under the current idempotency contract.
+
+    The conflict axes are client_request_id and authority_basis_hash.
+    connector_run_target_id is not unique; the same target may produce distinct
+    records when a future caller supplies a distinct client_request_id and
+    therefore a distinct authority_basis_hash.
+    """
     request_id = _normalise_required(client_request_id, "client_request_id")
     if not _CLIENT_REQUEST_RE.match(request_id):
         raise ConnectorSourceIntakeError(
@@ -855,7 +875,7 @@ def _gate_b_forbidden_decision_basis_fields(
         for raw_key, nested_value in value.items():
             key = str(raw_key)
             field_path = f"{prefix}.{key}"
-            if key in _CONNECTOR_SOURCE_INTAKE_GATE_B_FORBIDDEN_FIELDS:
+            if _normalise_gate_b_decision_basis_key(key) in _CONNECTOR_SOURCE_INTAKE_GATE_B_FORBIDDEN_KEYS:
                 blocked.append(field_path)
             blocked.extend(_gate_b_forbidden_decision_basis_fields(nested_value, field_path))
     elif isinstance(value, list):
