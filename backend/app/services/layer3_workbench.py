@@ -248,6 +248,11 @@ from app.services.layer3_source_intake import (
     SourceIntakeError,
     validate_source_intake_gate_b_decision_basis,
 )
+from app.services.layer3_connector_source_intake import (
+    CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
+    ConnectorSourceIntakeError,
+    validate_connector_intake_gate_b_decision_basis,
+)
 from app.services.layer3_source_directory_material_admission import (
     SOURCE_CLASS as SOURCE_DIRECTORY_FILE_SOURCE_CLASS,
     SourceDirectoryMaterialAdmissionError,
@@ -2252,6 +2257,23 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                     blocked_fields=exc.details.get("blocked_fields")
                     or ["candidate_decisions.decision_basis"],
                     next_allowed_actions=["refresh_source_directory_material_preview"],
+                ) from exc
+        if source_class == CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY:
+            try:
+                validate_connector_intake_gate_b_decision_basis(
+                    db,
+                    candidate_id=candidate_id,
+                    decision_basis=decision_basis,
+                )
+            except ConnectorSourceIntakeError as exc:
+                raise Layer3WorkbenchError(
+                    exc.code,
+                    exc.message,
+                    status="conflict" if exc.http_status == 409 else "blocked",
+                    http_status=exc.http_status,
+                    blocked_fields=exc.details.get("blocked_fields")
+                    or ["candidate_decisions.decision_basis"],
+                    next_allowed_actions=["refresh_connector_source_intake_material_preview"],
                 ) from exc
         source_identity = decision_basis.get("source_identity") if isinstance(decision_basis.get("source_identity"), dict) else {}
         source_provenance = (
