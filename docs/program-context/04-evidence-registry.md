@@ -439,3 +439,6 @@ host-class authority for future taxonomy fetches.
 | Artifact | sha256 anchor | Meaning |
 |---|---|---|
 | `state/agent-inbox/decision-brief-2026-07-08.txt` | `ec81e1ca25edb4621fe62146a0de1662f79452be457b08fee8356e5cdbf590b9` | Owner authorization for the Phase-1 shared admission-map contract (planning doc 1366) recorded as D32. The brief itself is inbox-local; the committed digest is D32 plus planning doc 1366's authority, non-goals, and Phase 0-7 sequence. |
+| PR #2470 | commit `423fbbae5d7bf94d84d596fad1ea23b079e535dc` | Admission-map count and posture reconciliation after #2469; documentation record only, with no runtime, value, schema, persistence, default-on, or support-matrix change by this registry row. |
+| PR #2471 | commit `e413d2df7cf0adeda2fd538bc4a3a2f87a5cfcc2` | Neutral NRC APS facade executed with behavior-neutral routing and preserved material-admission semantics. |
+| PR #2472 | commit `e31f5ebd5dcc0ae7820252d04cf47db4946d6743` | Connector source-intake envelope: ScienceBase/MCS connector Gate-B next_state closure and four-producer static guard. |

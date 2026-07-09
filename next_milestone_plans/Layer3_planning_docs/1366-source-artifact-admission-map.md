@@ -173,3 +173,52 @@ Stage-2 audit `M-ADMISSION-MAP-ADVERSARIAL` finding F1 identified a count-fideli
 PR #2469's in-review refinements are preserved as code-true: the raw-mixed current-posture row is admitted by `_is_admitted_dataset_version_provenance`, and the source-directory `gate_b_admitted` posture remains documented. This erratum reconciles the family-count prose, discloses the exactly 3 material-preview producer functions on main, and discloses the exactly 32 support-matrix capability entries with their runtime-contract assertion.
 
 Supersession scope: this erratum supersedes only the prior family-count prose and adds only the producer-count and capability-count disclosures above. It does not alter any other runtime, target-posture, phase, non-goal, support-matrix, or production-readiness claim in this document.
+
+## Erratum (2026-07-09, M-ADMISSION-DOCS)
+
+This D26 erratum is the current currency boundary for this map. The original
+grounding line against `project6-origin/main` tip `ee87e576` remains true only
+for the original authoring snapshot; current Lane B authority is
+`e31f5ebd5dcc0ae7820252d04cf47db4946d6743`. Because the 2026-07-08 erratum
+already cites later #2469 refinements, skim readers must treat this document as
+current only through the dated errata rather than over-trusting the original
+status line.
+
+Material-preview producer functions on current main are exactly 4, not exactly
+3: `app.services.layer3_workbench:material_preview`,
+`app.services.layer3_source_intake:source_intake_material_preview`,
+`app.services.layer3_source_directory_material_admission:source_directory_material_preview`,
+and
+`app.services.layer3_connector_source_intake:connector_source_intake_material_preview`.
+Any future gate must re-run the producer-count check independently instead of
+inheriting this prose.
+
+ScienceBase/MCS current posture and the target-row shorthand are superseded by
+the connector source-intake Gate-B result. The Gate-B decision `next_state` is
+`connector_source_intake_gate_b_admitted`. Separately, the connector Gate-B
+material-admission mode is `connector_source_intake_gate_b_material_admission`.
+These are distinct symbols: the mode string is not the next_state, and neither
+should be collapsed to generic `gate_b_admitted` wording.
+
+Gate B now validates `source_intake`, `source_directory`, and
+connector-source-intake decision bases. The connector-source-intake validator
+was delivered with the ScienceBase/MCS envelope. The function
+`validate_dataset_version_gate_b_decision_basis` remains legitimately absent:
+Phases 2 and 3 are closed, connector-intake validation was delivered, and the
+dataset-version validator remains the Section 9b seam rather than an unexecuted
+Phase 2/3 code item.
+
+Phase execution status is superseded as follows: Phase 2 is EXECUTED in PR
+#2471 / `e413d2df7cf0adeda2fd538bc4a3a2f87a5cfcc2`; Phase 3 is EXECUTED in PR
+#2472 / `e31f5ebd5dcc0ae7820252d04cf47db4946d6743`; Phase 7 is EXECUTED in PR
+#2472 / `e31f5ebd5dcc0ae7820252d04cf47db4946d6743`. Phase 4, Phase 5, and Phase
+6 are not claimed executed by this erratum.
+
+The future WB/BLS/OECD/CFTC shape-pilot target posture is no longer generic
+`artifact_enveloped` + `layer3_preview_admitted`. Those future pilots should
+distinguish artifact envelope from connector source-intake Gate-B admission:
+their connector path targets `next_state`
+`connector_source_intake_gate_b_admitted` with mode
+`connector_source_intake_gate_b_material_admission` where both labels are
+needed. This updates the target posture only; it does not claim Phase 4 has
+landed.
