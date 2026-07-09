@@ -26,6 +26,7 @@ from app.models.models import (
     DatasetSourceProvenance,
     L3ConnectorSourceIntakeRecord,
     L3GateBIdempotencyKey,
+    L3Session,
 )
 from app.services.layer3_connector_source_intake import (
     CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
@@ -213,6 +214,27 @@ def test_sciencebase_csv_connector_intake_reaches_gate_b_through_existing_route(
         assert body["authority_rail"]["source_authority"]["source_classes"] == [
             CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
         ]
+        stored_session = db.get(L3Session, body["session_id"])
+        assert stored_session is not None
+        assert stored_session.summary_json["current_gate"] == "gate_b"
+
+        summary_response = client.get(f"/api/v1/layer3/session/{body['session_id']}")
+        assert summary_response.status_code == 200, summary_response.text
+        summary_body = summary_response.json()
+        assert summary_body["current_gate"] == "gate_b"
+        assert summary_body["authority_rail"]["current_gate"] == "gate_b"
+
+        gate_c_response = client.post(
+            "/api/v1/layer3/gate-c/preview",
+            json={
+                "client_request_id": "sciencebase-envelope-gate-c-readback-001",
+                "session_id": body["session_id"],
+            },
+        )
+        assert gate_c_response.status_code == 200, gate_c_response.text
+        gate_c_body = gate_c_response.json()
+        assert gate_c_body["next_state"] == "connector_source_intake_gate_b_admitted"
+        assert gate_c_body["authority_rail"]["current_gate"] == "gate_b"
         assert (
             db.query(L3GateBIdempotencyKey)
             .filter(L3GateBIdempotencyKey.client_request_id == "sciencebase-envelope-gate-b-001")
@@ -423,13 +445,138 @@ def test_connector_gate_b_rejects_raw_storage_reference_aliases(client):
         db.close()
 
 
-def test_connector_gate_b_rejects_payload_connector_identity_tampering(client):
+def test_connector_gate_b_rejects_mixed_case_and_camel_case_forbidden_fields(client):
     db = client.layer3_session_factory()
     try:
         run, target, _ = _seed_downloaded_sciencebase_target(db)
         record = record_connector_produced_source_intake(
             db,
             client_request_id="sciencebase-envelope-record-009",
+            connector_key=run.connector_key,
+            connector_run_id=run.connector_run_id,
+            connector_run_target_id=target.connector_run_target_id,
+            source_label="ScienceBase mixed-case forbidden fields CSV",
+            source_description="Downloaded public ScienceBase CSV raw blob.",
+            media_type="text/csv",
+        )
+        preview = connector_source_intake_material_preview(
+            db,
+            connector_source_intake_record_id=record["connector_source_intake_record_id"],
+        )
+        candidate = preview["material_candidate"]
+        decision_basis = _decision_basis(candidate)
+        decision_basis["payload"] = {
+            **decision_basis["payload"],
+            "StorageRef": target.raw_storage_ref,
+            "localPath": target.raw_storage_ref,
+            "providerUrl": "https://www.sciencebase.gov/catalog/file/get/sb-item-001",
+            "rawStorageRef": target.raw_storage_ref,
+        }
+
+        with pytest.raises(ConnectorSourceIntakeError) as excinfo:
+            validate_connector_intake_gate_b_decision_basis(
+                db,
+                candidate_id=candidate["candidate_id"],
+                decision_basis=decision_basis,
+            )
+        assert excinfo.value.code == "connector_source_intake_gate_b_forbidden_field_not_admitted"
+        assert excinfo.value.details["blocked_fields"] == [
+            "candidate_decisions.decision_basis.payload.StorageRef",
+            "candidate_decisions.decision_basis.payload.localPath",
+            "candidate_decisions.decision_basis.payload.providerUrl",
+            "candidate_decisions.decision_basis.payload.rawStorageRef",
+        ]
+    finally:
+        db.close()
+
+
+def test_connector_source_intake_contract_documents_idempotency_axes():
+    doc = record_connector_produced_source_intake.__doc__ or ""
+
+    assert "client_request_id" in doc
+    assert "authority_basis_hash" in doc
+    assert "connector_run_target_id is not unique" in doc
+
+
+def test_connector_intake_allows_same_target_with_distinct_request_ids(client):
+    db = client.layer3_session_factory()
+    try:
+        run, target, _ = _seed_downloaded_sciencebase_target(db)
+
+        first = record_connector_produced_source_intake(
+            db,
+            client_request_id="sciencebase-envelope-record-010",
+            connector_key=run.connector_key,
+            connector_run_id=run.connector_run_id,
+            connector_run_target_id=target.connector_run_target_id,
+            source_label="ScienceBase same target first CSV",
+            source_description="Downloaded public ScienceBase CSV raw blob.",
+            media_type="text/csv",
+        )
+        second = record_connector_produced_source_intake(
+            db,
+            client_request_id="sciencebase-envelope-record-011",
+            connector_key=run.connector_key,
+            connector_run_id=run.connector_run_id,
+            connector_run_target_id=target.connector_run_target_id,
+            source_label="ScienceBase same target second CSV",
+            source_description="Downloaded public ScienceBase CSV raw blob.",
+            media_type="text/csv",
+        )
+
+        assert first["connector_source_intake_record_id"] != second["connector_source_intake_record_id"]
+        assert (
+            db.query(L3ConnectorSourceIntakeRecord)
+            .filter(
+                L3ConnectorSourceIntakeRecord.connector_run_target_id
+                == target.connector_run_target_id
+            )
+            .count()
+            == 2
+        )
+    finally:
+        db.close()
+
+
+def test_connector_intake_rejects_duplicate_client_request_id(client):
+    db = client.layer3_session_factory()
+    try:
+        run, target, _ = _seed_downloaded_sciencebase_target(db)
+        record_connector_produced_source_intake(
+            db,
+            client_request_id="sciencebase-envelope-record-012",
+            connector_key=run.connector_key,
+            connector_run_id=run.connector_run_id,
+            connector_run_target_id=target.connector_run_target_id,
+            source_label="ScienceBase duplicate request first CSV",
+            source_description="Downloaded public ScienceBase CSV raw blob.",
+            media_type="text/csv",
+        )
+
+        with pytest.raises(ConnectorSourceIntakeError) as excinfo:
+            record_connector_produced_source_intake(
+                db,
+                client_request_id="sciencebase-envelope-record-012",
+                connector_key=run.connector_key,
+                connector_run_id=run.connector_run_id,
+                connector_run_target_id=target.connector_run_target_id,
+                source_label="ScienceBase duplicate request second CSV",
+                source_description="Downloaded public ScienceBase CSV raw blob.",
+                media_type="text/csv",
+            )
+        assert excinfo.value.code == "connector_source_intake_idempotency_conflict"
+        assert db.query(L3ConnectorSourceIntakeRecord).count() == 1
+    finally:
+        db.close()
+
+
+def test_connector_gate_b_rejects_payload_connector_identity_tampering(client):
+    db = client.layer3_session_factory()
+    try:
+        run, target, _ = _seed_downloaded_sciencebase_target(db)
+        record = record_connector_produced_source_intake(
+            db,
+            client_request_id="sciencebase-envelope-record-013",
             connector_key=run.connector_key,
             connector_run_id=run.connector_run_id,
             connector_run_target_id=target.connector_run_target_id,

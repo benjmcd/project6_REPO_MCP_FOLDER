@@ -16,10 +16,12 @@ import json
 import logging
 import os
 import sys
+import uuid
 from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine, inspect as sa_inspect, text
+from sqlalchemy.exc import IntegrityError
 
 # ---------------------------------------------------------------------------
 # Path bootstrap — replicate the pattern used by the other test_layer3_*.py
@@ -653,6 +655,147 @@ def test_alembic_upgrade_head_idempotent_postgres():
     """Running alembic upgrade head twice on Postgres must not error."""
     _run_upgrade(_POSTGRES_URL)
     _run_upgrade(_POSTGRES_URL)
+
+
+@_skip_postgres
+def test_connector_source_intake_record_0056_constraints_postgres():
+    """0056 constraints reject invalid values and duplicate idempotency keys on Postgres."""
+    _run_upgrade(_POSTGRES_URL)
+    engine = create_engine(_POSTGRES_URL, future=True)
+    suffix = uuid.uuid4().hex[:12]
+
+    def _row(record_id: str, request_id: str, authority_hash: str, **overrides):
+        row = {
+            "connector_source_intake_record_id": record_id,
+            "client_request_id": request_id,
+            "operator_decision": "record_connector_produced_source",
+            "source_family": "connector_produced_single_source",
+            "source_label": "Postgres 0056 proof CSV",
+            "source_description": None,
+            "original_filename": "postgres-0056-proof.csv",
+            "media_type": "text/csv",
+            "content_size_bytes": 17,
+            "content_sha256": hashlib.sha256(record_id.encode("utf-8")).hexdigest(),
+            "metadata_hash": hashlib.sha256(request_id.encode("utf-8")).hexdigest(),
+            "authority_basis_hash": authority_hash,
+            "storage_ref": f"connector://postgres-0056/{record_id}",
+            "freshness_timestamp": None,
+            "provenance_json": json.dumps({"schema_id": "postgres-0056-proof"}),
+            "downstream_eligibility_json": json.dumps({"eligible": True}),
+            "summary_json": json.dumps({"proof": "postgres-0056"}),
+            "status": "recorded",
+            "connector_key": "sciencebase-public",
+            "connector_run_id": f"run-postgres-0056-{suffix}",
+            "connector_run_target_id": f"target-postgres-0056-{suffix}",
+        }
+        row.update(overrides)
+        return row
+
+    def _insert(row):
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO l3_connector_source_intake_record (
+                        connector_source_intake_record_id,
+                        client_request_id,
+                        operator_decision,
+                        source_family,
+                        source_label,
+                        source_description,
+                        original_filename,
+                        media_type,
+                        content_size_bytes,
+                        content_sha256,
+                        metadata_hash,
+                        authority_basis_hash,
+                        storage_ref,
+                        freshness_timestamp,
+                        provenance_json,
+                        downstream_eligibility_json,
+                        summary_json,
+                        status,
+                        created_at,
+                        updated_at,
+                        connector_key,
+                        connector_run_id,
+                        connector_run_target_id
+                    )
+                    VALUES (
+                        :connector_source_intake_record_id,
+                        :client_request_id,
+                        :operator_decision,
+                        :source_family,
+                        :source_label,
+                        :source_description,
+                        :original_filename,
+                        :media_type,
+                        :content_size_bytes,
+                        :content_sha256,
+                        :metadata_hash,
+                        :authority_basis_hash,
+                        :storage_ref,
+                        :freshness_timestamp,
+                        CAST(:provenance_json AS JSON),
+                        CAST(:downstream_eligibility_json AS JSON),
+                        CAST(:summary_json AS JSON),
+                        :status,
+                        now(),
+                        now(),
+                        :connector_key,
+                        :connector_run_id,
+                        :connector_run_target_id
+                    )
+                    """
+                ),
+                row,
+            )
+
+    base_authority_hash = hashlib.sha256(f"authority-{suffix}".encode("utf-8")).hexdigest()
+    _insert(
+        _row(
+            f"pg0056-{suffix}-base",
+            f"pg0056-client-{suffix}-base",
+            base_authority_hash,
+        )
+    )
+
+    with pytest.raises(IntegrityError):
+        _insert(
+            _row(
+                f"pg0056-{suffix}-bad-decision",
+                f"pg0056-client-{suffix}-bad-decision",
+                hashlib.sha256(f"bad-decision-{suffix}".encode("utf-8")).hexdigest(),
+                operator_decision="wrong_decision",
+            )
+        )
+    with pytest.raises(IntegrityError):
+        _insert(
+            _row(
+                f"pg0056-{suffix}-bad-status",
+                f"pg0056-client-{suffix}-bad-status",
+                hashlib.sha256(f"bad-status-{suffix}".encode("utf-8")).hexdigest(),
+                status="wrong_status",
+            )
+        )
+    with pytest.raises(IntegrityError):
+        _insert(
+            _row(
+                f"pg0056-{suffix}-dup-client",
+                f"pg0056-client-{suffix}-base",
+                hashlib.sha256(f"dup-client-{suffix}".encode("utf-8")).hexdigest(),
+            )
+        )
+    with pytest.raises(IntegrityError):
+        _insert(
+            _row(
+                f"pg0056-{suffix}-dup-authority",
+                f"pg0056-client-{suffix}-dup-authority",
+                base_authority_hash,
+            )
+        )
+
+    engine.dispose()
 
 
 @_skip_postgres

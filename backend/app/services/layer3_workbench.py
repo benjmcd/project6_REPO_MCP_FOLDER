@@ -2517,6 +2517,11 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                 "expansion_reason": "gate_b_approved_material",
             }
         )
+    approved_source_classes = sorted({item["source_class"] for item in approved})
+    connector_only_gate_b_admission = approved_source_classes == [
+        CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
+    ]
+    current_gate = "gate_b" if connector_only_gate_b_admission else "gate_c"
 
     session, manifest = commit_selection(
         db,
@@ -2525,7 +2530,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             source_plane_hints={
                 "preflight_id": preflight_id,
                 "source_set_id": source_set_id,
-                "source_classes": sorted({item["source_class"] for item in approved}),
+                "source_classes": approved_source_classes,
             },
             commit_reason=str(payload.get("commit_reason") or "operator_gate_b_decision"),
             entry_route_context={"route": ROUTE, "api_root": API_ROOT, "slice": "workbench_first_slice"},
@@ -2541,7 +2546,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                     gate_b_decision_manifest_id=gate_b_decision_manifest_id,
                 ),
             },
-            summary={"current_gate": "gate_c", "gate_b_summary_v1": counts},
+            summary={"current_gate": current_gate, "gate_b_summary_v1": counts},
         ),
     )
     complete_gate_b_idempotency_claim(gate_b_claim, session=session, manifest=manifest)
@@ -2628,9 +2633,7 @@ def _latest_selection_manifest_for_session(db: Session, *, session: L3Session) -
     return manifest
 
 
-def _source_classes_from_latest_manifest(db: Session, session_id: str) -> list[str]:
-    session = _load_session(db, session_id)
-    manifest = _latest_selection_manifest_for_session(db, session=session)
+def _source_classes_from_manifest(manifest: L3SelectionManifest) -> list[str]:
     hints = manifest.source_plane_hints_json or {}
     hinted_classes = hints.get("source_classes")
     if isinstance(hinted_classes, list):
@@ -2643,6 +2646,18 @@ def _source_classes_from_latest_manifest(db: Session, session_id: str) -> list[s
             if isinstance(item, dict) and str(item.get("descriptor_type") or "").strip()
         }
     )
+
+
+def _source_classes_from_latest_manifest(db: Session, session_id: str) -> list[str]:
+    session = _load_session(db, session_id)
+    manifest = _latest_selection_manifest_for_session(db, session=session)
+    return _source_classes_from_manifest(manifest)
+
+
+def _connector_only_gate_b_source_classes(source_classes: list[str]) -> bool:
+    return sorted({str(item).strip() for item in source_classes if str(item).strip()}) == [
+        CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
+    ]
 
 
 def _gate_b_snapshot_material_basis(
@@ -2732,6 +2747,7 @@ def gate_c_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     session = _load_session(db, session_id)
     gate_b_counts = gate_b_summary_from_session(session)
     source_classes = _source_classes_from_latest_manifest(db, session_id)
+    connector_only_gate_b = _connector_only_gate_b_source_classes(source_classes)
     commit_typing = bool(payload.get("commit_typing"))
     try:
         if commit_typing:
@@ -2788,10 +2804,22 @@ def gate_c_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                 "analysis_sets": analysis_sets,
                 "unsupported_material": unsupported_material,
                 "override_allowed": False,
-                "next_state": "first_slice_complete" if typing_records and not unsupported_material else "blocked_typing_unavailable",
+                "next_state": (
+                    "connector_source_intake_gate_b_admitted"
+                    if connector_only_gate_b
+                    else "first_slice_complete"
+                    if typing_records and not unsupported_material
+                    else "blocked_typing_unavailable"
+                ),
                 "authority_rail": _authority_rail(
                     session_id=session_id,
-                    current_gate="complete" if typing_records and not unsupported_material else "gate_c",
+                    current_gate=(
+                        "gate_b"
+                        if connector_only_gate_b
+                        else "complete"
+                        if typing_records and not unsupported_material
+                        else "gate_c"
+                    ),
                     persistence_mode="durable_layer3_control",
                     source_classes=source_classes,
                     counts=gate_b_counts,
@@ -19509,6 +19537,7 @@ def _external_local_export_summary(
 def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     session = _load_session(db, session_id)
     manifest = _latest_selection_manifest_for_session(db, session=session)
+    source_classes = _source_classes_from_manifest(manifest)
 
     typing_record_count = db.query(L3TypingRecord).filter(L3TypingRecord.session_id == session_id).count()
     analysis_unit_count = db.query(L3AnalysisUnit).filter(L3AnalysisUnit.session_id == session_id).count()
@@ -19696,7 +19725,14 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         package_review_preview_state.get("available")
         or package_construction_state.get("state") == PACKAGE_CONSTRUCTED_STATE
     )
-    current_gate = "package" if package_active else ("execution" if selection_active else ("plan" if typing_committed else "gate_c"))
+    gate_b_untyped_gate = (
+        "gate_b" if _connector_only_gate_b_source_classes(source_classes) else "gate_c"
+    )
+    current_gate = (
+        "package"
+        if package_active
+        else ("execution" if selection_active else ("plan" if typing_committed else gate_b_untyped_gate))
+    )
     downstream_unavailable = (
         _active_package_downstream_unavailable(
             package_construction_state=package_construction_state,
