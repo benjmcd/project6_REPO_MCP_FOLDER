@@ -25,6 +25,9 @@ KNOWN_WRAPPERS = frozenset(
     }
 )
 
+FunctionNode = ast.FunctionDef | ast.AsyncFunctionDef
+FUNCTION_NODE_TYPES = (ast.FunctionDef, ast.AsyncFunctionDef)
+
 
 def _guard_modules(extra_modules: tuple[ModuleType, ...] = ()) -> list[ModuleType]:
     import app.api.layer3
@@ -66,7 +69,7 @@ def _top_level_import_aliases(module_node: ast.Module) -> dict[str, str]:
     return aliases
 
 
-def _called_names(function_node: ast.FunctionDef, aliases: dict[str, str] | None = None) -> set[str]:
+def _called_names(function_node: FunctionNode, aliases: dict[str, str] | None = None) -> set[str]:
     resolved_aliases = dict(aliases or {})
     resolved_aliases.update(_import_aliases(function_node))
     names: set[str] = set()
@@ -81,7 +84,7 @@ def _called_names(function_node: ast.FunctionDef, aliases: dict[str, str] | None
     return names
 
 
-def _keyword_names(function_node: ast.FunctionDef) -> set[str]:
+def _keyword_names(function_node: FunctionNode) -> set[str]:
     names: set[str] = set()
     for node in ast.walk(function_node):
         if isinstance(node, ast.Call):
@@ -89,7 +92,7 @@ def _keyword_names(function_node: ast.FunctionDef) -> set[str]:
     return names
 
 
-def _string_literals(function_node: ast.FunctionDef) -> set[str]:
+def _string_literals(function_node: FunctionNode) -> set[str]:
     values: set[str] = set()
     for node in ast.walk(function_node):
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
@@ -128,7 +131,7 @@ def _module_source_has_keyworded_call(source: str, name: str, keyword: str) -> b
     return False
 
 
-def _is_preview_or_bridge_site(function_node: ast.FunctionDef, aliases: dict[str, str] | None = None) -> bool:
+def _is_preview_or_bridge_site(function_node: FunctionNode, aliases: dict[str, str] | None = None) -> bool:
     called = _called_names(function_node, aliases)
     strings = _string_literals(function_node)
     computes_hash = {
@@ -147,7 +150,7 @@ def _is_preview_or_bridge_site(function_node: ast.FunctionDef, aliases: dict[str
 
 def _is_hash_persisting_site(
     module_name: str,
-    function_node: ast.FunctionDef,
+    function_node: FunctionNode,
     aliases: dict[str, str] | None = None,
 ) -> bool:
     if module_name in {"app.services.layer3_gate_b_state", "app.services.layer3_workbench"}:
@@ -210,7 +213,7 @@ def _discover_material_preview_sites(
                 (
                     node
                     for node in ast.walk(parsed)
-                    if isinstance(node, ast.FunctionDef) and node.name == obj.__name__
+                    if isinstance(node, FUNCTION_NODE_TYPES) and node.name == obj.__name__
                 ),
                 None,
             )
@@ -304,6 +307,26 @@ def _rogue_alias_api_material_preview(db, payload):
     }
 
 
+async def post_async_material_preview(db, payload):
+    from app.services.layer3_gate_b_state import material_preview_hash
+
+    candidate = {
+        "candidate_id": "mat-rogue-async-api-1",
+        "source_class": "rogue_async_api_connector",
+        "source_ref": "rogue-async-api:1",
+        "query_basis": "rogue_async_api",
+        "provenance_ref": "rogue-async-api:1",
+        "source_identity": {},
+        "source_provenance": {},
+        "payload": {},
+        "load_summary": {},
+    }
+    return {
+        "material_candidate": candidate,
+        "material_preview_hash": material_preview_hash([candidate]),
+    }
+
+
 def test_material_preview_producer_registry_is_exact() -> None:
     discovered = _discover_material_preview_sites()
 
@@ -379,6 +402,17 @@ def test_guard_detects_rogue_split_api_material_preview_producer() -> None:
         "app.api.layer3.source_ingestion_rogue:post_source_ingestion_rogue_material_preview"
         in discovered
     )
+    assert discovered != PRODUCERS | KNOWN_WRAPPERS
+
+
+def test_guard_detects_rogue_async_split_api_material_preview_producer() -> None:
+    module = ModuleType("app.api.layer3.async_rogue")
+    post_async_material_preview.__module__ = module.__name__
+    module.post_async_material_preview = post_async_material_preview
+
+    discovered = _discover_material_preview_sites((module,))
+
+    assert "app.api.layer3.async_rogue:post_async_material_preview" in discovered
     assert discovered != PRODUCERS | KNOWN_WRAPPERS
 
 
