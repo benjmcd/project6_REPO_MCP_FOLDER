@@ -29,6 +29,25 @@ Supersession boundary: this block is the current admission-spine program pointer
   this docs-only publication. A later lane must widen the fence explicitly if
   those progress surfaces become part of admission-spine publication.
 
+2026-07-09 D26 supersession: this admission-spine pointer is closed through the
+executed Phase 2, Phase 3, and Phase 7 landings. Phase 2 is EXECUTED in PR #2471
+/ `e413d2df7cf0adeda2fd538bc4a3a2f87a5cfcc2` as the neutral NRC APS facade with
+behavior-neutral routing. Phase 3 is EXECUTED in PR #2472 /
+`e31f5ebd5dcc0ae7820252d04cf47db4946d6743` as the ScienceBase/MCS connector
+source-intake Gate-B envelope. Phase 7 is EXECUTED in PR #2472 /
+`e31f5ebd5dcc0ae7820252d04cf47db4946d6743` as the static/CI guard for the first
+pilot. Phase 4 shape pilots, Phase 5 proof reconstruction, and Phase 6 one
+named operator workflow proof remain future or residual unless superseded by a
+newer live-main authority.
+
+Progress-surface boundary: `next_milestone_plans/layer3_progress_manifest.json`,
+`next_milestone_plans/layer3_workbench_proof_manifest.json`, and
+`next_milestone_plans/layer3_progress_board.md` remain intentionally unchanged
+under this exact docs fence. This block is a program-context supersession
+pointer, not a dashboard or manifest update; any later lane that promotes this
+admission-spine closure into those surfaces must widen the file fence
+explicitly.
+
 ## 2026-07-08 Forward Program Refresh (M-PROGRAM-SYNC)
 
 Supersession boundary: this block is the current connector-breadth pointer. It

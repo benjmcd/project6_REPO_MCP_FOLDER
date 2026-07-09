@@ -35,6 +35,19 @@ selected program spine, while the PR #2467/#2468 connector-program history
 remains true in time. No production-readiness, default-on, nonlocal-admission,
 live-pilot, or connector-source-default expansion is claimed by this pointer.
 
+2026-07-09 D26 supersession pointer: the current admission-spine frontier
+documented by this lane is now closed through PR #2472
+(`e31f5ebd5dcc0ae7820252d04cf47db4946d6743`). The landed admission-spine set is
+PR #2469 / `6eb2fab42d23847a4f53710d23df5f976fb32f50`, PR #2470 /
+`423fbbae5d7bf94d84d596fad1ea23b079e535dc`, PR #2471 /
+`e413d2df7cf0adeda2fd538bc4a3a2f87a5cfcc2`, and PR #2472 /
+`e31f5ebd5dcc0ae7820252d04cf47db4946d6743`. This is a docs-current-pointer
+update only; the historical M-ADMISSION-MAP / Phase 0+1 pointer and the
+PR #2467/#2468 connector-program history remain true in time. No
+production-readiness, default-on behavior, live-pilot expansion, nonlocal
+admission, connector-source defaults, or value reveal is claimed by this
+pointer.
+
 2026-07-04 pointer: `docs/program-context/` is the exhaustive SEC-XBRL program record; this file remains the executive summary under that set's INDEX authority order.
 
 2026-07-06 pointer: `docs/program-context/` is refreshed by

@@ -314,3 +314,30 @@ envelope grant was exercised and stopped hard on HTTP 403 (`GET 1/4`, zero
 contingency spent), leaving IMF owner-gated with the unlock fork recorded in
 F9/D31. FAO and BTS remain defer-final. Live pilots still require per-connector
 D27 owner grants, and all connector source defaults remain default-off/local.
+
+## Phase 13 - Admission spine frontier closure (07-09)
+
+- #2469 `6eb2fab4` published D32 and planning doc 1366 as the Phase 0+1
+  source-artifact admission-spine contract. Why: the program needed a single
+  documented admission axis for source-family artifacts before later code lanes
+  could close individual seams.
+- #2470 `423fbbae` reconciled the admission-map count and posture record after
+  stage-2 audit feedback. Why: the durable contract needed to distinguish
+  program source families, raw-mixed workbench materialization, and exact
+  producer-count facts without relying on review-session memory.
+- #2471 `e413d2df` executed Phase 2 by routing NRC APS through a neutral facade
+  with behavior-neutral coverage. Why: the reference family could be
+  decoupled from direct workbench imports without changing admitted behavior.
+- #2472 `e31f5ebd` executed Phase 3 by landing the ScienceBase/MCS connector
+  direct envelope to connector source-intake Gate B, and executed Phase 7 by
+  adding the static/CI guard that keeps the material-preview producer registry
+  exact. Why: the first connector pilot needed both a landed connector
+  admission path and a guard against silent reintroduction of connector-owned
+  downstream admission state.
+
+This entry fixes cold-start reachability from `docs/program-context/INDEX.md`
+to this chronological ledger: a new reader can reconstruct the landed
+admission-spine set (#2469-#2472) without untracked session memory. Phase 4
+shape pilots, Phase 5 proof reconstruction, Phase 6 one named operator workflow
+proof, and owner-gated future decisions remain separate unless later authority
+lands them.
