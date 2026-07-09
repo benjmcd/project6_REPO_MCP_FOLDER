@@ -9,7 +9,19 @@ os.environ["DB_INIT_MODE"] = "none"
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
-from app.services import layer3_workbench, nrc_aps_artifact_ingestion
+from app.services import (
+    layer3_artifact_ingestion_facade as facade,
+    layer3_workbench,
+    nrc_aps_artifact_ingestion,
+)
+
+FIVE_CONTRACT_SYMBOLS = (
+    "validate_target_artifact_payload",
+    "APS_ARTIFACT_INGESTION_SCHEMA_VERSION",
+    "APS_ARTIFACT_INGESTION_TARGET_SCHEMA_ID",
+    "APS_ARTIFACT_INGESTION_RUN_SCHEMA_ID",
+    "APS_FAILURE_ARTIFACT_UNSUPPORTED_MEDIA_TYPE",
+)
 
 
 def _valid_unsupported_media_target_payload() -> dict:
@@ -85,14 +97,37 @@ def test_target_schema_id_gate_returns_none_on_mismatch() -> None:
 def test_consumer_run_schema_id_binding_resolves_identically() -> None:
     # The RUN schema-id read is inline in aps_refused_artifact_traces. Pin the
     # consumer binding by identity rather than widening the fence for seeding.
-    for name in (
-        "APS_ARTIFACT_INGESTION_RUN_SCHEMA_ID",
-        "APS_ARTIFACT_INGESTION_TARGET_SCHEMA_ID",
-        "APS_ARTIFACT_INGESTION_SCHEMA_VERSION",
-        "APS_FAILURE_ARTIFACT_UNSUPPORTED_MEDIA_TYPE",
-        "validate_target_artifact_payload",
-    ):
+    for name in FIVE_CONTRACT_SYMBOLS:
         assert getattr(layer3_workbench.nrc_aps_artifact_ingestion, name) is getattr(
             nrc_aps_artifact_ingestion,
             name,
         )
+
+
+def test_facade_reexports_preserve_object_identity() -> None:
+    for name in FIVE_CONTRACT_SYMBOLS:
+        assert getattr(facade, name) is getattr(nrc_aps_artifact_ingestion, name)
+        assert name in facade.__all__
+
+    assert set(facade.ARTIFACT_INGESTION_PROVIDERS) == {"nrc_aps"}
+    assert facade.ARTIFACT_INGESTION_PROVIDERS["nrc_aps"] is nrc_aps_artifact_ingestion
+
+
+def test_facade_is_sole_layer3_service_importer_of_nrc_aps_artifact_ingestion() -> None:
+    direct_import = "from app.services import nrc_aps_artifact_ingestion"
+    facade_import = "from app.services import layer3_artifact_ingestion_facade as nrc_aps_artifact_ingestion"
+    services = Path(__file__).resolve().parents[1] / "app" / "services"
+
+    def has_exact_import_line(text: str) -> bool:
+        return any(line.strip() == direct_import for line in text.splitlines())
+
+    importers = [
+        path.name
+        for path in sorted(services.glob("layer3_*.py"))
+        if has_exact_import_line(path.read_text(encoding="utf-8"))
+    ]
+    assert importers == ["layer3_artifact_ingestion_facade.py"]
+
+    workbench = (services / "layer3_workbench.py").read_text(encoding="utf-8")
+    assert not has_exact_import_line(workbench)
+    assert any(line.strip() == facade_import for line in workbench.splitlines())
