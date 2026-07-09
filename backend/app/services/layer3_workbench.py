@@ -51,7 +51,7 @@ from app.models.models import (
     VariableDefinition,
     uuid_str,
 )
-from app.services import nrc_aps_artifact_ingestion
+from app.services import layer3_artifact_ingestion_facade as nrc_aps_artifact_ingestion
 from app.services.layer3_pass_entry import (
     COHORT_REQUESTED_METHOD_SOURCE,
     COHORT_SHAPE_ALIGNED_WIDE_TABLE,
