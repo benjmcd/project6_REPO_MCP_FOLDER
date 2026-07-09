@@ -208,11 +208,28 @@ Phases 2 and 3 are closed, connector-intake validation was delivered, and the
 dataset-version validator remains the Section 9b seam rather than an unexecuted
 Phase 2/3 code item.
 
+This does not bless the dataset-version Gate-B seam as an end-state. It
+reclassifies the seam as Section 9b residual or future hardening outside the
+closed Phase 2/3 execution record.
+
 Phase execution status is superseded as follows: Phase 2 is EXECUTED in PR
 #2471 / `e413d2df7cf0adeda2fd538bc4a3a2f87a5cfcc2`; Phase 3 is EXECUTED in PR
 #2472 / `e31f5ebd5dcc0ae7820252d04cf47db4946d6743`; Phase 7 is EXECUTED in PR
 #2472 / `e31f5ebd5dcc0ae7820252d04cf47db4946d6743`. Phase 4, Phase 5, and Phase
 6 are not claimed executed by this erratum.
+
+The closed Phase 3 schema authority is the connector source-intake table,
+`L3ConnectorSourceIntakeRecord`, introduced by migration
+`0056_layer3_connector_source_intake_record` and modeled at
+`backend/app/models/models.py`. This supersedes the stale Phase 3 acceptance-row
+pointer to `L3SourceIntakeRecord` constraints for rollback and follow-up
+tracing.
+
+Phase 7 closure means the first-pilot static/CI guard delivered in #2472: the
+exact material-preview producer registry and wrapper classification guard. It
+does not claim every future family-specific guard extension has already been
+built; future Phase 4 guard work must remain compatible with the same rule that
+connectors do not own downstream admission state.
 
 The future WB/BLS/OECD/CFTC shape-pilot target posture is no longer generic
 `artifact_enveloped` + `layer3_preview_admitted`. Those future pilots should
@@ -222,3 +239,9 @@ their connector path targets `next_state`
 `connector_source_intake_gate_b_material_admission` where both labels are
 needed. This updates the target posture only; it does not claim Phase 4 has
 landed.
+
+This supersedes the Section 10 Phase 4 acceptance criteria for WB/BLS/OECD/CFTC
+where they still name the old `artifact_enveloped` + `layer3_preview_admitted`
+pair as sufficient. Future Phase 4 acceptance must include the connector
+source-intake Gate-B target above while preserving the separate artifact
+envelope requirement.

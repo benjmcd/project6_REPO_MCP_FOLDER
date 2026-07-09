@@ -40,6 +40,14 @@ pilot. Phase 4 shape pilots, Phase 5 proof reconstruction, and Phase 6 one
 named operator workflow proof remain future or residual unless superseded by a
 newer live-main authority.
 
+Progress-surface boundary: `next_milestone_plans/layer3_progress_manifest.json`,
+`next_milestone_plans/layer3_workbench_proof_manifest.json`, and
+`next_milestone_plans/layer3_progress_board.md` remain intentionally unchanged
+under this exact docs fence. This block is a program-context supersession
+pointer, not a dashboard or manifest update; any later lane that promotes this
+admission-spine closure into those surfaces must widen the file fence
+explicitly.
+
 ## 2026-07-08 Forward Program Refresh (M-PROGRAM-SYNC)
 
 Supersession boundary: this block is the current connector-breadth pointer. It
