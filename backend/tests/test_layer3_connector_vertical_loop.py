@@ -208,12 +208,127 @@ import time
 B1A_SOCKET_GUARD_ID = os.environ["B1A_RUN_ID"]
 B1A_ATTEMPT_LEDGER = os.environ["B1A_NETWORK_ATTEMPT_LEDGER"]
 _B1A_LEDGER_LOCK = threading.Lock()
+_B1A_REAL_CONNECT = socket.socket.connect
+_B1A_REAL_CONNECT_EX = socket.socket.connect_ex
+_B1A_REAL_CREATE_CONNECTION = socket.create_connection
+_B1A_AF_INET = socket.AF_INET
+_B1A_AF_INET6 = socket.AF_INET6
+_B1A_LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1", "localhost"})
 
 
-def _b1a_record_and_deny(api: str, address: object) -> None:
+def _b1a_is_loopback(
+    api: str, address: object, socket_family: object
+) -> bool:
+    if api not in {
+        "socket.connect",
+        "socket.connect_ex",
+        "socket.create_connection",
+    }:
+        return False
+    if type(address) is not tuple or len(address) not in {2, 4}:
+        return False
+    if api == "socket.create_connection" and len(address) != 2:
+        return False
+    host, port = address[:2]
+    if (
+        type(host) is not str
+        or not host.isascii()
+        or host.lower() not in _B1A_LOOPBACK_HOSTS
+        or type(port) is not int
+        or not 0 <= port <= 65535
+    ):
+        return False
+    normalized_host = host.lower()
+    if api != "socket.create_connection":
+        if normalized_host == "localhost":
+            if socket_family not in {_B1A_AF_INET, _B1A_AF_INET6}:
+                return False
+        else:
+            expected_family = (
+                _B1A_AF_INET6 if normalized_host == "::1" else _B1A_AF_INET
+            )
+            if socket_family != expected_family:
+                return False
+    if normalized_host != "::1":
+        return len(address) == 2
+    if len(address) == 2:
+        return True
+    flowinfo, scope_id = address[2:]
+    return (
+        type(flowinfo) is int
+        and 0 <= flowinfo <= 0xFFFFF
+        and type(scope_id) is int
+        and 0 <= scope_id <= 0xFFFFFFFF
+    )
+
+
+def _b1a_forward_address(address: object, socket_family: object) -> object:
+    assert type(address) is tuple
+    host = address[0]
+    if type(host) is str and host.isascii() and host.lower() == "localhost":
+        forwarded_host = "::1" if socket_family == _B1A_AF_INET6 else "127.0.0.1"
+        return (forwarded_host, *address[1:])
+    return address
+
+
+def _b1a_create_connection_source(
+    args: tuple[object, ...], kwargs: dict[str, object]
+) -> tuple[bool, object]:
+    if len(args) > 2 or (len(args) == 2 and "source_address" in kwargs):
+        return False, None
+    if len(args) == 2:
+        return True, args[1]
+    return True, kwargs.get("source_address")
+
+
+def _b1a_forward_create_connection_source(
+    args: tuple[object, ...],
+    kwargs: dict[str, object],
+    forwarded_source_address: object,
+) -> tuple[tuple[object, ...], dict[str, object]]:
+    if forwarded_source_address is None:
+        return args, kwargs
+    if len(args) == 2:
+        return (args[0], forwarded_source_address), kwargs
+    if "source_address" in kwargs:
+        forwarded_kwargs = dict(kwargs)
+        forwarded_kwargs["source_address"] = forwarded_source_address
+        return args, forwarded_kwargs
+    return args, kwargs
+
+
+def _b1a_record_attempt(
+    api: str,
+    address: object,
+    socket_family: object,
+    *,
+    source_address: object = None,
+    source_family: object = None,
+    source_shape_valid: bool = True,
+) -> tuple[bool, object, object]:
+    destination_is_loopback = _b1a_is_loopback(api, address, socket_family)
+    source_is_loopback = source_shape_valid and (
+        source_address is None
+        or _b1a_is_loopback("socket.connect", source_address, source_family)
+    )
+    is_loopback = destination_is_loopback and source_is_loopback
+    forwarded_address = (
+        _b1a_forward_address(address, socket_family)
+        if destination_is_loopback
+        else address
+    )
+    forwarded_source_address = (
+        _b1a_forward_address(source_address, source_family)
+        if source_address is not None and source_is_loopback
+        else source_address
+    )
     record = {
         "api": api,
         "address_repr": repr(address),
+        "forwarded_address_repr": repr(forwarded_address),
+        "source_address_repr": repr(source_address),
+        "forwarded_source_address_repr": repr(forwarded_source_address),
+        "is_loopback": is_loopback,
         "run_id": B1A_SOCKET_GUARD_ID,
         "time_ns": time.time_ns(),
     }
@@ -222,22 +337,86 @@ def _b1a_record_and_deny(api: str, address: object) -> None:
             handle.write(json.dumps(record, sort_keys=True, separators=(",", ":")) + "\\n")
             handle.flush()
             os.fsync(handle.fileno())
-    raise OSError("OFFLINE-ONLY: outbound socket attempt denied")
+    return is_loopback, forwarded_address, forwarded_source_address
 
 
 def _b1a_connect(_socket: socket.socket, address: object) -> None:
-    _b1a_record_and_deny("socket.connect", address)
+    is_loopback, forwarded_address, _ = _b1a_record_attempt(
+        "socket.connect", address, _socket.family
+    )
+    if not is_loopback:
+        raise OSError("OFFLINE-ONLY: outbound socket attempt denied")
+    return _B1A_REAL_CONNECT(_socket, forwarded_address)
 
 
 def _b1a_connect_ex(_socket: socket.socket, address: object) -> int:
-    _b1a_record_and_deny("socket.connect_ex", address)
-    raise AssertionError("unreachable")
+    is_loopback, forwarded_address, _ = _b1a_record_attempt(
+        "socket.connect_ex", address, _socket.family
+    )
+    if not is_loopback:
+        raise OSError("OFFLINE-ONLY: outbound socket attempt denied")
+    return _B1A_REAL_CONNECT_EX(_socket, forwarded_address)
 
 
 def _b1a_create_connection(address: object, *args: object, **kwargs: object) -> socket.socket:
-    del args, kwargs
-    _b1a_record_and_deny("socket.create_connection", address)
-    raise AssertionError("unreachable")
+    source_shape_valid, source_address = _b1a_create_connection_source(args, kwargs)
+    target_family = (
+        _B1A_AF_INET6
+        if type(address) is tuple
+        and len(address) > 0
+        and type(address[0]) is str
+        and address[0].isascii()
+        and address[0].lower() == "::1"
+        else _B1A_AF_INET
+    )
+    is_loopback, forwarded_address, forwarded_source_address = _b1a_record_attempt(
+        "socket.create_connection",
+        address,
+        None,
+        source_address=source_address,
+        source_family=target_family,
+        source_shape_valid=source_shape_valid,
+    )
+    if not is_loopback:
+        raise OSError("OFFLINE-ONLY: outbound socket attempt denied")
+    forwarded_args, forwarded_kwargs = _b1a_forward_create_connection_source(
+        args, kwargs, forwarded_source_address
+    )
+    return _B1A_REAL_CREATE_CONNECTION(
+        forwarded_address, *forwarded_args, **forwarded_kwargs
+    )
+
+
+assert _b1a_is_loopback("socket.connect", ("127.0.0.1", 1), _B1A_AF_INET)
+assert _b1a_is_loopback("socket.connect_ex", ("::1", 1, 0, 0), _B1A_AF_INET6)
+assert _b1a_is_loopback("socket.connect_ex", ("localhost", 1), _B1A_AF_INET6)
+assert _b1a_is_loopback("socket.create_connection", ("localhost", 1), None)
+assert _b1a_is_loopback("socket.create_connection", ("LOCALHOST", 1), None)
+assert not _b1a_is_loopback("socket.connect", ("127.0.0.1", 1), _B1A_AF_INET6)
+assert not _b1a_is_loopback("socket.connect", ("::1", 1), _B1A_AF_INET)
+assert not _b1a_is_loopback("socket.connect", ("127.0.0.2", 1), _B1A_AF_INET)
+assert not _b1a_is_loopback("socket.connect", ("10.0.0.1", 1), _B1A_AF_INET)
+assert not _b1a_is_loopback("socket.connect", ("localhoſt", 1), _B1A_AF_INET)
+assert not _b1a_is_loopback("socket.connect", ("localhost",), _B1A_AF_INET)
+assert not _b1a_is_loopback(
+    "socket.connect_ex", ("127.0.0.1", "not-a-port"), _B1A_AF_INET
+)
+assert not _b1a_is_loopback(
+    "socket.connect_ex", ("::1", 1, "not-flowinfo", 0), _B1A_AF_INET6
+)
+assert not _b1a_is_loopback(
+    "socket.create_connection", ("::1", 1, 0, 0), None
+)
+assert not _b1a_is_loopback(
+    "socket.connect_ex", ("::1", 1, 0, 1 << 100), _B1A_AF_INET6
+)
+assert not _b1a_is_loopback(
+    "socket.connect", "local-domain-socket", _B1A_AF_INET
+)
+assert not _b1a_is_loopback("unknown", ("127.0.0.1", 1), _B1A_AF_INET)
+assert _b1a_forward_address(("localhost", 1), None) == ("127.0.0.1", 1)
+assert _b1a_forward_address(("localhost", 1), _B1A_AF_INET6) == ("::1", 1)
+assert _b1a_forward_address(("::1", 1), _B1A_AF_INET6) == ("::1", 1)
 
 
 for _guarded in (_b1a_connect, _b1a_connect_ex, _b1a_create_connection):
@@ -247,6 +426,10 @@ for _guarded in (_b1a_connect, _b1a_connect_ex, _b1a_create_connection):
 socket.socket.connect = _b1a_connect
 socket.socket.connect_ex = _b1a_connect_ex
 socket.create_connection = _b1a_create_connection
+
+assert socket.socket.connect is _b1a_connect
+assert socket.socket.connect_ex is _b1a_connect_ex
+assert socket.create_connection is _b1a_create_connection
 """
 SOCKET_GUARD_BYTES = SOCKET_GUARD_SOURCE.encode("utf-8")
 SOCKET_GUARD_SHA256 = hashlib.sha256(SOCKET_GUARD_BYTES).hexdigest()
@@ -1324,6 +1507,8 @@ def _network_evidence() -> dict[str, Any]:
         return {
             "measurement_status": "NOT-RUN-IN-STEP1-AUTHORING",
             "socket_attempts": None,
+            "loopback_socket_attempts": None,
+            "non_loopback_socket_attempts": None,
         }
     network = EARLY_B2_RECEIPTS["network-deny.json"]
     attempt_path = Path(network["attempt_ledger_path"]).resolve()
@@ -1354,11 +1539,22 @@ def _network_evidence() -> dict[str, Any]:
         if line.strip():
             attempt = json.loads(line)
             assert isinstance(attempt, dict)
+            assert type(attempt.get("is_loopback")) is bool
             attempts.append(attempt)
-    assert attempts == [], f"offline socket guard recorded attempts: {attempts}"
+    loopback_attempts = [attempt for attempt in attempts if attempt["is_loopback"]]
+    non_loopback_attempts = [
+        attempt for attempt in attempts if not attempt["is_loopback"]
+    ]
+    assert non_loopback_attempts == [], (
+        "offline socket guard recorded non-loopback attempts: "
+        f"{non_loopback_attempts}"
+    )
     return {
         "measurement_status": "B2-LIVE-SOCKET-DENY-LEDGER",
-        "socket_attempts": 0,
+        "socket_attempts": len(attempts),
+        "loopback_socket_attempts": len(loopback_attempts),
+        "non_loopback_socket_attempts": len(non_loopback_attempts),
+        "loopback_attempts": loopback_attempts,
         "attempt_ledger_path": str(attempt_path),
         "attempt_ledger_bytes": len(payload),
         "attempt_ledger_sha256": _sha256_bytes(payload),
@@ -1368,7 +1564,7 @@ def _network_evidence() -> dict[str, Any]:
 
 def _phase_status() -> str:
     network = _network_evidence()
-    if network["socket_attempts"] == 0:
+    if network["non_loopback_socket_attempts"] == 0:
         return "PASS"
     return "AUTHORING-CONTRACT-PASS"
 
@@ -1376,6 +1572,209 @@ def _phase_status() -> str:
 def _git_blob_sha1(payload: bytes) -> str:
     header = f"blob {len(payload)}\0".encode("ascii")
     return hashlib.sha1(header + payload).hexdigest()
+
+
+def _assert_socket_guard_loopback_contract() -> None:
+    ledger_path = "C:/b1a-socket-guard-self-check/network-attempts.ndjson"
+    ledger_writes: list[str] = []
+    ledger_flushes: list[bool] = []
+    fsync_calls: list[int] = []
+    real_calls: list[tuple[str, object]] = []
+    forwarded_create_connection: list[
+        tuple[object, tuple[object, ...], dict[str, object]]
+    ] = []
+    create_connection_result = object()
+
+    class _FakeLedgerHandle:
+        def __enter__(self) -> _FakeLedgerHandle:
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            del args
+
+        def write(self, payload: str) -> int:
+            ledger_writes.append(payload)
+            return len(payload)
+
+        def flush(self) -> None:
+            ledger_flushes.append(True)
+
+        def fileno(self) -> int:
+            return 41
+
+    def _fake_open(
+        path: object,
+        mode: str,
+        *,
+        encoding: str,
+        newline: str,
+    ) -> _FakeLedgerHandle:
+        assert path == ledger_path
+        assert mode == "a"
+        assert encoding == "utf-8"
+        assert newline == "\n"
+        return _FakeLedgerHandle()
+
+    def _fake_fsync(file_descriptor: int) -> None:
+        fsync_calls.append(file_descriptor)
+
+    class _FakeSocket:
+        def __init__(self, family: int = 2) -> None:
+            self.family = family
+
+        def connect(self, address: object) -> None:
+            real_calls.append(("socket.connect", address))
+
+        def connect_ex(self, address: object) -> int:
+            real_calls.append(("socket.connect_ex", address))
+            return 17
+
+    def _fake_create_connection(
+        address: object, *args: object, **kwargs: object
+    ) -> object:
+        real_calls.append(("socket.create_connection", address))
+        forwarded_create_connection.append((address, args, kwargs))
+        return create_connection_result
+
+    fake_socket_module = type("_FakeSocketModule", (), {})()
+    fake_socket_module.AF_INET = 2
+    fake_socket_module.AF_INET6 = 23
+    fake_socket_module.socket = _FakeSocket
+    fake_socket_module.create_connection = _fake_create_connection
+    fake_os_module = type("_FakeOsModule", (), {"fsync": staticmethod(_fake_fsync)})()
+    prior_socket_module = sys.modules["socket"]
+    guard_env = {
+        "B1A_RUN_ID": "b1a-socket-guard-self-check",
+        "B1A_NETWORK_ATTEMPT_LEDGER": str(ledger_path),
+    }
+    prior_guard_env = {name: os.environ.get(name) for name in guard_env}
+    guard_namespace: dict[str, Any] = {}
+    try:
+        sys.modules["socket"] = fake_socket_module
+        os.environ.update(guard_env)
+        exec(
+            compile(SOCKET_GUARD_SOURCE, "sitecustomize.py", "exec"),
+            guard_namespace,
+        )
+    finally:
+        sys.modules["socket"] = prior_socket_module
+        for name, value in prior_guard_env.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+
+    guard_namespace["open"] = _fake_open
+    guard_namespace["os"] = fake_os_module
+    client = fake_socket_module.socket()
+    ipv6_client = fake_socket_module.socket(fake_socket_module.AF_INET6)
+    unix_client = fake_socket_module.socket(1)
+    assert client.connect(("127.0.0.1", 41001)) is None
+    assert ipv6_client.connect_ex(("::1", 41002)) == 17
+    assert ipv6_client.connect_ex(("localhost", 41011)) == 17
+    assert (
+        fake_socket_module.create_connection(
+            ("localhost", 41003),
+            1.0,
+            source_address=("localhost", 0),
+        )
+        is create_connection_result
+    )
+    assert real_calls == [
+        ("socket.connect", ("127.0.0.1", 41001)),
+        ("socket.connect_ex", ("::1", 41002)),
+        ("socket.connect_ex", ("::1", 41011)),
+        ("socket.create_connection", ("127.0.0.1", 41003)),
+    ]
+    assert forwarded_create_connection == [
+        (
+            ("127.0.0.1", 41003),
+            (1.0,),
+            {"source_address": ("127.0.0.1", 0)},
+        )
+    ]
+
+    class _LoopbackHost(str):
+        pass
+
+    class _LoopbackAddress(tuple):
+        pass
+
+    denied_calls = (
+        lambda: client.connect(("198.51.100.1", 9)),
+        lambda: client.connect_ex(("198.51.100.1", 9)),
+        lambda: fake_socket_module.create_connection(("198.51.100.1", 9)),
+        lambda: client.connect(("localhost",)),
+        lambda: client.connect_ex(("127.0.0.1", "not-a-port")),
+        lambda: fake_socket_module.create_connection(("::1",)),
+        lambda: client.connect(("localhoſt", 41004)),
+        lambda: client.connect_ex((_LoopbackHost("localhost"), 41005)),
+        lambda: fake_socket_module.create_connection(
+            _LoopbackAddress(("::1", 41006))
+        ),
+        lambda: fake_socket_module.create_connection(("::1", 41007, 0, 0)),
+        lambda: client.connect_ex(("::1", 41008, 0, 1 << 100)),
+        lambda: unix_client.connect(("127.0.0.1", 41009)),
+        lambda: fake_socket_module.create_connection(
+            ("127.0.0.1", 41010),
+            source_address=("example.com", 0),
+        ),
+    )
+    for denied_call in denied_calls:
+        with pytest.raises(
+            OSError, match=r"^OFFLINE-ONLY: outbound socket attempt denied$"
+        ):
+            denied_call()
+    assert len(real_calls) == 4
+
+    attempts = [json.loads(payload) for payload in ledger_writes]
+    assert [attempt["api"] for attempt in attempts] == [
+        "socket.connect",
+        "socket.connect_ex",
+        "socket.connect_ex",
+        "socket.create_connection",
+        "socket.connect",
+        "socket.connect_ex",
+        "socket.create_connection",
+        "socket.connect",
+        "socket.connect_ex",
+        "socket.create_connection",
+        "socket.connect",
+        "socket.connect_ex",
+        "socket.create_connection",
+        "socket.create_connection",
+        "socket.connect_ex",
+        "socket.connect",
+        "socket.create_connection",
+    ]
+    assert [attempt["is_loopback"] for attempt in attempts] == [
+        True,
+        True,
+        True,
+        True,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+    ]
+    assert all(attempt["run_id"] == guard_env["B1A_RUN_ID"] for attempt in attempts)
+    assert attempts[2]["address_repr"] == "('localhost', 41011)"
+    assert attempts[2]["forwarded_address_repr"] == "('::1', 41011)"
+    assert attempts[3]["address_repr"] == "('localhost', 41003)"
+    assert attempts[3]["forwarded_address_repr"] == "('127.0.0.1', 41003)"
+    assert attempts[3]["source_address_repr"] == "('localhost', 0)"
+    assert attempts[3]["forwarded_source_address_repr"] == "('127.0.0.1', 0)"
+    assert ledger_flushes == [True] * len(attempts)
+    assert fsync_calls == [41] * len(attempts)
 
 
 def _file_receipt(path: Path) -> dict[str, Any]:
@@ -1490,17 +1889,41 @@ def _emit_runtime_stop_receipt(
         network_facts: dict[str, Any] = {
             "measurement_status": "NOT-RUN-IN-STEP1-AUTHORING",
             "socket_attempts": None,
+            "loopback_socket_attempts": None,
+            "non_loopback_socket_attempts": None,
         }
     else:
         attempt_path = Path(
             EARLY_B2_RECEIPTS["network-deny.json"]["attempt_ledger_path"]
         ).resolve()
         attempt_bytes = attempt_path.read_bytes()
+        attempt_lines = [
+            line for line in attempt_bytes.splitlines() if line.strip()
+        ]
+        loopback_socket_attempts = 0
+        malformed_socket_attempts = 0
+        for line in attempt_lines:
+            try:
+                attempt = json.loads(line)
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                malformed_socket_attempts += 1
+                continue
+            if (
+                not isinstance(attempt, dict)
+                or type(attempt.get("is_loopback")) is not bool
+            ):
+                malformed_socket_attempts += 1
+                continue
+            if attempt["is_loopback"]:
+                loopback_socket_attempts += 1
         network_facts = {
             "measurement_status": "B2-LIVE-SOCKET-DENY-LEDGER",
-            "socket_attempts": len(
-                [line for line in attempt_bytes.splitlines() if line.strip()]
+            "socket_attempts": len(attempt_lines),
+            "loopback_socket_attempts": loopback_socket_attempts,
+            "non_loopback_socket_attempts": (
+                len(attempt_lines) - loopback_socket_attempts
             ),
+            "malformed_socket_attempts": malformed_socket_attempts,
             "attempt_ledger_bytes": len(attempt_bytes),
             "attempt_ledger_sha256": hashlib.sha256(attempt_bytes).hexdigest(),
         }
@@ -2288,6 +2711,8 @@ def _exercise_replay_matrix(
 @_stop_receipt_on_failure
 def test_b1a_b2_receipt_and_fixture_assertions(tmp_path: Path) -> None:
     evidence_dir = _evidence_dir(tmp_path)
+    if EARLY_B2_RECEIPTS is None:
+        _assert_socket_guard_loopback_contract()
     assert len(FIXTURE_BYTES) == 34
     assert _sha256_bytes(FIXTURE_BYTES) == FIXTURE_SHA256
     assert _git_blob_sha1(FIXTURE_BYTES) == FIXTURE_PAYLOAD_GIT_BLOB
