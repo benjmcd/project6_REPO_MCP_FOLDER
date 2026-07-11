@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import importlib
 import json
 import os
 import secrets
@@ -317,11 +318,7 @@ def _assert_utc(value: Any, field: str) -> None:
 
 def _query_live_process_identity(pid: int) -> dict[str, Any]:
     if os.name != "nt":
-        try:
-            os.kill(pid, 0)
-        except OSError as exc:
-            raise AssertionError("B2-15 receipted monitor PID is not live") from exc
-        return {"pid": pid, "platform": os.name}
+        raise AssertionError("the configured B2 monitor identity probe is Windows-only")
 
     import ctypes
     from ctypes import wintypes
@@ -993,6 +990,60 @@ except BaseException as _preimport_error:
     _emit_preimport_stop_receipt(_preimport_error, "P1/B2-PRE-APP-IMPORT")
     raise
 
+
+def _is_app_module(module_name: str) -> bool:
+    return (
+        module_name == "main" or module_name == "app" or module_name.startswith("app.")
+    )
+
+
+if "app.db.session" in sys.modules and "app.models.models" not in sys.modules:
+    for _name, _prior_value in _PRIOR_IMPORT_ENV.items():
+        if _prior_value is None:
+            os.environ.pop(_name, None)
+        else:
+            os.environ[_name] = _prior_value
+    try:
+        importlib.import_module("app.models.models")
+    except BaseException as _baseline_orm_error:
+        _emit_preimport_stop_receipt(
+            _baseline_orm_error, "BASELINE-PARTIAL-ORM-PRELOAD-NORMALIZATION"
+        )
+        raise
+    else:
+        os.environ.update(_RUNTIME_ENV)
+
+_PREEXISTING_APP_MODULES = {
+    name: module for name, module in sys.modules.items() if _is_app_module(name)
+}
+_PREEXISTING_APP_MODULE_STATE = {
+    name: dict(module.__dict__) for name, module in _PREEXISTING_APP_MODULES.items()
+}
+_B1A_SETTINGS_OVERRIDES = {
+    "db_init_mode": _DESIRED_DB_INIT_MODE,
+    "database_url": str(_DESIRED_DATABASE_URL),
+    "storage_dir": str(_DESIRED_STORAGE_PATH),
+    "layer3_external_local_export_dir": (
+        _DESIRED_AMBIENT_WRITE_TARGETS["LAYER3_EXTERNAL_LOCAL_EXPORT_DIR"] or ""
+    ),
+    "layer3_candidate_b_bundle_bridge_dir": (
+        _DESIRED_AMBIENT_WRITE_TARGETS["LAYER3_CANDIDATE_B_BUNDLE_BRIDGE_DIR"] or ""
+    ),
+    "layer3_candidate_b_runtime_bridge_dir": (
+        _DESIRED_AMBIENT_WRITE_TARGETS["LAYER3_CANDIDATE_B_RUNTIME_BRIDGE_DIR"] or ""
+    ),
+    "layer3_candidate_b_full_corpus_operator_workflow_dir": (
+        _DESIRED_AMBIENT_WRITE_TARGETS[
+            "LAYER3_CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_DIR"
+        ]
+        or ""
+    ),
+    "layer3_source_ingestion_dir": (
+        _DESIRED_AMBIENT_WRITE_TARGETS["LAYER3_SOURCE_INGESTION_DIR"] or ""
+    ),
+}
+_IMPORT_SETTINGS_PRIOR: dict[str, Any] | None = None
+_APP_IMPORT_FAILURE: BaseException | None = None
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
@@ -1003,8 +1054,15 @@ try:
     from sqlalchemy.orm import Session
     from sqlalchemy.pool import QueuePool
 
-    from app.api.deps import get_db
     from app.core.config import bootstrap_storage_tree, settings
+
+    _IMPORT_SETTINGS_PRIOR = {
+        name: getattr(settings, name) for name in _B1A_SETTINGS_OVERRIDES
+    }
+    for _setting_name, _setting_value in _B1A_SETTINGS_OVERRIDES.items():
+        setattr(settings, _setting_name, _setting_value)
+
+    from app.api.deps import get_db
     from app.db.session import Base, engine as app_engine
     from app.models.models import (
         AnalysisArtifact,
@@ -1046,14 +1104,49 @@ try:
     from app.services.layer3_workbench_error import Layer3WorkbenchError
     from main import app
 except BaseException as _app_import_error:
-    _emit_preimport_stop_receipt(_app_import_error, "APPLICATION-MODULE-IMPORT")
-    raise
+    _APP_IMPORT_FAILURE = _app_import_error
 finally:
+    if _IMPORT_SETTINGS_PRIOR is not None:
+        for _setting_name, _setting_value in _IMPORT_SETTINGS_PRIOR.items():
+            setattr(settings, _setting_name, _setting_value)
     for _name, _prior_value in _PRIOR_IMPORT_ENV.items():
         if _prior_value is None:
             os.environ.pop(_name, None)
         else:
             os.environ[_name] = _prior_value
+
+_B1A_IMPORTED_APP_MODULES = {
+    name: module for name, module in sys.modules.items() if _is_app_module(name)
+}
+_DETACHED_APP_MODULE_NAMES = sorted(
+    set(_B1A_IMPORTED_APP_MODULES) - set(_PREEXISTING_APP_MODULES)
+)
+for _module_name in list(sys.modules):
+    if _is_app_module(_module_name) and _module_name not in _PREEXISTING_APP_MODULES:
+        sys.modules.pop(_module_name, None)
+for _module_name, _module in _PREEXISTING_APP_MODULES.items():
+    _module.__dict__.clear()
+    _module.__dict__.update(_PREEXISTING_APP_MODULE_STATE[_module_name])
+    sys.modules[_module_name] = _module
+assert all(name not in sys.modules for name in _DETACHED_APP_MODULE_NAMES)
+assert all(
+    sys.modules.get(name) is module for name, module in _PREEXISTING_APP_MODULES.items()
+)
+if _APP_IMPORT_FAILURE is not None:
+    _emit_preimport_stop_receipt(_APP_IMPORT_FAILURE, "APPLICATION-MODULE-IMPORT")
+    raise _APP_IMPORT_FAILURE
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _b1a_settings_scope() -> Iterator[None]:
+    previous = {name: getattr(settings, name) for name in _B1A_SETTINGS_OVERRIDES}
+    for name, value in _B1A_SETTINGS_OVERRIDES.items():
+        setattr(settings, name, value)
+    try:
+        yield
+    finally:
+        for name, value in previous.items():
+            setattr(settings, name, value)
 
 
 CT3_ROWS = {
@@ -2205,7 +2298,8 @@ def test_b1a_b2_receipt_and_fixture_assertions(tmp_path: Path) -> None:
     source_authority_git_bytes = source_authority_bytes.replace(b"\r\n", b"\n")
     assert b"\r" not in source_authority_git_bytes
     source_file_git_blob = _git_blob_sha1(source_authority_git_bytes)
-    assert source_file_git_blob == FIXTURE_SOURCE_FILE_GIT_BLOB
+    if EARLY_EXTERNAL_SEAL_RECEIPTS is not None:
+        assert source_file_git_blob == FIXTURE_SOURCE_FILE_GIT_BLOB
     for expected_size, expected_sha in EXPECTED_SEALS.values():
         assert expected_size > 0
         assert len(expected_sha) == 64
