@@ -240,11 +240,15 @@ def _b1a_is_loopback(
         return False
     normalized_host = host.lower()
     if api != "socket.create_connection":
-        expected_family = (
-            _B1A_AF_INET6 if normalized_host == "::1" else _B1A_AF_INET
-        )
-        if socket_family != expected_family:
-            return False
+        if normalized_host == "localhost":
+            if socket_family not in {_B1A_AF_INET, _B1A_AF_INET6}:
+                return False
+        else:
+            expected_family = (
+                _B1A_AF_INET6 if normalized_host == "::1" else _B1A_AF_INET
+            )
+            if socket_family != expected_family:
+                return False
     if normalized_host != "::1":
         return len(address) == 2
     if len(address) == 2:
@@ -385,6 +389,7 @@ def _b1a_create_connection(address: object, *args: object, **kwargs: object) -> 
 
 assert _b1a_is_loopback("socket.connect", ("127.0.0.1", 1), _B1A_AF_INET)
 assert _b1a_is_loopback("socket.connect_ex", ("::1", 1, 0, 0), _B1A_AF_INET6)
+assert _b1a_is_loopback("socket.connect_ex", ("localhost", 1), _B1A_AF_INET6)
 assert _b1a_is_loopback("socket.create_connection", ("localhost", 1), None)
 assert _b1a_is_loopback("socket.create_connection", ("LOCALHOST", 1), None)
 assert not _b1a_is_loopback("socket.connect", ("127.0.0.1", 1), _B1A_AF_INET6)
@@ -1666,6 +1671,7 @@ def _assert_socket_guard_loopback_contract() -> None:
     unix_client = fake_socket_module.socket(1)
     assert client.connect(("127.0.0.1", 41001)) is None
     assert ipv6_client.connect_ex(("::1", 41002)) == 17
+    assert ipv6_client.connect_ex(("localhost", 41011)) == 17
     assert (
         fake_socket_module.create_connection(
             ("localhost", 41003),
@@ -1677,6 +1683,7 @@ def _assert_socket_guard_loopback_contract() -> None:
     assert real_calls == [
         ("socket.connect", ("127.0.0.1", 41001)),
         ("socket.connect_ex", ("::1", 41002)),
+        ("socket.connect_ex", ("::1", 41011)),
         ("socket.create_connection", ("127.0.0.1", 41003)),
     ]
     assert forwarded_create_connection == [
@@ -1718,11 +1725,12 @@ def _assert_socket_guard_loopback_contract() -> None:
             OSError, match=r"^OFFLINE-ONLY: outbound socket attempt denied$"
         ):
             denied_call()
-    assert len(real_calls) == 3
+    assert len(real_calls) == 4
 
     attempts = [json.loads(payload) for payload in ledger_writes]
     assert [attempt["api"] for attempt in attempts] == [
         "socket.connect",
+        "socket.connect_ex",
         "socket.connect_ex",
         "socket.create_connection",
         "socket.connect",
@@ -1743,6 +1751,7 @@ def _assert_socket_guard_loopback_contract() -> None:
         True,
         True,
         True,
+        True,
         False,
         False,
         False,
@@ -1758,10 +1767,12 @@ def _assert_socket_guard_loopback_contract() -> None:
         False,
     ]
     assert all(attempt["run_id"] == guard_env["B1A_RUN_ID"] for attempt in attempts)
-    assert attempts[2]["address_repr"] == "('localhost', 41003)"
-    assert attempts[2]["forwarded_address_repr"] == "('127.0.0.1', 41003)"
-    assert attempts[2]["source_address_repr"] == "('localhost', 0)"
-    assert attempts[2]["forwarded_source_address_repr"] == "('127.0.0.1', 0)"
+    assert attempts[2]["address_repr"] == "('localhost', 41011)"
+    assert attempts[2]["forwarded_address_repr"] == "('::1', 41011)"
+    assert attempts[3]["address_repr"] == "('localhost', 41003)"
+    assert attempts[3]["forwarded_address_repr"] == "('127.0.0.1', 41003)"
+    assert attempts[3]["source_address_repr"] == "('localhost', 0)"
+    assert attempts[3]["forwarded_source_address_repr"] == "('127.0.0.1', 0)"
     assert ledger_flushes == [True] * len(attempts)
     assert fsync_calls == [41] * len(attempts)
 
