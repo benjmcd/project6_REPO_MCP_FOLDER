@@ -211,6 +211,7 @@ _B1A_LEDGER_LOCK = threading.Lock()
 _B1A_REAL_CONNECT = socket.socket.connect
 _B1A_REAL_CONNECT_EX = socket.socket.connect_ex
 _B1A_REAL_CREATE_CONNECTION = socket.create_connection
+_B1A_AF_INET6 = socket.AF_INET6
 _B1A_LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1", "localhost"})
 
 
@@ -247,11 +248,26 @@ def _b1a_is_loopback(api: str, address: object) -> bool:
     )
 
 
-def _b1a_record_attempt(api: str, address: object) -> bool:
+def _b1a_forward_address(address: object, socket_family: object) -> object:
+    assert type(address) is tuple
+    host = address[0]
+    if type(host) is str and host.isascii() and host.lower() == "localhost":
+        forwarded_host = "::1" if socket_family == _B1A_AF_INET6 else "127.0.0.1"
+        return (forwarded_host, *address[1:])
+    return address
+
+
+def _b1a_record_attempt(
+    api: str, address: object, socket_family: object
+) -> tuple[bool, object]:
     is_loopback = _b1a_is_loopback(api, address)
+    forwarded_address = (
+        _b1a_forward_address(address, socket_family) if is_loopback else address
+    )
     record = {
         "api": api,
         "address_repr": repr(address),
+        "forwarded_address_repr": repr(forwarded_address),
         "is_loopback": is_loopback,
         "run_id": B1A_SOCKET_GUARD_ID,
         "time_ns": time.time_ns(),
@@ -261,25 +277,34 @@ def _b1a_record_attempt(api: str, address: object) -> bool:
             handle.write(json.dumps(record, sort_keys=True, separators=(",", ":")) + "\\n")
             handle.flush()
             os.fsync(handle.fileno())
-    return is_loopback
+    return is_loopback, forwarded_address
 
 
 def _b1a_connect(_socket: socket.socket, address: object) -> None:
-    if not _b1a_record_attempt("socket.connect", address):
+    is_loopback, forwarded_address = _b1a_record_attempt(
+        "socket.connect", address, _socket.family
+    )
+    if not is_loopback:
         raise OSError("OFFLINE-ONLY: outbound socket attempt denied")
-    return _B1A_REAL_CONNECT(_socket, address)
+    return _B1A_REAL_CONNECT(_socket, forwarded_address)
 
 
 def _b1a_connect_ex(_socket: socket.socket, address: object) -> int:
-    if not _b1a_record_attempt("socket.connect_ex", address):
+    is_loopback, forwarded_address = _b1a_record_attempt(
+        "socket.connect_ex", address, _socket.family
+    )
+    if not is_loopback:
         raise OSError("OFFLINE-ONLY: outbound socket attempt denied")
-    return _B1A_REAL_CONNECT_EX(_socket, address)
+    return _B1A_REAL_CONNECT_EX(_socket, forwarded_address)
 
 
 def _b1a_create_connection(address: object, *args: object, **kwargs: object) -> socket.socket:
-    if not _b1a_record_attempt("socket.create_connection", address):
+    is_loopback, forwarded_address = _b1a_record_attempt(
+        "socket.create_connection", address, None
+    )
+    if not is_loopback:
         raise OSError("OFFLINE-ONLY: outbound socket attempt denied")
-    return _B1A_REAL_CREATE_CONNECTION(address, *args, **kwargs)
+    return _B1A_REAL_CREATE_CONNECTION(forwarded_address, *args, **kwargs)
 
 
 assert _b1a_is_loopback("socket.connect", ("127.0.0.1", 1))
@@ -302,6 +327,9 @@ assert not _b1a_is_loopback(
 )
 assert not _b1a_is_loopback("socket.connect", "local-domain-socket")
 assert not _b1a_is_loopback("unknown", ("127.0.0.1", 1))
+assert _b1a_forward_address(("localhost", 1), None) == ("127.0.0.1", 1)
+assert _b1a_forward_address(("localhost", 1), _B1A_AF_INET6) == ("::1", 1)
+assert _b1a_forward_address(("::1", 1), _B1A_AF_INET6) == ("::1", 1)
 
 
 for _guarded in (_b1a_connect, _b1a_connect_ex, _b1a_create_connection):
@@ -1504,6 +1532,8 @@ def _assert_socket_guard_loopback_contract() -> None:
         fsync_calls.append(file_descriptor)
 
     class _FakeSocket:
+        family = 2
+
         def connect(self, address: object) -> None:
             real_calls.append(("socket.connect", address))
 
@@ -1519,6 +1549,7 @@ def _assert_socket_guard_loopback_contract() -> None:
         return create_connection_result
 
     fake_socket_module = type("_FakeSocketModule", (), {})()
+    fake_socket_module.AF_INET6 = 23
     fake_socket_module.socket = _FakeSocket
     fake_socket_module.create_connection = _fake_create_connection
     fake_os_module = type("_FakeOsModule", (), {"fsync": staticmethod(_fake_fsync)})()
@@ -1560,11 +1591,11 @@ def _assert_socket_guard_loopback_contract() -> None:
     assert real_calls == [
         ("socket.connect", ("127.0.0.1", 41001)),
         ("socket.connect_ex", ("::1", 41002)),
-        ("socket.create_connection", ("localhost", 41003)),
+        ("socket.create_connection", ("127.0.0.1", 41003)),
     ]
     assert forwarded_create_connection == [
         (
-            ("localhost", 41003),
+            ("127.0.0.1", 41003),
             (1.0,),
             {"source_address": ("127.0.0.1", 0)},
         )
@@ -1632,6 +1663,8 @@ def _assert_socket_guard_loopback_contract() -> None:
         False,
     ]
     assert all(attempt["run_id"] == guard_env["B1A_RUN_ID"] for attempt in attempts)
+    assert attempts[2]["address_repr"] == "('localhost', 41003)"
+    assert attempts[2]["forwarded_address_repr"] == "('127.0.0.1', 41003)"
     assert ledger_flushes == [True] * len(attempts)
     assert fsync_calls == [41] * len(attempts)
 
