@@ -13734,3 +13734,91 @@ accession/CIK disclosure, local path disclosure beyond `C:/p6store`,
 production-readiness claim, value-reveal claim, nonlocal admission claim,
 default-on expansion, unsupported IFRS readiness claim, or broader host-class
 authority for future taxonomy fetches is admitted by this tranche.
+
+## M-ADMISSION-SPINE-B1-RECORD
+
+Milestone: `m_admission_spine_b1_record_v1`.
+
+Record lane: owner-authorized Tier-1 tracked-records alignment.
+
+Source frontier: `project6-origin/main` through PR `#2476`, commit
+`56c56e77ebe435c3a9f035f47de2d8611efee7d7`. The recorded chain is:
+
+| PR | Merge commit | Title |
+|---|---|---|
+| `#2473` | `cdc832d9cbfba5b0485ed0cca0c2a79854605044` | `docs: publish admission spine closure record` |
+| `#2474` | `2b7973d72e65661acc30c3ec88791fe1c88061e0` | `test(layer3): close Lane A admission guard gaps` |
+| `#2475` | `4439b1de50d85b2bc72bd92fa8e54717b7e9d500` | `test(layer3): add B1a connector vertical loop proof` |
+| `#2476` | `56c56e77ebe435c3a9f035f47de2d8611efee7d7` | `test(layer3): allow guarded loopback sockets` |
+
+Allowed tracked-record surfaces for this lane are exactly:
+
+1. `docs/MASTER_CONTEXT.md`
+2. `docs/program-context/00-posture-and-invariants.md`
+3. `docs/program-context/01-arc-ledger.md`
+4. `docs/program-context/02-decision-record.md`
+5. `docs/program-context/03-forward-plan.md`
+6. `docs/program-context/04-evidence-registry.md`
+7. `next_milestone_plans/Layer3_planning_docs/1366-source-artifact-admission-map.md`
+8. `next_milestone_plans/layer3_progress_manifest.json`
+9. `next_milestone_plans/layer3_workbench_proof_manifest.json`
+10. `next_milestone_plans/layer3_progress_board.md`
+
+`docs/program-context/INDEX.md` is intentionally excluded: its static exhaustive
+inventory, reading order, authority order, and maintenance conventions are
+unchanged.
+
+Standing: `B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED.`
+
+Bounded B1a proof: `pass`; proof scope
+`bounded_connector_vertical_loop`; CL-6 status `closure_pass`. The bounded result
+does not prove an integrated loop or analytical utility, does not complete Phase
+4, 5, or 6, does not establish production readiness, and is not B1b
+implementation.
+
+Owner dispositions:
+
+- Enumeration: `RATIFIED-EXACTLY-AS-PROPOSED`, all 58 dispositions, no field
+  overrides. Version is
+  `layer3.connector_source_intake.identity_metadata.v1`; the outer tuple axes
+  are `source_family` and `content_sha256`; the inner-hash fields are
+  `connector_key`, `sciencebase_item_id`, and `media_type`. The ratified
+  persistence shape remains design only.
+- Precedence: `RATIFIED-AS-PROPOSED`. The first successfully committed approved
+  receipt wins. A semantically equivalent later approval reuses that receipt
+  and mints no new receipt. A divergent Gate-B decision returns dedicated 409
+  `promotion_identity_decision_conflict` with zero mutation. Supersession
+  requires explicit owner authority. A non-approved decision mints no receipt
+  and occupies no promotion identity.
+- Second key: `NOT-GRANTED`; future intent is
+  `INTENDED-NON-AUTHORIZING`; `WITHHELD` is `NOT-CLAIMED`. Remaining gate:
+  `EXPLICIT-SECOND-KEY`.
+
+Operator-held local evidence is not repository-carried and is recorded only by
+basename and integrity metadata:
+
+| Evidence | Bytes | Full SHA-256 | Canonical self-hash | Role |
+|---|---:|---|---|---|
+| `b1b-ratification-2026-07-13.md` | 10942 | `CC56D146D2574CE66E80E0B4BF3DC509B5213BDFD8B9310EC06EF99EE4D5298A` | `6B21BC536C49708E72F4B8C15CCE1AE2BEC483C4C659D426F62A8F46CE7AFA9B` | enumeration and precedence ratification |
+| `b1b-scope-2026-07-13.md` | 4304 | `94667BF8B61902F2ABD79CDF531177D55BFC3A30FD3AC8B4158D9024D48F940E` | `CC5E7D62DFE41E407EE180CAEEF95CE29F7D2DBCEDFFF5C8D90C0AFF2A095A4B` | post-seal scope clarification |
+| `v2-b1a-run-report.md` | 28922 | `93BB7D1E606A083B888E55B658BAACBB4C1158AF2C5FDAF021C970936B65FB51` | not applicable | bounded B1a run closure |
+| `v2-b1a-cl6-report.md` | 21009 | `9B875CE36FCA1EAEA6A49B56B0897191394FD596088913644785D8B652548A05` | not applicable | CL-6 convergence verification |
+
+Provenance qualification: the authority source is direct current-owner chat and
+the writer instruction is relayed records authority. Owner timestamp is
+`NOT-PROVIDED`, owner message ID is `NOT-EXPOSED`, and an independent owner
+artifact is `NOT-PROVIDED`; none is inferred.
+
+Negative authority flags: implementation, schema, ORM, migration, runtime,
+build dispatch, B1b build PR, and B1b build merge authorization are all
+`false`. Integrated-loop proof, analytical-utility proof, Phase 4/5/6
+completion, production-readiness claim, schema change, raw-payload admission,
+absolute-local-path disclosure, owner-identifier disclosure, thread-ID
+disclosure, and invented-owner-metadata admission are also all `false`.
+
+Supersession is limited to older current-frontier and owner-queue wording for
+the `#2473`-`#2476` chain, the bounded B1a result, the resolved enumeration and
+precedence questions, the explicit ten-file progress-surface fence, and the
+remaining explicit second-key gate. Historical sections remain true in time.
+
+Next posture: `explicit_second_key_owner_gate`.

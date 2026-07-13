@@ -16,6 +16,33 @@
 
 ---
 
+2026-07-13 current pointer: the admission-spine record is current through PR
+#2476 at `56c56e77ebe435c3a9f035f47de2d8611efee7d7`. The closing merge chain is
+#2473 / `cdc832d9cbfba5b0485ed0cca0c2a79854605044` (admission-spine closure
+record), #2474 / `2b7973d72e65661acc30c3ec88791fe1c88061e0` (Lane A admission
+guard closure), #2475 / `4439b1de50d85b2bc72bd92fa8e54717b7e9d500`
+(bounded B1a connector vertical-loop proof), and #2476 /
+`56c56e77ebe435c3a9f035f47de2d8611efee7d7` (guarded loopback-socket
+allowance). The bounded B1a run and its CL-6 convergence record establish B1a
+only; they do not establish an integrated connector-originated loop,
+analytical utility, Phase 4/5/6 completion, production readiness, or B1b
+implementation.
+
+The owner disposition is now durable in `docs/program-context/02-decision-record.md`:
+the complete 58-row identity-metadata enumeration is
+`RATIFIED-EXACTLY-AS-PROPOSED`, and the promotion-identity precedence rule is
+`RATIFIED-AS-PROPOSED`. The sole remaining B1b owner gate is an explicit
+second key. That key is intended only as future posture, is not granted, and
+has no present authorizing effect; no withheld disposition is claimed.
+
+`B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED.`
+
+Supersession scope: this pointer replaces older current-frontier and open-owner-
+queue language only for the admission-spine state through #2476 and the now
+resolved enumeration/precedence questions. All older dated addenda remain true
+in time. This records no implementation, schema, ORM, migration, runtime,
+build-dispatch, B1b build-PR, or B1b build-merge authority.
+
 2026-07-08 pointer: `docs/program-context/` latest program-context frontier
 is now PR #2468, the stage-2 closeout correction on top of PR #2467
 (`a0bc9f0a183afe5fd1bd92e14ca21ea30703ce3e`). PR #2467 carries the

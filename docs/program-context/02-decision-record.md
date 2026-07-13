@@ -776,3 +776,160 @@ renumbered or backfilled.
   from documentation/proof posture into code. Any support-matrix, schema,
   migration, live-pilot, nonlocal-admission, connector-source-default, or
   production-readiness expansion requires its own explicit lane and proof.
+
+## 2026-07-13 Admission-Spine B1 Owner-Ratification Addendum
+
+Provenance qualification: the decisions below were supplied in direct current-
+owner chat and relayed into the records lane. The precise owner decision
+timestamp was not provided, the message identifier was not exposed, and no
+independent owner artifact was provided. Those facts are not inferred. The
+operator-held ratification receipt is identified below by basename, byte count,
+full SHA-256, and canonical self-hash; it is not a repository-carried file.
+
+## D33. Ratify the complete v1 identity-metadata enumeration exactly as proposed (07-13)
+
+- Context: B1b promotion identity needs one owner-settled v1 field contract
+  before any later build packet can be evaluated. A partial field-name summary
+  would omit the proposal's null, normalization, canonical-JSON, versioning,
+  equivalence, and persistence-design semantics.
+- Alternatives: (a) leave the enumeration unresolved; (b) ratify only the three
+  inner hash fields; (c) ratify the complete 58-disposition proposal with no
+  overrides.
+- Decision: (c). `ENUMERATION_DISPOSITION=RATIFIED-EXACTLY-AS-PROPOSED`;
+  disposition count `58`; overrides `NONE`. Identity version is
+  `layer3.connector_source_intake.identity_metadata.v1`. The outer tuple axes
+  are `source_family` and `content_sha256`. The inner metadata-hash fields are
+  `connector_key`, `sciencebase_item_id`, and `media_type`.
+
+| # | Field | Ratified v1 disposition |
+|---:|---|---|
+| 01 | `source_family` | INCLUDE — outer tuple axis only |
+| 02 | `content_sha256` | INCLUDE — outer tuple axis only |
+| 03 | `connector_key` | INCLUDE — inner hash |
+| 04 | `sciencebase_item_id` | INCLUDE — inner hash |
+| 05 | `media_type`, including canonical charset/parameters | INCLUDE — inner hash |
+| 06 | `client_request_id` | EXCLUDE |
+| 07 | `connector_run_id` | EXCLUDE |
+| 08 | `connector_run_target_id` | EXCLUDE |
+| 09 | `freshness_timestamp` | EXCLUDE |
+| 10 | `sciencebase_download_uri` | EXCLUDE |
+| 11 | `sciencebase_file_name` / `original_filename` | EXCLUDE |
+| 12 | `content_size_bytes` | EXCLUDE |
+| 13 | `source_label` | EXCLUDE |
+| 14 | `source_description` | EXCLUDE |
+| 15 | `connector_source_intake_record_id` | EXCLUDE |
+| 16 | `operator_decision` | EXCLUDE |
+| 17 | `metadata_hash` | EXCLUDE; retained unchanged as lineage fingerprint |
+| 18 | `authority_basis_hash` | EXCLUDE |
+| 19 | `storage_ref` | EXCLUDE |
+| 20 | `provenance_json` | EXCLUDE |
+| 21 | `downstream_eligibility_json` | EXCLUDE |
+| 22 | `summary_json` | EXCLUDE |
+| 23 | `status` | EXCLUDE |
+| 24 | `created_at` | EXCLUDE |
+| 25 | `updated_at` | EXCLUDE |
+| 26 | `schema_id` | EXCLUDE |
+| 27 | `mode` | EXCLUDE |
+| 28 | `server_authority` | EXCLUDE |
+| 29 | `source_gate` | EXCLUDE |
+| 30 | `preview_encoding` | EXCLUDE |
+| 31 | `gate_b_material_admission_enabled` | EXCLUDE |
+| 32 | `gate_b_mode` | EXCLUDE |
+| 33 | `csv_only_pilot` | EXCLUDE |
+| 34 | `media_type_widening_deferred` | EXCLUDE |
+| 35 | `support_matrix_capability_added` | EXCLUDE |
+| 36 | `new_http_route_added` | EXCLUDE |
+| 37 | `operator_source_intake_table_modified` | EXCLUDE |
+| 38 | `generic_source_classes_widened` | EXCLUDE |
+| 39 | `support_matrix_changed` | EXCLUDE |
+| 40 | `media_type_gate_widened` | EXCLUDE |
+| 41 | `absolute_path_exposed` | EXCLUDE |
+| 42 | `sciencebase_item_url` | EXCLUDE FROM v1; future consideration DEFERRED |
+| 43 | `ConnectorRun.source_system` | DEFERRED; not part of v1 |
+| 44 | `ConnectorRun.source_mode` | EXCLUDE FROM v1; future consideration DEFERRED |
+| 45 | `stable_release_key` | DEFERRED; not part of v1 |
+| 46 | `stable_release_identifier` | DEFERRED; not part of v1 |
+| 47 | `identifiers_json` | DEFERRED; not part of v1 |
+| 48 | `source_artifact_key` | EXCLUDE FROM v1; future consideration DEFERRED |
+| 49 | `canonical_artifact_key` | EXCLUDE FROM v1; future consideration DEFERRED |
+| 50 | `remote_checksum_type` | EXCLUDE |
+| 51 | `remote_checksum_value` | EXCLUDE |
+| 52 | `downloaded_sha256` | EXCLUDE |
+| 53 | `etag` | EXCLUDE |
+| 54 | `last_modified` | EXCLUDE |
+| 55 | `source_reference_json` | EXCLUDE |
+| 56 | `permission_snapshot_json` | EXCLUDE |
+| 57 | `access_level_summary` | EXCLUDE |
+| 58 | `public_read_confirmed` | EXCLUDE |
+
+- Exact semantics: fields 03-05 are non-null. `connector_key` and
+  `sciencebase_item_id` are strings, Unicode-whitespace-trimmed,
+  NFC-normalized, and case-preserved; empty, missing, or null is invalid and
+  unhashable. `media_type` uses full-value parsing, lowercased essence and
+  parameter names, duplicate-name rejection, unquote/trim/NFC parameter
+  values, an explicit nullable charset, a lowercased charset token without
+  alias guessing, and order-independent parameters.
+- Canonicalization/version semantics: the preimage is the version `schema_id`
+  plus its three-field `fields` object. Serialize with sorted keys,
+  ASCII-escaped compact JSON, `allow_nan=False`, UTF-8, no `default=str`, then
+  emit lowercase 64-hex SHA-256. Persist the version separately and include it
+  in the preimage. Any field, normalization, null, JSON, or version change
+  requires a newly owner-ratified version; v1 is never reinterpreted. Missing
+  required fields leave version and hash null and make the record P1-ineligible.
+- Persistence-design boundary: the nullable version/hash pair, paired-null
+  constraint, and non-unique lookup index are ratified as design only. This
+  decision authorizes no persistence implementation, schema/ORM edit,
+  migration, backfill, or runtime activation.
+- Why optimal: the complete contract makes semantic equivalence replayable and
+  reviewable without turning request, storage, operator, or mutable runtime
+  metadata into identity.
+- Evidence: operator-held `b1b-ratification-2026-07-13.md`, 10,942 bytes, full
+  SHA-256 `CC56D146D2574CE66E80E0B4BF3DC509B5213BDFD8B9310EC06EF99EE4D5298A`,
+  canonical self-hash
+  `6B21BC536C49708E72F4B8C15CCE1AE2BEC483C4C659D426F62A8F46CE7AFA9B`.
+- Revisit gate: only a new explicit owner-ratified version may change these
+  semantics. A separate build authorization is required before implementation.
+
+## D34. Ratify first-committed approved-receipt precedence (07-13)
+
+- Context: repeated Gate-B decisions for one final I1 promotion identity need a
+  deterministic collision rule that distinguishes equivalent replay from a
+  divergent decision and from a non-approved outcome.
+- Alternatives: (a) latest decision wins; (b) every approval mints another
+  receipt; (c) first successfully committed approved receipt wins, equivalent
+  replay reuses it, and divergence fails closed pending explicit supersession.
+- Decision: (c), `PRECEDENCE_DISPOSITION=RATIFIED-AS-PROPOSED`:
+  1. For one final I1 identity, the first successfully committed approved
+     receipt wins.
+  2. A later semantically equivalent approval reuses that receipt and mints no
+     new receipt.
+  3. A divergent Gate-B decision returns dedicated HTTP `409`
+     `promotion_identity_decision_conflict`, mutates zero rows, and requires
+     explicit owner authority for supersession.
+  4. A non-approved decision mints no receipt and occupies no promotion
+     identity.
+- Why optimal: this rule makes approval replay idempotent, keeps conflict
+  visible, prevents last-writer-wins mutation, and reserves semantic
+  supersession for an explicit owner act.
+- Evidence: the same operator-held ratification receipt and hashes recorded in
+  D33. This rule is distinct from the earlier CT3-08=M1/dual-retention decision
+  and does not infer implementation or an intake-uniqueness migration.
+- Revisit gate: only explicit owner supersession may replace a committed
+  divergent decision. Implementation still requires separate authority.
+
+### Non-decisional second-key status note
+
+This note records current gate state; it is deliberately unnumbered because a
+non-grant is not a constructive decision.
+
+```text
+SECOND_KEY_STATUS=NOT-GRANTED
+SECOND_KEY_FUTURE_INTENT=INTENDED-NON-AUTHORIZING
+SECOND_KEY_WITHHELD=NOT-CLAIMED
+NEXT_POSTURE=EXPLICIT-SECOND-KEY-OWNER-GATE
+```
+
+The records-only alignment lane grants no implementation, schema, ORM,
+migration, runtime, build dispatch, B1b build PR, or B1b build merge authority.
+
+`B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED.`

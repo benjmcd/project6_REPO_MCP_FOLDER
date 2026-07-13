@@ -50032,5 +50032,174 @@
     },
     "next_posture": "corpus_46_supported_retained_ifrs_replay_closed_owner_decisions_remain_parked"
   },
-  "latest_m_corpus_46_record_summary": "M-CORPUS-46-RECORD records the owner-authorized retained IFRS annual replay closeout from source frontier 098e96eafd799d3a322d754b88058e5bd3ea7650 after PR #2441, with predecessor pin PRs #2440 and #2442 merged. It keeps the #2433/#2434 39-supported-filing record and #2437 40-supported-filing addendum historical, then supersedes the current distribution to 46 supported filings / 27 supported issuers after six retained IFRS annuals replayed at zero SEC EDGAR egress using fresh client_request_ids ifrs-replay-01-r1 through ifrs-replay-06-r1. The issuer count is derived from the prior 21 supported issuers plus six named distinct retained IFRS issuers: SONY, CCJ, DNN, NXE, MT, and TSM. All 6/6 rows reached ready, stores persisted, named replay blocks were zero, counts were 4693 / 886 / 1582 / 7335 / 2670 / 3565 for 20731 total records, and the record is operator-attested + independently regraded (PASS_WITH_ATTESTED_FIELDS). The results hash is 7d691b6ac96fe31e40797b9e1ef582274e4792fb331c0071f821250c9189bbc7, evidence bundle hash a49b9c5553fd21788307b2dae9407b36582a97b467780aeeceda7772c44c40ff, independent regrade hash 6e755725e65c11fb7fd1ddc926911804aebf924b79da9fc553f56a88b2bce2e3, r3 provisioning hash 6ff72308060a5769ff708b556bc3e9a6269ac867b1f06eaa6d0291f4a8a9708c, arming hash cb275a03cbbadfcdb55a8eedc3d585f8dd5eb6cb4c9a8b45bac986ceb080b8f6, and IFRS package hash 302afc7f69c5f92697ab8d87a6f584406f4addaf7f905468052c280c2fe16d19. Remaining non-replay dispositions are 6-K no_inline_facts_pre_inline_era, KAP/PDN/YCA official_ticker_resolution_missing, and TSMC-as-written ticker_alias_resolution_required. This record admits no backend/tool/test edit, network egress by this record lane, runtime/config/flag/schema change, sandbox or p6store mutation by this record lane, raw values, accession/CIK, local path beyond C:/p6store, production-readiness, value-reveal, nonlocal admission, default-on expansion, unsupported IFRS readiness, foreign-annual replay residual, or broader host-class authority."
+  "latest_m_corpus_46_record_summary": "M-CORPUS-46-RECORD records the owner-authorized retained IFRS annual replay closeout from source frontier 098e96eafd799d3a322d754b88058e5bd3ea7650 after PR #2441, with predecessor pin PRs #2440 and #2442 merged. It keeps the #2433/#2434 39-supported-filing record and #2437 40-supported-filing addendum historical, then supersedes the current distribution to 46 supported filings / 27 supported issuers after six retained IFRS annuals replayed at zero SEC EDGAR egress using fresh client_request_ids ifrs-replay-01-r1 through ifrs-replay-06-r1. The issuer count is derived from the prior 21 supported issuers plus six named distinct retained IFRS issuers: SONY, CCJ, DNN, NXE, MT, and TSM. All 6/6 rows reached ready, stores persisted, named replay blocks were zero, counts were 4693 / 886 / 1582 / 7335 / 2670 / 3565 for 20731 total records, and the record is operator-attested + independently regraded (PASS_WITH_ATTESTED_FIELDS). The results hash is 7d691b6ac96fe31e40797b9e1ef582274e4792fb331c0071f821250c9189bbc7, evidence bundle hash a49b9c5553fd21788307b2dae9407b36582a97b467780aeeceda7772c44c40ff, independent regrade hash 6e755725e65c11fb7fd1ddc926911804aebf924b79da9fc553f56a88b2bce2e3, r3 provisioning hash 6ff72308060a5769ff708b556bc3e9a6269ac867b1f06eaa6d0291f4a8a9708c, arming hash cb275a03cbbadfcdb55a8eedc3d585f8dd5eb6cb4c9a8b45bac986ceb080b8f6, and IFRS package hash 302afc7f69c5f92697ab8d87a6f584406f4addaf7f905468052c280c2fe16d19. Remaining non-replay dispositions are 6-K no_inline_facts_pre_inline_era, KAP/PDN/YCA official_ticker_resolution_missing, and TSMC-as-written ticker_alias_resolution_required. This record admits no backend/tool/test edit, network egress by this record lane, runtime/config/flag/schema change, sandbox or p6store mutation by this record lane, raw values, accession/CIK, local path beyond C:/p6store, production-readiness, value-reveal, nonlocal admission, default-on expansion, unsupported IFRS readiness, foreign-annual replay residual, or broader host-class authority.",
+  "m_admission_spine_b1_record_tracking": {
+    "tracking_kind": "m_admission_spine_b1_record_tracking",
+    "milestone": "m_admission_spine_b1_record_v1",
+    "status": "owner_authorized_tier1_tracked_records_alignment",
+    "progress_board_section": "M-ADMISSION-SPINE-B1-RECORD",
+    "source_frontier_refreshed_at": "56c56e77ebe435c3a9f035f47de2d8611efee7d7",
+    "source_frontier_refreshed_at_source": "project6-origin/main after PR #2476",
+    "included_recent_prs": [
+      {
+        "pr": "#2473",
+        "merge_commit": "cdc832d9cbfba5b0485ed0cca0c2a79854605044",
+        "title": "docs: publish admission spine closure record"
+      },
+      {
+        "pr": "#2474",
+        "merge_commit": "2b7973d72e65661acc30c3ec88791fe1c88061e0",
+        "title": "test(layer3): close Lane A admission guard gaps"
+      },
+      {
+        "pr": "#2475",
+        "merge_commit": "4439b1de50d85b2bc72bd92fa8e54717b7e9d500",
+        "title": "test(layer3): add B1a connector vertical loop proof"
+      },
+      {
+        "pr": "#2476",
+        "merge_commit": "56c56e77ebe435c3a9f035f47de2d8611efee7d7",
+        "title": "test(layer3): allow guarded loopback sockets"
+      }
+    ],
+    "allowed_files": [
+      "docs/MASTER_CONTEXT.md",
+      "docs/program-context/00-posture-and-invariants.md",
+      "docs/program-context/01-arc-ledger.md",
+      "docs/program-context/02-decision-record.md",
+      "docs/program-context/03-forward-plan.md",
+      "docs/program-context/04-evidence-registry.md",
+      "next_milestone_plans/Layer3_planning_docs/1366-source-artifact-admission-map.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "next_milestone_plans/layer3_progress_board.md"
+    ],
+    "index_scope": {
+      "classification": "intentional_exclusion",
+      "path": "docs/program-context/INDEX.md",
+      "reason": "static exhaustive inventory, reading order, authority order, and maintenance conventions are unchanged"
+    },
+    "standing": "B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED.",
+    "bounded_b1a": {
+      "status": "pass",
+      "proof_scope": "bounded_connector_vertical_loop",
+      "cl6_status": "closure_pass",
+      "integrated_loop_proven": false,
+      "analytical_utility_proven": false,
+      "phase_4_complete": false,
+      "phase_5_complete": false,
+      "phase_6_complete": false,
+      "production_readiness_claim": false,
+      "b1b_implementation_claim": false
+    },
+    "owner_dispositions": {
+      "enumeration": {
+        "status": "RATIFIED-EXACTLY-AS-PROPOSED",
+        "disposition_count": 58,
+        "field_overrides": "NONE",
+        "identity_version": "layer3.connector_source_intake.identity_metadata.v1",
+        "outer_tuple_axes": [
+          "source_family",
+          "content_sha256"
+        ],
+        "inner_hash_fields": [
+          "connector_key",
+          "sciencebase_item_id",
+          "media_type"
+        ],
+        "persistence_design_only": true
+      },
+      "precedence": {
+        "status": "RATIFIED-AS-PROPOSED",
+        "rules": [
+          "first successfully committed approved receipt wins",
+          "semantically equivalent later approval reuses the receipt and mints no new receipt",
+          "divergent Gate-B decision returns 409 promotion_identity_decision_conflict with zero mutation",
+          "supersession requires explicit owner authority",
+          "non-approved decision mints no receipt and occupies no promotion identity"
+        ]
+      },
+      "second_key": {
+        "status": "NOT-GRANTED",
+        "future_intent": "INTENDED-NON-AUTHORIZING",
+        "withheld": "NOT-CLAIMED",
+        "remaining_gate": "EXPLICIT-SECOND-KEY"
+      }
+    },
+    "local_evidence": [
+      {
+        "name": "b1b-ratification-2026-07-13.md",
+        "evidence_class": "operator_held_local_evidence",
+        "bytes": 10942,
+        "full_sha256": "CC56D146D2574CE66E80E0B4BF3DC509B5213BDFD8B9310EC06EF99EE4D5298A",
+        "canonical_self_hash": "6B21BC536C49708E72F4B8C15CCE1AE2BEC483C4C659D426F62A8F46CE7AFA9B",
+        "role": "enumeration_and_precedence_ratification"
+      },
+      {
+        "name": "b1b-scope-2026-07-13.md",
+        "evidence_class": "operator_held_local_evidence",
+        "bytes": 4304,
+        "full_sha256": "94667BF8B61902F2ABD79CDF531177D55BFC3A30FD3AC8B4158D9024D48F940E",
+        "canonical_self_hash": "CC5E7D62DFE41E407EE180CAEEF95CE29F7D2DBCEDFFF5C8D90C0AFF2A095A4B",
+        "role": "post_seal_scope_clarification"
+      },
+      {
+        "name": "v2-b1a-run-report.md",
+        "evidence_class": "operator_held_local_evidence",
+        "bytes": 28922,
+        "full_sha256": "93BB7D1E606A083B888E55B658BAACBB4C1158AF2C5FDAF021C970936B65FB51",
+        "canonical_self_hash": null,
+        "role": "bounded_b1a_run_closure"
+      },
+      {
+        "name": "v2-b1a-cl6-report.md",
+        "evidence_class": "operator_held_local_evidence",
+        "bytes": 21009,
+        "full_sha256": "9B875CE36FCA1EAEA6A49B56B0897191394FD596088913644785D8B652548A05",
+        "canonical_self_hash": null,
+        "role": "cl6_convergence_verification"
+      }
+    ],
+    "provenance_qualification": {
+      "owner_authority_source": "direct_current_owner_chat",
+      "writer_input": "relayed_records_instruction",
+      "owner_timestamp": "NOT-PROVIDED",
+      "owner_message_id": "NOT-EXPOSED",
+      "independent_owner_artifact": "NOT-PROVIDED",
+      "repository_carry_state": "operator_held_local_evidence_not_repository_carried"
+    },
+    "supersession_boundary": "Supersedes older current-frontier and owner-queue wording only for the #2473-#2476 chain, bounded B1a result, resolved enumeration and precedence questions, explicit ten-file progress-surface fence, and remaining explicit second-key gate; all historical sections remain true in time.",
+    "validation": [
+      "PowerShell ConvertFrom-Json for both JSON manifests",
+      "git diff --check",
+      "ten-file changed-set and fence check",
+      "58-row uniqueness and completeness check",
+      "progress proof and board semantic parity check",
+      "operator-held evidence rehash"
+    ],
+    "negative_authority_flags": {
+      "implementation_authorized": false,
+      "schema_authorized": false,
+      "orm_authorized": false,
+      "migration_authorized": false,
+      "runtime_authorized": false,
+      "build_dispatch_authorized": false,
+      "b1b_build_pr_authorized": false,
+      "b1b_build_merge_authorized": false,
+      "integrated_loop_proven": false,
+      "analytical_utility_proven": false,
+      "phase_4_complete": false,
+      "phase_5_complete": false,
+      "phase_6_complete": false,
+      "production_readiness_claim": false,
+      "schema_changed": false,
+      "raw_payload_committed": false,
+      "absolute_local_path_disclosed": false,
+      "owner_identifier_disclosed": false,
+      "thread_id_disclosed": false,
+      "invented_owner_metadata": false
+    },
+    "next_posture": "explicit_second_key_owner_gate"
+  },
+  "latest_m_admission_spine_b1_record_summary": "M-ADMISSION-SPINE-B1-RECORD aligns the tracked record through PR #2476 at 56c56e77ebe435c3a9f035f47de2d8611efee7d7. Standing: B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED. The complete 58-disposition enumeration is RATIFIED-EXACTLY-AS-PROPOSED and precedence is RATIFIED-AS-PROPOSED; the second key is NOT-GRANTED, future intent is INTENDED-NON-AUTHORIZING, and WITHHELD is NOT-CLAIMED. Four operator-held local evidence files are recorded only by basename, bytes, full SHA-256, and canonical self-hash where applicable. This records lane authorizes no implementation, schema, ORM, migration, runtime, build dispatch, B1b build PR, or B1b build merge. Next posture: explicit_second_key_owner_gate."
 }
