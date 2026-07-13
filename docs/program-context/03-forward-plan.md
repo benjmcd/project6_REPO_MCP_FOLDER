@@ -6,6 +6,59 @@ report as verified/adjudicated, grounded in repo authorities (merge-gate
 policy, admission runbook, A8 docs, support matrix). Nothing here is authorized by this
 document — it specifies what authorization would require.
 
+## 2026-07-13 Current Admission-Spine Refresh (M-ADMISSION-SPINE-B1-RECORD)
+
+Supersession boundary: this block is the current admission-spine pointer through
+PR #2476 / `56c56e77ebe435c3a9f035f47de2d8611efee7d7`. It supersedes older
+current-frontier and open-owner-queue wording only where those blocks still
+describe the enumeration or precedence rule as unresolved. Historical refreshes
+and every F/P section remain prior context where not explicitly superseded.
+
+### Current B1 record and next gate
+
+- Source frontier: #2473 /
+  `cdc832d9cbfba5b0485ed0cca0c2a79854605044`, #2474 /
+  `2b7973d72e65661acc30c3ec88791fe1c88061e0`, #2475 /
+  `4439b1de50d85b2bc72bd92fa8e54717b7e9d500`, and #2476 /
+  `56c56e77ebe435c3a9f035f47de2d8611efee7d7` are merged in order.
+- B1a: bounded pass and CL-6 closure are operator-held evidence, recorded by
+  hash/byte anchors in `04-evidence-registry.md`. This is not integrated-loop
+  proof, analytical-utility proof, Phase 4/5/6 completion, production
+  readiness, or B1b implementation.
+- Owner frontier: the complete 58-disposition enumeration is
+  `RATIFIED-EXACTLY-AS-PROPOSED`; precedence is
+  `RATIFIED-AS-PROPOSED`. Remove both from the open owner queue. The only
+  remaining B1b packet gate is the explicit second key.
+- Second-key posture: `NOT-GRANTED`; future intent
+  `INTENDED-NON-AUTHORIZING`; `WITHHELD` is `NOT-CLAIMED`. The next posture is
+  `explicit_second_key_owner_gate`, not a build lane.
+- Exact standing:
+  `B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED.`
+- Authority boundary: implementation, schema, ORM, migration, runtime, build
+  dispatch, B1b build PR, and B1b build merge remain not authorized.
+
+### Progress-surface fence widened for this records lane
+
+The earlier M-ADMISSION-MAP progress-surface exclusion is superseded only for
+this authorized records-alignment lane; the orchestrated scope audit derived its
+complete ten-file write fence as:
+
+1. `docs/MASTER_CONTEXT.md`
+2. `docs/program-context/00-posture-and-invariants.md`
+3. `docs/program-context/01-arc-ledger.md`
+4. `docs/program-context/02-decision-record.md`
+5. `docs/program-context/03-forward-plan.md`
+6. `docs/program-context/04-evidence-registry.md`
+7. `next_milestone_plans/Layer3_planning_docs/1366-source-artifact-admission-map.md`
+8. `next_milestone_plans/layer3_progress_manifest.json`
+9. `next_milestone_plans/layer3_workbench_proof_manifest.json`
+10. `next_milestone_plans/layer3_progress_board.md`
+
+`docs/program-context/INDEX.md` remains an intentional exclusion: its static
+exhaustive inventory, reading order, authority order, and maintenance
+conventions do not change. This records lane grants none of the implementation
+authority withheld above.
+
 ## 2026-07-08 Forward Program Refresh (M-ADMISSION-MAP)
 
 Supersession boundary: this block is the current admission-spine program pointer. It supersedes older program-frontier planning only for the local-depth source-artifact admission-spine program selection and the Phase 0-7 sequencing recorded here. Historical F-sections and prior refresh blocks remain prior context where not explicitly superseded.

@@ -245,3 +245,51 @@ where they still name the old `artifact_enveloped` + `layer3_preview_admitted`
 pair as sufficient. Future Phase 4 acceptance must include the connector
 source-intake Gate-B target above while preserving the separate artifact
 envelope requirement.
+
+## Erratum (2026-07-13, M-ADMISSION-SPINE-B1-RECORD)
+
+This is the current currency boundary for planning doc 1366 through
+`project6-origin/main` `56c56e77ebe435c3a9f035f47de2d8611efee7d7`.
+After the 2026-07-09 erratum, PR #2473 /
+`cdc832d9cbfba5b0485ed0cca0c2a79854605044` published the admission-spine
+closure record, PR #2474 / `2b7973d72e65661acc30c3ec88791fe1c88061e0`
+closed the Lane A admission-guard gaps, PR #2475 /
+`4439b1de50d85b2bc72bd92fa8e54717b7e9d500` added the bounded B1a connector
+vertical-loop proof, and PR #2476 /
+`56c56e77ebe435c3a9f035f47de2d8611efee7d7` allowed only guarded loopback
+sockets for that proof.
+
+The B1a result is bounded. It does not prove an integrated connector-originated
+loop, analytical utility, Phase 4 shape-pilot completion, Phase 5 proof-
+reconstruction completion, Phase 6 named workflow completion, production
+readiness, or B1b implementation.
+
+The target B1b identity semantics are now settled but not implemented:
+
+- The complete 58-disposition v1 enumeration is
+  `RATIFIED-EXACTLY-AS-PROPOSED`. The outer tuple remains
+  (`source_family`, `content_sha256`); the inner identity-metadata hash remains
+  (`connector_key`, `sciencebase_item_id`, canonical full `media_type`) under
+  version `layer3.connector_source_intake.identity_metadata.v1` and the
+  canonicalization/null/version rules recorded in D33.
+- The precedence rule is `RATIFIED-AS-PROPOSED`: the first successfully
+  committed approved receipt wins; an equivalent approval reuses it; a
+  divergent Gate-B decision returns dedicated `409`
+  `promotion_identity_decision_conflict` with zero mutation and requires
+  explicit owner supersession; a non-approved decision mints no receipt and
+  occupies no identity.
+- Persistence shape is a ratified design only. No implementation, schema, ORM,
+  migration, runtime, build dispatch, B1b build PR, or B1b build merge is
+  authorized by this erratum.
+
+The sole remaining B1b owner gate is an explicit second key. It is
+`NOT-GRANTED`; future intent is `INTENDED-NON-AUTHORIZING`; `WITHHELD` is
+`NOT-CLAIMED`.
+
+`B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED.`
+
+Supersession scope: this erratum supersedes earlier current-currency and open-
+owner-frontier wording only for the #2473-#2476 chain, the bounded B1a result,
+the two ratified target-semantics questions, and the remaining explicit-second-
+key gate. It preserves every earlier erratum and makes no Phase 4/5/6 or B1b
+implementation claim.

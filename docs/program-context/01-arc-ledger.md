@@ -341,3 +341,36 @@ admission-spine set (#2469-#2472) without untracked session memory. Phase 4
 shape pilots, Phase 5 proof reconstruction, Phase 6 one named operator workflow
 proof, and owner-gated future decisions remain separate unless later authority
 lands them.
+
+## Phase 14 - Admission-spine B1 closure, bounded proof, and owner ratification (07-11 to 07-13)
+
+- #2473 `cdc832d9cbfba5b0485ed0cca0c2a79854605044` - `docs: publish
+  admission spine closure record`. Why: the landed Phase 2/3/7 chain needed a
+  durable closure surface before the remaining B1 proof and owner gates could
+  be evaluated without session-local context.
+- #2474 `2b7973d72e65661acc30c3ec88791fe1c88061e0` - `test(layer3): close
+  Lane A admission guard gaps`. Why: the B1a lane required the admitted-source
+  and fail-closed guard gaps to be pinned before a vertical-loop proof could be
+  treated as bounded evidence.
+- #2475 `4439b1de50d85b2bc72bd92fa8e54717b7e9d500` - `test(layer3): add B1a
+  connector vertical loop proof`. Why: this supplied the connector-loop test
+  proof while preserving the distinction between a bounded B1a run and an
+  integrated production loop.
+- #2476 `56c56e77ebe435c3a9f035f47de2d8611efee7d7` - `test(layer3): allow
+  guarded loopback sockets`. Why: it removed the documented loopback false
+  positive without widening non-loopback network authority.
+- The operator-held B1a run record closes with a bounded pass, and the separate
+  CL-6 convergence rerun closes the record-fix checks. Those receipts are
+  hash/byte anchored in `04-evidence-registry.md`; they prove neither an
+  integrated connector-originated loop nor analytical utility, Phase 4/5/6
+  completion, production readiness, or B1b implementation.
+- Owner disposition: the complete 58-row identity-metadata enumeration is
+  `RATIFIED-EXACTLY-AS-PROPOSED`; the promotion-identity precedence rule is
+  `RATIFIED-AS-PROPOSED`. The only remaining B1b owner gate is an explicit
+  second key. Future intent is non-authorizing, the key is not granted, and no
+  withheld disposition is claimed.
+- Exact standing:
+  `B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED.`
+- Authority boundary: this phase records decisions and evidence only. It grants
+  no implementation, schema, ORM, migration, runtime, build-dispatch, B1b
+  build-PR, or B1b build-merge authority.

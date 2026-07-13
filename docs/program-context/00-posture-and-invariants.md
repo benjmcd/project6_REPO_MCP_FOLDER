@@ -183,3 +183,23 @@ is which.)
   durable record.
 - Enforced: record-lane closeout convention, beginning with the 2026-07-06 seed
   archive recorded in D29 and the evidence registry.
+
+## I13. Semantic ratification does not authorize a B1b build
+
+- Requires: an owner ratification of target semantics is recorded as a durable
+  decision without being upgraded into implementation authority. The complete
+  58-disposition identity-metadata enumeration is
+  `RATIFIED-EXACTLY-AS-PROPOSED`; the promotion-identity precedence rule is
+  `RATIFIED-AS-PROPOSED`. The explicit second key remains not granted. Its
+  future intent is `INTENDED-NON-AUTHORIZING`, and `WITHHELD` is not claimed.
+- Why optimal: target-state agreement and authority to mutate runtime are
+  independent controls. Keeping them separate makes the next owner gate exact,
+  prevents a future-intent statement from becoming an accidental grant, and
+  permits records to converge without implying that schema, persistence, or
+  dispatch work has begun.
+- Enforced: D33 and D34 contain the self-contained ratified semantics; the
+  unnumbered status note after them carries the remaining explicit-second-key
+  gate. No implementation, schema, ORM, migration, runtime, build dispatch,
+  B1b build PR, or B1b build merge is authorized by those records.
+- Current standing:
+  `B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED.`

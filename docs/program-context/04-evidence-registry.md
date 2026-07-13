@@ -442,3 +442,43 @@ host-class authority for future taxonomy fetches.
 | PR #2470 | commit `423fbbae5d7bf94d84d596fad1ea23b079e535dc` | Admission-map count and posture reconciliation after #2469; documentation record only, with no runtime, value, schema, persistence, default-on, or support-matrix change by this registry row. |
 | PR #2471 | commit `e413d2df7cf0adeda2fd538bc4a3a2f87a5cfcc2` | Neutral NRC APS facade executed with behavior-neutral routing and preserved material-admission semantics. |
 | PR #2472 | commit `e31f5ebd5dcc0ae7820252d04cf47db4946d6743` | Connector source-intake envelope: ScienceBase/MCS connector Gate-B next_state closure and four-producer static guard. |
+
+## Admission-Spine B1 Evidence Registry Extension (2026-07-13)
+
+### Live merge chain through the current source frontier
+
+| PR | Merge SHA | Title / tranche |
+|---|---|---|
+| #2473 | `cdc832d9cbfba5b0485ed0cca0c2a79854605044` | `docs: publish admission spine closure record` |
+| #2474 | `2b7973d72e65661acc30c3ec88791fe1c88061e0` | `test(layer3): close Lane A admission guard gaps` |
+| #2475 | `4439b1de50d85b2bc72bd92fa8e54717b7e9d500` | `test(layer3): add B1a connector vertical loop proof` |
+| #2476 | `56c56e77ebe435c3a9f035f47de2d8611efee7d7` | `test(layer3): allow guarded loopback sockets`; current source frontier |
+
+### Operator-held local evidence anchors
+
+These four files are operator-held local evidence. They are not repository-
+carried files, and their names do not imply that their raw payloads are
+committed. The tracked record admits only basename, byte count, hash, evidence
+role, and the semantic facts copied into D33/D34 and the current-status
+surfaces.
+
+| Evidence basename | Bytes | Full SHA-256 | Canonical self-hash | Evidence role |
+|---|---:|---|---|---|
+| `b1b-ratification-2026-07-13.md` | 10,942 | `CC56D146D2574CE66E80E0B4BF3DC509B5213BDFD8B9310EC06EF99EE4D5298A` | `6B21BC536C49708E72F4B8C15CCE1AE2BEC483C4C659D426F62A8F46CE7AFA9B` | Complete enumeration and precedence ratification receipt; records-only scope |
+| `b1b-scope-2026-07-13.md` | 4,304 | `94667BF8B61902F2ABD79CDF531177D55BFC3A30FD3AC8B4158D9024D48F940E` | `CC5E7D62DFE41E407EE180CAEEF95CE29F7D2DBCEDFFF5C8D90C0AFF2A095A4B` | Post-seal clarification that predecessor PR/merge negatives apply to the B1b build lane, not separately authorized records alignment |
+| `v2-b1a-run-report.md` | 28,922 | `93BB7D1E606A083B888E55B658BAACBB4C1158AF2C5FDAF021C970936B65FB51` | n/a | Bounded B1a successful-run closure record with historical STOP attempts retained |
+| `v2-b1a-cl6-report.md` | 21,009 | `9B875CE36FCA1EAEA6A49B56B0897191394FD596088913644785D8B652548A05` | n/a | CL-6 convergence rerun and exact standing/fix-fence verification |
+
+Provenance qualification: direct current-owner chat is the authority for the
+ratifications, and the records writer received the decision through a relayed
+instruction. The precise owner timestamp was not provided, the message
+identifier was not exposed, and no independent owner artifact was provided.
+This registry does not invent or infer any of them.
+
+The B1a evidence is bounded: it is not integrated-loop proof, analytical-
+utility proof, Phase 4/5/6 completion, production readiness, or B1b
+implementation. The ratification evidence settles target semantics only and
+does not authorize implementation, schema, ORM, migration, runtime, build
+dispatch, B1b build PR, or B1b build merge.
+
+`B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED.`
