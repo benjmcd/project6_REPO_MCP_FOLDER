@@ -482,3 +482,29 @@ does not authorize implementation, schema, ORM, migration, runtime, build
 dispatch, B1b build PR, or B1b build merge.
 
 `B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED.`
+
+## Stage-1 bounded prekey archive receipt (2026-07-18)
+
+Owner-granted Section 13.1 archive-only act (key grammar-valid, single mark
+`GRANTED-ARCHIVE-ONLY`): the exact 15-source bounded snapshot was captured to
+the durable root and verified by a dual-read census. This is redundancy
+evidence only. It retains `OPEN-I12-ARCHIVE-PENDING` and adds
+`BOUNDED-PREKEY-SNAPSHOT-COMPLETE`; it does not close, waive, or supersede I12,
+and it authorizes no B1b implementation, schema, ORM, migration, runtime,
+build dispatch, build PR, or build merge. The compound Stage-2 second key
+remains ungranted at this citation's capture time.
+
+| Field | Value |
+|---|---|
+| Authorization record | `b1b-i12-archive-authorization-2026-07-13.md` — 895 B; canonical (zero-field rule) `4F1DEEA441FADF4BE76CB3B84BAD37F752F20E0EC3F67DEC6144AB8D963C43E2`; full `E3E4DC7C5D639DF340AFA85A754E7CB70EF5F2D9E4CAEDDA1D2DBFFF42755B5D` |
+| Owner act timestamp | `2026-07-18T11:16:34.434418Z` (RFC3339Z, owner-supplied) |
+| Destination basename | `20260718T112014493Z-b1b-prekey` |
+| Manifest | `ARCHIVE_MANIFEST.json` — 4,604 B; full SHA-256 `cc2aec5985dae721e9c141960088bf6ed66b6e07c52fdfe82b31535e5e9cab6e` |
+| Entry aggregate | `34c10823a487100d2dae75b6961b21dac6a118841cd46ae152560cc668146d31` (D33-canonical entry array, sorted by archive-relative path) |
+| Source census | `b1b-bounded-prekey-archive.v1` — exactly 15 sources: 14 operator-root files plus the correction read from Git blob `0ec2c9fa93fbdb9d3ac1d456e5d900283882f33a` at `fcf6070d046a9232ec009d55b767a248ad44a4a2` (505,389 B / `FAC9E02B58A5536FC9F77D5E0E86430075059C352F21EA927C132A23012C92A6`) |
+| Census result | 15/15 copied, dual-read hash-verified, final second-read census PASS; named-mutex, free-space, no-overwrite, and no-reparse rules observed |
+
+The snapshot is intentionally scoped, not exhaustive (living coordination
+files and other lane payloads are excluded by design); it therefore records
+`BOUNDED-PREKEY-SNAPSHOT-COMPLETE; I12-OPEN` and is inadmissible for any
+`I12-EXHAUSTIVE-ARCHIVE-COMPLETE` selection.
