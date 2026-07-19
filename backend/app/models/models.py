@@ -2335,6 +2335,93 @@ class L3ConnectorSourceIntakeRecord(Base):
     connector_run_target_id: Mapped[str] = mapped_column(String(36), nullable=False)
 
 
+class L3ConnectorPromotionReceipt(Base):
+    """Option II authoritative B1b promotion receipt (exhaustive owner-bound DDL)."""
+
+    __tablename__ = "l3_connector_promotion_receipt"
+    __table_args__ = (
+        UniqueConstraint(
+            "identity_metadata_hash_version",
+            "source_family",
+            "content_sha256",
+            "identity_metadata_hash",
+            name="uq_l3_connector_promotion_identity_tuple",
+        ),
+        CheckConstraint(
+            "receipt_schema_version = 'layer3.connector_promotion_receipt.v1'",
+            name="ck_l3_connector_promotion_receipt_schema",
+        ),
+        CheckConstraint(
+            "("
+            "materialization_status IS NULL"
+            " AND dataset_id IS NULL AND dataset_version_id IS NULL"
+            " AND promoted_session_id IS NULL"
+            " AND materialization_basis_hash IS NULL AND materialized_at IS NULL"
+            ") OR ("
+            "materialization_status IS NOT NULL AND materialization_status = 'materializing'"
+            " AND materialization_basis_hash IS NOT NULL"
+            " AND dataset_id IS NULL AND dataset_version_id IS NULL"
+            " AND promoted_session_id IS NULL AND materialized_at IS NULL"
+            ") OR ("
+            "materialization_status IS NOT NULL AND materialization_status = 'materialized'"
+            " AND materialization_basis_hash IS NOT NULL"
+            " AND dataset_id IS NOT NULL AND dataset_version_id IS NOT NULL"
+            " AND promoted_session_id IS NOT NULL AND materialized_at IS NOT NULL"
+            ")",
+            name="ck_l3_connector_promotion_joint_state",
+        ),
+        Index("ix_l3_connector_promotion_intake", "connector_source_intake_record_id"),
+        Index("ix_l3_connector_promotion_gate_b_session", "gate_b_session_id"),
+        Index("ix_l3_connector_promotion_selection_manifest", "gate_b_selection_manifest_id"),
+        Index("ix_l3_connector_promotion_material_snapshot", "gate_b_material_snapshot_id"),
+        Index("ix_l3_connector_promotion_dataset", "dataset_id"),
+        Index("ix_l3_connector_promotion_dataset_version", "dataset_version_id"),
+        Index("ix_l3_connector_promotion_promoted_session", "promoted_session_id"),
+    )
+
+    connector_promotion_receipt_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    receipt_schema_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    identity_metadata_hash_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_family: Mapped[str] = mapped_column(String(64), nullable=False)
+    content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    identity_metadata_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    canonical_identity_key_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    connector_source_intake_record_id: Mapped[str] = mapped_column(
+        ForeignKey(
+            "l3_connector_source_intake_record.connector_source_intake_record_id",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+    )
+    gate_b_session_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_session.session_id", ondelete="RESTRICT"), nullable=False
+    )
+    gate_b_selection_manifest_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_selection_manifest.selection_manifest_id", ondelete="RESTRICT"), nullable=False
+    )
+    gate_b_material_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_material_snapshot.material_snapshot_id", ondelete="RESTRICT"), nullable=False
+    )
+    gate_b_decision_manifest_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    gate_b_decision_manifest_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    material_preview_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    approval_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    promotion_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    dataset_id: Mapped[str | None] = mapped_column(ForeignKey("dataset.dataset_id", ondelete="RESTRICT"))
+    dataset_version_id: Mapped[str | None] = mapped_column(
+        ForeignKey("dataset_version.dataset_version_id", ondelete="RESTRICT")
+    )
+    promoted_session_id: Mapped[str | None] = mapped_column(
+        ForeignKey("l3_session.session_id", ondelete="RESTRICT")
+    )
+    materialization_status: Mapped[str | None] = mapped_column(String(32))
+    materialization_basis_hash: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+    materialized_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class L3SourceDirectoryIngestionBatch(Base):
     __tablename__ = "l3_source_directory_ingestion_batch"
     __table_args__ = (
