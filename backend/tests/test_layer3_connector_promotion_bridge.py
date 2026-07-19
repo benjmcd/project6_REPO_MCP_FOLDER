@@ -60,6 +60,9 @@ from app.models.models import (  # noqa: E402
     DatasetRow,
     DatasetSourceProvenance,
     DatasetVersion,
+    L3AnalysisGroup,
+    L3AnalysisSet,
+    L3AnalysisUnit,
     L3ConnectorPromotionReceipt,
     L3ConnectorSourceIntakeRecord,
     L3Descriptor,
@@ -68,6 +71,7 @@ from app.models.models import (  # noqa: E402
     L3RetrievalEvent,
     L3SelectionManifest,
     L3Session,
+    L3TypingRecord,
     SourceConnector,
     VariableDefinition,
 )
@@ -2014,11 +2018,26 @@ _MATERIALIZATION_MODELS = (
     VariableDefinition,
     DatasetSourceProvenance,
     DatasetRow,
+    L3TypingRecord,
+    L3AnalysisUnit,
+    L3AnalysisGroup,
+    L3AnalysisSet,
     L3Session,
     L3SelectionManifest,
     L3Descriptor,
     L3RetrievalEvent,
     L3MaterialSnapshot,
+)
+_SESSION_CHAIN_MODELS = (
+    L3Session,
+    L3SelectionManifest,
+    L3Descriptor,
+    L3RetrievalEvent,
+    L3MaterialSnapshot,
+    L3TypingRecord,
+    L3AnalysisUnit,
+    L3AnalysisGroup,
+    L3AnalysisSet,
 )
 _RESOLVE_KEYS = {
     "approval_hash",
@@ -2071,6 +2090,14 @@ def _seed_materializable_receipt(
 def _materialization_census(runtime: dict) -> dict[str, int]:
     with runtime["factory"]() as db:
         return {model.__name__: db.query(model).count() for model in _MATERIALIZATION_MODELS}
+
+
+def _session_chain_census(runtime: dict, session_id: str) -> dict[str, int]:
+    with runtime["factory"]() as db:
+        return {
+            model.__name__: db.query(model).filter(model.session_id == session_id).count()
+            for model in _SESSION_CHAIN_MODELS
+        }
 
 
 def _lane_files(runtime: dict) -> dict[str, tuple[int, str]]:
@@ -2149,6 +2176,18 @@ def test_step5_first_call_profile_wrapper_links_and_response_are_exact(
         if path.is_file()
     }
     target_before = _target_projection(b1b_step3_runtime)
+    original_session_before = _session_chain_census(b1b_step3_runtime, gate_b_session_id)
+    assert original_session_before == {
+        "L3Session": 1,
+        "L3SelectionManifest": 1,
+        "L3Descriptor": 1,
+        "L3RetrievalEvent": 1,
+        "L3MaterialSnapshot": 1,
+        "L3TypingRecord": 0,
+        "L3AnalysisUnit": 0,
+        "L3AnalysisGroup": 0,
+        "L3AnalysisSet": 0,
+    }
 
     response = _resolve(b1b_step3_runtime, gate_b_session_id)
 
@@ -2165,11 +2204,19 @@ def test_step5_first_call_profile_wrapper_links_and_response_are_exact(
         "VariableDefinition": 2,
         "DatasetSourceProvenance": 1,
         "DatasetRow": 0,
+        "L3TypingRecord": 1,
+        "L3AnalysisUnit": 1,
+        "L3AnalysisGroup": 1,
+        "L3AnalysisSet": 1,
         "L3Session": 1,
         "L3SelectionManifest": 1,
         "L3Descriptor": 1,
         "L3RetrievalEvent": 1,
         "L3MaterialSnapshot": 1,
+    }
+    assert _session_chain_census(b1b_step3_runtime, gate_b_session_id) == original_session_before
+    assert _session_chain_census(b1b_step3_runtime, response["promoted_session_id"]) == {
+        model.__name__: 1 for model in _SESSION_CHAIN_MODELS
     }
     raw_after = {
         path: path.read_bytes()
@@ -2221,8 +2268,34 @@ def test_step5_first_call_profile_wrapper_links_and_response_are_exact(
             promoted.session_id,
         )
         assert promoted.status == "completed_with_warnings"
+        original_snapshot = db.query(L3MaterialSnapshot).filter_by(session_id=gate_b_session_id).one()
         snapshot = db.query(L3MaterialSnapshot).filter_by(session_id=promoted.session_id).one()
         event = db.query(L3RetrievalEvent).filter_by(session_id=promoted.session_id).one()
+        typing_record = db.query(L3TypingRecord).filter_by(session_id=promoted.session_id).one()
+        analysis_unit = db.query(L3AnalysisUnit).filter_by(session_id=promoted.session_id).one()
+        analysis_group = db.query(L3AnalysisGroup).filter_by(session_id=promoted.session_id).one()
+        analysis_set = db.query(L3AnalysisSet).filter_by(session_id=promoted.session_id).one()
+        assert original_snapshot.source_shape == pm.F07_SOURCE_FAMILY
+        assert snapshot.source_shape == "dataset_version"
+        assert original_snapshot.material_snapshot_id != snapshot.material_snapshot_id
+        assert typing_record.material_snapshot_id == snapshot.material_snapshot_id
+        assert typing_record.candidate_modalities_json == ["quantitative"]
+        assert typing_record.chosen_modality == "quantitative"
+        assert typing_record.confidence == 1.0
+        assert typing_record.overridden_by_operator is False
+        assert analysis_unit.member_snapshot_ids_json == [snapshot.material_snapshot_id]
+        assert analysis_unit.typing_record_ids_json == [typing_record.typing_record_id]
+        assert (analysis_unit.unit_kind, analysis_unit.analysis_modality, analysis_unit.must_remain_intact) == (
+            "atomic",
+            "quantitative",
+            False,
+        )
+        assert analysis_group.analysis_unit_ids_json == [analysis_unit.analysis_unit_id]
+        assert analysis_group.typing_basis_json["group_basis"] == "singleton"
+        assert (analysis_group.analysis_modality, analysis_group.status) == ("quantitative", "formed")
+        assert analysis_set.analysis_group_ids_json == [analysis_group.analysis_group_id]
+        assert analysis_set.analysis_unit_ids_json == [analysis_unit.analysis_unit_id]
+        assert analysis_set.set_type == "single_item"
         assert Path(snapshot.payload_ref).is_file()
         assert _hashlib.sha256(Path(snapshot.payload_ref).read_bytes()).hexdigest() == snapshot.payload_hash
         assert event.event_payload_json["loaded_items"][0]["payload_ref"] == snapshot.payload_ref
@@ -3149,6 +3222,7 @@ def test_step5_route_precedence_auth_then_availability_then_validation(
     _install_step5_db_override(b1b_step3_runtime)
     client = TestClient(main.app, raise_server_exceptions=False)
     try:
+        flag_false_before = _materialization_census(b1b_step3_runtime)
         monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", False)
         absent = client.post(
             _RESOLVE_PATH,
@@ -3180,6 +3254,7 @@ def test_step5_route_precedence_auth_then_availability_then_validation(
             "Connector promotion bridge is unavailable.",
             retryable=True,
         )
+        assert _materialization_census(b1b_step3_runtime) == flag_false_before
 
         monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", True)
         monkeypatch.setattr(pm, "attestation_precondition_available", lambda _candidate=None: False)

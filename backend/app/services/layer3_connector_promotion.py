@@ -76,6 +76,7 @@ from app.services.layer3_session_entry import (
     finalize_session,
     record_retrieval_event,
 )
+from app.services.layer3_typing_entry import materialize_typing_entry
 
 # ---------------------------------------------------------------------------
 # Schema identifiers and fixed contract constants (owner-bound literals)
@@ -2610,6 +2611,7 @@ def _materialize_locked_receipt(
         receipt.promoted_session_id = promoted.session_id
         receipt.materialization_status = "materialized"
         receipt.materialized_at = datetime.now(timezone.utc)
+        materialize_typing_entry(db, session_id=promoted.session_id)
         response = _materialization_response(
             receipt,
             disposition="materialized",
