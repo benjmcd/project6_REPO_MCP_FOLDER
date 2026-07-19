@@ -51,6 +51,7 @@ from app.models.models import (
     VariableDefinition,
     uuid_str,
 )
+from app.services import layer3_connector_promotion as connector_promotion
 from app.services import layer3_artifact_ingestion_facade as nrc_aps_artifact_ingestion
 from app.services.layer3_pass_entry import (
     COHORT_REQUESTED_METHOD_SOURCE,
@@ -2161,12 +2162,17 @@ def _gate_b_response_from_session(
     connector_only_gate_b_admission = approved_source_classes == [
         CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
     ]
-    next_state = (
-        "connector_source_intake_gate_b_admitted"
-        if connector_only_gate_b_admission
-        else "gate_c_preview_ready"
-    )
-    current_gate = "gate_b" if connector_only_gate_b_admission else "gate_c"
+    summary = session.summary_json if isinstance(session.summary_json, dict) else {}
+    scoped_nonapproved = not approved_source_classes and summary.get("current_gate") == "gate_b"
+    if connector_only_gate_b_admission:
+        next_state = "connector_source_intake_gate_b_admitted"
+        current_gate = "gate_b"
+    elif scoped_nonapproved:
+        next_state = "gate_b_decision_recorded"
+        current_gate = "gate_b"
+    else:
+        next_state = "gate_c_preview_ready"
+        current_gate = "gate_c"
     return {
         **_base_response("layer3.gate_b_decision_result.v1", request_id=request_id),
         "status": status,
@@ -2191,7 +2197,22 @@ def _gate_b_response_from_session(
     }
 
 
-def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+def _connector_promotion_workbench_error(
+    db: Session,
+    exc: connector_promotion.ConnectorPromotionError,
+) -> Layer3WorkbenchError:
+    db.rollback()
+    db.info.pop("b1b_promotion_identity_lock", None)
+    return Layer3WorkbenchError(
+        exc.code,
+        exc.message,
+        status="conflict" if exc.http_status == 409 else "blocked",
+        http_status=exc.http_status,
+        recoverable=exc.retryable,
+    )
+
+
+def _gate_b_decision_impl(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or "").strip()
     if not request_id:
         raise Layer3WorkbenchError(
@@ -2207,6 +2228,31 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     raw_decisions = payload.get("candidate_decisions") or []
     if not isinstance(raw_decisions, list) or not raw_decisions:
         raise Layer3WorkbenchError("no_approved_material", "At least one Gate B decision is required.", status="blocked")
+
+    promotion_candidate = None
+    if settings.layer3_connector_promotion_bridge_enabled:
+        possible_candidate = connector_promotion.possible_gate_b_promotion_candidate(
+            raw_decisions
+        )
+        if possible_candidate is not None:
+            try:
+                server_exact = connector_promotion.side_effect_free_server_exact_candidate(
+                    db.get_bind(),
+                    possible_candidate,
+                )
+                if server_exact:
+                    if not connector_promotion.attestation_precondition_available(
+                        possible_candidate
+                    ):
+                        raise connector_promotion.ConnectorPromotionError(
+                            "connector_promotion_bridge_unavailable",
+                            "Connector promotion bridge is unavailable.",
+                            http_status=503,
+                            retryable=True,
+                        )
+                    promotion_candidate = possible_candidate
+            except connector_promotion.ConnectorPromotionError as exc:
+                raise _connector_promotion_workbench_error(db, exc) from exc
 
     decisions: list[dict[str, Any]] = []
     material_candidate_bases: list[dict[str, str]] = []
@@ -2270,7 +2316,10 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                     or ["candidate_decisions.decision_basis"],
                     next_allowed_actions=["refresh_source_directory_material_preview"],
                 ) from exc
-        if source_class == CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY:
+        if source_class == CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY and not (
+            promotion_candidate is not None
+            and candidate_id == promotion_candidate.candidate_id
+        ):
             try:
                 validate_connector_intake_gate_b_decision_basis(
                     db,
@@ -2328,6 +2377,44 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     decision_manifest = build_candidate_decision_manifest(decisions)
     gate_b_decision_manifest_id = build_gate_b_decision_manifest_id(decision_manifest)
 
+    promotion_arbitration = None
+    if promotion_candidate is not None:
+        try:
+            promotion_arbitration = connector_promotion.begin_gate_b_arbitration(
+                db,
+                promotion_candidate,
+            )
+        except connector_promotion.ConnectorPromotionError as exc:
+            raise _connector_promotion_workbench_error(db, exc) from exc
+
+    if promotion_arbitration is not None and promotion_arbitration.receipt is not None:
+        winning_origin = promotion_arbitration.winning_origin
+        if winning_origin is None:
+            exc = connector_promotion.ConnectorPromotionError(
+                "connector_promotion_basis_conflict",
+                "Promotion basis conflicts with the committed receipt.",
+                http_status=409,
+                retryable=False,
+            )
+            raise _connector_promotion_workbench_error(db, exc)
+        winning_session, winning_manifest, winning_decision_manifest = winning_origin
+        response = _gate_b_response_from_session(
+            request_id=request_id,
+            status="already_committed",
+            session=winning_session,
+            manifest=winning_manifest,
+            decision_manifest=winning_decision_manifest,
+        )
+        result = connector_promotion.promotion_result(
+            promotion_arbitration.candidate,
+            "reused",
+            promotion_arbitration.receipt.connector_promotion_receipt_id,
+        )
+        db.rollback()
+        db.info.pop("b1b_promotion_identity_lock", None)
+        connector_promotion.consume_gate_b_promotion_result(result)
+        return response
+
     def existing_gate_b_response(existing_session: L3Session, existing_record: dict[str, Any]) -> dict[str, Any]:
         existing_manifest = db.get(L3SelectionManifest, existing_session.selection_manifest_id)
         if existing_manifest is None:
@@ -2368,6 +2455,28 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             decision_manifest=existing_decision_manifest,
         )
 
+    def complete_existing_promotion_response(response: dict[str, Any]) -> dict[str, Any]:
+        if promotion_arbitration is None:
+            return response
+        if promotion_arbitration.candidate.decision != "approved":
+            result = connector_promotion.promotion_result(
+                promotion_arbitration.candidate,
+                "none",
+                None,
+            )
+        else:
+            exc = connector_promotion.ConnectorPromotionError(
+                "connector_promotion_basis_conflict",
+                "Promotion basis conflicts with the committed receipt.",
+                http_status=409,
+                retryable=False,
+            )
+            raise _connector_promotion_workbench_error(db, exc)
+        db.rollback()
+        db.info.pop("b1b_promotion_identity_lock", None)
+        connector_promotion.consume_gate_b_promotion_result(result)
+        return response
+
     existing_idempotency = find_gate_b_idempotency_session(db, client_request_id=request_id)
     if existing_idempotency is not None:
         existing_session, existing_record = existing_idempotency
@@ -2378,7 +2487,9 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             and str(existing_record.get("material_preview_hash") or material_preview_hash) == material_preview_hash
             and str(existing_record.get("gate_b_decision_manifest_id") or "") == gate_b_decision_manifest_id
         ):
-            return existing_gate_b_response(existing_session, existing_record)
+            return complete_existing_promotion_response(
+                existing_gate_b_response(existing_session, existing_record)
+            )
         raise Layer3WorkbenchError(
             "idempotency_conflict",
             "client_request_id already committed Gate B for different material decisions.",
@@ -2429,7 +2540,9 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                     status="conflict",
                     http_status=409,
                 )
-            return existing_gate_b_response(existing_session, existing_record)
+            return complete_existing_promotion_response(
+                existing_gate_b_response(existing_session, existing_record)
+            )
         raise Layer3WorkbenchError(
             "idempotency_conflict",
             "client_request_id already claimed Gate B for different material decisions.",
@@ -2442,7 +2555,8 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     if preexisting_claim is not None:
         return existing_claim_response(preexisting_claim)
 
-    if not approved:
+    scoped_nonapproved = promotion_arbitration is not None and not approved
+    if not approved and not scoped_nonapproved:
         raise Layer3WorkbenchError(
             "no_approved_material",
             "At least one material candidate must be approved before Gate C.",
@@ -2492,8 +2606,9 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         if len(approved_dataset_version_ids) > 1
         else None
     )
+    persisted_items = approved if approved else decisions
     manifest_items = []
-    for item in approved:
+    for item in persisted_items:
         short_id = hashlib.sha256(item["candidate_id"].encode("utf-8")).hexdigest()[:12]
         manifest_items.append(
             {
@@ -2512,16 +2627,24 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                     "candidate_id": item["candidate_id"],
                     "query_basis": item["decision_basis"].get("query_basis", "operator_intent"),
                     "provenance_ref": item["decision_basis"].get("provenance_ref", "layer3-preview"),
-                    "gate_b_decision": "approved",
+                    "gate_b_decision": item["decision"],
                 },
-                "expansion_reason": "gate_b_approved_material",
+                "expansion_reason": (
+                    "gate_b_approved_material"
+                    if item["decision"] == "approved"
+                    else "gate_b_nonapproved_material"
+                ),
             }
         )
     approved_source_classes = sorted({item["source_class"] for item in approved})
     connector_only_gate_b_admission = approved_source_classes == [
         CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
     ]
-    current_gate = "gate_b" if connector_only_gate_b_admission else "gate_c"
+    current_gate = (
+        "gate_b"
+        if connector_only_gate_b_admission or scoped_nonapproved
+        else "gate_c"
+    )
 
     session, manifest = commit_selection(
         db,
@@ -2551,7 +2674,8 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     )
     complete_gate_b_idempotency_claim(gate_b_claim, session=session, manifest=manifest)
     descriptors = expand_descriptors(db, session=session, manifest=manifest)
-    for descriptor, item in zip(descriptors, approved, strict=True):
+    promotion_snapshot = None
+    for descriptor, item in zip(descriptors, persisted_items, strict=True):
         co_retrieval_group_id = None
         if (
             dataset_version_co_retrieval_group_id is not None
@@ -2563,12 +2687,16 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             item,
             mark_aps_handoff_companion=dataset_version_co_retrieval_group_id is not None,
         )
-        record_retrieval_event(
+        _, snapshots = record_retrieval_event(
             db,
             session=session,
             descriptor=descriptor,
             outcome="loaded",
-            reason_code="gate_b_approved_preview_material",
+            reason_code=(
+                "gate_b_approved_preview_material"
+                if item["decision"] == "approved"
+                else "gate_b_nonapproved_preview_material"
+            ),
             loaded_materials=[
                 SnapshotMaterial(
                     source_shape=item["source_class"],
@@ -2580,15 +2708,45 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                     source_provenance=source_provenance,
                     payload=(
                         item["payload"]
-                        or {"candidate_id": item["candidate_id"], "source_class": item["source_class"], "decision": "approved"}
+                        or {
+                            "candidate_id": item["candidate_id"],
+                            "source_class": item["source_class"],
+                            "decision": item["decision"],
+                        }
                     ),
                     load_summary=load_summary,
                     co_retrieval_group_id=co_retrieval_group_id,
                 )
             ],
         )
+        if (
+            promotion_candidate is not None
+            and item["candidate_id"] == promotion_candidate.candidate_id
+        ):
+            promotion_snapshot = snapshots[0]
+    promotion_internal_result = None
+    if promotion_arbitration is not None:
+        if promotion_snapshot is None:
+            raise Layer3WorkbenchError(
+                "gate_b_idempotency_state_inconsistent",
+                "Gate B promotion snapshot was not staged.",
+                status="conflict",
+                http_status=409,
+            )
+        promotion_internal_result = connector_promotion.stage_gate_b_promotion_receipt(
+            db,
+            promotion_arbitration,
+            session=session,
+            manifest=manifest,
+            snapshot=promotion_snapshot,
+            decision_manifest=decision_manifest,
+            submitted_material_preview_hash=material_preview_hash,
+        )
     finalize_session(db, session=session)
     db.commit()
+    db.info.pop("b1b_promotion_identity_lock", None)
+    if promotion_internal_result is not None:
+        connector_promotion.consume_gate_b_promotion_result(promotion_internal_result)
     return _gate_b_response_from_session(
         request_id=request_id,
         status="ok",
@@ -2596,6 +2754,16 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         manifest=manifest,
         decision_manifest=decision_manifest,
     )
+
+
+def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        return _gate_b_decision_impl(db, payload)
+    except Exception:
+        if db.info.get("b1b_promotion_identity_lock"):
+            db.rollback()
+            db.info.pop("b1b_promotion_identity_lock", None)
+        raise
 
 
 def _load_session(db: Session, session_id: str) -> L3Session:

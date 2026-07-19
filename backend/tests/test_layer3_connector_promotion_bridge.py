@@ -21,6 +21,7 @@ parity check covers table/column presence only, not FK behavior).
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import logging
 import os
@@ -33,6 +34,7 @@ import pytest
 from sqlalchemy import create_engine, inspect as sa_inspect, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.pool import StaticPool
 
 os.environ.setdefault("DB_INIT_MODE", "none")
@@ -48,11 +50,22 @@ from app.db.session import Base  # noqa: E402
 from app.models.models import (  # noqa: E402
     ConnectorRun,
     ConnectorRunTarget,
+    L3ConnectorPromotionReceipt,
     L3ConnectorSourceIntakeRecord,
+    L3Descriptor,
+    L3GateBIdempotencyKey,
+    L3MaterialSnapshot,
+    L3RetrievalEvent,
+    L3SelectionManifest,
+    L3Session,
 )
 from app.services.layer3_connector_source_intake import (  # noqa: E402
+    connector_source_intake_material_preview,
     record_connector_produced_source_intake,
 )
+from app.services.layer3_workbench_error import Layer3WorkbenchError  # noqa: E402
+from app.services import layer3_workbench  # noqa: E402
+from app.services.layer3_utils import stable_hash  # noqa: E402
 
 ALEMBIC_INI = BACKEND / "alembic.ini"
 
@@ -922,3 +935,1025 @@ def test_materialization_basis_and_record_wrapper() -> None:
             promoted_session_id="promoted-1",
             source_connector_id="conn-1",
         )
+
+
+# ---------------------------------------------------------------------------
+# Gate-B arbitration and receipt mint/reuse (B1b-01 step 3)
+# ---------------------------------------------------------------------------
+
+_F07_BYTES = b"site_id,value\nSB-001,42\nSB-002,43\n"
+_GATE_B_MODELS = (
+    L3GateBIdempotencyKey,
+    L3Session,
+    L3SelectionManifest,
+    L3Descriptor,
+    L3RetrievalEvent,
+    L3MaterialSnapshot,
+    L3ConnectorPromotionReceipt,
+)
+_GATE_B_SPINE_DELTA = {
+    "L3GateBIdempotencyKey": 1,
+    "L3Session": 1,
+    "L3SelectionManifest": 1,
+    "L3Descriptor": 1,
+    "L3RetrievalEvent": 1,
+    "L3MaterialSnapshot": 1,
+    "L3ConnectorPromotionReceipt": 0,
+}
+_GATE_B_MINT_DELTA = {**_GATE_B_SPINE_DELTA, "L3ConnectorPromotionReceipt": 1}
+_PUBLIC_GATE_B_KEYS = {
+    "schema_id",
+    "schema_version",
+    "request_id",
+    "server_time",
+    "status",
+    "session_id",
+    "selection_manifest_id",
+    "material_preview_hash",
+    "gate_b_decision_manifest_id",
+    "approved_candidate_ids",
+    "denied_candidate_ids",
+    "isolated_candidate_ids",
+    "flagged_candidate_ids",
+    "next_state",
+    "authority_rail",
+}
+
+
+@pytest.fixture
+def b1b_step3_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    storage_dir = tmp_path / "storage"
+    raw_dir = storage_dir / "connectors" / "raw" / "f07"
+    raw_dir.mkdir(parents=True)
+    raw_path = raw_dir / "water-quality.csv"
+    raw_path.write_bytes(_F07_BYTES)
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", False)
+
+    db_path = tmp_path / "step3.db"
+    engine = create_engine(
+        f"sqlite:///{db_path.as_posix()}",
+        future=True,
+        connect_args={"check_same_thread": False},
+    )
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine, future=True, expire_on_commit=False)
+    run_id = str(uuid.uuid4())
+    target_id = str(uuid.uuid4())
+    with factory() as db:
+        db.add_all(
+            [
+                ConnectorRun(
+                    connector_run_id=run_id,
+                    connector_key=pm.F07_CONNECTOR_KEY,
+                    source_system="sciencebase",
+                    source_mode="synthetic_local_direct_intake",
+                    status="running",
+                ),
+                ConnectorRunTarget(
+                    connector_run_target_id=target_id,
+                    connector_run_id=run_id,
+                    ordinal=1,
+                    sciencebase_item_id=pm.F07_SCIENCEBASE_ITEM_ID,
+                    sciencebase_item_url=None,
+                    sciencebase_file_name="water-quality.csv",
+                    sciencebase_download_uri=None,
+                    artifact_surface="synthetic_fixture",
+                    artifact_locator_type="intake_storage_ref",
+                    source_artifact_key="f07-c01-synthetic",
+                    downloaded_sha256=pm.F07_CONTENT_SHA256,
+                    raw_storage_ref=str(raw_path.resolve()),
+                    public_read_confirmed=True,
+                    status="downloaded",
+                ),
+            ]
+        )
+        db.commit()
+    runtime = {
+        "engine": engine,
+        "factory": factory,
+        "storage_dir": storage_dir,
+        "raw_path": raw_path,
+        "run_id": run_id,
+        "target_id": target_id,
+    }
+    yield runtime
+    engine.dispose()
+
+
+def _capture_f07(runtime: dict, stem: str) -> tuple[dict, dict]:
+    with runtime["factory"]() as db:
+        intake = record_connector_produced_source_intake(
+            db,
+            client_request_id=f"{stem}-intake",
+            connector_key=pm.F07_CONNECTOR_KEY,
+            connector_run_id=runtime["run_id"],
+            connector_run_target_id=runtime["target_id"],
+            source_label="Synthetic F07 C01 connector material",
+            source_description="Offline synthetic fixture; not official public data.",
+            media_type=pm.F07_MEDIA_TYPE,
+        )
+        preview = connector_source_intake_material_preview(
+            db,
+            connector_source_intake_record_id=intake["connector_source_intake_record_id"],
+        )
+    return intake, preview
+
+
+def _step3_decision_basis(candidate: dict) -> dict:
+    return {
+        "source_ref": candidate["source_ref"],
+        "query_basis": candidate["query_basis"],
+        "provenance_ref": candidate["provenance_ref"],
+        "source_identity": copy.deepcopy(candidate["source_identity"]),
+        "source_provenance": copy.deepcopy(candidate["source_provenance"]),
+        "payload": copy.deepcopy(candidate["payload"]),
+        "load_summary": copy.deepcopy(candidate["load_summary"]),
+        "connector_target": {
+            "connector_run_target_id": candidate["payload"]["connector_run_target_id"],
+            "connector_key": pm.F07_CONNECTOR_KEY,
+        },
+    }
+
+
+def _step3_payload(preview: dict, stem: str, *, decision: str = "approved") -> dict:
+    candidate = preview["material_candidate"]
+    return {
+        "client_request_id": f"{stem}-gate-b",
+        "preflight_id": f"{stem}-preflight",
+        "source_set_id": f"{stem}-source-set",
+        "material_preview_id": preview["material_preview_id"],
+        "material_preview_hash": preview["material_preview_hash"],
+        "candidate_decisions": [
+            {
+                "candidate_id": candidate["candidate_id"],
+                "decision": decision,
+                "operator_reason": "" if decision == "approved" else f"Operator selected {decision}.",
+                "decision_basis": _step3_decision_basis(candidate),
+            }
+        ],
+        "actor": "pytest-b1b-step3",
+    }
+
+
+def _invoke_step3(runtime: dict, payload: dict) -> dict:
+    with runtime["factory"]() as db:
+        return layer3_workbench.gate_b_decision(db, payload)
+
+
+def _gate_b_census(runtime: dict) -> dict[str, int]:
+    with runtime["factory"]() as db:
+        return {model.__name__: db.query(model).count() for model in _GATE_B_MODELS}
+
+
+def _gate_b_delta(before: dict[str, int], after: dict[str, int]) -> dict[str, int]:
+    return {name: after[name] - before[name] for name in before}
+
+
+def _snapshot_files(runtime: dict) -> set[Path]:
+    root = runtime["storage_dir"] / "artifacts" / "layer3"
+    return {path for path in root.rglob("*") if path.is_file()} if root.exists() else set()
+
+
+def _intake_record(runtime: dict, record_id: str) -> L3ConnectorSourceIntakeRecord:
+    with runtime["factory"]() as db:
+        record = db.get(L3ConnectorSourceIntakeRecord, record_id)
+        assert record is not None
+        db.expunge(record)
+        return record
+
+
+def _enable_step3(monkeypatch: pytest.MonkeyPatch, captured: list[dict]) -> None:
+    monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", True)
+    monkeypatch.setattr(pm, "attestation_precondition_available", lambda _candidate: True)
+    monkeypatch.setattr(
+        pm,
+        "consume_gate_b_promotion_result",
+        lambda result: captured.append(copy.deepcopy(result)),
+    )
+
+
+def _boom(*_args, **_kwargs):
+    raise AssertionError("promotion branch must not be called")
+
+
+def test_step3_duplicate_receipt_query_maps_to_basis_conflict() -> None:
+    class DuplicateReceiptQuery:
+        def filter(self, *_args):
+            return self
+
+        def one_or_none(self):
+            raise MultipleResultsFound("duplicate receipt identity")
+
+    class DuplicateReceiptDb:
+        def query(self, *_args):
+            return DuplicateReceiptQuery()
+
+    with pytest.raises(pm.ConnectorPromotionError) as caught:
+        pm._receipt_for_identity(DuplicateReceiptDb())
+    assert (caught.value.code, caught.value.http_status, caught.value.retryable) == (
+        "connector_promotion_basis_conflict",
+        409,
+        False,
+    )
+
+
+@pytest.mark.parametrize("shape", ["mixed", "multi", "other", "legacy"])
+def test_step3_classifier_misses_bypass_new_side_effect_branches(shape: str) -> None:
+    candidate = {
+        "candidate_id": f"mat-connector_source_intake_record-{uuid.uuid4()}",
+        "decision": "approved",
+        "operator_reason": "",
+        "decision_basis": {
+            "source_identity": {
+                "source_family": pm.F07_SOURCE_FAMILY,
+                "content_sha256": pm.F07_CONTENT_SHA256,
+                "connector_key": pm.F07_CONNECTOR_KEY,
+            },
+            "payload": {
+                "source_class": pm.F07_SOURCE_FAMILY,
+                "content_sha256": pm.F07_CONTENT_SHA256,
+                "connector_key": pm.F07_CONNECTOR_KEY,
+            },
+        },
+    }
+    decisions = [candidate]
+    if shape == "mixed":
+        decisions.append({"candidate_id": "mat-dataset_version-other", "decision": "approved"})
+    elif shape == "multi":
+        duplicate = copy.deepcopy(candidate)
+        duplicate["candidate_id"] = f"mat-connector_source_intake_record-{uuid.uuid4()}"
+        decisions.append(duplicate)
+    elif shape == "other":
+        candidate["candidate_id"] = "mat-dataset_version-other"
+    else:
+        candidate["candidate_id"] = "legacy-material-candidate"
+    assert pm.possible_gate_b_promotion_candidate(decisions) is None
+
+
+def test_step3_classifier_miss_bypasses_new_branches_through_public_workbench(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    intake, preview = _capture_f07(b1b_step3_runtime, "classifier-public")
+    payload = _step3_payload(preview, "classifier-public")
+    payload["candidate_decisions"].append(copy.deepcopy(payload["candidate_decisions"][0]))
+    monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", True)
+    for name in (
+        "side_effect_free_server_exact_candidate",
+        "attestation_precondition_available",
+        "begin_gate_b_arbitration",
+        "consume_gate_b_promotion_result",
+    ):
+        monkeypatch.setattr(pm, name, _boom)
+    before = _gate_b_census(b1b_step3_runtime)
+    files_before = _snapshot_files(b1b_step3_runtime)
+    with pytest.raises(Layer3WorkbenchError) as caught:
+        _invoke_step3(b1b_step3_runtime, payload)
+    assert caught.value.error_code == "duplicate_material_candidate_decision"
+    assert _gate_b_census(b1b_step3_runtime) == before
+    assert _snapshot_files(b1b_step3_runtime) == files_before
+    record = _intake_record(b1b_step3_runtime, intake["connector_source_intake_record_id"])
+    assert (record.identity_metadata_hash_version, record.identity_metadata_hash) == (None, None)
+
+
+def test_step3_flag_false_exact_shape_preserves_gate_b_response_and_state(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    intake, preview = _capture_f07(b1b_step3_runtime, "flag-false")
+    for name in (
+        "possible_gate_b_promotion_candidate",
+        "side_effect_free_server_exact_candidate",
+        "attestation_precondition_available",
+        "begin_gate_b_arbitration",
+        "consume_gate_b_promotion_result",
+    ):
+        monkeypatch.setattr(pm, name, _boom)
+    before = _gate_b_census(b1b_step3_runtime)
+    response = _invoke_step3(b1b_step3_runtime, _step3_payload(preview, "flag-false"))
+    after = _gate_b_census(b1b_step3_runtime)
+    assert set(response) == _PUBLIC_GATE_B_KEYS
+    assert response["status"] == "ok"
+    assert _gate_b_delta(before, after) == _GATE_B_SPINE_DELTA
+    assert after["L3ConnectorPromotionReceipt"] == 0
+    record = _intake_record(b1b_step3_runtime, intake["connector_source_intake_record_id"])
+    assert (record.identity_metadata_hash_version, record.identity_metadata_hash) == (None, None)
+
+
+# PostgreSQL execution is deliberately deferred to the isolated Section 10 provider.
+# These are real case bodies: once the provider declares itself provisioned,
+# absence of its fixture or any unequal fact fails closed instead of skipping.
+_B1B_POSTGRES_URL = os.environ.get("LAYER3_MIGRATION_TEST_DATABASE_URL", "")
+_B1B_POSTGRES_SCHEMA = os.environ.get("B1B_POSTGRESQL_TEST_SCHEMA", "")
+_B1B_POSTGRES_PROVISIONED = os.environ.get("B1B_POSTGRESQL_STEP3_PROVISIONED") == "1"
+
+
+def _b1b_psycopg_available() -> bool:
+    try:
+        import psycopg  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
+_skip_b1b_postgresql = pytest.mark.skipif(
+    not (
+        _b1b_psycopg_available()
+        and bool(_B1B_POSTGRES_URL)
+        and bool(_B1B_POSTGRES_SCHEMA)
+        and _B1B_POSTGRES_SCHEMA != "public"
+        and _B1B_POSTGRES_PROVISIONED
+    ),
+    reason=(
+        "B1b Step 3 PostgreSQL cases require the later isolated two-connection "
+        "provider, psycopg, URL, and non-public pre-provisioned schema"
+    ),
+)
+
+
+def _postgres_step3_case(request, case_id: str):
+    factory = request.getfixturevalue("b1b_postgresql_step3_case")
+    case = factory(case_id)
+    assert case.case_id == case_id
+    assert case.canonical_identity_key_hash == pm.F07_CANONICAL_IDENTITY_KEY_HASH
+    assert case.two_independent_sessions is True
+    assert case.schema_name == _B1B_POSTGRES_SCHEMA
+    return case
+
+
+@_skip_b1b_postgresql
+def test_b1b_postgresql_equivalent_approval_uniqueness(request) -> None:
+    case = _postgres_step3_case(request, "equivalent_approval_uniqueness")
+    facts = case.run_equivalent_approval_uniqueness()
+    assert tuple(facts) == (
+        200,
+        200,
+        "created",
+        "reused",
+        1,
+        1,
+        7,
+        1,
+        0,
+        0,
+    )
+    case.register_and_cleanup(facts)
+
+
+@_skip_b1b_postgresql
+def test_b1b_postgresql_race_approved_first(request) -> None:
+    case = _postgres_step3_case(request, "race_approved_first")
+    facts = case.run_race(winner="approved", contender="nonapproved")
+    assert tuple(facts) == (
+        200,
+        409,
+        "promotion_identity_decision_conflict",
+        True,
+        False,
+        1,
+        7,
+        1,
+        0,
+        0,
+        0,
+    )
+    case.register_and_cleanup(facts)
+
+
+@_skip_b1b_postgresql
+def test_b1b_postgresql_race_nonapproved_first(request) -> None:
+    case = _postgres_step3_case(request, "race_nonapproved_first")
+    facts = case.run_race(winner="nonapproved", contender="approved")
+    assert tuple(facts) == (200, 200, True, True, 1, 6, 1, 7, 1, 0)
+    case.register_and_cleanup(facts)
+
+
+@_skip_b1b_postgresql
+def test_b1b_postgresql_lock_timeout(request) -> None:
+    case = _postgres_step3_case(request, "lock_timeout")
+    facts = case.run_lock_timeout(lock_timeout_seconds=5)
+    assert tuple(facts) == (
+        503,
+        "promotion_identity_lock_unavailable",
+        0,
+        0,
+        0,
+    )
+    case.register_and_cleanup(facts)
+
+
+def test_step3_flag_true_non_f07_stays_legacy_and_mints_no_receipt(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    non_f07 = b"site_id,value\nSB-001,44\nSB-002,45\n"
+    non_f07_hash = hashlib.sha256(non_f07).hexdigest()
+    b1b_step3_runtime["raw_path"].write_bytes(non_f07)
+    with b1b_step3_runtime["factory"]() as db:
+        target = db.get(ConnectorRunTarget, b1b_step3_runtime["target_id"])
+        assert target is not None
+        target.downloaded_sha256 = non_f07_hash
+        db.commit()
+    intake, preview = _capture_f07(b1b_step3_runtime, "non-f07")
+    monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", True)
+    for name in (
+        "attestation_precondition_available",
+        "begin_gate_b_arbitration",
+        "consume_gate_b_promotion_result",
+    ):
+        monkeypatch.setattr(pm, name, _boom)
+    response = _invoke_step3(b1b_step3_runtime, _step3_payload(preview, "non-f07"))
+    assert set(response) == _PUBLIC_GATE_B_KEYS
+    assert _gate_b_census(b1b_step3_runtime)["L3ConnectorPromotionReceipt"] == 0
+    record = _intake_record(b1b_step3_runtime, intake["connector_source_intake_record_id"])
+    assert (record.identity_metadata_hash_version, record.identity_metadata_hash) == (None, None)
+
+
+@pytest.mark.parametrize(
+    ("owner", "field", "near_miss"),
+    [
+        ("run", "source_system", "other"),
+        ("run", "source_mode", "other"),
+        ("run", "status", "completed"),
+        ("target", "ordinal", 2),
+        ("target", "sciencebase_item_url", "https://example.invalid/item"),
+        ("target", "sciencebase_file_name", "other.csv"),
+        ("target", "sciencebase_download_uri", "https://example.invalid/file"),
+        ("target", "artifact_surface", "other"),
+        ("target", "artifact_locator_type", "other"),
+        ("target", "source_artifact_key", "other"),
+        ("target", "public_read_confirmed", False),
+        ("target", "status", "discovered"),
+    ],
+)
+def test_step3_server_provenance_near_miss_stays_legacy(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    owner: str,
+    field: str,
+    near_miss: object,
+) -> None:
+    intake, preview = _capture_f07(b1b_step3_runtime, f"near-{owner}-{field}")
+    with b1b_step3_runtime["factory"]() as db:
+        row = db.get(
+            ConnectorRun if owner == "run" else ConnectorRunTarget,
+            b1b_step3_runtime["run_id" if owner == "run" else "target_id"],
+        )
+        assert row is not None
+        setattr(row, field, near_miss)
+        db.commit()
+    monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", True)
+    for name in (
+        "attestation_precondition_available",
+        "begin_gate_b_arbitration",
+        "consume_gate_b_promotion_result",
+    ):
+        monkeypatch.setattr(pm, name, _boom)
+    before = _gate_b_census(b1b_step3_runtime)
+    response = _invoke_step3(
+        b1b_step3_runtime,
+        _step3_payload(preview, f"near-{owner}-{field}"),
+    )
+    after = _gate_b_census(b1b_step3_runtime)
+    assert set(response) == _PUBLIC_GATE_B_KEYS
+    assert _gate_b_delta(before, after) == _GATE_B_SPINE_DELTA
+    assert after["L3ConnectorPromotionReceipt"] == 0
+    record = _intake_record(b1b_step3_runtime, intake["connector_source_intake_record_id"])
+    assert (record.identity_metadata_hash_version, record.identity_metadata_hash) == (None, None)
+
+
+def test_step3_request_basis_cannot_bypass_server_exact_scope(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    intake, preview = _capture_f07(b1b_step3_runtime, "server-scope")
+    payload = _step3_payload(preview, "server-scope")
+    payload["candidate_decisions"][0]["decision_basis"]["source_identity"][
+        "content_sha256"
+    ] = "0" * 64
+    monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", True)
+    before = _gate_b_census(b1b_step3_runtime)
+    with pytest.raises(Layer3WorkbenchError) as caught:
+        _invoke_step3(b1b_step3_runtime, payload)
+    assert (caught.value.error_code, caught.value.http_status) == (
+        "connector_promotion_bridge_unavailable",
+        503,
+    )
+    assert _gate_b_census(b1b_step3_runtime) == before
+    record = _intake_record(b1b_step3_runtime, intake["connector_source_intake_record_id"])
+    assert (record.identity_metadata_hash_version, record.identity_metadata_hash) == (None, None)
+
+
+def test_step3_attestation_unavailable_is_503_with_zero_mutation(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    intake, preview = _capture_f07(b1b_step3_runtime, "attestation")
+    monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", True)
+    before = _gate_b_census(b1b_step3_runtime)
+    files_before = _snapshot_files(b1b_step3_runtime)
+    with pytest.raises(Layer3WorkbenchError) as caught:
+        _invoke_step3(b1b_step3_runtime, _step3_payload(preview, "attestation"))
+    assert (
+        caught.value.error_code,
+        caught.value.message,
+        caught.value.http_status,
+        caught.value.recoverable,
+    ) == (
+        "connector_promotion_bridge_unavailable",
+        "Connector promotion bridge is unavailable.",
+        503,
+        True,
+    )
+    assert _gate_b_census(b1b_step3_runtime) == before
+    assert _snapshot_files(b1b_step3_runtime) == files_before
+    record = _intake_record(b1b_step3_runtime, intake["connector_source_intake_record_id"])
+    assert (record.identity_metadata_hash_version, record.identity_metadata_hash) == (None, None)
+
+
+def test_step3_mints_exact_receipt_and_populates_identity_pair(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    intake, preview = _capture_f07(b1b_step3_runtime, "mint")
+    captured: list[dict] = []
+    _enable_step3(monkeypatch, captured)
+    before = _gate_b_census(b1b_step3_runtime)
+    files_before = _snapshot_files(b1b_step3_runtime)
+    response = _invoke_step3(b1b_step3_runtime, _step3_payload(preview, "mint"))
+    after = _gate_b_census(b1b_step3_runtime)
+    assert set(response) == _PUBLIC_GATE_B_KEYS
+    assert _gate_b_delta(before, after) == _GATE_B_MINT_DELTA
+    assert len(_snapshot_files(b1b_step3_runtime) - files_before) == 1
+    assert len(captured) == 1 and set(captured[0]) == {
+        "candidate_id",
+        "decision",
+        "receipt_disposition",
+        "connector_promotion_receipt_id",
+    }
+    assert captured[0]["decision"] == "approved"
+    assert captured[0]["receipt_disposition"] == "created"
+
+    with b1b_step3_runtime["factory"]() as db:
+        receipt = db.query(L3ConnectorPromotionReceipt).one()
+        record = db.get(
+            L3ConnectorSourceIntakeRecord,
+            intake["connector_source_intake_record_id"],
+        )
+        assert record is not None
+        assert receipt.connector_promotion_receipt_id == captured[0]["connector_promotion_receipt_id"]
+        assert (
+            receipt.receipt_schema_version,
+            receipt.identity_metadata_hash_version,
+            receipt.source_family,
+            receipt.content_sha256,
+            receipt.identity_metadata_hash,
+            receipt.canonical_identity_key_hash,
+        ) == (
+            pm.RECEIPT_SCHEMA_VERSION,
+            pm.IDENTITY_METADATA_HASH_VERSION,
+            pm.F07_SOURCE_FAMILY,
+            pm.F07_CONTENT_SHA256,
+            pm.F07_IDENTITY_METADATA_HASH,
+            pm.F07_CANONICAL_IDENTITY_KEY_HASH,
+        )
+        assert receipt.approval_hash == pm.decision_semantics_hash(
+            "approved",
+            pm.IDENTITY_METADATA_HASH_VERSION,
+            pm.F07_SOURCE_FAMILY,
+            pm.F07_CONTENT_SHA256,
+            pm.F07_IDENTITY_METADATA_HASH,
+        )
+        session = db.get(L3Session, receipt.gate_b_session_id)
+        manifest = db.get(L3SelectionManifest, receipt.gate_b_selection_manifest_id)
+        snapshot = db.get(L3MaterialSnapshot, receipt.gate_b_material_snapshot_id)
+        assert session is not None and manifest is not None and snapshot is not None
+        decision_manifest = session.operator_context_json["layer3_gate_b_decision_manifest_v1"]
+        assert (
+            receipt.connector_source_intake_record_id,
+            receipt.gate_b_session_id,
+            receipt.gate_b_selection_manifest_id,
+            receipt.gate_b_material_snapshot_id,
+            manifest.session_id,
+            snapshot.session_id,
+            receipt.gate_b_decision_manifest_id,
+            receipt.gate_b_decision_manifest_hash,
+            receipt.material_preview_hash,
+        ) == (
+            intake["connector_source_intake_record_id"],
+            response["session_id"],
+            response["selection_manifest_id"],
+            snapshot.material_snapshot_id,
+            session.session_id,
+            session.session_id,
+            pm.gate_b_decision_manifest_id(decision_manifest),
+            stable_hash(decision_manifest),
+            preview["material_preview_hash"],
+        )
+        assert receipt.promotion_basis_hash == pm.promotion_basis_hash(
+            approval_hash=receipt.approval_hash,
+            gate_b_session_id=receipt.gate_b_session_id,
+            gate_b_selection_manifest_id=receipt.gate_b_selection_manifest_id,
+            gate_b_material_snapshot_id=receipt.gate_b_material_snapshot_id,
+            gate_b_decision_manifest_id=receipt.gate_b_decision_manifest_id,
+            gate_b_decision_manifest_hash=receipt.gate_b_decision_manifest_hash,
+            material_preview_hash=receipt.material_preview_hash,
+            canonical_identity_key_hash=receipt.canonical_identity_key_hash,
+            identity_metadata_hash_version=receipt.identity_metadata_hash_version,
+            source_family=receipt.source_family,
+            content_sha256=receipt.content_sha256,
+            identity_metadata_hash=receipt.identity_metadata_hash,
+            connector_source_intake_record_id=receipt.connector_source_intake_record_id,
+        )
+        assert (record.identity_metadata_hash_version, record.identity_metadata_hash) == (
+            pm.IDENTITY_METADATA_HASH_VERSION,
+            pm.F07_IDENTITY_METADATA_HASH,
+        )
+
+
+def _receipt_state(runtime: dict) -> tuple:
+    with runtime["factory"]() as db:
+        receipt = db.query(L3ConnectorPromotionReceipt).one()
+        return tuple(getattr(receipt, column) for column in EXPECTED_COLUMNS)
+
+
+def test_step3_equivalent_approval_reuses_winning_receipt_without_update(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    first_intake, first_preview = _capture_f07(b1b_step3_runtime, "reuse-first")
+    captured: list[dict] = []
+    _enable_step3(monkeypatch, captured)
+    first_payload = _step3_payload(first_preview, "reuse-first")
+    first_response = _invoke_step3(b1b_step3_runtime, first_payload)
+    winning_state = _receipt_state(b1b_step3_runtime)
+    before = _gate_b_census(b1b_step3_runtime)
+    files_before = _snapshot_files(b1b_step3_runtime)
+
+    captured.clear()
+    replay_response = _invoke_step3(b1b_step3_runtime, first_payload)
+    assert replay_response["status"] == "already_committed"
+    assert replay_response["session_id"] == first_response["session_id"]
+    assert _gate_b_census(b1b_step3_runtime) == before
+    assert _snapshot_files(b1b_step3_runtime) == files_before
+    assert captured == [
+        {
+            "candidate_id": first_preview["material_candidate"]["candidate_id"],
+            "decision": "approved",
+            "receipt_disposition": "reused",
+            "connector_promotion_receipt_id": winning_state[0],
+        }
+    ]
+
+    second_intake, second_preview = _capture_f07(b1b_step3_runtime, "reuse-second")
+    captured.clear()
+    second_response = _invoke_step3(
+        b1b_step3_runtime,
+        _step3_payload(second_preview, "reuse-second"),
+    )
+    assert _gate_b_census(b1b_step3_runtime) == before
+    assert _snapshot_files(b1b_step3_runtime) == files_before
+    assert _receipt_state(b1b_step3_runtime) == winning_state
+    assert second_response["session_id"] == first_response["session_id"]
+    assert second_response["selection_manifest_id"] == first_response["selection_manifest_id"]
+    assert set(second_response) == _PUBLIC_GATE_B_KEYS
+    assert captured == [
+        {
+            "candidate_id": second_preview["material_candidate"]["candidate_id"],
+            "decision": "approved",
+            "receipt_disposition": "reused",
+            "connector_promotion_receipt_id": winning_state[0],
+        }
+    ]
+    assert _intake_record(
+        b1b_step3_runtime,
+        first_intake["connector_source_intake_record_id"],
+    ).identity_metadata_hash == pm.F07_IDENTITY_METADATA_HASH
+    second_record = _intake_record(
+        b1b_step3_runtime,
+        second_intake["connector_source_intake_record_id"],
+    )
+    assert (second_record.identity_metadata_hash_version, second_record.identity_metadata_hash) == (
+        None,
+        None,
+    )
+
+
+def test_step3_legacy_idempotency_replay_returns_receipt_winning_origin(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    legacy_intake, legacy_preview = _capture_f07(b1b_step3_runtime, "legacy-replay")
+    legacy_payload = _step3_payload(legacy_preview, "legacy-replay")
+    legacy_response = _invoke_step3(b1b_step3_runtime, legacy_payload)
+
+    winning_intake, winning_preview = _capture_f07(b1b_step3_runtime, "winner")
+    captured: list[dict] = []
+    _enable_step3(monkeypatch, captured)
+    winning_response = _invoke_step3(
+        b1b_step3_runtime,
+        _step3_payload(winning_preview, "winner"),
+    )
+    before = _gate_b_census(b1b_step3_runtime)
+    files_before = _snapshot_files(b1b_step3_runtime)
+    receipt_id = _receipt_state(b1b_step3_runtime)[0]
+
+    captured.clear()
+    replay_response = _invoke_step3(b1b_step3_runtime, legacy_payload)
+    assert replay_response["status"] == "already_committed"
+    assert replay_response["session_id"] == winning_response["session_id"]
+    assert replay_response["session_id"] != legacy_response["session_id"]
+    assert _gate_b_census(b1b_step3_runtime) == before
+    assert _snapshot_files(b1b_step3_runtime) == files_before
+    assert captured == [
+        {
+            "candidate_id": legacy_preview["material_candidate"]["candidate_id"],
+            "decision": "approved",
+            "receipt_disposition": "reused",
+            "connector_promotion_receipt_id": receipt_id,
+        }
+    ]
+    assert _intake_record(
+        b1b_step3_runtime,
+        legacy_intake["connector_source_intake_record_id"],
+    ).identity_metadata_hash is None
+    assert _intake_record(
+        b1b_step3_runtime,
+        winning_intake["connector_source_intake_record_id"],
+    ).identity_metadata_hash == pm.F07_IDENTITY_METADATA_HASH
+
+
+def test_step3_reuse_rejects_prepopulated_nonwinning_identity_pair(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, first_preview = _capture_f07(b1b_step3_runtime, "pair-first")
+    captured: list[dict] = []
+    _enable_step3(monkeypatch, captured)
+    _invoke_step3(b1b_step3_runtime, _step3_payload(first_preview, "pair-first"))
+    winning_state = _receipt_state(b1b_step3_runtime)
+
+    second_intake, second_preview = _capture_f07(b1b_step3_runtime, "pair-second")
+    with b1b_step3_runtime["factory"]() as db:
+        record = db.get(
+            L3ConnectorSourceIntakeRecord,
+            second_intake["connector_source_intake_record_id"],
+        )
+        assert record is not None
+        record.identity_metadata_hash_version = pm.IDENTITY_METADATA_HASH_VERSION
+        record.identity_metadata_hash = pm.F07_IDENTITY_METADATA_HASH
+        db.commit()
+    before = _gate_b_census(b1b_step3_runtime)
+    files_before = _snapshot_files(b1b_step3_runtime)
+    captured.clear()
+    with pytest.raises(Layer3WorkbenchError) as caught:
+        _invoke_step3(
+            b1b_step3_runtime,
+            _step3_payload(second_preview, "pair-second"),
+        )
+    assert (caught.value.error_code, caught.value.http_status, caught.value.recoverable) == (
+        "connector_promotion_not_eligible",
+        409,
+        False,
+    )
+    assert _gate_b_census(b1b_step3_runtime) == before
+    assert _snapshot_files(b1b_step3_runtime) == files_before
+    assert _receipt_state(b1b_step3_runtime) == winning_state
+    assert captured == []
+
+
+@pytest.mark.parametrize(
+    ("corruption", "decision"),
+    [
+        ("receipt_hash", "approved"),
+        ("receipt_hash", "denied"),
+        ("idempotency_link", "approved"),
+        ("descriptor_link", "approved"),
+        ("event_link", "approved"),
+        ("snapshot_identity", "approved"),
+        ("extra_event", "approved"),
+        ("malformed_context", "approved"),
+        ("malformed_payload_ref", "approved"),
+    ],
+)
+def test_step3_corrupt_stored_basis_rejected_without_new_state(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    corruption: str,
+    decision: str,
+) -> None:
+    _, first_preview = _capture_f07(b1b_step3_runtime, "corrupt-first")
+    captured: list[dict] = []
+    _enable_step3(monkeypatch, captured)
+    _invoke_step3(b1b_step3_runtime, _step3_payload(first_preview, "corrupt-first"))
+    with b1b_step3_runtime["factory"]() as db:
+        if corruption == "receipt_hash":
+            db.query(L3ConnectorPromotionReceipt).one().promotion_basis_hash = "0" * 64
+        elif corruption == "idempotency_link":
+            db.query(L3GateBIdempotencyKey).one().selection_manifest_id = None
+        elif corruption == "descriptor_link":
+            db.query(L3Descriptor).one().status = "failed"
+        elif corruption == "event_link":
+            db.query(L3RetrievalEvent).one().material_snapshot_ids_json = []
+        elif corruption == "snapshot_identity":
+            db.query(L3MaterialSnapshot).one().source_identity_json = {
+                "candidate_id": "wrong"
+            }
+        elif corruption == "extra_event":
+            event = db.query(L3RetrievalEvent).one()
+            db.add(
+                L3RetrievalEvent(
+                    session_id=event.session_id,
+                    descriptor_id=event.descriptor_id,
+                    outcome="failed",
+                    reason_code="corrupt_duplicate_event",
+                    material_snapshot_ids_json=[],
+                    event_payload_json={},
+                )
+            )
+        elif corruption == "malformed_context":
+            db.query(L3Session).one().operator_context_json = []
+        else:
+            db.query(L3MaterialSnapshot).one().payload_ref = "\x00"
+        db.commit()
+    _, second_preview = _capture_f07(b1b_step3_runtime, "corrupt-second")
+    before = _gate_b_census(b1b_step3_runtime)
+    files_before = _snapshot_files(b1b_step3_runtime)
+    with pytest.raises(Layer3WorkbenchError) as caught:
+        _invoke_step3(
+            b1b_step3_runtime,
+            _step3_payload(second_preview, "corrupt-second", decision=decision),
+        )
+    assert (caught.value.error_code, caught.value.http_status, caught.value.recoverable) == (
+        "connector_promotion_basis_conflict",
+        409,
+        False,
+    )
+    assert _gate_b_census(b1b_step3_runtime) == before
+    assert _snapshot_files(b1b_step3_runtime) == files_before
+
+
+def test_step3_nonapproved_commits_six_row_spine_without_receipt(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    intake, preview = _capture_f07(b1b_step3_runtime, "denied")
+    captured: list[dict] = []
+    _enable_step3(monkeypatch, captured)
+    before = _gate_b_census(b1b_step3_runtime)
+    files_before = _snapshot_files(b1b_step3_runtime)
+    response = _invoke_step3(
+        b1b_step3_runtime,
+        _step3_payload(preview, "denied", decision="denied"),
+    )
+    after = _gate_b_census(b1b_step3_runtime)
+    assert set(response) == _PUBLIC_GATE_B_KEYS
+    assert response["denied_candidate_ids"] == [preview["material_candidate"]["candidate_id"]]
+    assert response["next_state"] == "gate_b_decision_recorded"
+    assert response["authority_rail"]["current_gate"] == "gate_b"
+    assert _gate_b_delta(before, after) == _GATE_B_SPINE_DELTA
+    assert after["L3ConnectorPromotionReceipt"] == 0
+    assert len(_snapshot_files(b1b_step3_runtime) - files_before) == 1
+    assert captured == [
+        {
+            "candidate_id": preview["material_candidate"]["candidate_id"],
+            "decision": "denied",
+            "receipt_disposition": "none",
+            "connector_promotion_receipt_id": None,
+        }
+    ]
+    record = _intake_record(b1b_step3_runtime, intake["connector_source_intake_record_id"])
+    assert (record.identity_metadata_hash_version, record.identity_metadata_hash) == (None, None)
+
+
+def test_step3_public_wrapper_releases_lock_after_ordinary_post_lock_error(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    intake, preview = _capture_f07(b1b_step3_runtime, "wrapper-cleanup")
+    captured: list[dict] = []
+    _enable_step3(monkeypatch, captured)
+
+    def raise_post_lock_error(*_args, **_kwargs):
+        raise Layer3WorkbenchError(
+            "post_lock_probe",
+            "Ordinary post-lock failure for wrapper cleanup proof.",
+            status="blocked",
+        )
+
+    monkeypatch.setattr(
+        layer3_workbench,
+        "find_gate_b_idempotency_session",
+        raise_post_lock_error,
+    )
+    before = _gate_b_census(b1b_step3_runtime)
+    files_before = _snapshot_files(b1b_step3_runtime)
+    with b1b_step3_runtime["factory"]() as db:
+        with pytest.raises(Layer3WorkbenchError) as caught:
+            layer3_workbench.gate_b_decision(
+                db,
+                _step3_payload(preview, "wrapper-cleanup"),
+            )
+        assert caught.value.error_code == "post_lock_probe"
+        assert not db.in_transaction()
+        assert "b1b_promotion_identity_lock" not in db.info
+        pm.acquire_promotion_identity_lock(db)
+        assert db.info["b1b_promotion_identity_lock"] == pm.F07_CANONICAL_IDENTITY_KEY_HASH
+        db.rollback()
+        db.info.pop("b1b_promotion_identity_lock", None)
+    assert _gate_b_census(b1b_step3_runtime) == before
+    assert _snapshot_files(b1b_step3_runtime) == files_before
+    assert captured == []
+    record = _intake_record(b1b_step3_runtime, intake["connector_source_intake_record_id"])
+    assert (record.identity_metadata_hash_version, record.identity_metadata_hash) == (None, None)
+
+
+def test_step3_divergent_decision_rolls_back_without_partial_state(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, first_preview = _capture_f07(b1b_step3_runtime, "diverge-first")
+    captured: list[dict] = []
+    _enable_step3(monkeypatch, captured)
+    _invoke_step3(b1b_step3_runtime, _step3_payload(first_preview, "diverge-first"))
+    winning_state = _receipt_state(b1b_step3_runtime)
+    second_intake, second_preview = _capture_f07(b1b_step3_runtime, "diverge-second")
+    before = _gate_b_census(b1b_step3_runtime)
+    files_before = _snapshot_files(b1b_step3_runtime)
+    captured.clear()
+    with b1b_step3_runtime["factory"]() as db:
+        with pytest.raises(Layer3WorkbenchError) as caught:
+            layer3_workbench.gate_b_decision(
+                db,
+                _step3_payload(second_preview, "diverge-second", decision="denied"),
+            )
+        assert not db.in_transaction()
+        assert "b1b_promotion_identity_lock" not in db.info
+        pm.acquire_promotion_identity_lock(db)
+        assert db.info["b1b_promotion_identity_lock"] == pm.F07_CANONICAL_IDENTITY_KEY_HASH
+        db.rollback()
+        db.info.pop("b1b_promotion_identity_lock", None)
+    assert (
+        caught.value.error_code,
+        caught.value.message,
+        caught.value.http_status,
+        caught.value.recoverable,
+    ) == (
+        "promotion_identity_decision_conflict",
+        "Promotion identity decision conflicts with the committed receipt.",
+        409,
+        False,
+    )
+    assert _gate_b_census(b1b_step3_runtime) == before
+    assert _snapshot_files(b1b_step3_runtime) == files_before
+    assert _receipt_state(b1b_step3_runtime) == winning_state
+    assert captured == []
+    second_record = _intake_record(
+        b1b_step3_runtime,
+        second_intake["connector_source_intake_record_id"],
+    )
+    assert (second_record.identity_metadata_hash_version, second_record.identity_metadata_hash) == (
+        None,
+        None,
+    )
+
+
+def test_step3_sqlite_second_connection_lock_timeout_is_503_zero_delta(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    intake, preview = _capture_f07(b1b_step3_runtime, "sqlite-timeout")
+    captured: list[dict] = []
+    _enable_step3(monkeypatch, captured)
+    before = _gate_b_census(b1b_step3_runtime)
+    files_before = _snapshot_files(b1b_step3_runtime)
+    blocker = b1b_step3_runtime["engine"].connect()
+    try:
+        blocker.exec_driver_sql("PRAGMA busy_timeout=5000")
+        blocker.exec_driver_sql("BEGIN IMMEDIATE")
+        with pytest.raises(Layer3WorkbenchError) as caught:
+            _invoke_step3(
+                b1b_step3_runtime,
+                _step3_payload(preview, "sqlite-timeout"),
+            )
+        assert (
+            caught.value.error_code,
+            caught.value.message,
+            caught.value.http_status,
+            caught.value.recoverable,
+        ) == (
+            "promotion_identity_lock_unavailable",
+            "Promotion identity lock is unavailable.",
+            503,
+            True,
+        )
+    finally:
+        blocker.rollback()
+        blocker.close()
+    assert _gate_b_census(b1b_step3_runtime) == before
+    assert _snapshot_files(b1b_step3_runtime) == files_before
+    assert captured == []
+    record = _intake_record(b1b_step3_runtime, intake["connector_source_intake_record_id"])
+    assert (record.identity_metadata_hash_version, record.identity_metadata_hash) == (None, None)
