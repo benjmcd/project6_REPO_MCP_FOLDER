@@ -2304,7 +2304,19 @@ class L3ConnectorSourceIntakeRecord(Base):
             "status IN ('recorded', 'already_recorded')",
             name="ck_l3_connector_source_intake_status",
         ),
+        CheckConstraint(
+            "(identity_metadata_hash_version IS NULL AND identity_metadata_hash IS NULL)"
+            " OR (identity_metadata_hash_version IS NOT NULL AND identity_metadata_hash IS NOT NULL)",
+            name="ck_l3_connector_source_intake_identity_metadata_joint_null",
+        ),
         Index("ix_l3_connector_source_intake_content_sha256", "content_sha256"),
+        Index(
+            "ix_l3_connector_intake_material_identity",
+            "identity_metadata_hash_version",
+            "source_family",
+            "content_sha256",
+            "identity_metadata_hash",
+        ),
         Index("ix_l3_connector_source_intake_source_family", "source_family"),
         Index("ix_l3_connector_source_intake_status", "status"),
         Index("ix_l3_connector_source_intake_run_target", "connector_run_target_id"),
@@ -2320,6 +2332,8 @@ class L3ConnectorSourceIntakeRecord(Base):
     media_type: Mapped[str | None] = mapped_column(String(128))
     content_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    identity_metadata_hash_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    identity_metadata_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     metadata_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     authority_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     storage_ref: Mapped[str] = mapped_column(String(1024), nullable=False)

@@ -2,6 +2,9 @@
 
 Covers the owner-bound Option II receipt DDL and the bridge feature flag:
 - LAYER3_CONNECTOR_PROMOTION_BRIDGE_ENABLED defaults to False
+- nullable intake identity pair, joint-null check, non-unique lookup index
+- no-backfill upgrade and flag-false intake-path inertness
+- receipt-aware downgrade refusal and clean dependency-ordered downgrade
 - migrated SQLite schema: exact 23-column receipt table, D33 four-column
   unique tuple, receipt-schema pin check, joint-state check, 7 indexes
 - joint-state semantics: the three valid states insert; invalid mixtures fail
@@ -18,6 +21,7 @@ parity check covers table/column presence only, not FK behavior).
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import sys
@@ -28,6 +32,8 @@ from pathlib import Path
 import pytest
 from sqlalchemy import create_engine, inspect as sa_inspect, text
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 os.environ.setdefault("DB_INIT_MODE", "none")
 
@@ -37,10 +43,24 @@ if str(BACKEND) not in sys.path:
 
 from alembic.config import Config  # noqa: E402
 from alembic import command  # noqa: E402
+from app.core.config import settings  # noqa: E402
+from app.db.session import Base  # noqa: E402
+from app.models.models import (  # noqa: E402
+    ConnectorRun,
+    ConnectorRunTarget,
+    L3ConnectorSourceIntakeRecord,
+)
+from app.services.layer3_connector_source_intake import (  # noqa: E402
+    record_connector_produced_source_intake,
+)
 
 ALEMBIC_INI = BACKEND / "alembic.ini"
 
 TABLE = "l3_connector_promotion_receipt"
+INTAKE_TABLE = "l3_connector_source_intake_record"
+INTAKE_IDENTITY_CHECK = "ck_l3_connector_source_intake_identity_metadata_joint_null"
+INTAKE_IDENTITY_INDEX = "ix_l3_connector_intake_material_identity"
+INTAKE_IDENTITY_COLUMNS = ["identity_metadata_hash_version", "identity_metadata_hash"]
 RECEIPT_SCHEMA_VERSION = "layer3.connector_promotion_receipt.v1"
 
 EXPECTED_COLUMNS = [
@@ -69,8 +89,40 @@ EXPECTED_COLUMNS = [
     "materialized_at",
 ]
 
+BASE_INTAKE_COLUMNS = [
+    "connector_source_intake_record_id",
+    "client_request_id",
+    "operator_decision",
+    "source_family",
+    "source_label",
+    "source_description",
+    "original_filename",
+    "media_type",
+    "content_size_bytes",
+    "content_sha256",
+    "metadata_hash",
+    "authority_basis_hash",
+    "storage_ref",
+    "freshness_timestamp",
+    "provenance_json",
+    "downstream_eligibility_json",
+    "summary_json",
+    "status",
+    "created_at",
+    "updated_at",
+    "connector_key",
+    "connector_run_id",
+    "connector_run_target_id",
+]
 
-def _run_upgrade(url: str) -> None:
+MIGRATED_INTAKE_COLUMNS = [
+    *BASE_INTAKE_COLUMNS[:10],
+    *INTAKE_IDENTITY_COLUMNS,
+    *BASE_INTAKE_COLUMNS[10:],
+]
+
+
+def _run_alembic(url: str, operation, revision: str) -> None:
     prev = os.environ.get("DATABASE_URL")
     os.environ["DATABASE_URL"] = url
     manager = logging.Logger.manager
@@ -83,7 +135,7 @@ def _run_upgrade(url: str) -> None:
         cfg = Config(str(ALEMBIC_INI))
         cfg.set_main_option("script_location", str(BACKEND / "alembic"))
         cfg.set_main_option("sqlalchemy.url", url)
-        command.upgrade(cfg, "head")
+        operation(cfg, revision)
     finally:
         if prev is None:
             os.environ.pop("DATABASE_URL", None)
@@ -92,6 +144,18 @@ def _run_upgrade(url: str) -> None:
         for name, lg in manager.loggerDict.items():
             if isinstance(lg, logging.Logger):
                 lg.disabled = disabled_before.get(name, False)
+
+
+def _run_upgrade(url: str) -> None:
+    _run_alembic(url, command.upgrade, "head")
+
+
+def _run_upgrade_to(url: str, revision: str) -> None:
+    _run_alembic(url, command.upgrade, revision)
+
+
+def _run_downgrade_to(url: str, revision: str) -> None:
+    _run_alembic(url, command.downgrade, revision)
 
 
 @pytest.fixture(scope="module")
@@ -146,6 +210,50 @@ def _insert(conn, **overrides) -> dict:
     return row
 
 
+def _intake_row(**overrides) -> dict:
+    now = datetime.now(timezone.utc)
+    row = {
+        "connector_source_intake_record_id": str(uuid.uuid4()),
+        "client_request_id": f"b1b-predecessor-{uuid.uuid4()}",
+        "operator_decision": "record_connector_produced_source",
+        "source_family": "connector_produced_single_source",
+        "source_label": "B1b predecessor repair fixture",
+        "source_description": "Inert schema-repair test row.",
+        "original_filename": "water-quality.csv",
+        "media_type": "text/csv",
+        "content_size_bytes": 34,
+        "content_sha256": "d4eb55501d9003c9c769fa3dbd5d92c9b68a7c42f8be493a17b1e6ec42eca3ad",
+        "identity_metadata_hash_version": None,
+        "identity_metadata_hash": None,
+        "metadata_hash": uuid.uuid4().hex + uuid.uuid4().hex,
+        "authority_basis_hash": uuid.uuid4().hex + uuid.uuid4().hex,
+        "storage_ref": "connector-raw/run/target_water-quality.csv",
+        "freshness_timestamp": None,
+        "provenance_json": "{}",
+        "downstream_eligibility_json": "{}",
+        "summary_json": "{}",
+        "status": "recorded",
+        "created_at": now,
+        "updated_at": now,
+        "connector_key": "sciencebase-public",
+        "connector_run_id": str(uuid.uuid4()),
+        "connector_run_target_id": str(uuid.uuid4()),
+    }
+    row.update(overrides)
+    return row
+
+
+def _insert_intake(conn, *, include_identity: bool = True, **overrides) -> dict:
+    row = _intake_row(**overrides)
+    columns = MIGRATED_INTAKE_COLUMNS if include_identity else BASE_INTAKE_COLUMNS
+    statement = text(
+        f"INSERT INTO {INTAKE_TABLE} ({', '.join(columns)}) VALUES "
+        f"({', '.join(':' + column for column in columns)})"
+    )
+    conn.execute(statement, {column: row[column] for column in columns})
+    return row
+
+
 # ---------------------------------------------------------------------------
 # Flag default
 # ---------------------------------------------------------------------------
@@ -167,9 +275,157 @@ def test_bridge_flag_alias_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.layer3_connector_promotion_bridge_enabled is True
 
 
+def test_bridge_flag_false_existing_intake_path_leaves_identity_pair_null(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    storage_dir = tmp_path / "storage"
+    raw_dir = storage_dir / "connectors" / "raw"
+    raw_dir.mkdir(parents=True)
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", False)
+
+    engine = create_engine(
+        "sqlite:///:memory:",
+        future=True,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    session_local = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+    db = session_local()
+    try:
+        blob = b"site_id,value\nSB-001,42\nSB-002,43\n"
+        run_id = str(uuid.uuid4())
+        target_id = str(uuid.uuid4())
+        raw_path = raw_dir / f"{target_id}_water-quality.csv"
+        raw_path.write_bytes(blob)
+        run = ConnectorRun(
+            connector_run_id=run_id,
+            connector_key="sciencebase-public",
+            source_system="sciencebase",
+            source_mode="public_api",
+            status="running",
+        )
+        target = ConnectorRunTarget(
+            connector_run_target_id=target_id,
+            connector_run_id=run_id,
+            ordinal=1,
+            sciencebase_item_id="sb-item-001",
+            sciencebase_item_url="https://www.sciencebase.gov/catalog/item/sb-item-001",
+            sciencebase_file_name="water-quality.csv",
+            sciencebase_download_uri="https://www.sciencebase.gov/catalog/file/get/sb-item-001",
+            artifact_surface="files",
+            artifact_locator_type="download_uri",
+            source_artifact_key="sciencebase://sb-item-001/water-quality.csv",
+            downloaded_sha256=hashlib.sha256(blob).hexdigest(),
+            raw_storage_ref=str(raw_path),
+            public_read_confirmed=True,
+            status="downloaded",
+        )
+        db.add_all([run, target])
+        db.commit()
+
+        response = record_connector_produced_source_intake(
+            db,
+            client_request_id="b1b-predecessor-flag-false",
+            connector_key=run.connector_key,
+            connector_run_id=run_id,
+            connector_run_target_id=target_id,
+            source_label="Flag-false inert intake",
+            source_description="Existing intake path must not populate B1b identity metadata.",
+            media_type="text/csv",
+        )
+        db.expire_all()
+        record = db.get(
+            L3ConnectorSourceIntakeRecord,
+            response["connector_source_intake_record_id"],
+        )
+        assert record is not None
+        assert record.identity_metadata_hash_version is None
+        assert record.identity_metadata_hash is None
+    finally:
+        db.close()
+        engine.dispose()
+
+
 # ---------------------------------------------------------------------------
 # Migrated DDL shape
 # ---------------------------------------------------------------------------
+
+
+def test_intake_identity_schema_shape_and_orm_parity(migrated_engine) -> None:
+    inspector = sa_inspect(migrated_engine)
+    reflected_columns = {column["name"]: column for column in inspector.get_columns(INTAKE_TABLE)}
+    for column_name in INTAKE_IDENTITY_COLUMNS:
+        assert str(reflected_columns[column_name]["type"]).upper() == "VARCHAR(64)"
+        assert reflected_columns[column_name]["nullable"] is True
+
+    reflected_indexes = {index["name"]: index for index in inspector.get_indexes(INTAKE_TABLE)}
+    identity_index = reflected_indexes[INTAKE_IDENTITY_INDEX]
+    assert identity_index["column_names"] == [
+        "identity_metadata_hash_version",
+        "source_family",
+        "content_sha256",
+        "identity_metadata_hash",
+    ]
+    assert bool(identity_index["unique"]) is False
+    unique_column_sets = {
+        tuple(constraint["column_names"])
+        for constraint in inspector.get_unique_constraints(INTAKE_TABLE)
+    }
+    assert tuple(identity_index["column_names"]) not in unique_column_sets
+    reflected_check_names = {
+        constraint["name"] for constraint in inspector.get_check_constraints(INTAKE_TABLE)
+    }
+    assert INTAKE_IDENTITY_CHECK in reflected_check_names
+
+    orm_table = L3ConnectorSourceIntakeRecord.__table__
+    for column_name in INTAKE_IDENTITY_COLUMNS:
+        assert str(orm_table.c[column_name].type).upper() == "VARCHAR(64)"
+        assert orm_table.c[column_name].nullable is True
+    orm_identity_index = next(index for index in orm_table.indexes if index.name == INTAKE_IDENTITY_INDEX)
+    assert [column.name for column in orm_identity_index.columns] == identity_index["column_names"]
+    assert orm_identity_index.unique is False
+    assert INTAKE_IDENTITY_CHECK in {constraint.name for constraint in orm_table.constraints}
+
+
+def test_intake_identity_joint_null_and_non_unique_semantics(migrated_engine) -> None:
+    version = "layer3.connector_source_intake.identity_metadata.v1"
+    identity_hash = "7" * 64
+    with migrated_engine.begin() as conn:
+        _insert_intake(conn)
+        _insert_intake(
+            conn,
+            identity_metadata_hash_version=version,
+            identity_metadata_hash=identity_hash,
+        )
+        _insert_intake(
+            conn,
+            identity_metadata_hash_version=version,
+            identity_metadata_hash=identity_hash,
+        )
+
+
+@pytest.mark.parametrize(
+    ("identity_metadata_hash_version", "identity_metadata_hash"),
+    [
+        (None, "8" * 64),
+        ("layer3.connector_source_intake.identity_metadata.v1", None),
+    ],
+)
+def test_intake_identity_one_null_rejected(
+    migrated_engine,
+    identity_metadata_hash_version,
+    identity_metadata_hash,
+) -> None:
+    with pytest.raises(IntegrityError):
+        with migrated_engine.begin() as conn:
+            _insert_intake(
+                conn,
+                identity_metadata_hash_version=identity_metadata_hash_version,
+                identity_metadata_hash=identity_metadata_hash,
+            )
 
 
 def test_receipt_table_exact_columns(migrated_engine) -> None:
@@ -268,6 +524,141 @@ def test_receipt_fk_targets_and_restrict(migrated_engine) -> None:
         assert (fk.get("options") or {}).get("ondelete") == "RESTRICT", fk
         seen[col] = True
     assert set(seen) == set(EXPECTED_FKS)
+
+
+# ---------------------------------------------------------------------------
+# No-backfill upgrade and guarded downgrade
+# ---------------------------------------------------------------------------
+
+
+def test_upgrade_preserves_preexisting_intake_row_without_backfill(tmp_path: Path) -> None:
+    db_path = tmp_path / "no-backfill.db"
+    url = f"sqlite:///{db_path.as_posix()}"
+    _run_upgrade_to(url, "0056_layer3_connector_source_intake_record")
+    engine = create_engine(url)
+    with engine.begin() as conn:
+        row = _insert_intake(conn, include_identity=False)
+        before = dict(
+            conn.execute(
+                text(
+                    f"SELECT {', '.join(BASE_INTAKE_COLUMNS)} FROM {INTAKE_TABLE} "
+                    "WHERE connector_source_intake_record_id = :record_id"
+                ),
+                {"record_id": row["connector_source_intake_record_id"]},
+            )
+            .mappings()
+            .one()
+        )
+    engine.dispose()
+
+    _run_upgrade(url)
+    engine = create_engine(url)
+    with engine.connect() as conn:
+        after = dict(
+            conn.execute(
+                text(
+                    f"SELECT {', '.join(MIGRATED_INTAKE_COLUMNS)} FROM {INTAKE_TABLE} "
+                    "WHERE connector_source_intake_record_id = :record_id"
+                ),
+                {"record_id": row["connector_source_intake_record_id"]},
+            )
+            .mappings()
+            .one()
+        )
+        receipt_count = conn.execute(text(f"SELECT COUNT(*) FROM {TABLE}")).scalar_one()
+    engine.dispose()
+
+    assert {column: after[column] for column in BASE_INTAKE_COLUMNS} == before
+    assert after["identity_metadata_hash_version"] is None
+    assert after["identity_metadata_hash"] is None
+    assert receipt_count == 0
+
+
+def test_downgrade_refuses_before_ddl_when_receipt_exists(tmp_path: Path) -> None:
+    db_path = tmp_path / "downgrade-refusal.db"
+    url = f"sqlite:///{db_path.as_posix()}"
+    _run_upgrade(url)
+    engine = create_engine(url)
+    with engine.begin() as conn:
+        _insert(conn)
+    engine.dispose()
+
+    with pytest.raises(RuntimeError, match="promotion receipt rows exist"):
+        _run_downgrade_to(url, "0056_layer3_connector_source_intake_record")
+
+    engine = create_engine(url)
+    inspector = sa_inspect(engine)
+    assert inspector.has_table(TABLE)
+    assert set(INTAKE_IDENTITY_COLUMNS) <= {
+        column["name"] for column in inspector.get_columns(INTAKE_TABLE)
+    }
+    assert INTAKE_IDENTITY_INDEX in {
+        index["name"] for index in inspector.get_indexes(INTAKE_TABLE)
+    }
+    assert INTAKE_IDENTITY_CHECK in {
+        constraint["name"] for constraint in inspector.get_check_constraints(INTAKE_TABLE)
+    }
+    with engine.connect() as conn:
+        assert conn.execute(text(f"SELECT COUNT(*) FROM {TABLE}")).scalar_one() == 1
+        assert conn.execute(text("SELECT version_num FROM alembic_version")).scalar_one() == (
+            "0057_layer3_b1b_connector_promotion"
+        )
+    engine.dispose()
+
+
+def test_clean_downgrade_preserves_intake_row_and_removes_b1b_schema(tmp_path: Path) -> None:
+    db_path = tmp_path / "clean-downgrade.db"
+    url = f"sqlite:///{db_path.as_posix()}"
+    _run_upgrade(url)
+    engine = create_engine(url)
+    with engine.begin() as conn:
+        row = _insert_intake(
+            conn,
+            identity_metadata_hash_version="layer3.connector_source_intake.identity_metadata.v1",
+            identity_metadata_hash="9" * 64,
+        )
+        before = dict(
+            conn.execute(
+                text(
+                    f"SELECT {', '.join(BASE_INTAKE_COLUMNS)} FROM {INTAKE_TABLE} "
+                    "WHERE connector_source_intake_record_id = :record_id"
+                ),
+                {"record_id": row["connector_source_intake_record_id"]},
+            )
+            .mappings()
+            .one()
+        )
+    engine.dispose()
+
+    _run_downgrade_to(url, "0056_layer3_connector_source_intake_record")
+    engine = create_engine(url)
+    inspector = sa_inspect(engine)
+    assert not inspector.has_table(TABLE)
+    assert set(INTAKE_IDENTITY_COLUMNS).isdisjoint(
+        column["name"] for column in inspector.get_columns(INTAKE_TABLE)
+    )
+    assert INTAKE_IDENTITY_INDEX not in {
+        index["name"] for index in inspector.get_indexes(INTAKE_TABLE)
+    }
+    assert INTAKE_IDENTITY_CHECK not in {
+        constraint["name"] for constraint in inspector.get_check_constraints(INTAKE_TABLE)
+    }
+    with engine.connect() as conn:
+        after = dict(
+            conn.execute(
+                text(
+                    f"SELECT {', '.join(BASE_INTAKE_COLUMNS)} FROM {INTAKE_TABLE} "
+                    "WHERE connector_source_intake_record_id = :record_id"
+                ),
+                {"record_id": row["connector_source_intake_record_id"]},
+            )
+            .mappings()
+            .one()
+        )
+        revision = conn.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
+    engine.dispose()
+    assert after == before
+    assert revision == "0056_layer3_connector_source_intake_record"
 
 
 # ---------------------------------------------------------------------------
