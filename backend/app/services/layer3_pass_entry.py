@@ -25,6 +25,7 @@ from app.models.models import (
     L3AnalysisPlan,
     L3AnalysisSet,
     L3AnalysisUnit,
+    L3ConnectorPromotionReceipt,
     L3MaterialSnapshot,
     L3PassRun,
     L3Session,
@@ -51,6 +52,10 @@ from app.services.layer3_qual_aps_execution import (
     QUAL_APS_METHOD_NAME,
     QUAL_APS_SOURCE_GATE,
     qualitative_aps_candidate_exclusion_reason,
+)
+from app.services.layer3_connector_promotion import (
+    METHOD_INPUT_SHA256 as CONNECTOR_B1_METHOD_INPUT_SHA256,
+    TRANSFORM_CONTRACT_SHA256 as CONNECTOR_B1_TRANSFORM_CONTRACT_SHA256,
 )
 from app.services.layer3_utils import (
     json_clone as _json_clone,
@@ -95,6 +100,26 @@ SOURCE_GATE_COHORT_FREEZE = "07_GATEC_COHORT_FREEZE"
 SOURCE_GATE_COHORT_DESC_FREEZE = "78_COHORT_FREEZE"
 SOURCE_GATE_SOURCE_INTAKE_PLAN_PREVIEW_FREEZE = "299_SOURCE_INTAKE_PLAN_PREVIEW_BOUNDARY_FREEZE"
 PLAN_VERSION = "gatec_pass_entry_v1"
+RECEIPT_BOUND_ANALYSIS_CONTRACT_KEY = "receipt_bound_analysis_contract"
+CONNECTOR_B1_METHOD_CONTRACT_SHA256 = "586745d83f62f60e32a94fb62cd5557341866e5319d48eece7d0ea741a5e89e5"
+CONNECTOR_B1_QUESTION_TEXT = "Within the two synthetic C01 rows (`SB-001=42` and `SB-002=43`), what per-column classification, missingness, top values, and `value` minimum, maximum, mean, median, and sample standard deviation does `descriptive_summary` report, subject to the fixture being synthetic, non-temporal, and too small for official, causal, or population-wide inference?"
+CONNECTOR_B1_METHOD_CONTRACT = {
+    "analysis_authority": {
+        "git_blob": "e38beab8a29d3e024a442573624199dc2e93fba0",
+        "path": "backend/app/services/analysis.py",
+        "runner": "_run_descriptive_summary",
+    },
+    "annotation_window_id": None,
+    "dependency_lock_git_blob": "3a0fec8abe04341a192822862dfa0be1861d137b",
+    "goal_type": None,
+    "method_id": "descriptive_summary",
+    "method_input_sha256": CONNECTOR_B1_METHOD_INPUT_SHA256,
+    "method_version": "1",
+    "parameters": {},
+    "question_id": "CT4B-C01-DESC-001",
+    "question_text": CONNECTOR_B1_QUESTION_TEXT,
+    "schema_id": "layer3.descriptive_summary.method_contract.v1",
+}
 PASS_SCOPE_QUANT_SINGLE_ITEM = "quantitative_single_item_dataset_version"
 PASS_SCOPE_QUANT_ASSOCIATED_COHORT = "quantitative_associated_cohort_dataset_version"
 PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE = "qualitative_single_item_operator_uploaded_source"
@@ -918,40 +943,113 @@ def _plan_source_gate(admitted: list[_AdmittedSetCandidate]) -> str:
     return "mixed_gatec_pass_entry"
 
 
+def _receipt_bound_analysis_contract(
+    db: Session,
+    *,
+    session_id: str,
+    admitted: list[_AdmittedSetCandidate],
+    excluded: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    if not settings.layer3_connector_promotion_bridge_enabled:
+        return None
+
+    receipts = (
+        db.query(L3ConnectorPromotionReceipt)
+        .filter(L3ConnectorPromotionReceipt.promoted_session_id == session_id)
+        .order_by(L3ConnectorPromotionReceipt.connector_promotion_receipt_id.asc())
+        .all()
+    )
+    if not receipts:
+        return None
+    if len(receipts) != 1:
+        raise Layer3PassEntryError(
+            f"Receipt-bound Layer 3 session '{session_id}' must have exactly one promotion receipt"
+        )
+
+    receipt = receipts[0]
+    if (
+        receipt.materialization_status != "materialized"
+        or not receipt.dataset_version_id
+        or receipt.promoted_session_id != session_id
+        or len(admitted) != 1
+        or excluded
+    ):
+        raise Layer3PassEntryError(
+            f"Receipt-bound Layer 3 session '{session_id}' is not an exact promoted single-item analysis input"
+        )
+
+    candidate = admitted[0]
+    if (
+        candidate.analysis_set.set_type != SET_TYPE_SINGLE_ITEM
+        or candidate.pass_type != PASS_TYPE_SINGLE_ITEM
+        or candidate.pass_scope != PASS_SCOPE_QUANT_SINGLE_ITEM
+        or candidate.engine_family != ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS
+        or candidate.selected_method_name != "descriptive_summary"
+        or candidate.source_gate != SOURCE_GATE_PASS_FREEZE
+        or candidate.dataset_version_id != receipt.dataset_version_id
+    ):
+        raise Layer3PassEntryError(
+            f"Receipt-bound Layer 3 session '{session_id}' does not match the frozen descriptive-analysis contract"
+        )
+
+    return {
+        "inputs": {
+            "connector_promotion_receipt_id": receipt.connector_promotion_receipt_id,
+            "dataset_version_id": receipt.dataset_version_id,
+        },
+        "method_contract": _json_clone(CONNECTOR_B1_METHOD_CONTRACT),
+        "method_contract_sha256": CONNECTOR_B1_METHOD_CONTRACT_SHA256,
+        "transformation_contract_sha256": CONNECTOR_B1_TRANSFORM_CONTRACT_SHA256,
+    }
+
+
 def _plan_payload(
+    db: Session,
+    *,
+    session_id: str,
     admitted: list[_AdmittedSetCandidate],
     excluded: list[dict[str, Any]],
 ) -> dict[str, Any]:
+    receipt_contract = _receipt_bound_analysis_contract(
+        db,
+        session_id=session_id,
+        admitted=admitted,
+        excluded=excluded,
+    )
+    planned_passes: list[dict[str, Any]] = []
+    for candidate in admitted:
+        planned_pass = {
+            "analysis_set_id": candidate.analysis_set.analysis_set_id,
+            "set_type": candidate.analysis_set.set_type,
+            "pass_type": candidate.pass_type,
+            "pass_scope": candidate.pass_scope,
+            "engine_family": candidate.engine_family,
+            "selected_method_name": candidate.selected_method_name,
+            "source_gate": candidate.source_gate,
+            **(
+                {
+                    "cohort_shape": COHORT_SHAPE_ALIGNED_WIDE_TABLE,
+                    **(
+                        {
+                            "requested_method_name": "descriptive_summary",
+                            "requested_method_source": COHORT_REQUESTED_METHOD_SOURCE,
+                        }
+                        if candidate.selected_method_name == "descriptive_summary"
+                        else {}
+                    ),
+                }
+                if candidate.pass_type == PASS_TYPE_ASSOCIATED_COHORT
+                else {}
+            ),
+            **_planned_pass_source_fields(candidate),
+        }
+        if receipt_contract is not None:
+            planned_pass[RECEIPT_BOUND_ANALYSIS_CONTRACT_KEY] = _json_clone(receipt_contract)
+        planned_passes.append(planned_pass)
+
     return {
         "plan_version": PLAN_VERSION,
-        "planned_passes_json": [
-            {
-                "analysis_set_id": candidate.analysis_set.analysis_set_id,
-                "set_type": candidate.analysis_set.set_type,
-                "pass_type": candidate.pass_type,
-                "pass_scope": candidate.pass_scope,
-                "engine_family": candidate.engine_family,
-                "selected_method_name": candidate.selected_method_name,
-                "source_gate": candidate.source_gate,
-                **(
-                    {
-                        "cohort_shape": COHORT_SHAPE_ALIGNED_WIDE_TABLE,
-                        **(
-                            {
-                                "requested_method_name": "descriptive_summary",
-                                "requested_method_source": COHORT_REQUESTED_METHOD_SOURCE,
-                            }
-                            if candidate.selected_method_name == "descriptive_summary"
-                            else {}
-                        ),
-                    }
-                    if candidate.pass_type == PASS_TYPE_ASSOCIATED_COHORT
-                    else {}
-                ),
-                **_planned_pass_source_fields(candidate),
-            }
-            for candidate in admitted
-        ],
+        "planned_passes_json": planned_passes,
         "excluded_sets_json": _json_clone(excluded),
         "formation_reason": _plan_formation_reason(admitted),
         "source_gate": _plan_source_gate(admitted),
@@ -1045,6 +1143,7 @@ def _approval_admitted_entry(item: dict[str, Any]) -> dict[str, Any]:
 
 
 def _preview_result_from_basis(
+    db: Session,
     *,
     session_id: str,
     admitted: list[_AdmittedSetCandidate],
@@ -1053,7 +1152,12 @@ def _preview_result_from_basis(
     unit_by_id: dict[str, L3AnalysisUnit],
     snapshot_by_id: dict[str, L3MaterialSnapshot],
 ) -> Layer3PassEntryPreviewResult:
-    plan_payload = _plan_payload(admitted, excluded)
+    plan_payload = _plan_payload(
+        db,
+        session_id=session_id,
+        admitted=admitted,
+        excluded=excluded,
+    )
     analysis_set_by_id = {analysis_set.analysis_set_id: analysis_set for analysis_set in analysis_sets}
     admitted_sets = tuple(_preview_admitted_entry(candidate) for candidate in admitted)
     excluded_sets = tuple(
@@ -1135,6 +1239,7 @@ def _load_admitted_preview_basis(
             f"Layer 3 session '{session_id}' has no admissible analysis sets for Gate C pass entry"
         )
     preview = _preview_result_from_basis(
+        db,
         session_id=session_id,
         admitted=admitted,
         excluded=excluded,
@@ -1239,7 +1344,12 @@ def _materialize_analysis_plan(
         status=PLAN_STATUS_FORMED,
         approved_by_operator=False,
         approved_at=None,
-        plan_json=_plan_payload(admitted, excluded),
+        plan_json=_plan_payload(
+            db,
+            session_id=session_id,
+            admitted=admitted,
+            excluded=excluded,
+        ),
         created_at=_utcnow(),
     )
     db.add(analysis_plan)

@@ -35,6 +35,7 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 from sqlalchemy import create_engine, inspect as sa_inspect, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
@@ -54,6 +55,10 @@ from app.api.deps import get_db  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.db.session import Base  # noqa: E402
 from app.models.models import (  # noqa: E402
+    AnalysisArtifact,
+    AnalysisRun,
+    AssumptionCheck,
+    CaveatNote,
     ConnectorRun,
     ConnectorRunTarget,
     Dataset,
@@ -61,6 +66,7 @@ from app.models.models import (  # noqa: E402
     DatasetSourceProvenance,
     DatasetVersion,
     L3AnalysisGroup,
+    L3AnalysisPlan,
     L3AnalysisSet,
     L3AnalysisUnit,
     L3ConnectorPromotionReceipt,
@@ -68,6 +74,9 @@ from app.models.models import (  # noqa: E402
     L3Descriptor,
     L3GateBIdempotencyKey,
     L3MaterialSnapshot,
+    L3OutputPackage,
+    L3PassRun,
+    L3ReconciliationRecord,
     L3RetrievalEvent,
     L3SelectionManifest,
     L3Session,
@@ -75,13 +84,15 @@ from app.models.models import (  # noqa: E402
     SourceConnector,
     VariableDefinition,
 )
+from app.api.layer3 import Layer3PlanApprovalRequest, Layer3PlanPreviewRequest  # noqa: E402
 from app.services.layer3_connector_source_intake import (  # noqa: E402
     connector_source_intake_material_preview,
     record_connector_produced_source_intake,
 )
 from app.services.layer3_workbench_error import Layer3WorkbenchError  # noqa: E402
+from app.services import layer3_pass_entry  # noqa: E402
 from app.services import layer3_workbench  # noqa: E402
-from app.services.layer3_utils import stable_hash  # noqa: E402
+from app.services.layer3_utils import stable_hash, stable_json_bytes  # noqa: E402
 
 ALEMBIC_INI = BACKEND / "alembic.ini"
 
@@ -782,6 +793,100 @@ import hashlib as _hashlib
 import json as _json
 
 from app.services import layer3_connector_promotion as pm
+
+
+@pytest.fixture(scope="module")
+def b1b_03_golden_preimages() -> dict[str, bytes]:
+    return {
+        "question": b"Within the two synthetic C01 rows (`SB-001=42` and `SB-002=43`), what per-column classification, missingness, top values, and `value` minimum, maximum, mean, median, and sample standard deviation does `descriptive_summary` report, subject to the fixture being synthetic, non-temporal, and too small for official, causal, or population-wide inference?",
+        "transformation": b'{"input":{"bom":false,"bytes":34,"encoding":"utf-8-strict","final_lf":true,"line_endings":"lf","sha256":"d4eb55501d9003c9c769fa3dbd5d92c9b68a7c42f8be493a17b1e6ec42eca3ad"},"output":{"coercion_count":0,"column_count":2,"columns":[{"logical_type":"categorical_string","name":"site_id"},{"logical_type":"numeric_integer","name":"value"}],"drop_count":0,"row_count":2,"rows":[["SB-001",42],["SB-002",43]]},"parse":{"fallbacks":[],"header":["site_id","value"],"row_order":"source"},"schema_id":"layer3.connector_promotion_transform.v1"}',
+        "method_input": b'{"columns":[{"logical_type":"categorical_string","name":"site_id"},{"logical_type":"numeric_integer","name":"value"}],"rows":[["SB-001",42],["SB-002",43]],"schema_id":"layer3.descriptive_summary.input.v1","time_column":null}',
+        "method_contract": b'{"analysis_authority":{"git_blob":"e38beab8a29d3e024a442573624199dc2e93fba0","path":"backend/app/services/analysis.py","runner":"_run_descriptive_summary"},"annotation_window_id":null,"dependency_lock_git_blob":"3a0fec8abe04341a192822862dfa0be1861d137b","goal_type":null,"method_id":"descriptive_summary","method_input_sha256":"907672513191cd069b19b761a60f9bbc51334bb0ca25e4c316d35faf48a3155b","method_version":"1","parameters":{},"question_id":"CT4B-C01-DESC-001","question_text":"Within the two synthetic C01 rows (`SB-001=42` and `SB-002=43`), what per-column classification, missingness, top values, and `value` minimum, maximum, mean, median, and sample standard deviation does `descriptive_summary` report, subject to the fixture being synthetic, non-temporal, and too small for official, causal, or population-wide inference?","schema_id":"layer3.descriptive_summary.method_contract.v1"}',
+    }
+
+
+def test_b1b_03_golden_preimages_and_entry_gate_are_exact(
+    b1b_03_golden_preimages: dict[str, bytes],
+) -> None:
+    expected = {
+        "question": (350, "c7ca8c1ffd1693be3e32a0d6172923714f2396bffc29d251a38eb1d7c22f911d"),
+        "transformation": (531, "951b3a88b1eaa9ef2b1da0480396e3b4c7a01b7e16687a726b2566bd1caf3179"),
+        "method_input": (224, "907672513191cd069b19b761a60f9bbc51334bb0ca25e4c316d35faf48a3155b"),
+        "method_contract": (894, "586745d83f62f60e32a94fb62cd5557341866e5319d48eece7d0ea741a5e89e5"),
+    }
+    for name, data in b1b_03_golden_preimages.items():
+        assert (len(data), _hashlib.sha256(data).hexdigest()) == expected[name]
+        assert not data.startswith(b"\xef\xbb\xbf")
+        assert b"\r" not in data and not data.endswith(b"\n")
+        if name != "question":
+            assert pm.d33_canonical_bytes(_json.loads(data)) == data
+
+    transformation = _json.loads(b1b_03_golden_preimages["transformation"])
+    method_input = _json.loads(b1b_03_golden_preimages["method_input"])
+    method_contract = _json.loads(b1b_03_golden_preimages["method_contract"])
+    assert transformation["output"] == {
+        "coercion_count": 0,
+        "column_count": 2,
+        "columns": [
+            {"logical_type": "categorical_string", "name": "site_id"},
+            {"logical_type": "numeric_integer", "name": "value"},
+        ],
+        "drop_count": 0,
+        "row_count": 2,
+        "rows": [["SB-001", 42], ["SB-002", 43]],
+    }
+    assert method_input["rows"] == transformation["output"]["rows"]
+    assert method_contract["method_input_sha256"] == expected["method_input"][1]
+    assert method_contract["question_text"].encode("utf-8") == b1b_03_golden_preimages["question"]
+
+    repo = BACKEND.parent
+    pins = {
+        "backend/app/services/analysis.py": "e38beab8a29d3e024a442573624199dc2e93fba0",
+        "backend/requirements.lock.txt": "3a0fec8abe04341a192822862dfa0be1861d137b",
+    }
+    assert {
+        path: subprocess.check_output(
+            ["git", "rev-parse", f"HEAD:{path}"], cwd=repo, text=True
+        ).strip()
+        for path in pins
+    } == pins
+
+
+def test_b1b_03_request_models_reject_all_derived_analysis_overrides() -> None:
+    overrides = {
+        "connector_promotion_receipt_id": "caller-receipt",
+        "dataset_version_id": "caller-version",
+        "question_id": "caller-question",
+        "question_text": "caller text",
+        "method_id": "caller_method",
+        "method_version": "999",
+        "parameters": {"caller": True},
+        "goal_type": "caller-goal",
+        "annotation_window_id": "caller-window",
+        "method_input_sha256": "1" * 64,
+        "method_contract_sha256": "2" * 64,
+        "transformation_contract_sha256": "3" * 64,
+        "method_contract": {"method_id": "caller_method"},
+        "receipt_bound_analysis_contract": {"inputs": {"dataset_version_id": "caller-version"}},
+    }
+    model_payloads = (
+        (Layer3PlanPreviewRequest, {"session_id": "session-1"}),
+        (
+            Layer3PlanApprovalRequest,
+            {
+                "session_id": "session-1",
+                "preview_id": "preview-1",
+                "preview_hash": "a" * 64,
+                "operator_confirmation": True,
+            },
+        ),
+    )
+    for model, payload in model_payloads:
+        for field, value in overrides.items():
+            with pytest.raises(ValidationError) as caught:
+                model.model_validate({**payload, field: value})
+            assert caught.value.errors()[0]["type"] == "extra_forbidden"
+            assert caught.value.errors()[0]["loc"] == (field,)
 
 
 def test_b1b_closed_error_registry_and_attestation_default_are_exact() -> None:
@@ -2028,6 +2133,36 @@ _MATERIALIZATION_MODELS = (
     L3RetrievalEvent,
     L3MaterialSnapshot,
 )
+_B1B_03_ROW_CONTRACT_MODELS = (
+    ConnectorRun,
+    ConnectorRunTarget,
+    L3ConnectorSourceIntakeRecord,
+    L3GateBIdempotencyKey,
+    L3Session,
+    L3SelectionManifest,
+    L3Descriptor,
+    L3RetrievalEvent,
+    L3MaterialSnapshot,
+    L3ConnectorPromotionReceipt,
+    SourceConnector,
+    Dataset,
+    DatasetVersion,
+    VariableDefinition,
+    DatasetSourceProvenance,
+    DatasetRow,
+    L3TypingRecord,
+    L3AnalysisUnit,
+    L3AnalysisGroup,
+    L3AnalysisSet,
+    L3AnalysisPlan,
+    L3PassRun,
+    AnalysisRun,
+    AssumptionCheck,
+    AnalysisArtifact,
+    CaveatNote,
+    L3ReconciliationRecord,
+    L3OutputPackage,
+)
 _SESSION_CHAIN_MODELS = (
     L3Session,
     L3SelectionManifest,
@@ -2090,6 +2225,51 @@ def _seed_materializable_receipt(
 def _materialization_census(runtime: dict) -> dict[str, int]:
     with runtime["factory"]() as db:
         return {model.__name__: db.query(model).count() for model in _MATERIALIZATION_MODELS}
+
+
+def _b1b_03_row_census(runtime: dict) -> dict[str, int]:
+    with runtime["factory"]() as db:
+        return {model.__name__: db.query(model).count() for model in _B1B_03_ROW_CONTRACT_MODELS}
+
+
+def _project_query_rows(query, model) -> list[dict[str, object]]:
+    primary_key = list(model.__table__.primary_key.columns)
+    return [
+        {
+            column.name: copy.deepcopy(getattr(row, column.name))
+            for column in model.__table__.columns
+        }
+        for row in query.order_by(*primary_key).all()
+    ]
+
+
+def _b1b_03_row_projection(runtime: dict) -> dict[str, list[dict[str, object]]]:
+    with runtime["factory"]() as db:
+        return {
+            model.__name__: _project_query_rows(db.query(model), model)
+            for model in _B1B_03_ROW_CONTRACT_MODELS
+        }
+
+
+def _session_chain_projection(runtime: dict, session_id: str) -> dict[str, list[dict[str, object]]]:
+    with runtime["factory"]() as db:
+        return {
+            model.__name__: _project_query_rows(
+                db.query(model).filter(model.session_id == session_id),
+                model,
+            )
+            for model in _SESSION_CHAIN_MODELS
+        }
+
+
+def _all_storage_files(runtime: dict) -> dict[str, tuple[int, str]]:
+    root = runtime["storage_dir"]
+    return {
+        path.relative_to(root).as_posix(): (len(data), _hashlib.sha256(data).hexdigest())
+        for path in sorted(root.rglob("*"))
+        if path.is_file()
+        for data in [path.read_bytes()]
+    }
 
 
 def _session_chain_census(runtime: dict, session_id: str) -> dict[str, int]:
@@ -2303,6 +2483,323 @@ def test_step5_first_call_profile_wrapper_links_and_response_are_exact(
         for key, value in target_before.items():
             if key not in {"dataset_id", "dataset_version_id"}:
                 assert getattr(target, key) == value
+
+
+def test_b1b_03_receipt_bound_public_analysis_is_exact_and_replay_inert(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    b1b_03_golden_preimages: dict[str, bytes],
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(
+        b1b_step3_runtime,
+        monkeypatch,
+        "b1b-03-analysis",
+    )
+    _enable_step5(monkeypatch)
+    original_session = _session_chain_projection(b1b_step3_runtime, gate_b_session_id)
+    resolved = _resolve(b1b_step3_runtime, gate_b_session_id)
+    promoted_session_id = resolved["promoted_session_id"]
+    assert _session_chain_projection(b1b_step3_runtime, gate_b_session_id) == original_session
+
+    monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", False)
+    with b1b_step3_runtime["factory"]() as db:
+        legacy_preview = layer3_pass_entry.preview_pass_entry(
+            db,
+            session_id=promoted_session_id,
+        )
+        assert len(legacy_preview.admitted_sets) == 1
+        analysis_set_id = legacy_preview.admitted_sets[0]["analysis_set_id"]
+        expected_legacy_plan = {
+            "plan_version": "gatec_pass_entry_v1",
+            "planned_passes_json": [
+                {
+                    "analysis_set_id": analysis_set_id,
+                    "set_type": "single_item",
+                    "pass_type": "single_item",
+                    "pass_scope": "quantitative_single_item_dataset_version",
+                    "engine_family": "wrapped_quantitative_analysis",
+                    "selected_method_name": "descriptive_summary",
+                    "source_gate": "06_GATEC_PASS_FREEZE",
+                    "dataset_version_id": resolved["dataset_version_id"],
+                }
+            ],
+            "excluded_sets_json": [],
+            "formation_reason": "quantitative_dataset_version_backed_gatec_only",
+            "source_gate": "06_GATEC_PASS_FREEZE",
+        }
+        assert stable_json_bytes(legacy_preview.owner_plan_payload) == stable_json_bytes(
+            expected_legacy_plan
+        )
+        legacy_hash_basis = {
+            "schema_id": "layer3.plan_preview_hash.v1",
+            "session_id": promoted_session_id,
+            "admitted_sets": legacy_preview.admitted_sets,
+            "excluded_sets": legacy_preview.excluded_sets,
+            "planned_passes": legacy_preview.planned_passes,
+            "warnings": legacy_preview.warnings,
+            "owner_service_basis": legacy_preview.owner_service_basis,
+            "owner_plan_payload": expected_legacy_plan,
+        }
+        assert legacy_preview.preview_hash == stable_hash(legacy_hash_basis)
+
+    monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", True)
+    expected_receipt_contract = {
+        "inputs": {
+            "connector_promotion_receipt_id": resolved["connector_promotion_receipt_id"],
+            "dataset_version_id": resolved["dataset_version_id"],
+        },
+        "method_contract": _json.loads(b1b_03_golden_preimages["method_contract"]),
+        "method_contract_sha256": "586745d83f62f60e32a94fb62cd5557341866e5319d48eece7d0ea741a5e89e5",
+        "transformation_contract_sha256": "951b3a88b1eaa9ef2b1da0480396e3b4c7a01b7e16687a726b2566bd1caf3179",
+    }
+    expected_enriched_plan = copy.deepcopy(expected_legacy_plan)
+    expected_enriched_plan["planned_passes_json"][0][
+        "receipt_bound_analysis_contract"
+    ] = expected_receipt_contract
+
+    with b1b_step3_runtime["factory"]() as db:
+        enriched_preview = layer3_pass_entry.preview_pass_entry(
+            db,
+            session_id=promoted_session_id,
+        )
+        repeated_preview = layer3_pass_entry.preview_pass_entry(
+            db,
+            session_id=promoted_session_id,
+        )
+        assert enriched_preview.owner_plan_payload == expected_enriched_plan
+        assert pm.d33_canonical_bytes(
+            enriched_preview.owner_plan_payload["planned_passes_json"][0][
+                "receipt_bound_analysis_contract"
+            ]["method_contract"]
+        ) == b1b_03_golden_preimages["method_contract"]
+        assert enriched_preview.preview_hash == repeated_preview.preview_hash
+        assert enriched_preview.preview_hash != legacy_preview.preview_hash
+        assert enriched_preview.preview_hash == stable_hash(
+            {**legacy_hash_basis, "owner_plan_payload": expected_enriched_plan}
+        )
+
+        public_preview = layer3_workbench.plan_preview(
+            db,
+            {
+                "client_request_id": "b1b-03-plan-preview",
+                "session_id": promoted_session_id,
+                "question_text": "caller must not replace the frozen question",
+                "receipt_bound_analysis_contract": {"method_contract": {"method_id": "caller"}},
+            },
+        )
+        assert public_preview["preview_hash"] == enriched_preview.preview_hash
+
+    before_census = _b1b_03_row_census(b1b_step3_runtime)
+    files_before = _all_storage_files(b1b_step3_runtime)
+    with b1b_step3_runtime["factory"]() as db:
+        approval = layer3_workbench.plan_approval(
+            db,
+            {
+                "client_request_id": "b1b-03-plan-approval",
+                "session_id": promoted_session_id,
+                "preview_id": public_preview["preview_id"],
+                "preview_hash": public_preview["preview_hash"],
+                "operator_confirmation": True,
+            },
+        )
+        selection_payload = {
+            "client_request_id": "b1b-03-execution-selection",
+            "session_id": promoted_session_id,
+            "analysis_plan_id": approval["analysis_plan_id"],
+            "preview_id": public_preview["preview_id"],
+            "preview_hash": public_preview["preview_hash"],
+        }
+        selection = layer3_workbench.execution_selection(db, selection_payload)
+        start_payload = {
+            "client_request_id": "b1b-03-analysis-start",
+            "session_id": promoted_session_id,
+            "analysis_plan_id": approval["analysis_plan_id"],
+            "pass_run_id": selection["pass_run_ids"][0],
+            "preview_id": public_preview["preview_id"],
+            "preview_hash": public_preview["preview_hash"],
+        }
+        start = layer3_workbench.analysis_execution_start(db, start_payload)
+
+    after_census = _b1b_03_row_census(b1b_step3_runtime)
+    expected_delta = {name: 0 for name in before_census}
+    expected_delta.update(
+        {
+            "L3AnalysisPlan": 1,
+            "L3PassRun": 1,
+            "AnalysisRun": 1,
+            "AssumptionCheck": 4,
+            "AnalysisArtifact": 1,
+            "CaveatNote": 1,
+        }
+    )
+    assert {
+        name: after_census[name] - before_census[name]
+        for name in before_census
+    } == expected_delta
+
+    files_after = _all_storage_files(b1b_step3_runtime)
+    assert {name: files_after[name] for name in files_before} == files_before
+    added_files = set(files_after) - set(files_before)
+    assert len(added_files) == 2
+    assert len(
+        [name for name in added_files if name.startswith("artifacts/descriptive_summary_result_")]
+    ) == 1
+    assert len(
+        [name for name in added_files if name.startswith("artifacts/layer3/l3_pass_run_")]
+    ) == 1
+
+    with b1b_step3_runtime["factory"]() as db:
+        plan = db.query(L3AnalysisPlan).filter_by(session_id=promoted_session_id).one()
+        pass_run = db.query(L3PassRun).filter_by(session_id=promoted_session_id).one()
+        analysis_run = db.query(AnalysisRun).one()
+        checks = db.query(AssumptionCheck).all()
+        artifact = db.query(AnalysisArtifact).one()
+        caveat = db.query(CaveatNote).one()
+        assert approval["plan_status"] == plan.status == "approved"
+        assert plan.approved_by_operator is True
+        assert plan.analysis_set_ids_json == [analysis_set_id]
+        assert plan.plan_json["source_preview_hash"] == public_preview["preview_hash"]
+        assert (
+            plan.plan_json["planned_passes_json"][0]["receipt_bound_analysis_contract"]
+            == expected_receipt_contract
+        )
+        assert pass_run.analysis_plan_id == plan.analysis_plan_id
+        assert pass_run.analysis_set_id == analysis_set_id
+        assert pass_run.status == start["pass_run_status"] == "completed_with_warnings"
+        assert (
+            pass_run.summary_json["planned_pass"]["receipt_bound_analysis_contract"]
+            == expected_receipt_contract
+        )
+        assert pass_run.summary_json["analysis_run_id"] == analysis_run.analysis_run_id
+        assert analysis_run.dataset_version_id == resolved["dataset_version_id"]
+        assert (analysis_run.method_name, analysis_run.goal_type, analysis_run.parameters_json) == (
+            "descriptive_summary",
+            None,
+            {},
+        )
+        assert analysis_run.window_scope_json == {}
+        assert analysis_run.status == "completed"
+
+        assert {
+            check.assumption_name: (
+                check.check_method,
+                check.check_result,
+                check.severity,
+                check.notes,
+            )
+            for check in checks
+        } == {
+            "data_availability": ("dataframe_shape", "pass", "high", "rows=2; columns=2"),
+            "column_classification": (
+                "deterministic_dtype_scan",
+                "pass",
+                "medium",
+                '{"categorical": 1, "numeric": 1}',
+            ),
+            "missingness_scan": (
+                "cell_missingness",
+                "pass",
+                "medium",
+                "missing_cells=0; missing_fraction=0.000000",
+            ),
+            "time_column_coverage": (
+                "declared_time_column_scan",
+                "warn",
+                "medium",
+                "time_column=; present=False",
+            ),
+        }
+        assert (
+            caveat.caveat_type,
+            caveat.severity,
+            caveat.message,
+        ) == (
+            "non_time_series_interpretation",
+            "medium",
+            "Dataset does not declare a usable time column; descriptive summary is non-time-series only.",
+        )
+        assert artifact.analysis_run_id == analysis_run.analysis_run_id
+        assert artifact.artifact_type == "descriptive_summary_result"
+        artifact_path = Path(settings.artifact_storage_dir) / Path(artifact.storage_ref).name
+        result_payload = _json.loads(artifact_path.read_text(encoding="utf-8"))
+        assert artifact.metadata_json == result_payload["summary_stats"]
+        assert result_payload["summary_stats"] == {
+            "row_count": 2,
+            "column_count": 2,
+            "numeric_column_count": 1,
+            "categorical_column_count": 1,
+            "boolean_column_count": 0,
+            "time_column_count": 0,
+            "missing_cell_count": 0,
+            "missing_fraction": 0.0,
+        }
+        assert result_payload["columns"]["site_id"] == {
+            "inferred_class": "categorical",
+            "non_null_count": 2,
+            "missing_count": 0,
+            "missing_fraction": 0.0,
+            "unsupported_nested_values": False,
+            "unique_count": 2,
+            "top_values": [
+                {"value": "SB-001", "count": 1},
+                {"value": "SB-002", "count": 1},
+            ],
+        }
+        value_summary = result_payload["columns"]["value"]
+        assert {
+            key: value_summary[key]
+            for key in (
+                "inferred_class",
+                "non_null_count",
+                "missing_count",
+                "missing_fraction",
+                "unsupported_nested_values",
+                "top_values",
+            )
+        } == {
+            "inferred_class": "numeric",
+            "non_null_count": 2,
+            "missing_count": 0,
+            "missing_fraction": 0.0,
+            "unsupported_nested_values": False,
+            "top_values": [{"value": 42, "count": 1}, {"value": 43, "count": 1}],
+        }
+        numeric_summary = value_summary["numeric_summary"]
+        assert {key: numeric_summary[key] for key in ("non_null_count", "min", "max", "mean", "median")} == {
+            "non_null_count": 2,
+            "min": 42.0,
+            "max": 43.0,
+            "mean": 42.5,
+            "median": 42.5,
+        }
+        assert numeric_summary["std_dev"] == pytest.approx(
+            0.7071067811865476,
+            rel=1e-12,
+            abs=1e-12,
+        )
+        output_manifest = _json.loads(Path(pass_run.output_payload_ref).read_text(encoding="utf-8"))
+        assert output_manifest == {
+            "analysis_run_id": analysis_run.analysis_run_id,
+            "analysis_set_id": analysis_set_id,
+            "dataset_version_id": resolved["dataset_version_id"],
+            "selected_method_name": "descriptive_summary",
+            "artifact_refs_json": [artifact.storage_ref],
+            "artifact_types_json": ["descriptive_summary_result"],
+            "source_gate": "06_GATEC_PASS_FREEZE",
+        }
+
+    frozen_rows = _b1b_03_row_projection(b1b_step3_runtime)
+    frozen_files = _all_storage_files(b1b_step3_runtime)
+    with b1b_step3_runtime["factory"]() as db:
+        selection_replay = layer3_workbench.execution_selection(db, selection_payload)
+        start_replay = layer3_workbench.analysis_execution_start(db, start_payload)
+    assert selection_replay["status"] == "already_selected"
+    assert start_replay["status"] == "already_completed"
+    resolver_replay = _resolve(b1b_step3_runtime, gate_b_session_id)
+    assert resolver_replay == {**resolved, "disposition": "reused"}
+    assert _b1b_03_row_projection(b1b_step3_runtime) == frozen_rows
+    assert _all_storage_files(b1b_step3_runtime) == frozen_files
+    assert _session_chain_projection(b1b_step3_runtime, gate_b_session_id) == original_session
 
 
 def test_step5_exact_replay_is_zero_delta_and_rehashes_final(

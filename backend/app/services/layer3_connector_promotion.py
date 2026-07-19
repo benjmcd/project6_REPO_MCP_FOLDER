@@ -2076,6 +2076,16 @@ def _verify_materialized_replay(
         .all()
     )
     manifest = db.get(L3SelectionManifest, promoted.selection_manifest_id)
+    materialization_summary = {
+        "descriptor_status_counts": {"resolved_loaded": 1},
+        "retrieval_outcome_counts": {"loaded": 1},
+        "loaded_snapshot_count": 1,
+        "source_planes": ["dataset"],
+        "warning_reasons": ["synthetic_non_official_fixture"],
+        "retrieved_descriptor_count": 1,
+        "unresolved_descriptor_count": 0,
+        "descriptor_coverage_status": "complete",
+    }
     if (
         len(provenance_rows) != 1
         or len(snapshots) != 1
@@ -2085,17 +2095,8 @@ def _verify_materialized_replay(
         or promoted.status != "completed_with_warnings"
         or promoted.completed_at is None
         or promoted.entry_route_context_json != {}
-        or promoted.summary_json
-        != {
-            "descriptor_status_counts": {"resolved_loaded": 1},
-            "retrieval_outcome_counts": {"loaded": 1},
-            "loaded_snapshot_count": 1,
-            "source_planes": ["dataset"],
-            "warning_reasons": ["synthetic_non_official_fixture"],
-            "retrieved_descriptor_count": 1,
-            "unresolved_descriptor_count": 0,
-            "descriptor_coverage_status": "complete",
-        }
+        or not isinstance(promoted.summary_json, dict)
+        or any(promoted.summary_json.get(key) != value for key, value in materialization_summary.items())
     ):
         raise _closed_b1b_error("connector_materialization_basis_conflict")
     provenance = provenance_rows[0]
