@@ -14,11 +14,15 @@ from __future__ import annotations
 
 import csv
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import hashlib
 import io
 import json
 import math
+import os
 from pathlib import Path
+import stat
+import subprocess
 import unicodedata
 from typing import Any, Mapping
 import uuid
@@ -32,6 +36,9 @@ from app.core.config import settings
 from app.models.models import (
     ConnectorRun,
     ConnectorRunTarget,
+    Dataset,
+    DatasetSourceProvenance,
+    DatasetVersion,
     L3ConnectorPromotionReceipt,
     L3ConnectorSourceIntakeRecord,
     L3Descriptor,
@@ -40,7 +47,11 @@ from app.models.models import (
     L3RetrievalEvent,
     L3SelectionManifest,
     L3Session,
+    SourceConnector,
+    VariableDefinition,
 )
+from app.services.dataframe_io import write_dataframe_to_absent_parquet
+from app.services.ingest import read_existing_csv_reference
 from app.services.layer3_connector_source_intake import (
     CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX,
     ConnectorSourceIntakeError,
@@ -57,6 +68,14 @@ from app.services.layer3_gate_b_state import (
     material_preview_hash,
 )
 from app.services.layer3_utils import stable_hash as gate_b_stable_hash
+from app.services.layer3_session_entry import (
+    SessionEntryRequest,
+    SnapshotMaterial,
+    commit_selection,
+    expand_descriptors,
+    finalize_session,
+    record_retrieval_event,
+)
 
 # ---------------------------------------------------------------------------
 # Schema identifiers and fixed contract constants (owner-bound literals)
@@ -94,6 +113,21 @@ F07_CANONICAL_IDENTITY_KEY_HASH = "2198fa283f1191bf30e8c3c39dec83e32cf5337f440fd
 # Kept as the canonical byte string so tests can prove byte-for-byte fidelity
 # (canonicalize(parse(s)) == s, len == 2180, sha256 == METADATA_CONTRACT_SHA256).
 METADATA_CONTRACT_CANONICAL_JSON = '{"dataset":{"description":"Two-row synthetic, non-temporal, non-official C01 fixture for local B1b proof only.","domain_pack":null,"frequency_hint":null,"name":"Synthetic F07 C01 connector material","time_column":null},"dataset_source_provenance":{"artifact_locator_type":"intake_storage_ref","artifact_surface":"synthetic_fixture","blocked_reason":null,"discovered_at":null,"downloaded_at":null,"downloaded_sha256":"d4eb55501d9003c9c769fa3dbd5d92c9b68a7c42f8be493a17b1e6ec42eca3ad","etag":null,"fetch_policy_mode":"synthetic_local_no_network","last_modified":null,"raw_storage_ref_policy":"reuse_exact_intake_storage_ref","redirect_count":null,"remote_checksum_type":null,"remote_checksum_value":null,"resolved_ip":null,"retrieved_http_json":{},"sciencebase_download_uri":null,"sciencebase_file_name":null,"sciencebase_item_id":"synthetic-sb-item-001","sciencebase_item_url":null,"source_artifact_key":"f07-c01-synthetic","source_mode":"synthetic_local_direct_intake","source_query_fingerprint":null,"source_reference_json_policy":"exact_materialization_wrapper_only","source_system":"sciencebase_public_synthetic_fixture"},"dataset_version":{"content_hash":"d4eb55501d9003c9c769fa3dbd5d92c9b68a7c42f8be493a17b1e6ec42eca3ad","dropped_row_count":0,"notes":"synthetic=true; official_public_read_evidence=false; f20_status=NOT-ESTABLISHED; encoding=utf-8; transform=layer3.connector_promotion_transform.v1","parent_version_id":null,"row_count":2,"source_row_count":2,"status":"ready","storage_ref_policy":"final_parquet_under_dataset_storage_root","version_label":"b1b_f07_c01_v1","version_type":"synthetic_connector_promotion"},"schema_id":"layer3.connector_promotion_materialization_metadata.v1","source_connector":{"api_available_flag":false,"automation_tier":"tier_0","cleanup_burden":null,"domain_pack":null,"source_category":"synthetic_local_proof","source_name":"synthetic_f07_c01_connector","update_cadence":null},"variables":[{"dtype":"object","is_numeric":false,"is_time_index":false,"ordinal_position":0,"role":"measure","variable_name":"site_id"},{"dtype":"float64","is_numeric":true,"is_time_index":false,"ordinal_position":1,"role":"measure","variable_name":"value"}]}'
+
+_B1B_ERROR_SPECS: dict[str, tuple[int, str, bool]] = {
+    "promotion_identity_decision_conflict": (409, "Promotion identity decision conflicts with the committed receipt.", False),
+    "connector_promotion_bridge_unavailable": (503, "Connector promotion bridge is unavailable.", True),
+    "b1b_handoff_full_body_required": (400, "Handoff requires a full-body request.", False),
+    "connector_promotion_session_not_found": (404, "Connector promotion session was not found.", False),
+    "connector_promotion_not_eligible": (409, "Connector promotion is not eligible.", False),
+    "b1b_request_validation_failed": (422, "Request body failed validation.", False),
+    "promotion_identity_lock_unavailable": (503, "Promotion identity lock is unavailable.", True),
+    "connector_promotion_basis_conflict": (409, "Promotion basis conflicts with the committed receipt.", False),
+    "connector_result_review_decision_conflict": (409, "Result review decision conflicts with the recorded review.", False),
+    "connector_package_basis_conflict": (409, "Package basis conflicts with the committed package set.", False),
+    "connector_package_review_decision_conflict": (409, "Package review decision conflicts with the recorded review.", False),
+    "connector_materialization_basis_conflict": (409, "Materialization basis conflicts with the committed output.", False),
+}
 
 
 class PromotionIdentityError(ValueError):
@@ -489,9 +523,35 @@ def side_effect_free_server_exact_candidate(
         ) from exc
 
 
-def attestation_precondition_available(_candidate: GateBPromotionCandidate) -> bool:
+def attestation_precondition_available(_candidate: GateBPromotionCandidate | None = None) -> bool:
     """Step-3 seam. Full Section-8 attestation wiring is separately gated."""
     return False
+
+
+def bridge_precondition_available() -> bool:
+    """Body/DB-free availability check after static operator authorization."""
+    return bool(
+        settings.layer3_connector_promotion_bridge_enabled
+        and attestation_precondition_available(None)
+    )
+
+
+def b1b_error_spec(error_code: str) -> tuple[int, str, bool]:
+    try:
+        return _B1B_ERROR_SPECS[error_code]
+    except KeyError as exc:
+        raise PromotionIdentityError("unknown closed B1b error code") from exc
+
+
+def b1b_error_body(error_code: str) -> dict[str, Any]:
+    _status, message, retryable = b1b_error_spec(error_code)
+    return {
+        "error_code": error_code,
+        "message": message,
+        "retryable": retryable,
+        "schema_id": "layer3.b1b_error.v1",
+        "status": "error",
+    }
 
 
 def _signed_advisory_lock_key(canonical_key_hash: str) -> int:
@@ -1350,6 +1410,7 @@ def build_materialization_record(
             "dropped_row_count": 0,
             "promoted_session_id": _clean_required_string(promoted_session_id, "promoted_session_id"),
             "row_count": 2,
+            "source_connector_id": _clean_required_string(source_connector_id, "source_connector_id"),
             "source_row_count": 2,
             "variable_count": 2,
         },
@@ -1370,3 +1431,1310 @@ def build_materialization_wrapper(record: dict) -> dict:
     only; the wrapper itself is never separately hashed.
     """
     return {"record": record, "record_hash": materialization_record_hash(record)}
+
+
+MATERIALIZATION_CONTEXT_KEY = "layer3_connector_promotion_materialization_v1"
+MATERIALIZATION_RESPONSE_SCHEMA_ID = "layer3.connector_promotion_resolve_response.v1"
+
+
+def _closed_b1b_error(error_code: str) -> ConnectorPromotionError:
+    http_status, message, retryable = b1b_error_spec(error_code)
+    return _promotion_error(
+        error_code,
+        message,
+        http_status=http_status,
+        retryable=retryable,
+    )
+
+
+def _git_text(repo_root: Path, *args: str) -> str:
+    try:
+        result = subprocess.run(
+            ["git", *args],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise PromotionIdentityError("unable to read audited Git code identity") from exc
+    return result.stdout.strip()
+
+
+def _read_clean_materialization_code_identity() -> dict[str, str]:
+    """Re-read the tracked-clean HEAD and three bound blobs immediately pre-claim."""
+    repo_root = Path(__file__).resolve().parents[3]
+    if _git_text(repo_root, "status", "--porcelain=v1", "--untracked-files=no"):
+        raise PromotionIdentityError("tracked checkout is dirty")
+    head_before = _git_text(repo_root, "rev-parse", "HEAD")
+    values = {
+        "implementation_commit": head_before,
+        "promotion_git_blob": _git_text(
+            repo_root,
+            "rev-parse",
+            f"{head_before}:backend/app/services/layer3_connector_promotion.py",
+        ),
+        "ingest_git_blob": _git_text(
+            repo_root,
+            "rev-parse",
+            f"{head_before}:backend/app/services/ingest.py",
+        ),
+        "dataframe_io_git_blob": _git_text(
+            repo_root,
+            "rev-parse",
+            f"{head_before}:backend/app/services/dataframe_io.py",
+        ),
+    }
+    if (
+        _git_text(repo_root, "rev-parse", "HEAD") != head_before
+        or _git_text(repo_root, "status", "--porcelain=v1", "--untracked-files=no")
+    ):
+        raise PromotionIdentityError("audited Git code identity changed during re-read")
+    return {key: _require_lower_hex40(value, key) for key, value in values.items()}
+
+
+def _is_reparse(path: Path) -> bool:
+    try:
+        info = os.lstat(path)
+    except OSError as exc:
+        raise PromotionIdentityError("storage reference is unavailable") from exc
+    return bool(path.is_symlink() or getattr(info, "st_file_attributes", 0) & 0x400)
+
+
+def _require_nonreparse_components(path: Path) -> None:
+    absolute = Path(os.path.abspath(path))
+    component = Path(absolute.anchor)
+    for part in absolute.parts[1:]:
+        component /= part
+        if not os.path.lexists(component):
+            raise PromotionIdentityError("storage path component is unavailable")
+        if _is_reparse(component):
+            raise PromotionIdentityError("storage path contains a reparse component")
+
+
+def _resolve_regular_reference(raw_ref: str, root_ref: str) -> tuple[Path, str]:
+    if not isinstance(raw_ref, str) or not raw_ref or "\x00" in raw_ref:
+        raise PromotionIdentityError("storage reference is invalid")
+    root_input = Path(root_ref)
+    if not root_input.exists() or not root_input.is_dir() or _is_reparse(root_input):
+        raise PromotionIdentityError("storage root is invalid")
+    _require_nonreparse_components(root_input)
+    root = root_input.resolve(strict=True)
+    candidate = Path(raw_ref)
+    candidate = candidate if candidate.is_absolute() else root / candidate
+    try:
+        lexical_relative = candidate.relative_to(root)
+    except ValueError as exc:
+        raise PromotionIdentityError("storage reference escapes its configured root") from exc
+    if any(part in {"", ".", ".."} for part in lexical_relative.parts):
+        raise PromotionIdentityError("storage reference has a forbidden path segment")
+    component = root
+    for part in lexical_relative.parts:
+        component /= part
+        if component.exists() and _is_reparse(component):
+            raise PromotionIdentityError("storage reference contains a reparse component")
+    try:
+        resolved = candidate.resolve(strict=True)
+        relative = resolved.relative_to(root)
+        mode = resolved.stat().st_mode
+    except (OSError, ValueError) as exc:
+        raise PromotionIdentityError("storage reference escapes its configured root") from exc
+    if not stat.S_ISREG(mode):
+        raise PromotionIdentityError("storage reference is not a regular file")
+    normalized = normalize_relative_ref(relative.as_posix())
+    return resolved, normalized
+
+
+def _file_facts(path: Path) -> tuple[int, str]:
+    digest = hashlib.sha256()
+    size = 0
+    try:
+        with path.open("rb") as handle:
+            while chunk := handle.read(1024 * 1024):
+                size += len(chunk)
+                digest.update(chunk)
+    except OSError as exc:
+        raise PromotionIdentityError("unable to re-read materialization file") from exc
+    return size, digest.hexdigest()
+
+
+def _atomic_rename_no_overwrite(source: Path, destination: Path) -> None:
+    if destination.exists():
+        raise FileExistsError(f"materialization destination exists: {destination}")
+    if not destination.parent.is_dir() or _is_reparse(destination.parent):
+        raise PromotionIdentityError("materialization destination parent is invalid")
+    if _is_reparse(source) or not stat.S_ISREG(source.stat().st_mode):
+        raise PromotionIdentityError("materialization source is not a regular non-reparse file")
+    if source.stat().st_dev != destination.parent.stat().st_dev:
+        raise PromotionIdentityError("materialization publish crosses volumes")
+    if os.name == "nt":
+        os.rename(source, destination)
+        return
+    try:
+        import ctypes
+        import errno
+
+        libc = ctypes.CDLL(None, use_errno=True)
+        renameat2 = libc.renameat2
+        result = renameat2(
+            -100,
+            os.fsencode(source),
+            -100,
+            os.fsencode(destination),
+            1,
+        )
+        if result != 0:
+            error_number = ctypes.get_errno()
+            raise OSError(error_number, os.strerror(error_number), str(destination))
+    except AttributeError as exc:
+        raise OSError("atomic no-overwrite rename is unavailable") from exc
+    except OSError as exc:
+        if getattr(exc, "errno", None) == errno.EEXIST:
+            raise FileExistsError(str(destination)) from exc
+        raise
+
+
+_CONTAINMENT_RECORD_SUFFIX = ".containment.json"
+
+
+def _containment_record_path(artifact: Path) -> Path:
+    return artifact.with_name(artifact.name + _CONTAINMENT_RECORD_SUFFIX)
+
+
+def _write_containment_record(record_path: Path, record: Mapping[str, Any]) -> None:
+    record_bytes = d33_canonical_bytes(dict(record))
+    if record_path.exists():
+        if _is_reparse(record_path) or not stat.S_ISREG(record_path.stat().st_mode):
+            raise PromotionIdentityError("containment record is not a regular file")
+        existing = record_path.read_bytes()
+        if existing == record_bytes:
+            return
+        if not record_bytes.startswith(existing):
+            raise PromotionIdentityError("containment record conflicts with artifact facts")
+        with record_path.open("ab") as handle:
+            handle.write(record_bytes[len(existing) :])
+            handle.flush()
+            os.fsync(handle.fileno())
+        if record_path.read_bytes() != record_bytes:
+            raise PromotionIdentityError("containment record recovery did not converge")
+        return
+    with record_path.open("xb") as handle:
+        handle.write(record_bytes)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def _contained_artifact_record(artifact: Path, containment_root: Path) -> dict[str, Any]:
+    try:
+        relative = artifact.relative_to(containment_root)
+    except ValueError as exc:
+        raise PromotionIdentityError("contained artifact escapes containment root") from exc
+    if len(relative.parts) != 3:
+        raise PromotionIdentityError("contained artifact path shape is invalid")
+    prefix, basis_hash, artifact_name = relative.parts
+    _require_lower_hex64(basis_hash, "containment basis_hash")
+    if prefix != basis_hash[:2] or not artifact.suffix:
+        raise PromotionIdentityError("contained artifact basis namespace is invalid")
+    stem = artifact_name[: -len(artifact.suffix)]
+    name_parts = stem.split("-")
+    if len(name_parts) not in {2, 3}:
+        raise PromotionIdentityError("contained artifact name is invalid")
+    namespace_hash = _require_lower_hex64(name_parts[0], "containment namespace_hash")
+    name_digest = _require_lower_hex64(name_parts[1], "containment artifact_sha256")
+    size, digest = _file_facts(artifact)
+    if digest != name_digest:
+        raise PromotionIdentityError("contained artifact hash conflicts with its name")
+    return {
+        "artifact_bytes": size,
+        "artifact_sha256": digest,
+        "basis_hash": basis_hash,
+        "namespace_hash": namespace_hash,
+        "status": "non_authoritative_non_reusable",
+    }
+
+
+def _reconcile_containment_records(containment_root: Path) -> None:
+    files = _regular_lane_files(containment_root)
+    artifacts = [path for path in files if not path.name.endswith(_CONTAINMENT_RECORD_SUFFIX)]
+    for artifact in artifacts:
+        record = _contained_artifact_record(artifact, containment_root)
+        _write_containment_record(_containment_record_path(artifact), record)
+    for record_path in files:
+        if not record_path.name.endswith(_CONTAINMENT_RECORD_SUFFIX):
+            continue
+        artifact = record_path.with_name(record_path.name[: -len(_CONTAINMENT_RECORD_SUFFIX)])
+        if not artifact.is_file() or _is_reparse(artifact):
+            raise PromotionIdentityError("containment record has no regular artifact")
+
+
+def _contain_file(
+    source: Path,
+    *,
+    containment_root: Path,
+    basis_hash: str,
+    namespace: str,
+) -> Path | None:
+    if not source.exists():
+        return None
+    _require_lower_hex64(basis_hash, "containment basis_hash")
+    _size, digest = _file_facts(source)
+    namespace_hash = d33_sha256(
+        {
+            "basis_hash": basis_hash,
+            "namespace": namespace,
+            "source_name": unicodedata.normalize("NFC", source.name),
+        }
+    )
+    destination_dir = containment_root / basis_hash[:2] / basis_hash
+    _ensure_nonreparse_lane_directory(destination_dir, containment_root)
+    destination = destination_dir / f"{namespace_hash}-{digest}{source.suffix}"
+    record_path = _containment_record_path(destination)
+    if destination.exists() or record_path.exists():
+        destination = destination_dir / f"{namespace_hash}-{digest}-{uuid.uuid4().hex}{source.suffix}"
+        record_path = _containment_record_path(destination)
+    _atomic_rename_no_overwrite(source, destination)
+    _write_containment_record(
+        record_path,
+        _contained_artifact_record(destination, containment_root),
+    )
+    return destination
+
+
+def _lane_paths(basis_hash: str) -> dict[str, Path]:
+    dataset_root = Path(settings.dataset_storage_dir)
+    artifact_custody_root = Path(settings.artifact_storage_dir)
+    artifact_root = artifact_custody_root / "layer3"
+    return {
+        "dataset_root": dataset_root,
+        "stage_root": dataset_root / "b1b" / "staging",
+        "dataset_final_root": dataset_root / "b1b" / "dataset-versions",
+        "final": dataset_root / "b1b" / "dataset-versions" / basis_hash[:2] / f"{basis_hash}.parquet",
+        "dataset_containment": dataset_root / "b1b" / "containment",
+        "artifact_custody_root": artifact_custody_root,
+        "artifact_root": artifact_root,
+        "artifact_stage_root": artifact_root / "b1b-staging",
+        "artifact_final_root": artifact_root / "b1b",
+        "artifact_containment": artifact_root / "b1b-containment",
+    }
+
+
+def _ensure_nonreparse_directory_tree(path: Path) -> Path:
+    absolute = Path(os.path.abspath(path))
+    component = Path(absolute.anchor)
+    if _is_reparse(component) or not component.is_dir():
+        raise PromotionIdentityError("materialization path anchor is invalid")
+    for part in absolute.parts[1:]:
+        component /= part
+        if not os.path.lexists(component):
+            try:
+                component.mkdir()
+            except FileExistsError:
+                pass
+        if _is_reparse(component) or not component.is_dir():
+            raise PromotionIdentityError("materialization path contains a reparse component")
+    return absolute
+
+
+def _ensure_nonreparse_lane_directory(path: Path, custody_root: Path) -> None:
+    root = _ensure_nonreparse_directory_tree(custody_root)
+    absolute = Path(os.path.abspath(path))
+    try:
+        relative = absolute.relative_to(root)
+    except ValueError as exc:
+        raise PromotionIdentityError("materialization directory escapes custody root") from exc
+    component = root
+    for part in relative.parts:
+        component /= part
+        if not os.path.lexists(component):
+            try:
+                component.mkdir()
+            except FileExistsError:
+                pass
+        if _is_reparse(component) or not component.is_dir():
+            raise PromotionIdentityError("materialization directory contains a reparse component")
+    try:
+        absolute.resolve(strict=True).relative_to(root.resolve(strict=True))
+    except (OSError, ValueError) as exc:
+        raise PromotionIdentityError("materialization directory escapes custody root") from exc
+
+
+def _regular_lane_files(root: Path) -> list[Path]:
+    if not root.exists():
+        return []
+    files: list[Path] = []
+    for path in sorted(root.rglob("*")):
+        if _is_reparse(path):
+            raise PromotionIdentityError("materialization lane contains a reparse entry")
+        if path.is_file():
+            if not stat.S_ISREG(path.stat().st_mode):
+                raise PromotionIdentityError("materialization lane contains a nonregular entry")
+            files.append(path)
+        elif not path.is_dir():
+            raise PromotionIdentityError("materialization lane contains an unsupported entry")
+    return files
+
+
+def _lane_file_basis(path: Path, lane_root: Path, *, layout: str) -> str:
+    try:
+        relative = path.relative_to(lane_root)
+    except ValueError as exc:
+        raise PromotionIdentityError("lane artifact escapes its lane root") from exc
+    if layout == "basis-dirs" and len(relative.parts) >= 3:
+        prefix, basis_hash = relative.parts[:2]
+        _require_lower_hex64(basis_hash, "lane artifact basis_hash")
+        if prefix == basis_hash[:2]:
+            return basis_hash
+    elif layout == "basis-file" and len(relative.parts) == 2:
+        prefix, artifact_name = relative.parts
+        basis_hash = Path(artifact_name).stem
+        _require_lower_hex64(basis_hash, "lane artifact basis_hash")
+        if prefix == basis_hash[:2]:
+            return basis_hash
+    elif layout == "basis-prefix":
+        basis_hash = relative.name.split("-", 1)[0]
+        _require_lower_hex64(basis_hash, "lane artifact basis_hash")
+        return basis_hash
+    raise PromotionIdentityError("lane artifact has no derivable basis")
+
+
+def _contain_unreferenced_lane_files(
+    db: OrmSession,
+    *,
+    paths: Mapping[str, Path],
+    authoritative_final: Path | None = None,
+) -> None:
+    _reconcile_containment_records(paths["dataset_containment"])
+    _reconcile_containment_records(paths["artifact_containment"])
+    committed_version_ids = {
+        value
+        for (value,) in db.query(L3ConnectorPromotionReceipt.dataset_version_id)
+        .filter(L3ConnectorPromotionReceipt.materialization_status == "materialized")
+        .all()
+        if value
+    }
+    referenced_dataset_files = {
+        Path(value).resolve()
+        for (value,) in db.query(DatasetVersion.storage_ref)
+        .filter(DatasetVersion.dataset_version_id.in_(committed_version_ids))
+        .all()
+        if value
+    } if committed_version_ids else set()
+    if authoritative_final is not None:
+        referenced_dataset_files.add(authoritative_final.resolve())
+    for path in _regular_lane_files(paths["dataset_final_root"]):
+        if path.resolve() not in referenced_dataset_files:
+            _contain_file(
+                path,
+                containment_root=paths["dataset_containment"],
+                basis_hash=_lane_file_basis(
+                    path,
+                    paths["dataset_final_root"],
+                    layout="basis-file",
+                ),
+                namespace="deterministic-final",
+            )
+    for path in _regular_lane_files(paths["stage_root"]):
+        _contain_file(
+            path,
+            containment_root=paths["dataset_containment"],
+            basis_hash=_lane_file_basis(path, paths["stage_root"], layout="basis-prefix"),
+            namespace="parquet-staging",
+        )
+    for path in _regular_lane_files(paths["artifact_stage_root"]):
+        _contain_file(
+            path,
+            containment_root=paths["artifact_containment"],
+            basis_hash=_lane_file_basis(
+                path,
+                paths["artifact_stage_root"],
+                layout="basis-dirs",
+            ),
+            namespace="snapshot-staging",
+        )
+    committed_session_ids = {
+        value
+        for (value,) in db.query(L3ConnectorPromotionReceipt.promoted_session_id)
+        .filter(L3ConnectorPromotionReceipt.materialization_status == "materialized")
+        .all()
+        if value
+    }
+    referenced_snapshots = {
+        Path(value).resolve()
+        for (value,) in db.query(L3MaterialSnapshot.payload_ref)
+        .filter(L3MaterialSnapshot.session_id.in_(committed_session_ids))
+        .all()
+    } if committed_session_ids else set()
+    for path in _regular_lane_files(paths["artifact_final_root"]):
+        if path.resolve() not in referenced_snapshots:
+            _contain_file(
+                path,
+                containment_root=paths["artifact_containment"],
+                basis_hash=_lane_file_basis(
+                    path,
+                    paths["artifact_final_root"],
+                    layout="basis-dirs",
+                ),
+                namespace="snapshot-final",
+            )
+
+
+def _before_materialization_publish() -> None:
+    """Fault-injection seam; production is a no-op."""
+
+
+def _after_materialization_publish() -> None:
+    """Crash/fault-injection seam immediately after the Parquet rename."""
+
+
+def _validated_existing_f07_frame(raw_path: Path):
+    raw_bytes = raw_path.read_bytes()
+    _reproduce_f07_transform(raw_bytes)
+    existing = read_existing_csv_reference(
+        raw_path,
+        expected_sha256=F07_CONTENT_SHA256,
+        expected_size_bytes=F07_CONTENT_BYTES,
+    )
+    frame = existing.dataframe.copy()
+    if (
+        existing.encoding != "utf-8"
+        or existing.source_row_count != 2
+        or list(frame.columns) != ["site_id", "value"]
+        or frame["site_id"].tolist() != ["SB-001", "SB-002"]
+        or frame["value"].tolist() != [42, 43]
+    ):
+        raise PromotionIdentityError("existing CSV reference does not reproduce F07")
+    frame["site_id"] = frame["site_id"].astype("object")
+    frame["value"] = frame["value"].astype("float64")
+    return frame
+
+
+def _build_resolver_basis(
+    *,
+    receipt: L3ConnectorPromotionReceipt,
+    intake: L3ConnectorSourceIntakeRecord,
+    target: ConnectorRunTarget,
+    input_relative_ref: str,
+    code_identity: Mapping[str, str],
+) -> tuple[dict[str, Any], str]:
+    basis = build_materialization_basis(
+        dataframe_io_git_blob=code_identity["dataframe_io_git_blob"],
+        implementation_commit=code_identity["implementation_commit"],
+        ingest_git_blob=code_identity["ingest_git_blob"],
+        promotion_git_blob=code_identity["promotion_git_blob"],
+        input_storage_ref_hash=storage_ref_hash(input_relative_ref),
+        connector_run_id=intake.connector_run_id,
+        connector_run_target_id=target.connector_run_target_id,
+        connector_source_intake_record_id=intake.connector_source_intake_record_id,
+        gate_b_material_snapshot_id=receipt.gate_b_material_snapshot_id,
+        gate_b_selection_manifest_id=receipt.gate_b_selection_manifest_id,
+        gate_b_session_id=receipt.gate_b_session_id,
+        canonical_identity_key_hash=receipt.canonical_identity_key_hash,
+        connector_promotion_receipt_id=receipt.connector_promotion_receipt_id,
+        promotion_basis_hash=receipt.promotion_basis_hash,
+    )
+    return basis, materialization_basis_hash(basis)
+
+
+def _materialization_response(
+    receipt: L3ConnectorPromotionReceipt,
+    *,
+    disposition: str,
+    record_hash: str,
+) -> dict[str, Any]:
+    if disposition not in {"materialized", "reused"}:
+        raise PromotionIdentityError("invalid materialization disposition")
+    return {
+        "approval_hash": receipt.approval_hash,
+        "canonical_identity_key_hash": receipt.canonical_identity_key_hash,
+        "connector_promotion_receipt_id": receipt.connector_promotion_receipt_id,
+        "dataset_id": receipt.dataset_id,
+        "dataset_version_id": receipt.dataset_version_id,
+        "disposition": disposition,
+        "gate_b_session_id": receipt.gate_b_session_id,
+        "materialization_basis_hash": receipt.materialization_basis_hash,
+        "materialization_record_hash": record_hash,
+        "promoted_session_id": receipt.promoted_session_id,
+        "promotion_basis_hash": receipt.promotion_basis_hash,
+        "row_count": 2,
+        "schema_id": MATERIALIZATION_RESPONSE_SCHEMA_ID,
+        "source_row_count": 2,
+        "variable_count": 2,
+    }
+
+
+def _materialization_manifest_item(
+    *,
+    dataset_version_id: str,
+    receipt_id: str,
+    basis_hash: str,
+) -> dict[str, Any]:
+    return {
+        "source_plane": "dataset",
+        "descriptor_type": "dataset_version",
+        "selector_payload": {"dataset_version_id": dataset_version_id},
+        "selection_basis": {
+            "connector_promotion_receipt_id": receipt_id,
+            "materialization_basis_hash": basis_hash,
+        },
+        "expansion_reason": "connector_promotion_materialization",
+        "status": "expanded",
+    }
+
+
+def _model_matches_profile(
+    row: Any,
+    profile: Mapping[str, Any],
+    *,
+    excluded: frozenset[str] = frozenset(),
+) -> bool:
+    return all(getattr(row, key) == value for key, value in profile.items() if key not in excluded)
+
+
+def _verify_materialized_replay(
+    db: OrmSession,
+    *,
+    receipt: L3ConnectorPromotionReceipt,
+    intake: L3ConnectorSourceIntakeRecord,
+    target: ConnectorRunTarget,
+    basis_hash: str,
+    paths: Mapping[str, Path],
+) -> dict[str, Any]:
+    if (
+        receipt.materialization_status != "materialized"
+        or receipt.materialization_basis_hash != basis_hash
+        or not receipt.dataset_id
+        or not receipt.dataset_version_id
+        or not receipt.promoted_session_id
+        or receipt.materialized_at is None
+    ):
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    dataset = db.get(Dataset, receipt.dataset_id)
+    version = db.get(DatasetVersion, receipt.dataset_version_id)
+    promoted = db.get(L3Session, receipt.promoted_session_id)
+    if dataset is None or version is None or promoted is None:
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    if (
+        (target.dataset_id, target.dataset_version_id)
+        != (dataset.dataset_id, version.dataset_version_id)
+        or version.dataset_id != dataset.dataset_id
+    ):
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    source = db.get(SourceConnector, dataset.source_id) if dataset.source_id else None
+    variables = (
+        db.query(VariableDefinition)
+        .filter(VariableDefinition.dataset_version_id == version.dataset_version_id)
+        .order_by(VariableDefinition.ordinal_position)
+        .all()
+    )
+    profile = json.loads(METADATA_CONTRACT_CANONICAL_JSON)
+    if (
+        source is None
+        or not _model_matches_profile(source, profile["source_connector"])
+        or not _model_matches_profile(dataset, profile["dataset"])
+        or not _model_matches_profile(
+            version,
+            profile["dataset_version"],
+            excluded=frozenset({"storage_ref_policy"}),
+        )
+        or len(variables) != len(profile["variables"])
+        or any(
+            not _model_matches_profile(variable, expected)
+            for variable, expected in zip(variables, profile["variables"], strict=True)
+        )
+    ):
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    try:
+        final_path, output_relative_ref = _resolve_regular_reference(
+            str(version.storage_ref or ""),
+            settings.dataset_storage_dir,
+        )
+    except PromotionIdentityError as exc:
+        raise _closed_b1b_error("connector_materialization_basis_conflict") from exc
+    if final_path != paths["final"].resolve() or version.content_hash != F07_CONTENT_SHA256:
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    file_bytes, file_sha256 = _file_facts(final_path)
+    provenance_rows = (
+        db.query(DatasetSourceProvenance)
+        .filter(DatasetSourceProvenance.dataset_version_id == version.dataset_version_id)
+        .all()
+    )
+    snapshots = (
+        db.query(L3MaterialSnapshot)
+        .filter(L3MaterialSnapshot.session_id == promoted.session_id)
+        .all()
+    )
+    events = (
+        db.query(L3RetrievalEvent)
+        .filter(L3RetrievalEvent.session_id == promoted.session_id)
+        .all()
+    )
+    descriptors = (
+        db.query(L3Descriptor)
+        .filter(L3Descriptor.session_id == promoted.session_id)
+        .all()
+    )
+    manifest = db.get(L3SelectionManifest, promoted.selection_manifest_id)
+    if (
+        len(provenance_rows) != 1
+        or len(snapshots) != 1
+        or len(events) != 1
+        or len(descriptors) != 1
+        or manifest is None
+        or promoted.status != "completed_with_warnings"
+        or promoted.completed_at is None
+        or promoted.entry_route_context_json != {}
+        or promoted.summary_json
+        != {
+            "descriptor_status_counts": {"resolved_loaded": 1},
+            "retrieval_outcome_counts": {"loaded": 1},
+            "loaded_snapshot_count": 1,
+            "source_planes": ["dataset"],
+            "warning_reasons": ["synthetic_non_official_fixture"],
+            "retrieved_descriptor_count": 1,
+            "unresolved_descriptor_count": 0,
+            "descriptor_coverage_status": "complete",
+        }
+    ):
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    provenance = provenance_rows[0]
+    snapshot = snapshots[0]
+    event = events[0]
+    descriptor = descriptors[0]
+    expected_manifest_item = _materialization_manifest_item(
+        dataset_version_id=version.dataset_version_id,
+        receipt_id=receipt.connector_promotion_receipt_id,
+        basis_hash=basis_hash,
+    )
+    try:
+        snapshot_path, _snapshot_relative_ref = _resolve_regular_reference(
+            snapshot.payload_ref,
+            str(paths["artifact_final_root"]),
+        )
+        snapshot_bytes = snapshot_path.read_bytes()
+    except (OSError, PromotionIdentityError) as exc:
+        raise _closed_b1b_error("connector_materialization_basis_conflict") from exc
+    expected_snapshot_path = (
+        paths["artifact_final_root"]
+        / basis_hash[:2]
+        / basis_hash
+        / promoted.session_id
+        / f"{snapshot.payload_hash}.json"
+    ).resolve()
+    expected_event_payload = {
+        "loaded_items": [
+            {
+                "material_snapshot_id": snapshot.material_snapshot_id,
+                "source_plane": snapshot.source_plane,
+                "source_shape": snapshot.source_shape,
+                "payload_ref": snapshot.payload_ref,
+                "payload_hash": snapshot.payload_hash,
+            }
+        ],
+        "failed_items": [],
+        "why": "connector_promotion_materialized_dataset_version",
+    }
+    if (
+        snapshot_path != expected_snapshot_path
+        or hashlib.sha256(snapshot_bytes).hexdigest() != snapshot.payload_hash
+        or json.loads(snapshot_bytes) != {"dataset_version_id": version.dataset_version_id}
+        or snapshot.descriptor_id != descriptor.descriptor_id
+        or snapshot.source_plane != "dataset"
+        or snapshot.source_shape != "dataset_version"
+        or snapshot.load_summary_json
+        != {"loaded_records": 2, "failed_records": 0, "variable_count": 2}
+        or event.descriptor_id != descriptor.descriptor_id
+        or event.outcome != "loaded"
+        or event.reason_code != "connector_promotion_materialized_dataset_version"
+        or event.material_snapshot_ids_json != [snapshot.material_snapshot_id]
+        or event.event_payload_json != expected_event_payload
+        or manifest.session_id != promoted.session_id
+        or manifest.manifest_json != {"items": [expected_manifest_item]}
+        or manifest.source_plane_hints_json != {"dataset": 1}
+        or manifest.commit_reason != "connector_promotion_materialization"
+        or descriptor.selection_manifest_id != manifest.selection_manifest_id
+        or descriptor.source_plane != "dataset"
+        or descriptor.descriptor_type != "dataset_version"
+        or descriptor.selector_payload_json != expected_manifest_item["selector_payload"]
+        or descriptor.selection_basis_json != expected_manifest_item["selection_basis"]
+        or descriptor.expansion_reason != "connector_promotion_materialization"
+        or descriptor.status != "resolved_loaded"
+        or snapshot.source_identity_json
+        != {
+            "schema_id": "layer3.dataset_version_source_identity.v1",
+            "source_class": "dataset_version",
+            "dataset_version_id": version.dataset_version_id,
+            "dataset_id": dataset.dataset_id,
+            "dataset_name": dataset.name,
+            "version_label": version.version_label,
+            "version_type": version.version_type,
+            "status": version.status,
+        }
+        or snapshot.source_provenance_json
+        != {
+            "schema_id": "layer3.connector_promotion_dataset_source_provenance.v1",
+            "connector_promotion_receipt_id": receipt.connector_promotion_receipt_id,
+            "materialization_basis_hash": basis_hash,
+        }
+    ):
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    if (
+        not _model_matches_profile(
+            provenance,
+            profile["dataset_source_provenance"],
+            excluded=frozenset({"raw_storage_ref_policy", "source_reference_json_policy"}),
+        )
+        or provenance.connector_run_id != intake.connector_run_id
+        or provenance.raw_storage_ref != intake.storage_ref
+    ):
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    if list(provenance.source_reference_json) != [MATERIALIZATION_CONTEXT_KEY]:
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    wrapper = provenance.source_reference_json[MATERIALIZATION_CONTEXT_KEY]
+    if promoted.operator_context_json != {MATERIALIZATION_CONTEXT_KEY: wrapper}:
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    if not isinstance(wrapper, dict) or set(wrapper) != {"record", "record_hash"}:
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    record = wrapper.get("record")
+    if not isinstance(record, dict) or materialization_record_hash(record) != wrapper.get("record_hash"):
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    expected_output = {
+        "dataset_file_bytes": file_bytes,
+        "dataset_file_sha256": file_sha256,
+        "dataset_id": dataset.dataset_id,
+        "dataset_source_provenance_id": provenance.dataset_source_provenance_id,
+        "dataset_storage_ref_hash": dataset_storage_ref_hash(output_relative_ref),
+        "dataset_version_content_sha256": version.content_hash,
+        "dataset_version_id": version.dataset_version_id,
+        "dropped_row_count": 0,
+        "promoted_session_id": promoted.session_id,
+        "row_count": 2,
+        "source_connector_id": source.source_id,
+        "source_row_count": 2,
+        "variable_count": 2,
+    }
+    if record != {
+        "basis_hash": basis_hash,
+        "output": expected_output,
+        "schema_id": MATERIALIZATION_RECORD_SCHEMA_ID,
+    }:
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    response = _materialization_response(
+        receipt,
+        disposition="reused",
+        record_hash=wrapper["record_hash"],
+    )
+    _contain_unreferenced_lane_files(
+        db,
+        paths=paths,
+        authoritative_final=final_path,
+    )
+    db.rollback()
+    db.info.pop("b1b_promotion_identity_lock", None)
+    return response
+
+
+def _stage_profile_rows(
+    db: OrmSession,
+    *,
+    receipt: L3ConnectorPromotionReceipt,
+    intake: L3ConnectorSourceIntakeRecord,
+    target: ConnectorRunTarget,
+    frame,
+    basis_hash: str,
+    final_path: Path,
+    artifact_stage_root: Path,
+) -> tuple[
+    SourceConnector,
+    Dataset,
+    DatasetVersion,
+    DatasetSourceProvenance,
+    L3Session,
+    L3RetrievalEvent,
+    L3MaterialSnapshot,
+]:
+    profile = json.loads(METADATA_CONTRACT_CANONICAL_JSON)
+    source_profile = profile["source_connector"]
+    source = SourceConnector(**source_profile)
+    db.add(source)
+    db.flush()
+    dataset = Dataset(source_id=source.source_id, **profile["dataset"])
+    db.add(dataset)
+    db.flush()
+    version_profile = profile["dataset_version"]
+    version = DatasetVersion(
+        dataset_id=dataset.dataset_id,
+        parent_version_id=version_profile["parent_version_id"],
+        version_label=version_profile["version_label"],
+        version_type=version_profile["version_type"],
+        status=version_profile["status"],
+        storage_ref=str(final_path.resolve()),
+        row_count=version_profile["row_count"],
+        content_hash=version_profile["content_hash"],
+        source_row_count=version_profile["source_row_count"],
+        dropped_row_count=version_profile["dropped_row_count"],
+        notes=version_profile["notes"],
+    )
+    db.add(version)
+    db.flush()
+    for variable_profile in profile["variables"]:
+        db.add(VariableDefinition(dataset_version_id=version.dataset_version_id, **variable_profile))
+    provenance_profile = profile["dataset_source_provenance"]
+    provenance = DatasetSourceProvenance(
+        dataset_version_id=version.dataset_version_id,
+        connector_run_id=intake.connector_run_id,
+        source_system=provenance_profile["source_system"],
+        source_mode=provenance_profile["source_mode"],
+        source_artifact_key=provenance_profile["source_artifact_key"],
+        sciencebase_item_id=provenance_profile["sciencebase_item_id"],
+        sciencebase_item_url=provenance_profile["sciencebase_item_url"],
+        sciencebase_file_name=provenance_profile["sciencebase_file_name"],
+        sciencebase_download_uri=provenance_profile["sciencebase_download_uri"],
+        artifact_surface=provenance_profile["artifact_surface"],
+        artifact_locator_type=provenance_profile["artifact_locator_type"],
+        remote_checksum_type=provenance_profile["remote_checksum_type"],
+        remote_checksum_value=provenance_profile["remote_checksum_value"],
+        downloaded_sha256=provenance_profile["downloaded_sha256"],
+        raw_storage_ref=intake.storage_ref,
+        source_query_fingerprint=provenance_profile["source_query_fingerprint"],
+        source_reference_json={},
+        fetch_policy_mode=provenance_profile["fetch_policy_mode"],
+        resolved_ip=provenance_profile["resolved_ip"],
+        redirect_count=provenance_profile["redirect_count"],
+        blocked_reason=provenance_profile["blocked_reason"],
+        etag=provenance_profile["etag"],
+        last_modified=provenance_profile["last_modified"],
+        retrieved_http_json=provenance_profile["retrieved_http_json"],
+        discovered_at=provenance_profile["discovered_at"],
+        downloaded_at=provenance_profile["downloaded_at"],
+    )
+    db.add(provenance)
+    manifest_item = _materialization_manifest_item(
+        dataset_version_id=version.dataset_version_id,
+        receipt_id=receipt.connector_promotion_receipt_id,
+        basis_hash=basis_hash,
+    )
+    promoted, manifest = commit_selection(
+        db,
+        SessionEntryRequest(
+            manifest_items=[manifest_item],
+            source_plane_hints={"dataset": 1},
+            commit_reason="connector_promotion_materialization",
+        ),
+    )
+    descriptors = expand_descriptors(db, session=promoted, manifest=manifest)
+    source_identity = {
+        "schema_id": "layer3.dataset_version_source_identity.v1",
+        "source_class": "dataset_version",
+        "dataset_version_id": version.dataset_version_id,
+        "dataset_id": dataset.dataset_id,
+        "dataset_name": dataset.name,
+        "version_label": version.version_label,
+        "version_type": version.version_type,
+        "status": version.status,
+    }
+    event, snapshots = record_retrieval_event(
+        db,
+        session=promoted,
+        descriptor=descriptors[0],
+        outcome="loaded",
+        reason_code="connector_promotion_materialized_dataset_version",
+        loaded_materials=[
+            SnapshotMaterial(
+                source_shape="dataset_version",
+                source_identity=source_identity,
+                source_provenance={
+                    "schema_id": "layer3.connector_promotion_dataset_source_provenance.v1",
+                    "connector_promotion_receipt_id": receipt.connector_promotion_receipt_id,
+                    "materialization_basis_hash": basis_hash,
+                },
+                payload={"dataset_version_id": version.dataset_version_id},
+                load_summary={
+                    "loaded_records": int(len(frame)),
+                    "failed_records": 0,
+                    "variable_count": 2,
+                },
+            )
+        ],
+        storage_root=artifact_stage_root,
+    )
+    finalize_session(db, session=promoted)
+    promoted.status = "completed_with_warnings"
+    promoted.summary_json = {
+        **promoted.summary_json,
+        "warning_reasons": ["synthetic_non_official_fixture"],
+    }
+    return source, dataset, version, provenance, promoted, event, snapshots[0]
+
+
+def _commit_materialization(db: OrmSession) -> None:
+    """Commit seam used only to test acknowledged and ambiguous outcomes."""
+    db.commit()
+
+
+def _best_effort_rollback(db: OrmSession) -> None:
+    """Never let a broken original connection mask independent reconciliation."""
+    try:
+        db.rollback()
+    except Exception:
+        pass
+
+
+def _before_failed_materialization_containment() -> None:
+    """Fault/barrier seam entered only while the fresh I1 lock is held."""
+
+
+def _reconcile_failed_materialization(
+    engine,
+    *,
+    receipt_id: str,
+    target_id: str,
+    paths: Mapping[str, Path],
+    expectation: Mapping[str, Any] | None,
+) -> str:
+    with OrmSession(bind=engine, expire_on_commit=False) as verify_db:
+        acquire_promotion_identity_lock(verify_db, F07_CANONICAL_IDENTITY_KEY_HASH)
+        receipt = verify_db.get(L3ConnectorPromotionReceipt, receipt_id)
+        target = verify_db.get(ConnectorRunTarget, target_id)
+        if receipt is None or target is None:
+            return "uncertain"
+        if expectation is not None:
+            dataset_id = expectation["dataset_id"]
+            dataset_version_id = expectation["dataset_version_id"]
+            promoted_session_id = expectation["promoted_session_id"]
+            final_path = expectation["final_path"]
+            snapshot_path = expectation["snapshot_path"]
+            committed = (
+                receipt.materialization_status == "materialized"
+                and receipt.materialization_basis_hash == expectation["basis_hash"]
+                and receipt.dataset_id == dataset_id
+                and receipt.dataset_version_id == dataset_version_id
+                and receipt.promoted_session_id == promoted_session_id
+                and receipt.materialized_at is not None
+                and (target.dataset_id, target.dataset_version_id)
+                == (dataset_id, dataset_version_id)
+            )
+        else:
+            committed = False
+        if committed and expectation is not None:
+            _require_nonreparse_components(final_path)
+            _require_nonreparse_components(snapshot_path)
+            version = verify_db.get(DatasetVersion, dataset_version_id)
+            snapshots = (
+                verify_db.query(L3MaterialSnapshot)
+                .filter(L3MaterialSnapshot.session_id == promoted_session_id)
+                .all()
+            )
+            if (
+                version is not None
+                and Path(version.storage_ref).resolve() == final_path.resolve()
+                and len(snapshots) == 1
+                and Path(snapshots[0].payload_ref).resolve() == snapshot_path.resolve()
+                and _file_facts(final_path)
+                == (expectation["final_bytes"], expectation["final_sha256"])
+                and _file_facts(snapshot_path)
+                == (expectation["snapshot_bytes"], expectation["snapshot_sha256"])
+                and not _is_reparse(final_path)
+                and not _is_reparse(snapshot_path)
+            ):
+                return "committed"
+            return "uncertain"
+        absent = (
+            receipt.materialization_status is None
+            and receipt.materialization_basis_hash is None
+            and receipt.dataset_id is None
+            and receipt.dataset_version_id is None
+            and receipt.promoted_session_id is None
+            and receipt.materialized_at is None
+            and target.dataset_id is None
+            and target.dataset_version_id is None
+        )
+        if absent and expectation is not None:
+            absent = (
+                verify_db.get(Dataset, dataset_id) is None
+                and verify_db.get(DatasetVersion, dataset_version_id) is None
+                and verify_db.get(L3Session, promoted_session_id) is None
+            )
+        if absent:
+            _before_failed_materialization_containment()
+            _contain_unreferenced_lane_files(verify_db, paths=paths)
+            return "absent"
+        return "uncertain"
+
+
+def _materialize_locked_receipt(
+    db: OrmSession,
+    *,
+    receipt: L3ConnectorPromotionReceipt,
+    intake: L3ConnectorSourceIntakeRecord,
+    target: ConnectorRunTarget,
+    frame,
+    basis_hash: str,
+    input_relative_ref: str,
+    paths: Mapping[str, Path],
+) -> dict[str, Any]:
+    bind = db.get_bind()
+    reconciliation_engine = getattr(bind, "engine", bind)
+    stage_path = paths["stage_root"] / f"{basis_hash}-{uuid.uuid4().hex}.parquet"
+    snapshot_stage: Path | None = None
+    snapshot_final: Path | None = None
+    commit_expectation: dict[str, Any] | None = None
+    response: dict[str, Any] | None = None
+    try:
+        directory_bindings = (
+            (paths["dataset_root"], paths["dataset_root"]),
+            (paths["stage_root"], paths["dataset_root"]),
+            (paths["dataset_final_root"], paths["dataset_root"]),
+            (paths["final"].parent, paths["dataset_root"]),
+            (paths["dataset_containment"], paths["dataset_root"]),
+            (paths["artifact_custody_root"], paths["artifact_custody_root"]),
+            (paths["artifact_root"], paths["artifact_custody_root"]),
+            (paths["artifact_stage_root"], paths["artifact_custody_root"]),
+            (paths["artifact_final_root"], paths["artifact_custody_root"]),
+            (paths["artifact_containment"], paths["artifact_custody_root"]),
+        )
+        for directory, custody_root in directory_bindings:
+            _ensure_nonreparse_lane_directory(directory, custody_root)
+        _contain_unreferenced_lane_files(db, paths=paths)
+        if paths["final"].exists() or stage_path.exists():
+            raise _closed_b1b_error("connector_materialization_basis_conflict")
+        write_dataframe_to_absent_parquet(frame, stage_path)
+        stage_bytes, stage_sha256 = _file_facts(stage_path)
+        artifact_stage_basis_root = (
+            paths["artifact_stage_root"] / basis_hash[:2] / basis_hash
+        )
+        _ensure_nonreparse_lane_directory(
+            artifact_stage_basis_root,
+            paths["artifact_custody_root"],
+        )
+        source, dataset, version, provenance, promoted, event, snapshot = _stage_profile_rows(
+            db,
+            receipt=receipt,
+            intake=intake,
+            target=target,
+            frame=frame,
+            basis_hash=basis_hash,
+            final_path=paths["final"],
+            artifact_stage_root=artifact_stage_basis_root,
+        )
+        snapshot_stage, _snapshot_stage_ref = _resolve_regular_reference(
+            snapshot.payload_ref,
+            str(paths["artifact_stage_root"]),
+        )
+        with snapshot_stage.open("rb+") as handle:
+            os.fsync(handle.fileno())
+        snapshot_stage_bytes, snapshot_stage_sha256 = _file_facts(snapshot_stage)
+        if snapshot_stage_sha256 != snapshot.payload_hash:
+            raise PromotionIdentityError("staged snapshot payload hash mismatch")
+        snapshot_final = (
+            paths["artifact_final_root"]
+            / basis_hash[:2]
+            / basis_hash
+            / promoted.session_id
+            / snapshot_stage.name
+        )
+        receipt.materialization_status = "materializing"
+        receipt.materialization_basis_hash = basis_hash
+        db.flush()
+        _before_materialization_publish()
+        if paths["final"].exists():
+            raise _closed_b1b_error("connector_materialization_basis_conflict")
+        _atomic_rename_no_overwrite(stage_path, paths["final"])
+        _after_materialization_publish()
+        _ensure_nonreparse_lane_directory(snapshot_final.parent, paths["artifact_custody_root"])
+        _atomic_rename_no_overwrite(snapshot_stage, snapshot_final)
+        snapshot_final, _snapshot_final_ref = _resolve_regular_reference(
+            str(snapshot_final),
+            str(paths["artifact_final_root"]),
+        )
+        snapshot_final_bytes, snapshot_final_sha256 = _file_facts(snapshot_final)
+        if (snapshot_final_bytes, snapshot_final_sha256) != (
+            snapshot_stage_bytes,
+            snapshot_stage_sha256,
+        ):
+            raise PromotionIdentityError("published snapshot differs from verified stage")
+        snapshot.payload_ref = str(snapshot_final)
+        event_payload = json.loads(json.dumps(event.event_payload_json))
+        loaded_items = event_payload.get("loaded_items")
+        if (
+            not isinstance(loaded_items, list)
+            or len(loaded_items) != 1
+            or loaded_items[0].get("material_snapshot_id") != snapshot.material_snapshot_id
+            or loaded_items[0].get("payload_hash") != snapshot.payload_hash
+        ):
+            raise PromotionIdentityError("snapshot retrieval event linkage is invalid")
+        loaded_items[0]["payload_ref"] = snapshot.payload_ref
+        event.event_payload_json = event_payload
+
+        input_path_check, input_relative_check = _resolve_regular_reference(
+            intake.storage_ref,
+            settings.storage_dir,
+        )
+        if input_relative_check != input_relative_ref:
+            raise PromotionIdentityError("input storage reference changed during materialization")
+        _validated_existing_f07_frame(input_path_check)
+        final_path_check, output_relative_ref = _resolve_regular_reference(
+            str(paths["final"]),
+            settings.dataset_storage_dir,
+        )
+        final_bytes, final_sha256 = _file_facts(final_path_check)
+        if (final_bytes, final_sha256) != (stage_bytes, stage_sha256):
+            raise PromotionIdentityError("published Parquet differs from verified stage")
+        record = build_materialization_record(
+            basis_hash=basis_hash,
+            dataset_file_bytes=final_bytes,
+            dataset_file_sha256=final_sha256,
+            dataset_id=dataset.dataset_id,
+            dataset_source_provenance_id=provenance.dataset_source_provenance_id,
+            dataset_storage_ref_hash=dataset_storage_ref_hash(output_relative_ref),
+            dataset_version_content_sha256=version.content_hash,
+            dataset_version_id=version.dataset_version_id,
+            promoted_session_id=promoted.session_id,
+            source_connector_id=source.source_id,
+        )
+        wrapper = build_materialization_wrapper(record)
+        provenance.source_reference_json = {MATERIALIZATION_CONTEXT_KEY: wrapper}
+        promoted.operator_context_json = {MATERIALIZATION_CONTEXT_KEY: wrapper}
+        if (
+            dataset.source_id != source.source_id
+            or version.dataset_id != dataset.dataset_id
+            or provenance.dataset_version_id != version.dataset_version_id
+            or provenance.connector_run_id != intake.connector_run_id
+            or target.connector_run_id != intake.connector_run_id
+        ):
+            raise PromotionIdentityError("materialization foreign-key equality check failed")
+        target.dataset_id = dataset.dataset_id
+        target.dataset_version_id = version.dataset_version_id
+        receipt.dataset_id = dataset.dataset_id
+        receipt.dataset_version_id = version.dataset_version_id
+        receipt.promoted_session_id = promoted.session_id
+        receipt.materialization_status = "materialized"
+        receipt.materialized_at = datetime.now(timezone.utc)
+        response = _materialization_response(
+            receipt,
+            disposition="materialized",
+            record_hash=wrapper["record_hash"],
+        )
+        commit_expectation = {
+            "basis_hash": basis_hash,
+            "dataset_id": dataset.dataset_id,
+            "dataset_version_id": version.dataset_version_id,
+            "promoted_session_id": promoted.session_id,
+            "final_path": paths["final"],
+            "final_bytes": final_bytes,
+            "final_sha256": final_sha256,
+            "snapshot_path": snapshot_final,
+            "snapshot_bytes": snapshot_final_bytes,
+            "snapshot_sha256": snapshot_final_sha256,
+        }
+        _commit_materialization(db)
+        db.info.pop("b1b_promotion_identity_lock", None)
+        return response
+    except Exception as exc:
+        _best_effort_rollback(db)
+        db.info.pop("b1b_promotion_identity_lock", None)
+        try:
+            outcome = _reconcile_failed_materialization(
+                reconciliation_engine,
+                receipt_id=receipt.connector_promotion_receipt_id,
+                target_id=target.connector_run_target_id,
+                paths=paths,
+                expectation=commit_expectation,
+            )
+        except Exception as reconciliation_error:
+            raise _closed_b1b_error("connector_materialization_basis_conflict") from reconciliation_error
+        if outcome == "committed" and response is not None:
+            return response
+        if outcome != "absent":
+            raise _closed_b1b_error("connector_materialization_basis_conflict") from exc
+        raise
+
+
+def resolve_connector_promotion(
+    db: OrmSession,
+    *,
+    gate_b_session_id: str,
+) -> dict[str, Any]:
+    """Materialize or exactly replay the receipt selected by one Gate-B session."""
+    try:
+        uuid.UUID(_clean_required_string(gate_b_session_id, "gate_b_session_id"))
+    except (ValueError, AttributeError, PromotionIdentityError, TypeError) as exc:
+        raise _closed_b1b_error("connector_promotion_session_not_found") from exc
+    try:
+        acquire_promotion_identity_lock(db, F07_CANONICAL_IDENTITY_KEY_HASH)
+        session = db.get(L3Session, gate_b_session_id)
+        if session is None:
+            raise _closed_b1b_error("connector_promotion_session_not_found")
+        try:
+            receipt = (
+                db.query(L3ConnectorPromotionReceipt)
+                .filter(L3ConnectorPromotionReceipt.gate_b_session_id == gate_b_session_id)
+                .one_or_none()
+            )
+        except MultipleResultsFound as exc:
+            raise _basis_conflict() from exc
+        if receipt is None:
+            raise _not_eligible()
+        verify_existing_receipt_basis(db, receipt)
+        intake = db.get(L3ConnectorSourceIntakeRecord, receipt.connector_source_intake_record_id)
+        if intake is None:
+            raise _basis_conflict()
+        run = db.get(ConnectorRun, intake.connector_run_id)
+        target = db.get(ConnectorRunTarget, intake.connector_run_target_id)
+        if not _server_exact_shape(intake, run, target) or target is None:
+            raise _not_eligible()
+        try:
+            code_identity = _read_clean_materialization_code_identity()
+            raw_path, input_relative_ref = _resolve_regular_reference(
+                intake.storage_ref,
+                settings.storage_dir,
+            )
+            frame = _validated_existing_f07_frame(raw_path)
+            _basis, basis_hash = _build_resolver_basis(
+                receipt=receipt,
+                intake=intake,
+                target=target,
+                input_relative_ref=input_relative_ref,
+                code_identity=code_identity,
+            )
+        except PromotionIdentityError as exc:
+            raise _closed_b1b_error("connector_materialization_basis_conflict") from exc
+        paths = _lane_paths(basis_hash)
+        if receipt.materialization_status == "materialized":
+            return _verify_materialized_replay(
+                db,
+                receipt=receipt,
+                intake=intake,
+                target=target,
+                basis_hash=basis_hash,
+                paths=paths,
+            )
+        if (
+            receipt.materialization_status is not None
+            or receipt.materialization_basis_hash is not None
+            or receipt.dataset_id is not None
+            or receipt.dataset_version_id is not None
+            or receipt.promoted_session_id is not None
+            or receipt.materialized_at is not None
+            or target.dataset_id is not None
+            or target.dataset_version_id is not None
+        ):
+            raise _closed_b1b_error("connector_materialization_basis_conflict")
+        return _materialize_locked_receipt(
+            db,
+            receipt=receipt,
+            intake=intake,
+            target=target,
+            frame=frame,
+            basis_hash=basis_hash,
+            input_relative_ref=input_relative_ref,
+            paths=paths,
+        )
+    except ConnectorPromotionError:
+        _best_effort_rollback(db)
+        db.info.pop("b1b_promotion_identity_lock", None)
+        raise
+    except Exception as exc:
+        _best_effort_rollback(db)
+        db.info.pop("b1b_promotion_identity_lock", None)
+        raise _closed_b1b_error("connector_materialization_basis_conflict") from exc

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -37,6 +38,17 @@ def persist_dataframe_as_version_rows(db: Session, version: DatasetVersion, df: 
     version.storage_ref = str(storage_path)
     version.row_count = int(len(frame))
     db.flush()
+
+
+def write_dataframe_to_absent_parquet(df: pd.DataFrame, storage_path: Path) -> int:
+    """Write an existing-reference frame to an absent path; no DB work or commit."""
+    path = Path(storage_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("xb") as handle:
+        df.copy().to_parquet(handle, index=False)
+        handle.flush()
+        os.fsync(handle.fileno())
+    return int(len(df))
 
 
 def load_version_dataframe(db: Session, dataset_version_id: str) -> pd.DataFrame:

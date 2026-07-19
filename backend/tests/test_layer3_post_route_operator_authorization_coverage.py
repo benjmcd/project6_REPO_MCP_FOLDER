@@ -54,6 +54,9 @@ _MARKET_POST_PATHS = [
     f"{_API_PREFIX}/market-pipeline/insights/process",
     f"{_API_PREFIX}/analyst-insight/insights/process",
 ]
+_B1B_STEP5_POST_PATHS = [
+    f"{_API_PREFIX}/layer3/source/connector/promotion/resolve",
+]
 
 
 def _post_routes() -> list[tuple[str, object]]:
@@ -132,6 +135,13 @@ def test_market_and_analyst_post_routes_are_gated() -> None:
             f"market/analyst route missing from pre-body authorization registry "
             f"as write: {path}"
         )
+
+
+def test_b1b_step5_post_routes_are_registered_and_write_gated() -> None:
+    registered = {path for path, _ in _post_routes()}
+    for path in _B1B_STEP5_POST_PATHS:
+        assert path in registered, f"expected B1b Step 5 POST route not registered on app: {path}"
+        assert main._pre_body_operator_authorization_access_for_path(path) == "write"
 
 
 def _configure_proxy(monkeypatch) -> None:

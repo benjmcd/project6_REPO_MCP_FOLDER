@@ -23,14 +23,18 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import json
 import logging
 import os
+import subprocess
 import sys
+import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, inspect as sa_inspect, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
@@ -45,11 +49,17 @@ if str(BACKEND) not in sys.path:
 
 from alembic.config import Config  # noqa: E402
 from alembic import command  # noqa: E402
+import main  # noqa: E402
+from app.api.deps import get_db  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app.db.session import Base  # noqa: E402
 from app.models.models import (  # noqa: E402
     ConnectorRun,
     ConnectorRunTarget,
+    Dataset,
+    DatasetRow,
+    DatasetSourceProvenance,
+    DatasetVersion,
     L3ConnectorPromotionReceipt,
     L3ConnectorSourceIntakeRecord,
     L3Descriptor,
@@ -58,6 +68,8 @@ from app.models.models import (  # noqa: E402
     L3RetrievalEvent,
     L3SelectionManifest,
     L3Session,
+    SourceConnector,
+    VariableDefinition,
 )
 from app.services.layer3_connector_source_intake import (  # noqa: E402
     connector_source_intake_material_preview,
@@ -768,6 +780,30 @@ import json as _json
 from app.services import layer3_connector_promotion as pm
 
 
+def test_b1b_closed_error_registry_and_attestation_default_are_exact() -> None:
+    expected = [
+        ("promotion_identity_decision_conflict", 409, "Promotion identity decision conflicts with the committed receipt.", False),
+        ("connector_promotion_bridge_unavailable", 503, "Connector promotion bridge is unavailable.", True),
+        ("b1b_handoff_full_body_required", 400, "Handoff requires a full-body request.", False),
+        ("connector_promotion_session_not_found", 404, "Connector promotion session was not found.", False),
+        ("connector_promotion_not_eligible", 409, "Connector promotion is not eligible.", False),
+        ("b1b_request_validation_failed", 422, "Request body failed validation.", False),
+        ("promotion_identity_lock_unavailable", 503, "Promotion identity lock is unavailable.", True),
+        ("connector_promotion_basis_conflict", 409, "Promotion basis conflicts with the committed receipt.", False),
+        ("connector_result_review_decision_conflict", 409, "Result review decision conflicts with the recorded review.", False),
+        ("connector_package_basis_conflict", 409, "Package basis conflicts with the committed package set.", False),
+        ("connector_package_review_decision_conflict", 409, "Package review decision conflicts with the recorded review.", False),
+        ("connector_materialization_basis_conflict", 409, "Materialization basis conflicts with the committed output.", False),
+    ]
+    assert [
+        (code, status, message, retryable)
+        for code, (status, message, retryable) in pm._B1B_ERROR_SPECS.items()
+    ] == expected
+    assert pm.attestation_precondition_available() is False
+    with pytest.raises(pm.PromotionIdentityError):
+        pm.b1b_error_body("not-a-closed-code")
+
+
 def test_metadata_contract_golden_vector() -> None:
     data = pm.METADATA_CONTRACT_CANONICAL_JSON.encode("utf-8")
     assert len(data) == 2180
@@ -885,23 +921,25 @@ def test_storage_ref_hash_domains() -> None:
 
 def test_materialization_basis_and_record_wrapper() -> None:
     basis = pm.build_materialization_basis(
-        dataframe_io_git_blob="1" * 40,
-        implementation_commit="2" * 40,
+        dataframe_io_git_blob="4" * 40,
+        implementation_commit="1" * 40,
         ingest_git_blob="3" * 40,
-        promotion_git_blob="4" * 40,
-        input_storage_ref_hash="5" * 64,
-        connector_run_id="run-1",
-        connector_run_target_id="target-1",
-        connector_source_intake_record_id="intake-1",
-        gate_b_material_snapshot_id="snap-1",
-        gate_b_selection_manifest_id="manifest-1",
-        gate_b_session_id="session-1",
+        promotion_git_blob="2" * 40,
+        input_storage_ref_hash="f" * 64,
+        connector_run_id="66666666-6666-6666-6666-666666666666",
+        connector_run_target_id="77777777-7777-7777-7777-777777777777",
+        connector_source_intake_record_id="11111111-1111-1111-1111-111111111111",
+        gate_b_material_snapshot_id="44444444-4444-4444-4444-444444444444",
+        gate_b_selection_manifest_id="33333333-3333-3333-3333-333333333333",
+        gate_b_session_id="22222222-2222-2222-2222-222222222222",
         canonical_identity_key_hash=pm.F07_CANONICAL_IDENTITY_KEY_HASH,
-        connector_promotion_receipt_id="receipt-1",
-        promotion_basis_hash="6" * 64,
+        connector_promotion_receipt_id="55555555-5555-5555-5555-555555555555",
+        promotion_basis_hash="cd3edda3b436481aaf4caaa39d483b54b2c86979ae9b6df6b293d1c1c9e6a938",
     )
     bh = pm.materialization_basis_hash(basis)
-    assert len(bh) == 64
+    canonical_basis = pm.d33_canonical_bytes(basis)
+    assert len(canonical_basis) == 1787
+    assert bh == "2f4b1251c42f753558d66352218358883c33de44543adfc497d209b783dfaca7"
     # Embedded fixed sections are exact.
     assert basis["code"]["metadata_contract_sha256"] == pm.METADATA_CONTRACT_SHA256
     assert basis["transformation"]["contract_sha256"] == pm.TRANSFORM_CONTRACT_SHA256
@@ -910,16 +948,22 @@ def test_materialization_basis_and_record_wrapper() -> None:
     record = pm.build_materialization_record(
         basis_hash=bh,
         dataset_file_bytes=1234,
-        dataset_file_sha256="7" * 64,
-        dataset_id="ds-1",
-        dataset_source_provenance_id="prov-1",
-        dataset_storage_ref_hash="8" * 64,
+        dataset_file_sha256="0" * 64,
+        dataset_id="88888888-8888-8888-8888-888888888888",
+        dataset_source_provenance_id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        dataset_storage_ref_hash="9" * 64,
         dataset_version_content_sha256=pm.F07_CONTENT_SHA256,
-        dataset_version_id="dsv-1",
-        promoted_session_id="promoted-1",
-        source_connector_id="conn-1",
+        dataset_version_id="99999999-9999-9999-9999-999999999999",
+        promoted_session_id="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        source_connector_id="cccccccc-cccc-cccc-cccc-cccccccccccc",
     )
     wrapper = pm.build_materialization_wrapper(record)
+    canonical_record = pm.d33_canonical_bytes(record)
+    assert len(canonical_record) == 848
+    assert _hashlib.sha256(canonical_record).hexdigest() == (
+        "b43f3ba85a0ec153367368cc7a895dd8d0377a282d65ef6ac81df4c8e3483d0f"
+    )
+    assert record["output"]["source_connector_id"] == "cccccccc-cccc-cccc-cccc-cccccccccccc"
     assert wrapper["record"] is record
     assert wrapper["record_hash"] == pm.d33_sha256(record)  # inner record only, never the wrapper
     with pytest.raises(pm.PromotionIdentityError):
@@ -1957,3 +2001,1369 @@ def test_step3_sqlite_second_connection_lock_timeout_is_503_zero_delta(
     assert captured == []
     record = _intake_record(b1b_step3_runtime, intake["connector_source_intake_record_id"])
     assert (record.identity_metadata_hash_version, record.identity_metadata_hash) == (None, None)
+
+
+# ---------------------------------------------------------------------------
+# Durable materialization and closed resolver route (B1b-01 step 5)
+# ---------------------------------------------------------------------------
+
+_MATERIALIZATION_MODELS = (
+    SourceConnector,
+    Dataset,
+    DatasetVersion,
+    VariableDefinition,
+    DatasetSourceProvenance,
+    DatasetRow,
+    L3Session,
+    L3SelectionManifest,
+    L3Descriptor,
+    L3RetrievalEvent,
+    L3MaterialSnapshot,
+)
+_RESOLVE_KEYS = {
+    "approval_hash",
+    "canonical_identity_key_hash",
+    "connector_promotion_receipt_id",
+    "dataset_id",
+    "dataset_version_id",
+    "disposition",
+    "gate_b_session_id",
+    "materialization_basis_hash",
+    "materialization_record_hash",
+    "promoted_session_id",
+    "promotion_basis_hash",
+    "row_count",
+    "schema_id",
+    "source_row_count",
+    "variable_count",
+}
+_FIXED_CODE_IDENTITY = {
+    "implementation_commit": "1" * 40,
+    "promotion_git_blob": "2" * 40,
+    "ingest_git_blob": "3" * 40,
+    "dataframe_io_git_blob": "4" * 40,
+}
+
+
+def _enable_step5(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", True)
+    monkeypatch.setattr(pm, "attestation_precondition_available", lambda _candidate=None: True)
+    monkeypatch.setattr(
+        pm,
+        "_read_clean_materialization_code_identity",
+        lambda: dict(_FIXED_CODE_IDENTITY),
+    )
+
+
+def _seed_materializable_receipt(
+    runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    stem: str,
+) -> str:
+    _, preview = _capture_f07(runtime, stem)
+    captured: list[dict] = []
+    _enable_step3(monkeypatch, captured)
+    response = _invoke_step3(runtime, _step3_payload(preview, stem))
+    assert captured[0]["receipt_disposition"] == "created"
+    return response["session_id"]
+
+
+def _materialization_census(runtime: dict) -> dict[str, int]:
+    with runtime["factory"]() as db:
+        return {model.__name__: db.query(model).count() for model in _MATERIALIZATION_MODELS}
+
+
+def _lane_files(runtime: dict) -> dict[str, tuple[int, str]]:
+    root = runtime["storage_dir"]
+    files: dict[str, tuple[int, str]] = {}
+    for lane_root in (
+        root / "datasets" / "b1b",
+        root / "artifacts" / "layer3" / "b1b",
+        root / "artifacts" / "layer3" / "b1b-staging",
+        root / "artifacts" / "layer3" / "b1b-containment",
+    ):
+        if not lane_root.exists():
+            continue
+        for path in lane_root.rglob("*"):
+            if path.is_file():
+                data = path.read_bytes()
+                files[path.relative_to(root).as_posix()] = (len(data), _hashlib.sha256(data).hexdigest())
+    return files
+
+
+def _assert_exact_containment_ledgers(runtime: dict) -> list[tuple[Path, dict[str, object]]]:
+    pairs: list[tuple[Path, dict[str, object]]] = []
+    roots = (
+        runtime["storage_dir"] / "datasets" / "b1b" / "containment",
+        runtime["storage_dir"] / "artifacts" / "layer3" / "b1b-containment",
+    )
+    for root in roots:
+        if not root.exists():
+            continue
+        files = {path for path in root.rglob("*") if path.is_file()}
+        artifacts = {
+            path for path in files if not path.name.endswith(pm._CONTAINMENT_RECORD_SUFFIX)
+        }
+        records = files - artifacts
+        assert records == {pm._containment_record_path(path) for path in artifacts}
+        for artifact in sorted(artifacts):
+            record = json.loads(pm._containment_record_path(artifact).read_bytes())
+            data = artifact.read_bytes()
+            assert record["artifact_bytes"] == len(data)
+            assert record["artifact_sha256"] == _hashlib.sha256(data).hexdigest()
+            assert record["basis_hash"] == artifact.parent.name
+            assert record["status"] == "non_authoritative_non_reusable"
+            pairs.append((artifact, record))
+    return pairs
+
+
+def _target_projection(runtime: dict) -> dict[str, object]:
+    with runtime["factory"]() as db:
+        target = db.get(ConnectorRunTarget, runtime["target_id"])
+        assert target is not None
+        return {column.name: copy.deepcopy(getattr(target, column.name)) for column in target.__table__.columns}
+
+
+def _resolve(runtime: dict, gate_b_session_id: str) -> dict:
+    with runtime["factory"]() as db:
+        return pm.resolve_connector_promotion(db, gate_b_session_id=gate_b_session_id)
+
+
+def test_step5_first_call_profile_wrapper_links_and_response_are_exact(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services import ingest as ingest_service
+
+    gate_b_session_id = _seed_materializable_receipt(
+        b1b_step3_runtime,
+        monkeypatch,
+        "step5-first",
+    )
+    _enable_step5(monkeypatch)
+    monkeypatch.setattr(ingest_service, "ingest_csv_bytes_to_dataset", _boom)
+    before = _materialization_census(b1b_step3_runtime)
+    raw_before = {
+        path: path.read_bytes()
+        for path in (b1b_step3_runtime["storage_dir"] / "connectors" / "raw").rglob("*")
+        if path.is_file()
+    }
+    target_before = _target_projection(b1b_step3_runtime)
+
+    response = _resolve(b1b_step3_runtime, gate_b_session_id)
+
+    assert set(response) == _RESOLVE_KEYS
+    assert response["schema_id"] == "layer3.connector_promotion_resolve_response.v1"
+    assert response["disposition"] == "materialized"
+    assert response["gate_b_session_id"] == gate_b_session_id
+    assert (response["row_count"], response["source_row_count"], response["variable_count"]) == (2, 2, 2)
+    after = _materialization_census(b1b_step3_runtime)
+    assert {name: after[name] - before[name] for name in before} == {
+        "SourceConnector": 1,
+        "Dataset": 1,
+        "DatasetVersion": 1,
+        "VariableDefinition": 2,
+        "DatasetSourceProvenance": 1,
+        "DatasetRow": 0,
+        "L3Session": 1,
+        "L3SelectionManifest": 1,
+        "L3Descriptor": 1,
+        "L3RetrievalEvent": 1,
+        "L3MaterialSnapshot": 1,
+    }
+    raw_after = {
+        path: path.read_bytes()
+        for path in (b1b_step3_runtime["storage_dir"] / "connectors" / "raw").rglob("*")
+        if path.is_file()
+    }
+    assert raw_after == raw_before
+
+    with b1b_step3_runtime["factory"]() as db:
+        source = db.query(SourceConnector).one()
+        dataset = db.get(Dataset, response["dataset_id"])
+        version = db.get(DatasetVersion, response["dataset_version_id"])
+        provenance = db.query(DatasetSourceProvenance).one()
+        receipt = db.query(L3ConnectorPromotionReceipt).one()
+        promoted = db.get(L3Session, response["promoted_session_id"])
+        target = db.get(ConnectorRunTarget, b1b_step3_runtime["target_id"])
+        assert dataset is not None and version is not None and promoted is not None and target is not None
+        assert (source.source_name, source.source_category, source.automation_tier) == (
+            "synthetic_f07_c01_connector",
+            "synthetic_local_proof",
+            "tier_0",
+        )
+        assert dataset.source_id == source.source_id
+        assert version.dataset_id == dataset.dataset_id
+        assert version.content_hash == pm.F07_CONTENT_SHA256
+        assert (version.row_count, version.source_row_count, version.dropped_row_count) == (2, 2, 0)
+        variables = db.query(VariableDefinition).order_by(VariableDefinition.ordinal_position).all()
+        assert [(v.variable_name, v.dtype, v.is_numeric, v.is_time_index) for v in variables] == [
+            ("site_id", "object", False, False),
+            ("value", "float64", True, False),
+        ]
+        assert provenance.dataset_version_id == version.dataset_version_id
+        assert provenance.connector_run_id == b1b_step3_runtime["run_id"]
+        intake = db.get(L3ConnectorSourceIntakeRecord, receipt.connector_source_intake_record_id)
+        assert intake is not None and provenance.raw_storage_ref == intake.storage_ref
+        wrapper = provenance.source_reference_json["layer3_connector_promotion_materialization_v1"]
+        assert promoted.operator_context_json["layer3_connector_promotion_materialization_v1"] == wrapper
+        assert wrapper["record_hash"] == response["materialization_record_hash"]
+        assert wrapper["record"]["basis_hash"] == receipt.materialization_basis_hash
+        assert wrapper["record"]["output"]["source_connector_id"] == source.source_id
+        final_path = Path(version.storage_ref)
+        final_bytes = final_path.read_bytes()
+        assert wrapper["record"]["output"]["dataset_file_sha256"] == _hashlib.sha256(final_bytes).hexdigest()
+        assert wrapper["record"]["output"]["dataset_file_bytes"] == len(final_bytes)
+        assert receipt.materialization_status == "materialized"
+        assert (receipt.dataset_id, receipt.dataset_version_id, receipt.promoted_session_id) == (
+            dataset.dataset_id,
+            version.dataset_version_id,
+            promoted.session_id,
+        )
+        assert promoted.status == "completed_with_warnings"
+        snapshot = db.query(L3MaterialSnapshot).filter_by(session_id=promoted.session_id).one()
+        event = db.query(L3RetrievalEvent).filter_by(session_id=promoted.session_id).one()
+        assert Path(snapshot.payload_ref).is_file()
+        assert _hashlib.sha256(Path(snapshot.payload_ref).read_bytes()).hexdigest() == snapshot.payload_hash
+        assert event.event_payload_json["loaded_items"][0]["payload_ref"] == snapshot.payload_ref
+        assert (target.dataset_id, target.dataset_version_id) == (dataset.dataset_id, version.dataset_version_id)
+        for key, value in target_before.items():
+            if key not in {"dataset_id", "dataset_version_id"}:
+                assert getattr(target, key) == value
+
+
+def test_step5_exact_replay_is_zero_delta_and_rehashes_final(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(b1b_step3_runtime, monkeypatch, "step5-replay")
+    _enable_step5(monkeypatch)
+    first = _resolve(b1b_step3_runtime, gate_b_session_id)
+    census = _materialization_census(b1b_step3_runtime)
+    files = _lane_files(b1b_step3_runtime)
+    target = _target_projection(b1b_step3_runtime)
+    receipt = _receipt_state(b1b_step3_runtime)
+
+    replay = _resolve(b1b_step3_runtime, gate_b_session_id)
+
+    assert replay == {**first, "disposition": "reused"}
+    assert _materialization_census(b1b_step3_runtime) == census
+    assert _lane_files(b1b_step3_runtime) == files
+    assert _target_projection(b1b_step3_runtime) == target
+    assert _receipt_state(b1b_step3_runtime) == receipt
+
+
+def test_step5_replay_rejects_final_file_drift_without_db_delta(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(b1b_step3_runtime, monkeypatch, "step5-replay-drift")
+    _enable_step5(monkeypatch)
+    first = _resolve(b1b_step3_runtime, gate_b_session_id)
+    with b1b_step3_runtime["factory"]() as db:
+        version = db.get(DatasetVersion, first["dataset_version_id"])
+        assert version is not None
+        final_path = Path(version.storage_ref)
+    final_path.write_bytes(final_path.read_bytes() + b"drift")
+    census = _materialization_census(b1b_step3_runtime)
+    target = _target_projection(b1b_step3_runtime)
+    receipt = _receipt_state(b1b_step3_runtime)
+
+    with pytest.raises(pm.ConnectorPromotionError) as caught:
+        _resolve(b1b_step3_runtime, gate_b_session_id)
+    assert caught.value.code == "connector_materialization_basis_conflict"
+    assert _materialization_census(b1b_step3_runtime) == census
+    assert _target_projection(b1b_step3_runtime) == target
+    assert _receipt_state(b1b_step3_runtime) == receipt
+
+
+def test_step5_replay_rejects_metadata_profile_drift_without_further_delta(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(b1b_step3_runtime, monkeypatch, "step5-profile-drift")
+    _enable_step5(monkeypatch)
+    _resolve(b1b_step3_runtime, gate_b_session_id)
+    with b1b_step3_runtime["factory"]() as db:
+        source = db.query(SourceConnector).one()
+        source.source_category = "drifted"
+        db.commit()
+    census = _materialization_census(b1b_step3_runtime)
+    files = _lane_files(b1b_step3_runtime)
+
+    with pytest.raises(pm.ConnectorPromotionError) as caught:
+        _resolve(b1b_step3_runtime, gate_b_session_id)
+    assert caught.value.code == "connector_materialization_basis_conflict"
+    assert _materialization_census(b1b_step3_runtime) == census
+    assert _lane_files(b1b_step3_runtime) == files
+
+
+def _assert_receipt_and_target_unmaterialized(runtime: dict) -> None:
+    with runtime["factory"]() as db:
+        receipt = db.query(L3ConnectorPromotionReceipt).one()
+        target = db.get(ConnectorRunTarget, runtime["target_id"])
+        assert target is not None
+        assert (
+            receipt.materialization_status,
+            receipt.materialization_basis_hash,
+            receipt.dataset_id,
+            receipt.dataset_version_id,
+            receipt.promoted_session_id,
+            receipt.materialized_at,
+        ) == (None, None, None, None, None, None)
+        assert (target.dataset_id, target.dataset_version_id) == (None, None)
+
+
+def _authoritative_step5_files(runtime: dict) -> set[str]:
+    root = runtime["storage_dir"]
+    result: set[str] = set()
+    for lane_root in (
+        root / "datasets" / "b1b" / "dataset-versions",
+        root / "artifacts" / "layer3" / "b1b",
+    ):
+        if lane_root.exists():
+            result.update(
+                path.relative_to(root).as_posix()
+                for path in lane_root.rglob("*")
+                if path.is_file()
+            )
+    return result
+
+
+def test_step5_code_identity_failure_is_before_mutation(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(b1b_step3_runtime, monkeypatch, "step5-code")
+    _enable_step5(monkeypatch)
+    before = _materialization_census(b1b_step3_runtime)
+    files_before = _lane_files(b1b_step3_runtime)
+
+    def dirty_checkout():
+        raise pm.PromotionIdentityError("tracked checkout is dirty")
+
+    monkeypatch.setattr(pm, "_read_clean_materialization_code_identity", dirty_checkout)
+    with pytest.raises(pm.ConnectorPromotionError) as caught:
+        _resolve(b1b_step3_runtime, gate_b_session_id)
+    assert (caught.value.code, caught.value.http_status, caught.value.retryable) == (
+        "connector_materialization_basis_conflict",
+        409,
+        False,
+    )
+    assert _materialization_census(b1b_step3_runtime) == before
+    assert _lane_files(b1b_step3_runtime) == files_before
+    _assert_receipt_and_target_unmaterialized(b1b_step3_runtime)
+
+
+def test_step5_code_identity_provider_double_checks_head_and_clean_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    status_reads = 0
+    blob_specs: list[str] = []
+
+    def stable_git(_root: Path, *args: str) -> str:
+        nonlocal status_reads
+        if args[:2] == ("status", "--porcelain=v1"):
+            status_reads += 1
+            return ""
+        if args == ("rev-parse", "HEAD"):
+            return "a" * 40
+        blob_specs.append(args[1])
+        return {
+            f"{'a' * 40}:backend/app/services/layer3_connector_promotion.py": "b" * 40,
+            f"{'a' * 40}:backend/app/services/ingest.py": "c" * 40,
+            f"{'a' * 40}:backend/app/services/dataframe_io.py": "d" * 40,
+        }[args[1]]
+
+    monkeypatch.setattr(pm, "_git_text", stable_git)
+    assert pm._read_clean_materialization_code_identity() == {
+        "implementation_commit": "a" * 40,
+        "promotion_git_blob": "b" * 40,
+        "ingest_git_blob": "c" * 40,
+        "dataframe_io_git_blob": "d" * 40,
+    }
+    assert status_reads == 2
+    assert blob_specs == [
+        f"{'a' * 40}:backend/app/services/layer3_connector_promotion.py",
+        f"{'a' * 40}:backend/app/services/ingest.py",
+        f"{'a' * 40}:backend/app/services/dataframe_io.py",
+    ]
+
+    def drifting_git(root: Path, *args: str) -> str:
+        if args[:2] == ("status", "--porcelain=v1") and drifting_git.status_seen:
+            return " M backend/app/services/layer3_connector_promotion.py"
+        if args[:2] == ("status", "--porcelain=v1"):
+            drifting_git.status_seen = True
+        return stable_git(root, *args)
+
+    drifting_git.status_seen = False
+    monkeypatch.setattr(pm, "_git_text", drifting_git)
+    with pytest.raises(pm.PromotionIdentityError, match="changed during re-read"):
+        pm._read_clean_materialization_code_identity()
+
+
+def test_step5_failure_before_publish_rolls_back_and_contains_stage(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(b1b_step3_runtime, monkeypatch, "step5-prepublish")
+    _enable_step5(monkeypatch)
+    before = _materialization_census(b1b_step3_runtime)
+
+    def fail_before_publish() -> None:
+        raise RuntimeError("injected failure before publish")
+
+    monkeypatch.setattr(pm, "_before_materialization_publish", fail_before_publish)
+    with pytest.raises(pm.ConnectorPromotionError) as caught:
+        _resolve(b1b_step3_runtime, gate_b_session_id)
+    assert caught.value.code == "connector_materialization_basis_conflict"
+    assert isinstance(caught.value.__cause__, RuntimeError)
+
+    assert _materialization_census(b1b_step3_runtime) == before
+    assert _authoritative_step5_files(b1b_step3_runtime) == set()
+    assert any("containment" in path for path in _lane_files(b1b_step3_runtime))
+    _assert_receipt_and_target_unmaterialized(b1b_step3_runtime)
+
+
+def test_step5_failure_after_publish_contains_orphan_then_retry_rebuilds(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(b1b_step3_runtime, monkeypatch, "step5-postpublish")
+    _enable_step5(monkeypatch)
+    before = _materialization_census(b1b_step3_runtime)
+
+    def fail_after_publish() -> None:
+        raise RuntimeError("injected failure after publish")
+
+    monkeypatch.setattr(pm, "_after_materialization_publish", fail_after_publish)
+    with pytest.raises(pm.ConnectorPromotionError) as caught:
+        _resolve(b1b_step3_runtime, gate_b_session_id)
+    assert caught.value.code == "connector_materialization_basis_conflict"
+    assert isinstance(caught.value.__cause__, RuntimeError)
+    assert _materialization_census(b1b_step3_runtime) == before
+    assert _authoritative_step5_files(b1b_step3_runtime) == set()
+    failed_files = _lane_files(b1b_step3_runtime)
+    contained_parquets = {
+        path: facts for path, facts in failed_files.items() if "containment" in path and path.endswith(".parquet")
+    }
+    assert len(contained_parquets) == 1
+    _assert_receipt_and_target_unmaterialized(b1b_step3_runtime)
+
+    monkeypatch.setattr(pm, "_after_materialization_publish", lambda: None)
+    response = _resolve(b1b_step3_runtime, gate_b_session_id)
+    assert response["disposition"] == "materialized"
+    authoritative_parquets = {
+        path: facts
+        for path, facts in _lane_files(b1b_step3_runtime).items()
+        if "/dataset-versions/" in path and path.endswith(".parquet")
+    }
+    assert len(authoritative_parquets) == 1
+    assert next(iter(authoritative_parquets.values())) == next(iter(contained_parquets.values()))
+    containment_pairs = _assert_exact_containment_ledgers(b1b_step3_runtime)
+    assert len(containment_pairs) == 2
+    assert {artifact.suffix for artifact, _record in containment_pairs} == {
+        ".json",
+        ".parquet",
+    }
+
+
+def test_step5_commit_then_raise_is_reconciled_as_committed_without_containment(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(
+        b1b_step3_runtime,
+        monkeypatch,
+        "step5-commit-ack-lost",
+    )
+    _enable_step5(monkeypatch)
+
+    def commit_then_raise(db) -> None:
+        db.commit()
+        raise RuntimeError("injected acknowledgement loss after durable commit")
+
+    monkeypatch.setattr(pm, "_commit_materialization", commit_then_raise)
+    response = _resolve(b1b_step3_runtime, gate_b_session_id)
+    assert response["disposition"] == "materialized"
+    assert _assert_exact_containment_ledgers(b1b_step3_runtime) == []
+    census = _materialization_census(b1b_step3_runtime)
+    files = _lane_files(b1b_step3_runtime)
+
+    replay = _resolve(b1b_step3_runtime, gate_b_session_id)
+    assert replay == {**response, "disposition": "reused"}
+    assert _materialization_census(b1b_step3_runtime) == census
+    assert _lane_files(b1b_step3_runtime) == files
+
+
+def test_step5_precommit_failure_rolls_back_and_contains_both_published_files(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(
+        b1b_step3_runtime,
+        monkeypatch,
+        "step5-commit-not-applied",
+    )
+    _enable_step5(monkeypatch)
+    before = _materialization_census(b1b_step3_runtime)
+
+    def fail_before_commit(_db) -> None:
+        raise RuntimeError("injected failure before commit")
+
+    monkeypatch.setattr(pm, "_commit_materialization", fail_before_commit)
+    with pytest.raises(pm.ConnectorPromotionError) as caught:
+        _resolve(b1b_step3_runtime, gate_b_session_id)
+    assert caught.value.code == "connector_materialization_basis_conflict"
+    assert isinstance(caught.value.__cause__, RuntimeError)
+    assert _materialization_census(b1b_step3_runtime) == before
+    assert _authoritative_step5_files(b1b_step3_runtime) == set()
+    pairs = _assert_exact_containment_ledgers(b1b_step3_runtime)
+    assert len(pairs) == 2
+    assert {artifact.suffix for artifact, _record in pairs} == {".json", ".parquet"}
+    _assert_receipt_and_target_unmaterialized(b1b_step3_runtime)
+
+
+def test_step5_commit_then_raise_reconciles_even_when_original_rollback_fails(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(
+        b1b_step3_runtime,
+        monkeypatch,
+        "step5-commit-rollback-broken",
+    )
+    _enable_step5(monkeypatch)
+
+    def commit_then_raise(db) -> None:
+        db.commit()
+        raise RuntimeError("injected acknowledgement loss after durable commit")
+
+    def rollback_fails() -> None:
+        raise RuntimeError("injected original-session rollback failure")
+
+    monkeypatch.setattr(pm, "_commit_materialization", commit_then_raise)
+    with b1b_step3_runtime["factory"]() as db:
+        monkeypatch.setattr(db, "rollback", rollback_fails)
+        response = pm.resolve_connector_promotion(
+            db,
+            gate_b_session_id=gate_b_session_id,
+        )
+    assert response["disposition"] == "materialized"
+    assert _assert_exact_containment_ledgers(b1b_step3_runtime) == []
+    assert _resolve(b1b_step3_runtime, gate_b_session_id) == {
+        **response,
+        "disposition": "reused",
+    }
+
+
+def test_step5_precommit_failure_leaves_uncertain_files_for_next_locked_census(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(
+        b1b_step3_runtime,
+        monkeypatch,
+        "step5-precommit-rollback-broken",
+    )
+    _enable_step5(monkeypatch)
+    before = _materialization_census(b1b_step3_runtime)
+    commit_materialization = pm._commit_materialization
+
+    def fail_before_commit(_db) -> None:
+        raise RuntimeError("injected failure before commit")
+
+    def rollback_fails() -> None:
+        raise RuntimeError("injected original-session rollback failure")
+
+    monkeypatch.setattr(pm, "_commit_materialization", fail_before_commit)
+    with b1b_step3_runtime["factory"]() as db:
+        monkeypatch.setattr(db, "rollback", rollback_fails)
+        with pytest.raises(pm.ConnectorPromotionError) as caught:
+            pm.resolve_connector_promotion(
+                db,
+                gate_b_session_id=gate_b_session_id,
+            )
+    assert caught.value.code == "connector_materialization_basis_conflict"
+    assert _materialization_census(b1b_step3_runtime) == before
+    assert len(_authoritative_step5_files(b1b_step3_runtime)) == 2
+    assert _assert_exact_containment_ledgers(b1b_step3_runtime) == []
+    _assert_receipt_and_target_unmaterialized(b1b_step3_runtime)
+
+    monkeypatch.setattr(pm, "_commit_materialization", commit_materialization)
+    response = _resolve(b1b_step3_runtime, gate_b_session_id)
+    assert response["disposition"] == "materialized"
+    assert len(_authoritative_step5_files(b1b_step3_runtime)) == 2
+    assert len(_assert_exact_containment_ledgers(b1b_step3_runtime)) == 2
+
+
+def test_step5_absent_cleanup_holds_i1_lock_against_second_writer(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(
+        b1b_step3_runtime,
+        monkeypatch,
+        "step5-cleanup-lock-barrier",
+    )
+    _enable_step5(monkeypatch)
+    commit_materialization = pm._commit_materialization
+    acquire_lock = pm.acquire_promotion_identity_lock
+    cleanup_entered = threading.Event()
+    release_cleanup = threading.Event()
+    second_attempted = threading.Event()
+    second_done = threading.Event()
+    outcomes: dict[str, object] = {}
+    errors: list[BaseException] = []
+
+    def commit_by_writer(db) -> None:
+        if threading.current_thread().name == "failed-writer":
+            raise RuntimeError("injected first-writer precommit failure")
+        commit_materialization(db)
+
+    def observe_lock_attempt(db, canonical_key_hash=pm.F07_CANONICAL_IDENTITY_KEY_HASH) -> None:
+        if threading.current_thread().name == "second-writer":
+            second_attempted.set()
+        acquire_lock(db, canonical_key_hash)
+
+    def hold_cleanup() -> None:
+        if threading.current_thread().name == "failed-writer":
+            cleanup_entered.set()
+            if not release_cleanup.wait(10):
+                raise RuntimeError("cleanup barrier timed out")
+
+    def run_failed_writer() -> None:
+        try:
+            outcomes["first"] = _resolve(b1b_step3_runtime, gate_b_session_id)
+        except pm.ConnectorPromotionError as exc:
+            outcomes["first"] = exc.code
+        except BaseException as exc:
+            errors.append(exc)
+
+    def run_second_writer() -> None:
+        try:
+            outcomes["second"] = _resolve(b1b_step3_runtime, gate_b_session_id)
+        except BaseException as exc:
+            errors.append(exc)
+        finally:
+            second_done.set()
+
+    monkeypatch.setattr(pm, "_commit_materialization", commit_by_writer)
+    monkeypatch.setattr(pm, "acquire_promotion_identity_lock", observe_lock_attempt)
+    monkeypatch.setattr(pm, "_before_failed_materialization_containment", hold_cleanup)
+    first = threading.Thread(target=run_failed_writer, name="failed-writer")
+    second: threading.Thread | None = None
+    first.start()
+    try:
+        assert cleanup_entered.wait(10)
+        second = threading.Thread(target=run_second_writer, name="second-writer")
+        second.start()
+        assert second_attempted.wait(10)
+        assert not second_done.wait(0.25)
+    finally:
+        release_cleanup.set()
+        first.join(10)
+        if second is not None:
+            second.join(10)
+
+    assert not first.is_alive()
+    assert second is not None and not second.is_alive()
+    assert errors == []
+    assert outcomes["first"] == "connector_materialization_basis_conflict"
+    second_result = outcomes["second"]
+    assert isinstance(second_result, dict)
+    assert second_result["disposition"] == "materialized"
+    assert len(_authoritative_step5_files(b1b_step3_runtime)) == 2
+    assert len(_assert_exact_containment_ledgers(b1b_step3_runtime)) == 2
+
+
+def test_step5_no_expectation_reconciliation_preserves_second_writer_commit(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(
+        b1b_step3_runtime,
+        monkeypatch,
+        "step5-inverse-cleanup-barrier",
+    )
+    _enable_step5(monkeypatch)
+    best_effort_rollback = pm._best_effort_rollback
+    first_rolled_back = threading.Event()
+    release_reconciliation = threading.Event()
+    second_done = threading.Event()
+    outcomes: dict[str, object] = {}
+    errors: list[BaseException] = []
+
+    def fail_first_after_publish() -> None:
+        if threading.current_thread().name == "failed-writer":
+            raise RuntimeError("injected failure before commit expectation")
+
+    def rollback_then_pause(db) -> None:
+        best_effort_rollback(db)
+        if (
+            threading.current_thread().name == "failed-writer"
+            and not first_rolled_back.is_set()
+        ):
+            first_rolled_back.set()
+            if not release_reconciliation.wait(10):
+                raise RuntimeError("reconciliation barrier timed out")
+
+    def run_failed_writer() -> None:
+        try:
+            outcomes["first"] = _resolve(b1b_step3_runtime, gate_b_session_id)
+        except pm.ConnectorPromotionError as exc:
+            outcomes["first"] = exc.code
+        except BaseException as exc:
+            errors.append(exc)
+
+    def run_second_writer() -> None:
+        try:
+            outcomes["second"] = _resolve(b1b_step3_runtime, gate_b_session_id)
+        except BaseException as exc:
+            errors.append(exc)
+        finally:
+            second_done.set()
+
+    monkeypatch.setattr(pm, "_after_materialization_publish", fail_first_after_publish)
+    monkeypatch.setattr(pm, "_best_effort_rollback", rollback_then_pause)
+    first = threading.Thread(target=run_failed_writer, name="failed-writer")
+    second: threading.Thread | None = None
+    first.start()
+    try:
+        assert first_rolled_back.wait(10)
+        second = threading.Thread(target=run_second_writer, name="second-writer")
+        second.start()
+        assert second_done.wait(10)
+    finally:
+        release_reconciliation.set()
+        first.join(10)
+        if second is not None:
+            second.join(10)
+
+    assert not first.is_alive()
+    assert second is not None and not second.is_alive()
+    assert errors == []
+    assert outcomes["first"] == "connector_materialization_basis_conflict"
+    second_result = outcomes["second"]
+    assert isinstance(second_result, dict)
+    assert second_result["disposition"] == "materialized"
+    assert len(_authoritative_step5_files(b1b_step3_runtime)) == 2
+    assert len(_assert_exact_containment_ledgers(b1b_step3_runtime)) == 2
+    assert _resolve(b1b_step3_runtime, gate_b_session_id) == {
+        **second_result,
+        "disposition": "reused",
+    }
+
+
+def test_step5_kill_after_rename_fresh_process_contains_then_retries_once(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(b1b_step3_runtime, monkeypatch, "step5-kill")
+    _enable_step5(monkeypatch)
+    database_path = str(b1b_step3_runtime["engine"].url.database)
+    storage_dir = str(b1b_step3_runtime["storage_dir"])
+    child_code = "\n".join(
+        [
+            "import os, sys",
+            f"sys.path.insert(0, {str(BACKEND)!r})",
+            "os.environ['DB_INIT_MODE'] = 'none'",
+            "from sqlalchemy import create_engine",
+            "from sqlalchemy.orm import sessionmaker",
+            "from app.core.config import settings",
+            "from app.services import layer3_connector_promotion as pm",
+            f"settings.storage_dir = {storage_dir!r}",
+            f"engine = create_engine('sqlite:///{Path(database_path).as_posix()}', future=True, connect_args={{'check_same_thread': False}})",
+            "factory = sessionmaker(bind=engine, future=True, expire_on_commit=False)",
+            f"pm._read_clean_materialization_code_identity = lambda: {_FIXED_CODE_IDENTITY!r}",
+            "pm.attestation_precondition_available = lambda _candidate=None: True",
+            "pm._after_materialization_publish = lambda: os._exit(73)",
+            "with factory() as db:",
+            f"    pm.resolve_connector_promotion(db, gate_b_session_id={gate_b_session_id!r})",
+        ]
+    )
+
+    child = subprocess.run(
+        [sys.executable, "-c", child_code],
+        cwd=BACKEND.parent,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert child.returncode == 73, (child.stdout, child.stderr)
+    _assert_receipt_and_target_unmaterialized(b1b_step3_runtime)
+    orphaned_parquets = {
+        path: facts
+        for path, facts in _lane_files(b1b_step3_runtime).items()
+        if "/dataset-versions/" in path and path.endswith(".parquet")
+    }
+    assert len(orphaned_parquets) == 1
+
+    response = _resolve(b1b_step3_runtime, gate_b_session_id)
+    assert response["disposition"] == "materialized"
+    lane_files = _lane_files(b1b_step3_runtime)
+    authoritative = {
+        path: facts
+        for path, facts in lane_files.items()
+        if "/dataset-versions/" in path and path.endswith(".parquet")
+    }
+    contained = {
+        path: facts
+        for path, facts in lane_files.items()
+        if "containment" in path and path.endswith(".parquet")
+    }
+    assert len(authoritative) == 1
+    assert len(contained) == 1
+    assert next(iter(authoritative.values())) == next(iter(orphaned_parquets.values()))
+    assert next(iter(contained.values())) == next(iter(orphaned_parquets.values()))
+
+
+def test_step5_rejects_out_of_root_intake_reference_without_delta(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(b1b_step3_runtime, monkeypatch, "step5-outside")
+    _enable_step5(monkeypatch)
+    outside = b1b_step3_runtime["storage_dir"].parent / "outside.csv"
+    outside.write_bytes(_F07_BYTES)
+    with b1b_step3_runtime["factory"]() as db:
+        receipt = db.query(L3ConnectorPromotionReceipt).one()
+        intake = db.get(L3ConnectorSourceIntakeRecord, receipt.connector_source_intake_record_id)
+        assert intake is not None
+        intake.storage_ref = str(outside)
+        db.commit()
+    before = _materialization_census(b1b_step3_runtime)
+    with pytest.raises(pm.ConnectorPromotionError) as caught:
+        _resolve(b1b_step3_runtime, gate_b_session_id)
+    assert caught.value.code == "connector_promotion_basis_conflict"
+    assert _materialization_census(b1b_step3_runtime) == before
+    assert _authoritative_step5_files(b1b_step3_runtime) == set()
+    _assert_receipt_and_target_unmaterialized(b1b_step3_runtime)
+
+
+def test_step5_storage_ref_rejects_symlink_component(tmp_path: Path) -> None:
+    root = tmp_path / "storage"
+    real_dir = root / "real"
+    real_dir.mkdir(parents=True)
+    (real_dir / "fixture.csv").write_bytes(_F07_BYTES)
+    link = root / "linked"
+    try:
+        link.symlink_to(real_dir, target_is_directory=True)
+    except OSError:
+        pytest.skip("local Windows policy does not permit creating a symlink probe")
+    with pytest.raises(pm.PromotionIdentityError, match="reparse"):
+        pm._resolve_regular_reference(str(link / "fixture.csv"), str(root))
+    with pytest.raises(pm.PromotionIdentityError, match="reparse"):
+        pm._resolve_regular_reference(str(real_dir / "fixture.csv"), str(link))
+
+
+def test_step5_lane_root_reparse_is_rejected_before_descendant_creation(tmp_path: Path) -> None:
+    real_parent = tmp_path / "real"
+    real_parent.mkdir()
+    linked_parent = tmp_path / "linked"
+    try:
+        linked_parent.symlink_to(real_parent, target_is_directory=True)
+    except OSError:
+        pytest.skip("local Windows policy does not permit creating a symlink probe")
+    custody_root = linked_parent / "custody"
+
+    with pytest.raises(pm.PromotionIdentityError, match="reparse"):
+        pm._ensure_nonreparse_lane_directory(custody_root / "lane", custody_root)
+
+    assert not (real_parent / "custody").exists()
+
+
+def test_step5_containment_record_write_failure_is_repaired_on_reconciliation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    basis_hash = "b" * 64
+    source = tmp_path / "stage.parquet"
+    source.write_bytes(b"contained payload")
+    containment_root = tmp_path / "containment"
+    write_record = pm._write_containment_record
+
+    def fail_record_write(_path: Path, _record: dict) -> None:
+        raise RuntimeError("injected containment record failure")
+
+    monkeypatch.setattr(pm, "_write_containment_record", fail_record_write)
+    with pytest.raises(RuntimeError, match="containment record failure"):
+        pm._contain_file(
+            source,
+            containment_root=containment_root,
+            basis_hash=basis_hash,
+            namespace="record-recovery",
+        )
+    assert not source.exists()
+    artifacts = [
+        path
+        for path in containment_root.rglob("*")
+        if path.is_file() and not path.name.endswith(pm._CONTAINMENT_RECORD_SUFFIX)
+    ]
+    assert len(artifacts) == 1
+    assert not pm._containment_record_path(artifacts[0]).exists()
+
+    monkeypatch.setattr(pm, "_write_containment_record", write_record)
+    pm._reconcile_containment_records(containment_root)
+    record = json.loads(pm._containment_record_path(artifacts[0]).read_bytes())
+    assert record["basis_hash"] == basis_hash
+    assert record["artifact_sha256"] == _hashlib.sha256(b"contained payload").hexdigest()
+
+
+@pytest.mark.parametrize("prefix_size", [0, 17], ids=["empty", "mid-prefix"])
+def test_step5_partial_containment_record_is_completed_on_reconciliation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    prefix_size: int,
+) -> None:
+    basis_hash = "c" * 64
+    source = tmp_path / "stage.parquet"
+    source.write_bytes(b"partial-ledger payload")
+    containment_root = tmp_path / "containment"
+    write_record = pm._write_containment_record
+    captured: list[bytes] = []
+
+    def fail_after_prefix(record_path: Path, record: dict) -> None:
+        record_bytes = pm.d33_canonical_bytes(dict(record))
+        captured.append(record_bytes)
+        with record_path.open("xb") as handle:
+            handle.write(record_bytes[:prefix_size])
+            handle.flush()
+            os.fsync(handle.fileno())
+        raise RuntimeError("injected partial containment record write")
+
+    monkeypatch.setattr(pm, "_write_containment_record", fail_after_prefix)
+    with pytest.raises(RuntimeError, match="partial containment record"):
+        pm._contain_file(
+            source,
+            containment_root=containment_root,
+            basis_hash=basis_hash,
+            namespace="partial-record-recovery",
+        )
+    artifacts = [
+        path
+        for path in containment_root.rglob("*")
+        if path.is_file() and not path.name.endswith(pm._CONTAINMENT_RECORD_SUFFIX)
+    ]
+    assert len(artifacts) == 1
+    record_path = pm._containment_record_path(artifacts[0])
+    assert record_path.read_bytes() == captured[0][:prefix_size]
+
+    monkeypatch.setattr(pm, "_write_containment_record", write_record)
+    pm._reconcile_containment_records(containment_root)
+    assert record_path.read_bytes() == captured[0]
+    assert json.loads(record_path.read_bytes())["basis_hash"] == basis_hash
+
+
+def test_step5_orphan_census_preserves_the_orphans_own_basis(
+    b1b_step3_runtime: dict,
+) -> None:
+    current_basis = "a" * 64
+    orphan_basis = "b" * 64
+    paths = pm._lane_paths(current_basis)
+    orphan = (
+        paths["dataset_final_root"]
+        / orphan_basis[:2]
+        / f"{orphan_basis}.parquet"
+    )
+    orphan.parent.mkdir(parents=True)
+    orphan.write_bytes(b"old-basis orphan")
+
+    with b1b_step3_runtime["factory"]() as db:
+        pm._contain_unreferenced_lane_files(db, paths=paths)
+
+    assert not orphan.exists()
+    pairs = _assert_exact_containment_ledgers(b1b_step3_runtime)
+    assert len(pairs) == 1
+    artifact, record = pairs[0]
+    assert artifact.parent.name == orphan_basis
+    assert record["basis_hash"] == orphan_basis
+    assert record["basis_hash"] != current_basis
+
+
+def test_step5_atomic_publish_never_overwrites_an_existing_destination(tmp_path: Path) -> None:
+    source = tmp_path / "stage.parquet"
+    destination = tmp_path / "final.parquet"
+    source.write_bytes(b"new")
+    destination.write_bytes(b"existing")
+    with pytest.raises(FileExistsError):
+        pm._atomic_rename_no_overwrite(source, destination)
+    assert source.read_bytes() == b"new"
+    assert destination.read_bytes() == b"existing"
+
+
+def test_step5_atomic_publish_refuses_cross_volume_without_rename(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "stage.parquet"
+    destination_dir = tmp_path / "final"
+    destination = destination_dir / "output.parquet"
+    source.write_bytes(b"source")
+    destination_dir.mkdir()
+    real_stat = Path.stat
+    destination_parent_stat = real_stat(destination_dir)
+    source_device = real_stat(source).st_dev
+    rename_calls: list[tuple[object, object]] = []
+
+    class DifferentDeviceStat:
+        st_mode = destination_parent_stat.st_mode
+        st_dev = source_device + 1
+
+    def mismatched_device_stat(path: Path, *args, **kwargs):
+        if path == destination_dir:
+            return DifferentDeviceStat()
+        return real_stat(path, *args, **kwargs)
+
+    def unexpected_rename(source_path, destination_path) -> None:
+        rename_calls.append((source_path, destination_path))
+        raise AssertionError("rename must not run across volumes")
+
+    monkeypatch.setattr(Path, "stat", mismatched_device_stat)
+    monkeypatch.setattr(pm.os, "rename", unexpected_rename)
+    with pytest.raises(pm.PromotionIdentityError, match="crosses volumes"):
+        pm._atomic_rename_no_overwrite(source, destination)
+    assert rename_calls == []
+    assert source.read_bytes() == b"source"
+    assert not destination.exists()
+
+
+def test_step5_rejects_prelinked_unequal_target_without_delta(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(b1b_step3_runtime, monkeypatch, "step5-target")
+    _enable_step5(monkeypatch)
+    with b1b_step3_runtime["factory"]() as db:
+        target = db.get(ConnectorRunTarget, b1b_step3_runtime["target_id"])
+        assert target is not None
+        target.dataset_id = str(uuid.uuid4())
+        target.dataset_version_id = str(uuid.uuid4())
+        db.commit()
+    before = _materialization_census(b1b_step3_runtime)
+    with pytest.raises(pm.ConnectorPromotionError) as caught:
+        _resolve(b1b_step3_runtime, gate_b_session_id)
+    assert caught.value.code == "connector_materialization_basis_conflict"
+    assert _materialization_census(b1b_step3_runtime) == before
+    assert _authoritative_step5_files(b1b_step3_runtime) == set()
+
+
+_B1B_POSTGRES_STEP5_PROVISIONED = os.environ.get("B1B_POSTGRESQL_STEP5_PROVISIONED") == "1"
+_skip_b1b_step5_postgresql = pytest.mark.skipif(
+    not (
+        _b1b_psycopg_available()
+        and bool(_B1B_POSTGRES_URL)
+        and bool(_B1B_POSTGRES_SCHEMA)
+        and _B1B_POSTGRES_SCHEMA != "public"
+        and _B1B_POSTGRES_STEP5_PROVISIONED
+    ),
+    reason=(
+        "B1b Step 5 PostgreSQL cases require the later isolated materialization "
+        "provider, psycopg, URL, and non-public pre-provisioned schema"
+    ),
+)
+
+
+def _postgres_step5_case(request, case_id: str):
+    factory = request.getfixturevalue("b1b_postgresql_step5_case")
+    case = factory(case_id)
+    assert case.case_id == case_id
+    assert case.canonical_identity_key_hash == pm.F07_CANONICAL_IDENTITY_KEY_HASH
+    assert case.two_independent_sessions is True
+    assert case.schema_name == _B1B_POSTGRES_SCHEMA
+    return case
+
+
+@_skip_b1b_step5_postgresql
+def test_b1b_postgresql_materialization_claim_race_is_single_winner(request) -> None:
+    case = _postgres_step5_case(request, "materialization_claim_race")
+    facts = case.run_materialization_claim_race()
+    assert facts.status_codes == (200, 200)
+    assert set(facts.dispositions) == {"materialized", "reused"}
+    assert facts.materialized_receipt_count == 1
+    assert facts.authoritative_parquet_count == 1
+    assert facts.authoritative_snapshot_count == 1
+    assert facts.unreferenced_output_count == 0
+    case.register_and_cleanup(facts)
+
+
+@_skip_b1b_step5_postgresql
+def test_b1b_postgresql_post_publish_crash_recovery_contains_orphan(request) -> None:
+    case = _postgres_step5_case(request, "post_publish_crash_recovery")
+    facts = case.run_post_publish_crash_recovery(exit_code=73)
+    assert facts.crash_exit_code == 73
+    assert (facts.retry_status, facts.retry_disposition) == (200, "materialized")
+    assert facts.contained_parquet_count == 1
+    assert facts.contained_snapshot_count == 1
+    assert facts.authoritative_parquet_count == 1
+    assert facts.authoritative_snapshot_count == 1
+    assert facts.orphan_adopted is False
+    case.register_and_cleanup(facts)
+
+
+_RESOLVE_PATH = "/api/v1/layer3/source/connector/promotion/resolve"
+_OPERATOR_HEADERS = {
+    "content-type": "application/json",
+    "x-forwarded-groups": "b1b-workspace",
+    "x-forwarded-user": "b1b-operator",
+    "x-forwarded-roles": "owner",
+}
+
+
+def _configure_step5_proxy(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+    monkeypatch.setattr(settings, "proxy_identity_header", "x-forwarded-user")
+    monkeypatch.setattr(settings, "proxy_groups_header", "x-forwarded-groups")
+    monkeypatch.setattr(settings, "proxy_roles_header", "x-forwarded-roles")
+    monkeypatch.setattr(settings, "layer3_route_authorization_mode", "role_enforcing")
+    monkeypatch.setattr(settings, "layer3_owner_role_tokens", "owner")
+    monkeypatch.setattr(settings, "layer3_auditor_role_tokens", "auditor")
+
+
+def _closed_error(code: str, message: str, *, retryable: bool) -> dict[str, object]:
+    return {
+        "schema_id": "layer3.b1b_error.v1",
+        "status": "error",
+        "error_code": code,
+        "message": message,
+        "retryable": retryable,
+    }
+
+
+def _install_step5_db_override(runtime: dict) -> None:
+    def override_db():
+        with runtime["factory"]() as db:
+            yield db
+
+    main.app.dependency_overrides[get_db] = override_db
+
+
+def test_step5_route_precedence_auth_then_availability_then_validation(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    _configure_step5_proxy(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    client = TestClient(main.app, raise_server_exceptions=False)
+    try:
+        monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", False)
+        absent = client.post(
+            _RESOLVE_PATH,
+            content="{not-json",
+            headers={"content-type": "application/json", "x-forwarded-groups": "bridge-sentinel"},
+        )
+        assert absent.status_code == 401
+        assert absent.json()["error_code"] == "sec_xbrl_in_app_auth_policy_missing_identity_authority"
+        assert "connector_promotion_bridge_unavailable" not in absent.text
+
+        auditor = client.post(
+            _RESOLVE_PATH,
+            content="{not-json",
+            headers={
+                "content-type": "application/json",
+                "x-forwarded-groups": "b1b-workspace",
+                "x-forwarded-user": "bridge-sentinel",
+                "x-forwarded-roles": "auditor",
+            },
+        )
+        assert auditor.status_code == 403
+        assert auditor.json()["error_code"] == "sec_xbrl_in_app_auth_policy_role_access_forbidden"
+        assert "connector_promotion_bridge_unavailable" not in auditor.text
+
+        unavailable = client.post(_RESOLVE_PATH, content="{not-json", headers=_OPERATOR_HEADERS)
+        assert unavailable.status_code == 503
+        assert unavailable.json() == _closed_error(
+            "connector_promotion_bridge_unavailable",
+            "Connector promotion bridge is unavailable.",
+            retryable=True,
+        )
+
+        monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", True)
+        monkeypatch.setattr(pm, "attestation_precondition_available", lambda _candidate=None: False)
+        unattested = client.post(_RESOLVE_PATH, content="{not-json", headers=_OPERATOR_HEADERS)
+        assert unattested.status_code == 503
+        assert unattested.json() == unavailable.json()
+
+        monkeypatch.setattr(pm, "attestation_precondition_available", lambda _candidate=None: True)
+        sentinel = "b1b-rejected-secret-sentinel"
+        monkeypatch.setattr(pm, "resolve_connector_promotion", _boom)
+        with caplog.at_level(logging.INFO):
+            malformed_responses = [
+                client.post(
+                    _RESOLVE_PATH,
+                    content=f'{{"gate_b_session_id":"{sentinel}"',
+                    headers=_OPERATOR_HEADERS,
+                ),
+                client.post(_RESOLVE_PATH, json={}, headers=_OPERATOR_HEADERS),
+                client.post(_RESOLVE_PATH, json={"gate_b_session_id": 7}, headers=_OPERATOR_HEADERS),
+                client.post(
+                    _RESOLVE_PATH,
+                    json={"gate_b_session_id": str(uuid.uuid4()), "forbidden_secret": sentinel},
+                    headers=_OPERATOR_HEADERS,
+                ),
+            ]
+        for malformed in malformed_responses:
+            assert malformed.status_code == 422
+            assert list(malformed.json()) == ["error_code", "message", "retryable", "schema_id", "status"]
+            assert malformed.content == pm.d33_canonical_bytes(malformed.json())
+            assert malformed.json() == _closed_error(
+                "b1b_request_validation_failed",
+                "Request body failed validation.",
+                retryable=False,
+            )
+            assert sentinel not in malformed.text
+            assert sentinel not in str(malformed.headers)
+        assert sentinel not in caplog.text
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+def test_step5_route_maps_not_found_and_not_eligible_to_closed_domains(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _configure_step5_proxy(monkeypatch)
+    _enable_step5(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    client = TestClient(main.app, raise_server_exceptions=False)
+    try:
+        missing = client.post(
+            _RESOLVE_PATH,
+            json={"gate_b_session_id": str(uuid.uuid4())},
+            headers=_OPERATOR_HEADERS,
+        )
+        assert missing.status_code == 404
+        assert missing.json() == _closed_error(
+            "connector_promotion_session_not_found",
+            "Connector promotion session was not found.",
+            retryable=False,
+        )
+
+        session_id = str(uuid.uuid4())
+        with b1b_step3_runtime["factory"]() as db:
+            db.add(
+                L3Session(
+                    session_id=session_id,
+                    status="completed",
+                    selection_manifest_id=str(uuid.uuid4()),
+                    entry_route_context_json={},
+                    operator_context_json={},
+                    summary_json={},
+                )
+            )
+            db.commit()
+        ineligible = client.post(
+            _RESOLVE_PATH,
+            json={"gate_b_session_id": session_id},
+            headers=_OPERATOR_HEADERS,
+        )
+        assert ineligible.status_code == 409
+        assert ineligible.json() == _closed_error(
+            "connector_promotion_not_eligible",
+            "Connector promotion is not eligible.",
+            retryable=False,
+        )
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+def test_step5_route_transports_all_closed_error_codes_canonically(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _configure_step5_proxy(monkeypatch)
+    _enable_step5(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    client = TestClient(main.app, raise_server_exceptions=False)
+    before = _materialization_census(b1b_step3_runtime)
+    try:
+        for code, (http_status, message, retryable) in pm._B1B_ERROR_SPECS.items():
+            def fail_closed(*_args, _code=code, **_kwargs):
+                raise pm._closed_b1b_error(_code)
+
+            monkeypatch.setattr(pm, "resolve_connector_promotion", fail_closed)
+            response = client.post(
+                _RESOLVE_PATH,
+                json={"gate_b_session_id": str(uuid.uuid4())},
+                headers=_OPERATOR_HEADERS,
+            )
+            assert response.status_code == http_status
+            assert response.json() == _closed_error(code, message, retryable=retryable)
+            assert response.content == pm.d33_canonical_bytes(response.json())
+        assert _materialization_census(b1b_step3_runtime) == before
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+def test_step5_route_ignores_mutable_exception_transport_fields(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _configure_step5_proxy(monkeypatch)
+    _enable_step5(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    client = TestClient(main.app, raise_server_exceptions=False)
+
+    def fail_with_mismatched_transport(*_args, **_kwargs):
+        raise pm.ConnectorPromotionError(
+            "connector_promotion_not_eligible",
+            "caller-controlled text",
+            http_status=418,
+            retryable=True,
+        )
+
+    monkeypatch.setattr(pm, "resolve_connector_promotion", fail_with_mismatched_transport)
+    try:
+        response = client.post(
+            _RESOLVE_PATH,
+            json={"gate_b_session_id": str(uuid.uuid4())},
+            headers=_OPERATOR_HEADERS,
+        )
+        assert response.status_code == 409
+        assert response.json() == _closed_error(
+            "connector_promotion_not_eligible",
+            "Connector promotion is not eligible.",
+            retryable=False,
+        )
+        assert response.content == pm.d33_canonical_bytes(response.json())
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+def test_step5_route_first_call_and_replay_have_exact_redacted_schema(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id = _seed_materializable_receipt(b1b_step3_runtime, monkeypatch, "step5-route")
+    _configure_step5_proxy(monkeypatch)
+    _enable_step5(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    client = TestClient(main.app, raise_server_exceptions=False)
+    try:
+        first = client.post(
+            _RESOLVE_PATH,
+            json={"gate_b_session_id": gate_b_session_id},
+            headers=_OPERATOR_HEADERS,
+        )
+        assert first.status_code == 200, first.text
+        assert set(first.json()) == _RESOLVE_KEYS
+        assert first.json()["disposition"] == "materialized"
+        assert first.content == pm.d33_canonical_bytes(first.json())
+        census = _materialization_census(b1b_step3_runtime)
+        files = _lane_files(b1b_step3_runtime)
+
+        replay = client.post(
+            _RESOLVE_PATH,
+            json={"gate_b_session_id": gate_b_session_id},
+            headers=_OPERATOR_HEADERS,
+        )
+        assert replay.status_code == 200, replay.text
+        assert replay.json() == {**first.json(), "disposition": "reused"}
+        assert replay.content == pm.d33_canonical_bytes(replay.json())
+        assert _materialization_census(b1b_step3_runtime) == census
+        assert _lane_files(b1b_step3_runtime) == files
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)

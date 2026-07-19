@@ -57,6 +57,12 @@ def test_pre_body_route_discovery_fails_closed_when_required_routes_missing() ->
 def test_pre_body_map_matches_path_parameter_routes() -> None:
     assert (
         main._pre_body_operator_authorization_access_for_path(
+            "/api/v1/layer3/source/connector/promotion/resolve"
+        )
+        == "write"
+    )
+    assert (
+        main._pre_body_operator_authorization_access_for_path(
             "/api/v1/datasets/dataset-1/versions/version-1/profile"
         )
         == "write"

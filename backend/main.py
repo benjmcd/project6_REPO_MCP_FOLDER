@@ -10,6 +10,8 @@ from typing import Any
 from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI, Request
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -20,7 +22,7 @@ from app.api.router import api_router
 from app.core.config import bootstrap_storage_tree, settings
 from app.core.observability import RequestIdMiddleware, setup_logging, unhandled_exception_handler
 from app.db.session import Base, engine, SessionLocal
-from app.services import layer3_sec_xbrl_in_app_auth_policy
+from app.services import layer3_connector_promotion, layer3_sec_xbrl_in_app_auth_policy
 from app.services.layer3_workbench_error import Layer3WorkbenchError, workbench_error_response
 
 
@@ -65,8 +67,34 @@ app.add_middleware(
 app.add_exception_handler(Exception, unhandled_exception_handler)
 
 
+_B1B_PREVALIDATION_PATHS = {
+    f"{settings.api_prefix.rstrip('/')}/layer3/source/connector/promotion/resolve",
+}
+
+
+@app.exception_handler(RequestValidationError)
+async def _b1b_path_scoped_validation_error_handler(
+    request: Request,
+    exc: RequestValidationError,
+):
+    if (
+        request.url.path in _B1B_PREVALIDATION_PATHS
+        and getattr(request.state, "b1b_prevalidation_authorized", False)
+    ):
+        return JSONResponse(
+            status_code=layer3_connector_promotion.b1b_error_spec(
+                "b1b_request_validation_failed"
+            )[0],
+            content=layer3_connector_promotion.b1b_error_body(
+                "b1b_request_validation_failed"
+            ),
+        )
+    return await request_validation_exception_handler(request, exc)
+
+
 _REQUIRED_PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTES = {
     f"{settings.api_prefix.rstrip('/')}/analysis-runs": "write",
+    f"{settings.api_prefix.rstrip('/')}/layer3/source/connector/promotion/resolve": "write",
     f"{settings.api_prefix.rstrip('/')}/layer3/source/intake/upload": "write",
     f"{settings.api_prefix.rstrip('/')}/layer3/sec-xbrl/operator-review/workflow/status": "read",
 }
@@ -151,6 +179,7 @@ def _build_static_pre_body_routes(
         (f"{L}/package/replacement-namespace/record-from-corrected-artifact-manifest-authority", "write"),
         (f"{L}/package/replacement-activation/commit", "write"),
         # --- layer3/source_ingestion.py ---
+        (f"{L}/source/connector/promotion/resolve", "write"),
         (f"{L}/source/intake/upload", "write"),
         (f"{L}/source/ingestion/candidate-b/bundle/material-bridge", "write"),
         (f"{L}/source/ingestion/candidate-b/runtime/material-bridge", "write"),
@@ -455,6 +484,17 @@ async def _pre_body_operator_authorization_middleware(request: Request, call_nex
             )
         except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
             return _auth_policy_error_response(exc)
+        if request.url.path in _B1B_PREVALIDATION_PATHS:
+            if not layer3_connector_promotion.bridge_precondition_available():
+                return JSONResponse(
+                    status_code=layer3_connector_promotion.b1b_error_spec(
+                        "connector_promotion_bridge_unavailable"
+                    )[0],
+                    content=layer3_connector_promotion.b1b_error_body(
+                        "connector_promotion_bridge_unavailable"
+                    ),
+                )
+            request.state.b1b_prevalidation_authorized = True
     return await call_next(request)
 
 

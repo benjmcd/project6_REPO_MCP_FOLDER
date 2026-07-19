@@ -4,6 +4,7 @@ import csv
 import hashlib
 import io
 import re
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -18,6 +19,17 @@ from app.services.dataframe_io import persist_dataframe_as_version_rows
 
 
 CSV_READ_ENCODINGS = ("utf-8", "utf-8-sig", "cp1252", "latin1")
+
+
+@dataclass
+class ExistingCsvReference:
+    """Parsed existing CSV bytes; creates no raw copy and performs no commit."""
+
+    dataframe: pd.DataFrame
+    encoding: str
+    source_row_count: int
+    content_sha256: str
+    content_size_bytes: int
 
 
 def _safe_filename(name: str) -> str:
@@ -43,6 +55,43 @@ def _read_csv_with_fallback(raw_path: Path) -> tuple[pd.DataFrame, str]:
 def _count_csv_source_rows(content: bytes, encoding: str) -> int:
     records = list(csv.reader(io.StringIO(content.decode(encoding), newline="")))
     return max(len(records) - 1, 0)
+
+
+def read_existing_csv_reference(
+    raw_path: Path,
+    *,
+    expected_sha256: str,
+    expected_size_bytes: int,
+) -> ExistingCsvReference:
+    """Parse one already-stored CSV without copying it or touching the DB."""
+    path = Path(raw_path)
+    content = path.read_bytes()
+    digest = hashlib.sha256(content).hexdigest()
+    if len(content) != expected_size_bytes or digest != expected_sha256:
+        raise ValueError("existing CSV reference does not match expected content")
+    decode_failures: list[str] = []
+    for encoding in CSV_READ_ENCODINGS:
+        try:
+            frame = pd.read_csv(io.BytesIO(content), encoding=encoding)
+            break
+        except UnicodeDecodeError as exc:
+            decode_failures.append(f"{encoding}: {exc}")
+        except Exception as exc:
+            raise ValueError(f"parse failed with encoding {encoding}: {exc}") from exc
+    else:
+        last_error = decode_failures[-1] if decode_failures else "unknown decoding error"
+        raise ValueError(f"unable to decode existing CSV reference: {last_error}")
+    source_row_count = _count_csv_source_rows(content, encoding)
+    frame = clean_dataframe(frame)
+    if frame.empty:
+        raise ValueError("existing CSV reference contains no non-empty rows")
+    return ExistingCsvReference(
+        dataframe=frame,
+        encoding=encoding,
+        source_row_count=source_row_count,
+        content_sha256=digest,
+        content_size_bytes=len(content),
+    )
 
 
 def _next_version_label(db: Session, dataset_id: str) -> str:

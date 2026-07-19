@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
 from fastapi import Depends, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -49,6 +51,7 @@ from app.services import (
     layer3_candidate_b_promotion_closure,
     layer3_candidate_b_runtime_bridge,
     layer3_candidate_b_visual_lane_status,
+    layer3_connector_promotion,
     layer3_package_supersession_commit,
     layer3_raw_mixed_bridge,
     layer3_raw_mixed_materialization,
@@ -232,6 +235,13 @@ from app.api.layer3 import (  # Pydantic models still defined in __init__
     Layer3SourceIntakeRecordResponse,
     _workbench_error_responses,
 )
+
+
+class ConnectorPromotionResolveRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    gate_b_session_id: UUID
+
 
 @router.post(
     "/source/intake/upload",
@@ -2712,3 +2722,35 @@ def post_raw_mixed_corpus_materialize(
             db,
         )
     )
+
+
+@router.post(
+    "/source/connector/promotion/resolve",
+    response_model=None,
+)
+def post_connector_promotion_resolve(
+    request: Request,
+    payload: ConnectorPromotionResolveRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    if not getattr(request.state, "b1b_prevalidation_authorized", False):
+        try:
+            _route_level_operator_identity(request, access="write")
+        except SecXbrlInAppAuthPolicyError as exc:
+            return _sec_xbrl_auth_policy_error_response(exc)
+        if not layer3_connector_promotion.bridge_precondition_available():
+            error_code = "connector_promotion_bridge_unavailable"
+            return JSONResponse(
+                status_code=layer3_connector_promotion.b1b_error_spec(error_code)[0],
+                content=layer3_connector_promotion.b1b_error_body(error_code),
+            )
+    try:
+        return layer3_connector_promotion.resolve_connector_promotion(
+            db,
+            gate_b_session_id=str(payload.gate_b_session_id),
+        )
+    except layer3_connector_promotion.ConnectorPromotionError as exc:
+        return JSONResponse(
+            status_code=layer3_connector_promotion.b1b_error_spec(exc.code)[0],
+            content=layer3_connector_promotion.b1b_error_body(exc.code),
+        )
