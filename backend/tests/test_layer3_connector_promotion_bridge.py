@@ -352,3 +352,182 @@ def test_receipt_schema_version_pinned(migrated_engine) -> None:
     with pytest.raises(IntegrityError):
         with migrated_engine.begin() as conn:
             _insert(conn, receipt_schema_version="layer3.connector_promotion_receipt.v2")
+
+
+# ---------------------------------------------------------------------------
+# Digest primitives (B1b-01 step 2) — golden vectors and contract behavior
+# ---------------------------------------------------------------------------
+
+import hashlib as _hashlib
+import json as _json
+
+from app.services import layer3_connector_promotion as pm
+
+
+def test_metadata_contract_golden_vector() -> None:
+    data = pm.METADATA_CONTRACT_CANONICAL_JSON.encode("utf-8")
+    assert len(data) == 2180
+    assert _hashlib.sha256(data).hexdigest() == pm.METADATA_CONTRACT_SHA256
+    # Round trip: the embedded string IS the D33-canonical form of its object.
+    assert pm.d33_canonical_bytes(_json.loads(data)) == data
+
+
+def test_identity_metadata_hash_golden_vector() -> None:
+    assert (
+        pm.identity_metadata_hash(pm.F07_CONNECTOR_KEY, pm.F07_SCIENCEBASE_ITEM_ID, pm.F07_MEDIA_TYPE)
+        == pm.F07_IDENTITY_METADATA_HASH
+    )
+
+
+def test_canonical_identity_key_golden_vector() -> None:
+    assert (
+        pm.canonical_identity_key_hash(
+            pm.IDENTITY_METADATA_HASH_VERSION,
+            pm.F07_SOURCE_FAMILY,
+            pm.F07_CONTENT_SHA256,
+            pm.F07_IDENTITY_METADATA_HASH,
+        )
+        == pm.F07_CANONICAL_IDENTITY_KEY_HASH
+    )
+
+
+def test_d33_serializer_rejections() -> None:
+    for bad in [float("nan"), float("inf"), {1: "x"}, {"a": {2: "y"}}, {"a": set()}, {"a": b"bytes"}]:
+        with pytest.raises(pm.PromotionIdentityError):
+            pm.d33_canonical_bytes(bad if isinstance(bad, (dict, list)) else {"v": bad})
+
+
+def test_media_type_normalization_matrix() -> None:
+    # Essence + parameter-name lowercasing; parameter order irrelevant; value case preserved.
+    a = pm.parse_media_type("Text/CSV; Foo=Bar; baz=qux")
+    b = pm.parse_media_type("text/csv; BAZ=qux; foo=Bar")
+    assert a == b == {"charset": None, "essence": "text/csv", "parameters": {"baz": "qux", "foo": "Bar"}}
+    # charset moves to the explicit nullable key, token lowercased, no alias guessing.
+    c = pm.parse_media_type('text/csv; charset="UTF-8"')
+    assert c == {"charset": "utf-8", "essence": "text/csv", "parameters": {}}
+    d = pm.parse_media_type("text/csv; charset=utf8")
+    assert d["charset"] == "utf8"  # utf8 is NOT normalized to utf-8
+    # Rejections: malformed essence, duplicate names after lowercasing, empty segment.
+    for bad in ["textcsv", "text/", "/csv", "text/csv; a=1; A=2", "text/csv; ;", "text/csv; name", "text/csv; =v"]:
+        with pytest.raises(pm.PromotionIdentityError):
+            pm.parse_media_type(bad)
+
+
+def test_identity_string_rules() -> None:
+    # Trim + NFC + case preserved; empty/None invalid, never a wildcard.
+    assert (
+        pm.identity_metadata_hash("  sciencebase_public  ", pm.F07_SCIENCEBASE_ITEM_ID, pm.F07_MEDIA_TYPE)
+        == pm.F07_IDENTITY_METADATA_HASH
+    )
+    for bad_key in ["", "   ", None, 7]:
+        with pytest.raises(pm.PromotionIdentityError):
+            pm.identity_metadata_hash(bad_key, pm.F07_SCIENCEBASE_ITEM_ID, pm.F07_MEDIA_TYPE)
+
+
+def test_decision_semantics_hash_behavior() -> None:
+    args = (
+        pm.IDENTITY_METADATA_HASH_VERSION,
+        pm.F07_SOURCE_FAMILY,
+        pm.F07_CONTENT_SHA256,
+        pm.F07_IDENTITY_METADATA_HASH,
+    )
+    approved = pm.decision_semantics_hash("approved", *args)
+    denied = pm.decision_semantics_hash("denied", *args)
+    assert approved != denied
+    assert approved == pm.decision_semantics_hash("approved", *args)  # deterministic
+    with pytest.raises(pm.PromotionIdentityError):
+        pm.decision_semantics_hash("maybe", *args)
+
+
+def test_promotion_basis_hash_structure() -> None:
+    kwargs = dict(
+        approval_hash="a" * 64,
+        gate_b_session_id="s-1",
+        gate_b_selection_manifest_id="m-1",
+        gate_b_material_snapshot_id="snap-1",
+        gate_b_decision_manifest_id="gate-b-0123456789abcdef",
+        gate_b_decision_manifest_hash="b" * 64,
+        material_preview_hash="c" * 64,
+        canonical_identity_key_hash=pm.F07_CANONICAL_IDENTITY_KEY_HASH,
+        identity_metadata_hash_version=pm.IDENTITY_METADATA_HASH_VERSION,
+        source_family=pm.F07_SOURCE_FAMILY,
+        content_sha256=pm.F07_CONTENT_SHA256,
+        identity_metadata_hash=pm.F07_IDENTITY_METADATA_HASH,
+        connector_source_intake_record_id="intake-1",
+    )
+    h1 = pm.promotion_basis_hash(**kwargs)
+    assert len(h1) == 64 and h1 == pm.promotion_basis_hash(**kwargs)
+    # Any single component change changes the digest.
+    changed = dict(kwargs, gate_b_session_id="s-2")
+    assert pm.promotion_basis_hash(**changed) != h1
+    # Uppercase hex rejected (lowercase 64-hex contract).
+    with pytest.raises(pm.PromotionIdentityError):
+        pm.promotion_basis_hash(**dict(kwargs, approval_hash="A" * 64))
+
+
+def test_storage_ref_hash_domains() -> None:
+    ref = "b1b/dataset-versions/ab/abcd.parquet"
+    expected_in = _hashlib.sha256(b"project6-storage-ref-v1\x00" + ref.encode()).hexdigest()
+    expected_out = _hashlib.sha256(b"project6-dataset-storage-ref-v1\x00" + ref.encode()).hexdigest()
+    assert pm.storage_ref_hash(ref) == expected_in
+    assert pm.dataset_storage_ref_hash(ref) == expected_out
+    assert expected_in != expected_out  # domains never interchange
+    # Backslashes normalize to '/', case preserved.
+    assert pm.storage_ref_hash("b1b\\dataset-versions\\ab\\abcd.parquet") == expected_in
+    for bad in ["", "/lead", "trail/", "a//b", "a/./b", "a/../b", "C:/x", "a\x00b", ".."]:
+        with pytest.raises(pm.PromotionIdentityError):
+            pm.storage_ref_hash(bad)
+
+
+def test_materialization_basis_and_record_wrapper() -> None:
+    basis = pm.build_materialization_basis(
+        dataframe_io_git_blob="1" * 40,
+        implementation_commit="2" * 40,
+        ingest_git_blob="3" * 40,
+        promotion_git_blob="4" * 40,
+        input_storage_ref_hash="5" * 64,
+        connector_run_id="run-1",
+        connector_run_target_id="target-1",
+        connector_source_intake_record_id="intake-1",
+        gate_b_material_snapshot_id="snap-1",
+        gate_b_selection_manifest_id="manifest-1",
+        gate_b_session_id="session-1",
+        canonical_identity_key_hash=pm.F07_CANONICAL_IDENTITY_KEY_HASH,
+        connector_promotion_receipt_id="receipt-1",
+        promotion_basis_hash="6" * 64,
+    )
+    bh = pm.materialization_basis_hash(basis)
+    assert len(bh) == 64
+    # Embedded fixed sections are exact.
+    assert basis["code"]["metadata_contract_sha256"] == pm.METADATA_CONTRACT_SHA256
+    assert basis["transformation"]["contract_sha256"] == pm.TRANSFORM_CONTRACT_SHA256
+    assert basis["input"]["bytes"] == 34
+
+    record = pm.build_materialization_record(
+        basis_hash=bh,
+        dataset_file_bytes=1234,
+        dataset_file_sha256="7" * 64,
+        dataset_id="ds-1",
+        dataset_source_provenance_id="prov-1",
+        dataset_storage_ref_hash="8" * 64,
+        dataset_version_content_sha256=pm.F07_CONTENT_SHA256,
+        dataset_version_id="dsv-1",
+        promoted_session_id="promoted-1",
+        source_connector_id="conn-1",
+    )
+    wrapper = pm.build_materialization_wrapper(record)
+    assert wrapper["record"] is record
+    assert wrapper["record_hash"] == pm.d33_sha256(record)  # inner record only, never the wrapper
+    with pytest.raises(pm.PromotionIdentityError):
+        pm.build_materialization_record(
+            basis_hash=bh,
+            dataset_file_bytes=0,
+            dataset_file_sha256="7" * 64,
+            dataset_id="ds-1",
+            dataset_source_provenance_id="prov-1",
+            dataset_storage_ref_hash="8" * 64,
+            dataset_version_content_sha256=pm.F07_CONTENT_SHA256,
+            dataset_version_id="dsv-1",
+            promoted_session_id="promoted-1",
+            source_connector_id="conn-1",
+        )
