@@ -7107,3 +7107,33 @@ findings, and Section 15 standing. For every attempted invocation it also binds
 intent, worker manifest when present, closeout bytes/hashes and disposition, and
 the consuming `profile_verdict.v2` when one exists. Pre-merge records only entry/
 authorized state; final success is reserved for merged proof and records closeout.
+
+<!-- B1B-AMENDMENT-V2-BEGIN -->
+
+## 17. Owner-confirmed prospective amendment
+
+Only these six decisions amend the preceding correction; every preexisting clause remains byte-current.
+
+1. **Non-waiver and non-authorization.** Adoption below does not waive the historical one-builder violation, retroactively authorize any work, validate any prior informal audit or review, or itself authorize dispatch, implementation, runtime, repair, B1b-04, merge, or publication. Authority still requires the refreshed Section 13.2 key and every fresh entry gate.
+
+2. **Preserved prior work product.** The exact direct-parent chain below is adopted without re-execution only as valid prior work product and repair input, not as certified conforming to decision 4:
+
+   | Commit | Owner-adjudicated execution provenance |
+   |---|---|
+   | `26f933a4a8ec7e0c222bdfdd3a13bde75a50ab19` | inherited-checkpoint/foreground-Claude |
+   | `5bac0b0c68c39a23c4a79f8cdd63f1f95fb17980` | foreground-Claude |
+   | `13631e89594c6ed69629b759c818e73f80c1b5fd` | p6_main_thread |
+   | `901bce8eeaac835a0a663d697f0e45947389ed64` | p6_main_thread |
+   | `141be3517e6baca28120b9893ef7c10a7c03b7cc` | p6_main_thread |
+   | `f91257900b9d1b0227bba9cfdd9ce87b4ad95035` | p6_main_thread |
+   | `7f942518b9c3f57d159dfee8385aec070e47f2ac` | p6_main_thread |
+
+3. **Prospective roles.** `p6_main_thread` (`019f5a7d-78d4-75d1-bddb-04d48d3dec84`) is the sole candidate writer; `p6_agent1` (`019f497a-bece-7162-9d0b-5d2a21e8b23d`) is the independent auditor; `p6_agent3` (`019f497b-591b-7341-87bd-65154f49fb21`) is the independent reviewer; and `p6_agent2` (`019f497b-15a8-7763-a3a4-20a29046dd26`) is the unassigned fourth allowlisted task. Unlisted workflow outputs are advisory-only.
+
+4. **Option (a) replay closure.** `_verify_materialized_replay` accepts `summary_json` without `schema_id` only when its key set and values are exactly `{"descriptor_status_counts":{"resolved_loaded":1},"retrieval_outcome_counts":{"loaded":1},"loaded_snapshot_count":1,"source_planes":["dataset"],"warning_reasons":["synthetic_non_official_fixture"],"retrieved_descriptor_count":1,"unresolved_descriptor_count":0,"descriptor_coverage_status":"complete"}`. With `schema_id`, it accepts only `schema_id=layer3.b1b_session_state.v1` and exactly these twelve keys: `schema_id`, `review_record_ref`, `review_state`, `result_review_hash`, `analysis_plan_id`, `pass_run_id`, `analysis_run_id`, `package_review_state`, `package_review_hash`, `reconciliation_record_id`, `packages`, and `connector_dataset_handoff_basis_hash`. Values must be stage-valid under lines 817-834, including the transitions at lines 999-1017. Eight-plus-extra, twelve-plus-extra, partial, mixed, unknown, unrecognized-schema, or stage-invalid state fails closed.
+
+5. **Refreshed ballot record.** The mechanically captured refreshed record is `state/agent-inbox/b1b-dispatch-v2.md`; it must be absent before create and written once. The historical `state/agent-inbox/b1b-dispatch-owner-decision-2026-07-13.md` remains byte-immutable and may not be reused, appended to, or overwritten.
+
+6. **Pre-B1b-04 conformance repair.** Only after a valid refreshed key and fresh E0/Gate 7, the repair file fence is exactly `backend/app/services/layer3_connector_promotion.py` and `backend/tests/test_layer3_connector_promotion_bridge.py`. No other candidate file may change, and B1b-04 remains blocked until this repair passes its required verification, independent audit, and independent review.
+
+<!-- B1B-AMENDMENT-V2-END -->
