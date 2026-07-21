@@ -91,7 +91,17 @@ from app.services.layer3_connector_source_intake import (  # noqa: E402
 )
 from app.services.layer3_workbench_error import Layer3WorkbenchError  # noqa: E402
 from app.services import layer3_pass_entry  # noqa: E402
+from app.services import layer3_response_contract  # noqa: E402
 from app.services import layer3_workbench  # noqa: E402
+from app.services.layer3_session_entry import (  # noqa: E402
+    SessionEntryRequest,
+    SnapshotMaterial,
+    commit_selection,
+    expand_descriptors,
+    finalize_session,
+    record_retrieval_event,
+)
+from app.services.layer3_typing_entry import materialize_typing_entry  # noqa: E402
 from app.services.layer3_utils import stable_hash, stable_json_bytes  # noqa: E402
 
 ALEMBIC_INI = BACKEND / "alembic.ini"
@@ -2422,6 +2432,170 @@ def _start_replay_subject(
     )
 
 
+def _prepare_result_review_subject(
+    runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    stem: str,
+) -> tuple[dict, dict, dict, dict]:
+    _gate_b_session_id, resolved = _materialize_replay_subject(runtime, monkeypatch, stem)
+    with runtime["factory"]() as db:
+        preview, approval = _approve_replay_subject(db, resolved["promoted_session_id"], stem)
+        selection = _select_replay_subject(
+            db,
+            resolved["promoted_session_id"],
+            stem,
+            preview,
+            approval,
+        )
+        start = _start_replay_subject(
+            db,
+            resolved["promoted_session_id"],
+            stem,
+            preview,
+            approval,
+            selection,
+        )
+    return resolved, preview, approval, start
+
+
+def _prepare_ordinary_result_review_subject(
+    runtime: dict,
+    stem: str,
+) -> tuple[str, dict, dict, dict]:
+    dataset_id = str(uuid.uuid4())
+    dataset_version_id = str(uuid.uuid4())
+    csv_bytes = b"site_id,value\nordinary-a,1\nordinary-b,2\n"
+    csv_path = runtime["storage_dir"] / "ordinary" / f"{dataset_version_id}.csv"
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    csv_path.write_bytes(csv_bytes)
+
+    with runtime["factory"]() as db:
+        db.add_all(
+            [
+                Dataset(
+                    dataset_id=dataset_id,
+                    source_id=None,
+                    name="Ordinary parity dataset",
+                    description="Non-connector result-review parity fixture",
+                    domain_pack="parity",
+                    frequency_hint=None,
+                    time_column=None,
+                ),
+                DatasetVersion(
+                    dataset_version_id=dataset_version_id,
+                    dataset_id=dataset_id,
+                    parent_version_id=None,
+                    version_label="v1",
+                    version_type="baseline",
+                    status="ready",
+                    storage_ref=str(csv_path),
+                    row_count=2,
+                    content_hash=hashlib.sha256(csv_bytes).hexdigest(),
+                    source_row_count=2,
+                    dropped_row_count=0,
+                    notes="ordinary non-connector parity fixture",
+                ),
+                VariableDefinition(
+                    dataset_version_id=dataset_version_id,
+                    variable_name="site_id",
+                    dtype="string",
+                    role="dimension",
+                    is_numeric=False,
+                    is_time_index=False,
+                    ordinal_position=0,
+                ),
+                VariableDefinition(
+                    dataset_version_id=dataset_version_id,
+                    variable_name="value",
+                    dtype="int64",
+                    role="measure",
+                    is_numeric=True,
+                    is_time_index=False,
+                    ordinal_position=1,
+                ),
+            ]
+        )
+        session, manifest = commit_selection(
+            db,
+            SessionEntryRequest(
+                manifest_items=[
+                    {
+                        "source_plane": "plane_a",
+                        "descriptor_type": "dataset_version",
+                        "selector_payload": {"dataset_version_id": dataset_version_id},
+                        "selection_basis": {"selection_id": f"{stem}-selection"},
+                        "expansion_reason": "committed_selection",
+                    }
+                ],
+                source_plane_hints={"plane_a": ["dataset_version"]},
+                commit_reason="ordinary_result_review_parity",
+                entry_route_context={"entrypoint": "pytest"},
+                operator_context={"operator": "pytest"},
+                summary={"fixture": "ordinary_non_connector"},
+            ),
+        )
+        descriptor = expand_descriptors(db, session=session, manifest=manifest)[0]
+        record_retrieval_event(
+            db,
+            session=session,
+            descriptor=descriptor,
+            outcome="loaded",
+            reason_code="loaded",
+            loaded_materials=[
+                SnapshotMaterial(
+                    source_shape="dataset_version",
+                    source_identity={
+                        "dataset_id": dataset_id,
+                        "dataset_version_id": dataset_version_id,
+                    },
+                    source_provenance={"storage_ref": str(csv_path)},
+                    payload={"dataset_version_id": dataset_version_id},
+                    load_summary={"loaded_records": 2, "failed_records": 0},
+                )
+            ],
+            storage_root=runtime["storage_dir"] / "artifacts" / "layer3" / "ordinary",
+        )
+        finalize_session(db, session=session)
+        materialize_typing_entry(db, session_id=session.session_id)
+        db.commit()
+        preview, approval = _approve_replay_subject(db, session.session_id, stem)
+        selection = _select_replay_subject(db, session.session_id, stem, preview, approval)
+        start = _start_replay_subject(
+            db,
+            session.session_id,
+            stem,
+            preview,
+            approval,
+            selection,
+        )
+        return session.session_id, preview, approval, start
+
+
+def _b1b_04_review_payload(
+    resolved: dict,
+    preview: dict,
+    approval: dict,
+    start: dict,
+    *,
+    decision: str = "approved",
+    review_notes: str = "",
+) -> dict:
+    basis = {
+        "session_id": resolved["promoted_session_id"],
+        "analysis_plan_id": approval["analysis_plan_id"],
+        "pass_run_id": start["pass_run_id"],
+        "preview_id": preview["preview_id"],
+        "preview_hash": preview["preview_hash"],
+        "analysis_run_id": start["analysis_run_id"],
+        "operator_decision": decision,
+        "review_notes": review_notes,
+    }
+    return {
+        "client_request_id": f"b1b-result-review-{pm.d33_sha256(basis)}",
+        **basis,
+    }
+
+
 _RESULT_REVIEW_STATE_BY_DECISION = {
     "approved": "execution_result_review_approved",
     "changes_requested": "execution_result_review_changes_requested",
@@ -2441,14 +2615,11 @@ def _install_closed_result_review(db, receipt, promoted, decision: str) -> dict:
     plan = db.query(L3AnalysisPlan).filter_by(session_id=promoted.session_id).one()
     pass_run = db.query(L3PassRun).filter_by(session_id=promoted.session_id).one()
     analysis_run = db.get(AnalysisRun, pass_run.summary_json["analysis_run_id"])
-    artifact = db.query(AnalysisArtifact).filter_by(analysis_run_id=analysis_run.analysis_run_id).one()
-    checks = (
-        db.query(AssumptionCheck)
-        .filter_by(analysis_run_id=analysis_run.analysis_run_id)
-        .order_by(AssumptionCheck.assumption_check_id)
-        .all()
+    evidence = pm._b1b_result_artifact_evidence(
+        db,
+        receipt=receipt,
+        analysis_run=analysis_run,
     )
-    caveat = db.query(CaveatNote).filter_by(analysis_run_id=analysis_run.analysis_run_id).one()
     review_notes = None if decision == "approved" else f"{decision} note"
     record = {
         "schema_id": "layer3.b1b_result_review_record.v1",
@@ -2459,27 +2630,12 @@ def _install_closed_result_review(db, receipt, promoted, decision: str) -> dict:
         "preview_id": plan.plan_json["source_preview_id"],
         "preview_hash": plan.plan_json["source_preview_hash"],
         "analysis_run_id": analysis_run.analysis_run_id,
-        "result_payload_sha256": "a" * 64,
-        "analysis_artifact_id": artifact.artifact_id,
-        "analysis_artifact_sha256": "b" * 64,
-        "assumption_check_ids": [row.assumption_check_id for row in checks],
-        "caveat_note_id": caveat.caveat_note_id,
-        "reviewed_output_items": [
-            {
-                "index": 0,
-                "item_ref": f"analysis-artifact:{artifact.artifact_id}",
-                "item_type": "fact",
-                "trace_status": "resolved",
-                "missing_trace_fields": [],
-            },
-            {
-                "index": 1,
-                "item_ref": f"caveat:{caveat.caveat_note_id}",
-                "item_type": "caveat",
-                "trace_status": "resolved",
-                "missing_trace_fields": [],
-            },
-        ],
+        "result_payload_sha256": evidence["result_payload_sha256"],
+        "analysis_artifact_id": evidence["analysis_artifact_id"],
+        "analysis_artifact_sha256": evidence["analysis_artifact_sha256"],
+        "assumption_check_ids": evidence["assumption_check_ids"],
+        "caveat_note_id": evidence["caveat_note_id"],
+        "reviewed_output_items": evidence["reviewed_output_items"],
         "unresolved_trace_count": 0,
         "operator_decision": decision,
         "review_notes": review_notes,
@@ -3385,6 +3541,661 @@ def test_b1b_03_receipt_bound_public_analysis_is_exact_and_replay_inert(
     assert _session_chain_projection(b1b_step3_runtime, gate_b_session_id) == original_session
 
 
+@pytest.mark.parametrize(
+    ("decision", "raw_notes", "stored_notes"),
+    (
+        ("approved", "", None),
+        ("changes_requested", "  revise the bounded finding  ", "revise the bounded finding"),
+        ("rejected", "  reject the bounded finding  ", "reject the bounded finding"),
+        ("blocked", "  blocked by bounded evidence  ", "blocked by bounded evidence"),
+    ),
+)
+def test_b1b_04_result_review_persists_exact_closed_projection_for_all_decisions(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    decision: str,
+    raw_notes: str,
+    stored_notes: str | None,
+) -> None:
+    resolved, preview, approval, start = _prepare_result_review_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        f"b1b-04-{decision}",
+    )
+    pass_run_id = start["pass_run_id"]
+    request_basis = {
+        "session_id": resolved["promoted_session_id"],
+        "analysis_plan_id": approval["analysis_plan_id"],
+        "pass_run_id": pass_run_id,
+        "preview_id": preview["preview_id"],
+        "preview_hash": preview["preview_hash"],
+        "analysis_run_id": start["analysis_run_id"],
+        "operator_decision": decision,
+        "review_notes": raw_notes,
+    }
+    basis_hash = pm.d33_sha256(request_basis)
+    payload = {
+        "client_request_id": f"b1b-result-review-{basis_hash}",
+        **request_basis,
+    }
+
+    with b1b_step3_runtime["factory"]() as db:
+        response = layer3_workbench.execution_result_review(db, payload)
+    assert isinstance(response, pm.B1BClosedApiResponse)
+    assert response.http_status == 200, response.body_bytes
+
+    with b1b_step3_runtime["factory"]() as db:
+        receipt = db.query(L3ConnectorPromotionReceipt).filter_by(
+            promoted_session_id=resolved["promoted_session_id"]
+        ).one()
+        promoted = db.get(L3Session, resolved["promoted_session_id"])
+        pass_run = db.get(L3PassRun, pass_run_id)
+        artifact = db.query(AnalysisArtifact).filter_by(
+            analysis_run_id=start["analysis_run_id"]
+        ).one()
+        checks = db.query(AssumptionCheck).filter_by(
+            analysis_run_id=start["analysis_run_id"]
+        ).all()
+        caveat = db.query(CaveatNote).filter_by(
+            analysis_run_id=start["analysis_run_id"]
+        ).one()
+        assert promoted is not None
+        assert pass_run is not None
+        artifact_bytes = (Path(settings.artifact_storage_dir) / Path(artifact.storage_ref).name).read_bytes()
+        result_payload = _json.loads(artifact_bytes)
+        ordered_check_ids = [
+            next(row.assumption_check_id for row in checks if row.assumption_name == name)
+            for name in (
+                "data_availability",
+                "column_classification",
+                "missingness_scan",
+                "time_column_coverage",
+            )
+        ]
+        reviewed_items = [
+            {
+                "index": 0,
+                "item_ref": f"analysis-artifact:{artifact.artifact_id}",
+                "item_type": "fact",
+                "trace_status": "resolved",
+                "missing_trace_fields": [],
+            },
+            {
+                "index": 1,
+                "item_ref": f"caveat:{caveat.caveat_note_id}",
+                "item_type": "caveat",
+                "trace_status": "resolved",
+                "missing_trace_fields": [],
+            },
+        ]
+        record = {
+            "schema_id": "layer3.b1b_result_review_record.v1",
+            "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+            "promoted_session_id": promoted.session_id,
+            "analysis_plan_id": approval["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+            "analysis_run_id": start["analysis_run_id"],
+            "result_payload_sha256": pm.d33_sha256(result_payload),
+            "analysis_artifact_id": artifact.artifact_id,
+            "analysis_artifact_sha256": _hashlib.sha256(artifact_bytes).hexdigest(),
+            "assumption_check_ids": ordered_check_ids,
+            "caveat_note_id": caveat.caveat_note_id,
+            "reviewed_output_items": reviewed_items,
+            "unresolved_trace_count": 0,
+            "operator_decision": decision,
+            "review_notes": stored_notes,
+            "result_review_request_basis_hash": basis_hash,
+        }
+        result_review_hash = pm.d33_sha256(record)
+        review_record_ref = f"b1b-result-review-{result_review_hash}"
+        review_state = _RESULT_REVIEW_STATE_BY_DECISION[decision]
+        expected_closed_review = {
+            **record,
+            "review_record_ref": review_record_ref,
+            "review_state": review_state,
+            "result_review_hash": result_review_hash,
+        }
+        assert pass_run.summary_json["execution_result_review"] == expected_closed_review
+        assert promoted.summary_json == {
+            "schema_id": "layer3.b1b_session_state.v1",
+            "review_record_ref": review_record_ref,
+            "review_state": review_state,
+            "result_review_hash": result_review_hash,
+            "analysis_plan_id": approval["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "analysis_run_id": start["analysis_run_id"],
+            "package_review_state": None,
+            "package_review_hash": None,
+            "reconciliation_record_id": None,
+            "packages": None,
+            "connector_dataset_handoff_basis_hash": None,
+        }
+        assert _replay_summary_contract_valid(db, promoted.session_id) is True
+
+    expected_response = {
+        "schema_id": "layer3.b1b_result_review_response.v1",
+        "promotion_receipt_id": resolved["connector_promotion_receipt_id"],
+        "promoted_session_id": resolved["promoted_session_id"],
+        "analysis_plan_id": approval["analysis_plan_id"],
+        "pass_run_id": pass_run_id,
+        "analysis_run_id": start["analysis_run_id"],
+        "operator_decision": decision,
+        "review_state": review_state,
+        "result_review_hash": result_review_hash,
+        "review_notes_present": stored_notes is not None,
+        "review_notes_sha256": (
+            _hashlib.sha256(stored_notes.encode("utf-8")).hexdigest()
+            if stored_notes is not None
+            else None
+        ),
+        "package_review_preview_enabled": decision == "approved",
+    }
+    assert isinstance(response, pm.B1BClosedApiResponse)
+    assert response.http_status == 200
+    assert response.body_bytes == pm.d33_canonical_bytes(expected_response)
+    assert _json.loads(response.body_bytes) == expected_response
+
+
+def test_b1b_04_exact_replay_and_both_conflict_classes_are_zero_delta(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resolved, preview, approval, start = _prepare_result_review_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        "b1b-04-replay",
+    )
+    payload = _b1b_04_review_payload(resolved, preview, approval, start)
+
+    with b1b_step3_runtime["factory"]() as db:
+        first = layer3_workbench.execution_result_review(db, payload)
+    assert isinstance(first, pm.B1BClosedApiResponse)
+    assert first.http_status == 200
+    frozen_rows = _b1b_03_row_projection(b1b_step3_runtime)
+    frozen_files = _all_storage_files(b1b_step3_runtime)
+    assert frozen_rows["L3ReconciliationRecord"] == []
+    assert frozen_rows["L3OutputPackage"] == []
+
+    with b1b_step3_runtime["factory"]() as db:
+        replay = layer3_workbench.execution_result_review(db, payload)
+    assert isinstance(replay, pm.B1BClosedApiResponse)
+    assert replay.http_status == 200
+    assert replay.body_bytes == first.body_bytes
+    assert _b1b_03_row_projection(b1b_step3_runtime) == frozen_rows
+    assert _all_storage_files(b1b_step3_runtime) == frozen_files
+
+    malformed_replay_id = {**payload, "client_request_id": "b1b-result-review-wrong"}
+    with b1b_step3_runtime["factory"]() as db:
+        malformed_replay = layer3_workbench.execution_result_review(db, malformed_replay_id)
+    assert isinstance(malformed_replay, pm.B1BClosedApiResponse)
+    assert malformed_replay.http_status == 422
+    assert _json.loads(malformed_replay.body_bytes) == pm.b1b_error_body(
+        "b1b_request_validation_failed"
+    )
+    assert _b1b_03_row_projection(b1b_step3_runtime) == frozen_rows
+    assert _all_storage_files(b1b_step3_runtime) == frozen_files
+
+    unequal_basis = {
+        **payload,
+        "operator_decision": "changes_requested",
+        "review_notes": "revise bounded result",
+    }
+    second_decision = _b1b_04_review_payload(
+        resolved,
+        preview,
+        approval,
+        start,
+        decision="changes_requested",
+        review_notes="revise bounded result",
+    )
+    for conflict_payload in (unequal_basis, second_decision):
+        with b1b_step3_runtime["factory"]() as db:
+            conflict = layer3_workbench.execution_result_review(db, conflict_payload)
+        assert isinstance(conflict, pm.B1BClosedApiResponse)
+        assert conflict.http_status == 409
+        assert _json.loads(conflict.body_bytes) == pm.b1b_error_body(
+            "connector_result_review_decision_conflict"
+        )
+        assert conflict.body_bytes == pm.d33_canonical_bytes(_json.loads(conflict.body_bytes))
+        assert _b1b_03_row_projection(b1b_step3_runtime) == frozen_rows
+        assert _all_storage_files(b1b_step3_runtime) == frozen_files
+
+
+def test_b1b_04_closed_request_profile_rejects_notes_and_all_evidence_widening_without_delta(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resolved, preview, approval, start = _prepare_result_review_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        "b1b-04-profile",
+    )
+    payload = _b1b_04_review_payload(resolved, preview, approval, start)
+    generic_optional_fields = (
+        "package",
+        "package_review",
+        "handoff",
+        "export",
+        "rerun",
+        "retry",
+        "recover",
+        "cancel",
+        "selected_pass_ids",
+        "pass_run_ids",
+        "new_analysis_plan",
+        "plan_revision",
+        "source_expansion",
+        "local_upload",
+        "local_directory",
+        "schema_migration",
+        "runtime_db_write",
+        "artifact_manifest",
+        "package_variant",
+        "aps_handoff",
+        "edited_findings",
+        "rewrite_output",
+    )
+    invalid_payloads = [
+        {**payload, "reviewed_output_items": []},
+        {**payload, "connector_b1_evidence": {}},
+        {**payload, "review_notes": "not empty"},
+        {**payload, "operator_decision": "changes_requested", "review_notes": "   "},
+        {**payload, "operator_decision": "other"},
+        {**payload, "client_request_id": "b1b-result-review-wrong"},
+        {**payload, "review_notes": None},
+        *({**payload, field: None} for field in generic_optional_fields),
+    ]
+    frozen_rows = _b1b_03_row_projection(b1b_step3_runtime)
+    frozen_files = _all_storage_files(b1b_step3_runtime)
+
+    for invalid_payload in invalid_payloads:
+        with b1b_step3_runtime["factory"]() as db:
+            response = layer3_workbench.execution_result_review(db, invalid_payload)
+        assert isinstance(response, pm.B1BClosedApiResponse)
+        assert response.http_status == 422
+        assert _json.loads(response.body_bytes) == pm.b1b_error_body("b1b_request_validation_failed")
+        assert response.body_bytes == pm.d33_canonical_bytes(_json.loads(response.body_bytes))
+        assert _b1b_03_row_projection(b1b_step3_runtime) == frozen_rows
+        assert _all_storage_files(b1b_step3_runtime) == frozen_files
+
+
+@pytest.mark.parametrize(
+    "leaking_value",
+    (
+        {"Proxy Authorization": "sentinel"},
+        {"\uff30\uff21\uff33\uff33\uff37\uff2f\uff32\uff24": "sentinel"},
+        {"note": r"C:\temp\sentinel.txt"},
+        {"note": r"\\server\share\sentinel.txt"},
+        {"note": "/tmp/sentinel.txt"},
+        {"note": "file:///tmp/sentinel.txt"},
+        {"note": "safe/%252e%252e/sentinel"},
+        {"note": "https://user:password@example.test/resource"},
+        {"note": "https://example.test/resource?access-token=sentinel"},
+        {"note": "Bearer sentinel"},
+        {"note": "Cookie: session=sentinel"},
+    ),
+)
+def test_b1b_04_closed_transport_recursive_no_leak_rejects_key_and_value_evasions(
+    leaking_value: object,
+) -> None:
+    with pytest.raises(pm.PromotionIdentityError):
+        pm._assert_b1b04_closed_body_no_leak(leaking_value)
+
+    pm._assert_b1b04_closed_body_no_leak(
+        {
+            "storage_ref_hash": "a" * 64,
+            "message": "Benign status text contains no raw reference.",
+        }
+    )
+
+
+def test_b1b_04_reader_extension_accepts_only_exact_closed_state_and_preserves_native_reader(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resolved, preview, approval, start = _prepare_result_review_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        "b1b-04-reader",
+    )
+    payload = _b1b_04_review_payload(resolved, preview, approval, start)
+    with b1b_step3_runtime["factory"]() as db:
+        response = layer3_workbench.execution_result_review(db, payload)
+    assert isinstance(response, pm.B1BClosedApiResponse)
+    assert response.http_status == 200
+
+    with b1b_step3_runtime["factory"]() as db:
+        pass_run = db.get(L3PassRun, start["pass_run_id"])
+        assert pass_run is not None
+        original_summary = copy.deepcopy(pass_run.summary_json)
+        closed_state = pm.b1b_result_review_from_pass_run(db, pass_run)
+        assert closed_state is not None
+        assert closed_state["source_preview_id"] == preview["preview_id"]
+        assert closed_state["source_preview_hash"] == preview["preview_hash"]
+        assert layer3_workbench._downstream_execution_result_review_from_pass_run(db, pass_run) == closed_state
+
+        malformed_fields = (
+            ("promotion_receipt_id", str(uuid.uuid4())),
+            ("promoted_session_id", str(uuid.uuid4())),
+            ("analysis_plan_id", str(uuid.uuid4())),
+            ("pass_run_id", str(uuid.uuid4())),
+            ("preview_id", ""),
+            ("preview_hash", "A" * 64),
+            ("analysis_run_id", str(uuid.uuid4())),
+            ("result_payload_sha256", "short"),
+            ("analysis_artifact_id", str(uuid.uuid4())),
+            ("analysis_artifact_sha256", "B" * 64),
+            ("assumption_check_ids", [str(uuid.uuid4()) for _index in range(4)]),
+            ("caveat_note_id", str(uuid.uuid4())),
+            ("unresolved_trace_count", False),
+            ("result_review_request_basis_hash", "C" * 64),
+        )
+        for field, malformed_value in malformed_fields:
+            malformed_review = copy.deepcopy(original_summary["execution_result_review"])
+            malformed_review[field] = malformed_value
+            malformed_record = {
+                key: malformed_review[key] for key in pm._RESULT_REVIEW_RECORD_KEYS
+            }
+            malformed_hash = pm.d33_sha256(malformed_record)
+            malformed_review["result_review_hash"] = malformed_hash
+            malformed_review["review_record_ref"] = f"b1b-result-review-{malformed_hash}"
+            pass_run.summary_json = {
+                **original_summary,
+                "execution_result_review": malformed_review,
+            }
+            assert layer3_workbench._downstream_execution_result_review_from_pass_run(db, pass_run) is None
+
+        mismatched_preview_summary = copy.deepcopy(original_summary)
+        mismatched_preview_summary["source_preview_id"] = "different-preview"
+        pass_run.summary_json = mismatched_preview_summary
+        assert layer3_workbench._downstream_execution_result_review_from_pass_run(db, pass_run) is None
+
+        malformed_review = copy.deepcopy(original_summary["execution_result_review"])
+        malformed_review["trace_summary"] = {}
+        pass_run.summary_json = {**original_summary, "execution_result_review": malformed_review}
+        assert layer3_workbench._downstream_execution_result_review_from_pass_run(db, pass_run) is None
+
+        pass_run.summary_json = {
+            **original_summary,
+            "execution_result_review": {"schema_id": "layer3.unrecognized_review_state.v1"},
+        }
+        assert layer3_workbench._downstream_execution_result_review_from_pass_run(db, pass_run) is None
+
+        native_state = {
+            "schema_id": "layer3.execution_result_review_state.v1",
+            "operator_decision": "approved",
+            "review_state": "execution_result_review_approved",
+        }
+        pass_run.summary_json = {**original_summary, "execution_result_review": native_state}
+        assert layer3_workbench._downstream_execution_result_review_from_pass_run(db, pass_run) is None
+
+        mixed_native_state = {
+            **native_state,
+            "promotion_receipt_id": str(uuid.uuid4()),
+        }
+        pass_run.summary_json = {**original_summary, "execution_result_review": mixed_native_state}
+        assert layer3_workbench._downstream_execution_result_review_from_pass_run(db, pass_run) is None
+
+        promoted = db.get(L3Session, resolved["promoted_session_id"])
+        assert promoted is not None
+        original_promoted_summary = copy.deepcopy(promoted.summary_json)
+        promoted.summary_json = {**original_promoted_summary, "result_review_hash": "d" * 64}
+        pass_run.summary_json = original_summary
+        assert layer3_workbench._downstream_execution_result_review_from_pass_run(db, pass_run) is None
+        promoted.summary_json = original_promoted_summary
+
+        pass_run.summary_json = original_summary
+        monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", False)
+        assert layer3_workbench._downstream_execution_result_review_from_pass_run(db, pass_run) is None
+        assert pm.side_effect_free_b1b_result_review_scope(db.get_bind(), str(uuid.uuid4())) is False
+
+        pass_run.summary_json = {**original_summary, "execution_result_review": mixed_native_state}
+        assert layer3_workbench._downstream_execution_result_review_from_pass_run(db, pass_run) == mixed_native_state
+        db.rollback()
+
+
+@pytest.mark.parametrize(
+    "corruption",
+    ("artifact", "check_order", "check_content", "caveat"),
+)
+def test_b1b_04_reader_rejects_rehashed_post_record_authority_drift(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    corruption: str,
+) -> None:
+    resolved, preview, approval, start = _prepare_result_review_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        f"b1b-04-post-record-{corruption}",
+    )
+    payload = _b1b_04_review_payload(resolved, preview, approval, start)
+    with b1b_step3_runtime["factory"]() as db:
+        response = layer3_workbench.execution_result_review(db, payload)
+    assert isinstance(response, pm.B1BClosedApiResponse)
+    assert response.http_status == 200
+
+    with b1b_step3_runtime["factory"]() as db:
+        pass_run = db.get(L3PassRun, start["pass_run_id"])
+        promoted = db.get(L3Session, resolved["promoted_session_id"])
+        assert pass_run is not None and promoted is not None
+        pass_summary = copy.deepcopy(pass_run.summary_json)
+        review = copy.deepcopy(pass_summary["execution_result_review"])
+        if corruption == "artifact":
+            artifact = db.query(AnalysisArtifact).filter_by(
+                analysis_run_id=start["analysis_run_id"]
+            ).one()
+            path = Path(settings.artifact_storage_dir) / Path(artifact.storage_ref).name
+            document = _json.loads(path.read_bytes())
+            document["method_id"] = "drifted_method"
+            drifted_bytes = pm.d33_canonical_bytes(document)
+            path.write_bytes(drifted_bytes)
+            review["result_payload_sha256"] = pm.d33_sha256(document)
+            review["analysis_artifact_sha256"] = hashlib.sha256(drifted_bytes).hexdigest()
+        elif corruption == "check_order":
+            review["assumption_check_ids"] = list(reversed(review["assumption_check_ids"]))
+        elif corruption == "check_content":
+            check = db.query(AssumptionCheck).filter_by(
+                analysis_run_id=start["analysis_run_id"],
+                assumption_name="missingness_scan",
+            ).one()
+            check.notes = "drifted after review"
+        else:
+            caveat = db.query(CaveatNote).filter_by(
+                analysis_run_id=start["analysis_run_id"]
+            ).one()
+            caveat.message = "drifted after review"
+
+        record = {key: review[key] for key in pm._RESULT_REVIEW_RECORD_KEYS}
+        result_hash = pm.d33_sha256(record)
+        review_record_ref = f"b1b-result-review-{result_hash}"
+        review["result_review_hash"] = result_hash
+        review["review_record_ref"] = review_record_ref
+        pass_run.summary_json = {
+            **pass_summary,
+            "execution_result_review": review,
+        }
+        promoted.summary_json = {
+            **copy.deepcopy(promoted.summary_json),
+            "review_record_ref": review_record_ref,
+            "result_review_hash": result_hash,
+        }
+        db.commit()
+
+    frozen_rows = _b1b_03_row_projection(b1b_step3_runtime)
+    frozen_files = _all_storage_files(b1b_step3_runtime)
+    with b1b_step3_runtime["factory"]() as db:
+        pass_run = db.get(L3PassRun, start["pass_run_id"])
+        promoted = db.get(L3Session, resolved["promoted_session_id"])
+        receipt = db.query(L3ConnectorPromotionReceipt).filter_by(
+            promoted_session_id=resolved["promoted_session_id"]
+        ).one()
+        assert pass_run is not None and promoted is not None
+        assert pm.b1b_result_review_from_pass_run(db, pass_run) is None
+        assert layer3_workbench._downstream_execution_result_review_from_pass_run(db, pass_run) is None
+        assert not pm._materialized_replay_summary_is_valid(
+            db,
+            receipt=receipt,
+            promoted=promoted,
+        )
+    assert _b1b_03_row_projection(b1b_step3_runtime) == frozen_rows
+    assert _all_storage_files(b1b_step3_runtime) == frozen_files
+
+
+@pytest.mark.parametrize("corruption", ("artifact", "check", "caveat"))
+def test_b1b_04_corrupt_authoritative_evidence_fails_closed_without_review_delta(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    corruption: str,
+) -> None:
+    resolved, preview, approval, start = _prepare_result_review_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        f"b1b-04-corrupt-{corruption}",
+    )
+    payload = _b1b_04_review_payload(resolved, preview, approval, start)
+    with b1b_step3_runtime["factory"]() as db:
+        if corruption == "artifact":
+            artifact = db.query(AnalysisArtifact).filter_by(
+                analysis_run_id=start["analysis_run_id"]
+            ).one()
+            path = Path(settings.artifact_storage_dir) / Path(artifact.storage_ref).name
+            document = _json.loads(path.read_bytes())
+            document["method_id"] = "drifted_method"
+            path.write_text(_json.dumps(document, indent=2), encoding="utf-8")
+        elif corruption == "check":
+            check = db.query(AssumptionCheck).filter_by(
+                analysis_run_id=start["analysis_run_id"],
+                assumption_name="missingness_scan",
+            ).one()
+            check.notes = "drifted check"
+            db.commit()
+        else:
+            caveat = db.query(CaveatNote).filter_by(
+                analysis_run_id=start["analysis_run_id"]
+            ).one()
+            caveat.message = "drifted caveat"
+            db.commit()
+    frozen_rows = _b1b_03_row_projection(b1b_step3_runtime)
+    frozen_files = _all_storage_files(b1b_step3_runtime)
+
+    with b1b_step3_runtime["factory"]() as db:
+        response = layer3_workbench.execution_result_review(db, payload)
+    assert isinstance(response, pm.B1BClosedApiResponse)
+    assert response.http_status == 409
+    assert _json.loads(response.body_bytes) == pm.b1b_error_body(
+        "connector_materialization_basis_conflict"
+    )
+    assert _b1b_03_row_projection(b1b_step3_runtime) == frozen_rows
+    assert _all_storage_files(b1b_step3_runtime) == frozen_files
+
+
+def test_b1b_04_flag_false_keeps_receipt_session_on_unchanged_native_review_path(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resolved, preview, approval, start = _prepare_result_review_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        "b1b-04-flag-false",
+    )
+    payload = _b1b_04_review_payload(resolved, preview, approval, start)
+    monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", False)
+    monkeypatch.setattr(pm, "record_b1b_result_review", _boom)
+
+    with b1b_step3_runtime["factory"]() as db:
+        response = layer3_workbench.execution_result_review(db, payload)
+        pass_run = db.get(L3PassRun, start["pass_run_id"])
+        assert pass_run is not None
+        native_state = layer3_workbench._execution_result_review_from_pass_run(pass_run)
+    assert isinstance(response, dict)
+    assert response["status"] == "recorded"
+    assert native_state is not None
+    assert native_state["schema_id"] == "layer3.execution_result_review_state.v1"
+
+
+def test_b1b_04_scope_checks_full_process_precondition_before_database_access(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", True)
+    monkeypatch.setattr(pm, "attestation_precondition_available", lambda _candidate=None: False)
+    monkeypatch.setattr(pm, "OrmSession", _boom)
+
+    assert pm.side_effect_free_b1b_result_review_scope(object(), str(uuid.uuid4())) is False
+
+
+def test_b1b_04_ordinary_route_preserves_exact_native_bytes_and_state_flag_off_and_no_receipt(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session_id, preview, approval, start = _prepare_ordinary_result_review_subject(
+        b1b_step3_runtime,
+        "b1b-04-native-route-parity",
+    )
+    payload = {
+        "client_request_id": "ordinary-native-result-review-parity",
+        "session_id": session_id,
+        "analysis_plan_id": approval["analysis_plan_id"],
+        "pass_run_id": start["pass_run_id"],
+        "preview_id": preview["preview_id"],
+        "preview_hash": preview["preview_hash"],
+        "analysis_run_id": start["analysis_run_id"],
+        "operator_decision": "approved",
+        "review_notes": "",
+    }
+    fixed_time = "2026-07-21T12:00:00.000000Z"
+    monkeypatch.setattr(layer3_workbench, "_utcnow_iso", lambda: fixed_time)
+    monkeypatch.setattr(layer3_response_contract, "utcnow_iso_z", lambda: fixed_time)
+    monkeypatch.setattr(pm, "record_b1b_result_review", _boom)
+    _enable_step5(monkeypatch)
+    _configure_step5_proxy(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    files_before = _all_storage_files(b1b_step3_runtime)
+    with b1b_step3_runtime["factory"]() as db:
+        pass_run = db.get(L3PassRun, start["pass_run_id"])
+        session = db.get(L3Session, session_id)
+        assert pass_run is not None and session is not None
+        assert db.query(L3ConnectorPromotionReceipt).filter_by(promoted_session_id=session_id).count() == 0
+        pass_summary_before = copy.deepcopy(pass_run.summary_json)
+        session_summary_before = copy.deepcopy(session.summary_json)
+    client = TestClient(main.app, raise_server_exceptions=False)
+    try:
+        monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", False)
+        flag_off = client.post(_RESULT_REVIEW_PATH, json=payload, headers=_OPERATOR_HEADERS)
+        assert flag_off.status_code == 200, flag_off.text
+        assert flag_off.json()["schema_id"] == "layer3.execution_result_review.v1"
+        assert flag_off.json()["status"] == "recorded"
+        assert flag_off.content == _json.dumps(
+            flag_off.json(),
+            ensure_ascii=False,
+            allow_nan=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+
+        oracle_projection = _b1b_03_row_projection(b1b_step3_runtime)
+        with b1b_step3_runtime["factory"]() as db:
+            pass_run = db.get(L3PassRun, start["pass_run_id"])
+            session = db.get(L3Session, session_id)
+            assert pass_run is not None and session is not None
+            pass_run.summary_json = pass_summary_before
+            session.summary_json = session_summary_before
+            db.commit()
+
+        monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", True)
+        no_receipt = client.post(_RESULT_REVIEW_PATH, json=payload, headers=_OPERATOR_HEADERS)
+        assert no_receipt.status_code == 200, no_receipt.text
+        assert no_receipt.content == flag_off.content
+        assert no_receipt.json() == flag_off.json()
+        assert "promotion_receipt_id" not in no_receipt.json()
+        assert "result_review_hash" not in no_receipt.json()
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+    assert _b1b_03_row_projection(b1b_step3_runtime) == oracle_projection
+    assert _all_storage_files(b1b_step3_runtime) == files_before
+
+
 def test_step5_exact_replay_is_zero_delta_and_rehashes_final(
     b1b_step3_runtime: dict,
     monkeypatch: pytest.MonkeyPatch,
@@ -4256,6 +5067,7 @@ def test_b1b_postgresql_post_publish_crash_recovery_contains_orphan(request) -> 
 
 
 _RESOLVE_PATH = "/api/v1/layer3/source/connector/promotion/resolve"
+_RESULT_REVIEW_PATH = "/api/v1/layer3/execution/result/review"
 _OPERATOR_HEADERS = {
     "content-type": "application/json",
     "x-forwarded-groups": "b1b-workspace",
@@ -4520,5 +5332,100 @@ def test_step5_route_first_call_and_replay_have_exact_redacted_schema(
         assert replay.content == pm.d33_canonical_bytes(replay.json())
         assert _materialization_census(b1b_step3_runtime) == census
         assert _lane_files(b1b_step3_runtime) == files
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+def test_b1b_04_route_preserves_auth_precedence_and_canonical_closed_transport(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resolved, preview, approval, start = _prepare_result_review_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        "b1b-04-route",
+    )
+    payload = _b1b_04_review_payload(resolved, preview, approval, start)
+    _configure_step5_proxy(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    client = TestClient(main.app, raise_server_exceptions=False)
+    try:
+        absent = client.post(
+            _RESULT_REVIEW_PATH,
+            content="{not-json",
+            headers={"content-type": "application/json"},
+        )
+        assert absent.status_code == 401
+        assert absent.json()["error_code"] == "sec_xbrl_in_app_auth_policy_missing_identity_authority"
+        assert "b1b_request_validation_failed" not in absent.text
+
+        auditor = client.post(
+            _RESULT_REVIEW_PATH,
+            content="{not-json",
+            headers={
+                "content-type": "application/json",
+                "x-forwarded-groups": "b1b-workspace",
+                "x-forwarded-user": "auditor-1",
+                "x-forwarded-roles": "auditor",
+            },
+        )
+        assert auditor.status_code == 403
+        assert auditor.json()["error_code"] == "sec_xbrl_in_app_auth_policy_role_access_forbidden"
+        assert "b1b_request_validation_failed" not in auditor.text
+
+        first = client.post(_RESULT_REVIEW_PATH, json=payload, headers=_OPERATOR_HEADERS)
+        assert first.status_code == 200, first.text
+        assert set(first.json()) == pm._B1B_RESULT_REVIEW_RESPONSE_KEYS
+        assert first.content == pm.d33_canonical_bytes(first.json())
+        assert first.json()["package_review_preview_enabled"] is True
+        frozen_rows = _b1b_03_row_projection(b1b_step3_runtime)
+        frozen_files = _all_storage_files(b1b_step3_runtime)
+
+        replay = client.post(_RESULT_REVIEW_PATH, json=payload, headers=_OPERATOR_HEADERS)
+        assert replay.status_code == 200
+        assert replay.content == first.content
+
+        second_decision = _b1b_04_review_payload(
+            resolved,
+            preview,
+            approval,
+            start,
+            decision="rejected",
+            review_notes="bounded rejection",
+        )
+        conflict = client.post(
+            _RESULT_REVIEW_PATH,
+            json=second_decision,
+            headers=_OPERATOR_HEADERS,
+        )
+        assert conflict.status_code == 409
+        assert conflict.json() == pm.b1b_error_body("connector_result_review_decision_conflict")
+        assert conflict.content == pm.d33_canonical_bytes(conflict.json())
+
+        malformed_responses = (
+            client.post(_RESULT_REVIEW_PATH, content="{not-json", headers=_OPERATOR_HEADERS),
+            client.post(
+                _RESULT_REVIEW_PATH,
+                json={**payload, "unknown_evidence": "do-not-echo"},
+                headers=_OPERATOR_HEADERS,
+            ),
+            client.post(
+                _RESULT_REVIEW_PATH,
+                json={**payload, "reviewed_output_items": []},
+                headers=_OPERATOR_HEADERS,
+            ),
+            client.post(
+                _RESULT_REVIEW_PATH,
+                json={**payload, "package": None},
+                headers=_OPERATOR_HEADERS,
+            ),
+        )
+        for malformed in malformed_responses:
+            assert malformed.status_code == 422
+            assert malformed.json() == pm.b1b_error_body("b1b_request_validation_failed")
+            assert malformed.content == pm.d33_canonical_bytes(malformed.json())
+            assert "do-not-echo" not in malformed.text
+        assert _b1b_03_row_projection(b1b_step3_runtime) == frozen_rows
+        assert _all_storage_files(b1b_step3_runtime) == frozen_files
     finally:
         main.app.dependency_overrides.pop(get_db, None)

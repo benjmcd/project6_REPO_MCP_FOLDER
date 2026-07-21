@@ -21,10 +21,12 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import stat
 import subprocess
 import unicodedata
 from typing import Any, Mapping
+from urllib.parse import parse_qsl, unquote, urlsplit
 import uuid
 
 from sqlalchemy import text
@@ -159,6 +161,20 @@ class ConnectorPromotionError(Exception):
         self.message = message
         self.http_status = http_status
         self.retryable = retryable
+
+
+@dataclass(frozen=True, init=False)
+class B1BClosedApiResponse:
+    """Validated closed B1b transport; stores only canonical bytes and status."""
+
+    body_bytes: bytes
+    http_status: int
+
+    def __init__(self, body: Mapping[str, Any], *, http_status: int) -> None:
+        _validate_b1b_closed_api_body(body, http_status=http_status)
+        _assert_b1b04_closed_body_no_leak(body)
+        object.__setattr__(self, "body_bytes", d33_canonical_bytes(body))
+        object.__setattr__(self, "http_status", http_status)
 
 
 @dataclass(frozen=True)
@@ -532,6 +548,27 @@ def side_effect_free_server_exact_candidate(
         ) from exc
 
 
+def side_effect_free_b1b_result_review_scope(bind, session_id: object) -> bool:
+    """Classify a committed receipt-bound session without touching the writer Session."""
+    if not bridge_precondition_available() or not isinstance(session_id, str):
+        return False
+    selected_session_id = session_id.strip()
+    if not selected_session_id:
+        return False
+    try:
+        with OrmSession(bind=bind, future=True) as screen_db:
+            return bool(
+                screen_db.query(L3ConnectorPromotionReceipt)
+                .filter(
+                    L3ConnectorPromotionReceipt.promoted_session_id == selected_session_id
+                )
+                .limit(1)
+                .first()
+            )
+    except DBAPIError as exc:
+        raise _closed_b1b_error("connector_promotion_bridge_unavailable") from exc
+
+
 def attestation_precondition_available(_candidate: GateBPromotionCandidate | None = None) -> bool:
     """Step-3 seam. Full Section-8 attestation wiring is separately gated."""
     return False
@@ -561,6 +598,11 @@ def b1b_error_body(error_code: str) -> dict[str, Any]:
         "schema_id": "layer3.b1b_error.v1",
         "status": "error",
     }
+
+
+def b1b_closed_error_response(error_code: str) -> B1BClosedApiResponse:
+    http_status, _message, _retryable = b1b_error_spec(error_code)
+    return B1BClosedApiResponse(b1b_error_body(error_code), http_status=http_status)
 
 
 def _signed_advisory_lock_key(canonical_key_hash: str) -> int:
@@ -2126,6 +2168,106 @@ _PACKAGE_REVIEW_STATES = {
 }
 _REPLAY_DOWNSTREAM_UNAVAILABLE = ["results", "package", "handoff"]
 _B1B_PACKAGE_ORDER = ["canonical_internal", "user_facing", "review_facing"]
+_B1B_RESULT_REVIEW_REQUEST_KEYS = frozenset(
+    {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "analysis_run_id",
+        "operator_decision",
+        "review_notes",
+    }
+)
+_B1B_RESULT_REVIEW_RESPONSE_KEYS = frozenset(
+    {
+        "schema_id",
+        "promotion_receipt_id",
+        "promoted_session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "analysis_run_id",
+        "operator_decision",
+        "review_state",
+        "result_review_hash",
+        "review_notes_present",
+        "review_notes_sha256",
+        "package_review_preview_enabled",
+    }
+)
+_B1B_ERROR_BODY_KEYS = frozenset(
+    {"schema_id", "status", "error_code", "message", "retryable"}
+)
+_B1B_ASSUMPTION_CHECK_CONTRACT = (
+    ("data_availability", "dataframe_shape", "pass", "high", "rows=2; columns=2"),
+    (
+        "column_classification",
+        "deterministic_dtype_scan",
+        "pass",
+        "medium",
+        '{"categorical": 1, "numeric": 1}',
+    ),
+    (
+        "missingness_scan",
+        "cell_missingness",
+        "pass",
+        "medium",
+        "missing_cells=0; missing_fraction=0.000000",
+    ),
+    (
+        "time_column_coverage",
+        "declared_time_column_scan",
+        "warn",
+        "medium",
+        "time_column=; present=False",
+    ),
+)
+_B1B_CAVEAT_CONTRACT = (
+    "non_time_series_interpretation",
+    "medium",
+    "Dataset does not declare a usable time column; descriptive summary is non-time-series only.",
+)
+_B1B_BOUNDED_RESULT = {
+    "row_count": 2,
+    "column_count": 2,
+    "class_counts": {"numeric": 1, "categorical": 1, "boolean": 0, "time": 0},
+    "missing_cells": 0,
+    "missing_fraction": 0.0,
+    "columns": [
+        {
+            "name": "site_id",
+            "inferred_class": "categorical",
+            "non_null_count": 2,
+            "missing_count": 0,
+            "missing_fraction": 0.0,
+            "unsupported_nested_values": False,
+            "unique_count": 2,
+            "top_values": [
+                {"value": "SB-001", "count": 1},
+                {"value": "SB-002", "count": 1},
+            ],
+        },
+        {
+            "name": "value",
+            "inferred_class": "numeric",
+            "non_null_count": 2,
+            "missing_count": 0,
+            "missing_fraction": 0.0,
+            "unsupported_nested_values": False,
+            "numeric_summary": {
+                "non_null_count": 2,
+                "min": 42.0,
+                "max": 43.0,
+                "mean": 42.5,
+                "median": 42.5,
+                "std_dev": 0.7071067811865476,
+            },
+            "top_values": [{"value": 42, "count": 1}, {"value": 43, "count": 1}],
+        },
+    ],
+}
 
 
 def _has_exact_keys(value: object, keys: frozenset[str]) -> bool:
@@ -2142,6 +2284,195 @@ def _is_lower_hex64(value: object) -> bool:
         and len(value) == 64
         and all(character in "0123456789abcdef" for character in value)
     )
+
+
+def _is_uuid_string(value: object) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        return str(uuid.UUID(value)) == value
+    except ValueError:
+        return False
+
+
+_B1B04_FORBIDDEN_NORMALIZED_KEYS = frozenset(
+    {
+        "authorization",
+        "proxy_authorization",
+        "cookie",
+        "set_cookie",
+        "password",
+        "passwd",
+        "token",
+        "access_token",
+        "refresh_token",
+        "secret",
+        "api_key",
+        "credential",
+        "credentials",
+        "storage_ref",
+        "raw_storage_ref",
+        "input_payload_ref",
+        "output_payload_ref",
+        "payload_ref",
+        "source_reference",
+        "storage_path",
+        "file_path",
+        "local_path",
+    }
+)
+
+
+def _normalize_b1b04_no_leak_key(value: str) -> str:
+    normalized = unicodedata.normalize("NFKC", value).casefold()
+    normalized = normalized.replace(" ", "_").replace("-", "_")
+    while "__" in normalized:
+        normalized = normalized.replace("__", "_")
+    return normalized
+
+
+def _b1b04_forbidden_normalized_keys() -> frozenset[str]:
+    proxy_headers = {
+        _normalize_b1b04_no_leak_key(value)
+        for value in (
+            settings.proxy_identity_header,
+            settings.proxy_email_header,
+            settings.proxy_groups_header,
+            settings.proxy_roles_header,
+        )
+        if isinstance(value, str) and value
+    }
+    return _B1B04_FORBIDDEN_NORMALIZED_KEYS | proxy_headers
+
+
+def _assert_b1b04_no_leak_string(value: str, *, forbidden_keys: frozenset[str]) -> None:
+    decoded_values = [unicodedata.normalize("NFKC", value)]
+    for _pass in range(2):
+        decoded = unquote(decoded_values[-1])
+        if decoded == decoded_values[-1]:
+            break
+        decoded_values.append(decoded)
+    for decoded in decoded_values:
+        folded = unicodedata.normalize("NFKC", decoded).casefold().strip()
+        slash_value = folded.replace("\\", "/")
+        if (
+            re.match(r"^[a-z]:/", slash_value)
+            or slash_value.startswith("/")
+            or folded.startswith("file:")
+            or any(segment in {".", ".."} for segment in slash_value.split("/"))
+            or re.match(r"^(?:basic|bearer)\s+\S", folded)
+            or re.match(r"^(?:cookie|set-cookie)\s*:", folded)
+        ):
+            raise PromotionIdentityError("closed B1b body contains a forbidden string")
+        try:
+            parsed = urlsplit(decoded)
+        except ValueError as exc:
+            raise PromotionIdentityError("closed B1b body contains a malformed URL") from exc
+        if parsed.username is not None or parsed.password is not None:
+            raise PromotionIdentityError("closed B1b body contains URL credentials")
+        if any(
+            _normalize_b1b04_no_leak_key(key) in forbidden_keys
+            for key, _query_value in parse_qsl(parsed.query, keep_blank_values=True)
+        ):
+            raise PromotionIdentityError("closed B1b body contains a sensitive URL query")
+
+
+def _assert_b1b04_closed_body_no_leak(value: object) -> None:
+    """B1B-04 response/error guard; later package registries remain separately gated."""
+    forbidden_keys = _b1b04_forbidden_normalized_keys()
+
+    def visit(item: object) -> None:
+        if item is None or isinstance(item, bool) or isinstance(item, int):
+            return
+        if isinstance(item, float):
+            if not math.isfinite(item):
+                raise PromotionIdentityError("closed B1b body contains a non-finite number")
+            return
+        if isinstance(item, str):
+            _assert_b1b04_no_leak_string(item, forbidden_keys=forbidden_keys)
+            return
+        if isinstance(item, Mapping):
+            for key, child in item.items():
+                if not isinstance(key, str):
+                    raise PromotionIdentityError("closed B1b body contains a non-string key")
+                normalized_key = _normalize_b1b04_no_leak_key(key)
+                if normalized_key in forbidden_keys:
+                    raise PromotionIdentityError("closed B1b body contains a forbidden key")
+                for suffix in ("_hash", "_sha256"):
+                    if normalized_key.endswith(suffix):
+                        raw_key = normalized_key[: -len(suffix)]
+                        if raw_key in forbidden_keys and not _is_lower_hex64(child):
+                            raise PromotionIdentityError("closed B1b body contains a malformed reference hash")
+                visit(child)
+            return
+        if isinstance(item, (list, tuple)):
+            for child in item:
+                visit(child)
+            return
+        raise PromotionIdentityError("closed B1b body contains a non-JSON value")
+
+    visit(value)
+
+
+def _validate_b1b_closed_api_body(body: Mapping[str, Any], *, http_status: int) -> None:
+    if not isinstance(body, dict) or type(http_status) is not int:
+        raise PromotionIdentityError("closed B1b response is malformed")
+    _validate_json_primitives(body)
+    if body.get("schema_id") == "layer3.b1b_error.v1":
+        if not _has_exact_keys(body, _B1B_ERROR_BODY_KEYS):
+            raise PromotionIdentityError("closed B1b error keys are malformed")
+        error_code = body.get("error_code")
+        if not isinstance(error_code, str):
+            raise PromotionIdentityError("closed B1b error code is malformed")
+        expected_status, message, retryable = b1b_error_spec(error_code)
+        if (
+            http_status != expected_status
+            or body.get("status") != "error"
+            or body.get("message") != message
+            or body.get("retryable") is not retryable
+        ):
+            raise PromotionIdentityError("closed B1b error mapping is malformed")
+        return
+    if (
+        body.get("schema_id") != "layer3.b1b_result_review_response.v1"
+        or not _has_exact_keys(body, _B1B_RESULT_REVIEW_RESPONSE_KEYS)
+        or http_status != 200
+    ):
+        raise PromotionIdentityError("closed B1b result-review response is malformed")
+    if not all(
+        _is_uuid_string(body.get(field))
+        for field in (
+            "promotion_receipt_id",
+            "promoted_session_id",
+            "analysis_plan_id",
+            "pass_run_id",
+            "analysis_run_id",
+        )
+    ):
+        raise PromotionIdentityError("closed B1b result-review identity is malformed")
+    decision = body.get("operator_decision")
+    expected_state = _RESULT_REVIEW_STATES.get(decision)
+    if (
+        expected_state is None
+        or body.get("review_state") != expected_state
+        or not _is_lower_hex64(body.get("result_review_hash"))
+        or type(body.get("review_notes_present")) is not bool
+        or type(body.get("package_review_preview_enabled")) is not bool
+    ):
+        raise PromotionIdentityError("closed B1b result-review outcome is malformed")
+    notes_present = body["review_notes_present"]
+    notes_sha256 = body.get("review_notes_sha256")
+    package_enabled = body["package_review_preview_enabled"]
+    if decision == "approved":
+        valid_notes = notes_present is False and notes_sha256 is None and package_enabled is True
+    else:
+        valid_notes = (
+            notes_present is True
+            and _is_lower_hex64(notes_sha256)
+            and package_enabled is False
+        )
+    if not valid_notes:
+        raise PromotionIdentityError("closed B1b result-review note projection is malformed")
 
 
 def _timestamp_matches(value: object, row_value: datetime | None) -> bool:
@@ -2472,35 +2803,23 @@ def _closed_result_review_matches(
             return None
     elif not isinstance(notes, str) or not notes or notes != notes.strip():
         return None
-    artifacts = db.query(AnalysisArtifact).filter(AnalysisArtifact.analysis_run_id == analysis_run_id).all()
-    checks = db.query(AssumptionCheck).filter(AssumptionCheck.analysis_run_id == analysis_run_id).all()
-    caveats = db.query(CaveatNote).filter(CaveatNote.analysis_run_id == analysis_run_id).all()
-    if (
-        len(artifacts) != 1
-        or artifacts[0].artifact_id != record["analysis_artifact_id"]
-        or len(checks) != 4
-        or {row.assumption_check_id for row in checks} != set(check_ids)
-        or len(caveats) != 1
-        or caveats[0].caveat_note_id != record["caveat_note_id"]
-    ):
+    try:
+        authoritative_evidence = _b1b_result_artifact_evidence(
+            db,
+            receipt=receipt,
+            analysis_run=analysis_run,
+        )
+    except ConnectorPromotionError:
         return None
-    expected_items = [
-        {
-            "index": 0,
-            "item_ref": f"analysis-artifact:{artifacts[0].artifact_id}",
-            "item_type": "fact",
-            "trace_status": "resolved",
-            "missing_trace_fields": [],
-        },
-        {
-            "index": 1,
-            "item_ref": f"caveat:{caveats[0].caveat_note_id}",
-            "item_type": "caveat",
-            "trace_status": "resolved",
-            "missing_trace_fields": [],
-        },
-    ]
-    return decision if reviewed_items == expected_items else None
+    evidence_keys = (
+        "result_payload_sha256",
+        "analysis_artifact_id",
+        "analysis_artifact_sha256",
+        "assumption_check_ids",
+        "caveat_note_id",
+        "reviewed_output_items",
+    )
+    return decision if all(record[key] == authoritative_evidence[key] for key in evidence_keys) else None
 
 
 def _handoff_basis_matches(
@@ -2795,6 +3114,499 @@ def _materialized_replay_summary_is_valid(
         )
     except (PromotionIdentityError, TypeError, ValueError):
         return False
+
+
+def _b1b_result_review_request(
+    payload: dict[str, Any],
+) -> tuple[dict[str, str], str, str, str | None]:
+    if not _has_exact_keys(payload, _B1B_RESULT_REVIEW_REQUEST_KEYS):
+        raise _closed_b1b_error("b1b_request_validation_failed")
+    if not all(isinstance(payload[key], str) for key in _B1B_RESULT_REVIEW_REQUEST_KEYS):
+        raise _closed_b1b_error("b1b_request_validation_failed")
+    for field in ("session_id", "analysis_plan_id", "pass_run_id", "analysis_run_id"):
+        value = payload[field]
+        if value != value.strip() or not _is_uuid_string(value):
+            raise _closed_b1b_error("b1b_request_validation_failed")
+    preview_id = payload["preview_id"]
+    if not preview_id or preview_id != preview_id.strip():
+        raise _closed_b1b_error("b1b_request_validation_failed")
+    if not _is_lower_hex64(payload["preview_hash"]):
+        raise _closed_b1b_error("b1b_request_validation_failed")
+    decision = payload["operator_decision"]
+    if decision not in _RESULT_REVIEW_STATES:
+        raise _closed_b1b_error("b1b_request_validation_failed")
+    raw_notes = payload["review_notes"]
+    if decision == "approved":
+        if raw_notes != "":
+            raise _closed_b1b_error("b1b_request_validation_failed")
+        normalized_notes = None
+    else:
+        normalized_notes = raw_notes.strip()
+        if not normalized_notes:
+            raise _closed_b1b_error("b1b_request_validation_failed")
+    request_basis = {
+        "session_id": payload["session_id"],
+        "analysis_plan_id": payload["analysis_plan_id"],
+        "pass_run_id": payload["pass_run_id"],
+        "preview_id": payload["preview_id"],
+        "preview_hash": payload["preview_hash"],
+        "analysis_run_id": payload["analysis_run_id"],
+        "operator_decision": decision,
+        "review_notes": raw_notes,
+    }
+    return request_basis, d33_sha256(request_basis), decision, normalized_notes
+
+
+def _b1b_expected_result_payload(
+    *,
+    dataset_id: str,
+    dataset_version_id: str,
+) -> dict[str, Any]:
+    site_summary = {
+        key: value for key, value in _B1B_BOUNDED_RESULT["columns"][0].items() if key != "name"
+    }
+    value_summary = {
+        key: value for key, value in _B1B_BOUNDED_RESULT["columns"][1].items() if key != "name"
+    }
+    value_summary["top_values"] = [{"value": 42.0, "count": 1}, {"value": 43.0, "count": 1}]
+    return {
+        "dataset_version_id": dataset_version_id,
+        "dataset_id": dataset_id,
+        "method_id": "descriptive_summary",
+        "columns": {"site_id": site_summary, "value": value_summary},
+        "summary_stats": {
+            "row_count": 2,
+            "column_count": 2,
+            "numeric_column_count": 1,
+            "categorical_column_count": 1,
+            "boolean_column_count": 0,
+            "time_column_count": 0,
+            "missing_cell_count": 0,
+            "missing_fraction": 0.0,
+        },
+    }
+
+
+def _b1b_result_artifact_evidence(
+    db: OrmSession,
+    *,
+    receipt: L3ConnectorPromotionReceipt,
+    analysis_run: AnalysisRun,
+) -> dict[str, Any]:
+    artifacts = (
+        db.query(AnalysisArtifact)
+        .filter(AnalysisArtifact.analysis_run_id == analysis_run.analysis_run_id)
+        .with_for_update()
+        .all()
+    )
+    checks = (
+        db.query(AssumptionCheck)
+        .filter(AssumptionCheck.analysis_run_id == analysis_run.analysis_run_id)
+        .with_for_update()
+        .all()
+    )
+    caveats = (
+        db.query(CaveatNote)
+        .filter(CaveatNote.analysis_run_id == analysis_run.analysis_run_id)
+        .with_for_update()
+        .all()
+    )
+    if len(artifacts) != 1 or len(checks) != 4 or len(caveats) != 1:
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    artifact = artifacts[0]
+    caveat = caveats[0]
+    if (
+        artifact.artifact_type != "descriptive_summary_result"
+        or artifact.title != "Descriptive summary results"
+        or artifact.summary != "Descriptive summary for 2 rows and 2 columns."
+        or not _is_uuid_string(artifact.artifact_id)
+        or not _is_uuid_string(caveat.caveat_note_id)
+        or (caveat.caveat_type, caveat.severity, caveat.message) != _B1B_CAVEAT_CONTRACT
+    ):
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    storage_ref = artifact.storage_ref
+    artifact_name = Path(storage_ref).name if isinstance(storage_ref, str) else ""
+    if not artifact_name or storage_ref != f"/storage/artifacts/{artifact_name}":
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    try:
+        artifact_path, _relative_ref = _resolve_regular_reference(
+            artifact_name,
+            settings.artifact_storage_dir,
+        )
+        artifact_bytes = artifact_path.read_bytes()
+        result_payload = json.loads(artifact_bytes.decode("utf-8"))
+        expected_payload = _b1b_expected_result_payload(
+            dataset_id=str(receipt.dataset_id),
+            dataset_version_id=str(receipt.dataset_version_id),
+        )
+        normalized_payload = json.loads(json.dumps(result_payload))
+        standard_deviation = normalized_payload["columns"]["value"]["numeric_summary"]["std_dev"]
+        if type(standard_deviation) is not float or not math.isclose(
+            standard_deviation,
+            0.7071067811865476,
+            rel_tol=1e-12,
+            abs_tol=1e-12,
+        ):
+            raise PromotionIdentityError("result standard deviation is outside the frozen tolerance")
+        normalized_payload["columns"]["value"]["numeric_summary"]["std_dev"] = 0.7071067811865476
+        if d33_canonical_bytes(normalized_payload) != d33_canonical_bytes(expected_payload):
+            raise PromotionIdentityError("result payload differs from the frozen projection")
+        if d33_canonical_bytes(artifact.metadata_json) != d33_canonical_bytes(expected_payload["summary_stats"]):
+            raise PromotionIdentityError("artifact metadata differs from the frozen projection")
+        result_payload_sha256 = d33_sha256(result_payload)
+    except (OSError, UnicodeError, ValueError, KeyError, TypeError, PromotionIdentityError) as exc:
+        raise _closed_b1b_error("connector_materialization_basis_conflict") from exc
+    check_by_name = {row.assumption_name: row for row in checks}
+    if len(check_by_name) != 4:
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    ordered_check_ids: list[str] = []
+    for name, method, result, severity, notes in _B1B_ASSUMPTION_CHECK_CONTRACT:
+        row = check_by_name.get(name)
+        if (
+            row is None
+            or not _is_uuid_string(row.assumption_check_id)
+            or (row.check_method, row.check_result, row.severity, row.notes)
+            != (method, result, severity, notes)
+        ):
+            raise _closed_b1b_error("connector_materialization_basis_conflict")
+        ordered_check_ids.append(row.assumption_check_id)
+    reviewed_items = [
+        {
+            "index": 0,
+            "item_ref": f"analysis-artifact:{artifact.artifact_id}",
+            "item_type": "fact",
+            "trace_status": "resolved",
+            "missing_trace_fields": [],
+        },
+        {
+            "index": 1,
+            "item_ref": f"caveat:{caveat.caveat_note_id}",
+            "item_type": "caveat",
+            "trace_status": "resolved",
+            "missing_trace_fields": [],
+        },
+    ]
+    return {
+        "result_payload_sha256": result_payload_sha256,
+        "analysis_artifact_id": artifact.artifact_id,
+        "analysis_artifact_sha256": hashlib.sha256(artifact_bytes).hexdigest(),
+        "assumption_check_ids": ordered_check_ids,
+        "caveat_note_id": caveat.caveat_note_id,
+        "reviewed_output_items": reviewed_items,
+    }
+
+
+def _locked_b1b_result_review_authority(
+    db: OrmSession,
+    *,
+    request_basis: dict[str, str],
+) -> tuple[L3ConnectorPromotionReceipt, L3Session, L3PassRun, dict[str, Any]]:
+    receipts = (
+        db.query(L3ConnectorPromotionReceipt)
+        .filter(L3ConnectorPromotionReceipt.promoted_session_id == request_basis["session_id"])
+        .with_for_update()
+        .all()
+    )
+    if len(receipts) != 1:
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    receipt = receipts[0]
+    promoted = (
+        db.query(L3Session)
+        .filter(L3Session.session_id == request_basis["session_id"])
+        .with_for_update()
+        .first()
+    )
+    plans = (
+        db.query(L3AnalysisPlan)
+        .filter(L3AnalysisPlan.session_id == request_basis["session_id"])
+        .with_for_update()
+        .all()
+    )
+    pass_runs = (
+        db.query(L3PassRun)
+        .filter(L3PassRun.session_id == request_basis["session_id"])
+        .with_for_update()
+        .all()
+    )
+    if promoted is None or len(plans) != 1 or len(pass_runs) != 1:
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    plan = plans[0]
+    pass_run = pass_runs[0]
+    pass_summary = pass_run.summary_json
+    plan_json = plan.plan_json
+    analysis_run = (
+        db.query(AnalysisRun)
+        .filter(AnalysisRun.analysis_run_id == request_basis["analysis_run_id"])
+        .with_for_update()
+        .first()
+    )
+    if (
+        receipt.canonical_identity_key_hash != F07_CANONICAL_IDENTITY_KEY_HASH
+        or receipt.source_family != F07_SOURCE_FAMILY
+        or receipt.content_sha256 != F07_CONTENT_SHA256
+        or receipt.materialization_status != "materialized"
+        or not receipt.dataset_id
+        or not receipt.dataset_version_id
+        or receipt.promoted_session_id != promoted.session_id
+        or not _materialized_replay_summary_is_valid(db, receipt=receipt, promoted=promoted)
+        or plan.analysis_plan_id != request_basis["analysis_plan_id"]
+        or plan.status != "approved"
+        or plan.approved_by_operator is not True
+        or not isinstance(plan_json, dict)
+        or plan_json.get("source_preview_id") != request_basis["preview_id"]
+        or plan_json.get("source_preview_hash") != request_basis["preview_hash"]
+        or pass_run.pass_run_id != request_basis["pass_run_id"]
+        or pass_run.analysis_plan_id != plan.analysis_plan_id
+        or pass_run.status != "completed_with_warnings"
+        or not isinstance(pass_summary, dict)
+        or pass_summary.get("source_preview_id") != request_basis["preview_id"]
+        or pass_summary.get("source_preview_hash") != request_basis["preview_hash"]
+        or pass_summary.get("analysis_run_id") != request_basis["analysis_run_id"]
+        or analysis_run is None
+        or analysis_run.status != "completed"
+        or analysis_run.dataset_version_id != receipt.dataset_version_id
+        or analysis_run.method_name != "descriptive_summary"
+    ):
+        raise _closed_b1b_error("connector_materialization_basis_conflict")
+    evidence = _b1b_result_artifact_evidence(db, receipt=receipt, analysis_run=analysis_run)
+    evidence.update(
+        {
+            "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+            "promoted_session_id": promoted.session_id,
+            "analysis_plan_id": plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "analysis_run_id": analysis_run.analysis_run_id,
+        }
+    )
+    return receipt, promoted, pass_run, evidence
+
+
+def _b1b_result_review_response(
+    *,
+    record: dict[str, Any],
+    result_review_hash: str,
+) -> B1BClosedApiResponse:
+    decision = record["operator_decision"]
+    notes = record["review_notes"]
+    body = {
+        "schema_id": "layer3.b1b_result_review_response.v1",
+        "promotion_receipt_id": record["promotion_receipt_id"],
+        "promoted_session_id": record["promoted_session_id"],
+        "analysis_plan_id": record["analysis_plan_id"],
+        "pass_run_id": record["pass_run_id"],
+        "analysis_run_id": record["analysis_run_id"],
+        "operator_decision": decision,
+        "review_state": _RESULT_REVIEW_STATES[decision],
+        "result_review_hash": result_review_hash,
+        "review_notes_present": notes is not None,
+        "review_notes_sha256": (
+            hashlib.sha256(notes.encode("utf-8")).hexdigest() if notes is not None else None
+        ),
+        "package_review_preview_enabled": decision == "approved",
+    }
+    return B1BClosedApiResponse(body, http_status=200)
+
+
+def record_b1b_result_review(
+    db: OrmSession,
+    payload: dict[str, Any],
+) -> B1BClosedApiResponse:
+    request_basis, request_basis_hash, decision, normalized_notes = _b1b_result_review_request(payload)
+    if not bridge_precondition_available():
+        raise _closed_b1b_error("connector_promotion_bridge_unavailable")
+    try:
+        acquire_promotion_identity_lock(db, F07_CANONICAL_IDENTITY_KEY_HASH)
+        receipt, promoted, pass_run, connector_b1_evidence = _locked_b1b_result_review_authority(
+            db,
+            request_basis=request_basis,
+        )
+        existing = (pass_run.summary_json or {}).get("execution_result_review")
+        expected_client_request_id = f"b1b-result-review-{request_basis_hash}"
+        if existing is not None:
+            if (
+                isinstance(existing, dict)
+                and existing.get("result_review_request_basis_hash") == request_basis_hash
+            ):
+                if payload["client_request_id"] != expected_client_request_id:
+                    raise _closed_b1b_error("b1b_request_validation_failed")
+                record = {key: existing[key] for key in _RESULT_REVIEW_RECORD_KEYS}
+                response = _b1b_result_review_response(
+                    record=record,
+                    result_review_hash=existing["result_review_hash"],
+                )
+                db.rollback()
+                db.info.pop("b1b_promotion_identity_lock", None)
+                return response
+            raise _closed_b1b_error("connector_result_review_decision_conflict")
+        if payload["client_request_id"] != expected_client_request_id:
+            raise _closed_b1b_error("b1b_request_validation_failed")
+        record = {
+            "schema_id": "layer3.b1b_result_review_record.v1",
+            "promotion_receipt_id": connector_b1_evidence["promotion_receipt_id"],
+            "promoted_session_id": connector_b1_evidence["promoted_session_id"],
+            "analysis_plan_id": connector_b1_evidence["analysis_plan_id"],
+            "pass_run_id": connector_b1_evidence["pass_run_id"],
+            "preview_id": request_basis["preview_id"],
+            "preview_hash": request_basis["preview_hash"],
+            "analysis_run_id": connector_b1_evidence["analysis_run_id"],
+            "result_payload_sha256": connector_b1_evidence["result_payload_sha256"],
+            "analysis_artifact_id": connector_b1_evidence["analysis_artifact_id"],
+            "analysis_artifact_sha256": connector_b1_evidence["analysis_artifact_sha256"],
+            "assumption_check_ids": connector_b1_evidence["assumption_check_ids"],
+            "caveat_note_id": connector_b1_evidence["caveat_note_id"],
+            "reviewed_output_items": connector_b1_evidence["reviewed_output_items"],
+            "unresolved_trace_count": 0,
+            "operator_decision": decision,
+            "review_notes": normalized_notes,
+            "result_review_request_basis_hash": request_basis_hash,
+        }
+        result_review_hash = d33_sha256(record)
+        review_record_ref = f"b1b-result-review-{result_review_hash}"
+        review_state = _RESULT_REVIEW_STATES[decision]
+        pass_run.summary_json = {
+            **json.loads(json.dumps(pass_run.summary_json)),
+            "execution_result_review": {
+                **record,
+                "review_record_ref": review_record_ref,
+                "review_state": review_state,
+                "result_review_hash": result_review_hash,
+            },
+        }
+        promoted.summary_json = {
+            "schema_id": "layer3.b1b_session_state.v1",
+            "review_record_ref": review_record_ref,
+            "review_state": review_state,
+            "result_review_hash": result_review_hash,
+            "analysis_plan_id": connector_b1_evidence["analysis_plan_id"],
+            "pass_run_id": connector_b1_evidence["pass_run_id"],
+            "analysis_run_id": connector_b1_evidence["analysis_run_id"],
+            "package_review_state": None,
+            "package_review_hash": None,
+            "reconciliation_record_id": None,
+            "packages": None,
+            "connector_dataset_handoff_basis_hash": None,
+        }
+        db.flush()
+        if not _materialized_replay_summary_is_valid(db, receipt=receipt, promoted=promoted):
+            raise _closed_b1b_error("connector_materialization_basis_conflict")
+        response = _b1b_result_review_response(
+            record=record,
+            result_review_hash=result_review_hash,
+        )
+        db.commit()
+        db.info.pop("b1b_promotion_identity_lock", None)
+        return response
+    except ConnectorPromotionError:
+        _best_effort_rollback(db)
+        db.info.pop("b1b_promotion_identity_lock", None)
+        raise
+    except DBAPIError as exc:
+        _best_effort_rollback(db)
+        db.info.pop("b1b_promotion_identity_lock", None)
+        raise _closed_b1b_error("connector_promotion_bridge_unavailable") from exc
+
+
+def b1b_result_review_from_pass_run(
+    db: OrmSession,
+    pass_run: L3PassRun,
+) -> dict[str, Any] | None:
+    summary = pass_run.summary_json
+    if not isinstance(summary, dict):
+        return None
+    review = summary.get("execution_result_review")
+    review_keys = _RESULT_REVIEW_RECORD_KEYS | {
+        "review_record_ref",
+        "review_state",
+        "result_review_hash",
+    }
+    if not _has_exact_keys(review, frozenset(review_keys)):
+        return None
+    assert isinstance(review, dict)
+    try:
+        record = {key: review[key] for key in _RESULT_REVIEW_RECORD_KEYS}
+        decision = record["operator_decision"]
+        result_hash = review["result_review_hash"]
+        expected_items = [
+            {
+                "index": 0,
+                "item_ref": f"analysis-artifact:{record['analysis_artifact_id']}",
+                "item_type": "fact",
+                "trace_status": "resolved",
+                "missing_trace_fields": [],
+            },
+            {
+                "index": 1,
+                "item_ref": f"caveat:{record['caveat_note_id']}",
+                "item_type": "caveat",
+                "trace_status": "resolved",
+                "missing_trace_fields": [],
+            },
+        ]
+        check_ids = record["assumption_check_ids"]
+        if (
+            record["schema_id"] != "layer3.b1b_result_review_record.v1"
+            or not all(
+                _is_uuid_string(record[field])
+                for field in (
+                    "promotion_receipt_id",
+                    "promoted_session_id",
+                    "analysis_plan_id",
+                    "pass_run_id",
+                    "analysis_run_id",
+                    "analysis_artifact_id",
+                    "caveat_note_id",
+                )
+            )
+            or record["promoted_session_id"] != pass_run.session_id
+            or record["analysis_plan_id"] != pass_run.analysis_plan_id
+            or record["pass_run_id"] != pass_run.pass_run_id
+            or not _is_nonempty_string(record["preview_id"])
+            or record["preview_id"] != record["preview_id"].strip()
+            or record["preview_id"] != summary.get("source_preview_id")
+            or not _is_lower_hex64(record["preview_hash"])
+            or record["preview_hash"] != summary.get("source_preview_hash")
+            or record["analysis_run_id"] != summary.get("analysis_run_id")
+            or not _is_lower_hex64(record["result_payload_sha256"])
+            or not _is_lower_hex64(record["analysis_artifact_sha256"])
+            or not _is_lower_hex64(record["result_review_request_basis_hash"])
+            or _RESULT_REVIEW_STATES.get(decision) != review["review_state"]
+            or not _is_lower_hex64(result_hash)
+            or d33_sha256(record) != result_hash
+            or review["review_record_ref"] != f"b1b-result-review-{result_hash}"
+            or not isinstance(check_ids, list)
+            or len(check_ids) != 4
+            or len(set(check_ids)) != 4
+            or not all(_is_uuid_string(value) for value in check_ids)
+            or record["reviewed_output_items"] != expected_items
+            or type(record["unresolved_trace_count"]) is not int
+            or record["unresolved_trace_count"] != 0
+        ):
+            return None
+        notes = record["review_notes"]
+        if decision == "approved":
+            if notes is not None:
+                return None
+        elif not isinstance(notes, str) or not notes or notes != notes.strip():
+            return None
+        receipt = db.get(L3ConnectorPromotionReceipt, record["promotion_receipt_id"])
+        promoted = db.get(L3Session, record["promoted_session_id"])
+        if (
+            receipt is None
+            or promoted is None
+            or not _materialized_replay_summary_is_valid(
+                db,
+                receipt=receipt,
+                promoted=promoted,
+            )
+        ):
+            return None
+        return {
+            **review,
+            "source_preview_id": record["preview_id"],
+            "source_preview_hash": record["preview_hash"],
+        }
+    except (DBAPIError, KeyError, PromotionIdentityError, TypeError, ValueError):
+        return None
 
 
 def _verify_materialized_replay(

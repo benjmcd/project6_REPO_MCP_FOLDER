@@ -30,6 +30,7 @@ from app.models.models import (
     L3AnalysisSet,
     L3AnalysisUnit,
     L3ConnectorLocalDestinationReceipt,
+    L3ConnectorPromotionReceipt,
     L3ExternalLocalExportAuditEvent,
     L3ExternalLocalExportReceipt,
     L3InternalWebhookDispatchAuditEvent,
@@ -5689,7 +5690,38 @@ def execution_result_status(db: Session, payload: dict[str, Any]) -> dict[str, A
     )
 
 
-def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+def _downstream_execution_result_review_from_pass_run(
+    db: Session,
+    pass_run: L3PassRun,
+) -> dict[str, Any] | None:
+    native_review = _execution_result_review_from_pass_run(pass_run)
+    if not connector_promotion.bridge_precondition_available():
+        return native_review
+    receipts = (
+        db.query(L3ConnectorPromotionReceipt)
+        .filter(L3ConnectorPromotionReceipt.promoted_session_id == pass_run.session_id)
+        .all()
+    )
+    if not receipts:
+        return native_review
+    if len(receipts) != 1 or native_review is not None:
+        return None
+    return connector_promotion.b1b_result_review_from_pass_run(db, pass_run)
+
+
+def execution_result_review(
+    db: Session,
+    payload: dict[str, Any],
+) -> dict[str, Any] | connector_promotion.B1BClosedApiResponse:
+    try:
+        if connector_promotion.side_effect_free_b1b_result_review_scope(
+            db.get_bind(),
+            payload.get("session_id"),
+        ):
+            return connector_promotion.record_b1b_result_review(db, payload)
+    except connector_promotion.ConnectorPromotionError as exc:
+        return connector_promotion.b1b_closed_error_response(exc.code)
+
     session_id = str(payload.get("session_id") or "").strip()
     analysis_plan_id = str(payload.get("analysis_plan_id") or "").strip()
     pass_run_id = str(payload.get("pass_run_id") or "").strip()
@@ -7010,7 +7042,7 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
                 next_allowed_actions=["inspect_execution_result_status"],
             )
 
-    review_state = _execution_result_review_from_pass_run(pass_run)
+    review_state = _downstream_execution_result_review_from_pass_run(db, pass_run)
     if (
         review_state is None
         or review_state.get("review_state") != EXECUTION_RESULT_REVIEW_APPROVED_STATE
@@ -8168,7 +8200,7 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
                 http_status=409,
                 next_allowed_actions=["inspect_execution_result_status"],
             )
-    review_state = _execution_result_review_from_pass_run(pass_run)
+    review_state = _downstream_execution_result_review_from_pass_run(db, pass_run)
     if (
         review_state is None
         or review_state.get("review_state") != EXECUTION_RESULT_REVIEW_APPROVED_STATE
@@ -8755,7 +8787,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             next_allowed_actions=["package_construction_commit"],
         )
 
-    review_state = _execution_result_review_from_pass_run(pass_run)
+    review_state = _downstream_execution_result_review_from_pass_run(db, pass_run)
     if (
         review_state is None
         or review_state.get("review_state") != EXECUTION_RESULT_REVIEW_APPROVED_STATE
@@ -10087,7 +10119,7 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             next_allowed_actions=["inspect_package_construction_state"],
         )
 
-    review_state = _execution_result_review_from_pass_run(pass_run)
+    review_state = _downstream_execution_result_review_from_pass_run(db, pass_run)
     if (
         review_state is None
         or review_state.get("review_state") != EXECUTION_RESULT_REVIEW_APPROVED_STATE

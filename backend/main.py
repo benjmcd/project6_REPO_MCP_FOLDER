@@ -13,7 +13,7 @@ from fastapi import FastAPI, Request
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect as sa_inspect, text
 
@@ -67,9 +67,22 @@ app.add_middleware(
 app.add_exception_handler(Exception, unhandled_exception_handler)
 
 
-_B1B_PREVALIDATION_PATHS = {
+_B1B_NEW_PREVALIDATION_PATHS = {
     f"{settings.api_prefix.rstrip('/')}/layer3/source/connector/promotion/resolve",
 }
+_B1B_SHARED_PREVALIDATION_PATHS = {
+    f"{settings.api_prefix.rstrip('/')}/layer3/execution/result/review",
+}
+_B1B_PREVALIDATION_PATHS = _B1B_NEW_PREVALIDATION_PATHS | _B1B_SHARED_PREVALIDATION_PATHS
+
+
+def _b1b_closed_http_response(error_code: str) -> Response:
+    closed = layer3_connector_promotion.b1b_closed_error_response(error_code)
+    return Response(
+        content=closed.body_bytes,
+        status_code=closed.http_status,
+        media_type="application/json",
+    )
 
 
 @app.exception_handler(RequestValidationError)
@@ -81,14 +94,7 @@ async def _b1b_path_scoped_validation_error_handler(
         request.url.path in _B1B_PREVALIDATION_PATHS
         and getattr(request.state, "b1b_prevalidation_authorized", False)
     ):
-        return JSONResponse(
-            status_code=layer3_connector_promotion.b1b_error_spec(
-                "b1b_request_validation_failed"
-            )[0],
-            content=layer3_connector_promotion.b1b_error_body(
-                "b1b_request_validation_failed"
-            ),
-        )
+        return _b1b_closed_http_response("b1b_request_validation_failed")
     return await request_validation_exception_handler(request, exc)
 
 
@@ -484,16 +490,14 @@ async def _pre_body_operator_authorization_middleware(request: Request, call_nex
             )
         except layer3_sec_xbrl_in_app_auth_policy.SecXbrlInAppAuthPolicyError as exc:
             return _auth_policy_error_response(exc)
-        if request.url.path in _B1B_PREVALIDATION_PATHS:
+        if request.url.path in _B1B_NEW_PREVALIDATION_PATHS:
             if not layer3_connector_promotion.bridge_precondition_available():
-                return JSONResponse(
-                    status_code=layer3_connector_promotion.b1b_error_spec(
-                        "connector_promotion_bridge_unavailable"
-                    )[0],
-                    content=layer3_connector_promotion.b1b_error_body(
-                        "connector_promotion_bridge_unavailable"
-                    ),
-                )
+                return _b1b_closed_http_response("connector_promotion_bridge_unavailable")
+            request.state.b1b_prevalidation_authorized = True
+        elif (
+            request.url.path in _B1B_SHARED_PREVALIDATION_PATHS
+            and layer3_connector_promotion.bridge_precondition_available()
+        ):
             request.state.b1b_prevalidation_authorized = True
     return await call_next(request)
 

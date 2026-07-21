@@ -5,12 +5,13 @@ from typing import Any, Callable, Literal
 from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.services import (
+    layer3_connector_promotion,
     layer3_connector_dispatch_entry,
     layer3_connector_local_destination_receipt,
     layer3_corrected_package_artifact_set,
@@ -11552,12 +11553,24 @@ def post_execution_result_review(
     payload: Layer3ExecutionResultReviewRequest,
     request: Request,
     db: Session = Depends(get_db),
-) -> dict[str, Any] | JSONResponse:
+) -> dict[str, Any] | JSONResponse | Response:
     try:
         _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
-    return _json_or_error(lambda: layer3_workbench.execution_result_review(db, payload.model_dump(exclude_unset=True)))
+    result = _json_or_error(
+        lambda: layer3_workbench.execution_result_review(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
+    if isinstance(result, layer3_connector_promotion.B1BClosedApiResponse):
+        return Response(
+            content=result.body_bytes,
+            status_code=result.http_status,
+            media_type="application/json",
+        )
+    return result
 
 
 @router.get(
