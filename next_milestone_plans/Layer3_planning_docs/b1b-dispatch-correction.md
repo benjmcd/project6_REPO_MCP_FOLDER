@@ -7137,3 +7137,242 @@ Only these six decisions amend the preceding correction; every preexisting claus
 6. **Pre-B1b-04 conformance repair.** Only after a valid refreshed key and fresh E0/Gate 7, the repair file fence is exactly `backend/app/services/layer3_connector_promotion.py` and `backend/tests/test_layer3_connector_promotion_bridge.py`. No other candidate file may change, and B1b-04 remains blocked until this repair passes its required verification, independent audit, and independent review.
 
 <!-- B1B-AMENDMENT-V2-END -->
+
+<!-- B1B-AMENDMENT-V3-BEGIN -->
+
+## 18. Owner-directed remediation refinement
+
+Section 17 items 1, 2, 3, and 5 are preserved unchanged. This section
+supersedes Section 17 items 4 and 6 and the inherited Section 13.2 Part-A grant
+scope, only as stated below; every other preexisting clause remains
+byte-current. Section 18 is the sole contract authority for the repair it
+authorizes.
+
+1. **Closed receipt-bound replay contract.** This contract supersedes
+   Section 17 item 4 and is self-contained. Let B be exactly
+   `{"descriptor_status_counts":{"resolved_loaded":1},"retrieval_outcome_counts":{"loaded":1},"loaded_snapshot_count":1,"source_planes":["dataset"],"warning_reasons":["synthetic_non_official_fixture"],"retrieved_descriptor_count":1,"unresolved_descriptor_count":0,"descriptor_coverage_status":"complete"}`.
+   For the receipt-bound B1b staged path **without a top-level `schema_id`**,
+   `_verify_materialized_replay` accepts exactly these four top-level
+   progressions and no other, with predecessor-complete ordering (a later key
+   is valid only when every predecessor key is present):
+
+   - B;
+   - B plus `plan_approval`;
+   - B plus `plan_approval` plus `execution_selection`, where
+     `execution_selection` is the 13-key pre-start object only;
+   - B plus `plan_approval` plus the 14-key terminal `execution_selection` plus
+     the 14-key `analysis_execution_start`.
+
+   The staged objects are closed as follows.
+
+   `plan_approval` has exactly `analysis_plan_id`, `approved_set_count`,
+   `excluded_set_count`, `planned_pass_count`, `source_preview_id`,
+   `source_preview_hash`, `source_gate`, `approval_only`, and
+   `execution_started`, with `approved_set_count=1`, `excluded_set_count=0`,
+   `planned_pass_count=1`, `source_gate="06_GATEC_PASS_FREEZE"`,
+   `approval_only=true`, `execution_started=false`, and `analysis_plan_id`,
+   `source_preview_id`, and `source_preview_hash` equal to the linked
+   approved-plan/preview values.
+
+   Pre-start `execution_selection` has exactly `schema_id`, `state`,
+   `client_request_id`, `analysis_plan_id`, `source_preview_id`,
+   `source_preview_hash`, `pass_run_ids_json`, `pass_run_count`,
+   `execution_started`, `analysis_run_ids_json`, `downstream_unavailable`,
+   `operator_reason_recorded`, and `selected_at`, with
+   `schema_id="layer3.execution_selection_state.v1"`,
+   `state="execution_selected_not_started"`,
+   `pass_run_ids_json=[<the one linked pass_run_id>]`, `pass_run_count=1`,
+   `execution_started=false`, `analysis_run_ids_json=[]`,
+   `downstream_unavailable=["results","package","handoff"]`, the linked
+   `L3PassRun` status equal to `"selected_not_started"`, and
+   `client_request_id`, the plan/preview identities, `selected_at`, and all
+   duplicated values equal to the preserved pass-summary/row values.
+
+   Terminal `execution_selection` has exactly those 13 keys plus
+   `pass_run_statuses_json`, and continues to satisfy every pre-start
+   constraint for its inherited 13 keys except the explicitly transitioned
+   fields below. Its schema remains
+   `"layer3.execution_selection_state.v1"`; its selection
+   `client_request_id`, plan/preview identities, one-item
+   `pass_run_ids_json`, `pass_run_count=1`, `selected_at`, and other preserved
+   values remain bound to the original selection state.
+   `analysis_execution_start` has exactly `schema_id`, `client_request_id`,
+   `state`, `analysis_plan_id`, `pass_run_id`, `source_preview_id`,
+   `source_preview_hash`, `analysis_run_id`, `pass_run_status`,
+   `output_payload_ref`, `downstream_unavailable`,
+   `operator_reason_recorded`, `started_at`, and `completed_at`, where
+   `analysis_execution_start.client_request_id` is the linked execution-start
+   request ID. Both nested objects independently require
+   `downstream_unavailable=["results","package","handoff"]`.
+
+   For the completed terminal pair:
+   `execution_selection.state="execution_pass_completed"`,
+   `execution_started=true`,
+   `analysis_run_ids_json=[<the linked analysis_run_id>]`,
+   `pass_run_statuses_json={<pass_run_id>:"completed_with_warnings"}`,
+   `analysis_execution_start.schema_id="layer3.analysis_execution_start_state.v1"`,
+   `analysis_execution_start.state="execution_pass_completed"`,
+   `analysis_run_id` equal to the one linked `AnalysisRun` whose status is
+   `"completed"`, `pass_run_status="completed_with_warnings"`,
+   `output_payload_ref` nonempty and equal to `L3PassRun.output_payload_ref`,
+   and `started_at` and `completed_at` equal to the corresponding `L3PassRun`
+   timestamps.
+
+   For the failed terminal pair:
+   `execution_selection.state="execution_pass_failed"`,
+   `execution_started=true`, `analysis_run_ids_json=[]`,
+   `pass_run_statuses_json={<pass_run_id>:"failed"}`,
+   `analysis_execution_start.schema_id="layer3.analysis_execution_start_state.v1"`,
+   `analysis_execution_start.state="execution_pass_failed"`,
+   `analysis_run_id=null` with no linked `AnalysisRun` existing,
+   `pass_run_status="failed"`, `output_payload_ref=null`, and `started_at`
+   and `completed_at` equal to the corresponding failed `L3PassRun`
+   timestamps.
+
+   For both terminal alternatives, the same plan, pass-run, preview, request,
+   status, output, and timestamp relationships must hold across the two nested
+   objects and their database rows. A valid failed replay preserves
+   materialization replay only; it does not satisfy or complete B1b-03. Each
+   `operator_reason_recorded` receives Boolean-domain validation only, because
+   no independent persisted source rederives it; no stronger verification is
+   claimed. Unknown nested fields and any mismatch are rejected without
+   mutation. Nested `schema_id` fields never select the twelve-key branch.
+
+   **With top-level `schema_id=layer3.b1b_session_state.v1`**, the only
+   accepted state has exactly the twelve keys `schema_id`,
+   `review_record_ref`, `review_state`, `result_review_hash`,
+   `analysis_plan_id`, `pass_run_id`, `analysis_run_id`,
+   `package_review_state`, `package_review_hash`, `reconciliation_record_id`,
+   `packages`, and `connector_dataset_handoff_basis_hash`, stage-valid as
+   follows. Result review writes the first seven keys and sets the last five
+   exactly to null; its exhaustive decision-to-state map is
+   `approved -> execution_result_review_approved`,
+   `changes_requested -> execution_result_review_changes_requested`,
+   `rejected -> execution_result_review_rejected`, and
+   `blocked -> execution_result_review_blocked`. `review_record_ref` must
+   equal `"b1b-result-review-" + result_review_hash`, and
+   `result_review_hash` must equal the D33 hash of the exact persisted
+   result-review record. `analysis_plan_id`, `pass_run_id`, and
+   `analysis_run_id` must identify one coherent promoted-session chain.
+   Package review may follow only an approved result review and preserves the
+   first seven keys unchanged; its exhaustive map is
+   `approved -> package_review_approved`,
+   `changes_requested -> package_review_changes_requested`,
+   `rejected -> package_review_rejected`, and
+   `blocked -> package_review_blocked`. Approved changes exactly all five
+   initially null keys: `package_review_state`, `package_review_hash`,
+   `reconciliation_record_id`, `packages`, and
+   `connector_dataset_handoff_basis_hash`. Each nonapproved decision changes
+   exactly the first four and leaves
+   `connector_dataset_handoff_basis_hash=null`. `package_review_hash` must
+   equal the D33 hash of the exact persisted package-review record, and
+   `reconciliation_record_id` and every package projection must equal the
+   linked reconciliation/package rows. `packages` is exactly the ordered
+   three-object projection over `canonical_internal`, `user_facing`, and
+   `review_facing` in that order, each object exactly
+   `{package_kind, output_package_id, payload_sha256}`. For approved package
+   review, `connector_dataset_handoff_basis_hash` must equal the hash of the
+   exact Section 4.3 basis stored in reconciliation; the full basis is never
+   stored in the session. The repair must structurally test this twelve-key
+   validator but claims no runtime producer proof before B1b-04 through
+   B1b-06 exist. Any arbitrary, unknown, extra, partial, malformed, mixed,
+   out-of-order, unrecognized-schema, or stage-invalid state fails closed
+   without mutation.
+
+   Flag-false and all non-B1b behavior remain unchanged. The repair file fence
+   is exactly `backend/app/services/layer3_connector_promotion.py` and
+   `backend/tests/test_layer3_connector_promotion_bridge.py`. Encoding this
+   section's literals and model-row checks locally in
+   `layer3_connector_promotion.py` is implementation of this contract, not
+   duplicated authority. The repair must not import `layer3_pass_entry` or
+   `layer3_workbench` (both already depend on promotion), must not modify
+   either producer, and must not add a shared third file. The lane stops and
+   reports a blocker only if model queries and local validators cannot
+   implement this contract within the exact two-file fence.
+
+2. **Fresh E0, Gate-7 confirmation, and transplantation.** The fresh
+   entry-gate record is the create-once, pre-edit
+   `state/agent-inbox/b1b-e0-v2.md`, and the refreshed ballot record is
+   `state/agent-inbox/b1b-dispatch-v2.md`; both resolve beneath the verified
+   operator-context root, not inside the fresh candidate worktree, and are
+   never candidate commits. E0 is absent before creation, written only by
+   `p6_main_thread` (`019f5a7d-78d4-75d1-bddb-04d48d3dec84`), and never
+   changed thereafter. It records Gates 1-6 as PASS with evidence and Gate 7
+   as `RECORDED-PENDING-INDEPENDENT-CONFIRMATION`; it never claims Gate 7
+   PASS. It binds: the captured refreshed ballot, the correction and
+   owner-bound-main identities, the exact seven source commit SHAs of
+   Section 17 item 2 in order, the clean fresh worktree path, branch, and
+   initial HEAD, the migration identity, the 58-path fence, the Section 17
+   item 3 roles as refined by this section, the lane roots, the resource
+   rails, and the stop conditions. It does not contain a transplant map. The
+   candidate worktree must be clean at Gate-7 confirmation. After E0 creation,
+   `p6_agent1` issues a separate read-only Gate-7 verdict bound to E0's exact
+   full-file SHA-256 and reverified custody; no transplantation or repair may
+   start before `GATE7-CONFIRMED`. Immediately before transplantation, the
+   lane reverifies that owner-bound main has changed no source-chain path:
+   the owner-bound-main tree must equal source base
+   `f6b7003015e68c40dea9629a4f171987bb545070` on the exact 14 paths changed by
+   the seven-commit chain. Transplantation is conflict-free ordered
+   application of the seven source commits; verification requires identical
+   per-commit changed-path sets, `git patch-id --stable` equality per commit,
+   and, before the repair, that the aggregate diff from source base
+   `f6b7003015e68c40dea9629a4f171987bb545070` to source head
+   `7f942518b9c3f57d159dfee8385aec070e47f2ac` equals the aggregate diff from
+   the fresh worktree's initial HEAD to the transplanted head on those paths.
+   The old-to-new commit map is derived mechanically from the resulting Git
+   history; no new map artifact is created. Any conflict, drift, or mismatch
+   stops the lane. The source worktree is never modified or cleaned. The
+   later final `p6_agent1` audit is distinct from the Gate-7 confirmation and
+   precedes the `p6_agent3` review. The historical Rev-9 E0 record remains
+   byte-immutable.
+
+3. **Ballot authority.** The refreshed record path remains
+   `state/agent-inbox/b1b-dispatch-v2.md`; no further record path is created.
+   The captured ballot must reproduce the following Part-A block exactly; Part
+   B and every subsequent field are copied verbatim from Section 13.2,
+   preserving the five conditional I12 placeholders,
+   `owner_decision_key=<nonempty-owner-key>`,
+   `owner_utc_timestamp=<RFC3339Z>`, `budget_resource_cap=NONE`, the zero
+   canonical-hash field, the existing key grammar, and the Stage-1/Stage-2 key
+   distinction, with no uniqueness requirement added or removed:
+
+   Part A - select exactly one
+   [ ] GRANTED - authorize only fresh E0, p6_agent1 Gate-7 confirmation, ordered seven-patch transplantation, the two-file repair, verification, final p6_agent1 audit, and p6_agent3 review; then stop before B1b-04
+   [ ] WITHHELD - do not authorize B1b dispatch
+
+4. **Later GO.** A later direct owner message authorizes only the milestone or
+   milestones it explicitly names; `GO B1B-04` does not imply B1b-05 or
+   B1b-06. Any such GO must bind the exact repaired candidate head SHA, the E0
+   full-file SHA-256, the final audit full-file SHA-256, the final review
+   full-file SHA-256, and an owner-supplied RFC3339Z timestamp. No GO is
+   inferred from ballot capture, test results, audit, review, or silence, and
+   this amendment creates no additional GO-record path.
+
+5. **Authority and custody.** Only `p6_main_thread`
+   (`019f5a7d-78d4-75d1-bddb-04d48d3dec84`), `p6_agent1`
+   (`019f497a-bece-7162-9d0b-5d2a21e8b23d`), and `p6_agent3`
+   (`019f497b-591b-7341-87bd-65154f49fb21`) perform their assigned acts —
+   writer, Gate-7 confirmer and final auditor, and final reviewer
+   respectively; `p6_agent2` (`019f497b-15a8-7763-a3a4-20a29046dd26`) remains
+   allowlisted but unassigned and inactive under this grant. Additional
+   delegated or orchestration workflows, descendants, and agents are
+   prohibited; repository CI/check workflows required by this correction are
+   preserved. The seven adopted commits are used as Git objects only;
+   `worktrees/b1b-build` is neither modified nor cleaned, and its untracked
+   harness state is not evidence.
+
+6. **Amendment authoring and ballot preflight.** This section is authored
+   against exactly this predecessor now on live main: main
+   `fe73b5d14fbd76a3430f1dc830d3f3d90b4eaacf`, correction blob
+   `69bf154518bbdfbe1962cc343ba74805c140d4c7`, 508,912 bytes, full SHA-256
+   `A01C56B256D32CCE51A0EC6293F44CCA6C49BE482AD81E32F4F46A3D12EC972B`. That
+   exact blob must be the byte-for-byte prefix of the amended file; if any of
+   these identities differs at authoring time, the lane stops and re-presents
+   rather than silently rebinding. Authoring must additionally prove strict
+   UTF-8, LF-only encoding with no BOM, no CR, exactly one final LF, and
+   one-file scope. After landing, every ballot field is rebound to the newly
+   landed identity and the complete Section 13.2 binary preflight is
+   performed, including exact byte equality between the owner-bound Git blob
+   and the checkout bytes; blob-only verification is insufficient.
+
+<!-- B1B-AMENDMENT-V3-END -->
