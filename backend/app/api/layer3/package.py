@@ -50,6 +50,7 @@ from app.api.layer3 import (  # Pydantic models still defined in __init__
     Layer3ReplacementPackageSetAuthorityRequest,
     Layer3ReplacementPackageSetAuthorityResponse,
     Layer3WorkbenchErrorResponse,
+    _b1b_closed_route_call,
     _workbench_error_responses,
 )
 
@@ -64,12 +65,18 @@ def post_package_review_preview(
     request: Request,
     payload: Layer3PackageReviewPreviewRequest,
     db: Session = Depends(get_db),
-) -> dict[str, Any] | JSONResponse:
+) -> dict[str, Any] | JSONResponse | Response:
     try:
         _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
-    return _json_or_error(lambda: layer3_workbench.package_review_preview(db, payload.model_dump(exclude_unset=True)))
+    return _b1b_closed_route_call(
+        request,
+        lambda: layer3_workbench.package_review_preview(
+            db,
+            payload.model_dump(exclude_unset=True),
+        ),
+    )
 
 
 @router.post(
@@ -82,12 +89,18 @@ def post_package_review_commit(
     request: Request,
     payload: Layer3PackageConstructionCommitRequest,
     db: Session = Depends(get_db),
-) -> dict[str, Any] | JSONResponse:
+) -> dict[str, Any] | JSONResponse | Response:
     try:
         _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
-    return _json_or_error(lambda: layer3_workbench.package_construction_commit(db, payload.model_dump(exclude_unset=True)))
+    return _b1b_closed_route_call(
+        request,
+        lambda: layer3_workbench.package_construction_commit(
+            db,
+            payload.model_dump(exclude_unset=True),
+        ),
+    )
 
 
 @router.post(
@@ -100,12 +113,18 @@ def post_package_review_submit(
     request: Request,
     payload: Layer3PackageReviewSubmitRequest,
     db: Session = Depends(get_db),
-) -> dict[str, Any] | JSONResponse:
+) -> dict[str, Any] | JSONResponse | Response:
     try:
         _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
-    return _json_or_error(lambda: layer3_workbench.package_review_submit(db, payload.model_dump(exclude_unset=True)))
+    return _b1b_closed_route_call(
+        request,
+        lambda: layer3_workbench.package_review_submit(
+            db,
+            payload.model_dump(exclude_unset=True),
+        ),
+    )
 
 
 @router.post(

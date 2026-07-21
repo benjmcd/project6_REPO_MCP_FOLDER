@@ -11543,6 +11543,27 @@ def post_execution_result_status(
     return _json_or_error(lambda: layer3_workbench.execution_result_status(db, payload.model_dump(exclude_unset=True)))
 
 
+def _b1b_closed_route_result(result: Any) -> Any:
+    if isinstance(result, layer3_connector_promotion.B1BClosedApiResponse):
+        return Response(
+            content=result.body_bytes,
+            status_code=result.http_status,
+            media_type="application/json",
+        )
+    return result
+
+
+def _b1b_closed_route_call(request: Request, callback: Callable[[], Any]) -> Any:
+    def closed_or_generic() -> Any:
+        try:
+            return callback()
+        except layer3_connector_promotion.B1BClosedApiError as exc:
+            return layer3_connector_promotion.b1b_closed_error_response(exc.code)
+
+    with layer3_connector_promotion.b1b_request_sensitive_scope(request.headers):
+        return _b1b_closed_route_result(_json_or_error(closed_or_generic))
+
+
 @router.post(
     "/execution/result/review",
     response_model=Layer3ExecutionResultReviewResponse,
@@ -11558,19 +11579,13 @@ def post_execution_result_review(
         _route_level_operator_identity(request, access="write")
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
-    result = _json_or_error(
+    return _b1b_closed_route_call(
+        request,
         lambda: layer3_workbench.execution_result_review(
             db,
             payload.model_dump(exclude_unset=True),
-        )
+        ),
     )
-    if isinstance(result, layer3_connector_promotion.B1BClosedApiResponse):
-        return Response(
-            content=result.body_bytes,
-            status_code=result.http_status,
-            media_type="application/json",
-        )
-    return result
 
 
 @router.get(

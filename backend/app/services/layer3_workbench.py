@@ -5719,8 +5719,10 @@ def execution_result_review(
             payload.get("session_id"),
         ):
             return connector_promotion.record_b1b_result_review(db, payload)
+    except connector_promotion.B1BClosedApiError:
+        raise
     except connector_promotion.ConnectorPromotionError as exc:
-        return connector_promotion.b1b_closed_error_response(exc.code)
+        raise connector_promotion._closed_b1b_error(exc.code) from exc
 
     session_id = str(payload.get("session_id") or "").strip()
     analysis_plan_id = str(payload.get("analysis_plan_id") or "").strip()
@@ -6926,7 +6928,20 @@ def _mixed_source_package_review_preview(db: Session, payload: dict[str, Any]) -
     }
 
 
-def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+def package_review_preview(
+    db: Session,
+    payload: dict[str, Any],
+) -> dict[str, Any] | connector_promotion.B1BClosedApiResponse:
+    try:
+        if connector_promotion.side_effect_free_b1b_result_review_scope(
+            db.get_bind(),
+            payload.get("session_id"),
+        ):
+            return connector_promotion.preview_b1b_package_review(db, payload)
+    except connector_promotion.B1BClosedApiError:
+        raise
+    except connector_promotion.ConnectorPromotionError as exc:
+        raise connector_promotion._closed_b1b_error(exc.code) from exc
     session_id = str(payload.get("session_id") or "").strip()
     blocked_payload_fields = package_review_preview_blocked_fields(payload)
     if blocked_payload_fields:
@@ -8038,7 +8053,20 @@ def _mixed_source_package_review_submit(db: Session, payload: dict[str, Any]) ->
     )
 
 
-def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+def package_construction_commit(
+    db: Session,
+    payload: dict[str, Any],
+) -> dict[str, Any] | connector_promotion.B1BClosedApiResponse:
+    try:
+        if connector_promotion.side_effect_free_b1b_result_review_scope(
+            db.get_bind(),
+            payload.get("session_id"),
+        ):
+            return connector_promotion.commit_b1b_packages(db, payload)
+    except connector_promotion.B1BClosedApiError:
+        raise
+    except connector_promotion.ConnectorPromotionError as exc:
+        raise connector_promotion._closed_b1b_error(exc.code) from exc
     request_id = str(payload.get("client_request_id") or "").strip()
     if not request_id:
         raise Layer3WorkbenchError(
@@ -8534,7 +8562,20 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
     }
 
 
-def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+def package_review_submit(
+    db: Session,
+    payload: dict[str, Any],
+) -> dict[str, Any] | connector_promotion.B1BClosedApiResponse:
+    try:
+        if connector_promotion.side_effect_free_b1b_result_review_scope(
+            db.get_bind(),
+            payload.get("session_id"),
+        ):
+            return connector_promotion.submit_b1b_package_review(db, payload)
+    except connector_promotion.B1BClosedApiError:
+        raise
+    except connector_promotion.ConnectorPromotionError as exc:
+        raise connector_promotion._closed_b1b_error(exc.code) from exc
     request_id = str(payload.get("client_request_id") or "").strip()
     if not request_id:
         raise Layer3WorkbenchError(

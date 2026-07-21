@@ -72,6 +72,9 @@ _B1B_NEW_PREVALIDATION_PATHS = {
 }
 _B1B_SHARED_PREVALIDATION_PATHS = {
     f"{settings.api_prefix.rstrip('/')}/layer3/execution/result/review",
+    f"{settings.api_prefix.rstrip('/')}/layer3/package/review/preview",
+    f"{settings.api_prefix.rstrip('/')}/layer3/package/review/commit",
+    f"{settings.api_prefix.rstrip('/')}/layer3/package/review/submit",
 }
 
 

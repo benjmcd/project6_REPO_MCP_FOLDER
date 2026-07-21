@@ -21,6 +21,7 @@ parity check covers table/column presence only, not FK behavior).
 
 from __future__ import annotations
 
+import base64
 import copy
 import hashlib
 import json
@@ -32,6 +33,7 @@ import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import quote
 
 import pytest
 from fastapi.testclient import TestClient
@@ -3728,11 +3730,11 @@ def test_b1b_04_exact_replay_and_both_conflict_classes_are_zero_delta(
 
     malformed_replay_id = {**payload, "client_request_id": "b1b-result-review-wrong"}
     with b1b_step3_runtime["factory"]() as db:
-        malformed_replay = layer3_workbench.execution_result_review(db, malformed_replay_id)
-    assert isinstance(malformed_replay, pm.B1BClosedApiResponse)
-    assert malformed_replay.http_status == 422
-    assert _json.loads(malformed_replay.body_bytes) == pm.b1b_error_body(
-        "b1b_request_validation_failed"
+        with pytest.raises(pm.B1BClosedApiError) as malformed_replay:
+            layer3_workbench.execution_result_review(db, malformed_replay_id)
+    assert (malformed_replay.value.code, malformed_replay.value.http_status) == (
+        "b1b_request_validation_failed",
+        422,
     )
     assert _b1b_03_row_projection(b1b_step3_runtime) == frozen_rows
     assert _all_storage_files(b1b_step3_runtime) == frozen_files
@@ -3752,13 +3754,12 @@ def test_b1b_04_exact_replay_and_both_conflict_classes_are_zero_delta(
     )
     for conflict_payload in (unequal_basis, second_decision):
         with b1b_step3_runtime["factory"]() as db:
-            conflict = layer3_workbench.execution_result_review(db, conflict_payload)
-        assert isinstance(conflict, pm.B1BClosedApiResponse)
-        assert conflict.http_status == 409
-        assert _json.loads(conflict.body_bytes) == pm.b1b_error_body(
-            "connector_result_review_decision_conflict"
+            with pytest.raises(pm.B1BClosedApiError) as conflict:
+                layer3_workbench.execution_result_review(db, conflict_payload)
+        assert (conflict.value.code, conflict.value.http_status) == (
+            "connector_result_review_decision_conflict",
+            409,
         )
-        assert conflict.body_bytes == pm.d33_canonical_bytes(_json.loads(conflict.body_bytes))
         assert _b1b_03_row_projection(b1b_step3_runtime) == frozen_rows
         assert _all_storage_files(b1b_step3_runtime) == frozen_files
 
@@ -3812,11 +3813,12 @@ def test_b1b_04_closed_request_profile_rejects_notes_and_all_evidence_widening_w
 
     for invalid_payload in invalid_payloads:
         with b1b_step3_runtime["factory"]() as db:
-            response = layer3_workbench.execution_result_review(db, invalid_payload)
-        assert isinstance(response, pm.B1BClosedApiResponse)
-        assert response.http_status == 422
-        assert _json.loads(response.body_bytes) == pm.b1b_error_body("b1b_request_validation_failed")
-        assert response.body_bytes == pm.d33_canonical_bytes(_json.loads(response.body_bytes))
+            with pytest.raises(pm.B1BClosedApiError) as response:
+                layer3_workbench.execution_result_review(db, invalid_payload)
+        assert (response.value.code, response.value.http_status) == (
+            "b1b_request_validation_failed",
+            422,
+        )
         assert _b1b_03_row_projection(b1b_step3_runtime) == frozen_rows
         assert _all_storage_files(b1b_step3_runtime) == frozen_files
 
@@ -4081,11 +4083,11 @@ def test_b1b_04_corrupt_authoritative_evidence_fails_closed_without_review_delta
     frozen_files = _all_storage_files(b1b_step3_runtime)
 
     with b1b_step3_runtime["factory"]() as db:
-        response = layer3_workbench.execution_result_review(db, payload)
-    assert isinstance(response, pm.B1BClosedApiResponse)
-    assert response.http_status == 409
-    assert _json.loads(response.body_bytes) == pm.b1b_error_body(
-        "connector_materialization_basis_conflict"
+        with pytest.raises(pm.B1BClosedApiError) as response:
+            layer3_workbench.execution_result_review(db, payload)
+    assert (response.value.code, response.value.http_status) == (
+        "connector_materialization_basis_conflict",
+        409,
     )
     assert _b1b_03_row_projection(b1b_step3_runtime) == frozen_rows
     assert _all_storage_files(b1b_step3_runtime) == frozen_files
@@ -5533,3 +5535,1238 @@ def test_b1b_04_route_preserves_auth_precedence_and_canonical_closed_transport(
         assert _all_storage_files(b1b_step3_runtime) == frozen_files
     finally:
         main.app.dependency_overrides.pop(get_db, None)
+
+
+_PACKAGE_PREVIEW_PATH = "/api/v1/layer3/package/review/preview"
+_PACKAGE_COMMIT_PATH = "/api/v1/layer3/package/review/commit"
+_PACKAGE_SUBMIT_PATH = "/api/v1/layer3/package/review/submit"
+_B1B05_AUTHORITY = {
+    "packet_full_sha256": "1" * 64,
+    "packet_canonical_sha256": "2" * 64,
+    "correction_full_sha256": "3" * 64,
+    "owner_decision_full_sha256": "4" * 64,
+    "owner_decision_canonical_sha256": "5" * 64,
+    "owner_bound_main_sha": "6" * 40,
+    "implementation_head_sha": "7" * 40,
+    "pass_to_launch_sha256": "8" * 64,
+    "profile": "sqlite_authorized",
+}
+
+
+def _extract_frozen_b1b05_construction_vector() -> bytes:
+    spec = subprocess.check_output(
+        [
+            "git",
+            "show",
+            "c1fcd840:next_milestone_plans/Layer3_planning_docs/b1b-dispatch-correction.md",
+        ],
+        cwd=BACKEND.parent,
+        text=True,
+        encoding="utf-8",
+    )
+    marker = "The normative construction-basis golden vector is 1,447 bytes"
+    fenced = spec.split(marker, 1)[1].split("```json", 1)[1].split("```", 1)[0]
+    return fenced.strip().encode("utf-8")
+
+
+def _b1b05_preview_payload(
+    resolved: dict,
+    preview: dict,
+    approval: dict,
+    start: dict,
+    review: dict,
+) -> dict:
+    return {
+        "session_id": resolved["promoted_session_id"],
+        "analysis_plan_id": approval["analysis_plan_id"],
+        "pass_run_id": start["pass_run_id"],
+        "preview_id": preview["preview_id"],
+        "preview_hash": preview["preview_hash"],
+        "analysis_run_id": start["analysis_run_id"],
+        "result_review_record_ref": f"b1b-result-review-{review['result_review_hash']}",
+    }
+
+
+def _b1b05_commit_payload(preview_payload: dict, package_preview: dict) -> dict:
+    return {
+        "client_request_id": f"b1b-package-construction-{package_preview['package_review_preview_hash']}",
+        **preview_payload,
+        "package_review_preview_hash": package_preview["package_review_preview_hash"],
+        "expected_package_kinds": list(_PACKAGE_ORDER),
+    }
+
+
+def _b1b05_submit_payload(
+    preview_payload: dict,
+    package_preview: dict,
+    package_commit: dict,
+    *,
+    decision: str,
+    notes: str,
+) -> dict:
+    packages = package_commit["packages"]
+    basis = {
+        "session_id": preview_payload["session_id"],
+        "analysis_plan_id": preview_payload["analysis_plan_id"],
+        "pass_run_id": preview_payload["pass_run_id"],
+        "preview_id": preview_payload["preview_id"],
+        "preview_hash": preview_payload["preview_hash"],
+        "analysis_run_id": preview_payload["analysis_run_id"],
+        "result_review_record_ref": preview_payload["result_review_record_ref"],
+        "package_review_preview_hash": package_preview["package_review_preview_hash"],
+        "construction_basis_hash": package_commit["construction_basis_hash"],
+        "reconciliation_record_id": package_commit["reconciliation_record_id"],
+        "output_package_ids": [item["output_package_id"] for item in packages],
+        "payload_hashes": [item["payload_sha256"] for item in packages],
+        "operator_decision": decision,
+        "decision_notes": notes,
+        "expected_package_kinds": list(_PACKAGE_ORDER),
+    }
+    return {
+        "client_request_id": f"b1b-package-review-{pm.d33_sha256(basis)}",
+        **basis,
+    }
+
+
+def _with_b1b05_submit_identity(payload: dict) -> dict:
+    basis = {key: value for key, value in payload.items() if key != "client_request_id"}
+    return {"client_request_id": f"b1b-package-review-{pm.d33_sha256(basis)}", **basis}
+
+
+def _committed_b1b05_subject(
+    runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    suffix: str,
+) -> dict:
+    resolved, preview, approval, start = _prepare_result_review_subject(
+        runtime,
+        monkeypatch,
+        suffix,
+    )
+    monkeypatch.setattr(pm, "_read_b1b_package_authority", lambda: dict(_B1B05_AUTHORITY))
+    review_payload = _b1b_04_review_payload(resolved, preview, approval, start)
+    with runtime["factory"]() as db:
+        review = json.loads(pm.record_b1b_result_review(db, review_payload).body_bytes)
+    preview_payload = _b1b05_preview_payload(
+        resolved,
+        preview,
+        approval,
+        start,
+        review,
+    )
+    with runtime["factory"]() as db:
+        package_preview = json.loads(pm.preview_b1b_package_review(db, preview_payload).body_bytes)
+    commit_payload = _b1b05_commit_payload(preview_payload, package_preview)
+    with runtime["factory"]() as db:
+        package_commit_response = pm.commit_b1b_packages(db, commit_payload)
+    package_commit = json.loads(package_commit_response.body_bytes)
+    return {
+        "resolved": resolved,
+        "review_payload": review_payload,
+        "preview_payload": preview_payload,
+        "package_preview": package_preview,
+        "commit_payload": commit_payload,
+        "package_commit": package_commit,
+        "package_commit_bytes": package_commit_response.body_bytes,
+        "submit_payload": _b1b05_submit_payload(
+            preview_payload,
+            package_preview,
+            package_commit,
+            decision="approved",
+            notes="",
+        ),
+    }
+
+
+def test_b1b_05_committed_replay_censuses_and_contains_package_orphans(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    subject = _committed_b1b05_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        "b1b-05-replay-census",
+    )
+    paths = pm._b1b_package_lane_paths()
+    rows_before = _b1b_03_row_projection(b1b_step3_runtime)
+    files_before = _all_storage_files(b1b_step3_runtime)
+    with b1b_step3_runtime["factory"]() as db:
+        package_rows = db.query(L3OutputPackage).filter_by(
+            session_id=subject["resolved"]["promoted_session_id"]
+        ).all()
+        authoritative_before = {
+            Path(row.payload_ref).resolve(): pm._file_facts(Path(row.payload_ref).resolve())
+            for row in package_rows
+        }
+
+    stage_basis = "a" * 64
+    final_basis = "b" * 64
+    stage_orphan = paths["stage"] / f"{stage_basis}-orphan-canonical_internal.json"
+    final_orphan = paths["final"] / final_basis[:2] / final_basis / "orphan.json"
+    stage_orphan.parent.mkdir(parents=True, exist_ok=True)
+    final_orphan.parent.mkdir(parents=True, exist_ok=True)
+    stage_orphan.write_bytes(b"staged package orphan")
+    final_orphan.write_bytes(b"published package orphan")
+    orphan_facts = {
+        stage_basis: pm._file_facts(stage_orphan),
+        final_basis: pm._file_facts(final_orphan),
+    }
+
+    with b1b_step3_runtime["factory"]() as db:
+        replay = pm.commit_b1b_packages(db, subject["commit_payload"])
+
+    assert replay.body_bytes == subject["package_commit_bytes"]
+    assert _b1b_03_row_projection(b1b_step3_runtime) == rows_before
+    assert not stage_orphan.exists()
+    assert not final_orphan.exists()
+    assert {
+        path: pm._file_facts(path) for path in authoritative_before
+    } == authoritative_before
+
+    containment_files = {
+        path for path in paths["containment"].rglob("*") if path.is_file()
+    }
+    contained = {
+        path
+        for path in containment_files
+        if not path.name.endswith(pm._CONTAINMENT_RECORD_SUFFIX)
+    }
+    records = containment_files - contained
+    assert len(contained) == 2
+    assert records == {pm._containment_record_path(path) for path in contained}
+    observed: dict[str, tuple[int, str]] = {}
+    for artifact in contained:
+        record = json.loads(pm._containment_record_path(artifact).read_bytes())
+        facts = pm._file_facts(artifact)
+        assert set(record) == {
+            "artifact_bytes",
+            "artifact_sha256",
+            "basis_hash",
+            "namespace_hash",
+            "status",
+        }
+        assert record["artifact_bytes"] == facts[0]
+        assert record["artifact_sha256"] == facts[1]
+        assert record["basis_hash"] == artifact.parent.name
+        assert pm._is_lower_hex64(record["namespace_hash"])
+        assert record["status"] == "non_authoritative_non_reusable"
+        observed[record["basis_hash"]] = facts
+    assert observed == orphan_facts
+    files_after = _all_storage_files(b1b_step3_runtime)
+    for relative_path, facts in files_before.items():
+        assert files_after[relative_path] == facts
+    containment_relatives = {
+        path.relative_to(b1b_step3_runtime["storage_dir"]).as_posix()
+        for path in containment_files
+    }
+    assert set(files_after) == set(files_before) | containment_relatives
+
+
+def test_b1b_05_all_closed_errors_are_canonical_at_all_four_routes(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    subject = _committed_b1b05_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        "b1b-05-closed-errors",
+    )
+    _configure_step5_proxy(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    monkeypatch.setattr(main, "engine", b1b_step3_runtime["engine"])
+    routes = (
+        (_RESULT_REVIEW_PATH, "execution_result_review", subject["review_payload"]),
+        (_PACKAGE_PREVIEW_PATH, "package_review_preview", subject["preview_payload"]),
+        (_PACKAGE_COMMIT_PATH, "package_construction_commit", subject["commit_payload"]),
+        (_PACKAGE_SUBMIT_PATH, "package_review_submit", subject["submit_payload"]),
+    )
+    rows_before = _b1b_03_row_projection(b1b_step3_runtime)
+    files_before = _all_storage_files(b1b_step3_runtime)
+    client = TestClient(main.app, raise_server_exceptions=False)
+    observed: set[tuple[str, str]] = set()
+    try:
+        for error_code, (http_status, _message, _retryable) in pm._B1B_ERROR_SPECS.items():
+            assert isinstance(pm._closed_b1b_error(error_code), pm.B1BClosedApiError)
+            for path, handler_name, payload in routes:
+                def fail_closed(*_args, _error_code=error_code, **_kwargs):
+                    raise pm._closed_b1b_error(_error_code)
+
+                with monkeypatch.context() as route_patch:
+                    route_patch.setattr(layer3_workbench, handler_name, fail_closed)
+                    response = client.post(path, json=payload, headers=_OPERATOR_HEADERS)
+                expected = pm.b1b_error_body(error_code)
+                assert response.status_code == http_status
+                assert response.json() == expected
+                assert response.content == pm.d33_canonical_bytes(expected)
+                observed.add((error_code, path))
+        assert observed == {
+            (error_code, path)
+            for error_code in pm._B1B_ERROR_SPECS
+            for path, _handler_name, _payload in routes
+        }
+        assert _b1b_03_row_projection(b1b_step3_runtime) == rows_before
+        assert _all_storage_files(b1b_step3_runtime) == files_before
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+def test_b1b_05_base_lock_failure_is_typed_by_services_and_intercepted_by_routes(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    subject = _committed_b1b05_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        "b1b-05-lock-error",
+    )
+    _configure_step5_proxy(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    monkeypatch.setattr(main, "engine", b1b_step3_runtime["engine"])
+    code = "promotion_identity_lock_unavailable"
+    http_status, message, retryable = pm._B1B_ERROR_SPECS[code]
+
+    def fail_lock(*_args, **_kwargs):
+        raise pm.ConnectorPromotionError(
+            code,
+            message,
+            http_status=http_status,
+            retryable=retryable,
+        )
+
+    monkeypatch.setattr(pm, "acquire_promotion_identity_lock", fail_lock)
+    routes = (
+        (_RESULT_REVIEW_PATH, "execution_result_review", subject["review_payload"]),
+        (_PACKAGE_PREVIEW_PATH, "package_review_preview", subject["preview_payload"]),
+        (_PACKAGE_COMMIT_PATH, "package_construction_commit", subject["commit_payload"]),
+        (_PACKAGE_SUBMIT_PATH, "package_review_submit", subject["submit_payload"]),
+    )
+    rows_before = _b1b_03_row_projection(b1b_step3_runtime)
+    files_before = _all_storage_files(b1b_step3_runtime)
+    for _path, handler_name, payload in routes:
+        with b1b_step3_runtime["factory"]() as db:
+            with pytest.raises(pm.B1BClosedApiError) as caught:
+                getattr(layer3_workbench, handler_name)(db, payload)
+        assert (caught.value.code, caught.value.http_status) == (code, http_status)
+
+    client = TestClient(main.app, raise_server_exceptions=False)
+    try:
+        expected = pm.b1b_error_body(code)
+        for path, _handler_name, payload in routes:
+            response = client.post(path, json=payload, headers=_OPERATOR_HEADERS)
+            assert response.status_code == http_status
+            assert response.json() == expected
+            assert response.content == pm.d33_canonical_bytes(expected)
+        assert _b1b_03_row_projection(b1b_step3_runtime) == rows_before
+        assert _all_storage_files(b1b_step3_runtime) == files_before
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+def test_b1b_05_unmapped_route_faults_remain_generic_and_zero_delta(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    subject = _committed_b1b05_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        "b1b-05-unmapped-errors",
+    )
+    _configure_step5_proxy(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    monkeypatch.setattr(main, "engine", b1b_step3_runtime["engine"])
+    routes = (
+        (_RESULT_REVIEW_PATH, "execution_result_review", subject["review_payload"]),
+        (_PACKAGE_PREVIEW_PATH, "package_review_preview", subject["preview_payload"]),
+        (_PACKAGE_COMMIT_PATH, "package_construction_commit", subject["commit_payload"]),
+        (_PACKAGE_SUBMIT_PATH, "package_review_submit", subject["submit_payload"]),
+    )
+    rows_before = _b1b_03_row_projection(b1b_step3_runtime)
+    files_before = _all_storage_files(b1b_step3_runtime)
+    client = TestClient(main.app, raise_server_exceptions=False)
+    try:
+        for path, handler_name, payload in routes:
+            def fail_unmapped(*_args, **_kwargs):
+                raise RuntimeError("unmapped-b1b-sentinel")
+
+            with monkeypatch.context() as route_patch:
+                route_patch.setattr(layer3_workbench, handler_name, fail_unmapped)
+                response = client.post(path, json=payload, headers=_OPERATOR_HEADERS)
+            assert response.status_code == 500
+            assert "unmapped-b1b-sentinel" not in response.text
+            assert "layer3.b1b_error.v1" not in response.text
+        assert _b1b_03_row_projection(b1b_step3_runtime) == rows_before
+        assert _all_storage_files(b1b_step3_runtime) == files_before
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+def test_b1b_05_construction_basis_matches_mechanically_extracted_golden_vector() -> None:
+    frozen_bytes = _extract_frozen_b1b05_construction_vector()
+    frozen = json.loads(frozen_bytes)
+    built = pm.build_b1b_package_construction_basis(
+        authority=frozen["authority"],
+        bundle=frozen["bundle"],
+        packages=frozen["packages"],
+    )
+    assert pm.d33_canonical_bytes(built) == frozen_bytes
+    assert len(frozen_bytes) == 1447
+    assert hashlib.sha256(frozen_bytes).hexdigest() == (
+        "2c3bca8c8b3e40b625c8a70878e57a37e4e97a5d3a7c6ab28f07c921bfbf7aa9"
+    )
+    assert pm.d33_sha256(pm._b1b_battery_expected_census("sqlite_authorized")) == (
+        "0ecc091a19ee41b4a704a36b4fea9ee32b3bacac2aa342a175fc0addae0eb6ea"
+    )
+    assert pm.d33_sha256(pm._b1b_battery_expected_census("postgresql_authorized")) == (
+        "87b5c9dd9d3c436a106aa86604462794461f0cd9b0b0e22181f49a482da76454"
+    )
+    assert pm.d33_sha256(pm._b1b_replay_contract()) == (
+        "f2005da248be2c49c41c0b55d5b84afb3e27593c4c30dc495f9214def3769568"
+    )
+    assert pm._b1b_fixture_disclosure() == {
+        "source_fixture_id": "F07",
+        "proof_cell_id": "C01",
+        "synthetic": True,
+        "byte_length": 34,
+        "content_sha256": pm.F07_CONTENT_SHA256,
+        "official_public_read_evidence": False,
+        "f20_status": "NOT-ESTABLISHED",
+    }
+    assert pm._b1b_lineage_fixture() == {
+        **pm._b1b_fixture_disclosure(),
+        "media_type": "text/csv",
+    }
+
+
+def test_b1b_05_package_leak_registry_is_reference_scoped_and_encoding_complete() -> None:
+    def fullwidth(value: str) -> str:
+        return "".join(
+            chr(ord(character) + 0xFEE0) if "!" <= character <= "~" else character
+            for character in value
+        )
+
+    for forbidden_key in pm._b1b04_forbidden_normalized_keys():
+        evasions = {
+            forbidden_key,
+            forbidden_key.upper(),
+            forbidden_key.replace("_", "-"),
+            forbidden_key.replace("_", " "),
+            fullwidth(forbidden_key),
+        }
+        for evasion in evasions:
+            with pytest.raises(pm.PromotionIdentityError):
+                pm._assert_b1b_package_no_leak({evasion: "sentinel"}, set())
+    pm._assert_b1b_package_no_leak(
+        {
+            "storage_ref_hash": "a" * 64,
+            "status": "tokenized benign nonclaim",
+            "value": [*pm._B1B_MEMBER_PATHS, "application/json"],
+        },
+        set(),
+    )
+
+    registry: set[str] = set()
+    pm._add_b1b_nested_reference_strings(
+        registry,
+        {
+            "dataset_version_id": "public-version-id",
+            "source_artifact_key": "bounded-logical-key",
+            "nested": {"storage_ref": "datasets/private/payload.parquet"},
+        },
+    )
+    assert registry == {"datasets/private/payload.parquet"}
+    for leaking_value in pm._b1b_sensitive_encodings("datasets/private/payload.parquet"):
+        with pytest.raises(pm.PromotionIdentityError):
+            pm._assert_b1b_package_no_leak({"note": leaking_value}, registry)
+
+    encoded_sources = {
+        "credential": "credential-\u00ff\u00ff\u00ff",
+        "cookie": "cookie-\u00ff\u00ff\u00ff",
+        "identity": "identity-\u00ff\u00ff\u00ff",
+        "storage_ref": "connectors/raw/private-\u00ff\u00ff\u00ff.csv",
+    }
+    encoded_registry = set(encoded_sources.values())
+    for source in encoded_sources.values():
+        raw = source.encode("utf-8")
+        standard = base64.b64encode(raw).decode("ascii")
+        urlsafe = base64.urlsafe_b64encode(raw).decode("ascii")
+        assert standard != urlsafe
+        evasions = {
+            standard,
+            standard.rstrip("="),
+            urlsafe,
+            urlsafe.rstrip("="),
+            quote(source, safe=""),
+            quote(quote(source, safe=""), safe=""),
+        }
+        for evasion in evasions:
+            with pytest.raises(pm.PromotionIdentityError):
+                pm._assert_b1b_package_no_leak({"value": evasion}, encoded_registry)
+
+    fixture_lf = b"site_id,value\nSB-001,42\nSB-002,43\n"
+    fixture_variants = (
+        fixture_lf.decode("utf-8").rstrip("\n"),
+        fixture_lf.decode("utf-8"),
+        fixture_lf.decode("utf-8").replace("\n", "\r\n"),
+        base64.b64encode(fixture_lf.rstrip(b"\n")).decode("ascii"),
+        base64.b64encode(fixture_lf).decode("ascii"),
+    )
+    for leaking_value in fixture_variants:
+        with pytest.raises(pm.PromotionIdentityError):
+            pm._assert_b1b_package_no_leak({"note": leaking_value}, set())
+
+    request_sentinels = {
+        "authorization": "request-authorization-sentinel",
+        "cookie": "request-cookie-sentinel",
+        settings.proxy_identity_header: "request-identity-sentinel",
+        settings.proxy_email_header: "request-email-sentinel",
+        settings.proxy_groups_header: "request-workspace-sentinel",
+    }
+    request_headers = {
+        **request_sentinels,
+        settings.proxy_roles_header: "owner",
+    }
+    with pm.b1b_request_sensitive_scope(request_headers):
+        registered = pm._b1b_runtime_sensitive_values()
+        assert set(request_sentinels.values()) <= registered
+        assert "owner" not in registered
+        for sentinel in request_sentinels.values():
+            for encoding in pm._b1b_sensitive_encodings(sentinel):
+                with pytest.raises(pm.PromotionIdentityError):
+                    pm._assert_b1b_package_no_leak({"note": encoding}, registered)
+        pm._assert_b1b_package_no_leak(
+            {
+                "owner_bound_main_sha": "6" * 40,
+                "approved_by_operator": True,
+                "note": "owner requested changes from the operator",
+            },
+            registered,
+        )
+    assert not set(request_sentinels.values()) & pm._b1b_runtime_sensitive_values()
+
+
+def test_b1b_05_package_commit_rejects_artifact_drift_after_locked_review_revalidation(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resolved, preview, approval, start = _prepare_result_review_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        "b1b-05-artifact-race",
+    )
+    monkeypatch.setattr(pm, "_read_b1b_package_authority", lambda: dict(_B1B05_AUTHORITY))
+    review_payload = _b1b_04_review_payload(resolved, preview, approval, start)
+    with b1b_step3_runtime["factory"]() as db:
+        review = json.loads(pm.record_b1b_result_review(db, review_payload).body_bytes)
+    preview_payload = _b1b05_preview_payload(
+        resolved,
+        preview,
+        approval,
+        start,
+        review,
+    )
+    with b1b_step3_runtime["factory"]() as db:
+        package_preview = json.loads(pm.preview_b1b_package_review(db, preview_payload).body_bytes)
+        artifact = db.query(AnalysisArtifact).filter_by(
+            analysis_run_id=start["analysis_run_id"]
+        ).one()
+    artifact_path = (Path(settings.artifact_storage_dir) / Path(artifact.storage_ref).name).resolve()
+    actual_file_facts = pm._file_facts
+
+    def drifted_file_facts(path: Path) -> tuple[int, str]:
+        facts = actual_file_facts(path)
+        return (facts[0], "0" * 64) if Path(path).resolve() == artifact_path else facts
+
+    monkeypatch.setattr(pm, "_file_facts", drifted_file_facts)
+    before_rows = _b1b_03_row_projection(b1b_step3_runtime)
+    before_files = _all_storage_files(b1b_step3_runtime)
+    with b1b_step3_runtime["factory"]() as db:
+        with pytest.raises(pm.ConnectorPromotionError) as caught:
+            pm.commit_b1b_packages(
+                db,
+                _b1b05_commit_payload(preview_payload, package_preview),
+            )
+    assert (caught.value.code, caught.value.http_status) == (
+        "connector_package_basis_conflict",
+        409,
+    )
+    assert _b1b_03_row_projection(b1b_step3_runtime) == before_rows
+    assert _all_storage_files(b1b_step3_runtime) == before_files
+
+
+@pytest.mark.parametrize("commit_mode", ("fail_before_commit", "commit_then_raise"))
+def test_b1b_05_commit_exception_is_classified_from_fresh_locked_exact_state(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    commit_mode: str,
+) -> None:
+    resolved, preview, approval, start = _prepare_result_review_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        f"b1b-05-{commit_mode}",
+    )
+    monkeypatch.setattr(pm, "_read_b1b_package_authority", lambda: dict(_B1B05_AUTHORITY))
+    review_payload = _b1b_04_review_payload(resolved, preview, approval, start)
+    with b1b_step3_runtime["factory"]() as db:
+        review = json.loads(pm.record_b1b_result_review(db, review_payload).body_bytes)
+    preview_payload = _b1b05_preview_payload(
+        resolved,
+        preview,
+        approval,
+        start,
+        review,
+    )
+    with b1b_step3_runtime["factory"]() as db:
+        package_preview = json.loads(pm.preview_b1b_package_review(db, preview_payload).body_bytes)
+    commit_payload = _b1b05_commit_payload(preview_payload, package_preview)
+    actual_commit = pm._commit_b1b_packages
+
+    def failed_commit(db) -> None:
+        if commit_mode == "commit_then_raise":
+            db.commit()
+        raise OSError(f"simulated {commit_mode}")
+
+    monkeypatch.setattr(pm, "_commit_b1b_packages", failed_commit)
+    committed_response: bytes | None = None
+    with b1b_step3_runtime["factory"]() as db:
+        if commit_mode == "fail_before_commit":
+            with pytest.raises(pm.ConnectorPromotionError) as caught:
+                pm.commit_b1b_packages(db, commit_payload)
+            assert (caught.value.code, caught.value.http_status) == (
+                "connector_promotion_bridge_unavailable",
+                503,
+            )
+        else:
+            committed_response = pm.commit_b1b_packages(db, commit_payload).body_bytes
+
+    monkeypatch.setattr(pm, "_commit_b1b_packages", actual_commit)
+    with b1b_step3_runtime["factory"]() as db:
+        replay = pm.commit_b1b_packages(db, commit_payload).body_bytes
+        assert db.query(L3ReconciliationRecord).filter_by(
+            session_id=resolved["promoted_session_id"]
+        ).count() == 1
+        assert db.query(L3OutputPackage).filter_by(
+            session_id=resolved["promoted_session_id"]
+        ).count() == 3
+    if committed_response is not None:
+        assert replay == committed_response
+    files = _all_storage_files(b1b_step3_runtime)
+    assert not any("b1b-packages-staging" in path for path in files)
+    assert len(
+        [path for path in files if "/b1b-packages/" in path and path.endswith(".json")]
+    ) == 3
+
+
+@pytest.mark.parametrize(
+    ("decision", "notes", "state", "eligible"),
+    [
+        ("approved", "", "package_review_approved", True),
+        (
+            "changes_requested",
+            "  owner requested bounded change  ",
+            "package_review_changes_requested",
+            False,
+        ),
+        ("rejected", " bounded operator rejection ", "package_review_rejected", False),
+        ("blocked", " bounded block ", "package_review_blocked", False),
+    ],
+)
+def test_b1b_05_routes_commit_closed_immutable_packages_and_exact_review(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    decision: str,
+    notes: str,
+    state: str,
+    eligible: bool,
+) -> None:
+    resolved, preview, approval, start = _prepare_result_review_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        f"b1b-05-{decision}",
+    )
+    _configure_step5_proxy(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    monkeypatch.setattr(main, "engine", b1b_step3_runtime["engine"])
+    monkeypatch.setattr(pm, "_read_b1b_package_authority", lambda: dict(_B1B05_AUTHORITY))
+    client = TestClient(main.app, raise_server_exceptions=False)
+    try:
+        review_payload = _b1b_04_review_payload(resolved, preview, approval, start)
+        review = client.post(_RESULT_REVIEW_PATH, json=review_payload, headers=_OPERATOR_HEADERS)
+        assert review.status_code == 200, review.text
+
+        preview_payload = _b1b05_preview_payload(
+            resolved,
+            preview,
+            approval,
+            start,
+            review.json(),
+        )
+        package_preview = client.post(
+            _PACKAGE_PREVIEW_PATH,
+            json=preview_payload,
+            headers=_OPERATOR_HEADERS,
+        )
+        assert package_preview.status_code == 200, package_preview.text
+        assert set(package_preview.json()) == pm._B1B_PACKAGE_PREVIEW_RESPONSE_KEYS
+        assert package_preview.content == pm.d33_canonical_bytes(package_preview.json())
+        assert package_preview.json()["candidate_package_kinds"] == list(_PACKAGE_ORDER)
+        assert package_preview.json()["member_count"] == 9
+        assert client.post(
+            _PACKAGE_PREVIEW_PATH,
+            json=preview_payload,
+            headers=_OPERATOR_HEADERS,
+        ).content == package_preview.content
+
+        commit_payload = _b1b05_commit_payload(preview_payload, package_preview.json())
+        package_commit = client.post(
+            _PACKAGE_COMMIT_PATH,
+            json=commit_payload,
+            headers=_OPERATOR_HEADERS,
+        )
+        assert package_commit.status_code == 200, package_commit.text
+        assert set(package_commit.json()) == pm._B1B_PACKAGE_COMMIT_RESPONSE_KEYS
+        assert package_commit.content == pm.d33_canonical_bytes(package_commit.json())
+        assert [item["package_kind"] for item in package_commit.json()["packages"]] == list(_PACKAGE_ORDER)
+        assert package_commit.json()["package_count"] == 3
+        assert package_commit.json()["member_count"] == 9
+        assert package_commit.json()["persistence_status"] == "committed"
+
+        frozen_rows = _b1b_03_row_projection(b1b_step3_runtime)
+        frozen_files = _all_storage_files(b1b_step3_runtime)
+        commit_replay = client.post(
+            _PACKAGE_COMMIT_PATH,
+            json=commit_payload,
+            headers=_OPERATOR_HEADERS,
+        )
+        assert commit_replay.content == package_commit.content
+        assert _b1b_03_row_projection(b1b_step3_runtime) == frozen_rows
+        assert _all_storage_files(b1b_step3_runtime) == frozen_files
+
+        with b1b_step3_runtime["factory"]() as db:
+            rows = {
+                row.package_kind: row
+                for row in db.query(L3OutputPackage).filter_by(
+                    session_id=resolved["promoted_session_id"]
+                )
+            }
+            assert list(sorted(rows)) == sorted(_PACKAGE_ORDER)
+            outer = {
+                kind: json.loads(Path(rows[kind].payload_ref).read_bytes())
+                for kind in _PACKAGE_ORDER
+            }
+            assert set(outer["canonical_internal"]) == {
+                "package_header",
+                "b1_evidence_bundle",
+                "b1_evidence_bundle_index",
+            }
+            assert set(outer["review_facing"]) == {
+                "package_header",
+                "b1_evidence_bundle",
+                "b1_evidence_bundle_index",
+                "canonical_package_binding",
+            }
+            assert set(outer["user_facing"]) == {
+                "package_header",
+                "b1_public_disclosure",
+                "b1_evidence_bundle_index",
+                "canonical_package_binding",
+            }
+            assert outer["canonical_internal"]["b1_evidence_bundle"] == outer["review_facing"][
+                "b1_evidence_bundle"
+            ]
+            assert [
+                item["logical_path"]
+                for item in outer["canonical_internal"]["b1_evidence_bundle"]["members"]
+            ] == list(pm._B1B_MEMBER_PATHS)
+            members_by_path = {
+                item["logical_path"]: item["content"]
+                for item in outer["canonical_internal"]["b1_evidence_bundle"]["members"]
+            }
+            assert members_by_path["dataset-lineage.json"]["fixture"] == (
+                pm._b1b_lineage_fixture()
+            )
+            assert members_by_path["result-review.json"]["connector_b1_evidence"][
+                "fixture_disclosure_sha256"
+            ] == pm.d33_sha256(pm._b1b_fixture_disclosure())
+            assert len(outer["canonical_internal"]["b1_evidence_bundle_index"]["members"]) == 9
+            assert outer["user_facing"]["b1_public_disclosure"]["fixture_disclosure"] == (
+                pm._b1b_fixture_disclosure()
+            )
+
+            index = outer["canonical_internal"]["b1_evidence_bundle_index"]
+            index_by_path = {item["logical_path"]: item for item in index["members"]}
+            aliases = {
+                "bundle_index_order_hash": index["package_order_hash"],
+                "package_manifest_sha256": index_by_path["package-manifest.json"]["sha256"],
+                "package_rehash_sha256": index_by_path["package-rehash.json"]["sha256"],
+            }
+            stored_packages = [
+                {
+                    "package_kind": item["package_kind"],
+                    "output_package_id": item["output_package_id"],
+                    "payload_bytes": item["byte_length"],
+                    "payload_sha256": item["payload_sha256"],
+                }
+                for item in package_commit.json()["packages"]
+            ]
+            reconciliation = db.query(L3ReconciliationRecord).filter_by(
+                session_id=resolved["promoted_session_id"]
+            ).one()
+            assert reconciliation.summary_json == {
+                "schema_id": "layer3.b1b_reconciliation_summary.v1",
+                "profile": "receipt_bound_b1b",
+                "source_gate": "50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE",
+                "promotion_receipt_id": package_commit.json()["promotion_receipt_id"],
+                "promoted_session_id": resolved["promoted_session_id"],
+                "result_review_hash": review.json()["result_review_hash"],
+                "package_review_preview_hash": package_preview.json()[
+                    "package_review_preview_hash"
+                ],
+                "package_set": {
+                    "construction_basis_hash": package_commit.json()["construction_basis_hash"],
+                    "member_count": 9,
+                    **aliases,
+                    "packages": stored_packages,
+                },
+                "package_review_submit": None,
+                "package_review_hash": None,
+                "connector_dataset_handoff_basis": None,
+                "connector_dataset_handoff_basis_hash": None,
+            }
+            for index_number, kind in enumerate(_PACKAGE_ORDER):
+                assert rows[kind].output_package_id == stored_packages[index_number][
+                    "output_package_id"
+                ]
+                assert rows[kind].status == "package_complete"
+                assert rows[kind].payload_hash == stored_packages[index_number]["payload_sha256"]
+                assert rows[kind].summary_json == {
+                    "schema_id": "layer3.b1b_output_package_summary.v1",
+                    "profile": "receipt_bound_b1b",
+                    "package_kind": kind,
+                    "member_count": 0 if kind == "user_facing" else 9,
+                    **aliases,
+                    "canonical_binding_present": kind != "canonical_internal",
+                }
+            package_rows_before_submit = _project_query_rows(
+                db.query(L3OutputPackage).filter_by(session_id=resolved["promoted_session_id"]),
+                L3OutputPackage,
+            )
+            package_bytes_before_submit = {
+                kind: Path(rows[kind].payload_ref).read_bytes() for kind in _PACKAGE_ORDER
+            }
+
+        submit_payload = _b1b05_submit_payload(
+            preview_payload,
+            package_preview.json(),
+            package_commit.json(),
+            decision=decision,
+            notes=notes,
+        )
+        submitted = client.post(_PACKAGE_SUBMIT_PATH, json=submit_payload, headers=_OPERATOR_HEADERS)
+        assert submitted.status_code == 200, submitted.text
+        assert set(submitted.json()) == (
+            pm._B1B_PACKAGE_SUBMIT_APPROVED_RESPONSE_KEYS
+            if eligible
+            else pm._B1B_PACKAGE_SUBMIT_RESPONSE_KEYS
+        )
+        assert submitted.content == pm.d33_canonical_bytes(submitted.json())
+        assert submitted.json()["package_review_state"] == state
+        assert submitted.json()["handoff_eligibility_status"] == (
+            "eligible" if eligible else "ineligible"
+        )
+        assert submitted.json()["decision_notes_present"] is (not eligible)
+        assert ("connector_dataset_handoff_basis_hash" in submitted.json()) is eligible
+        assert client.post(
+            _PACKAGE_SUBMIT_PATH,
+            json=submit_payload,
+            headers=_OPERATOR_HEADERS,
+        ).content == submitted.content
+        assert _all_storage_files(b1b_step3_runtime) == frozen_files
+        with b1b_step3_runtime["factory"]() as db:
+            rows_after_submit = {
+                row.package_kind: row
+                for row in db.query(L3OutputPackage).filter_by(
+                    session_id=resolved["promoted_session_id"]
+                )
+            }
+            assert _project_query_rows(
+                db.query(L3OutputPackage).filter_by(session_id=resolved["promoted_session_id"]),
+                L3OutputPackage,
+            ) == package_rows_before_submit
+            assert {
+                kind: Path(rows_after_submit[kind].payload_ref).read_bytes()
+                for kind in _PACKAGE_ORDER
+            } == package_bytes_before_submit
+            assert _replay_summary_contract_valid(db, resolved["promoted_session_id"])
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+def test_b1b_05_package_basis_and_second_decision_conflicts_are_distinct_and_zero_delta(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resolved, preview, approval, start = _prepare_result_review_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        "b1b-05-conflicts",
+    )
+    _configure_step5_proxy(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    monkeypatch.setattr(main, "engine", b1b_step3_runtime["engine"])
+    monkeypatch.setattr(pm, "_read_b1b_package_authority", lambda: dict(_B1B05_AUTHORITY))
+    client = TestClient(main.app, raise_server_exceptions=False)
+    try:
+        def assert_closed_validation(response, sentinel: str) -> None:
+            assert response.status_code == 422
+            assert response.json() == pm.b1b_error_body("b1b_request_validation_failed")
+            assert response.content == pm.d33_canonical_bytes(response.json())
+            assert sentinel not in response.text
+
+        review = client.post(
+            _RESULT_REVIEW_PATH,
+            json=_b1b_04_review_payload(resolved, preview, approval, start),
+            headers=_OPERATOR_HEADERS,
+        )
+        assert review.status_code == 200, review.text
+        preview_payload = _b1b05_preview_payload(
+            resolved,
+            preview,
+            approval,
+            start,
+            review.json(),
+        )
+        initial_rows = _b1b_03_row_projection(b1b_step3_runtime)
+        initial_files = _all_storage_files(b1b_step3_runtime)
+        preview_sentinel = "preview-rejected-sentinel"
+        malformed_preview = client.post(
+            _PACKAGE_PREVIEW_PATH,
+            json={**preview_payload, "unexpected": preview_sentinel},
+            headers=_OPERATOR_HEADERS,
+        )
+        assert_closed_validation(malformed_preview, preview_sentinel)
+        assert _b1b_03_row_projection(b1b_step3_runtime) == initial_rows
+        assert _all_storage_files(b1b_step3_runtime) == initial_files
+        package_preview = client.post(
+            _PACKAGE_PREVIEW_PATH,
+            json=preview_payload,
+            headers=_OPERATOR_HEADERS,
+        )
+        assert package_preview.status_code == 200, package_preview.text
+
+        before_rows = _b1b_03_row_projection(b1b_step3_runtime)
+        before_files = _all_storage_files(b1b_step3_runtime)
+        commit_sentinel = "commit-rejected-sentinel"
+        malformed_commit = client.post(
+            _PACKAGE_COMMIT_PATH,
+            json={
+                **_b1b05_commit_payload(preview_payload, package_preview.json()),
+                "unexpected": commit_sentinel,
+            },
+            headers=_OPERATOR_HEADERS,
+        )
+        assert_closed_validation(malformed_commit, commit_sentinel)
+        assert _b1b_03_row_projection(b1b_step3_runtime) == before_rows
+        assert _all_storage_files(b1b_step3_runtime) == before_files
+        changed_preview = _b1b05_commit_payload(preview_payload, package_preview.json())
+        changed_preview["package_review_preview_hash"] = "0" * 64
+        changed_preview["client_request_id"] = f"b1b-package-construction-{'0' * 64}"
+        commit_conflict = client.post(
+            _PACKAGE_COMMIT_PATH,
+            json=changed_preview,
+            headers=_OPERATOR_HEADERS,
+        )
+        assert commit_conflict.status_code == 409
+        assert commit_conflict.json() == pm.b1b_error_body("connector_package_basis_conflict")
+        assert _b1b_03_row_projection(b1b_step3_runtime) == before_rows
+        assert _all_storage_files(b1b_step3_runtime) == before_files
+
+        commit_payload = _b1b05_commit_payload(preview_payload, package_preview.json())
+        package_commit = client.post(
+            _PACKAGE_COMMIT_PATH,
+            json=commit_payload,
+            headers=_OPERATOR_HEADERS,
+        )
+        assert package_commit.status_code == 200, package_commit.text
+        submit_payload = _b1b05_submit_payload(
+            preview_payload,
+            package_preview.json(),
+            package_commit.json(),
+            decision="approved",
+            notes="",
+        )
+        committed_rows = _b1b_03_row_projection(b1b_step3_runtime)
+        committed_files = _all_storage_files(b1b_step3_runtime)
+        with b1b_step3_runtime["factory"]() as db:
+            package_ref = db.query(L3OutputPackage).filter_by(
+                session_id=resolved["promoted_session_id"]
+            ).first().payload_ref
+        request_secret = "submit-request-secret-sentinel"
+        encoded_package_ref = base64.urlsafe_b64encode(package_ref.encode("utf-8")).decode(
+            "ascii"
+        ).rstrip("=")
+        for leaking_note, headers in (
+            (request_secret, {**_OPERATOR_HEADERS, "authorization": request_secret}),
+            (encoded_package_ref, _OPERATOR_HEADERS),
+        ):
+            leaking_submit = _b1b05_submit_payload(
+                preview_payload,
+                package_preview.json(),
+                package_commit.json(),
+                decision="rejected",
+                notes=leaking_note,
+            )
+            rejected_leak = client.post(
+                _PACKAGE_SUBMIT_PATH,
+                json=leaking_submit,
+                headers=headers,
+            )
+            assert rejected_leak.status_code == 422
+            assert rejected_leak.json() == pm.b1b_error_body("b1b_request_validation_failed")
+            assert rejected_leak.content == pm.d33_canonical_bytes(rejected_leak.json())
+            assert _b1b_03_row_projection(b1b_step3_runtime) == committed_rows
+            assert _all_storage_files(b1b_step3_runtime) == committed_files
+
+        authority_reader = pm._read_b1b_package_authority
+
+        def unavailable_authority() -> dict[str, str]:
+            raise OSError("simulated attestation reopen failure")
+
+        monkeypatch.setattr(pm, "_read_b1b_package_authority", unavailable_authority)
+        unavailable_submit = client.post(
+            _PACKAGE_SUBMIT_PATH,
+            json=submit_payload,
+            headers=_OPERATOR_HEADERS,
+        )
+        assert unavailable_submit.status_code == 503
+        assert unavailable_submit.json() == pm.b1b_error_body(
+            "connector_promotion_bridge_unavailable"
+        )
+        assert unavailable_submit.content == pm.d33_canonical_bytes(unavailable_submit.json())
+        assert _b1b_03_row_projection(b1b_step3_runtime) == committed_rows
+        assert _all_storage_files(b1b_step3_runtime) == committed_files
+        monkeypatch.setattr(pm, "_read_b1b_package_authority", authority_reader)
+
+        submit_sentinel = "submit-payload-ref-sentinel"
+        malformed_submit = client.post(
+            _PACKAGE_SUBMIT_PATH,
+            json={**submit_payload, "payload_refs": [submit_sentinel]},
+            headers=_OPERATOR_HEADERS,
+        )
+        assert_closed_validation(malformed_submit, submit_sentinel)
+        assert _b1b_03_row_projection(b1b_step3_runtime) == committed_rows
+        assert _all_storage_files(b1b_step3_runtime) == committed_files
+        unequal_bases = (
+            {**submit_payload, "construction_basis_hash": "0" * 64},
+            {**submit_payload, "reconciliation_record_id": str(uuid.uuid4())},
+            {
+                **submit_payload,
+                "output_package_ids": [
+                    str(uuid.uuid4()),
+                    *submit_payload["output_package_ids"][1:],
+                ],
+            },
+            {
+                **submit_payload,
+                "payload_hashes": ["0" * 64, *submit_payload["payload_hashes"][1:]],
+            },
+        )
+        for unequal_basis in unequal_bases:
+            conflict = client.post(
+                _PACKAGE_SUBMIT_PATH,
+                json=_with_b1b05_submit_identity(unequal_basis),
+                headers=_OPERATOR_HEADERS,
+            )
+            assert conflict.status_code == 409
+            assert conflict.json() == pm.b1b_error_body("connector_package_basis_conflict")
+            assert conflict.content == pm.d33_canonical_bytes(conflict.json())
+            assert _b1b_03_row_projection(b1b_step3_runtime) == committed_rows
+            assert _all_storage_files(b1b_step3_runtime) == committed_files
+
+        submitted = client.post(
+            _PACKAGE_SUBMIT_PATH,
+            json=submit_payload,
+            headers=_OPERATOR_HEADERS,
+        )
+        assert submitted.status_code == 200, submitted.text
+        reviewed_rows = _b1b_03_row_projection(b1b_step3_runtime)
+        reviewed_files = _all_storage_files(b1b_step3_runtime)
+        second_decision = _with_b1b05_submit_identity(
+            {
+                **submit_payload,
+                "operator_decision": "rejected",
+                "decision_notes": "bounded rejection",
+            }
+        )
+        decision_conflict = client.post(
+            _PACKAGE_SUBMIT_PATH,
+            json=second_decision,
+            headers=_OPERATOR_HEADERS,
+        )
+        assert decision_conflict.status_code == 409
+        assert decision_conflict.json() == pm.b1b_error_body(
+            "connector_package_review_decision_conflict"
+        )
+        assert decision_conflict.content == pm.d33_canonical_bytes(decision_conflict.json())
+        assert _b1b_03_row_projection(b1b_step3_runtime) == reviewed_rows
+        assert _all_storage_files(b1b_step3_runtime) == reviewed_files
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+@pytest.mark.parametrize(
+    "path",
+    (_PACKAGE_PREVIEW_PATH, _PACKAGE_COMMIT_PATH, _PACKAGE_SUBMIT_PATH),
+)
+def test_b1b_05_shared_package_routes_preserve_flag_false_and_nonreceipt_validation_bytes(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    path: str,
+) -> None:
+    _configure_step5_proxy(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    monkeypatch.setattr(main, "engine", b1b_step3_runtime["engine"])
+    payload = {"session_id": str(uuid.uuid4()), "unexpected": "ordinary-sentinel"}
+    before_rows = _b1b_03_row_projection(b1b_step3_runtime)
+    before_files = _all_storage_files(b1b_step3_runtime)
+    client = TestClient(main.app, raise_server_exceptions=False)
+    try:
+        monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", False)
+        flag_false = client.post(path, json=payload, headers=_OPERATOR_HEADERS)
+        assert flag_false.status_code == 422
+        assert flag_false.json() != pm.b1b_error_body("b1b_request_validation_failed")
+
+        _enable_step5(monkeypatch)
+        nonreceipt = client.post(path, json=payload, headers=_OPERATOR_HEADERS)
+        assert nonreceipt.status_code == flag_false.status_code
+        assert nonreceipt.content == flag_false.content
+        assert nonreceipt.headers["content-type"] == flag_false.headers["content-type"]
+        assert _b1b_03_row_projection(b1b_step3_runtime) == before_rows
+        assert _all_storage_files(b1b_step3_runtime) == before_files
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+@pytest.mark.parametrize("publish_ordinal", [1, 2, 3])
+def test_b1b_05_kill_after_each_publish_contains_all_orphans_then_retries(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    publish_ordinal: int,
+) -> None:
+    resolved, preview, approval, start = _prepare_result_review_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        f"b1b-05-kill-{publish_ordinal}",
+    )
+    monkeypatch.setattr(pm, "_read_b1b_package_authority", lambda: dict(_B1B05_AUTHORITY))
+    review_payload = _b1b_04_review_payload(resolved, preview, approval, start)
+    with b1b_step3_runtime["factory"]() as db:
+        review_body = json.loads(pm.record_b1b_result_review(db, review_payload).body_bytes)
+    preview_payload = _b1b05_preview_payload(
+        resolved,
+        preview,
+        approval,
+        start,
+        review_body,
+    )
+    with b1b_step3_runtime["factory"]() as db:
+        package_preview = json.loads(pm.preview_b1b_package_review(db, preview_payload).body_bytes)
+    commit_payload = _b1b05_commit_payload(preview_payload, package_preview)
+    database_path = str(b1b_step3_runtime["engine"].url.database)
+    storage_dir = str(b1b_step3_runtime["storage_dir"])
+    child_code = "\n".join(
+        [
+            "import os, sys",
+            f"sys.path.insert(0, {str(BACKEND)!r})",
+            "os.environ['DB_INIT_MODE'] = 'none'",
+            "from sqlalchemy import create_engine",
+            "from sqlalchemy.orm import sessionmaker",
+            "from app.core.config import settings",
+            "from app.services import layer3_connector_promotion as pm",
+            f"settings.storage_dir = {storage_dir!r}",
+            f"engine = create_engine('sqlite:///{Path(database_path).as_posix()}', future=True, connect_args={{'check_same_thread': False}})",
+            "factory = sessionmaker(bind=engine, future=True, expire_on_commit=False)",
+            "settings.layer3_connector_promotion_bridge_enabled = True",
+            "pm.attestation_precondition_available = lambda _candidate=None: True",
+            f"pm._read_b1b_package_authority = lambda: {_B1B05_AUTHORITY!r}",
+            f"pm._after_b1b_package_publish = lambda ordinal: os._exit({80 + publish_ordinal}) if ordinal == {publish_ordinal} else None",
+            "with factory() as db:",
+            f"    pm.commit_b1b_packages(db, {commit_payload!r})",
+        ]
+    )
+    child = subprocess.run(
+        [sys.executable, "-c", child_code],
+        cwd=BACKEND.parent,
+        capture_output=True,
+        text=True,
+        timeout=90,
+        check=False,
+    )
+    assert child.returncode == 80 + publish_ordinal, (child.stdout, child.stderr)
+    with b1b_step3_runtime["factory"]() as db:
+        assert db.query(L3ReconciliationRecord).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+    orphans = {
+        path: facts
+        for path, facts in _all_storage_files(b1b_step3_runtime).items()
+        if "b1b-packages-staging" in path or "/b1b-packages/" in path
+    }
+    assert len(orphans) == 3
+
+    retry_code = "\n".join(
+        [
+            "import os, sys",
+            f"sys.path.insert(0, {str(BACKEND)!r})",
+            "os.environ['DB_INIT_MODE'] = 'none'",
+            "from sqlalchemy import create_engine",
+            "from sqlalchemy.orm import sessionmaker",
+            "from app.core.config import settings",
+            "from app.services import layer3_connector_promotion as pm",
+            f"settings.storage_dir = {storage_dir!r}",
+            f"engine = create_engine('sqlite:///{Path(database_path).as_posix()}', future=True, connect_args={{'check_same_thread': False}})",
+            "factory = sessionmaker(bind=engine, future=True, expire_on_commit=False)",
+            "settings.layer3_connector_promotion_bridge_enabled = True",
+            "pm.attestation_precondition_available = lambda _candidate=None: True",
+            f"pm._read_b1b_package_authority = lambda: {_B1B05_AUTHORITY!r}",
+            "with factory() as db:",
+            f"    response = pm.commit_b1b_packages(db, {commit_payload!r})",
+            "    print('B1B_RETRY:' + response.body_bytes.decode('utf-8'))",
+        ]
+    )
+    retry_child = subprocess.run(
+        [sys.executable, "-c", retry_code],
+        cwd=BACKEND.parent,
+        capture_output=True,
+        text=True,
+        timeout=90,
+        check=False,
+    )
+    assert retry_child.returncode == 0, (retry_child.stdout, retry_child.stderr)
+    retry_line = next(
+        line for line in retry_child.stdout.splitlines() if line.startswith("B1B_RETRY:")
+    )
+    retry = json.loads(retry_line.removeprefix("B1B_RETRY:"))
+    assert retry["package_count"] == 3
+    with b1b_step3_runtime["factory"]() as db:
+        assert db.query(L3ReconciliationRecord).count() == 1
+        assert db.query(L3OutputPackage).count() == 3
+    files = _all_storage_files(b1b_step3_runtime)
+    assert not any("b1b-packages-staging" in path for path in files)
+    authoritative = {
+        path: facts
+        for path, facts in files.items()
+        if "/b1b-packages/" in path and path.endswith(".json")
+    }
+    contained = {
+        path: facts
+        for path, facts in files.items()
+        if "b1b-packages-containment" in path
+        and path.endswith(".json")
+        and not path.endswith(".containment.json")
+    }
+    ledgers = {
+        path for path in files if path.endswith(".containment.json")
+    }
+    assert len(authoritative) == 3
+    assert len(contained) == 3
+    assert len(ledgers) == 3
+    assert sorted(contained.values()) == sorted(orphans.values())

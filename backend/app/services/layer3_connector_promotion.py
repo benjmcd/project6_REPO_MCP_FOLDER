@@ -12,7 +12,10 @@ pass. Importing this module performs no I/O and mutates no state.
 
 from __future__ import annotations
 
+import base64
 import csv
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
@@ -26,7 +29,7 @@ import stat
 import subprocess
 import unicodedata
 from typing import Any, Mapping
-from urllib.parse import parse_qsl, unquote, urlsplit
+from urllib.parse import parse_qsl, quote, unquote, urlsplit
 import uuid
 
 from sqlalchemy import text
@@ -50,6 +53,9 @@ from app.models.models import (
     L3Descriptor,
     L3GateBIdempotencyKey,
     L3AnalysisPlan,
+    L3AnalysisGroup,
+    L3AnalysisSet,
+    L3AnalysisUnit,
     L3MaterialSnapshot,
     L3OutputPackage,
     L3PassRun,
@@ -57,6 +63,7 @@ from app.models.models import (
     L3RetrievalEvent,
     L3SelectionManifest,
     L3Session,
+    L3TypingRecord,
     SourceConnector,
     VariableDefinition,
 )
@@ -109,6 +116,19 @@ TRANSFORM_VERSION = "1"
 TRANSFORM_CONTRACT_SHA256 = "951b3a88b1eaa9ef2b1da0480396e3b4c7a01b7e16687a726b2566bd1caf3179"
 METHOD_INPUT_SHA256 = "907672513191cd069b19b761a60f9bbc51334bb0ca25e4c316d35faf48a3155b"
 METADATA_CONTRACT_SHA256 = "86d8ab86401f1a7fa84f42e63bc288da1fe05d670cde1ec98c9387f136deb644"
+MATERIALIZATION_SEMANTIC_SHA256 = "4bf4b24ded8e29087d1a8503e92d6141f59beb1356f3c9e7fadce1a250fbe2b0"
+B1B_METHOD_CONTRACT_SHA256 = "586745d83f62f60e32a94fb62cd5557341866e5319d48eece7d0ea741a5e89e5"
+B1B_EXPECTED_FIRST_PATH_CONTRACT_SHA256 = "0390d6adf485487bb599008bdabb7c04e8bfdb421fc5b76a3e604e9752d45dea"
+B1B_QUESTION_TEXT = "Within the two synthetic C01 rows (`SB-001=42` and `SB-002=43`), what per-column classification, missingness, top values, and `value` minimum, maximum, mean, median, and sample standard deviation does `descriptive_summary` report, subject to the fixture being synthetic, non-temporal, and too small for official, causal, or population-wide inference?"
+B1B_LIMITATIONS = [
+    "Synthetic C01 fixture; not acquired from ScienceBase or USGS.",
+    "public_read_confirmed=true is synthetic test state only.",
+    "official_public_read_evidence=false.",
+    "F20 is NOT-ESTABLISHED.",
+    "The two-row sample is degenerate and non-temporal.",
+    "Only bounded deterministic repeatability of descriptive_summary on C01 is supported.",
+    "No official-data, source-availability, public-read, production, utility, causal, temporal, representativeness, or population-wide claim is supported.",
+]
 
 # F07/C01 fixed identity (v1 eligibility policy is exactly this material).
 F07_SOURCE_FAMILY = "connector_produced_single_source"
@@ -163,6 +183,10 @@ class ConnectorPromotionError(Exception):
         self.retryable = retryable
 
 
+class B1BClosedApiError(ConnectorPromotionError):
+    """Distinct typed failure intercepted only by the closed B1b route branch."""
+
+
 @dataclass(frozen=True, init=False)
 class B1BClosedApiResponse:
     """Validated closed B1b transport; stores only canonical bytes and status."""
@@ -172,7 +196,7 @@ class B1BClosedApiResponse:
 
     def __init__(self, body: Mapping[str, Any], *, http_status: int) -> None:
         _validate_b1b_closed_api_body(body, http_status=http_status)
-        _assert_b1b04_closed_body_no_leak(body)
+        _assert_b1b_package_no_leak(body, _b1b_runtime_sensitive_values())
         object.__setattr__(self, "body_bytes", d33_canonical_bytes(body))
         object.__setattr__(self, "http_status", http_status)
 
@@ -1488,9 +1512,9 @@ MATERIALIZATION_CONTEXT_KEY = "layer3_connector_promotion_materialization_v1"
 MATERIALIZATION_RESPONSE_SCHEMA_ID = "layer3.connector_promotion_resolve_response.v1"
 
 
-def _closed_b1b_error(error_code: str) -> ConnectorPromotionError:
+def _closed_b1b_error(error_code: str) -> B1BClosedApiError:
     http_status, message, retryable = b1b_error_spec(error_code)
-    return _promotion_error(
+    return B1BClosedApiError(
         error_code,
         message,
         http_status=http_status,
@@ -2168,6 +2192,17 @@ _PACKAGE_REVIEW_STATES = {
 }
 _REPLAY_DOWNSTREAM_UNAVAILABLE = ["results", "package", "handoff"]
 _B1B_PACKAGE_ORDER = ["canonical_internal", "user_facing", "review_facing"]
+_B1B_MEMBER_PATHS = (
+    "dataset-lineage.json",
+    "canonical-3c.json",
+    "analysis-plan-pass.json",
+    "result-review.json",
+    "package-manifest.json",
+    "package-rehash.json",
+    "same-origin-handoff.json",
+    "downstream-replay.json",
+    "b1b-verdict.json",
+)
 _B1B_RESULT_REVIEW_REQUEST_KEYS = frozenset(
     {
         "client_request_id",
@@ -2179,6 +2214,68 @@ _B1B_RESULT_REVIEW_REQUEST_KEYS = frozenset(
         "analysis_run_id",
         "operator_decision",
         "review_notes",
+    }
+)
+_B1B_PACKAGE_PREVIEW_REQUEST_KEYS = frozenset(
+    {
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "analysis_run_id",
+        "result_review_record_ref",
+    }
+)
+_B1B_PACKAGE_COMMIT_REQUEST_KEYS = _B1B_PACKAGE_PREVIEW_REQUEST_KEYS | {
+    "client_request_id",
+    "package_review_preview_hash",
+    "expected_package_kinds",
+}
+_B1B_PACKAGE_SUBMIT_REQUEST_KEYS = frozenset(
+    {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "analysis_run_id",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "construction_basis_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "payload_hashes",
+        "operator_decision",
+        "decision_notes",
+        "expected_package_kinds",
+    }
+)
+_B1B_RECONCILIATION_SUMMARY_KEYS = frozenset(
+    {
+        "schema_id",
+        "profile",
+        "source_gate",
+        "promotion_receipt_id",
+        "promoted_session_id",
+        "result_review_hash",
+        "package_review_preview_hash",
+        "package_set",
+        "package_review_submit",
+        "package_review_hash",
+        "connector_dataset_handoff_basis",
+        "connector_dataset_handoff_basis_hash",
+    }
+)
+_B1B_PACKAGE_SET_KEYS = frozenset(
+    {
+        "construction_basis_hash",
+        "member_count",
+        "bundle_index_order_hash",
+        "package_manifest_sha256",
+        "package_rehash_sha256",
+        "packages",
     }
 )
 _B1B_RESULT_REVIEW_RESPONSE_KEYS = frozenset(
@@ -2200,6 +2297,64 @@ _B1B_RESULT_REVIEW_RESPONSE_KEYS = frozenset(
 _B1B_ERROR_BODY_KEYS = frozenset(
     {"schema_id", "status", "error_code", "message", "retryable"}
 )
+_B1B_PACKAGE_PREVIEW_RESPONSE_KEYS = frozenset(
+    {
+        "schema_id",
+        "promotion_receipt_id",
+        "promoted_session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "analysis_run_id",
+        "result_review_hash",
+        "package_review_preview_hash",
+        "candidate_package_kinds",
+        "member_count",
+        "package_contract_schema_id",
+        "correction_full_sha256",
+    }
+)
+_B1B_PACKAGE_COMMIT_RESPONSE_KEYS = frozenset(
+    {
+        "schema_id",
+        "promotion_receipt_id",
+        "promoted_session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "analysis_run_id",
+        "result_review_hash",
+        "package_review_preview_hash",
+        "construction_basis_hash",
+        "reconciliation_record_id",
+        "packages",
+        "package_count",
+        "member_count",
+        "persistence_status",
+    }
+)
+_B1B_PACKAGE_SUBMIT_RESPONSE_KEYS = frozenset(
+    {
+        "schema_id",
+        "promotion_receipt_id",
+        "promoted_session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "analysis_run_id",
+        "result_review_hash",
+        "package_review_preview_hash",
+        "construction_basis_hash",
+        "package_review_hash",
+        "reconciliation_record_id",
+        "packages",
+        "operator_decision",
+        "package_review_state",
+        "decision_notes_present",
+        "decision_notes_sha256",
+        "handoff_eligibility_status",
+    }
+)
+_B1B_PACKAGE_SUBMIT_APPROVED_RESPONSE_KEYS = _B1B_PACKAGE_SUBMIT_RESPONSE_KEYS | {
+    "connector_dataset_handoff_basis_hash"
+}
 _B1B_ASSUMPTION_CHECK_CONTRACT = (
     ("data_availability", "dataframe_shape", "pass", "high", "rows=2; columns=2"),
     (
@@ -2295,6 +2450,80 @@ def _is_uuid_string(value: object) -> bool:
         return False
 
 
+def build_b1b_package_construction_basis(
+    *,
+    authority: Mapping[str, Any],
+    bundle: Mapping[str, Any],
+    packages: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Build the closed B1b-05 construction identity in its frozen order."""
+    authority_keys = frozenset(
+        {
+            "correction_full_sha256",
+            "owner_bound_main_sha",
+            "promotion_receipt_id",
+            "promoted_session_id",
+            "result_review_hash",
+            "package_review_preview_hash",
+        }
+    )
+    bundle_keys = frozenset(
+        {
+            "member_count",
+            "bundle_index_order_hash",
+            "package_manifest_sha256",
+            "package_rehash_sha256",
+        }
+    )
+    package_keys = frozenset(
+        {"package_kind", "output_package_id", "payload_bytes", "payload_sha256"}
+    )
+    if (
+        not _has_exact_keys(authority, authority_keys)
+        or not _has_exact_keys(bundle, bundle_keys)
+        or not isinstance(packages, list)
+        or len(packages) != 3
+    ):
+        raise PromotionIdentityError("B1b package construction basis is malformed")
+    if (
+        not _is_lower_hex64(authority["correction_full_sha256"])
+        or not isinstance(authority["owner_bound_main_sha"], str)
+        or len(authority["owner_bound_main_sha"]) != 40
+        or any(character not in _HEX40 for character in authority["owner_bound_main_sha"])
+        or not _is_uuid_string(authority["promotion_receipt_id"])
+        or not _is_uuid_string(authority["promoted_session_id"])
+        or not _is_lower_hex64(authority["result_review_hash"])
+        or not _is_lower_hex64(authority["package_review_preview_hash"])
+        or bundle["member_count"] != 9
+        or type(bundle["member_count"]) is not int
+        or any(
+            not _is_lower_hex64(bundle[field])
+            for field in (
+                "bundle_index_order_hash",
+                "package_manifest_sha256",
+                "package_rehash_sha256",
+            )
+        )
+    ):
+        raise PromotionIdentityError("B1b package construction authority is malformed")
+    for index, package in enumerate(packages):
+        if (
+            not _has_exact_keys(package, package_keys)
+            or package["package_kind"] != _B1B_PACKAGE_ORDER[index]
+            or not _is_uuid_string(package["output_package_id"])
+            or type(package["payload_bytes"]) is not int
+            or package["payload_bytes"] <= 0
+            or not _is_lower_hex64(package["payload_sha256"])
+        ):
+            raise PromotionIdentityError("B1b package construction projection is malformed")
+    return {
+        "schema_id": "layer3.b1b_package_construction_basis.v1",
+        "authority": dict(authority),
+        "bundle": dict(bundle),
+        "packages": json.loads(json.dumps(packages)),
+    }
+
+
 _B1B04_FORBIDDEN_NORMALIZED_KEYS = frozenset(
     {
         "authorization",
@@ -2329,6 +2558,43 @@ def _normalize_b1b04_no_leak_key(value: str) -> str:
     while "__" in normalized:
         normalized = normalized.replace("__", "_")
     return normalized
+
+
+_B1B_REQUEST_SENSITIVE_VALUES: ContextVar[frozenset[str]] = ContextVar(
+    "b1b_request_sensitive_values",
+    default=frozenset(),
+)
+
+
+@contextmanager
+def b1b_request_sensitive_scope(headers: Mapping[str, str]):
+    sensitive_names = {
+        "authorization",
+        "proxy_authorization",
+        "cookie",
+        "set_cookie",
+        *(
+            _normalize_b1b04_no_leak_key(value)
+            for value in (
+                settings.proxy_identity_header,
+                settings.proxy_email_header,
+                settings.proxy_groups_header,
+            )
+            if isinstance(value, str) and value
+        ),
+    }
+    values = frozenset(
+        value
+        for key, value in headers.items()
+        if isinstance(value, str)
+        and value
+        and _normalize_b1b04_no_leak_key(key) in sensitive_names
+    )
+    token = _B1B_REQUEST_SENSITIVE_VALUES.set(values)
+    try:
+        yield
+    finally:
+        _B1B_REQUEST_SENSITIVE_VALUES.reset(token)
 
 
 def _b1b04_forbidden_normalized_keys() -> frozenset[str]:
@@ -2414,6 +2680,221 @@ def _assert_b1b04_closed_body_no_leak(value: object) -> None:
     visit(value)
 
 
+def _b1b_sensitive_encodings(value: str) -> set[str]:
+    raw = value.encode("utf-8")
+    variants = {value, quote(value, safe="")}
+    if len(raw) >= 8:
+        for encoded in (base64.b64encode(raw), base64.urlsafe_b64encode(raw)):
+            text_value = encoded.decode("ascii")
+            variants.update({text_value, text_value.rstrip("=")})
+    return {item for item in variants if item}
+
+
+def _b1b_reference_canonical(value: str) -> str:
+    decoded = unicodedata.normalize("NFKC", value)
+    for _pass in range(2):
+        next_value = unquote(decoded)
+        if next_value == decoded:
+            break
+        decoded = next_value
+    parts: list[str] = []
+    for part in decoded.replace("\\", "/").casefold().split("/"):
+        if part in {"", "."}:
+            continue
+        if part == "..":
+            if parts:
+                parts.pop()
+            continue
+        parts.append(part)
+    return "/".join(parts)
+
+
+def _assert_b1b_package_no_leak(value: object, sensitive_values: set[str]) -> None:
+    _assert_b1b04_closed_body_no_leak(value)
+    encodings = {
+        encoded
+        for sensitive in sensitive_values
+        if isinstance(sensitive, str) and sensitive
+        for encoded in _b1b_sensitive_encodings(sensitive)
+    }
+    canonical = {
+        _b1b_reference_canonical(encoded)
+        for encoded in encodings
+        if _b1b_reference_canonical(encoded)
+    }
+    raw_fixture = "site_id,value\nSB-001,42\nSB-002,43"
+    crlf_fixture = raw_fixture.replace("\n", "\r\n")
+    fixture_encodings: set[str] = set()
+    for fixture_text in (
+        raw_fixture,
+        f"{raw_fixture}\n",
+        crlf_fixture,
+        f"{crlf_fixture}\r\n",
+    ):
+        fixture_encodings.update(_b1b_sensitive_encodings(fixture_text))
+
+    def visit(item: object, *, allow_embedded: bool) -> None:
+        if isinstance(item, str):
+            normalized = unicodedata.normalize("NFKC", item)
+            decoded = normalized
+            for _pass in range(2):
+                decoded = unquote(decoded)
+            item_canonical = _b1b_reference_canonical(decoded)
+            encoded_match = any(
+                (encoded in normalized or encoded in decoded)
+                if allow_embedded
+                else (encoded == normalized or encoded == decoded)
+                for encoded in encodings
+            )
+            canonical_match = any(
+                value and (
+                    value in item_canonical
+                    if allow_embedded
+                    else value == item_canonical
+                )
+                for value in canonical
+            )
+            if (
+                encoded_match
+                or any(encoded in normalized or encoded in decoded for encoded in fixture_encodings)
+                or canonical_match
+            ):
+                raise PromotionIdentityError("closed B1b package contains a registered value")
+            return
+        if isinstance(item, Mapping):
+            for key, child in item.items():
+                visit(key, allow_embedded=False)
+                visit(child, allow_embedded=True)
+        elif isinstance(item, (list, tuple)):
+            for child in item:
+                visit(child, allow_embedded=True)
+
+    visit(value, allow_embedded=True)
+
+
+def _add_b1b_sensitive_strings(registry: set[str], value: object) -> None:
+    if isinstance(value, str):
+        if value and value != F07_SCIENCEBASE_ITEM_ID:
+            registry.add(value)
+        return
+    if isinstance(value, Mapping):
+        for child in value.values():
+            _add_b1b_sensitive_strings(registry, child)
+        return
+    if isinstance(value, (list, tuple)):
+        for child in value:
+            _add_b1b_sensitive_strings(registry, child)
+
+
+def _is_b1b_reference_key(key: object) -> bool:
+    normalized = _normalize_b1b04_no_leak_key(key)
+    return normalized in {
+        "reference",
+        "references",
+        "storage",
+        "storage_ref",
+        "raw_storage_ref",
+        "payload_ref",
+        "input_payload_ref",
+        "output_payload_ref",
+        "path",
+        "url",
+        "uri",
+        "download_url",
+        "download_uri",
+        "sciencebase_item_url",
+        "sciencebase_download_uri",
+    } or normalized.endswith(("_ref", "_path", "_url", "_uri"))
+
+
+def _add_b1b_nested_reference_strings(registry: set[str], value: object) -> None:
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            if _is_b1b_reference_key(key):
+                _add_b1b_sensitive_strings(registry, child)
+            else:
+                _add_b1b_nested_reference_strings(registry, child)
+        return
+    if isinstance(value, (list, tuple)):
+        for child in value:
+            _add_b1b_nested_reference_strings(registry, child)
+
+
+def _b1b_runtime_sensitive_values() -> set[str]:
+    values = settings.model_dump() if hasattr(settings, "model_dump") else settings.dict()
+    registry: set[str] = set()
+    for key, value in values.items():
+        if not isinstance(value, str) or not value:
+            continue
+        normalized_key = _normalize_b1b04_no_leak_key(key)
+        credential_setting = any(
+            marker in normalized_key
+            for marker in ("password", "secret", "api_key", "subscription_key", "credential")
+        )
+        if normalized_key == "database_url" or credential_setting or Path(value).is_absolute():
+            registry.add(value)
+    attestation_path = os.environ.get("PROJECT6_B1B_ATTESTATION_PATH", "")
+    if attestation_path:
+        registry.add(attestation_path)
+    registry.update(_B1B_REQUEST_SENSITIVE_VALUES.get())
+    return registry
+
+
+def _b1b_package_sensitive_values(
+    *,
+    target: ConnectorRunTarget,
+    intake: L3ConnectorSourceIntakeRecord,
+    gate_snapshot: L3MaterialSnapshot,
+    promoted_snapshot: L3MaterialSnapshot,
+    version: DatasetVersion,
+    provenance: DatasetSourceProvenance,
+    pass_run: L3PassRun,
+    artifact: AnalysisArtifact,
+) -> set[str]:
+    registry = _b1b_runtime_sensitive_values()
+    for value in (
+        target.raw_storage_ref,
+        target.sciencebase_item_url,
+        target.sciencebase_download_uri,
+        intake.storage_ref,
+        gate_snapshot.payload_ref,
+        promoted_snapshot.payload_ref,
+        version.storage_ref,
+        provenance.raw_storage_ref,
+        pass_run.input_payload_ref,
+        pass_run.output_payload_ref,
+        artifact.storage_ref,
+    ):
+        _add_b1b_sensitive_strings(registry, value)
+    for value in (
+        target.source_reference_json,
+        intake.provenance_json,
+        gate_snapshot.source_identity_json,
+        gate_snapshot.source_provenance_json,
+        promoted_snapshot.source_identity_json,
+        promoted_snapshot.source_provenance_json,
+        provenance.source_reference_json,
+        provenance.retrieved_http_json,
+    ):
+        _add_b1b_nested_reference_strings(registry, value)
+    return registry
+
+
+def _valid_b1b_response_packages(value: object) -> bool:
+    if not isinstance(value, list) or len(value) != 3:
+        return False
+    keys = frozenset({"package_kind", "output_package_id", "byte_length", "payload_sha256"})
+    return all(
+        _has_exact_keys(item, keys)
+        and item["package_kind"] == _B1B_PACKAGE_ORDER[index]
+        and _is_uuid_string(item["output_package_id"])
+        and type(item["byte_length"]) is int
+        and item["byte_length"] > 0
+        and _is_lower_hex64(item["payload_sha256"])
+        for index, item in enumerate(value)
+    )
+
+
 def _validate_b1b_closed_api_body(body: Mapping[str, Any], *, http_status: int) -> None:
     if not isinstance(body, dict) or type(http_status) is not int:
         raise PromotionIdentityError("closed B1b response is malformed")
@@ -2433,46 +2914,109 @@ def _validate_b1b_closed_api_body(body: Mapping[str, Any], *, http_status: int) 
         ):
             raise PromotionIdentityError("closed B1b error mapping is malformed")
         return
-    if (
-        body.get("schema_id") != "layer3.b1b_result_review_response.v1"
-        or not _has_exact_keys(body, _B1B_RESULT_REVIEW_RESPONSE_KEYS)
-        or http_status != 200
-    ):
-        raise PromotionIdentityError("closed B1b result-review response is malformed")
-    if not all(
-        _is_uuid_string(body.get(field))
-        for field in (
-            "promotion_receipt_id",
-            "promoted_session_id",
-            "analysis_plan_id",
-            "pass_run_id",
-            "analysis_run_id",
-        )
-    ):
-        raise PromotionIdentityError("closed B1b result-review identity is malformed")
-    decision = body.get("operator_decision")
-    expected_state = _RESULT_REVIEW_STATES.get(decision)
-    if (
-        expected_state is None
-        or body.get("review_state") != expected_state
-        or not _is_lower_hex64(body.get("result_review_hash"))
-        or type(body.get("review_notes_present")) is not bool
-        or type(body.get("package_review_preview_enabled")) is not bool
-    ):
-        raise PromotionIdentityError("closed B1b result-review outcome is malformed")
-    notes_present = body["review_notes_present"]
-    notes_sha256 = body.get("review_notes_sha256")
-    package_enabled = body["package_review_preview_enabled"]
-    if decision == "approved":
-        valid_notes = notes_present is False and notes_sha256 is None and package_enabled is True
-    else:
+    if http_status != 200:
+        raise PromotionIdentityError("closed B1b success status is malformed")
+    identity_fields = (
+        "promotion_receipt_id",
+        "promoted_session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "analysis_run_id",
+    )
+    if not all(_is_uuid_string(body.get(field)) for field in identity_fields):
+        raise PromotionIdentityError("closed B1b response identity is malformed")
+    schema_id = body.get("schema_id")
+    if schema_id == "layer3.b1b_result_review_response.v1":
+        if not _has_exact_keys(body, _B1B_RESULT_REVIEW_RESPONSE_KEYS):
+            raise PromotionIdentityError("closed B1b result-review response is malformed")
+        decision = body.get("operator_decision")
+        notes_present = body.get("review_notes_present")
+        notes_sha256 = body.get("review_notes_sha256")
+        package_enabled = body.get("package_review_preview_enabled")
         valid_notes = (
-            notes_present is True
+            notes_present is False and notes_sha256 is None and package_enabled is True
+            if decision == "approved"
+            else notes_present is True
             and _is_lower_hex64(notes_sha256)
             and package_enabled is False
         )
-    if not valid_notes:
-        raise PromotionIdentityError("closed B1b result-review note projection is malformed")
+        if (
+            _RESULT_REVIEW_STATES.get(decision) != body.get("review_state")
+            or not _is_lower_hex64(body.get("result_review_hash"))
+            or type(notes_present) is not bool
+            or type(package_enabled) is not bool
+            or not valid_notes
+        ):
+            raise PromotionIdentityError("closed B1b result-review outcome is malformed")
+        return
+    if schema_id == "layer3.b1b_package_review_preview_response.v1":
+        if (
+            not _has_exact_keys(body, _B1B_PACKAGE_PREVIEW_RESPONSE_KEYS)
+            or not _is_lower_hex64(body.get("result_review_hash"))
+            or not _is_lower_hex64(body.get("package_review_preview_hash"))
+            or body.get("candidate_package_kinds") != _B1B_PACKAGE_ORDER
+            or body.get("member_count") != 9
+            or type(body.get("member_count")) is not int
+            or body.get("package_contract_schema_id") != "layer3.b1b_package_contract.v1"
+            or not _is_lower_hex64(body.get("correction_full_sha256"))
+        ):
+            raise PromotionIdentityError("closed B1b package preview response is malformed")
+        return
+    if schema_id == "layer3.b1b_package_construction_commit_response.v1":
+        if (
+            not _has_exact_keys(body, _B1B_PACKAGE_COMMIT_RESPONSE_KEYS)
+            or any(
+                not _is_lower_hex64(body.get(field))
+                for field in (
+                    "result_review_hash",
+                    "package_review_preview_hash",
+                    "construction_basis_hash",
+                )
+            )
+            or not _is_uuid_string(body.get("reconciliation_record_id"))
+            or not _valid_b1b_response_packages(body.get("packages"))
+            or body.get("package_count") != 3
+            or type(body.get("package_count")) is not int
+            or body.get("member_count") != 9
+            or type(body.get("member_count")) is not int
+            or body.get("persistence_status") != "committed"
+        ):
+            raise PromotionIdentityError("closed B1b package commit response is malformed")
+        return
+    if schema_id == "layer3.b1b_package_review_submit_response.v1":
+        decision = body.get("operator_decision")
+        approved = decision == "approved"
+        expected_keys = (
+            _B1B_PACKAGE_SUBMIT_APPROVED_RESPONSE_KEYS
+            if approved
+            else _B1B_PACKAGE_SUBMIT_RESPONSE_KEYS
+        )
+        notes_present = body.get("decision_notes_present")
+        notes_sha256 = body.get("decision_notes_sha256")
+        if (
+            not _has_exact_keys(body, frozenset(expected_keys))
+            or _PACKAGE_REVIEW_STATES.get(decision) != body.get("package_review_state")
+            or any(
+                not _is_lower_hex64(body.get(field))
+                for field in (
+                    "result_review_hash",
+                    "package_review_preview_hash",
+                    "construction_basis_hash",
+                    "package_review_hash",
+                )
+            )
+            or not _is_uuid_string(body.get("reconciliation_record_id"))
+            or not _valid_b1b_response_packages(body.get("packages"))
+            or type(notes_present) is not bool
+            or (approved and (notes_present or notes_sha256 is not None))
+            or (not approved and (not notes_present or not _is_lower_hex64(notes_sha256)))
+            or body.get("handoff_eligibility_status")
+            != ("eligible" if approved else "ineligible")
+            or (approved and not _is_lower_hex64(body.get("connector_dataset_handoff_basis_hash")))
+        ):
+            raise PromotionIdentityError("closed B1b package submit response is malformed")
+        return
+    raise PromotionIdentityError("closed B1b response schema is malformed")
 
 
 def _timestamp_matches(value: object, row_value: datetime | None) -> bool:
@@ -2946,37 +3490,11 @@ def _closed_package_review_matches(
     if summary["packages"] != packages:
         return False
     reconciliation_summary = reconciliation.summary_json
-    reconciliation_keys = frozenset(
-        {
-            "schema_id",
-            "profile",
-            "source_gate",
-            "promotion_receipt_id",
-            "promoted_session_id",
-            "result_review_hash",
-            "package_review_preview_hash",
-            "package_set",
-            "package_review_submit",
-            "package_review_hash",
-            "connector_dataset_handoff_basis",
-            "connector_dataset_handoff_basis_hash",
-        }
-    )
-    if not _has_exact_keys(reconciliation_summary, reconciliation_keys):
+    if not _has_exact_keys(reconciliation_summary, _B1B_RECONCILIATION_SUMMARY_KEYS):
         return False
     assert isinstance(reconciliation_summary, dict)
     package_set = reconciliation_summary["package_set"]
-    package_set_keys = frozenset(
-        {
-            "construction_basis_hash",
-            "member_count",
-            "bundle_index_order_hash",
-            "package_manifest_sha256",
-            "package_rehash_sha256",
-            "packages",
-        }
-    )
-    if not _has_exact_keys(package_set, package_set_keys):
+    if not _has_exact_keys(package_set, _B1B_PACKAGE_SET_KEYS):
         return False
     assert isinstance(package_set, dict)
     package_set_rows = package_set["packages"]
@@ -3607,6 +4125,1924 @@ def b1b_result_review_from_pass_run(
         }
     except (DBAPIError, KeyError, PromotionIdentityError, TypeError, ValueError):
         return None
+
+
+def _read_b1b_package_authority() -> dict[str, str]:
+    """Reopen and validate the pass-to-launch authority without exposing its path."""
+    path_value = os.environ.get("PROJECT6_B1B_ATTESTATION_PATH", "")
+    expected_sha256 = os.environ.get("PROJECT6_B1B_ATTESTATION_SHA256", "")
+    profile = os.environ.get("PROJECT6_B1B_DATABASE_PROFILE", "")
+    if not path_value or not _is_lower_hex64(expected_sha256):
+        raise PromotionIdentityError("B1b package attestation is unavailable")
+    path = Path(path_value)
+    _require_nonreparse_components(path)
+    if _is_reparse(path) or not stat.S_ISREG(path.stat().st_mode):
+        raise PromotionIdentityError("B1b package attestation is not a regular file")
+    raw = path.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != expected_sha256:
+        raise PromotionIdentityError("B1b package attestation hash mismatch")
+    document = json.loads(raw.decode("utf-8"))
+    authority = document.get("authority") if isinstance(document, dict) else None
+    if not isinstance(authority, dict):
+        raise PromotionIdentityError("B1b package authority is malformed")
+
+    def authority_object(name: str) -> dict[str, Any]:
+        value = authority.get(name)
+        if not isinstance(value, dict):
+            raise PromotionIdentityError("B1b package authority is incomplete")
+        return value
+
+    packet = authority_object("packet")
+    correction = authority_object("correction")
+    owner_decision = authority_object("dispatch_owner_decision")
+    result = {
+        "packet_full_sha256": packet.get("full_sha256"),
+        "packet_canonical_sha256": packet.get("canonical_sha256"),
+        "correction_full_sha256": correction.get("full_sha256"),
+        "owner_decision_full_sha256": owner_decision.get("full_sha256"),
+        "owner_decision_canonical_sha256": owner_decision.get("canonical_sha256"),
+        "owner_bound_main_sha": authority.get("owner_bound_main_sha"),
+        "implementation_head_sha": authority.get("candidate_head_sha"),
+        "pass_to_launch_sha256": expected_sha256,
+        "profile": profile,
+    }
+    if (
+        any(not _is_lower_hex64(result[key]) for key in result if key.endswith("sha256"))
+        or any(
+            not isinstance(result[key], str)
+            or len(result[key]) != 40
+            or any(character not in _HEX40 for character in result[key])
+            for key in ("owner_bound_main_sha", "implementation_head_sha")
+        )
+        or correction.get("owner_bound_main_sha") != result["owner_bound_main_sha"]
+        or profile not in {"sqlite_authorized", "postgresql_authorized"}
+    ):
+        raise PromotionIdentityError("B1b package authority binding is malformed")
+    return result
+
+
+def _b1b_package_preview_request(payload: dict[str, Any]) -> dict[str, str]:
+    if not _has_exact_keys(payload, _B1B_PACKAGE_PREVIEW_REQUEST_KEYS):
+        raise _closed_b1b_error("b1b_request_validation_failed")
+    if not all(isinstance(payload[key], str) for key in _B1B_PACKAGE_PREVIEW_REQUEST_KEYS):
+        raise _closed_b1b_error("b1b_request_validation_failed")
+    for field in ("session_id", "analysis_plan_id", "pass_run_id", "analysis_run_id"):
+        if payload[field] != payload[field].strip() or not _is_uuid_string(payload[field]):
+            raise _closed_b1b_error("b1b_request_validation_failed")
+    if (
+        not payload["preview_id"]
+        or payload["preview_id"] != payload["preview_id"].strip()
+        or not _is_lower_hex64(payload["preview_hash"])
+        or not re.fullmatch(r"b1b-result-review-[0-9a-f]{64}", payload["result_review_record_ref"])
+    ):
+        raise _closed_b1b_error("b1b_request_validation_failed")
+    return dict(payload)
+
+
+def _b1b_package_commit_request(payload: dict[str, Any]) -> tuple[dict[str, str], str]:
+    if not _has_exact_keys(payload, _B1B_PACKAGE_COMMIT_REQUEST_KEYS):
+        raise _closed_b1b_error("b1b_request_validation_failed")
+    preview = _b1b_package_preview_request(
+        {key: payload[key] for key in _B1B_PACKAGE_PREVIEW_REQUEST_KEYS}
+    )
+    package_preview_hash = payload["package_review_preview_hash"]
+    client_request_id = payload["client_request_id"]
+    if (
+        not _is_lower_hex64(package_preview_hash)
+        or client_request_id != f"b1b-package-construction-{package_preview_hash}"
+        or payload["expected_package_kinds"] != _B1B_PACKAGE_ORDER
+    ):
+        raise _closed_b1b_error("b1b_request_validation_failed")
+    return preview, package_preview_hash
+
+
+def _locked_b1b_approved_review(
+    db: OrmSession,
+    *,
+    request_basis: dict[str, str],
+) -> tuple[
+    L3ConnectorPromotionReceipt,
+    L3Session,
+    L3PassRun,
+    dict[str, Any],
+    dict[str, Any],
+]:
+    receipt, promoted, pass_run, evidence = _locked_b1b_result_review_authority(
+        db,
+        request_basis=request_basis,
+    )
+    review = b1b_result_review_from_pass_run(db, pass_run)
+    if (
+        review is None
+        or review.get("operator_decision") != "approved"
+        or review.get("review_state") != _RESULT_REVIEW_STATES["approved"]
+        or review.get("review_record_ref") != request_basis["result_review_record_ref"]
+        or review.get("result_review_hash")
+        != request_basis["result_review_record_ref"].removeprefix("b1b-result-review-")
+        or any(review.get(key) != value for key, value in evidence.items())
+    ):
+        raise _closed_b1b_error("connector_package_basis_conflict")
+    return receipt, promoted, pass_run, evidence, review
+
+
+def _b1b_package_preview_basis(
+    *,
+    request_basis: dict[str, str],
+    receipt: L3ConnectorPromotionReceipt,
+    review: dict[str, Any],
+    correction_full_sha256: str,
+) -> dict[str, Any]:
+    return {
+        "schema_id": "layer3.b1b_package_review_preview_basis.v1",
+        "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+        "promoted_session_id": request_basis["session_id"],
+        "analysis_plan_id": request_basis["analysis_plan_id"],
+        "pass_run_id": request_basis["pass_run_id"],
+        "preview_id": request_basis["preview_id"],
+        "preview_hash": request_basis["preview_hash"],
+        "analysis_run_id": request_basis["analysis_run_id"],
+        "result_review_hash": review["result_review_hash"],
+        "candidate_package_kinds": list(_B1B_PACKAGE_ORDER),
+        "package_contract_schema_id": "layer3.b1b_package_contract.v1",
+        "correction_full_sha256": correction_full_sha256,
+    }
+
+
+def preview_b1b_package_review(
+    db: OrmSession,
+    payload: dict[str, Any],
+) -> B1BClosedApiResponse:
+    request_basis = _b1b_package_preview_request(payload)
+    if not bridge_precondition_available():
+        raise _closed_b1b_error("connector_promotion_bridge_unavailable")
+    try:
+        authority = _read_b1b_package_authority()
+        acquire_promotion_identity_lock(db, F07_CANONICAL_IDENTITY_KEY_HASH)
+        receipt, _promoted, _pass_run, _evidence, review = _locked_b1b_approved_review(
+            db,
+            request_basis=request_basis,
+        )
+        basis = _b1b_package_preview_basis(
+            request_basis=request_basis,
+            receipt=receipt,
+            review=review,
+            correction_full_sha256=authority["correction_full_sha256"],
+        )
+        body = {
+            "schema_id": "layer3.b1b_package_review_preview_response.v1",
+            "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+            "promoted_session_id": request_basis["session_id"],
+            "analysis_plan_id": request_basis["analysis_plan_id"],
+            "pass_run_id": request_basis["pass_run_id"],
+            "analysis_run_id": request_basis["analysis_run_id"],
+            "result_review_hash": review["result_review_hash"],
+            "package_review_preview_hash": d33_sha256(basis),
+            "candidate_package_kinds": list(_B1B_PACKAGE_ORDER),
+            "member_count": 9,
+            "package_contract_schema_id": "layer3.b1b_package_contract.v1",
+            "correction_full_sha256": authority["correction_full_sha256"],
+        }
+        response = B1BClosedApiResponse(body, http_status=200)
+        db.rollback()
+        db.info.pop("b1b_promotion_identity_lock", None)
+        return response
+    except ConnectorPromotionError:
+        _best_effort_rollback(db)
+        db.info.pop("b1b_promotion_identity_lock", None)
+        raise
+    except (DBAPIError, OSError, UnicodeError, ValueError, PromotionIdentityError) as exc:
+        _best_effort_rollback(db)
+        db.info.pop("b1b_promotion_identity_lock", None)
+        raise _closed_b1b_error("connector_promotion_bridge_unavailable") from exc
+
+
+def _single_locked_row(db: OrmSession, model, session_id: str):
+    rows = db.query(model).filter(model.session_id == session_id).with_for_update().all()
+    if len(rows) != 1:
+        raise _closed_b1b_error("connector_package_basis_conflict")
+    return rows[0]
+
+
+def _b1b_fixture_disclosure() -> dict[str, Any]:
+    return {
+        "source_fixture_id": "F07",
+        "proof_cell_id": "C01",
+        "synthetic": True,
+        "byte_length": 34,
+        "content_sha256": F07_CONTENT_SHA256,
+        "official_public_read_evidence": False,
+        "f20_status": "NOT-ESTABLISHED",
+    }
+
+
+def _b1b_lineage_fixture() -> dict[str, Any]:
+    return {**_b1b_fixture_disclosure(), "media_type": "text/csv"}
+
+
+def _b1b_battery_expected_census(profile: str) -> dict[str, Any]:
+    if profile not in {"sqlite_authorized", "postgresql_authorized"}:
+        raise PromotionIdentityError("B1b package profile is not authorized")
+    comparison_count = 3 if profile == "sqlite_authorized" else 0
+    return {
+        "analysis_artifact_count": 1,
+        "analysis_run_count": 1,
+        "assumption_check_count": 4,
+        "authoritative_application_file_count_at_c2": 9,
+        "authoritative_session_spine_count": 2,
+        "caveat_count": 1,
+        "dataset_count": 1,
+        "dataset_version_count": 1,
+        "materializer_comparison_run_count": comparison_count,
+        "method_comparison_run_count": comparison_count,
+        "output_package_count": 3,
+        "profile": profile,
+        "promotion_receipt_count": 1,
+        "schema_id": "layer3.b1b_battery_expected_census.v1",
+        "variable_definition_count": 2,
+    }
+
+
+def _b1b_replay_contract() -> dict[str, Any]:
+    return {
+        "authoritative_same_request": {
+            "changed_columns": [],
+            "http_status": 200,
+            "new_files": 0,
+            "new_rows": 0,
+            "zero_mutation": True,
+        },
+        "cross_run_same_i1": {
+            "changed_columns": ["dataset_id", "dataset_version_id", "updated_at"],
+            "excluded_from_authoritative_c0_c3": True,
+            "http_status": 200,
+            "new_files": 0,
+            "new_rows": 0,
+        },
+        "divergent_d34": {
+            "changed_columns": [],
+            "error_code": "promotion_identity_decision_conflict",
+            "excluded_from_authoritative_c0_c3": True,
+            "http_status": 409,
+            "new_files": 0,
+            "new_rows": 0,
+        },
+        "schema_id": "layer3.b1b_replay_contract.v1",
+        "seam_order": [
+            "same_request_exact_replay",
+            "cross_run_same_i1_reuse",
+            "divergent_d34_conflict",
+        ],
+    }
+
+
+def _build_b1b_package_members(
+    db: OrmSession,
+    *,
+    receipt: L3ConnectorPromotionReceipt,
+    promoted: L3Session,
+    pass_run: L3PassRun,
+    review: dict[str, Any],
+    package_review_preview_hash: str,
+    authority: dict[str, str],
+) -> tuple[dict[str, dict[str, Any]], set[str]]:
+    snapshot = _single_locked_row(db, L3MaterialSnapshot, promoted.session_id)
+    typing = _single_locked_row(db, L3TypingRecord, promoted.session_id)
+    unit = _single_locked_row(db, L3AnalysisUnit, promoted.session_id)
+    group = _single_locked_row(db, L3AnalysisGroup, promoted.session_id)
+    analysis_set = _single_locked_row(db, L3AnalysisSet, promoted.session_id)
+    plan = _single_locked_row(db, L3AnalysisPlan, promoted.session_id)
+    analysis_run = (
+        db.query(AnalysisRun)
+        .filter(AnalysisRun.analysis_run_id == review["analysis_run_id"])
+        .with_for_update()
+        .first()
+    )
+    intake = (
+        db.query(L3ConnectorSourceIntakeRecord)
+        .filter(
+            L3ConnectorSourceIntakeRecord.connector_source_intake_record_id
+            == receipt.connector_source_intake_record_id
+        )
+        .with_for_update()
+        .first()
+    )
+    target = (
+        db.query(ConnectorRunTarget)
+        .filter(ConnectorRunTarget.connector_run_target_id == intake.connector_run_target_id)
+        .with_for_update()
+        .first()
+        if intake is not None
+        else None
+    )
+    gate_snapshot = (
+        db.query(L3MaterialSnapshot)
+        .filter(L3MaterialSnapshot.material_snapshot_id == receipt.gate_b_material_snapshot_id)
+        .with_for_update()
+        .first()
+    )
+    dataset = (
+        db.query(Dataset)
+        .filter(Dataset.dataset_id == receipt.dataset_id)
+        .with_for_update()
+        .first()
+    )
+    version = (
+        db.query(DatasetVersion)
+        .filter(DatasetVersion.dataset_version_id == receipt.dataset_version_id)
+        .with_for_update()
+        .first()
+    )
+    provenance_rows = (
+        db.query(DatasetSourceProvenance)
+        .filter(DatasetSourceProvenance.dataset_version_id == receipt.dataset_version_id)
+        .with_for_update()
+        .all()
+    )
+    variables = (
+        db.query(VariableDefinition)
+        .filter(VariableDefinition.dataset_version_id == receipt.dataset_version_id)
+        .order_by(VariableDefinition.ordinal_position)
+        .with_for_update()
+        .all()
+    )
+    checks = (
+        db.query(AssumptionCheck)
+        .filter(AssumptionCheck.analysis_run_id == review["analysis_run_id"])
+        .with_for_update()
+        .all()
+    )
+    caveat_rows = (
+        db.query(CaveatNote)
+        .filter(CaveatNote.analysis_run_id == review["analysis_run_id"])
+        .with_for_update()
+        .all()
+    )
+    artifact = (
+        db.query(AnalysisArtifact)
+        .filter(AnalysisArtifact.artifact_id == review["analysis_artifact_id"])
+        .with_for_update()
+        .first()
+    )
+    wrapper = (promoted.operator_context_json or {}).get(MATERIALIZATION_CONTEXT_KEY)
+    if (
+        analysis_run is None
+        or intake is None
+        or target is None
+        or gate_snapshot is None
+        or dataset is None
+        or version is None
+        or len(provenance_rows) != 1
+        or len(variables) != 2
+        or [row.variable_name for row in variables] != ["site_id", "value"]
+        or len(checks) != 4
+        or len(caveat_rows) != 1
+        or artifact is None
+        or not isinstance(wrapper, dict)
+        or set(wrapper) != {"record", "record_hash"}
+        or not isinstance(wrapper["record"], dict)
+        or d33_sha256(wrapper["record"]) != wrapper["record_hash"]
+    ):
+        raise _closed_b1b_error("connector_package_basis_conflict")
+    provenance = provenance_rows[0]
+    record = wrapper["record"]
+    output = record.get("output") if isinstance(record, dict) else None
+    if (
+        not isinstance(output, dict)
+        or promoted.status != "completed_with_warnings"
+        or snapshot.source_shape != "dataset_version"
+        or typing.material_snapshot_id != snapshot.material_snapshot_id
+        or typing.candidate_modalities_json != ["quantitative"]
+        or typing.chosen_modality != "quantitative"
+        or typing.confidence != 1.0
+        or typing.overridden_by_operator is not False
+        or unit.unit_kind != "atomic"
+        or unit.analysis_modality != "quantitative"
+        or unit.member_snapshot_ids_json != [snapshot.material_snapshot_id]
+        or unit.typing_record_ids_json != [typing.typing_record_id]
+        or unit.must_remain_intact is not False
+        or not _is_lower_hex64(unit.unit_hash)
+        or group.analysis_modality != "quantitative"
+        or not isinstance(group.typing_basis_json, dict)
+        or group.typing_basis_json.get("group_basis") != "singleton"
+        or group.analysis_unit_ids_json != [unit.analysis_unit_id]
+        or group.status != "formed"
+        or analysis_set.set_type != "single_item"
+        or analysis_set.analysis_group_ids_json != [group.analysis_group_id]
+        or analysis_set.analysis_unit_ids_json != [unit.analysis_unit_id]
+        or plan.analysis_set_ids_json != [analysis_set.analysis_set_id]
+        or plan.status != "approved"
+        or plan.approved_by_operator is not True
+        or pass_run.analysis_plan_id != plan.analysis_plan_id
+        or pass_run.analysis_set_id != analysis_set.analysis_set_id
+        or pass_run.pass_type != "single_item"
+        or analysis_run.dataset_version_id != version.dataset_version_id
+        or analysis_run.method_name != "descriptive_summary"
+        or analysis_run.status != "completed"
+        or artifact.artifact_type != "descriptive_summary_result"
+        or target.connector_run_target_id != intake.connector_run_target_id
+        or target.connector_run_id != intake.connector_run_id
+        or gate_snapshot.session_id != receipt.gate_b_session_id
+        or dataset.dataset_id != version.dataset_id
+        or provenance.dataset_version_id != version.dataset_version_id
+    ):
+        raise _closed_b1b_error("connector_package_basis_conflict")
+
+    fixture_disclosure = _b1b_fixture_disclosure()
+    question = {
+        "question_id": "CT4B-C01-DESC-001",
+        "text": B1B_QUESTION_TEXT,
+        "question_sha256": hashlib.sha256(B1B_QUESTION_TEXT.encode("utf-8")).hexdigest(),
+    }
+    check_by_id = {row.assumption_check_id: row for row in checks}
+    assumption_checks: list[dict[str, Any]] = []
+    for check_id in review["assumption_check_ids"]:
+        row = check_by_id.get(check_id)
+        if row is None:
+            raise _closed_b1b_error("connector_package_basis_conflict")
+        assumption_checks.append(
+            {
+                "assumption_check_id": row.assumption_check_id,
+                "name": row.assumption_name,
+                "method": row.check_method,
+                "result": row.check_result,
+                "severity": row.severity,
+                "notes": row.notes,
+            }
+        )
+    caveat_row = caveat_rows[0]
+    caveat = {
+        "caveat_note_id": caveat_row.caveat_note_id,
+        "type": caveat_row.caveat_type,
+        "severity": caveat_row.severity,
+        "message": caveat_row.message,
+    }
+    result_record = {key: review[key] for key in _RESULT_REVIEW_RECORD_KEYS}
+    result_review = {
+        **result_record,
+        "review_record_ref": review["review_record_ref"],
+        "result_review_hash": review["result_review_hash"],
+    }
+    package_review = {
+        "schema_id": "layer3.b1b_package_review_expected.v1",
+        "review_state": "package_review_preview_ready",
+        "package_review_preview_hash": package_review_preview_hash,
+        "result_review_hash": review["result_review_hash"],
+        "candidate_package_kinds": list(_B1B_PACKAGE_ORDER),
+        "expected_member_count": 9,
+        "package_contract_schema_id": "layer3.b1b_package_contract.v1",
+        "correction_full_sha256": authority["correction_full_sha256"],
+    }
+    artifact_path, _ = _resolve_regular_reference(
+        Path(artifact.storage_ref).name,
+        settings.artifact_storage_dir,
+    )
+    artifact_bytes, artifact_sha256 = _file_facts(artifact_path)
+    if artifact_sha256 != review["analysis_artifact_sha256"]:
+        raise _closed_b1b_error("connector_package_basis_conflict")
+
+    dataset_lineage = {
+        "schema_id": "layer3.b1b_dataset_lineage.v1",
+        "authority_bindings": {
+            key: authority[key]
+            for key in (
+                "packet_full_sha256",
+                "packet_canonical_sha256",
+                "correction_full_sha256",
+                "owner_decision_full_sha256",
+                "owner_decision_canonical_sha256",
+                "owner_bound_main_sha",
+                "implementation_head_sha",
+                "pass_to_launch_sha256",
+            )
+        },
+        "fixture": _b1b_lineage_fixture(),
+        "material_identity": {
+            "source_family": receipt.source_family,
+            "content_sha256": receipt.content_sha256,
+            "identity_metadata_hash": receipt.identity_metadata_hash,
+            "identity_metadata_hash_version": receipt.identity_metadata_hash_version,
+            "canonical_identity_key_hash": receipt.canonical_identity_key_hash,
+        },
+        "capture_lineage": {
+            "connector_run_id": intake.connector_run_id,
+            "connector_run_target_id": intake.connector_run_target_id,
+            "connector_source_intake_record_id": intake.connector_source_intake_record_id,
+        },
+        "gate_b_lineage": {
+            "session_id": receipt.gate_b_session_id,
+            "selection_manifest_id": receipt.gate_b_selection_manifest_id,
+            "material_snapshot_id": receipt.gate_b_material_snapshot_id,
+            "decision_manifest_id": receipt.gate_b_decision_manifest_id,
+            "decision_manifest_hash": receipt.gate_b_decision_manifest_hash,
+            "material_preview_hash": receipt.material_preview_hash,
+        },
+        "promotion_receipt": {
+            "connector_promotion_receipt_id": receipt.connector_promotion_receipt_id,
+            "receipt_schema_version": receipt.receipt_schema_version,
+            "approval_hash": receipt.approval_hash,
+            "promotion_basis_hash": receipt.promotion_basis_hash,
+            "materialization_status": receipt.materialization_status,
+            "materialization_basis_hash": receipt.materialization_basis_hash,
+        },
+        "materialization": {
+            "materialization_record_sha256": wrapper["record_hash"],
+            "materialization_semantic_sha256": MATERIALIZATION_SEMANTIC_SHA256,
+            "dataset_file_bytes": output["dataset_file_bytes"],
+            "dataset_file_sha256": output["dataset_file_sha256"],
+            "dataset_storage_ref_hash": output["dataset_storage_ref_hash"],
+            "source_row_count": output["source_row_count"],
+            "row_count": output["row_count"],
+            "dropped_row_count": output["dropped_row_count"],
+            "column_count": 2,
+            "variable_count": output["variable_count"],
+        },
+        "dataset_lineage": {
+            "source_connector_id": output["source_connector_id"],
+            "dataset_id": dataset.dataset_id,
+            "dataset_version_id": version.dataset_version_id,
+            "dataset_version_content_sha256": version.content_hash,
+            "dataset_source_provenance_id": provenance.dataset_source_provenance_id,
+            "variable_definition_ids": [row.variable_id for row in variables],
+        },
+        "nonclaims": list(B1B_LIMITATIONS),
+    }
+
+    canonical_3c = {
+        "schema_id": "layer3.b1b_canonical_3c.v1",
+        "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+        "promoted_session": {
+            "session_id": promoted.session_id,
+            "status": promoted.status,
+            "snapshot_count": 1,
+        },
+        "material_snapshot": {
+            "material_snapshot_id": snapshot.material_snapshot_id,
+            "source_shape": snapshot.source_shape,
+            "dataset_version_id": version.dataset_version_id,
+            "content_sha256": snapshot.payload_hash,
+        },
+        "typing_record": {
+            "typing_record_id": typing.typing_record_id,
+            "material_snapshot_id": typing.material_snapshot_id,
+            "candidate_modalities": typing.candidate_modalities_json,
+            "chosen_modality": typing.chosen_modality,
+            "confidence": typing.confidence,
+            "overridden_by_operator": typing.overridden_by_operator,
+        },
+        "analysis_unit": {
+            "analysis_unit_id": unit.analysis_unit_id,
+            "unit_kind": unit.unit_kind,
+            "analysis_modality": unit.analysis_modality,
+            "material_snapshot_ids": unit.member_snapshot_ids_json,
+            "typing_record_ids": unit.typing_record_ids_json,
+            "must_remain_intact": unit.must_remain_intact,
+            "unit_hash": unit.unit_hash,
+        },
+        "analysis_group": {
+            "analysis_group_id": group.analysis_group_id,
+            "analysis_modality": group.analysis_modality,
+            "group_basis": group.typing_basis_json.get("group_basis"),
+            "analysis_unit_ids": group.analysis_unit_ids_json,
+            "status": group.status,
+        },
+        "analysis_set": {
+            "analysis_set_id": analysis_set.analysis_set_id,
+            "set_type": analysis_set.set_type,
+            "analysis_group_ids": analysis_set.analysis_group_ids_json,
+            "analysis_unit_ids": analysis_set.analysis_unit_ids_json,
+        },
+        "census": {
+            "promoted_sessions": 1,
+            "material_snapshots": 1,
+            "typing_records": 1,
+            "analysis_units": 1,
+            "analysis_groups": 1,
+            "analysis_sets": 1,
+        },
+    }
+
+    analysis_plan_pass = {
+        "schema_id": "layer3.b1b_analysis_plan_pass.v1",
+        "question": question,
+        "method_contract": {
+            "method": "descriptive_summary",
+            "version": "1",
+            "parameters": {},
+            "contract_sha256": B1B_METHOD_CONTRACT_SHA256,
+            "method_input_sha256": METHOD_INPUT_SHA256,
+        },
+        "analysis_plan": {
+            "analysis_plan_id": plan.analysis_plan_id,
+            "analysis_set_id": analysis_set.analysis_set_id,
+            "status": plan.status,
+            "approved_by_operator": plan.approved_by_operator,
+            "preview_id": review["preview_id"],
+            "preview_hash": review["preview_hash"],
+        },
+        "pass_run": {
+            "pass_run_id": pass_run.pass_run_id,
+            "analysis_plan_id": pass_run.analysis_plan_id,
+            "analysis_set_id": pass_run.analysis_set_id,
+            "pass_type": pass_run.pass_type,
+            "selected_method_name": "descriptive_summary",
+            "status": pass_run.status,
+            "result_payload_sha256": review["result_payload_sha256"],
+        },
+        "analysis_run": {
+            "analysis_run_id": analysis_run.analysis_run_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "dataset_version_id": analysis_run.dataset_version_id,
+            "method": analysis_run.method_name,
+            "status": analysis_run.status,
+            "result_payload_sha256": review["result_payload_sha256"],
+        },
+        "assumption_checks": assumption_checks,
+        "caveat": caveat,
+        "hash_links": {
+            "question_sha256": question["question_sha256"],
+            "method_contract_sha256": B1B_METHOD_CONTRACT_SHA256,
+            "method_input_sha256": METHOD_INPUT_SHA256,
+            "result_payload_sha256": review["result_payload_sha256"],
+            "analysis_artifact_sha256": artifact_sha256,
+            "materialization_semantic_sha256": MATERIALIZATION_SEMANTIC_SHA256,
+        },
+    }
+    connector_b1_evidence = {
+        "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+        "promoted_session_id": promoted.session_id,
+        "dataset_id": dataset.dataset_id,
+        "dataset_version_id": version.dataset_version_id,
+        "gate_b_session_id": receipt.gate_b_session_id,
+        "connector_source_intake_record_id": intake.connector_source_intake_record_id,
+        "canonical_identity_key_hash": receipt.canonical_identity_key_hash,
+        "fixture_disclosure_sha256": d33_sha256(fixture_disclosure),
+        "promotion_basis_hash": receipt.promotion_basis_hash,
+        "materialization_basis_hash": receipt.materialization_basis_hash,
+        "materialization_semantic_sha256": MATERIALIZATION_SEMANTIC_SHA256,
+        "transformation_contract_sha256": TRANSFORM_CONTRACT_SHA256,
+        "question_sha256": question["question_sha256"],
+        "method_contract_sha256": B1B_METHOD_CONTRACT_SHA256,
+        "method_input_sha256": METHOD_INPUT_SHA256,
+        "analysis_run_id": analysis_run.analysis_run_id,
+        "result_payload_sha256": review["result_payload_sha256"],
+        "analysis_artifact_id": artifact.artifact_id,
+        "analysis_artifact_sha256": artifact_sha256,
+        "assumption_checks_sha256": d33_sha256(assumption_checks),
+        "caveat_sha256": d33_sha256(caveat),
+        "limitations_sha256": d33_sha256(B1B_LIMITATIONS),
+        "battery_census_sha256": d33_sha256(
+            _b1b_battery_expected_census(authority["profile"])
+        ),
+        "result_review_hash": review["result_review_hash"],
+        "package_review_preview_hash": package_review_preview_hash,
+        "assumption_check_count": 4,
+        "caveat_count": 1,
+        "expected_first_path_contract_sha256": B1B_EXPECTED_FIRST_PATH_CONTRACT_SHA256,
+        "replay_contract_sha256": d33_sha256(_b1b_replay_contract()),
+    }
+    result_review_member = {
+        "schema_id": "layer3.b1b_result_review.v1",
+        "connector_b1_evidence": connector_b1_evidence,
+        "bounded_result": json.loads(json.dumps(_B1B_BOUNDED_RESULT)),
+        "result_artifact": {
+            "analysis_artifact_id": artifact.artifact_id,
+            "artifact_type": artifact.artifact_type,
+            "byte_length": artifact_bytes,
+            "sha256": artifact_sha256,
+            "result_payload_sha256": review["result_payload_sha256"],
+        },
+        "result_review": result_review,
+        "package_review": package_review,
+        "limitations": list(B1B_LIMITATIONS),
+        "hash_links": {
+            "dataset_lineage_sha256": d33_sha256(dataset_lineage),
+            "canonical_3c_sha256": d33_sha256(canonical_3c),
+            "analysis_plan_pass_sha256": d33_sha256(analysis_plan_pass),
+            "result_review_hash": review["result_review_hash"],
+            "package_review_preview_hash": package_review_preview_hash,
+        },
+    }
+    same_origin_handoff = {
+        "schema_id": "layer3.b1b_same_origin_handoff.v1",
+        "eligibility_status": "pending_approved_package_review",
+        "basis": {
+            "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+            "promoted_session_id": promoted.session_id,
+            "result_review_hash": review["result_review_hash"],
+            "package_review_preview_hash": package_review_preview_hash,
+            "required_handoff_basis_schema": "layer3.connector_dataset_handoff_basis.v1",
+        },
+        "expected_invariants": [
+            "one_receipt",
+            "one_three_package_set",
+            "canonical_bytes_rehashed",
+            "approved_reviews_required",
+            "prepare_and_deliver_zero_mutation",
+        ],
+        "forbidden_substitutions": [
+            "aps_package",
+            "mixed_session",
+            "caller_selected_package",
+            "payload_reference",
+            "predicted_review_outcome",
+        ],
+    }
+    downstream_replay = {
+        "schema_id": "layer3.b1b_downstream_replay.v1",
+        "eligibility_status": "not_yet_executed",
+        "basis_hashes": {
+            "canonical_identity_key_hash": receipt.canonical_identity_key_hash,
+            "approval_hash": receipt.approval_hash,
+            "promotion_basis_hash": receipt.promotion_basis_hash,
+            "materialization_basis_hash": receipt.materialization_basis_hash,
+            "result_review_hash": review["result_review_hash"],
+            "package_review_preview_hash": package_review_preview_hash,
+        },
+        "expected_seams": [
+            "same_request_exact_replay",
+            "cross_run_same_i1_reuse",
+            "divergent_d34_conflict",
+        ],
+        "expected_zero_mutation": {
+            "same_request": True,
+            "cross_run_new_rows": 0,
+            "cross_run_new_files": 0,
+            "cross_run_changed_columns": ["dataset_id", "dataset_version_id", "updated_at"],
+            "divergent": True,
+        },
+    }
+    verdict = {
+        "schema_id": "layer3.b1b_package_verdict.v1",
+        "verdict": "PACKAGE-ELIGIBLE-NOT-FINAL",
+        "pending_operations": [
+            "package_persistence",
+            "package_review_submit",
+            "package_rehash",
+            "handoff_prepare",
+            "handoff_deliver",
+            "downstream_replay",
+            "final_census",
+        ],
+        "required_external_receipts": [
+            "package-postclose-rehash.json",
+            "handoff-delivery-receipt.json",
+            "downstream-replay-receipt.json",
+            "b1b-integrated-run-verdict.json",
+        ],
+        "nonclaims": list(B1B_LIMITATIONS),
+    }
+    members = {
+        "dataset-lineage.json": dataset_lineage,
+        "canonical-3c.json": canonical_3c,
+        "analysis-plan-pass.json": analysis_plan_pass,
+        "result-review.json": result_review_member,
+        "same-origin-handoff.json": same_origin_handoff,
+        "downstream-replay.json": downstream_replay,
+        "b1b-verdict.json": verdict,
+    }
+    sensitive_values = _b1b_package_sensitive_values(
+        target=target,
+        intake=intake,
+        gate_snapshot=gate_snapshot,
+        promoted_snapshot=snapshot,
+        version=version,
+        provenance=provenance,
+        pass_run=pass_run,
+        artifact=artifact,
+    )
+    for member in members.values():
+        _assert_b1b_package_no_leak(member, sensitive_values)
+    return members, sensitive_values
+
+
+def _b1b_index_entry(logical_path: str, content: Mapping[str, Any]) -> dict[str, Any]:
+    content_bytes = d33_canonical_bytes(dict(content))
+    return {
+        "logical_path": logical_path,
+        "ordinal": _B1B_MEMBER_PATHS.index(logical_path) + 1,
+        "media_type": "application/json",
+        "encoding": "utf-8",
+        "bom": False,
+        "terminal_newline": False,
+        "byte_length": len(content_bytes),
+        "sha256": hashlib.sha256(content_bytes).hexdigest(),
+    }
+
+
+def _build_b1b_bundle(
+    first_members: dict[str, dict[str, Any]],
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, str]]:
+    first_order = [path for path in _B1B_MEMBER_PATHS if path in first_members]
+    first_entries = {path: _b1b_index_entry(path, first_members[path]) for path in first_order}
+    rehash_members = [
+        {"logical_path": path, "sha256": first_entries[path]["sha256"]}
+        for path in first_order
+    ]
+    rehash = {
+        "schema_id": "layer3.b1b_package_rehash.v1",
+        "member_count": 7,
+        "members": rehash_members,
+    }
+    rehash_entry = _b1b_index_entry("package-rehash.json", rehash)
+    manifest_entries = [
+        first_entries[path] if path in first_entries else rehash_entry
+        for path in _B1B_MEMBER_PATHS
+        if path != "package-manifest.json"
+    ]
+    manifest = {
+        "schema_id": "layer3.b1b_package_manifest.v1",
+        "member_count": 8,
+        "members": manifest_entries,
+        "package_order_hash": d33_sha256(manifest_entries),
+    }
+    manifest_entry = _b1b_index_entry("package-manifest.json", manifest)
+    complete = {**first_members, "package-manifest.json": manifest, "package-rehash.json": rehash}
+    entries = [
+        manifest_entry
+        if path == "package-manifest.json"
+        else rehash_entry
+        if path == "package-rehash.json"
+        else first_entries[path]
+        for path in _B1B_MEMBER_PATHS
+    ]
+    bundle = {
+        "schema_id": "layer3.b1b_evidence_bundle.v1",
+        "member_count": 9,
+        "members": [
+            {"logical_path": path, "content": complete[path]}
+            for path in _B1B_MEMBER_PATHS
+        ],
+    }
+    index = {
+        "schema_id": "layer3.b1b_evidence_bundle_index.v1",
+        "member_count": 9,
+        "members": entries,
+        "package_order_hash": d33_sha256(entries),
+    }
+    aliases = {
+        "bundle_index_order_hash": index["package_order_hash"],
+        "package_manifest_sha256": manifest_entry["sha256"],
+        "package_rehash_sha256": rehash_entry["sha256"],
+    }
+    return bundle, index, aliases
+
+
+def _build_b1b_outer_packages(
+    *,
+    session_id: str,
+    output_package_ids: Mapping[str, str],
+    first_members: dict[str, dict[str, Any]],
+    sensitive_values: set[str],
+) -> tuple[dict[str, bytes], dict[str, str], list[dict[str, Any]]]:
+    bundle, index, aliases = _build_b1b_bundle(first_members)
+    canonical_key = f"l3:{session_id}:canonical_internal"
+    canonical = {
+        "package_header": {
+            "schema_id": "layer3.canonical_internal_package.v1",
+            "schema_version": 1,
+            "package_key": canonical_key,
+            "package_kind": "canonical_internal",
+            "package_status": "package_complete",
+            "session_id": session_id,
+            "source_gate": "50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE",
+        },
+        "b1_evidence_bundle": bundle,
+        "b1_evidence_bundle_index": index,
+    }
+    canonical_bytes = d33_canonical_bytes(canonical)
+    canonical_binding = {
+        "schema_id": "layer3.b1b_canonical_package_binding.v1",
+        "canonical_package_key": canonical_key,
+        "canonical_payload_bytes": len(canonical_bytes),
+        "canonical_payload_sha256": hashlib.sha256(canonical_bytes).hexdigest(),
+        "package_manifest_sha256": aliases["package_manifest_sha256"],
+        "package_rehash_sha256": aliases["package_rehash_sha256"],
+        "bundle_index_order_hash": aliases["bundle_index_order_hash"],
+    }
+    question = first_members["analysis-plan-pass.json"]["question"]
+    user = {
+        "package_header": {
+            "schema_id": "layer3.user_facing_package.v1",
+            "schema_version": 1,
+            "package_key": f"l3:{session_id}:user_facing",
+            "package_kind": "user_facing",
+            "package_status": "package_complete",
+            "session_id": session_id,
+            "source_gate": "50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE",
+            "canonical_package_key": canonical_key,
+        },
+        "b1_public_disclosure": {
+            "schema_id": "layer3.b1b_public_disclosure.v1",
+            "fixture_disclosure": _b1b_fixture_disclosure(),
+            "question": question,
+            "bounded_result": json.loads(json.dumps(_B1B_BOUNDED_RESULT)),
+            "limitations": list(B1B_LIMITATIONS),
+        },
+        "b1_evidence_bundle_index": index,
+        "canonical_package_binding": canonical_binding,
+    }
+    review = {
+        "package_header": {
+            "schema_id": "layer3.review_facing_package.v1",
+            "schema_version": 1,
+            "package_key": f"l3:{session_id}:review_facing",
+            "package_kind": "review_facing",
+            "package_status": "package_complete",
+            "session_id": session_id,
+            "source_gate": "50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE",
+            "canonical_package_key": canonical_key,
+        },
+        "b1_evidence_bundle": bundle,
+        "b1_evidence_bundle_index": index,
+        "canonical_package_binding": canonical_binding,
+    }
+    objects = {
+        "canonical_internal": canonical,
+        "user_facing": user,
+        "review_facing": review,
+    }
+    payloads: dict[str, bytes] = {}
+    packages: list[dict[str, Any]] = []
+    for kind in _B1B_PACKAGE_ORDER:
+        _assert_b1b_package_no_leak(objects[kind], sensitive_values)
+        payload = d33_canonical_bytes(objects[kind])
+        payloads[kind] = payload
+        packages.append(
+            {
+                "package_kind": kind,
+                "output_package_id": output_package_ids[kind],
+                "payload_bytes": len(payload),
+                "payload_sha256": hashlib.sha256(payload).hexdigest(),
+            }
+        )
+    return payloads, aliases, packages
+
+
+def _b1b_package_lane_paths() -> dict[str, Path]:
+    custody_root = Path(settings.artifact_storage_dir)
+    root = custody_root / "layer3"
+    return {
+        "custody_root": custody_root,
+        "root": root,
+        "stage": root / "b1b-packages-staging",
+        "final": root / "b1b-packages",
+        "containment": root / "b1b-packages-containment",
+    }
+
+
+def _ensure_b1b_package_lanes(paths: Mapping[str, Path]) -> None:
+    for path in (paths["custody_root"], paths["root"], paths["stage"], paths["final"], paths["containment"]):
+        _ensure_nonreparse_lane_directory(path, paths["custody_root"])
+
+
+def _authoritative_b1b_package_files(
+    db: OrmSession,
+    *,
+    authority: Mapping[str, str],
+) -> dict[Path, tuple[int, str]]:
+    session_ids: set[str] = set()
+    for row in db.query(L3OutputPackage).all():
+        if isinstance(row.summary_json, dict) and row.summary_json.get("profile") == "receipt_bound_b1b":
+            session_ids.add(row.session_id)
+    for row in db.query(L3ReconciliationRecord).all():
+        if isinstance(row.summary_json, dict) and row.summary_json.get("profile") == "receipt_bound_b1b":
+            session_ids.add(row.session_id)
+
+    authoritative: dict[Path, tuple[int, str]] = {}
+    for session_id in sorted(session_ids):
+        pass_runs = (
+            db.query(L3PassRun)
+            .filter(L3PassRun.session_id == session_id)
+            .with_for_update()
+            .all()
+        )
+        if len(pass_runs) != 1:
+            raise _closed_b1b_error("connector_package_basis_conflict")
+        review = b1b_result_review_from_pass_run(db, pass_runs[0])
+        if review is None or review.get("operator_decision") != "approved":
+            raise _closed_b1b_error("connector_package_basis_conflict")
+        request_basis = {
+            "session_id": session_id,
+            "analysis_plan_id": review["analysis_plan_id"],
+            "pass_run_id": review["pass_run_id"],
+            "preview_id": review["preview_id"],
+            "preview_hash": review["preview_hash"],
+            "analysis_run_id": review["analysis_run_id"],
+            "result_review_record_ref": review["review_record_ref"],
+        }
+        receipt, promoted, pass_run, _evidence, locked_review = _locked_b1b_approved_review(
+            db,
+            request_basis=request_basis,
+        )
+        package_preview_hash = d33_sha256(
+            _b1b_package_preview_basis(
+                request_basis=request_basis,
+                receipt=receipt,
+                review=locked_review,
+                correction_full_sha256=authority["correction_full_sha256"],
+            )
+        )
+        state = _locked_b1b_package_set(
+            db,
+            receipt=receipt,
+            promoted=promoted,
+            pass_run=pass_run,
+            request_basis=request_basis,
+            review=locked_review,
+            package_preview_hash=package_preview_hash,
+            authority=authority,
+        )
+        if state is None:
+            raise _closed_b1b_error("connector_package_basis_conflict")
+        for package, row in zip(state["packages"], state["rows"], strict=True):
+            path = Path(row.payload_ref).resolve()
+            if path in authoritative:
+                raise _closed_b1b_error("connector_package_basis_conflict")
+            authoritative[path] = (package["payload_bytes"], package["payload_sha256"])
+    return authoritative
+
+
+def _contain_unreferenced_b1b_package_files(
+    db: OrmSession,
+    *,
+    paths: Mapping[str, Path],
+    authority: Mapping[str, str],
+) -> None:
+    authoritative = _authoritative_b1b_package_files(db, authority=authority)
+    _reconcile_containment_records(paths["containment"])
+    for stage in _regular_lane_files(paths["stage"]):
+        basis_hash = _lane_file_basis(stage, paths["stage"], layout="basis-prefix")
+        _contain_file(
+            stage,
+            containment_root=paths["containment"],
+            basis_hash=basis_hash,
+            namespace="package-stage-orphan",
+        )
+    for final in _regular_lane_files(paths["final"]):
+        expected = authoritative.get(final.resolve())
+        if expected is not None and _file_facts(final) == expected:
+            continue
+        basis_hash = _lane_file_basis(final, paths["final"], layout="basis-dirs")
+        _contain_file(
+            final,
+            containment_root=paths["containment"],
+            basis_hash=basis_hash,
+            namespace="package-final-orphan",
+        )
+
+
+def _b1b_commit_response(
+    *,
+    receipt: L3ConnectorPromotionReceipt,
+    request_basis: Mapping[str, str],
+    review: Mapping[str, Any],
+    package_preview_hash: str,
+    construction_basis_hash: str,
+    reconciliation_record_id: str,
+    packages: list[dict[str, Any]],
+) -> B1BClosedApiResponse:
+    body = {
+        "schema_id": "layer3.b1b_package_construction_commit_response.v1",
+        "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+        "promoted_session_id": request_basis["session_id"],
+        "analysis_plan_id": request_basis["analysis_plan_id"],
+        "pass_run_id": request_basis["pass_run_id"],
+        "analysis_run_id": request_basis["analysis_run_id"],
+        "result_review_hash": review["result_review_hash"],
+        "package_review_preview_hash": package_preview_hash,
+        "construction_basis_hash": construction_basis_hash,
+        "reconciliation_record_id": reconciliation_record_id,
+        "packages": [
+            {
+                "package_kind": item["package_kind"],
+                "output_package_id": item["output_package_id"],
+                "byte_length": item["payload_bytes"],
+                "payload_sha256": item["payload_sha256"],
+            }
+            for item in packages
+        ],
+        "package_count": 3,
+        "member_count": 9,
+        "persistence_status": "committed",
+    }
+    return B1BClosedApiResponse(body, http_status=200)
+
+
+def _locked_b1b_package_set(
+    db: OrmSession,
+    *,
+    receipt: L3ConnectorPromotionReceipt,
+    promoted: L3Session,
+    pass_run: L3PassRun,
+    request_basis: Mapping[str, str],
+    review: Mapping[str, Any],
+    package_preview_hash: str,
+    authority: Mapping[str, str],
+) -> dict[str, Any] | None:
+    reconciliation_rows = (
+        db.query(L3ReconciliationRecord)
+        .filter(L3ReconciliationRecord.session_id == promoted.session_id)
+        .with_for_update()
+        .all()
+    )
+    rows = (
+        db.query(L3OutputPackage)
+        .filter(L3OutputPackage.session_id == promoted.session_id)
+        .with_for_update()
+        .all()
+    )
+    if not reconciliation_rows and not rows:
+        return None
+    if len(reconciliation_rows) != 1 or len(rows) != 3:
+        raise _closed_b1b_error("connector_package_basis_conflict")
+    reconciliation = reconciliation_rows[0]
+    summary = reconciliation.summary_json
+    rows_by_kind = {row.package_kind: row for row in rows}
+    if (
+        set(rows_by_kind) != set(_B1B_PACKAGE_ORDER)
+        or not _has_exact_keys(summary, _B1B_RECONCILIATION_SUMMARY_KEYS)
+        or reconciliation.status != "reconciled"
+    ):
+        raise _closed_b1b_error("connector_package_basis_conflict")
+    package_set = summary.get("package_set")
+    if (
+        not _has_exact_keys(package_set, _B1B_PACKAGE_SET_KEYS)
+        or summary.get("schema_id") != "layer3.b1b_reconciliation_summary.v1"
+        or summary.get("profile") != "receipt_bound_b1b"
+        or summary.get("source_gate") != "50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE"
+        or summary.get("promotion_receipt_id") != receipt.connector_promotion_receipt_id
+        or summary.get("promoted_session_id") != promoted.session_id
+        or summary.get("result_review_hash") != review["result_review_hash"]
+        or summary.get("package_review_preview_hash") != package_preview_hash
+        or package_set.get("member_count") != 9
+        or type(package_set.get("member_count")) is not int
+        or any(
+            not _is_lower_hex64(package_set.get(field))
+            for field in (
+                "construction_basis_hash",
+                "bundle_index_order_hash",
+                "package_manifest_sha256",
+                "package_rehash_sha256",
+            )
+        )
+    ):
+        raise _closed_b1b_error("connector_package_basis_conflict")
+    stored_packages = package_set.get("packages")
+    if not isinstance(stored_packages, list) or len(stored_packages) != 3:
+        raise _closed_b1b_error("connector_package_basis_conflict")
+    paths = _b1b_package_lane_paths()
+    sensitive_values = _b1b_runtime_sensitive_values() | {
+        row.payload_ref for row in rows if isinstance(row.payload_ref, str) and row.payload_ref
+    }
+    try:
+        first_members, derived_sensitive_values = _build_b1b_package_members(
+            db,
+            receipt=receipt,
+            promoted=promoted,
+            pass_run=pass_run,
+            review=dict(review),
+            package_review_preview_hash=package_preview_hash,
+            authority=dict(authority),
+        )
+        sensitive_values.update(derived_sensitive_values)
+        expected_payloads, aliases, packages = _build_b1b_outer_packages(
+            session_id=promoted.session_id,
+            output_package_ids={
+                kind: rows_by_kind[kind].output_package_id for kind in _B1B_PACKAGE_ORDER
+            },
+            first_members=first_members,
+            sensitive_values=sensitive_values,
+        )
+    except (OSError, KeyError, TypeError, ValueError, PromotionIdentityError) as exc:
+        raise _closed_b1b_error("connector_package_basis_conflict") from exc
+    package_paths: dict[str, Path] = {}
+    for index, kind in enumerate(_B1B_PACKAGE_ORDER):
+        row = rows_by_kind[kind]
+        stored = stored_packages[index]
+        try:
+            if not isinstance(row.payload_ref, str) or not Path(row.payload_ref).is_absolute():
+                raise PromotionIdentityError("B1b package reference is not absolute")
+            resolved, _relative = _resolve_regular_reference(row.payload_ref, str(paths["final"]))
+            payload = resolved.read_bytes()
+            facts = (len(payload), hashlib.sha256(payload).hexdigest())
+        except (OSError, UnicodeError, ValueError, TypeError, PromotionIdentityError) as exc:
+            raise _closed_b1b_error("connector_package_basis_conflict") from exc
+        expected = packages[index]
+        expected_summary = {
+            "schema_id": "layer3.b1b_output_package_summary.v1",
+            "profile": "receipt_bound_b1b",
+            "package_kind": kind,
+            "member_count": 0 if kind == "user_facing" else 9,
+            **aliases,
+            "canonical_binding_present": index != 0,
+        }
+        if (
+            row.reconciliation_record_id != reconciliation.reconciliation_record_id
+            or row.status != "package_complete"
+            or row.payload_hash != facts[1]
+            or payload != expected_payloads[kind]
+            or facts != (expected["payload_bytes"], expected["payload_sha256"])
+            or stored != expected
+            or row.summary_json != expected_summary
+        ):
+            raise _closed_b1b_error("connector_package_basis_conflict")
+        package_paths[kind] = resolved
+    construction_basis = build_b1b_package_construction_basis(
+        authority={
+            "correction_full_sha256": authority["correction_full_sha256"],
+            "owner_bound_main_sha": authority["owner_bound_main_sha"],
+            "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+            "promoted_session_id": promoted.session_id,
+            "result_review_hash": review["result_review_hash"],
+            "package_review_preview_hash": package_preview_hash,
+        },
+        bundle={"member_count": 9, **aliases},
+        packages=packages,
+    )
+    construction_basis_hash = d33_sha256(construction_basis)
+    if package_set != {
+        "construction_basis_hash": construction_basis_hash,
+        "member_count": 9,
+        **aliases,
+        "packages": packages,
+    }:
+        raise _closed_b1b_error("connector_package_basis_conflict")
+    try:
+        for kind, path in package_paths.items():
+            expected_path = (
+                paths["final"]
+                / construction_basis_hash[:2]
+                / construction_basis_hash
+                / f"{kind}.json"
+            ).resolve(strict=True)
+            if path != expected_path:
+                raise PromotionIdentityError("B1b package path does not match its basis")
+    except (OSError, KeyError, TypeError, ValueError, PromotionIdentityError) as exc:
+        raise _closed_b1b_error("connector_package_basis_conflict") from exc
+    return {
+        "reconciliation": reconciliation,
+        "rows": [rows_by_kind[kind] for kind in _B1B_PACKAGE_ORDER],
+        "package_set": package_set,
+        "packages": packages,
+        "construction_basis_hash": construction_basis_hash,
+        "sensitive_values": sensitive_values,
+        "response": _b1b_commit_response(
+            receipt=receipt,
+            request_basis=request_basis,
+            review=review,
+            package_preview_hash=package_preview_hash,
+            construction_basis_hash=construction_basis_hash,
+            reconciliation_record_id=reconciliation.reconciliation_record_id,
+            packages=packages,
+        ),
+    }
+
+
+def _after_b1b_package_publish(_ordinal: int) -> None:
+    """Crash seam invoked after each no-clobber package publication."""
+
+
+def _commit_b1b_packages(db: OrmSession) -> None:
+    """Commit seam used to distinguish acknowledged and ambiguous outcomes."""
+    db.commit()
+
+
+def _reconcile_failed_b1b_packages(
+    engine,
+    *,
+    request_basis: Mapping[str, str],
+    paths: Mapping[str, Path],
+    expectation: Mapping[str, Any] | None,
+    authority: Mapping[str, str],
+) -> str:
+    with OrmSession(bind=engine, expire_on_commit=False) as verify_db:
+        acquire_promotion_identity_lock(verify_db, F07_CANONICAL_IDENTITY_KEY_HASH)
+        reconciliations = (
+            verify_db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.session_id == request_basis["session_id"])
+            .with_for_update()
+            .all()
+        )
+        rows = (
+            verify_db.query(L3OutputPackage)
+            .filter(L3OutputPackage.session_id == request_basis["session_id"])
+            .with_for_update()
+            .all()
+        )
+        if expectation is not None and len(reconciliations) == 1 and len(rows) == 3:
+            try:
+                receipt, promoted, pass_run, _evidence, review = _locked_b1b_approved_review(
+                    verify_db,
+                    request_basis=dict(request_basis),
+                )
+                package_preview_hash = d33_sha256(
+                    _b1b_package_preview_basis(
+                        request_basis=dict(request_basis),
+                        receipt=receipt,
+                        review=review,
+                        correction_full_sha256=authority["correction_full_sha256"],
+                    )
+                )
+                state = _locked_b1b_package_set(
+                    verify_db,
+                    receipt=receipt,
+                    promoted=promoted,
+                    pass_run=pass_run,
+                    request_basis=request_basis,
+                    review=review,
+                    package_preview_hash=package_preview_hash,
+                    authority=authority,
+                )
+            except (
+                ConnectorPromotionError,
+                DBAPIError,
+                KeyError,
+                OSError,
+                TypeError,
+                ValueError,
+                PromotionIdentityError,
+            ):
+                return "uncertain"
+            if (
+                state is not None
+                and state["reconciliation"].reconciliation_record_id
+                == expectation["reconciliation_record_id"]
+                and state["construction_basis_hash"] == expectation["construction_basis_hash"]
+                and state["packages"] == expectation["packages"]
+            ):
+                return "committed"
+            return "uncertain"
+        if not reconciliations and not rows:
+            _contain_unreferenced_b1b_package_files(
+                verify_db,
+                paths=paths,
+                authority=authority,
+            )
+            return "absent"
+        return "uncertain"
+
+
+def commit_b1b_packages(
+    db: OrmSession,
+    payload: dict[str, Any],
+) -> B1BClosedApiResponse:
+    request_basis, supplied_preview_hash = _b1b_package_commit_request(payload)
+    if not bridge_precondition_available():
+        raise _closed_b1b_error("connector_promotion_bridge_unavailable")
+    paths = _b1b_package_lane_paths()
+    bind = db.get_bind()
+    engine = getattr(bind, "engine", bind)
+    authority: dict[str, str] | None = None
+    expectation: dict[str, Any] | None = None
+    response: B1BClosedApiResponse | None = None
+    try:
+        authority = _read_b1b_package_authority()
+        acquire_promotion_identity_lock(db, F07_CANONICAL_IDENTITY_KEY_HASH)
+        receipt, promoted, pass_run, _evidence, review = _locked_b1b_approved_review(
+            db,
+            request_basis=request_basis,
+        )
+        preview_basis = _b1b_package_preview_basis(
+            request_basis=request_basis,
+            receipt=receipt,
+            review=review,
+            correction_full_sha256=authority["correction_full_sha256"],
+        )
+        package_preview_hash = d33_sha256(preview_basis)
+        if supplied_preview_hash != package_preview_hash:
+            raise _closed_b1b_error("connector_package_basis_conflict")
+        existing = _locked_b1b_package_set(
+            db,
+            receipt=receipt,
+            promoted=promoted,
+            pass_run=pass_run,
+            request_basis=request_basis,
+            review=review,
+            package_preview_hash=package_preview_hash,
+            authority=authority,
+        )
+        _ensure_b1b_package_lanes(paths)
+        _contain_unreferenced_b1b_package_files(db, paths=paths, authority=authority)
+        if existing is not None:
+            if not _materialized_replay_summary_is_valid(
+                db,
+                receipt=receipt,
+                promoted=promoted,
+            ):
+                raise _closed_b1b_error("connector_package_basis_conflict")
+            db.rollback()
+            db.info.pop("b1b_promotion_identity_lock", None)
+            return existing["response"]
+
+        output_package_ids = {kind: str(uuid.uuid4()) for kind in _B1B_PACKAGE_ORDER}
+        reconciliation_record_id = str(uuid.uuid4())
+        first_members, sensitive_values = _build_b1b_package_members(
+            db,
+            receipt=receipt,
+            promoted=promoted,
+            pass_run=pass_run,
+            review=review,
+            package_review_preview_hash=package_preview_hash,
+            authority=authority,
+        )
+        package_payloads, aliases, packages = _build_b1b_outer_packages(
+            session_id=promoted.session_id,
+            output_package_ids=output_package_ids,
+            first_members=first_members,
+            sensitive_values=sensitive_values,
+        )
+        construction_basis = build_b1b_package_construction_basis(
+            authority={
+                "correction_full_sha256": authority["correction_full_sha256"],
+                "owner_bound_main_sha": authority["owner_bound_main_sha"],
+                "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+                "promoted_session_id": promoted.session_id,
+                "result_review_hash": review["result_review_hash"],
+                "package_review_preview_hash": package_preview_hash,
+            },
+            bundle={"member_count": 9, **aliases},
+            packages=packages,
+        )
+        construction_basis_hash = d33_sha256(construction_basis)
+        expectation = {
+            "reconciliation_record_id": reconciliation_record_id,
+            "construction_basis_hash": construction_basis_hash,
+            "packages": packages,
+        }
+        response = _b1b_commit_response(
+            receipt=receipt,
+            request_basis=request_basis,
+            review=review,
+            package_preview_hash=package_preview_hash,
+            construction_basis_hash=construction_basis_hash,
+            reconciliation_record_id=reconciliation_record_id,
+            packages=packages,
+        )
+        final_dir = paths["final"] / construction_basis_hash[:2] / construction_basis_hash
+        _ensure_nonreparse_lane_directory(final_dir, paths["custody_root"])
+        stage_paths: dict[str, Path] = {}
+        final_paths: dict[str, Path] = {}
+        for kind in _B1B_PACKAGE_ORDER:
+            stage_path = paths["stage"] / f"{construction_basis_hash}-{uuid.uuid4().hex}-{kind}.json"
+            final_path = final_dir / f"{kind}.json"
+            if stage_path.exists() or final_path.exists():
+                raise _closed_b1b_error("connector_package_basis_conflict")
+            with stage_path.open("xb") as handle:
+                handle.write(package_payloads[kind])
+                handle.flush()
+                os.fsync(handle.fileno())
+            if _file_facts(stage_path) != (
+                len(package_payloads[kind]),
+                hashlib.sha256(package_payloads[kind]).hexdigest(),
+            ):
+                raise PromotionIdentityError("staged B1b package failed close verification")
+            stage_paths[kind] = stage_path
+            final_paths[kind] = final_path
+        sensitive_values.update(
+            str(path.resolve()) for path in (*stage_paths.values(), *final_paths.values())
+        )
+        for payload_bytes in package_payloads.values():
+            _assert_b1b_package_no_leak(json.loads(payload_bytes), sensitive_values)
+        for ordinal, kind in enumerate(_B1B_PACKAGE_ORDER, start=1):
+            _atomic_rename_no_overwrite(stage_paths[kind], final_paths[kind])
+            _after_b1b_package_publish(ordinal)
+        if any(
+            _file_facts(final_paths[item["package_kind"]])
+            != (item["payload_bytes"], item["payload_sha256"])
+            for item in packages
+        ):
+            raise PromotionIdentityError("published B1b package failed reopen verification")
+
+        package_set = {
+            "construction_basis_hash": construction_basis_hash,
+            "member_count": 9,
+            **aliases,
+            "packages": packages,
+        }
+        reconciliation_summary = {
+            "schema_id": "layer3.b1b_reconciliation_summary.v1",
+            "profile": "receipt_bound_b1b",
+            "source_gate": "50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE",
+            "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+            "promoted_session_id": promoted.session_id,
+            "result_review_hash": review["result_review_hash"],
+            "package_review_preview_hash": package_preview_hash,
+            "package_set": package_set,
+            "package_review_submit": None,
+            "package_review_hash": None,
+            "connector_dataset_handoff_basis": None,
+            "connector_dataset_handoff_basis_hash": None,
+        }
+        _assert_b1b_package_no_leak(reconciliation_summary, sensitive_values)
+        reconciliation = L3ReconciliationRecord(
+            reconciliation_record_id=reconciliation_record_id,
+            session_id=promoted.session_id,
+            status="reconciled",
+            summary_json=reconciliation_summary,
+        )
+        db.add(reconciliation)
+        for index, item in enumerate(packages):
+            kind = item["package_kind"]
+            output_summary = {
+                "schema_id": "layer3.b1b_output_package_summary.v1",
+                "profile": "receipt_bound_b1b",
+                "package_kind": kind,
+                "member_count": 0 if kind == "user_facing" else 9,
+                **aliases,
+                "canonical_binding_present": index != 0,
+            }
+            _assert_b1b_package_no_leak(output_summary, sensitive_values)
+            db.add(
+                L3OutputPackage(
+                    output_package_id=item["output_package_id"],
+                    session_id=promoted.session_id,
+                    reconciliation_record_id=reconciliation_record_id,
+                    package_kind=kind,
+                    status="package_complete",
+                    payload_ref=str(final_paths[kind].resolve()),
+                    payload_hash=item["payload_sha256"],
+                    summary_json=output_summary,
+                )
+            )
+        db.flush()
+        if not _materialized_replay_summary_is_valid(db, receipt=receipt, promoted=promoted):
+            raise _closed_b1b_error("connector_package_basis_conflict")
+        _commit_b1b_packages(db)
+        db.info.pop("b1b_promotion_identity_lock", None)
+        return response
+    except ConnectorPromotionError as exc:
+        _best_effort_rollback(db)
+        db.info.pop("b1b_promotion_identity_lock", None)
+        if expectation is not None and paths["custody_root"].exists():
+            assert authority is not None
+            outcome = _reconcile_failed_b1b_packages(
+                engine,
+                request_basis=request_basis,
+                paths=paths,
+                expectation=expectation,
+                authority=authority,
+            )
+            if outcome == "committed" and response is not None:
+                return response
+            if outcome == "uncertain" and expectation is not None:
+                raise _closed_b1b_error("connector_promotion_bridge_unavailable") from exc
+        raise
+    except (DBAPIError, OSError, UnicodeError, PromotionIdentityError) as exc:
+        _best_effort_rollback(db)
+        db.info.pop("b1b_promotion_identity_lock", None)
+        outcome = (
+            _reconcile_failed_b1b_packages(
+                engine,
+                request_basis=request_basis,
+                paths=paths,
+                expectation=expectation,
+                authority=authority,
+            )
+            if expectation is not None
+            and authority is not None
+            and paths["custody_root"].exists()
+            else "uncertain"
+        )
+        if outcome == "committed" and response is not None:
+            return response
+        raise _closed_b1b_error("connector_promotion_bridge_unavailable") from exc
+    except Exception:
+        _best_effort_rollback(db)
+        db.info.pop("b1b_promotion_identity_lock", None)
+        outcome = (
+            _reconcile_failed_b1b_packages(
+                engine,
+                request_basis=request_basis,
+                paths=paths,
+                expectation=expectation,
+                authority=authority,
+            )
+            if expectation is not None
+            and authority is not None
+            and paths["custody_root"].exists()
+            else "uncertain"
+        )
+        if outcome == "committed" and response is not None:
+            return response
+        raise
+
+
+def _b1b_package_submit_request(
+    payload: dict[str, Any],
+) -> tuple[dict[str, str], dict[str, Any], str, str | None]:
+    if not _has_exact_keys(payload, _B1B_PACKAGE_SUBMIT_REQUEST_KEYS):
+        raise _closed_b1b_error("b1b_request_validation_failed")
+    preview = _b1b_package_preview_request(
+        {key: payload[key] for key in _B1B_PACKAGE_PREVIEW_REQUEST_KEYS}
+    )
+    decision = payload.get("operator_decision")
+    raw_notes = payload.get("decision_notes")
+    if decision not in _PACKAGE_REVIEW_STATES or not isinstance(raw_notes, str):
+        raise _closed_b1b_error("b1b_request_validation_failed")
+    if decision == "approved":
+        if raw_notes != "":
+            raise _closed_b1b_error("b1b_request_validation_failed")
+        normalized_notes = None
+    else:
+        normalized_notes = raw_notes.strip()
+        if not normalized_notes:
+            raise _closed_b1b_error("b1b_request_validation_failed")
+    for field in (
+        "package_review_preview_hash",
+        "construction_basis_hash",
+    ):
+        if not _is_lower_hex64(payload.get(field)):
+            raise _closed_b1b_error("b1b_request_validation_failed")
+    if not _is_uuid_string(payload.get("reconciliation_record_id")):
+        raise _closed_b1b_error("b1b_request_validation_failed")
+    for field in ("output_package_ids", "payload_hashes", "expected_package_kinds"):
+        value = payload.get(field)
+        if not isinstance(value, list) or len(value) != 3:
+            raise _closed_b1b_error("b1b_request_validation_failed")
+    if (
+        not all(_is_uuid_string(value) for value in payload["output_package_ids"])
+        or not all(_is_lower_hex64(value) for value in payload["payload_hashes"])
+        or payload["expected_package_kinds"] != _B1B_PACKAGE_ORDER
+    ):
+        raise _closed_b1b_error("b1b_request_validation_failed")
+    request_basis = {key: payload[key] for key in payload if key != "client_request_id"}
+    request_basis_hash = d33_sha256(request_basis)
+    if payload.get("client_request_id") != f"b1b-package-review-{request_basis_hash}":
+        raise _closed_b1b_error("b1b_request_validation_failed")
+    return preview, request_basis, request_basis_hash, normalized_notes
+
+
+def _b1b_handoff_basis(
+    *,
+    receipt: L3ConnectorPromotionReceipt,
+    promoted: L3Session,
+    result_review_hash: str,
+    package_review_hash: str,
+    reconciliation_record_id: str,
+    packages: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "approved_reviews": {
+            "package_review_hash": package_review_hash,
+            "result_review_hash": result_review_hash,
+        },
+        "canonical_internal": {
+            "byte_length": packages[0]["payload_bytes"],
+            "output_package_id": packages[0]["output_package_id"],
+            "payload_hash": packages[0]["payload_sha256"],
+        },
+        "package_set": {
+            "reconciliation_record_id": reconciliation_record_id,
+            "review_facing_output_package_id": packages[2]["output_package_id"],
+            "review_facing_payload_hash": packages[2]["payload_sha256"],
+            "user_facing_output_package_id": packages[1]["output_package_id"],
+            "user_facing_payload_hash": packages[1]["payload_sha256"],
+        },
+        "promoted_session_id": promoted.session_id,
+        "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+        "schema_id": "layer3.connector_dataset_handoff_basis.v1",
+    }
+
+
+def _b1b_submit_response(
+    *,
+    receipt: L3ConnectorPromotionReceipt,
+    request_basis: Mapping[str, Any],
+    review: Mapping[str, Any],
+    package_review_hash: str,
+    package_review_state: str,
+    packages: list[dict[str, Any]],
+    normalized_notes: str | None,
+    handoff_basis_hash: str | None,
+) -> B1BClosedApiResponse:
+    body: dict[str, Any] = {
+        "schema_id": "layer3.b1b_package_review_submit_response.v1",
+        "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+        "promoted_session_id": request_basis["session_id"],
+        "analysis_plan_id": request_basis["analysis_plan_id"],
+        "pass_run_id": request_basis["pass_run_id"],
+        "analysis_run_id": request_basis["analysis_run_id"],
+        "result_review_hash": review["result_review_hash"],
+        "package_review_preview_hash": request_basis["package_review_preview_hash"],
+        "construction_basis_hash": request_basis["construction_basis_hash"],
+        "package_review_hash": package_review_hash,
+        "reconciliation_record_id": request_basis["reconciliation_record_id"],
+        "packages": [
+            {
+                "package_kind": item["package_kind"],
+                "output_package_id": item["output_package_id"],
+                "byte_length": item["payload_bytes"],
+                "payload_sha256": item["payload_sha256"],
+            }
+            for item in packages
+        ],
+        "operator_decision": request_basis["operator_decision"],
+        "package_review_state": package_review_state,
+        "decision_notes_present": normalized_notes is not None,
+        "decision_notes_sha256": (
+            hashlib.sha256(normalized_notes.encode("utf-8")).hexdigest()
+            if normalized_notes is not None
+            else None
+        ),
+        "handoff_eligibility_status": "eligible" if handoff_basis_hash else "ineligible",
+    }
+    if handoff_basis_hash is not None:
+        body["connector_dataset_handoff_basis_hash"] = handoff_basis_hash
+    return B1BClosedApiResponse(body, http_status=200)
+
+
+def submit_b1b_package_review(
+    db: OrmSession,
+    payload: dict[str, Any],
+) -> B1BClosedApiResponse:
+    preview_request, request_basis, request_basis_hash, normalized_notes = (
+        _b1b_package_submit_request(payload)
+    )
+    if not bridge_precondition_available():
+        raise _closed_b1b_error("connector_promotion_bridge_unavailable")
+    try:
+        authority = _read_b1b_package_authority()
+        acquire_promotion_identity_lock(db, F07_CANONICAL_IDENTITY_KEY_HASH)
+        receipt, promoted, pass_run, _evidence, review = _locked_b1b_approved_review(
+            db,
+            request_basis=preview_request,
+        )
+        preview_basis = _b1b_package_preview_basis(
+            request_basis=preview_request,
+            receipt=receipt,
+            review=review,
+            correction_full_sha256=authority["correction_full_sha256"],
+        )
+        package_preview_hash = d33_sha256(preview_basis)
+        package_state = _locked_b1b_package_set(
+            db,
+            receipt=receipt,
+            promoted=promoted,
+            pass_run=pass_run,
+            request_basis=preview_request,
+            review=review,
+            package_preview_hash=package_preview_hash,
+            authority=authority,
+        )
+        if package_state is None:
+            raise _closed_b1b_error("connector_package_basis_conflict")
+        packages = package_state["packages"]
+        reconciliation = package_state["reconciliation"]
+        sensitive_values = set(package_state["sensitive_values"])
+        projected_ids = [item["output_package_id"] for item in packages]
+        projected_hashes = [item["payload_sha256"] for item in packages]
+        if (
+            request_basis["package_review_preview_hash"] != package_preview_hash
+            or request_basis["construction_basis_hash"]
+            != package_state["construction_basis_hash"]
+            or request_basis["reconciliation_record_id"]
+            != reconciliation.reconciliation_record_id
+            or request_basis["output_package_ids"] != projected_ids
+            or request_basis["payload_hashes"] != projected_hashes
+            or request_basis["expected_package_kinds"] != _B1B_PACKAGE_ORDER
+        ):
+            raise _closed_b1b_error("connector_package_basis_conflict")
+        summary = reconciliation.summary_json
+        try:
+            _assert_b1b_package_no_leak(summary, sensitive_values)
+        except PromotionIdentityError as exc:
+            raise _closed_b1b_error("connector_package_basis_conflict") from exc
+        existing = summary.get("package_review_submit")
+        if existing is not None:
+            if (
+                not isinstance(existing, dict)
+                or existing.get("review_request_basis_hash") != request_basis_hash
+                or summary.get("package_review_hash") != d33_sha256(existing)
+                or not _materialized_replay_summary_is_valid(
+                    db,
+                    receipt=receipt,
+                    promoted=promoted,
+                )
+            ):
+                raise _closed_b1b_error("connector_package_review_decision_conflict")
+            handoff_hash = summary.get("connector_dataset_handoff_basis_hash")
+            response = _b1b_submit_response(
+                receipt=receipt,
+                request_basis=request_basis,
+                review=review,
+                package_review_hash=summary["package_review_hash"],
+                package_review_state=_PACKAGE_REVIEW_STATES[existing["operator_decision"]],
+                packages=packages,
+                normalized_notes=existing["decision_notes"],
+                handoff_basis_hash=handoff_hash,
+            )
+            for item, row in zip(packages, package_state["rows"], strict=True):
+                if _file_facts(Path(row.payload_ref)) != (
+                    item["payload_bytes"],
+                    item["payload_sha256"],
+                ):
+                    raise _closed_b1b_error("connector_package_basis_conflict")
+            db.rollback()
+            db.info.pop("b1b_promotion_identity_lock", None)
+            return response
+        if any(
+            promoted.summary_json[field] is not None
+            for field in (
+                "package_review_state",
+                "package_review_hash",
+                "reconciliation_record_id",
+                "packages",
+                "connector_dataset_handoff_basis_hash",
+            )
+        ):
+            raise _closed_b1b_error("connector_package_review_decision_conflict")
+
+        decision = request_basis["operator_decision"]
+        record = {
+            "schema_id": "layer3.b1b_package_review_record.v1",
+            "review_request_basis_hash": request_basis_hash,
+            "package_review_preview_hash": package_preview_hash,
+            "construction_basis_hash": package_state["construction_basis_hash"],
+            "reconciliation_record_id": reconciliation.reconciliation_record_id,
+            "output_package_ids": projected_ids,
+            "package_kinds": list(_B1B_PACKAGE_ORDER),
+            "payload_hashes": projected_hashes,
+            "operator_decision": decision,
+            "decision_notes": normalized_notes,
+        }
+        try:
+            _assert_b1b_package_no_leak(record, sensitive_values)
+        except PromotionIdentityError as exc:
+            raise _closed_b1b_error("b1b_request_validation_failed") from exc
+        package_review_hash = d33_sha256(record)
+        handoff_basis = None
+        handoff_hash = None
+        if decision == "approved":
+            handoff_basis = _b1b_handoff_basis(
+                receipt=receipt,
+                promoted=promoted,
+                result_review_hash=review["result_review_hash"],
+                package_review_hash=package_review_hash,
+                reconciliation_record_id=reconciliation.reconciliation_record_id,
+                packages=packages,
+            )
+            handoff_hash = d33_sha256(handoff_basis)
+        reconciliation_summary = {
+            **json.loads(json.dumps(summary)),
+            "package_review_submit": record,
+            "package_review_hash": package_review_hash,
+            "connector_dataset_handoff_basis": handoff_basis,
+            "connector_dataset_handoff_basis_hash": handoff_hash,
+        }
+        session_packages = [
+            {
+                "package_kind": item["package_kind"],
+                "output_package_id": item["output_package_id"],
+                "payload_sha256": item["payload_sha256"],
+            }
+            for item in packages
+        ]
+        session_summary = {
+            **json.loads(json.dumps(promoted.summary_json)),
+            "package_review_state": _PACKAGE_REVIEW_STATES[decision],
+            "package_review_hash": package_review_hash,
+            "reconciliation_record_id": reconciliation.reconciliation_record_id,
+            "packages": session_packages,
+            "connector_dataset_handoff_basis_hash": handoff_hash,
+        }
+        _assert_b1b_package_no_leak(reconciliation_summary, sensitive_values)
+        _assert_b1b_package_no_leak(session_summary, sensitive_values)
+        reconciliation.summary_json = reconciliation_summary
+        promoted.summary_json = session_summary
+        db.flush()
+        if not _materialized_replay_summary_is_valid(db, receipt=receipt, promoted=promoted):
+            raise _closed_b1b_error("connector_package_basis_conflict")
+        for item, row in zip(packages, package_state["rows"], strict=True):
+            if _file_facts(Path(row.payload_ref)) != (
+                item["payload_bytes"],
+                item["payload_sha256"],
+            ):
+                raise _closed_b1b_error("connector_package_basis_conflict")
+        response = _b1b_submit_response(
+            receipt=receipt,
+            request_basis=request_basis,
+            review=review,
+            package_review_hash=package_review_hash,
+            package_review_state=_PACKAGE_REVIEW_STATES[decision],
+            packages=packages,
+            normalized_notes=normalized_notes,
+            handoff_basis_hash=handoff_hash,
+        )
+        db.commit()
+        db.info.pop("b1b_promotion_identity_lock", None)
+        return response
+    except ConnectorPromotionError:
+        _best_effort_rollback(db)
+        db.info.pop("b1b_promotion_identity_lock", None)
+        raise
+    except (DBAPIError, OSError, UnicodeError, PromotionIdentityError) as exc:
+        _best_effort_rollback(db)
+        db.info.pop("b1b_promotion_identity_lock", None)
+        raise _closed_b1b_error("connector_promotion_bridge_unavailable") from exc
+    except Exception:
+        _best_effort_rollback(db)
+        db.info.pop("b1b_promotion_identity_lock", None)
+        raise
 
 
 def _verify_materialized_replay(
