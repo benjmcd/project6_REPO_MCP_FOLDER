@@ -2336,6 +2336,528 @@ def _resolve(runtime: dict, gate_b_session_id: str) -> dict:
         return pm.resolve_connector_promotion(db, gate_b_session_id=gate_b_session_id)
 
 
+def _materialize_replay_subject(
+    runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    stem: str,
+) -> tuple[str, dict]:
+    gate_b_session_id = _seed_materializable_receipt(runtime, monkeypatch, stem)
+    _enable_step5(monkeypatch)
+    return gate_b_session_id, _resolve(runtime, gate_b_session_id)
+
+
+def _replay_summary_contract_valid(db, promoted_session_id: str) -> bool:
+    promoted = db.get(L3Session, promoted_session_id)
+    receipt = (
+        db.query(L3ConnectorPromotionReceipt)
+        .filter_by(promoted_session_id=promoted_session_id)
+        .one()
+    )
+    assert promoted is not None
+    return pm._materialized_replay_summary_is_valid(
+        db,
+        receipt=receipt,
+        promoted=promoted,
+    )
+
+
+def _approve_replay_subject(db, promoted_session_id: str, stem: str) -> tuple[dict, dict]:
+    preview = layer3_workbench.plan_preview(
+        db,
+        {
+            "client_request_id": f"{stem}-preview",
+            "session_id": promoted_session_id,
+        },
+    )
+    approval = layer3_workbench.plan_approval(
+        db,
+        {
+            "client_request_id": f"{stem}-approval",
+            "session_id": promoted_session_id,
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+            "operator_confirmation": True,
+        },
+    )
+    return preview, approval
+
+
+def _select_replay_subject(
+    db,
+    promoted_session_id: str,
+    stem: str,
+    preview: dict,
+    approval: dict,
+) -> dict:
+    return layer3_workbench.execution_selection(
+        db,
+        {
+            "client_request_id": f"{stem}-selection",
+            "session_id": promoted_session_id,
+            "analysis_plan_id": approval["analysis_plan_id"],
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+        },
+    )
+
+
+def _start_replay_subject(
+    db,
+    promoted_session_id: str,
+    stem: str,
+    preview: dict,
+    approval: dict,
+    selection: dict,
+) -> dict:
+    return layer3_workbench.analysis_execution_start(
+        db,
+        {
+            "client_request_id": f"{stem}-start",
+            "session_id": promoted_session_id,
+            "analysis_plan_id": approval["analysis_plan_id"],
+            "pass_run_id": selection["pass_run_ids"][0],
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+        },
+    )
+
+
+_RESULT_REVIEW_STATE_BY_DECISION = {
+    "approved": "execution_result_review_approved",
+    "changes_requested": "execution_result_review_changes_requested",
+    "rejected": "execution_result_review_rejected",
+    "blocked": "execution_result_review_blocked",
+}
+_PACKAGE_REVIEW_STATE_BY_DECISION = {
+    "approved": "package_review_approved",
+    "changes_requested": "package_review_changes_requested",
+    "rejected": "package_review_rejected",
+    "blocked": "package_review_blocked",
+}
+_PACKAGE_ORDER = ("canonical_internal", "user_facing", "review_facing")
+
+
+def _install_closed_result_review(db, receipt, promoted, decision: str) -> dict:
+    plan = db.query(L3AnalysisPlan).filter_by(session_id=promoted.session_id).one()
+    pass_run = db.query(L3PassRun).filter_by(session_id=promoted.session_id).one()
+    analysis_run = db.get(AnalysisRun, pass_run.summary_json["analysis_run_id"])
+    artifact = db.query(AnalysisArtifact).filter_by(analysis_run_id=analysis_run.analysis_run_id).one()
+    checks = (
+        db.query(AssumptionCheck)
+        .filter_by(analysis_run_id=analysis_run.analysis_run_id)
+        .order_by(AssumptionCheck.assumption_check_id)
+        .all()
+    )
+    caveat = db.query(CaveatNote).filter_by(analysis_run_id=analysis_run.analysis_run_id).one()
+    review_notes = None if decision == "approved" else f"{decision} note"
+    record = {
+        "schema_id": "layer3.b1b_result_review_record.v1",
+        "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+        "promoted_session_id": promoted.session_id,
+        "analysis_plan_id": plan.analysis_plan_id,
+        "pass_run_id": pass_run.pass_run_id,
+        "preview_id": plan.plan_json["source_preview_id"],
+        "preview_hash": plan.plan_json["source_preview_hash"],
+        "analysis_run_id": analysis_run.analysis_run_id,
+        "result_payload_sha256": "a" * 64,
+        "analysis_artifact_id": artifact.artifact_id,
+        "analysis_artifact_sha256": "b" * 64,
+        "assumption_check_ids": [row.assumption_check_id for row in checks],
+        "caveat_note_id": caveat.caveat_note_id,
+        "reviewed_output_items": [
+            {
+                "index": 0,
+                "item_ref": f"analysis-artifact:{artifact.artifact_id}",
+                "item_type": "fact",
+                "trace_status": "resolved",
+                "missing_trace_fields": [],
+            },
+            {
+                "index": 1,
+                "item_ref": f"caveat:{caveat.caveat_note_id}",
+                "item_type": "caveat",
+                "trace_status": "resolved",
+                "missing_trace_fields": [],
+            },
+        ],
+        "unresolved_trace_count": 0,
+        "operator_decision": decision,
+        "review_notes": review_notes,
+        "result_review_request_basis_hash": "c" * 64,
+    }
+    result_review_hash = pm.d33_sha256(record)
+    review_record_ref = f"b1b-result-review-{result_review_hash}"
+    review_state = _RESULT_REVIEW_STATE_BY_DECISION[decision]
+    pass_run.summary_json = {
+        **copy.deepcopy(pass_run.summary_json),
+        "execution_result_review": {
+            **record,
+            "review_record_ref": review_record_ref,
+            "review_state": review_state,
+            "result_review_hash": result_review_hash,
+        },
+    }
+    promoted.summary_json = {
+        "schema_id": "layer3.b1b_session_state.v1",
+        "review_record_ref": review_record_ref,
+        "review_state": review_state,
+        "result_review_hash": result_review_hash,
+        "analysis_plan_id": plan.analysis_plan_id,
+        "pass_run_id": pass_run.pass_run_id,
+        "analysis_run_id": analysis_run.analysis_run_id,
+        "package_review_state": None,
+        "package_review_hash": None,
+        "reconciliation_record_id": None,
+        "packages": None,
+        "connector_dataset_handoff_basis_hash": None,
+    }
+    db.flush()
+    return copy.deepcopy(promoted.summary_json)
+
+
+def _install_closed_package_review(db, receipt, promoted, decision: str) -> dict:
+    result_state = _install_closed_result_review(db, receipt, promoted, "approved")
+    reconciliation = db.query(L3ReconciliationRecord).filter_by(session_id=promoted.session_id).one_or_none()
+    if reconciliation is None:
+        reconciliation = L3ReconciliationRecord(
+            reconciliation_record_id=str(uuid.uuid4()),
+            session_id=promoted.session_id,
+            status="reconciled",
+            summary_json={},
+        )
+        db.add(reconciliation)
+        db.flush()
+        for index, package_kind in enumerate(_PACKAGE_ORDER):
+            db.add(
+                L3OutputPackage(
+                    output_package_id=str(uuid.uuid4()),
+                    session_id=promoted.session_id,
+                    reconciliation_record_id=reconciliation.reconciliation_record_id,
+                    package_kind=package_kind,
+                    status="package_complete",
+                    payload_ref=f"b1b://package/{package_kind}",
+                    payload_hash=str(index + 1) * 64,
+                    summary_json={},
+                )
+            )
+        db.flush()
+    rows = {
+        row.package_kind: row
+        for row in db.query(L3OutputPackage).filter_by(session_id=promoted.session_id).all()
+    }
+    packages = [
+        {
+            "package_kind": kind,
+            "output_package_id": rows[kind].output_package_id,
+            "payload_sha256": rows[kind].payload_hash,
+        }
+        for kind in _PACKAGE_ORDER
+    ]
+    package_set = {
+        "construction_basis_hash": "d" * 64,
+        "member_count": 9,
+        "bundle_index_order_hash": "e" * 64,
+        "package_manifest_sha256": "f" * 64,
+        "package_rehash_sha256": "0" * 64,
+        "packages": [
+            {**item, "payload_bytes": 1000 + index}
+            for index, item in enumerate(packages)
+        ],
+    }
+    package_record = {
+        "schema_id": "layer3.b1b_package_review_record.v1",
+        "review_request_basis_hash": "1" * 64,
+        "package_review_preview_hash": "2" * 64,
+        "construction_basis_hash": package_set["construction_basis_hash"],
+        "reconciliation_record_id": reconciliation.reconciliation_record_id,
+        "output_package_ids": [item["output_package_id"] for item in packages],
+        "package_kinds": [item["package_kind"] for item in packages],
+        "payload_hashes": [item["payload_sha256"] for item in packages],
+        "operator_decision": decision,
+        "decision_notes": None if decision == "approved" else f"{decision} note",
+    }
+    package_review_hash = pm.d33_sha256(package_record)
+    handoff_basis = None
+    handoff_hash = None
+    if decision == "approved":
+        handoff_basis = {
+            "approved_reviews": {
+                "package_review_hash": package_review_hash,
+                "result_review_hash": result_state["result_review_hash"],
+            },
+            "canonical_internal": {
+                "byte_length": package_set["packages"][0]["payload_bytes"],
+                "output_package_id": packages[0]["output_package_id"],
+                "payload_hash": packages[0]["payload_sha256"],
+            },
+            "package_set": {
+                "reconciliation_record_id": reconciliation.reconciliation_record_id,
+                "review_facing_output_package_id": packages[2]["output_package_id"],
+                "review_facing_payload_hash": packages[2]["payload_sha256"],
+                "user_facing_output_package_id": packages[1]["output_package_id"],
+                "user_facing_payload_hash": packages[1]["payload_sha256"],
+            },
+            "promoted_session_id": promoted.session_id,
+            "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+            "schema_id": "layer3.connector_dataset_handoff_basis.v1",
+        }
+        handoff_hash = pm.d33_sha256(handoff_basis)
+    reconciliation.summary_json = {
+        "schema_id": "layer3.b1b_reconciliation_summary.v1",
+        "profile": "receipt_bound_b1b",
+        "source_gate": "50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE",
+        "promotion_receipt_id": receipt.connector_promotion_receipt_id,
+        "promoted_session_id": promoted.session_id,
+        "result_review_hash": result_state["result_review_hash"],
+        "package_review_preview_hash": package_record["package_review_preview_hash"],
+        "package_set": package_set,
+        "package_review_submit": package_record,
+        "package_review_hash": package_review_hash,
+        "connector_dataset_handoff_basis": handoff_basis,
+        "connector_dataset_handoff_basis_hash": handoff_hash,
+    }
+    promoted.summary_json = {
+        **result_state,
+        "package_review_state": _PACKAGE_REVIEW_STATE_BY_DECISION[decision],
+        "package_review_hash": package_review_hash,
+        "reconciliation_record_id": reconciliation.reconciliation_record_id,
+        "packages": packages,
+        "connector_dataset_handoff_basis_hash": handoff_hash,
+    }
+    db.flush()
+    return copy.deepcopy(promoted.summary_json)
+
+
+def test_closed_replay_contract_accepts_all_staged_success_progressions(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _gate_b_session_id, resolved = _materialize_replay_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        "closed-success",
+    )
+    promoted_session_id = resolved["promoted_session_id"]
+    with b1b_step3_runtime["factory"]() as db:
+        assert _replay_summary_contract_valid(db, promoted_session_id)
+        preview, approval = _approve_replay_subject(db, promoted_session_id, "closed-success")
+        assert _replay_summary_contract_valid(db, promoted_session_id)
+        selection = _select_replay_subject(
+            db,
+            promoted_session_id,
+            "closed-success",
+            preview,
+            approval,
+        )
+        assert _replay_summary_contract_valid(db, promoted_session_id)
+        start = _start_replay_subject(
+            db,
+            promoted_session_id,
+            "closed-success",
+            preview,
+            approval,
+            selection,
+        )
+        assert start["pass_run_status"] == "completed_with_warnings"
+        assert _replay_summary_contract_valid(db, promoted_session_id)
+
+
+def test_closed_replay_contract_accepts_failed_terminal_and_replay_is_inert(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id, resolved = _materialize_replay_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        "closed-failed",
+    )
+    promoted_session_id = resolved["promoted_session_id"]
+    with b1b_step3_runtime["factory"]() as db:
+        preview, approval = _approve_replay_subject(db, promoted_session_id, "closed-failed")
+        selection = _select_replay_subject(
+            db,
+            promoted_session_id,
+            "closed-failed",
+            preview,
+            approval,
+        )
+
+        def _fail_analysis(*_args, **_kwargs):
+            raise RuntimeError("expected closed replay failure")
+
+        monkeypatch.setattr(layer3_pass_entry, "run_analysis", _fail_analysis)
+        start = _start_replay_subject(
+            db,
+            promoted_session_id,
+            "closed-failed",
+            preview,
+            approval,
+            selection,
+        )
+        assert start["pass_run_status"] == "failed"
+        assert db.query(AnalysisRun).count() == 0
+        assert _replay_summary_contract_valid(db, promoted_session_id)
+    rows_before = _b1b_03_row_projection(b1b_step3_runtime)
+    files_before = _all_storage_files(b1b_step3_runtime)
+    assert _resolve(b1b_step3_runtime, gate_b_session_id) == {
+        **resolved,
+        "disposition": "reused",
+    }
+    assert _b1b_03_row_projection(b1b_step3_runtime) == rows_before
+    assert _all_storage_files(b1b_step3_runtime) == files_before
+
+
+def test_closed_replay_contract_accepts_all_result_and_package_decision_states(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _gate_b_session_id, resolved = _materialize_replay_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        "closed-reviews",
+    )
+    promoted_session_id = resolved["promoted_session_id"]
+    with b1b_step3_runtime["factory"]() as db:
+        preview, approval = _approve_replay_subject(db, promoted_session_id, "closed-reviews")
+        selection = _select_replay_subject(db, promoted_session_id, "closed-reviews", preview, approval)
+        _start_replay_subject(
+            db,
+            promoted_session_id,
+            "closed-reviews",
+            preview,
+            approval,
+            selection,
+        )
+        promoted = db.get(L3Session, promoted_session_id)
+        receipt = db.query(L3ConnectorPromotionReceipt).filter_by(promoted_session_id=promoted_session_id).one()
+        assert promoted is not None
+        for decision, expected_state in _RESULT_REVIEW_STATE_BY_DECISION.items():
+            state = _install_closed_result_review(db, receipt, promoted, decision)
+            assert state["review_state"] == expected_state
+            assert all(state[key] is None for key in tuple(state)[-5:])
+            assert _replay_summary_contract_valid(db, promoted_session_id)
+        for decision, expected_state in _PACKAGE_REVIEW_STATE_BY_DECISION.items():
+            state = _install_closed_package_review(db, receipt, promoted, decision)
+            assert state["package_review_state"] == expected_state
+            assert [item["package_kind"] for item in state["packages"]] == list(_PACKAGE_ORDER)
+            assert (state["connector_dataset_handoff_basis_hash"] is not None) is (
+                decision == "approved"
+            )
+            assert _replay_summary_contract_valid(db, promoted_session_id)
+
+
+def test_closed_replay_contract_rejects_malformed_states_without_resolver_mutation(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate_b_session_id, _resolved = _materialize_replay_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        "closed-reject",
+    )
+    with b1b_step3_runtime["factory"]() as db:
+        promoted = db.query(L3Session).filter(L3Session.session_id != gate_b_session_id).one()
+        promoted_session_id = promoted.session_id
+        preview, approval = _approve_replay_subject(db, promoted_session_id, "closed-reject")
+        selection = _select_replay_subject(db, promoted_session_id, "closed-reject", preview, approval)
+        _start_replay_subject(
+            db,
+            promoted_session_id,
+            "closed-reject",
+            preview,
+            approval,
+            selection,
+        )
+        staged = copy.deepcopy(promoted.summary_json)
+        assert _replay_summary_contract_valid(db, promoted_session_id)
+        base = {
+            key: value
+            for key, value in staged.items()
+            if key not in {"plan_approval", "execution_selection", "analysis_execution_start"}
+        }
+        staged_cases: dict[str, dict] = {}
+        staged_cases["unknown_top_level"] = {**staged, "unexpected": True}
+        staged_cases["partial_base"] = copy.deepcopy(staged)
+        staged_cases["partial_base"].pop("loaded_snapshot_count")
+        staged_cases["out_of_order"] = {
+            **base,
+            "execution_selection": copy.deepcopy(staged["execution_selection"]),
+        }
+        staged_cases["mixed_top_schema"] = {**staged, "schema_id": "layer3.b1b_session_state.v1"}
+        staged_cases["nested_schema_mismatch"] = copy.deepcopy(staged)
+        staged_cases["nested_schema_mismatch"]["execution_selection"]["schema_id"] = (
+            "layer3.b1b_session_state.v1"
+        )
+        staged_cases["unknown_nested_field"] = copy.deepcopy(staged)
+        staged_cases["unknown_nested_field"]["plan_approval"]["unexpected"] = True
+        staged_cases["boolean_domain"] = copy.deepcopy(staged)
+        staged_cases["boolean_domain"]["execution_selection"]["operator_reason_recorded"] = 1
+        staged_cases["cardinality"] = copy.deepcopy(staged)
+        staged_cases["cardinality"]["execution_selection"]["pass_run_ids_json"] = []
+        staged_cases["terminal_partial"] = copy.deepcopy(staged)
+        staged_cases["terminal_partial"]["analysis_execution_start"].pop("completed_at")
+        staged_cases["terminal_status_link"] = copy.deepcopy(staged)
+        staged_cases["terminal_status_link"]["analysis_execution_start"]["pass_run_status"] = "failed"
+        staged_cases["terminal_timestamp_link"] = copy.deepcopy(staged)
+        staged_cases["terminal_timestamp_link"]["analysis_execution_start"]["completed_at"] = (
+            "2000-01-01T00:00:00+00:00"
+        )
+        for name, candidate in staged_cases.items():
+            promoted.summary_json = candidate
+            db.flush()
+            assert not _replay_summary_contract_valid(db, promoted_session_id), name
+
+        receipt = db.query(L3ConnectorPromotionReceipt).filter_by(promoted_session_id=promoted_session_id).one()
+        approved = _install_closed_package_review(db, receipt, promoted, "approved")
+        assert _replay_summary_contract_valid(db, promoted_session_id)
+        closed_cases: dict[str, dict] = {}
+        closed_cases["unknown_top_level"] = {**approved, "unexpected": True}
+        closed_cases["partial"] = copy.deepcopy(approved)
+        closed_cases["partial"].pop("package_review_hash")
+        closed_cases["unknown_schema"] = {**approved, "schema_id": "layer3.unknown.v1"}
+        closed_cases["package_order"] = copy.deepcopy(approved)
+        closed_cases["package_order"]["packages"] = list(reversed(closed_cases["package_order"]["packages"]))
+        closed_cases["approved_missing_handoff"] = {
+            **approved,
+            "connector_dataset_handoff_basis_hash": None,
+        }
+        closed_cases["package_hash_link"] = {**approved, "package_review_hash": "9" * 64}
+        for name, candidate in closed_cases.items():
+            promoted.summary_json = candidate
+            db.flush()
+            assert not _replay_summary_contract_valid(db, promoted_session_id), name
+
+        rejected = _install_closed_result_review(db, receipt, promoted, "rejected")
+        rejected_with_package = {
+            **rejected,
+            **{key: approved[key] for key in tuple(approved)[-5:]},
+        }
+        promoted.summary_json = rejected_with_package
+        db.flush()
+        assert not _replay_summary_contract_valid(db, promoted_session_id)
+
+        blocked = _install_closed_package_review(db, receipt, promoted, "blocked")
+        blocked["connector_dataset_handoff_basis_hash"] = approved[
+            "connector_dataset_handoff_basis_hash"
+        ]
+        promoted.summary_json = blocked
+        db.flush()
+        assert not _replay_summary_contract_valid(db, promoted_session_id)
+
+        resolver_invalid = _install_closed_package_review(db, receipt, promoted, "approved")
+        resolver_invalid["unexpected"] = True
+        promoted.summary_json = resolver_invalid
+        db.commit()
+
+    rows_before = _b1b_03_row_projection(b1b_step3_runtime)
+    files_before = _all_storage_files(b1b_step3_runtime)
+    with pytest.raises(pm.ConnectorPromotionError) as caught:
+        _resolve(b1b_step3_runtime, gate_b_session_id)
+    assert caught.value.code == "connector_materialization_basis_conflict"
+    assert _b1b_03_row_projection(b1b_step3_runtime) == rows_before
+    assert _all_storage_files(b1b_step3_runtime) == files_before
+
+
 def test_step5_first_call_profile_wrapper_links_and_response_are_exact(
     b1b_step3_runtime: dict,
     monkeypatch: pytest.MonkeyPatch,

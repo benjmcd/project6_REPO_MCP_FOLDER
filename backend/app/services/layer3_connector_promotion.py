@@ -34,6 +34,10 @@ from sqlalchemy.orm.exc import MultipleResultsFound
 
 from app.core.config import settings
 from app.models.models import (
+    AnalysisArtifact,
+    AnalysisRun,
+    AssumptionCheck,
+    CaveatNote,
     ConnectorRun,
     ConnectorRunTarget,
     Dataset,
@@ -43,7 +47,11 @@ from app.models.models import (
     L3ConnectorSourceIntakeRecord,
     L3Descriptor,
     L3GateBIdempotencyKey,
+    L3AnalysisPlan,
     L3MaterialSnapshot,
+    L3OutputPackage,
+    L3PassRun,
+    L3ReconciliationRecord,
     L3RetrievalEvent,
     L3SelectionManifest,
     L3Session,
@@ -1518,8 +1526,10 @@ def _resolve_regular_reference(raw_ref: str, root_ref: str) -> tuple[Path, str]:
     if not isinstance(raw_ref, str) or not raw_ref or "\x00" in raw_ref:
         raise PromotionIdentityError("storage reference is invalid")
     root_input = Path(root_ref)
-    if not root_input.exists() or not root_input.is_dir() or _is_reparse(root_input):
+    if not root_input.exists() or not root_input.is_dir():
         raise PromotionIdentityError("storage root is invalid")
+    if _is_reparse(root_input):
+        raise PromotionIdentityError("storage root contains a reparse point")
     _require_nonreparse_components(root_input)
     root = root_input.resolve(strict=True)
     candidate = Path(raw_ref)
@@ -1992,6 +2002,783 @@ def _model_matches_profile(
     return all(getattr(row, key) == value for key, value in profile.items() if key not in excluded)
 
 
+_MATERIALIZED_REPLAY_BASE = {
+    "descriptor_status_counts": {"resolved_loaded": 1},
+    "retrieval_outcome_counts": {"loaded": 1},
+    "loaded_snapshot_count": 1,
+    "source_planes": ["dataset"],
+    "warning_reasons": ["synthetic_non_official_fixture"],
+    "retrieved_descriptor_count": 1,
+    "unresolved_descriptor_count": 0,
+    "descriptor_coverage_status": "complete",
+}
+_PLAN_APPROVAL_KEYS = frozenset(
+    {
+        "analysis_plan_id",
+        "approved_set_count",
+        "excluded_set_count",
+        "planned_pass_count",
+        "source_preview_id",
+        "source_preview_hash",
+        "source_gate",
+        "approval_only",
+        "execution_started",
+    }
+)
+_EXECUTION_SELECTION_KEYS = frozenset(
+    {
+        "schema_id",
+        "state",
+        "client_request_id",
+        "analysis_plan_id",
+        "source_preview_id",
+        "source_preview_hash",
+        "pass_run_ids_json",
+        "pass_run_count",
+        "execution_started",
+        "analysis_run_ids_json",
+        "downstream_unavailable",
+        "operator_reason_recorded",
+        "selected_at",
+    }
+)
+_ANALYSIS_EXECUTION_START_KEYS = frozenset(
+    {
+        "schema_id",
+        "client_request_id",
+        "state",
+        "analysis_plan_id",
+        "pass_run_id",
+        "source_preview_id",
+        "source_preview_hash",
+        "analysis_run_id",
+        "pass_run_status",
+        "output_payload_ref",
+        "downstream_unavailable",
+        "operator_reason_recorded",
+        "started_at",
+        "completed_at",
+    }
+)
+_B1B_SESSION_STATE_KEYS = frozenset(
+    {
+        "schema_id",
+        "review_record_ref",
+        "review_state",
+        "result_review_hash",
+        "analysis_plan_id",
+        "pass_run_id",
+        "analysis_run_id",
+        "package_review_state",
+        "package_review_hash",
+        "reconciliation_record_id",
+        "packages",
+        "connector_dataset_handoff_basis_hash",
+    }
+)
+_RESULT_REVIEW_RECORD_KEYS = frozenset(
+    {
+        "schema_id",
+        "promotion_receipt_id",
+        "promoted_session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "analysis_run_id",
+        "result_payload_sha256",
+        "analysis_artifact_id",
+        "analysis_artifact_sha256",
+        "assumption_check_ids",
+        "caveat_note_id",
+        "reviewed_output_items",
+        "unresolved_trace_count",
+        "operator_decision",
+        "review_notes",
+        "result_review_request_basis_hash",
+    }
+)
+_PACKAGE_REVIEW_RECORD_KEYS = frozenset(
+    {
+        "schema_id",
+        "review_request_basis_hash",
+        "package_review_preview_hash",
+        "construction_basis_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_hashes",
+        "operator_decision",
+        "decision_notes",
+    }
+)
+_RESULT_REVIEW_STATES = {
+    "approved": "execution_result_review_approved",
+    "changes_requested": "execution_result_review_changes_requested",
+    "rejected": "execution_result_review_rejected",
+    "blocked": "execution_result_review_blocked",
+}
+_PACKAGE_REVIEW_STATES = {
+    "approved": "package_review_approved",
+    "changes_requested": "package_review_changes_requested",
+    "rejected": "package_review_rejected",
+    "blocked": "package_review_blocked",
+}
+_REPLAY_DOWNSTREAM_UNAVAILABLE = ["results", "package", "handoff"]
+_B1B_PACKAGE_ORDER = ["canonical_internal", "user_facing", "review_facing"]
+
+
+def _has_exact_keys(value: object, keys: frozenset[str]) -> bool:
+    return isinstance(value, dict) and set(value) == keys
+
+
+def _is_nonempty_string(value: object) -> bool:
+    return isinstance(value, str) and bool(value)
+
+
+def _is_lower_hex64(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def _timestamp_matches(value: object, row_value: datetime | None) -> bool:
+    if not isinstance(value, str) or not value or row_value is None:
+        return False
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    expected = row_value
+    if expected.tzinfo is None:
+        expected = expected.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc) == expected.astimezone(timezone.utc)
+
+
+def _approved_replay_plan(
+    db: OrmSession,
+    *,
+    promoted: L3Session,
+    approval: object,
+) -> L3AnalysisPlan | None:
+    if not _has_exact_keys(approval, _PLAN_APPROVAL_KEYS):
+        return None
+    assert isinstance(approval, dict)
+    if (
+        type(approval["approved_set_count"]) is not int
+        or approval["approved_set_count"] != 1
+        or type(approval["excluded_set_count"]) is not int
+        or approval["excluded_set_count"] != 0
+        or type(approval["planned_pass_count"]) is not int
+        or approval["planned_pass_count"] != 1
+        or approval["source_gate"] != "06_GATEC_PASS_FREEZE"
+        or approval["approval_only"] is not True
+        or approval["execution_started"] is not False
+        or not _is_nonempty_string(approval["analysis_plan_id"])
+        or not _is_nonempty_string(approval["source_preview_id"])
+        or not _is_nonempty_string(approval["source_preview_hash"])
+    ):
+        return None
+    plans = db.query(L3AnalysisPlan).filter(L3AnalysisPlan.session_id == promoted.session_id).all()
+    if len(plans) != 1 or plans[0].analysis_plan_id != approval["analysis_plan_id"]:
+        return None
+    plan = plans[0]
+    plan_json = plan.plan_json
+    if not isinstance(plan_json, dict):
+        return None
+    return plan if (
+        plan.status == "approved"
+        and plan.approved_by_operator is True
+        and plan.approved_at is not None
+        and isinstance(plan.analysis_set_ids_json, list)
+        and len(plan.analysis_set_ids_json) == 1
+        and plan_json.get("source_preview_id") == approval["source_preview_id"]
+        and plan_json.get("source_preview_hash") == approval["source_preview_hash"]
+        and plan_json.get("source_gate") == approval["source_gate"]
+        and plan_json.get("approval_only") is True
+        and plan_json.get("execution_started") is False
+        and isinstance(plan_json.get("approved_sets_json"), list)
+        and len(plan_json["approved_sets_json"]) == 1
+        and plan_json.get("excluded_sets_json") == []
+        and isinstance(plan_json.get("planned_passes_json"), list)
+        and len(plan_json["planned_passes_json"]) == 1
+    ) else None
+
+
+def _staged_execution_matches(
+    db: OrmSession,
+    *,
+    promoted: L3Session,
+    receipt: L3ConnectorPromotionReceipt,
+    plan: L3AnalysisPlan,
+    selection: object,
+    start: object | None,
+) -> bool:
+    terminal = start is not None
+    selection_keys = _EXECUTION_SELECTION_KEYS | ({"pass_run_statuses_json"} if terminal else set())
+    if not _has_exact_keys(selection, frozenset(selection_keys)):
+        return False
+    assert isinstance(selection, dict)
+    pass_run_ids = selection["pass_run_ids_json"]
+    if (
+        selection["schema_id"] != "layer3.execution_selection_state.v1"
+        or not _is_nonempty_string(selection["client_request_id"])
+        or selection["analysis_plan_id"] != plan.analysis_plan_id
+        or selection["source_preview_id"] != plan.plan_json.get("source_preview_id")
+        or selection["source_preview_hash"] != plan.plan_json.get("source_preview_hash")
+        or not isinstance(pass_run_ids, list)
+        or len(pass_run_ids) != 1
+        or not _is_nonempty_string(pass_run_ids[0])
+        or type(selection["pass_run_count"]) is not int
+        or selection["pass_run_count"] != 1
+        or selection["downstream_unavailable"] != _REPLAY_DOWNSTREAM_UNAVAILABLE
+        or type(selection["operator_reason_recorded"]) is not bool
+        or not _is_nonempty_string(selection["selected_at"])
+    ):
+        return False
+    pass_runs = db.query(L3PassRun).filter(L3PassRun.session_id == promoted.session_id).all()
+    if len(pass_runs) != 1 or pass_runs[0].pass_run_id != pass_run_ids[0]:
+        return False
+    pass_run = pass_runs[0]
+    pass_summary = pass_run.summary_json
+    if (
+        pass_run.analysis_plan_id != plan.analysis_plan_id
+        or not isinstance(pass_summary, dict)
+        or pass_summary.get("client_request_id") != selection["client_request_id"]
+        or pass_summary.get("analysis_plan_id") != selection["analysis_plan_id"]
+        or pass_summary.get("source_preview_id") != selection["source_preview_id"]
+        or pass_summary.get("source_preview_hash") != selection["source_preview_hash"]
+        or pass_summary.get("downstream_unavailable") != selection["downstream_unavailable"]
+        or pass_summary.get("selected_at") != selection["selected_at"]
+        or pass_summary.get("selection_state") != "execution_selected_not_started"
+    ):
+        return False
+    if not terminal:
+        return (
+            selection["state"] == "execution_selected_not_started"
+            and selection["execution_started"] is False
+            and selection["analysis_run_ids_json"] == []
+            and pass_run.status == "selected_not_started"
+            and pass_run.started_at is None
+            and pass_run.completed_at is None
+            and pass_run.output_payload_ref is None
+            and pass_summary.get("execution_started") is False
+            and pass_summary.get("analysis_run_id") is None
+        )
+    if not _has_exact_keys(start, _ANALYSIS_EXECUTION_START_KEYS):
+        return False
+    assert isinstance(start, dict)
+    pass_start = pass_summary.get("analysis_execution_start")
+    if (
+        start["schema_id"] != "layer3.analysis_execution_start_state.v1"
+        or not _is_nonempty_string(start["client_request_id"])
+        or start["analysis_plan_id"] != plan.analysis_plan_id
+        or start["pass_run_id"] != pass_run.pass_run_id
+        or start["source_preview_id"] != selection["source_preview_id"]
+        or start["source_preview_hash"] != selection["source_preview_hash"]
+        or start["downstream_unavailable"] != _REPLAY_DOWNSTREAM_UNAVAILABLE
+        or type(start["operator_reason_recorded"]) is not bool
+        or selection["execution_started"] is not True
+        or not isinstance(pass_start, dict)
+        or pass_start.get("client_request_id") != start["client_request_id"]
+        or pass_start.get("state") != start["state"]
+        or not _timestamp_matches(start["started_at"], pass_run.started_at)
+        or not _timestamp_matches(start["completed_at"], pass_run.completed_at)
+        or not _timestamp_matches(pass_start.get("started_at"), pass_run.started_at)
+        or not _timestamp_matches(pass_start.get("completed_at"), pass_run.completed_at)
+    ):
+        return False
+    if start["state"] == "execution_pass_completed":
+        analysis_run_id = start["analysis_run_id"]
+        analysis_run = db.get(AnalysisRun, analysis_run_id) if _is_nonempty_string(analysis_run_id) else None
+        return (
+            selection["state"] == "execution_pass_completed"
+            and selection["analysis_run_ids_json"] == [analysis_run_id]
+            and selection["pass_run_statuses_json"] == {pass_run.pass_run_id: "completed_with_warnings"}
+            and pass_run.status == "completed_with_warnings"
+            and pass_summary.get("execution_started") is True
+            and pass_summary.get("analysis_run_id") == analysis_run_id
+            and analysis_run is not None
+            and analysis_run.status == "completed"
+            and analysis_run.dataset_version_id == receipt.dataset_version_id
+            and start["pass_run_status"] == "completed_with_warnings"
+            and _is_nonempty_string(start["output_payload_ref"])
+            and start["output_payload_ref"] == pass_run.output_payload_ref
+        )
+    return (
+        start["state"] == "execution_pass_failed"
+        and selection["state"] == "execution_pass_failed"
+        and selection["analysis_run_ids_json"] == []
+        and selection["pass_run_statuses_json"] == {pass_run.pass_run_id: "failed"}
+        and pass_run.status == "failed"
+        and pass_summary.get("execution_started") is True
+        and pass_summary.get("analysis_run_id") is None
+        and start["analysis_run_id"] is None
+        and start["pass_run_status"] == "failed"
+        and start["output_payload_ref"] is None
+        and pass_run.output_payload_ref is None
+    )
+
+
+def _staged_replay_summary_matches(
+    db: OrmSession,
+    *,
+    receipt: L3ConnectorPromotionReceipt,
+    promoted: L3Session,
+    summary: dict[str, Any],
+) -> bool:
+    base_keys = frozenset(_MATERIALIZED_REPLAY_BASE)
+    progressions = (
+        base_keys,
+        base_keys | {"plan_approval"},
+        base_keys | {"plan_approval", "execution_selection"},
+        base_keys | {"plan_approval", "execution_selection", "analysis_execution_start"},
+    )
+    if frozenset(summary) not in progressions or any(
+        summary.get(key) != value for key, value in _MATERIALIZED_REPLAY_BASE.items()
+    ):
+        return False
+    if set(summary) == base_keys:
+        return (
+            db.query(L3AnalysisPlan).filter(L3AnalysisPlan.session_id == promoted.session_id).count() == 0
+            and db.query(L3PassRun).filter(L3PassRun.session_id == promoted.session_id).count() == 0
+        )
+    plan = _approved_replay_plan(db, promoted=promoted, approval=summary["plan_approval"])
+    if plan is None:
+        return False
+    if "execution_selection" not in summary:
+        return db.query(L3PassRun).filter(L3PassRun.session_id == promoted.session_id).count() == 0
+    return _staged_execution_matches(
+        db,
+        promoted=promoted,
+        receipt=receipt,
+        plan=plan,
+        selection=summary["execution_selection"],
+        start=summary.get("analysis_execution_start"),
+    )
+
+
+def _closed_result_review_matches(
+    db: OrmSession,
+    *,
+    receipt: L3ConnectorPromotionReceipt,
+    promoted: L3Session,
+    summary: dict[str, Any],
+) -> str | None:
+    plan_id = summary["analysis_plan_id"]
+    pass_run_id = summary["pass_run_id"]
+    analysis_run_id = summary["analysis_run_id"]
+    if not all(_is_nonempty_string(value) for value in (plan_id, pass_run_id, analysis_run_id)):
+        return None
+    plans = db.query(L3AnalysisPlan).filter(L3AnalysisPlan.session_id == promoted.session_id).all()
+    pass_runs = db.query(L3PassRun).filter(L3PassRun.session_id == promoted.session_id).all()
+    if (
+        len(plans) != 1
+        or plans[0].analysis_plan_id != plan_id
+        or len(pass_runs) != 1
+        or pass_runs[0].pass_run_id != pass_run_id
+    ):
+        return None
+    plan = plans[0]
+    pass_run = pass_runs[0]
+    analysis_run = db.get(AnalysisRun, analysis_run_id)
+    pass_summary = pass_run.summary_json
+    if (
+        plan.status != "approved"
+        or plan.approved_by_operator is not True
+        or pass_run.analysis_plan_id != plan.analysis_plan_id
+        or pass_run.status != "completed_with_warnings"
+        or not _is_nonempty_string(pass_run.output_payload_ref)
+        or not isinstance(pass_summary, dict)
+        or pass_summary.get("analysis_run_id") != analysis_run_id
+        or analysis_run is None
+        or analysis_run.status != "completed"
+        or analysis_run.dataset_version_id != receipt.dataset_version_id
+    ):
+        return None
+    review = pass_summary.get("execution_result_review")
+    review_keys = _RESULT_REVIEW_RECORD_KEYS | {
+        "review_record_ref",
+        "review_state",
+        "result_review_hash",
+    }
+    if not _has_exact_keys(review, frozenset(review_keys)):
+        return None
+    assert isinstance(review, dict)
+    record = {key: review[key] for key in _RESULT_REVIEW_RECORD_KEYS}
+    decision = record["operator_decision"]
+    expected_state = _RESULT_REVIEW_STATES.get(decision)
+    result_hash = review["result_review_hash"]
+    expected_ref = f"b1b-result-review-{result_hash}"
+    plan_json = plan.plan_json
+    check_ids = record["assumption_check_ids"]
+    reviewed_items = record["reviewed_output_items"]
+    if (
+        record["schema_id"] != "layer3.b1b_result_review_record.v1"
+        or record["promotion_receipt_id"] != receipt.connector_promotion_receipt_id
+        or record["promoted_session_id"] != promoted.session_id
+        or record["analysis_plan_id"] != plan.analysis_plan_id
+        or record["pass_run_id"] != pass_run.pass_run_id
+        or not isinstance(plan_json, dict)
+        or record["preview_id"] != plan_json.get("source_preview_id")
+        or record["preview_hash"] != plan_json.get("source_preview_hash")
+        or record["preview_id"] != pass_summary.get("source_preview_id")
+        or record["preview_hash"] != pass_summary.get("source_preview_hash")
+        or record["analysis_run_id"] != analysis_run.analysis_run_id
+        or not _is_lower_hex64(record["result_payload_sha256"])
+        or not _is_lower_hex64(record["analysis_artifact_sha256"])
+        or not _is_lower_hex64(record["result_review_request_basis_hash"])
+        or not isinstance(check_ids, list)
+        or len(check_ids) != 4
+        or len(set(check_ids)) != 4
+        or not all(_is_nonempty_string(value) for value in check_ids)
+        or type(record["unresolved_trace_count"]) is not int
+        or record["unresolved_trace_count"] != 0
+        or expected_state is None
+        or not _is_lower_hex64(result_hash)
+        or d33_sha256(record) != result_hash
+        or review["review_record_ref"] != expected_ref
+        or review["review_state"] != expected_state
+        or summary["review_record_ref"] != expected_ref
+        or summary["review_state"] != expected_state
+        or summary["result_review_hash"] != result_hash
+    ):
+        return None
+    notes = record["review_notes"]
+    if decision == "approved":
+        if notes is not None:
+            return None
+    elif not isinstance(notes, str) or not notes or notes != notes.strip():
+        return None
+    artifacts = db.query(AnalysisArtifact).filter(AnalysisArtifact.analysis_run_id == analysis_run_id).all()
+    checks = db.query(AssumptionCheck).filter(AssumptionCheck.analysis_run_id == analysis_run_id).all()
+    caveats = db.query(CaveatNote).filter(CaveatNote.analysis_run_id == analysis_run_id).all()
+    if (
+        len(artifacts) != 1
+        or artifacts[0].artifact_id != record["analysis_artifact_id"]
+        or len(checks) != 4
+        or {row.assumption_check_id for row in checks} != set(check_ids)
+        or len(caveats) != 1
+        or caveats[0].caveat_note_id != record["caveat_note_id"]
+    ):
+        return None
+    expected_items = [
+        {
+            "index": 0,
+            "item_ref": f"analysis-artifact:{artifacts[0].artifact_id}",
+            "item_type": "fact",
+            "trace_status": "resolved",
+            "missing_trace_fields": [],
+        },
+        {
+            "index": 1,
+            "item_ref": f"caveat:{caveats[0].caveat_note_id}",
+            "item_type": "caveat",
+            "trace_status": "resolved",
+            "missing_trace_fields": [],
+        },
+    ]
+    return decision if reviewed_items == expected_items else None
+
+
+def _handoff_basis_matches(
+    basis: object,
+    *,
+    basis_hash: object,
+    receipt: L3ConnectorPromotionReceipt,
+    promoted: L3Session,
+    result_review_hash: str,
+    package_review_hash: str,
+    reconciliation: L3ReconciliationRecord,
+    packages: list[dict[str, Any]],
+    package_set: dict[str, Any],
+) -> bool:
+    if not _has_exact_keys(
+        basis,
+        frozenset(
+            {
+                "approved_reviews",
+                "canonical_internal",
+                "package_set",
+                "promoted_session_id",
+                "promotion_receipt_id",
+                "schema_id",
+            }
+        ),
+    ):
+        return False
+    assert isinstance(basis, dict)
+    approved_reviews = basis["approved_reviews"]
+    canonical = basis["canonical_internal"]
+    basis_package_set = basis["package_set"]
+    if (
+        not _has_exact_keys(approved_reviews, frozenset({"package_review_hash", "result_review_hash"}))
+        or not _has_exact_keys(canonical, frozenset({"byte_length", "output_package_id", "payload_hash"}))
+        or not _has_exact_keys(
+            basis_package_set,
+            frozenset(
+                {
+                    "reconciliation_record_id",
+                    "review_facing_output_package_id",
+                    "review_facing_payload_hash",
+                    "user_facing_output_package_id",
+                    "user_facing_payload_hash",
+                }
+            ),
+        )
+    ):
+        return False
+    assert isinstance(approved_reviews, dict)
+    assert isinstance(canonical, dict)
+    assert isinstance(basis_package_set, dict)
+    return (
+        basis["schema_id"] == "layer3.connector_dataset_handoff_basis.v1"
+        and basis["promotion_receipt_id"] == receipt.connector_promotion_receipt_id
+        and basis["promoted_session_id"] == promoted.session_id
+        and approved_reviews
+        == {
+            "package_review_hash": package_review_hash,
+            "result_review_hash": result_review_hash,
+        }
+        and type(canonical["byte_length"]) is int
+        and canonical["byte_length"] > 0
+        and canonical["byte_length"] == package_set["packages"][0]["payload_bytes"]
+        and canonical["output_package_id"] == packages[0]["output_package_id"]
+        and canonical["payload_hash"] == packages[0]["payload_sha256"]
+        and basis_package_set
+        == {
+            "reconciliation_record_id": reconciliation.reconciliation_record_id,
+            "review_facing_output_package_id": packages[2]["output_package_id"],
+            "review_facing_payload_hash": packages[2]["payload_sha256"],
+            "user_facing_output_package_id": packages[1]["output_package_id"],
+            "user_facing_payload_hash": packages[1]["payload_sha256"],
+        }
+        and _is_lower_hex64(basis_hash)
+        and d33_sha256(basis) == basis_hash
+    )
+
+
+def _closed_package_review_matches(
+    db: OrmSession,
+    *,
+    receipt: L3ConnectorPromotionReceipt,
+    promoted: L3Session,
+    summary: dict[str, Any],
+    result_decision: str,
+) -> bool:
+    if result_decision != "approved":
+        return False
+    if (
+        not _is_nonempty_string(summary["package_review_state"])
+        or not _is_lower_hex64(summary["package_review_hash"])
+        or not _is_nonempty_string(summary["reconciliation_record_id"])
+        or not isinstance(summary["packages"], list)
+    ):
+        return False
+    reconciliation = db.get(L3ReconciliationRecord, summary["reconciliation_record_id"])
+    if reconciliation is None or reconciliation.session_id != promoted.session_id:
+        return False
+    reconciliation_rows = (
+        db.query(L3ReconciliationRecord)
+        .filter(L3ReconciliationRecord.session_id == promoted.session_id)
+        .all()
+    )
+    rows = db.query(L3OutputPackage).filter(L3OutputPackage.session_id == promoted.session_id).all()
+    if len(reconciliation_rows) != 1 or len(rows) != 3:
+        return False
+    rows_by_kind = {row.package_kind: row for row in rows}
+    if set(rows_by_kind) != set(_B1B_PACKAGE_ORDER) or any(
+        row.reconciliation_record_id != reconciliation.reconciliation_record_id
+        or row.status != "package_complete"
+        or not _is_lower_hex64(row.payload_hash)
+        for row in rows
+    ):
+        return False
+    packages = [
+        {
+            "package_kind": kind,
+            "output_package_id": rows_by_kind[kind].output_package_id,
+            "payload_sha256": rows_by_kind[kind].payload_hash,
+        }
+        for kind in _B1B_PACKAGE_ORDER
+    ]
+    if summary["packages"] != packages:
+        return False
+    reconciliation_summary = reconciliation.summary_json
+    reconciliation_keys = frozenset(
+        {
+            "schema_id",
+            "profile",
+            "source_gate",
+            "promotion_receipt_id",
+            "promoted_session_id",
+            "result_review_hash",
+            "package_review_preview_hash",
+            "package_set",
+            "package_review_submit",
+            "package_review_hash",
+            "connector_dataset_handoff_basis",
+            "connector_dataset_handoff_basis_hash",
+        }
+    )
+    if not _has_exact_keys(reconciliation_summary, reconciliation_keys):
+        return False
+    assert isinstance(reconciliation_summary, dict)
+    package_set = reconciliation_summary["package_set"]
+    package_set_keys = frozenset(
+        {
+            "construction_basis_hash",
+            "member_count",
+            "bundle_index_order_hash",
+            "package_manifest_sha256",
+            "package_rehash_sha256",
+            "packages",
+        }
+    )
+    if not _has_exact_keys(package_set, package_set_keys):
+        return False
+    assert isinstance(package_set, dict)
+    package_set_rows = package_set["packages"]
+    if (
+        type(package_set["member_count"]) is not int
+        or package_set["member_count"] != 9
+        or not all(
+            _is_lower_hex64(package_set[key])
+            for key in (
+                "construction_basis_hash",
+                "bundle_index_order_hash",
+                "package_manifest_sha256",
+                "package_rehash_sha256",
+            )
+        )
+        or not isinstance(package_set_rows, list)
+        or len(package_set_rows) != 3
+    ):
+        return False
+    for index, (stored, projected) in enumerate(zip(package_set_rows, packages, strict=True)):
+        if (
+            not _has_exact_keys(
+                stored,
+                frozenset({"package_kind", "output_package_id", "payload_bytes", "payload_sha256"}),
+            )
+            or {key: stored[key] for key in projected} != projected
+            or type(stored["payload_bytes"]) is not int
+            or stored["payload_bytes"] <= 0
+            or stored["package_kind"] != _B1B_PACKAGE_ORDER[index]
+        ):
+            return False
+    record = reconciliation_summary["package_review_submit"]
+    if not _has_exact_keys(record, _PACKAGE_REVIEW_RECORD_KEYS):
+        return False
+    assert isinstance(record, dict)
+    decision = record["operator_decision"]
+    expected_state = _PACKAGE_REVIEW_STATES.get(decision)
+    package_review_hash = reconciliation_summary["package_review_hash"]
+    if (
+        reconciliation_summary["schema_id"] != "layer3.b1b_reconciliation_summary.v1"
+        or reconciliation_summary["profile"] != "receipt_bound_b1b"
+        or reconciliation_summary["source_gate"] != "50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE"
+        or reconciliation_summary["promotion_receipt_id"] != receipt.connector_promotion_receipt_id
+        or reconciliation_summary["promoted_session_id"] != promoted.session_id
+        or reconciliation_summary["result_review_hash"] != summary["result_review_hash"]
+        or reconciliation_summary["package_review_preview_hash"]
+        != record["package_review_preview_hash"]
+        or record["schema_id"] != "layer3.b1b_package_review_record.v1"
+        or not _is_lower_hex64(record["review_request_basis_hash"])
+        or not _is_lower_hex64(record["package_review_preview_hash"])
+        or record["construction_basis_hash"] != package_set["construction_basis_hash"]
+        or record["reconciliation_record_id"] != reconciliation.reconciliation_record_id
+        or record["output_package_ids"] != [item["output_package_id"] for item in packages]
+        or record["package_kinds"] != _B1B_PACKAGE_ORDER
+        or record["payload_hashes"] != [item["payload_sha256"] for item in packages]
+        or expected_state is None
+        or summary["package_review_state"] != expected_state
+        or summary["package_review_hash"] != package_review_hash
+        or not _is_lower_hex64(package_review_hash)
+        or d33_sha256(record) != package_review_hash
+    ):
+        return False
+    notes = record["decision_notes"]
+    if decision == "approved":
+        if notes is not None:
+            return False
+        return _handoff_basis_matches(
+            reconciliation_summary["connector_dataset_handoff_basis"],
+            basis_hash=reconciliation_summary["connector_dataset_handoff_basis_hash"],
+            receipt=receipt,
+            promoted=promoted,
+            result_review_hash=summary["result_review_hash"],
+            package_review_hash=package_review_hash,
+            reconciliation=reconciliation,
+            packages=packages,
+            package_set=package_set,
+        ) and summary["connector_dataset_handoff_basis_hash"] == reconciliation_summary[
+            "connector_dataset_handoff_basis_hash"
+        ]
+    return (
+        isinstance(notes, str)
+        and bool(notes)
+        and notes == notes.strip()
+        and summary["connector_dataset_handoff_basis_hash"] is None
+        and reconciliation_summary["connector_dataset_handoff_basis"] is None
+        and reconciliation_summary["connector_dataset_handoff_basis_hash"] is None
+    )
+
+
+def _materialized_replay_summary_is_valid(
+    db: OrmSession,
+    *,
+    receipt: L3ConnectorPromotionReceipt,
+    promoted: L3Session,
+) -> bool:
+    summary = promoted.summary_json
+    if not isinstance(summary, dict):
+        return False
+    if "schema_id" not in summary:
+        return _staged_replay_summary_matches(
+            db,
+            receipt=receipt,
+            promoted=promoted,
+            summary=summary,
+        )
+    if (
+        summary.get("schema_id") != "layer3.b1b_session_state.v1"
+        or not _has_exact_keys(summary, _B1B_SESSION_STATE_KEYS)
+    ):
+        return False
+    try:
+        result_decision = _closed_result_review_matches(
+            db,
+            receipt=receipt,
+            promoted=promoted,
+            summary=summary,
+        )
+        if result_decision is None:
+            return False
+        package_fields = (
+            "package_review_state",
+            "package_review_hash",
+            "reconciliation_record_id",
+            "packages",
+            "connector_dataset_handoff_basis_hash",
+        )
+        if all(summary[field] is None for field in package_fields):
+            return True
+        return _closed_package_review_matches(
+            db,
+            receipt=receipt,
+            promoted=promoted,
+            summary=summary,
+            result_decision=result_decision,
+        )
+    except (PromotionIdentityError, TypeError, ValueError):
+        return False
+
+
 def _verify_materialized_replay(
     db: OrmSession,
     *,
@@ -2076,16 +2863,6 @@ def _verify_materialized_replay(
         .all()
     )
     manifest = db.get(L3SelectionManifest, promoted.selection_manifest_id)
-    materialization_summary = {
-        "descriptor_status_counts": {"resolved_loaded": 1},
-        "retrieval_outcome_counts": {"loaded": 1},
-        "loaded_snapshot_count": 1,
-        "source_planes": ["dataset"],
-        "warning_reasons": ["synthetic_non_official_fixture"],
-        "retrieved_descriptor_count": 1,
-        "unresolved_descriptor_count": 0,
-        "descriptor_coverage_status": "complete",
-    }
     if (
         len(provenance_rows) != 1
         or len(snapshots) != 1
@@ -2095,8 +2872,11 @@ def _verify_materialized_replay(
         or promoted.status != "completed_with_warnings"
         or promoted.completed_at is None
         or promoted.entry_route_context_json != {}
-        or not isinstance(promoted.summary_json, dict)
-        or any(promoted.summary_json.get(key) != value for key, value in materialization_summary.items())
+        or not _materialized_replay_summary_is_valid(
+            db,
+            receipt=receipt,
+            promoted=promoted,
+        )
     ):
         raise _closed_b1b_error("connector_materialization_basis_conflict")
     provenance = provenance_rows[0]
