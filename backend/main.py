@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import inspect
-import json
 import os
 import re
 import sys
@@ -85,19 +84,15 @@ def _b1b_closed_http_response(error_code: str) -> Response:
     )
 
 
-async def _b1b_shared_validation_is_receipt_bound(request: Request) -> bool:
+def _b1b_shared_validation_is_receipt_bound(body: Any) -> bool:
     try:
-        body = json.loads(await request.body())
-    except (json.JSONDecodeError, UnicodeDecodeError, RuntimeError):
-        return False
-    if not isinstance(body, dict):
-        return False
-    try:
+        if not isinstance(body, dict):
+            return False
         return layer3_connector_promotion.side_effect_free_b1b_result_review_scope(
             engine,
             body.get("session_id"),
         )
-    except layer3_connector_promotion.ConnectorPromotionError:
+    except Exception:
         return False
 
 
@@ -111,11 +106,11 @@ async def _b1b_path_scoped_validation_error_handler(
         and getattr(request.state, "b1b_prevalidation_authorized", False)
     ):
         return _b1b_closed_http_response("b1b_request_validation_failed")
-    if (
-        request.url.path in _B1B_SHARED_PREVALIDATION_PATHS
-        and await _b1b_shared_validation_is_receipt_bound(request)
-    ):
-        return _b1b_closed_http_response("b1b_request_validation_failed")
+    if request.url.path in _B1B_SHARED_PREVALIDATION_PATHS:
+        if not layer3_connector_promotion.bridge_precondition_available():
+            return await request_validation_exception_handler(request, exc)
+        if _b1b_shared_validation_is_receipt_bound(exc.body):
+            return _b1b_closed_http_response("b1b_request_validation_failed")
     return await request_validation_exception_handler(request, exc)
 
 

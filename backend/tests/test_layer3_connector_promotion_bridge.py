@@ -4167,11 +4167,63 @@ def test_b1b_04_unparseable_shared_route_body_preserves_native_validation_bytes(
         assert native.status_code == 422
         assert native.json() != pm.b1b_error_body("b1b_request_validation_failed")
 
+        classifier = main._b1b_shared_validation_is_receipt_bound
+        monkeypatch.setattr(main, "_b1b_shared_validation_is_receipt_bound", _boom)
+        flag_off = client.post(_RESULT_REVIEW_PATH, content="{not-json", headers=_OPERATOR_HEADERS)
+        assert flag_off.status_code == native.status_code
+        assert flag_off.content == native.content
+        assert flag_off.headers["content-type"] == native.headers["content-type"]
+        monkeypatch.setattr(main, "_b1b_shared_validation_is_receipt_bound", classifier)
+
+        original_request_body = main.Request.body
+        body_call_counts: dict[int, int] = {}
+
+        async def fail_on_handler_body_reread(request):
+            request_key = id(request)
+            body_call_counts[request_key] = body_call_counts.get(request_key, 0) + 1
+            if body_call_counts[request_key] > 2:
+                raise AssertionError("validation handler must classify from RequestValidationError.body")
+            return await original_request_body(request)
+
+        monkeypatch.setattr(main.Request, "body", fail_on_handler_body_reread)
         _enable_step5(monkeypatch)
         enabled = client.post(_RESULT_REVIEW_PATH, content="{not-json", headers=_OPERATOR_HEADERS)
         assert enabled.status_code == native.status_code
         assert enabled.content == native.content
         assert enabled.headers["content-type"] == native.headers["content-type"]
+        assert max(body_call_counts.values()) == 2
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+def test_b1b_04_shared_validation_classifier_errors_preserve_native_bytes(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = {"session_id": str(uuid.uuid4()), "unknown_evidence": "native-error-sentinel"}
+    _configure_step5_proxy(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    monkeypatch.setattr(main, "engine", b1b_step3_runtime["engine"])
+    client = TestClient(main.app, raise_server_exceptions=False)
+    try:
+        monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", False)
+        native = client.post(_RESULT_REVIEW_PATH, json=payload, headers=_OPERATOR_HEADERS)
+        assert native.status_code == 422
+
+        _enable_step5(monkeypatch)
+        for error_type in (RecursionError, MemoryError, AttributeError, TypeError):
+            def raise_classifier_error(*_args, _error_type=error_type, **_kwargs):
+                raise _error_type("classifier failure")
+
+            monkeypatch.setattr(
+                pm,
+                "side_effect_free_b1b_result_review_scope",
+                raise_classifier_error,
+            )
+            response = client.post(_RESULT_REVIEW_PATH, json=payload, headers=_OPERATOR_HEADERS)
+            assert response.status_code == native.status_code
+            assert response.content == native.content
+            assert response.headers["content-type"] == native.headers["content-type"]
     finally:
         main.app.dependency_overrides.pop(get_db, None)
 
