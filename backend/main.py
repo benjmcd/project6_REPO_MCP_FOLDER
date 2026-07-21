@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import json
 import os
 import re
 import sys
@@ -73,7 +74,6 @@ _B1B_NEW_PREVALIDATION_PATHS = {
 _B1B_SHARED_PREVALIDATION_PATHS = {
     f"{settings.api_prefix.rstrip('/')}/layer3/execution/result/review",
 }
-_B1B_PREVALIDATION_PATHS = _B1B_NEW_PREVALIDATION_PATHS | _B1B_SHARED_PREVALIDATION_PATHS
 
 
 def _b1b_closed_http_response(error_code: str) -> Response:
@@ -85,14 +85,35 @@ def _b1b_closed_http_response(error_code: str) -> Response:
     )
 
 
+async def _b1b_shared_validation_is_receipt_bound(request: Request) -> bool:
+    try:
+        body = json.loads(await request.body())
+    except (json.JSONDecodeError, UnicodeDecodeError, RuntimeError):
+        return False
+    if not isinstance(body, dict):
+        return False
+    try:
+        return layer3_connector_promotion.side_effect_free_b1b_result_review_scope(
+            engine,
+            body.get("session_id"),
+        )
+    except layer3_connector_promotion.ConnectorPromotionError:
+        return False
+
+
 @app.exception_handler(RequestValidationError)
 async def _b1b_path_scoped_validation_error_handler(
     request: Request,
     exc: RequestValidationError,
 ):
     if (
-        request.url.path in _B1B_PREVALIDATION_PATHS
+        request.url.path in _B1B_NEW_PREVALIDATION_PATHS
         and getattr(request.state, "b1b_prevalidation_authorized", False)
+    ):
+        return _b1b_closed_http_response("b1b_request_validation_failed")
+    if (
+        request.url.path in _B1B_SHARED_PREVALIDATION_PATHS
+        and await _b1b_shared_validation_is_receipt_bound(request)
     ):
         return _b1b_closed_http_response("b1b_request_validation_failed")
     return await request_validation_exception_handler(request, exc)
@@ -493,11 +514,6 @@ async def _pre_body_operator_authorization_middleware(request: Request, call_nex
         if request.url.path in _B1B_NEW_PREVALIDATION_PATHS:
             if not layer3_connector_promotion.bridge_precondition_available():
                 return _b1b_closed_http_response("connector_promotion_bridge_unavailable")
-            request.state.b1b_prevalidation_authorized = True
-        elif (
-            request.url.path in _B1B_SHARED_PREVALIDATION_PATHS
-            and layer3_connector_promotion.bridge_precondition_available()
-        ):
             request.state.b1b_prevalidation_authorized = True
     return await call_next(request)
 

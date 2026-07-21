@@ -4125,6 +4125,57 @@ def test_b1b_04_scope_checks_full_process_precondition_before_database_access(
     assert pm.side_effect_free_b1b_result_review_scope(object(), str(uuid.uuid4())) is False
 
 
+def test_b1b_04_ordinary_validation_error_preserves_native_bytes_when_bridge_enabled(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session_id, _, _, _ = _prepare_ordinary_result_review_subject(
+        b1b_step3_runtime,
+        "b1b-04-native-validation-parity",
+    )
+    payload = {"session_id": session_id, "unknown_evidence": "ordinary-native-sentinel"}
+    _configure_step5_proxy(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    monkeypatch.setattr(main, "engine", b1b_step3_runtime["engine"])
+    client = TestClient(main.app, raise_server_exceptions=False)
+    try:
+        monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", False)
+        native = client.post(_RESULT_REVIEW_PATH, json=payload, headers=_OPERATOR_HEADERS)
+        assert native.status_code == 422
+        assert native.json() != pm.b1b_error_body("b1b_request_validation_failed")
+
+        _enable_step5(monkeypatch)
+        enabled = client.post(_RESULT_REVIEW_PATH, json=payload, headers=_OPERATOR_HEADERS)
+        assert enabled.status_code == native.status_code
+        assert enabled.content == native.content
+        assert enabled.headers["content-type"] == native.headers["content-type"]
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
+def test_b1b_04_unparseable_shared_route_body_preserves_native_validation_bytes(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _configure_step5_proxy(monkeypatch)
+    _install_step5_db_override(b1b_step3_runtime)
+    monkeypatch.setattr(main, "engine", b1b_step3_runtime["engine"])
+    client = TestClient(main.app, raise_server_exceptions=False)
+    try:
+        monkeypatch.setattr(settings, "layer3_connector_promotion_bridge_enabled", False)
+        native = client.post(_RESULT_REVIEW_PATH, content="{not-json", headers=_OPERATOR_HEADERS)
+        assert native.status_code == 422
+        assert native.json() != pm.b1b_error_body("b1b_request_validation_failed")
+
+        _enable_step5(monkeypatch)
+        enabled = client.post(_RESULT_REVIEW_PATH, content="{not-json", headers=_OPERATOR_HEADERS)
+        assert enabled.status_code == native.status_code
+        assert enabled.content == native.content
+        assert enabled.headers["content-type"] == native.headers["content-type"]
+    finally:
+        main.app.dependency_overrides.pop(get_db, None)
+
+
 def test_b1b_04_ordinary_route_preserves_exact_native_bytes_and_state_flag_off_and_no_receipt(
     b1b_step3_runtime: dict,
     monkeypatch: pytest.MonkeyPatch,
@@ -4151,6 +4202,7 @@ def test_b1b_04_ordinary_route_preserves_exact_native_bytes_and_state_flag_off_a
     _enable_step5(monkeypatch)
     _configure_step5_proxy(monkeypatch)
     _install_step5_db_override(b1b_step3_runtime)
+    monkeypatch.setattr(main, "engine", b1b_step3_runtime["engine"])
     files_before = _all_storage_files(b1b_step3_runtime)
     with b1b_step3_runtime["factory"]() as db:
         pass_run = db.get(L3PassRun, start["pass_run_id"])
@@ -5348,6 +5400,7 @@ def test_b1b_04_route_preserves_auth_precedence_and_canonical_closed_transport(
     payload = _b1b_04_review_payload(resolved, preview, approval, start)
     _configure_step5_proxy(monkeypatch)
     _install_step5_db_override(b1b_step3_runtime)
+    monkeypatch.setattr(main, "engine", b1b_step3_runtime["engine"])
     client = TestClient(main.app, raise_server_exceptions=False)
     try:
         absent = client.post(
@@ -5403,7 +5456,6 @@ def test_b1b_04_route_preserves_auth_precedence_and_canonical_closed_transport(
         assert conflict.content == pm.d33_canonical_bytes(conflict.json())
 
         malformed_responses = (
-            client.post(_RESULT_REVIEW_PATH, content="{not-json", headers=_OPERATOR_HEADERS),
             client.post(
                 _RESULT_REVIEW_PATH,
                 json={**payload, "unknown_evidence": "do-not-echo"},
