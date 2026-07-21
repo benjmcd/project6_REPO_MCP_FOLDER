@@ -2746,6 +2746,67 @@ def test_closed_replay_contract_accepts_all_result_and_package_decision_states(
             assert _replay_summary_contract_valid(db, promoted_session_id)
 
 
+@pytest.mark.parametrize(
+    ("path", "replacement"),
+    (
+        pytest.param(("loaded_snapshot_count",), True, id="loaded-snapshot-bool"),
+        pytest.param(("retrieved_descriptor_count",), 1.0, id="retrieved-descriptor-float"),
+        pytest.param(("unresolved_descriptor_count",), False, id="unresolved-descriptor-bool"),
+        pytest.param(
+            ("descriptor_status_counts", "resolved_loaded"),
+            True,
+            id="resolved-loaded-bool",
+        ),
+        pytest.param(("retrieval_outcome_counts", "loaded"), 1.0, id="loaded-float"),
+        pytest.param(
+            ("plan_approval", "approved_set_count"),
+            True,
+            id="approved-set-count-bool",
+        ),
+        pytest.param(
+            ("execution_selection", "execution_started"),
+            1,
+            id="execution-started-int",
+        ),
+    ),
+)
+def test_closed_replay_contract_rejects_numeric_type_substitutions_without_durable_mutation(
+    b1b_step3_runtime: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    path: tuple[str, ...],
+    replacement: object,
+) -> None:
+    stem = f"typed-{path[-1].replace('_', '-')}"
+    _gate_b_session_id, resolved = _materialize_replay_subject(
+        b1b_step3_runtime,
+        monkeypatch,
+        stem,
+    )
+    promoted_session_id = resolved["promoted_session_id"]
+    with b1b_step3_runtime["factory"]() as db:
+        preview, approval = _approve_replay_subject(db, promoted_session_id, stem)
+        _select_replay_subject(db, promoted_session_id, stem, preview, approval)
+
+    rows_before = _b1b_03_row_projection(b1b_step3_runtime)
+    files_before = _all_storage_files(b1b_step3_runtime)
+    with b1b_step3_runtime["factory"]() as db:
+        promoted = db.get(L3Session, promoted_session_id)
+        assert promoted is not None
+        malformed = copy.deepcopy(promoted.summary_json)
+        target = malformed
+        for key in path[:-1]:
+            target = target[key]
+            assert isinstance(target, dict)
+        target[path[-1]] = replacement
+        promoted.summary_json = malformed
+        db.flush()
+        assert not _replay_summary_contract_valid(db, promoted_session_id)
+        db.rollback()
+
+    assert _b1b_03_row_projection(b1b_step3_runtime) == rows_before
+    assert _all_storage_files(b1b_step3_runtime) == files_before
+
+
 def test_closed_replay_contract_rejects_malformed_states_without_resolver_mutation(
     b1b_step3_runtime: dict,
     monkeypatch: pytest.MonkeyPatch,

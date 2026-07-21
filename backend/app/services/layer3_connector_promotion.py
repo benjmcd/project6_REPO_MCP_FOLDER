@@ -2332,13 +2332,31 @@ def _staged_replay_summary_matches(
     summary: dict[str, Any],
 ) -> bool:
     base_keys = frozenset(_MATERIALIZED_REPLAY_BASE)
+    descriptor_counts = summary.get("descriptor_status_counts")
+    retrieval_counts = summary.get("retrieval_outcome_counts")
+    source_planes = summary.get("source_planes")
+    warning_reasons = summary.get("warning_reasons")
+    base_types_are_exact = (
+        type(descriptor_counts) is dict
+        and type(descriptor_counts.get("resolved_loaded")) is int
+        and type(retrieval_counts) is dict
+        and type(retrieval_counts.get("loaded")) is int
+        and type(summary.get("loaded_snapshot_count")) is int
+        and type(summary.get("retrieved_descriptor_count")) is int
+        and type(summary.get("unresolved_descriptor_count")) is int
+        and type(source_planes) is list
+        and all(type(value) is str for value in source_planes)
+        and type(warning_reasons) is list
+        and all(type(value) is str for value in warning_reasons)
+        and type(summary.get("descriptor_coverage_status")) is str
+    )
     progressions = (
         base_keys,
         base_keys | {"plan_approval"},
         base_keys | {"plan_approval", "execution_selection"},
         base_keys | {"plan_approval", "execution_selection", "analysis_execution_start"},
     )
-    if frozenset(summary) not in progressions or any(
+    if frozenset(summary) not in progressions or not base_types_are_exact or any(
         summary.get(key) != value for key, value in _MATERIALIZED_REPLAY_BASE.items()
     ):
         return False
