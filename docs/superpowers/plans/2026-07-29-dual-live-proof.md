@@ -1281,8 +1281,10 @@ process alive at any instant—and adversarial tests are mandatory.
   records `reserved_not_sent` and calls no transport;
 - fingerprint the final prepared request and require equality with the
   reservation's request fingerprint; both fingerprints are computed by the SAME
-  secret-free preimage schema (method, URL, non-secret header names/values,
-  credential audience label, body hash — never the subscription-key value),
+  secret-free preimage schema — the full eight-component schema defined in the
+  reservation-fingerprint paragraph above (arming/grant digest, ordinal, stage,
+  method, normalized exact URL, non-secret header names/values, credential
+  audience label, body hash/absence — never the subscription-key value) —
   with the send-side fingerprint recomputed over the request Requests hands to
   the adapter after its own header merging; a mismatch records
   `reserved_not_sent` and calls no transport;
@@ -2463,10 +2465,9 @@ Before either arming:
 12. launch only through the campaign wrapper, setting live egress true only in
     the acquisition child: create the log directory with exclusive permissions, force
     UTF-8, redirect process stdout/stderr, route application and HTTP-library
-    logs to the indexed four files — with `http.jsonl` carrying counter records
-    ONLY (application and HTTP-library chatter goes to `app.jsonl` and the
-    wrapper-owned stdout/stderr streams, never into `http.jsonl`, whose strict
-    evaluator parse would otherwise yield INDETERMINATE) — disable other
+    logs to `app.jsonl` and the wrapper-owned stdout/stderr streams while
+    `http.jsonl` receives counter records ONLY (any other line in `http.jsonl`
+    makes the evaluator's strict parse INDETERMINATE), disable other
     process-owned handlers, and record runtime start without logging secrets or
     exact URLs;
 13. re-resolve the campaign's earliest complete-slice revision, require it to
