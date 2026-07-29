@@ -235,11 +235,13 @@ The recommended structure is:
    content-addressed bytes plus expected deterministic consumption-marker
    hashes for later read-only verification, and fixes the one protected
    four-stream runtime-log directory/manifest/separate-seal contract;
-4. one ScienceBase arming that binds its verified grant digest, the campaign
-   fingerprint, and only ScienceBase target/host/method/path/budget authority;
-5. one NRC APS arming that binds its verified grant digest, the same campaign
+4. one NRC APS arming that binds its verified grant digest, the campaign
    fingerprint, and only the exact NRC target/host/method/path/credential/budget
    authority described below;
+5. one ScienceBase arming, creatable only after the NRC acquisition-success
+   predicate, that binds its verified grant digest, the same campaign
+   fingerprint, the predecessor NRC parent-run ID and `ledger_terminal_hash`,
+   and only ScienceBase target/host/method/path/budget authority;
 6. a committed hash/class-only derived arming before either connector sends a
    detail-derived artifact request;
 7. independent technical outcomes;
@@ -341,7 +343,7 @@ Rejected alternatives:
 
 ### 5.2 No-migration serial MVP
 
-For a trusted, single-process, single-operator proof, the narrowest design can
+For a trusted, serial, single-operator proof, the narrowest design can
 reuse existing tables:
 
 - a `ConnectorRun` with status `armed` is the arming record;
@@ -355,7 +357,13 @@ reuse existing tables:
   `consumed/<raw_grant_sha256>.json` marker under the protected evidence root
   supplies the cross-client/cross-DB one-parent-arming fence;
 - an execute call atomically transitions `armed` to `pending` and enqueues only
-  the frozen configuration.
+  the frozen configuration, and only when its compare-and-swap claim returns
+  `claimed_now=true`; executor lease acquisition is the only transition from
+  `pending` to `running`, every physical reservation requires `running` plus
+  the exact active lease, and a strict-only finalizer commits the one terminal
+  transition to `completed`, `failed`, or `cancelled` while releasing the
+  lease and emitting one deterministic terminal event; generic resume, cancel,
+  and target-count finalize paths are rejected for strict runs.
 
 The execute request must not accept replacement connector configuration.
 
@@ -374,7 +382,8 @@ grant, reservation, and budget schema becomes necessary before multi-process,
 recurring, shared-budget, auto-resume, default-on, or production use.
 Immutability in this MVP is service-enforced rather than protected by a
 database trigger. That limitation is acceptable only inside the exclusive
-single-process proof and is independently checked by the evaluator.
+serial proof—at most one campaign process alive at any instant—and is
+independently checked by the evaluator.
 The consumption marker deliberately cannot be rolled back if the following DB
 transaction fails; availability is sacrificed so owner authority cannot be
 silently restored.
@@ -389,7 +398,12 @@ Creation records intent only and performs no network operation. Execution is a
 second call that independently reloads the same exact owner grant and caller
 posture. Both operations fail closed when the campaign feature flag is off.
 
-The proof runs in an isolated, single-process, exclusive runtime. While the
+The proof runs in an isolated, exclusive serial runtime with a hard
+acquisition/downstream process boundary. An acquisition-only child process
+alone holds credentials and live egress and ends at raw admission; a
+secret-free, network-denied process performs parsing and Layer 3C only after
+the child's process tree is stopped and process/port quiescence is proven. At
+most one campaign process is alive at any instant. While the
 proof flag is enabled, generic ScienceBase/NRC submit and resume routes are
 blocked so unrelated connector traffic cannot be mistaken for or escape the
 campaign ledger. Existing generic behavior remains unchanged when the proof
@@ -463,8 +477,21 @@ independently queries both events, and requires exact cross-domain parity. It
 accepts no index/log/seal path from a caller. This is local experimental tamper
 evidence, not a signature, WORM store, or cryptographic nonrepudiation.
 
-Validation starts only after the live child is stopped and the manifest/seal/
-events are complete. Its separate CLI requires live egress disabled, current
+The network privilege window closes at raw admission. The acquisition child
+never parses acquired bytes beyond the bounded admission media/shape checks
+(ScienceBase nonempty CSV header/data-row shape; NRC `%PDF-` magic bytes): the
+existing NRC document path runs native PDF
+parsing, a default-on OCR fallback, in-process PaddleOCR, a Tesseract
+subprocess, and Camelot table extraction in the invoking process, so parsing
+may not share a process with the key or live egress. After the child's tree is
+terminated and quiescence is proven, the downstream phase parses the
+content-addressed bytes with optional OCR/Camelot/Paddle paths disabled and
+with fixed bounds on pages, rendered pixels, CPU, memory, subprocesses, temp
+disk, table rows/columns, extracted text, and output bytes; a breached bound
+fails the campaign.
+
+Validation starts only after both campaign phases are stopped and the
+manifest/seal/events are complete. Its separate CLI requires live egress disabled, current
 campaign-definition/grant settings cleared, and a fail-closed
 application-process network guard installed before application/service imports;
 raw socket, DNS, HTTP-client, and connector-transport probes must all be denied
@@ -537,19 +564,25 @@ Immediately before every send, one independent reservation transaction must:
    connector grant, traverse the evidence-index chain, and require its
    configured revision to remain both the unique maximal head and the earliest
    complete-slice introduction revision bound by the arming;
-2. lock/load the run and verify strict proof mode, `pending` state, current
-   lease token, arming/definition/grant/campaign fingerprints, active
+2. lock/load the run and verify strict proof mode, `running` state, the exact
+   active lease token, arming/definition/grant/campaign fingerprints, active
    index revision/digest, code revision, and both original half-open windows;
 3. verify the requested stage/ordinal is the next permitted one, within the
    connector map and frozen ceiling, with every prior reservation terminal;
-4. revalidate method, host, port, path/query rule, credential audience, byte
-   cap, and any required derived-arming hash;
+4. revalidate method, host, port, path/query rule, credential audience, the
+   effective byte cap — the lesser of the stage cap and the remaining
+   aggregate wire budget under `max_run_bytes` — and any required
+   derived-arming hash;
 5. insert the deterministic `egress_reserved` event and commit;
 6. recheck time/lease/flags/definition/grant hashes and unique-maximal
    index-head revision/digest, then capture `send_started_at` immediately before
    transport; an expired or changed definition/grant/index head records
    `reserved_not_sent` and sends nothing;
-7. perform exactly one HTTP send with library retries and redirects disabled;
+7. perform exactly one HTTP send with library retries and redirects disabled,
+   cookies rejected, `Accept-Encoding: identity`, the final prepared request
+   fingerprint-matched to the reservation, the counting adapter appending its
+   wire-accounting record, and the absolute monotonic deadline and effective
+   byte cap enforced while streaming;
 8. record one completion or classified failure event, including the captured
    send-start time, and commit.
 
@@ -574,8 +607,29 @@ admitted raw bytes. Completion may follow expiry only for a bounded request that
 started inside both windows. Equality with either `expires_at` is expired in
 current and historical checks.
 
-This app ledger plus an instrumented transport counter is adequate for the
-single-process experimental proof. It is not an independent network-provider
+The transport counter is concrete, not aspirational: a counting HTTP adapter
+at the lowest application-visible Requests boundary, inside the
+acquisition-only child that alone performs physical sends, appends one
+secret-free deterministic record per physical send to the manifest-bound,
+seal-covered `http.jsonl` capture — ordinal, stage, fingerprint of the final
+prepared request, wire header bytes, wire body bytes, decoded body bytes,
+decoded-body SHA-256, response status, and monotonic start/stop readings
+paired with injected UTC evidence timestamps. Wire bytes — status line, raw
+headers, and body as received before any content decoding, including
+redirect, partial, failed, and oversized responses — are the budget currency:
+their run aggregate must never exceed `max_run_bytes`, enforced before
+reservation and during every streamed response. `Accept-Encoding: identity`
+is sent so wire and decoded body counts coincide, and a response declaring
+any other encoding stops; raw headers are bounded; cookies are never stored
+or replayed. Each send runs under an absolute deadline derived from
+`request_timeout_seconds` and measured on the process monotonic clock, and
+`min_request_interval_ms` is monotonic spacing per actual destination host —
+no duration, budget, or rate decision reads the wall clock. The absolute
+authority-window membership checks (campaign and grant `not_before`/`issued_at`/
+`expires_at`) are the stated exception: they read the injected UTC clock, and
+wall-clock trust there is an explicit, disclosed limitation of this MVP.
+This app ledger plus that counter is adequate for the exclusive serial
+experimental proof. It is not an independent network-provider
 audit. Production promotion requires proxy-, firewall-, or OS-level egress
 accounting in addition to the application ledger. The experimental transport
 must ignore ambient proxy/cookie configuration, retain TLS verification, and
@@ -831,15 +885,23 @@ artifact hash and that every downstream receipt continues to bind that origin.
 | M2 | connector-specific strict modes | one shared adversarial network-contract review; separate connector tests | both clients fail closed offline |
 | M3 | source-to-Layer3 continuity receipts | shared integrity review | both verticals hash-bound offline |
 | M4 | crash/concurrency/redaction/negative suite | one readiness review | implementation candidate ready for owner preflight |
-| M5 | exact server-configured campaign definition, single-use connector grants, new immutable evidence-index revision/marker bindings, and parent armings | common campaign review, connector-separated grant digests/receipts | live execution authorized once as written; original definition, grant, consumption, and index bytes preserved |
-| M6 | NRC acquisition, then ScienceBase acquisition, with derived artifact armings created only from admitted responses | per-connector budget and outcome check | fresh bytes acquired or safely stopped |
-| M7 | Layer 3C, review, three packages, submit, handoff prepare | combined campaign closeout | one named workflow per source proven through boundary |
+| M5 | exact server-configured campaign definition, single-use connector grants, new immutable evidence-index revision/marker bindings, and the NRC parent arming only — both grant digests verified, ScienceBase grant left unconsumed | common campaign review, connector-separated grant digests/receipts | live execution authorized once as written; original definition, grant, consumption, and index bytes preserved |
+| M6 | NRC acquisition; then, only after the NRC acquisition-success predicate, ScienceBase parent arming and acquisition, all executed inside the acquisition-only child, with derived artifact armings created only from admitted responses; network/credential capability removed at raw admission by process-tree stop, session close, key/grant clear, and quiescence proof | per-connector budget and outcome check | fresh bytes acquired or safely stopped; privilege window closed; an NRC stop leaves the ScienceBase grant unconsumed |
+| M7 | network-inert Layer 3C, review, three packages, submit, handoff prepare in a secret-free, network-denied process with OCR/Camelot/Paddle disabled and fixed parse resource bounds | combined campaign closeout | one named workflow per source proven through boundary |
 | M8 | second campaign under a new definition/grants and strict-superset index successor, no code changes; reject index rollback/fork and old-grant re-arming, then re-evaluate both campaigns | repeatability and historical-lifecycle review | repeatability evidenced without losing campaign-1 auditability or reviving budget |
 | M9 | explicit promotion decision | new owner/product/security decision | either remain experimental or design production controls |
 
 NRC runs first because its keyed API/public-artifact behavior has more unknowns and can
 invalidate the shared campaign before the simpler anonymous acquisition spends
-its grant. This ordering does not let NRC failure consume ScienceBase authority.
+its grant. The isolation is mechanical, not procedural: preflight verifies both
+grant digests but arms and consumes NRC only. The ScienceBase parent arming —
+and with it the atomic consumption marker that spends its grant — cannot be
+created until the arming service revalidates the NRC parent run in strict
+terminal `completed` and binds that run's ID and `ledger_terminal_hash` into
+the ScienceBase envelope. An NRC failure, safe stop, or indeterminate outcome
+therefore ends the campaign while the expected ScienceBase consumption-marker
+path is verifiably absent and its grant unconsumed; the abandoned grant is
+retired by campaign-close head advancement, never transferred or reused.
 
 M0/M1 may proceed in an isolated worktree independently of the current Claude
 session's B1b review/capture lane. If both lanes would share a mutable worktree,
@@ -858,8 +920,10 @@ The campaign passes only if:
    campaign introduction revision/digest that was the head before arming,
    verified campaign-definition raw digest and
    rederived canonical fingerprint, both verified owner grant digests/nonces,
-   both exact one-use consumption markers, both deterministic parent armings,
-   and every response-derived arming are recorded;
+   both exact one-use consumption markers, both deterministic parent armings —
+   the ScienceBase envelope binding the NRC parent-run ID and
+   `ledger_terminal_hash` that prove NRC terminal success preceded ScienceBase
+   consumption — and every response-derived arming are recorded;
 2. every physical request reloads/rederives the exact server definition,
    revalidates the exact connector grant and the unique-maximal index head
    against the arming-bound revision/digest, and has a prior committed
@@ -867,8 +931,11 @@ The campaign passes only if:
    half-open windows;
 3. observed sends do not exceed either connector’s ceiling;
 4. no credential reaches an unapproved audience or redirect;
-5. both artifacts are complete `200` responses within byte limits and
-   `fresh_live` is independently derived from their terminal ledgers;
+5. both artifacts are complete `200` responses within byte limits, each strict
+   connector run carries exactly one valid deterministic terminal event with
+   status `completed`, no unexpired execution lease, and no later failure or
+   cancellation evidence, and `fresh_live` is independently derived from
+   their terminal ledgers;
 6. exact target predicates pass;
 7. raw hashes and every continuity receipt agree;
 8. each appropriate Layer 3 chain reaches result review;
@@ -895,12 +962,19 @@ duplicate executor, timeout, partial/empty/oversized/wrong-type content, target
 mismatch, hash mismatch, secret-audience ambiguity, or persistence failure.
 
 One connector’s failure does not make the other connector successful, does not
-expand the other grant, and does not satisfy the combined campaign.
+expand the other grant, and does not satisfy the combined campaign. An NRC
+stop precedes ScienceBase arming, so it leaves the expected ScienceBase
+consumption-marker path absent and that grant unconsumed; the evaluator
+verifies that absence directly rather than inferring it from ordering.
 
 ### Evidence insufficiency
 
-If app-ledger and instrumented-transport counts disagree, the result is
-indeterminate and fails. If a live send could have occurred but its completion
+If the DB request ledger and the manifest-bound transport counter disagree in
+any way — a missing, extra, or unparseable counter record; a mismatched
+ordinal, fingerprint, status, byte count, or body hash; or a failed
+rederivation of the `max_run_bytes` aggregate or `min_request_interval_ms`
+spacing — the result is `INDETERMINATE` and fails; it is never narrated into
+success. If a live send could have occurred but its completion
 is unknown, count it as spent and do not replay it. If downstream bytes cannot
 be re-derived, do not claim continuity.
 
@@ -919,8 +993,9 @@ be re-derived, do not claim continuity.
 | logs and self-hashing manifest are rewritten together | historical custody scan passes altered bytes | separate indexed no-overwrite seal plus matching deterministic events on both connector runs; production still requires signed/WORM evidence |
 | hidden HTTP retry | request ceiling exceeded | one-send transport below retry layers |
 | ambient proxy/cookie state or DNS rebinding | credential audience or destination differs from the reviewed request | isolated session with `trust_env=False`, empty cookies, TLS verification, public-address checks; production requires independent egress enforcement |
+| network privilege outlives acquisition | parser/OCR/table workloads execute while the key and live egress are still present | acquisition-only child ends at raw admission; process-tree stop, session close, key/grant clear, and quiescence proof before parse; secret-free network-denied downstream process; OCR/Camelot/Paddle disabled; fixed parse resource bounds |
 | crash after send | result unknown, accidental replay | reservation counts spent; no auto-resume |
-| concurrent executor | duplicate sends | lease plus atomic `armed → pending` transition |
+| concurrent executor | duplicate sends | atomic `armed → pending` claim with `claimed_now`-gated enqueue; lease-acquisition-only `pending → running`; reservation requires `running` plus the exact active lease |
 | oversized response | memory/disk pressure | streamed byte ceilings, hydration cap |
 | stale historical filename | wrong ScienceBase file | confirm exact name in hydration; no fallback |
 | fixture/live conflation | overclaimed readiness | separate `OFFLINE-PROVEN` and fresh-live receipts |
