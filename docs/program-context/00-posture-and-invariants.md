@@ -203,3 +203,60 @@ is which.)
   B1b build PR, or B1b build merge is authorized by those records.
 - Current standing:
   `B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED.`
+
+> **Candidate invariant:** I14 becomes standing only when co-committed with the
+> exact dual-live campaign record, implementation plan, and D35-D43 after M0
+> review. Until then it is a proposal and grants no authority.
+
+## I14. Connector caller posture is not egress-grant authority
+
+- Requires: identity, role, local mode, feature flags, and caller-supplied
+  references never substitute for the named connector grant required by
+  D27/D28. A live arming and every physical-request reservation must first
+  load/rederive the protected strict campaign definition as a deny-only
+  correlation predicate, then load the connector-specific owner grant from a
+  protected server path, match separately configured SHA-256 values, strictly
+  validate the definition/grant intersection and both half-open windows, and
+  traverse the protected evidence-index chain. Its configured revision must be
+  the unique maximal head and the selected campaign's earliest complete-slice
+  introduction before marker creation; a preserved ancestor cannot arm even if
+  its grant is unused. After arming, that revision/digest must remain equal to
+  the immutable arming binding at reservation and immediately before send. Bind
+  the definition, grant, and index digests to the arming. Only the grant
+  supplies egress authority.
+- Also requires: `fresh_live` is derived from a canonical terminal request
+  ledger plus admitted raw bytes; it is never a caller field. One canonical
+  connector-origin receipt lives on the connector target and downstream
+  surfaces carry only its ID/hash.
+- Historical boundary: expired or rotated definition/grant bytes may be
+  rehashed only through a protected server-configured content-addressed
+  evidence-index chain to validate recorded send times inside both original
+  half-open windows. The configured index must be the unique maximal head;
+  successors preserve every predecessor reference and add exactly one complete
+  disjoint slice. Campaign armings, log seals, and both seal events bind the
+  earliest complete-slice introduction revision/digest. Those evidence types
+  are distinct/read-only and cannot arm, execute, reserve, send, or revive
+  budget.
+- Ceiling and custody boundary: each grant has one nonce, one deterministic
+  parent arming, and one no-overwrite consumption marker. Any replacement needs
+  a new strict definition/campaign and explicitly superseding grant;
+  same-campaign recovery is not admissible. Exact derived URLs remain in
+  memory; strict URL scalar columns are null and raw metadata responses are not
+  persisted. ScienceBase duplicate-member/sole-`downloadUri` and raw-path/query
+  authority are checked before permissive parsing. The four-stream runtime-log
+  manifest, separate no-overwrite seal, and both connector-run seal events are
+  part of the custody scan; machine-global logs and cryptographic
+  nonrepudiation are not claimed.
+- Why optimal: authentication answers who called, while the grant answers what
+  exact egress was approved. Separating them prevents a local flag or owner
+  role from silently widening target, credential audience, or request budget,
+  and prevents fixture/live relabeling.
+- Experimental boundary: protected local definition/grant files,
+  no-overwrite seals, and service-enforced JSON/event immutability are adequate
+  only for the exclusive single-process proof.
+  Supported multi-user/production operation requires a signed grant/control
+  plane and normalized immutable grant/ledger/receipt schema.
+- Prospective enforcement:
+  `docs/campaign-records/2026-07-29-dual-live-proof.md`,
+  `docs/superpowers/plans/2026-07-29-dual-live-proof.md`, D39-D43. No
+  implementation, grant file, egress, or proof is claimed by this candidate.
