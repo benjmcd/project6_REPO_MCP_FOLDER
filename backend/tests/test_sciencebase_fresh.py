@@ -1167,6 +1167,65 @@ def test_locked_raw_file_round_trip_uses_available_backend(
     assert output.read_bytes() == content
 
 
+def test_locked_raw_snapshot_retains_descriptor_through_caller_block(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    content = b"held-snapshot-content\n"
+    raw_root = tmp_path / "raw"
+    output = raw_root / "sha256" / "held.bin"
+    raw_handles.persist_locked_raw_file(raw_root, output, content)
+    captured_fds: list[int] = []
+    real_hash_fd = raw_handles._hash_fd
+
+    def capture_hash(fd: int, **kwargs: Any) -> tuple[int, str, bool]:
+        captured_fds.append(fd)
+        return real_hash_fd(fd, **kwargs)
+
+    monkeypatch.setattr(raw_handles, "_hash_fd", capture_hash)
+    with raw_handles.locked_raw_file_snapshot(
+        raw_root,
+        output,
+    ) as snapshot:
+        held_fd = captured_fds[0]
+        assert os.fstat(held_fd).st_size == len(content)
+        assert snapshot.canonical_ref == str(output.resolve(strict=True))
+        assert snapshot.size == len(content)
+        assert snapshot.sha256 == hashlib.sha256(content).hexdigest()
+
+    with pytest.raises(OSError):
+        os.fstat(held_fd)
+    assert len(captured_fds) == 2
+
+
+def test_locked_raw_snapshot_exit_rehash_detects_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    content = b"snapshot-drift-content\n"
+    raw_root = tmp_path / "raw"
+    output = raw_root / "sha256" / "drift.bin"
+    raw_handles.persist_locked_raw_file(raw_root, output, content)
+    real_hash_fd = raw_handles._hash_fd
+    calls = 0
+
+    def drift_hash(fd: int, **kwargs: Any) -> tuple[int, str, bool]:
+        nonlocal calls
+        calls += 1
+        size, digest, matches = real_hash_fd(fd, **kwargs)
+        if calls == 2:
+            digest = "0" * 64
+        return size, digest, matches
+
+    monkeypatch.setattr(raw_handles, "_hash_fd", drift_hash)
+    with pytest.raises(raw_handles.StableRawStorageError) as excinfo:
+        with raw_handles.locked_raw_file_snapshot(raw_root, output):
+            pass
+
+    assert excinfo.value.reason == "changed"
+    assert calls == 2
+
+
 def test_posix_locked_raw_file_rejects_symlink_component(
     tmp_path: Path,
 ) -> None:

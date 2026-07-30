@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from sqlalchemy import and_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import ApsContentChunk, ApsContentDocument, ApsContentLinkage
@@ -52,6 +53,10 @@ APS_CONTENT_INDEX_GATE_FAILURE_DB_CHUNK_MISSING = "artifact_db_chunk_missing"
 APS_CONTENT_INDEX_GATE_FAILURE_DB_CHUNK_FIELD_MISMATCH = "artifact_db_chunk_field_mismatch"
 APS_CONTENT_INDEX_GATE_FAILURE_DB_LINKAGE_MISSING = "artifact_db_linkage_missing"
 APS_CONTENT_INDEX_GATE_FAILURE_CHECKSUM_MISMATCH = "checksum_mismatch"
+
+
+class ImmutableContentInsertConflict(ValueError):
+    pass
 
 
 def _utc_iso() -> str:
@@ -881,6 +886,276 @@ def build_failure_artifact_payload(
     }
     payload["payload_sha256"] = _stable_hash(payload)
     return payload
+
+
+def _immutable_document(
+    payload: Mapping[str, Any],
+) -> ApsContentDocument:
+    visual_refs = payload.get("visual_page_refs")
+    return ApsContentDocument(
+        content_id=str(payload["content_id"]),
+        content_contract_id=str(payload["content_contract_id"]),
+        chunking_contract_id=str(payload["chunking_contract_id"]),
+        normalization_contract_id=str(
+            payload["normalization_contract_id"]
+        ),
+        normalized_text_sha256=str(
+            payload["normalized_text_sha256"]
+        ),
+        normalized_char_count=int(payload["normalized_char_count"]),
+        chunk_count=int(payload["chunk_count"]),
+        content_status=str(payload["content_status"]),
+        media_type=str(payload["effective_content_type"]),
+        document_class=str(payload["document_class"]),
+        quality_status=str(payload["quality_status"]),
+        page_count=int(payload["page_count"]),
+        diagnostics_ref=None,
+        visual_page_refs_json=json.dumps(visual_refs),
+    )
+
+
+def _immutable_chunks(
+    payload: Mapping[str, Any],
+) -> list[ApsContentChunk]:
+    raw_chunks = payload.get("chunks")
+    if not isinstance(raw_chunks, list):
+        raise ValueError("chunks_invalid")
+    rows: list[ApsContentChunk] = []
+    for raw_chunk in raw_chunks:
+        if not isinstance(raw_chunk, Mapping):
+            raise ValueError("chunk_invalid")
+        chunk = dict(raw_chunk)
+        rows.append(
+            ApsContentChunk(
+                content_id=str(payload["content_id"]),
+                chunk_id=str(chunk["chunk_id"]),
+                content_contract_id=str(
+                    payload["content_contract_id"]
+                ),
+                chunking_contract_id=str(
+                    payload["chunking_contract_id"]
+                ),
+                chunk_ordinal=int(chunk["chunk_ordinal"]),
+                start_char=int(chunk["start_char"]),
+                end_char=int(chunk["end_char"]),
+                chunk_text=str(chunk["chunk_text"]),
+                chunk_text_sha256=str(chunk["chunk_text_sha256"]),
+                page_start=(
+                    int(chunk["page_start"])
+                    if chunk.get("page_start") is not None
+                    else None
+                ),
+                page_end=(
+                    int(chunk["page_end"])
+                    if chunk.get("page_end") is not None
+                    else None
+                ),
+                unit_kind=str(chunk["unit_kind"]),
+                quality_status=str(payload["quality_status"]),
+            )
+        )
+    if len(rows) != int(payload["chunk_count"]):
+        raise ValueError("chunk_count_mismatch")
+    return rows
+
+
+def _immutable_linkage(
+    payload: Mapping[str, Any],
+) -> ApsContentLinkage:
+    return ApsContentLinkage(
+        content_id=str(payload["content_id"]),
+        run_id=str(payload["run_id"]),
+        target_id=str(payload["target_id"]),
+        accession_number=str(payload["accession_number"]),
+        content_contract_id=str(payload["content_contract_id"]),
+        chunking_contract_id=str(payload["chunking_contract_id"]),
+        content_units_ref=None,
+        normalized_text_ref=None,
+        normalized_text_sha256=str(
+            payload["normalized_text_sha256"]
+        ),
+        blob_ref=str(payload["blob_ref"]),
+        blob_sha256=str(payload["blob_sha256"]),
+        download_exchange_ref=None,
+        discovery_ref=None,
+        selection_ref=None,
+        diagnostics_ref=None,
+    )
+
+
+def _immutable_visual_refs(raw: str | None) -> object:
+    try:
+        return json.loads(raw) if raw is not None else None
+    except (TypeError, json.JSONDecodeError):
+        return None
+
+
+def _immutable_projection_exact(
+    db: Session,
+    *,
+    payload: Mapping[str, Any],
+) -> ApsContentLinkage | None:
+    content_id = str(payload["content_id"])
+    documents = (
+        db.query(ApsContentDocument)
+        .filter(ApsContentDocument.content_id == content_id)
+        .all()
+    )
+    chunks = (
+        db.query(ApsContentChunk)
+        .filter(ApsContentChunk.content_id == content_id)
+        .all()
+    )
+    linkages = (
+        db.query(ApsContentLinkage)
+        .filter(
+            ApsContentLinkage.run_id == str(payload["run_id"]),
+            ApsContentLinkage.target_id == str(payload["target_id"]),
+        )
+        .all()
+    )
+    if len(documents) != 1 or len(linkages) != 1:
+        return None
+    document = documents[0]
+    if not (
+        document.content_id == content_id
+        and document.content_contract_id
+        == payload["content_contract_id"]
+        and document.chunking_contract_id
+        == payload["chunking_contract_id"]
+        and document.normalization_contract_id
+        == payload["normalization_contract_id"]
+        and document.normalized_text_sha256
+        == payload["normalized_text_sha256"]
+        and document.normalized_char_count
+        == payload["normalized_char_count"]
+        and document.chunk_count == payload["chunk_count"]
+        and document.content_status == payload["content_status"]
+        and document.media_type == payload["effective_content_type"]
+        and document.document_class == payload["document_class"]
+        and document.quality_status == payload["quality_status"]
+        and document.page_count == payload["page_count"]
+        and document.diagnostics_ref is None
+        and _immutable_visual_refs(document.visual_page_refs_json)
+        == payload["visual_page_refs"]
+    ):
+        return None
+
+    expected_chunks = payload.get("chunks")
+    if not isinstance(expected_chunks, list) or len(chunks) != len(
+        expected_chunks
+    ):
+        return None
+    by_id = {row.chunk_id: row for row in chunks}
+    if len(by_id) != len(chunks):
+        return None
+    for raw_expected in expected_chunks:
+        if not isinstance(raw_expected, Mapping):
+            return None
+        expected = dict(raw_expected)
+        row = by_id.get(expected.get("chunk_id"))
+        if row is None or not (
+            row.content_id == content_id
+            and row.content_contract_id
+            == payload["content_contract_id"]
+            and row.chunking_contract_id
+            == payload["chunking_contract_id"]
+            and row.chunk_ordinal == expected.get("chunk_ordinal")
+            and row.start_char == expected.get("start_char")
+            and row.end_char == expected.get("end_char")
+            and row.chunk_text == expected.get("chunk_text")
+            and row.chunk_text_sha256
+            == expected.get("chunk_text_sha256")
+            and row.page_start == expected.get("page_start")
+            and row.page_end == expected.get("page_end")
+            and row.unit_kind == expected.get("unit_kind")
+            and row.quality_status == payload["quality_status"]
+        ):
+            return None
+
+    linkage = linkages[0]
+    if not (
+        linkage.content_id == content_id
+        and linkage.run_id == payload["run_id"]
+        and linkage.target_id == payload["target_id"]
+        and linkage.accession_number == payload["accession_number"]
+        and linkage.content_contract_id
+        == payload["content_contract_id"]
+        and linkage.chunking_contract_id
+        == payload["chunking_contract_id"]
+        and linkage.content_units_ref is None
+        and linkage.normalized_text_ref is None
+        and linkage.normalized_text_sha256
+        == payload["normalized_text_sha256"]
+        and linkage.blob_ref == payload["blob_ref"]
+        and linkage.blob_sha256 == payload["blob_sha256"]
+        and linkage.download_exchange_ref is None
+        and linkage.discovery_ref is None
+        and linkage.selection_ref is None
+        and linkage.diagnostics_ref is None
+    ):
+        return None
+    return linkage
+
+
+def _insert_content_units_immutable(
+    db: Session,
+    *,
+    payload: Mapping[str, Any],
+    reuse_exact_content: bool,
+) -> ApsContentLinkage:
+    if (
+        payload.get("content_contract_id") != APS_CONTENT_CONTRACT_ID
+        or payload.get("chunking_contract_id")
+        != APS_CHUNKING_CONTRACT_ID
+    ):
+        raise ValueError("unknown_contract_id")
+    try:
+        with db.begin_nested():
+            if not reuse_exact_content:
+                db.add(_immutable_document(payload))
+                db.add_all(_immutable_chunks(payload))
+            linkage = _immutable_linkage(payload)
+            db.add(linkage)
+            db.flush()
+            exact = _immutable_projection_exact(db, payload=payload)
+            if exact is None:
+                raise ImmutableContentInsertConflict(
+                    "content_units_immutable_conflict"
+                )
+            return exact
+    except IntegrityError as exc:
+        raise ImmutableContentInsertConflict(
+            "content_units_immutable_conflict"
+        ) from exc
+
+
+def insert_content_units_payload_immutable(
+    db: Session,
+    *,
+    payload: Mapping[str, Any],
+) -> ApsContentLinkage:
+    """Insert an absent exact projection without updating existing rows."""
+
+    return _insert_content_units_immutable(
+        db,
+        payload=payload,
+        reuse_exact_content=False,
+    )
+
+
+def insert_content_linkage_immutable(
+    db: Session,
+    *,
+    payload: Mapping[str, Any],
+) -> ApsContentLinkage:
+    """Insert one linkage over an already-exact shared projection."""
+
+    return _insert_content_units_immutable(
+        db,
+        payload=payload,
+        reuse_exact_content=True,
+    )
 
 
 def upsert_content_units_payload(db: Session, *, payload: dict[str, Any]) -> None:

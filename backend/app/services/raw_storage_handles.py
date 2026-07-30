@@ -36,6 +36,13 @@ _ERROR_ALREADY_EXISTS = 183
 _FILE_ATTRIBUTE_TAG_INFO_CLASS = 9
 
 
+@dataclass(frozen=True)
+class LockedRawFileSnapshot:
+    canonical_ref: str
+    size: int
+    sha256: str
+
+
 if os.name == "nt":
     import msvcrt
     from ctypes import wintypes
@@ -685,6 +692,169 @@ def _use_windows_file_handle(
         os.close(fd)
 
 
+def _read_windows_snapshot_state(
+    fd: int,
+    path: Path,
+    locked: list[tuple[int, Path, tuple[int, int]]],
+) -> tuple[tuple[int, int], tuple[int, int, int, int], int, str]:
+    before = os.fstat(fd)
+    handle = msvcrt.get_osfhandle(fd)
+    handle_identity = _validate_windows_handle(
+        handle,
+        path,
+        directory=False,
+    )
+    size, digest, _ = _hash_fd(fd)
+    after = os.fstat(fd)
+    if (
+        _fd_identity(before) != _fd_identity(after)
+        or _fd_stable_state(before) != _fd_stable_state(after)
+        or int(after.st_size) != size
+        or _validate_windows_handle(
+            handle,
+            path,
+            directory=False,
+        )
+        != handle_identity
+    ):
+        raise StableRawStorageError("changed")
+    _revalidate_windows_directories(locked)
+    return handle_identity, _fd_stable_state(after), size, digest
+
+
+def _read_posix_snapshot_state(
+    fd: int,
+    parent_fd: int,
+    file_name: str,
+    locked: list[_PosixDirectoryHandle],
+) -> tuple[tuple[int, int, int, int], int, str]:
+    before = os.fstat(fd)
+    before_identity = _require_posix_regular_file(before)
+    size, digest, _ = _hash_fd(fd)
+    after = os.fstat(fd)
+    after_identity = _require_posix_regular_file(after)
+    path_after = os.stat(
+        file_name,
+        dir_fd=parent_fd,
+        follow_symlinks=False,
+    )
+    if (
+        before_identity != after_identity
+        or _fd_stable_state(before) != _fd_stable_state(after)
+        or int(after.st_size) != size
+        or _require_posix_regular_file(path_after) != after_identity
+        or _fd_stable_state(path_after) != _fd_stable_state(after)
+    ):
+        raise StableRawStorageError("changed")
+    _revalidate_posix_directories(locked)
+    return _fd_stable_state(after), size, digest
+
+
+@contextmanager
+def _locked_windows_raw_file_snapshot(
+    raw_root: Path,
+    file_path: Path,
+) -> Iterator[LockedRawFileSnapshot]:
+    with _locked_windows_parents(
+        raw_root,
+        file_path,
+        create=False,
+    ) as (output, locked):
+        handle = _open_windows_file_handle(output, create_new=False)
+        try:
+            fd = msvcrt.open_osfhandle(
+                handle,
+                os.O_BINARY | os.O_RDONLY,
+            )
+        except OSError as exc:
+            _close_windows_handle(handle)
+            raise StableRawStorageError("io") from exc
+        try:
+            identity, stable_state, size, digest = (
+                _read_windows_snapshot_state(fd, output, locked)
+            )
+            snapshot = LockedRawFileSnapshot(
+                canonical_ref=str(output.resolve(strict=True)),
+                size=size,
+                sha256=digest,
+            )
+            try:
+                yield snapshot
+            finally:
+                (
+                    exit_identity,
+                    exit_state,
+                    exit_size,
+                    exit_digest,
+                ) = _read_windows_snapshot_state(
+                    fd,
+                    output,
+                    locked,
+                )
+                if (
+                    exit_identity != identity
+                    or exit_state != stable_state
+                    or exit_size != size
+                    or exit_digest != digest
+                ):
+                    raise StableRawStorageError("changed")
+        except OSError as exc:
+            raise StableRawStorageError("changed") from exc
+        finally:
+            os.close(fd)
+
+
+@contextmanager
+def _locked_posix_raw_file_snapshot(
+    raw_root: Path,
+    file_path: Path,
+) -> Iterator[LockedRawFileSnapshot]:
+    with _locked_posix_parents(
+        raw_root,
+        file_path,
+        create=False,
+    ) as (output, file_name, locked):
+        parent_fd = locked[-1].fd
+        fd = _open_posix_file_fd(
+            parent_fd,
+            file_name,
+            create_new=False,
+        )
+        try:
+            stable_state, size, digest = _read_posix_snapshot_state(
+                fd,
+                parent_fd,
+                file_name,
+                locked,
+            )
+            snapshot = LockedRawFileSnapshot(
+                canonical_ref=str(output.resolve(strict=True)),
+                size=size,
+                sha256=digest,
+            )
+            try:
+                yield snapshot
+            finally:
+                exit_state, exit_size, exit_digest = (
+                    _read_posix_snapshot_state(
+                        fd,
+                        parent_fd,
+                        file_name,
+                        locked,
+                    )
+                )
+                if (
+                    exit_state != stable_state
+                    or exit_size != size
+                    or exit_digest != digest
+                ):
+                    raise StableRawStorageError("changed")
+        except OSError as exc:
+            raise StableRawStorageError("changed") from exc
+        finally:
+            os.close(fd)
+
+
 def _persist_windows_locked_raw_file(
     raw_root: Path,
     file_path: Path,
@@ -730,20 +900,15 @@ def _hash_windows_locked_raw_file(
     raw_root: Path,
     file_path: Path,
 ) -> tuple[int, str, str]:
-    with _locked_windows_parents(
+    with _locked_windows_raw_file_snapshot(
         raw_root,
         file_path,
-        create=False,
-    ) as (output, locked):
-        handle = _open_windows_file_handle(output, create_new=False)
-        size, digest, _ = _use_windows_file_handle(
-            handle,
-            output,
-            locked,
-            write_content=None,
-            expected_content=None,
+    ) as snapshot:
+        return (
+            snapshot.size,
+            snapshot.sha256,
+            snapshot.canonical_ref,
         )
-        return size, digest, str(output.resolve(strict=True))
 
 
 def _persist_posix_locked_raw_file(
@@ -802,26 +967,37 @@ def _hash_posix_locked_raw_file(
     raw_root: Path,
     file_path: Path,
 ) -> tuple[int, str, str]:
-    with _locked_posix_parents(
+    with _locked_posix_raw_file_snapshot(
         raw_root,
         file_path,
-        create=False,
-    ) as (output, file_name, locked):
-        parent_fd = locked[-1].fd
-        fd = _open_posix_file_fd(
-            parent_fd,
-            file_name,
-            create_new=False,
+    ) as snapshot:
+        return (
+            snapshot.size,
+            snapshot.sha256,
+            snapshot.canonical_ref,
         )
-        size, digest, _ = _use_posix_file_fd(
-            fd,
-            parent_fd,
-            file_name,
-            locked,
-            write_content=None,
-            expected_content=None,
-        )
-        return size, digest, str(output)
+
+
+@contextmanager
+def locked_raw_file_snapshot(
+    raw_root: Path,
+    file_path: Path,
+) -> Iterator[LockedRawFileSnapshot]:
+    if _windows_backend_available():
+        with _locked_windows_raw_file_snapshot(
+            raw_root,
+            file_path,
+        ) as snapshot:
+            yield snapshot
+        return
+    if _supports_posix_anchored_io():
+        with _locked_posix_raw_file_snapshot(
+            raw_root,
+            file_path,
+        ) as snapshot:
+            yield snapshot
+        return
+    raise StableRawStorageError("unsupported")
 
 
 def persist_locked_raw_file(
