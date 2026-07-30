@@ -1,0 +1,1796 @@
+from __future__ import annotations
+
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
+import hashlib
+import http.client
+import io
+import json
+from pathlib import Path
+import sys
+from threading import Barrier
+from types import SimpleNamespace
+from typing import Any
+
+import pytest
+import requests
+from sqlalchemy import create_engine, event
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+BACKEND = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(BACKEND))
+
+from app.db.session import Base  # noqa: E402
+from app.models import ConnectorRun, ConnectorRunEvent  # noqa: E402
+from app.services import connector_egress_arming as arming  # noqa: E402
+from app.services import connector_egress_transport as transport  # noqa: E402
+
+
+@pytest.fixture()
+def session_factory(monkeypatch):
+    engine = create_engine(
+        "sqlite:///:memory:",
+        future=True,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+    monkeypatch.setattr(transport, "SESSION_FACTORY", factory)
+    try:
+        yield factory
+    finally:
+        engine.dispose()
+
+
+def _strict_envelope() -> dict:
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    return {
+        "schema_id": "project6.connector_egress_arming.v1",
+        "connector_key": "nrc_adams_aps",
+        "campaign_id": "7fe33e0a-c0e7-4f8e-9d55-8ba77a01ce23",
+        "campaign_fingerprint": "a" * 64,
+        "campaign_definition_sha256": "b" * 64,
+        "campaign_introduction_index_revision": 1,
+        "campaign_introduction_index_sha256": "c" * 64,
+        "arming_fingerprint": "d" * 64,
+        "grant_sha256": "e" * 64,
+        "canonical_grant_fingerprint": "f" * 64,
+        "code_revision": "test-revision",
+        "max_physical_requests": 2,
+        "max_run_bytes": 10_000,
+        "max_single_send_detection_allowance_bytes": (
+            transport.SINGLE_SEND_DETECTION_ALLOWANCE_BYTES
+        ),
+        "request_timeout_seconds": 30,
+        "min_request_interval_ms": 0,
+        "campaign_not_before": "2026-01-01T00:00:00.000000Z",
+        "campaign_expires_at": transport.utc_six_z(expires_at),
+        "grant_issued_at": "2026-01-01T00:00:00.000000Z",
+        "grant_expires_at": transport.utc_six_z(expires_at),
+        "request_rules": [
+            {
+                "ordinal": 1,
+                "stage": "exact_accession_api",
+                "method": "GET",
+                "scheme": "https",
+                "allowed_hosts": ["adams-api.nrc.gov"],
+                "port": 443,
+                "path_rule_id": "nrc_get_document_exact_v1",
+                "query_rule_id": "none_v1",
+                "credential_audience": "nrc_aps_api_key",
+                "max_response_bytes": 5 * 1024 * 1024,
+            },
+            {
+                "ordinal": 2,
+                "stage": "artifact",
+                "method": "GET",
+                "scheme": "https",
+                "allowed_hosts": ["www.nrc.gov"],
+                "port": 443,
+                "path_rule_id": "nrc_public_pdf_exact_v1",
+                "query_rule_id": "none_v1",
+                "credential_audience": "none",
+                "max_response_bytes": 64 * 1024 * 1024,
+            },
+        ],
+    }
+
+
+def _seed_running_run(factory) -> ConnectorRun:
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    run = ConnectorRun(
+        connector_run_id="strict-nrc-run",
+        connector_key="nrc_adams_aps",
+        source_system="nrc_adams_aps",
+        source_mode="strict_live_egress",
+        status="running",
+        request_config_json={"connector_egress_arming": _strict_envelope()},
+        request_fingerprint="d" * 64,
+        execution_lease_owner="test",
+        execution_lease_token="lease-token",
+        execution_lease_expires_at=now + timedelta(minutes=5),
+    )
+    with factory() as db:
+        db.add(run)
+        db.commit()
+    return run
+
+
+def _set_first_request_limits(
+    factory,
+    *,
+    max_run_bytes: int,
+    stage_cap: int | None = None,
+) -> None:
+    with factory() as db:
+        run = db.get(ConnectorRun, "strict-nrc-run")
+        config = dict(run.request_config_json)
+        envelope = dict(config["connector_egress_arming"])
+        envelope["max_run_bytes"] = max_run_bytes
+        if stage_cap is not None:
+            rules = [dict(rule) for rule in envelope["request_rules"]]
+            rules[0]["max_response_bytes"] = stage_cap
+            envelope["request_rules"] = rules
+        config["connector_egress_arming"] = envelope
+        run.request_config_json = config
+        db.commit()
+
+
+def _request() -> transport.FrozenPhysicalRequest:
+    return transport.FrozenPhysicalRequest(
+        method="GET",
+        url="https://adams-api.nrc.gov/aps/api/search/ML17123A319",
+        headers={"Accept-Encoding": "identity", "Ocp-Apim-Subscription-Key": "secret"},
+        credential_audience="nrc_aps_api_key",
+    )
+
+
+def test_revalidation_delegates_coordinated_tamper_to_canonical_resolver(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    with session_factory() as db:
+        run = db.get(ConnectorRun, "strict-nrc-run")
+        config = dict(run.request_config_json)
+        envelope = dict(config["connector_egress_arming"])
+        rules = [dict(rule) for rule in envelope["request_rules"]]
+        rules[0]["allowed_hosts"] = ["attacker.invalid"]
+        envelope["request_rules"] = rules
+        tampered_fingerprint = arming.compute_arming_fingerprint(envelope)
+        envelope["arming_fingerprint"] = tampered_fingerprint
+        run.request_fingerprint = tampered_fingerprint
+        config["connector_egress_arming"] = envelope
+        run.request_config_json = config
+        db.commit()
+
+    monkeypatch.setattr(transport.settings, "connector_live_egress_enabled", True)
+    monkeypatch.setattr(
+        transport.settings,
+        "connector_live_egress_exclusive_proof_mode",
+        True,
+    )
+
+    def reject_tampered_envelope(db, *, connector_run_id, now):
+        run = db.get(ConnectorRun, connector_run_id)
+        envelope = transport._strict_envelope(run)
+        assert envelope["request_rules"][0]["allowed_hosts"] == [
+            "attacker.invalid"
+        ]
+        raise arming.ConnectorEgressArmingError(
+            "connector_arming_authority_drift",
+            "synthetic canonical-envelope mismatch",
+        )
+
+    monkeypatch.setattr(
+        arming,
+        "resolve_current_egress_authority",
+        reject_tampered_envelope,
+    )
+
+    with session_factory() as db:
+        run = db.get(ConnectorRun, "strict-nrc-run")
+        envelope = transport._strict_envelope(run)
+        with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+            transport._revalidate_run_authority(
+                db=db,
+                run=run,
+                envelope=envelope,
+                now=datetime.now(timezone.utc),
+            )
+    assert exc.value.code == "connector_egress_authority_revalidation_failed"
+
+
+def test_reservation_commits_before_send_and_terminal_ledger_is_stable(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    seen: list[int] = []
+
+    def observed_send() -> None:
+        with session_factory() as check:
+            seen.append(
+                check.query(ConnectorRunEvent)
+                .filter(
+                    ConnectorRunEvent.event_type == transport.RESERVATION_EVENT_TYPE
+                )
+                .count()
+            )
+
+    reservation = transport.reserve_physical_request(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        ordinal=1,
+        stage="exact_accession_api",
+        request=_request(),
+        expected_derived_arming_hash=None,
+        now=datetime.now(timezone.utc),
+    )
+    observed_send()
+    transport.complete_physical_request(
+        reservation=reservation,
+        outcome=transport.PhysicalRequestOutcome(
+            outcome_class="completed",
+            response_status=200,
+            byte_count=8,
+            body_sha256="1" * 64,
+            counted_status_header_bytes=42,
+            delivered_body_bytes=8,
+            decoded_body_bytes=8,
+            decoded_body_sha256="1" * 64,
+            send_started_at=datetime.now(timezone.utc),
+            completed_at=datetime.now(timezone.utc),
+        ),
+    )
+
+    assert seen == [1]
+    with session_factory() as db:
+        first = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+        )
+        second = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+        )
+    assert first.ledger_terminal_hash == second.ledger_terminal_hash
+    assert first.entries[0]["ordinal"] == 1
+    assert first.entries[0]["outcome_class"] == "completed"
+    assert not first.eligible
+    assert "counter_reconciliation_failed" in first.validation_errors
+
+
+def test_reservation_commit_failure_calls_transport_zero_times(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    sends: list[object] = []
+
+    def reject_reservation_commit(db) -> None:
+        if any(
+            isinstance(value, ConnectorRunEvent)
+            and value.event_type == transport.RESERVATION_EVENT_TYPE
+            for value in db.new
+        ):
+            raise RuntimeError("synthetic reservation commit failure")
+
+    event.listen(session_factory.class_, "before_commit", reject_reservation_commit)
+    try:
+        client = transport.BoundedConnectorTransport(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            counter_path=tmp_path / "http.jsonl",
+            send_callable=lambda *args, **kwargs: sends.append(args),
+            dns_resolver=lambda host, port: ["8.8.8.8"],
+        )
+        with pytest.raises(RuntimeError, match="reservation commit failure"):
+            client.send_once(
+                ordinal=1,
+                stage="exact_accession_api",
+                request=_request(),
+            )
+    finally:
+        event.remove(session_factory.class_, "before_commit", reject_reservation_commit)
+    assert sends == []
+    with session_factory() as db:
+        assert db.query(ConnectorRunEvent).count() == 0
+
+
+def test_terminal_ledger_rejects_coordinated_reservation_identity_tamper(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    now = datetime.now(timezone.utc)
+    reservation = transport.reserve_physical_request(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        ordinal=1,
+        stage="exact_accession_api",
+        request=_request(),
+        expected_derived_arming_hash=None,
+        now=now,
+    )
+    transport.complete_physical_request(
+        reservation=reservation,
+        outcome=transport.PhysicalRequestOutcome(
+            outcome_class="completed",
+            response_status=200,
+            byte_count=1,
+            body_sha256=hashlib.sha256(b"x").hexdigest(),
+            counted_status_header_bytes=10,
+            delivered_body_bytes=1,
+            decoded_body_bytes=1,
+            decoded_body_sha256=hashlib.sha256(b"x").hexdigest(),
+            send_started_at=now,
+            completed_at=now,
+        ),
+    )
+
+    with session_factory() as db:
+        reservation_event = (
+            db.query(ConnectorRunEvent)
+            .filter(ConnectorRunEvent.event_type == transport.RESERVATION_EVENT_TYPE)
+            .one()
+        )
+        completion_event = (
+            db.query(ConnectorRunEvent)
+            .filter(ConnectorRunEvent.event_type == transport.COMPLETION_EVENT_TYPE)
+            .one()
+        )
+        reservation_metrics = dict(reservation_event.metrics_json)
+        completion_metrics = dict(completion_event.metrics_json)
+        reservation_metrics["host"] = "attacker.invalid"
+        reservation_metrics["request_fingerprint"] = "9" * 64
+        completion_metrics["request_fingerprint"] = "9" * 64
+        reservation_event.metrics_json = reservation_metrics
+        completion_event.metrics_json = completion_metrics
+        db.commit()
+
+    with session_factory() as db:
+        ledger = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+        )
+    assert not ledger.eligible
+    assert "invalid_reservation_1" in ledger.validation_errors
+
+
+def test_duplicate_reservation_is_returned_as_already_spent(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    kwargs = {
+        "connector_run_id": "strict-nrc-run",
+        "lease_token": "lease-token",
+        "arming_fingerprint": "d" * 64,
+        "ordinal": 1,
+        "stage": "exact_accession_api",
+        "request": _request(),
+        "expected_derived_arming_hash": None,
+        "now": datetime.now(timezone.utc),
+    }
+    first = transport.reserve_physical_request(**kwargs)
+    second = transport.reserve_physical_request(**kwargs)
+    assert first.reservation_event_id == second.reservation_event_id
+    assert not first.already_reserved
+    assert second.already_reserved
+
+
+def test_two_workers_cannot_create_two_reservations_for_one_ordinal(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    engine = create_engine(
+        f"sqlite:///{(tmp_path / 'race.db').as_posix()}",
+        future=True,
+        connect_args={"check_same_thread": False, "timeout": 10},
+    )
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+    monkeypatch.setattr(transport, "SESSION_FACTORY", factory)
+    _seed_running_run(factory)
+    barrier = Barrier(2)
+
+    def revalidate(**kwargs):
+        barrier.wait(timeout=10)
+        return kwargs["envelope"]
+
+    monkeypatch.setattr(transport, "_revalidate_run_authority", revalidate)
+    kwargs = {
+        "connector_run_id": "strict-nrc-run",
+        "lease_token": "lease-token",
+        "arming_fingerprint": "d" * 64,
+        "ordinal": 1,
+        "stage": "exact_accession_api",
+        "request": _request(),
+        "expected_derived_arming_hash": None,
+        "now": datetime.now(timezone.utc),
+    }
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(
+                pool.map(
+                    lambda _: transport.reserve_physical_request(**kwargs),
+                    range(2),
+                )
+            )
+        assert sorted(result.already_reserved for result in results) == [False, True]
+        assert len({result.reservation_event_id for result in results}) == 1
+        with factory() as db:
+            assert (
+                db.query(ConnectorRunEvent)
+                .filter(
+                    ConnectorRunEvent.event_type == transport.RESERVATION_EVENT_TYPE
+                )
+                .count()
+                == 1
+            )
+    finally:
+        engine.dispose()
+
+
+def test_artifact_reservation_requires_committed_derived_arming(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    now = datetime.now(timezone.utc)
+    first = transport.reserve_physical_request(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        ordinal=1,
+        stage="exact_accession_api",
+        request=_request(),
+        expected_derived_arming_hash=None,
+        now=now,
+    )
+    transport.complete_physical_request(
+        reservation=first,
+        outcome=transport.PhysicalRequestOutcome(
+            outcome_class="completed",
+            response_status=200,
+            byte_count=1,
+            body_sha256=hashlib.sha256(b"x").hexdigest(),
+            counted_status_header_bytes=10,
+            delivered_body_bytes=1,
+            decoded_body_bytes=1,
+            decoded_body_sha256=hashlib.sha256(b"x").hexdigest(),
+            send_started_at=now,
+            completed_at=now,
+        ),
+    )
+    artifact_url = "https://www.nrc.gov/docs/ML1712/ML17123A319.pdf"
+    expected_hash = hashlib.sha256(artifact_url.encode("ascii")).hexdigest()
+    counter_path = tmp_path / "http.jsonl"
+    counter_path.write_text(
+        json.dumps(
+            {
+                "schema_id": "project6.connector_http_counter.v1",
+                "ordinal": 1,
+                "stage": "exact_accession_api",
+                "request_fingerprint": first.request_fingerprint,
+                "canonical_status_header_bytes": 10,
+                "delivered_body_bytes": 1,
+                "decoded_body_bytes": 1,
+                "decoded_body_sha256": hashlib.sha256(b"x").hexdigest(),
+                "response_status": 200,
+                "error_class": None,
+                "monotonic_started_at": 1.0,
+                "monotonic_stopped_at": 2.0,
+                "evidence_started_at": transport.utc_six_z(now),
+                "evidence_stopped_at": transport.utc_six_z(now),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport.reserve_physical_request(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            ordinal=2,
+            stage="artifact",
+            request=transport.FrozenPhysicalRequest(
+                method="GET",
+                url=artifact_url,
+            ),
+            expected_derived_arming_hash=expected_hash,
+            now=now,
+            counter_path=counter_path,
+        )
+    assert exc.value.code == "connector_egress_derived_arming_missing"
+    with session_factory() as db:
+        assert (
+            db.query(ConnectorRunEvent)
+            .filter(ConnectorRunEvent.event_type == transport.RESERVATION_EVENT_TYPE)
+            .count()
+            == 1
+        )
+
+
+@pytest.mark.parametrize("counter_mode", ["missing", "mismatched", "extra"])
+def test_later_ordinal_requires_matching_independent_prior_counter(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+    counter_mode: str,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    now = datetime.now(timezone.utc)
+    first = transport.reserve_physical_request(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        ordinal=1,
+        stage="exact_accession_api",
+        request=_request(),
+        expected_derived_arming_hash=None,
+        now=now,
+    )
+    body_hash = hashlib.sha256(b"x").hexdigest()
+    transport.complete_physical_request(
+        reservation=first,
+        outcome=transport.PhysicalRequestOutcome(
+            outcome_class="completed",
+            response_status=200,
+            byte_count=1,
+            body_sha256=body_hash,
+            counted_status_header_bytes=10,
+            delivered_body_bytes=1,
+            decoded_body_bytes=1,
+            decoded_body_sha256=body_hash,
+            send_started_at=now,
+            completed_at=now,
+        ),
+    )
+    counter_path = tmp_path / "http.jsonl"
+    if counter_mode != "missing":
+        record = {
+            "schema_id": "project6.connector_http_counter.v1",
+            "ordinal": 1,
+            "stage": "exact_accession_api",
+            "request_fingerprint": first.request_fingerprint,
+            "canonical_status_header_bytes": (
+                9 if counter_mode == "mismatched" else 10
+            ),
+            "delivered_body_bytes": 1,
+            "decoded_body_bytes": 1,
+            "decoded_body_sha256": body_hash,
+            "response_status": 200,
+            "error_class": None,
+            "monotonic_started_at": 1.0,
+            "monotonic_stopped_at": 2.0,
+            "evidence_started_at": transport.utc_six_z(now),
+            "evidence_stopped_at": transport.utc_six_z(now),
+        }
+        records = [record]
+        if counter_mode == "extra":
+            records.append({**record, "ordinal": 99})
+        counter_path.write_text(
+            "".join(
+                json.dumps(item, sort_keys=True, separators=(",", ":")) + "\n"
+                for item in records
+            ),
+            encoding="utf-8",
+        )
+
+    artifact_url = "https://www.nrc.gov/docs/ML1712/ML17123A319.pdf"
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport.reserve_physical_request(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            ordinal=2,
+            stage="artifact",
+            request=transport.FrozenPhysicalRequest(
+                method="GET",
+                url=artifact_url,
+            ),
+            expected_derived_arming_hash=hashlib.sha256(
+                artifact_url.encode("ascii")
+            ).hexdigest(),
+            now=now,
+            counter_path=counter_path,
+        )
+    assert exc.value.code == "connector_egress_prior_counter_unresolved"
+    with session_factory() as db:
+        assert (
+            db.query(ConnectorRunEvent)
+            .filter(ConnectorRunEvent.event_type == transport.RESERVATION_EVENT_TYPE)
+            .count()
+            == 1
+        )
+
+
+def test_counter_reconciliation_rejects_reordered_records(tmp_path) -> None:
+    now = datetime.now(timezone.utc)
+    events: list[Any] = []
+    records: list[dict[str, object]] = []
+    for ordinal in (1, 2):
+        fingerprint = str(ordinal) * 64
+        stage = f"stage-{ordinal}"
+        events.append(
+            SimpleNamespace(
+                event_type=transport.RESERVATION_EVENT_TYPE,
+                metrics_json={
+                    "ordinal": ordinal,
+                    "stage": stage,
+                    "request_fingerprint": fingerprint,
+                },
+            )
+        )
+        events.append(
+            SimpleNamespace(
+                event_type=transport.COMPLETION_EVENT_TYPE,
+                metrics_json={
+                    "ordinal": ordinal,
+                    "stage": stage,
+                    "request_fingerprint": fingerprint,
+                    "outcome_class": "completed",
+                    "response_status": 200,
+                    "counted_status_header_bytes": 10,
+                    "delivered_body_bytes": 1,
+                    "decoded_body_bytes": 1,
+                    "decoded_body_sha256": hashlib.sha256(b"x").hexdigest(),
+                    "send_started_at": transport.utc_six_z(now),
+                    "completed_at": transport.utc_six_z(now),
+                },
+            )
+        )
+        records.append(
+            {
+                "schema_id": "project6.connector_http_counter.v1",
+                "ordinal": ordinal,
+                "stage": stage,
+                "request_fingerprint": fingerprint,
+                "canonical_status_header_bytes": 10,
+                "delivered_body_bytes": 1,
+                "decoded_body_bytes": 1,
+                "decoded_body_sha256": hashlib.sha256(b"x").hexdigest(),
+                "response_status": 200,
+                "error_class": None,
+                "monotonic_started_at": float(ordinal),
+                "monotonic_stopped_at": float(ordinal) + 0.5,
+                "evidence_started_at": transport.utc_six_z(now),
+                "evidence_stopped_at": transport.utc_six_z(now),
+            }
+        )
+    counter_path = tmp_path / "http.jsonl"
+    counter_path.write_text(
+        "".join(
+            json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n"
+            for record in reversed(records)
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport._reconcile_prior_counter_stream(
+            events,
+            before_ordinal=3,
+            counter_path=counter_path,
+        )
+    assert exc.value.code == "connector_egress_prior_counter_unresolved"
+
+
+def test_runtime_parser_limit_drift_fails_closed() -> None:
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport.assert_pinned_http_parser_limits(maxline=65_535, maxheaders=100)
+    assert exc.value.code == "connector_egress_http_parser_limit_drift"
+
+
+def test_pinned_http_parser_accepts_99_fields_and_rejects_a_100th() -> None:
+    admitted = b"".join(
+        f"X-{index:02d}: value\r\n".encode("ascii") for index in range(99)
+    ) + b"\r\n"
+    parsed = http.client.parse_headers(io.BytesIO(admitted))
+    assert len(parsed.items()) == 99
+
+    rejected = b"".join(
+        f"X-{index:03d}: value\r\n".encode("ascii") for index in range(100)
+    ) + b"\r\n"
+    with pytest.raises(http.client.HTTPException, match="more than 100 headers"):
+        http.client.parse_headers(io.BytesIO(rejected))
+
+
+def test_detection_allowance_mismatch_stops_before_reservation_or_send(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    with session_factory() as db:
+        run = db.get(ConnectorRun, "strict-nrc-run")
+        config = dict(run.request_config_json)
+        envelope = dict(config["connector_egress_arming"])
+        envelope["max_single_send_detection_allowance_bytes"] -= 1
+        config["connector_egress_arming"] = envelope
+        run.request_config_json = config
+        db.commit()
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    sends: list[object] = []
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        counter_path=tmp_path / "http.jsonl",
+        send_callable=lambda *args, **kwargs: sends.append(args),
+        dns_resolver=lambda host, port: ["8.8.8.8"],
+    )
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        client.send_once(
+            ordinal=1,
+            stage="exact_accession_api",
+            request=_request(),
+        )
+    assert exc.value.code == "connector_egress_detection_allowance_mismatch"
+    assert sends == []
+    with session_factory() as db:
+        assert db.query(ConnectorRunEvent).count() == 0
+
+
+@pytest.mark.parametrize(
+    ("header_bytes", "body_bytes", "remaining", "crossed"),
+    [
+        (101, 0, 100, True),
+        (90, 20, 100, True),
+        (90, 10, 100, False),
+        (0, 101, 100, True),
+    ],
+)
+def test_aggregate_crossing_is_strict_greater_than(
+    header_bytes: int,
+    body_bytes: int,
+    remaining: int,
+    crossed: bool,
+) -> None:
+    assert (
+        transport.aggregate_budget_crossed(
+            status_header_bytes=header_bytes,
+            delivered_body_bytes=body_bytes,
+            remaining_budget=remaining,
+        )
+        is crossed
+    )
+
+
+def test_wall_clock_rollback_or_jump_cannot_change_bound_monotonic_authority() -> None:
+    wall = [datetime(2026, 1, 1, tzinfo=timezone.utc)]
+    monotonic = [100.0]
+    envelope = {
+        "campaign_expires_at": transport.utc_six_z(wall[0] + timedelta(seconds=10)),
+        "grant_expires_at": transport.utc_six_z(wall[0] + timedelta(seconds=10)),
+    }
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="unused",
+        lease_token="unused",
+        arming_fingerprint="d" * 64,
+        counter_path=Path("unused-http.jsonl"),
+        utc_clock=lambda: wall[0],
+        monotonic_clock=lambda: monotonic[0],
+    )
+    assert client._bind_authority_deadline(envelope) == 110.0
+
+    wall[0] -= timedelta(seconds=100)
+    monotonic[0] = 102.0
+    assert client._bind_authority_deadline(envelope) == 110.0
+
+    wall[0] = datetime(2026, 1, 1, 0, 0, 9, tzinfo=timezone.utc)
+    monotonic[0] = 103.0
+    assert client._bind_authority_deadline(envelope) == 110.0
+
+
+def test_authority_windows_are_half_open_at_exact_boundaries() -> None:
+    start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    end = start + timedelta(seconds=10)
+    envelope = {
+        "campaign_not_before": transport.utc_six_z(start),
+        "campaign_expires_at": transport.utc_six_z(end),
+        "grant_issued_at": transport.utc_six_z(start),
+        "grant_expires_at": transport.utc_six_z(end),
+    }
+    assert transport._window_contains(envelope, start)
+    assert transport._window_contains(envelope, end - timedelta(microseconds=1))
+    assert not transport._window_contains(envelope, end)
+
+
+def test_reservation_at_authority_expiry_fails_before_event(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    expiry = datetime.now(timezone.utc)
+    with session_factory() as db:
+        run = db.get(ConnectorRun, "strict-nrc-run")
+        config = dict(run.request_config_json)
+        envelope = dict(config["connector_egress_arming"])
+        envelope["campaign_expires_at"] = transport.utc_six_z(expiry)
+        envelope["grant_expires_at"] = transport.utc_six_z(expiry)
+        config["connector_egress_arming"] = envelope
+        run.request_config_json = config
+        db.commit()
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport.reserve_physical_request(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            ordinal=1,
+            stage="exact_accession_api",
+            request=_request(),
+            expected_derived_arming_hash=None,
+            now=expiry,
+        )
+    assert exc.value.code == "connector_egress_campaign_expired"
+    with session_factory() as db:
+        assert db.query(ConnectorRunEvent).count() == 0
+
+
+def test_reserved_not_sent_rejects_any_response_or_counter_evidence(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    now = datetime.now(timezone.utc)
+    reservation = transport.reserve_physical_request(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        ordinal=1,
+        stage="exact_accession_api",
+        request=_request(),
+        expected_derived_arming_hash=None,
+        now=now,
+    )
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport.complete_physical_request(
+            reservation=reservation,
+            outcome=transport.PhysicalRequestOutcome(
+                outcome_class="reserved_not_sent",
+                response_status=200,
+                byte_count=0,
+                body_sha256=hashlib.sha256(b"").hexdigest(),
+                counted_status_header_bytes=12,
+                delivered_body_bytes=0,
+                decoded_body_bytes=0,
+                decoded_body_sha256=hashlib.sha256(b"").hexdigest(),
+                send_started_at=None,
+                completed_at=now,
+            ),
+        )
+    assert exc.value.code == "connector_egress_reserved_not_sent_counter_invalid"
+    with session_factory() as db:
+        assert (
+            db.query(ConnectorRunEvent)
+            .filter(ConnectorRunEvent.event_type == transport.COMPLETION_EVENT_TYPE)
+            .count()
+            == 0
+        )
+
+
+def test_terminal_ledger_rejects_non_strict_source_mode(session_factory) -> None:
+    _seed_running_run(session_factory)
+    with session_factory() as db:
+        run = db.get(ConnectorRun, "strict-nrc-run")
+        run.source_mode = "legacy_live"
+        db.commit()
+    with session_factory() as db:
+        ledger = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+        )
+    assert not ledger.eligible
+    assert "run_authority_identity_invalid" in ledger.validation_errors
+
+
+class _HeaderPairs:
+    def __init__(self, pairs: list[tuple[str, str]]) -> None:
+        self._pairs = list(pairs)
+
+    def items(self):
+        return iter(self._pairs)
+
+    def get(self, name: str, default=None):
+        values = [value for key, value in self._pairs if key.lower() == name.lower()]
+        return values[-1] if values else default
+
+    def getlist(self, name: str):
+        return [value for key, value in self._pairs if key.lower() == name.lower()]
+
+
+class _RawResponse:
+    version = 11
+
+    def __init__(
+        self,
+        body: bytes,
+        *,
+        headers: list[tuple[str, str]] | None = None,
+    ) -> None:
+        self._body = body
+        self._offset = 0
+        self.headers = _HeaderPairs(headers or [("Content-Type", "application/json")])
+        self.read_calls = 0
+        self.closed = False
+
+    def read(self, amount: int, *, decode_content: bool = False) -> bytes:
+        assert decode_content is False
+        self.read_calls += 1
+        chunk = self._body[self._offset : self._offset + amount]
+        self._offset += len(chunk)
+        return chunk
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class _DeadlineSocket:
+    def __init__(self) -> None:
+        self.timeout = 0.0
+        self.observed: list[float] = []
+
+    def settimeout(self, timeout: float) -> None:
+        self.timeout = timeout
+        self.observed.append(timeout)
+
+
+class _SlowDripRaw(_RawResponse):
+    def __init__(self, clock: list[float]) -> None:
+        super().__init__(b"xx")
+        self._clock = clock
+        self._socket = _DeadlineSocket()
+        self._fp = SimpleNamespace(
+            fp=SimpleNamespace(
+                raw=SimpleNamespace(_sock=self._socket),
+            )
+        )
+
+    def read(self, amount: int, *, decode_content: bool = False) -> bytes:
+        assert decode_content is False
+        duration = 0.6
+        if duration > self._socket.timeout:
+            self._clock[0] += self._socket.timeout
+            raise requests.Timeout("synthetic absolute deadline")
+        self._clock[0] += duration
+        self.read_calls += 1
+        chunk = self._body[self._offset : self._offset + 1]
+        self._offset += len(chunk)
+        return chunk
+
+
+def _response(
+    body: bytes,
+    *,
+    status: int = 200,
+    reason: str = "OK",
+    headers: list[tuple[str, str]] | None = None,
+):
+    response = requests.Response()
+    response.status_code = status
+    response.reason = reason
+    response.raw = _RawResponse(body, headers=headers)
+    response.headers.clear()
+    for name, value in response.raw.headers.items():
+        response.headers[name] = value
+    return response
+
+
+def test_subscription_key_value_is_absent_from_fingerprint_and_repr() -> None:
+    first = _request()
+    second = transport.FrozenPhysicalRequest(
+        method="GET",
+        url=first.url,
+        headers={
+            "Accept-Encoding": "identity",
+            "Ocp-Apim-Subscription-Key": "different-secret",
+        },
+        credential_audience="nrc_aps_api_key",
+    )
+    kwargs = {
+        "arming_fingerprint": "d" * 64,
+        "grant_sha256": "e" * 64,
+        "ordinal": 1,
+        "stage": "exact_accession_api",
+    }
+    assert transport.secret_free_request_fingerprint(first, **kwargs) == (
+        transport.secret_free_request_fingerprint(second, **kwargs)
+    )
+    assert "secret" not in repr(first)
+    assert first.url not in repr(first)
+
+
+def test_frozen_request_snapshots_caller_owned_headers() -> None:
+    headers = {
+        "Accept-Encoding": "identity",
+        "Ocp-Apim-Subscription-Key": "first-secret",
+    }
+    request = transport.FrozenPhysicalRequest(
+        method="GET",
+        url="https://adams-api.nrc.gov/aps/api/search/ML17123A319",
+        headers=headers,
+        credential_audience="nrc_aps_api_key",
+    )
+    before = transport.secret_free_request_fingerprint(
+        request,
+        arming_fingerprint="d" * 64,
+        grant_sha256="e" * 64,
+        ordinal=1,
+        stage="exact_accession_api",
+    )
+    headers["Authorization"] = "Bearer attacker"
+    headers["Ocp-Apim-Subscription-Key"] = "second-secret"
+    after = transport.secret_free_request_fingerprint(
+        request,
+        arming_fingerprint="d" * 64,
+        grant_sha256="e" * 64,
+        ordinal=1,
+        stage="exact_accession_api",
+    )
+    assert before == after
+    assert "Authorization" not in request.headers
+
+
+def test_nrc_request_without_subscription_key_is_rejected_before_reservation(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport.reserve_physical_request(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            ordinal=1,
+            stage="exact_accession_api",
+            request=transport.FrozenPhysicalRequest(
+                method="GET",
+                url="https://adams-api.nrc.gov/aps/api/search/ML17123A319",
+                credential_audience="nrc_aps_api_key",
+            ),
+            expected_derived_arming_hash=None,
+            now=datetime.now(timezone.utc),
+        )
+    assert exc.value.code == "connector_egress_credential_header_missing"
+    with session_factory() as db:
+        assert db.query(ConnectorRunEvent).count() == 0
+
+
+@pytest.mark.parametrize(
+    "forbidden_header",
+    [
+        "Authorization",
+        "Host",
+        "Cookie",
+        "Proxy-Authorization",
+        "Transfer-Encoding",
+        "Connection",
+    ],
+)
+def test_control_or_ambient_credential_header_is_rejected_before_reservation(
+    session_factory,
+    monkeypatch,
+    forbidden_header: str,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    headers = {
+        "Accept-Encoding": "identity",
+        "Ocp-Apim-Subscription-Key": "secret",
+        forbidden_header: "forbidden",
+    }
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport.reserve_physical_request(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            ordinal=1,
+            stage="exact_accession_api",
+            request=transport.FrozenPhysicalRequest(
+                method="GET",
+                url="https://adams-api.nrc.gov/aps/api/search/ML17123A319",
+                headers=headers,
+                credential_audience="nrc_aps_api_key",
+            ),
+            expected_derived_arming_hash=None,
+            now=datetime.now(timezone.utc),
+        )
+    assert exc.value.code == "connector_egress_header_not_authorized"
+    with session_factory() as db:
+        assert db.query(ConnectorRunEvent).count() == 0
+
+
+def test_non_public_dns_stops_before_reservation_or_send(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    sends: list[object] = []
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        counter_path=tmp_path / "http.jsonl",
+        send_callable=lambda *args, **kwargs: sends.append(args),
+        dns_resolver=lambda host, port: ["127.0.0.1"],
+    )
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        client.send_once(
+            ordinal=1,
+            stage="exact_accession_api",
+            request=_request(),
+        )
+    assert exc.value.code == "connector_egress_dns_non_public"
+    assert sends == []
+    with session_factory() as db:
+        assert db.query(ConnectorRunEvent).count() == 0
+
+
+def test_final_prepared_request_drift_spends_reservation_without_send(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    sends: list[object] = []
+
+    def mutate(prepared):
+        prepared.headers["X-Adapter-Drift"] = "changed"
+        return prepared
+
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        counter_path=tmp_path / "http.jsonl",
+        send_callable=lambda *args, **kwargs: sends.append(args),
+        dns_resolver=lambda host, port: ["8.8.8.8"],
+        prepared_request_adapter=mutate,
+    )
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        client.send_once(
+            ordinal=1,
+            stage="exact_accession_api",
+            request=_request(),
+        )
+    assert exc.value.code == "connector_egress_prepared_request_mismatch"
+    assert sends == []
+    assert not (tmp_path / "http.jsonl").exists()
+    with session_factory() as db:
+        ledger = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+            counter_path=tmp_path / "http.jsonl",
+        )
+    assert ledger.entries[0]["outcome_class"] == "reserved_not_sent"
+    assert not ledger.eligible
+    assert "counter_reconciliation_failed" not in ledger.validation_errors
+
+
+def test_rate_wait_failure_records_reserved_not_sent_and_calls_no_transport(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    with session_factory() as db:
+        run = db.get(ConnectorRun, "strict-nrc-run")
+        config = dict(run.request_config_json)
+        envelope = dict(config["connector_egress_arming"])
+        envelope["min_request_interval_ms"] = 1_000
+        config["connector_egress_arming"] = envelope
+        run.request_config_json = config
+        db.commit()
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    sends: list[object] = []
+
+    def interrupted_wait(seconds: float) -> None:
+        raise RuntimeError(f"synthetic wait failure after {seconds}")
+
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        counter_path=tmp_path / "http.jsonl",
+        send_callable=lambda *args, **kwargs: sends.append(args),
+        dns_resolver=lambda host, port: ["8.8.8.8"],
+        monotonic_clock=lambda: 0.0,
+        sleeper=interrupted_wait,
+        rate_state={"adams-api.nrc.gov": 0.0},
+    )
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        client.send_once(
+            ordinal=1,
+            stage="exact_accession_api",
+            request=_request(),
+        )
+    assert exc.value.code == "connector_egress_pre_send_failed"
+    assert sends == []
+    with session_factory() as db:
+        ledger = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+        )
+    assert ledger.entries[0]["outcome_class"] == "reserved_not_sent"
+    assert not ledger.eligible
+
+
+def test_post_reservation_authority_drift_records_reserved_not_sent(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    calls = [0]
+
+    def revalidate(**kwargs):
+        calls[0] += 1
+        if calls[0] == 3:
+            raise transport.ConnectorEgressTransportError(
+                "connector_egress_authority_revalidation_failed"
+            )
+        return kwargs["envelope"]
+
+    monkeypatch.setattr(transport, "_revalidate_run_authority", revalidate)
+    sends: list[object] = []
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        counter_path=tmp_path / "http.jsonl",
+        send_callable=lambda *args, **kwargs: sends.append(args),
+        dns_resolver=lambda host, port: ["8.8.8.8"],
+    )
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        client.send_once(
+            ordinal=1,
+            stage="exact_accession_api",
+            request=_request(),
+        )
+    assert exc.value.code == "connector_egress_authority_revalidation_failed"
+    assert calls[0] == 3
+    assert sends == []
+    with session_factory() as db:
+        ledger = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+        )
+    assert ledger.entries[0]["outcome_class"] == "reserved_not_sent"
+    assert not ledger.eligible
+
+
+def test_one_send_is_identity_no_redirect_and_counter_precedes_completion(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    observed: dict[str, object] = {}
+
+    def send(prepared, **kwargs):
+        observed["prepared"] = prepared
+        observed.update(kwargs)
+        return _response(
+            b"payload",
+            headers=[
+                ("Content-Type", "application/json"),
+                ("Location", "/first"),
+                ("Location", "/second"),
+            ],
+        )
+
+    counter_path = tmp_path / "http.jsonl"
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        counter_path=counter_path,
+        send_callable=send,
+        dns_resolver=lambda host, port: ["8.8.8.8"],
+    )
+    result = client.send_once(
+        ordinal=1,
+        stage="exact_accession_api",
+        request=_request(),
+    )
+
+    prepared = observed["prepared"]
+    assert prepared.headers["Accept-Encoding"] == "identity"
+    assert observed["allow_redirects"] is False
+    assert observed["verify"] is True
+    assert observed["session"].trust_env is False
+    assert len(observed["session"].cookies) == 0
+    assert result.body == b"payload"
+    assert result.location_values == ("/first", "/second")
+    records = [
+        json.loads(line)
+        for line in counter_path.read_text(encoding="utf-8").splitlines()
+    ]
+    assert len(records) == 1
+    assert records[0]["response_status"] == 200
+    assert records[0]["delivered_body_bytes"] == 7
+    serialized = json.dumps(records[0], sort_keys=True)
+    assert "secret" not in serialized
+    assert "adams-api" not in serialized
+    with session_factory() as db:
+        ledger = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+            counter_path=counter_path,
+        )
+    assert ledger.entries[0]["outcome_class"] == "completed"
+    assert ledger.eligible
+
+
+def test_slow_drip_is_cut_off_at_absolute_monotonic_deadline(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    with session_factory() as db:
+        run = db.get(ConnectorRun, "strict-nrc-run")
+        config = dict(run.request_config_json)
+        envelope = dict(config["connector_egress_arming"])
+        envelope["request_timeout_seconds"] = 1
+        config["connector_egress_arming"] = envelope
+        run.request_config_json = config
+        db.commit()
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    monotonic = [0.0]
+    raw = _SlowDripRaw(monotonic)
+    response = requests.Response()
+    response.status_code = 200
+    response.reason = "OK"
+    response.raw = raw
+    response.headers["Content-Type"] = "application/json"
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        counter_path=tmp_path / "http.jsonl",
+        send_callable=lambda *args, **kwargs: response,
+        dns_resolver=lambda host, port: ["8.8.8.8"],
+        monotonic_clock=lambda: monotonic[0],
+    )
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        client.send_once(
+            ordinal=1,
+            stage="exact_accession_api",
+            request=_request(),
+        )
+    assert exc.value.code == "connector_egress_transport_timeout"
+    assert monotonic[0] == pytest.approx(1.0)
+    assert raw._socket.observed == pytest.approx([1.0, 0.4])
+    records = [
+        json.loads(line)
+        for line in (tmp_path / "http.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert records[0]["delivered_body_bytes"] == 1
+
+
+@pytest.mark.parametrize(
+    ("status", "body"),
+    [
+        (206, b"partial"),
+        (429, b""),
+        (500, b"provider-error"),
+    ],
+)
+def test_partial_throttle_and_server_error_each_remain_one_physical_send(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+    status: int,
+    body: bytes,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    sends = [0]
+
+    def send(*args, **kwargs):
+        sends[0] += 1
+        return _response(body, status=status, reason="Synthetic")
+
+    counter_path = tmp_path / "http.jsonl"
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        counter_path=counter_path,
+        send_callable=send,
+        dns_resolver=lambda host, port: ["8.8.8.8"],
+    )
+    result = client.send_once(
+        ordinal=1,
+        stage="exact_accession_api",
+        request=_request(),
+    )
+    assert sends == [1]
+    assert result.response_status == status
+    assert result.body == body
+    assert len(counter_path.read_text(encoding="utf-8").splitlines()) == 1
+
+
+def test_header_only_aggregate_crossing_is_terminal_oversized(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    headers = [(f"X-{index:02d}", "x" * 512) for index in range(99)]
+    response = _response(
+        b"must-not-be-read",
+        headers=headers,
+    )
+    header_bytes = len(
+        transport._canonical_status_header_bytes(
+            response,
+            transport._header_pairs(response),
+        )
+    )
+    assert header_bytes > 32_768
+    _set_first_request_limits(
+        session_factory,
+        max_run_bytes=header_bytes - 1,
+    )
+    counter_path = tmp_path / "http.jsonl"
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        counter_path=counter_path,
+        send_callable=lambda *args, **kwargs: response,
+        dns_resolver=lambda host, port: ["8.8.8.8"],
+    )
+    result = client.send_once(
+        ordinal=1,
+        stage="exact_accession_api",
+        request=_request(),
+    )
+    assert result.outcome_class == "oversized"
+    assert len(headers) == 99
+    assert response.raw.read_calls == 0
+    record = json.loads(counter_path.read_text(encoding="utf-8"))
+    assert record["canonical_status_header_bytes"] == header_bytes
+    assert (
+        record["canonical_status_header_bytes"] - (header_bytes - 1)
+        <= transport.SINGLE_SEND_DETECTION_ALLOWANCE_BYTES
+    )
+    with session_factory() as db:
+        ledger = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+            counter_path=counter_path,
+        )
+    assert not ledger.eligible
+    assert "aggregate_ceiling_crossed" in ledger.validation_errors
+
+
+def test_body_chunk_crosses_aggregate_while_body_stays_within_streaming_cap(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    body = b"aggregate-crossing-body"
+    response = _response(body)
+    header_bytes = len(
+        transport._canonical_status_header_bytes(
+            response,
+            transport._header_pairs(response),
+        )
+    )
+    remaining = header_bytes + len(body) - 1
+    assert len(body) <= remaining
+    _set_first_request_limits(session_factory, max_run_bytes=remaining)
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        counter_path=tmp_path / "http.jsonl",
+        send_callable=lambda *args, **kwargs: response,
+        dns_resolver=lambda host, port: ["8.8.8.8"],
+    )
+    result = client.send_once(
+        ordinal=1,
+        stage="exact_accession_api",
+        request=_request(),
+    )
+    assert result.outcome_class == "oversized"
+    assert result.delivered_body_bytes == len(body)
+
+
+def test_aggregate_exact_boundary_completes_without_crossing(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    body = b"exact-boundary"
+    response = _response(body)
+    header_bytes = len(
+        transport._canonical_status_header_bytes(
+            response,
+            transport._header_pairs(response),
+        )
+    )
+    _set_first_request_limits(
+        session_factory,
+        max_run_bytes=header_bytes + len(body),
+    )
+    counter_path = tmp_path / "http.jsonl"
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        counter_path=counter_path,
+        send_callable=lambda *args, **kwargs: response,
+        dns_resolver=lambda host, port: ["8.8.8.8"],
+    )
+    result = client.send_once(
+        ordinal=1,
+        stage="exact_accession_api",
+        request=_request(),
+    )
+    assert result.outcome_class == "completed"
+    with session_factory() as db:
+        ledger = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+            counter_path=counter_path,
+        )
+    assert ledger.eligible
+
+
+def test_body_stage_crossing_without_aggregate_crossing_is_oversized(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    body = b"12345"
+    response = _response(body)
+    header_bytes = len(
+        transport._canonical_status_header_bytes(
+            response,
+            transport._header_pairs(response),
+        )
+    )
+    max_run_bytes = header_bytes + len(body) + 100
+    _set_first_request_limits(
+        session_factory,
+        max_run_bytes=max_run_bytes,
+        stage_cap=len(body) - 1,
+    )
+    counter_path = tmp_path / "http.jsonl"
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        counter_path=counter_path,
+        send_callable=lambda *args, **kwargs: response,
+        dns_resolver=lambda host, port: ["8.8.8.8"],
+    )
+    result = client.send_once(
+        ordinal=1,
+        stage="exact_accession_api",
+        request=_request(),
+    )
+    assert result.outcome_class == "oversized"
+    assert result.counted_status_header_bytes + result.delivered_body_bytes < (
+        max_run_bytes
+    )
+    with session_factory() as db:
+        ledger = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+            counter_path=counter_path,
+        )
+    assert "aggregate_ceiling_crossed" not in ledger.validation_errors
+
+
+def test_pre_status_transport_failure_has_one_null_status_counter(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    counter_path = tmp_path / "http.jsonl"
+
+    def fail(*args, **kwargs):
+        raise requests.ConnectionError("synthetic")
+
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        counter_path=counter_path,
+        send_callable=fail,
+        dns_resolver=lambda host, port: ["8.8.8.8"],
+    )
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        client.send_once(
+            ordinal=1,
+            stage="exact_accession_api",
+            request=_request(),
+        )
+    assert exc.value.code == "connector_egress_transport_failed"
+    records = [
+        json.loads(line)
+        for line in counter_path.read_text(encoding="utf-8").splitlines()
+    ]
+    assert len(records) == 1
+    assert records[0]["response_status"] is None
+    assert records[0]["error_class"] == "transport_error"
+    with session_factory() as db:
+        ledger = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+            counter_path=counter_path,
+        )
+    assert ledger.entries[0]["outcome_class"] == "transport_error"
+    assert not ledger.eligible
+
+
+def test_counter_write_failure_after_send_leaves_spent_unknown_and_closes_response(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    response = _response(b"delivered")
+    sends = [0]
+
+    def send(*args, **kwargs):
+        sends[0] += 1
+        return response
+
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        counter_path=tmp_path / "absent-parent" / "http.jsonl",
+        send_callable=send,
+        dns_resolver=lambda host, port: ["8.8.8.8"],
+    )
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        client.send_once(
+            ordinal=1,
+            stage="exact_accession_api",
+            request=_request(),
+        )
+    assert exc.value.code == "connector_egress_counter_write_failed"
+    assert sends == [1]
+    assert response.raw.closed
+    with session_factory() as db:
+        ledger = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+        )
+    assert ledger.entries[0]["outcome_class"] == "spent_unknown"
+    assert not ledger.eligible
