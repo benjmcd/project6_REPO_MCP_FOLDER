@@ -67,6 +67,11 @@ app.add_exception_handler(Exception, unhandled_exception_handler)
 
 _REQUIRED_PRE_BODY_OPERATOR_AUTHORIZATION_POST_ROUTES = {
     f"{settings.api_prefix.rstrip('/')}/analysis-runs": "write",
+    f"{settings.api_prefix.rstrip('/')}/connectors/egress-armings": "write",
+    (
+        f"{settings.api_prefix.rstrip('/')}/connectors/egress-armings/"
+        "{connector_run_id}/execute"
+    ): "write",
     f"{settings.api_prefix.rstrip('/')}/layer3/source/intake/upload": "write",
     f"{settings.api_prefix.rstrip('/')}/layer3/sec-xbrl/operator-review/workflow/status": "read",
 }
@@ -286,6 +291,7 @@ def _build_static_pre_body_routes(
         # --- app/api/router.py (legacy API — no /layer3 sub-prefix) ---
         (f"{p}/sources/upload", "write"),
         (f"{p}/analysis-runs", "write"),
+        (f"{p}/connectors/egress-armings", "write"),
         (f"{p}/connectors/sciencebase-public/runs", "write"),
         (f"{p}/connectors/sciencebase-mcs/runs", "write"),
         (f"{p}/connectors/nrc-adams-aps/runs", "write"),
@@ -326,6 +332,7 @@ def _build_static_pre_body_routes(
         (f"{p}/datasets/{{dataset_id}}/versions/{{dataset_version_id}}/transformations/apply", "write"),
         (f"{p}/datasets/{{dataset_id}}/versions/{{dataset_version_id}}/annotations", "write"),
         (f"{p}/datasets/{{dataset_id}}/versions/{{dataset_version_id}}/analysis/recommend", "write"),
+        (f"{p}/connectors/egress-armings/{{connector_run_id}}/execute", "write"),
         (f"{p}/connectors/runs/{{connector_run_id}}/resume", "write"),
         (f"{p}/connectors/runs/{{connector_run_id}}/cancel", "write"),
     ]
