@@ -1539,11 +1539,38 @@ def test_created_linkage_satisfies_existing_receipt_derivation(
     db: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    run, target, _, _ = _make_strict_state(db)
+    run, target, raw_path, digest = _make_strict_state(db)
     _install_parser(monkeypatch)
-    linkage = _phase_b().bind_strict_nrc_phase_b_linkage(
+    phase_b = _phase_b()
+    linkage = phase_b.bind_strict_nrc_phase_b_linkage(
         db,
         connector_run_target_id=target.connector_run_target_id,
+    )
+    verification_calls: list[str] = []
+
+    def verify_fresh_binding(
+        verify_db: Session,
+        *,
+        connector_run_target_id: str,
+    ) -> Any:
+        # StaticPool memory DB cannot expose an independent committed reader.
+        # This test isolates the origin bridge; verifier tests cover visibility.
+        assert verify_db is db
+        verification_calls.append(connector_run_target_id)
+        return phase_b.NrcPhaseBVerifiedState(
+            connector_run_id=run.connector_run_id,
+            connector_run_target_id=target.connector_run_target_id,
+            aps_content_linkage_id=linkage.aps_content_linkage_id,
+            content_id=linkage.content_id,
+            raw_storage_ref=str(raw_path.resolve()),
+            raw_content_sha256=digest,
+            raw_content_size_bytes=raw_path.stat().st_size,
+        )
+
+    monkeypatch.setattr(
+        phase_b,
+        "verify_strict_nrc_phase_b_linkage",
+        verify_fresh_binding,
     )
     monkeypatch.setattr(
         origin,
@@ -1564,6 +1591,7 @@ def test_created_linkage_satisfies_existing_receipt_derivation(
         linkage.aps_content_linkage_id
     )
     assert receipt["content_id"] == linkage.content_id
+    assert verification_calls == [target.connector_run_target_id]
 
 
 @pytest.mark.parametrize(

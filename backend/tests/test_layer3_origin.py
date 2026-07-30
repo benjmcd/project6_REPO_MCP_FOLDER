@@ -12,7 +12,8 @@ from typing import cast
 from uuid import NAMESPACE_URL, uuid5
 
 import pytest
-from sqlalchemy import create_engine, event, inspect as sa_inspect
+from sqlalchemy import create_engine, event, inspect as sa_inspect, select
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -38,10 +39,19 @@ from app.schemas.api import (
     expected_grant_rule_payloads,
 )
 from app.services import layer3_origin_continuity as origin
-from app.services import connector_egress_arming, connector_egress_transport
+from app.services import (
+    connector_egress_arming,
+    connector_egress_transport,
+    connectors_nrc_adams,
+    layer3_connector_source_intake as connector_intake,
+    nrc_aps_artifact_ingestion,
+    nrc_aps_document_processing,
+    nrc_aps_phase_b_linkage as phase_b,
+)
 from app.services.connector_egress_authorization import (
     VerifiedHistoricalGrantEvidence,
 )
+from app.services.raw_storage_handles import persist_locked_raw_file
 
 
 CAMPAIGN_ID = "7fe33e0a-c0e7-4f8e-9d55-8ba77a01ce23"
@@ -81,6 +91,11 @@ def db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     )
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine, future=True)()
+    monkeypatch.setattr(
+        phase_b,
+        "verify_strict_nrc_phase_b_linkage",
+        _verify_synthetic_phase_b,
+    )
     try:
         yield session
     finally:
@@ -561,6 +576,95 @@ def _seed_sciencebase(db, content: bytes = b"commodity,value\nGermanium,42\n"):
     return run, target, digest, storage_ref
 
 
+def _seed_actual_sciencebase_phase_a(db):
+    content = b"county,value\n001,1\n"
+    digest = hashlib.sha256(content).hexdigest()
+    raw_dir = Path(settings.connector_raw_dir) / "sha256"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    raw_path = raw_dir / f"{digest}.csv"
+    raw_path.write_bytes(content)
+    run = ConnectorRun(
+        connector_run_id="run-sciencebase-phase-a-origin",
+        connector_key="sciencebase_mcs",
+        source_system="sciencebase",
+        source_mode="strict_live_egress",
+        status="running",
+    )
+    target = ConnectorRunTarget(
+        connector_run_target_id="target-sciencebase-phase-a-origin",
+        connector_run_id=run.connector_run_id,
+        ordinal=1,
+        sciencebase_item_id="63d1a3c6d34e06fef15006be",
+        sciencebase_item_url=None,
+        sciencebase_file_name="mcs2023-germa_salient.csv",
+        sciencebase_download_uri=None,
+        artifact_surface="files",
+        artifact_locator_type="downloadUri_hash_only",
+        source_artifact_key=(
+            "sciencebase:63d1a3c6d34e06fef15006be:"
+            "mcs2023-germa_salient.csv"
+        ),
+        downloaded_sha256=digest,
+        raw_storage_ref=str(raw_path.resolve()),
+        public_read_confirmed=True,
+        status="downloaded",
+    )
+    db.add_all([run, target])
+    db.commit()
+    intake = connector_intake._stage_strict_sciencebase_source_intake(
+        db,
+        run=run,
+        target=target,
+    )
+    dataset = Dataset(
+        dataset_id="dataset-sciencebase-phase-a-origin",
+        name="MCS Germanium Phase A",
+    )
+    version = DatasetVersion(
+        dataset_version_id="version-sciencebase-phase-a-origin",
+        dataset_id=dataset.dataset_id,
+        version_label="fresh",
+        version_type="source",
+        storage_ref=str(raw_path.resolve()),
+        content_hash=digest,
+    )
+    provenance = DatasetSourceProvenance(
+        dataset_source_provenance_id=(
+            "provenance-sciencebase-phase-a-origin"
+        ),
+        dataset_version_id=version.dataset_version_id,
+        connector_run_id=run.connector_run_id,
+        source_system="sciencebase",
+        source_mode="strict_live_egress",
+        source_artifact_key=target.source_artifact_key,
+        sciencebase_item_id=target.sciencebase_item_id,
+        sciencebase_file_name=target.sciencebase_file_name,
+        downloaded_sha256=digest,
+        raw_storage_ref=str(raw_path.resolve()),
+        source_reference_json={
+            "schema_id": "project6.sciencebase_phase_a_provenance.v1",
+            "connector_key": "sciencebase_mcs",
+            "connector_run_target_id": target.connector_run_target_id,
+            "item_id": target.sciencebase_item_id,
+            "exact_file_name": target.sciencebase_file_name,
+            "artifact_surface": "files",
+            "source_mode": "strict_live_egress",
+            "raw_sha256": digest,
+            "storage_class": "connector_raw_sha256",
+        },
+    )
+    target.dataset_id = dataset.dataset_id
+    target.dataset_version_id = version.dataset_version_id
+    run.status = "completed"
+    run.request_config_json = {
+        "connector_egress_arming": _arming("sciencebase_mcs")
+    }
+    run.request_fingerprint = ARMING_FINGERPRINT
+    db.add_all([dataset, version, provenance])
+    db.commit()
+    return run, target, provenance, intake, digest, raw_path
+
+
 def _seed_nrc(
     db,
     *,
@@ -632,6 +736,213 @@ def _seed_nrc(
     return run, target, linkage, digest
 
 
+def _strict_phase_b_output() -> dict:
+    first = (
+        "NRC admitted content remains bound to server-owned raw bytes "
+        "and exact accession authority."
+    )
+    second = (
+        "Phase B creates canonical chunks without changing Phase A "
+        "acquisition state or URL posture."
+    )
+    normalized_text = f"{first}\n{second}"
+    return {
+        "declared_content_type": "application/pdf",
+        "sniffed_content_type": "application/pdf",
+        "effective_content_type": "application/pdf",
+        "media_detection_status": "declared_and_sniffed_match",
+        "document_processing_contract_id": (
+            nrc_aps_document_processing.APS_DOCUMENT_EXTRACTION_CONTRACT_ID
+        ),
+        "extractor_id": (
+            nrc_aps_document_processing.APS_PDF_EXTRACTOR_ID
+        ),
+        "normalization_contract_id": (
+            nrc_aps_document_processing.APS_TEXT_NORMALIZATION_CONTRACT_ID
+        ),
+        "document_class": "layout_complex_pdf",
+        "page_count": 2,
+        "quality_status": (
+            nrc_aps_document_processing.APS_QUALITY_STATUS_STRONG
+        ),
+        "degradation_codes": [],
+        "ordered_units": [
+            {
+                "page_number": 1,
+                "unit_kind": "pdf_text_block",
+                "text": first,
+                "bbox": [1.0, 2.0, 300.0, 40.0],
+                "start_char": 0,
+                "end_char": len(first),
+            },
+            {
+                "page_number": 2,
+                "unit_kind": "pdf_text_block",
+                "text": second,
+                "bbox": [1.0, 2.0, 320.0, 42.0],
+                "start_char": len(first) + 1,
+                "end_char": len(normalized_text),
+            },
+        ],
+        "page_summaries": [
+            {"page_number": 1, "unit_count": 1, "source": "native"},
+            {"page_number": 2, "unit_count": 1, "source": "native"},
+        ],
+        "native_page_count": 2,
+        "ocr_page_count": 0,
+        "weak_page_count": 0,
+        "visual_page_refs": [],
+        "normalized_text": normalized_text,
+        "normalized_text_sha256": hashlib.sha256(
+            normalized_text.encode("utf-8")
+        ).hexdigest(),
+        "normalized_char_count": len(normalized_text),
+    }
+
+
+def _seed_actual_nrc_phase_b(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    raw_bytes = b"%PDF-1.7\nstrict origin Phase B fixture\n%%EOF"
+    digest = hashlib.sha256(raw_bytes).hexdigest()
+    raw_root = Path(settings.connector_raw_dir)
+    raw_path = raw_root / nrc_aps_artifact_ingestion.blob_relative_path(
+        sha256=digest
+    )
+    persist_locked_raw_file(raw_root, raw_path, raw_bytes)
+    completed_at = WINDOW_START.replace(tzinfo=None)
+    run = ConnectorRun(
+        connector_run_id="run-nrc-phase-b-origin",
+        connector_key="nrc_adams_aps",
+        source_system="nrc_adams_aps",
+        source_mode="strict_live_egress",
+        status="completed",
+        submission_idempotency_key="egress-arm:run-nrc-phase-b-origin",
+        request_config_json={
+            "connector_egress_arming": _arming("nrc_adams_aps")
+        },
+        request_fingerprint=ARMING_FINGERPRINT,
+        completed_at=completed_at,
+        discovered_count=1,
+        selected_count=1,
+        downloaded_count=1,
+        ingested_count=0,
+        consumed_bytes=len(raw_bytes),
+        failed_count=0,
+        terminal_target_count=1,
+        nonterminal_target_count=0,
+        execution_lease_owner=None,
+        execution_lease_token=None,
+        execution_lease_expires_at=completed_at,
+        error_summary=None,
+    )
+    target = ConnectorRunTarget(
+        connector_run_target_id="target-nrc-phase-b-origin",
+        connector_run_id=run.connector_run_id,
+        ordinal=1,
+        stable_release_key="ML17123A319",
+        stable_release_identifier="adams_accession:ML17123A319",
+        identifiers_json=[
+            {"type": "AccessionNumber", "value": "ML17123A319"}
+        ],
+        sciencebase_file_name="ML17123A319.pdf",
+        artifact_surface="files",
+        selection_source="strict_exact_accession",
+        selection_scope="dual_live_proof_v1",
+        selection_match_basis="exact_accession",
+        artifact_locator_type=(
+            connectors_nrc_adams.NRC_FRESH_ARTIFACT_PATH_CLASS
+        ),
+        source_artifact_key="nrc_adams_aps::ML17123A319",
+        canonical_artifact_key="nrc_adams_aps::ML17123A319",
+        downloaded_sha256=digest,
+        raw_storage_ref=str(raw_path),
+        fetch_policy_mode="strict_live_egress",
+        redirect_count=0,
+        aliases_json=[],
+        source_reference_json={
+            "schema_id": "project6.nrc_raw_admission.v1",
+            "accession_number": "ML17123A319",
+            "artifact_file_name": "ML17123A319.pdf",
+            "detail_response_sha256": "3" * 64,
+            "artifact_url_sha256": "4" * 64,
+            "artifact_path_class": (
+                connectors_nrc_adams.NRC_FRESH_ARTIFACT_PATH_CLASS
+            ),
+            "raw_content_sha256": digest,
+            "raw_content_size_bytes": len(raw_bytes),
+            "media_type": "application/pdf",
+            "blob_storage_layout": "nrc_aps_blob_sha256_v1",
+        },
+        permission_snapshot_json={"direct_public_200": True},
+        access_level_summary="public_direct_200",
+        public_read_confirmed=True,
+        status="downloaded",
+        retry_eligible=False,
+        attempt_count=1,
+        downloaded_at=completed_at,
+        last_attempt_at=completed_at,
+        last_stage_transition_at=completed_at,
+    )
+    terminal = ConnectorRunEvent(
+        connector_run_event_id=connector_egress_arming._deterministic_id(
+            run.connector_run_id,
+            "egress_run_terminal",
+        ),
+        connector_run_id=run.connector_run_id,
+        phase="execution",
+        stage="terminal",
+        event_type="egress_run_terminal",
+        status_before="running",
+        status_after="completed",
+        reason_code="nrc_raw_admission_completed",
+        metrics_json={
+            "outcome_class": "nrc_raw_admission_completed",
+            "arming_fingerprint": ARMING_FINGERPRINT,
+            "campaign_introduction_index_revision": 1,
+            "campaign_introduction_index_sha256": INDEX_SHA256,
+        },
+        created_at=completed_at,
+    )
+    db.add_all([run, target, terminal])
+    db.commit()
+    monkeypatch.setattr(
+        phase_b.nrc_aps_strict_parse,
+        "parse_admitted_blob_strict",
+        lambda **kwargs: deepcopy(_strict_phase_b_output()),
+    )
+    linkage = phase_b.bind_strict_nrc_phase_b_linkage(
+        db,
+        connector_run_target_id=target.connector_run_target_id,
+    )
+    return run, target, linkage, digest, raw_path
+
+
+def _verify_synthetic_phase_b(
+    db,
+    *,
+    connector_run_target_id: str,
+):
+    anchor = origin._read_origin_anchor(
+        db,
+        target_id=connector_run_target_id,
+    )
+    run = anchor.run.materialize(ConnectorRun)
+    target = anchor.target.materialize(ConnectorRunTarget)
+    linkage = anchor.linkages[0].materialize(ApsContentLinkage)
+    raw_path = _stored_path(str(target.raw_storage_ref))
+    return phase_b.NrcPhaseBVerifiedState(
+        connector_run_id=run.connector_run_id,
+        connector_run_target_id=target.connector_run_target_id,
+        aps_content_linkage_id=linkage.aps_content_linkage_id,
+        content_id=linkage.content_id,
+        raw_storage_ref=str(raw_path.resolve()),
+        raw_content_sha256=str(target.downloaded_sha256),
+        raw_content_size_bytes=raw_path.stat().st_size,
+    )
+
+
 def _install_live_proof(
     monkeypatch: pytest.MonkeyPatch,
     *,
@@ -660,6 +971,12 @@ def _install_live_proof(
         "_compute_arming_fingerprint",
         lambda envelope: ARMING_FINGERPRINT,
     )
+    if connector_key == "nrc_adams_aps":
+        monkeypatch.setattr(
+            phase_b,
+            "verify_strict_nrc_phase_b_linkage",
+            _verify_synthetic_phase_b,
+        )
     return calls
 
 
@@ -1118,7 +1435,7 @@ def _seed_real_live_origin(
         (
             "nrc_adams_aps",
             {
-                "connector_run_event": 8,
+                "connector_run_event": 9,
                 "connector_policy_snapshot": 3,
                 "aps_content_linkage": 2,
                 "dataset_source_provenance": 2,
@@ -1128,7 +1445,7 @@ def _seed_real_live_origin(
         (
             "sciencebase_mcs",
             {
-                "connector_run_event": 12,
+                "connector_run_event": 13,
                 "connector_policy_snapshot": 4,
                 "aps_content_linkage": 2,
                 "dataset_source_provenance": 2,
@@ -1210,9 +1527,9 @@ def test_origin_anchor_uses_six_non_cartesian_core_selects(
         (
             "nrc_adams_aps",
             "event",
-            8,
+            9,
             "connector_run_event",
-            7,
+            8,
         ),
         (
             "nrc_adams_aps",
@@ -1231,9 +1548,9 @@ def test_origin_anchor_uses_six_non_cartesian_core_selects(
         (
             "sciencebase_mcs",
             "event",
-            12,
+            13,
             "connector_run_event",
-            11,
+            12,
         ),
         (
             "sciencebase_mcs",
@@ -1329,8 +1646,8 @@ def test_origin_anchor_rejects_collection_overflow(
 @pytest.mark.parametrize(
     ("connector_key", "event_cap", "policy_cap"),
     [
-        ("nrc_adams_aps", 7, 2),
-        ("sciencebase_mcs", 11, 3),
+        ("nrc_adams_aps", 8, 2),
+        ("sciencebase_mcs", 12, 3),
     ],
 )
 def test_origin_anchor_accepts_frozen_collection_cap_boundaries(
@@ -1862,14 +2179,16 @@ def test_stored_receipt_tampering_and_ineligible_ledger_fail_closed(
     db,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    run, target, digest, storage_ref = _seed_sciencebase(db)
+    run, target, _, intake, digest, _ = (
+        _seed_actual_sciencebase_phase_a(db)
+    )
     entries = [
         _entry(1, "item_hydration"),
         _entry(
             2,
             "artifact",
             body_sha256=digest,
-            byte_count=_stored_path(storage_ref).stat().st_size,
+            byte_count=intake.content_size_bytes,
         ),
     ]
     _install_live_proof(
@@ -1878,13 +2197,18 @@ def test_stored_receipt_tampering_and_ineligible_ledger_fail_closed(
         connector_key=run.connector_key,
         entries=entries,
     )
-    receipt = origin.derive_connector_origin_receipt(
+    projection = origin.mint_connector_origin_receipt(
         db,
         connector_run_target_id=target.connector_run_target_id,
     )
-    target.source_reference_json = {
-        "connector_origin_receipt_v1": dict(receipt),
-    }
+    receipt = deepcopy(
+        target.source_reference_json[
+            origin.ORIGIN_RECEIPT_STORAGE_KEY
+        ]
+    )
+    assert projection["connector_origin_receipt_hash"] == (
+        receipt["receipt_hash"]
+    )
     db.commit()
 
     origin.assert_connector_origin_continuity(
@@ -2140,7 +2464,11 @@ def test_local_dirty_custody_cannot_be_autoflushed_or_attested(
                 receipt=receipt,
             )
 
-    assert excinfo.value.code == "layer3_origin_nrc_custody_ineligible"
+    assert excinfo.value.code == (
+        "layer3_origin_nrc_custody_ineligible"
+        if operation == "derive"
+        else "layer3_origin_identity_map_dirty"
+    )
     assert update_statements == []
     assert sa_inspect(target) is state_before
     assert (
@@ -2531,7 +2859,28 @@ def test_fixed_manifest_source_derives_offline_fixture_without_live_resolvers(
     assert "proof_class" not in inspect.signature(
         origin.derive_connector_origin_receipt
     ).parameters
-
+    monkeypatch.setattr(
+        phase_b,
+        "verify_strict_nrc_phase_b_linkage",
+        lambda *args, **kwargs: pytest.fail(
+            "offline fixture invoked committed Phase-B verifier"
+        ),
+    )
+    projection = origin.mint_connector_origin_receipt(
+        db,
+        connector_run_target_id=target.connector_run_target_id,
+    )
+    assert projection == {
+        "connector_run_target_id": target.connector_run_target_id,
+        "connector_origin_receipt_hash": receipt["receipt_hash"],
+    }
+    assert (
+        target.source_reference_json[
+            origin.ORIGIN_RECEIPT_STORAGE_KEY
+        ]
+        == receipt
+    )
+    db.rollback()
     run.request_config_json = ["not", "an", "object"]
     db.commit()
     with pytest.raises(origin.Layer3OriginContinuityError) as exc:
@@ -2540,3 +2889,1137 @@ def test_fixed_manifest_source_derives_offline_fixture_without_live_resolvers(
             connector_run_target_id=target.connector_run_target_id,
         )
     assert exc.value.code == "layer3_origin_request_config_invalid"
+
+
+def test_origin_mint_public_contract_requires_caller_transaction(
+    db,
+) -> None:
+    expected_parameters = ["db", "connector_run_target_id"]
+    for function_name in (
+        "mint_connector_origin_receipt",
+        "verified_connector_origin_projection",
+    ):
+        function = getattr(origin, function_name)
+        assert list(inspect.signature(function).parameters) == (
+            expected_parameters
+        )
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            function(
+                db,
+                connector_run_target_id="target-without-transaction",
+            )
+        assert (
+            excinfo.value.code
+            == "layer3_origin_caller_transaction_required"
+        )
+    postgres_condition = origin._json_cas_condition(
+        ConnectorRunTarget.__table__.c.source_reference_json,
+        expected={"b": 2, "a": 1},
+        dialect_name="postgresql",
+    )
+    compiled = str(
+        postgres_condition.compile(
+            dialect=postgresql.dialect(),
+        )
+    )
+    assert " AS JSONB)" in compiled
+    assert "source_reference_json AS JSONB" in compiled
+    with pytest.raises(
+        origin.Layer3OriginContinuityError
+    ) as unsupported:
+        origin._json_cas_condition(
+            ConnectorRunTarget.__table__.c.source_reference_json,
+            expected={},
+            dialect_name="unsupported",
+        )
+    assert (
+        unsupported.value.code
+        == "layer3_origin_cas_dialect_unsupported"
+    )
+
+
+def test_actual_sciencebase_phase_a_mint_is_atomic_exact_and_replay_safe(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run, target, provenance, intake, digest, _ = (
+        _seed_actual_sciencebase_phase_a(db)
+    )
+    run_id = run.connector_run_id
+    target_id = target.connector_run_target_id
+    intake_id = intake.connector_source_intake_record_id
+    _install_live_proof(
+        monkeypatch,
+        run_id=run_id,
+        connector_key="sciencebase_mcs",
+        entries=[
+            _entry(1, "item_hydration"),
+            _entry(
+                2,
+                "artifact",
+                body_sha256=digest,
+                byte_count=intake.content_size_bytes,
+            ),
+        ],
+    )
+    db.rollback()
+    with pytest.raises(
+        connector_intake.ConnectorSourceIntakeError
+    ) as pre_mint:
+        connector_intake.connector_source_intake_material_preview(
+            db,
+            connector_source_intake_record_id=intake_id,
+        )
+    assert (
+        pre_mint.value.code
+        == "connector_source_intake_preview_origin_receipt_missing"
+    )
+    db.rollback()
+
+    outer = db.begin()
+    with _record_dml(
+        db,
+        ("SAVEPOINT", "INSERT ", "UPDATE ", "DELETE "),
+    ) as first_statements:
+        projection = origin.mint_connector_origin_receipt(
+            db,
+            connector_run_target_id=target_id,
+        )
+
+    assert outer.is_active
+    assert db.in_transaction()
+    assert not db.in_nested_transaction()
+    assert set(projection) == {
+        "connector_run_target_id",
+        "connector_origin_receipt_hash",
+    }
+    assert projection["connector_run_target_id"] == target_id
+    assert len(
+        projection["connector_origin_receipt_hash"]
+    ) == 64
+    assert sum(
+        statement.lstrip().upper().startswith("SAVEPOINT")
+        for statement in first_statements
+    ) == 1
+    assert sum(
+        statement.lstrip().upper().startswith("UPDATE ")
+        for statement in first_statements
+    ) == 3
+
+    current_target = db.get(ConnectorRunTarget, target_id)
+    current_provenance = db.get(
+        DatasetSourceProvenance,
+        provenance.dataset_source_provenance_id,
+    )
+    current_intake = db.get(
+        L3ConnectorSourceIntakeRecord,
+        intake_id,
+    )
+    assert current_target is not None
+    assert current_provenance is not None
+    assert current_intake is not None
+    stored_receipt = current_target.source_reference_json[
+        origin.ORIGIN_RECEIPT_STORAGE_KEY
+    ]
+    assert stored_receipt["receipt_hash"] == (
+        projection["connector_origin_receipt_hash"]
+    )
+    assert current_provenance.source_reference_json == {
+        "schema_id": "project6.sciencebase_phase_a_provenance.v1",
+        "connector_key": "sciencebase_mcs",
+        "connector_run_target_id": target_id,
+        "item_id": target.sciencebase_item_id,
+        "exact_file_name": target.sciencebase_file_name,
+        "artifact_surface": "files",
+        "source_mode": "strict_live_egress",
+        "raw_sha256": digest,
+        "storage_class": "connector_raw_sha256",
+        "connector_origin_receipt_hash": (
+            projection["connector_origin_receipt_hash"]
+        ),
+    }
+    for values in (
+        current_intake.provenance_json,
+        current_intake.summary_json["metadata"],
+        current_intake.summary_json["authority_basis"],
+    ):
+        assert values["connector_run_target_id"] == target_id
+        assert values["connector_origin_receipt_hash"] == (
+            projection["connector_origin_receipt_hash"]
+        )
+
+    preview = (
+        connector_intake.connector_source_intake_material_preview(
+            db,
+            connector_source_intake_record_id=intake_id,
+        )
+    )
+    candidate = preview["material_candidate"]
+    for surface in (
+        candidate["source_identity"],
+        candidate["source_provenance"],
+        candidate["payload"],
+    ):
+        assert surface["connector_run_target_id"] == target_id
+        assert surface["connector_origin_receipt_hash"] == (
+            projection["connector_origin_receipt_hash"]
+        )
+    assert "connector_origin_receipt_hash" not in (
+        candidate["load_summary"]
+    )
+    connector_intake.validate_connector_intake_gate_b_decision_basis(
+        db,
+        candidate_id=candidate["candidate_id"],
+        decision_basis={
+            key: candidate[key]
+            for key in (
+                "source_ref",
+                "query_basis",
+                "provenance_ref",
+                "source_identity",
+                "source_provenance",
+                "payload",
+                "load_summary",
+            )
+        },
+    )
+
+    with _record_dml(
+        db,
+        ("INSERT ", "UPDATE ", "DELETE "),
+    ) as verifier_dml:
+        verified = origin.verified_connector_origin_projection(
+            db,
+            connector_run_target_id=target_id,
+        )
+    assert verified == projection
+    assert verifier_dml == []
+
+    with _record_dml(
+        db,
+        ("SAVEPOINT", "INSERT ", "UPDATE ", "DELETE "),
+    ) as replay_statements:
+        replay = origin.mint_connector_origin_receipt(
+            db,
+            connector_run_target_id=target_id,
+        )
+    assert replay == projection
+    assert sum(
+        statement.lstrip().upper().startswith("SAVEPOINT")
+        for statement in replay_statements
+    ) == 1
+    assert not any(
+        statement.lstrip().upper().startswith(
+            ("INSERT ", "UPDATE ", "DELETE ")
+        )
+        for statement in replay_statements
+    )
+    assert outer.is_active
+    outer.rollback()
+
+    durable_target = db.get(ConnectorRunTarget, target_id)
+    assert durable_target is not None
+    assert origin.ORIGIN_RECEIPT_STORAGE_KEY not in (
+        durable_target.source_reference_json or {}
+    )
+
+
+def test_mint_preserves_existing_nested_and_flushes_unrelated_work(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run, target, provenance, intake, digest, _ = (
+        _seed_actual_sciencebase_phase_a(db)
+    )
+    target_id = target.connector_run_target_id
+    provenance_id = provenance.dataset_source_provenance_id
+    intake_id = intake.connector_source_intake_record_id
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key=run.connector_key,
+        entries=[
+            _entry(1, "item_hydration"),
+            _entry(
+                2,
+                "artifact",
+                body_sha256=digest,
+                byte_count=intake.content_size_bytes,
+            ),
+        ],
+    )
+    db.rollback()
+    outer = db.begin()
+    caller_nested = db.begin_nested()
+    unrelated = Dataset(
+        dataset_id="unrelated-mint-pending",
+        name="Unrelated mint pending",
+    )
+    unrelated_id = unrelated.dataset_id
+    db.add(unrelated)
+    real_begin_nested = db.begin_nested
+    mint_nested_calls = 0
+
+    def counted_begin_nested():
+        nonlocal mint_nested_calls
+        mint_nested_calls += 1
+        return real_begin_nested()
+
+    monkeypatch.setattr(
+        db,
+        "begin_nested",
+        counted_begin_nested,
+    )
+
+    with _record_dml(
+        db,
+        ("SAVEPOINT", "INSERT ", "UPDATE ", "DELETE "),
+    ) as statements:
+        projection = origin.mint_connector_origin_receipt(
+            db,
+            connector_run_target_id=target_id,
+        )
+
+    assert projection["connector_run_target_id"] == target_id
+    assert outer.is_active
+    assert caller_nested.is_active
+    assert db.in_nested_transaction()
+    assert unrelated not in db.new
+    assert db.get(Dataset, unrelated_id) is unrelated
+    assert mint_nested_calls == 1
+    assert sum(
+        statement.lstrip().upper().startswith("SAVEPOINT")
+        for statement in statements
+    ) == 2
+    caller_nested.commit()
+    assert outer.is_active
+    outer.rollback()
+    witness = sessionmaker(
+        bind=db.get_bind(),
+        future=True,
+    )()
+    try:
+        reverted_target = witness.get(
+            ConnectorRunTarget,
+            target_id,
+        )
+        reverted_provenance = witness.get(
+            DatasetSourceProvenance,
+            provenance_id,
+        )
+        reverted_intake = witness.get(
+            L3ConnectorSourceIntakeRecord,
+            intake_id,
+        )
+        assert reverted_target is not None
+        assert reverted_provenance is not None
+        assert reverted_intake is not None
+        assert origin.ORIGIN_RECEIPT_STORAGE_KEY not in (
+            reverted_target.source_reference_json or {}
+        )
+        assert "connector_origin_receipt_hash" not in (
+            reverted_provenance.source_reference_json or {}
+        )
+        assert "connector_origin_receipt_hash" not in (
+            reverted_intake.provenance_json or {}
+        )
+        assert witness.get(Dataset, unrelated_id) is None
+    finally:
+        witness.close()
+
+
+def test_mint_refuses_unverified_sqlite_nested_root_without_dml(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run, target, _, intake, digest, _ = (
+        _seed_actual_sciencebase_phase_a(db)
+    )
+    target_id = target.connector_run_target_id
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key=run.connector_key,
+        entries=[
+            _entry(1, "item_hydration"),
+            _entry(
+                2,
+                "artifact",
+                body_sha256=digest,
+                byte_count=intake.content_size_bytes,
+            ),
+        ],
+    )
+    db.rollback()
+    prior_root = db.begin()
+    origin._prepare_caller_root_transaction(db)
+    prior_root.rollback()
+    outer = db.begin()
+    caller_nested = db.begin_nested()
+    assert db.get(ConnectorRunTarget, target_id) is not None
+    assert db.connection().get_nested_transaction() is not None
+    unrelated = Dataset(
+        dataset_id="unsafe-nested-unrelated",
+        name="Unsafe nested unrelated",
+    )
+    db.add(unrelated)
+
+    with _record_dml(
+        db,
+        ("SAVEPOINT", "INSERT ", "UPDATE ", "DELETE "),
+    ) as statements:
+        with pytest.raises(
+            origin.Layer3OriginContinuityError
+        ) as excinfo:
+            origin.mint_connector_origin_receipt(
+                db,
+                connector_run_target_id=target_id,
+            )
+
+    assert (
+        excinfo.value.code
+        == "layer3_origin_sqlite_nested_root_unverified"
+    )
+    assert statements == []
+    assert unrelated in db.new
+    assert caller_nested.is_active
+    assert outer.is_active
+    caller_nested.rollback()
+    outer.rollback()
+
+
+@pytest.mark.parametrize("pending_state", ["new", "deleted"])
+def test_mint_rejects_relevant_new_or_deleted_without_dml(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+    pending_state: str,
+) -> None:
+    run, target, provenance, intake, digest, _ = (
+        _seed_actual_sciencebase_phase_a(db)
+    )
+    target_id = target.connector_run_target_id
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key=run.connector_key,
+        entries=[
+            _entry(1, "item_hydration"),
+            _entry(
+                2,
+                "artifact",
+                body_sha256=digest,
+                byte_count=intake.content_size_bytes,
+            ),
+        ],
+    )
+    db.rollback()
+    outer = db.begin()
+    if pending_state == "new":
+        pending = ConnectorRunEvent(
+            connector_run_event_id="pending-origin-event",
+            connector_run_id=run.connector_run_id,
+            event_type="pending_origin_event",
+        )
+        db.add(pending)
+    else:
+        pending = db.get(
+            DatasetSourceProvenance,
+            provenance.dataset_source_provenance_id,
+        )
+        assert pending is not None
+        db.delete(pending)
+
+    with _record_dml(
+        db,
+        ("INSERT ", "UPDATE ", "DELETE "),
+    ) as statements:
+        with pytest.raises(
+            origin.Layer3OriginContinuityError
+        ) as excinfo:
+            origin.mint_connector_origin_receipt(
+                db,
+                connector_run_target_id=target_id,
+            )
+
+    assert excinfo.value.code == "layer3_origin_identity_map_dirty"
+    assert statements == []
+    assert outer.is_active
+    assert pending in (
+        db.new if pending_state == "new" else db.deleted
+    )
+    outer.rollback()
+
+
+@pytest.mark.parametrize(
+    ("model", "field", "value"),
+    [
+        (ConnectorRunTarget, "blocked_reason", "pending-local-change"),
+        (
+            DatasetSourceProvenance,
+            "source_mode",
+            "pending-local-change",
+        ),
+        (
+            L3ConnectorSourceIntakeRecord,
+            "source_label",
+            "pending-local-change",
+        ),
+    ],
+)
+def test_mint_rejects_dirty_relevant_authority_without_dml(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+    model,
+    field: str,
+    value: str,
+) -> None:
+    run, target, provenance, intake, digest, _ = (
+        _seed_actual_sciencebase_phase_a(db)
+    )
+    target_id = target.connector_run_target_id
+    identities = {
+        ConnectorRunTarget: target_id,
+        DatasetSourceProvenance: provenance.dataset_source_provenance_id,
+        L3ConnectorSourceIntakeRecord: (
+            intake.connector_source_intake_record_id
+        ),
+    }
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key="sciencebase_mcs",
+        entries=[
+            _entry(1, "item_hydration"),
+            _entry(
+                2,
+                "artifact",
+                body_sha256=digest,
+                byte_count=intake.content_size_bytes,
+            ),
+        ],
+    )
+    db.rollback()
+    outer = db.begin()
+    authority = db.get(model, identities[model])
+    assert authority is not None
+    setattr(authority, field, value)
+    with _record_dml(
+        db,
+        ("INSERT ", "UPDATE ", "DELETE "),
+    ) as dml_statements:
+        with pytest.raises(
+            origin.Layer3OriginContinuityError
+        ) as excinfo:
+            origin.mint_connector_origin_receipt(
+                db,
+                connector_run_target_id=target_id,
+            )
+
+    assert excinfo.value.code == "layer3_origin_identity_map_dirty"
+    assert dml_statements == []
+    assert outer.is_active
+    assert authority in db.dirty
+    outer.rollback()
+
+
+@pytest.mark.parametrize(
+    ("drift_model", "drift_values"),
+    [
+        (
+            ConnectorRunTarget,
+            {"blocked_reason": "forced-cas-drift"},
+        ),
+        (
+            DatasetSourceProvenance,
+            {"blocked_reason": "forced-cas-drift"},
+        ),
+        (
+            L3ConnectorSourceIntakeRecord,
+            {"source_label": "forced-cas-drift"},
+        ),
+    ],
+)
+def test_sciencebase_cas_drift_rolls_back_only_receipt_child(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+    drift_model,
+    drift_values: dict,
+) -> None:
+    run, target, provenance, intake, digest, _ = (
+        _seed_actual_sciencebase_phase_a(db)
+    )
+    target_id = target.connector_run_target_id
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key=run.connector_key,
+        entries=[
+            _entry(1, "item_hydration"),
+            _entry(
+                2,
+                "artifact",
+                body_sha256=digest,
+                byte_count=intake.content_size_bytes,
+            ),
+        ],
+    )
+    db.rollback()
+    outer = db.begin()
+    unrelated = Dataset(
+        dataset_id=f"cas-unrelated-{drift_model.__name__}",
+        name="CAS unrelated pending",
+    )
+    unrelated_id = unrelated.dataset_id
+    db.add(unrelated)
+    real_cas = origin._cas_update_anchor_row
+    injected = False
+
+    def drift_then_cas(
+        session,
+        *,
+        row,
+        model,
+        values,
+    ):
+        nonlocal injected
+        if model is drift_model and not injected:
+            injected = True
+            identity = origin._row_primary_identity(
+                row,
+                model,
+            )
+            primary_key = tuple(model.__table__.primary_key)
+            assert len(primary_key) == len(identity) == 1
+            session.execute(
+                model.__table__.update()
+                .where(primary_key[0] == identity[0])
+                .values(**drift_values)
+            )
+        return real_cas(
+            session,
+            row=row,
+            model=model,
+            values=values,
+        )
+
+    monkeypatch.setattr(
+        origin,
+        "_cas_update_anchor_row",
+        drift_then_cas,
+    )
+    with pytest.raises(
+        origin.Layer3OriginContinuityError
+    ) as excinfo:
+        origin.mint_connector_origin_receipt(
+            db,
+            connector_run_target_id=target_id,
+        )
+
+    assert excinfo.value.code == "layer3_origin_cas_conflict"
+    assert injected
+    assert outer.is_active
+    assert db.get(Dataset, unrelated_id) is unrelated
+    db.expire_all()
+    current_target = db.get(ConnectorRunTarget, target_id)
+    current_provenance = db.get(
+        DatasetSourceProvenance,
+        provenance.dataset_source_provenance_id,
+    )
+    current_intake = db.get(
+        L3ConnectorSourceIntakeRecord,
+        intake.connector_source_intake_record_id,
+    )
+    assert current_target is not None
+    assert current_provenance is not None
+    assert current_intake is not None
+    assert origin.ORIGIN_RECEIPT_STORAGE_KEY not in (
+        current_target.source_reference_json or {}
+    )
+    assert "connector_origin_receipt_hash" not in (
+        current_provenance.source_reference_json or {}
+    )
+    assert "connector_origin_receipt_hash" not in (
+        current_intake.provenance_json or {}
+    )
+    outer.rollback()
+    assert db.get(Dataset, unrelated_id) is None
+
+
+@pytest.mark.parametrize(
+    ("stored_state", "expected_code"),
+    [
+        (
+            "stale_receipt",
+            "layer3_origin_stored_receipt_mismatch",
+        ),
+        (
+            "partial_projection",
+            "layer3_origin_provenance_projection_mismatch",
+        ),
+    ],
+)
+def test_stale_or_partial_stored_receipt_fails_without_repair_dml(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+    stored_state: str,
+    expected_code: str,
+) -> None:
+    run, target, _, intake, digest, _ = (
+        _seed_actual_sciencebase_phase_a(db)
+    )
+    target_id = target.connector_run_target_id
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key=run.connector_key,
+        entries=[
+            _entry(1, "item_hydration"),
+            _entry(
+                2,
+                "artifact",
+                body_sha256=digest,
+                byte_count=intake.content_size_bytes,
+            ),
+        ],
+    )
+    receipt = origin.derive_connector_origin_receipt(
+        db,
+        connector_run_target_id=target_id,
+    )
+    stored = deepcopy(receipt)
+    if stored_state == "stale_receipt":
+        stored["source_artifact_key"] = "stale-source-artifact"
+        stored["receipt_hash"] = origin._stable_hash(
+            {
+                key: value
+                for key, value in stored.items()
+                if key != "receipt_hash"
+            }
+        )
+    target.source_reference_json = {
+        **(target.source_reference_json or {}),
+        origin.ORIGIN_RECEIPT_STORAGE_KEY: stored,
+    }
+    db.commit()
+    outer = db.begin()
+
+    with _record_dml(
+        db,
+        ("INSERT ", "UPDATE ", "DELETE "),
+    ) as statements:
+        with pytest.raises(
+            origin.Layer3OriginContinuityError
+        ) as excinfo:
+            origin.mint_connector_origin_receipt(
+                db,
+                connector_run_target_id=target_id,
+            )
+
+    assert excinfo.value.code == expected_code
+    assert statements == []
+    assert outer.is_active
+    current_target = db.get(ConnectorRunTarget, target_id)
+    assert current_target is not None
+    assert (
+        current_target.source_reference_json[
+            origin.ORIGIN_RECEIPT_STORAGE_KEY
+        ]
+        == stored
+    )
+    outer.rollback()
+
+
+@pytest.mark.parametrize(
+    ("history_state", "expected_code"),
+    [
+        (
+            "exact_current_target",
+            "layer3_origin_candidate_already_consumed",
+        ),
+        (
+            "malformed_unattributed",
+            "layer3_origin_history_claim_malformed",
+        ),
+        (
+            "hidden_current_target",
+            "layer3_origin_history_claim_malformed",
+        ),
+        (
+            "hidden_current_provenance",
+            "layer3_origin_history_claim_malformed",
+        ),
+        ("explicit_other_target", None),
+    ],
+)
+def test_origin_history_claim_attribution_is_fail_closed(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+    history_state: str,
+    expected_code: str | None,
+) -> None:
+    run, target, provenance, intake, digest, _ = (
+        _seed_actual_sciencebase_phase_a(db)
+    )
+    target_id = target.connector_run_target_id
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key=run.connector_key,
+        entries=[
+            _entry(1, "item_hydration"),
+            _entry(
+                2,
+                "artifact",
+                body_sha256=digest,
+                byte_count=intake.content_size_bytes,
+            ),
+        ],
+    )
+    receipt = origin.derive_connector_origin_receipt(
+        db,
+        connector_run_target_id=target_id,
+    )
+    receipt_hash = receipt["receipt_hash"]
+    if history_state == "exact_current_target":
+        claim = {
+            "connector_run_target_id": target_id,
+            "connector_origin_receipt_hash": receipt_hash,
+        }
+    elif history_state == "malformed_unattributed":
+        claim = {
+            "connector_origin_receipt_hash": "not-a-hash",
+        }
+    else:
+        claim = {
+            "connector_run_target_id": "explicit-other-target",
+            "connector_origin_receipt_hash": receipt_hash,
+        }
+    if history_state == "hidden_current_target":
+        target.source_reference_json = {
+            "hidden_claim": {
+                "connector_run_target_id": target_id,
+                "connector_origin_receipt_hash": receipt_hash,
+            },
+        }
+    elif history_state == "hidden_current_provenance":
+        provenance.source_reference_json = {
+            "hidden_claim": {
+                "connector_run_target_id": target_id,
+                "connector_origin_receipt_hash": receipt_hash,
+            },
+        }
+    history_dataset = Dataset(
+        dataset_id=f"history-dataset-{history_state}",
+        name="History claim dataset",
+    )
+    history_version = DatasetVersion(
+        dataset_version_id=f"history-version-{history_state}",
+        dataset_id=history_dataset.dataset_id,
+        version_label="history",
+        version_type="source",
+    )
+    history_provenance = DatasetSourceProvenance(
+        dataset_source_provenance_id=(
+            f"history-provenance-{history_state}"
+        ),
+        dataset_version_id=history_version.dataset_version_id,
+        connector_run_id=None,
+        source_system="history",
+        source_mode="history",
+        source_artifact_key=f"history:{history_state}",
+        source_reference_json=claim,
+    )
+    db.add_all(
+        [
+            history_dataset,
+            history_version,
+            history_provenance,
+        ]
+    )
+    db.commit()
+    outer = db.begin()
+
+    if expected_code is None:
+        projection = origin.mint_connector_origin_receipt(
+            db,
+            connector_run_target_id=target_id,
+        )
+        assert projection["connector_origin_receipt_hash"] == (
+            receipt_hash
+        )
+    else:
+        with _record_dml(
+            db,
+            ("INSERT ", "UPDATE ", "DELETE "),
+        ) as statements:
+            with pytest.raises(
+                origin.Layer3OriginContinuityError
+            ) as excinfo:
+                origin.mint_connector_origin_receipt(
+                    db,
+                    connector_run_target_id=target_id,
+                )
+        assert excinfo.value.code == expected_code
+        assert statements == []
+    assert outer.is_active
+    outer.rollback()
+
+
+@pytest.mark.parametrize("target_state", ["missing", "wrong"])
+def test_sciencebase_phase_a_target_projection_tamper_is_zero_dml(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+    target_state: str,
+) -> None:
+    run, target, provenance, intake, digest, _ = (
+        _seed_actual_sciencebase_phase_a(db)
+    )
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key=run.connector_key,
+        entries=[
+            _entry(1, "item_hydration"),
+            _entry(
+                2,
+                "artifact",
+                body_sha256=digest,
+                byte_count=intake.content_size_bytes,
+            ),
+        ],
+    )
+    source_reference = dict(provenance.source_reference_json)
+    if target_state == "missing":
+        source_reference.pop("connector_run_target_id")
+    else:
+        source_reference["connector_run_target_id"] = "wrong-target"
+    provenance.source_reference_json = source_reference
+    db.commit()
+
+    with _record_dml(
+        db,
+        ("INSERT ", "UPDATE ", "DELETE "),
+    ) as statements:
+        with pytest.raises(
+            origin.Layer3OriginContinuityError
+        ) as excinfo:
+            origin.mint_connector_origin_receipt(
+                db,
+                connector_run_target_id=(
+                    target.connector_run_target_id
+                ),
+            )
+    assert (
+        excinfo.value.code
+        == "layer3_origin_provenance_projection_mismatch"
+    )
+    assert statements == []
+
+
+def test_post_mint_seal_event_preserves_receipt_and_projection(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run, target, _, intake, digest, _ = (
+        _seed_actual_sciencebase_phase_a(db)
+    )
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key=run.connector_key,
+        entries=[
+            _entry(1, "item_hydration"),
+            _entry(
+                2,
+                "artifact",
+                body_sha256=digest,
+                byte_count=intake.content_size_bytes,
+            ),
+        ],
+    )
+    before = origin.derive_connector_origin_receipt(
+        db,
+        connector_run_target_id=target.connector_run_target_id,
+    )
+    projection = origin.mint_connector_origin_receipt(
+        db,
+        connector_run_target_id=target.connector_run_target_id,
+    )
+    db.commit()
+    db.add(
+        ConnectorRunEvent(
+            connector_run_event_id="sciencebase-log-capture-sealed",
+            connector_run_id=run.connector_run_id,
+            event_type="campaign_log_capture_sealed",
+        )
+    )
+    db.commit()
+
+    after = origin.derive_connector_origin_receipt(
+        db,
+        connector_run_target_id=target.connector_run_target_id,
+    )
+    verified = origin.verified_connector_origin_projection(
+        db,
+        connector_run_target_id=target.connector_run_target_id,
+    )
+    assert after == before
+    assert verified == projection
+
+
+def test_duplicate_seal_events_fail_closed(db) -> None:
+    run, target, _, _ = _seed_nrc(db)
+    db.add_all(
+        [
+            ConnectorRunEvent(
+                connector_run_event_id=f"duplicate-seal-{index}",
+                connector_run_id=run.connector_run_id,
+                event_type="campaign_log_capture_sealed",
+            )
+            for index in range(2)
+        ]
+    )
+    db.commit()
+
+    with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+        origin._read_origin_anchor(
+            db,
+            target_id=target.connector_run_target_id,
+        )
+    assert (
+        excinfo.value.code
+        == "layer3_origin_seal_event_cardinality"
+    )
+
+
+@pytest.mark.parametrize("bound", ["depth", "nodes"])
+def test_origin_claim_traversal_bounds_fail_closed(
+    monkeypatch: pytest.MonkeyPatch,
+    bound: str,
+) -> None:
+    if bound == "depth":
+        monkeypatch.setattr(origin, "_ORIGIN_CLAIM_DEPTH_CAP", 2)
+        value = {"a": {"b": {"c": {}}}}
+    else:
+        monkeypatch.setattr(origin, "_ORIGIN_CLAIM_NODE_CAP", 2)
+        value = [1, 2, 3]
+    with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+        origin._origin_claims(value)
+    assert (
+        excinfo.value.code
+        == "layer3_origin_history_claim_bounds_exceeded"
+    )
+
+
+def test_origin_history_query_cap_fails_closed(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _seed_nrc(db)
+    monkeypatch.setattr(origin, "_ORIGIN_HISTORY_ROW_CAP", 0)
+    table = origin._model_table(ConnectorRunTarget)
+    with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+        origin._bounded_history_rows(
+            db,
+            select(table.c.connector_run_target_id),
+            table_name=str(table.name),
+        )
+    assert (
+        excinfo.value.code
+        == "layer3_origin_history_cardinality_exceeded"
+    )
+
+
+def test_actual_phase_b_mint_calls_committed_verifier_around_target_cas(
+    origin_file_dbs,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db, witness = origin_file_dbs
+    run, target, linkage, digest, raw_path = _seed_actual_nrc_phase_b(
+        db,
+        monkeypatch,
+    )
+    target_id = target.connector_run_target_id
+    real_verifier = phase_b.verify_strict_nrc_phase_b_linkage
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key=run.connector_key,
+        entries=[
+            _entry(1, "exact_accession_api"),
+            _entry(
+                2,
+                "artifact",
+                connector_key="nrc_adams_aps",
+                body_sha256=digest,
+                byte_count=raw_path.stat().st_size,
+            ),
+        ],
+    )
+    operation_order: list[str] = []
+
+    def verify_committed(db, *, connector_run_target_id: str):
+        operation_order.append("verify")
+        return real_verifier(
+            db,
+            connector_run_target_id=connector_run_target_id,
+        )
+
+    monkeypatch.setattr(
+        phase_b,
+        "verify_strict_nrc_phase_b_linkage",
+        verify_committed,
+    )
+    real_cas = origin._cas_update_anchor_row
+
+    def record_cas(session, *, row, model, values):
+        operation_order.append(f"cas:{model.__name__}")
+        return real_cas(
+            session,
+            row=row,
+            model=model,
+            values=values,
+        )
+
+    monkeypatch.setattr(
+        origin,
+        "_cas_update_anchor_row",
+        record_cas,
+    )
+    db.rollback()
+    outer = db.begin()
+    with _record_dml(
+        db,
+        ("INSERT ", "UPDATE ", "DELETE "),
+    ) as dml_statements:
+        projection = origin.mint_connector_origin_receipt(
+            db,
+            connector_run_target_id=target_id,
+        )
+
+    assert projection == {
+        "connector_run_target_id": target_id,
+        "connector_origin_receipt_hash": (
+            db.get(ConnectorRunTarget, target_id)
+            .source_reference_json[origin.ORIGIN_RECEIPT_STORAGE_KEY][
+                "receipt_hash"
+            ]
+        ),
+    }
+    assert operation_order == [
+        "verify",
+        "cas:ConnectorRunTarget",
+        "verify",
+    ]
+    assert sum(
+        statement.lstrip().upper().startswith("UPDATE ")
+        for statement in dml_statements
+    ) == 1
+    assert outer.is_active
+    assert linkage.aps_content_linkage_id
+    witness_target = witness.get(ConnectorRunTarget, target_id)
+    assert witness_target is not None
+    assert origin.ORIGIN_RECEIPT_STORAGE_KEY not in (
+        witness_target.source_reference_json or {}
+    )
+    outer.rollback()

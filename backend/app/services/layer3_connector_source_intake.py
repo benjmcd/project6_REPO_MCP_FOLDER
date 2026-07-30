@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 from typing import Any, Mapping
 
-from sqlalchemy import or_
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -41,6 +41,13 @@ CONNECTOR_SOURCE_INTAKE_GATE_B_MODE = "connector_source_intake_gate_b_material_a
 CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX = "mat-connector_source_intake_record-"
 CONNECTOR_SOURCE_INTAKE_QUERY_BASIS = "connector_produced_source_intake"
 CONNECTOR_SOURCE_INTAKE_SOURCE_GATE = "1366_SOURCE_ARTIFACT_ADMISSION_MAP_PHASE_3"
+CONNECTOR_ORIGIN_RECEIPT_HASH_KEY = "connector_origin_receipt_hash"
+STRICT_SCIENCEBASE_SOURCE_LABEL = "ScienceBase MCS frozen raw artifact"
+STRICT_SCIENCEBASE_SOURCE_DESCRIPTION = (
+    "Strict Phase-A raw CSV artifact; no semantic ingestion."
+)
+STRICT_SCIENCEBASE_ITEM_ID = "63d1a3c6d34e06fef15006be"
+STRICT_SCIENCEBASE_FILE_NAME = "mcs2023-germa_salient.csv"
 
 SERVER_AUTHORITY = (
     "Layer 3 connector source intake record owns connector-produced source "
@@ -209,6 +216,19 @@ def record_connector_produced_source_intake(
                 "connector_run_target_id": target_id,
                 "public_read_confirmed": bool(target.public_read_confirmed),
             },
+        )
+    if (
+        _server_owned_strict_sciencebase_authority(
+            db,
+            connector_run_target_id=target_id,
+        )
+        is not None
+    ):
+        raise ConnectorSourceIntakeError(
+            "connector_source_intake_reserved_strict_lane",
+            "Reserved strict ScienceBase targets require server-staged intake.",
+            http_status=409,
+            details={"connector_run_target_id": target_id},
         )
 
     original_filename = str(target.sciencebase_file_name or "").strip()
@@ -433,23 +453,63 @@ def _stage_strict_sciencebase_source_intake(
             http_status=409,
         )
 
-    client_request_id = (
-        f"strict-sciencebase:{run.connector_run_id}:"
-        f"{target.connector_run_target_id}"
+    values = _strict_sciencebase_intake_values(
+        connector_key=run.connector_key,
+        connector_run_id=run.connector_run_id,
+        connector_run_target_id=target.connector_run_target_id,
+        raw_storage_ref=str(resolved_path),
+        freshness_timestamp=target.downloaded_at,
+        content_size_bytes=content_size_bytes,
+        content_sha256=content_sha256,
+        connector_origin_receipt_hash=None,
     )
+    record = L3ConnectorSourceIntakeRecord(**values)
+    db.add(record)
+    db.flush()
+    return record
+
+
+def _strict_sciencebase_intake_values(
+    *,
+    connector_key: str,
+    connector_run_id: str,
+    connector_run_target_id: str,
+    raw_storage_ref: str,
+    freshness_timestamp: datetime | None,
+    content_size_bytes: int,
+    content_sha256: str,
+    connector_origin_receipt_hash: str | None,
+) -> dict[str, Any]:
+    """Build deterministic strict ScienceBase intake values without I/O."""
+
+    client_request_id = (
+        f"strict-sciencebase:{connector_run_id}:"
+        f"{connector_run_target_id}"
+    )
+    receipt_hash: str | None = None
+    if connector_origin_receipt_hash is not None:
+        receipt_hash = str(connector_origin_receipt_hash)
+        if not re.fullmatch(r"[0-9a-f]{64}", receipt_hash):
+            raise ConnectorSourceIntakeError(
+                "connector_source_intake_origin_projection_invalid",
+                "Strict ScienceBase origin projection requires one canonical receipt hash.",
+                http_status=409,
+            )
     metadata = {
         "client_request_id": client_request_id,
         "source_family": CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
-        "connector_key": run.connector_key,
-        "connector_run_id": run.connector_run_id,
-        "connector_run_target_id": target.connector_run_target_id,
-        "sciencebase_item_id": expected_item_id,
-        "sciencebase_file_name": expected_file_name,
+        "connector_key": connector_key,
+        "connector_run_id": connector_run_id,
+        "connector_run_target_id": connector_run_target_id,
+        "sciencebase_item_id": STRICT_SCIENCEBASE_ITEM_ID,
+        "sciencebase_file_name": STRICT_SCIENCEBASE_FILE_NAME,
         "artifact_surface": "files",
         "media_type": "text/csv",
         "content_size_bytes": content_size_bytes,
         "content_sha256": content_sha256,
     }
+    if receipt_hash is not None:
+        metadata[CONNECTOR_ORIGIN_RECEIPT_HASH_KEY] = receipt_hash
     metadata_hash = _stable_hash(metadata)
     authority_basis = {
         "schema_id": CONNECTOR_SOURCE_INTAKE_SCHEMA_ID,
@@ -460,49 +520,52 @@ def _stage_strict_sciencebase_source_intake(
         "content_sha256": content_sha256,
         "source_gate": CONNECTOR_SOURCE_INTAKE_SOURCE_GATE,
     }
+    if receipt_hash is not None:
+        authority_basis["connector_run_target_id"] = (
+            connector_run_target_id
+        )
+        authority_basis[CONNECTOR_ORIGIN_RECEIPT_HASH_KEY] = receipt_hash
     authority_basis_hash = _stable_hash(authority_basis)
-    record = L3ConnectorSourceIntakeRecord(
-        client_request_id=client_request_id,
-        operator_decision=CONNECTOR_SOURCE_INTAKE_OPERATOR_DECISION,
-        source_family=CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
-        source_label="ScienceBase MCS frozen raw artifact",
-        source_description=(
-            "Strict Phase-A raw CSV artifact; no semantic ingestion."
-        ),
-        original_filename=expected_file_name,
-        media_type="text/csv",
-        content_size_bytes=content_size_bytes,
-        content_sha256=content_sha256,
-        metadata_hash=metadata_hash,
-        authority_basis_hash=authority_basis_hash,
-        storage_ref=str(resolved_path),
-        freshness_timestamp=target.downloaded_at,
-        provenance_json={
-            "schema_id": CONNECTOR_SOURCE_INTAKE_SCHEMA_ID,
-            "mode": CONNECTOR_SOURCE_INTAKE_MODE,
-            "operator_decision": CONNECTOR_SOURCE_INTAKE_OPERATOR_DECISION,
-            "server_authority": SERVER_AUTHORITY,
-            "source_gate": CONNECTOR_SOURCE_INTAKE_SOURCE_GATE,
-            "connector_key": run.connector_key,
-            "connector_run_id": run.connector_run_id,
-            "connector_run_target_id": target.connector_run_target_id,
-            "content_sha256": content_sha256,
-            "metadata_hash": metadata_hash,
-        },
-        downstream_eligibility_json=_downstream_eligibility(),
-        summary_json={
+    provenance = {
+        "schema_id": CONNECTOR_SOURCE_INTAKE_SCHEMA_ID,
+        "mode": CONNECTOR_SOURCE_INTAKE_MODE,
+        "operator_decision": CONNECTOR_SOURCE_INTAKE_OPERATOR_DECISION,
+        "server_authority": SERVER_AUTHORITY,
+        "source_gate": CONNECTOR_SOURCE_INTAKE_SOURCE_GATE,
+        "connector_key": connector_key,
+        "connector_run_id": connector_run_id,
+        "connector_run_target_id": connector_run_target_id,
+        "content_sha256": content_sha256,
+        "metadata_hash": metadata_hash,
+    }
+    if receipt_hash is not None:
+        provenance[CONNECTOR_ORIGIN_RECEIPT_HASH_KEY] = receipt_hash
+    return {
+        "client_request_id": client_request_id,
+        "operator_decision": CONNECTOR_SOURCE_INTAKE_OPERATOR_DECISION,
+        "source_family": CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
+        "source_label": STRICT_SCIENCEBASE_SOURCE_LABEL,
+        "source_description": STRICT_SCIENCEBASE_SOURCE_DESCRIPTION,
+        "original_filename": STRICT_SCIENCEBASE_FILE_NAME,
+        "media_type": "text/csv",
+        "content_size_bytes": content_size_bytes,
+        "content_sha256": content_sha256,
+        "metadata_hash": metadata_hash,
+        "authority_basis_hash": authority_basis_hash,
+        "storage_ref": raw_storage_ref,
+        "freshness_timestamp": freshness_timestamp,
+        "provenance_json": provenance,
+        "downstream_eligibility_json": _downstream_eligibility(),
+        "summary_json": {
             "metadata": metadata,
             "authority_basis": authority_basis,
             "negative_invariants": _negative_invariants(),
         },
-        status=CONNECTOR_SOURCE_INTAKE_STATUS,
-        connector_key=run.connector_key,
-        connector_run_id=run.connector_run_id,
-        connector_run_target_id=target.connector_run_target_id,
-    )
-    db.add(record)
-    db.flush()
-    return record
+        "status": CONNECTOR_SOURCE_INTAKE_STATUS,
+        "connector_key": connector_key,
+        "connector_run_id": connector_run_id,
+        "connector_run_target_id": connector_run_target_id,
+    }
 
 
 def connector_source_intake_inventory(
@@ -600,7 +663,11 @@ def connector_source_intake_material_preview(
             http_status=404,
             details={"connector_source_intake_record_id": record_id},
     )
-    _assert_record_admitted(record, context="preview")
+    origin_projection = _assert_record_admitted(
+        db,
+        record,
+        context="preview",
+    )
     media_type = _normalise_media_type(record.media_type)
     if not _is_csv_media_type(media_type):
         raise ConnectorSourceIntakeError(
@@ -635,10 +702,39 @@ def connector_source_intake_material_preview(
     )[:36]
     source_ref = f"connector_source_intake_record:{record.connector_source_intake_record_id}"
     source_identity = _source_identity(record)
+    if origin_projection is not None:
+        source_identity[CONNECTOR_ORIGIN_RECEIPT_HASH_KEY] = (
+            origin_projection[CONNECTOR_ORIGIN_RECEIPT_HASH_KEY]
+        )
     source_provenance = {
         **(record.provenance_json or {}),
         "mode": CONNECTOR_SOURCE_INTAKE_GATE_B_MODE,
         "source_ref": source_ref,
+    }
+    payload = {
+        "connector_source_intake_record_id": (
+            record.connector_source_intake_record_id
+        ),
+        "source_class": CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
+        "content_sha256": record.content_sha256,
+        "metadata_hash": record.metadata_hash,
+        "authority_basis_hash": record.authority_basis_hash,
+        "connector_key": record.connector_key,
+        "connector_run_id": record.connector_run_id,
+        "connector_run_target_id": record.connector_run_target_id,
+        "bounded_preview_char_count": len(preview_text),
+        "preview_truncated": truncated,
+    }
+    if origin_projection is not None:
+        payload[CONNECTOR_ORIGIN_RECEIPT_HASH_KEY] = (
+            origin_projection[CONNECTOR_ORIGIN_RECEIPT_HASH_KEY]
+        )
+    load_summary = {
+        "loaded_records": 1,
+        "failed_records": 0,
+        "preview_material": True,
+        "bounded_text_preview": True,
+        "connector_source_intake_gate_b_material_admission": True,
     }
     material_candidate = {
         "candidate_id": f"{CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX}{record.connector_source_intake_record_id}",
@@ -660,25 +756,8 @@ def connector_source_intake_material_preview(
         "preview_encoding": "utf-8-replace",
         "source_identity": source_identity,
         "source_provenance": source_provenance,
-        "payload": {
-            "connector_source_intake_record_id": record.connector_source_intake_record_id,
-            "source_class": CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
-            "content_sha256": record.content_sha256,
-            "metadata_hash": record.metadata_hash,
-            "authority_basis_hash": record.authority_basis_hash,
-            "connector_key": record.connector_key,
-            "connector_run_id": record.connector_run_id,
-            "connector_run_target_id": record.connector_run_target_id,
-            "bounded_preview_char_count": len(preview_text),
-            "preview_truncated": truncated,
-        },
-        "load_summary": {
-            "loaded_records": 1,
-            "failed_records": 0,
-            "preview_material": True,
-            "bounded_text_preview": True,
-            "connector_source_intake_gate_b_material_admission": True,
-        },
+        "payload": payload,
+        "load_summary": load_summary,
         "current_decision_state": "candidate",
     }
     material_preview_hash = _gate_b_material_preview_hash(
@@ -734,7 +813,36 @@ def validate_connector_intake_gate_b_decision_basis(
             http_status=404,
             details={"connector_source_intake_record_id": record_id},
         )
-    _assert_record_admitted(record, context="gate_b")
+    origin_projection = _assert_record_admitted(
+        db,
+        record,
+        context="gate_b",
+    )
+    if origin_projection is not None:
+        mismatched_surfaces = []
+        for surface in (
+            "source_identity",
+            "source_provenance",
+            "payload",
+        ):
+            surface_value = decision_basis.get(surface)
+            if (
+                not isinstance(surface_value, Mapping)
+                or surface_value.get("connector_run_target_id")
+                != origin_projection["connector_run_target_id"]
+                or surface_value.get(CONNECTOR_ORIGIN_RECEIPT_HASH_KEY)
+                != origin_projection[CONNECTOR_ORIGIN_RECEIPT_HASH_KEY]
+            ):
+                mismatched_surfaces.append(
+                    f"candidate_decisions.decision_basis.{surface}"
+                )
+        if mismatched_surfaces:
+            raise ConnectorSourceIntakeError(
+                "connector_source_intake_gate_b_origin_projection_mismatch",
+                "Gate B requires the exact strict ScienceBase origin projection on every candidate surface.",
+                http_status=409,
+                details={"blocked_fields": mismatched_surfaces},
+            )
     media_type = _normalise_media_type(record.media_type)
     if not _is_csv_media_type(media_type):
         raise ConnectorSourceIntakeError(
@@ -827,6 +935,42 @@ def validate_connector_intake_gate_b_decision_basis(
         code="connector_source_intake_gate_b_payload_mismatch",
         message="The Gate B decision basis payload does not match the connector source-intake authority row.",
     )
+    canonical_candidate = connector_source_intake_material_preview(
+        db,
+        connector_source_intake_record_id=(
+            record.connector_source_intake_record_id
+        ),
+    )["material_candidate"]
+    expected_decision_basis = {
+        key: canonical_candidate[key]
+        for key in (
+            "source_ref",
+            "query_basis",
+            "provenance_ref",
+            "source_identity",
+            "source_provenance",
+            "payload",
+            "load_summary",
+        )
+    }
+    if "connector_target" in decision_basis:
+        expected_decision_basis["connector_target"] = {
+            "connector_run_target_id": (
+                record.connector_run_target_id
+            ),
+            "connector_key": record.connector_key,
+        }
+    if dict(decision_basis) != expected_decision_basis:
+        raise ConnectorSourceIntakeError(
+            "connector_source_intake_gate_b_basis_mismatch",
+            "Gate B requires the exact server-derived material-candidate basis.",
+            http_status=409,
+            details={
+                "connector_source_intake_record_id": (
+                    record.connector_source_intake_record_id
+                ),
+            },
+        )
 
 
 def _normalise_required(value: Any, field: str) -> str:
@@ -1007,7 +1151,99 @@ def _negative_invariants() -> dict[str, bool]:
     }
 
 
-def _assert_record_admitted(record: L3ConnectorSourceIntakeRecord, *, context: str) -> None:
+def _server_owned_strict_sciencebase_authority(
+    db: Session,
+    *,
+    connector_run_target_id: str,
+) -> Mapping[str, Any] | None:
+    target_id = str(connector_run_target_id or "").strip()
+    if not target_id:
+        return None
+    statement = (
+        select(
+            ConnectorRun.connector_run_id.label("run_id"),
+            ConnectorRun.connector_key.label("run_connector_key"),
+            ConnectorRun.source_mode.label("run_source_mode"),
+            ConnectorRun.status.label("run_status"),
+            ConnectorRunTarget.connector_run_target_id.label("target_id"),
+            ConnectorRunTarget.connector_run_id.label("target_run_id"),
+            ConnectorRunTarget.sciencebase_item_id,
+            ConnectorRunTarget.sciencebase_item_url,
+            ConnectorRunTarget.sciencebase_file_name,
+            ConnectorRunTarget.sciencebase_download_uri,
+            ConnectorRunTarget.artifact_surface,
+            ConnectorRunTarget.artifact_locator_type,
+            ConnectorRunTarget.source_artifact_key,
+            ConnectorRunTarget.status.label("target_status"),
+            ConnectorRunTarget.public_read_confirmed,
+            ConnectorRunTarget.source_reference_json,
+        )
+        .select_from(ConnectorRunTarget)
+        .join(
+            ConnectorRun,
+            ConnectorRun.connector_run_id
+            == ConnectorRunTarget.connector_run_id,
+        )
+        .where(
+            ConnectorRunTarget.connector_run_target_id == target_id
+        )
+        .limit(2)
+    )
+    with db.no_autoflush:
+        rows = list(db.execute(statement).mappings().all())
+    if len(rows) != 1:
+        return None
+    authority = rows[0]
+    from app.services import layer3_origin_continuity as origin
+
+    source_reference = authority["source_reference_json"]
+    receipt_present = (
+        isinstance(source_reference, Mapping)
+        and origin.ORIGIN_RECEIPT_STORAGE_KEY in source_reference
+    )
+    reserved = (
+        authority["run_connector_key"] == "sciencebase_mcs"
+        and authority["run_source_mode"] == "strict_live_egress"
+    ) or receipt_present
+    if not reserved:
+        return None
+    expected_artifact_key = (
+        f"sciencebase:{STRICT_SCIENCEBASE_ITEM_ID}:"
+        f"{STRICT_SCIENCEBASE_FILE_NAME}"
+    )
+    if (
+        authority["run_connector_key"] != "sciencebase_mcs"
+        or authority["run_source_mode"] != "strict_live_egress"
+        or authority["run_status"] not in {"running", "completed"}
+        or authority["target_run_id"] != authority["run_id"]
+        or authority["sciencebase_item_id"]
+        != STRICT_SCIENCEBASE_ITEM_ID
+        or authority["sciencebase_item_url"] is not None
+        or authority["sciencebase_file_name"]
+        != STRICT_SCIENCEBASE_FILE_NAME
+        or authority["sciencebase_download_uri"] is not None
+        or authority["artifact_surface"] != "files"
+        or authority["artifact_locator_type"]
+        != "downloadUri_hash_only"
+        or authority["source_artifact_key"] != expected_artifact_key
+        or authority["target_status"] != "downloaded"
+        or authority["public_read_confirmed"] is not True
+    ):
+        raise ConnectorSourceIntakeError(
+            "connector_source_intake_reserved_authority_invalid",
+            "Reserved ScienceBase authority contradicts its strict server-owned lane.",
+            http_status=409,
+            details={"connector_run_target_id": target_id},
+        )
+    return dict(authority)
+
+
+def _assert_record_admitted(
+    db: Session,
+    record: L3ConnectorSourceIntakeRecord,
+    *,
+    context: str,
+) -> dict[str, str] | None:
     if (
         record.status != CONNECTOR_SOURCE_INTAKE_STATUS
         or record.source_family != CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
@@ -1022,6 +1258,246 @@ def _assert_record_admitted(record: L3ConnectorSourceIntakeRecord, *, context: s
                 "source_family": record.source_family,
             },
         )
+    authority = _server_owned_strict_sciencebase_authority(
+        db,
+        connector_run_target_id=str(
+            record.connector_run_target_id or ""
+        ),
+    )
+    strict_shape = _strict_sciencebase_record_shape(record)
+    if authority is None:
+        provenance = (
+            record.provenance_json
+            if isinstance(record.provenance_json, Mapping)
+            else {}
+        )
+        summary = (
+            record.summary_json
+            if isinstance(record.summary_json, Mapping)
+            else {}
+        )
+        metadata = summary.get("metadata")
+        authority_basis = summary.get("authority_basis")
+        projected_origin_signal = any(
+            isinstance(surface, Mapping)
+            and CONNECTOR_ORIGIN_RECEIPT_HASH_KEY in surface
+            for surface in (
+                provenance,
+                metadata,
+                authority_basis,
+            )
+        )
+        if strict_shape != "generic" or projected_origin_signal:
+            raise ConnectorSourceIntakeError(
+                f"connector_source_intake_{context}_reserved_authority_invalid",
+                "Reserved ScienceBase intake lacks its server-owned run-target authority.",
+                http_status=409,
+                details={
+                    "connector_source_intake_record_id": (
+                        record.connector_source_intake_record_id
+                    ),
+                },
+            )
+        with db.no_autoflush:
+            generic_run = db.get(
+                ConnectorRun,
+                str(record.connector_run_id or ""),
+            )
+            generic_target = db.get(
+                ConnectorRunTarget,
+                str(record.connector_run_target_id or ""),
+            )
+        if (
+            generic_run is None
+            or generic_target is None
+            or generic_target.connector_run_id
+            != record.connector_run_id
+            or generic_run.connector_key != record.connector_key
+        ):
+            raise ConnectorSourceIntakeError(
+                f"connector_source_intake_{context}_record_not_admitted",
+                "Connector source intake lacks matching server-owned run-target authority.",
+                http_status=409,
+                details={
+                    "connector_source_intake_record_id": (
+                        record.connector_source_intake_record_id
+                    ),
+                },
+            )
+        return None
+    if (
+        strict_shape != "strict"
+        or record.connector_run_id != authority["run_id"]
+        or record.connector_run_target_id != authority["target_id"]
+        or record.connector_key != authority["run_connector_key"]
+    ):
+        raise ConnectorSourceIntakeError(
+            f"connector_source_intake_{context}_strict_shape_invalid",
+            "Reserved ScienceBase intake contradicts the frozen strict contract.",
+            http_status=409,
+            details={
+                "connector_source_intake_record_id": (
+                    record.connector_source_intake_record_id
+                ),
+            },
+        )
+    provenance = (
+        record.provenance_json
+        if isinstance(record.provenance_json, Mapping)
+        else {}
+    )
+    summary = (
+        record.summary_json
+        if isinstance(record.summary_json, Mapping)
+        else {}
+    )
+    metadata = summary.get("metadata")
+    authority_basis = summary.get("authority_basis")
+    metadata_receipt_hash = (
+        metadata.get(CONNECTOR_ORIGIN_RECEIPT_HASH_KEY)
+        if isinstance(metadata, Mapping)
+        else None
+    )
+    authority_receipt_hash = (
+        authority_basis.get(CONNECTOR_ORIGIN_RECEIPT_HASH_KEY)
+        if isinstance(authority_basis, Mapping)
+        else None
+    )
+    provenance_receipt_hash = provenance.get(
+        CONNECTOR_ORIGIN_RECEIPT_HASH_KEY
+    )
+    authority_target_id = (
+        authority_basis.get("connector_run_target_id")
+        if isinstance(authority_basis, Mapping)
+        else None
+    )
+    receipt_hash: str | None
+    if (
+        metadata_receipt_hash is None
+        and authority_receipt_hash is None
+        and provenance_receipt_hash is None
+    ):
+        receipt_hash = None
+    elif (
+        metadata_receipt_hash
+        == authority_receipt_hash
+        == provenance_receipt_hash
+        and re.fullmatch(
+            r"[0-9a-f]{64}",
+            str(metadata_receipt_hash or ""),
+        )
+        and authority_target_id == record.connector_run_target_id
+    ):
+        receipt_hash = str(metadata_receipt_hash)
+    else:
+        receipt_hash = ""
+    try:
+        expected_values = _strict_sciencebase_intake_values(
+            connector_key=str(record.connector_key),
+            connector_run_id=str(record.connector_run_id),
+            connector_run_target_id=str(record.connector_run_target_id),
+            raw_storage_ref=str(record.storage_ref),
+            freshness_timestamp=record.freshness_timestamp,
+            content_size_bytes=int(record.content_size_bytes),
+            content_sha256=str(record.content_sha256),
+            connector_origin_receipt_hash=(
+                receipt_hash if receipt_hash else None
+            ),
+        )
+        values_match = all(
+            getattr(record, field) == expected
+            for field, expected in expected_values.items()
+        )
+    except (TypeError, ValueError, ConnectorSourceIntakeError):
+        values_match = False
+    if (
+        not isinstance(metadata, Mapping)
+        or not isinstance(authority_basis, Mapping)
+        or not values_match
+        or not receipt_hash
+    ):
+        raise ConnectorSourceIntakeError(
+            f"connector_source_intake_{context}_origin_receipt_missing",
+            "Strict ScienceBase intake requires one exact top-level target/hash projection.",
+            http_status=409,
+            details={
+                "connector_source_intake_record_id": (
+                    record.connector_source_intake_record_id
+                ),
+            },
+        )
+    from app.services import layer3_origin_continuity as origin
+
+    try:
+        canonical_projection = (
+            origin.verified_connector_origin_projection(
+                db,
+                connector_run_target_id=str(
+                    record.connector_run_target_id
+                ),
+            )
+        )
+    except origin.Layer3OriginContinuityError:
+        raise ConnectorSourceIntakeError(
+            f"connector_source_intake_{context}_origin_receipt_missing",
+            "Strict ScienceBase intake lacks verified origin continuity.",
+            http_status=409,
+            details={
+                "connector_source_intake_record_id": (
+                    record.connector_source_intake_record_id
+                ),
+            },
+        ) from None
+    expected_projection = {
+        "connector_run_target_id": str(
+            record.connector_run_target_id
+        ),
+        "connector_origin_receipt_hash": receipt_hash,
+    }
+    if (
+        set(canonical_projection) != set(expected_projection)
+        or canonical_projection != expected_projection
+    ):
+        raise ConnectorSourceIntakeError(
+            f"connector_source_intake_{context}_origin_receipt_missing",
+            "Strict ScienceBase intake lacks verified origin continuity.",
+            http_status=409,
+            details={
+                "connector_source_intake_record_id": (
+                    record.connector_source_intake_record_id
+                ),
+            },
+        )
+    return canonical_projection
+
+
+def _strict_sciencebase_record_shape(
+    record: L3ConnectorSourceIntakeRecord,
+) -> str:
+    run_id = str(record.connector_run_id or "")
+    target_id = str(record.connector_run_target_id or "")
+    request_id = str(record.client_request_id or "")
+    expected_request_id = (
+        f"strict-sciencebase:{run_id}:{target_id}"
+    )
+    strict_signals = (
+        request_id.startswith("strict-sciencebase:")
+        or record.source_label == STRICT_SCIENCEBASE_SOURCE_LABEL
+        or record.source_description
+        == STRICT_SCIENCEBASE_SOURCE_DESCRIPTION
+    )
+    if not strict_signals:
+        return "generic"
+    if (
+        record.connector_key != "sciencebase_mcs"
+        or request_id != expected_request_id
+        or record.source_label != STRICT_SCIENCEBASE_SOURCE_LABEL
+        or record.source_description
+        != STRICT_SCIENCEBASE_SOURCE_DESCRIPTION
+        or record.original_filename != STRICT_SCIENCEBASE_FILE_NAME
+    ):
+        return "strict_invalid"
+    return "strict"
 
 
 def _connector_source_intake_record_id_from_candidate(candidate_id: str) -> str | None:

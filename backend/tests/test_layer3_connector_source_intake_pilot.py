@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 from pathlib import Path
 import sys
@@ -569,9 +570,358 @@ def test_private_strict_intake_stager_flushes_without_committing(client):
         assert record.content_sha256 == hashlib.sha256(content).hexdigest()
         assert record.storage_ref == target.raw_storage_ref
         assert db.query(L3ConnectorSourceIntakeRecord).count() == 1
+        with pytest.raises(ConnectorSourceIntakeError) as preview_error:
+            connector_source_intake_material_preview(
+                db,
+                connector_source_intake_record_id=(
+                    record.connector_source_intake_record_id
+                ),
+            )
+        assert (
+            preview_error.value.code
+            == "connector_source_intake_preview_origin_receipt_missing"
+        )
+        with pytest.raises(ConnectorSourceIntakeError) as gate_error:
+            validate_connector_intake_gate_b_decision_basis(
+                db,
+                candidate_id=(
+                    "mat-connector_source_intake_record-"
+                    f"{record.connector_source_intake_record_id}"
+                ),
+                decision_basis={},
+            )
+        assert (
+            gate_error.value.code
+            == "connector_source_intake_gate_b_origin_receipt_missing"
+        )
+        record.connector_key = "tampered-strict-shape"
+        with pytest.raises(
+            ConnectorSourceIntakeError
+        ) as strict_shape_error:
+            connector_source_intake_material_preview(
+                db,
+                connector_source_intake_record_id=(
+                    record.connector_source_intake_record_id
+                ),
+            )
+        assert (
+            strict_shape_error.value.code
+            == "connector_source_intake_preview_strict_shape_invalid"
+        )
 
         db.rollback()
         assert db.query(L3ConnectorSourceIntakeRecord).count() == 0
+    finally:
+        db.close()
+
+
+def test_strict_sciencebase_intake_builder_has_acyclic_pre_post_projection(
+    client,
+):
+    db = client.layer3_session_factory()
+    try:
+        run, target, content = _seed_strict_sciencebase_target(db)
+        digest = hashlib.sha256(content).hexdigest()
+        builder = getattr(
+            connector_intake,
+            "_strict_sciencebase_intake_values",
+        )
+        builder_inputs = {
+            "connector_key": run.connector_key,
+            "connector_run_id": run.connector_run_id,
+            "connector_run_target_id": (
+                target.connector_run_target_id
+            ),
+            "raw_storage_ref": str(target.raw_storage_ref),
+            "freshness_timestamp": target.downloaded_at,
+            "content_size_bytes": len(content),
+            "content_sha256": digest,
+        }
+        pre_mint = builder(
+            **builder_inputs,
+            connector_origin_receipt_hash=None,
+        )
+        projection = {
+            "connector_run_target_id": target.connector_run_target_id,
+            "connector_origin_receipt_hash": "a" * 64,
+        }
+        post_mint = builder(
+            **builder_inputs,
+            connector_origin_receipt_hash=(
+                projection["connector_origin_receipt_hash"]
+            ),
+        )
+
+        assert pre_mint["content_sha256"] == post_mint["content_sha256"]
+        assert pre_mint["content_size_bytes"] == (
+            post_mint["content_size_bytes"]
+        )
+        assert pre_mint["storage_ref"] == post_mint["storage_ref"]
+        assert pre_mint["metadata_hash"] != post_mint["metadata_hash"]
+        assert pre_mint["authority_basis_hash"] != (
+            post_mint["authority_basis_hash"]
+        )
+        assert pre_mint["provenance_json"] != (
+            post_mint["provenance_json"]
+        )
+        assert pre_mint["summary_json"] != post_mint["summary_json"]
+        for values in (
+            post_mint["provenance_json"],
+            post_mint["summary_json"]["metadata"],
+            post_mint["summary_json"]["authority_basis"],
+        ):
+            assert values["connector_run_target_id"] == (
+                projection["connector_run_target_id"]
+            )
+            assert values["connector_origin_receipt_hash"] == (
+                projection["connector_origin_receipt_hash"]
+            )
+        assert "url" not in json.dumps(post_mint).lower()
+        assert projection == {
+            "connector_run_target_id": target.connector_run_target_id,
+            "connector_origin_receipt_hash": "a" * 64,
+        }
+    finally:
+        db.close()
+
+
+def test_reserved_sciencebase_rejects_all_intake_signal_downgrade(client):
+    db = client.layer3_session_factory()
+    try:
+        run, target, _ = _seed_strict_sciencebase_target(db)
+        record = _strict_intake_stager()(
+            db,
+            run=run,
+            target=target,
+        )
+        record.client_request_id = "generic-downgrade"
+        record.connector_key = "generic-sciencebase"
+        record.source_label = "Generic CSV"
+        record.source_description = "Generic intake"
+        record.original_filename = "generic.csv"
+        db.commit()
+
+        with pytest.raises(ConnectorSourceIntakeError) as excinfo:
+            connector_source_intake_material_preview(
+                db,
+                connector_source_intake_record_id=(
+                    record.connector_source_intake_record_id
+                ),
+            )
+        assert (
+            excinfo.value.code
+            == "connector_source_intake_preview_strict_shape_invalid"
+        )
+    finally:
+        db.close()
+
+
+def test_reserved_sciencebase_rejects_forged_self_consistent_projection(
+    client,
+    monkeypatch,
+):
+    from app.services import layer3_origin_continuity as origin
+
+    db = client.layer3_session_factory()
+    try:
+        run, target, content = _seed_strict_sciencebase_target(db)
+        record = _strict_intake_stager()(
+            db,
+            run=run,
+            target=target,
+        )
+        forged_hash = "f" * 64
+        forged = connector_intake._strict_sciencebase_intake_values(
+            connector_key=run.connector_key,
+            connector_run_id=run.connector_run_id,
+            connector_run_target_id=target.connector_run_target_id,
+            raw_storage_ref=str(target.raw_storage_ref),
+            freshness_timestamp=record.freshness_timestamp,
+            content_size_bytes=len(content),
+            content_sha256=hashlib.sha256(content).hexdigest(),
+            connector_origin_receipt_hash=forged_hash,
+        )
+        for field in (
+            "metadata_hash",
+            "authority_basis_hash",
+            "provenance_json",
+            "summary_json",
+        ):
+            setattr(record, field, forged[field])
+        db.commit()
+        calls: list[str] = []
+
+        def verified_projection(
+            verify_db,
+            *,
+            connector_run_target_id: str,
+        ) -> dict[str, str]:
+            assert verify_db is db
+            calls.append(connector_run_target_id)
+            return {
+                "connector_run_target_id": connector_run_target_id,
+                "connector_origin_receipt_hash": "a" * 64,
+            }
+
+        monkeypatch.setattr(
+            origin,
+            "verified_connector_origin_projection",
+            verified_projection,
+        )
+        with pytest.raises(ConnectorSourceIntakeError) as excinfo:
+            connector_source_intake_material_preview(
+                db,
+                connector_source_intake_record_id=(
+                    record.connector_source_intake_record_id
+                ),
+            )
+        assert (
+            excinfo.value.code
+            == "connector_source_intake_preview_origin_receipt_missing"
+        )
+        assert calls == [target.connector_run_target_id]
+    finally:
+        db.close()
+
+
+def test_generic_creation_is_blocked_on_reserved_strict_sciencebase_target(
+    client,
+):
+    db = client.layer3_session_factory()
+    try:
+        run, target, _ = _seed_strict_sciencebase_target(db)
+        with pytest.raises(ConnectorSourceIntakeError) as excinfo:
+            record_connector_produced_source_intake(
+                db,
+                client_request_id="generic-sciencebase-mcs-record",
+                connector_key=run.connector_key,
+                connector_run_id=run.connector_run_id,
+                connector_run_target_id=target.connector_run_target_id,
+                source_label="Generic ScienceBase MCS CSV",
+                source_description="Generic/manual intake is reserved here.",
+                media_type="text/csv",
+            )
+        assert (
+            excinfo.value.code
+            == "connector_source_intake_reserved_strict_lane"
+        )
+        assert db.query(L3ConnectorSourceIntakeRecord).count() == 0
+    finally:
+        db.close()
+
+
+def test_orphaned_strict_sciencebase_intake_fails_preview_and_gate_b(
+    client,
+):
+    db = client.layer3_session_factory()
+    try:
+        run, target, _ = _seed_strict_sciencebase_target(db)
+        record = _strict_intake_stager()(
+            db,
+            run=run,
+            target=target,
+        )
+        record_id = record.connector_source_intake_record_id
+        db.delete(target)
+        db.commit()
+
+        with pytest.raises(ConnectorSourceIntakeError) as preview_error:
+            connector_source_intake_material_preview(
+                db,
+                connector_source_intake_record_id=record_id,
+            )
+        assert (
+            preview_error.value.code
+            == "connector_source_intake_preview_reserved_authority_invalid"
+        )
+
+        with pytest.raises(ConnectorSourceIntakeError) as gate_error:
+            validate_connector_intake_gate_b_decision_basis(
+                db,
+                candidate_id=(
+                    f"mat-connector_source_intake_record-{record_id}"
+                ),
+                decision_basis={},
+            )
+        assert (
+            gate_error.value.code
+            == "connector_source_intake_gate_b_reserved_authority_invalid"
+        )
+    finally:
+        db.close()
+
+
+def test_gate_b_rejects_hidden_conflicting_origin_claim(
+    client,
+    monkeypatch,
+):
+    from app.services import layer3_origin_continuity as origin
+
+    db = client.layer3_session_factory()
+    try:
+        run, target, content = _seed_strict_sciencebase_target(db)
+        record = _strict_intake_stager()(
+            db,
+            run=run,
+            target=target,
+        )
+        canonical_hash = "a" * 64
+        projected = connector_intake._strict_sciencebase_intake_values(
+            connector_key=run.connector_key,
+            connector_run_id=run.connector_run_id,
+            connector_run_target_id=target.connector_run_target_id,
+            raw_storage_ref=str(target.raw_storage_ref),
+            freshness_timestamp=record.freshness_timestamp,
+            content_size_bytes=len(content),
+            content_sha256=hashlib.sha256(content).hexdigest(),
+            connector_origin_receipt_hash=canonical_hash,
+        )
+        for field in (
+            "metadata_hash",
+            "authority_basis_hash",
+            "provenance_json",
+            "summary_json",
+        ):
+            setattr(record, field, projected[field])
+        db.commit()
+        monkeypatch.setattr(
+            origin,
+            "verified_connector_origin_projection",
+            lambda *args, **kwargs: {
+                "connector_run_target_id": (
+                    target.connector_run_target_id
+                ),
+                "connector_origin_receipt_hash": canonical_hash,
+            },
+        )
+        preview = connector_source_intake_material_preview(
+            db,
+            connector_source_intake_record_id=(
+                record.connector_source_intake_record_id
+            ),
+        )
+        decision_basis = _decision_basis(
+            preview["material_candidate"]
+        )
+        decision_basis["source_identity"]["hidden"] = {
+            "connector_run_target_id": (
+                target.connector_run_target_id
+            ),
+            "connector_origin_receipt_hash": "f" * 64,
+        }
+
+        with pytest.raises(ConnectorSourceIntakeError) as excinfo:
+            validate_connector_intake_gate_b_decision_basis(
+                db,
+                candidate_id=(
+                    preview["material_candidate"]["candidate_id"]
+                ),
+                decision_basis=decision_basis,
+            )
+        assert (
+            excinfo.value.code
+            == "connector_source_intake_gate_b_basis_mismatch"
+        )
     finally:
         db.close()
 
