@@ -1204,12 +1204,23 @@ The test matrix must include:
 - canonical status/header bytes are counted in full and recorded per send in
   the counter record; there is no per-send header threshold and no
   header-rejection path;
-- a response with 100 individually legal header lines whose aggregate
+- a response with 99 individually legal header fields plus the terminating
+  blank line (the pinned parser rejects a 101st entry, so 99 fields is the
+  executable maximum) whose aggregate
   canonical serialization far exceeds 32,768 bytes, delivered under a nearly
   exhausted remaining budget, counts every header byte, terminates with the
   correct terminal oversized or budget-exhaustion classification, is never
   `fresh_live`, leaves the aggregate excess at or below the SINGLE-SEND
   DETECTION ALLOWANCE, and proves no header-threshold rejection path exists;
+- aggregate-crossing fixtures: H > R with B = 0 (header alone crosses,
+  terminal oversized at the post-serialization check); H < R with
+  H + B > R while B stays within min(stage cap, R) (aggregate check fires at
+  a chunk boundary or EOF though the body predicate never does); H + B = R
+  exact boundary (no crossing, send completes); a body-stage crossing without
+  aggregate crossing (body predicate fires, aggregate does not); a grant
+  whose max_single_send_detection_allowance_bytes mismatches the computed
+  constant (fail-closed stop before any send); and a simulated
+  _MAXLINE/_MAXHEADERS drift (equality assertion trips, hard stop pre-send);
 - exactly one secret-free counter record per physical send appears in the
   manifest-bound `http.jsonl` capture — including exactly one record with a
   null `response_status` and a closed `error_class` for a send that dies
@@ -1434,9 +1445,14 @@ process alive at any instant—and adversarial tests are mandatory.
   and canonical status/header bytes count toward the run aggregate and
   `max_run_bytes` but never against the per-stage body caps or the streaming
   check — consistent with the header-bytes-never-count-against-stage-caps
-  rule below; the first chunk-boundary check that finds the body bound
-  crossed aborts the read, keeps every delivered byte counted against
-  `max_run_bytes`, and classifies the send as oversized; body-crossing abort
+  rule below; the adapter additionally maintains a separate AGGREGATE tally
+  aggregate_crossed := H + B > R (H = canonical status/header bytes of this
+  send, B = body bytes delivered, R = the remaining aggregate budget computed
+  at reservation), checked immediately after canonical header serialization,
+  at every body chunk boundary, and at EOF/completion; the first check that
+  finds EITHER the body bound or the aggregate crossed aborts the read, keeps
+  every delivered byte counted against `max_run_bytes`, and terminally
+  classifies the send as oversized; body-crossing abort
   granularity is one 64 KiB read chunk, the header contribution is
   whole-block granular, and the total single-send overshoot is bounded by the
   SINGLE-SEND DETECTION ALLOWANCE; no claim covers bytes the socket, TLS

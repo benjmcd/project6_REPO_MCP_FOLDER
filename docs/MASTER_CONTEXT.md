@@ -660,7 +660,7 @@ review; it is not a completed planning freeze.
   that introduces exactly one complete campaign slice, so rollback, fork, or
   evidence drop fails. Arming is allowed only while that campaign's earliest
   complete-slice revision is the current head; a retained ancestor is
-  historical-only. Campaign armings, log seals, and both seal events bind the
+  historical-only. Campaign armings, log seals, and the seal event(s) of every extant connector run (two on a passing dual run, one after an NRC-first stop) bind the
   introduction revision/digest. Historical types cannot enter arming,
   reservation, or transport. Each grant
   carries one UUID4 nonce and `max_armings=1`; a deterministic parent-run ID and

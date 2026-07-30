@@ -940,7 +940,7 @@ linear predecessor chain, a unique maximal configured head, and strict-superset
 successors that each add exactly one complete disjoint campaign slice. Arming
 requires the selected campaign's earliest complete-slice revision to be that
 current head; a preserved ancestor is historical-only even if unused. Bind each
-campaign's introduction revision/digest into its armings, log seal, and both
+campaign's introduction revision/digest into its armings, log seal, and the seal event(s) of every extant connector run (two on a passing dual run, one after an NRC-first stop) — formerly stated as both
 seal events.
 Current grant resolution remains the sole send authority after definition
 intersection; historical resolution validates both event-time windows and is

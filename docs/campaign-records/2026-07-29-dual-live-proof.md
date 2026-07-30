@@ -715,7 +715,9 @@ Maximum three physical requests, zero automatic retries:
 
 Allowed hosts are exactly `www.sciencebase.gov` and `sciencebase.gov`, HTTPS
 port 443, after public-address validation. The hydration response is capped at
-5 MiB; the artifact and whole run are capped at 64 MiB; concurrency is one.
+5 MiB; the artifact BODY-STAGE cap is 64 MiB; the nominal run ceiling is the
+grant's `max_run_bytes`, which uses the disclosed one-allowance detection
+semantics (a crossing is terminally classified and never `fresh_live`); concurrency is one.
 The artifact is streamed through the cap.
 
 Hydration is strict UTF-8 JSON with duplicate object-member rejection before
