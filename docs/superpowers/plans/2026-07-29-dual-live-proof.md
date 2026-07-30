@@ -13,10 +13,11 @@ preparation without exceeding a physical-request or credential boundary.
 **Architecture:** Add a default-off, no-migration proof lane that separates
 immutable arming from execution and splits every live campaign at a hard
 process boundary: an acquisition-only child process alone holds credentials
-and narrow live egress and ends at raw admission, and a secret-free,
-network-denied downstream process performs all parsing and Layer 3C work only
-after the child's process tree is stopped and process/port quiescence is
-proven. At most one campaign process is alive at any instant, preserving the
+and narrow live egress and ends at raw admission (performing only the bounded
+admission media/shape checks of invariant 21), and a secret-free,
+network-denied downstream process performs all document parsing and Layer 3C
+work only after the child's process tree is stopped and process/port
+quiescence is proven. At most one campaign process is alive at any instant, preserving the
 serial single-writer budget model. Reuse `ConnectorRun`,
 `ConnectorRunSubmission`, `ConnectorPolicySnapshot`, and deterministic
 `ConnectorRunEvent` rows for armings and request reservations. Load two exact
@@ -129,9 +130,12 @@ The implementation must preserve these invariants:
     child process tree is stopped, HTTP sessions are closed, key/grant/live-
     egress environment is cleared, and process/port quiescence is proven;
     document parsing and every Layer 3C step run in a secret-free process
-    whose pre-import guard denies socket, DNS, and HTTP activity; the first
-    proof disables optional OCR/Camelot/Paddle paths and runs under fixed
-    resource bounds whose breach is a campaign failure, not a degradation.
+    whose pre-import guard denies socket, DNS, HTTP, and subprocess-spawn
+    activity; the first proof parses only through the strict entry point,
+    which closes every OCR path and fatally refuses the Paddle/Camelot and
+    external-engine routings at their call sites, under the fixed
+    `dual_live_proof_v1` bounds (Task 5 Step 3) whose breach is a campaign
+    failure, not a degradation.
 
 ## Task 1: Add strict campaign, grant, target, and authorization contracts
 
@@ -429,10 +433,15 @@ subordinate policy snapshots inside that one parent run and do not consume
 another parent-arming slot.
 
 `max_run_bytes`, `request_timeout_seconds`, and `min_request_interval_ms` are
-enforced budgets, not annotations. `max_run_bytes` bounds the aggregate counted
-wire bytes of every physical send in the run — status lines, raw headers, and
-body bytes, including redirect, partial, failed, and oversized responses —
-measured at the counting adapter boundary before any content decoding.
+enforced budgets, not annotations. `max_run_bytes` bounds the run aggregate of
+counted bytes across every physical send — per send, the canonical
+status/header bytes plus the body bytes delivered by the wrapped urllib3 read
+path before Requests-level content decoding, including redirect, partial,
+failed, and oversized responses, exactly as Task 3's one-send transport
+defines them. It is an application-delivered ceiling with chunk-granular
+crossing detection, not a network-wire octet count: original status/header
+octets, chunked transfer framing, TLS records, and bytes buffered below the
+Requests-adapter seam are outside the counted entity.
 `request_timeout_seconds` is the absolute per-send deadline measured on the
 process monotonic clock from immediately before the transport call to the last
 body byte; the derived Requests connect/read socket timeouts are each clamped
@@ -800,13 +809,26 @@ Prove:
 - derived artifact armings do not consume another parent-arming slot;
 - when the verified campaign definition binds NRC-first execution order,
   creating the ScienceBase parent arming is rejected before its
-  consumption-marker create-new operation unless the deterministic NRC parent
-  run exists in strict terminal `completed` with exactly one valid terminal
-  event and no unexpired execution lease; an NRC run that is absent, `armed`,
-  `pending`, `running`, `failed`, `cancelled`, or terminally ambiguous leaves
-  the ScienceBase marker uncreated and its grant unconsumed, and the accepted
-  ScienceBase envelope binds the server-derived NRC parent-run ID and
-  `ledger_terminal_hash`, never caller-supplied values;
+  consumption-marker create-new operation unless
+  `evaluate_nrc_acquisition_success` passes every clause of the NRC
+  acquisition-success predicate defined once in Step 3; adversarial tests
+  falsify each clause individually — an NRC run that is absent, `armed`,
+  `pending`, `running`, `failed`, `cancelled`, or terminally ambiguous; a
+  terminal `completed` status whose transition was not committed by
+  `finalize_strict_run`; a duplicate or competing terminal event; later
+  failure or cancellation evidence; an unexpired execution lease; a
+  rederived ledger with a missing completion, missing/extra/reordered
+  ordinal, `spent_unknown` entry, or ceiling breach; a missing, extra,
+  unparseable, or field-disagreeing `http.jsonl` counter record; a
+  non-`200`, incomplete, or over-limit artifact completion; and a canonical
+  connector-target receipt raw SHA-256 that mismatches the rederived ledger
+  or counter hashes — and each falsification leaves the ScienceBase marker
+  uncreated, its grant unconsumed, and zero marker, DB row, or event
+  mutation; a stored `ledger_terminal_hash` or `proof_class` column that
+  disagrees with the rederived evidence is itself a rejection, and the
+  accepted ScienceBase envelope binds the server-derived NRC parent-run ID
+  and the rederived `ledger_terminal_hash`, never caller-supplied or
+  stored-column values;
 - caller target/host/path/budget/expiry fields are rejected and cannot alter the
   server-materialized arming;
 - changing or removing the configured campaign definition or grant after arming
@@ -872,6 +894,12 @@ create_connector_egress_arming(
     code_revision: str,
 ) -> tuple[ConnectorRun, bool]
 
+evaluate_nrc_acquisition_success(
+    db: Session,
+    *,
+    verified_definition: VerifiedDualLiveCampaignDefinition,
+) -> NrcAcquisitionSuccessEvidence
+
 claim_connector_egress_arming(
     db: Session,
     *,
@@ -920,11 +948,55 @@ campaign-introduction evidence-index revision/digest, exact code revision,
 `max_armings=1`, optional superseded-grant digest, every closed request rule,
 and authorization receipt. When the definition binds NRC-first execution
 order, the ScienceBase envelope additionally binds the predecessor NRC
-parent-run ID and its `ledger_terminal_hash`, both server-derived;
-`create_connector_egress_arming` revalidates that predecessor's strict
-terminal `completed` state — exactly one valid terminal event, no unexpired
-execution lease — inside the same call, before the consumption-marker
-create-new operation, and rejects otherwise. `ConnectorEgressArmingIn`
+parent-run ID and its `ledger_terminal_hash`, both server-derived — and the
+bound hash is the one `evaluate_nrc_acquisition_success` rederives in the
+same creation call, never a stored column value.
+
+`evaluate_nrc_acquisition_success` is the single authoritative definition of
+the NRC acquisition-success predicate. Every other statement of the
+predicate in this plan and in the campaign record is a reference to this
+definition; no wrapper, caller, or execution-order step may substitute a
+weaker check. The function takes no caller-supplied run ID, path, or hash:
+it server-loads the NRC grant bytes by configured digest, derives the
+deterministic NRC parent-run ID from them, resolves the campaign's capture
+path through the protected evidence index, and rederives every clause from
+authoritative records — never trusting `proof_class`, a stored
+`ledger_terminal_hash`, or any projection column. The predicate holds only
+when all of the following pass:
+
+1. the deterministic NRC parent run exists in strict terminal `completed`
+   whose one terminal transition was committed by `finalize_strict_run`:
+   exactly one valid deterministic `egress_run_terminal` event with status
+   `completed` exists, and the event stream carries no other terminal,
+   failure, or cancellation evidence;
+2. no unexpired execution lease survives on the run;
+3. the canonical terminal request ledger, rederived in the same call via
+   `derive_terminal_request_ledger`, shows every reservation matched by
+   exactly one completion (reservation/completion parity) within the NRC
+   grant ceiling and contains no `spent_unknown` entry;
+4. the transport-counter records, strictly parsed from the manifest-bound
+   `http.jsonl` capture at the index-bound deterministic path (necessarily
+   unsealed at this mid-campaign point; Task 8's evaluator later re-verifies
+   the sealed capture), reconcile one-to-one with that rederived ledger — no
+   missing, extra, or unparseable line, with agreement on ordinal, stage,
+   request fingerprint, response status, decoded body count, and
+   decoded-body SHA-256; the counting adapter flushes each record before the
+   matching completion event commits, so a terminal run whose records are
+   absent fails this clause rather than racing it;
+5. the admitted artifact completion is a complete `200` within its byte
+   limits, and the raw SHA-256 recorded on the canonical connector-target
+   receipt equals both the rederived ledger's artifact-completion
+   `body_sha256` and the matching counter record's decoded-body SHA-256.
+
+It returns `NrcAcquisitionSuccessEvidence` — the rederived
+`ledger_terminal_hash`, receipt raw SHA-256, and counter-reconciliation
+summary — and `create_connector_egress_arming` invokes it inside the same
+ScienceBase creation call, before the consumption-marker create-new
+operation, rejecting on any failed clause with zero marker, DB row, or
+event mutation. Because every creation path —
+`POST /api/v1/connectors/egress-armings` included — reaches marker creation
+only through this service call, no caller path can consume the ScienceBase
+grant on a weaker check. `ConnectorEgressArmingIn`
 carries no sequencing field; a caller cannot assert or waive the predecessor
 check.
 The deterministic `egress_arming_created` event binds the arming fingerprint
@@ -1089,12 +1161,17 @@ The test matrix must include:
   `min_request_interval_ms` of monotonic time has elapsed since the previous
   send start in that bucket does not reach the transport;
 - timeout, `429`, `5xx`, partial, oversized, empty, and wrong media remain
-  one physical send each, and every wire byte received before the failure
+  one physical send each, and every counted byte delivered before the failure
   still counts against `max_run_bytes`;
-- cumulative wire bytes across ordinals never exceed `max_run_bytes`: an
-  exhausted remaining aggregate budget stops before reservation as budget
-  exhaustion, and a response that would cross the remainder mid-stream is
-  aborted and classified oversized;
+- the counted-byte aggregate across ordinals is enforced against
+  `max_run_bytes`: an exhausted remaining aggregate budget stops before
+  reservation as budget exhaustion; a response that crosses the remainder at a
+  chunk-boundary check is aborted with every delivered byte counted and the
+  send classified oversized; a run whose counted aggregate crossed the ceiling
+  is never `fresh_live`-eligible, and that aggregate exceeds the ceiling by no
+  more than the detection bound — one canonical status/header block of at most
+  32 KiB plus one 64 KiB read chunk — with any larger excess rejected as a
+  counter defect;
 - the absolute monotonic send deadline aborts a slow-dripping response that
   never violates the per-read socket timeout, as one spent send;
 - a wall-clock rollback or jump between sends changes no budget, deadline, or
@@ -1105,7 +1182,9 @@ The test matrix must include:
   `Content-Encoding` stops without entering the admitted-artifact path;
 - raw response headers over the 32 KiB bound stop as oversized;
 - exactly one secret-free counter record per physical send appears in the
-  manifest-bound `http.jsonl` capture, and a missing, extra, or mismatched
+  manifest-bound `http.jsonl` capture — including exactly one record with a
+  null `response_status` and a closed `error_class` for a send that dies
+  before any HTTP status exists — and a missing, extra, or mismatched
   record against the derived terminal ledger yields `INDETERMINATE`, never
   success;
 - ambient proxy variables and cookie jars are ignored, TLS verification remains
@@ -1173,20 +1252,21 @@ session and must atomically:
    exists;
 5. validate the exact request against the closed method/host/port/path/query/
    credential rule and required derived-arming hash;
-6. compute the remaining aggregate wire budget as `max_run_bytes` minus the
-   counted wire bytes of every prior reservation, terminal or spent/unknown;
-   a remainder of zero or less — or a prior spent/unknown reservation whose
-   wire count cannot be resolved from the manifest-bound counter stream —
-   stops as budget exhaustion before any send, and the effective streaming cap
-   for this ordinal is the lesser of the stage byte cap and that remainder;
+6. compute the remaining aggregate counted-byte budget as `max_run_bytes`
+   minus the counted bytes of every prior reservation, terminal or
+   spent/unknown; a remainder of zero or less — or a prior spent/unknown
+   reservation whose counted bytes cannot be resolved from the manifest-bound
+   counter stream — stops as budget exhaustion before any send, and the
+   effective streaming cap for this ordinal is the lesser of the stage byte
+   cap and that remainder;
 7. insert the deterministic reservation event and commit.
 
 The UUIDv5 event ID is
 `uuid5(NAMESPACE_URL, "project6:egress:<run>:<arming>:<ordinal>:<kind>")`.
 The reservation metrics include only ordinal, stage, method, host, safe
 path/query class, credential-audience class, request hash, grant digest,
-derived-arming hash, effective streaming cap, and remaining aggregate wire
-budget.
+derived-arming hash, effective streaming cap, and remaining aggregate
+counted-byte budget.
 
 The request fingerprint hashes stable JSON over arming/grant digest, ordinal,
 stage, method, normalized exact URL, non-secret header names/values, credential
@@ -1233,7 +1313,12 @@ The canonical terminal projection is:
 Entries sort numerically by ordinal; keys use stable canonical JSON. The three
 timestamps are normalized UTC RFC 3339 with exactly six fractional digits and
 `Z`; they bind later original-grant-window validation. Free text, raw
-URLs/queries/headers/bodies, and secrets are excluded. A missing completion or
+URLs/queries/headers/bodies, and secrets are excluded. A physical send that
+failed before any HTTP status existed still projects exactly one entry with a
+null `response_status`, a closed failure `outcome_class`, and null
+`byte_count`/`body_sha256` when no body byte was delivered — null is a
+recorded value under the closed schema, not an omission, so one entry per
+physical send stays deterministic. A missing completion or
 missing `send_started_at` for a claimed send derives `spent_unknown` and makes
 the ledger ineligible for `fresh_live`. `ledger_terminal_hash` is the SHA-256
 of these rederived bytes.
@@ -1252,16 +1337,26 @@ process alive at any instant—and adversarial tests are mandatory.
   policy, the jar must be empty before and after the send, and any
   `Set-Cookie` value is discarded, never stored or replayed;
 - mount a counting HTTP adapter as the lowest application-visible transport
-  boundary: it observes the final prepared request and the raw response at the
-  adapter seam, counts status-line, raw-header, and body bytes before any
-  content decoding (`decode_content=False`), and appends one deterministic
-  counter record per physical send to the manifest-bound, seal-covered
-  `http.jsonl` capture carrying only ordinal, stage, request fingerprint,
-  wire header bytes, wire body bytes, decoded body bytes, decoded-body
-  SHA-256, response status, and monotonic start/stop readings paired with
-  injected UTC evidence timestamps — never a raw URL, query, header value, or
-  secret; TLS framing and provider-level accounting remain outside the
-  experimental claim;
+  boundary: a Requests `HTTPAdapter` subclass whose `send` observes the final
+  prepared request and wraps the returned urllib3 response's read path so
+  every body byte delivered to the application is counted before
+  Requests-level content decoding. That seam exposes only parsed status and
+  header fields — Requests and urllib3 rebuild them after `http.client`
+  parsing — so original wire octets are not observable there; the counter
+  instead computes canonical status/header bytes, a deterministic
+  re-serialization of the parsed HTTP version, status code, reason, and
+  headers in received order, one `name: value` CRLF line each plus terminal
+  CRLF. Chunked transfer framing and trailers are stripped below the seam and
+  are not counted. The adapter appends one deterministic counter record per
+  physical send — exactly one even when the send fails before any HTTP status
+  exists, with `response_status` null and a closed `error_class` — to the
+  manifest-bound, seal-covered `http.jsonl` capture carrying only ordinal,
+  stage, request fingerprint, canonical status/header bytes, delivered body
+  bytes, decoded body bytes, decoded-body SHA-256, nullable response status,
+  closed error class, and monotonic start/stop readings paired with injected
+  UTC evidence timestamps — never a raw URL, query, header value, or secret;
+  original wire octets, TLS framing, and provider-level accounting remain
+  outside the experimental claim;
 - immediately reject an admitted hostname if any resolved address is
   non-public, while recording that this app-level check is not protection
   against all DNS time-of-check/time-of-use behavior;
@@ -1289,17 +1384,22 @@ process alive at any instant—and adversarial tests are mandatory.
   the adapter after its own header merging; a mismatch records
   `reserved_not_sent` and calls no transport;
 - send `Accept-Encoding: identity` explicitly; a response declaring any other
-  `Content-Encoding` is counted at wire size, classified as a stop, and never
-  silently decompressed into the admitted-artifact path;
+  `Content-Encoding` is counted at its delivered pre-decode size, classified
+  as a stop, and never silently decompressed into the admitted-artifact path;
 - call an injected transport once with `allow_redirects=False`;
 - configure a Requests adapter with `max_retries=0`;
-- bound raw response headers: more than 32 KiB (32,768 bytes) of status line
-  plus raw header bytes stops the read and classifies the send as oversized;
-- stream the body under the effective streaming cap recorded at reservation —
-  the lesser of the stage cap and the remaining aggregate wire budget — while
-  the counting adapter independently accumulates wire bytes; crossing either
-  bound aborts the read mid-stream, keeps every received byte counted against
-  `max_run_bytes`, and classifies the send as oversized;
+- bound response headers: more than 32 KiB (32,768 bytes) of canonical
+  status/header bytes stops the read and classifies the send as oversized;
+- stream the body in fixed 64 KiB (65,536-byte) reads under the effective
+  streaming cap recorded at reservation — the lesser of the stage cap and the
+  remaining aggregate counted-byte budget — while the counting adapter
+  independently accumulates delivered bytes; the first chunk-boundary check
+  that finds either bound crossed aborts the read, keeps every delivered byte
+  counted against `max_run_bytes`, and classifies the send as oversized;
+  abort granularity is one read chunk — a crossing is detected and terminally
+  recorded after at most one 64 KiB overshoot — and no claim covers bytes the
+  socket, TLS layer, or urllib3 buffered below the seam without delivering
+  them;
 - enforce the absolute send deadline on the process monotonic clock during
   streaming: every chunk boundary rechecks the remaining monotonic budget
   derived from the frozen `request_timeout_seconds`, and exhaustion aborts the
@@ -1320,22 +1420,37 @@ Do not put retry, redirect, credential fallback, or target selection inside this
 class. Connector-specific state machines own those decisions and therefore
 reserve new ordinals explicitly.
 
-Byte accounting is defined mechanically, not by intent:
+Byte accounting is defined mechanically, not by intent. The budget currency is
+counted bytes — canonical status/header bytes plus delivered body bytes per
+physical send — and the grant's `max_run_bytes`, the reservation arithmetic,
+the counter records, the evaluator's rederivation, and every acceptance
+statement use that one currency:
 
-- wire bytes are what the counting adapter observed before any content
-  decoding; decoded bytes are what streaming yielded after Requests'
-  transparent decompression — under enforced identity encoding the two body
-  counts are equal, and any divergence is a counter/ledger disagreement;
-- status lines and raw headers count against `max_run_bytes` and never against
-  per-stage body caps;
-- a redirect response counts in full — status line, headers, and any body
-  bytes — even though its `Location` is never followed on the same ordinal;
-- a partial, failed, timed-out, or oversized response counts every wire byte
-  actually received, and those bytes stay spent; no failure refunds budget;
+- delivered body bytes are what the wrapped urllib3 read path handed the
+  application before Requests-level content decoding; decoded bytes are what
+  streaming yielded after that decoding — under enforced identity encoding the
+  two body counts are equal, and any divergence is a counter/ledger
+  disagreement;
+- canonical status/header bytes count against `max_run_bytes` and never
+  against per-stage body caps;
+- a redirect response counts in full — canonical status/header bytes plus any
+  delivered body bytes — even though its `Location` is never followed on the
+  same ordinal;
+- a partial, failed, timed-out, or oversized response counts every byte
+  actually delivered, and those bytes stay spent; no failure refunds budget;
+- explicitly outside the counted entity, with no claim made over them:
+  original status-line/header octets as transmitted, chunked transfer framing
+  and trailers, TLS records and handshakes, TCP/IP framing and retransmission,
+  DNS traffic, and bytes received by the socket, TLS layer, or urllib3 but
+  never delivered through the wrapped read path — `max_run_bytes` is an
+  application-delivered ceiling with chunk-granular crossing detection, not a
+  network-receipt guarantee, and the network-level claim belongs to the
+  proxy-, firewall-, or OS-level accounting that production promotion already
+  requires;
 - the ledger entry `byte_count` is the decoded admitted body byte count and
-  `body_sha256` hashes those decoded bytes; the counter record carries both
-  wire and decoded counts so the evaluator reconciles them without trusting
-  either side alone.
+  `body_sha256` hashes those decoded bytes; the counter record carries
+  canonical status/header, delivered, and decoded counts so the evaluator
+  reconciles them without trusting either side alone.
 
 The DB request ledger and the manifest-bound transport counter are two
 independent records of the same physical sends. Neither substitutes for the
@@ -1526,7 +1641,13 @@ git commit -m "feat(sciencebase): add one-file fresh proof mode"
 
 - Modify: `backend/app/services/connectors_nrc_adams.py`
 - Modify: `backend/app/schemas/api.py`
+- Create: `backend/app/services/nrc_aps_strict_parse.py`
+- Modify: `backend/app/services/nrc_aps_document_processing.py`
+- Audit only, no modification: `backend/app/services/nrc_aps_ocr.py`,
+  `backend/app/services/nrc_aps_advanced_ocr.py`,
+  `backend/app/services/nrc_aps_advanced_table_parser.py`
 - Test: `backend/tests/test_nrc_fresh.py`
+- Test: `backend/tests/test_nrc_strict_parse.py`
 - Test: `tests/test_api.py`
 
 ### Step 1: Write failing strict-mode tests
@@ -1563,7 +1684,10 @@ Prove:
 - the strict NRC run terminates only through `finalize_strict_run` with
   exactly one deterministic terminal event, `completed` on success and
   `failed` on every stop, no unexpired lease afterward, and rejection of
-  generic resume/cancel in every state.
+  generic resume/cancel in every state;
+- the strict parse-lane refusal, bound, and zero-render behaviors enumerated
+  in Step 3 (in `backend/tests/test_nrc_strict_parse.py`), exercised in a
+  process with the network-deny and subprocess-denial guards installed.
 
 ### Step 2: Run the failing tests
 
@@ -1615,18 +1739,133 @@ The strict NRC executor ends at raw admission and never calls the document-
 processing path. That path runs native `fitz` parsing, an OCR fallback that is
 enabled by default, in-process PaddleOCR, a Tesseract subprocess, and Camelot
 table extraction in the invoking process, and the invoking executor here still
-holds the NRC key and live egress. Expose instead a strict parse entry point
-that accepts only the admitted content-addressed blob reference and invokes
-the existing document-processing/linkage code from the secret-free,
-network-denied downstream phase (Task 8 Step 4). In the reserved proof lane
-that entry point must force the baseline engine with `ocr_enabled=false`,
-refuse—not merely skip—the advanced-OCR (Paddle) and Camelot/advanced-table
-paths, deny subprocess spawn, and enforce fixed bounds on page count, rendered
-pixels, extracted text bytes, table rows/columns, temp-disk bytes, memory,
-CPU wall-clock, and output bytes. Exceeding any bound fails the campaign
-rather than degrading. `ApsContentLinkage.blob_sha256` binding therefore
-occurs in the downstream phase against the admitted bytes; the raw-hash
-equality it must prove is unchanged.
+holds the NRC key and live egress. Expose instead one strict parse
+entry point with a complete enumerated edit surface and exact fail-closed
+bounds, invoked only from the secret-free, network-denied downstream phase
+(Task 8 Step 4).
+
+The complete parser-lane edit surface is:
+
+- Create `backend/app/services/nrc_aps_strict_parse.py` with:
+  - `STRICT_PARSE_PROFILE_ID = "dual_live_proof_v1"`, the frozen bound
+    constants below, and `class StrictParseViolation(RuntimeError)`;
+  - `install_subprocess_denial_guard()` — idempotent; wraps
+    `subprocess.Popen` (the primitive under Tesseract's `subprocess.run`),
+    `os.system`, `os.spawn*`, `os.exec*`, `os.posix_spawn*`, and
+    `os.startfile` so any call raises `StrictParseViolation`; installed
+    before application imports by the phase-B wrapper and re-asserted by the
+    entry point;
+  - `parse_admitted_blob_strict(*, blob_path, expected_sha256)` — the only
+    strict entry: rehash the blob and require equality with the admitted
+    SHA-256; build the pinned profile config internally and accept no config
+    mapping, engine, document type, or override from any caller; create one
+    fresh empty scratch directory and point `tempfile.tempdir` at it for the
+    parse; call `nrc_aps_document_processing.process_document`; then apply
+    the post-parse checks: scratch directory still empty, serialized output
+    within the output bound, returned `extractor_id` equal to the baseline
+    `aps_pdf_text_extractor`, `ocr_page_count` zero, and `degradation_codes`
+    free of every OCR/advanced/visual code (`ocr_fallback_used`,
+    `ocr_required_but_unavailable`, `ocr_execution_failed`,
+    `ocr_hybrid_failed`, `advanced_ocr_weights_missing`,
+    `advanced_ocr_execution_failed`, `visual_artifact_failed`,
+    `visual_capture_failed`); any miss raises.
+- Modify `backend/app/services/nrc_aps_document_processing.py` at exactly
+  these points, keyed on a new `strict_parse_profile` field added to
+  `default_processing_config` (default `None`; generic callers unchanged):
+  - `_process_pdf` page cap: under the profile,
+    `total_pages > content_parse_max_pages` raises
+    `strict_page_limit_exceeded`; the generic thirtyfold allowance
+    (`content_parse_max_pages * 30`) is not applied;
+  - `_process_pdf` hybrid image branch: its entry gate gains the missing
+    `ocr_enabled` check — today the branch invokes Tesseract on availability
+    alone — so `ocr_enabled=false` closes every OCR path; this is a generic
+    repair whose default-on behavior is unchanged;
+  - `_process_pdf` OCR attempt blocks (fallback and hybrid): under the
+    profile, reaching either block despite the gates raises
+    `strict_ocr_path_refused`; weak/unusable native pages proceed with
+    native units and honest quality metrics instead of invoking any engine;
+  - the two exception-to-degradation conversions (`ocr_execution_failed`,
+    `ocr_hybrid_failed`): under the profile they re-raise instead of
+    degrading;
+  - `_extract_native_pdf_units`: the `COMPLEX_TABLE_DOC_TYPES` routing
+    raises `strict_advanced_table_refused` under the profile before any
+    Camelot call, and native `find_tables()` extraction enforces the strict
+    row/column caps below;
+  - `_process_pdf` accumulation loop: a running UTF-8 byte counter over
+    every appended unit text enforces the text ceiling, and a checkpoint
+    helper at each existing 100-page chunk boundary and at parse end samples
+    peak RSS and CPU seconds against their bounds.
+- Do not modify `nrc_aps_ocr.py`, `nrc_aps_advanced_ocr.py`, or
+  `nrc_aps_advanced_table_parser.py`: the profile makes their call sites
+  unreachable, the routing refusals make reaching them fatal, and the
+  subprocess-denial guard makes any residual spawn fatal; they are
+  read-audit and test-fixture surface only.
+
+The pinned profile is frozen constants — no field is caller-overridable:
+`document_processing_engine="baseline"` with
+`document_processing_engine_explicit=true`, required because the unforced
+PDF default resolves to the candidate-B OpenDataLoader engine, which writes
+input/output artifacts and invokes an external converter;
+`ocr_enabled=false`; no `document_type`, so
+`ADVANCED_OCR_DOC_TYPES`/`COMPLEX_TABLE_DOC_TYPES` routing is structurally
+unselectable; no `artifact_storage_dir`, `file_path`, or `pdf_path`, so no
+visual-page artifact write or Camelot path fallback exists;
+`visual_lane_mode="baseline"`.
+
+Exact bounds — breach fails the campaign; each names value, unit,
+measurement point, and enforcing code:
+
+- pages: 500 pages, read from `document.page_count` immediately after open
+  and before any page load, enforced by the `_process_pdf` strict cap;
+- rendered pixels: 0 — the strict lane never rasterizes; every render site
+  (page-OCR pixmap, advanced-OCR pixmap, visual-page artifact) lies on a
+  refused or unconfigured path, and the test suite pins a
+  `fitz.Page.get_pixmap` sentinel proving zero calls;
+- extracted text: 20,000,000 cumulative UTF-8 bytes, measured at each unit
+  append by the `_process_pdf` strict counter;
+- table rows/columns: 10,000 rows total and 200 columns per row, measured on
+  `find_tables()` extraction results in `_extract_native_pdf_units` before
+  unit construction;
+- temp disk: 0 bytes, measured by the entry point's post-parse scan of the
+  fresh scratch directory `tempfile.tempdir` was pointed at;
+- memory: 2,147,483,648 bytes peak RSS, sampled per 100-page chunk boundary
+  and at parse end (`resource.getrusage` where available, Windows
+  `GetProcessMemoryInfo` peak working set via ctypes otherwise);
+- wall-clock: 300 seconds monotonic, via the existing per-page/per-chunk
+  parse-deadline checkpoints with `content_parse_timeout_seconds=300`;
+- CPU: 300 `time.process_time()` seconds, sampled at the same checkpoints;
+- output: 30,000,000 bytes of canonical-JSON serialization of the returned
+  payload, measured once after `process_document` returns;
+- subprocess: 0 spawns — any wrapped spawn-primitive call raises
+  `StrictParseViolation`.
+
+State the mechanism limits as explicit non-claims: memory, CPU, and
+wall-clock are checkpoint-sampled failure detectors that fail the campaign
+at the next checkpoint; they do not preempt one blocking native `fitz` call
+mid-flight. The subprocess-denial and network-deny guards are Python
+process-level guards, not an OS sandbox. Refusal-by-construction plus
+checkpoint failure detection is the experimental claim; OS-level parse
+sandboxing is a production-promotion requirement.
+
+`backend/tests/test_nrc_strict_parse.py` must prove, with both guards
+installed: a 501-page fixture raises `strict_page_limit_exceeded` while the
+generic path still admits it under the thirtyfold allowance; the current
+hybrid branch — a significant image plus available Tesseract under
+`ocr_enabled=false` — attempts no OCR and appends no degradation code after
+the gate repair, and forcing entry under the profile raises
+`strict_ocr_path_refused` rather than degrading to `ocr_hybrid_failed`; a
+weak-native-text page parses natively with zero OCR attempts (engine-call
+sentinels on `nrc_aps_ocr.run_tesseract_ocr` and
+`nrc_aps_advanced_ocr.run_advanced_ocr`); a `COMPLEX_TABLE_DOC_TYPES`
+document type raises `strict_advanced_table_refused` before any Camelot
+call; the `get_pixmap` sentinel records zero calls across the strict suite;
+text, table, temp-disk, output, and injected memory/CPU/deadline breaches
+each raise; the entry point rejects a blob-hash mismatch; and its signature
+admits no engine, document-type, artifact-dir, or config override. Exceeding
+any bound fails the campaign rather than degrading.
+`ApsContentLinkage.blob_sha256` binding therefore occurs in the downstream
+phase against the admitted bytes; the raw-hash equality it must prove is
+unchanged.
 
 Use the same strict safe-projection boundary as Task 4. Do not call current NRC
 helpers that persist `normalized_document["url"]`,
@@ -1651,11 +1890,11 @@ artifact request.
 
 ```powershell
 Push-Location backend
-python -m pytest tests/test_nrc_fresh.py -q
+python -m pytest tests/test_nrc_fresh.py tests/test_nrc_strict_parse.py -q
 Pop-Location
 python -m pytest tests/test_api.py tests/test_nrc_aps_safeguards.py tests/test_nrc_aps_artifact_ingestion.py -q -k "nrc or aps"
 git diff --check
-git add backend/app/services/connectors_nrc_adams.py backend/app/schemas/api.py backend/tests/test_nrc_fresh.py tests/test_api.py
+git add backend/app/services/connectors_nrc_adams.py backend/app/schemas/api.py backend/app/services/nrc_aps_strict_parse.py backend/app/services/nrc_aps_document_processing.py backend/tests/test_nrc_fresh.py backend/tests/test_nrc_strict_parse.py tests/test_api.py
 git commit -m "feat(nrc-aps): add exact-accession fresh proof mode"
 ```
 
@@ -2115,14 +2354,25 @@ arming/ledger/seal/event introduction-index parity, validates every
 reservation/send timestamp against both original half-open windows, reconstructs
 the terminal ledger from events, derives the canonical
 connector-origin receipt from raw relationships/bytes, and compares the one
-stored target receipt plus all downstream hash projections. It must then
+stored target receipt plus all downstream hash projections. For the
+ScienceBase run it must also require the arming envelope's bound NRC
+parent-run ID and `ledger_terminal_hash` to equal its own independently
+rederived NRC values, re-verifying — never trusting — the recorded
+NRC-first sequencing proof. It must then
 reconcile the DB ledger against the manifest-bound transport counter: parse
 the sealed `http.jsonl` capture strictly, require exactly one counter record
 per ledger send and no unmatched record, and require agreement on ordinal,
 stage, request fingerprint, response status, decoded body count, and
-decoded-body SHA-256. From the counter's wire counts it rederives that
-aggregate wire bytes never exceeded the original grant's `max_run_bytes` and
-that consecutive same-bucket monotonic send starts respected
+decoded-body SHA-256. From the counter's canonical status/header and
+delivered-body counts it rederives the run's counted-byte aggregate in the
+same currency the grant binds: `fresh_live` eligibility requires that
+aggregate to be at most the original grant's `max_run_bytes`, and a crossed
+ceiling must carry its terminal oversized or budget-exhaustion
+classification, with the aggregate above the ceiling by no more than the
+detection bound — one 32 KiB canonical status/header block plus one 64 KiB
+read chunk — a crossing classified any other way, or any larger excess,
+failing as a counter defect. It also rederives that
+consecutive same-bucket monotonic send starts respected
 `min_request_interval_ms`; monotonic readings are comparable only within the
 one recorded acquisition process, and records spanning more than one process
 boot make the spacing rederivation `INDETERMINATE`. Any missing, extra,
@@ -2203,12 +2453,18 @@ quiescence result as a deterministic record to the wrapper stream. A surviving
 process or endpoint is a campaign failure and phase B never starts.
 
 Phase B launches a second, secret-free process with no NRC key, no
-campaign-definition/grant paths, `CONNECTOR_LIVE_EGRESS_ENABLED=false`, and
-the same pre-import fail-closed network-deny guard specified for the
-validator. It parses the admitted content-addressed bytes through the strict
-parse entry point—optional OCR/Camelot/Paddle paths disabled, fixed resource
-bounds—and runs Layer 3C, review, packaging, submission, and handoff
-preparation. On phase-B exit or operator stop the wrapper flushes/closes all
+campaign-definition/grant paths, `CONNECTOR_LIVE_EGRESS_ENABLED=false`, the
+same pre-import fail-closed network-deny guard specified for the validator,
+and `install_subprocess_denial_guard` from `nrc_aps_strict_parse`, both
+installed before application/service imports. It parses the admitted NRC PDF
+only through `parse_admitted_blob_strict` under the frozen
+`dual_live_proof_v1` profile (Task 5 Step 3)—baseline engine forced
+explicitly, every OCR path closed, Paddle/Camelot routing fatally refused,
+each fixed bound enforced at its named measurement point—and runs Layer 3C,
+review, packaging, submission, and handoff preparation; the ScienceBase CSV
+enters Layer 3C through its existing bounded intake path inside the same
+guarded process. A `StrictParseViolation`, routing refusal, prohibited
+degradation code, or breached bound is a campaign failure. On phase-B exit or operator stop the wrapper flushes/closes all
 handlers, rehashes the exact four files, rejects extras, and atomically
 creates the manifest. It then computes the raw manifest SHA-256
 and canonical ordered file-set hash, atomically creates the strict seal at the
@@ -2277,7 +2533,7 @@ Pop-Location
 
 ```powershell
 Push-Location backend
-python -m pytest tests/test_sciencebase_fresh.py tests/test_nrc_fresh.py -q
+python -m pytest tests/test_sciencebase_fresh.py tests/test_nrc_fresh.py tests/test_nrc_strict_parse.py -q
 Pop-Location
 python -m pytest tests/test_api.py -q -k "sciencebase or nrc_adams"
 ```
@@ -2474,7 +2730,9 @@ Before either arming:
     equal the configured unique-maximal head, then create the NRC parent
     arming only, without executing; the ScienceBase parent arming is not
     created here — its grant stays digest-verified but unconsumed until the
-    NRC acquisition-success predicate in the execution order passes;
+    service-defined NRC acquisition-success predicate
+    (`evaluate_nrc_acquisition_success`, Task 2) passes inside ScienceBase
+    arming creation;
 14. verify the NRC atomic consumption marker now exists with the exact indexed
     bytes/hash and deterministic run ID, and verify the indexed expected
     ScienceBase consumption-marker path is still absent and no ScienceBase
@@ -2492,26 +2750,23 @@ Any mismatch stops before network.
 3. if admitted, require the committed derived arming before artifact GET;
 4. stop on artifact redirect, `401`, or `403`; do not send the key to an
    artifact host;
-5. evaluate the NRC acquisition-success predicate: the NRC parent run reached
-   strict terminal `completed` through the strict-only finalizer with exactly
-   one valid terminal event, no unexpired execution lease, and no later
-   failure or cancellation; its canonical terminal ledger has
-   reservation/completion parity within the grant ceiling, no `spent_unknown`
-   entry, and no disagreement between the DB request ledger and the
-   manifest-bound transport counter; and the admitted PDF is a complete `200`
-   within byte limits whose raw SHA-256 is recorded on the canonical
-   connector-target receipt. On any other outcome — failure, safe stop, or
-   indeterminate — stop: the ScienceBase parent arming was never created, so
-   no mechanism has consumed its grant and its expected consumption-marker
-   path remains verifiably absent. Only after the predicate passes, create
-   the ScienceBase parent arming through the same arming service, which
-   revalidates the NRC parent run's terminal `completed` state, binds the
-   NRC parent-run ID and `ledger_terminal_hash` into the ScienceBase arming
-   envelope, and re-resolves the campaign introduction revision as the
-   current unique-maximal head before its consumption-marker create-new
-   operation; verify that marker's exact indexed bytes/hash and deterministic
-   run ID, inspect its redacted projection, then execute the ScienceBase
-   arming;
+5. evaluate the NRC acquisition-success predicate — the single predicate
+   defined once on `evaluate_nrc_acquisition_success` in Task 2 and
+   referenced here without restatement. On any failed or indeterminate
+   clause — failure, safe stop, or indeterminate — stop: the ScienceBase
+   parent arming was never created, so no mechanism has consumed its grant
+   and its expected consumption-marker path remains verifiably absent. Only
+   after the predicate passes, create the ScienceBase parent arming through
+   the same arming service; this wrapper-side evaluation is a campaign-flow
+   decision only, because `create_connector_egress_arming` rederives the
+   identical predicate inside the creation call — wrapper ordering is never
+   the enforcement mechanism. Before the consumption-marker create-new
+   operation the service both passes the rederived predicate and re-resolves
+   the campaign introduction revision as the current unique-maximal head; it
+   binds the NRC parent-run ID and the `ledger_terminal_hash` it rederived
+   into the ScienceBase arming envelope. Verify that marker's exact indexed
+   bytes/hash and deterministic run ID, inspect its redacted projection,
+   then execute the ScienceBase arming;
 6. stop if the exact CSV name is absent or ambiguous;
 7. require the committed ScienceBase derived arming before artifact and any
    separately admitted redirect GET;
@@ -2525,10 +2780,12 @@ Any mismatch stops before network.
    process/port quiescence; a surviving process or endpoint stops the campaign
    here;
 9. only after that recorded quiescence proof, the wrapper launches the
-   secret-free, network-denied phase-B process, which parses the admitted
-   bytes through the strict parse entry point—OCR/Camelot/Paddle disabled,
-   fixed resource bounds—and runs each existing Layer 3 workflow through
-   review, three packages, package submission, and handoff preparation;
+   secret-free, network- and subprocess-denied phase-B process, which parses
+   the admitted NRC PDF only through `parse_admitted_blob_strict` under the
+   frozen `dual_live_proof_v1` profile and bounds (Task 5 Step 3) and runs
+   each existing Layer 3 workflow through review, three packages, package
+   submission, and handoff preparation; any refusal, prohibited degradation
+   code, or breached bound stops the campaign here;
 10. in success or failure, quiesce and stop the runtime, flush/close all four
     capture streams, atomically seal the strict campaign-log manifest,
     atomically create the separately indexed no-overwrite seal, and append its
@@ -2546,8 +2803,10 @@ Record:
 - exact commit, raw campaign-definition digest, rederived canonical campaign
   fingerprint, arming fingerprints, separate raw/canonical grant digests,
   single-use nonce/marker hashes, deterministic parent-run IDs, the NRC
-  parent-run ID and `ledger_terminal_hash` bound inside the ScienceBase
-  arming envelope as the NRC-first sequencing proof, and the
+  parent-run ID and the `ledger_terminal_hash` rederived by
+  `evaluate_nrc_acquisition_success` at ScienceBase arming creation and
+  bound inside the ScienceBase arming envelope as the NRC-first
+  full-predicate sequencing proof, and the
   protected campaign-evidence-index introduction revision/digest and verified
   unique-maximal head revision/digest;
 - safe per-request ordinal, method, host, path/query class, credential
