@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 import tempfile
 import unicodedata
-import uuid
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.models import ApsContentChunk, ApsContentDocument, ApsContentLinkage
 from app.services import nrc_aps_artifact_ingestion
 from app.services import nrc_aps_document_processing
+from app.services import nrc_aps_media_detection
 from app.services import nrc_aps_safeguards
 
 
@@ -564,6 +565,257 @@ def build_content_units_payload_from_target_artifact(
         "selection_ref": str(evidence.get("selection_ref") or "").strip() or None,
         "availability_reason": availability_reason,
         "visual_page_refs": visual_page_refs,
+        "chunk_count": len(chunks),
+        "chunks": chunks,
+    }
+    payload["payload_sha256"] = _stable_hash(payload)
+    return payload
+
+
+def build_strict_content_units_payload_from_processed_output(
+    *,
+    run_id: str,
+    target_id: str,
+    accession_number: str,
+    blob_ref: str,
+    blob_sha256: str,
+    processed_output: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Project one frozen strict-parser result into canonical content units."""
+
+    if not isinstance(processed_output, Mapping):
+        raise ValueError("strict_processed_output_not_mapping")
+    processed = dict(processed_output)
+    expected_contracts = {
+        "document_processing_contract_id": (
+            nrc_aps_document_processing.APS_DOCUMENT_EXTRACTION_CONTRACT_ID
+        ),
+        "normalization_contract_id": APS_NORMALIZATION_CONTRACT_ID,
+        "extractor_id": nrc_aps_document_processing.APS_PDF_EXTRACTOR_ID,
+        "declared_content_type": "application/pdf",
+        "sniffed_content_type": "application/pdf",
+        "effective_content_type": "application/pdf",
+        "media_detection_status": (
+            nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_MATCH
+        ),
+    }
+    if any(
+        processed.get(field) != expected
+        for field, expected in expected_contracts.items()
+    ):
+        raise ValueError("strict_processed_output_contract_mismatch")
+
+    normalized_text = processed.get("normalized_text")
+    if not isinstance(normalized_text, str):
+        raise ValueError("strict_normalized_text_invalid")
+    normalized_sha256 = hashlib.sha256(
+        normalized_text.encode("utf-8")
+    ).hexdigest()
+    if (
+        processed.get("normalized_text_sha256") != normalized_sha256
+        or processed.get("normalized_char_count") != len(normalized_text)
+    ):
+        raise ValueError("strict_normalized_text_binding_mismatch")
+
+    page_count = processed.get("page_count")
+    if (
+        isinstance(page_count, bool)
+        or not isinstance(page_count, int)
+        or not 1 <= page_count <= 500
+    ):
+        raise ValueError("strict_page_count_invalid")
+    if (
+        processed.get("ocr_page_count") != 0
+        or processed.get("native_page_count") != page_count
+    ):
+        raise ValueError("strict_page_projection_invalid")
+    if processed.get("visual_page_refs") != []:
+        raise ValueError("strict_visual_refs_refused")
+
+    quality_status = processed.get("quality_status")
+    admitted_quality = {
+        nrc_aps_document_processing.APS_QUALITY_STATUS_STRONG,
+        nrc_aps_document_processing.APS_QUALITY_STATUS_LIMITED,
+        nrc_aps_document_processing.APS_QUALITY_STATUS_WEAK,
+        nrc_aps_document_processing.APS_QUALITY_STATUS_UNUSABLE,
+    }
+    if quality_status not in admitted_quality:
+        raise ValueError("strict_quality_status_invalid")
+    document_class = processed.get("document_class")
+    if document_class not in {
+        "born_digital_pdf",
+        "layout_complex_pdf",
+        "font_encoded_pdf",
+    }:
+        raise ValueError("strict_document_class_invalid")
+
+    raw_units = processed.get("ordered_units")
+    if not isinstance(raw_units, list):
+        raise ValueError("strict_ordered_units_invalid")
+    ordered_units: list[dict[str, Any]] = []
+    next_start = 0
+    last_page = 0
+    page_unit_counts = {page: 0 for page in range(1, page_count + 1)}
+    for raw_unit in raw_units:
+        if not isinstance(raw_unit, Mapping):
+            raise ValueError("strict_ordered_unit_invalid")
+        unit = dict(raw_unit)
+        text = unit.get("text")
+        page_number = unit.get("page_number")
+        start_char = unit.get("start_char")
+        end_char = unit.get("end_char")
+        unit_kind = unit.get("unit_kind")
+        if (
+            not isinstance(text, str)
+            or not text
+            or text != text.strip()
+            or isinstance(page_number, bool)
+            or not isinstance(page_number, int)
+            or not 1 <= page_number <= page_count
+            or page_number < last_page
+            or isinstance(start_char, bool)
+            or not isinstance(start_char, int)
+            or isinstance(end_char, bool)
+            or not isinstance(end_char, int)
+            or start_char != next_start
+            or end_char != start_char + len(text)
+            or not isinstance(unit_kind, str)
+            or unit_kind not in {
+                "pdf_native_span",
+                "pdf_text_block",
+                "pdf_table",
+            }
+        ):
+            raise ValueError("strict_ordered_unit_binding_invalid")
+        bbox = unit.get("bbox")
+        if not isinstance(bbox, (list, tuple)) or len(bbox) != 4:
+            raise ValueError("strict_unit_geometry_invalid")
+        coordinates: list[float] = []
+        for value in bbox:
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError("strict_unit_geometry_invalid")
+            coordinate = float(value)
+            if not math.isfinite(coordinate) or coordinate < 0:
+                raise ValueError("strict_unit_geometry_invalid")
+            coordinates.append(coordinate)
+        if (
+            coordinates[2] < coordinates[0]
+            or coordinates[3] < coordinates[1]
+        ):
+            raise ValueError("strict_unit_geometry_invalid")
+        ordered_units.append(
+            {
+                "page_number": page_number,
+                "unit_kind": unit_kind,
+                "text": text,
+                "bbox": coordinates,
+                "start_char": start_char,
+                "end_char": end_char,
+            }
+        )
+        page_unit_counts[page_number] += 1
+        next_start = end_char + 1
+        last_page = page_number
+
+    reconstructed_text = "\n".join(
+        str(unit["text"]) for unit in ordered_units
+    )
+    if reconstructed_text != normalized_text or bool(ordered_units) != bool(
+        normalized_text
+    ):
+        raise ValueError("strict_normalized_text_unit_mismatch")
+
+    page_summaries = processed.get("page_summaries")
+    if not isinstance(page_summaries, list) or len(page_summaries) != page_count:
+        raise ValueError("strict_page_summaries_invalid")
+    for ordinal, raw_summary in enumerate(page_summaries, start=1):
+        if not isinstance(raw_summary, Mapping):
+            raise ValueError("strict_page_summary_invalid")
+        summary = dict(raw_summary)
+        if (
+            summary.get("page_number") != ordinal
+            or summary.get("source") != "native"
+            or summary.get("unit_count") != page_unit_counts[ordinal]
+        ):
+            raise ValueError("strict_page_summary_binding_mismatch")
+
+    content_status = APS_CONTENT_STATUS_INDEXED
+    if not normalized_text:
+        content_status = APS_CONTENT_STATUS_EMPTY_NORMALIZED_TEXT
+    elif quality_status == nrc_aps_document_processing.APS_QUALITY_STATUS_WEAK:
+        content_status = APS_CONTENT_STATUS_LOW_QUALITY_TEXT
+    elif (
+        quality_status
+        == nrc_aps_document_processing.APS_QUALITY_STATUS_UNUSABLE
+    ):
+        content_status = APS_CONTENT_STATUS_UNUSABLE_TEXT
+
+    content_id = _content_id(
+        normalized_text_sha256=normalized_sha256,
+        accession_number=accession_number,
+        content_status=content_status,
+        availability_reason=None,
+    )
+    if content_id == str(blob_sha256):
+        raise ValueError("strict_content_id_raw_sha_collision")
+    chunking_policy = normalize_chunking_policy({})
+    chunks: list[dict[str, Any]] = []
+    if normalized_text and content_status == APS_CONTENT_STATUS_INDEXED:
+        base_chunks = chunk_document_units(
+            ordered_units=ordered_units,
+            chunk_size_chars=chunking_policy["chunk_size_chars"],
+            chunk_overlap_chars=chunking_policy["chunk_overlap_chars"],
+            min_chunk_chars=chunking_policy["min_chunk_chars"],
+        )
+        chunks = [
+            {
+                **chunk,
+                "chunk_id": _chunk_id(
+                    content_id=content_id,
+                    chunk_ordinal=int(chunk["chunk_ordinal"]),
+                    start_char=int(chunk["start_char"]),
+                    end_char=int(chunk["end_char"]),
+                    chunk_text_sha256=str(chunk["chunk_text_sha256"]),
+                ),
+            }
+            for chunk in base_chunks
+        ]
+
+    payload: dict[str, Any] = {
+        "schema_id": APS_CONTENT_UNITS_SCHEMA_ID,
+        "schema_version": APS_CONTENT_INDEX_SCHEMA_VERSION,
+        "generated_at_utc": _utc_iso(),
+        "run_id": str(run_id),
+        "target_id": str(target_id),
+        "accession_number": str(accession_number),
+        "pipeline_mode": (
+            nrc_aps_artifact_ingestion.APS_PIPELINE_MODE_HYDRATE_PROCESS
+        ),
+        "artifact_outcome_status": "completed",
+        "content_contract_id": APS_CONTENT_CONTRACT_ID,
+        "chunking_contract_id": APS_CHUNKING_CONTRACT_ID,
+        "normalization_contract_id": APS_NORMALIZATION_CONTRACT_ID,
+        "content_id": content_id,
+        "content_status": content_status,
+        "chunk_size_chars": chunking_policy["chunk_size_chars"],
+        "chunk_overlap_chars": chunking_policy["chunk_overlap_chars"],
+        "min_chunk_chars": chunking_policy["min_chunk_chars"],
+        "normalized_char_count": len(normalized_text),
+        "normalized_text_ref": None,
+        "normalized_text_sha256": normalized_sha256,
+        "effective_content_type": "application/pdf",
+        "document_class": document_class,
+        "quality_status": quality_status,
+        "page_count": page_count,
+        "diagnostics_ref": None,
+        "source_metadata_ref": None,
+        "blob_ref": str(blob_ref),
+        "blob_sha256": str(blob_sha256),
+        "download_exchange_ref": None,
+        "discovery_ref": None,
+        "selection_ref": None,
+        "availability_reason": None,
+        "visual_page_refs": [],
         "chunk_count": len(chunks),
         "chunks": chunks,
     }
