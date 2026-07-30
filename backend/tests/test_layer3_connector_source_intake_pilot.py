@@ -15,12 +15,12 @@ os.environ["DB_INIT_MODE"] = "none"
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
-import pytest
+import pytest  # noqa: E402
 
-from app.api.deps import get_db
-from app.core.config import bootstrap_storage_tree, settings
-from app.db.session import Base
-from app.models.models import (
+from app.api.deps import get_db  # noqa: E402
+from app.core.config import bootstrap_storage_tree, settings  # noqa: E402
+from app.db.session import Base  # noqa: E402
+from app.models.models import (  # noqa: E402
     ConnectorRun,
     ConnectorRunTarget,
     DatasetSourceProvenance,
@@ -28,18 +28,21 @@ from app.models.models import (
     L3GateBIdempotencyKey,
     L3Session,
 )
-from app.services.layer3_connector_source_intake import (
+from app.services import (  # noqa: E402
+    layer3_connector_source_intake as connector_intake,
+)
+from app.services.layer3_connector_source_intake import (  # noqa: E402
     CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
     ConnectorSourceIntakeError,
     connector_source_intake_material_preview,
     record_connector_produced_source_intake,
     validate_connector_intake_gate_b_decision_basis,
 )
-from app.services.layer3_source_intake import (
+from app.services.layer3_source_intake import (  # noqa: E402
     SourceIntakeError,
     validate_source_intake_gate_b_decision_basis,
 )
-from main import app
+from main import app  # noqa: E402
 
 
 @pytest.fixture()
@@ -120,6 +123,56 @@ def _seed_downloaded_sciencebase_target(
     db.add(target)
     db.commit()
     return run, target, blob
+
+
+def _seed_strict_sciencebase_target(
+    db,
+) -> tuple[ConnectorRun, ConnectorRunTarget, bytes]:
+    blob = b"county,value\n001,1\n"
+    digest = hashlib.sha256(blob).hexdigest()
+    raw_dir = Path(settings.connector_raw_dir) / "sha256"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    raw_path = raw_dir / f"{digest}.csv"
+    raw_path.write_bytes(blob)
+    run = ConnectorRun(
+        connector_run_id="sciencebase-strict-intake-run",
+        connector_key="sciencebase_mcs",
+        source_system="sciencebase",
+        source_mode="strict_live_egress",
+        status="running",
+    )
+    target = ConnectorRunTarget(
+        connector_run_target_id="sciencebase-strict-intake-target",
+        connector_run_id=run.connector_run_id,
+        ordinal=1,
+        sciencebase_item_id="63d1a3c6d34e06fef15006be",
+        sciencebase_item_url=None,
+        sciencebase_file_name="mcs2023-germa_salient.csv",
+        sciencebase_download_uri=None,
+        artifact_surface="files",
+        artifact_locator_type="downloadUri_hash_only",
+        source_artifact_key=(
+            "sciencebase:63d1a3c6d34e06fef15006be:"
+            "mcs2023-germa_salient.csv"
+        ),
+        downloaded_sha256=digest,
+        raw_storage_ref=str(raw_path.resolve()),
+        public_read_confirmed=True,
+        status="downloaded",
+    )
+    db.add_all([run, target])
+    db.commit()
+    return run, target, blob
+
+
+def _strict_intake_stager():
+    stager = getattr(
+        connector_intake,
+        "_stage_strict_sciencebase_source_intake",
+        None,
+    )
+    assert stager is not None, "private strict intake stager is missing"
+    return stager
 
 
 def _decision_basis(candidate: dict, *, include_connector_target: bool = False) -> dict:
@@ -496,6 +549,52 @@ def test_connector_source_intake_contract_documents_idempotency_axes():
     assert "client_request_id" in doc
     assert "authority_basis_hash" in doc
     assert "connector_run_target_id is not unique" in doc
+
+
+def test_private_strict_intake_stager_flushes_without_committing(client):
+    db = client.layer3_session_factory()
+    try:
+        run, target, content = _seed_strict_sciencebase_target(db)
+        record = _strict_intake_stager()(
+            db,
+            run=run,
+            target=target,
+        )
+
+        assert record.connector_key == "sciencebase_mcs"
+        assert record.connector_run_id == run.connector_run_id
+        assert record.connector_run_target_id == target.connector_run_target_id
+        assert record.media_type == "text/csv"
+        assert record.content_size_bytes == len(content)
+        assert record.content_sha256 == hashlib.sha256(content).hexdigest()
+        assert record.storage_ref == target.raw_storage_ref
+        assert db.query(L3ConnectorSourceIntakeRecord).count() == 1
+
+        db.rollback()
+        assert db.query(L3ConnectorSourceIntakeRecord).count() == 0
+    finally:
+        db.close()
+
+
+def test_private_strict_intake_stager_rejects_duplicate_target_run(client):
+    db = client.layer3_session_factory()
+    try:
+        run, target, _ = _seed_strict_sciencebase_target(db)
+        stager = _strict_intake_stager()
+        first = stager(db, run=run, target=target)
+
+        with pytest.raises(ConnectorSourceIntakeError) as excinfo:
+            stager(db, run=run, target=target)
+
+        assert (
+            excinfo.value.code
+            == "connector_source_intake_strict_cardinality_conflict"
+        )
+        rows = db.query(L3ConnectorSourceIntakeRecord).all()
+        assert rows == [first]
+    finally:
+        db.rollback()
+        db.close()
 
 
 def test_connector_intake_allows_same_target_with_distinct_request_ids(client):

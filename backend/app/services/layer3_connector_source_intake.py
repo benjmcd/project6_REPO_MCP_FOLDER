@@ -344,6 +344,162 @@ def record_connector_produced_source_intake(
     return _record_response(record)
 
 
+def _stage_strict_sciencebase_source_intake(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    target: ConnectorRunTarget,
+) -> L3ConnectorSourceIntakeRecord:
+    """Stage one server-owned strict ScienceBase intake row without commit."""
+
+    expected_item_id = "63d1a3c6d34e06fef15006be"
+    expected_file_name = "mcs2023-germa_salient.csv"
+    expected_artifact_key = (
+        f"sciencebase:{expected_item_id}:{expected_file_name}"
+    )
+    if (
+        run.connector_key != "sciencebase_mcs"
+        or run.source_mode != "strict_live_egress"
+        or run.status != "running"
+        or target.connector_run_id != run.connector_run_id
+        or target.sciencebase_item_id != expected_item_id
+        or target.sciencebase_file_name != expected_file_name
+        or target.sciencebase_item_url is not None
+        or target.sciencebase_download_uri is not None
+        or target.artifact_surface != "files"
+        or target.source_artifact_key != expected_artifact_key
+        or target.status != "downloaded"
+        or target.public_read_confirmed is not True
+    ):
+        raise ConnectorSourceIntakeError(
+            "connector_source_intake_strict_authority_invalid",
+            "Strict ScienceBase intake requires exact server-owned run and target authority.",
+            http_status=409,
+        )
+    existing_count = (
+        db.query(L3ConnectorSourceIntakeRecord)
+        .filter(
+            L3ConnectorSourceIntakeRecord.connector_run_id
+            == run.connector_run_id,
+            L3ConnectorSourceIntakeRecord.connector_run_target_id
+            == target.connector_run_target_id,
+        )
+        .count()
+    )
+    if existing_count:
+        raise ConnectorSourceIntakeError(
+            "connector_source_intake_strict_cardinality_conflict",
+            "Strict ScienceBase intake already exists for this run and target.",
+            http_status=409,
+            details={
+                "connector_run_id": run.connector_run_id,
+                "connector_run_target_id": target.connector_run_target_id,
+                "existing_count": existing_count,
+            },
+        )
+    if not target.downloaded_sha256 or not target.raw_storage_ref:
+        raise ConnectorSourceIntakeError(
+            "connector_source_intake_strict_raw_blob_missing",
+            "Strict ScienceBase intake requires admitted raw hash and storage authority.",
+            http_status=409,
+        )
+    storage_path = _storage_path_from_ref(target.raw_storage_ref)
+    raw_root = Path(settings.connector_raw_dir).resolve()
+    resolved_path = storage_path.resolve()
+    expected_hash = str(target.downloaded_sha256)
+    if (
+        not storage_path.is_file()
+        or resolved_path.parent != raw_root / "sha256"
+        or resolved_path.name != f"{expected_hash}.csv"
+    ):
+        raise ConnectorSourceIntakeError(
+            "connector_source_intake_strict_storage_ref_invalid",
+            "Strict ScienceBase intake requires the canonical content-addressed raw path.",
+            http_status=409,
+        )
+    content_size_bytes, content_sha256 = _hash_file(resolved_path)
+    if (
+        content_size_bytes <= 0
+        or content_sha256 != expected_hash
+    ):
+        raise ConnectorSourceIntakeError(
+            "connector_source_intake_strict_hash_mismatch",
+            "Strict ScienceBase intake raw bytes contradict target authority.",
+            http_status=409,
+        )
+
+    client_request_id = (
+        f"strict-sciencebase:{run.connector_run_id}:"
+        f"{target.connector_run_target_id}"
+    )
+    metadata = {
+        "client_request_id": client_request_id,
+        "source_family": CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
+        "connector_key": run.connector_key,
+        "connector_run_id": run.connector_run_id,
+        "connector_run_target_id": target.connector_run_target_id,
+        "sciencebase_item_id": expected_item_id,
+        "sciencebase_file_name": expected_file_name,
+        "artifact_surface": "files",
+        "media_type": "text/csv",
+        "content_size_bytes": content_size_bytes,
+        "content_sha256": content_sha256,
+    }
+    metadata_hash = _stable_hash(metadata)
+    authority_basis = {
+        "schema_id": CONNECTOR_SOURCE_INTAKE_SCHEMA_ID,
+        "mode": CONNECTOR_SOURCE_INTAKE_MODE,
+        "operator_decision": CONNECTOR_SOURCE_INTAKE_OPERATOR_DECISION,
+        "client_request_id": client_request_id,
+        "metadata_hash": metadata_hash,
+        "content_sha256": content_sha256,
+        "source_gate": CONNECTOR_SOURCE_INTAKE_SOURCE_GATE,
+    }
+    authority_basis_hash = _stable_hash(authority_basis)
+    record = L3ConnectorSourceIntakeRecord(
+        client_request_id=client_request_id,
+        operator_decision=CONNECTOR_SOURCE_INTAKE_OPERATOR_DECISION,
+        source_family=CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
+        source_label="ScienceBase MCS frozen raw artifact",
+        source_description=(
+            "Strict Phase-A raw CSV artifact; no semantic ingestion."
+        ),
+        original_filename=expected_file_name,
+        media_type="text/csv",
+        content_size_bytes=content_size_bytes,
+        content_sha256=content_sha256,
+        metadata_hash=metadata_hash,
+        authority_basis_hash=authority_basis_hash,
+        storage_ref=str(resolved_path),
+        freshness_timestamp=target.downloaded_at,
+        provenance_json={
+            "schema_id": CONNECTOR_SOURCE_INTAKE_SCHEMA_ID,
+            "mode": CONNECTOR_SOURCE_INTAKE_MODE,
+            "operator_decision": CONNECTOR_SOURCE_INTAKE_OPERATOR_DECISION,
+            "server_authority": SERVER_AUTHORITY,
+            "source_gate": CONNECTOR_SOURCE_INTAKE_SOURCE_GATE,
+            "connector_key": run.connector_key,
+            "connector_run_id": run.connector_run_id,
+            "connector_run_target_id": target.connector_run_target_id,
+            "content_sha256": content_sha256,
+            "metadata_hash": metadata_hash,
+        },
+        downstream_eligibility_json=_downstream_eligibility(),
+        summary_json={
+            "metadata": metadata,
+            "authority_basis": authority_basis,
+            "negative_invariants": _negative_invariants(),
+        },
+        status=CONNECTOR_SOURCE_INTAKE_STATUS,
+        connector_key=run.connector_key,
+        connector_run_id=run.connector_run_id,
+        connector_run_target_id=target.connector_run_target_id,
+    )
+    db.add(record)
+    db.flush()
+    return record
+
+
 def connector_source_intake_inventory(
     db: Session,
     *,

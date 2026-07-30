@@ -33,9 +33,12 @@ from app.models import (
     ConnectorRunPartitionCursor,
     ConnectorRunSubmission,
     ConnectorRunTarget,
+    Dataset,
     DatasetExternalIdentity,
     DatasetSourceProvenance,
+    DatasetVersion,
 )
+from app.models.models import L3ConnectorSourceIntakeRecord
 from app.services.sciencebase_connector.executor import ExecutorGuards, assert_lease_token, transition_target_state
 from app.services.sciencebase_connector.contracts import (
     ARTIFACT_DEDUP_POLICIES,
@@ -76,6 +79,9 @@ from app.services.connector_egress_transport import (
     FrozenPhysicalRequest,
 )
 from app.services.ingest import ingest_csv_bytes_to_dataset
+from app.services.layer3_connector_source_intake import (
+    _stage_strict_sciencebase_source_intake,
+)
 from app.services.profiling import profile_dataset_version
 from app.services.transforms import recommend_transformations
 
@@ -387,13 +393,13 @@ def _persist_fresh_sciencebase_raw_blob(content: bytes, digest: str) -> str:
         raise ScienceBaseFreshAcquisitionError(
             "sciencebase_artifact_hash_mismatch"
         )
-    raw_root = Path(settings.storage_dir)
+    raw_root = Path(settings.connector_raw_dir)
     if raw_root.exists() and _path_is_reparse_or_symlink(raw_root):
         raise ScienceBaseFreshAcquisitionError(
             "sciencebase_raw_storage_unsafe"
         )
     root = raw_root.resolve(strict=False)
-    content_dir = root / "connector-raw" / "sha256"
+    content_dir = root / "sha256"
     content_dir.mkdir(parents=True, exist_ok=True)
     if _path_is_reparse_or_symlink(content_dir):
         raise ScienceBaseFreshAcquisitionError(
@@ -415,7 +421,11 @@ def _persist_fresh_sciencebase_raw_blob(content: bytes, digest: str) -> str:
             raise ScienceBaseFreshAcquisitionError(
                 "sciencebase_raw_storage_unsafe"
             )
-        if output.read_bytes() != content:
+        existing = output.read_bytes()
+        if (
+            existing != content
+            or hashlib.sha256(existing).hexdigest() != digest
+        ):
             raise ScienceBaseFreshAcquisitionError(
                 "sciencebase_raw_content_conflict"
             )
@@ -423,15 +433,51 @@ def _persist_fresh_sciencebase_raw_blob(content: bytes, digest: str) -> str:
         raise ScienceBaseFreshAcquisitionError(
             "sciencebase_raw_storage_failed"
         ) from exc
+    _, _, resolved_ref = _rehash_fresh_sciencebase_raw_blob(
+        str(output),
+        expected_digest=digest,
+    )
+    return resolved_ref
+
+
+def _rehash_fresh_sciencebase_raw_blob(
+    storage_ref: str,
+    *,
+    expected_digest: str,
+) -> tuple[int, str, str]:
+    root = Path(settings.connector_raw_dir).resolve(strict=False)
+    try:
+        output = Path(storage_ref).resolve(strict=True)
+    except OSError as exc:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_raw_storage_verification_failed"
+        ) from exc
     if (
-        _path_is_reparse_or_symlink(output)
+        output.parent != root / "sha256"
+        or output.name != f"{expected_digest}.csv"
+        or _path_is_reparse_or_symlink(output)
         or not output.is_file()
-        or hashlib.sha256(output.read_bytes()).hexdigest() != digest
     ):
         raise ScienceBaseFreshAcquisitionError(
             "sciencebase_raw_storage_verification_failed"
         )
-    return str(output.resolve(strict=True))
+    digest = hashlib.sha256()
+    size = 0
+    try:
+        with output.open("rb") as stream:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                size += len(chunk)
+                digest.update(chunk)
+    except OSError as exc:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_raw_storage_verification_failed"
+        ) from exc
+    rehashed = digest.hexdigest()
+    if rehashed != expected_digest:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_raw_storage_verification_failed"
+        )
+    return size, rehashed, str(output)
 
 
 def _resolve_current_sciencebase_egress_authority(
@@ -3298,6 +3344,234 @@ def _create_fresh_sciencebase_target(
     return target
 
 
+def _stage_fresh_sciencebase_phase_a_graph(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    target: ConnectorRunTarget,
+    raw_storage_ref: str,
+    artifact_sha256: str,
+    artifact_size: int,
+    upstream_media_class: str,
+    header_column_count: int,
+    nonempty_data_row_confirmed: bool,
+    redirect_projection: Mapping[str, Any] | None,
+) -> None:
+    if (
+        target.status != "selected"
+        or target.downloaded_sha256 is not None
+        or target.raw_storage_ref is not None
+        or target.dataset_id is not None
+        or target.dataset_version_id is not None
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_strict_graph_cardinality_conflict"
+        )
+    provenance_count = (
+        db.query(DatasetSourceProvenance)
+        .filter(
+            DatasetSourceProvenance.connector_run_id
+            == run.connector_run_id,
+            DatasetSourceProvenance.source_artifact_key
+            == target.source_artifact_key,
+        )
+        .count()
+    )
+    intake_count = (
+        db.query(L3ConnectorSourceIntakeRecord)
+        .filter(
+            L3ConnectorSourceIntakeRecord.connector_run_id
+            == run.connector_run_id,
+            L3ConnectorSourceIntakeRecord.connector_run_target_id
+            == target.connector_run_target_id,
+        )
+        .count()
+    )
+    if provenance_count or intake_count:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_strict_graph_cardinality_conflict"
+        )
+    rehashed_size, rehashed_sha256, canonical_storage_ref = (
+        _rehash_fresh_sciencebase_raw_blob(
+            raw_storage_ref,
+            expected_digest=artifact_sha256,
+        )
+    )
+    if (
+        rehashed_size != artifact_size
+        or rehashed_sha256 != artifact_sha256
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_raw_storage_verification_failed"
+        )
+
+    current_reference = target.source_reference_json
+    request_class = (
+        current_reference.get("artifact_request_class")
+        if isinstance(current_reference, Mapping)
+        else None
+    )
+    if (
+        not isinstance(current_reference, Mapping)
+        or current_reference.get("schema_id")
+        != "project6.sciencebase_strict_safe_projection.v1"
+        or current_reference.get("connector_key") != "sciencebase_mcs"
+        or current_reference.get("item_id") != SCIENCEBASE_FRESH_ITEM_ID
+        or current_reference.get("exact_file_name")
+        != SCIENCEBASE_FRESH_FILE_NAME
+        or current_reference.get("surface") != "files"
+        or not isinstance(request_class, Mapping)
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_strict_safe_projection_invalid"
+        )
+    safe_source_reference: dict[str, Any] = {
+        "schema_id": "project6.sciencebase_strict_safe_projection.v1",
+        "connector_key": "sciencebase_mcs",
+        "item_id": SCIENCEBASE_FRESH_ITEM_ID,
+        "exact_file_name": SCIENCEBASE_FRESH_FILE_NAME,
+        "surface": "files",
+        "hydration_response_body_sha256": str(
+            current_reference.get("hydration_response_body_sha256") or ""
+        ),
+        "artifact_url_sha256": str(
+            current_reference.get("artifact_url_sha256") or ""
+        ),
+        "artifact_request_class": {
+            key: request_class.get(key)
+            for key in (
+                "scheme",
+                "host",
+                "port",
+                "path_rule_id",
+                "query_class",
+            )
+        },
+        "artifact_response": {
+            "body_sha256": artifact_sha256,
+            "byte_count": artifact_size,
+            "media_class": upstream_media_class,
+            "header_column_count": header_column_count,
+            "nonempty_data_row_confirmed": nonempty_data_row_confirmed,
+        },
+    }
+    if redirect_projection is not None:
+        safe_source_reference["redirect_request_class"] = {
+            "url_sha256": redirect_projection.get("url_sha256"),
+            **{
+                key: redirect_projection.get(key)
+                for key in (
+                    "scheme",
+                    "host",
+                    "port",
+                    "path_rule_id",
+                    "query_class",
+                )
+            },
+        }
+
+    now = _utcnow()
+    dataset_id = str(uuid.uuid4())
+    dataset_version_id = str(uuid.uuid4())
+    dataset = Dataset(
+        dataset_id=dataset_id,
+        source_id=None,
+        name="ScienceBase MCS frozen raw artifact",
+        description=(
+            "Strict Phase-A raw CSV artifact; no semantic ingestion."
+        ),
+        domain_pack=None,
+        frequency_hint=None,
+        time_column=None,
+    )
+    version = DatasetVersion(
+        dataset_version_id=dataset_version_id,
+        dataset_id=dataset_id,
+        parent_version_id=None,
+        version_label="sciencebase_phase_a_raw_v1",
+        version_type="raw",
+        status="ready",
+        storage_ref=canonical_storage_ref,
+        row_count=0,
+        content_hash=artifact_sha256,
+        source_row_count=None,
+        dropped_row_count=None,
+        notes="Strict Phase-A raw artifact; no semantic ingestion.",
+    )
+    provenance = DatasetSourceProvenance(
+        dataset_version_id=dataset_version_id,
+        connector_run_id=run.connector_run_id,
+        source_system="sciencebase",
+        source_mode=run.source_mode,
+        source_artifact_key=str(target.source_artifact_key),
+        sciencebase_item_id=SCIENCEBASE_FRESH_ITEM_ID,
+        sciencebase_item_url=None,
+        sciencebase_file_name=SCIENCEBASE_FRESH_FILE_NAME,
+        sciencebase_download_uri=None,
+        artifact_surface="files",
+        artifact_locator_type="downloadUri_hash_only",
+        remote_checksum_type=None,
+        remote_checksum_value=None,
+        downloaded_sha256=artifact_sha256,
+        raw_storage_ref=canonical_storage_ref,
+        source_query_fingerprint=None,
+        source_reference_json={
+            "schema_id": "project6.sciencebase_phase_a_provenance.v1",
+            "connector_key": "sciencebase_mcs",
+            "connector_run_target_id": target.connector_run_target_id,
+            "item_id": SCIENCEBASE_FRESH_ITEM_ID,
+            "exact_file_name": SCIENCEBASE_FRESH_FILE_NAME,
+            "artifact_surface": "files",
+            "source_mode": run.source_mode,
+            "raw_sha256": artifact_sha256,
+            "storage_class": "connector_raw_sha256",
+        },
+        fetch_policy_mode="strict_exact_egress",
+        resolved_ip=None,
+        redirect_count=1 if redirect_projection is not None else 0,
+        blocked_reason=None,
+        etag=None,
+        last_modified=None,
+        retrieved_http_json={
+            "response_status": 200,
+            "content_size_bytes": artifact_size,
+            "admitted_media_type": "text/csv",
+            "upstream_media_class": upstream_media_class,
+        },
+        discovered_at=target.discovered_at,
+        downloaded_at=now,
+    )
+    db.add_all([dataset, version, provenance])
+
+    target.source_reference_json = safe_source_reference
+    target.sciencebase_item_url = None
+    target.sciencebase_download_uri = None
+    target.downloaded_sha256 = artifact_sha256
+    target.raw_storage_ref = canonical_storage_ref
+    target.status = "downloaded"
+    target.public_read_confirmed = True
+    target.retry_eligible = False
+    target.downloaded_at = now
+    target.ingested_at = None
+    target.profiled_at = None
+    target.recommended_at = None
+    target.last_stage_transition_at = now
+    target.operator_reason_code = "strict_raw_admitted"
+    target.versioning_reason_code = "phase_a_raw_admission_only"
+    target.dataset_id = dataset_id
+    target.dataset_version_id = dataset_version_id
+    target.redirect_count = 1 if redirect_projection is not None else 0
+    run.downloaded_count = 1
+    run.consumed_bytes = artifact_size
+    run.error_summary = None
+    _stage_strict_sciencebase_source_intake(
+        db,
+        run=run,
+        target=target,
+    )
+    db.flush()
+
+
 def _strict_terminal_event_exists(db: Session, run: ConnectorRun) -> bool:
     return bool(
         db.query(ConnectorRunEvent)
@@ -3536,43 +3810,20 @@ def _execute_fresh_exact_sciencebase_run(
             lease_token=lease_token,
             now=datetime.now(timezone.utc),
         )
-        safe_source_reference = dict(target.source_reference_json or {})
-        safe_source_reference["artifact_response"] = {
-            "body_sha256": artifact_sha256,
-            "byte_count": len(artifact_body),
-            **shape_facts,
-        }
-        if redirect_projection is not None:
-            target.redirect_count = 1
-            safe_source_reference["redirect_request_class"] = {
-                "url_sha256": redirect_projection["url_sha256"],
-                **{
-                    key: redirect_projection[key]
-                    for key in (
-                        "scheme",
-                        "host",
-                        "port",
-                        "path_rule_id",
-                        "query_class",
-                    )
-                },
-            }
-        now = _utcnow()
-        target.source_reference_json = safe_source_reference
-        target.sciencebase_item_url = None
-        target.sciencebase_download_uri = None
-        target.downloaded_sha256 = artifact_sha256
-        target.raw_storage_ref = raw_storage_ref
-        target.status = "downloaded"
-        target.public_read_confirmed = True
-        target.retry_eligible = False
-        target.downloaded_at = now
-        target.last_stage_transition_at = now
-        target.operator_reason_code = "strict_raw_admitted"
-        target.versioning_reason_code = "phase_a_raw_admission_only"
-        run.downloaded_count = 1
-        run.consumed_bytes = len(artifact_body)
-        run.error_summary = None
+        _stage_fresh_sciencebase_phase_a_graph(
+            db,
+            run=run,
+            target=target,
+            raw_storage_ref=raw_storage_ref,
+            artifact_sha256=artifact_sha256,
+            artifact_size=len(artifact_body),
+            upstream_media_class=str(shape_facts["media_class"]),
+            header_column_count=int(shape_facts["header_column_count"]),
+            nonempty_data_row_confirmed=bool(
+                shape_facts["nonempty_data_row_confirmed"]
+            ),
+            redirect_projection=redirect_projection,
+        )
         _record_run_event(
             db,
             run=run,

@@ -21,10 +21,17 @@ from app.models import (  # noqa: E402
     ConnectorRun,
     ConnectorRunEvent,
     ConnectorRunTarget,
+    Dataset,
+    DatasetExternalIdentity,
+    DatasetRow,
     DatasetSourceProvenance,
     DatasetVersion,
+    VariableDefinition,
+    VariableProfile,
 )
+from app.models.models import L3ConnectorSourceIntakeRecord  # noqa: E402
 from app.services import connectors_sciencebase as sciencebase  # noqa: E402
+from app.services import layer3_origin_continuity as origin  # noqa: E402
 from app.services.connector_egress_transport import (  # noqa: E402
     BoundedConnectorResponse,
 )
@@ -46,6 +53,33 @@ REDIRECT_URL = (
 )
 CSV_BYTES = b"county,value\n001,1\n"
 UPSTREAM_SENTINEL = "upstream-object-must-not-persist"
+FORBIDDEN_URL_KEYS = {
+    "url",
+    "uri",
+    "downloadUri",
+    "sciencebase_item_url",
+    "sciencebase_download_uri",
+    "alias_url",
+    "provider_url",
+    "public_url",
+    "Location",
+}
+
+
+def _json_keys(value: Any) -> set[str]:
+    if isinstance(value, dict):
+        return set(value) | {
+            nested_key
+            for nested_value in value.values()
+            for nested_key in _json_keys(nested_value)
+        }
+    if isinstance(value, list):
+        return {
+            nested_key
+            for nested_value in value
+            for nested_key in _json_keys(nested_value)
+        }
+    return set()
 
 
 def _envelope() -> dict[str, Any]:
@@ -276,7 +310,7 @@ def test_generic_submit_rejects_reserved_arming_marker(
     assert db.scalar(select(ConnectorRun)) is None
 
 
-def test_exact_raw_admission_stops_before_csv_or_provenance(
+def test_complete_200_atomically_persists_phase_a_graph(
     db: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -325,11 +359,24 @@ def test_exact_raw_admission_stops_before_csv_or_provenance(
     assert target.sciencebase_download_uri is None
     assert target.downloaded_sha256 == digest
     assert target.status == "downloaded"
-    assert target.dataset_id is None
-    assert target.dataset_version_id is None
-    assert Path(target.raw_storage_ref).name == f"{digest}.csv"
-    assert Path(target.raw_storage_ref).parent.name == "sha256"
-    assert Path(target.raw_storage_ref).read_bytes() == CSV_BYTES
+    assert target.ingested_at is None
+    assert target.profiled_at is None
+    assert target.recommended_at is None
+    raw_path = Path(target.raw_storage_ref).resolve()
+    assert raw_path == (
+        Path(sciencebase.settings.connector_raw_dir).resolve()
+        / "sha256"
+        / f"{digest}.csv"
+    )
+    assert not (
+        Path(sciencebase.settings.storage_dir)
+        / "connector-raw"
+        / "sha256"
+        / f"{digest}.csv"
+    ).exists()
+    assert raw_path.read_bytes() == CSV_BYTES
+    fresh_digest = hashlib.sha256(raw_path.read_bytes()).hexdigest()
+    assert fresh_digest == digest
     assert ARTIFACT_URL not in json.dumps(target.source_reference_json)
     assert f"f={FILE_NAME}" not in json.dumps(target.source_reference_json)
     assert UPSTREAM_SENTINEL not in json.dumps(target.source_reference_json)
@@ -337,9 +384,107 @@ def test_exact_raw_admission_stops_before_csv_or_provenance(
         ARTIFACT_URL.encode("ascii")
     ).hexdigest()
     assert target.versioning_reason_code == "phase_a_raw_admission_only"
+
+    datasets = list(db.scalars(select(Dataset)))
+    versions = list(db.scalars(select(DatasetVersion)))
+    provenance_rows = list(db.scalars(select(DatasetSourceProvenance)))
+    intake_rows = list(db.scalars(select(L3ConnectorSourceIntakeRecord)))
+    assert len(datasets) == len(versions) == len(provenance_rows) == len(intake_rows) == 1
+    dataset = datasets[0]
+    version = versions[0]
+    provenance = provenance_rows[0]
+    intake = intake_rows[0]
+    assert target.dataset_id == dataset.dataset_id
+    assert target.dataset_version_id == version.dataset_version_id
+    assert version.dataset_id == dataset.dataset_id
+    assert provenance.dataset_version_id == version.dataset_version_id
+    assert dataset.source_id is None
+    assert dataset.name == "ScienceBase MCS frozen raw artifact"
+    assert dataset.description == "Strict Phase-A raw CSV artifact; no semantic ingestion."
+    assert dataset.time_column is None
+    assert version.parent_version_id is None
+    assert version.version_label == "sciencebase_phase_a_raw_v1"
+    assert version.version_type == "raw"
+    assert version.status == "ready"
+    assert version.row_count == 0
+    assert version.source_row_count is None
+    assert version.dropped_row_count is None
+    assert version.notes == "Strict Phase-A raw artifact; no semantic ingestion."
+    assert provenance.connector_run_id == run.connector_run_id
+    assert provenance.source_mode == run.source_mode
+    assert provenance.source_artifact_key == target.source_artifact_key
+    assert provenance.sciencebase_item_id == ITEM_ID
+    assert provenance.sciencebase_item_url is None
+    assert provenance.sciencebase_download_uri is None
+    assert provenance.sciencebase_file_name == FILE_NAME
+    assert provenance.retrieved_http_json == {
+        "response_status": 200,
+        "content_size_bytes": len(CSV_BYTES),
+        "admitted_media_type": "text/csv",
+        "upstream_media_class": "declared_csv_shape",
+    }
+    assert intake.connector_key == run.connector_key
+    assert intake.connector_run_id == run.connector_run_id
+    assert intake.connector_run_target_id == target.connector_run_target_id
+    assert intake.media_type == "text/csv"
+    assert intake.original_filename == FILE_NAME
+    assert intake.content_size_bytes == len(CSV_BYTES)
+    assert {
+        target.downloaded_sha256,
+        version.content_hash,
+        provenance.downloaded_sha256,
+        intake.content_sha256,
+        fresh_digest,
+    } == {digest}
+    assert {
+        Path(target.raw_storage_ref).resolve(),
+        Path(version.storage_ref).resolve(),
+        Path(provenance.raw_storage_ref).resolve(),
+        Path(intake.storage_ref).resolve(),
+    } == {raw_path}
+
+    stored_json = [
+        target.source_reference_json,
+        target.permission_snapshot_json,
+        provenance.source_reference_json,
+        provenance.retrieved_http_json,
+        intake.provenance_json,
+        intake.downstream_eligibility_json,
+        intake.summary_json,
+    ]
+    assert not FORBIDDEN_URL_KEYS.intersection(
+        set().union(*(_json_keys(value) for value in stored_json))
+    )
+    serialized_json = json.dumps(stored_json, sort_keys=True)
+    assert ARTIFACT_URL not in serialized_json
+    assert f"f={FILE_NAME}" not in serialized_json
+    assert UPSTREAM_SENTINEL not in serialized_json
+
+    loaded_path = origin._raw_storage_path(target.raw_storage_ref)
+    loaded_size, loaded_hash = origin._hash_file(loaded_path)
+    bindings = origin._load_sciencebase_bindings(
+        db,
+        run=run,
+        target=target,
+        raw_sha256=loaded_hash,
+        raw_size=loaded_size,
+    )
+    assert bindings == {
+        "dataset_id": dataset.dataset_id,
+        "dataset_version_id": version.dataset_version_id,
+        "dataset_source_provenance_id": provenance.dataset_source_provenance_id,
+        "connector_source_intake_record_id": (
+            intake.connector_source_intake_record_id
+        ),
+        "aps_content_linkage_id": None,
+        "content_id": None,
+    }
+
     assert db.scalar(select(ConnectorArtifactAlias)) is None
-    assert db.scalar(select(DatasetVersion)) is None
-    assert db.scalar(select(DatasetSourceProvenance)) is None
+    assert db.scalar(select(DatasetExternalIdentity)) is None
+    assert db.scalar(select(DatasetRow)) is None
+    assert db.scalar(select(VariableDefinition)) is None
+    assert db.scalar(select(VariableProfile)) is None
 
 
 def test_lease_expiry_after_response_blocks_next_send_and_finalizes_failed(
@@ -724,6 +869,7 @@ def test_redirect_guard_never_reserves_ordinal_three(
 @pytest.mark.parametrize(
     "artifact_response",
     [
+        _response(404, b"not found", media="text/plain"),
         _response(206, CSV_BYTES, media="text/csv"),
         _response(200, b"", media="text/csv"),
         _response(200, b"<html>bad</html>", media="text/html"),
@@ -768,6 +914,130 @@ def test_artifact_admission_failure_never_persists_raw_target(
     assert target.status == "download_failed"
     assert target.raw_storage_ref is None
     assert target.downloaded_sha256 is None
+    assert target.dataset_id is None
+    assert target.dataset_version_id is None
+    assert db.scalar(select(Dataset)) is None
+    assert db.scalar(select(DatasetVersion)) is None
+    assert db.scalar(select(DatasetSourceProvenance)) is None
+    assert db.scalar(select(L3ConnectorSourceIntakeRecord)) is None
+
+
+def test_rehash_drift_rolls_back_entire_phase_a_graph(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    timeline: list[tuple[Any, ...]] = []
+    _install_seams(monkeypatch, timeline)
+    run = _running_run(db)
+    real_persist = sciencebase._persist_fresh_sciencebase_raw_blob
+
+    def persist_then_drift(body: bytes, digest: str) -> str:
+        raw_storage_ref = real_persist(body, digest)
+        Path(raw_storage_ref).write_bytes(b"drifted-after-persist")
+        return raw_storage_ref
+
+    monkeypatch.setattr(
+        sciencebase,
+        "_persist_fresh_sciencebase_raw_blob",
+        persist_then_drift,
+    )
+    transport = FakeTransport(
+        [
+            _response(200, _hydration_body(), media="application/json"),
+            _response(200, CSV_BYTES, media="text/csv"),
+        ],
+        timeline,
+    )
+
+    sciencebase._execute_fresh_exact_sciencebase_run(
+        db,
+        run=run,
+        lease_token="lease-token",
+        transport=transport,
+    )
+
+    db.expire_all()
+    persisted_run = db.get(ConnectorRun, run.connector_run_id)
+    target = db.scalar(select(ConnectorRunTarget))
+    assert persisted_run is not None
+    assert persisted_run.status == "failed"
+    assert target is not None
+    assert target.status == "download_failed"
+    assert target.raw_storage_ref is None
+    assert target.downloaded_sha256 is None
+    assert target.dataset_id is None
+    assert target.dataset_version_id is None
+    assert db.scalar(select(Dataset)) is None
+    assert db.scalar(select(DatasetVersion)) is None
+    assert db.scalar(select(DatasetSourceProvenance)) is None
+    assert db.scalar(select(L3ConnectorSourceIntakeRecord)) is None
+
+
+def test_success_finalizer_failure_rolls_back_staged_graph_then_fails_run(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    timeline: list[tuple[Any, ...]] = []
+    real_finalizer = sciencebase._finalize_sciencebase_strict_run
+    _install_seams(monkeypatch, timeline)
+    run = _running_run(db)
+
+    def fail_success_finalizer(**kwargs: Any) -> None:
+        if kwargs["terminal_status"] == "completed":
+            assert kwargs["db"].query(Dataset).count() == 1
+            assert kwargs["db"].query(DatasetVersion).count() == 1
+            assert kwargs["db"].query(DatasetSourceProvenance).count() == 1
+            assert (
+                kwargs["db"].query(L3ConnectorSourceIntakeRecord).count() == 1
+            )
+            raise RuntimeError("forced_success_finalizer_failure")
+        real_finalizer(**kwargs)
+
+    monkeypatch.setattr(
+        sciencebase,
+        "_finalize_sciencebase_strict_run",
+        fail_success_finalizer,
+    )
+    transport = FakeTransport(
+        [
+            _response(200, _hydration_body(), media="application/json"),
+            _response(200, CSV_BYTES, media="text/csv"),
+        ],
+        timeline,
+    )
+
+    sciencebase._execute_fresh_exact_sciencebase_run(
+        db,
+        run=run,
+        lease_token="lease-token",
+        transport=transport,
+    )
+
+    db.expire_all()
+    persisted_run = db.get(ConnectorRun, run.connector_run_id)
+    target = db.scalar(select(ConnectorRunTarget))
+    assert persisted_run is not None
+    assert persisted_run.status == "failed"
+    assert target is not None
+    assert target.status == "download_failed"
+    assert target.raw_storage_ref is None
+    assert target.downloaded_sha256 is None
+    assert target.dataset_id is None
+    assert target.dataset_version_id is None
+    assert db.scalar(select(Dataset)) is None
+    assert db.scalar(select(DatasetVersion)) is None
+    assert db.scalar(select(DatasetSourceProvenance)) is None
+    assert db.scalar(select(L3ConnectorSourceIntakeRecord)) is None
+    terminal_events = list(
+        db.scalars(
+            select(ConnectorRunEvent).where(
+                ConnectorRunEvent.connector_run_id == run.connector_run_id,
+                ConnectorRunEvent.event_type == "egress_run_terminal",
+            )
+        )
+    )
+    assert len(terminal_events) == 1
+    assert terminal_events[0].status_after == "failed"
 
 
 class _NonClosingSession:
