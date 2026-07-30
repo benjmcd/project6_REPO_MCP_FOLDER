@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 import re
-from typing import Any, Literal
+from typing import Any, Literal, Mapping
 from uuid import UUID
 
 from pydantic import (
@@ -808,6 +808,33 @@ class ConnectorCampaignLogSealV1(BaseModel):
         return self
 
 
+def _reject_reserved_sciencebase_egress_input(value: Any) -> Any:
+    if not isinstance(value, Mapping):
+        return value
+    source_mode = value.get("source_mode")
+    idempotency_values = (
+        value.get("client_request_id"),
+        value.get("submission_idempotency_key"),
+        value.get("idempotency_key"),
+    )
+    if (
+        "connector_egress_arming" in value
+        or (
+            isinstance(source_mode, str)
+            and source_mode.strip().lower() == "strict_live_egress"
+        )
+        or any(
+            isinstance(item, str)
+            and item.strip().startswith("egress-arm:")
+            for item in idempotency_values
+        )
+    ):
+        raise ValueError(
+            "reserved egress provenance requires the protected arming API"
+        )
+    return value
+
+
 class ScienceBaseConnectorRunIn(BaseModel):
     q: str = "Mineral Commodity Summaries"
     filters: list[str] = Field(default_factory=list)
@@ -847,6 +874,11 @@ class ScienceBaseConnectorRunIn(BaseModel):
     client_request_id: str | None = None
     detect_seasonality: bool = True
     detect_stationarity: bool = True
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_reserved_egress_input(cls, value: Any) -> Any:
+        return _reject_reserved_sciencebase_egress_input(value)
 
 
 class ScienceBaseMcsConnectorRunIn(ScienceBaseConnectorRunIn):
