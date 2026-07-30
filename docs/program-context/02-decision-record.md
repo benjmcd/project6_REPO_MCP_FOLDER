@@ -1097,8 +1097,7 @@ migration, runtime, build dispatch, B1b build PR, or B1b build merge authority.
   slice. Arming resolves the earliest revision containing that slice and
   requires it to be the current head before marker creation; a preserved
   ancestor is historical-only even if its grant remains unused. Rollback, fork,
-  gap, orphan, partial addition, or drop/relabel fails. Campaign armings, log seals, and the seal event(s) of every extant connector run (two on a passing dual run, one after an NRC-first stop) bind the introduction revision, superseding the former unconditional both-events wording, bind the
-  introduction revision/digest. Historical validation accepts no archive/index path from the
+  gap, orphan, partial addition, or drop/relabel fails. Campaign armings, log seals, and the seal event(s) of every extant connector run (two on a passing dual run, one after an NRC-first stop) bind the introduction revision, superseding the former unconditional both-events wording. Historical validation accepts no archive/index path from the
   caller, rehashes the whole chain and indexed original bytes, and proves each
   recorded reservation/send timestamp satisfies both original half-open
   windows. Historical evidence cannot arm, execute, reserve, transport, or
