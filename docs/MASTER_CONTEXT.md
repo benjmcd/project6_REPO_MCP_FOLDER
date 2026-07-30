@@ -678,7 +678,7 @@ review; it is not a completed planning freeze.
   any permissive parser; its one optional redirect has a closed status set and
   exactly one raw `Location`. The protected index revision fixes a four-stream
   runtime-log capture whose manifest is anchored by a separate no-overwrite
-  seal plus matching events on both connector runs; all three bind the same
+  seal plus matching events on every extant connector run (one in an NRC-first failure state); all three bind the same
   campaign index revision/digest. Machine-global logs and cryptographic
   nonrepudiation remain outside this experimental proof.
 - Current status: documentation/design only. No fresh acquisition, owner grant,

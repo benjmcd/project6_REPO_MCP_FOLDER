@@ -1175,7 +1175,7 @@ migration, runtime, build dispatch, B1b build PR, or B1b build merge authority.
   untrimmed `downloadUri`, a closed redirect-status/single-`Location` rule, and
   byte-for-byte raw ASCII path/query equality. The protected evidence index
   also fixes one four-stream runtime-log capture; its manifest is bound by a
-  separate no-overwrite seal plus matching events on both connector runs, and
+  separate no-overwrite seal plus matching events on every extant connector run (one in an NRC-first failure state), and
   raw/escaped forms are scanned without accepting a caller path. Machine-global
   logs and cryptographic nonrepudiation remain outside the experiment.
 - Why optimal: it closes existing scalar and snapshot leaks without a

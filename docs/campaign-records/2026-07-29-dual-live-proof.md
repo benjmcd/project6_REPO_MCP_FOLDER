@@ -271,7 +271,8 @@ the earliest revision containing the selected exact complete slice and requires
 that introduction revision/digest to be the current unique-maximal head before
 marker creation. A preserved ancestor slice is historical-only even if its
 grant remains unused. The introduction revision/digest is bound into each
-campaign arming, log seal, and both seal events; later head rotation does not
+campaign arming, the log seal, and the seal event of every extant connector
+run; later head rotation does not
 erase that binding. This is the bounded local mechanism that makes “preserved”
 enforceable rather than a procedural promise.
 
@@ -467,15 +468,22 @@ file-count/size/hash manifest.
 
 The wrapper then hashes the manifest and canonical ordered file set, atomically
 creates the strict no-overwrite seal at its separately indexed path, and appends
-one matching deterministic `campaign_log_capture_sealed` event to each
-connector run in one DB transaction. The seal and both events bind the
+one matching deterministic `campaign_log_capture_sealed` event to each extant
+connector run in one DB transaction. Seal-event cardinality is conditional on
+run existence: exactly one event per connector run that exists — two in a
+completed dual run, exactly one after an NRC-first stop, where the ScienceBase
+run correctly does not exist and no run is created merely to receive an
+event. The seal and every extant-run event bind the
 campaign-introduction evidence-index revision/digest used by the immutable
 armings. The preflight
 index revision is never rewritten; a later no-overwrite head can only add a
 complete disjoint slice while preserving it through the predecessor chain. The
 read-only evaluator resolves the four files, manifest, and seal only from
 protected server configuration plus the verified unique-maximal index chain,
-independently queries both events, and requires exact cross-domain parity. It
+independently queries the event of every extant connector run, and requires
+exact cross-domain parity; it never requires a seal event for a run whose
+creation was correctly prevented, and a seal naming a nonexistent run fails.
+It
 accepts no index/log/seal path from a caller. This is local experimental tamper
 evidence, not a signature, WORM store, or cryptographic nonrepudiation.
 
@@ -555,7 +563,8 @@ fingerprint must agree. Each grant must name schema/version, grant ID,
 connector, campaign ID/fingerprint/definition digest, exact target, UUID4
 arming nonce, `max_armings=1`, optional superseded-grant digest, ordered request
 rules, host/port/method/path/query predicates, credential audience, per-stage
-and total byte/request ceilings, timeout/rate, issued/expiry times, reviewed
+and total byte/request ceilings, the single-send detection allowance field,
+timeout/rate, issued/expiry times, reviewed
 code revision, operator mode, and explicit non-authorities. Its configured
 SHA-256 is the lookup and authority key. The public arming request carries the
 connector key, campaign fingerprint, expected grant digest, and client
@@ -657,18 +666,18 @@ the next reservation before any send, and a chunk-boundary check that finds
 the remainder crossed mid-stream aborts the read, counts every delivered
 byte, and terminally classifies the send. Because `http.client` fully parses
 the status/header block before the adapter seam runs (admitting up to 100
-header lines of 65,536 B each), the 32 KiB canonical status/header check is a
-post-parse terminal rejection whose bytes are still counted and spent — so
-the reservation headroom guard admits a send only when the remaining
-aggregate budget covers the worst-case single-send allowance (one parsed
-header block at the parser admission ceiling, ~6.4 MiB, plus one 64 KiB read
-chunk). Overshoot beyond that arithmetic-enforced allowance is a counter
-defect; none of this is a network-level never-exceeded guarantee. A campaign
+header lines of 65,536 B each), there is no per-send header threshold:
+canonical status/header bytes are counted in full and spent, and the counted
+aggregate can exceed `max_run_bytes` by at most one SINGLE-SEND DETECTION
+ALLOWANCE of 6,684,672 B (defined in the plan's enforced-budgets section).
+Any larger excess is a counter defect. This is an application-delivered
+ceiling with a disclosed allowance — not a hard maximum and not a
+network-level never-exceeded guarantee. A campaign
 whose counted aggregate crossed the ceiling is never `fresh_live`.
 `Accept-Encoding: identity` is sent so delivered and decoded body counts
-coincide, and a response declaring any other encoding stops; a canonical
-status/header block over 32 KiB is terminally rejected post-parse, its
-counted bytes spent; cookies are never stored or
+coincide, and a response declaring any other encoding stops; canonical
+status/header bytes are counted in full per send and recorded in the
+counter; cookies are never stored or
 replayed. Each send runs under an absolute deadline derived from
 `request_timeout_seconds` and measured on the process monotonic clock, and
 `min_request_interval_ms` is monotonic spacing per actual destination host —
@@ -968,6 +977,11 @@ including an NRC failure, safe stop, or indeterminate outcome —
 therefore ends the campaign while the expected ScienceBase consumption-marker
 path is verifiably absent and its grant unconsumed; the abandoned grant is
 retired by campaign-close head advancement, never transferred or reused.
+Campaign-log closeout is phase-aware in that state: the wrapper still seals
+the capture, exactly one `campaign_log_capture_sealed` event is expected — on
+the extant NRC run only — and neither the closeout nor the evaluator may
+require a seal event for the ScienceBase run whose creation was correctly
+prevented, or create a run merely to receive one.
 
 M0/M1 may proceed in an isolated worktree independently of the current Claude
 session's B1b review/capture lane. If both lanes would share a mutable worktree,
@@ -1042,7 +1056,8 @@ any way — a missing, extra, or unparseable counter record; a mismatched
 ordinal, fingerprint, status, byte count, or body hash; or a failed
 rederivation of the `max_run_bytes` counted-byte aggregate — including a
 ceiling crossing without its terminal oversized or budget-exhaustion
-classification, or an overshoot beyond the stated detection bound — or of
+classification, or an overshoot beyond the SINGLE-SEND DETECTION ALLOWANCE
+stated in section 7 — or of
 `min_request_interval_ms` spacing — the result is `INDETERMINATE` and fails; it is never narrated into
 success. If a live send could have occurred but its completion
 is unknown, count it as spent and do not replay it. If downstream bytes cannot
@@ -1060,13 +1075,14 @@ be re-derived, do not claim continuity.
 | broad `3xx` handling or collapsed `Location` headers | an unreviewed redirect becomes ordinal 3 | admit only 301/302/303/307/308; lossless exactly-one `Location`; every other case stops |
 | secret crosses host/redirect | credential disclosure | unkeyed artifact fetch; explicit API-key audience; never follow an API redirect |
 | credential-like derived URL is persisted | DB/backup/log becomes a bearer-secret store | strict URL scalars null; raw metadata never snapshotted; safe whitelists; protected manifest/seal/event-bound runtime logs; raw/escaped scalar/text/JSON/non-source-file scan; persist URL hash plus closed class only |
-| logs and self-hashing manifest are rewritten together | historical custody scan passes altered bytes | separate indexed no-overwrite seal plus matching deterministic events on both connector runs; production still requires signed/WORM evidence |
+| logs and self-hashing manifest are rewritten together | historical custody scan passes altered bytes | separate indexed no-overwrite seal plus matching deterministic events on every extant connector run; production still requires signed/WORM evidence |
 | hidden HTTP retry | request ceiling exceeded | one-send transport below retry layers |
 | ambient proxy/cookie state or DNS rebinding | credential audience or destination differs from the reviewed request | isolated session with `trust_env=False`, empty cookies, TLS verification, public-address checks; production requires independent egress enforcement |
 | network privilege outlives acquisition | parser/OCR/table workloads execute while the key and live egress are still present | acquisition-only child ends at raw admission; process-tree stop, session close, key/grant clear, and quiescence proof before parse; secret-free network- and subprocess-denied downstream process; strict entry point with every OCR path closed and Paddle/Camelot routing fatally refused at their call sites; exact `dual_live_proof_v1` parse bounds |
 | crash after send | result unknown, accidental replay | reservation counts spent; no auto-resume |
 | concurrent executor | duplicate sends | atomic `armed → pending` claim with `claimed_now`-gated enqueue; lease-acquisition-only `pending → running`; reservation requires `running` plus the exact active lease |
 | oversized response | memory/disk pressure | streamed byte ceilings, hydration cap |
+| large legal header block under nearly exhausted budget | counted aggregate exceeds `max_run_bytes` by up to one SINGLE-SEND DETECTION ALLOWANCE | allowance disclosed (sections 7 and 15) and grant-bound; every header byte counted in full; terminal oversized classification; never `fresh_live`; adversarial test in plan Task 3 |
 | stale historical filename | wrong ScienceBase file | confirm exact name in hydration; no fallback |
 | fixture/live conflation | overclaimed readiness | separate `OFFLINE-PROVEN` and fresh-live receipts |
 | combined governance conflates grants | authority bleed | canonical shared definition is deny-only; independent grants/armings |
@@ -1111,6 +1127,9 @@ This record does not claim:
 - that one connector’s grant covers the other;
 - that the existing supported profile includes keyed NRC APS;
 - that application-ledger counts are an independent network audit;
+- that the counted-byte aggregate can never exceed `max_run_bytes` — it is
+  bounded, under non-defective counting, by `max_run_bytes` plus one disclosed SINGLE-SEND DETECTION
+  ALLOWANCE;
 - that current handoff preparation is third-party delivery;
 - that the no-migration MVP is safe for multi-process or production use;
 - that a technical pass equals owner acceptance or product promotion;

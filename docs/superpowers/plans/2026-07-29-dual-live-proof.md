@@ -285,6 +285,7 @@ class ConnectorEgressGrantV1(BaseModel):
     request_rules: tuple[ConnectorGrantRequestRuleV1, ...]
     max_physical_requests: int
     max_run_bytes: int
+    max_single_send_detection_allowance_bytes: int
     request_timeout_seconds: int
     min_request_interval_ms: int
     non_authorities: tuple[str, ...]
@@ -394,7 +395,10 @@ class ConnectorCampaignLogSealV1(BaseModel):
     manifest_relative_path: str
     manifest_sha256: str
     file_set_hash: str
-    connector_run_ids: tuple[str, str]
+    # one entry per extant connector run, sorted: two in a completed dual
+    # run, exactly one after an NRC-first stop (length 1 or 2, never 0 once
+    # any connector run exists)
+    connector_run_ids: tuple[str, ...]
     sealed_at: datetime
 ```
 
@@ -438,10 +442,22 @@ counted bytes across every physical send — per send, the canonical
 status/header bytes plus the body bytes delivered by the wrapped urllib3 read
 path before Requests-level content decoding, including redirect, partial,
 failed, and oversized responses, exactly as Task 3's one-send transport
-defines them. It is an application-delivered ceiling with chunk-granular
-crossing detection, not a network-wire octet count: original status/header
-octets, chunked transfer framing, TLS records, and bytes buffered below the
-Requests-adapter seam are outside the counted entity.
+defines them. It is an application-delivered ceiling with header-block-granular
+and 64 KiB chunk-granular crossing detection, not a network-wire octet count:
+original status/header octets, chunked transfer framing, TLS records, and bytes
+buffered below the Requests-adapter seam are outside the counted entity.
+SINGLE-SEND DETECTION ALLOWANCE = 6,684,672 bytes (100 x 65,536 header-line
+bytes + one 65,536-byte status line + one 65,536-byte read chunk), derived from
+the pinned interpreter's `http.client` header-admission limits
+(`_MAXLINE=65536`, `_MAXHEADERS=100`); the operative mechanism is the fail-closed
+equality assertion below — parser-limit drift stops the run regardless of
+interpreter version — and
+the grant-bound `max_single_send_detection_allowance_bytes` field must equal
+this computed constant — asserted fail-closed at reservation and transport
+construction, so interpreter drift is a hard stop. `max_run_bytes` is therefore
+a ceiling plus that one disclosed allowance, not a hard maximum: the counted
+aggregate may exceed it by at most one SINGLE-SEND DETECTION ALLOWANCE before
+terminal detection, and any larger excess is a counter defect.
 `request_timeout_seconds` is the absolute per-send deadline measured on the
 process monotonic clock from immediately before the transport call to the last
 body byte; the derived Requests connect/read socket timeouts are each clamped
@@ -632,17 +648,23 @@ stops and flushes the runtime, then atomically writes the strict manifest with
 file byte counts/hashes. It then computes the manifest SHA-256 and the canonical
 ordered file-set hash, atomically creates the strict no-overwrite seal at the
 pre-indexed separate path, and in one DB transaction appends one deterministic
-`campaign_log_capture_sealed` event to each connector run. The seal and both
-event payloads bind the same campaign-introduction evidence-index
+`campaign_log_capture_sealed` event to each extant connector run. Seal-event
+cardinality is conditional on run existence: exactly one seal event per
+connector run that exists — two in a completed dual run, exactly one after an
+NRC-first stop, where the ScienceBase run correctly does not exist and no run
+is ever created merely to receive an event. The seal and every extant-run
+event payload bind the same campaign-introduction evidence-index
 revision/digest, seal
 SHA-256, manifest SHA-256, file-set hash, raw campaign-definition digest,
-campaign/revision, and sorted two-run set. The preflight evidence-index revision
+campaign/revision, and sorted extant-run set. The preflight evidence-index revision
 is never rewritten; a later head can only add a complete disjoint slice while
 retaining it through the verified predecessor chain.
 
 The evaluator resolves these paths only through server configuration plus the
 protected index and requires exact parity among the four files, manifest, seal,
-and both independently queried DB events. A log/manifest rewrite, seal rewrite,
+and the independently queried DB events of every extant connector run; it
+never requires a seal event for a run whose creation was correctly prevented,
+and a seal naming a nonexistent run fails. A log/manifest rewrite, seal rewrite,
 missing/duplicate event, or cross-run disagreement fails. This protected
 no-overwrite filesystem plus DB cross-domain anchor is adequate only for the
 local experiment; it is not a signature, WORM store, or cryptographic
@@ -1164,20 +1186,13 @@ The test matrix must include:
   one physical send each, and every counted byte delivered before the failure
   still counts against `max_run_bytes`;
 - the counted-byte aggregate across ordinals is enforced against
-  `max_run_bytes`: an exhausted remaining aggregate budget stops before
-  reservation as budget exhaustion; a response that crosses the remainder at a
-  chunk-boundary check is aborted with every delivered byte counted and the
-  send classified oversized; a run whose counted aggregate crossed the ceiling
-  is never `fresh_live`-eligible. RESERVATION HEADROOM GUARD: a send is
-  admitted only when the remaining aggregate budget is at least the worst-case
-  single-send detection allowance — one parsed canonical status/header block at
-  the `http.client` admission ceiling (100 lines x 65,536 B plus status line,
-  ~6.4 MiB) plus one 64 KiB read chunk; a smaller remainder stops before
-  reservation as budget exhaustion. Under that guard the counted aggregate
-  exceeds the ceiling by no more than the stated allowance — enforced by
-  arithmetic before the send, not promised of the seam — with any larger
-  excess rejected as a
-  counter defect;
+  `max_run_bytes`: an exhausted remaining aggregate budget — a remainder of
+  zero or less — stops before reservation as budget exhaustion; a crossing
+  found at a chunk-boundary check is terminal oversized with every delivered
+  byte counted and spent; the counted aggregate exceeds `max_run_bytes` by at
+  most one SINGLE-SEND DETECTION ALLOWANCE; any larger excess is a counter
+  defect; a run whose counted aggregate crossed the ceiling is never
+  `fresh_live`-eligible;
 - the absolute monotonic send deadline aborts a slow-dripping response that
   never violates the per-read socket timeout, as one spent send;
 - a wall-clock rollback or jump between sends changes no budget, deadline, or
@@ -1186,7 +1201,15 @@ The test matrix must include:
   reserved request fingerprint sends nothing;
 - `Accept-Encoding: identity` is sent, and a response declaring any other
   `Content-Encoding` stops without entering the admitted-artifact path;
-- raw response headers over the 32 KiB bound stop as oversized;
+- canonical status/header bytes are counted in full and recorded per send in
+  the counter record; there is no per-send header threshold and no
+  header-rejection path;
+- a response with 100 individually legal header lines whose aggregate
+  canonical serialization far exceeds 32,768 bytes, delivered under a nearly
+  exhausted remaining budget, counts every header byte, terminates with the
+  correct terminal oversized or budget-exhaustion classification, is never
+  `fresh_live`, leaves the aggregate excess at or below the SINGLE-SEND
+  DETECTION ALLOWANCE, and proves no header-threshold rejection path exists;
 - exactly one secret-free counter record per physical send appears in the
   manifest-bound `http.jsonl` capture — including exactly one record with a
   null `response_status` and a closed `error_class` for a send that dies
@@ -1271,8 +1294,8 @@ The UUIDv5 event ID is
 `uuid5(NAMESPACE_URL, "project6:egress:<run>:<arming>:<ordinal>:<kind>")`.
 The reservation metrics include only ordinal, stage, method, host, safe
 path/query class, credential-audience class, request hash, grant digest,
-derived-arming hash, effective streaming cap, and remaining aggregate
-counted-byte budget.
+derived-arming hash, effective streaming cap, remaining aggregate
+counted-byte budget, and the detection allowance in effect.
 
 The request fingerprint hashes stable JSON over arming/grant digest, ordinal,
 stage, method, normalized exact URL, non-secret header names/values, credential
@@ -1352,7 +1375,9 @@ process alive at any instant—and adversarial tests are mandatory.
   instead computes canonical status/header bytes, a deterministic
   re-serialization of the parsed HTTP version, status code, reason, and
   headers in received order, one `name: value` CRLF line each plus terminal
-  CRLF. Chunked transfer framing and trailers are stripped below the seam and
+  CRLF, byte-encoded as ISO-8859-1 — the same byte-preserving decoding http.client
+  applies at parse — so canonical bytes never exceed parser-admitted bytes by
+  re-encoding. Chunked transfer framing and trailers are stripped below the seam and
   are not counted. The adapter appends one deterministic counter record per
   physical send — exactly one even when the send fails before any HTTP status
   exists, with `response_status` null and a closed `error_class` — to the
@@ -1394,26 +1419,28 @@ process alive at any instant—and adversarial tests are mandatory.
   as a stop, and never silently decompressed into the admitted-artifact path;
 - call an injected transport once with `allow_redirects=False`;
 - configure a Requests adapter with `max_retries=0`;
-- bound response headers, post-parse and honestly: `http.client` parses the
-  complete status/header block BEFORE the adapter seam sees parsed fields, and
-  the parser itself admits up to 100 header lines of up to 65,536 bytes each —
-  so no seam-level check can prevent receipt of a large legal header block.
-  The 32 KiB (32,768-byte) canonical status/header check is therefore a
-  POST-PARSE terminal rejection: a block whose canonical serialization exceeds
-  32 KiB classifies the send as oversized, with every counted header byte
-  still spent. The worst-case counted header contribution of one send is the
-  parser's own admission ceiling (~6.4 MiB), not 32 KiB, and the reservation
-  headroom guard below is the mechanism that keeps the owner ceiling honest;
+- count response headers, post-parse and honestly: `http.client` fully parses
+  the complete status/header block BEFORE the adapter seam sees parsed fields,
+  and the parser itself admits up to 100 header lines of up to 65,536 bytes
+  each plus a 65,536-byte status line — so no seam-level threshold is claimed
+  or implemented. The counter records the canonical status/header bytes of
+  every send in full; the maximum single-send header contribution is the
+  parser's own admission ceiling of 6,619,136 bytes;
 - stream the body in fixed 64 KiB (65,536-byte) reads under the effective
   streaming cap recorded at reservation — the lesser of the stage cap and the
   remaining aggregate counted-byte budget — while the counting adapter
-  independently accumulates delivered bytes; the first chunk-boundary check
-  that finds either bound crossed aborts the read, keeps every delivered byte
-  counted against `max_run_bytes`, and classifies the send as oversized;
-  abort granularity is one read chunk — a crossing is detected and terminally
-  recorded after at most one 64 KiB overshoot — and no claim covers bytes the
-  socket, TLS layer, or urllib3 buffered below the seam without delivering
-  them;
+  independently accumulates delivered bytes; the streaming chunk-boundary
+  check compares body bytes delivered against that effective streaming cap,
+  and canonical status/header bytes count toward the run aggregate and
+  `max_run_bytes` but never against the per-stage body caps or the streaming
+  check — consistent with the header-bytes-never-count-against-stage-caps
+  rule below; the first chunk-boundary check that finds the body bound
+  crossed aborts the read, keeps every delivered byte counted against
+  `max_run_bytes`, and classifies the send as oversized; body-crossing abort
+  granularity is one 64 KiB read chunk, the header contribution is
+  whole-block granular, and the total single-send overshoot is bounded by the
+  SINGLE-SEND DETECTION ALLOWANCE; no claim covers bytes the socket, TLS
+  layer, or urllib3 buffered below the seam without delivering them;
 - enforce the absolute send deadline on the process monotonic clock during
   streaming: every chunk boundary rechecks the remaining monotonic budget
   derived from the frozen `request_timeout_seconds`, and exhaustion aborts the
@@ -1457,7 +1484,9 @@ statement use that one currency:
   and trailers, TLS records and handshakes, TCP/IP framing and retransmission,
   DNS traffic, and bytes received by the socket, TLS layer, or urllib3 but
   never delivered through the wrapped read path — `max_run_bytes` is an
-  application-delivered ceiling with chunk-granular crossing detection, not a
+  application-delivered ceiling with header-block-granular and 64 KiB
+  chunk-granular crossing detection, its overshoot bounded by one SINGLE-SEND
+  DETECTION ALLOWANCE, not a
   network-receipt guarantee, and the network-level claim belongs to the
   proxy-, firewall-, or OS-level accounting that production promotion already
   requires;
@@ -2203,7 +2232,8 @@ campaign:
   with both grant entries and the one capture reference in the selected
   two-connector slice matching it;
 - campaign-introduction evidence-index revision/digest parity across the
-  arming, ledger, log seal, and both connector-run seal events, plus a complete
+  arming, ledger, log seal, and the seal events of every extant connector run
+  (both runs for a passing campaign), plus a complete
   unique-maximal predecessor chain whose every successor adds exactly one
   complete disjoint slice as a strict superset;
 - exact one-use consumption-marker bytes/hash, deterministic parent-run ID,
@@ -2213,6 +2243,12 @@ campaign:
 - code and campaign fingerprints;
 - independently reconstructed terminal-ledger hashes, reservation/completion
   parity, stage ordering, and physical-send ceilings;
+- the counted-byte aggregate rederived from the counter records: an aggregate
+  excess over `max_run_bytes` at or below the SINGLE-SEND DETECTION ALLOWANCE
+  carrying its correct terminal oversized or budget-exhaustion classification
+  passes; an excess above the allowance is a counter defect and
+  `INDETERMINATE`; a crossing lacking its terminal oversized or
+  budget-exhaustion classification fails;
 - per connector run, exactly one valid deterministic strict terminal event, a
   stored terminal status equal to that event's status and equal to
   `completed` for a passing campaign, `completed_at` present, no unexpired
@@ -2249,8 +2285,10 @@ campaign:
 - attempting to arm an unconsumed campaign whose introduction revision is a
   preserved ancestor fails before marker/run/event/network activity;
 - missing, changed, or overwritten post-run seal, missing/duplicate/mismatched
-  `campaign_log_capture_sealed` event on either connector run, or any
-  manifest/file-set/seal/event parity failure fails closed;
+  `campaign_log_capture_sealed` event on any extant connector run, a seal or
+  event naming a connector run that does not exist, or any
+  manifest/file-set/seal/event parity failure fails closed — while no seal
+  event is required for a run whose creation was correctly prevented;
 - strict-mode startup fails if the application/root/HTTP logger census contains
   an enabled file, stream, queue, socket, event-log, or other process-owned
   handler outside the indexed app/HTTP streams and wrapper-owned stdout/stderr;
@@ -2292,9 +2330,13 @@ streams in raw, JSON-escaped, percent-encoded, and embedded-text forms, stops
 the runtime, and seals the manifest. Every form must fail. A clean capture must
 pass only when the manifest names exactly the indexed four files, their freshly
 rederived byte counts/hashes match, the separate no-overwrite seal binds the
-manifest and canonical file set, and both connector runs carry the matching
-deterministic seal event. Coordinated rewrites of logs plus manifest, logs plus
-manifest plus seal, or either DB event must fail at cross-domain parity.
+manifest and canonical file set, and every extant connector run — both in
+this test's completed dual capture — carries the matching deterministic seal
+event. Add an NRC-first-stop capture case: only the NRC run exists, the seal
+binds exactly that one run, exactly one seal event is required, and demanding
+or fabricating a ScienceBase event fails. Coordinated rewrites of logs plus
+manifest, logs plus
+manifest plus seal, or any extant-run DB event must fail at cross-domain parity.
 
 Add a two-campaign lifecycle test: campaign 1 passes, its definition/grants
 expire, current definition/grant configuration rotates to campaign 2, and both
@@ -2382,9 +2424,9 @@ delivered-body counts it rederives the run's counted-byte aggregate in the
 same currency the grant binds: `fresh_live` eligibility requires that
 aggregate to be at most the original grant's `max_run_bytes`, and a crossed
 ceiling must carry its terminal oversized or budget-exhaustion
-classification, with the aggregate above the ceiling by no more than the
-detection bound — one 32 KiB canonical status/header block plus one 64 KiB
-read chunk — a crossing classified any other way, or any larger excess,
+classification, with the aggregate above the ceiling by no more than one
+SINGLE-SEND DETECTION ALLOWANCE (defined in the enforced-budgets section) —
+a crossing classified any other way, or any larger excess,
 failing as a counter defect. It also rederives that
 consecutive same-bucket monotonic send starts respected
 `min_request_interval_ms`; monotonic readings are comparable only within the
@@ -2411,8 +2453,12 @@ two-entry, one-capture index slice and require connector-set, ID, fingerprint,
 revision, targets, non-authorities, and both original window checks. Rehash the
 strict manifest, rederive its
 canonical ordered file-set hash, rehash/parse the separate no-overwrite seal,
-and independently query both deterministic seal events. All file/manifest/
-seal/event values and the sorted two-run set must agree. The evaluator does not
+and independently query the deterministic seal event of every extant connector
+run. All file/manifest/
+seal/event values and the sorted extant-run set must agree: the seal's bound
+run set must equal the set of extant connector runs, a run whose creation was
+correctly prevented requires no event, and a seal or event naming a
+nonexistent run fails. The evaluator does not
 repair or complete a partial seal.
 
 The custody scanner has an executable bounded algorithm:
@@ -2483,8 +2529,10 @@ handlers, rehashes the exact four files, rejects extras, and atomically
 creates the manifest. It then computes the raw manifest SHA-256
 and canonical ordered file-set hash, atomically creates the strict seal at the
 separate pre-indexed `log-seals/<campaign_fingerprint>.json` path, and appends
-matching deterministic seal events to both connector runs in one DB
-transaction. It never rewrites the preflight evidence-index revision. Failure
+one matching deterministic seal event to each extant connector run in one DB
+transaction — both runs in success, exactly one after an NRC-first stop in
+which the ScienceBase run correctly does not exist and is never created to
+receive an event. It never rewrites the preflight evidence-index revision. Failure
 at any step is a campaign failure, and neither run nor validator may overwrite
 an existing index object, directory, manifest, seal, or event.
 
@@ -2716,7 +2764,11 @@ Before either arming:
    ID/revision/targets/profiles/order/package set/half-open window/
    non-authorities; then hash both grant files and require their configured
    digests, strict schemas, campaign/revision/targets, windows wholly inside the
-   definition window, exact rules, limits, and non-authorities;
+   definition window, exact rules, limits, and non-authorities; record the
+   owner acknowledgement that each grant's
+   `max_single_send_detection_allowance_bytes` equals exactly 6,684,672 —
+   the SINGLE-SEND DETECTION ALLOWANCE — and that `max_run_bytes` is a
+   ceiling plus that one disclosed allowance, not a hard maximum;
 9. copy the exact non-secret definition and grant bytes, without overwrite, to
    content-addressed files under the protected campaign-evidence root; create a
    new no-overwrite content-addressed evidence-index revision whose exact
@@ -2803,7 +2855,10 @@ Any mismatch stops before network.
 10. in success or failure, quiesce and stop the runtime, flush/close all four
     capture streams, atomically seal the strict campaign-log manifest,
     atomically create the separately indexed no-overwrite seal, and append its
-    matching deterministic event to both connector runs;
+    matching deterministic event to each extant connector run — both in
+    success; in an NRC-first failure state the ScienceBase run does not
+    exist, exactly one seal event is expected, and no run is created merely
+    to receive an event;
 11. from a separate application-network-inert validation process using the same
     server-configured DB/storage/evidence/log settings, with live egress off,
     current campaign-definition/grant settings cleared, the pre-import
@@ -2864,7 +2919,12 @@ query strings, or redirect `Location`.
   ScienceBase grant. Record the absent expected ScienceBase
   consumption-marker path and the absence of any ScienceBase parent
   run/submission/policy rows as closeout evidence; the evaluator verifies
-  that absence rather than inferring it. The unconsumed grant is not
+  that absence rather than inferring it. Campaign-log closeout is phase-aware
+  in that state: the wrapper still seals the capture, exactly one
+  `campaign_log_capture_sealed` event is expected — on the extant NRC run
+  only — and neither the closeout nor the evaluator may require a seal event
+  for the ScienceBase run whose creation was correctly prevented, or create
+  one merely to receive it. The unconsumed grant is not
   reusable authority: campaign-close head advancement abandons it, and
   recovery follows the new-definition/superseding-grant rule above.
 

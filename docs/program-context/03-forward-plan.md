@@ -986,7 +986,7 @@ source authorize or satisfy the other.
   scheme/host/port/path/query-class projection persist. Raw connector metadata
   snapshots do not persist. The protected index revision fixes a four-stream
   runtime-log capture whose manifest is bound by a separate no-overwrite seal
-  and matching events on both connector runs; the arming/seal/events bind the
+  and matching events on every extant connector run (one in an NRC-first failure state); the arming/seal/events bind the
   same introduction revision/digest, and all scalar/text/JSON plus generated/
   non-source-file/runtime-log sinks pass raw and escaped custody scans.
   Machine-global logs, signed/WORM custody, and cryptographic nonrepudiation are
