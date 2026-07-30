@@ -843,6 +843,11 @@ def _reconcile_prior_counter_stream(
         if expected_ordinals is None
         else set(expected_ordinals)
     )
+    expected_order = sorted(expected)
+    if expected_order and expected_order != list(
+        range(expected_order[0], expected_order[-1] + 1)
+    ):
+        _fail("connector_egress_prior_counter_unresolved")
     if counter_path is None:
         if not expected:
             return 0
@@ -887,6 +892,9 @@ def _reconcile_prior_counter_stream(
         expected_identities.append((request_fingerprint, ordinal, stage))
         reservation_metrics_by_ordinal[ordinal] = reservation_metrics
         completion_metrics_by_ordinal[ordinal] = completion_metrics
+    expected_identity_set = set(expected_identities)
+    if len(expected_identity_set) != len(expected_identities):
+        _fail("connector_egress_prior_counter_unresolved")
     expected_fingerprints = {
         request_fingerprint
         for request_fingerprint, _ordinal, _stage in expected_identities
@@ -895,22 +903,22 @@ def _reconcile_prior_counter_stream(
         _fail("connector_egress_prior_counter_unresolved")
 
     current_records: list[dict[str, Any]] = []
-    current_segment_started = False
-    for record in records:
+    current_record_indices: list[int] = []
+    found_identities: set[tuple[str, int, str]] = set()
+    for stream_index, record in enumerate(records):
         request_fingerprint = record.get("request_fingerprint")
         if request_fingerprint not in expected_fingerprints:
-            if current_segment_started:
-                _fail("connector_egress_prior_counter_unresolved")
             continue
-        current_segment_started = True
         identity = (
             request_fingerprint,
             record.get("ordinal"),
             record.get("stage"),
         )
-        if identity not in expected_identities:
+        if identity not in expected_identity_set or identity in found_identities:
             _fail("connector_egress_prior_counter_unresolved")
+        found_identities.add(identity)
         current_records.append(record)
+        current_record_indices.append(stream_index)
     if [
         (
             record.get("request_fingerprint"),
@@ -919,6 +927,13 @@ def _reconcile_prior_counter_stream(
         )
         for record in current_records
     ] != expected_identities:
+        _fail("connector_egress_prior_counter_unresolved")
+    if current_record_indices != list(
+        range(
+            current_record_indices[0],
+            current_record_indices[0] + len(current_record_indices),
+        )
+    ):
         _fail("connector_egress_prior_counter_unresolved")
 
     counted = 0

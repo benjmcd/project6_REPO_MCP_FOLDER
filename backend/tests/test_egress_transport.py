@@ -184,6 +184,43 @@ def _write_counter_records(
     )
 
 
+def _counter_events(
+    records: list[dict[str, object]],
+) -> list[SimpleNamespace]:
+    events: list[SimpleNamespace] = []
+    for record in records:
+        identity = {
+            "ordinal": record["ordinal"],
+            "stage": record["stage"],
+            "request_fingerprint": record["request_fingerprint"],
+        }
+        events.append(
+            SimpleNamespace(
+                event_type=transport.RESERVATION_EVENT_TYPE,
+                metrics_json=identity,
+            )
+        )
+        events.append(
+            SimpleNamespace(
+                event_type=transport.COMPLETION_EVENT_TYPE,
+                metrics_json={
+                    **identity,
+                    "outcome_class": "completed",
+                    "response_status": record["response_status"],
+                    "counted_status_header_bytes": record[
+                        "canonical_status_header_bytes"
+                    ],
+                    "delivered_body_bytes": record["delivered_body_bytes"],
+                    "decoded_body_bytes": record["decoded_body_bytes"],
+                    "decoded_body_sha256": record["decoded_body_sha256"],
+                    "send_started_at": record["evidence_started_at"],
+                    "completed_at": record["evidence_stopped_at"],
+                },
+            )
+        )
+    return events
+
+
 def test_revalidation_delegates_coordinated_tamper_to_canonical_resolver(
     session_factory,
     monkeypatch,
@@ -755,6 +792,215 @@ def test_counter_reconciliation_rejects_reordered_records(tmp_path) -> None:
     assert exc.value.code == "connector_egress_prior_counter_unresolved"
 
 
+def test_counter_reconciliation_allows_foreign_prefix_and_suffix(
+    tmp_path,
+) -> None:
+    now = datetime.now(timezone.utc)
+    expected_record = _counter_record(
+        ordinal=1,
+        stage="item_hydration",
+        request_fingerprint="3" * 64,
+        now=now,
+    )
+    counter_path = tmp_path / "http.jsonl"
+    _write_counter_records(
+        counter_path,
+        [
+            _counter_record(
+                ordinal=1,
+                stage="exact_accession_api",
+                request_fingerprint="1" * 64,
+                now=now,
+            ),
+            expected_record,
+            _counter_record(
+                ordinal=2,
+                stage="artifact",
+                request_fingerprint="2" * 64,
+                now=now,
+            ),
+        ],
+    )
+
+    assert (
+        transport._reconcile_prior_counter_stream(
+            _counter_events([expected_record]),
+            before_ordinal=2,
+            counter_path=counter_path,
+        )
+        == 11
+    )
+
+
+def test_counter_reconciliation_rejects_true_interleaving(tmp_path) -> None:
+    now = datetime.now(timezone.utc)
+    expected_records = [
+        _counter_record(
+            ordinal=1,
+            stage="item_hydration",
+            request_fingerprint="3" * 64,
+            now=now,
+        ),
+        _counter_record(
+            ordinal=2,
+            stage="download",
+            request_fingerprint="4" * 64,
+            now=now,
+        ),
+    ]
+    counter_path = tmp_path / "http.jsonl"
+    _write_counter_records(
+        counter_path,
+        [
+            expected_records[0],
+            _counter_record(
+                ordinal=1,
+                stage="exact_accession_api",
+                request_fingerprint="1" * 64,
+                now=now,
+            ),
+            expected_records[1],
+        ],
+    )
+
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport._reconcile_prior_counter_stream(
+            _counter_events(expected_records),
+            before_ordinal=3,
+            counter_path=counter_path,
+        )
+    assert exc.value.code == "connector_egress_prior_counter_unresolved"
+
+
+@pytest.mark.parametrize("duplicate_position", ["prefix", "suffix"])
+def test_counter_reconciliation_rejects_duplicate_expected_identity(
+    tmp_path,
+    duplicate_position: str,
+) -> None:
+    now = datetime.now(timezone.utc)
+    expected_record = _counter_record(
+        ordinal=1,
+        stage="item_hydration",
+        request_fingerprint="3" * 64,
+        now=now,
+    )
+    foreign_record = _counter_record(
+        ordinal=1,
+        stage="exact_accession_api",
+        request_fingerprint="1" * 64,
+        now=now,
+    )
+    records = (
+        [expected_record, dict(expected_record), foreign_record]
+        if duplicate_position == "prefix"
+        else [foreign_record, expected_record, dict(expected_record)]
+    )
+    counter_path = tmp_path / "http.jsonl"
+    _write_counter_records(counter_path, records)
+
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport._reconcile_prior_counter_stream(
+            _counter_events([expected_record]),
+            before_ordinal=2,
+            counter_path=counter_path,
+        )
+    assert exc.value.code == "connector_egress_prior_counter_unresolved"
+
+
+@pytest.mark.parametrize(
+    ("identity_field", "wrong_value"),
+    [("ordinal", 2), ("stage", "wrong-stage")],
+)
+def test_counter_reconciliation_rejects_wrong_expected_fingerprint_identity(
+    tmp_path,
+    identity_field: str,
+    wrong_value: object,
+) -> None:
+    now = datetime.now(timezone.utc)
+    expected_record = _counter_record(
+        ordinal=1,
+        stage="item_hydration",
+        request_fingerprint="3" * 64,
+        now=now,
+    )
+    wrong_identity = dict(expected_record)
+    wrong_identity[identity_field] = wrong_value
+    counter_path = tmp_path / "http.jsonl"
+    _write_counter_records(counter_path, [expected_record, wrong_identity])
+
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport._reconcile_prior_counter_stream(
+            _counter_events([expected_record]),
+            before_ordinal=2,
+            counter_path=counter_path,
+        )
+    assert exc.value.code == "connector_egress_prior_counter_unresolved"
+
+
+def test_counter_reconciliation_rejects_malformed_foreign_suffix(
+    tmp_path,
+) -> None:
+    now = datetime.now(timezone.utc)
+    expected_record = _counter_record(
+        ordinal=1,
+        stage="item_hydration",
+        request_fingerprint="3" * 64,
+        now=now,
+    )
+    foreign_record = _counter_record(
+        ordinal=1,
+        stage="exact_accession_api",
+        request_fingerprint="1" * 64,
+        now=now,
+    )
+    counter_path = tmp_path / "http.jsonl"
+    counter_path.write_bytes(
+        transport._canonical_json_bytes(expected_record)
+        + b"\n"
+        + transport._canonical_json_bytes(foreign_record)[:-1]
+        + b"\n"
+    )
+
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport._reconcile_prior_counter_stream(
+            _counter_events([expected_record]),
+            before_ordinal=2,
+            counter_path=counter_path,
+        )
+    assert exc.value.code == "connector_egress_prior_counter_unresolved"
+
+
+def test_counter_reconciliation_rejects_gapped_expected_ordinals(
+    tmp_path,
+) -> None:
+    now = datetime.now(timezone.utc)
+    expected_records = [
+        _counter_record(
+            ordinal=1,
+            stage="item_hydration",
+            request_fingerprint="3" * 64,
+            now=now,
+        ),
+        _counter_record(
+            ordinal=3,
+            stage="download",
+            request_fingerprint="4" * 64,
+            now=now,
+        ),
+    ]
+    counter_path = tmp_path / "http.jsonl"
+    _write_counter_records(counter_path, expected_records)
+
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport._reconcile_prior_counter_stream(
+            _counter_events(expected_records),
+            before_ordinal=4,
+            counter_path=counter_path,
+            expected_ordinals={1, 3},
+        )
+    assert exc.value.code == "connector_egress_prior_counter_unresolved"
+
+
 def test_shared_nrc_prefix_allows_sciencebase_ordinal_one(tmp_path) -> None:
     now = datetime.now(timezone.utc)
     counter_path = tmp_path / "http.jsonl"
@@ -816,7 +1062,9 @@ def test_sciencebase_ordinal_one_rejects_invalid_shared_prefix(
     assert exc.value.code == "connector_egress_prior_counter_unresolved"
 
 
-def test_shared_nrc_prefix_allows_later_sciencebase_ordinal(tmp_path) -> None:
+def test_shared_nrc_prefix_and_suffix_allow_later_sciencebase_ordinal(
+    tmp_path,
+) -> None:
     now = datetime.now(timezone.utc)
     sciencebase_fingerprint = "3" * 64
     sciencebase_record = _counter_record(
@@ -880,7 +1128,7 @@ def test_shared_nrc_prefix_allows_later_sciencebase_ordinal(tmp_path) -> None:
         == 11
     )
 
-    interleaved_foreign = _counter_record(
+    foreign_suffix = _counter_record(
         ordinal=3,
         stage="foreign_after_current_segment",
         request_fingerprint="4" * 64,
@@ -888,16 +1136,17 @@ def test_shared_nrc_prefix_allows_later_sciencebase_ordinal(tmp_path) -> None:
     )
     counter_path.write_bytes(
         counter_path.read_bytes()
-        + transport._canonical_json_bytes(interleaved_foreign)
+        + transport._canonical_json_bytes(foreign_suffix)
         + b"\n"
     )
-    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+    assert (
         transport._reconcile_prior_counter_stream(
             events,
             before_ordinal=2,
             counter_path=counter_path,
         )
-    assert exc.value.code == "connector_egress_prior_counter_unresolved"
+        == 11
+    )
 
 
 def test_runtime_parser_limit_drift_fails_closed() -> None:
