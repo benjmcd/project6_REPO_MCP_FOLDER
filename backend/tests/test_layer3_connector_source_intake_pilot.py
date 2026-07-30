@@ -576,6 +576,49 @@ def test_private_strict_intake_stager_flushes_without_committing(client):
         db.close()
 
 
+def test_private_strict_intake_rejects_open_handle_identity_swap(
+    client,
+    monkeypatch,
+):
+    db = client.layer3_session_factory()
+    try:
+        _, target, _ = _seed_strict_sciencebase_target(db)
+        real_fstat = os.fstat
+        fstat_calls = 0
+
+        class ChangedFileIdentity:
+            def __init__(self, original):
+                self._original = original
+
+            @property
+            def st_ino(self):
+                return int(self._original.st_ino) + 1
+
+            def __getattr__(self, name):
+                return getattr(self._original, name)
+
+        def swapped_fstat(fd):
+            nonlocal fstat_calls
+            current = real_fstat(fd)
+            fstat_calls += 1
+            if fstat_calls >= 2:
+                return ChangedFileIdentity(current)
+            return current
+
+        monkeypatch.setattr(os, "fstat", swapped_fstat)
+
+        with pytest.raises(ConnectorSourceIntakeError) as excinfo:
+            connector_intake._hash_file(Path(target.raw_storage_ref))
+
+        assert (
+            excinfo.value.code
+            == "connector_source_intake_raw_blob_changed"
+        )
+        assert fstat_calls >= 2
+    finally:
+        db.close()
+
+
 def test_private_strict_intake_stager_rejects_duplicate_target_run(client):
     db = client.layer3_session_factory()
     try:

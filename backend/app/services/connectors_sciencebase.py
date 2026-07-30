@@ -83,6 +83,11 @@ from app.services.layer3_connector_source_intake import (
     _stage_strict_sciencebase_source_intake,
 )
 from app.services.profiling import profile_dataset_version
+from app.services.raw_storage_handles import (
+    StableRawStorageError,
+    hash_locked_raw_file,
+    persist_locked_raw_file,
+)
 from app.services.transforms import recommend_transformations
 
 
@@ -393,50 +398,44 @@ def _persist_fresh_sciencebase_raw_blob(content: bytes, digest: str) -> str:
         raise ScienceBaseFreshAcquisitionError(
             "sciencebase_artifact_hash_mismatch"
         )
-    raw_root = Path(settings.connector_raw_dir)
+    raw_root = Path(os.path.abspath(settings.connector_raw_dir))
     if raw_root.exists() and _path_is_reparse_or_symlink(raw_root):
         raise ScienceBaseFreshAcquisitionError(
             "sciencebase_raw_storage_unsafe"
         )
-    root = raw_root.resolve(strict=False)
-    content_dir = root / "sha256"
+    content_dir = raw_root / "sha256"
     content_dir.mkdir(parents=True, exist_ok=True)
     if _path_is_reparse_or_symlink(content_dir):
         raise ScienceBaseFreshAcquisitionError(
             "sciencebase_raw_storage_unsafe"
         )
     output = content_dir / f"{digest}.csv"
-    resolved_output = output.resolve(strict=False)
-    if not resolved_output.is_relative_to(root):
+    if output.parent != content_dir:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_raw_storage_unsafe"
+        )
+    if _path_is_reparse_or_symlink(content_dir):
         raise ScienceBaseFreshAcquisitionError(
             "sciencebase_raw_storage_unsafe"
         )
     try:
-        with output.open("xb") as stream:
-            stream.write(content)
-            stream.flush()
-            os.fsync(stream.fileno())
-    except FileExistsError:
-        if _path_is_reparse_or_symlink(output) or not output.is_file():
-            raise ScienceBaseFreshAcquisitionError(
-                "sciencebase_raw_storage_unsafe"
-            )
-        existing = output.read_bytes()
-        if (
-            existing != content
-            or hashlib.sha256(existing).hexdigest() != digest
-        ):
-            raise ScienceBaseFreshAcquisitionError(
-                "sciencebase_raw_content_conflict"
-            )
-    except OSError as exc:
+        size, stored_digest, resolved_ref = persist_locked_raw_file(
+            raw_root,
+            output,
+            content,
+        )
+    except StableRawStorageError as exc:
+        if exc.reason == "conflict":
+            code = "sciencebase_raw_content_conflict"
+        elif exc.reason in {"unsafe", "changed", "unsupported"}:
+            code = "sciencebase_raw_storage_unsafe"
+        else:
+            code = "sciencebase_raw_storage_failed"
+        raise ScienceBaseFreshAcquisitionError(code) from exc
+    if size != len(content) or stored_digest != digest:
         raise ScienceBaseFreshAcquisitionError(
-            "sciencebase_raw_storage_failed"
-        ) from exc
-    _, _, resolved_ref = _rehash_fresh_sciencebase_raw_blob(
-        str(output),
-        expected_digest=digest,
-    )
+            "sciencebase_raw_storage_verification_failed"
+        )
     return resolved_ref
 
 
@@ -445,39 +444,32 @@ def _rehash_fresh_sciencebase_raw_blob(
     *,
     expected_digest: str,
 ) -> tuple[int, str, str]:
-    root = Path(settings.connector_raw_dir).resolve(strict=False)
-    try:
-        output = Path(storage_ref).resolve(strict=True)
-    except OSError as exc:
-        raise ScienceBaseFreshAcquisitionError(
-            "sciencebase_raw_storage_verification_failed"
-        ) from exc
+    root = Path(os.path.abspath(settings.connector_raw_dir))
+    output = Path(os.path.abspath(storage_ref))
     if (
         output.parent != root / "sha256"
         or output.name != f"{expected_digest}.csv"
+        or _path_is_reparse_or_symlink(root)
+        or _path_is_reparse_or_symlink(output.parent)
         or _path_is_reparse_or_symlink(output)
-        or not output.is_file()
     ):
         raise ScienceBaseFreshAcquisitionError(
             "sciencebase_raw_storage_verification_failed"
         )
-    digest = hashlib.sha256()
-    size = 0
     try:
-        with output.open("rb") as stream:
-            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-                size += len(chunk)
-                digest.update(chunk)
-    except OSError as exc:
+        size, rehashed, resolved_ref = hash_locked_raw_file(
+            root,
+            output,
+        )
+    except StableRawStorageError as exc:
         raise ScienceBaseFreshAcquisitionError(
             "sciencebase_raw_storage_verification_failed"
         ) from exc
-    rehashed = digest.hexdigest()
     if rehashed != expected_digest:
         raise ScienceBaseFreshAcquisitionError(
             "sciencebase_raw_storage_verification_failed"
         )
-    return size, rehashed, str(output)
+    return size, rehashed, resolved_ref
 
 
 def _resolve_current_sciencebase_egress_authority(

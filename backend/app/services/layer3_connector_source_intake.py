@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 from typing import Any, Mapping
@@ -16,6 +17,10 @@ from app.models.models import ConnectorRun, ConnectorRunTarget, L3ConnectorSourc
 from app.services.layer3_gate_b_state import (
     material_candidate_basis_from_preview as _gate_b_material_candidate_basis_from_preview,
     material_preview_hash as _gate_b_material_preview_hash,
+)
+from app.services.raw_storage_handles import (
+    StableRawStorageError,
+    hash_locked_raw_file,
 )
 
 
@@ -404,8 +409,8 @@ def _stage_strict_sciencebase_source_intake(
             http_status=409,
         )
     storage_path = _storage_path_from_ref(target.raw_storage_ref)
-    raw_root = Path(settings.connector_raw_dir).resolve()
-    resolved_path = storage_path.resolve()
+    raw_root = Path(os.path.abspath(settings.connector_raw_dir))
+    resolved_path = Path(os.path.abspath(storage_path))
     expected_hash = str(target.downloaded_sha256)
     if (
         not storage_path.is_file()
@@ -855,12 +860,12 @@ def _parse_freshness_timestamp(raw_value: datetime | str | None) -> datetime | N
 
 
 def _storage_path_from_ref(storage_ref: str) -> Path:
-    raw_root = Path(settings.connector_raw_dir).resolve()
+    raw_root = Path(os.path.abspath(settings.connector_raw_dir))
     candidate = Path(str(storage_ref or "").strip())
     if not candidate.is_absolute():
         candidate = raw_root / candidate
-    resolved = candidate.resolve()
-    if resolved != raw_root and raw_root not in resolved.parents:
+    candidate = Path(os.path.abspath(candidate))
+    if candidate != raw_root and raw_root not in candidate.parents:
         raise ConnectorSourceIntakeError(
             "connector_source_intake_storage_ref_not_admitted",
             "The connector source-intake storage reference resolves outside the connector raw storage segment.",
@@ -870,13 +875,18 @@ def _storage_path_from_ref(storage_ref: str) -> Path:
 
 
 def _hash_file(path: Path) -> tuple[int, str]:
-    digest = hashlib.sha256()
-    size = 0
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            size += len(chunk)
-            digest.update(chunk)
-    return size, digest.hexdigest()
+    try:
+        size, digest, _ = hash_locked_raw_file(
+            Path(settings.connector_raw_dir),
+            path,
+        )
+    except StableRawStorageError as exc:
+        raise ConnectorSourceIntakeError(
+            "connector_source_intake_raw_blob_changed",
+            "The connector raw blob or its storage path changed during verification.",
+            http_status=409,
+        ) from exc
+    return size, digest
 
 
 def _preview_text_and_hash(storage_path: Path, max_chars: int) -> tuple[str, int, str]:

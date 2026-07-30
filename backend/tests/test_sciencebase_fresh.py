@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -32,6 +33,7 @@ from app.models import (  # noqa: E402
 from app.models.models import L3ConnectorSourceIntakeRecord  # noqa: E402
 from app.services import connectors_sciencebase as sciencebase  # noqa: E402
 from app.services import layer3_origin_continuity as origin  # noqa: E402
+from app.services import raw_storage_handles as raw_handles  # noqa: E402
 from app.services.connector_egress_transport import (  # noqa: E402
     BoundedConnectorResponse,
 )
@@ -207,6 +209,18 @@ class FakeTransport:
         if not self.responses:
             raise AssertionError("unexpected physical send")
         return self.responses.pop(0)
+
+
+class _ChangedFileIdentity:
+    def __init__(self, original: Any) -> None:
+        self._original = original
+
+    @property
+    def st_ino(self) -> int:
+        return int(self._original.st_ino) + 1
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._original, name)
 
 
 def _install_seams(
@@ -971,6 +985,132 @@ def test_rehash_drift_rolls_back_entire_phase_a_graph(
     assert db.scalar(select(DatasetVersion)) is None
     assert db.scalar(select(DatasetSourceProvenance)) is None
     assert db.scalar(select(L3ConnectorSourceIntakeRecord)) is None
+
+
+def test_raw_persist_rejects_parent_reparse_between_checks(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    del db
+    digest = hashlib.sha256(CSV_BYTES).hexdigest()
+    content_dir = (
+        Path(sciencebase.settings.connector_raw_dir).resolve()
+        / "sha256"
+    )
+    real_check = sciencebase._path_is_reparse_or_symlink
+    content_dir_checks = 0
+
+    def reparse_after_first_check(path: Path) -> bool:
+        nonlocal content_dir_checks
+        if Path(path).resolve(strict=False) == content_dir:
+            content_dir_checks += 1
+            return content_dir_checks > 1
+        return real_check(path)
+
+    monkeypatch.setattr(
+        sciencebase,
+        "_path_is_reparse_or_symlink",
+        reparse_after_first_check,
+    )
+
+    with pytest.raises(
+        sciencebase.ScienceBaseFreshAcquisitionError
+    ) as excinfo:
+        sciencebase._persist_fresh_sciencebase_raw_blob(
+            CSV_BYTES,
+            digest,
+        )
+
+    assert excinfo.value.code == "sciencebase_raw_storage_unsafe"
+    assert content_dir_checks >= 2
+
+
+def test_raw_rehash_rejects_open_handle_identity_swap(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    del db
+    digest = hashlib.sha256(CSV_BYTES).hexdigest()
+    raw_dir = Path(sciencebase.settings.connector_raw_dir) / "sha256"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    raw_path = raw_dir / f"{digest}.csv"
+    raw_path.write_bytes(CSV_BYTES)
+    real_fstat = sciencebase.os.fstat
+    fstat_calls = 0
+
+    def swapped_fstat(fd: int) -> Any:
+        nonlocal fstat_calls
+        current = real_fstat(fd)
+        fstat_calls += 1
+        if fstat_calls >= 2:
+            return _ChangedFileIdentity(current)
+        return current
+
+    monkeypatch.setattr(sciencebase.os, "fstat", swapped_fstat)
+
+    with pytest.raises(
+        sciencebase.ScienceBaseFreshAcquisitionError
+    ) as excinfo:
+        sciencebase._rehash_fresh_sciencebase_raw_blob(
+            str(raw_path),
+            expected_digest=digest,
+        )
+
+    assert excinfo.value.code == "sciencebase_raw_storage_verification_failed"
+    assert fstat_calls >= 2
+
+
+@pytest.mark.skipif(
+    os.name != "nt",
+    reason="Windows delete-sharing lock behavior",
+)
+def test_raw_persist_parent_lock_prevents_redirect_swap(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    del db
+    digest = hashlib.sha256(CSV_BYTES).hexdigest()
+    content_dir = (
+        Path(sciencebase.settings.connector_raw_dir).resolve()
+        / "sha256"
+    )
+    content_dir.mkdir(parents=True, exist_ok=True)
+    displaced_dir = content_dir.with_name("sha256-held")
+    outside_dir = tmp_path / "outside"
+    outside_dir.mkdir()
+    real_open = raw_handles._open_windows_file_handle
+    rename_errors: list[int | None] = []
+
+    def attack_before_child_open(
+        path: Path,
+        *,
+        create_new: bool,
+    ) -> int:
+        try:
+            content_dir.rename(displaced_dir)
+        except OSError as exc:
+            rename_errors.append(exc.winerror)
+        else:
+            import _winapi
+
+            _winapi.CreateJunction(str(outside_dir), str(content_dir))
+        return real_open(path, create_new=create_new)
+
+    monkeypatch.setattr(
+        raw_handles,
+        "_open_windows_file_handle",
+        attack_before_child_open,
+    )
+
+    storage_ref = sciencebase._persist_fresh_sciencebase_raw_blob(
+        CSV_BYTES,
+        digest,
+    )
+
+    assert rename_errors == [32]
+    assert Path(storage_ref).read_bytes() == CSV_BYTES
+    assert not (outside_dir / f"{digest}.csv").exists()
 
 
 def test_success_finalizer_failure_rolls_back_staged_graph_then_fails_run(
