@@ -101,7 +101,7 @@ def test_parent_arming_id_is_deterministic_uuid5() -> None:
     assert UUID(first).version == 5
 
 
-NOW = datetime(2026, 7, 30, 12, 0, tzinfo=UTC)
+NOW = datetime.now(UTC).replace(microsecond=0)
 CAMPAIGN_ID = "27693345-6a47-45bb-97a7-44c2932ef76b"
 CAMPAIGN_FINGERPRINT = "c" * 64
 CAMPAIGN_RAW_SHA256 = "d" * 64
@@ -480,11 +480,26 @@ def test_marker_without_db_arming_fails_closed(tmp_path) -> None:
     assert db.query(ConnectorRun).count() == 0
 
 
-def test_sciencebase_predecessor_failure_leaves_marker_and_db_untouched(
+def test_sciencebase_uncleared_clause_5_leaves_marker_db_and_events_untouched(
     tmp_path,
+    monkeypatch,
 ) -> None:
     db = _session()
-    grant = _grant(tmp_path, connector_key="sciencebase_mcs")
+    state = _nrc_evaluation_fixture(db, tmp_path, monkeypatch)
+    sciencebase_root = tmp_path / "sciencebase"
+    sciencebase_root.mkdir()
+    grant = _grant(sciencebase_root, connector_key="sciencebase_mcs")
+    grant.verified_campaign = state.grant.verified_campaign
+    baseline_counts = {
+        model: db.query(model).count()
+        for model in (
+            ConnectorRun,
+            ConnectorRunSubmission,
+            ConnectorPolicySnapshot,
+            ConnectorRunEvent,
+            ConnectorRunTarget,
+        )
+    }
 
     with pytest.raises(ConnectorEgressArmingError) as exc:
         create_connector_egress_arming(
@@ -495,9 +510,13 @@ def test_sciencebase_predecessor_failure_leaves_marker_and_db_untouched(
             code_revision=CODE_REVISION,
         )
 
-    assert exc.value.code == "nrc_acquisition_success_grant_unconfigured"
+    assert exc.value.code == "nrc_acquisition_success_clause_5_not_cleared"
+    assert exc.value.status_code == 409
+    assert str(exc.value) == "NRC acquisition-success clause 5 is not cleared"
     assert not grant.consumption_marker_path.exists()
-    assert db.query(ConnectorRun).count() == 0
+    assert {
+        model: db.query(model).count() for model in baseline_counts
+    } == baseline_counts
 
 
 def _created_arming(db: Session, tmp_path):
@@ -650,16 +669,6 @@ def _nrc_evaluation_fixture(db, tmp_path, monkeypatch):
     grant.verified_campaign.index_chain = SimpleNamespace(
         head=SimpleNamespace(log_captures=(capture,))
     )
-    receipt = {
-        "receipt_hash": "3" * 64,
-        "proof_class": "fresh_live",
-        "connector_key": "nrc_adams_aps",
-        "connector_run_id": run.connector_run_id,
-        "connector_run_target_id": target.connector_run_target_id,
-        "ledger_terminal_hash": ledger.ledger_terminal_hash,
-        "raw_content_sha256": artifact_hash,
-        "raw_content_size_bytes": 16,
-    }
     monkeypatch.setattr(
         settings,
         "connector_nrc_aps_grant_sha256",
@@ -683,12 +692,16 @@ def _nrc_evaluation_fixture(db, tmp_path, monkeypatch):
     monkeypatch.setattr(
         origin_module,
         "derive_connector_origin_receipt",
-        lambda *_args, **_kwargs: receipt,
+        lambda *_args, **_kwargs: pytest.fail(
+            "derive_connector_origin_receipt must not be called"
+        ),
     )
     monkeypatch.setattr(
         origin_module,
         "assert_connector_origin_continuity",
-        lambda *_args, **_kwargs: None,
+        lambda *_args, **_kwargs: pytest.fail(
+            "assert_connector_origin_continuity must not be called"
+        ),
     )
     return SimpleNamespace(
         run=run,
@@ -696,26 +709,25 @@ def _nrc_evaluation_fixture(db, tmp_path, monkeypatch):
         ledger=ledger,
         records=records,
         counter_path=counter_path,
-        receipt=receipt,
     )
 
 
-def test_evaluate_nrc_acquisition_success_rederives_all_five_clauses(
+def test_evaluate_nrc_acquisition_success_stops_at_uncleared_clause_5(
     tmp_path,
     monkeypatch,
 ) -> None:
     db = _session()
     state = _nrc_evaluation_fixture(db, tmp_path, monkeypatch)
 
-    evidence = evaluate_nrc_acquisition_success(
-        db,
-        verified_definition=state.grant.verified_campaign,
-    )
+    with pytest.raises(ConnectorEgressArmingError) as exc:
+        evaluate_nrc_acquisition_success(
+            db,
+            verified_definition=state.grant.verified_campaign,
+        )
 
-    assert evidence.connector_run_id == state.run.connector_run_id
-    assert evidence.ledger_terminal_hash == state.ledger.ledger_terminal_hash
-    assert evidence.receipt_raw_sha256 == "2" * 64
-    assert evidence.counter_reconciliation["record_count"] == 2
+    assert exc.value.code == "nrc_acquisition_success_clause_5_not_cleared"
+    assert exc.value.status_code == 409
+    assert str(exc.value) == "NRC acquisition-success clause 5 is not cleared"
 
 
 def test_evaluate_nrc_acquisition_success_rejects_failure_like_terminal_outcome(
@@ -753,7 +765,6 @@ def test_evaluate_nrc_acquisition_success_rejects_failure_like_terminal_outcome(
         ("lease", "nrc_acquisition_success_lease_active"),
         ("ledger", "nrc_acquisition_success_ledger_invalid"),
         ("counter", "nrc_acquisition_success_counter_invalid"),
-        ("receipt", "nrc_acquisition_success_receipt_invalid"),
     ],
 )
 def test_evaluate_nrc_acquisition_success_fails_each_clause_closed(
@@ -794,8 +805,6 @@ def test_evaluate_nrc_acquisition_success_fails_each_clause_closed(
                 for record in reversed(state.records)
             )
         )
-    else:
-        state.receipt["raw_content_sha256"] = "9" * 64
 
     with pytest.raises(ConnectorEgressArmingError) as exc:
         evaluate_nrc_acquisition_success(

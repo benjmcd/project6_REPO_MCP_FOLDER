@@ -24,7 +24,6 @@ from app.models import (
     ConnectorRun,
     ConnectorRunEvent,
     ConnectorRunSubmission,
-    ConnectorRunTarget,
 )
 from app.schemas.api import (
     ConnectorEgressArmingIn,
@@ -734,10 +733,6 @@ def evaluate_nrc_acquisition_success(
     from app.services.connector_egress_transport import (
         derive_terminal_request_ledger,
     )
-    from app.services.layer3_origin_continuity import (
-        assert_connector_origin_continuity,
-        derive_connector_origin_receipt,
-    )
 
     now = datetime.now(UTC)
     configured_digest = settings.connector_nrc_aps_grant_sha256
@@ -902,69 +897,10 @@ def evaluate_nrc_acquisition_success(
             "NRC artifact completion is not one complete bounded 200 response",
         )
 
-    targets = list(
-        db.scalars(
-            select(ConnectorRunTarget).where(
-                ConnectorRunTarget.connector_run_id == run_id
-            )
-        ).all()
-    )
-    if len(targets) != 1:
-        raise ConnectorEgressArmingError(
-            "nrc_acquisition_success_target_invalid",
-            "NRC predecessor does not have exactly one canonical target",
-        )
-    target = targets[0]
-    try:
-        receipt = derive_connector_origin_receipt(
-            db,
-            connector_run_target_id=target.connector_run_target_id,
-        )
-        receipt_hash = str(receipt.get("receipt_hash") or "")
-        raw_sha256 = str(receipt.get("raw_content_sha256") or "")
-        assert_connector_origin_continuity(
-            db,
-            connector_run_target_id=target.connector_run_target_id,
-            expected_receipt_hash=receipt_hash,
-            expected_bindings={
-                "connector_run_id": run_id,
-                "raw_content_sha256": raw_sha256,
-                "ledger_terminal_hash": ledger.ledger_terminal_hash,
-                "proof_class": "fresh_live",
-            },
-        )
-    except Exception as exc:
-        raise ConnectorEgressArmingError(
-            "nrc_acquisition_success_receipt_invalid",
-            "canonical NRC connector-origin receipt could not be rederived",
-        ) from exc
-    if (
-        receipt.get("proof_class") != "fresh_live"
-        or receipt.get("connector_key") != "nrc_adams_aps"
-        or receipt.get("connector_run_id") != run_id
-        or receipt.get("connector_run_target_id")
-        != target.connector_run_target_id
-        or receipt.get("ledger_terminal_hash")
-        != ledger.ledger_terminal_hash
-        or receipt.get("raw_content_size_bytes") != artifact_size
-        or target.sciencebase_download_uri is not None
-        or raw_sha256 != artifact_hash
-    ):
-        raise ConnectorEgressArmingError(
-            "nrc_acquisition_success_receipt_invalid",
-            "canonical NRC receipt does not equal the ledger and admitted bytes",
-        )
-
-    counter_bytes = resolved_counter.read_bytes()
-    return NrcAcquisitionSuccessEvidence(
-        connector_run_id=run_id,
-        ledger_terminal_hash=ledger.ledger_terminal_hash,
-        receipt_raw_sha256=raw_sha256,
-        counter_reconciliation={
-            "record_count": len(records),
-            "http_jsonl_sha256": hashlib.sha256(counter_bytes).hexdigest(),
-            "artifact_body_sha256": artifact_hash,
-        },
+    raise ConnectorEgressArmingError(
+        "nrc_acquisition_success_clause_5_not_cleared",
+        "NRC acquisition-success clause 5 is not cleared",
+        status_code=409,
     )
 
 
