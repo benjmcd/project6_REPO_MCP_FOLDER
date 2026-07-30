@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import hashlib
 import inspect
@@ -10,7 +12,7 @@ from typing import cast
 from uuid import NAMESPACE_URL, uuid5
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event, inspect as sa_inspect
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -61,6 +63,9 @@ MIN_REQUEST_INTERVAL_MS = 1_000
 NON_AUTHORITIES = ["external_delivery", "recurring_operation"]
 WINDOW_START = datetime(2026, 7, 29, 8, 0, tzinfo=timezone.utc)
 WINDOW_END = datetime(2026, 7, 30, 8, 0, tzinfo=timezone.utc)
+_CUSTODY_KEY = "nrc_phase_b_custody_v1"
+_CUSTODY_SCHEMA = "project6.nrc_phase_b_custody.v1"
+_CUSTODY_ATTEMPT = "22222222-2222-4222-8222-222222222222"
 
 
 @pytest.fixture()
@@ -80,6 +85,36 @@ def db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         yield session
     finally:
         session.close()
+        engine.dispose()
+
+
+@pytest.fixture()
+def origin_file_dbs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    storage = tmp_path / "storage"
+    monkeypatch.setattr(settings, "storage_dir", str(storage))
+    Path(settings.connector_raw_dir).mkdir(parents=True)
+    db_path = tmp_path / "origin-dirty.db"
+    engine = create_engine(
+        f"sqlite:///{db_path}",
+        future=True,
+        connect_args={"check_same_thread": False},
+    )
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(
+        bind=engine,
+        expire_on_commit=False,
+        future=True,
+    )
+    first = factory()
+    second = factory()
+    try:
+        yield first, second
+    finally:
+        first.close()
+        second.close()
         engine.dispose()
 
 
@@ -577,6 +612,21 @@ def _seed_nrc(
         blob_ref=effective_ref,
         blob_sha256=digest,
     )
+    if source_mode != "offline_fixture":
+        target.source_reference_json = {
+            _CUSTODY_KEY: {
+                "schema_id": _CUSTODY_SCHEMA,
+                "status": "verified",
+                "attempt_id": _CUSTODY_ATTEMPT,
+                "connector_run_id": run_id,
+                "connector_run_target_id": target_id,
+                "aps_content_linkage_id": linkage.aps_content_linkage_id,
+                "content_id": linkage.content_id,
+                "blob_ref": effective_ref,
+                "blob_sha256": digest,
+                "blob_size_bytes": _stored_path(effective_ref).stat().st_size,
+            }
+        }
     db.add_all([run, target, linkage])
     db.commit()
     return run, target, linkage, digest
@@ -611,6 +661,191 @@ def _install_live_proof(
         lambda envelope: ARMING_FINGERPRINT,
     )
     return calls
+
+
+def _seed_nrc_with_live_proof(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    content: bytes,
+):
+    run, target, linkage, digest = _seed_nrc(db, content=content)
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key=run.connector_key,
+        entries=[
+            _entry(1, "exact_accession_api"),
+            _entry(
+                2,
+                "artifact",
+                connector_key="nrc_adams_aps",
+                body_sha256=digest,
+                byte_count=_stored_path(linkage.blob_ref).stat().st_size,
+            ),
+        ],
+    )
+    return run, target, linkage, digest
+
+
+@contextmanager
+def _record_dml(db, prefixes: tuple[str, ...]):
+    statements: list[str] = []
+
+    def record(
+        connection,
+        cursor,
+        statement: str,
+        parameters,
+        context,
+        executemany: bool,
+    ) -> None:
+        if statement.lstrip().upper().startswith(prefixes):
+            statements.append(statement)
+
+    event.listen(db.get_bind(), "before_cursor_execute", record)
+    try:
+        yield statements
+    finally:
+        event.remove(db.get_bind(), "before_cursor_execute", record)
+
+
+@contextmanager
+def _record_select_sql(db):
+    statements: list[tuple[str, tuple[object, ...]]] = []
+
+    def record(
+        connection,
+        cursor,
+        statement: str,
+        parameters,
+        context,
+        executemany: bool,
+    ) -> None:
+        normalized = " ".join(statement.lower().split())
+        if normalized.startswith("select "):
+            assert isinstance(parameters, tuple)
+            statements.append((normalized, parameters))
+
+    event.listen(db.get_bind(), "before_cursor_execute", record)
+    try:
+        yield statements
+    finally:
+        event.remove(db.get_bind(), "before_cursor_execute", record)
+
+
+def _anchor_events(
+    *,
+    run_id: str,
+    count: int,
+) -> list[ConnectorRunEvent]:
+    return [
+        ConnectorRunEvent(
+            connector_run_event_id=f"fanout-event-{ordinal:02d}",
+            connector_run_id=run_id,
+            event_type="fanout_contract_test",
+            metrics_json={"ordinal": ordinal},
+            created_at=WINDOW_START + timedelta(seconds=ordinal),
+        )
+        for ordinal in range(count)
+    ]
+
+
+def _anchor_policies(
+    *,
+    run_id: str,
+    count: int,
+) -> list[ConnectorPolicySnapshot]:
+    return [
+        ConnectorPolicySnapshot(
+            connector_policy_snapshot_id=f"fanout-policy-{ordinal:02d}",
+            connector_run_id=run_id,
+            policy_json={"ordinal": ordinal},
+            retry_matrix_json={},
+        )
+        for ordinal in range(count)
+    ]
+
+
+def _overflow_linkage(
+    *,
+    run_id: str,
+    target_id: str,
+) -> ApsContentLinkage:
+    return ApsContentLinkage(
+        aps_content_linkage_id="fanout-linkage",
+        content_id="8" * 64,
+        run_id=run_id,
+        target_id=target_id,
+        accession_number="ML17123A319",
+        content_contract_id="fanout-content-contract",
+        chunking_contract_id="fanout-chunking-contract",
+        blob_ref="fanout.pdf",
+        blob_sha256="8" * 64,
+    )
+
+
+def _overflow_provenance(
+    *,
+    run_id: str,
+    version_id: str,
+) -> DatasetSourceProvenance:
+    return DatasetSourceProvenance(
+        dataset_source_provenance_id="fanout-provenance",
+        dataset_version_id=version_id,
+        connector_run_id=run_id,
+        source_system="sciencebase",
+        source_mode="strict_live_proof",
+        source_artifact_key="sciencebase:fanout",
+        downloaded_sha256="8" * 64,
+        raw_storage_ref="fanout.csv",
+    )
+
+
+def _overflow_intake(
+    *,
+    connector_key: str,
+    run_id: str,
+    target_id: str,
+) -> L3ConnectorSourceIntakeRecord:
+    return L3ConnectorSourceIntakeRecord(
+        connector_source_intake_record_id="fanout-intake",
+        client_request_id="fanout-intake",
+        operator_decision="record_connector_produced_source",
+        source_family="connector_produced_single_source",
+        source_label="Fanout",
+        original_filename="fanout.csv",
+        media_type="text/csv",
+        content_size_bytes=1,
+        content_sha256="8" * 64,
+        metadata_hash="3" * 64,
+        authority_basis_hash="4" * 64,
+        storage_ref="fanout.csv",
+        status="recorded",
+        connector_key=connector_key,
+        connector_run_id=run_id,
+        connector_run_target_id=target_id,
+    )
+
+
+def _invoke_origin(
+    operation: str,
+    db,
+    *,
+    target_id: str,
+    receipt: dict,
+):
+    if operation == "derive":
+        return origin.derive_connector_origin_receipt(
+            db,
+            connector_run_target_id=target_id,
+        )
+    return origin.assert_connector_origin_continuity(
+        db,
+        connector_run_target_id=target_id,
+        expected_receipt_hash=receipt["receipt_hash"],
+        expected_bindings={},
+    )
 
 
 def _seed_real_nrc_terminal_evidence(
@@ -838,6 +1073,311 @@ def _seed_real_nrc_terminal_evidence(
     )
 
 
+def _seed_real_live_origin(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    content: bytes,
+):
+    run, target, _, digest = _seed_nrc(db, content=content)
+    run.source_mode = "strict_live_egress"
+    db.commit()
+    _, counter_path, capture = _capture_root()
+    _seed_real_nrc_terminal_evidence(
+        db,
+        run=run,
+        raw_body=content,
+        counter_path=counter_path,
+    )
+    evidence = _evidence(
+        run.connector_key,
+        run.connector_run_id,
+        capture=capture,
+    )
+    monkeypatch.setattr(
+        origin,
+        "_resolve_historical_evidence",
+        lambda **kwargs: evidence,
+    )
+    monkeypatch.setattr(
+        origin,
+        "_compute_arming_fingerprint",
+        lambda envelope: ARMING_FINGERPRINT,
+    )
+    monkeypatch.setattr(
+        connector_egress_arming,
+        "compute_arming_fingerprint",
+        lambda envelope: ARMING_FINGERPRINT,
+    )
+    return run, target, digest, counter_path
+
+
+@pytest.mark.parametrize(
+    ("connector_key", "expected_limits"),
+    [
+        (
+            "nrc_adams_aps",
+            {
+                "connector_run_event": 8,
+                "connector_policy_snapshot": 3,
+                "aps_content_linkage": 2,
+                "dataset_source_provenance": 2,
+                "l3_connector_source_intake_record": 2,
+            },
+        ),
+        (
+            "sciencebase_mcs",
+            {
+                "connector_run_event": 12,
+                "connector_policy_snapshot": 4,
+                "aps_content_linkage": 2,
+                "dataset_source_provenance": 2,
+                "l3_connector_source_intake_record": 2,
+            },
+        ),
+    ],
+)
+def test_origin_anchor_uses_six_non_cartesian_core_selects(
+    db,
+    connector_key: str,
+    expected_limits: dict[str, int],
+) -> None:
+    if connector_key == "nrc_adams_aps":
+        _, target, _, _ = _seed_nrc(db)
+    else:
+        _, target, _, _ = _seed_sciencebase(db)
+    target_id = target.connector_run_target_id
+    collection_tables = (
+        "connector_run_event",
+        "connector_policy_snapshot",
+        "aps_content_linkage",
+        "dataset_source_provenance",
+        "l3_connector_source_intake_record",
+    )
+
+    with _record_select_sql(db) as statements:
+        origin._read_origin_anchor(
+            db,
+            target_id=target_id,
+        )
+
+    assert len(statements) == 6
+    sql_statements = [statement for statement, _ in statements]
+    (base_statement, _), *collection_records = statements
+    collection_statements = [
+        statement for statement, _ in collection_records
+    ]
+    assert "connector_run_target" in base_statement
+    assert "connector_run" in base_statement
+    assert "dataset_version" in base_statement
+    assert (
+        "dataset_version.dataset_version_id = "
+        "connector_run_target.dataset_version_id"
+    ) in base_statement
+    assert not any(table in base_statement for table in collection_tables)
+    assert all(" order by " not in statement for statement in sql_statements)
+    assert all(" limit " in statement for statement in collection_statements)
+    assert sorted(
+        table
+        for statement in collection_statements
+        for table in collection_tables
+        if table in statement
+    ) == sorted(collection_tables)
+    assert all(
+        sum(table in statement for table in collection_tables) <= 1
+        for statement in sql_statements
+    )
+    for statement, parameters in collection_records:
+        matched_tables = [
+            table for table in collection_tables if table in statement
+        ]
+        assert len(matched_tables) == 1
+        assert parameters[-2:] == (
+            expected_limits[matched_tables[0]],
+            0,
+        )
+
+
+@pytest.mark.parametrize(
+    (
+        "connector_key",
+        "surface",
+        "overflow_count",
+        "expected_table",
+        "max_rows",
+    ),
+    [
+        (
+            "nrc_adams_aps",
+            "event",
+            8,
+            "connector_run_event",
+            7,
+        ),
+        (
+            "nrc_adams_aps",
+            "policy",
+            3,
+            "connector_policy_snapshot",
+            2,
+        ),
+        (
+            "nrc_adams_aps",
+            "linkage",
+            1,
+            "aps_content_linkage",
+            1,
+        ),
+        (
+            "sciencebase_mcs",
+            "event",
+            12,
+            "connector_run_event",
+            11,
+        ),
+        (
+            "sciencebase_mcs",
+            "policy",
+            4,
+            "connector_policy_snapshot",
+            3,
+        ),
+        (
+            "sciencebase_mcs",
+            "provenance",
+            1,
+            "dataset_source_provenance",
+            1,
+        ),
+        (
+            "sciencebase_mcs",
+            "intake",
+            1,
+            "l3_connector_source_intake_record",
+            1,
+        ),
+    ],
+)
+def test_origin_anchor_rejects_collection_overflow(
+    db,
+    connector_key: str,
+    surface: str,
+    overflow_count: int,
+    expected_table: str,
+    max_rows: int,
+) -> None:
+    if connector_key == "nrc_adams_aps":
+        run, target, _, _ = _seed_nrc(db)
+    else:
+        run, target, _, _ = _seed_sciencebase(db)
+
+    if surface == "event":
+        db.add_all(
+            _anchor_events(
+                run_id=run.connector_run_id,
+                count=overflow_count,
+            )
+        )
+    elif surface == "policy":
+        db.add_all(
+            _anchor_policies(
+                run_id=run.connector_run_id,
+                count=overflow_count,
+            )
+        )
+    elif surface == "linkage":
+        db.add(
+            _overflow_linkage(
+                run_id=run.connector_run_id,
+                target_id=target.connector_run_target_id,
+            )
+        )
+    elif surface == "provenance":
+        assert isinstance(target.dataset_version_id, str)
+        db.add(
+            _overflow_provenance(
+                run_id=run.connector_run_id,
+                version_id=target.dataset_version_id,
+            )
+        )
+    else:
+        db.add(
+            _overflow_intake(
+                connector_key=run.connector_key,
+                run_id=run.connector_run_id,
+                target_id=target.connector_run_target_id,
+            )
+        )
+    db.commit()
+
+    with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+        origin._read_origin_anchor(
+            db,
+            target_id=target.connector_run_target_id,
+        )
+
+    assert excinfo.value.code == (
+        "layer3_origin_anchor_cardinality_exceeded"
+    )
+    assert excinfo.value.details == {
+        "table": expected_table,
+        "max_rows": max_rows,
+        "observed_at_least": max_rows + 1,
+    }
+
+
+@pytest.mark.parametrize(
+    ("connector_key", "event_cap", "policy_cap"),
+    [
+        ("nrc_adams_aps", 7, 2),
+        ("sciencebase_mcs", 11, 3),
+    ],
+)
+def test_origin_anchor_accepts_frozen_collection_cap_boundaries(
+    db,
+    connector_key: str,
+    event_cap: int,
+    policy_cap: int,
+) -> None:
+    if connector_key == "nrc_adams_aps":
+        run, target, _, _ = _seed_nrc(db)
+    else:
+        run, target, _, _ = _seed_sciencebase(db)
+    db.add_all(
+        [
+            *_anchor_events(
+                run_id=run.connector_run_id,
+                count=event_cap,
+            ),
+            *_anchor_policies(
+                run_id=run.connector_run_id,
+                count=policy_cap,
+            ),
+        ]
+    )
+    db.commit()
+
+    anchor = origin._read_origin_anchor(
+        db,
+        target_id=target.connector_run_target_id,
+    )
+
+    assert len(anchor.events) == event_cap
+    assert len(anchor.policy_snapshots) == policy_cap
+    assert len(anchor.linkages) == (
+        1 if connector_key == "nrc_adams_aps" else 0
+    )
+    assert len(anchor.dataset_versions) == (
+        1 if connector_key == "sciencebase_mcs" else 0
+    )
+    assert len(anchor.provenances) == (
+        1 if connector_key == "sciencebase_mcs" else 0
+    )
+    assert len(anchor.intakes) == (
+        1 if connector_key == "sciencebase_mcs" else 0
+    )
+
+
 def test_authority_canonicalization_accepts_real_frozen_schema_models() -> None:
     code_revision = "1" * 40
     definition = DualLiveCampaignDefinitionV1.model_validate(
@@ -987,35 +1527,10 @@ def test_live_receipt_uses_real_manifest_bound_counter_reconciliation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     content = b"%PDF-real-counter-evidence"
-    run, target, _, digest = _seed_nrc(db, content=content)
-    run.source_mode = "strict_live_egress"
-    db.commit()
-    _, counter_path, capture = _capture_root()
-    _seed_real_nrc_terminal_evidence(
+    _, target, digest, counter_path = _seed_real_live_origin(
         db,
-        run=run,
-        raw_body=content,
-        counter_path=counter_path,
-    )
-    evidence = _evidence(
-        run.connector_key,
-        run.connector_run_id,
-        capture=capture,
-    )
-    monkeypatch.setattr(
-        origin,
-        "_resolve_historical_evidence",
-        lambda **kwargs: evidence,
-    )
-    monkeypatch.setattr(
-        origin,
-        "_compute_arming_fingerprint",
-        lambda envelope: ARMING_FINGERPRINT,
-    )
-    monkeypatch.setattr(
-        connector_egress_arming,
-        "compute_arming_fingerprint",
-        lambda envelope: ARMING_FINGERPRINT,
+        monkeypatch,
+        content=content,
     )
 
     receipt = origin.derive_connector_origin_receipt(
@@ -1034,6 +1549,78 @@ def test_live_receipt_uses_real_manifest_bound_counter_reconciliation(
             connector_run_target_id=target.connector_run_target_id,
         )
     assert exc.value.code == "layer3_origin_terminal_ledger_ineligible"
+
+
+@pytest.mark.parametrize("dirty_surface", ["run", "event", "policy"])
+def test_dirty_terminal_ledger_authority_uses_frozen_durable_rows(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+    dirty_surface: str,
+) -> None:
+    run, target, _, _ = _seed_real_live_origin(
+        db,
+        monkeypatch,
+        content=b"%PDF-dirty-terminal-ledger",
+    )
+    run_id = run.connector_run_id
+    target_id = target.connector_run_target_id
+    baseline = origin.derive_connector_origin_receipt(
+        db,
+        connector_run_target_id=target_id,
+    )
+    db.rollback()
+
+    changed: object
+    if dirty_surface == "run":
+        authority = db.get(ConnectorRun, run_id)
+        field = "request_fingerprint"
+        changed = "0" * 64
+    elif dirty_surface == "event":
+        authority = (
+            db.query(ConnectorRunEvent)
+            .filter(
+                ConnectorRunEvent.connector_run_id == run_id,
+                ConnectorRunEvent.event_type == "egress_reserved",
+            )
+            .first()
+        )
+        assert authority is not None
+        field = "metrics_json"
+        event_metrics = deepcopy(authority.metrics_json)
+        event_metrics["request_fingerprint"] = "0" * 64
+        changed = event_metrics
+    else:
+        authority = (
+            db.query(ConnectorPolicySnapshot)
+            .filter(
+                ConnectorPolicySnapshot.connector_run_id == run_id,
+            )
+            .first()
+        )
+        assert authority is not None
+        field = "policy_json"
+        changed = {"tampered": True}
+    assert authority is not None
+    setattr(authority, field, changed)
+    state_before = sa_inspect(authority)
+    history_before = state_before.attrs[field].history
+    assert authority in db.dirty
+
+    with _record_dml(
+        db,
+        ("INSERT ", "UPDATE ", "DELETE "),
+    ) as dml_statements:
+        derived = origin.derive_connector_origin_receipt(
+            db,
+            connector_run_target_id=target_id,
+        )
+
+    assert derived == baseline
+    assert dml_statements == []
+    assert sa_inspect(authority) is state_before
+    assert state_before.attrs[field].history == history_before
+    assert authority in db.dirty
+    db.rollback()
 
 
 @pytest.mark.parametrize(
@@ -1387,6 +1974,327 @@ def test_nrc_receipt_binds_linkage_content_and_exact_request_sequence(
 
 
 @pytest.mark.parametrize(
+    "marker_case",
+    ["missing", "pending", "malformed", "contradictory"],
+)
+def test_fresh_nrc_origin_requires_exact_verified_custody(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+    marker_case: str,
+) -> None:
+    run, target, linkage, digest = _seed_nrc(
+        db,
+        content=b"%PDF-custody-gate",
+    )
+    source_reference = dict(target.source_reference_json)
+    if marker_case == "missing":
+        source_reference.pop(_CUSTODY_KEY)
+    elif marker_case == "pending":
+        marker = dict(source_reference[_CUSTODY_KEY])
+        marker["status"] = "pending_snapshot_exit"
+        source_reference[_CUSTODY_KEY] = marker
+    elif marker_case == "malformed":
+        source_reference[_CUSTODY_KEY] = {
+            "schema_id": _CUSTODY_SCHEMA,
+            "status": "verified",
+        }
+    else:
+        marker = dict(source_reference[_CUSTODY_KEY])
+        marker["content_id"] = "0" * 64
+        source_reference[_CUSTODY_KEY] = marker
+    target.source_reference_json = source_reference
+    db.commit()
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key=run.connector_key,
+        entries=[
+            _entry(1, "exact_accession_api"),
+            _entry(
+                2,
+                "artifact",
+                connector_key="nrc_adams_aps",
+                body_sha256=digest,
+                byte_count=_stored_path(linkage.blob_ref).stat().st_size,
+            ),
+        ],
+    )
+
+    with pytest.raises(origin.Layer3OriginContinuityError) as exc:
+        origin.derive_connector_origin_receipt(
+            db,
+            connector_run_target_id=target.connector_run_target_id,
+        )
+
+    assert exc.value.code == "layer3_origin_nrc_custody_ineligible"
+
+
+def test_origin_assert_freshly_observes_competing_stored_receipt_change(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run, target, linkage, digest = _seed_nrc(
+        db,
+        content=b"%PDF-fresh-stored-receipt",
+    )
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key=run.connector_key,
+        entries=[
+            _entry(1, "exact_accession_api"),
+            _entry(
+                2,
+                "artifact",
+                connector_key="nrc_adams_aps",
+                body_sha256=digest,
+                byte_count=_stored_path(linkage.blob_ref).stat().st_size,
+            ),
+        ],
+    )
+    receipt = origin.derive_connector_origin_receipt(
+        db,
+        connector_run_target_id=target.connector_run_target_id,
+    )
+    source_reference = dict(target.source_reference_json)
+    source_reference[origin.ORIGIN_RECEIPT_STORAGE_KEY] = deepcopy(receipt)
+    target.source_reference_json = source_reference
+    db.expire_on_commit = False
+    db.commit()
+    retained = db.get(ConnectorRunTarget, target.connector_run_target_id)
+    assert retained is target
+    competing = sessionmaker(
+        bind=db.get_bind(),
+        expire_on_commit=False,
+        future=True,
+    )()
+    try:
+        competing_target = competing.get(
+            ConnectorRunTarget,
+            target.connector_run_target_id,
+        )
+        assert competing_target is not None
+        changed = dict(competing_target.source_reference_json)
+        changed_receipt = dict(
+            changed[origin.ORIGIN_RECEIPT_STORAGE_KEY]
+        )
+        changed_receipt["receipt_hash"] = "0" * 64
+        changed[origin.ORIGIN_RECEIPT_STORAGE_KEY] = changed_receipt
+        competing_target.source_reference_json = changed
+        competing.commit()
+
+        with pytest.raises(origin.Layer3OriginContinuityError) as exc:
+            origin.assert_connector_origin_continuity(
+                db,
+                connector_run_target_id=target.connector_run_target_id,
+                expected_receipt_hash=receipt["receipt_hash"],
+                expected_bindings={},
+            )
+    finally:
+        competing.close()
+
+    assert exc.value.code == "layer3_origin_stored_receipt_hash_mismatch"
+
+
+@pytest.mark.parametrize("operation", ["derive", "assert"])
+def test_local_dirty_custody_cannot_be_autoflushed_or_attested(
+    origin_file_dbs,
+    monkeypatch: pytest.MonkeyPatch,
+    operation: str,
+) -> None:
+    db, witness = origin_file_dbs
+    _, target, _, _ = _seed_nrc_with_live_proof(
+        db,
+        monkeypatch,
+        content=b"%PDF-local-dirty-custody",
+    )
+    target_id = target.connector_run_target_id
+    receipt = origin.derive_connector_origin_receipt(
+        db,
+        connector_run_target_id=target_id,
+    )
+    durable_source_reference = deepcopy(target.source_reference_json)
+    durable_marker = dict(durable_source_reference[_CUSTODY_KEY])
+    durable_marker["status"] = "pending_snapshot_exit"
+    durable_source_reference[_CUSTODY_KEY] = durable_marker
+    durable_source_reference[
+        origin.ORIGIN_RECEIPT_STORAGE_KEY
+    ] = deepcopy(receipt)
+    target.source_reference_json = deepcopy(durable_source_reference)
+    db.commit()
+
+    local_source_reference = deepcopy(durable_source_reference)
+    local_marker = dict(local_source_reference[_CUSTODY_KEY])
+    local_marker["status"] = "verified"
+    local_source_reference[_CUSTODY_KEY] = local_marker
+    target.source_reference_json = deepcopy(local_source_reference)
+    assert target in db.dirty
+    state_before = sa_inspect(target)
+    history_before = state_before.attrs.source_reference_json.history
+    with _record_dml(db, ("UPDATE ",)) as update_statements:
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            _invoke_origin(
+                operation,
+                db,
+                target_id=target_id,
+                receipt=receipt,
+            )
+
+    assert excinfo.value.code == "layer3_origin_nrc_custody_ineligible"
+    assert update_statements == []
+    assert sa_inspect(target) is state_before
+    assert (
+        state_before.attrs.source_reference_json.history
+        == history_before
+    )
+    assert target.source_reference_json == local_source_reference
+    assert target in db.dirty
+    durable_value = (
+        witness.query(ConnectorRunTarget.source_reference_json)
+        .filter(
+            ConnectorRunTarget.connector_run_target_id == target_id
+        )
+        .scalar()
+    )
+    assert durable_value == durable_source_reference
+    db.rollback()
+
+
+def test_unrelated_pending_state_is_not_flushed_by_origin_derive(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, target, _, _ = _seed_nrc_with_live_proof(
+        db,
+        monkeypatch,
+        content=b"%PDF-unrelated-pending",
+    )
+    target_id = target.connector_run_target_id
+    unrelated = Dataset(
+        dataset_id="unrelated-pending-dataset",
+        name="Unrelated pending dataset",
+    )
+    db.add(unrelated)
+    assert unrelated in db.new
+    with _record_dml(
+        db,
+        ("INSERT ", "UPDATE ", "DELETE "),
+    ) as dml_statements:
+        receipt = origin.derive_connector_origin_receipt(
+            db,
+            connector_run_target_id=target_id,
+        )
+
+    assert receipt["receipt_hash"]
+    assert dml_statements == []
+    assert unrelated in db.new
+    assert db.in_transaction()
+    db.rollback()
+
+
+@pytest.mark.parametrize("operation", ["derive", "assert"])
+def test_origin_anchor_rejects_competing_durable_target_drift(
+    origin_file_dbs,
+    monkeypatch: pytest.MonkeyPatch,
+    operation: str,
+) -> None:
+    db, competing = origin_file_dbs
+    _, target, _, _ = _seed_nrc_with_live_proof(
+        db,
+        monkeypatch,
+        content=b"%PDF-origin-anchor-drift",
+    )
+    target_id = target.connector_run_target_id
+    receipt = origin.derive_connector_origin_receipt(
+        db,
+        connector_run_target_id=target_id,
+    )
+    source_reference = deepcopy(target.source_reference_json)
+    source_reference[origin.ORIGIN_RECEIPT_STORAGE_KEY] = deepcopy(
+        receipt
+    )
+    target.source_reference_json = source_reference
+    db.commit()
+    real_validate = origin._validate_fresh_live_evidence
+    mutations = 0
+
+    def validate_then_mutate(*args, **kwargs):
+        nonlocal mutations
+        result = real_validate(*args, **kwargs)
+        mutations += 1
+        competing.query(ConnectorRunTarget).filter(
+            ConnectorRunTarget.connector_run_target_id == target_id
+        ).update(
+            {"blocked_reason": f"durable-drift-{operation}"},
+            synchronize_session=False,
+        )
+        competing.commit()
+        return result
+
+    monkeypatch.setattr(
+        origin,
+        "_validate_fresh_live_evidence",
+        validate_then_mutate,
+    )
+
+    with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+        _invoke_origin(
+            operation,
+            db,
+            target_id=target_id,
+            receipt=receipt,
+        )
+
+    assert excinfo.value.code == "layer3_origin_authority_drift"
+    assert mutations == 1
+    competing.expire_all()
+    changed = competing.get(ConnectorRunTarget, target_id)
+    assert changed is not None
+    assert changed.blocked_reason == f"durable-drift-{operation}"
+
+
+def test_flushed_savepoint_receipt_is_visible_without_transaction_takeover(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, target, _, _ = _seed_nrc_with_live_proof(
+        db,
+        monkeypatch,
+        content=b"%PDF-origin-savepoint",
+    )
+    target_id = target.connector_run_target_id
+    receipt = origin.derive_connector_origin_receipt(
+        db,
+        connector_run_target_id=target_id,
+    )
+    db.rollback()
+
+    outer = db.begin()
+    nested = db.begin_nested()
+    current = db.get(ConnectorRunTarget, target_id)
+    assert current is not None
+    source_reference = deepcopy(current.source_reference_json)
+    source_reference[origin.ORIGIN_RECEIPT_STORAGE_KEY] = deepcopy(receipt)
+    current.source_reference_json = source_reference
+    db.flush()
+
+    origin.assert_connector_origin_continuity(
+        db,
+        connector_run_target_id=target_id,
+        expected_receipt_hash=receipt["receipt_hash"],
+        expected_bindings={},
+    )
+
+    assert outer.is_active
+    assert nested.is_active
+    assert db.in_transaction()
+    assert db.in_nested_transaction()
+    nested.rollback()
+    assert outer.is_active
+    outer.rollback()
+
+
+@pytest.mark.parametrize(
     "entries",
     [
         [
@@ -1619,6 +2527,7 @@ def test_fixed_manifest_source_derives_offline_fixture_without_live_resolvers(
     assert receipt["fixture_manifest_sha256"] == hashlib.sha256(
         (fixture_root / "manifest.json").read_bytes()
     ).hexdigest()
+    assert _CUSTODY_KEY not in target.source_reference_json
     assert "proof_class" not in inspect.signature(
         origin.derive_connector_origin_receipt
     ).parameters

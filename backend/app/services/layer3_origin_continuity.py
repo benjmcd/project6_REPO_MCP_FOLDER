@@ -1,25 +1,35 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import date, datetime, time, timezone
+from decimal import Decimal
 import hashlib
 import json
+import math
 import os
 from pathlib import Path, PurePosixPath
 import stat
-from typing import TYPE_CHECKING, Any, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn, TypeVar
+from uuid import UUID
 
+from sqlalchemy import false, select
+from sqlalchemy.engine import RowMapping
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.selectable import FromClause
 
 from app.core.config import settings
 from app.models.models import (
     ApsContentLinkage,
+    ConnectorPolicySnapshot,
     ConnectorRun,
+    ConnectorRunEvent,
     ConnectorRunTarget,
     DatasetSourceProvenance,
     DatasetVersion,
     L3ConnectorSourceIntakeRecord,
 )
+from app.services import nrc_phase_b_custody
 from app.services.connector_egress_authorization import (
     VerifiedHistoricalGrantEvidence,
     resolve_historical_connector_grant_evidence,
@@ -35,6 +45,8 @@ if TYPE_CHECKING:
         VerifiedTerminalRequestLedger,
     )
 
+_ModelT = TypeVar("_ModelT")
+
 
 ORIGIN_RECEIPT_SCHEMA_ID = "layer3.connector_origin_continuity.v1"
 ORIGIN_RECEIPT_STORAGE_KEY = "connector_origin_receipt_v1"
@@ -44,6 +56,17 @@ FRESH_LIVE_PROOF_CLASS = "fresh_live"
 OFFLINE_FIXTURE_PROOF_CLASS = "offline_fixture"
 
 _ALLOWED_CONNECTORS = frozenset({"sciencebase_mcs", "nrc_adams_aps"})
+_ORIGIN_EVENT_CAPS: Mapping[str, int] = {
+    "nrc_adams_aps": 7,
+    "sciencebase_mcs": 11,
+}
+_ORIGIN_POLICY_CAPS: Mapping[str, int] = {
+    "nrc_adams_aps": 2,
+    "sciencebase_mcs": 3,
+}
+_GLOBAL_ORIGIN_EVENT_CAP = 11
+_GLOBAL_ORIGIN_POLICY_CAP = 3
+_SINGLE_ORIGIN_ROW_CAP = 1
 _HEX = frozenset("0123456789abcdef")
 _FIXTURE_ID = "ml17123a319"
 _FIXTURE_FILE_NAME = "ML17123A319.pdf"
@@ -167,6 +190,535 @@ def _one(rows: list[Any], *, code: str, label: str) -> Any:
             details={"count": len(rows)},
         )
     return rows[0]
+
+
+def _freeze_anchor_value(value: object) -> tuple[str, Any]:
+    if value is None:
+        return ("none", None)
+    if isinstance(value, bool):
+        return ("bool", value)
+    if isinstance(value, int):
+        return ("int", value)
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            _fail(
+                "layer3_origin_anchor_invalid",
+                "Origin authority contains a non-finite float.",
+            )
+        return ("float", value.hex())
+    if isinstance(value, str):
+        return ("str", value)
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        return ("bytes", bytes(value).hex())
+    if isinstance(value, datetime):
+        normalized = value
+        if value.tzinfo is not None:
+            normalized = value.astimezone(timezone.utc)
+        return ("datetime", normalized.isoformat(timespec="microseconds"))
+    if isinstance(value, date):
+        return ("date", value.isoformat())
+    if isinstance(value, time):
+        return ("time", value.isoformat(timespec="microseconds"))
+    if isinstance(value, Decimal):
+        return ("decimal", str(value.normalize()))
+    if isinstance(value, UUID):
+        return ("uuid", str(value))
+    if isinstance(value, Mapping):
+        items: list[tuple[str, tuple[str, Any]]] = []
+        for key, item in value.items():
+            if not isinstance(key, str):
+                _fail(
+                    "layer3_origin_anchor_invalid",
+                    "Origin authority mapping keys must be strings.",
+                )
+            items.append((key, _freeze_anchor_value(item)))
+        return ("mapping", tuple(sorted(items)))
+    if isinstance(value, list):
+        return (
+            "list",
+            tuple(_freeze_anchor_value(item) for item in value),
+        )
+    if isinstance(value, tuple):
+        return (
+            "tuple",
+            tuple(_freeze_anchor_value(item) for item in value),
+        )
+    _fail(
+        "layer3_origin_anchor_invalid",
+        f"Unsupported origin authority type: {type(value).__name__}.",
+    )
+
+
+def _thaw_anchor_value(value: tuple[str, Any]) -> Any:
+    kind, payload = value
+    if kind == "none":
+        return None
+    if kind in {"bool", "int", "str"}:
+        return payload
+    if kind == "float":
+        return float.fromhex(payload)
+    if kind == "bytes":
+        return bytes.fromhex(payload)
+    if kind == "datetime":
+        return datetime.fromisoformat(payload)
+    if kind == "date":
+        return date.fromisoformat(payload)
+    if kind == "time":
+        return time.fromisoformat(payload)
+    if kind == "decimal":
+        return Decimal(payload)
+    if kind == "uuid":
+        return UUID(payload)
+    if kind == "mapping":
+        return {
+            key: _thaw_anchor_value(item)
+            for key, item in payload
+        }
+    if kind == "list":
+        return [_thaw_anchor_value(item) for item in payload]
+    if kind == "tuple":
+        return tuple(_thaw_anchor_value(item) for item in payload)
+    _fail(
+        "layer3_origin_anchor_invalid",
+        f"Unknown frozen origin authority type: {kind}.",
+    )
+
+
+@dataclass(frozen=True)
+class _AnchorRow:
+    table_name: str
+    values: tuple[tuple[str, tuple[str, Any]], ...]
+
+    def materialize(self, model: type[_ModelT]) -> _ModelT:
+        table = getattr(model, "__table__", None)
+        if getattr(table, "name", None) != self.table_name:
+            _fail(
+                "layer3_origin_anchor_invalid",
+                "Origin authority materialization used the wrong model.",
+            )
+        return model(
+            **{
+                key: _thaw_anchor_value(value)
+                for key, value in self.values
+            }
+        )
+
+
+@dataclass(frozen=True)
+class _OriginAnchor:
+    target: _AnchorRow
+    run: _AnchorRow
+    events: tuple[_AnchorRow, ...]
+    policy_snapshots: tuple[_AnchorRow, ...]
+    linkages: tuple[_AnchorRow, ...]
+    dataset_versions: tuple[_AnchorRow, ...]
+    provenances: tuple[_AnchorRow, ...]
+    intakes: tuple[_AnchorRow, ...]
+
+
+def _index_anchor_authority(
+    rows: Sequence[_AnchorRow],
+    *,
+    model: type[_ModelT],
+    identity_field: str,
+) -> dict[str, _ModelT]:
+    indexed: dict[str, _ModelT] = {}
+    for row in rows:
+        materialized = row.materialize(model)
+        identity = getattr(materialized, identity_field, None)
+        if (
+            not isinstance(identity, str)
+            or not identity
+            or identity in indexed
+        ):
+            _fail(
+                "layer3_origin_anchor_invalid",
+                "Frozen terminal-ledger authority has invalid cardinality.",
+            )
+        indexed[identity] = materialized
+    return indexed
+
+
+def _ledger_event_order(
+    event: ConnectorRunEvent,
+) -> tuple[str, str]:
+    created_at = event.created_at
+    if not isinstance(created_at, datetime):
+        _fail(
+            "layer3_origin_anchor_invalid",
+            "Frozen terminal-ledger event lacks a datetime.",
+        )
+    normalized = (
+        created_at.replace(tzinfo=timezone.utc)
+        if created_at.tzinfo is None
+        else created_at.astimezone(timezone.utc)
+    )
+    event_id = event.connector_run_event_id
+    if not isinstance(event_id, str) or not event_id:
+        _fail(
+            "layer3_origin_anchor_invalid",
+            "Frozen terminal-ledger event lacks an identity.",
+        )
+    return normalized.isoformat(timespec="microseconds"), event_id
+
+
+@dataclass(frozen=True)
+class _FrozenLedgerQuery:
+    rows: tuple[ConnectorRunEvent, ...]
+
+    def filter(self, *criteria: object) -> _FrozenLedgerQuery:
+        return self
+
+    def order_by(self, *criteria: object) -> _FrozenLedgerQuery:
+        return self
+
+    def all(self) -> list[ConnectorRunEvent]:
+        return list(self.rows)
+
+
+@dataclass(frozen=True)
+class _FrozenLedgerAuthority:
+    run: ConnectorRun
+    events_by_id: Mapping[str, ConnectorRunEvent]
+    policies_by_id: Mapping[str, ConnectorPolicySnapshot]
+    terminal_events: tuple[ConnectorRunEvent, ...]
+
+    @classmethod
+    def from_anchor(
+        cls,
+        anchor: _OriginAnchor,
+    ) -> _FrozenLedgerAuthority:
+        run = anchor.run.materialize(ConnectorRun)
+        events = _index_anchor_authority(
+            anchor.events,
+            model=ConnectorRunEvent,
+            identity_field="connector_run_event_id",
+        )
+        policies = _index_anchor_authority(
+            anchor.policy_snapshots,
+            model=ConnectorPolicySnapshot,
+            identity_field="connector_policy_snapshot_id",
+        )
+        run_id = run.connector_run_id
+        if any(
+            event.connector_run_id != run_id
+            for event in events.values()
+        ) or any(
+            policy.connector_run_id != run_id
+            for policy in policies.values()
+        ):
+            _fail(
+                "layer3_origin_anchor_invalid",
+                "Frozen terminal-ledger authority crosses run identity.",
+            )
+        terminal_events = tuple(
+            sorted(
+                (
+                    event
+                    for event in events.values()
+                    if event.event_type
+                    in {"egress_reserved", "egress_completed"}
+                ),
+                key=_ledger_event_order,
+            )
+        )
+        return cls(
+            run=run,
+            events_by_id=events,
+            policies_by_id=policies,
+            terminal_events=terminal_events,
+        )
+
+    def get(
+        self,
+        model: type[Any],
+        identity: str,
+    ) -> Any | None:
+        if model is ConnectorRun:
+            return (
+                self.run
+                if identity == self.run.connector_run_id
+                else None
+            )
+        if model is ConnectorRunEvent:
+            return self.events_by_id.get(identity)
+        if model is ConnectorPolicySnapshot:
+            return self.policies_by_id.get(identity)
+        _fail(
+            "layer3_origin_anchor_invalid",
+            "Terminal-ledger derivation requested unanchored authority.",
+        )
+
+    def query(self, model: type[Any]) -> _FrozenLedgerQuery:
+        if model is not ConnectorRunEvent:
+            _fail(
+                "layer3_origin_anchor_invalid",
+                "Terminal-ledger derivation queried unanchored authority.",
+            )
+        return _FrozenLedgerQuery(self.terminal_events)
+
+
+def _anchor_columns(
+    table: FromClause,
+    prefix: str,
+) -> list[Any]:
+    return [
+        column.label(f"{prefix}__{column.key}")
+        for column in sorted(table.columns, key=lambda item: item.key)
+    ]
+
+
+def _anchor_row(
+    row: RowMapping,
+    *,
+    table: FromClause,
+    prefix: str,
+) -> _AnchorRow | None:
+    primary_values = [
+        row[f"{prefix}__{column.key}"]
+        for column in table.primary_key
+    ]
+    if all(value is None for value in primary_values):
+        return None
+    if any(value is None for value in primary_values):
+        _fail(
+            "layer3_origin_anchor_invalid",
+            "Origin authority has a partial primary key.",
+        )
+    table_name = getattr(table, "name", None)
+    if not isinstance(table_name, str) or not table_name:
+        _fail(
+            "layer3_origin_anchor_invalid",
+            "Origin authority table lacks an identity.",
+        )
+    return _AnchorRow(
+        table_name=table_name,
+        values=tuple(
+            (
+                column.key,
+                _freeze_anchor_value(row[f"{prefix}__{column.key}"]),
+            )
+            for column in sorted(table.columns, key=lambda item: item.key)
+        ),
+    )
+
+
+def _anchor_rows(
+    rows: Sequence[RowMapping],
+    *,
+    table: FromClause,
+    prefix: str,
+) -> tuple[_AnchorRow, ...]:
+    unique: set[_AnchorRow] = set()
+    for row in rows:
+        anchor_row = _anchor_row(row, table=table, prefix=prefix)
+        if anchor_row is not None:
+            unique.add(anchor_row)
+    return tuple(sorted(unique, key=lambda item: repr(item.values)))
+
+
+def _bounded_anchor_rows(
+    db: Session,
+    *,
+    table: FromClause,
+    prefix: str,
+    criteria: Sequence[Any],
+    max_rows: int,
+) -> tuple[_AnchorRow, ...]:
+    statement = (
+        select(*_anchor_columns(table, prefix))
+        .select_from(table)
+        .where(*criteria)
+        .limit(max_rows + 1)
+    )
+    rows = list(db.execute(statement).mappings().all())
+    if len(rows) > max_rows:
+        table_name = getattr(table, "name", None)
+        if not isinstance(table_name, str) or not table_name:
+            _fail(
+                "layer3_origin_anchor_invalid",
+                "Origin authority table lacks an identity.",
+            )
+        _fail(
+            "layer3_origin_anchor_cardinality_exceeded",
+            "Origin authority exceeds its frozen row maximum.",
+            details={
+                "table": table_name,
+                "max_rows": max_rows,
+                "observed_at_least": max_rows + 1,
+            },
+        )
+    return _anchor_rows(rows, table=table, prefix=prefix)
+
+
+def _read_origin_anchor(
+    db: Session,
+    *,
+    target_id: str,
+) -> _OriginAnchor:
+    target_table = ConnectorRunTarget.__table__
+    run_table = ConnectorRun.__table__
+    event_table = ConnectorRunEvent.__table__
+    policy_table = ConnectorPolicySnapshot.__table__
+    linkage_table = ApsContentLinkage.__table__
+    version_table = DatasetVersion.__table__
+    provenance_table = DatasetSourceProvenance.__table__
+    intake_table = L3ConnectorSourceIntakeRecord.__table__
+    base_tables: tuple[tuple[FromClause, str], ...] = (
+        (target_table, "target"),
+        (run_table, "run"),
+        (version_table, "version"),
+    )
+    from_clause = (
+        target_table.outerjoin(
+            run_table,
+            run_table.c.connector_run_id
+            == target_table.c.connector_run_id,
+        )
+        .outerjoin(
+            version_table,
+            version_table.c.dataset_version_id
+            == target_table.c.dataset_version_id,
+        )
+    )
+    columns = [
+        column
+        for table, prefix in base_tables
+        for column in _anchor_columns(table, prefix)
+    ]
+    statement = (
+        select(*columns)
+        .select_from(from_clause)
+        .where(
+            target_table.c.connector_run_target_id == target_id
+        )
+    )
+    rows = list(db.execute(statement).mappings().all())
+    targets = list(
+        _anchor_rows(rows, table=target_table, prefix="target")
+    )
+    if not targets:
+        _fail(
+            "layer3_origin_target_not_found",
+            "The connector run target does not exist.",
+        )
+    target = _one(
+        targets,
+        code="layer3_origin_target_cardinality",
+        label="connector run-target row",
+    )
+    run = _one(
+        list(_anchor_rows(rows, table=run_table, prefix="run")),
+        code="layer3_origin_run_not_found",
+        label="connector run row",
+    )
+    dataset_versions = _anchor_rows(
+        rows,
+        table=version_table,
+        prefix="version",
+    )
+    anchored_target = target.materialize(ConnectorRunTarget)
+    anchored_run = run.materialize(ConnectorRun)
+    run_id = anchored_run.connector_run_id
+    anchored_target_id = anchored_target.connector_run_target_id
+    connector_key = anchored_run.connector_key
+    event_cap = _ORIGIN_EVENT_CAPS.get(
+        connector_key,
+        _GLOBAL_ORIGIN_EVENT_CAP,
+    )
+    policy_cap = _ORIGIN_POLICY_CAPS.get(
+        connector_key,
+        _GLOBAL_ORIGIN_POLICY_CAP,
+    )
+    version_id = (
+        dataset_versions[0]
+        .materialize(DatasetVersion)
+        .dataset_version_id
+        if dataset_versions
+        else None
+    )
+
+    events = _bounded_anchor_rows(
+        db,
+        table=event_table,
+        prefix="event",
+        criteria=(event_table.c.connector_run_id == run_id,),
+        max_rows=event_cap,
+    )
+    policy_snapshots = _bounded_anchor_rows(
+        db,
+        table=policy_table,
+        prefix="policy",
+        criteria=(policy_table.c.connector_run_id == run_id,),
+        max_rows=policy_cap,
+    )
+    linkages = _bounded_anchor_rows(
+        db,
+        table=linkage_table,
+        prefix="linkage",
+        criteria=(
+            linkage_table.c.run_id == run_id,
+            linkage_table.c.target_id == anchored_target_id,
+        ),
+        max_rows=_SINGLE_ORIGIN_ROW_CAP,
+    )
+    provenances = _bounded_anchor_rows(
+        db,
+        table=provenance_table,
+        prefix="provenance",
+        criteria=(
+            provenance_table.c.connector_run_id == run_id,
+            (
+                provenance_table.c.dataset_version_id == version_id
+                if version_id is not None
+                else false()
+            ),
+        ),
+        max_rows=_SINGLE_ORIGIN_ROW_CAP,
+    )
+    intakes = _bounded_anchor_rows(
+        db,
+        table=intake_table,
+        prefix="intake",
+        criteria=(
+            intake_table.c.connector_run_id == run_id,
+            intake_table.c.connector_run_target_id
+            == anchored_target_id,
+        ),
+        max_rows=_SINGLE_ORIGIN_ROW_CAP,
+    )
+    return _OriginAnchor(
+        target=target,
+        run=run,
+        events=events,
+        policy_snapshots=policy_snapshots,
+        linkages=linkages,
+        dataset_versions=dataset_versions,
+        provenances=provenances,
+        intakes=intakes,
+    )
+
+
+def _require_anchor_unchanged(
+    db: Session,
+    *,
+    target_id: str,
+    expected: _OriginAnchor,
+) -> None:
+    # Additive reads plus this full recollect detect sustained drift only;
+    # they are not a one-statement snapshot and do not detect ABA changes.
+    try:
+        current = _read_origin_anchor(db, target_id=target_id)
+    except Layer3OriginContinuityError as exc:
+        raise Layer3OriginContinuityError(
+            "layer3_origin_authority_drift",
+            "Origin authority changed before verification completed.",
+        ) from exc
+    if current != expected:
+        _fail(
+            "layer3_origin_authority_drift",
+            "Origin authority changed before verification completed.",
+        )
 
 
 def _same_storage_reference(left: object, right: object) -> bool:
@@ -299,7 +851,7 @@ def _resolve_historical_evidence(
 
 
 def _derive_terminal_ledger(
-    db: Session,
+    authority: Any,
     connector_run_id: str,
     *,
     counter_path: Path,
@@ -309,7 +861,7 @@ def _derive_terminal_ledger(
     )
 
     return derive_terminal_request_ledger(
-        db,
+        authority,
         connector_run_id=connector_run_id,
         counter_path=counter_path,
     )
@@ -426,9 +978,9 @@ def _resolve_historical_counter_path(
     return resolved
 
 
-def _load_sciencebase_bindings(
-    db: Session,
+def _load_sciencebase_bindings_from_anchor(
     *,
+    anchor: _OriginAnchor,
     run: ConnectorRun,
     target: ConnectorRunTarget,
     raw_sha256: str,
@@ -438,8 +990,18 @@ def _load_sciencebase_bindings(
         target.dataset_version_id,
         field="dataset_version_id",
     )
-    version = db.get(DatasetVersion, version_id)
-    if version is None or version.dataset_id != target.dataset_id:
+    version = _one(
+        [
+            row.materialize(DatasetVersion)
+            for row in anchor.dataset_versions
+        ],
+        code="layer3_origin_dataset_version_cardinality",
+        label="dataset-version row",
+    )
+    if (
+        version.dataset_version_id != version_id
+        or version.dataset_id != target.dataset_id
+    ):
         _fail(
             "layer3_origin_dataset_version_mismatch",
             "The target dataset version relationship is missing or contradictory.",
@@ -453,10 +1015,10 @@ def _load_sciencebase_bindings(
             "DatasetVersion.content_hash does not equal the raw-byte hash.",
         )
     provenance = _one(
-        db.query(DatasetSourceProvenance)
-        .filter(DatasetSourceProvenance.connector_run_id == run.connector_run_id)
-        .filter(DatasetSourceProvenance.dataset_version_id == version_id)
-        .all(),
+        [
+            row.materialize(DatasetSourceProvenance)
+            for row in anchor.provenances
+        ],
         code="layer3_origin_provenance_cardinality",
         label="dataset source-provenance row",
     )
@@ -480,16 +1042,10 @@ def _load_sciencebase_bindings(
         )
 
     intake = _one(
-        db.query(L3ConnectorSourceIntakeRecord)
-        .filter(
-            L3ConnectorSourceIntakeRecord.connector_run_id
-            == run.connector_run_id
-        )
-        .filter(
-            L3ConnectorSourceIntakeRecord.connector_run_target_id
-            == target.connector_run_target_id
-        )
-        .all(),
+        [
+            row.materialize(L3ConnectorSourceIntakeRecord)
+            for row in anchor.intakes
+        ],
         code="layer3_origin_source_intake_cardinality",
         label="connector source-intake row",
     )
@@ -518,21 +1074,60 @@ def _load_sciencebase_bindings(
     }
 
 
-def _load_nrc_bindings(
+def _load_sciencebase_bindings(
     db: Session,
     *,
     run: ConnectorRun,
     target: ConnectorRunTarget,
     raw_sha256: str,
+    raw_size: int,
+) -> dict[str, str | None]:
+    """Compatibility boundary backed by one caller-connection Core anchor."""
+    with db.no_autoflush:
+        target_id = _required_text(
+            target.connector_run_target_id,
+            field="connector_run_target_id",
+        )
+        anchor = _read_origin_anchor(db, target_id=target_id)
+        anchored_run = anchor.run.materialize(ConnectorRun)
+        anchored_target = anchor.target.materialize(ConnectorRunTarget)
+        if (
+            anchored_run.connector_run_id != run.connector_run_id
+            or anchored_target.connector_run_target_id != target_id
+        ):
+            _fail(
+                "layer3_origin_anchor_mismatch",
+                "Caller bindings do not identify the captured origin anchor.",
+            )
+        bindings = _load_sciencebase_bindings_from_anchor(
+            anchor=anchor,
+            run=anchored_run,
+            target=anchored_target,
+            raw_sha256=raw_sha256,
+            raw_size=raw_size,
+        )
+        _require_anchor_unchanged(
+            db,
+            target_id=target_id,
+            expected=anchor,
+        )
+        return bindings
+
+
+def _load_nrc_bindings(
+    *,
+    anchor: _OriginAnchor,
+    run: ConnectorRun,
+    target: ConnectorRunTarget,
+    raw_sha256: str,
+    raw_size: int,
+    require_custody: bool,
 ) -> dict[str, str | None]:
     linkage = _one(
-        db.query(ApsContentLinkage)
-        .filter(ApsContentLinkage.run_id == run.connector_run_id)
-        .filter(
-            ApsContentLinkage.target_id
-            == target.connector_run_target_id
-        )
-        .all(),
+        [
+            row.materialize(ApsContentLinkage)
+            for row in anchor.linkages
+        ],
         code="layer3_origin_aps_linkage_cardinality",
         label="APS content-linkage row",
     )
@@ -557,6 +1152,32 @@ def _load_nrc_bindings(
             "layer3_origin_aps_linkage_mismatch",
             "APS content linkage contradicts the connector target bytes.",
         )
+    if require_custody:
+        source_reference = target.source_reference_json
+        marker = (
+            source_reference.get(
+                nrc_phase_b_custody.CUSTODY_STORAGE_KEY
+            )
+            if isinstance(source_reference, Mapping)
+            else None
+        )
+        try:
+            nrc_phase_b_custody.require_exact_custody_marker(
+                marker,
+                status=nrc_phase_b_custody.VERIFIED,
+                connector_run_id=run.connector_run_id,
+                connector_run_target_id=target.connector_run_target_id,
+                aps_content_linkage_id=linkage.aps_content_linkage_id,
+                content_id=linkage.content_id,
+                blob_ref=str(linkage.blob_ref or ""),
+                blob_sha256=str(linkage.blob_sha256 or ""),
+                blob_size_bytes=raw_size,
+            )
+        except nrc_phase_b_custody.NrcPhaseBCustodyMarkerError as exc:
+            raise Layer3OriginContinuityError(
+                "layer3_origin_nrc_custody_ineligible",
+                "NRC origin requires one exact verified Phase-B custody marker.",
+            ) from exc
     return {
         "dataset_id": None,
         "dataset_version_id": None,
@@ -1016,7 +1637,7 @@ def _validate_target_against_grant(
 
 
 def _validate_fresh_live_evidence(
-    db: Session,
+    ledger_authority: _FrozenLedgerAuthority,
     *,
     run: ConnectorRun,
     target: ConnectorRunTarget,
@@ -1137,7 +1758,7 @@ def _validate_fresh_live_evidence(
         campaign_fingerprint=campaign_fingerprint,
     )
     ledger = _derive_terminal_ledger(
-        db,
+        ledger_authority,
         run.connector_run_id,
         counter_path=counter_path,
     )
@@ -1300,28 +1921,12 @@ def _validate_fresh_live_evidence(
     )
 
 
-def derive_connector_origin_receipt(
-    db: Session,
+def _derive_connector_origin_receipt_from_anchor(
     *,
-    connector_run_target_id: str,
+    anchor: _OriginAnchor,
 ) -> dict[str, Any]:
-    """Reconstruct one connector target's origin receipt from server-owned state."""
-    target_id = _required_text(
-        connector_run_target_id,
-        field="connector_run_target_id",
-    )
-    target = db.get(ConnectorRunTarget, target_id)
-    if target is None:
-        _fail(
-            "layer3_origin_target_not_found",
-            "The connector run target does not exist.",
-        )
-    run = db.get(ConnectorRun, target.connector_run_id)
-    if run is None:
-        _fail(
-            "layer3_origin_run_not_found",
-            "The connector run does not exist.",
-        )
+    target = anchor.target.materialize(ConnectorRunTarget)
+    run = anchor.run.materialize(ConnectorRun)
     if run.connector_key not in _ALLOWED_CONNECTORS:
         _fail(
             "layer3_origin_connector_not_admitted",
@@ -1356,8 +1961,8 @@ def derive_connector_origin_receipt(
         )
 
     if run.connector_key == "sciencebase_mcs":
-        content_bindings = _load_sciencebase_bindings(
-            db,
+        content_bindings = _load_sciencebase_bindings_from_anchor(
+            anchor=anchor,
             run=run,
             target=target,
             raw_sha256=raw_sha256,
@@ -1365,10 +1970,12 @@ def derive_connector_origin_receipt(
         )
     else:
         content_bindings = _load_nrc_bindings(
-            db,
+            anchor=anchor,
             run=run,
             target=target,
             raw_sha256=raw_sha256,
+            raw_size=raw_size,
+            require_custody=not is_offline_fixture,
         )
 
     if not isinstance(run.request_config_json, Mapping):
@@ -1395,7 +2002,7 @@ def derive_connector_origin_receipt(
                 "The run lacks a strict server-derived arming envelope.",
             )
         authority_bindings, target_identity = _validate_fresh_live_evidence(
-            db,
+            _FrozenLedgerAuthority.from_anchor(anchor),
             run=run,
             target=target,
             envelope=envelope,
@@ -1425,6 +2032,29 @@ def derive_connector_origin_receipt(
     return receipt
 
 
+def derive_connector_origin_receipt(
+    db: Session,
+    *,
+    connector_run_target_id: str,
+) -> dict[str, Any]:
+    """Reconstruct one connector target's origin receipt from server-owned state."""
+    target_id = _required_text(
+        connector_run_target_id,
+        field="connector_run_target_id",
+    )
+    with db.no_autoflush:
+        anchor = _read_origin_anchor(db, target_id=target_id)
+        receipt = _derive_connector_origin_receipt_from_anchor(
+            anchor=anchor,
+        )
+        _require_anchor_unchanged(
+            db,
+            target_id=target_id,
+            expected=anchor,
+        )
+        return receipt
+
+
 def assert_connector_origin_continuity(
     db: Session,
     *,
@@ -1445,77 +2075,78 @@ def assert_connector_origin_continuity(
         _fail(
             "layer3_origin_expected_bindings_invalid",
             "expected_bindings must be a mapping of scalar receipt fields.",
-        )
-    target = db.get(ConnectorRunTarget, target_id)
-    if target is None:
-        _fail(
-            "layer3_origin_target_not_found",
-            "The connector run target does not exist.",
-        )
-    source_reference = (
-        target.source_reference_json
-        if isinstance(target.source_reference_json, Mapping)
-        else {}
     )
-    stored = source_reference.get(ORIGIN_RECEIPT_STORAGE_KEY)
-    if not isinstance(stored, Mapping):
-        _fail(
-            "layer3_origin_stored_receipt_missing",
-            "The target lacks its authoritative connector-origin receipt.",
+    with db.no_autoflush:
+        anchor = _read_origin_anchor(db, target_id=target_id)
+        target = anchor.target.materialize(ConnectorRunTarget)
+        source_reference = (
+            target.source_reference_json
+            if isinstance(target.source_reference_json, Mapping)
+            else {}
         )
-    for key, value in source_reference.items():
-        if (
-            key != ORIGIN_RECEIPT_STORAGE_KEY
-            and isinstance(value, Mapping)
-            and value.get("schema_id") == ORIGIN_RECEIPT_SCHEMA_ID
-        ):
+        stored = source_reference.get(ORIGIN_RECEIPT_STORAGE_KEY)
+        if not isinstance(stored, Mapping):
             _fail(
-                "layer3_origin_duplicate_canonical_receipt",
-                "The target carries more than one canonical origin receipt.",
+                "layer3_origin_stored_receipt_missing",
+                "The target lacks its authoritative connector-origin receipt.",
             )
-    stored_dict = dict(stored)
-    stored_hash = _normalized_sha256(
-        stored_dict.get("receipt_hash"),
-        field="stored receipt_hash",
-    )
-    stored_preimage = {
-        key: value
-        for key, value in stored_dict.items()
-        if key != "receipt_hash"
-    }
-    if _stable_hash(stored_preimage) != stored_hash:
-        _fail(
-            "layer3_origin_stored_receipt_hash_mismatch",
-            "The stored connector-origin receipt hash does not rederive.",
+        for key, value in source_reference.items():
+            if (
+                key != ORIGIN_RECEIPT_STORAGE_KEY
+                and isinstance(value, Mapping)
+                and value.get("schema_id") == ORIGIN_RECEIPT_SCHEMA_ID
+            ):
+                _fail(
+                    "layer3_origin_duplicate_canonical_receipt",
+                    "The target carries more than one canonical origin receipt.",
+                )
+        stored_dict = dict(stored)
+        stored_hash = _normalized_sha256(
+            stored_dict.get("receipt_hash"),
+            field="stored receipt_hash",
         )
+        stored_preimage = {
+            key: value
+            for key, value in stored_dict.items()
+            if key != "receipt_hash"
+        }
+        if _stable_hash(stored_preimage) != stored_hash:
+            _fail(
+                "layer3_origin_stored_receipt_hash_mismatch",
+                "The stored connector-origin receipt hash does not rederive.",
+            )
 
-    derived = derive_connector_origin_receipt(
-        db,
-        connector_run_target_id=target_id,
-    )
-    if (
-        derived["receipt_hash"] != expected_hash
-        or stored_hash != expected_hash
-        or stored_dict != derived
-    ):
-        _fail(
-            "layer3_origin_stored_receipt_mismatch",
-            "The stored receipt does not equal reconstructed origin evidence.",
+        derived = _derive_connector_origin_receipt_from_anchor(
+            anchor=anchor,
         )
-    for field, expected in expected_bindings.items():
-        if not isinstance(field, str) or not isinstance(expected, str):
-            _fail(
-                "layer3_origin_expected_bindings_invalid",
-                "Expected origin bindings must use string keys and values.",
-            )
-        actual = derived.get(field)
+        _require_anchor_unchanged(
+            db,
+            target_id=target_id,
+            expected=anchor,
+        )
         if (
-            actual is None
-            or isinstance(actual, (Mapping, list))
-            or str(actual) != expected
+            derived["receipt_hash"] != expected_hash
+            or stored_hash != expected_hash
+            or stored_dict != derived
         ):
             _fail(
-                "layer3_origin_expected_binding_mismatch",
-                "A downstream origin binding does not equal the canonical receipt.",
-                details={"field": field},
+                "layer3_origin_stored_receipt_mismatch",
+                "The stored receipt does not equal reconstructed origin evidence.",
             )
+        for field, expected in expected_bindings.items():
+            if not isinstance(field, str) or not isinstance(expected, str):
+                _fail(
+                    "layer3_origin_expected_bindings_invalid",
+                    "Expected origin bindings must use string keys and values.",
+                )
+            actual = derived.get(field)
+            if (
+                actual is None
+                or isinstance(actual, (Mapping, list))
+                or str(actual) != expected
+            ):
+                _fail(
+                    "layer3_origin_expected_binding_mismatch",
+                    "A downstream origin binding does not equal the canonical receipt.",
+                    details={"field": field},
+                )

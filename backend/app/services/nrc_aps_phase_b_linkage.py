@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from copy import deepcopy
+from datetime import date, datetime, time, timezone
+from decimal import Decimal
 import json
+import math
 import os
 from pathlib import Path
 import re
 from typing import Any, Mapping, NoReturn
+from uuid import UUID
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -26,6 +30,7 @@ from app.services import connectors_nrc_adams
 from app.services import layer3_origin_continuity
 from app.services import nrc_aps_artifact_ingestion
 from app.services import nrc_aps_content_index
+from app.services import nrc_phase_b_custody
 from app.services import nrc_aps_strict_parse
 from app.services.raw_storage_handles import (
     StableRawStorageError,
@@ -39,6 +44,7 @@ _ACCESSION = connectors_nrc_adams.NRC_FRESH_ACCESSION
 _ORIGIN_RECEIPT_KEY = (
     layer3_origin_continuity.ORIGIN_RECEIPT_STORAGE_KEY
 )
+_CUSTODY_KEY = nrc_phase_b_custody.CUSTODY_STORAGE_KEY
 _ADMISSION_KEYS = frozenset(
     {
         "schema_id",
@@ -53,10 +59,14 @@ _ADMISSION_KEYS = frozenset(
         "blob_storage_layout",
     }
 )
+_RowSnapshot = tuple[tuple[str, Any], ...]
+_EventSnapshot = tuple[_RowSnapshot, ...]
 _ADMISSION_KEY_SETS = frozenset(
     {
         _ADMISSION_KEYS,
         _ADMISSION_KEYS | {_ORIGIN_RECEIPT_KEY},
+        _ADMISSION_KEYS | {_CUSTODY_KEY},
+        _ADMISSION_KEYS | {_ORIGIN_RECEIPT_KEY, _CUSTODY_KEY},
     }
 )
 
@@ -111,6 +121,74 @@ def _contains_url(value: object) -> bool:
     return False
 
 
+def _canonical_snapshot_value(value: object) -> tuple[str, Any]:
+    if value is None:
+        return ("none", None)
+    if isinstance(value, bool):
+        return ("bool", value)
+    if isinstance(value, int):
+        return ("int", value)
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            _fail(
+                "nrc_phase_b_snapshot_invalid",
+                "Authority snapshot contains a non-finite float.",
+            )
+        return ("float", value.hex())
+    if isinstance(value, str):
+        return ("str", value)
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        return ("bytes", bytes(value).hex())
+    if isinstance(value, datetime):
+        normalized = value
+        if value.tzinfo is not None:
+            normalized = value.astimezone(timezone.utc).replace(tzinfo=None)
+        return ("datetime", normalized.isoformat(timespec="microseconds"))
+    if isinstance(value, date):
+        return ("date", value.isoformat())
+    if isinstance(value, time):
+        return ("time", value.isoformat(timespec="microseconds"))
+    if isinstance(value, Decimal):
+        return ("decimal", str(value.normalize()))
+    if isinstance(value, UUID):
+        return ("uuid", str(value))
+    if isinstance(value, (Mapping, list, tuple)):
+        try:
+            canonical_json = json.dumps(
+                value,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            )
+        except (TypeError, ValueError) as exc:
+            raise NrcPhaseBLinkageError(
+                "nrc_phase_b_snapshot_invalid",
+                "Authority JSON cannot be canonicalized.",
+            ) from exc
+        return ("json", canonical_json)
+    _fail(
+        "nrc_phase_b_snapshot_invalid",
+        f"Unsupported authority value type: {type(value).__name__}.",
+    )
+
+
+def _mapped_snapshot(row: object) -> _RowSnapshot:
+    table = getattr(row, "__table__", None)
+    if table is None:
+        _fail(
+            "nrc_phase_b_snapshot_invalid",
+            "Authority row has no mapped table.",
+        )
+    return tuple(
+        (
+            column.key,
+            _canonical_snapshot_value(getattr(row, column.key)),
+        )
+        for column in sorted(table.columns, key=lambda item: item.key)
+    )
+
+
 def _require_owned_clean_transaction(db: Session) -> None:
     if (
         db.in_transaction()
@@ -127,25 +205,12 @@ def _require_owned_clean_transaction(db: Session) -> None:
 
 def _event_snapshot(
     events: list[ConnectorRunEvent],
-) -> tuple[tuple[Any, ...], ...]:
+) -> _EventSnapshot:
     return tuple(
-        sorted(
-            (
-                event.connector_run_event_id,
-                event.connector_run_id,
-                event.connector_run_target_id,
-                event.phase,
-                event.stage,
-                event.event_type,
-                event.status_before,
-                event.status_after,
-                event.reason_code,
-                event.error_class,
-                event.message,
-                json.dumps(event.metrics_json, sort_keys=True),
-                event.created_at,
-            )
-            for event in events
+        _mapped_snapshot(event)
+        for event in sorted(
+            events,
+            key=lambda item: item.connector_run_event_id,
         )
     )
 
@@ -154,9 +219,9 @@ def _validate_run(
     db: Session,
     run: ConnectorRun,
     *,
-    expected_event_snapshot: tuple[tuple[Any, ...], ...] | None = None,
+    expected_event_snapshot: _EventSnapshot | None = None,
     lock_events: bool = False,
-) -> tuple[tuple[Any, ...], ...]:
+) -> _EventSnapshot:
     if (
         run.connector_key != "nrc_adams_aps"
         or run.source_system != "nrc_adams_aps"
@@ -178,7 +243,7 @@ def _validate_run(
         )
     event_query = db.query(ConnectorRunEvent).filter(
         ConnectorRunEvent.connector_run_id == run.connector_run_id
-    )
+    ).populate_existing()
     if lock_events:
         event_query = event_query.with_for_update()
     events = event_query.all()
@@ -399,69 +464,12 @@ def _safe_rehash(
     return resolved_path
 
 
-def _run_snapshot(run: ConnectorRun) -> tuple[Any, ...]:
-    return (
-        run.connector_run_id,
-        run.connector_key,
-        run.source_system,
-        run.source_mode,
-        run.status,
-        json.dumps(run.request_config_json, sort_keys=True),
-        run.submission_idempotency_key,
-        run.completed_at,
-        run.discovered_count,
-        run.selected_count,
-        run.downloaded_count,
-        run.ingested_count,
-        run.consumed_bytes,
-        run.failed_count,
-        run.terminal_target_count,
-        run.nonterminal_target_count,
-        run.execution_lease_owner,
-        run.execution_lease_token,
-        run.execution_lease_expires_at,
-        run.error_summary,
-    )
+def _run_snapshot(run: ConnectorRun) -> _RowSnapshot:
+    return _mapped_snapshot(run)
 
 
-def _target_snapshot(target: ConnectorRunTarget) -> tuple[Any, ...]:
-    return (
-        target.connector_run_target_id,
-        target.connector_run_id,
-        target.ordinal,
-        target.stable_release_key,
-        target.stable_release_identifier,
-        json.dumps(target.identifiers_json, sort_keys=True),
-        target.sciencebase_item_id,
-        target.sciencebase_item_url,
-        target.sciencebase_file_name,
-        target.sciencebase_download_uri,
-        target.artifact_surface,
-        target.selection_source,
-        target.selection_scope,
-        target.selection_match_basis,
-        target.artifact_locator_type,
-        target.source_artifact_key,
-        target.canonical_artifact_key,
-        target.downloaded_sha256,
-        target.raw_storage_ref,
-        target.fetch_policy_mode,
-        target.redirect_count,
-        json.dumps(target.aliases_json, sort_keys=True),
-        json.dumps(target.source_reference_json, sort_keys=True),
-        json.dumps(target.permission_snapshot_json, sort_keys=True),
-        target.access_level_summary,
-        target.public_read_confirmed,
-        target.status,
-        target.retry_eligible,
-        target.attempt_count,
-        target.downloaded_at,
-        target.ingested_at,
-        target.profiled_at,
-        target.recommended_at,
-        target.last_attempt_at,
-        target.last_stage_transition_at,
-    )
+def _target_snapshot(target: ConnectorRunTarget) -> _RowSnapshot:
+    return _mapped_snapshot(target)
 
 
 def _visual_refs(raw: str | None) -> list[dict[str, Any]] | None:
@@ -519,7 +527,10 @@ def _chunks_match(
         if not isinstance(raw_expected, Mapping):
             return False
         expected = dict(raw_expected)
-        row = by_id.get(expected.get("chunk_id"))
+        chunk_id = expected.get("chunk_id")
+        if not isinstance(chunk_id, str):
+            return False
+        row = by_id.get(chunk_id)
         if row is None or not (
             row.content_id == payload["content_id"]
             and row.content_contract_id
@@ -576,12 +587,14 @@ def _content_projection(
         .filter(
             ApsContentDocument.content_id == payload["content_id"]
         )
+        .populate_existing()
         .with_for_update()
         .all()
     )
     chunks = (
         db.query(ApsContentChunk)
         .filter(ApsContentChunk.content_id == payload["content_id"])
+        .populate_existing()
         .with_for_update()
         .all()
     )
@@ -599,6 +612,7 @@ def _preflight(
             ApsContentLinkage.run_id == payload["run_id"],
             ApsContentLinkage.target_id == payload["target_id"],
         )
+        .populate_existing()
         .with_for_update()
         .all()
     )
@@ -651,6 +665,7 @@ def _require_exact_persisted(
             ApsContentLinkage.run_id == payload["run_id"],
             ApsContentLinkage.target_id == payload["target_id"],
         )
+        .populate_existing()
         .with_for_update()
         .all()
     )
@@ -674,9 +689,9 @@ def _reload_authority(
     *,
     run_id: str,
     target_id: str,
-    run_snapshot: tuple[Any, ...],
-    target_snapshot: tuple[Any, ...],
-    event_snapshot: tuple[tuple[Any, ...], ...],
+    run_snapshot: _RowSnapshot,
+    target_snapshot: _RowSnapshot,
+    event_snapshot: _EventSnapshot,
 ) -> tuple[ConnectorRun, ConnectorRunTarget]:
     run = (
         db.query(ConnectorRun)
@@ -707,6 +722,7 @@ def _reload_authority(
     targets = (
         db.query(ConnectorRunTarget)
         .filter(ConnectorRunTarget.connector_run_id == run_id)
+        .populate_existing()
         .with_for_update()
         .all()
     )
@@ -728,46 +744,370 @@ def _reload_authority(
     return run, target
 
 
-def _begin_serialized_recovery(db: Session) -> None:
+def _recovery_target_snapshot(
+    db: Session,
+    *,
+    target_id: str,
+    target_snapshot: _RowSnapshot,
+    initial_source_reference: Mapping[str, Any],
+) -> _RowSnapshot:
+    target = (
+        db.query(ConnectorRunTarget)
+        .filter(
+            ConnectorRunTarget.connector_run_target_id == target_id
+        )
+        .populate_existing()
+        .with_for_update()
+        .one_or_none()
+    )
+    source_reference = (
+        target.source_reference_json if target is not None else None
+    )
+    if (
+        target is None
+        or not isinstance(source_reference, dict)
+        or _CUSTODY_KEY in initial_source_reference
+        or _CUSTODY_KEY not in source_reference
+    ):
+        _fail(
+            "nrc_phase_b_row_drift",
+            "Concurrent exact-conflict authority is not one custody delta.",
+        )
+    without_custody = deepcopy(source_reference)
+    without_custody.pop(_CUSTODY_KEY)
+    if without_custody != initial_source_reference:
+        _fail(
+            "nrc_phase_b_row_drift",
+            "Concurrent exact-conflict authority changed outside custody.",
+        )
+    replacement = _canonical_snapshot_value(source_reference)
+    replaced = False
+    recovered_snapshot: list[tuple[str, Any]] = []
+    for key, value in target_snapshot:
+        if key == "source_reference_json":
+            if replaced:
+                _fail(
+                    "nrc_phase_b_snapshot_invalid",
+                    "Target snapshot has duplicate source-reference columns.",
+                )
+            recovered_snapshot.append((key, replacement))
+            replaced = True
+        else:
+            recovered_snapshot.append((key, value))
+    if not replaced:
+        _fail(
+            "nrc_phase_b_snapshot_invalid",
+            "Target snapshot omits source-reference authority.",
+        )
+    return tuple(recovered_snapshot)
+
+
+def _begin_authoritative_transaction(db: Session) -> None:
     if db.get_bind().dialect.name == "sqlite":
         db.connection().exec_driver_sql("BEGIN IMMEDIATE")
 
 
-def _recover_exact_conflict(
-    db: Session,
-    *,
-    payload: Mapping[str, Any],
-    run_id: str,
-    target_id: str,
-    run_snapshot: tuple[Any, ...],
-    target_snapshot: tuple[Any, ...],
-    event_snapshot: tuple[tuple[Any, ...], ...],
-) -> ApsContentLinkage:
+def _cleanup_owned_session(db: Session) -> bool:
     try:
-        _begin_serialized_recovery(db)
-        _reload_authority(
-            db,
-            run_id=run_id,
-            target_id=target_id,
-            run_snapshot=run_snapshot,
-            target_snapshot=target_snapshot,
-            event_snapshot=event_snapshot,
-        )
-        return _require_exact_persisted(db, payload=payload)
-    except (NrcPhaseBLinkageError, SQLAlchemyError) as conflict:
-        raise NrcPhaseBLinkageError(
-            "nrc_phase_b_persistence_conflict",
-            "Concurrent persistence was not exact and authoritative.",
-        ) from conflict
+        if not db.in_transaction():
+            return True
+        db.rollback()
+        return True
+    except BaseException:
+        try:
+            db.invalidate()
+        except BaseException:
+            pass
+        return False
 
 
-def _commit_detached_linkage(
+def _detach_then_rollback(
+    db: Session,
+    linkage: ApsContentLinkage,
+) -> ApsContentLinkage:
+    db.expunge(linkage)
+    db.rollback()
+    return linkage
+
+
+def _detach_then_commit(
     db: Session,
     linkage: ApsContentLinkage,
 ) -> ApsContentLinkage:
     db.expunge(linkage)
     db.commit()
     return linkage
+
+
+def _custody_ineligible(
+    *,
+    cause: Exception | None = None,
+) -> NoReturn:
+    error = NrcPhaseBLinkageError(
+        "nrc_phase_b_custody_ineligible",
+        "Target custody marker is absent, pending, malformed, or contradictory.",
+    )
+    if cause is None:
+        raise error
+    raise error from cause
+
+
+def _initial_custody_gate(source_reference: Mapping[str, Any]) -> None:
+    if _CUSTODY_KEY not in source_reference:
+        return
+    try:
+        marker = nrc_phase_b_custody.parse_custody_marker(
+            source_reference[_CUSTODY_KEY]
+        )
+    except nrc_phase_b_custody.NrcPhaseBCustodyMarkerError as exc:
+        _custody_ineligible(cause=exc)
+    if marker["status"] != nrc_phase_b_custody.VERIFIED:
+        _custody_ineligible()
+
+
+def _require_exact_custody(
+    value: object,
+    *,
+    status: str,
+    linkage: ApsContentLinkage,
+    raw_size: int,
+    attempt_id: str | None = None,
+) -> dict[str, Any]:
+    try:
+        return nrc_phase_b_custody.require_exact_custody_marker(
+            value,
+            status=status,
+            connector_run_id=linkage.run_id,
+            connector_run_target_id=linkage.target_id,
+            aps_content_linkage_id=linkage.aps_content_linkage_id,
+            content_id=linkage.content_id,
+            blob_ref=str(linkage.blob_ref or ""),
+            blob_sha256=str(linkage.blob_sha256 or ""),
+            blob_size_bytes=raw_size,
+            attempt_id=attempt_id,
+        )
+    except nrc_phase_b_custody.NrcPhaseBCustodyMarkerError as exc:
+        _custody_ineligible(cause=exc)
+
+
+def _phase_one_state(
+    *,
+    target: ConnectorRunTarget,
+    action: str,
+    existing: ApsContentLinkage | None,
+    raw_size: int,
+) -> tuple[str, dict[str, Any] | None]:
+    source_reference = target.source_reference_json
+    assert isinstance(source_reference, Mapping)
+    receipt_present = _ORIGIN_RECEIPT_KEY in source_reference
+    if receipt_present and action != "existing":
+        _fail(
+            "nrc_phase_b_receipt_without_linkage",
+            "A canonical origin receipt requires exact existing content linkage.",
+        )
+
+    marker_present = _CUSTODY_KEY in source_reference
+    if not marker_present:
+        if action == "existing":
+            _custody_ineligible()
+        return "first_bind", None
+
+    try:
+        marker = nrc_phase_b_custody.parse_custody_marker(
+            source_reference[_CUSTODY_KEY]
+        )
+    except nrc_phase_b_custody.NrcPhaseBCustodyMarkerError as exc:
+        _custody_ineligible(cause=exc)
+    if (
+        marker["status"] != nrc_phase_b_custody.VERIFIED
+        or action != "existing"
+        or existing is None
+    ):
+        _custody_ineligible()
+    verified = _require_exact_custody(
+        marker,
+        status=nrc_phase_b_custody.VERIFIED,
+        linkage=existing,
+        raw_size=raw_size,
+    )
+    return "verified_replay", verified
+
+
+def _recover_exact_conflict(
+    db: Session,
+    *,
+    payload: Mapping[str, Any],
+    run_snapshot: _RowSnapshot,
+    target_snapshot: _RowSnapshot,
+    event_snapshot: _EventSnapshot,
+    initial_source_reference: Mapping[str, Any],
+    raw_size: int,
+) -> ApsContentLinkage:
+    try:
+        _begin_authoritative_transaction(db)
+        recovered_target_snapshot = _recovery_target_snapshot(
+            db,
+            target_id=str(payload["target_id"]),
+            target_snapshot=target_snapshot,
+            initial_source_reference=initial_source_reference,
+        )
+        _, target = _reload_authority(
+            db,
+            run_id=str(payload["run_id"]),
+            target_id=str(payload["target_id"]),
+            run_snapshot=run_snapshot,
+            target_snapshot=recovered_target_snapshot,
+            event_snapshot=event_snapshot,
+        )
+        action, existing = _preflight(db, payload=payload)
+        if action != "existing" or existing is None:
+            _fail(
+                "nrc_phase_b_persistence_conflict",
+                "Concurrent persistence did not produce one exact linkage.",
+            )
+        phase_state, _ = _phase_one_state(
+            target=target,
+            action=action,
+            existing=existing,
+            raw_size=raw_size,
+        )
+        if phase_state != "verified_replay":
+            _custody_ineligible()
+        return _detach_then_rollback(db, existing)
+    except SQLAlchemyError as exc:
+        _cleanup_owned_session(db)
+        raise NrcPhaseBLinkageError(
+            "nrc_phase_b_persistence_conflict",
+            "Exact-conflict recovery could not revalidate durable authority.",
+        ) from exc
+
+
+def _durably_verified_after_commit_error(
+    db: Session,
+    *,
+    run_id: str,
+    target_id: str,
+    expected_linkage_id: str,
+    processed: Mapping[str, Any],
+    raw_sha256: str,
+    raw_ref: str,
+    raw_size: int,
+    attempt_id: str,
+    run_snapshot: _RowSnapshot,
+    verified_target_snapshot: _RowSnapshot,
+    event_snapshot: _EventSnapshot,
+) -> bool:
+    if not _cleanup_owned_session(db):
+        return False
+    try:
+        _begin_authoritative_transaction(db)
+        run, target = _reload_authority(
+            db,
+            run_id=run_id,
+            target_id=target_id,
+            run_snapshot=run_snapshot,
+            target_snapshot=verified_target_snapshot,
+            event_snapshot=event_snapshot,
+        )
+        payload = _strict_payload(
+            run=run,
+            target=target,
+            raw_sha256=raw_sha256,
+            blob_ref=raw_ref,
+            processed=processed,
+        )
+        exact = _require_exact_persisted(db, payload=payload)
+        if exact.aps_content_linkage_id != expected_linkage_id:
+            _fail(
+                "nrc_phase_b_persistence_conflict",
+                "Durable commit acknowledgement changed linkage identity.",
+            )
+        source_reference = target.source_reference_json
+        if not isinstance(source_reference, Mapping):
+            _custody_ineligible()
+        _require_exact_custody(
+            source_reference.get(_CUSTODY_KEY),
+            status=nrc_phase_b_custody.VERIFIED,
+            linkage=exact,
+            raw_size=raw_size,
+            attempt_id=attempt_id,
+        )
+        return True
+    except Exception:
+        return False
+    finally:
+        _cleanup_owned_session(db)
+
+
+def _finalize_pending_custody(
+    db: Session,
+    *,
+    linkage: ApsContentLinkage,
+    processed: Mapping[str, Any],
+    raw_sha256: str,
+    raw_ref: str,
+    raw_size: int,
+    run_snapshot: _RowSnapshot,
+    pending_target_snapshot: _RowSnapshot,
+    event_snapshot: _EventSnapshot,
+    pending_marker: Mapping[str, Any],
+) -> None:
+    _begin_authoritative_transaction(db)
+    run, target = _reload_authority(
+        db,
+        run_id=linkage.run_id,
+        target_id=linkage.target_id,
+        run_snapshot=run_snapshot,
+        target_snapshot=pending_target_snapshot,
+        event_snapshot=event_snapshot,
+    )
+    payload = _strict_payload(
+        run=run,
+        target=target,
+        raw_sha256=raw_sha256,
+        blob_ref=raw_ref,
+        processed=processed,
+    )
+    exact = _require_exact_persisted(db, payload=payload)
+    if exact.aps_content_linkage_id != linkage.aps_content_linkage_id:
+        _fail(
+            "nrc_phase_b_persistence_conflict",
+            "Phase-two exact projection changed linkage identity.",
+        )
+    attempt_id = str(pending_marker["attempt_id"])
+    source_reference = deepcopy(target.source_reference_json)
+    current = _require_exact_custody(
+        source_reference.get(_CUSTODY_KEY),
+        status=nrc_phase_b_custody.PENDING_SNAPSHOT_EXIT,
+        linkage=exact,
+        raw_size=raw_size,
+        attempt_id=attempt_id,
+    )
+    source_reference[_CUSTODY_KEY] = (
+        nrc_phase_b_custody.verified_custody_marker(current)
+    )
+    target.source_reference_json = source_reference
+    db.flush()
+    verified_target_snapshot = _target_snapshot(target)
+    try:
+        db.commit()
+    except Exception:
+        if _durably_verified_after_commit_error(
+            db,
+            run_id=linkage.run_id,
+            target_id=linkage.target_id,
+            expected_linkage_id=linkage.aps_content_linkage_id,
+            processed=processed,
+            raw_sha256=raw_sha256,
+            raw_ref=raw_ref,
+            raw_size=raw_size,
+            attempt_id=attempt_id,
+            run_snapshot=run_snapshot,
+            verified_target_snapshot=verified_target_snapshot,
+            event_snapshot=event_snapshot,
+        ):
+            return
+        raise
 
 
 def _strict_payload(
@@ -805,13 +1145,25 @@ def _bind_strict_nrc_phase_b_linkage_owned(
     """Bind one strict NRC Phase-B parse to server-owned raw authority."""
 
     target_id = _text(connector_run_target_id)
-    target = db.get(ConnectorRunTarget, target_id)
+    target = (
+        db.query(ConnectorRunTarget)
+        .filter(
+            ConnectorRunTarget.connector_run_target_id == target_id
+        )
+        .populate_existing()
+        .one_or_none()
+    )
     if target is None:
         _fail(
             "nrc_phase_b_target_not_found",
             "Connector run target does not exist.",
         )
-    run = db.get(ConnectorRun, target.connector_run_id)
+    run = (
+        db.query(ConnectorRun)
+        .filter(ConnectorRun.connector_run_id == target.connector_run_id)
+        .populate_existing()
+        .one_or_none()
+    )
     if run is None:
         _fail(
             "nrc_phase_b_run_not_found",
@@ -824,6 +1176,7 @@ def _bind_strict_nrc_phase_b_linkage_owned(
             ConnectorRunTarget.connector_run_id
             == run.connector_run_id
         )
+        .populate_existing()
         .all()
     )
     if (
@@ -835,6 +1188,9 @@ def _bind_strict_nrc_phase_b_linkage_owned(
             "Strict NRC run must have exactly one ordinal-1 target.",
         )
     raw_sha256, raw_size = _validate_target(target, run=run)
+    assert isinstance(target.source_reference_json, Mapping)
+    initial_source_reference = deepcopy(target.source_reference_json)
+    _initial_custody_gate(initial_source_reference)
     raw_path = _safe_rehash(
         target,
         expected_sha256=raw_sha256,
@@ -843,6 +1199,8 @@ def _bind_strict_nrc_phase_b_linkage_owned(
     )
     run_authority = _run_snapshot(run)
     target_authority = _target_snapshot(target)
+    run_id = run.connector_run_id
+    expected_raw_ref = str(target.raw_storage_ref)
 
     try:
         processed = nrc_aps_strict_parse.parse_admitted_blob_strict(
@@ -858,41 +1216,20 @@ def _bind_strict_nrc_phase_b_linkage_owned(
             "nrc_phase_b_parse_failed",
             "Frozen strict parser refused admitted bytes.",
         ) from exc
-    payload = _strict_payload(
+    _strict_payload(
         run=run,
         target=target,
         raw_sha256=raw_sha256,
         blob_ref=str(raw_path),
         processed=processed,
     )
+    db.rollback()
 
-    first_action, first_existing = _preflight(db, payload=payload)
-    if (
-        _ORIGIN_RECEIPT_KEY in target.source_reference_json
-        and first_action != "existing"
-    ):
-        _fail(
-            "nrc_phase_b_receipt_without_linkage",
-            "A canonical origin receipt requires exact existing content linkage.",
-        )
-    run, target = _reload_authority(
-        db,
-        run_id=run.connector_run_id,
-        target_id=target.connector_run_target_id,
-        run_snapshot=run_authority,
-        target_snapshot=target_authority,
-        event_snapshot=event_authority,
-    )
-    commit_completed = False
-
-    def commit_linkage(
-        linkage: ApsContentLinkage,
-    ) -> ApsContentLinkage:
-        nonlocal commit_completed
-        detached = _commit_detached_linkage(db, linkage)
-        commit_completed = True
-        return detached
-
+    phase_one_committed = False
+    detached_linkage: ApsContentLinkage | None = None
+    pending_marker: dict[str, Any] | None = None
+    pending_target_authority: _RowSnapshot | None = None
+    raw_ref: str | None = None
     try:
         with locked_raw_file_snapshot(
             Path(settings.connector_raw_dir),
@@ -900,7 +1237,7 @@ def _bind_strict_nrc_phase_b_linkage_owned(
         ) as raw_snapshot:
             if (
                 raw_snapshot.canonical_ref
-                != target.raw_storage_ref
+                != expected_raw_ref
                 or raw_snapshot.size != raw_size
                 or raw_snapshot.sha256 != raw_sha256
             ):
@@ -908,38 +1245,38 @@ def _bind_strict_nrc_phase_b_linkage_owned(
                     "nrc_phase_b_raw_drift",
                     "Final locked raw snapshot contradicts admission authority.",
                 )
+            raw_ref = raw_snapshot.canonical_ref
+            _begin_authoritative_transaction(db)
+            run, target = _reload_authority(
+                db,
+                run_id=run_id,
+                target_id=target_id,
+                run_snapshot=run_authority,
+                target_snapshot=target_authority,
+                event_snapshot=event_authority,
+            )
             payload = _strict_payload(
                 run=run,
                 target=target,
                 raw_sha256=raw_sha256,
-                blob_ref=raw_snapshot.canonical_ref,
+                blob_ref=raw_ref,
                 processed=processed,
             )
-            second_action, second_existing = _preflight(
+            action, existing = _preflight(
                 db,
                 payload=payload,
             )
-            if (
-                first_action != second_action
-                or (
-                    first_existing is not None
-                    and (
-                        second_existing is None
-                        or first_existing.aps_content_linkage_id
-                        != second_existing.aps_content_linkage_id
-                    )
-                )
-            ):
-                _fail(
-                    "nrc_phase_b_persistence_conflict",
-                    "Persistence state changed during strict preflight.",
-                )
-
-            if second_action == "existing":
-                assert second_existing is not None
-                return commit_linkage(second_existing)
+            phase_state, _ = _phase_one_state(
+                target=target,
+                action=action,
+                existing=existing,
+                raw_size=raw_size,
+            )
+            if phase_state == "verified_replay":
+                assert existing is not None
+                return _detach_then_rollback(db, existing)
             try:
-                if second_action == "linkage_only":
+                if action == "linkage_only":
                     inserted = (
                         nrc_aps_content_index
                         .insert_content_linkage_immutable(
@@ -947,7 +1284,7 @@ def _bind_strict_nrc_phase_b_linkage_owned(
                             payload=payload,
                         )
                     )
-                elif second_action == "immutable_insert":
+                elif action == "immutable_insert":
                     inserted = (
                         nrc_aps_content_index
                         .insert_content_units_payload_immutable(
@@ -964,16 +1301,15 @@ def _bind_strict_nrc_phase_b_linkage_owned(
                 nrc_aps_content_index.ImmutableContentInsertConflict
             ):
                 db.rollback()
-                recovered = _recover_exact_conflict(
+                return _recover_exact_conflict(
                     db,
                     payload=payload,
-                    run_id=str(payload["run_id"]),
-                    target_id=str(payload["target_id"]),
                     run_snapshot=run_authority,
                     target_snapshot=target_authority,
                     event_snapshot=event_authority,
+                    initial_source_reference=initial_source_reference,
+                    raw_size=raw_size,
                 )
-                return commit_linkage(recovered)
 
             exact = _require_exact_persisted(db, payload=payload)
             if (
@@ -984,9 +1320,26 @@ def _bind_strict_nrc_phase_b_linkage_owned(
                     "nrc_phase_b_persistence_conflict",
                     "Precommit exact-one requery changed linkage identity.",
                 )
-            return commit_linkage(exact)
+            pending_marker = (
+                nrc_phase_b_custody.build_pending_custody_marker(
+                    connector_run_id=exact.run_id,
+                    connector_run_target_id=exact.target_id,
+                    aps_content_linkage_id=exact.aps_content_linkage_id,
+                    content_id=exact.content_id,
+                    blob_ref=str(exact.blob_ref or ""),
+                    blob_sha256=str(exact.blob_sha256 or ""),
+                    blob_size_bytes=raw_size,
+                )
+            )
+            source_reference = deepcopy(target.source_reference_json)
+            source_reference[_CUSTODY_KEY] = pending_marker
+            target.source_reference_json = source_reference
+            db.flush()
+            pending_target_authority = _target_snapshot(target)
+            detached_linkage = _detach_then_commit(db, exact)
+            phase_one_committed = True
     except StableRawStorageError as exc:
-        if commit_completed:
+        if phase_one_committed:
             raise NrcPhaseBLinkageError(
                 "nrc_phase_b_postcommit_raw_drift",
                 "Postcommit raw drift preserves exact rows but grants no "
@@ -996,6 +1349,24 @@ def _bind_strict_nrc_phase_b_linkage_owned(
             "nrc_phase_b_raw_drift",
             "Final locked raw snapshot changed during persistence.",
         ) from exc
+
+    assert detached_linkage is not None
+    assert pending_marker is not None
+    assert pending_target_authority is not None
+    assert raw_ref is not None
+    _finalize_pending_custody(
+        db,
+        linkage=detached_linkage,
+        processed=processed,
+        raw_sha256=raw_sha256,
+        raw_ref=raw_ref,
+        raw_size=raw_size,
+        run_snapshot=run_authority,
+        pending_target_snapshot=pending_target_authority,
+        event_snapshot=event_authority,
+        pending_marker=pending_marker,
+    )
+    return detached_linkage
 
 
 def bind_strict_nrc_phase_b_linkage(
@@ -1017,7 +1388,6 @@ def bind_strict_nrc_phase_b_linkage(
                 "Owned Phase-B transaction remained active on return.",
             )
         return linkage
-    except Exception:
-        if db.in_transaction():
-            db.rollback()
+    except BaseException:
+        _cleanup_owned_session(db)
         raise
