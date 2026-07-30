@@ -1386,7 +1386,7 @@ def test_refresh_strict_run_lease_is_active_exact_token_cas(
     assert run.execution_lease_expires_at == prior_expiry
 
 
-def test_expired_strict_lease_cannot_refresh_or_complete_but_can_fail_closed(
+def test_expired_strict_lease_cannot_refresh_or_finalize(
     tmp_path,
 ) -> None:
     db = _session()
@@ -1417,25 +1417,26 @@ def test_expired_strict_lease_cannot_refresh_or_complete_but_can_fail_closed(
         )
     assert complete.value.code == "connector_strict_lease_expired"
 
-    finalize_strict_run(
-        db,
-        run=run,
-        lease_token="lease-token",
-        terminal_status="failed",
-        outcome_class="connector_strict_lease_expired",
-        now=NOW,
-    )
+    with pytest.raises(ConnectorEgressArmingError) as failed:
+        finalize_strict_run(
+            db,
+            run=run,
+            lease_token="lease-token",
+            terminal_status="failed",
+            outcome_class="connector_strict_lease_expired",
+            now=NOW,
+        )
 
     db.refresh(run)
-    assert run.status == "failed"
-    assert run.execution_lease_owner is None
-    assert run.execution_lease_token is None
+    assert failed.value.code == "connector_strict_lease_expired"
+    assert run.status == "running"
+    assert run.execution_lease_owner == "strict-worker"
+    assert run.execution_lease_token == "lease-token"
     assert (
         db.query(ConnectorRunEvent)
         .filter(ConnectorRunEvent.event_type == "egress_run_terminal")
-        .one()
-        .reason_code
-        == "connector_strict_lease_expired"
+        .count()
+        == 0
     )
 
 

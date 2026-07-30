@@ -1826,11 +1826,10 @@ def finalize_strict_run(
             "connector_strict_finalize_conflict",
             "strict finalizer requires running state and exact lease ownership",
         )
-    lease_expired = current >= _as_utc(lease_expires_at)
-    if lease_expired and terminal_status != "failed":
+    if current >= _as_utc(lease_expires_at):
         raise ConnectorEgressArmingError(
             "connector_strict_lease_expired",
-            "an expired strict lease may only fail closed",
+            "strict finalizer requires an unexpired active lease",
         )
     terminal_event_id = _deterministic_id(
         persisted.connector_run_id,
@@ -1857,10 +1856,9 @@ def finalize_strict_run(
         ConnectorRun.execution_lease_token == lease_token,
         ConnectorRun.execution_lease_expires_at.is_not(None),
     ]
-    if terminal_status != "failed":
-        finalize_predicates.append(
-            ConnectorRun.execution_lease_expires_at > current
-        )
+    finalize_predicates.append(
+        ConnectorRun.execution_lease_expires_at > current
+    )
     result = cast(
         CursorResult[Any],
         db.execute(
