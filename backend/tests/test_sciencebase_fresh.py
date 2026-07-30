@@ -1060,16 +1060,151 @@ def test_raw_rehash_rejects_open_handle_identity_swap(
     assert fstat_calls >= 2
 
 
-@pytest.mark.skipif(
-    os.name != "nt",
-    reason="Windows delete-sharing lock behavior",
-)
+def test_raw_persist_dispatches_to_capable_posix_backend(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    expected = (7, "a" * 64, str(tmp_path / "raw" / "blob.csv"))
+    calls: list[tuple[Path, Path, bytes]] = []
+
+    def fake_persist(
+        raw_root: Path,
+        file_path: Path,
+        content: bytes,
+    ) -> tuple[int, str, str]:
+        calls.append((raw_root, file_path, content))
+        return expected
+
+    monkeypatch.setattr(
+        raw_handles,
+        "_windows_backend_available",
+        lambda: False,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        raw_handles,
+        "_supports_posix_anchored_io",
+        lambda: True,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        raw_handles,
+        "_persist_posix_locked_raw_file",
+        fake_persist,
+        raising=False,
+    )
+    raw_root = tmp_path / "raw"
+    output = raw_root / "blob.csv"
+
+    result = raw_handles.persist_locked_raw_file(
+        raw_root,
+        output,
+        b"content",
+    )
+
+    assert result == expected
+    assert calls == [(raw_root, output, b"content")]
+
+
+def test_raw_hash_dispatches_to_capable_posix_backend(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    expected = (7, "b" * 64, str(tmp_path / "raw" / "blob.csv"))
+    calls: list[tuple[Path, Path]] = []
+
+    def fake_hash(
+        raw_root: Path,
+        file_path: Path,
+    ) -> tuple[int, str, str]:
+        calls.append((raw_root, file_path))
+        return expected
+
+    monkeypatch.setattr(
+        raw_handles,
+        "_windows_backend_available",
+        lambda: False,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        raw_handles,
+        "_supports_posix_anchored_io",
+        lambda: True,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        raw_handles,
+        "_hash_posix_locked_raw_file",
+        fake_hash,
+        raising=False,
+    )
+    raw_root = tmp_path / "raw"
+    output = raw_root / "blob.csv"
+
+    result = raw_handles.hash_locked_raw_file(raw_root, output)
+
+    assert result == expected
+    assert calls == [(raw_root, output)]
+
+
+def test_locked_raw_file_round_trip_uses_available_backend(
+    tmp_path: Path,
+) -> None:
+    content = b"posix-content\n"
+    raw_root = tmp_path / "raw"
+    output = raw_root / "sha256" / "blob.csv"
+
+    persisted = raw_handles.persist_locked_raw_file(
+        raw_root,
+        output,
+        content,
+    )
+    rehashed = raw_handles.hash_locked_raw_file(raw_root, output)
+
+    assert persisted == rehashed
+    assert persisted[0] == len(content)
+    assert persisted[1] == hashlib.sha256(content).hexdigest()
+    assert output.read_bytes() == content
+
+
+def test_posix_locked_raw_file_rejects_symlink_component(
+    tmp_path: Path,
+) -> None:
+    if not raw_handles._supports_posix_anchored_io():
+        assert raw_handles._windows_backend_available()
+        return
+
+    raw_root = tmp_path / "raw"
+    outside = tmp_path / "outside"
+    raw_root.mkdir()
+    outside.mkdir()
+    os.symlink(
+        outside,
+        raw_root / "sha256",
+        target_is_directory=True,
+    )
+
+    with pytest.raises(raw_handles.StableRawStorageError) as excinfo:
+        raw_handles.persist_locked_raw_file(
+            raw_root,
+            raw_root / "sha256" / "blob.csv",
+            b"must-not-escape",
+        )
+
+    assert excinfo.value.reason == "unsafe"
+    assert list(outside.iterdir()) == []
+
+
 def test_raw_persist_parent_lock_prevents_redirect_swap(
     db: Session,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     del db
+    if not raw_handles._windows_backend_available():
+        assert raw_handles._supports_posix_anchored_io()
+        return
+
     digest = hashlib.sha256(CSV_BYTES).hexdigest()
     content_dir = (
         Path(sciencebase.settings.connector_raw_dir).resolve()

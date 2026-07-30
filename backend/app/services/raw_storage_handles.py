@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 import ctypes
+from dataclasses import dataclass
 import hashlib
 import os
 from pathlib import Path
+import stat
 from typing import Iterator
 
 
@@ -103,6 +105,25 @@ if os.name == "nt":
 
 def _lexical_absolute(path: Path) -> Path:
     return Path(os.path.abspath(os.fspath(path)))
+
+
+def _windows_backend_available() -> bool:
+    return os.name == "nt"
+
+
+def _supports_posix_anchored_io() -> bool:
+    return (
+        os.name == "posix"
+        and all(
+            function in os.supports_dir_fd
+            for function in (os.mkdir, os.open, os.stat)
+        )
+        and os.stat in os.supports_follow_symlinks
+        and all(
+            hasattr(os, constant)
+            for constant in ("O_CLOEXEC", "O_DIRECTORY", "O_NOFOLLOW")
+        )
+    )
 
 
 def _normalise_windows_handle_path(path: str) -> str:
@@ -282,6 +303,297 @@ def _fd_stable_state(
     )
 
 
+@dataclass(frozen=True)
+class _PosixDirectoryHandle:
+    fd: int
+    parent_fd: int | None
+    component: str | None
+    path: Path
+    identity: tuple[int, int]
+
+
+def _require_posix_directory(
+    file_stat: os.stat_result,
+) -> tuple[int, int]:
+    if stat.S_ISLNK(file_stat.st_mode) or not stat.S_ISDIR(
+        file_stat.st_mode
+    ):
+        raise StableRawStorageError("unsafe")
+    return _fd_identity(file_stat)
+
+
+def _require_posix_regular_file(
+    file_stat: os.stat_result,
+) -> tuple[int, int]:
+    if stat.S_ISLNK(file_stat.st_mode) or not stat.S_ISREG(
+        file_stat.st_mode
+    ):
+        raise StableRawStorageError("unsafe")
+    return _fd_identity(file_stat)
+
+
+def _posix_directory_flags() -> int:
+    return (
+        os.O_RDONLY
+        | os.O_CLOEXEC
+        | os.O_DIRECTORY
+        | os.O_NOFOLLOW
+    )
+
+
+def _open_posix_root(path: Path) -> _PosixDirectoryHandle:
+    try:
+        before = path.lstat()
+        before_identity = _require_posix_directory(before)
+        fd = os.open(path, _posix_directory_flags())
+    except (OSError, StableRawStorageError) as exc:
+        raise StableRawStorageError("unsafe") from exc
+    try:
+        opened_identity = _require_posix_directory(os.fstat(fd))
+        after_identity = _require_posix_directory(path.lstat())
+        if not (
+            before_identity == opened_identity == after_identity
+        ):
+            raise StableRawStorageError("changed")
+    except Exception:
+        os.close(fd)
+        raise
+    return _PosixDirectoryHandle(
+        fd=fd,
+        parent_fd=None,
+        component=None,
+        path=path,
+        identity=opened_identity,
+    )
+
+
+def _open_posix_child_directory(
+    parent: _PosixDirectoryHandle,
+    component: str,
+    path: Path,
+) -> _PosixDirectoryHandle:
+    try:
+        before = os.stat(
+            component,
+            dir_fd=parent.fd,
+            follow_symlinks=False,
+        )
+        before_identity = _require_posix_directory(before)
+        fd = os.open(
+            component,
+            _posix_directory_flags(),
+            dir_fd=parent.fd,
+        )
+    except (OSError, StableRawStorageError) as exc:
+        raise StableRawStorageError("unsafe") from exc
+    try:
+        opened_identity = _require_posix_directory(os.fstat(fd))
+        after = os.stat(
+            component,
+            dir_fd=parent.fd,
+            follow_symlinks=False,
+        )
+        after_identity = _require_posix_directory(after)
+        if not (
+            before_identity == opened_identity == after_identity
+        ):
+            raise StableRawStorageError("changed")
+    except Exception:
+        os.close(fd)
+        raise
+    return _PosixDirectoryHandle(
+        fd=fd,
+        parent_fd=parent.fd,
+        component=component,
+        path=path,
+        identity=opened_identity,
+    )
+
+
+def _revalidate_posix_directories(
+    locked: list[_PosixDirectoryHandle],
+) -> None:
+    for directory in locked:
+        try:
+            if directory.parent_fd is None:
+                current = directory.path.lstat()
+            else:
+                current = os.stat(
+                    str(directory.component),
+                    dir_fd=directory.parent_fd,
+                    follow_symlinks=False,
+                )
+            current_identity = _require_posix_directory(current)
+            opened_identity = _require_posix_directory(
+                os.fstat(directory.fd)
+            )
+        except (OSError, StableRawStorageError) as exc:
+            raise StableRawStorageError("changed") from exc
+        if not (
+            current_identity
+            == opened_identity
+            == directory.identity
+        ):
+            raise StableRawStorageError("changed")
+
+
+@contextmanager
+def _locked_posix_parents(
+    raw_root: Path,
+    file_path: Path,
+    *,
+    create: bool,
+) -> Iterator[
+    tuple[Path, str, list[_PosixDirectoryHandle]]
+]:
+    root = _lexical_absolute(raw_root)
+    output = _lexical_absolute(file_path)
+    try:
+        relative = output.relative_to(root)
+    except ValueError as exc:
+        raise StableRawStorageError("unsafe") from exc
+    if (
+        not relative.parts
+        or any(part in {"", ".", ".."} for part in relative.parts)
+    ):
+        raise StableRawStorageError("unsafe")
+
+    try:
+        if create:
+            root.mkdir(parents=True, exist_ok=True)
+        root_handle = _open_posix_root(root)
+    except OSError as exc:
+        raise StableRawStorageError("io") from exc
+
+    locked = [root_handle]
+    try:
+        current = root
+        for component in relative.parts[:-1]:
+            parent = locked[-1]
+            current = current / component
+            if create:
+                try:
+                    os.mkdir(component, 0o700, dir_fd=parent.fd)
+                except FileExistsError:
+                    pass
+                except OSError as exc:
+                    raise StableRawStorageError("io") from exc
+            locked.append(
+                _open_posix_child_directory(
+                    parent,
+                    component,
+                    current,
+                )
+            )
+        yield output, relative.parts[-1], locked
+    finally:
+        close_error: OSError | None = None
+        for directory in reversed(locked):
+            try:
+                os.close(directory.fd)
+            except OSError as exc:
+                close_error = close_error or exc
+        if close_error is not None:
+            raise StableRawStorageError("io") from close_error
+
+
+def _open_posix_file_fd(
+    parent_fd: int,
+    file_name: str,
+    *,
+    create_new: bool,
+) -> int:
+    flags = os.O_CLOEXEC | os.O_NOFOLLOW
+    if create_new:
+        flags |= os.O_CREAT | os.O_EXCL | os.O_RDWR
+        before_identity = None
+    else:
+        flags |= os.O_RDONLY
+        try:
+            before = os.stat(
+                file_name,
+                dir_fd=parent_fd,
+                follow_symlinks=False,
+            )
+            before_identity = _require_posix_regular_file(before)
+        except (OSError, StableRawStorageError) as exc:
+            raise StableRawStorageError("unsafe") from exc
+    try:
+        fd = os.open(
+            file_name,
+            flags,
+            0o600,
+            dir_fd=parent_fd,
+        )
+    except FileExistsError:
+        raise
+    except OSError as exc:
+        raise StableRawStorageError("unsafe") from exc
+    try:
+        opened_identity = _require_posix_regular_file(os.fstat(fd))
+        after = os.stat(
+            file_name,
+            dir_fd=parent_fd,
+            follow_symlinks=False,
+        )
+        after_identity = _require_posix_regular_file(after)
+        if opened_identity != after_identity or (
+            before_identity is not None
+            and opened_identity != before_identity
+        ):
+            raise StableRawStorageError("changed")
+    except Exception:
+        os.close(fd)
+        raise
+    return fd
+
+
+def _use_posix_file_fd(
+    fd: int,
+    parent_fd: int,
+    file_name: str,
+    locked: list[_PosixDirectoryHandle],
+    *,
+    write_content: bytes | None,
+    expected_content: bytes | None,
+) -> tuple[int, str, bool]:
+    try:
+        before = os.fstat(fd)
+        before_identity = _require_posix_regular_file(before)
+        if write_content is not None:
+            _write_fd(fd, write_content)
+        size, digest, matches = _hash_fd(
+            fd,
+            expected_content=expected_content,
+        )
+        after = os.fstat(fd)
+        after_identity = _require_posix_regular_file(after)
+        if before_identity != after_identity:
+            raise StableRawStorageError("changed")
+        if (
+            write_content is None
+            and _fd_stable_state(before) != _fd_stable_state(after)
+        ):
+            raise StableRawStorageError("changed")
+        if int(after.st_size) != size:
+            raise StableRawStorageError("changed")
+        path_after = os.stat(
+            file_name,
+            dir_fd=parent_fd,
+            follow_symlinks=False,
+        )
+        if _require_posix_regular_file(path_after) != after_identity:
+            raise StableRawStorageError("changed")
+        if _fd_stable_state(path_after) != _fd_stable_state(after):
+            raise StableRawStorageError("changed")
+        _revalidate_posix_directories(locked)
+        return size, digest, matches
+    except OSError as exc:
+        raise StableRawStorageError("changed") from exc
+    finally:
+        os.close(fd)
+
+
 def _hash_fd(
     fd: int,
     *,
@@ -373,13 +685,11 @@ def _use_windows_file_handle(
         os.close(fd)
 
 
-def persist_locked_raw_file(
+def _persist_windows_locked_raw_file(
     raw_root: Path,
     file_path: Path,
     content: bytes,
 ) -> tuple[int, str, str]:
-    if os.name != "nt":
-        raise StableRawStorageError("unsupported")
     with _locked_windows_parents(
         raw_root,
         file_path,
@@ -416,12 +726,10 @@ def persist_locked_raw_file(
         return size, digest, str(output.resolve(strict=True))
 
 
-def hash_locked_raw_file(
+def _hash_windows_locked_raw_file(
     raw_root: Path,
     file_path: Path,
 ) -> tuple[int, str, str]:
-    if os.name != "nt":
-        raise StableRawStorageError("unsupported")
     with _locked_windows_parents(
         raw_root,
         file_path,
@@ -436,3 +744,112 @@ def hash_locked_raw_file(
             expected_content=None,
         )
         return size, digest, str(output.resolve(strict=True))
+
+
+def _persist_posix_locked_raw_file(
+    raw_root: Path,
+    file_path: Path,
+    content: bytes,
+) -> tuple[int, str, str]:
+    with _locked_posix_parents(
+        raw_root,
+        file_path,
+        create=True,
+    ) as (output, file_name, locked):
+        parent_fd = locked[-1].fd
+        try:
+            fd = _open_posix_file_fd(
+                parent_fd,
+                file_name,
+                create_new=True,
+            )
+        except FileExistsError:
+            fd = _open_posix_file_fd(
+                parent_fd,
+                file_name,
+                create_new=False,
+            )
+            size, digest, matches = _use_posix_file_fd(
+                fd,
+                parent_fd,
+                file_name,
+                locked,
+                write_content=None,
+                expected_content=content,
+            )
+            if (
+                not matches
+                or digest != hashlib.sha256(content).hexdigest()
+                or size != len(content)
+            ):
+                raise StableRawStorageError("conflict")
+            return size, digest, str(output)
+
+        size, digest, matches = _use_posix_file_fd(
+            fd,
+            parent_fd,
+            file_name,
+            locked,
+            write_content=content,
+            expected_content=content,
+        )
+        if not matches:
+            raise StableRawStorageError("changed")
+        return size, digest, str(output)
+
+
+def _hash_posix_locked_raw_file(
+    raw_root: Path,
+    file_path: Path,
+) -> tuple[int, str, str]:
+    with _locked_posix_parents(
+        raw_root,
+        file_path,
+        create=False,
+    ) as (output, file_name, locked):
+        parent_fd = locked[-1].fd
+        fd = _open_posix_file_fd(
+            parent_fd,
+            file_name,
+            create_new=False,
+        )
+        size, digest, _ = _use_posix_file_fd(
+            fd,
+            parent_fd,
+            file_name,
+            locked,
+            write_content=None,
+            expected_content=None,
+        )
+        return size, digest, str(output)
+
+
+def persist_locked_raw_file(
+    raw_root: Path,
+    file_path: Path,
+    content: bytes,
+) -> tuple[int, str, str]:
+    if _windows_backend_available():
+        return _persist_windows_locked_raw_file(
+            raw_root,
+            file_path,
+            content,
+        )
+    if _supports_posix_anchored_io():
+        return _persist_posix_locked_raw_file(
+            raw_root,
+            file_path,
+            content,
+        )
+    raise StableRawStorageError("unsupported")
+
+
+def hash_locked_raw_file(
+    raw_root: Path,
+    file_path: Path,
+) -> tuple[int, str, str]:
+    if _windows_backend_available():
+        return _hash_windows_locked_raw_file(raw_root, file_path)
+    if _supports_posix_anchored_io():
+        return _hash_posix_locked_raw_file(raw_root, file_path)
+    raise StableRawStorageError("unsupported")
