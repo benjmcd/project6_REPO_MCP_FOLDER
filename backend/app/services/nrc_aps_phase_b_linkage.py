@@ -7,8 +7,9 @@ import json
 import os
 from pathlib import Path
 import re
-from typing import Any, Mapping
+from typing import Any, Mapping, NoReturn
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -67,7 +68,7 @@ class NrcPhaseBLinkageError(RuntimeError):
         self.message = message
 
 
-def _fail(code: str, message: str) -> None:
+def _fail(code: str, message: str) -> NoReturn:
     raise NrcPhaseBLinkageError(code, message)
 
 
@@ -124,7 +125,38 @@ def _require_owned_clean_transaction(db: Session) -> None:
         )
 
 
-def _validate_run(db: Session, run: ConnectorRun) -> None:
+def _event_snapshot(
+    events: list[ConnectorRunEvent],
+) -> tuple[tuple[Any, ...], ...]:
+    return tuple(
+        sorted(
+            (
+                event.connector_run_event_id,
+                event.connector_run_id,
+                event.connector_run_target_id,
+                event.phase,
+                event.stage,
+                event.event_type,
+                event.status_before,
+                event.status_after,
+                event.reason_code,
+                event.error_class,
+                event.message,
+                json.dumps(event.metrics_json, sort_keys=True),
+                event.created_at,
+            )
+            for event in events
+        )
+    )
+
+
+def _validate_run(
+    db: Session,
+    run: ConnectorRun,
+    *,
+    expected_event_snapshot: tuple[tuple[Any, ...], ...] | None = None,
+    lock_events: bool = False,
+) -> tuple[tuple[Any, ...], ...]:
     if (
         run.connector_key != "nrc_adams_aps"
         or run.source_system != "nrc_adams_aps"
@@ -144,14 +176,21 @@ def _validate_run(db: Session, run: ConnectorRun) -> None:
             "nrc_phase_b_run_invalid",
             "Target parent is not one completed strict NRC raw-only run.",
         )
-    events = (
-        db.query(ConnectorRunEvent)
-        .filter(
-            ConnectorRunEvent.connector_run_id
-            == run.connector_run_id
-        )
-        .all()
+    event_query = db.query(ConnectorRunEvent).filter(
+        ConnectorRunEvent.connector_run_id == run.connector_run_id
     )
+    if lock_events:
+        event_query = event_query.with_for_update()
+    events = event_query.all()
+    current_event_snapshot = _event_snapshot(events)
+    if (
+        expected_event_snapshot is not None
+        and current_event_snapshot != expected_event_snapshot
+    ):
+        _fail(
+            "nrc_phase_b_row_drift",
+            "Run event authority changed during strict parsing.",
+        )
     try:
         connector_egress_arming._assert_nrc_terminal_transition(
             run,
@@ -163,6 +202,7 @@ def _validate_run(db: Session, run: ConnectorRun) -> None:
             "nrc_phase_b_run_invalid",
             "Strict NRC terminal transition is not structurally valid.",
         ) from exc
+    return current_event_snapshot
 
 
 def _validate_target(
@@ -611,6 +651,7 @@ def _require_exact_persisted(
             ApsContentLinkage.run_id == payload["run_id"],
             ApsContentLinkage.target_id == payload["target_id"],
         )
+        .with_for_update()
         .all()
     )
     documents, chunks = _content_projection(db, payload)
@@ -635,6 +676,7 @@ def _reload_authority(
     target_id: str,
     run_snapshot: tuple[Any, ...],
     target_snapshot: tuple[Any, ...],
+    event_snapshot: tuple[tuple[Any, ...], ...],
 ) -> tuple[ConnectorRun, ConnectorRunTarget]:
     run = (
         db.query(ConnectorRun)
@@ -676,9 +718,56 @@ def _reload_authority(
             "nrc_phase_b_row_drift",
             "Run target cardinality changed during strict parsing.",
         )
-    _validate_run(db, run)
+    _validate_run(
+        db,
+        run,
+        expected_event_snapshot=event_snapshot,
+        lock_events=True,
+    )
     _validate_target(target, run=run)
     return run, target
+
+
+def _begin_serialized_recovery(db: Session) -> None:
+    if db.get_bind().dialect.name == "sqlite":
+        db.connection().exec_driver_sql("BEGIN IMMEDIATE")
+
+
+def _recover_exact_conflict(
+    db: Session,
+    *,
+    payload: Mapping[str, Any],
+    run_id: str,
+    target_id: str,
+    run_snapshot: tuple[Any, ...],
+    target_snapshot: tuple[Any, ...],
+    event_snapshot: tuple[tuple[Any, ...], ...],
+) -> ApsContentLinkage:
+    try:
+        _begin_serialized_recovery(db)
+        _reload_authority(
+            db,
+            run_id=run_id,
+            target_id=target_id,
+            run_snapshot=run_snapshot,
+            target_snapshot=target_snapshot,
+            event_snapshot=event_snapshot,
+        )
+        return _require_exact_persisted(db, payload=payload)
+    except (NrcPhaseBLinkageError, SQLAlchemyError) as conflict:
+        raise NrcPhaseBLinkageError(
+            "nrc_phase_b_persistence_conflict",
+            "Concurrent persistence was not exact and authoritative.",
+        ) from conflict
+
+
+def _commit_detached_linkage(
+    db: Session,
+    linkage: ApsContentLinkage,
+) -> ApsContentLinkage:
+    db.expunge(linkage)
+    db.commit()
+    return linkage
 
 
 def _strict_payload(
@@ -728,7 +817,7 @@ def _bind_strict_nrc_phase_b_linkage_owned(
             "nrc_phase_b_run_not_found",
             "Connector run does not exist.",
         )
-    _validate_run(db, run)
+    event_authority = _validate_run(db, run)
     targets = (
         db.query(ConnectorRunTarget)
         .filter(
@@ -778,13 +867,32 @@ def _bind_strict_nrc_phase_b_linkage_owned(
     )
 
     first_action, first_existing = _preflight(db, payload=payload)
+    if (
+        _ORIGIN_RECEIPT_KEY in target.source_reference_json
+        and first_action != "existing"
+    ):
+        _fail(
+            "nrc_phase_b_receipt_without_linkage",
+            "A canonical origin receipt requires exact existing content linkage.",
+        )
     run, target = _reload_authority(
         db,
         run_id=run.connector_run_id,
         target_id=target.connector_run_target_id,
         run_snapshot=run_authority,
         target_snapshot=target_authority,
+        event_snapshot=event_authority,
     )
+    commit_completed = False
+
+    def commit_linkage(
+        linkage: ApsContentLinkage,
+    ) -> ApsContentLinkage:
+        nonlocal commit_completed
+        detached = _commit_detached_linkage(db, linkage)
+        commit_completed = True
+        return detached
+
     try:
         with locked_raw_file_snapshot(
             Path(settings.connector_raw_dir),
@@ -829,8 +937,7 @@ def _bind_strict_nrc_phase_b_linkage_owned(
 
             if second_action == "existing":
                 assert second_existing is not None
-                db.commit()
-                return second_existing
+                return commit_linkage(second_existing)
             try:
                 if second_action == "linkage_only":
                     inserted = (
@@ -857,18 +964,16 @@ def _bind_strict_nrc_phase_b_linkage_owned(
                 nrc_aps_content_index.ImmutableContentInsertConflict
             ):
                 db.rollback()
-                try:
-                    recovered = _require_exact_persisted(
-                        db,
-                        payload=payload,
-                    )
-                except NrcPhaseBLinkageError as conflict:
-                    raise NrcPhaseBLinkageError(
-                        "nrc_phase_b_persistence_conflict",
-                        "Concurrent persistence was not exact.",
-                    ) from conflict
-                db.commit()
-                return recovered
+                recovered = _recover_exact_conflict(
+                    db,
+                    payload=payload,
+                    run_id=str(payload["run_id"]),
+                    target_id=str(payload["target_id"]),
+                    run_snapshot=run_authority,
+                    target_snapshot=target_authority,
+                    event_snapshot=event_authority,
+                )
+                return commit_linkage(recovered)
 
             exact = _require_exact_persisted(db, payload=payload)
             if (
@@ -879,9 +984,14 @@ def _bind_strict_nrc_phase_b_linkage_owned(
                     "nrc_phase_b_persistence_conflict",
                     "Precommit exact-one requery changed linkage identity.",
                 )
-            db.commit()
-            return exact
+            return commit_linkage(exact)
     except StableRawStorageError as exc:
+        if commit_completed:
+            raise NrcPhaseBLinkageError(
+                "nrc_phase_b_postcommit_raw_drift",
+                "Postcommit raw drift preserves exact rows but grants no "
+                "receipt, retry, or repair authority.",
+            ) from exc
         raise NrcPhaseBLinkageError(
             "nrc_phase_b_raw_drift",
             "Final locked raw snapshot changed during persistence.",

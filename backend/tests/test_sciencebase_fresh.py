@@ -1226,6 +1226,143 @@ def test_locked_raw_snapshot_exit_rehash_detects_drift(
     assert calls == 2
 
 
+@pytest.mark.parametrize(
+    "secondary_failure",
+    ["exit-validation", "close"],
+)
+def test_locked_raw_snapshot_preserves_body_error_during_cleanup_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    secondary_failure: str,
+) -> None:
+    content = b"primary-error-content\n"
+    raw_root = tmp_path / "raw"
+    output = raw_root / "sha256" / "primary.bin"
+    raw_handles.persist_locked_raw_file(raw_root, output, content)
+    real_hash_fd = raw_handles._hash_fd
+    real_close = raw_handles.os.close
+    held_fd: int | None = None
+    hash_calls = 0
+    close_failures = 0
+
+    def controlled_hash(
+        fd: int,
+        **kwargs: Any,
+    ) -> tuple[int, str, bool]:
+        nonlocal hash_calls, held_fd
+        hash_calls += 1
+        held_fd = fd
+        size, digest, matches = real_hash_fd(fd, **kwargs)
+        if secondary_failure == "exit-validation" and hash_calls == 2:
+            digest = "0" * 64
+        return size, digest, matches
+
+    def controlled_close(fd: int) -> None:
+        nonlocal close_failures
+        if (
+            secondary_failure == "close"
+            and fd == held_fd
+            and close_failures == 0
+        ):
+            close_failures += 1
+            raise OSError("forced held-descriptor close failure")
+        real_close(fd)
+
+    monkeypatch.setattr(raw_handles, "_hash_fd", controlled_hash)
+    monkeypatch.setattr(raw_handles.os, "close", controlled_close)
+    try:
+        with pytest.raises(RuntimeError) as excinfo:
+            with raw_handles.locked_raw_file_snapshot(raw_root, output):
+                raise RuntimeError("primary persistence failure")
+    finally:
+        if (
+            secondary_failure == "close"
+            and held_fd is not None
+            and close_failures == 1
+        ):
+            real_close(held_fd)
+
+    assert str(excinfo.value) == "primary persistence failure"
+    assert isinstance(
+        excinfo.value.__cause__,
+        raw_handles.StableRawStorageError,
+    )
+    assert any(
+        "secondary raw snapshot" in note.lower()
+        for note in getattr(excinfo.value, "__notes__", [])
+    )
+
+
+def test_locked_raw_snapshot_preserves_body_error_during_parent_close_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    content = b"parent-close-content\n"
+    raw_root = tmp_path / "raw"
+    output = raw_root / "sha256" / "parent.bin"
+    raw_handles.persist_locked_raw_file(raw_root, output, content)
+    failed_parent: list[int] = []
+    held_fd: int | None = None
+
+    if raw_handles._windows_backend_available():
+        real_parent_close = raw_handles._close_windows_handle
+
+        def fail_parent_close(handle: int) -> None:
+            if not failed_parent:
+                failed_parent.append(handle)
+                raise raw_handles.StableRawStorageError("io")
+            real_parent_close(handle)
+
+        monkeypatch.setattr(
+            raw_handles,
+            "_close_windows_handle",
+            fail_parent_close,
+        )
+    else:
+        real_hash_fd = raw_handles._hash_fd
+        real_parent_close = raw_handles.os.close
+
+        def capture_fd(
+            fd: int,
+            **kwargs: Any,
+        ) -> tuple[int, str, bool]:
+            nonlocal held_fd
+            held_fd = fd
+            return real_hash_fd(fd, **kwargs)
+
+        def fail_parent_close(fd: int) -> None:
+            if fd != held_fd and not failed_parent:
+                failed_parent.append(fd)
+                raise OSError("forced parent close failure")
+            real_parent_close(fd)
+
+        monkeypatch.setattr(raw_handles, "_hash_fd", capture_fd)
+        monkeypatch.setattr(
+            raw_handles.os,
+            "close",
+            fail_parent_close,
+        )
+
+    try:
+        with pytest.raises(RuntimeError) as excinfo:
+            with raw_handles.locked_raw_file_snapshot(raw_root, output):
+                raise RuntimeError("primary persistence failure")
+    finally:
+        for parent in failed_parent:
+            real_parent_close(parent)
+
+    assert failed_parent
+    assert str(excinfo.value) == "primary persistence failure"
+    assert isinstance(
+        excinfo.value.__cause__,
+        raw_handles.StableRawStorageError,
+    )
+    assert any(
+        "secondary raw snapshot" in note.lower()
+        for note in getattr(excinfo.value, "__notes__", [])
+    )
+
+
 def test_posix_locked_raw_file_rejects_symlink_component(
     tmp_path: Path,
 ) -> None:

@@ -137,6 +137,7 @@ jobs:
             "test_market_*.py",
             "test_analyst_*.py",
             "test_nrc_aps_*.py",
+            "test_nrc_phase_b_linkage.py",
             "test_pre_body_*.py",
             "test_review_browser_*.py",
             "test_review_nrc_aps_candidate_b_trace_*.py",

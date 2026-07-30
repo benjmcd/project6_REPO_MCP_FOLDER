@@ -263,26 +263,33 @@ def _locked_windows_parents(
         raise StableRawStorageError("unsafe")
 
     locked: list[tuple[int, Path, tuple[int, int]]] = []
+    primary: BaseException | None = None
+    close_error: StableRawStorageError | None = None
     try:
-        root_handle, root_identity = _open_windows_directory_handle(root)
-        locked.append((root_handle, root, root_identity))
-        current = root
-        for component in relative.parts[:-1]:
-            current = current / component
-            if create:
-                current.mkdir(exist_ok=True)
-            handle, identity = _open_windows_directory_handle(current)
-            locked.append((handle, current, identity))
-        yield output, locked
+        try:
+            root_handle, root_identity = _open_windows_directory_handle(root)
+            locked.append((root_handle, root, root_identity))
+            current = root
+            for component in relative.parts[:-1]:
+                current = current / component
+                if create:
+                    current.mkdir(exist_ok=True)
+                handle, identity = _open_windows_directory_handle(current)
+                locked.append((handle, current, identity))
+            yield output, locked
+        except BaseException as exc:
+            primary = exc
     finally:
-        close_error: StableRawStorageError | None = None
         for handle, _, _ in reversed(locked):
             try:
                 _close_windows_handle(handle)
             except StableRawStorageError as exc:
                 close_error = close_error or exc
-        if close_error is not None:
-            raise close_error
+    _raise_snapshot_errors(
+        primary=primary,
+        exit_error=None,
+        close_error=close_error,
+    )
 
 
 def _revalidate_windows_directories(
@@ -473,35 +480,45 @@ def _locked_posix_parents(
         raise StableRawStorageError("io") from exc
 
     locked = [root_handle]
+    primary: BaseException | None = None
+    close_error: StableRawStorageError | None = None
     try:
-        current = root
-        for component in relative.parts[:-1]:
-            parent = locked[-1]
-            current = current / component
-            if create:
-                try:
-                    os.mkdir(component, 0o700, dir_fd=parent.fd)
-                except FileExistsError:
-                    pass
-                except OSError as exc:
-                    raise StableRawStorageError("io") from exc
-            locked.append(
-                _open_posix_child_directory(
-                    parent,
-                    component,
-                    current,
+        try:
+            current = root
+            for component in relative.parts[:-1]:
+                parent = locked[-1]
+                current = current / component
+                if create:
+                    try:
+                        os.mkdir(component, 0o700, dir_fd=parent.fd)
+                    except FileExistsError:
+                        pass
+                    except OSError as exc:
+                        raise StableRawStorageError("io") from exc
+                locked.append(
+                    _open_posix_child_directory(
+                        parent,
+                        component,
+                        current,
+                    )
                 )
-            )
-        yield output, relative.parts[-1], locked
+            yield output, relative.parts[-1], locked
+        except BaseException as exc:
+            primary = exc
     finally:
-        close_error: OSError | None = None
+        raw_close_error: OSError | None = None
         for directory in reversed(locked):
             try:
                 os.close(directory.fd)
             except OSError as exc:
-                close_error = close_error or exc
-        if close_error is not None:
-            raise StableRawStorageError("io") from close_error
+                raw_close_error = raw_close_error or exc
+        if raw_close_error is not None:
+            close_error = _stable_snapshot_error("io", raw_close_error)
+    _raise_snapshot_errors(
+        primary=primary,
+        exit_error=None,
+        close_error=close_error,
+    )
 
 
 def _open_posix_file_fd(
@@ -750,6 +767,45 @@ def _read_posix_snapshot_state(
     return _fd_stable_state(after), size, digest
 
 
+def _stable_snapshot_error(
+    reason: str,
+    cause: BaseException,
+) -> StableRawStorageError:
+    error = StableRawStorageError(reason)
+    error.__cause__ = cause
+    return error
+
+
+def _raise_snapshot_errors(
+    *,
+    primary: BaseException | None,
+    exit_error: BaseException | None,
+    close_error: BaseException | None,
+) -> None:
+    if primary is not None:
+        if exit_error is not None:
+            primary.add_note(
+                f"Secondary raw snapshot exit failure: {exit_error}"
+            )
+        if close_error is not None:
+            primary.add_note(
+                f"Secondary raw snapshot close failure: {close_error}"
+            )
+        secondary = exit_error or close_error
+        if secondary is not None:
+            raise primary from secondary
+        raise primary
+    if exit_error is not None:
+        if close_error is not None:
+            exit_error.add_note(
+                f"Secondary raw snapshot close failure: {close_error}"
+            )
+            raise exit_error from close_error
+        raise exit_error
+    if close_error is not None:
+        raise close_error
+
+
 @contextmanager
 def _locked_windows_raw_file_snapshot(
     raw_root: Path,
@@ -769,39 +825,60 @@ def _locked_windows_raw_file_snapshot(
         except OSError as exc:
             _close_windows_handle(handle)
             raise StableRawStorageError("io") from exc
+        primary: BaseException | None = None
+        exit_error: BaseException | None = None
+        close_error: BaseException | None = None
         try:
-            identity, stable_state, size, digest = (
-                _read_windows_snapshot_state(fd, output, locked)
-            )
-            snapshot = LockedRawFileSnapshot(
-                canonical_ref=str(output.resolve(strict=True)),
-                size=size,
-                sha256=digest,
-            )
             try:
-                yield snapshot
-            finally:
-                (
-                    exit_identity,
-                    exit_state,
-                    exit_size,
-                    exit_digest,
-                ) = _read_windows_snapshot_state(
-                    fd,
-                    output,
-                    locked,
+                identity, stable_state, size, digest = (
+                    _read_windows_snapshot_state(fd, output, locked)
                 )
-                if (
-                    exit_identity != identity
-                    or exit_state != stable_state
-                    or exit_size != size
-                    or exit_digest != digest
-                ):
-                    raise StableRawStorageError("changed")
-        except OSError as exc:
-            raise StableRawStorageError("changed") from exc
+                snapshot = LockedRawFileSnapshot(
+                    canonical_ref=str(output.resolve(strict=True)),
+                    size=size,
+                    sha256=digest,
+                )
+            except OSError as exc:
+                primary = _stable_snapshot_error("changed", exc)
+            except BaseException as exc:
+                primary = exc
+            if primary is None:
+                try:
+                    yield snapshot
+                except BaseException as exc:
+                    primary = exc
+                try:
+                    (
+                        exit_identity,
+                        exit_state,
+                        exit_size,
+                        exit_digest,
+                    ) = _read_windows_snapshot_state(
+                        fd,
+                        output,
+                        locked,
+                    )
+                    if (
+                        exit_identity != identity
+                        or exit_state != stable_state
+                        or exit_size != size
+                        or exit_digest != digest
+                    ):
+                        raise StableRawStorageError("changed")
+                except OSError as exc:
+                    exit_error = _stable_snapshot_error("changed", exc)
+                except BaseException as exc:
+                    exit_error = exc
         finally:
-            os.close(fd)
+            try:
+                os.close(fd)
+            except OSError as exc:
+                close_error = _stable_snapshot_error("io", exc)
+        _raise_snapshot_errors(
+            primary=primary,
+            exit_error=exit_error,
+            close_error=close_error,
+        )
 
 
 @contextmanager
@@ -820,39 +897,60 @@ def _locked_posix_raw_file_snapshot(
             file_name,
             create_new=False,
         )
+        primary: BaseException | None = None
+        exit_error: BaseException | None = None
+        close_error: BaseException | None = None
         try:
-            stable_state, size, digest = _read_posix_snapshot_state(
-                fd,
-                parent_fd,
-                file_name,
-                locked,
-            )
-            snapshot = LockedRawFileSnapshot(
-                canonical_ref=str(output.resolve(strict=True)),
-                size=size,
-                sha256=digest,
-            )
             try:
-                yield snapshot
-            finally:
-                exit_state, exit_size, exit_digest = (
-                    _read_posix_snapshot_state(
-                        fd,
-                        parent_fd,
-                        file_name,
-                        locked,
-                    )
+                stable_state, size, digest = _read_posix_snapshot_state(
+                    fd,
+                    parent_fd,
+                    file_name,
+                    locked,
                 )
-                if (
-                    exit_state != stable_state
-                    or exit_size != size
-                    or exit_digest != digest
-                ):
-                    raise StableRawStorageError("changed")
-        except OSError as exc:
-            raise StableRawStorageError("changed") from exc
+                snapshot = LockedRawFileSnapshot(
+                    canonical_ref=str(output.resolve(strict=True)),
+                    size=size,
+                    sha256=digest,
+                )
+            except OSError as exc:
+                primary = _stable_snapshot_error("changed", exc)
+            except BaseException as exc:
+                primary = exc
+            if primary is None:
+                try:
+                    yield snapshot
+                except BaseException as exc:
+                    primary = exc
+                try:
+                    exit_state, exit_size, exit_digest = (
+                        _read_posix_snapshot_state(
+                            fd,
+                            parent_fd,
+                            file_name,
+                            locked,
+                        )
+                    )
+                    if (
+                        exit_state != stable_state
+                        or exit_size != size
+                        or exit_digest != digest
+                    ):
+                        raise StableRawStorageError("changed")
+                except OSError as exc:
+                    exit_error = _stable_snapshot_error("changed", exc)
+                except BaseException as exc:
+                    exit_error = exc
         finally:
-            os.close(fd)
+            try:
+                os.close(fd)
+            except OSError as exc:
+                close_error = _stable_snapshot_error("io", exc)
+        _raise_snapshot_errors(
+            primary=primary,
+            exit_error=exit_error,
+            close_error=close_error,
+        )
 
 
 def _persist_windows_locked_raw_file(

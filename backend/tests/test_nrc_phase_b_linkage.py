@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Any, Generator
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect as sa_inspect
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -32,6 +33,7 @@ from app.services import nrc_aps_artifact_ingestion
 from app.services import nrc_aps_content_index
 from app.services import nrc_aps_document_processing
 from app.services import nrc_aps_strict_parse
+from app.services import raw_storage_handles as raw_handles
 from app.services.raw_storage_handles import persist_locked_raw_file
 
 
@@ -58,6 +60,33 @@ def db(
         autocommit=False,
         autoflush=False,
         expire_on_commit=False,
+        future=True,
+    )
+    session = factory()
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path / "storage"))
+    try:
+        yield session
+    finally:
+        session.close()
+        engine.dispose()
+
+
+@pytest.fixture()
+def expiring_db(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> Generator[Session, None, None]:
+    engine = create_engine(
+        "sqlite:///:memory:",
+        future=True,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(
+        bind=engine,
+        autocommit=False,
+        autoflush=False,
         future=True,
     )
     session = factory()
@@ -440,6 +469,44 @@ def test_entry_refuses_caller_owned_transaction_state(
     assert db.in_transaction()
 
 
+def test_default_expiring_session_returns_loaded_detached_linkage(
+    expiring_db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, target, _, _ = _make_strict_state(expiring_db)
+    target_id = target.connector_run_target_id
+    expiring_db.rollback()
+    assert expiring_db.expire_on_commit is True
+    _install_parser(monkeypatch)
+
+    first = _phase_b().bind_strict_nrc_phase_b_linkage(
+        expiring_db,
+        connector_run_target_id=target_id,
+    )
+    first_id = first.aps_content_linkage_id
+
+    assert sa_inspect(first).detached
+    assert not sa_inspect(first).expired_attributes
+    assert expiring_db.expire_on_commit is True
+    assert not expiring_db.in_transaction()
+    assert {
+        column.name: getattr(first, column.name)
+        for column in ApsContentLinkage.__table__.columns
+    }["target_id"] == target_id
+    assert not expiring_db.in_transaction()
+
+    second = _phase_b().bind_strict_nrc_phase_b_linkage(
+        expiring_db,
+        connector_run_target_id=target_id,
+    )
+
+    assert sa_inspect(second).detached
+    assert not sa_inspect(second).expired_attributes
+    assert expiring_db.expire_on_commit is True
+    assert second.aps_content_linkage_id == first_id
+    assert not expiring_db.in_transaction()
+
+
 def test_exact_replay_allows_canonical_origin_receipt_without_using_it(
     db: Session,
     monkeypatch: pytest.MonkeyPatch,
@@ -479,6 +546,55 @@ def test_exact_replay_allows_canonical_origin_receipt_without_using_it(
     assert second.aps_content_linkage_id == first_id
     assert db.query(ApsContentLinkage).count() == 1
     assert db.query(ApsContentDocument).count() == 1
+
+
+def test_receipt_without_exact_existing_linkage_fails_before_mutation(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run, target, _, _ = _make_strict_state(db)
+    target_id = target.connector_run_target_id
+    admission = dict(target.source_reference_json)
+    admission["connector_origin_receipt_v1"] = {
+        "schema_id": origin.ORIGIN_RECEIPT_SCHEMA_ID,
+        "connector_key": run.connector_key,
+        "connector_run_id": run.connector_run_id,
+        "connector_run_target_id": target_id,
+        "receipt_hash": "e" * 64,
+        "opaque_receipt_field": "not Phase-B authority",
+    }
+    target.source_reference_json = admission
+    db.commit()
+    _install_parser(monkeypatch)
+    phase_b = _phase_b()
+    real_insert = (
+        phase_b.nrc_aps_content_index
+        .insert_content_units_payload_immutable
+    )
+    mutation_calls = 0
+
+    def record_mutation(*args: Any, **kwargs: Any) -> Any:
+        nonlocal mutation_calls
+        mutation_calls += 1
+        return real_insert(*args, **kwargs)
+
+    monkeypatch.setattr(
+        phase_b.nrc_aps_content_index,
+        "insert_content_units_payload_immutable",
+        record_mutation,
+    )
+
+    with pytest.raises(phase_b.NrcPhaseBLinkageError) as excinfo:
+        phase_b.bind_strict_nrc_phase_b_linkage(
+            db,
+            connector_run_target_id=target_id,
+        )
+
+    assert excinfo.value.code == "nrc_phase_b_receipt_without_linkage"
+    assert mutation_calls == 0
+    assert db.query(ApsContentDocument).count() == 0
+    assert db.query(ApsContentChunk).count() == 0
+    assert db.query(ApsContentLinkage).count() == 0
 
 
 @pytest.mark.parametrize(
@@ -974,6 +1090,127 @@ def test_final_raw_snapshot_encloses_flush_requery_and_commit(
     ]
 
 
+@pytest.mark.parametrize(
+    ("failure_timing", "expected_code", "expected_rows"),
+    [
+        ("precommit", "nrc_phase_b_raw_drift", 0),
+        ("postcommit", "nrc_phase_b_postcommit_raw_drift", 1),
+    ],
+)
+def test_custody_failure_code_distinguishes_commit_state(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    failure_timing: str,
+    expected_code: str,
+    expected_rows: int,
+) -> None:
+    _, target, raw_path, digest = _make_strict_state(db)
+    target_id = target.connector_run_target_id
+    raw_size = raw_path.stat().st_size
+    db.rollback()
+    _install_parser(monkeypatch)
+    phase_b = _phase_b()
+
+    @contextmanager
+    def injected_snapshot(
+        *args: Any,
+        **kwargs: Any,
+    ) -> Generator[raw_handles.LockedRawFileSnapshot, None, None]:
+        if failure_timing == "precommit":
+            raise raw_handles.StableRawStorageError("changed")
+        yield raw_handles.LockedRawFileSnapshot(
+            canonical_ref=str(raw_path.resolve(strict=True)),
+            size=raw_size,
+            sha256=digest,
+        )
+        raise raw_handles.StableRawStorageError("changed")
+
+    monkeypatch.setattr(
+        phase_b,
+        "locked_raw_file_snapshot",
+        injected_snapshot,
+    )
+
+    with pytest.raises(phase_b.NrcPhaseBLinkageError) as excinfo:
+        phase_b.bind_strict_nrc_phase_b_linkage(
+            db,
+            connector_run_target_id=target_id,
+        )
+
+    assert excinfo.value.code == expected_code
+    if failure_timing == "postcommit":
+        assert excinfo.value.message == (
+            "Postcommit raw drift preserves exact rows but grants no "
+            "receipt, retry, or repair authority."
+        )
+    assert db.query(ApsContentDocument).count() == expected_rows
+    assert db.query(ApsContentChunk).count() == expected_rows
+    assert db.query(ApsContentLinkage).count() == expected_rows
+
+
+def test_real_platform_postcommit_custody_outcome_is_fail_closed(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, target, raw_path, digest = _make_strict_state(db)
+    target_id = target.connector_run_target_id
+    db.rollback()
+    _install_parser(monkeypatch)
+    phase_b = _phase_b()
+    real_commit = db.commit
+    overwrite_outcomes: list[str] = []
+
+    def commit_then_overwrite() -> None:
+        real_commit()
+        try:
+            raw_path.write_bytes(b"%PDF-postcommit-drift\n%%EOF")
+        except OSError:
+            overwrite_outcomes.append("denied")
+        else:
+            overwrite_outcomes.append("written")
+
+    monkeypatch.setattr(db, "commit", commit_then_overwrite)
+
+    if raw_handles._windows_backend_available():
+        linkage = phase_b.bind_strict_nrc_phase_b_linkage(
+            db,
+            connector_run_target_id=target_id,
+        )
+        assert overwrite_outcomes == ["denied"]
+        assert linkage.blob_sha256 == digest
+    else:
+        with pytest.raises(phase_b.NrcPhaseBLinkageError) as excinfo:
+            phase_b.bind_strict_nrc_phase_b_linkage(
+                db,
+                connector_run_target_id=target_id,
+            )
+        assert excinfo.value.code == "nrc_phase_b_postcommit_raw_drift"
+        assert overwrite_outcomes == ["written"]
+
+    assert db.query(ApsContentDocument).count() == 1
+    assert db.query(ApsContentChunk).count() == 1
+    assert db.query(ApsContentLinkage).count() == 1
+    preserved_linkage = db.query(ApsContentLinkage).one()
+    assert preserved_linkage.target_id == target_id
+    assert preserved_linkage.blob_sha256 == digest
+    stored_target = db.get(ConnectorRunTarget, target_id)
+    assert stored_target is not None
+    assert origin.ORIGIN_RECEIPT_STORAGE_KEY not in (
+        stored_target.source_reference_json
+    )
+    assert stored_target.retry_eligible is False
+
+    if not raw_handles._windows_backend_available():
+        with pytest.raises(
+            origin.Layer3OriginContinuityError
+        ) as origin_error:
+            origin.derive_connector_origin_receipt(
+                db,
+                connector_run_target_id=target_id,
+            )
+        assert origin_error.value.code == "layer3_origin_raw_hash_mismatch"
+
+
 def test_post_parse_target_row_drift_fails_before_db_mutation(
     db: Session,
     monkeypatch: pytest.MonkeyPatch,
@@ -1444,6 +1681,134 @@ def test_concurrent_exact_uniqueness_conflict_is_accepted(
     assert persisted.target_id == target_id
     assert competing.query(ApsContentDocument).count() == 1
     assert competing.query(ApsContentChunk).count() == 1
+
+
+@pytest.mark.parametrize(
+    "authority_surface",
+    ["run", "target", "event-set"],
+)
+def test_exact_conflict_recovery_revalidates_all_authority(
+    file_dbs: tuple[Session, Session],
+    monkeypatch: pytest.MonkeyPatch,
+    authority_surface: str,
+) -> None:
+    db, competing = file_dbs
+    run, target, _, _ = _make_strict_state(db)
+    run_id = run.connector_run_id
+    target_id = target.connector_run_target_id
+    _install_parser(monkeypatch)
+    phase_b = _phase_b()
+    real_insert = (
+        phase_b.nrc_aps_content_index
+        .insert_content_units_payload_immutable
+    )
+
+    def race(*args: Any, **kwargs: Any) -> Any:
+        payload = deepcopy(kwargs["payload"])
+        nrc_aps_content_index.upsert_content_units_payload(
+            competing,
+            payload=payload,
+        )
+        if authority_surface == "run":
+            competing.query(ConnectorRun).filter(
+                ConnectorRun.connector_run_id == run_id
+            ).update({"status": "failed"})
+        elif authority_surface == "target":
+            competing.query(ConnectorRunTarget).filter(
+                ConnectorRunTarget.connector_run_target_id == target_id
+            ).update({"status": "failed"})
+        else:
+            competing.add(
+                ConnectorRunEvent(
+                    connector_run_event_id="recovery-benign-event",
+                    connector_run_id=run_id,
+                    connector_run_target_id=target_id,
+                    phase="execution",
+                    stage="progress",
+                    event_type="progress",
+                    status_before="running",
+                    status_after="running",
+                    reason_code="progress",
+                    metrics_json={},
+                    created_at=datetime.now(timezone.utc),
+                )
+            )
+        competing.commit()
+        return real_insert(*args, **kwargs)
+
+    monkeypatch.setattr(
+        phase_b.nrc_aps_content_index,
+        "insert_content_units_payload_immutable",
+        race,
+    )
+
+    with pytest.raises(phase_b.NrcPhaseBLinkageError) as excinfo:
+        phase_b.bind_strict_nrc_phase_b_linkage(
+            db,
+            connector_run_target_id=target_id,
+        )
+
+    assert excinfo.value.code == "nrc_phase_b_persistence_conflict"
+
+
+def test_sqlite_exact_conflict_recovery_blocks_post_read_mutation(
+    file_dbs: tuple[Session, Session],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db, competing = file_dbs
+    _, target, _, digest = _make_strict_state(db)
+    target_id = target.connector_run_target_id
+    _install_parser(monkeypatch)
+    phase_b = _phase_b()
+    real_insert = (
+        phase_b.nrc_aps_content_index
+        .insert_content_units_payload_immutable
+    )
+    real_require = phase_b._require_exact_persisted
+    write_outcomes: list[str] = []
+
+    def create_exact_conflict(*args: Any, **kwargs: Any) -> Any:
+        payload = deepcopy(kwargs["payload"])
+        nrc_aps_content_index.upsert_content_units_payload(
+            competing,
+            payload=payload,
+        )
+        competing.commit()
+        return real_insert(*args, **kwargs)
+
+    def read_then_try_write(*args: Any, **kwargs: Any) -> Any:
+        exact = real_require(*args, **kwargs)
+        competing.connection().exec_driver_sql("PRAGMA busy_timeout=100")
+        row = competing.query(ApsContentLinkage).one()
+        row.blob_sha256 = "0" * 64
+        try:
+            competing.commit()
+        except OperationalError:
+            competing.rollback()
+            write_outcomes.append("blocked")
+        else:
+            write_outcomes.append("committed")
+        return exact
+
+    monkeypatch.setattr(
+        phase_b.nrc_aps_content_index,
+        "insert_content_units_payload_immutable",
+        create_exact_conflict,
+    )
+    monkeypatch.setattr(
+        phase_b,
+        "_require_exact_persisted",
+        read_then_try_write,
+    )
+
+    phase_b.bind_strict_nrc_phase_b_linkage(
+        db,
+        connector_run_target_id=target_id,
+    )
+
+    assert write_outcomes == ["blocked"]
+    competing.expire_all()
+    assert competing.query(ApsContentLinkage).one().blob_sha256 == digest
 
 
 def test_concurrent_nonexact_conflict_fails_closed(
